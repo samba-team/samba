@@ -182,24 +182,24 @@ struct ldb_parse_tree {
 			struct ldb_parse_tree *child;
 		} isnot;
 		struct {
-			char *attr;
+			const char *attr;
 			struct ldb_val value;
 		} equality;
 		struct {
-			char *attr;
+			const char *attr;
 			int start_with_wildcard;
 			int end_with_wildcard;
 			struct ldb_val **chunks;
 		} substring;
 		struct {
-			char *attr;
+			const char *attr;
 		} present;
 		struct {
-			char *attr;
+			const char *attr;
 			struct ldb_val value;
 		} comparison;
 		struct {
-			char *attr;
+			const char *attr;
 			int dnAttributes;
 			char *rule_id;
 			struct ldb_val value;
@@ -241,7 +241,10 @@ struct ldb_attrib_handler {
 	ldb_attr_comparison_t comparison_fn;
 };
 
-#define LDB_ATTR_FLAG_HIDDEN     (1<<0)
+#define LDB_ATTR_FLAG_HIDDEN       (1<<0) /* the attribute is not returned by default */
+#define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) /* the attribute is constructed from other attributes */
+#define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) /* the attribute is constructed from other attributes */
+
 
 /* well-known ldap attribute syntaxes - see rfc2252 section 4.3.2 */
 #define LDB_SYNTAX_DN                   "1.3.6.1.4.1.1466.115.121.1.12"
@@ -383,7 +386,7 @@ struct ldb_dn *ldb_dn_make_child(void *mem_ctx,
 				 const struct ldb_dn_component *component,
 				 const struct ldb_dn *base);
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2);
-struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...);
+struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...) PRINTF_ATTRIBUTE(3,4);
 struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
 
 /* useful functions for ldb_message structure manipulation */
@@ -406,22 +409,19 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 				 struct ldb_val *val);
 
 /* add a new empty element to a ldb_message */
-int ldb_msg_add_empty(struct ldb_context *ldb,
-		      struct ldb_message *msg, const char *attr_name, int flags);
+int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags);
 
 /* add a element to a ldb_message */
-int ldb_msg_add(struct ldb_context *ldb, 
-		struct ldb_message *msg, 
+int ldb_msg_add(struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags);
-int ldb_msg_add_value(struct ldb_context *ldb,
-		      struct ldb_message *msg, 
+int ldb_msg_add_value(struct ldb_message *msg, 
 		      const char *attr_name,
 		      const struct ldb_val *val);
-int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
+int ldb_msg_add_string(struct ldb_message *msg, 
 		       const char *attr_name, const char *str);
-int ldb_msg_add_fmt(struct ldb_context *ldb, struct ldb_message *msg, 
-		    const char *attr_name, const char *fmt, ...) PRINTF_ATTRIBUTE(4,5);
+int ldb_msg_add_fmt(struct ldb_message *msg, 
+		    const char *attr_name, const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
 /* compare two message elements - return 0 on match */
 int ldb_msg_element_compare(struct ldb_message_element *el1, 
@@ -484,5 +484,17 @@ void *ldb_get_opaque(struct ldb_context *ldb, const char *name);
 
 const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
 						    const char *attrib);
+
+
+const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs);
+int ldb_attr_in_list(const char * const *attrs, const char *attr);
+
+
+void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree, 
+				 const char *attr, 
+				 const char *replace);
+
+void ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace);
+int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace);
 
 #endif

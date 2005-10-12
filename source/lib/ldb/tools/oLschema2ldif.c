@@ -123,7 +123,7 @@ static char *skip_spaces(char *string) {
 	return (string + strspn(string, " \t\n"));
 }
 
-static int add_multi_string(struct ldb_context *ldb, struct ldb_message *msg, const char *attr, char *values)
+static int add_multi_string(struct ldb_message *msg, const char *attr, char *values)
 {
 	char *c;
 	char *s;
@@ -133,7 +133,7 @@ static int add_multi_string(struct ldb_context *ldb, struct ldb_message *msg, co
 	while (*c) {
 		n = strcspn(c, " \t$");
 		s = talloc_strndup(msg, c, n);
-		if (ldb_msg_add_string(ldb, msg, attr, s) != 0) {
+		if (ldb_msg_add_string(msg, attr, s) != 0) {
 			return -1;
 		}
 		c += n;
@@ -143,8 +143,8 @@ static int add_multi_string(struct ldb_context *ldb, struct ldb_message *msg, co
 	return 0;
 }
 
-#define MSG_ADD_STRING(a, v) do { if (ldb_msg_add_string(ldb_ctx, msg, a, v) != 0) goto failed; } while(0)
-#define MSG_ADD_M_STRING(a, v) do { if (add_multi_string(ldb_ctx, msg, a, v) != 0) goto failed; } while(0)
+#define MSG_ADD_STRING(a, v) do { if (ldb_msg_add_string(msg, a, v) != 0) goto failed; } while(0)
+#define MSG_ADD_M_STRING(a, v) do { if (add_multi_string(msg, a, v) != 0) goto failed; } while(0)
 
 static char *get_def_value(TALLOC_CTX *ctx, char **string)
 {
@@ -373,7 +373,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 	ctx = talloc_new(mem_ctx);
 	msg = ldb_msg_new(ctx);
 
-	ldb_msg_add_string(ldb_ctx, msg, "objectClass", "top");
+	ldb_msg_add_string(msg, "objectClass", "top");
 
 	c = talloc_strdup(ctx, entry);
 	if (!c) return NULL;
@@ -488,7 +488,7 @@ failed:
 	return NULL;
 }
 
-static const struct schema_conv process_file(FILE *in, FILE *out)
+static struct schema_conv process_file(FILE *in, FILE *out)
 {
 	TALLOC_CTX *ctx;
 	struct schema_conv ret;

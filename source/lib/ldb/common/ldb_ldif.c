@@ -55,7 +55,7 @@ static int ldb_read_data_file(void *mem_ctx, struct ldb_val *value)
 	int ret;
 	int f;
 
-	f = open(value->data, O_RDONLY);
+	f = open((const char *)value->data, O_RDONLY);
 	if (f == -1) {
 		return -1;
 	}
@@ -79,7 +79,7 @@ static int ldb_read_data_file(void *mem_ctx, struct ldb_val *value)
 
 	count = 0;
 	size = statbuf.st_size;
-	buf = value->data;
+	buf = (char *)value->data;
 	while (count < statbuf.st_size) {
 		bytes = read(f, buf, size);
 		if (bytes == -1) {
@@ -325,7 +325,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 						 msg->elements[i].name);
 				CHECK_RET;
 				ret = base64_encode_f(ldb, fprintf_fn, private_data, 
-						      v.data, v.length,
+						      (char *)v.data, v.length,
 						      strlen(msg->elements[i].name)+3);
 				CHECK_RET;
 				ret = fprintf_fn(private_data, "\n");
@@ -334,7 +334,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 				ret = fprintf_fn(private_data, "%s: ", msg->elements[i].name);
 				CHECK_RET;
 				ret = fold_string(fprintf_fn, private_data,
-						  v.data, v.length,
+						  (char *)v.data, v.length,
 						  strlen(msg->elements[i].name)+2);
 				CHECK_RET;
 				ret = fprintf_fn(private_data, "\n");
@@ -461,7 +461,7 @@ static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val 
 		p++;
 	}
 
-	value->data = p;
+	value->data = (uint8_t *)p;
 
 	p = strchr(p, '\n');
 
@@ -475,7 +475,7 @@ static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val 
 	}
 
 	if (base64_encoded) {
-		int len = ldb_base64_decode(value->data);
+		int len = ldb_base64_decode((char *)value->data);
 		if (len == -1) {
 			/* it wasn't valid base64 data */
 			return -1;
@@ -588,7 +588,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	msg->dn = ldb_dn_explode(msg, value.data);
+	msg->dn = ldb_dn_explode(msg, (char *)value.data);
 
 	if (msg->dn == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Unable to parse dn '%s'\n", 

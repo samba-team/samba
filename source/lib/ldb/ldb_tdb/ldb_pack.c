@@ -75,7 +75,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	unsigned int i, j, real_elements=0;
 	size_t size;
 	char *dn;
-	char *p;
+	uint8_t *p;
 	size_t len;
 
 	dn = ldb_dn_linearize(ldb, message->dn);
@@ -106,7 +106,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 
 	/* allocate it */
-	data->dptr = talloc_array(ldb, char, size);
+	data->dptr = talloc_array(ldb, uint8_t, size);
 	if (!data->dptr) {
 		talloc_free(dn);
 		errno = ENOMEM;
@@ -157,7 +157,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 		     struct ldb_message *message)
 {
 	struct ldb_context *ldb = module->ldb;
-	char *p;
+	uint8_t *p;
 	unsigned int remaining;
 	unsigned int i, j;
 	unsigned format;
@@ -183,12 +183,12 @@ int ltdb_unpack_data(struct ldb_module *module,
 		break;
 
 	case LTDB_PACKING_FORMAT:
-		len = strnlen(p, remaining);
+		len = strnlen((char *)p, remaining);
 		if (len == remaining) {
 			errno = EIO;
 			goto failed;
 		}
-		message->dn = ldb_dn_explode(message, p);
+		message->dn = ldb_dn_explode(message, (char *)p);
 		if (message->dn == NULL) {
 			errno = ENOMEM;
 			goto failed;
@@ -226,13 +226,13 @@ int ltdb_unpack_data(struct ldb_module *module,
 			errno = EIO;
 			goto failed;
 		}
-		len = strnlen(p, remaining-6);
+		len = strnlen((char *)p, remaining-6);
 		if (len == remaining-6) {
 			errno = EIO;
 			goto failed;
 		}
 		message->elements[i].flags = 0;
-		message->elements[i].name = p;
+		message->elements[i].name = (char *)p;
 		remaining -= len + 1;
 		p += len + 1;
 		message->elements[i].num_values = pull_uint32(p, 0);

@@ -97,7 +97,7 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 		return -1;
 	}
 	
-	if (ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value) != 0) {
+	if (ldb_msg_add_value(msg2, "name", &rdn->value) != 0) {
 		talloc_free(msg2);
 		return -1;
 	}
@@ -105,7 +105,7 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 	attribute = rdn_name_find_attribute(msg2, rdn->name);
 
 	if (!attribute) {
-		if (ldb_msg_add_value(module->ldb, msg2, rdn->name, &rdn->value) != 0) {
+		if (ldb_msg_add_value(msg2, rdn->name, &rdn->value) != 0) {
 			talloc_free(msg2);
 			return -1;
 		}
@@ -175,7 +175,7 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 		return -1;
 	}
 	
-	if (ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value) != 0) {
+	if (ldb_msg_add_value(msg2, "name", &rdn->value) != 0) {
 		talloc_free(msg2);
 		return -1;
 	}

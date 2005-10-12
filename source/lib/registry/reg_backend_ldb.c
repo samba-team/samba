@@ -70,25 +70,25 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CT
 	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
 	char *type_s;
 
-	ldb_msg_add_string(ctx, msg, "value", talloc_strdup(mem_ctx, name));
+	ldb_msg_add_string(msg, "value", talloc_strdup(mem_ctx, name));
 
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
 		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, (void *)data.data, data.length, (void **)&val.data);
-		ldb_msg_add_value(ctx, msg, "data", &val);
+		ldb_msg_add_value(msg, "data", &val);
 		break;
 
 	case REG_DWORD:
-		ldb_msg_add_string(ctx, msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data.data, 0)));
+		ldb_msg_add_string(msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data.data, 0)));
 		break;
 	default:
-		ldb_msg_add_value(ctx, msg, "data", &data);
+		ldb_msg_add_value(msg, "data", &data);
 	}
 
 
 	type_s = talloc_asprintf(mem_ctx, "%u", type);
-	ldb_msg_add_string(ctx, msg, "type", type_s); 
+	ldb_msg_add_string(msg, "type", type_s); 
 
 	return msg;
 }
@@ -276,7 +276,7 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, const struct registry_key *paren
 
 	msg->dn = reg_path_to_ldb(msg, parent, name, NULL);
 
-	ldb_msg_add_string(ctx, msg, "key", talloc_strdup(mem_ctx, name));
+	ldb_msg_add_string(msg, "key", talloc_strdup(mem_ctx, name));
 
 	ret = ldb_add(ctx, msg);
 	if (ret < 0) {

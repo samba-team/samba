@@ -53,7 +53,7 @@ static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 			    const struct ldb_val *in, struct ldb_val *out)
 {
 	uint8_t *s1, *s2;
-	out->data = talloc_size(mem_ctx, strlen(in->data)+1);
+	out->data = talloc_size(mem_ctx, strlen((char *)in->data)+1);
 	if (out->data == NULL) {
 		ldb_oom(ldb);
 		return -1;
@@ -69,7 +69,7 @@ static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 		s2++; s1++;
 	}
 	*s2 = 0;
-	out->length = strlen(out->data);
+	out->length = strlen((char *)out->data);
 	return 0;
 }
 
@@ -82,15 +82,15 @@ static int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *in, struct ldb_val *out)
 {
 	char *end;
-	long long i = strtoll(in->data, &end, 0);
+	long long i = strtoll((char *)in->data, &end, 0);
 	if (*end != 0) {
 		return -1;
 	}
-	out->data = talloc_asprintf(mem_ctx, "%lld", i);
+	out->data = (uint8_t *)talloc_asprintf(mem_ctx, "%lld", i);
 	if (out->data == NULL) {
 		return -1;
 	}
-	out->length = strlen(out->data);
+	out->length = strlen((char *)out->data);
 	return 0;
 }
 
@@ -100,7 +100,7 @@ static int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 static int ldb_comparison_Integer(struct ldb_context *ldb, void *mem_ctx,
 				  const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	return strtoll(v1->data, NULL, 0) - strtoll(v2->data, NULL, 0);
+	return strtoll((char *)v1->data, NULL, 0) - strtoll((char *)v2->data, NULL, 0);
 }
 
 /*
@@ -123,7 +123,7 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	const char *s1=v1->data, *s2=v2->data;
+	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
 	while (*s1 == ' ') s1++;
 	while (*s2 == ' ') s2++;
 	/* TODO: make utf8 safe, possibly with helper function from application */
@@ -153,16 +153,16 @@ static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 	out->length = 0;
 	out->data = NULL;
 
-	dn = ldb_dn_explode_casefold(ldb, in->data);
+	dn = ldb_dn_explode_casefold(ldb, (char *)in->data);
 	if (dn == NULL) {
 		return -1;
 	}
 
-	out->data = ldb_dn_linearize(mem_ctx, dn);
+	out->data = (uint8_t *)ldb_dn_linearize(mem_ctx, dn);
 	if (out->data == NULL) {
 		goto done;
 	}
-	out->length = strlen(out->data);
+	out->length = strlen((char *)out->data);
 
 	ret = 0;
 
@@ -181,10 +181,10 @@ static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	int ret;
 
-	dn1 = ldb_dn_explode_casefold(mem_ctx, v1->data);
+	dn1 = ldb_dn_explode_casefold(mem_ctx, (char *)v1->data);
 	if (dn1 == NULL) return -1;
 
-	dn2 = ldb_dn_explode_casefold(mem_ctx, v2->data);
+	dn2 = ldb_dn_explode_casefold(mem_ctx, (char *)v2->data);
 	if (dn2 == NULL) {
 		talloc_free(dn1);
 		return -1;
@@ -209,7 +209,7 @@ static int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
 	if (ret == 0) {
 		return 0;
 	}
-	subclasses = ldb_subclass_list(ldb, v1->data);
+	subclasses = ldb_subclass_list(ldb, (char *)v1->data);
 	if (subclasses == NULL) {
 		return ret;
 	}

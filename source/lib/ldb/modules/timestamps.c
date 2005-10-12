@@ -58,7 +58,7 @@ static int add_time_element(struct ldb_module *module, struct ldb_message *msg,
 		}
 	}
 
-	if (ldb_msg_add_string(module->ldb, msg, attr_name, time_string) != 0) {
+	if (ldb_msg_add_string(msg, attr_name, time_string) != 0) {
 		return -1;
 	}
 

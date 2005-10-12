@@ -86,3 +86,21 @@ void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *
 	va_end(ap);
 }
 
+
+/*
+  log a message, and set the ldb error string to the same message
+*/
+void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level, 
+		   const char *fmt, ...)
+{
+	va_list ap;
+	char *msg;
+	va_start(ap, fmt);
+	msg = talloc_vasprintf(ldb, fmt, ap);
+	va_end(ap);
+	if (msg != NULL) {
+		ldb_set_errstring(ldb->modules, msg);
+		ldb_debug(ldb, level, "%s", msg);
+	}
+}
+

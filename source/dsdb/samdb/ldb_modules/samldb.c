@@ -107,17 +107,17 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	els[1].flags = LDB_FLAG_MOD_ADD;
 	els[1].name = els[0].name;
 
-	vals[0].data = talloc_asprintf(mem_ctx, "%u", *id);
+	vals[0].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", *id);
 	if (!vals[0].data) {
 		return -1;
 	}
-	vals[0].length = strlen(vals[0].data);
+	vals[0].length = strlen((char *)vals[0].data);
 
-	vals[1].data = talloc_asprintf(mem_ctx, "%u", (*id)+1);
+	vals[1].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", (*id)+1);
 	if (!vals[1].data) {
 		return -1;
 	}
-	vals[1].length = strlen(vals[1].data);
+	vals[1].length = strlen((char *)vals[1].data);
 
 	ret = ldb_modify(ldb, &msg);
 	if (ret != 0) {
@@ -240,7 +240,8 @@ static struct ldb_message_element *samldb_find_attribute(const struct ldb_messag
 				return &msg->elements[i];
 			}
 			for (j = 0; j < msg->elements[i].num_values; j++) {
-				if (strcasecmp(value, msg->elements[i].values[j].data) == 0) {
+				if (strcasecmp(value, 
+					       (char *)msg->elements[i].values[j].data) == 0) {
 					return &msg->elements[i];
 				}
 			}
@@ -260,7 +261,7 @@ static BOOL samldb_msg_add_string(struct ldb_module *module, struct ldb_message 
 		return False;
 	}
 
-	if (ldb_msg_add_string(module->ldb, msg, aname, aval) != 0) {
+	if (ldb_msg_add_string(msg, aname, aval) != 0) {
 		return False;
 	}
 
@@ -276,7 +277,7 @@ static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *ms
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
-	return (ldb_msg_add_value(module->ldb, msg, name, &v) == 0);
+	return (ldb_msg_add_value(msg, name, &v) == 0);
 }
 
 static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
@@ -497,7 +498,7 @@ static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ld
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
-		struct dom_sid *sid = dom_sid_parse_talloc(msg2, rdn->value.data);
+		struct dom_sid *sid = dom_sid_parse_talloc(msg2, (char *)rdn->value.data);
 		if (sid == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: internal error! Can't parse sid in CN\n");
 			return NULL;
