@@ -33,6 +33,13 @@ o   Jeremy Allison <jra@samba.org>
       which cannot be read due to permissions.
 
 
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 3070: Fix crash bug in qfsinfo when retrieving fs quota 
+      details.
+    * BUG 1473, 3090: Quota detection and compilation problems on 
+      Solaris.
+
+
 o   Marc Balmer <marc@msys.ch>
     * Build fixes when builddir != srcdir
 
