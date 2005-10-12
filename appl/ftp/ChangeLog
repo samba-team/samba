@@ -1,3 +1,24 @@
+2005-10-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftp/ftp.1: document -x
+	
+	* ftp/security.h: implement cprotect (from MIT)
+	
+	* ftp/security.c: add -x (encrypt) option; implement cprotect
+	(from MIT); make sure we CCC if switching to clear-text command
+	channel
+
+	* ftp/cmdtab.c: implement cprotect (from MIT)
+	
+	* ftp/ruserpass.c: if doing command line encryption (-x), ignore
+	prot commands in .netrc
+
+	* ftp/ftp_var.h: add -x (encrypt) option
+	
+	* ftp/globals.c: add -x (encrypt) option
+	
+	* ftp/main.c: add -x (encrypt) option
+	
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpcmd.y: Fix shadow warning.
