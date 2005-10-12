@@ -15,6 +15,7 @@ int	lineedit;		/* use line-editing */
 int	debug;			/* debugging level */
 int	bell;			/* ring bell on cmd completion */
 int	doglob;			/* glob local file names */
+int	doencrypt;		/* try to use encryption */
 int	autologin;		/* establish user account on connection */
 int	proxy;			/* proxy server connection active */
 int	proxflag;		/* proxy connection exists */

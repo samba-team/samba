@@ -69,6 +69,8 @@ struct getargs getargs[] = {
       "verbosity", NULL},
     { NULL,	'K', arg_negative_flag, &use_kerberos,
       "Disable kerberos authentication", NULL},
+    { "encrypt", 'x', arg_flag, &doencrypt,
+      "Encrypt command and data channel if possible" },
     { "version", 0,  arg_flag, &version_flag },
     { "help",	'h', arg_flag, &help_flag },
 };
