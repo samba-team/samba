@@ -165,7 +165,7 @@ int lsqlite3_connect(struct ldb_context *ldb,
 		     const char *url, 
 		     unsigned int flags, 
 		     const char *options[]);
-struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
+struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[]);
 

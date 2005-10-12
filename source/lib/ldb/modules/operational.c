@@ -61,6 +61,10 @@
      for this one we do the search as normal, then if requested ask
      for objectclass, change the attribute name, and add it
 
+  allowedAttributesEffective: HIDDEN, CONSTRUCTED, not-searchable, 
+     list of attributes that can be modified - requires schema lookup
+
+
   attributeTypes: in schema only
   objectClasses: in schema only
   matchingRules: in schema only

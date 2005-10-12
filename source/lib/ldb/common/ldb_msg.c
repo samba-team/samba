@@ -646,7 +646,7 @@ time_t ldb_string_to_time(const char *s)
 	
 	if (s == NULL) return 0;
 	
-	ZERO_STRUCT(tm);
+	memset(&tm, 0, sizeof(tm));
 	if (sscanf(s, "%04u%02u%02u%02u%02u%02u", 
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {

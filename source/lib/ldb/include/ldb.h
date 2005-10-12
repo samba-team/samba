@@ -453,7 +453,7 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 
 void ldb_msg_sort_elements(struct ldb_message *msg);
 
-struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx, 
+struct ldb_message *ldb_msg_copy_shallow(void *mem_ctx, 
 					 const struct ldb_message *msg);
 struct ldb_message *ldb_msg_copy(void *mem_ctx, 
 				 const struct ldb_message *msg);
@@ -489,7 +489,7 @@ const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
 						    const char *attrib);
 
 
-const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs);
+const char **ldb_attr_list_copy(void *mem_ctx, const char * const *attrs);
 int ldb_attr_in_list(const char * const *attrs, const char *attr);
 
 
@@ -500,7 +500,7 @@ void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree,
 int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace);
 int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace);
 
-char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t);
+char *ldb_timestring(void *mem_ctx, time_t t);
 time_t ldb_string_to_time(const char *s);
 
 #endif
