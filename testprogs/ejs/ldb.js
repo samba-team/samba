@@ -65,7 +65,7 @@ function setup_modules(ldb)
 {
 	ok = ldb.add("
 dn: @MODULES
-@LIST: timestamps,objectguid,rdn_name
+@LIST: operational,objectguid,rdn_name
 ");
 }
 
@@ -92,12 +92,13 @@ cn: X9
 
 	var res = ldb.search("x=8", NULL, ldb.SCOPE_DEFAULT);
 	assert(res[0].objectGUID != undefined);
-	assert(res[0].createTimestamp != undefined);
+	assert(res[0].createTimestamp == undefined);
 	assert(res[0].whenCreated != undefined);
 	assert(res[0].name == "x8");
 	assert(res[0].cn == "x8");
 
-	var res2 = ldb.search("x=9", NULL, ldb.SCOPE_DEFAULT);
+	var attrs = new Array("*", "createTimestamp");
+	var res2 = ldb.search("x=9", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res2[0].objectGUID != undefined);
 	assert(res2[0].createTimestamp != undefined);
 	assert(res2[0].whenCreated != undefined);
