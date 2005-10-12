@@ -120,11 +120,9 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 			}
 		}
 		if (i == attribute->num_values) {
-			char *error_string = talloc_asprintf(module, "RDN mismatch on %s: %s", ldb_dn_linearize(msg2, msg2->dn), rdn->name);
-			if (error_string) {
-				ldb_set_errstring(module, error_string);
-				ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s\n", error_string);
-			}
+			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, 
+				      "RDN mismatch on %s: %s", 
+				      ldb_dn_linearize(msg2, msg2->dn), rdn->name);
 			talloc_free(msg2);
 			return -1;
 		}

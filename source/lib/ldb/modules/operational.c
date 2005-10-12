@@ -126,7 +126,7 @@ static int operational_search_bytree(struct ldb_module *module,
 	   attributes to the alias for any hidden attributes that can
 	   be fetched directly using non-hidden names */
 	for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-		for (a=0;attrs[a];a++) {
+		for (a=0;attrs && attrs[a];a++) {
 			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) == 0) {
 				if (!search_attrs) {
 					search_attrs = ldb_attr_list_copy(module, attrs);
@@ -153,7 +153,7 @@ static int operational_search_bytree(struct ldb_module *module,
 	   them (if the aliased entry was not asked for) */
 	for (r=0;r<ret;r++) {
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-			for (a=0;attrs[a];a++) {
+			for (a=0;attrs && attrs[a];a++) {
 				if (ldb_attr_cmp(attrs[a], search_sub[i].attr) != 0) {
 					continue;
 				}
@@ -183,15 +183,98 @@ oom:
 	return -1;
 }
 
+/*
+  add a time element to a record
+*/
+static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
+{
+	struct ldb_message_element *el;
+	char *s;
+
+	if (ldb_msg_find_element(msg, attr) != NULL) {
+		return 0;
+	}
+
+	s = ldb_timestring(msg, t);
+	if (s == NULL) {
+		return -1;
+	}
+
+	if (ldb_msg_add_string(msg, attr, s) != 0) {
+		return -1;
+	}
+
+	el = ldb_msg_find_element(msg, attr);
+	/* always set as replace. This works because on add ops, the flag
+	   is ignored */
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	return 0;
+}
+
+
+/*
+  hook add record ops
+*/
+static int operational_add_record(struct ldb_module *module, 
+				  const struct ldb_message *msg)
+{
+	time_t t = time(NULL);
+	struct ldb_message *msg2;
+	int ret;
+
+	if (ldb_dn_is_special(msg->dn)) {
+		return ldb_next_add_record(module, msg);
+	}
+
+	/* we have to copy the message as the caller might have it as a const */
+	msg2 = ldb_msg_copy_shallow(module, msg);
+	if (msg2 == NULL) {
+		return -1;
+	}
+	if (add_time_element(msg2, "whenCreated", t) != 0 ||
+	    add_time_element(msg2, "whenChanged", t) != 0) {
+		talloc_free(msg2);
+		return -1;
+	}
+	ret = ldb_next_add_record(module, msg2);
+	talloc_free(msg2);
+	return ret;
+}
+
+/*
+  hook modify record ops
+*/
+static int operational_modify_record(struct ldb_module *module, 
+				     const struct ldb_message *msg)
+{
+	time_t t = time(NULL);
+	struct ldb_message *msg2;
+	int ret;
+
+	if (ldb_dn_is_special(msg->dn)) {
+		return ldb_next_modify_record(module, msg);
+	}
+
+	/* we have to copy the message as the caller might have it as a const */
+	msg2 = ldb_msg_copy_shallow(module, msg);
+	if (msg2 == NULL) {
+		return -1;
+	}
+	if (add_time_element(msg2, "whenChanged", t) != 0) {
+		talloc_free(msg2);
+		return -1;
+	}
+	ret = ldb_next_modify_record(module, msg2);
+	talloc_free(msg2);
+	return ret;
+}
 
 static const struct ldb_module_ops operational_ops = {
 	.name              = "operational",
 	.search_bytree     = operational_search_bytree,
-#if 0
 	.add_record        = operational_add_record,
-	.modify_record     = operational_modify_record,
-	.rename_record     = operational_rename_record
-#endif
+	.modify_record     = operational_modify_record
 };
 
 
@@ -212,6 +295,12 @@ struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &operational_ops;
+
+	/* setup some standard attribute handlers */
+	ldb_set_attrib_handler_syntax(ldb, "whenCreated", LDB_SYNTAX_UTC_TIME);
+	ldb_set_attrib_handler_syntax(ldb, "whenChanged", LDB_SYNTAX_UTC_TIME);
+	ldb_set_attrib_handler_syntax(ldb, "subschemaSubentry", LDB_SYNTAX_DN);
+	ldb_set_attrib_handler_syntax(ldb, "structuralObjectClass", LDB_SYNTAX_OBJECTCLASS);
 
 	return ctx;
 }

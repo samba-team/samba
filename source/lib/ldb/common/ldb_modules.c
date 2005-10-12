@@ -127,7 +127,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		ldb_module_init_t init;
 	} well_known_modules[] = {
 		{ "schema", schema_module_init },
-		{ "timestamps", timestamps_module_init },
+		{ "operational", operational_module_init },
 		{ "rdn_name", rdn_name_module_init },
 #ifdef _SAMBA_BUILD_
 		{ "objectguid", objectguid_module_init },

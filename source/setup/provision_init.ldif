@@ -48,5 +48,5 @@ template: groupTemplate
 #Add modules to the list to activate them by default
 #beware often order is important
 dn: @MODULES
-@LIST: samldb,timestamps,objectguid,rdn_name
+@LIST: samldb,operational,objectguid,rdn_name
 

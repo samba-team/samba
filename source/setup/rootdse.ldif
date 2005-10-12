@@ -7,7 +7,7 @@ modifyTimestamp: HIDDEN
 dn: @SUBCLASSES
 
 dn: @MODULES
-@MODULE: timestamps
+@MODULE: operational
 
 dn: cn=rootDSE
 currentTime: _DYNAMIC_
