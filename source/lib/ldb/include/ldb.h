@@ -243,7 +243,6 @@ struct ldb_attrib_handler {
 
 #define LDB_ATTR_FLAG_HIDDEN       (1<<0) /* the attribute is not returned by default */
 #define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) /* the attribute is constructed from other attributes */
-#define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) /* the attribute is constructed from other attributes */
 
 
 /* well-known ldap attribute syntaxes - see rfc2252 section 4.3.2 */
