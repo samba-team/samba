@@ -248,7 +248,7 @@ failed:
  encode the winsdb_addr("address") attribute like this:
  "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z;"
 */
-static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *msg, 
+static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, 
 				   const char *attr_name, struct winsdb_addr *addr)
 {
 	struct ldb_val val;
@@ -262,7 +262,7 @@ static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val);
 }
 
 struct winsdb_addr **winsdb_addr_list_make(TALLOC_CTX *mem_ctx)
@@ -523,7 +523,7 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", rec->version);
 	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
 	for (i=0;rec->addresses[i];i++) {
-		ret |= ldb_msg_add_winsdb_addr(ldb, msg, "address", rec->addresses[i]);
+		ret |= ldb_msg_add_winsdb_addr(msg, "address", rec->addresses[i]);
 	}
 	ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
 	if (ret != 0) goto failed;
@@ -544,7 +544,6 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int trans = -1;
 	int ret = 0;
-
 
 	trans = ldb_transaction_start(ldb);
 	if (trans != LDB_SUCCESS) goto failed;
