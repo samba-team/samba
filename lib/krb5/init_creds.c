@@ -40,7 +40,7 @@ krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
 {
     memset (opt, 0, sizeof(*opt));
     opt->flags = 0;
-    opt->private = NULL;
+    opt->opt_private = NULL;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -56,13 +56,13 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
 	return ENOMEM;
     }
     krb5_get_init_creds_opt_init(o);
-    o->private = calloc(1, sizeof(*o->private));
-    if (o->private == NULL) {
+    o->opt_private = calloc(1, sizeof(*o->opt_private));
+    if (o->opt_private == NULL) {
 	krb5_set_error_string(context, "out of memory");
 	free(o);
 	return ENOMEM;
     }
-    o->private->refcount = 1;
+    o->opt_private->refcount = 1;
     *opt = o;
     return 0;
 }
@@ -82,16 +82,16 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     }
     if (in)
 	*opt = *in;
-    if(opt->private == NULL) {
-	opt->private = calloc(1, sizeof(*opt->private));
-	if (opt->private == NULL) {
+    if(opt->opt_private == NULL) {
+	opt->opt_private = calloc(1, sizeof(*opt->opt_private));
+	if (opt->opt_private == NULL) {
 	    krb5_set_error_string(context, "out of memory");
 	    free(opt);
 	    return ENOMEM;
 	}
-	opt->private->refcount = 1;
+	opt->opt_private->refcount = 1;
     } else
-	opt->private->refcount++;
+	opt->opt_private->refcount++;
     *out = opt;
     return 0;
 }
@@ -99,13 +99,13 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
 {
-    if (opt->private == NULL)
+    if (opt->opt_private == NULL)
 	return;
-    if (opt->private->refcount < 1) /* abort ? */
+    if (opt->opt_private->refcount < 1) /* abort ? */
 	return;
-    if (--opt->private->refcount == 0) {
+    if (--opt->opt_private->refcount == 0) {
 	_krb5_get_init_creds_opt_free_pkinit(opt);
-	free(opt->private);
+	free(opt->opt_private);
     }
     memset(opt, 0, sizeof(*opt));
     free(opt);
@@ -293,7 +293,7 @@ require_ext_opt(krb5_context context,
 		krb5_get_init_creds_opt *opt,
 		const char *type)
 {
-    if (opt->private == NULL) {
+    if (opt->opt_private == NULL) {
 	krb5_set_error_string(context, "%s on non extendable opt", type);
 	return EINVAL;
     }
@@ -310,8 +310,8 @@ krb5_get_init_creds_opt_set_pa_password(krb5_context context,
     ret = require_ext_opt(context, opt, "init_creds_opt_set_pa_password");
     if (ret)
 	return ret;
-    opt->private->password = password;
-    opt->private->key_proc = key_proc;
+    opt->opt_private->password = password;
+    opt->opt_private->key_proc = key_proc;
     return 0;
 }
 
@@ -324,7 +324,7 @@ krb5_get_init_creds_opt_set_pac_request(krb5_context context,
     ret = require_ext_opt(context, opt, "init_creds_opt_set_pac_req");
     if (ret)
 	return ret;
-    opt->private->req_pac = req_pac ?
+    opt->opt_private->req_pac = req_pac ?
 	KRB5_PA_PAC_REQ_TRUE :
 	KRB5_PA_PAC_REQ_FALSE;
     return 0;

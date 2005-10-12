@@ -275,11 +275,11 @@ get_init_creds_common(krb5_context context,
 	options = &default_opt;
     }
 
-    if (options->private) {
-	ctx->password = options->private->password;
-	ctx->key_proc = options->private->key_proc;
-	ctx->req_pac = options->private->req_pac;
-	ctx->pk_init_ctx = options->private->pk_init_ctx;
+    if (options->opt_private) {
+	ctx->password = options->opt_private->password;
+	ctx->key_proc = options->opt_private->key_proc;
+	ctx->req_pac = options->opt_private->req_pac;
+	ctx->pk_init_ctx = options->opt_private->pk_init_ctx;
     } else
 	ctx->req_pac = KRB5_PA_PAC_DONT_CARE;
 
@@ -1466,8 +1466,8 @@ krb5_get_init_creds_password(krb5_context context,
 	return ret;
 
     if (password == NULL &&
-	options->private->password == NULL &&
-	options->private->pk_init_ctx == NULL)
+	options->opt_private->password == NULL &&
+	options->opt_private->pk_init_ctx == NULL)
     {
 	krb5_prompt prompt;
 	krb5_data password_data;
@@ -1495,7 +1495,7 @@ krb5_get_init_creds_password(krb5_context context,
 	password = password_data.data;
     }
 
-    if (options->private->password == NULL) {
+    if (options->opt_private->password == NULL) {
 	ret = krb5_get_init_creds_opt_set_pa_password(context, options,
 						      password, NULL);
 	if (ret) {
