@@ -225,6 +225,33 @@ static int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
+  compare two utc time values. 1 second resolution
+*/
+static int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
+				  const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	time_t t1, t2;
+	t1 = ldb_string_to_time((char *)v1->data);
+	t1 = ldb_string_to_time((char *)v1->data);
+	return (int)t2 - (int)t1;
+}
+
+/*
+  canonicalise a utc time
+*/
+static int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
+				    const struct ldb_val *in, struct ldb_val *out)
+{
+	time_t t = ldb_string_to_time((char *)in->data);
+	out->data = (uint8_t *)ldb_timestring(mem_ctx, t);
+	if (out->data == NULL) {
+		return -1;
+	}
+	out->length = strlen((char *)out->data);
+	return 0;
+}
+
+/*
   table of standard attribute handlers
 */
 static const struct ldb_attrib_handler ldb_standard_attribs[] = {
@@ -267,6 +294,14 @@ static const struct ldb_attrib_handler ldb_standard_attribs[] = {
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_handler_fold,
 		.comparison_fn   = ldb_comparison_objectclass
+	},
+	{ 
+		.attr            = LDB_SYNTAX_UTC_TIME,
+		.flags           = 0,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_utctime,
+		.comparison_fn   = ldb_comparison_utctime
 	}
 };
 

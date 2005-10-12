@@ -251,6 +251,7 @@ struct ldb_attrib_handler {
 #define LDB_SYNTAX_DIRECTORY_STRING     "1.3.6.1.4.1.1466.115.121.1.15"
 #define LDB_SYNTAX_INTEGER              "1.3.6.1.4.1.1466.115.121.1.27"
 #define LDB_SYNTAX_OCTET_STRING         "1.3.6.1.4.1.1466.115.121.1.40"
+#define LDB_SYNTAX_UTC_TIME             "1.3.6.1.4.1.1466.115.121.1.53"
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
 /*
@@ -452,6 +453,8 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 
 void ldb_msg_sort_elements(struct ldb_message *msg);
 
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx, 
+					 const struct ldb_message *msg);
 struct ldb_message *ldb_msg_copy(void *mem_ctx, 
 				 const struct ldb_message *msg);
 
