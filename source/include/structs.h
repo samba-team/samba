@@ -262,6 +262,7 @@ struct wins_server;
 
 struct nbt_dc_name;
 struct wb_sid_object;
+struct pam_auth_crap_state;
 
 struct cldap_socket;
 struct cldapd_server;
