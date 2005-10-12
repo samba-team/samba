@@ -909,19 +909,6 @@ int samdb_msg_set_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 }
 
 /*
-  set a ldaptime element in a message
-*/
-int samdb_msg_set_ldaptime(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			   const char *attr_name, time_t t)
-{
-	char *str = ldap_timestring(mem_ctx, t);
-	if (!str) {
-		return -1;
-	}
-	return samdb_msg_set_string(sam_ldb, mem_ctx, msg, attr_name, str);
-}
-
-/*
   add a record
 */
 int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
