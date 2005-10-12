@@ -63,8 +63,8 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		req->smb_conn->negotiate.max_send = sess->old.in.bufsize;
 	}
 	
-	if (req->smb_conn->negotiate.called_name) {
-		remote_machine = req->smb_conn->negotiate.called_name->name;
+	if (req->smb_conn->negotiate.calling_name) {
+		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 	
 	if (!remote_machine) {
@@ -172,8 +172,8 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		auth_context = req->smb_conn->negotiate.auth_context;
 	}
 
-	if (req->smb_conn->negotiate.called_name) {
-		remote_machine = req->smb_conn->negotiate.called_name->name;
+	if (req->smb_conn->negotiate.calling_name) {
+		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 	
 	if (!remote_machine) {
