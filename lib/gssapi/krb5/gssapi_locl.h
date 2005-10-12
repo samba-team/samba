@@ -230,6 +230,12 @@ int
 gss_oid_equal(const gss_OID a, const gss_OID b);
 
 void
+gssapi_krb5_clear_status (void);
+
+void
+gssapi_krb5_set_status (const char *fmt, ...);
+
+void
 gssapi_krb5_set_error_string (void);
 
 char *
