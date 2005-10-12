@@ -89,6 +89,12 @@ static void thread_accept_connection(struct event_context *ev,
 	status = socket_accept(sock, &state->sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(ev2);
+		/* We need to throttle things until the system clears
+		   enough resources to handle this new socket. If we
+		   don't then we will spin filling the log and causing
+		   more problems. We don't panic as this is probably a
+		   temporary resource constraint */
+		sleep(1);
 		return;
 	}
 
