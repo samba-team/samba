@@ -1,5 +1,20 @@
+2005-10-12  Love  <lha@kth.se>
+
+	* lib/krb5/init_creds.c: Rename private to opt_private.
+
+	* lib/krb5/init_creds_pw.c: Rename private to opt_private.
+
+	* lib/krb5/pkinit.c: rename element private to opt_private to make
+	c++ picky compilers less upset.
+
+	* lib/krb5/krb5.h (krb5_get_init_creds_opt): rename element
+	private to opt_private to make c++ picky compilers less upset.
+	
 2005-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krbhst.c (_krb5_krbhost_info_move): new function
+	(_krb5_free_krbhst_info): expose to internal use
+	
 	* lib/krb5/init_creds_pw.c: Prepare to pass down a
 	krb5_krbhst_info into the pre-auth mechs
 
