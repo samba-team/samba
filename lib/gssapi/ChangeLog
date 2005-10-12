@@ -1,5 +1,15 @@
+2005-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c (spnego_reply): Don't pass back raw Kerberos
+	errors, use GSS-API errors instead. From Michael B Allen.
+
+	* display_status.c: Add gssapi_krb5_clear_status,
+	gssapi_krb5_set_status for handling error messages.
+	
 2005-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* external.c: Use rk_UNCONST to avoid const warning.
+	
 	* display_status.c: Constify strings to avoid warnings.
 	
 2005-08-11 Love Hörnquist Åstrand  <lha@it.su.se>
