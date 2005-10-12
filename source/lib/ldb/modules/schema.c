@@ -106,7 +106,7 @@ static int get_msg_attributes(struct schema_structures *ss, const struct ldb_mes
 			}
 
 			for (j = 0, cnum = ss->objectclasses.num; j < msg->elements[i].num_values; j++) {
-				ss->objectclasses.attr[cnum+j].name = msg->elements[i].values[j].data;
+				ss->objectclasses.attr[cnum+j].name = (char *)msg->elements[i].values[j].data;
 				ss->objectclasses.attr[cnum+j].flags = msg->elements[i].flags & flag_mask;
 			}
 			ss->objectclasses.num += msg->elements[i].num_values;
@@ -164,14 +164,15 @@ static int add_attribute_uniq(void *mem_ctx, struct schema_attribute_list *list,
 		for (c = 0; c < list->num; c++) {
 			len = strlen(list->attr[c].name);
 			if (len == el->values[i].length) {
-				if (ldb_attr_cmp(list->attr[c].name, el->values[i].data) == 0) {
+				if (ldb_attr_cmp(list->attr[c].name, 
+						 (char *)el->values[i].data) == 0) {
 					found = 1;
 					break;
 				}
 			}
 		}
 		if (!found) {
-			list->attr[j + list->num].name = el->values[i].data;
+			list->attr[j + list->num].name = (char *)el->values[i].data;
 			list->attr[j + list->num].flags = flags;
 			j++;
 		}
@@ -187,7 +188,6 @@ static int add_attribute_uniq(void *mem_ctx, struct schema_attribute_list *list,
 static int get_attr_list_recursive(struct ldb_module *module, struct schema_structures *schema_struct)
 {
 	struct ldb_message **srch;
-	char *error_string;
 	int i, j;
 	int ret;
 
@@ -209,21 +209,18 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 		talloc_steal(schema_struct, srch);
 
 		if (ret <= 0) {
-			/* Schema DB Error: Error occurred retrieving Object Class Description */
-			error_string = talloc_asprintf(module, "Error retrieving Objectclass %s.\n", schema_struct->objectclasses.attr[i].name);
-			if (error_string) {
-				ldb_set_errstring(module, error_string);
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-			}
+			/* Schema DB Error: Error occurred retrieving
+			   Object Class Description */
+			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+				      "Error retrieving Objectclass %s.\n", 
+				      schema_struct->objectclasses.attr[i].name);
 			return -1;
 		}
 		if (ret > 1) {
 			/* Schema DB Error: Too Many Records */
-			error_string = talloc_asprintf(module, "Too many records found retrieving Objectclass %s.\n", schema_struct->objectclasses.attr[i].name);
-			if (error_string) {
-				ldb_set_errstring(module, error_string);
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-			}
+			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+				      "Too many records found retrieving Objectclass %s.\n", 
+				      schema_struct->objectclasses.attr[i].name);
 			return -1;
 		}
 
@@ -294,7 +291,6 @@ static int schema_search_bytree(struct ldb_module *module, const struct ldb_dn *
 static int schema_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct schema_structures *entry_structs;
-	char *error_string;
 	unsigned int i;
 	int ret;
 
@@ -338,13 +334,9 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 					     entry_structs->required_attrs.attr[i].name);
 
 		if (attr == NULL) { /* not found */
-			error_string = talloc_asprintf(module,
-				  "The required_attrs attribute %s is missing.\n",
-				  entry_structs->required_attrs.attr[i].name);
-			if (error_string) {
-				ldb_set_errstring(module, error_string);
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-			}
+			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+				      "The required_attrs attribute %s is missing.\n",
+				      entry_structs->required_attrs.attr[i].name);
 			talloc_free(entry_structs);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
@@ -363,13 +355,9 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 						     entry_structs->entry_attrs.attr[i].name);
 
 			if (attr == NULL) { /* not found */
-				error_string = talloc_asprintf(module,
-					  "The attribute %s is not referenced by any objectclass.\n",
-					  entry_structs->entry_attrs.attr[i].name);
-				if (error_string) {
-					ldb_set_errstring(module, error_string);
-					ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-				}
+				ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+					      "The attribute %s is not referenced by any objectclass.\n",
+					      entry_structs->entry_attrs.attr[i].name);
 				talloc_free(entry_structs);
 				return LDB_ERR_OBJECT_CLASS_VIOLATION;
 			}
@@ -385,7 +373,6 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 static int schema_modify_record(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct schema_structures *entry_structs;
-	char *error_string;
 	unsigned int i;
 	int ret;
 
@@ -437,13 +424,9 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 					     entry_structs->required_attrs.attr[i].name);
 
 		if (attr == NULL) { /* not found */
-			error_string = talloc_asprintf(module,
-				  "The required_attrs attribute %s is missing.\n",
-				  entry_structs->required_attrs.attr[i].name);
-			if (error_string) {
-				ldb_set_errstring(module, error_string);
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-			}
+			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+				      "The required_attrs attribute %s is missing.\n",
+				      entry_structs->required_attrs.attr[i].name);
 			talloc_free(entry_structs);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
@@ -451,14 +434,9 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		/* check we are not trying to delete a required attribute */
 		/* TODO: consider multivalued attrs */
 		if ((attr->flags & SCHEMA_FLAG_MOD_DELETE) != 0) {
-			error_string = talloc_asprintf(module,
-				  "Trying to delete the required attribute %s.\n",
-				  attr->name);
-			if (error_string) {
-				ldb_set_errstring(module, error_string);
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-			}
-
+			ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+				      "Trying to delete the required attribute %s.\n",
+				      attr->name);
 			talloc_free(entry_structs);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
@@ -477,14 +455,9 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 						     entry_structs->entry_attrs.attr[i].name);
 
 			if (attr == NULL) { /* not found */
-				error_string = talloc_asprintf(module,
-					  "The attribute %s is not referenced by any objectclass.\n",
-					  entry_structs->entry_attrs.attr[i].name);
-				if (error_string) {
-					ldb_set_errstring(module, error_string);
-					ldb_debug(module->ldb, LDB_DEBUG_ERROR, error_string);
-				}
-
+				ldb_debug_set(module->ldb, LDB_DEBUG_ERROR, 
+					      "The attribute %s is not referenced by any objectclass.\n",
+					      entry_structs->entry_attrs.attr[i].name);
 				talloc_free(entry_structs);
 				return LDB_ERR_OBJECT_CLASS_VIOLATION;
 			}

@@ -1459,7 +1459,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (ldb_msg_add_empty(state->sam_ldb, msg, "privilege", ldb_flag)) {
+	if (ldb_msg_add_empty(msg, "privilege", ldb_flag)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

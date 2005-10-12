@@ -153,7 +153,8 @@ static int ldb_match_equality(struct ldb_context *ldb,
 
 	if (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0 ||
 	    ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0) {
-		valuedn = ldb_dn_explode_casefold(ldb, tree->u.equality.value.data);
+		valuedn = ldb_dn_explode_casefold(ldb, 
+						  (char *)tree->u.equality.value.data);
 		if (valuedn == NULL) {
 			return 0;
 		}
@@ -194,7 +195,7 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	struct ldb_val cnk;
 	struct ldb_val *chunk;
 	char *p, *g;
-	char *save_p = NULL;
+	uint8_t *save_p = NULL;
 	int c = 0;
 
 	h = ldb_attrib_handler(ldb, tree->u.substring.attr);
@@ -211,7 +212,7 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
 
 		/* FIXME: case of embedded nulls */
-		if (strncmp(val.data, cnk.data, cnk.length) != 0) goto failed;
+		if (strncmp((char *)val.data, (char *)cnk.data, cnk.length) != 0) goto failed;
 		val.length -= cnk.length;
 		val.data += cnk.length;
 		c++;
@@ -225,16 +226,16 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
 
 		/* FIXME: case of embedded nulls */
-		p = strstr(val.data, cnk.data);
+		p = strstr((char *)val.data, (char *)cnk.data);
 		if (p == NULL) goto failed;
 		if ( (! tree->u.substring.chunks[c + 1]) && (! tree->u.substring.end_with_wildcard) ) {
 			do { /* greedy */
-				g = strstr(p + cnk.length, cnk.data);
+				g = strstr((char *)p + cnk.length, (char *)cnk.data);
 				if (g) p = g;
 			} while(g);
 		}
 		val.length = val.length - (p - (char *)(val.data)) - cnk.length;
-		val.data = p + cnk.length;
+		val.data = (uint8_t *)(p + cnk.length);
 		c++;
 		talloc_free(cnk.data);
 		cnk.data = NULL;
@@ -282,8 +283,8 @@ static int ldb_match_substring(struct ldb_context *ldb,
 static int ldb_comparator_and(struct ldb_val *v1, struct ldb_val *v2)
 {
 	uint64_t i1, i2;
-	i1 = strtoull(v1->data, NULL, 0);
-	i2 = strtoull(v2->data, NULL, 0);
+	i1 = strtoull((char *)v1->data, NULL, 0);
+	i2 = strtoull((char *)v2->data, NULL, 0);
 	return ((i1 & i2) == i2);
 }
 
@@ -293,8 +294,8 @@ static int ldb_comparator_and(struct ldb_val *v1, struct ldb_val *v2)
 static int ldb_comparator_or(struct ldb_val *v1, struct ldb_val *v2)
 {
 	uint64_t i1, i2;
-	i1 = strtoull(v1->data, NULL, 0);
-	i2 = strtoull(v2->data, NULL, 0);
+	i1 = strtoull((char *)v1->data, NULL, 0);
+	i2 = strtoull((char *)v2->data, NULL, 0);
 	return ((i1 & i2) != 0);
 }
 

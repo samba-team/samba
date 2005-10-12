@@ -95,7 +95,7 @@ static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
 		int j;
 		for (j=0;ltdb_valid_attr_flags[j].name;j++) {
 			if (strcmp(ltdb_valid_attr_flags[j].name, 
-				   el->values[i].data) == 0) {
+				   (char *)el->values[i].data) == 0) {
 				value |= ltdb_valid_attr_flags[j].value;
 				break;
 			}
@@ -197,7 +197,8 @@ static int ltdb_subclasses_load(struct ldb_module *module)
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		for (j=0;j<el->num_values;j++) {
-			if (ldb_subclass_add(module->ldb, el->name, el->values[j].data) != 0) {
+			if (ldb_subclass_add(module->ldb, el->name, 
+					     (char *)el->values[j].data) != 0) {
 				goto failed;
 			}
 		}
@@ -268,7 +269,7 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = 0;
-	val.data = talloc_strdup(msg, initial_sequence_number);
+	val.data = (uint8_t *)talloc_strdup(msg, initial_sequence_number);
 	if (!val.data) {
 		goto failed;
 	}
@@ -446,7 +447,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = LDB_FLAG_MOD_REPLACE;
-	val.data = s;
+	val.data = (uint8_t *)s;
 	val.length = strlen(s);
 
 	ret = ltdb_modify_internal(module, msg);
@@ -495,7 +496,7 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 	for (i = 0; i < attr_el->num_values; i++) {
 		for (j=0; ltdb_valid_attr_flags[j].name; j++) {
 			if (strcmp(ltdb_valid_attr_flags[j].name, 
-				   attr_el->values[i].data) == 0) {
+				   (char *)attr_el->values[i].data) == 0) {
 				ret |= ltdb_valid_attr_flags[j].value;
 			}
 		}
@@ -514,7 +515,7 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value)
 	int i;
 
 	for (i = 0; ltdb_valid_attr_flags[i].name != NULL; i++) {
-		if ((strcmp(ltdb_valid_attr_flags[i].name, value->data) == 0)) {
+		if ((strcmp(ltdb_valid_attr_flags[i].name, (char *)value->data) == 0)) {
 			return 0;
 		}
 	}

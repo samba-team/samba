@@ -80,4 +80,3 @@ int ldb_attr_cmp(const char *attr1, const char *attr2)
 {
 	return ldb_caseless_cmp(attr1, attr2);
 }
-
