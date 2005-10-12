@@ -138,6 +138,22 @@ void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib)
 	ldb->schema.num_attrib_handlers--;
 }
 
+/*
+  setup a attribute handler using a standard syntax
+*/
+int ldb_set_attrib_handler_syntax(struct ldb_context *ldb, 
+				  const char *attr, const char *syntax)
+{
+	const struct ldb_attrib_handler *h = ldb_attrib_handler_syntax(ldb, syntax);
+	struct ldb_attrib_handler h2;
+	if (h == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unknown syntax '%s'\n", syntax);
+		return -1;
+	}
+	h2 = *h;
+	h2.attr = attr;
+	return ldb_set_attrib_handlers(ldb, &h2, 1);
+}
 
 /*
   setup the attribute handles for well known attributes
@@ -158,17 +174,8 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 	};
 	int i;
 	for (i=0;i<ARRAY_SIZE(wellknown);i++) {
-		const struct ldb_attrib_handler *h = 
-			ldb_attrib_handler_syntax(ldb, wellknown[i].syntax);
-		struct ldb_attrib_handler h2;
-		if (h == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "Unknown syntax '%s'\n",
-				  wellknown[i].syntax);
-			return -1;
-		}
-		h2 = *h;
-		h2.attr = wellknown[i].attr;
-		if (ldb_set_attrib_handlers(ldb, &h2, 1) != 0) {
+		if (ldb_set_attrib_handler_syntax(ldb, wellknown[i].attr, 
+						  wellknown[i].syntax) != 0) {
 			return -1;
 		}
 	}
