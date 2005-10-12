@@ -353,6 +353,38 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
 }
 
 /*
+  shallow copy a message - copying only the elements array so that the caller
+  can safely add new elements without changing the message
+*/
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx, 
+					 const struct ldb_message *msg)
+{
+	struct ldb_message *msg2;
+	int i;
+
+	msg2 = talloc(mem_ctx, struct ldb_message);
+	if (msg2 == NULL) return NULL;
+
+	*msg2 = *msg;
+	msg2->private_data = NULL;
+
+	msg2->elements = talloc_array(msg2, struct ldb_message_element, 
+				      msg2->num_elements);
+	if (msg2->elements == NULL) goto failed;
+
+	for (i=0;i<msg2->num_elements;i++) {
+		msg2->elements[i] = msg->elements[i];
+	}
+
+	return msg2;
+
+failed:
+	talloc_free(msg2);
+	return NULL;
+}
+
+
+/*
   copy a message, allocating new memory for all parts
 */
 struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx, 
@@ -361,39 +393,24 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg2;
 	int i, j;
 
-	msg2 = talloc(mem_ctx, struct ldb_message);
+	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
 	if (msg2 == NULL) return NULL;
 
-	msg2->elements = NULL;
-	msg2->num_elements = 0;
-	msg2->private_data = NULL;
-
-	msg2->dn = ldb_dn_copy(msg2, msg->dn);
+	msg2->dn = ldb_dn_copy(msg2, msg2->dn);
 	if (msg2->dn == NULL) goto failed;
 
-	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg->num_elements);
-	if (msg2->elements == NULL) goto failed;
-
-	for (i=0;i<msg->num_elements;i++) {
-		struct ldb_message_element *el1 = &msg->elements[i];
-		struct ldb_message_element *el2 = &msg2->elements[i];
-
-		el2->flags = el1->flags;
-		el2->num_values = 0;
-		el2->values = NULL;
-		el2->name = talloc_strdup(msg2->elements, el1->name);
-		if (el2->name == NULL) goto failed;
-		el2->values = talloc_array(msg2->elements, struct ldb_val, el1->num_values);
-		for (j=0;j<el1->num_values;j++) {
-			el2->values[j] = ldb_val_dup(el2->values, &el1->values[j]);
-			if (el2->values[j].data == NULL &&
-			    el1->values[j].length != 0) {
+	for (i=0;i<msg2->num_elements;i++) {
+		struct ldb_message_element *el = &msg2->elements[i];
+		struct ldb_val *values = el->values;
+		el->name = talloc_strdup(msg2->elements, el->name);
+		if (el->name == NULL) goto failed;
+		el->values = talloc_array(msg2->elements, struct ldb_val, el->num_values);
+		for (j=0;j<el->num_values;j++) {
+			el->values[j] = ldb_val_dup(el->values, &values[j]);
+			if (el->values[j].data == NULL && values[j].length != 0) {
 				goto failed;
 			}
-			el2->num_values++;
 		}
-
-		msg2->num_elements++;
 	}
 
 	return msg2;
@@ -626,7 +643,7 @@ time_t ldb_string_to_time(const char *s)
 	if (s == NULL) return 0;
 	
 	ZERO_STRUCT(tm);
-	if (sscanf(s, "%04u%02u%02u%02u%02u%02u.0Z", 
+	if (sscanf(s, "%04u%02u%02u%02u%02u%02u", 
 		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
