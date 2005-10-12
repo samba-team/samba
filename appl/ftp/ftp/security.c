@@ -663,7 +663,15 @@ sec_prot_internal(int level)
 enum protection_level
 set_command_prot(enum protection_level level)
 {
+    int ret;
     enum protection_level old = command_prot;
+    if(level != command_prot && level == prot_clear) {
+	ret = command("CCC");
+	if(ret != COMPLETE) {
+	    printf("Failed to clear command channel.\n");
+	    return -1;
+	}
+    }
     command_prot = level;
     return old;
 }
@@ -673,8 +681,13 @@ sec_prot(int argc, char **argv)
 {
     int level = -1;
 
-    if(argc < 2 || argc > 3)
+    if(argc > 3)
 	goto usage;
+
+    if(argc == 1) {
+	sec_status();
+	return;
+    }
     if(!sec_complete) {
 	printf("No security data exchange has taken place.\n");
 	code = -1;
@@ -697,14 +710,57 @@ sec_prot(int argc, char **argv)
 	    code = -1;
 	    return;
 	}
-    } else if(strncasecmp(argv[1], "command", strlen(argv[1])) == 0)
-	set_command_prot(level);
-    else
+    } else if(strncasecmp(argv[1], "command", strlen(argv[1])) == 0) {
+	if(set_command_prot(level) < 0) {
+	    code = -1;
+	    return;
+	}
+    } else
 	goto usage;
     code = 0;
     return;
  usage:
     printf("usage: %s [command|data] [clear|safe|confidential|private]\n",
+	   argv[0]);
+    code = -1;
+}
+
+void
+sec_prot_command(int argc, char **argv)
+{
+    int level;
+
+    if(argc > 2)
+	goto usage;
+
+    if(!sec_complete) {
+	printf("No security data exchange has taken place.\n");
+	code = -1;
+	return;
+    }
+
+    if(argc == 1) {
+	sec_status();
+    } else {
+	level = name_to_level(argv[1]);
+	if(level == -1)
+	    goto usage;
+    
+	if((*mech->check_prot)(app_data, level)) {
+	    printf("%s does not implement %s protection.\n", 
+		   mech->name, level_to_name(level));
+	    code = -1;
+	    return;
+	}
+	if(set_command_prot(level) < 0) {
+	    code = -1;
+	    return;
+	}
+    }
+    code = 0;
+    return;
+ usage:
+    printf("usage: %s [clear|safe|confidential|private]\n",
 	   argv[0]);
     code = -1;
 }
@@ -780,7 +836,12 @@ sec_login(char *host)
 	}
 	mech = *m;
 	sec_complete = 1;
-	command_prot = prot_safe;
+	if(doencrypt) {
+	    command_prot = prot_private;
+	    request_data_prot = prot_private; 
+	} else {
+	    command_prot = prot_safe;
+	}
 	break;
     }
     
