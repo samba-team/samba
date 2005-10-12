@@ -1,13 +1,4 @@
 ################################################
-# Start MODULE libldb_timestamps
-[MODULE::libldb_timestamps]
-SUBSYSTEM = LIBLDB
-INIT_OBJ_FILES = \
-		lib/ldb/modules/timestamps.o
-# End MODULE libldb_timestamps
-################################################
-
-################################################
 # Start MODULE libldb_operational
 [MODULE::libldb_operational]
 SUBSYSTEM = LIBLDB
