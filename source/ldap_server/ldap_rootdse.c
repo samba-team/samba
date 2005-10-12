@@ -90,7 +90,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldb_message_element *a
 	{
 		int num_currentTime = 1;
 		DATA_BLOB *currentTime = talloc_array(mem_ctx, DATA_BLOB, num_currentTime);
-		char *str = ldap_timestring(mem_ctx, time(NULL));
+		char *str = ldb_timestring(mem_ctx, time(NULL));
 		NT_STATUS_HAVE_NO_MEMORY(str);
 		currentTime[0].data = (uint8_t *)str;
 		currentTime[0].length = strlen(str);
@@ -316,7 +316,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		for (j=0; j < ent->num_attributes; j++) {
 			if (ent->attributes[j].num_values == 1 &&
 			    ent->attributes[j].values[0].length >= 9 &&
-			    strncmp(ent->attributes[j].values[0].data, "_DYNAMIC_", 9) == 0) {
+			    strncmp((char *)ent->attributes[j].values[0].data, "_DYNAMIC_", 9) == 0) {
 				status = fill_dynamic_values(ent->attributes, &(ent->attributes[j]));
 				if (!NT_STATUS_IS_OK(status)) {
 					return status;
