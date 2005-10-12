@@ -179,38 +179,47 @@ static void lookupname_recv_sid(struct composite_context *ctx)
 
 NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 {
-	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
-	
 	s3call->response.result			= WINBINDD_ERROR;
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 {
+#if 0
 	struct wbsrv_service *service =
 		s3call->call->wbconn->listen_socket->service;
+	struct wbsrv_domain *domain;
 	struct creds_CredentialState *creds_state;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
 	struct netr_LogonSamLogon r;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = talloc_new(s3call);
+	TALLOC_CTX *mem_ctx;
+
+	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
+
+	mem_ctx = talloc_new(s3call);
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	domain = service->domains;
+
 	ZERO_STRUCT(auth2);
-	creds_state = cli_credentials_get_netlogon_creds(service->domains->schannel_creds);
+	creds_state =
+		cli_credentials_get_netlogon_creds(domain->schannel_creds);
 	
 	creds_client_authenticator(creds_state, &auth);
 
-	ninfo.identity_info.account_name.string = s3call->request.data.auth_crap.user;
-	ninfo.identity_info.domain_name.string = s3call->request.data.auth_crap.domain;
+	ninfo.identity_info.account_name.string =
+		s3call->request.data.auth_crap.user;
+	ninfo.identity_info.domain_name.string =
+		s3call->request.data.auth_crap.domain;
 	ninfo.identity_info.parameter_control = 0;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.workstation.string = s3call->request.data.auth_crap.workstation;
+	ninfo.identity_info.workstation.string =
+		s3call->request.data.auth_crap.workstation;
 	memcpy(ninfo.challenge, s3call->request.data.auth_crap.chal,
 	       sizeof(ninfo.challenge));
 	ninfo.nt.length = s3call->request.data.auth_crap.nt_resp_len;
@@ -218,8 +227,11 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	ninfo.lm.length = s3call->request.data.auth_crap.lm_resp_len;
 	ninfo.lm.data = s3call->request.data.auth_crap.lm_resp;
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(service->domains->netlogon_pipe));
-	r.in.workstation = cli_credentials_get_workstation(service->domains->schannel_creds);
+	r.in.server_name =
+		talloc_asprintf(mem_ctx, "\\\\%s",
+				dcerpc_server_name(domain->netlogon_pipe));
+	r.in.workstation =
+		cli_credentials_get_workstation(domain->schannel_creds);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;
@@ -227,14 +239,15 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	r.in.logon.network = &ninfo;
 
 	r.out.return_authenticator = NULL;
-	status = dcerpc_netr_LogonSamLogon(service->domains->netlogon_pipe, mem_ctx, &r);
+	status = dcerpc_netr_LogonSamLogon(domain->netlogon_pipe, mem_ctx, &r);
 	if (!r.out.return_authenticator || 
-	    !creds_client_check(creds_state, &r.out.return_authenticator->cred)) {
+	    !creds_client_check(creds_state,
+				&r.out.return_authenticator->cred)) {
 		DEBUG(0, ("Credentials check failed!\n"));
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 	if (NT_STATUS_IS_OK(status)) {
-		struct netr_SamBaseInfo *base;
+		struct netr_SamBaseInfo *base = NULL;
 		switch (r.in.validation_level) {
 		case 2:
 			base = &r.out.validation.sam2->base;
@@ -254,10 +267,12 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 		if ((s3call->request.flags & WBFLAG_PAM_INFO3_NDR) 
 		    && (r.in.validation_level == 3)) {
 			DATA_BLOB tmp_blob, tmp_blob2;
-			status = ndr_push_struct_blob(&tmp_blob, mem_ctx, r.out.validation.sam3,
-						      (ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
+			status = ndr_push_struct_blob(
+				&tmp_blob, mem_ctx, r.out.validation.sam3,
+				(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
 			if (NT_STATUS_IS_OK(status)) {
-				tmp_blob2 = data_blob_talloc(mem_ctx, NULL, tmp_blob.length + 4);
+				tmp_blob2 = data_blob_talloc(
+					mem_ctx, NULL, tmp_blob.length + 4);
 				if (!tmp_blob2.data) {
 					status = NT_STATUS_NO_MEMORY;
 				}
@@ -265,9 +280,11 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 			/* Ugly Samba3 winbind pipe compatability */
 			if (NT_STATUS_IS_OK(status)) {
 				SIVAL(tmp_blob2.data, 0, 1);
-				memcpy(tmp_blob2.data + 4, tmp_blob.data, tmp_blob.length); 
+				memcpy(tmp_blob2.data + 4, tmp_blob.data,
+				       tmp_blob.length); 
 			}
-			s3call->response.extra_data = talloc_steal(s3call, tmp_blob2.data);
+			s3call->response.extra_data =
+				talloc_steal(s3call, tmp_blob2.data);
 			s3call->response.length += tmp_blob2.length;
 		}
 		if (s3call->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
@@ -276,7 +293,8 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 		}
 		if (s3call->request.flags & WBFLAG_PAM_LMKEY) {
 			memcpy(s3call->response.data.auth.first_8_lm_hash, 
-			       base->LMSessKey.key, sizeof(s3call->response.data.auth.first_8_lm_hash) /* 8 */);
+			       base->LMSessKey.key,
+			       sizeof(s3call->response.data.auth.first_8_lm_hash) /* 8 */);
 		}
 	}
 		
@@ -294,4 +312,26 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 				nt_errstr(status));
 	s3call->response.data.auth.pam_error = nt_status_to_pam(status);
 	return NT_STATUS_OK;
+#else
+	DATA_BLOB chal, nt_resp, lm_resp;
+	DATA_BLOB info3;
+	struct netr_UserSessionKey user_session_key;
+	struct netr_LMSessionKey lm_key;
+
+	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
+
+	chal.data      = s3call->request.data.auth_crap.chal;
+	chal.length    = sizeof(s3call->request.data.auth_crap.chal);
+	nt_resp.data   = s3call->request.data.auth_crap.nt_resp;
+	nt_resp.length = s3call->request.data.auth_crap.nt_resp_len;
+	lm_resp.data   = s3call->request.data.auth_crap.lm_resp;
+	lm_resp.length = s3call->request.data.auth_crap.lm_resp_len;
+
+	return wb_pam_auth_crap(s3call->call,
+				s3call->request.data.auth_crap.user,
+				s3call->request.data.auth_crap.domain,
+				s3call->request.data.auth_crap.workstation,
+				chal, nt_resp, lm_resp,
+				s3call, &info3, &user_session_key, &lm_key);
+#endif
 }
