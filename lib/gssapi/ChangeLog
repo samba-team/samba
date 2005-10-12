@@ -1,5 +1,8 @@
 2005-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi_locl.h: Add gssapi_krb5_set_status and
+	gssapi_krb5_clear_status
+	
 	* init_sec_context.c (spnego_reply): Don't pass back raw Kerberos
 	errors, use GSS-API errors instead. From Michael B Allen.
 
