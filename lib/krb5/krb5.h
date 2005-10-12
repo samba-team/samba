@@ -662,7 +662,7 @@ typedef struct _krb5_get_init_creds_opt {
     krb5_preauthtype *preauth_list;
     int preauth_list_length;
     krb5_data *salt;
-    struct _krb5_get_init_creds_opt_private *private;
+    struct _krb5_get_init_creds_opt_private *opt_private;
 } krb5_get_init_creds_opt;
 
 #define KRB5_GET_INIT_CREDS_OPT_TKT_LIFE	0x0001
