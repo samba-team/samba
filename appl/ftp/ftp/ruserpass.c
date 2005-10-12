@@ -256,7 +256,7 @@ next:
 	    break;
 	case PROT:
 	    token();
-	    if(sec_request_prot(tokval) < 0)
+	    if(doencrypt == 0 && sec_request_prot(tokval) < 0)
 		warnx("Unknown protection level \"%s\"", tokval);
 	    break;
 	default:
