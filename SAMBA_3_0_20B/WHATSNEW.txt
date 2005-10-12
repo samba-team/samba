@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.20b
-                             Oct 11, 2005
+                             Oct 12, 2005
                    ===============================
 
 This is the latest stable release of Samba. This is the version
@@ -13,9 +13,8 @@ Common bugs fixed in 3.0.20b include:
   o A crash bug in winbindd
   o Reporting files as read-only instead of returning the 
     correct error code of "access denied"
+  o File system quota support defects
   
-
-
 
 ######################################################################
 Changes
