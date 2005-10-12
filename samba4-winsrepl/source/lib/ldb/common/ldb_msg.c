@@ -36,6 +36,7 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
+#include <time.h>
 
 /*
   create a new ldb_message in a given memory context (NULL for top level)
@@ -107,7 +108,7 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 
 	/* the +1 is to cope with buggy C library routines like strndup
 	   that look one byte beyond */
-	v2.data = talloc_array(mem_ctx, char, v->length+1);
+	v2.data = talloc_array(mem_ctx, uint8_t, v->length+1);
 	if (!v2.data) {
 		v2.length = 0;
 		return v2;
@@ -121,13 +122,12 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 /*
   add an empty element to a message
 */
-int ldb_msg_add_empty(struct ldb_context *ldb,
-		      struct ldb_message *msg, const char *attr_name, int flags)
+int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 {
 	struct ldb_message_element *els;
 
 	els = talloc_realloc(msg, msg->elements, 
-			       struct ldb_message_element, msg->num_elements+1);
+			     struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
 		errno = ENOMEM;
 		return -1;
@@ -150,12 +150,11 @@ int ldb_msg_add_empty(struct ldb_context *ldb,
 /*
   add an empty element to a message
 */
-int ldb_msg_add(struct ldb_context *ldb,
-		struct ldb_message *msg, 
+int ldb_msg_add(struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags)
 {
-	if (ldb_msg_add_empty(ldb, msg, el->name, flags) != 0) {
+	if (ldb_msg_add_empty(msg, el->name, flags) != 0) {
 		return -1;
 	}
 
@@ -168,8 +167,7 @@ int ldb_msg_add(struct ldb_context *ldb,
 /*
   add a value to a message
 */
-int ldb_msg_add_value(struct ldb_context *ldb,
-		      struct ldb_message *msg, 
+int ldb_msg_add_value(struct ldb_message *msg, 
 		      const char *attr_name,
 		      const struct ldb_val *val)
 {
@@ -178,7 +176,7 @@ int ldb_msg_add_value(struct ldb_context *ldb,
 
 	el = ldb_msg_find_element(msg, attr_name);
 	if (!el) {
-		ldb_msg_add_empty(ldb, msg, attr_name, 0);
+		ldb_msg_add_empty(msg, attr_name, 0);
 		el = ldb_msg_find_element(msg, attr_name);
 	}
 	if (!el) {
@@ -201,7 +199,7 @@ int ldb_msg_add_value(struct ldb_context *ldb,
 /*
   add a string element to a message
 */
-int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
+int ldb_msg_add_string(struct ldb_message *msg, 
 		       const char *attr_name, const char *str)
 {
 	struct ldb_val val;
@@ -209,13 +207,13 @@ int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg,
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val);
 }
 
 /*
   add a printf formatted element to a message
 */
-int ldb_msg_add_fmt(struct ldb_context *ldb, struct ldb_message *msg, 
+int ldb_msg_add_fmt(struct ldb_message *msg, 
 		    const char *attr_name, const char *fmt, ...)
 {
 	struct ldb_val val;
@@ -228,10 +226,10 @@ int ldb_msg_add_fmt(struct ldb_context *ldb, struct ldb_message *msg,
 
 	if (str == NULL) return -1;
 
-	val.data   = str;
+	val.data   = (uint8_t *)str;
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val);
 }
 
 /*
@@ -287,7 +285,7 @@ int ldb_msg_find_int(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtol(v->data, NULL, 0);
+	return strtol((const char *)v->data, NULL, 0);
 }
 
 unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
@@ -298,7 +296,7 @@ unsigned int ldb_msg_find_uint(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoul(v->data, NULL, 0);
+	return strtoul((const char *)v->data, NULL, 0);
 }
 
 int64_t ldb_msg_find_int64(const struct ldb_message *msg, 
@@ -309,7 +307,7 @@ int64_t ldb_msg_find_int64(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoll(v->data, NULL, 0);
+	return strtoll((const char *)v->data, NULL, 0);
 }
 
 uint64_t ldb_msg_find_uint64(const struct ldb_message *msg, 
@@ -320,7 +318,7 @@ uint64_t ldb_msg_find_uint64(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoull(v->data, NULL, 0);
+	return strtoull((const char *)v->data, NULL, 0);
 }
 
 double ldb_msg_find_double(const struct ldb_message *msg, 
@@ -331,7 +329,7 @@ double ldb_msg_find_double(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtod(v->data, NULL);
+	return strtod((const char *)v->data, NULL);
 }
 
 const char *ldb_msg_find_string(const struct ldb_message *msg, 
@@ -342,7 +340,7 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return v->data;
+	return (const char *)v->data;
 }
 
 /*
@@ -355,6 +353,38 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
 }
 
 /*
+  shallow copy a message - copying only the elements array so that the caller
+  can safely add new elements without changing the message
+*/
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx, 
+					 const struct ldb_message *msg)
+{
+	struct ldb_message *msg2;
+	int i;
+
+	msg2 = talloc(mem_ctx, struct ldb_message);
+	if (msg2 == NULL) return NULL;
+
+	*msg2 = *msg;
+	msg2->private_data = NULL;
+
+	msg2->elements = talloc_array(msg2, struct ldb_message_element, 
+				      msg2->num_elements);
+	if (msg2->elements == NULL) goto failed;
+
+	for (i=0;i<msg2->num_elements;i++) {
+		msg2->elements[i] = msg->elements[i];
+	}
+
+	return msg2;
+
+failed:
+	talloc_free(msg2);
+	return NULL;
+}
+
+
+/*
   copy a message, allocating new memory for all parts
 */
 struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx, 
@@ -363,39 +393,24 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg2;
 	int i, j;
 
-	msg2 = talloc(mem_ctx, struct ldb_message);
+	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
 	if (msg2 == NULL) return NULL;
 
-	msg2->elements = NULL;
-	msg2->num_elements = 0;
-	msg2->private_data = NULL;
-
-	msg2->dn = ldb_dn_copy(msg2, msg->dn);
+	msg2->dn = ldb_dn_copy(msg2, msg2->dn);
 	if (msg2->dn == NULL) goto failed;
 
-	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg->num_elements);
-	if (msg2->elements == NULL) goto failed;
-
-	for (i=0;i<msg->num_elements;i++) {
-		struct ldb_message_element *el1 = &msg->elements[i];
-		struct ldb_message_element *el2 = &msg2->elements[i];
-
-		el2->flags = el1->flags;
-		el2->num_values = 0;
-		el2->values = NULL;
-		el2->name = talloc_strdup(msg2->elements, el1->name);
-		if (el2->name == NULL) goto failed;
-		el2->values = talloc_array(msg2->elements, struct ldb_val, el1->num_values);
-		for (j=0;j<el1->num_values;j++) {
-			el2->values[j] = ldb_val_dup(el2->values, &el1->values[j]);
-			if (el2->values[j].data == NULL &&
-			    el1->values[j].length != 0) {
+	for (i=0;i<msg2->num_elements;i++) {
+		struct ldb_message_element *el = &msg2->elements[i];
+		struct ldb_val *values = el->values;
+		el->name = talloc_strdup(msg2->elements, el->name);
+		if (el->name == NULL) goto failed;
+		el->values = talloc_array(msg2->elements, struct ldb_val, el->num_values);
+		for (j=0;j<el->num_values;j++) {
+			el->values[j] = ldb_val_dup(el->values, &values[j]);
+			if (el->values[j].data == NULL && values[j].length != 0) {
 				goto failed;
 			}
-			el2->num_values++;
 		}
-
-		msg2->num_elements++;
 	}
 
 	return msg2;
@@ -479,7 +494,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 			continue;
 		}
 
-		if (ldb_msg_add(ldb, mod, 
+		if (ldb_msg_add(mod, 
 				&msg2->elements[i],
 				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
 			return NULL;
@@ -490,7 +505,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	for (i=0;i<msg1->num_elements;i++) {
 		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
 		if (!el) {
-			if (ldb_msg_add_empty(ldb, mod, 
+			if (ldb_msg_add_empty(mod, 
 					      msg1->elements[i].name,
 					      LDB_FLAG_MOD_DELETE) != 0) {
 				return NULL;
@@ -529,3 +544,117 @@ int ldb_msg_sanity_check(const struct ldb_message *msg)
 
 	return LDB_SUCCESS;
 }
+
+
+
+
+/*
+  copy an attribute list. This only copies the array, not the elements
+  (ie. the elements are left as the same pointers)
+*/
+const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs)
+{
+	const char **ret;
+	int i;
+	for (i=0;attrs[i];i++) /* noop */ ;
+	ret = talloc_array(mem_ctx, const char *, i+1);
+	if (ret == NULL) {
+		return NULL;
+	}
+	for (i=0;attrs[i];i++) {
+		ret[i] = attrs[i];
+	}
+	ret[i] = attrs[i];
+	return ret;
+}
+
+
+/*
+  return 1 if an attribute is in a list of attributes, or 0 otherwise
+*/
+int ldb_attr_in_list(const char * const *attrs, const char *attr)
+{
+	int i;
+	for (i=0;attrs[i];i++) {
+		if (ldb_attr_cmp(attrs[i], attr) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+/*
+  rename the specified attribute in a search result
+*/
+int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace)
+{
+	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
+	if (el == NULL) {
+		return 0;
+	}
+	el->name = talloc_strdup(msg->elements, replace);
+	if (el->name == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+
+/*
+  copy the specified attribute in a search result to a new attribute
+*/
+int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace)
+{
+	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
+	if (el == NULL) {
+		return 0;
+	}
+	if (ldb_msg_add(msg, el, 0) != 0) {
+		return -1;
+	}
+	return ldb_msg_rename_attr(msg, attr, replace);
+}
+
+
+/*
+  return a LDAP formatted time string
+*/
+char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
+{
+	struct tm *tm = gmtime(&t);
+
+	if (!tm) {
+		return NULL;
+	}
+
+	/* formatted like: 20040408072012.0Z */
+	return talloc_asprintf(mem_ctx, 
+			       "%04u%02u%02u%02u%02u%02u.0Z",
+			       tm->tm_year+1900, tm->tm_mon+1,
+			       tm->tm_mday, tm->tm_hour, tm->tm_min,
+			       tm->tm_sec);
+}
+
+
+/*
+  convert a LDAP time string to a time_t. Return 0 if unable to convert
+*/
+time_t ldb_string_to_time(const char *s)
+{
+	struct tm tm;
+	
+	if (s == NULL) return 0;
+	
+	memset(&tm, 0, sizeof(tm));
+	if (sscanf(s, "%04u%02u%02u%02u%02u%02u", 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+		return 0;
+	}
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+	
+	return timegm(&tm);
+}
+

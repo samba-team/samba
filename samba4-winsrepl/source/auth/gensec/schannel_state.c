@@ -118,15 +118,15 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	seed.data = creds->seed.data;
 	seed.length = sizeof(creds->seed.data);
 
-	ldb_msg_add_string(ldb, msg, "objectClass", "schannelState");
-	ldb_msg_add_value(ldb, msg, "sessionKey", &val);
-	ldb_msg_add_value(ldb, msg, "seed", &seed);
-	ldb_msg_add_string(ldb, msg, "negotiateFlags", f);
-	ldb_msg_add_string(ldb, msg, "secureChannelType", sct);
-	ldb_msg_add_string(ldb, msg, "accountName", creds->account_name);
-	ldb_msg_add_string(ldb, msg, "computerName", creds->computer_name);
-	ldb_msg_add_string(ldb, msg, "flatname", creds->domain);
-	ldb_msg_add_string(ldb, msg, "rid", rid);
+	ldb_msg_add_string(msg, "objectClass", "schannelState");
+	ldb_msg_add_value(msg, "sessionKey", &val);
+	ldb_msg_add_value(msg, "seed", &seed);
+	ldb_msg_add_string(msg, "negotiateFlags", f);
+	ldb_msg_add_string(msg, "secureChannelType", sct);
+	ldb_msg_add_string(msg, "accountName", creds->account_name);
+	ldb_msg_add_string(msg, "computerName", creds->computer_name);
+	ldb_msg_add_string(msg, "flatname", creds->domain);
+	ldb_msg_add_string(msg, "rid", rid);
 
 	ldb_delete(ldb, msg->dn);
 

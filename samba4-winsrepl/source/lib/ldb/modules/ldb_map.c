@@ -625,7 +625,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				for (j = 0; j < oldelm->num_values; j++)
 					elm->values[j] = ldb_val_dup(elm, &oldelm->values[j]);
 
-				ldb_msg_add(module->ldb, msg, elm, oldelm->flags);
+				ldb_msg_add(msg, elm, oldelm->flags);
 				break;
 				
 			case MAP_CONVERT:
@@ -642,7 +642,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				for (j = 0; j < oldelm->num_values; j++)
 					elm->values[j] = attr->u.convert.convert_remote(module, elm, &oldelm->values[j]);
 
-				ldb_msg_add(module->ldb, msg, elm, oldelm->flags);
+				ldb_msg_add(msg, elm, oldelm->flags);
 				break;
 
 			case MAP_KEEP:
@@ -659,7 +659,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 
 				elm->name = talloc_strdup(elm, oldelm->name);
 
-				ldb_msg_add(module->ldb, msg, elm, oldelm->flags);
+				ldb_msg_add(msg, elm, oldelm->flags);
 				break;
 
 			case MAP_GENERATE:
@@ -671,7 +671,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				if (!elm) 
 					continue;
 
-				ldb_msg_add(module->ldb, msg, elm, elm->flags);
+				ldb_msg_add(msg, elm, elm->flags);
 				break;
 			default: 
 				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Unknown attr->type for %s", attr->local_name);
@@ -750,9 +750,11 @@ static int map_search_fb(struct ldb_module *module, const struct ldb_dn *base,
 {
 	int ret;
 	struct ldb_parse_tree t_and, t_not, t_present, *childs[2];
+	char *ismapped;
 
 	t_present.operation = LDB_OP_PRESENT;
-	t_present.u.present.attr = talloc_strdup(NULL, "isMapped");
+	ismapped = talloc_strdup(module, "isMapped");
+	t_present.u.present.attr = ismapped;
 
 	t_not.operation = LDB_OP_NOT;
 	t_not.u.isnot.child = &t_present;
@@ -765,7 +767,7 @@ static int map_search_fb(struct ldb_module *module, const struct ldb_dn *base,
 	
 	ret = ldb_next_search_bytree(module, base, scope, &t_and, attrs, res);
 
-	talloc_free(t_present.u.present.attr);
+	talloc_free(ismapped);
 
 	return ret;
 }
@@ -847,7 +849,7 @@ static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
 			int j;
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN: %s", ldb_dn_linearize(merged, merged->dn));
 			for (j = 0; j < extrares[0]->num_elements; j++) {
-				ldb_msg_add(module->ldb, merged, &(extrares[0]->elements[j]), extrares[0]->elements[j].flags);
+				ldb_msg_add(merged, &(extrares[0]->elements[j]), extrares[0]->elements[j].flags);
 			}
 		}
 		
@@ -941,7 +943,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 	fb->dn = talloc_reference(fb, msg->dn);
 
 	/* We add objectClass, so 'top' should be no problem */
-	ldb_msg_add_string(module->ldb, mp, "objectClass", "top");
+	ldb_msg_add_string(mp, "objectClass", "top");
 	
 	/* make a list of remote objectclasses that can be used 
 	 *   given the attributes that are available and add to 
@@ -971,7 +973,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 		
 		/* Apparently, it contains all required elements */
 		if (has_musts && has_baseclasses) {
-			ldb_msg_add_string(module->ldb, mp, "objectClass", privdat->objectclass_maps[i].remote_name);	
+			ldb_msg_add_string(mp, "objectClass", privdat->objectclass_maps[i].remote_name);	
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "map_add: Adding objectClass %s", privdat->objectclass_maps[i].remote_name);
 		}
 	}
@@ -1071,7 +1073,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 				continue;
 			} 
 			
-			ldb_msg_add(module->ldb, mp, elm, 0);
+			ldb_msg_add(mp, elm, 0);
 			mapped++;
 		} 
 		
@@ -1083,7 +1085,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 			elm->values = talloc_reference(elm, msg->elements[i].values);
 			elm->name = talloc_strdup(elm, msg->elements[i].name);
 
-			ldb_msg_add(module->ldb, fb, elm, 0);
+			ldb_msg_add(fb, elm, 0);
 		}
 	}
 
@@ -1095,7 +1097,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_map_add: Added mapped record");
 
-	ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
+	ldb_msg_add_string(fb, "isMapped", "TRUE");
 	ret = ldb_next_add_record(module, fb);
 	if (ret == -1) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Adding fallback record failed: %s", ldb_errstring(module->ldb));
@@ -1159,7 +1161,7 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 					 elm->values[j] = msg->elements[i].values[j];
 				 }
 
-				 ldb_msg_add(module->ldb, mp, elm, msg->elements[i].flags);
+				 ldb_msg_add(mp, elm, msg->elements[i].flags);
 				 mapped++;
 				 continue;
 
@@ -1176,7 +1178,7 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 					 elm->values[j] = attr->u.convert.convert_local(module, mp, &msg->elements[i].values[j]);
 				 }
 
-				 ldb_msg_add(module->ldb, mp, elm, msg->elements[i].flags);
+				 ldb_msg_add(mp, elm, msg->elements[i].flags);
 				 mapped++;
 				 continue;
 
@@ -1191,7 +1193,7 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 				 elm->name = talloc_strdup(elm, msg->elements[i].name);
 
-				 ldb_msg_add(module->ldb, mp, elm, msg->elements[i].flags);	
+				 ldb_msg_add(mp, elm, msg->elements[i].flags);	
 				 mapped++;
 				 continue;
 
@@ -1209,8 +1211,7 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 			elm->values = talloc_reference(elm, msg->elements[i].values);
 			elm->name = talloc_strdup(elm, msg->elements[i].name);
 			
-			ldb_msg_add(module->ldb, fb, elm, msg->elements[i].flags);	
-
+			ldb_msg_add(fb, elm, msg->elements[i].flags);	
 		}
 	}
 
@@ -1218,7 +1219,7 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Modifying fallback record with %d elements", fb->num_elements);
 		fb_ret = ldb_next_modify_record(module, fb);
 		if (fb_ret == -1) {
-			ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
+			ldb_msg_add_string(fb, "isMapped", "TRUE");
 			fb_ret = ldb_next_add_record(module, fb);
 		}
 	} else fb_ret = 0;

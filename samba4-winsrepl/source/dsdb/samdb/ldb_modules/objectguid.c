@@ -101,7 +101,7 @@ static int objectguid_add_record(struct ldb_module *module, const struct ldb_mes
 		return -1;
 	}
 
-	ret = ldb_msg_add_value(module->ldb, msg2, "objectGUID", &v);
+	ret = ldb_msg_add_value(msg2, "objectGUID", &v);
 	if (ret) {
 		return ret;
 	}

@@ -145,6 +145,8 @@ void ldb_set_errstring(struct ldb_module *module, char *err_string);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level, 
+		   const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
 int ldb_should_b64_encode(const struct ldb_val *val);
@@ -163,7 +165,7 @@ int lsqlite3_connect(struct ldb_context *ldb,
 		     const char *url, 
 		     unsigned int flags, 
 		     const char *options[]);
-struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
+struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[]);
 
@@ -181,6 +183,8 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers);
 int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
+int ldb_set_attrib_handler_syntax(struct ldb_context *ldb, 
+				  const char *attr, const char *syntax);
 
 /* The following definitions come from lib/ldb/common/ldb_attributes.c  */
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *class);

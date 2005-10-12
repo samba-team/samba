@@ -109,19 +109,19 @@ static NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rtn = ldb_msg_add_string(remote_ldb, msg, "objectClass", "server");
+	rtn = ldb_msg_add_string(msg, "objectClass", "server");
 	if (rtn != 0) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	rtn = ldb_msg_add_string(remote_ldb, msg, "systemFlags", "50000000");
+	rtn = ldb_msg_add_string(msg, "systemFlags", "50000000");
 	if (rtn != 0) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	rtn = ldb_msg_add_string(remote_ldb, msg, "serverReference",libnet_r->out.account_dn_str);
+	rtn = ldb_msg_add_string(msg, "serverReference",libnet_r->out.account_dn_str);
 	if (rtn != 0) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

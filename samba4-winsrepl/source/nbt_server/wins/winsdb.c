@@ -67,13 +67,13 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	msg->dn = dn;
 
 
-	ret = ldb_msg_add_empty(ldb, msg, "objectClass", LDB_FLAG_MOD_REPLACE);
+	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE);
 	if (ret != 0) goto failed;
-	ret = ldb_msg_add_string(ldb, msg, "objectClass", "winsMaxVersion");
+	ret = ldb_msg_add_string(msg, "objectClass", "winsMaxVersion");
 	if (ret != 0) goto failed;
-	ret = ldb_msg_add_empty(ldb, msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
+	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
 	if (ret != 0) goto failed;
-	ret = ldb_msg_add_fmt(ldb, msg, "maxVersion", "%llu", maxVersion);
+	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", maxVersion);
 	if (ret != 0) goto failed;
 
 	ret = ldb_modify(ldb, msg);
@@ -235,7 +235,7 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_record *rec, struct ldb_val *va
 	}
 
 	*p = '\0';p++;
-	addr->expire_time = ldap_string_to_time(expire_time);
+	addr->expire_time = ldb_string_to_time(expire_time);
 
 	*_addr = addr;
 	return NT_STATUS_OK;
@@ -256,7 +256,7 @@ static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *
 
 	str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s;",
 			      addr->address, addr->wins_owner,
-			      ldap_timestring(msg, addr->expire_time));
+			      ldb_timestring(msg, addr->expire_time));
 	if (!str) return -1;
 
 	val.data = discard_const_p(uint8_t, str);
@@ -451,7 +451,7 @@ NTSTATUS winsdb_record(struct ldb_message *msg, struct nbt_name *name, TALLOC_CT
 	rec->state		= ldb_msg_find_int(msg, "recordState", WREPL_STATE_RELEASED);
 	rec->node		= ldb_msg_find_int(msg, "nodeType", WREPL_NODE_B);
 	rec->is_static		= ldb_msg_find_int(msg, "isStatic", 0);
-	rec->expire_time	= ldap_string_to_time(ldb_msg_find_string(msg, "expireTime", NULL));
+	rec->expire_time	= ldb_string_to_time(ldb_msg_find_string(msg, "expireTime", NULL));
 	rec->version		= ldb_msg_find_uint64(msg, "versionID", 0);
 	rec->wins_owner		= ldb_msg_find_string(msg, "winsOwner", NULL);
 	rec->registered_by	= ldb_msg_find_string(msg, "registeredBy", NULL);
@@ -513,19 +513,19 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
-	ret |= ldb_msg_add_fmt(ldb, msg, "objectClass", "winsRecord");
-	ret |= ldb_msg_add_fmt(ldb, msg, "recordType", "%u", rec->type);
-	ret |= ldb_msg_add_fmt(ldb, msg, "recordState", "%u", rec->state);
-	ret |= ldb_msg_add_fmt(ldb, msg, "nodeType", "%u", rec->node);
-	ret |= ldb_msg_add_fmt(ldb, msg, "isStatic", "%u", rec->is_static);
-	ret |= ldb_msg_add_string(ldb, msg, "expireTime", 
-				  ldap_timestring(msg, rec->expire_time));
-	ret |= ldb_msg_add_fmt(ldb, msg, "versionID", "%llu", rec->version);
-	ret |= ldb_msg_add_string(ldb, msg, "winsOwner", rec->wins_owner);
+	ret |= ldb_msg_add_fmt(msg, "objectClass", "winsRecord");
+	ret |= ldb_msg_add_fmt(msg, "recordType", "%u", rec->type);
+	ret |= ldb_msg_add_fmt(msg, "recordState", "%u", rec->state);
+	ret |= ldb_msg_add_fmt(msg, "nodeType", "%u", rec->node);
+	ret |= ldb_msg_add_fmt(msg, "isStatic", "%u", rec->is_static);
+	ret |= ldb_msg_add_string(msg, "expireTime", 
+				  ldb_timestring(msg, rec->expire_time));
+	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", rec->version);
+	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_winsdb_addr(ldb, msg, "address", rec->addresses[i]);
 	}
-	ret |= ldb_msg_add_string(ldb, msg, "registeredBy", rec->registered_by);
+	ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
 	if (ret != 0) goto failed;
 	return msg;
 
