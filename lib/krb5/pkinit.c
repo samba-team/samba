@@ -2678,9 +2678,9 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 #ifdef PKINIT
     krb5_pk_init_ctx ctx;
 
-    if (opt->private == NULL || opt->private->pk_init_ctx == NULL)
+    if (opt->opt_private == NULL || opt->opt_private->pk_init_ctx == NULL)
 	return;
-    ctx = opt->private->pk_init_ctx;
+    ctx = opt->opt_private->pk_init_ctx;
     if (ctx->dh)
 	DH_free(ctx->dh);
 	ctx->dh = NULL;
@@ -2705,7 +2705,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	free(ctx->id);
 	ctx->id = NULL;
     }
-    opt->private->pk_init_ctx = NULL;
+    opt->opt_private->pk_init_ctx = NULL;
 #endif
 }
     
@@ -2723,29 +2723,30 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 #ifdef PKINIT
     krb5_error_code ret;
 
-    if (opt->private == NULL) {
+    if (opt->opt_private == NULL) {
 	krb5_set_error_string(context, "PKINIT: on non extendable opt");
 	return EINVAL;
     }
 
-    opt->private->pk_init_ctx = calloc(1, sizeof(*opt->private->pk_init_ctx));
-    if (opt->private->pk_init_ctx == NULL) {
+    opt->opt_private->pk_init_ctx = 
+	calloc(1, sizeof(*opt->opt_private->pk_init_ctx));
+    if (opt->opt_private->pk_init_ctx == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
-    opt->private->pk_init_ctx->dh = NULL;
-    opt->private->pk_init_ctx->id = NULL;
-    opt->private->pk_init_ctx->clientDHNonce = NULL;
+    opt->opt_private->pk_init_ctx->dh = NULL;
+    opt->opt_private->pk_init_ctx->id = NULL;
+    opt->opt_private->pk_init_ctx->clientDHNonce = NULL;
     ret = _krb5_pk_load_openssl_id(context,
-				   &opt->private->pk_init_ctx->id,
+				   &opt->opt_private->pk_init_ctx->id,
 				   user_id,
 				   x509_anchors,
 				   prompter,
 				   prompter_data,
 				   password);
     if (ret) {
-	free(opt->private->pk_init_ctx);
-	opt->private->pk_init_ctx = NULL;
+	free(opt->opt_private->pk_init_ctx);
+	opt->opt_private->pk_init_ctx = NULL;
 	return ret;
     }
 
@@ -2759,27 +2760,27 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 						     NULL);
 
 	ret = _krb5_parse_moduli(context, moduli_file, 
-				 &opt->private->pk_init_ctx->m);
+				 &opt->opt_private->pk_init_ctx->m);
 	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ret;
 	}
 	
-	opt->private->pk_init_ctx->dh = DH_new();
-	if (opt->private->pk_init_ctx->dh == NULL) {
+	opt->opt_private->pk_init_ctx->dh = DH_new();
+	if (opt->opt_private->pk_init_ctx->dh == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 
-	ret = select_dh_group(context, opt->private->pk_init_ctx->dh, 0, 
-			      opt->private->pk_init_ctx->m);
+	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->dh, 0, 
+			      opt->opt_private->pk_init_ctx->m);
 	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ret;
 	}
 
-	if (DH_generate_key(opt->private->pk_init_ctx->dh) != 1) {
+	if (DH_generate_key(opt->opt_private->pk_init_ctx->dh) != 1) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
