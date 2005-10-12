@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -126,6 +126,7 @@ enum protection_level get_command_prot(void);
 void sec_end (void);
 int sec_login (char *);
 void sec_prot (int, char **);
+void sec_prot_command (int, char **);
 int sec_request_prot (char *);
 void sec_set_protection_level (void);
 void sec_status (void);

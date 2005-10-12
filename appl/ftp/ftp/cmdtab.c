@@ -105,6 +105,7 @@ char	userhelp[] =	"send new user information";
 char	verbosehelp[] =	"toggle verbose mode";
 
 char	prothelp[] = 	"set protection level";
+char	prothelp_c[] =	"set command protection level";
 #ifdef KRB4
 char	kauthhelp[] = 	"get remote tokens";
 #endif
@@ -193,7 +194,9 @@ struct cmd cmdtab[] = {
 	{ "verbose",	verbosehelp,	0,	0,	0,	setverbose },
 	{ "?",		helphelp,	0,	0,	1,	help },
 
-	{ "prot", 	prothelp, 	0, 	1, 	0,	sec_prot },
+	{ "protect", 	prothelp, 	0, 	1, 	0,	sec_prot },
+	/* what MIT uses */
+	{ "cprotect",	prothelp_c,	0,	1,	1,	sec_prot_command },
 #ifdef KRB4
 	{ "kauth", 	kauthhelp, 	0, 	1, 	0,	kauth },
 #endif
