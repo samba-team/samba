@@ -183,6 +183,8 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers);
 int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
+int ldb_set_attrib_handler_syntax(struct ldb_context *ldb, 
+				  const char *attr, const char *syntax);
 
 /* The following definitions come from lib/ldb/common/ldb_attributes.c  */
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *class);
