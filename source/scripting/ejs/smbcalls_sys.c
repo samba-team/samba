@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
+#include "lib/ldb/include/ldb.h"
 #include "system/time.h"
 
 /*
@@ -111,7 +112,7 @@ static int ejs_sys_ldaptime(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 	t = nt_time_to_unix(mprVarToNumber(argv[0]));
-	s = ldap_timestring(mprMemCtx(), t);
+	s = ldb_timestring(mprMemCtx(), t);
 	mpr_Return(eid, mprString(s));
 	talloc_free(s);
 	return 0;

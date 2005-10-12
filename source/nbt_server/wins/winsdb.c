@@ -136,7 +136,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	rec->name           = name;
 	rec->state          = ldb_msg_find_int(res[0], "active", WINS_REC_RELEASED);
 	rec->nb_flags       = ldb_msg_find_int(res[0], "nbFlags", 0);
-	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(res[0], "expires", NULL));
+	rec->expire_time    = ldb_string_to_time(ldb_msg_find_string(res[0], "expires", NULL));
 	rec->registered_by  = ldb_msg_find_string(res[0], "registeredBy", NULL);
 	rec->version        = ldb_msg_find_uint64(res[0], "version", 0);
 	talloc_steal(rec, rec->registered_by);
@@ -187,7 +187,7 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 	ret |= ldb_msg_add_fmt(msg, "nbFlags", "0x%04x", rec->nb_flags);
 	ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
 	ret |= ldb_msg_add_string(msg, "expires", 
-				  ldap_timestring(msg, rec->expire_time));
+				  ldb_timestring(msg, rec->expire_time));
 	ret |= ldb_msg_add_fmt(msg, "version", "%llu", rec->version);
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_string(msg, "address", rec->addresses[i]);
