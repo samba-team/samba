@@ -26,6 +26,7 @@
 #include "lib/events/events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
+#include "system/filesys.h"
 
 
 /*
@@ -51,6 +52,13 @@ static void single_accept_connection(struct event_context *ev,
 	status = socket_accept(sock, &sock2);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("accept_connection_single: accept: %s\n", nt_errstr(status)));
+		/* this looks strange, but is correct. We need to
+		   throttle things until the system clears enough
+		   resources to handle this new socket. If we don't
+		   then we will spin filling the log and causing more
+		   problems. We don't panic as this is probably a
+		   temporary resource constraint */
+		sleep(1);
 		return;
 	}
 
