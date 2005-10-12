@@ -129,7 +129,7 @@ static void pam_auth_crap_recv_init(struct composite_context *ctx)
 			       pam_auth_crap_recv_samlogon, state);
 }
 
-struct rpc_request *send_samlogon(struct pam_auth_crap_state *state)
+static struct rpc_request *send_samlogon(struct pam_auth_crap_state *state)
 {
 	state->creds_state = cli_credentials_get_netlogon_creds(
 		state->domain->schannel_creds);
