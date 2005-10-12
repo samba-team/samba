@@ -127,7 +127,7 @@ static struct ldb_val ldb_dn_unescape_value(void *mem_ctx, const char *src)
 	unsigned x;
 	char *p, *dst = NULL, *end;
 
-	value.length = 0;
+	memset(&value, 0, sizeof(value));
 
 	LDB_DN_NULL_FAILED(src);
 
@@ -276,8 +276,9 @@ static struct ldb_dn_component ldb_dn_explode_component(void *mem_ctx, char *raw
 	char *p;
 	int ret, qs, qe;
 
+	memset(&dc, 0, sizeof(dc));
+
 	if (raw_component == NULL) {
-		dc.name = NULL;
 		return dc;
 	}
 
@@ -618,8 +619,8 @@ char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *ed
 static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_dn_component *src)
 {
 	struct ldb_dn_component dst;
-	
-	dst.name = NULL;
+
+	memset(&dst, 0, sizeof(dst));
 
 	if (src == NULL) {
 		return dst;
