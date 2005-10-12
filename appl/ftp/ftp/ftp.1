@@ -33,7 +33,7 @@
 .\"
 .\"	@(#)ftp.1	8.3 (Berkeley) 10/9/94
 .\"
-.Dd April 27, 1996
+.Dd October 12, 2005
 .Dt FTP 1
 .Os BSD 4.2
 .Sh NAME
@@ -51,6 +51,7 @@ file transfer program
 .Op Fl g
 .Op Fl p
 .Op Fl l
+.Op Fl x
 .Op Fl -no-gss-bindings
 .Op Ar host
 .Sh DESCRIPTION
@@ -102,6 +103,8 @@ Disables file name globbing.
 use GSS-API bindings when talking to peer (ie make sure IP addresses match).
 .It Fl l
 Disables command line editing.
+.It Fl x
+Encrypt command and data channel.
 .El
 .Pp
 The client host with which
