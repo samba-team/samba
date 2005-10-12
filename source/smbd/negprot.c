@@ -177,7 +177,6 @@ static int negprot_spnego(char *p)
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
 				   NULL};
-	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 	int len;
 
 	global_spnego_negotiated = True;
@@ -198,20 +197,22 @@ static int negprot_spnego(char *p)
 	}
 #endif
 
-#if 0
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
 
-	   we can't do this until we teach our sesssion setup parser to know
-	   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)
+	   OLD COMMENT : "we can't do this until we teach our sesssion setup parser to know
+		   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)"
+
+	   Our sessionsetup code now handles raw NTLMSSP connects, so we can go
+	   back to doing what W2K3 does here. This is needed to make PocketPC 2003
+	   CIFS connections work with SPNEGO. See bugzilla bugs #1828 and #3133
+	   for details. JRA.
+
 	*/
-	if (lp_security() != SEC_ADS) {
+
+	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
 		memcpy(p, guid, 16);
 		return 16;
-	}
-#endif
-	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
-		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
 	} else {
 		fstring myname;
 		char *host_princ_s = NULL;
