@@ -3717,6 +3717,10 @@ case "$host_os" in
 	    AC_MSG_CHECKING(whether to use the lib/sysquotas_xfs.c builtin support)
 	    AC_MSG_RESULT(yes)
 	    ;;
+	*solaris*)
+	    # need to set this define when using static linking (BUG 1473)
+	    CPPFLAGS="$CPPFLAGS -DSUNOS5"
+	    ;;
 	*)
 	    ;;
 esac
@@ -3896,7 +3900,7 @@ fi
 
 AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch -I${srcdir-.}/smbwrapper"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
