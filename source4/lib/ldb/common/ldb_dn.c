@@ -54,7 +54,7 @@ int ldb_dn_check_special(const struct ldb_dn *dn, const char *check)
 {
 	if (dn == NULL || dn->comp_num != 1) return 0;
 
-	return ! strcmp(dn->components[0].value.data, check);
+	return ! strcmp((char *)dn->components[0].value.data, check);
 }
 
 static int ldb_dn_is_valid_attribute_name(const char *name)
@@ -163,7 +163,7 @@ static struct ldb_val ldb_dn_unescape_value(void *mem_ctx, const char *src)
 	}
 
 	value.length = end - dst;
-	value.data = dst;
+	value.data = (uint8_t *)dst;
 	return value;
 
 failed:
@@ -367,7 +367,7 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 		if (edn->components == NULL) goto failed;
 		edn->components[0].name = talloc_strdup(edn->components, LDB_SPECIAL);
 		if (edn->components[0].name == NULL) goto failed;
-		edn->components[0].value.data = talloc_strdup(edn->components, dn);
+		edn->components[0].value.data = (uint8_t *)talloc_strdup(edn->components, dn);
 		if (edn->components[0].value.data== NULL) goto failed;
 		edn->components[0].value.length = strlen(dn);
 		return edn;
@@ -425,7 +425,7 @@ char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn)
 
 	/* Special DNs */
 	if (ldb_dn_is_special(edn)) {
-		dn = talloc_strdup(mem_ctx, edn->components[0].value.data);
+		dn = talloc_strdup(mem_ctx, (char *)edn->components[0].value.data);
 		return dn;
 	}
 
@@ -598,7 +598,7 @@ char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *ed
 
 	/* Special DNs */
 	if (ldb_dn_is_special(edn)) {
-		dn = talloc_strdup(ldb, edn->components[0].value.data);
+		dn = talloc_strdup(ldb, (char *)edn->components[0].value.data);
 		return dn;
 	}
 
@@ -703,7 +703,7 @@ struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
 		return NULL;
 	}
 
-	dc->value.data = talloc_strdup(dc, val);
+	dc->value.data = (uint8_t *)talloc_strdup(dc, val);
 	if (dc->value.data ==  NULL) {
 		talloc_free(dc);
 		return NULL;
@@ -736,9 +736,9 @@ struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 	new->components[0].name = talloc_strdup(new->components, attr);
 	LDB_DN_NULL_FAILED(new->components[0].name);
 
-	new->components[0].value.data = talloc_strdup(new->components, value);
+	new->components[0].value.data = (uint8_t *)talloc_strdup(new->components, value);
 	LDB_DN_NULL_FAILED(new->components[0].value.data);
-	new->components[0].value.length = strlen(new->components[0].value.data);
+	new->components[0].value.length = strlen((char *)new->components[0].value.data);
 
 	return new;
 
@@ -753,7 +753,8 @@ struct ldb_dn *ldb_dn_make_child(void *mem_ctx, const struct ldb_dn_component *c
 {
 	if (component == NULL) return NULL;
 
-	return ldb_dn_build_child(mem_ctx, component->name, component->value.data, base);
+	return ldb_dn_build_child(mem_ctx, component->name, 
+				  (char *)component->value.data, base);
 }
 
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2)

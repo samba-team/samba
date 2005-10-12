@@ -55,17 +55,17 @@ static void generate_hashes (struct ldb_module *module, const char *local_attr,	
 	if (!upwd)
 		return;
 
-	ldb_msg_add_string(module->ldb, remote_fb, local_attr, upwd);
+	ldb_msg_add_string(remote_fb, local_attr, upwd);
 
 	val.length = 16;
 	val.data = talloc_zero_size(module, val.length);
 
 	E_md4hash(upwd, val.data);
-	ldb_msg_add_value(module->ldb, remote_mp, "sambaNTPassword", &val);
+	ldb_msg_add_value(remote_mp, "sambaNTPassword", &val);
 			
 	val.data = talloc_zero_size(module, val.length);
 	E_deshash(upwd, val.data);
-	ldb_msg_add_value(module->ldb, remote_mp, "sambaLMPassword", &val);
+	ldb_msg_add_value(remote_mp, "sambaLMPassword", &val);
 }
 
 
@@ -119,7 +119,7 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 
 	sidstring = dom_sid_string(remote_mp, sid);
 	talloc_free(sid);
-	ldb_msg_add_fmt(module->ldb, remote_mp, "sambaPrimaryGroupSID", "%s-%d", sidstring, ldb_msg_find_uint(local, "primaryGroupID", 0));
+	ldb_msg_add_fmt(remote_mp, "sambaPrimaryGroupSID", "%s-%d", sidstring, ldb_msg_find_uint(local, "primaryGroupID", 0));
 	talloc_free(sidstring);
 }
 

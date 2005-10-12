@@ -107,7 +107,7 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 
 	/* the +1 is to cope with buggy C library routines like strndup
 	   that look one byte beyond */
-	v2.data = talloc_array(mem_ctx, char, v->length+1);
+	v2.data = talloc_array(mem_ctx, uint8_t, v->length+1);
 	if (!v2.data) {
 		v2.length = 0;
 		return v2;
@@ -121,13 +121,12 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 /*
   add an empty element to a message
 */
-int ldb_msg_add_empty(struct ldb_context *ldb,
-		      struct ldb_message *msg, const char *attr_name, int flags)
+int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 {
 	struct ldb_message_element *els;
 
 	els = talloc_realloc(msg, msg->elements, 
-			       struct ldb_message_element, msg->num_elements+1);
+			     struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
 		errno = ENOMEM;
 		return -1;
@@ -150,12 +149,11 @@ int ldb_msg_add_empty(struct ldb_context *ldb,
 /*
   add an empty element to a message
 */
-int ldb_msg_add(struct ldb_context *ldb,
-		struct ldb_message *msg, 
+int ldb_msg_add(struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags)
 {
-	if (ldb_msg_add_empty(ldb, msg, el->name, flags) != 0) {
+	if (ldb_msg_add_empty(msg, el->name, flags) != 0) {
 		return -1;
 	}
 
@@ -168,8 +166,7 @@ int ldb_msg_add(struct ldb_context *ldb,
 /*
   add a value to a message
 */
-int ldb_msg_add_value(struct ldb_context *ldb,
-		      struct ldb_message *msg, 
+int ldb_msg_add_value(struct ldb_message *msg, 
 		      const char *attr_name,
 		      const struct ldb_val *val)
 {
@@ -178,7 +175,7 @@ int ldb_msg_add_value(struct ldb_context *ldb,
 
 	el = ldb_msg_find_element(msg, attr_name);
 	if (!el) {
-		ldb_msg_add_empty(ldb, msg, attr_name, 0);
+		ldb_msg_add_empty(msg, attr_name, 0);
 		el = ldb_msg_find_element(msg, attr_name);
 	}
 	if (!el) {
@@ -201,7 +198,7 @@ int ldb_msg_add_value(struct ldb_context *ldb,
 /*
   add a string element to a message
 */
-int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
+int ldb_msg_add_string(struct ldb_message *msg, 
 		       const char *attr_name, const char *str)
 {
 	struct ldb_val val;
@@ -209,13 +206,13 @@ int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg,
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val);
 }
 
 /*
   add a printf formatted element to a message
 */
-int ldb_msg_add_fmt(struct ldb_context *ldb, struct ldb_message *msg, 
+int ldb_msg_add_fmt(struct ldb_message *msg, 
 		    const char *attr_name, const char *fmt, ...)
 {
 	struct ldb_val val;
@@ -228,10 +225,10 @@ int ldb_msg_add_fmt(struct ldb_context *ldb, struct ldb_message *msg,
 
 	if (str == NULL) return -1;
 
-	val.data   = str;
+	val.data   = (uint8_t *)str;
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+	return ldb_msg_add_value(msg, attr_name, &val);
 }
 
 /*
@@ -287,7 +284,7 @@ int ldb_msg_find_int(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtol(v->data, NULL, 0);
+	return strtol((const char *)v->data, NULL, 0);
 }
 
 unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
@@ -298,7 +295,7 @@ unsigned int ldb_msg_find_uint(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoul(v->data, NULL, 0);
+	return strtoul((const char *)v->data, NULL, 0);
 }
 
 int64_t ldb_msg_find_int64(const struct ldb_message *msg, 
@@ -309,7 +306,7 @@ int64_t ldb_msg_find_int64(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoll(v->data, NULL, 0);
+	return strtoll((const char *)v->data, NULL, 0);
 }
 
 uint64_t ldb_msg_find_uint64(const struct ldb_message *msg, 
@@ -320,7 +317,7 @@ uint64_t ldb_msg_find_uint64(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoull(v->data, NULL, 0);
+	return strtoull((const char *)v->data, NULL, 0);
 }
 
 double ldb_msg_find_double(const struct ldb_message *msg, 
@@ -331,7 +328,7 @@ double ldb_msg_find_double(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtod(v->data, NULL);
+	return strtod((const char *)v->data, NULL);
 }
 
 const char *ldb_msg_find_string(const struct ldb_message *msg, 
@@ -342,7 +339,7 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 	if (!v || !v->data) {
 		return default_value;
 	}
-	return v->data;
+	return (const char *)v->data;
 }
 
 /*
@@ -479,7 +476,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 			continue;
 		}
 
-		if (ldb_msg_add(ldb, mod, 
+		if (ldb_msg_add(mod, 
 				&msg2->elements[i],
 				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
 			return NULL;
@@ -490,7 +487,7 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	for (i=0;i<msg1->num_elements;i++) {
 		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
 		if (!el) {
-			if (ldb_msg_add_empty(ldb, mod, 
+			if (ldb_msg_add_empty(mod, 
 					      msg1->elements[i].name,
 					      LDB_FLAG_MOD_DELETE) != 0) {
 				return NULL;
@@ -529,3 +526,71 @@ int ldb_msg_sanity_check(const struct ldb_message *msg)
 
 	return LDB_SUCCESS;
 }
+
+
+
+
+/*
+  copy an attribute list. This only copies the array, not the elements
+  (ie. the elements are left as the same pointers)
+*/
+const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs)
+{
+	const char **ret;
+	int i;
+	for (i=0;attrs[i];i++) /* noop */ ;
+	ret = talloc_array(mem_ctx, const char *, i+1);
+	if (ret == NULL) {
+		return NULL;
+	}
+	for (i=0;attrs[i];i++) {
+		ret[i] = attrs[i];
+	}
+	ret[i] = attrs[i];
+	return ret;
+}
+
+
+/*
+  return 1 if an attribute is in a list of attributes, or 0 otherwise
+*/
+int ldb_attr_in_list(const char * const *attrs, const char *attr)
+{
+	int i;
+	for (i=0;attrs[i];i++) {
+		if (ldb_attr_cmp(attrs[i], attr) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+/*
+  rename the specified attribute in a search result
+*/
+void ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace)
+{
+	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
+	if (el != NULL) {
+		el->name = replace;
+	}
+}
+
+
+/*
+  copy the specified attribute in a search result to a new attribute
+*/
+int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace)
+{
+	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
+	if (el == NULL) {
+		return 0;
+	}
+	if (ldb_msg_add(msg, el, 0) != 0) {
+		return -1;
+	}
+	ldb_msg_rename_attr(msg, attr, replace);
+	return 0;
+}
+

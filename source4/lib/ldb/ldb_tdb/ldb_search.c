@@ -100,17 +100,13 @@ static int msg_add_distinguished_name(struct ldb_module *module, struct ldb_mess
 	int ret;
 
 	el.flags = 0;
-	el.name = talloc_strdup(msg, "distinguishedName");
-	if (!el.name) {
-		return -1;
-	}
+	el.name = "distinguishedName";
 	el.num_values = 1;
 	el.values = &val;
-	val.data = ldb_dn_linearize(msg, msg->dn);
-	val.length = strlen(val.data);
+	val.data = (uint8_t *)ldb_dn_linearize(msg, msg->dn);
+	val.length = strlen((char *)val.data);
 	
 	ret = msg_add_element(module->ldb, msg, &el, 1);
-	talloc_free(el.name);
 	return ret;
 }
 
@@ -190,7 +186,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 
 		if (ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
 			if (msg_add_distinguished_name(module, ret) != 0) {
-				return -1;
+				return NULL;
 			}
 			continue;
 		}
@@ -358,7 +354,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	int ret;
 
 	if (key.dsize < 4 || 
-	    strncmp(key.dptr, "DN=", 3) != 0) {
+	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
 		return 0;
 	}
 
@@ -376,7 +372,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	if (!msg->dn) {
-		msg->dn = ldb_dn_explode(msg, key.dptr + 3);
+		msg->dn = ldb_dn_explode(msg, (char *)key.dptr + 3);
 		if (msg->dn == NULL) {
 			talloc_free(msg);
 			return -1;

@@ -41,9 +41,9 @@ static BOOL winsdb_save_version(struct wins_server *winssrv)
 	msg->dn = ldb_dn_explode(msg, "CN=VERSION");
 	if (msg->dn == NULL) goto failed;
 
-	ret |= ldb_msg_add_string(ldb, msg, "objectClass", "winsEntry");
-	ret |= ldb_msg_add_fmt(ldb, msg, "minVersion", "%llu", winssrv->min_version);
-	ret |= ldb_msg_add_fmt(ldb, msg, "maxVersion", "%llu", winssrv->max_version);
+	ret |= ldb_msg_add_string(msg, "objectClass", "winsEntry");
+	ret |= ldb_msg_add_fmt(msg, "minVersion", "%llu", winssrv->min_version);
+	ret |= ldb_msg_add_fmt(msg, "maxVersion", "%llu", winssrv->max_version);
 	if (ret != 0) goto failed;
 
 	for (i=0;i<msg->num_elements;i++) {
@@ -177,21 +177,20 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 					  struct winsdb_record *rec, TALLOC_CTX *mem_ctx)
 {
 	int i, ret=0;
-	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
-	ret |= ldb_msg_add_fmt(ldb, msg, "objectClass", "wins");
-	ret |= ldb_msg_add_fmt(ldb, msg, "active", "%u", rec->state);
-	ret |= ldb_msg_add_fmt(ldb, msg, "nbFlags", "0x%04x", rec->nb_flags);
-	ret |= ldb_msg_add_string(ldb, msg, "registeredBy", rec->registered_by);
-	ret |= ldb_msg_add_string(ldb, msg, "expires", 
+	ret |= ldb_msg_add_fmt(msg, "objectClass", "wins");
+	ret |= ldb_msg_add_fmt(msg, "active", "%u", rec->state);
+	ret |= ldb_msg_add_fmt(msg, "nbFlags", "0x%04x", rec->nb_flags);
+	ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
+	ret |= ldb_msg_add_string(msg, "expires", 
 				  ldap_timestring(msg, rec->expire_time));
-	ret |= ldb_msg_add_fmt(ldb, msg, "version", "%llu", rec->version);
+	ret |= ldb_msg_add_fmt(msg, "version", "%llu", rec->version);
 	for (i=0;rec->addresses[i];i++) {
-		ret |= ldb_msg_add_string(ldb, msg, "address", rec->addresses[i]);
+		ret |= ldb_msg_add_string(msg, "address", rec->addresses[i]);
 	}
 	if (ret != 0) goto failed;
 	return msg;

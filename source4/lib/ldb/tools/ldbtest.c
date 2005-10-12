@@ -86,43 +86,43 @@ static void add_records(struct ldb_context *ldb,
 		el[0].name = talloc_strdup(tmp_ctx, "cn");
 		el[0].num_values = 1;
 		el[0].values = vals[0];
-		vals[0][0].data = name;
+		vals[0][0].data = (uint8_t *)name;
 		vals[0][0].length = strlen(name);
 
 		el[1].flags = 0;
-		el[1].name = talloc_strdup(tmp_ctx, "title");
+		el[1].name = "title";
 		el[1].num_values = 1;
 		el[1].values = vals[1];
-		vals[1][0].data = talloc_asprintf(tmp_ctx, "The title of %s", name);
-		vals[1][0].length = strlen(vals[1][0].data);
+		vals[1][0].data = (uint8_t *)talloc_asprintf(tmp_ctx, "The title of %s", name);
+		vals[1][0].length = strlen((char *)vals[1][0].data);
 
 		el[2].flags = 0;
 		el[2].name = talloc_strdup(tmp_ctx, "uid");
 		el[2].num_values = 1;
 		el[2].values = vals[2];
-		vals[2][0].data = ldb_casefold(tmp_ctx, name);
-		vals[2][0].length = strlen(vals[2][0].data);
+		vals[2][0].data = (uint8_t *)ldb_casefold(tmp_ctx, name);
+		vals[2][0].length = strlen((char *)vals[2][0].data);
 
 		el[3].flags = 0;
 		el[3].name = talloc_strdup(tmp_ctx, "mail");
 		el[3].num_values = 1;
 		el[3].values = vals[3];
-		vals[3][0].data = talloc_asprintf(tmp_ctx, "%s@example.com", name);
-		vals[3][0].length = strlen(vals[3][0].data);
+		vals[3][0].data = (uint8_t *)talloc_asprintf(tmp_ctx, "%s@example.com", name);
+		vals[3][0].length = strlen((char *)vals[3][0].data);
 
 		el[4].flags = 0;
 		el[4].name = talloc_strdup(tmp_ctx, "objectClass");
 		el[4].num_values = 1;
 		el[4].values = vals[4];
-		vals[4][0].data = talloc_strdup(tmp_ctx, "OpenLDAPperson");
-		vals[4][0].length = strlen(vals[4][0].data);
+		vals[4][0].data = (uint8_t *)talloc_strdup(tmp_ctx, "OpenLDAPperson");
+		vals[4][0].length = strlen((char *)vals[4][0].data);
 
 		el[5].flags = 0;
 		el[5].name = talloc_strdup(tmp_ctx, "sn");
 		el[5].num_values = 1;
 		el[5].values = vals[5];
-		vals[5][0].data = name;
-		vals[5][0].length = strlen(vals[5][0].data);
+		vals[5][0].data = (uint8_t *)name;
+		vals[5][0].length = strlen((char *)vals[5][0].data);
 
 		ldb_delete(ldb, msg.dn);
 
@@ -172,15 +172,15 @@ static void modify_records(struct ldb_context *ldb,
 		el[1].name = talloc_strdup(tmp_ctx, "mail");
 		el[1].num_values = 1;
 		el[1].values = &vals[1];
-		vals[1].data = talloc_asprintf(tmp_ctx, "%s@other.example.com", name);
-		vals[1].length = strlen(vals[1].data);
+		vals[1].data = (uint8_t *)talloc_asprintf(tmp_ctx, "%s@other.example.com", name);
+		vals[1].length = strlen((char *)vals[1].data);
 
 		el[2].flags = LDB_FLAG_MOD_REPLACE;
 		el[2].name = talloc_strdup(tmp_ctx, "mail");
 		el[2].num_values = 1;
 		el[2].values = &vals[2];
-		vals[2].data = talloc_asprintf(tmp_ctx, "%s@other2.example.com", name);
-		vals[2].length = strlen(vals[2].data);
+		vals[2].data = (uint8_t *)talloc_asprintf(tmp_ctx, "%s@other2.example.com", name);
+		vals[2].length = strlen((char *)vals[2].data);
 
 		if (ldb_modify(ldb, &msg) != 0) {
 			printf("Modify of %s failed - %s\n", name, ldb_errstring(ldb));
@@ -314,7 +314,7 @@ static void start_test_index(struct ldb_context **ldb)
 	msg = ldb_msg_new(NULL);
 
 	msg->dn = indexlist;
-	ldb_msg_add_string(*ldb, msg, "@IDXATTR", strdup("uid"));
+	ldb_msg_add_string(msg, "@IDXATTR", strdup("uid"));
 
 	if (ldb_add(*ldb, msg) != 0) {
 		printf("Add of %s failed - %s\n", ldb_dn_linearize(*ldb, msg->dn), ldb_errstring(*ldb));
@@ -325,10 +325,10 @@ static void start_test_index(struct ldb_context **ldb)
 
 	memset(msg, 0, sizeof(*msg));
 	msg->dn = ldb_dn_build_child(msg, "cn", "test", basedn);
-	ldb_msg_add_string(*ldb, msg, "cn", strdup("test"));
-	ldb_msg_add_string(*ldb, msg, "sn", strdup("test"));
-	ldb_msg_add_string(*ldb, msg, "uid", strdup("test"));
-	ldb_msg_add_string(*ldb, msg, "objectClass", strdup("OpenLDAPperson"));
+	ldb_msg_add_string(msg, "cn", strdup("test"));
+	ldb_msg_add_string(msg, "sn", strdup("test"));
+	ldb_msg_add_string(msg, "uid", strdup("test"));
+	ldb_msg_add_string(msg, "objectClass", strdup("OpenLDAPperson"));
 
 	if (ldb_add(*ldb, msg) != 0) {
 		printf("Add of %s failed - %s\n", ldb_dn_linearize(*ldb, msg->dn), ldb_errstring(*ldb));

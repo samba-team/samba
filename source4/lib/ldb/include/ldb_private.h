@@ -145,6 +145,8 @@ void ldb_set_errstring(struct ldb_module *module, char *err_string);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level, 
+		   const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
 int ldb_should_b64_encode(const struct ldb_val *val);
