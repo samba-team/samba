@@ -113,6 +113,8 @@ static int operational_search_bytree(struct ldb_module *module,
 	int ret;
 	const char **search_attrs = NULL;
 
+	(*res) = NULL;
+
 	/* replace any attributes in the parse tree that are
 	   searchable, but are stored using a different name in the
 	   backend */
@@ -165,9 +167,11 @@ static int operational_search_bytree(struct ldb_module *module,
 						goto oom;
 					}
 				} else {
-					ldb_msg_rename_attr((*res)[r], 
-							    search_sub[i].replace,
-							    search_sub[i].attr);
+					if (ldb_msg_rename_attr((*res)[r], 
+							      search_sub[i].replace,
+							      search_sub[i].attr) != 0) {
+						goto oom;
+					}
 				}
 			}
 		}
@@ -179,6 +183,7 @@ static int operational_search_bytree(struct ldb_module *module,
 
 oom:
 	talloc_free(search_attrs);
+	talloc_free(*res);
 	ldb_oom(module->ldb);
 	return -1;
 }

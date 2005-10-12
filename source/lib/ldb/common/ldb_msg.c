@@ -587,12 +587,17 @@ int ldb_attr_in_list(const char * const *attrs, const char *attr)
 /*
   rename the specified attribute in a search result
 */
-void ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace)
+int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace)
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
-	if (el != NULL) {
-		el->name = replace;
+	if (el == NULL) {
+		return 0;
 	}
+	el->name = talloc_strdup(msg->elements, replace);
+	if (el->name == NULL) {
+		return -1;
+	}
+	return 0;
 }
 
 
@@ -608,8 +613,7 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 	if (ldb_msg_add(msg, el, 0) != 0) {
 		return -1;
 	}
-	ldb_msg_rename_attr(msg, attr, replace);
-	return 0;
+	return ldb_msg_rename_attr(msg, attr, replace);
 }
 
 
