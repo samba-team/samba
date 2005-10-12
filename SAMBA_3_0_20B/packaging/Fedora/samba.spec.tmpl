@@ -128,7 +128,7 @@ make proto
 make %{?_smp_mflags} all modules nsswitch/libnss_wins.so 
 
 ## build the cifs fs mount helper
-gcc  -o mount.cifs $RPM_OPT_FLAGS -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE client/mount.cifs
+gcc  -o mount.cifs $RPM_OPT_FLAGS -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE client/mount.cifs.c
 
 
 %install
