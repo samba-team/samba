@@ -41,6 +41,11 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 				 uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
 				 const char *name, struct drsuapi_DsNameInfo1 *info1);
 
+static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
+					uint32_t format_offered, uint32_t format_desired,
+					const struct ldb_dn *name_dn, const char *name, 
+					struct drsuapi_DsNameInfo1 *info1);
+
 static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
 				   TALLOC_CTX *mem_ctx,
 				   const char *alias_from,
@@ -82,7 +87,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		mapping = talloc_strdup(mem_ctx, 
 					(const char *)spnmappings->values[i].data);
 		if (!mapping) {
-			DEBUG(1, ("LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn_str));
+			DEBUG(1, ("LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping\n", service_dn_str));
 			return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		}
 		
@@ -90,7 +95,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		
 		p = strchr(mapping, '=');
 		if (!p) {
-			DEBUG(1, ("ldb_search: dn: %s sPNMapping malformed: %s", 
+			DEBUG(1, ("ldb_search: dn: %s sPNMapping malformed: %s\n", 
 				  service_dn_str, mapping));
 			return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		}
@@ -109,7 +114,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 			}
 		} while (p);
 	}
-	DEBUG(1, ("LDB_lookup_spn_alias: no alias for service %s applicable", alias_from));
+	DEBUG(1, ("LDB_lookup_spn_alias: no alias for service %s applicable\n", alias_from));
 	return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 }
 
@@ -137,8 +142,9 @@ static WERROR DsCrackNameSPNAlias(struct drsuapi_bind_state *b_state, TALLOC_CTX
 	}
 	
 	/* grab cifs/, http/ etc */
+	
+	/* This is checked for in callers, but be safe */
 	if (principal->name.name_string.len < 2) {
-		DEBUG(5, ("could not find principal in DB, alias not applicable"));
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	}
@@ -167,6 +173,7 @@ static WERROR DsCrackNameSPNAlias(struct drsuapi_bind_state *b_state, TALLOC_CTX
 		return WERR_NOMEM;
 	}
 	
+	/* reform principal */
 	ret = krb5_unparse_name_norealm(smb_krb5_context->krb5_context, principal, &new_princ);
 
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
@@ -175,7 +182,6 @@ static WERROR DsCrackNameSPNAlias(struct drsuapi_bind_state *b_state, TALLOC_CTX
 		return WERR_NOMEM;
 	}
 	
-	/* reform principal */
 	wret = DsCrackNameOneName(b_state, mem_ctx, format_flags, format_offered, format_desired,
 				  new_princ, info1);
 	free(new_princ);
@@ -201,7 +207,7 @@ static WERROR DsCrackNameUPN(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem
 		return WERR_OK;
 	}
 
-	ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
+	ret = krb5_parse_name_mustrealm(smb_krb5_context->krb5_context, name, &principal);
 	if (ret) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
@@ -349,6 +355,14 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 		WERR_TALLOC_CHECK(result_filter);
 		break;
 	}
+	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
+		domain_filter = NULL;
+
+		result_filter = talloc_asprintf(mem_ctx, "(|(displayName=%s)(samAccountName=%s))",
+						name, name);
+		WERR_TALLOC_CHECK(result_filter);
+		break;
+	}
 	
 	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
 		struct dom_sid *sid = dom_sid_parse_talloc(mem_ctx, name);
@@ -398,11 +412,11 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 		krb5_principal principal;
 		char *unparsed_name_short;
 		ret = krb5_parse_name_norealm(smb_krb5_context->krb5_context, name, &principal);
-		if (ret) {
+		if (ret || (principal->name.name_string.len < 2)) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			return WERR_OK;
 		}
-		
+
 		domain_filter = NULL;
 		
 		ret = krb5_unparse_name_norealm(smb_krb5_context->krb5_context, principal, &unparsed_name_short);
@@ -424,6 +438,11 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	}
 
 	}
+
+	if (format_flags & DRSUAPI_DS_NAME_FLAG_SYNTACTICAL_ONLY) {
+		return DsCrackNameOneSyntactical(mem_ctx, format_offered, format_desired,
+						 name_dn, name, info1);
+	}
 	
 	return DsCrackNameOneFilter(b_state, mem_ctx, 
 				    smb_krb5_context, 
@@ -431,6 +450,38 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 				    name_dn, name, 
 				    domain_filter, result_filter, 
 				    info1);
+}
+
+static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
+					uint32_t format_offered, uint32_t format_desired,
+					const struct ldb_dn *name_dn, const char *name, 
+					struct drsuapi_DsNameInfo1 *info1)
+{
+	char *cracked;
+	if (format_offered != DRSUAPI_DS_NAME_FORMAT_FQDN_1779) {
+		info1->status = DRSUAPI_DS_NAME_STATUS_NO_SYNTACTICAL_MAPPING;
+		return WERR_OK;
+	}
+
+	switch (format_desired) {
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: 
+		cracked = ldb_dn_canonical_string(mem_ctx, name_dn);
+		break;
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+		cracked = ldb_dn_canonical_ex_string(mem_ctx, name_dn);
+		break;
+	default:
+		info1->status = DRSUAPI_DS_NAME_STATUS_NO_SYNTACTICAL_MAPPING;
+		return WERR_OK;
+	}
+	info1->status = DRSUAPI_DS_NAME_STATUS_OK;
+	info1->result_name	= cracked;
+	if (!cracked) {
+		return WERR_NOMEM;
+	}
+	
+	return WERR_OK;	
+	
 }
 
 static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
@@ -449,32 +500,42 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 
 	/* here we need to set the attrs lists for domain and result lookups */
 	switch (format_desired) {
-		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-			const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-			const char * const _result_attrs[] = { "distinguishedName", NULL};
-			
-			domain_attrs = _domain_attrs;
-			result_attrs = _result_attrs;
-			break;
-		}
-		case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
-			const char * const _domain_attrs[] = { "ncName", "dnsRoot", "nETBIOSName", NULL};
-			const char * const _result_attrs[] = { "sAMAccountName", "objectSid", NULL};
-			
-			domain_attrs = _domain_attrs;
-			result_attrs = _result_attrs;
-			break;
-		}
-		case DRSUAPI_DS_NAME_FORMAT_GUID: {
-			const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-			const char * const _result_attrs[] = { "objectGUID", NULL};
-			
-			domain_attrs = _domain_attrs;
-			result_attrs = _result_attrs;
-			break;
-		}
-		default:
-			return WERR_OK;
+	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779:
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX: {
+		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
+		const char * const _result_attrs[] = { NULL};
+		
+		domain_attrs = _domain_attrs;
+		result_attrs = _result_attrs;
+		break;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
+		const char * const _domain_attrs[] = { "ncName", "dnsRoot", "nETBIOSName", NULL};
+		const char * const _result_attrs[] = { "sAMAccountName", "objectSid", NULL};
+		
+		domain_attrs = _domain_attrs;
+		result_attrs = _result_attrs;
+		break;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_GUID: {
+		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
+		const char * const _result_attrs[] = { "objectGUID", NULL};
+		
+		domain_attrs = _domain_attrs;
+		result_attrs = _result_attrs;
+		break;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
+		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
+		const char * const _result_attrs[] = { "displayName", "samAccountName", NULL};
+		
+		domain_attrs = _domain_attrs;
+		result_attrs = _result_attrs;
+		break;
+	}
+	default:
+		return WERR_OK;
 	}
 
 	if (domain_filter) {
@@ -534,7 +595,8 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 					      format_flags, format_offered, format_desired,
 					      name, info1);
 		}
-		break;
+		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+		return WERR_OK;
 	case -1:
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 		return WERR_OK;
@@ -552,6 +614,16 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
 	}
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
+		return DsCrackNameOneSyntactical(mem_ctx, 
+						 DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
+						 DRSUAPI_DS_NAME_FORMAT_CANONICAL,
+						 result_res[0]->dn, name, info1);
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+		return DsCrackNameOneSyntactical(mem_ctx, 
+						 DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
+						 DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX,
+						 result_res[0]->dn, name, info1);
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
 		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result_res[0], "objectSid");
 		const char *_acc = "", *_dom = "";
@@ -614,6 +686,18 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 		WERR_TALLOC_CHECK(info1->result_name);
 		
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
+		return WERR_OK;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
+		info1->result_name	= samdb_result_string(result_res[0], "displayName", NULL);
+		if (!info1->result_name) {
+			info1->result_name	= samdb_result_string(result_res[0], "sAMAccountName", NULL);
+		} 
+		if (!info1->result_name) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+		} else {
+			info1->status = DRSUAPI_DS_NAME_STATUS_OK;
+		}
 		return WERR_OK;
 	}
 	default:

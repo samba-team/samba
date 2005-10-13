@@ -502,4 +502,6 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 char *ldb_timestring(void *mem_ctx, time_t t);
 time_t ldb_string_to_time(const char *s);
 
+char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
+char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
 #endif

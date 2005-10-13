@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "torture/rpc/drsuapi.h"
+#include "ldb/include/ldb.h"
 
 static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				    struct DsPrivate *priv, const char *dn,
@@ -35,7 +36,6 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	BOOL ret = True;
 	struct drsuapi_DsCrackNames r;
-	struct drsuapi_DsNameString names[1];
 	enum drsuapi_DsNameFormat formats[] = {
 		DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 		DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
@@ -48,6 +48,7 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 		DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN
 	};
+	struct drsuapi_DsNameString names[ARRAY_SIZE(formats)];
 	int i, j;
 
 	const char *n_matrix[ARRAY_SIZE(formats)][ARRAY_SIZE(formats)];
@@ -208,6 +209,10 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *dns_domain;
 	const char *nt4_domain;
 	const char *FQDN_1779_name;
+	struct ldb_dn *FQDN_1779_dn;
+	struct ldb_dn *realm_dn;
+	const char *realm_canonical;
+	const char *realm_canonical_ex;
 	const char *user_principal_name;
 	const char *service_principal_name;
 	const char *canonical_name;
@@ -305,6 +310,27 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!ret) {
 		return ret;
 	}
+	
+	realm_dn =  ldb_dn_explode(mem_ctx, r.out.ctr.ctr1->array[0].result_name);
+	realm_canonical = ldb_dn_canonical_string(mem_ctx, realm_dn);
+
+	if (strcmp(realm_canonical, 
+		   talloc_asprintf(mem_ctx, "%s/", lp_realm()))!= 0) {
+		printf("local Round trip on canonical name failed: %s != %s!\n",
+		       realm_canonical, 
+		       talloc_asprintf(mem_ctx, "%s/", lp_realm()));
+		    return False;
+	};
+
+	realm_canonical_ex = ldb_dn_canonical_ex_string(mem_ctx, realm_dn);
+
+	if (strcmp(realm_canonical_ex, 
+		   talloc_asprintf(mem_ctx, "%s\n", lp_realm()))!= 0) {
+		printf("local Round trip on canonical ex name failed: %s != %s!\n",
+		       realm_canonical, 
+		       talloc_asprintf(mem_ctx, "%s\n", lp_realm()));
+		    return False;
+	};
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
@@ -364,63 +390,10 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	FQDN_1779_name = r.out.ctr.ctr1->array[0].result_name;
 
-	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
-	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL;
-	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc);
+	FQDN_1779_dn = ldb_dn_explode(mem_ctx, FQDN_1779_name);
 
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
-			names[0].str, r.in.req.req1.format_desired);
-
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
-
-	canonical_name = r.out.ctr.ctr1->array[0].result_name;
-
-	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
-	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX;
-	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, test_dc);
-
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
-			names[0].str, r.in.req.req1.format_desired);
-
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
-
-	canonical_ex_name = r.out.ctr.ctr1->array[0].result_name;
+	canonical_name = ldb_dn_canonical_string(mem_ctx, FQDN_1779_dn);
+	canonical_ex_name = ldb_dn_canonical_ex_string(mem_ctx, FQDN_1779_dn);
 
 	user_principal_name = talloc_asprintf(mem_ctx, "%s$@%s", test_dc, dns_domain);
 	service_principal_name = talloc_asprintf(mem_ctx, "HOST/%s", test_dc);
@@ -714,15 +687,14 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 				ret = False;
 			} else if (r.out.ctr.ctr1->array[0].status != crack[i].status) {
-				printf("DsCrackNames unexpected error %d, wanted %d on name: %s\n", 
+				printf("DsCrackNames unexpected status %d, wanted %d on name: %s\n", 
 				       r.out.ctr.ctr1->array[0].status,
 				       crack[i].status,
 				       crack[i].str);
 				ret = False;
-			}
-			if (crack[i].expected_str 
-				&& (strcmp(r.out.ctr.ctr1->array[0].result_name, 
-					   crack[i].expected_str) != 0)) {
+			} else if (crack[i].expected_str
+				   && (strcmp(r.out.ctr.ctr1->array[0].result_name, 
+					      crack[i].expected_str) != 0)) {
 				printf("DsCrackNames failed - got %s, expected %s\n", 
 				       r.out.ctr.ctr1->array[0].result_name, 
 				       crack[i].expected_str);
