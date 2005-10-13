@@ -7,7 +7,6 @@ AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_des) -I../com_err -I$(srcdir)/../com_er
 bin_PROGRAMS = verify_krb5_conf
 
 noinst_PROGRAMS =				\
-	dump_config				\
 	test_get_addrs				\
 	krbhst-test				\
 	test_alname				\
