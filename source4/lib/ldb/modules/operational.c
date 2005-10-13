@@ -80,6 +80,19 @@
 #include <time.h>
 
 /*
+  construct a canonical name from a message
+*/
+static int construct_canonical_name(struct ldb_module *module, struct ldb_message *msg)
+{
+	char *canonicalName;
+	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
+	if (canonicalName == NULL) {
+		return -1;
+	}
+	return ldb_msg_add_string(msg, "canonicalName", canonicalName);
+}
+
+/*
   a list of attribute names that should be substituted in the parse
   tree before the search is done
 */
@@ -91,6 +104,7 @@ static const struct {
 	{ "modifyTimestamp", "whenChanged" }
 };
 
+
 /*
   a list of attribute names that are hidden, but can be searched for
   using another (non-hidden) name to produce the correct result
@@ -98,11 +112,64 @@ static const struct {
 static const struct {
 	const char *attr;
 	const char *replace;
+	int (*constructor)(struct ldb_module *, struct ldb_message *);
 } search_sub[] = {
-	{ "createTimestamp", "whenCreated" },
-	{ "modifyTimestamp", "whenChanged" },
-	{ "structuralObjectClass", "objectClass" }
+	{ "createTimestamp", "whenCreated", NULL },
+	{ "modifyTimestamp", "whenChanged", NULL },
+	{ "structuralObjectClass", "objectClass", NULL },
+	{ "canonicalName", "distinguishedName", construct_canonical_name }
 };
+
+/*
+  post process a search result record. For any search_sub[] attributes that were
+  asked for, we need to call the appropriate copy routine to copy the result
+  into the message, then remove any attributes that we added to the search but were
+  not asked for by the user
+*/
+static int operational_search_post_process(struct ldb_module *module,
+					   struct ldb_message *msg, 
+					   const char * const *attrs)
+{
+	int i, a=0;
+
+	for (a=0;attrs && attrs[a];a++) {
+		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
+			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) != 0) {
+				continue;
+			}
+
+			/* construct the new attribute, using either a supplied 
+			   constructor or a simple copy */
+			if (search_sub[i].constructor) {
+				if (search_sub[i].constructor(module, msg) != 0) {
+					goto failed;
+				}
+			} else if (ldb_msg_copy_attr(msg,
+						     search_sub[i].replace,
+						     search_sub[i].attr) != 0) {
+				goto failed;
+			}
+
+			/* remove the added search attribute, unless it was asked for 
+			   by the user */
+			if (search_sub[i].replace == NULL ||
+			    ldb_attr_in_list(attrs, search_sub[i].replace) ||
+			    ldb_attr_in_list(attrs, "*")) {
+				continue;
+			}
+
+			ldb_msg_remove_attr(msg, search_sub[i].replace);
+		}
+	}
+
+	return 0;
+
+failed:
+	ldb_debug_set(module->ldb, LDB_DEBUG_WARNING, 
+		      "operational_search_post_process failed for attribute '%s'\n", 
+		      attrs[a]);
+	return -1;
+}
 
 /*
   hook search operations
@@ -131,13 +198,14 @@ static int operational_search_bytree(struct ldb_module *module,
 	/* in the list of attributes we are looking for, rename any
 	   attributes to the alias for any hidden attributes that can
 	   be fetched directly using non-hidden names */
-	for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-		for (a=0;attrs && attrs[a];a++) {
-			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) == 0) {
+	for (a=0;attrs && attrs[a];a++) {
+		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
+			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) == 0 &&
+			    search_sub[i].replace) {
 				if (!search_attrs) {
 					search_attrs = ldb_attr_list_copy(module, attrs);
 					if (search_attrs == NULL) {
-						goto oom;
+						goto failed;
 					}
 				}
 				search_attrs[a] = search_sub[i].replace;
@@ -153,31 +221,11 @@ static int operational_search_bytree(struct ldb_module *module,
 		return ret;
 	}
 
-	/* for each record returned see if we have added any
-	   attributes to the search, and if we have then either copy
-	   them (if the aliased name was also asked for) or rename
-	   them (if the aliased entry was not asked for) */
+	/* for each record returned post-process to add any derived
+	   attributes that have been asked for */
 	for (r=0;r<ret;r++) {
-		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-			for (a=0;attrs && attrs[a];a++) {
-				if (ldb_attr_cmp(attrs[a], search_sub[i].attr) != 0) {
-					continue;
-				}
-				if (ldb_attr_in_list(attrs, search_sub[i].replace) ||
-				    ldb_attr_in_list(attrs, "*")) {
-					if (ldb_msg_copy_attr((*res)[r], 
-							      search_sub[i].replace,
-							      search_sub[i].attr) != 0) {
-						goto oom;
-					}
-				} else {
-					if (ldb_msg_rename_attr((*res)[r], 
-							      search_sub[i].replace,
-							      search_sub[i].attr) != 0) {
-						goto oom;
-					}
-				}
-			}
+		if (operational_search_post_process(module, (*res)[r], attrs) != 0) {
+			goto failed;
 		}
 	}
 
@@ -185,7 +233,7 @@ static int operational_search_bytree(struct ldb_module *module,
 	talloc_free(search_attrs);
 	return ret;
 
-oom:
+failed:
 	talloc_free(search_attrs);
 	talloc_free(*res);
 	ldb_oom(module->ldb);

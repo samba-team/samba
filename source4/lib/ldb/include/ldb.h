@@ -498,6 +498,7 @@ void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree,
 
 int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace);
 int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace);
+void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
 
 char *ldb_timestring(void *mem_ctx, time_t t);
 time_t ldb_string_to_time(const char *s);
