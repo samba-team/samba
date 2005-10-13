@@ -857,10 +857,11 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 			break;
 		}
 		if (cracked) {
-			cracked = talloc_asprintf(mem_ctx, "%s.%s", dn->components[i].value.data,
+			cracked = talloc_asprintf(mem_ctx, "%s.%s",
+						  (const char *)dn->components[i].value.data,
 						  cracked);
 		} else {
-			cracked = talloc_strdup(mem_ctx, dn->components[i].value.data);
+			cracked = talloc_strdup(mem_ctx, (const char *)dn->components[i].value.data);
 		}
 		if (!cracked) {
 			return NULL;
