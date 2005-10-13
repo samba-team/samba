@@ -57,6 +57,11 @@ static BOOL test_assoc_ctx1(TALLOC_CTX *mem_ctx, const char *address)
 	struct wrepl_associate_stop assoc_stop;
 	NTSTATUS status;
 
+	if (!lp_parm_bool(-1, "torture", "dangerous", False)) {
+		printf("winsrepl: cross connection assoc_ctx usage disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
 	printf("Test if assoc_ctx is only valid on the conection it was created on\n");
 
 	wrepl_socket1 = wrepl_socket_init(mem_ctx, NULL);
@@ -162,6 +167,283 @@ static BOOL test_assoc_ctx2(TALLOC_CTX *mem_ctx, const char *address)
 done:
 	printf("Close wrepl connections\n");
 	talloc_free(wrepl_socket);
+	return ret;
+}
+
+struct test_wrepl_conflict_conn {
+	const char *address;
+	struct wrepl_socket *pull;
+	uint32_t pull_assoc;
+
+#define TEST_OWNER_A_ADDRESS "127.65.65.1"
+#define TEST_ADDRESS_A_PREFIX "127.0.65"
+#define TEST_OWNER_B_ADDRESS "127.66.66.1"
+#define TEST_ADDRESS_B_PREFIX "127.0.66"
+
+	struct wrepl_wins_owner a, b;
+};
+
+static const struct wrepl_ip addresses_A_1[] = {
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".1"
+	}
+};
+static const struct wrepl_ip addresses_A_2[] = {
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".2"
+	}
+};
+
+static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem_ctx,
+								 const char *address)
+{
+	struct test_wrepl_conflict_conn *ctx;
+	struct wrepl_associate associate;
+	struct wrepl_pull_table pull_table;
+	NTSTATUS status;
+	uint32_t i;
+
+	ctx = talloc_zero(mem_ctx, struct test_wrepl_conflict_conn);
+	if (!ctx) return NULL;
+
+	ctx->address	= address;
+	ctx->pull	= wrepl_socket_init(ctx, NULL);
+	if (!ctx->pull) return NULL;
+
+	printf("Setup wrepl conflict pull connection\n");
+	status = wrepl_connect(ctx->pull, NULL, ctx->address);
+	if (!NT_STATUS_IS_OK(status)) return NULL;
+
+	status = wrepl_associate(ctx->pull, &associate);
+	if (!NT_STATUS_IS_OK(status)) return NULL;
+
+	ctx->pull_assoc = associate.out.assoc_ctx;
+
+	ctx->a.address		= TEST_OWNER_A_ADDRESS;
+	ctx->a.max_version	= 0;
+	ctx->a.min_version	= 0;
+	ctx->a.type		= 1;
+
+	ctx->b.address		= TEST_OWNER_B_ADDRESS;
+	ctx->b.max_version	= 0;
+	ctx->b.min_version	= 0;
+	ctx->b.type		= 1;
+
+	pull_table.in.assoc_ctx	= ctx->pull_assoc;
+	status = wrepl_pull_table(ctx->pull, ctx->pull, &pull_table);
+	if (!NT_STATUS_IS_OK(status)) return NULL;
+
+	for (i=0; i < pull_table.out.num_partners; i++) {
+		if (strcmp(TEST_OWNER_A_ADDRESS,pull_table.out.partners[i].address)==0) {
+			ctx->a.max_version	= pull_table.out.partners[i].max_version;
+			ctx->a.min_version	= pull_table.out.partners[i].min_version;
+		}
+		if (strcmp(TEST_OWNER_B_ADDRESS,pull_table.out.partners[i].address)==0) {
+			ctx->b.max_version	= pull_table.out.partners[i].max_version;
+			ctx->b.min_version	= pull_table.out.partners[i].min_version;		
+		}
+	}
+
+	talloc_free(pull_table.out.partners);
+
+	return ctx;
+}
+
+static BOOL test_wrepl_update_one_A(struct test_wrepl_conflict_conn *ctx,
+				    const struct wrepl_wins_name *name)
+{
+	BOOL ret = True;
+	struct wrepl_socket *wrepl_socket;
+	struct wrepl_associate associate;
+	struct wrepl_packet update_packet, repl_send;
+	struct wrepl_table *update;
+	struct wrepl_wins_owner wrepl_wins_owners[1];
+	struct wrepl_packet *repl_recv;
+	struct wrepl_wins_owner *send_request;
+	struct wrepl_send_reply *send_reply;
+	struct wrepl_wins_name wrepl_wins_names[1];
+	uint32_t assoc_ctx;
+	NTSTATUS status;
+
+	wrepl_socket = wrepl_socket_init(ctx, NULL);
+
+	status = wrepl_connect(wrepl_socket, NULL, ctx->address);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = wrepl_associate(wrepl_socket, &associate);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	assoc_ctx = associate.out.assoc_ctx;
+
+	/* now send a WREPL_REPL_UPDATE message */
+	ZERO_STRUCT(update_packet);
+	update_packet.opcode			= WREPL_OPCODE_BITS;
+	update_packet.assoc_ctx			= assoc_ctx;
+	update_packet.mess_type			= WREPL_REPLICATION;
+	update_packet.message.replication.command	= WREPL_REPL_UPDATE;
+	update	= &update_packet.message.replication.info.table;
+
+	update->partner_count	= ARRAY_SIZE(wrepl_wins_owners);
+	update->partners	= wrepl_wins_owners;
+	update->initiator	= "0.0.0.0";
+
+	wrepl_wins_owners[0]	= ctx->a;
+
+	status = wrepl_request(wrepl_socket, wrepl_socket,
+			       &update_packet, &repl_recv);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(repl_recv->mess_type, WREPL_REPLICATION);
+	CHECK_VALUE(repl_recv->message.replication.command, WREPL_REPL_SEND_REQUEST);
+	send_request = &repl_recv->message.replication.info.owner;
+
+	ZERO_STRUCT(repl_send);
+	repl_send.opcode			= WREPL_OPCODE_BITS;
+	repl_send.assoc_ctx			= assoc_ctx;
+	repl_send.mess_type			= WREPL_REPLICATION;
+	repl_send.message.replication.command	= WREPL_REPL_SEND_REPLY;
+	send_reply = &repl_send.message.replication.info.reply;
+
+	send_reply->num_names	= ARRAY_SIZE(wrepl_wins_names);
+	send_reply->names	= wrepl_wins_names;
+
+	wrepl_wins_names[0]	= *name;
+
+	status = wrepl_request(wrepl_socket, wrepl_socket,
+			       &repl_send, &repl_recv);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(repl_recv->mess_type, WREPL_STOP_ASSOCIATION);
+	CHECK_VALUE(repl_recv->message.stop.reason, 0);
+
+done:
+	talloc_free(wrepl_socket);
+	return ret;
+}
+
+static BOOL test_wrepl_is_applied_A(struct test_wrepl_conflict_conn *ctx,
+				    const struct wrepl_wins_name *name)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct wrepl_pull_names pull_names;
+
+	ctx->a.min_version	= ctx->a.max_version;
+
+	pull_names.in.assoc_ctx	= ctx->pull_assoc;
+	pull_names.in.partner	= ctx->a;
+		
+	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(pull_names.out.num_names, 1);
+
+done:
+	talloc_free(pull_names.out.names);
+	return ret;
+}
+
+static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
+{
+	BOOL ret = True;
+	struct nbt_name	name;
+	struct wrepl_wins_name wins_name1;
+	struct wrepl_wins_name wins_name2;
+	struct wrepl_wins_name *wins_name_tmp;
+	struct wrepl_wins_name *wins_name_last;
+	struct wrepl_wins_name *wins_name_cur;
+	uint32_t i,j;
+	uint8_t types[] = { 0x00, 0x1C };
+	struct {
+		enum wrepl_name_type type;
+		enum wrepl_name_state state;
+		enum wrepl_name_node node;
+		BOOL is_static;
+		uint32_t num_ips;
+		const struct wrepl_ip *ips;
+	} records[] = {
+		{
+		.type		= WREPL_TYPE_GROUP,
+		.state		= WREPL_STATE_ACTIVE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_1),
+		.ips		= addresses_A_1,
+		},{
+		.type		= WREPL_TYPE_UNIQUE,
+		.state		= WREPL_STATE_ACTIVE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_1),
+		.ips		= addresses_A_1,
+		},{
+		.type		= WREPL_TYPE_UNIQUE,
+		.state		= WREPL_STATE_ACTIVE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_2),
+		.ips		= addresses_A_2,
+		},{
+		.type		= WREPL_TYPE_SGROUP,
+		.state		= WREPL_STATE_TOMBSTONE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_2),
+		.ips		= addresses_A_2,
+		},{
+		.type		= WREPL_TYPE_MHOMED,
+		.state		= WREPL_STATE_TOMBSTONE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_1),
+		.ips		= addresses_A_1,
+		},{
+		/* the last one should always be a tomstone record! */
+		.type		= WREPL_TYPE_UNIQUE,
+		.state		= WREPL_STATE_TOMBSTONE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_1),
+		.ips		= addresses_A_1,
+		}
+	};
+
+	if (!ctx) return False;
+
+	name.name	= "_SAME_OWNER_A";
+	name.type	= 0;
+	name.scope	= NULL;
+
+	wins_name_tmp	= NULL;
+	wins_name_last	= &wins_name2;
+	wins_name_cur	= &wins_name1;
+
+	for (j=0; ret && j < ARRAY_SIZE(types); j++) {
+		name.type = types[j];
+		printf("Test Replica Conflicts with same owner[%s] for %s\n",
+			nbt_name_string(ctx, &name), ctx->a.address);
+
+		for(i=0; ret && i < ARRAY_SIZE(records); i++) {
+			wins_name_tmp	= wins_name_last;
+			wins_name_last	= wins_name_cur;
+			wins_name_cur	= wins_name_tmp;
+
+			wins_name_cur->name	= &name;
+			wins_name_cur->flags	= WREPL_NAME_FLAGS(records[i].type,
+								   records[i].state,
+								   records[i].node,
+								   records[i].is_static);
+			wins_name_cur->id	= ++ctx->a.max_version;
+			if (wins_name_cur->flags & 2) {
+				wins_name_cur->addresses.addresses.num_ips = records[i].num_ips;
+				wins_name_cur->addresses.addresses.ips     = discard_const(records[i].ips);
+			} else {
+				wins_name_cur->addresses.ip = records[i].ips[0].ip;
+			}
+			wins_name_cur->unknown	= "255.255.255.255";
+
+			ret &= test_wrepl_update_one_A(ctx, wins_name_cur);
+			ret &= test_wrepl_is_applied_A(ctx, wins_name_cur);
+		}
+	}
 	return ret;
 }
 
@@ -273,7 +555,8 @@ BOOL torture_nbt_winsreplication(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
 	BOOL ret = True;
-	
+	struct test_wrepl_conflict_conn *ctx;
+
 	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
 
 	/* do an initial name resolution to find its IP */
@@ -289,6 +572,10 @@ BOOL torture_nbt_winsreplication(void)
 	ret &= test_assoc_ctx2(mem_ctx, address);
 
 	ret &= test_wins_replication(mem_ctx, address);
+
+	ctx = test_create_conflict_ctx(mem_ctx, address);
+
+	ret &= test_conflict_same_owner(ctx);
 
 	talloc_free(mem_ctx);
 
