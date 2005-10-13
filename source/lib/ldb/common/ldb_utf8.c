@@ -73,7 +73,7 @@ int ldb_caseless_cmp(const char *s1, const char *s2)
 }
 
 /*
-  compare two attributes
+  compare two attribute names
   return 0 for match
 */
 int ldb_attr_cmp(const char *attr1, const char *attr2)
