@@ -167,7 +167,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static int negprot_spnego(char *p)
+static int negprot_spnego(char *p, uint8 *pkeylen)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
@@ -212,6 +212,7 @@ static int negprot_spnego(char *p)
 
 	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
 		memcpy(p, guid, 16);
+		*pkeylen = 0;
 		return 16;
 	} else {
 		fstring myname;
@@ -224,6 +225,11 @@ static int negprot_spnego(char *p)
 	}
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
+	if (len > 256) {
+		DEBUG(0,("negprot_spnego: blob length too long (%d)\n", len));
+		len = 255;
+	}
+	*pkeylen = len;
 	data_blob_free(&blob);
 	return len;
 }
@@ -324,16 +330,17 @@ static int reply_nt1(char *inbuf, char *outbuf)
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
 			get_challenge(p);
-			SSVALS(outbuf,smb_vwv16+1,8);
+			SCVAL(outbuf,smb_vwv16+1,8);
 			p += 8;
 		}
 		p += srvstr_push(outbuf, p, lp_workgroup(), -1, 
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		int len = negprot_spnego(p);
+		uint8 keylen;
+		int len = negprot_spnego(p, &keylen);
 		
-		SSVALS(outbuf,smb_vwv16+1,len);
+		SCVAL(outbuf,smb_vwv16+1,keylen);
 		p += len;
 		DEBUG(3,("using SPNEGO\n"));
 	}
