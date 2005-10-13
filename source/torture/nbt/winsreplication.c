@@ -40,6 +40,12 @@
 		goto done; \
 	}} while (0)
 
+#define _NBT_NAME(n,t,s) {\
+	.name	= n,\
+	.type	= t,\
+	.scope	= s\
+}
+
 /*
   test how assoc_ctx's are only usable on the connection
   they are created on.
@@ -295,6 +301,19 @@ static const struct wrepl_ip addresses_A_2[] = {
 	}
 };
 
+static const struct wrepl_ip addresses_B_1[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".1"
+	}
+};
+static const struct wrepl_ip addresses_B_2[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".2"
+	}
+};
+
 static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem_ctx,
 								 const char *address)
 {
@@ -350,8 +369,9 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 	return ctx;
 }
 
-static BOOL test_wrepl_update_one_A(struct test_wrepl_conflict_conn *ctx,
-				    const struct wrepl_wins_name *name)
+static BOOL test_wrepl_update_one(struct test_wrepl_conflict_conn *ctx,
+				  const struct wrepl_wins_owner *owner,
+				  const struct wrepl_wins_name *name)
 {
 	BOOL ret = True;
 	struct wrepl_socket *wrepl_socket;
@@ -387,7 +407,7 @@ static BOOL test_wrepl_update_one_A(struct test_wrepl_conflict_conn *ctx,
 	update->partners	= wrepl_wins_owners;
 	update->initiator	= "0.0.0.0";
 
-	wrepl_wins_owners[0]	= ctx->a;
+	wrepl_wins_owners[0]	= *owner;
 
 	status = wrepl_request(wrepl_socket, wrepl_socket,
 			       &update_packet, &repl_recv);
@@ -419,21 +439,22 @@ done:
 	return ret;
 }
 
-static BOOL test_wrepl_is_applied_A(struct test_wrepl_conflict_conn *ctx,
-				    const struct wrepl_wins_name *name)
+static BOOL test_wrepl_is_applied(struct test_wrepl_conflict_conn *ctx,
+				  const struct wrepl_wins_owner *owner,
+				  const struct wrepl_wins_name *name,
+				  BOOL expected)
 {
 	BOOL ret = True;
 	NTSTATUS status;
 	struct wrepl_pull_names pull_names;
 
-	ctx->a.min_version	= ctx->a.max_version;
-
 	pull_names.in.assoc_ctx	= ctx->pull_assoc;
-	pull_names.in.partner	= ctx->a;
+	pull_names.in.partner	= *owner;
+	pull_names.in.partner.min_version = pull_names.in.partner.max_version;
 		
 	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(pull_names.out.num_names, 1);
+	CHECK_VALUE(pull_names.out.num_names, (expected?1:0));
 
 done:
 	talloc_free(pull_names.out.names);
@@ -481,6 +502,20 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 		.num_ips	= ARRAY_SIZE(addresses_A_2),
 		.ips		= addresses_A_2,
 		},{
+		.type		= WREPL_TYPE_UNIQUE,
+		.state		= WREPL_STATE_ACTIVE,
+		.node		= WREPL_NODE_B,
+		.is_static	= True,
+		.num_ips	= ARRAY_SIZE(addresses_A_1),
+		.ips		= addresses_A_1,
+		},{
+		.type		= WREPL_TYPE_UNIQUE,
+		.state		= WREPL_STATE_ACTIVE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_2),
+		.ips		= addresses_A_2,
+		},{
 		.type		= WREPL_TYPE_SGROUP,
 		.state		= WREPL_STATE_TOMBSTONE,
 		.node		= WREPL_NODE_B,
@@ -495,7 +530,7 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 		.num_ips	= ARRAY_SIZE(addresses_A_1),
 		.ips		= addresses_A_1,
 		},{
-		/* the last one should always be a tomstone record! */
+		/* the last one should always be a unique,tomstone record! */
 		.type		= WREPL_TYPE_UNIQUE,
 		.state		= WREPL_STATE_TOMBSTONE,
 		.node		= WREPL_NODE_B,
@@ -539,10 +574,350 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 			}
 			wins_name_cur->unknown	= "255.255.255.255";
 
-			ret &= test_wrepl_update_one_A(ctx, wins_name_cur);
-			ret &= test_wrepl_is_applied_A(ctx, wins_name_cur);
+			ret &= test_wrepl_update_one(ctx, &ctx->a,wins_name_cur);
+			ret &= test_wrepl_is_applied(ctx, &ctx->a, wins_name_cur, True);
 		}
 	}
+	return ret;
+}
+
+static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
+{
+	BOOL ret = True;
+	struct wrepl_wins_name wins_name1;
+	struct wrepl_wins_name wins_name2;
+	struct wrepl_wins_name *wins_name_r1;
+	struct wrepl_wins_name *wins_name_r2;
+	uint32_t i;
+	struct {
+		struct nbt_name name;
+		struct {
+			struct wrepl_wins_owner *owner;
+			enum wrepl_name_type type;
+			enum wrepl_name_state state;
+			enum wrepl_name_node node;
+			BOOL is_static;
+			uint32_t num_ips;
+			const struct wrepl_ip *ips;
+			BOOL apply_expected;
+		} r1, r2;
+	} records[] = {
+	/* 
+	 * NOTE: the first record and the last applied one
+	 *       needs to be from the same owner,
+	 *       to not conflict in the next smbtorture run!!!
+	 */
+
+	/* 
+	 * unique,active vs. unique,active the same ip
+	 * => should be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,active vs. unique,tombstone the same ips
+	 * => should NOT be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. unique,active the same ips
+	 * => should NOT be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. unique,tombstone the same ips
+	 * => should be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,active vs. unique,active the different ips
+	 * => should be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,active vs. unique,tombstone the different ips
+	 * => should NOT be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. unique,active the different ips
+	 * => should be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. unique,tombstone the different ips
+	 * => should be replaced
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * This should be the last record in this array,
+	 * we need to make sure the we leave a tombstoned unique entry
+	 * owned by OWNER_A
+	 */
+	{
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		}
+	}}; /* do not add entries here, this should be the last record! */
+
+	if (!ctx) return False;
+
+	wins_name_r1	= &wins_name1;
+	wins_name_r2	= &wins_name2;
+
+	for(i=0; ret && i < ARRAY_SIZE(records); i++) {
+
+		/*
+		 * Setup R1
+		 */
+		wins_name_r1->name	= &records[i].name;
+		wins_name_r1->flags	= WREPL_NAME_FLAGS(records[i].r1.type,
+							   records[i].r1.state,
+							   records[i].r1.node,
+							   records[i].r1.is_static);
+		wins_name_r1->id	= ++records[i].r1.owner->max_version;
+		if (wins_name_r1->flags & 2) {
+			wins_name_r1->addresses.addresses.num_ips = records[i].r1.num_ips;
+			wins_name_r1->addresses.addresses.ips     = discard_const(records[i].r1.ips);
+		} else {
+			wins_name_r1->addresses.ip = records[i].r1.ips[0].ip;
+		}
+		wins_name_r1->unknown	= "255.255.255.255";
+
+		/* now apply R1 */
+		ret &= test_wrepl_update_one(ctx, records[i].r1.owner, wins_name_r1);
+		ret &= test_wrepl_is_applied(ctx, records[i].r1.owner,
+					     wins_name_r1, records[i].r1.apply_expected);
+
+		/*
+		 * Setup R2
+		 */
+		wins_name_r2->name	= &records[i].name;
+		wins_name_r2->flags	= WREPL_NAME_FLAGS(records[i].r2.type,
+							   records[i].r2.state,
+							   records[i].r2.node,
+							   records[i].r2.is_static);
+		wins_name_r2->id	= ++records[i].r2.owner->max_version;
+		if (wins_name_r2->flags & 2) {
+			wins_name_r2->addresses.addresses.num_ips = records[i].r2.num_ips;
+			wins_name_r2->addresses.addresses.ips     = discard_const(records[i].r2.ips);
+		} else {
+			wins_name_r2->addresses.ip = records[i].r2.ips[0].ip;
+		}
+		wins_name_r2->unknown	= "255.255.255.255";
+
+		/* now apply R2 */
+		ret &= test_wrepl_update_one(ctx, records[i].r2.owner, wins_name_r2);
+		ret &= test_wrepl_is_applied(ctx, records[i].r2.owner,
+					     wins_name_r2, records[i].r2.apply_expected);
+
+		if (!ret) {
+			printf("%s: failed with index: %u\n", __location__, i);
+			return ret;
+		}
+	}
+
 	return ret;
 }
 
@@ -577,6 +952,7 @@ BOOL torture_nbt_winsreplication(void)
 	ctx = test_create_conflict_ctx(mem_ctx, address);
 
 	ret &= test_conflict_same_owner(ctx);
+	ret &= test_conflict_different_owner(ctx);
 
 	talloc_free(mem_ctx);
 
