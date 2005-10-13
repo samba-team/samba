@@ -128,7 +128,8 @@ make proto
 make %{?_smp_mflags} all modules nsswitch/libnss_wins.so 
 
 ## build the cifs fs mount helper
-gcc  -o mount.cifs $RPM_OPT_FLAGS -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE client/mount.cifs
+gcc  -o mount.cifs $RPM_OPT_FLAGS -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE client/mount.cifs.c
+gcc  -o umount.cifs $RPM_OPT_FLAGS -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE client/umount.cifs.c
 
 
 %install
@@ -156,7 +157,8 @@ install -m755 %{SOURCE8} $RPM_BUILD_ROOT%{_bindir}
 install -m644 %{SOURCE7} $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 %{SOURCE1} $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m755 source/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
-install -m755 source/client/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
+install -m755 source/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
+install -m755 source/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
 
 install -m755 %{SOURCE5} $RPM_BUILD_ROOT%{initdir}/smb
 install -m755 %{SOURCE6} $RPM_BUILD_ROOT%{initdir}/winbind
@@ -314,6 +316,7 @@ fi
 /sbin/mount.smb
 /sbin/mount.smbfs
 /sbin/mount.cifs
+/sbin/umount.cifs
 %{_libdir}/samba/lowcase.dat
 %{_libdir}/samba/upcase.dat
 %{_libdir}/samba/valid.dat
@@ -328,6 +331,8 @@ fi
 %{_mandir}/man8/smbmnt.8*
 %{_mandir}/man8/smbmount.8*
 %{_mandir}/man8/smbumount.8*
+%{_mandir}/man8/mount.cifs.8.*
+%{_mandir}/man8/umount.cifs.8.*
 %{_mandir}/man8/smbspool.8*
 %{_bindir}/nmblookup
 %{_bindir}/smbclient
