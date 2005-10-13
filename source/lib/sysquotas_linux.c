@@ -394,6 +394,7 @@ static int sys_set_linux_gen_quota(const char *path, const char *bdev, enum SMB_
 		D.dqb_ihardlimit = (dp->ihardlimit*dp->bsize)/bsize;
 		D.dqb_isoftlimit = (dp->isoftlimit*dp->bsize)/bsize;
 	}
+	D.dqb_valid = QIF_LIMITS;
 
 	qflags = dp->qflags;
 
