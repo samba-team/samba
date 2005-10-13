@@ -839,3 +839,58 @@ struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn)
 	return rdn;
 }
 
+static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_format) {
+	int i;
+	char *cracked = NULL;
+	for (i = dn->comp_num - 1 ; i >= 0; i--) {
+		if (strcasecmp(dn->components[i].name, "dc") != 0) {
+			break;
+		}
+		if (cracked) {
+			cracked = talloc_asprintf(mem_ctx, "%s.%s", dn->components[i].value.data,
+						  cracked);
+		} else {
+			cracked = talloc_strdup(mem_ctx, dn->components[i].value.data);
+		}
+		if (!cracked) {
+			return NULL;
+		}
+	}
+
+	/* Only domain components */
+	if (i < 0) {
+		if (ex_format) {
+			cracked = talloc_asprintf(mem_ctx, "%s\n", cracked);
+		} else {
+			cracked = talloc_asprintf(mem_ctx, "%s/", cracked);
+		}
+		return cracked;
+	}
+
+	for (; i > 0; i--) {
+		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
+					  dn->components[i].value.data);
+		if (!cracked) {
+			return NULL;
+		}
+	}
+
+	/* Last one */
+	if (ex_format) {
+		cracked = talloc_asprintf(mem_ctx, "%s\n%s", cracked, 
+					  dn->components[i].value.data);
+	} else {
+		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
+					  dn->components[i].value.data);
+	}
+	return cracked;
+}
+
+char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn) {
+	return ldb_dn_canonical(mem_ctx, dn, 0);
+
+}
+
+char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn) {
+	return ldb_dn_canonical(mem_ctx, dn, 1);
+}
