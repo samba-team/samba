@@ -175,7 +175,7 @@ static BOOL read_init_file( const char *servicename, struct rcinit_file_informat
 	struct rcinit_file_information *info;
 	pstring filepath, str;
 	XFILE *f;
-	char *p, *s;
+	char *p;
 		
 	if ( !(info = TALLOC_ZERO_P( NULL, struct rcinit_file_information ) ) )
 		return False;
@@ -189,7 +189,7 @@ static BOOL read_init_file( const char *servicename, struct rcinit_file_informat
 		return False;
 	}
 	
-	while ( (s = x_fgets( str, sizeof(str)-1, f )) != NULL ) {
+	while ( (x_fgets( str, sizeof(str)-1, f )) != NULL ) {
 		/* ignore everything that is not a full line 
 		   comment starting with a '#' */
 		   
@@ -400,7 +400,6 @@ void svcctl_init_keys( void )
 	REGSUBKEY_CTR *subkeys;
 	REGISTRY_KEY *key = NULL;
 	WERROR wresult;
-	BOOL new_services = False;
 	
 	/* bad mojo here if the lookup failed.  Should not happen */
 	
@@ -437,8 +436,6 @@ void svcctl_init_keys( void )
 		/* Add the new service key and initialize the appropriate values */
 
 		add_new_svc_name( key, subkeys, service_list[i] );
-
-		new_services = True;
 	}
 
 	regkey_close_internal( key );
