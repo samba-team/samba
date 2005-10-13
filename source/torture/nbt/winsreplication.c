@@ -170,6 +170,105 @@ done:
 	return ret;
 }
 
+
+/*
+  display a replication entry
+*/
+static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
+{
+	int i;
+
+	printf("%s\n", nbt_name_string(mem_ctx, &name->name));
+	printf("\tTYPE:%u STATE:%u NODE:%u STATIC:%u VERSION_ID: %llu\n",
+		name->type, name->state, name->node, name->is_static, name->version_id);
+	printf("\tRAW_FLAGS: 0x%08X OWNER: %-15s\n",
+		name->raw_flags, name->owner);
+	for (i=0;i<name->num_addresses;i++) {
+		printf("\tADDR: %-15s OWNER: %-15s\n", 
+			name->addresses[i].address, name->addresses[i].owner);
+	}
+}
+
+/*
+  test a full replication dump from a WINS server
+*/
+static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
+{
+	BOOL ret = True;
+	struct wrepl_socket *wrepl_socket;
+	NTSTATUS status;
+	int i, j;
+	struct wrepl_associate associate;
+	struct wrepl_pull_table pull_table;
+	struct wrepl_pull_names pull_names;
+
+	printf("Test one pull replication cycle\n");
+
+	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
+	
+	printf("Setup wrepl connections\n");
+	status = wrepl_connect(wrepl_socket, NULL, address);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Send a start association request\n");
+
+	status = wrepl_associate(wrepl_socket, &associate);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("association context: 0x%x\n", associate.out.assoc_ctx);
+
+	printf("Send a replication table query\n");
+	pull_table.in.assoc_ctx = associate.out.assoc_ctx;
+
+	status = wrepl_pull_table(wrepl_socket, mem_ctx, &pull_table);
+	if (NT_STATUS_EQUAL(NT_STATUS_NETWORK_ACCESS_DENIED,status)) {
+		struct wrepl_packet packet;
+		struct wrepl_request *req;
+
+		ZERO_STRUCT(packet);
+		packet.opcode                      = WREPL_OPCODE_BITS;
+		packet.assoc_ctx                   = associate.out.assoc_ctx;
+		packet.mess_type                   = WREPL_STOP_ASSOCIATION;
+		packet.message.stop.reason         = 0;
+
+		req = wrepl_request_send(wrepl_socket, &packet);
+		talloc_free(req);
+
+		printf("failed - We are not a valid pull partner for the server\n");
+		ret = False;
+		goto done;
+	}
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Found %d replication partners\n", pull_table.out.num_partners);
+
+	for (i=0;i<pull_table.out.num_partners;i++) {
+		struct wrepl_wins_owner *partner = &pull_table.out.partners[i];
+		printf("%s   max_version=%6llu   min_version=%6llu type=%d\n",
+		       partner->address, 
+		       partner->max_version, 
+		       partner->min_version, 
+		       partner->type);
+
+		pull_names.in.assoc_ctx = associate.out.assoc_ctx;
+		pull_names.in.partner = *partner;
+		
+		status = wrepl_pull_names(wrepl_socket, mem_ctx, &pull_names);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		printf("Received %d names\n", pull_names.out.num_names);
+
+		for (j=0;j<pull_names.out.num_names;j++) {
+			display_entry(mem_ctx, &pull_names.out.names[j]);
+		}
+	}
+
+done:
+	printf("Close wrepl connections\n");
+	talloc_free(wrepl_socket);
+	return ret;
+}
+
 struct test_wrepl_conflict_conn {
 	const char *address;
 	struct wrepl_socket *pull;
@@ -444,104 +543,6 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 			ret &= test_wrepl_is_applied_A(ctx, wins_name_cur);
 		}
 	}
-	return ret;
-}
-
-/*
-  display a replication entry
-*/
-static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
-{
-	int i;
-
-	printf("%s\n", nbt_name_string(mem_ctx, &name->name));
-	printf("\tTYPE:%u STATE:%u NODE:%u STATIC:%u VERSION_ID: %llu\n",
-		name->type, name->state, name->node, name->is_static, name->version_id);
-	printf("\tRAW_FLAGS: 0x%08X OWNER: %-15s\n",
-		name->raw_flags, name->owner);
-	for (i=0;i<name->num_addresses;i++) {
-		printf("\tADDR: %-15s OWNER: %-15s\n", 
-			name->addresses[i].address, name->addresses[i].owner);
-	}
-}
-
-/*
-  test a full replication dump from a WINS server
-*/
-static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
-{
-	BOOL ret = True;
-	struct wrepl_socket *wrepl_socket;
-	NTSTATUS status;
-	int i, j;
-	struct wrepl_associate associate;
-	struct wrepl_pull_table pull_table;
-	struct wrepl_pull_names pull_names;
-
-	printf("Test one pull replication cycle\n");
-
-	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
-	
-	printf("Setup wrepl connections\n");
-	status = wrepl_connect(wrepl_socket, NULL, address);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	printf("Send a start association request\n");
-
-	status = wrepl_associate(wrepl_socket, &associate);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	printf("association context: 0x%x\n", associate.out.assoc_ctx);
-
-	printf("Send a replication table query\n");
-	pull_table.in.assoc_ctx = associate.out.assoc_ctx;
-
-	status = wrepl_pull_table(wrepl_socket, mem_ctx, &pull_table);
-	if (NT_STATUS_EQUAL(NT_STATUS_NETWORK_ACCESS_DENIED,status)) {
-		struct wrepl_packet packet;
-		struct wrepl_request *req;
-
-		ZERO_STRUCT(packet);
-		packet.opcode                      = WREPL_OPCODE_BITS;
-		packet.assoc_ctx                   = associate.out.assoc_ctx;
-		packet.mess_type                   = WREPL_STOP_ASSOCIATION;
-		packet.message.stop.reason         = 0;
-
-		req = wrepl_request_send(wrepl_socket, &packet);
-		talloc_free(req);
-
-		printf("failed - We are not a valid pull partner for the server\n");
-		ret = False;
-		goto done;
-	}
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	printf("Found %d replication partners\n", pull_table.out.num_partners);
-
-	for (i=0;i<pull_table.out.num_partners;i++) {
-		struct wrepl_wins_owner *partner = &pull_table.out.partners[i];
-		printf("%s   max_version=%6llu   min_version=%6llu type=%d\n",
-		       partner->address, 
-		       partner->max_version, 
-		       partner->min_version, 
-		       partner->type);
-
-		pull_names.in.assoc_ctx = associate.out.assoc_ctx;
-		pull_names.in.partner = *partner;
-		
-		status = wrepl_pull_names(wrepl_socket, mem_ctx, &pull_names);
-		CHECK_STATUS(status, NT_STATUS_OK);
-
-		printf("Received %d names\n", pull_names.out.num_names);
-
-		for (j=0;j<pull_names.out.num_names;j++) {
-			display_entry(mem_ctx, &pull_names.out.names[j]);
-		}
-	}
-
-done:
-	printf("Close wrepl connections\n");
-	talloc_free(wrepl_socket);
 	return ret;
 }
 
