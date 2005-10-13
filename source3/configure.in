@@ -2820,6 +2820,7 @@ if test x"$with_ldap_support" != x"no"; then
   
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
+    CPPFLAGS="$CPPFLAGS -DLDAP_DEPRECATED"
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
     default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
