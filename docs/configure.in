@@ -19,16 +19,19 @@ DOCS_TARGET_REQUIRE_PROGRAM(RM, rm, ALL)
 DOCS_TARGET_REQUIRE_PROGRAM(DIA, dia, ALL)
 
 # Check dia version number
-[ DIA_VERSION=`$DIA -v | egrep -o '([0-9]+)\.([0-9]+)'`]
-DIA_MAJ_VERSION=`echo $DIA_VERSION | cut -d . -f 1`
-DIA_MIN_VERSION=`echo $DIA_VERSION | cut -d . -f 2`
 
-if test "$DIA_MAJ_VERSION" -le "0"
-then
+if test -n "$DIA"; then
+   [ DIA_VERSION=`$DIA -v | egrep -o '([0-9]+)\.([0-9]+)'`]
+   DIA_MAJ_VERSION=`echo $DIA_VERSION | cut -d . -f 1`
+   DIA_MIN_VERSION=`echo $DIA_VERSION | cut -d . -f 2`
+
+   if test "$DIA_MAJ_VERSION" -le "0"
+   then
 	if test "$DIA_MIN_VERSION" -le "92" && test -z "$DISPLAY" 
 	then
 		AC_MSG_ERROR([Dia below 0.93 requires an X environment. Set \$DISPLAY or install Dia 0.93 or higher])
 	fi
+   fi   
 fi
 
 DOCS_TARGET_REQUIRE_PROGRAM(MAKEINDEX, makeindex, LATEX)
