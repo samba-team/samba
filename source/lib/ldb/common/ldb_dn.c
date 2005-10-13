@@ -839,9 +839,19 @@ struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn)
 	return rdn;
 }
 
+/* Create a 'canonical name' string from a DN:
+
+   ie dc=samba,dc=org -> samba.org/
+      uid=administrator,ou=users,dc=samba,dc=org = samba.org/users/administrator
+
+   There are two formats, the EX format has the last / replaced with a newline (\n).
+
+*/
 static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_format) {
 	int i;
 	char *cracked = NULL;
+
+	/* Walk backwards down the DN, grabbing 'dc' components at first */
 	for (i = dn->comp_num - 1 ; i >= 0; i--) {
 		if (strcasecmp(dn->components[i].name, "dc") != 0) {
 			break;
@@ -857,7 +867,7 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 		}
 	}
 
-	/* Only domain components */
+	/* Only domain components?  Finish here */
 	if (i < 0) {
 		if (ex_format) {
 			cracked = talloc_asprintf(mem_ctx, "%s\n", cracked);
@@ -867,6 +877,7 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 		return cracked;
 	}
 
+	/* Now walk backwards appending remaining components */
 	for (; i > 0; i--) {
 		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
 					  dn->components[i].value.data);
@@ -875,7 +886,7 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 		}
 	}
 
-	/* Last one */
+	/* Last one, possibly a newline for the 'ex' format */
 	if (ex_format) {
 		cracked = talloc_asprintf(mem_ctx, "%s\n%s", cracked, 
 					  dn->components[i].value.data);
@@ -886,6 +897,7 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 	return cracked;
 }
 
+/* Wrapper functions for the above, for the two different string formats */
 char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn) {
 	return ldb_dn_canonical(mem_ctx, dn, 0);
 
