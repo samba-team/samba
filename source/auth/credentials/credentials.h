@@ -32,6 +32,11 @@ enum credentials_obtained {
 	CRED_SPECIFIED		 /* Was explicitly specified on the command-line */
 };
 
+#define CLI_CRED_NTLM2       0x01
+#define CLI_CRED_NTLMv2_AUTH 0x02
+#define CLI_CRED_LANMAN_AUTH 0x04
+#define CLI_CRED_NTLM_AUTH   0x08
+
 struct cli_credentials {
 	/* Preferred methods, NULL means default */
 	const char **preferred_methods;
