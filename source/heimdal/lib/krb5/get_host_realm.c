@@ -233,6 +233,7 @@ krb5_get_host_realm(krb5_context context,
 		    krb5_realm **realms)
 {
     char hostname[MAXHOSTNAMELEN];
+    krb5_boolean use_dns;
 
     if (host == NULL) {
 	if (gethostname (hostname, sizeof(hostname)))
@@ -240,5 +241,11 @@ krb5_get_host_realm(krb5_context context,
 	host = hostname;
     }
 
-    return _krb5_get_host_realm_int (context, host, 1, realms);
+    if (strchr(host, '.') == NULL) {
+	    use_dns = FALSE;
+    } else {
+	    use_dns = TRUE;
+    }
+
+    return _krb5_get_host_realm_int (context, host, use_dns, realms);
 }
