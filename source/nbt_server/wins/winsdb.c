@@ -110,9 +110,6 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 	struct ldb_dn *dn;
 
 	dn = ldb_dn_string_compose(mem_ctx, NULL, "type=%02x", name->type);
-	if (dn == NULL) {
-		return NULL;
-	}
 	if (dn && name->name && *name->name) {
 		dn = ldb_dn_string_compose(mem_ctx, dn, "name=%s", name->name);
 	}
