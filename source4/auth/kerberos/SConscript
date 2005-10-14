@@ -1,6 +1,0 @@
-Import('hostenv')
-
-hostenv.StaticLibrary('kerberos',
-		['kerberos.c','clikrb5.c','kerberos_verify.c',
-		'kerberos_util.c','kerberos_pac.c','gssapi_parse.c',
-		'krb5_init_context.c'])

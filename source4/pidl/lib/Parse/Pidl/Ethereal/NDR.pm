@@ -321,7 +321,6 @@ sub Element($$$)
 	my $call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, drep);";
 
 	my $type = find_type($e->{TYPE});
-	$hf_used{$hf} = 1;
 
 	if (not defined($type)) {
 		# default settings

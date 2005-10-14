@@ -1,5 +1,6 @@
 #!/usr/bin/python
 Import('hostenv')
+
 ndr_base_files = ['ndr/ndr.c', 'ndr/ndr_basic.c', 'ndr/ndr_string.c',
 		  'ndr/ndr_obfuscate.c', 'ndr/ndr_misc.c'] 
 
