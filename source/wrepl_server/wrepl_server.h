@@ -128,6 +128,12 @@ struct wreplsrv_partner {
 	struct {
 		/* the interval between 2 pull replications to the partner */
 		uint32_t interval;
+
+		/* this is a list of each wins_owner the partner knows about */
+		struct wreplsrv_owner *table;
+
+		/* the outgoing connection to the partner */
+		struct wreplsrv_out_connection *wreplconn;
 	} pull;
 };
 
