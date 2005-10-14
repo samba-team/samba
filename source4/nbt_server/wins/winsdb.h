@@ -20,9 +20,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-enum wins_record_state {
-	WINS_REC_RELEASED =0,
-	WINS_REC_ACTIVE   =1
+#define WINSDB_OWNER_LOCAL	"0.0.0.0"
+#define WINSDB_GROUP_ADDRESS	"255.255.255.255"
+
+struct winsdb_addr {
+	const char *address;
+	const char *wins_owner;
+	time_t expire_time;
 };
 
 #define WINSDB_OWNER_LOCAL	"0.0.0.0"
@@ -39,10 +43,17 @@ struct winsdb_addr {
 */
 struct winsdb_record {
 	struct nbt_name *name;
-	uint16_t nb_flags;
-	enum wins_record_state state;
+	enum wrepl_name_type type;
+	enum wrepl_name_state state;
+	enum wrepl_name_node node;
+	BOOL is_static;
 	const char *wins_owner;
 	time_t expire_time;
+	uint64_t version;
+	const char *wins_owner;
+	struct winsdb_addr **addresses;
+
+	/* only needed for debugging problems */
 	const char *registered_by;
 	struct winsdb_addr **addresses;
 	uint64_t version;
