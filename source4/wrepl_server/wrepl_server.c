@@ -254,6 +254,9 @@ static NTSTATUS wreplsrv_setup_partners(struct wreplsrv_service *service)
 	status = wreplsrv_load_table(service);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	status = wreplsrv_setup_out_connections(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	return NT_STATUS_OK;
 }
 
