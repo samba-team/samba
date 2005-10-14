@@ -279,6 +279,7 @@ struct wreplsrv_in_connection;
 struct wreplsrv_in_call;
 
 struct winsdb_record;
+struct winsdb_addr;
 
 struct wrepl_packet;
 struct wrepl_associate;
