@@ -34,7 +34,9 @@ struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;
 	struct drsuapi_DsBind req;
 	struct GUID bind_guid;
-	struct drsuapi_DsBindInfoCtr our_bind_info;
+	struct drsuapi_DsBindInfoCtr our_bind_info_ctr;
+	struct drsuapi_DsBindInfo28 our_bind_info28;
+	struct drsuapi_DsBindInfo28 peer_bind_info28;
 	struct policy_handle bind_handle;
 };
 
@@ -76,7 +78,8 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct DsSyncTest *ctx;
-	struct drsuapi_DsBindInfoCtr *our_bind_info;
+	struct drsuapi_DsBindInfo28 *our_bind_info28;
+	struct drsuapi_DsBindInfoCtr *our_bind_info_ctr;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	ctx = talloc_zero(mem_ctx, struct DsSyncTest);
 	if (!ctx) return NULL;
@@ -93,63 +96,69 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 	/* ctx->admin ...*/
 	ctx->admin.credentials				= cmdline_credentials;
 
-	our_bind_info					= &ctx->admin.drsuapi.our_bind_info;
-	our_bind_info->length				= 28;
-	our_bind_info->info.info28.supported_extensions	= 0xFFFFFFFF;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
-	our_bind_info->info.info28.site_guid		= GUID_zero();
-	our_bind_info->info.info28.u1			= 0;
-	our_bind_info->info.info28.repl_epoch		= 1;
+	our_bind_info28				= &ctx->admin.drsuapi.our_bind_info28;
+	our_bind_info28->supported_extensions	= 0xFFFFFFFF;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	our_bind_info28->site_guid		= GUID_zero();
+	our_bind_info28->u1			= 0;
+	our_bind_info28->repl_epoch		= 1;
+
+	our_bind_info_ctr			= &ctx->admin.drsuapi.our_bind_info_ctr;
+	our_bind_info_ctr->length		= 28;
+	our_bind_info_ctr->info.info28		= *our_bind_info28;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &ctx->admin.drsuapi.bind_guid);
 
 	ctx->admin.drsuapi.req.in.bind_guid		= &ctx->admin.drsuapi.bind_guid;
-	ctx->admin.drsuapi.req.in.bind_info		= our_bind_info;
+	ctx->admin.drsuapi.req.in.bind_info		= our_bind_info_ctr;
 	ctx->admin.drsuapi.req.out.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 
 	/* ctx->new_dc ...*/
 
-	our_bind_info					= &ctx->new_dc.drsuapi.our_bind_info;
-	our_bind_info->length				= 28;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
-	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+	our_bind_info28				= &ctx->new_dc.drsuapi.our_bind_info28;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
 	if (lp_parm_bool(-1,"dssync","xpress",False)) {
-		our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
+		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
-	our_bind_info->info.info28.site_guid		= GUID_zero();
-	our_bind_info->info.info28.u1			= 508;
-	our_bind_info->info.info28.repl_epoch		= 0;
+	our_bind_info28->site_guid		= GUID_zero();
+	our_bind_info28->u1			= 508;
+	our_bind_info28->repl_epoch		= 0;
+
+	our_bind_info_ctr			= &ctx->new_dc.drsuapi.our_bind_info_ctr;
+	our_bind_info_ctr->length		= 28;
+	our_bind_info_ctr->info.info28		= *our_bind_info28;
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID_W2K3, &ctx->new_dc.drsuapi.bind_guid);
 
 	ctx->new_dc.drsuapi.req.in.bind_guid		= &ctx->new_dc.drsuapi.bind_guid;
-	ctx->new_dc.drsuapi.req.in.bind_info		= our_bind_info;
+	ctx->new_dc.drsuapi.req.in.bind_info		= our_bind_info_ctr;
 	ctx->new_dc.drsuapi.req.out.bind_handle		= &ctx->new_dc.drsuapi.bind_handle;
 
 	/* ctx->old_dc ...*/
@@ -185,6 +194,24 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 	} else if (!W_ERROR_IS_OK(b->req.out.result)) {
 		printf("DsBind failed - %s\n", win_errstr(b->req.out.result));
 		ret = False;
+	}
+
+	ZERO_STRUCT(b->peer_bind_info28);
+	if (b->req.out.bind_info) {
+		switch (b->req.out.bind_info->length) {
+		case 24: {
+			struct drsuapi_DsBindInfo24 *info24;
+			info24 = &b->req.out.bind_info->info.info24;
+			b->peer_bind_info28.supported_extensions= info24->supported_extensions;
+			b->peer_bind_info28.site_guid		= info24->site_guid;
+			b->peer_bind_info28.u1			= info24->u1;
+			b->peer_bind_info28.repl_epoch		= 0;
+			break;
+		}
+		case 28:
+			b->peer_bind_info28 = b->req.out.bind_info->info.info28;
+			break;
+		}
 	}
 
 	return ret;
@@ -334,6 +361,7 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	const char *partition = NULL;
 	struct drsuapi_DsGetNCChanges r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
+	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
 	int32_t out_level = 0;
 	struct GUID null_guid;
@@ -440,6 +468,12 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 		for (y=0; ;y++) {
 			ZERO_STRUCT(r.out);
 
+			if (r.in.level == 5) {
+				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
+					r.in.req.req5.highwatermark.tmp_highest_usn,
+					r.in.req.req5.highwatermark.highest_usn));
+			}
+
 			if (r.in.level == 8) {
 				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
 					r.in.req.req8.highwatermark.tmp_highest_usn,
@@ -457,6 +491,27 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			} else if (!W_ERROR_IS_OK(r.out.result)) {
 				printf("DsGetNCChanges failed - %s\n", win_errstr(r.out.result));
 				ret = False;
+			}
+
+			if (ret == True && r.out.level == 1) {
+				out_level = 1;
+				ctr1 = &r.out.ctr.ctr1;
+			} else if (ret == True && r.out.level == 2) {
+				out_level = 1;
+				ctr1 = r.out.ctr.ctr2.ctr.mszip1.ctr1;
+			}
+
+			if (out_level == 1) {
+				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
+					ctr1->new_highwatermark.tmp_highest_usn,
+					ctr1->new_highwatermark.highest_usn));
+
+				test_analyse_objects(ctx, ctr1->first_object);
+
+				if (ctr1->new_highwatermark.tmp_highest_usn > ctr1->new_highwatermark.highest_usn) {
+					r.in.req.req5.highwatermark = ctr1->new_highwatermark;
+					continue;
+				}
 			}
 
 			if (ret == True && r.out.level == 6) {
