@@ -25,6 +25,10 @@ enum wins_record_state {
 	WINS_REC_ACTIVE   =1
 };
 
+struct winsdb_addr {
+	const char *address;
+};
+
 /*
   each record in the database contains the following information
 */
@@ -34,7 +38,7 @@ struct winsdb_record {
 	enum wins_record_state state;
 	time_t expire_time;
 	const char *registered_by;
-	const char **addresses;
+	struct winsdb_addr **addresses;
 	uint64_t version;
 };
 
