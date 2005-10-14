@@ -25,8 +25,13 @@ enum wins_record_state {
 	WINS_REC_ACTIVE   =1
 };
 
+#define WINSDB_OWNER_LOCAL	"0.0.0.0"
+#define WINSDB_GROUP_ADDRESS	"255.255.255.255"
+
 struct winsdb_addr {
 	const char *address;
+	const char *wins_owner;
+	time_t expire_time;
 };
 
 /*
@@ -36,6 +41,7 @@ struct winsdb_record {
 	struct nbt_name *name;
 	uint16_t nb_flags;
 	enum wins_record_state state;
+	const char *wins_owner;
 	time_t expire_time;
 	const char *registered_by;
 	struct winsdb_addr **addresses;

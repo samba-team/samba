@@ -59,11 +59,14 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.registered_by = src->addr;
 	rec.addresses     = winsdb_addr_list_make(packet);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
+
 	if (IS_GROUP_NAME(name, nb_flags)) {
-		rec.addresses     = winsdb_addr_list_add(rec.addresses, "255.255.255.255");
-	} else {
-		rec.addresses     = winsdb_addr_list_add(rec.addresses, address);
+		address = WINSDB_GROUP_ADDRESS;
 	}
+	rec.addresses     = winsdb_addr_list_add(rec.addresses,
+						 address,
+						 WINSDB_OWNER_LOCAL,
+						 rec.expire_time);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
 	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
