@@ -55,6 +55,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.name          = name;
 	rec.nb_flags      = nb_flags;
 	rec.state         = WINS_REC_ACTIVE;
+	rec.wins_owner    = WINSDB_OWNER_LOCAL;
 	rec.expire_time   = time(NULL) + ttl;
 	rec.registered_by = src->addr;
 	rec.addresses     = winsdb_addr_list_make(packet);
