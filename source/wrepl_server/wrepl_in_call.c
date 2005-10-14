@@ -169,13 +169,19 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins
 	}
 
 	namebuf = (uint8_t *)talloc_asprintf(mem_ctx, "%-15s%c%s",
-					    rec->name->name, rec->name->type,
+					    rec->name->name, 'X',
 					    (rec->name->scope?rec->name->scope:""));
 	NT_STATUS_HAVE_NO_MEMORY(namebuf);
 	namebuf_len = strlen((char *)namebuf) + 1;
 
+	/*
+	 * we need to set the type here, and use a place-holder in the talloc_asprintf()
+	 * as the type can be 0x00, and then the namebuf_len = strlen(namebuf); would give wrong results
+	 */
+	namebuf[15] = rec->name->type;
+
 	/* oh wow, what a nasty bug in windows ... */
-	if (namebuf[15] == 0x1b && namebuf_len >= 16) {
+	if (rec->name->type == 0x1b) {
 		namebuf[15] = namebuf[0];
 		namebuf[0] = 0x1b;
 	}
