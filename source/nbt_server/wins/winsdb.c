@@ -44,10 +44,8 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
 	if (!dn) goto failed;
 
-	ret |= ldb_msg_add_string(msg, "objectClass", "winsEntry");
-	ret |= ldb_msg_add_fmt(msg, "minVersion", "%llu", winssrv->min_version);
-	ret |= ldb_msg_add_fmt(msg, "maxVersion", "%llu", winssrv->max_version);
-	if (ret != 0) goto failed;
+	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
+	if (!dn) goto failed;
 
 	if (ret == 1) {
 		maxVersion = ldb_msg_find_uint64(res[0], "maxVersion", 0);
@@ -67,6 +65,9 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	ret = ldb_modify(ldb, msg);
 	if (ret != 0) ret = ldb_add(ldb, msg);
 	if (ret != 0) goto failed;
+
+	talloc_free(tmp_ctx);
+	return maxVersion;
 
 	talloc_free(tmp_ctx);
 	return maxVersion;
@@ -742,16 +743,19 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
-	ret |= ldb_msg_add_fmt(msg, "objectClass", "wins");
-	ret |= ldb_msg_add_fmt(msg, "active", "%u", rec->state);
-	ret |= ldb_msg_add_fmt(msg, "nbFlags", "0x%04x", rec->nb_flags);
-	ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
-	ret |= ldb_msg_add_string(msg, "expires", 
+	ret |= ldb_msg_add_fmt(msg, "objectClass", "winsRecord");
+	ret |= ldb_msg_add_fmt(msg, "recordType", "%u", rec->type);
+	ret |= ldb_msg_add_fmt(msg, "recordState", "%u", rec->state);
+	ret |= ldb_msg_add_fmt(msg, "nodeType", "%u", rec->node);
+	ret |= ldb_msg_add_fmt(msg, "isStatic", "%u", rec->is_static);
+	ret |= ldb_msg_add_string(msg, "expireTime", 
 				  ldb_timestring(msg, rec->expire_time));
-	ret |= ldb_msg_add_fmt(msg, "version", "%llu", rec->version);
+	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", rec->version);
+	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
 	for (i=0;rec->addresses[i];i++) {
-		ret |= ldb_msg_add_string(msg, "address", rec->addresses[i]);
+		ret |= ldb_msg_add_winsdb_addr(msg, "address", rec->addresses[i]);
 	}
+	ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
 	if (ret != 0) goto failed;
 	return msg;
 
@@ -771,12 +775,12 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 	int trans = -1;
 	int ret = 0;
 
-
 	trans = ldb_transaction_start(ldb);
 	if (trans != LDB_SUCCESS) goto failed;
 
 	rec->version = winsdb_allocate_version(winssrv);
 	if (rec->version == 0) goto failed;
+	rec->wins_owner = WINSDB_OWNER_LOCAL;
 
 	msg = winsdb_message(winssrv->wins_db, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
@@ -848,9 +852,6 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 	const struct ldb_dn *dn;
 	int trans;
 	int ret;
-
-	if(!winsdb_remove_version(winssrv, rec->version))
-		goto failed;
 
 	dn = winsdb_dn(tmp_ctx, rec->name);
 	if (dn == NULL) goto failed;

@@ -1,0 +1,62 @@
+/* 
+   Unix SMB/CIFS implementation.
+   
+   WINS Replication server
+   
+   Copyright (C) Stefan Metzmacher	2005
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+struct wreplsrv_pull_table_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
+	} in;
+	struct {
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
+	} out;
+};
+
+struct wreplsrv_pull_names_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		struct wreplsrv_out_connection *wreplconn;
+		struct wrepl_wins_owner owner;
+	} in;
+	struct {
+		uint32_t num_names;
+		struct wrepl_name *names;
+	} out;
+};
+
+struct wreplsrv_pull_cycle_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
+		struct wreplsrv_out_connection *wreplconn;
+	} in;
+};
+
+struct wreplsrv_push_notify_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		BOOL inform;
+		BOOL propagate;
+	} in;
+};

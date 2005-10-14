@@ -285,6 +285,7 @@ struct wrepl_associate;
 struct wrepl_associate_stop;
 struct wrepl_pull_table;
 struct wrepl_pull_names;
+struct wrepl_table;
 
 struct arcfour_state;
 
