@@ -21,6 +21,7 @@
 */
 
 #include "libcli/nbt/libnbt.h"
+#include "libcli/wrepl/winsrepl.h"
 #include "libcli/dgram/libdgram.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/messaging/irpc.h"
@@ -79,13 +80,9 @@ struct nbtd_server {
 
 
 /* check a condition on an incoming packet */
-#define NBTD_ASSERT_PACKET(packet, src_address, test) do { \
+#define NBTD_ASSERT_PACKET(packet, src, test) do { \
 	if (!(test)) { \
-		nbtd_bad_packet(packet, src_address, #test); \
+		nbtd_bad_packet(packet, src, #test); \
 		return; \
 	} \
 } while (0)
-
-/* this copes with the nasty hack that is the type 0x1c name */
-#define IS_GROUP_NAME(name, nb_flags) \
-	((name)->type != NBT_NAME_LOGON && (nb_flags & NBT_NM_GROUP))

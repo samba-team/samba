@@ -36,6 +36,21 @@ uint32_t wins_server_ttl(struct wins_server *winssrv, uint32_t ttl)
 	return ttl;
 }
 
+static enum wrepl_name_type wrepl_type(uint16_t nb_flags, struct nbt_name *name, BOOL mhomed)
+{
+	/* this copes with the nasty hack that is the type 0x1c name */
+	if (name->type != NBT_NAME_LOGON) {
+		return WREPL_TYPE_SGROUP;
+	}
+	if (nb_flags & NBT_NM_GROUP) {
+		return WREPL_TYPE_GROUP;
+	}
+	if (mhomed) {
+		return WREPL_TYPE_MHOMED;
+	}
+	return WREPL_TYPE_UNIQUE;
+}
+
 /*
   register a new name with WINS
 */
@@ -51,6 +66,9 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	struct winsdb_record rec;
+	enum wrepl_name_type type;
+	enum wrepl_name_node node;
+	BOOL mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
 
 	rec.name          = name;
 	rec.nb_flags      = nb_flags;
@@ -137,7 +155,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	}
 
 	/* its an active name - first see if the registration is of the right type */
-	if ((rec->nb_flags & NBT_NM_GROUP) && !(nb_flags & NBT_NM_GROUP)) {
+	if ((rec->type == WREPL_TYPE_GROUP) && !(nb_flags & NBT_NM_GROUP)) {
 		DEBUG(2,("WINS: Attempt to register unique name %s when group name is active\n",
 			 nbt_name_string(packet, name)));
 		rcode = NBT_RCODE_ACT;
@@ -154,6 +172,15 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	/* if the registration is for a group, then just update the expiry time 
 	   and we are done */
 	if (IS_GROUP_NAME(name, nb_flags)) {
+		wins_update_ttl(nbtsock, packet, rec, src);
+		goto done;
+	}
+
+	/*
+	 * TODO: this complete functions needs a lot of work,
+	 *       to handle special group and multiomed registrations
+	 */
+	if (name->type == NBT_NAME_LOGON) {
 		wins_update_ttl(nbtsock, packet, rec, src);
 		goto done;
 	}
@@ -246,7 +273,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 		DEBUG(4,("WINS: released name %s at %s\n", nbt_name_string(rec, rec->name), address));
 		winsdb_addr_list_remove(rec->addresses, address);
 		if (rec->addresses[0] == NULL) {
-			rec->state = WINS_REC_RELEASED;
+			rec->state = WREPL_STATE_RELEASED;
 		}
 		winsdb_modify(winssrv, rec);
 	}

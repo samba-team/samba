@@ -57,7 +57,7 @@ void nbtd_request_defense(struct nbt_name_socket *nbtsock,
 
 	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
 	if (iname != NULL && 
-	    !IS_GROUP_NAME(name, iname->nb_flags)) {
+	    !(name->type == NBT_NAME_LOGON || iname->nb_flags & NBT_NM_GROUP)) {
 		DEBUG(2,("Defending name %s on %s against %s\n",
 			 nbt_name_string(packet, name), 
 			 iface->bcast_address, src->addr));
