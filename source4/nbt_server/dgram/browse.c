@@ -31,8 +31,8 @@
 */
 void nbtd_mailslot_browse_handler(struct dgram_mailslot_handler *dgmslot, 
 				  struct nbt_dgram_packet *packet, 
-				  const char *src_address, int src_port)
+				  struct nbt_peer_socket *src)
 {
 	DEBUG(2,("Browse request on '%s' from %s:%d\n", 
-		  dgmslot->mailslot_name, src_address, src_port));
+		  dgmslot->mailslot_name, src->addr, src->port));
 }

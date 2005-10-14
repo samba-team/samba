@@ -31,8 +31,8 @@
   reply to a SAM LOGON request
  */
 static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot, 
-				   struct nbt_dgram_packet *packet, 
-				   const char *src_address, int src_port,
+				   struct nbt_dgram_packet *packet,
+				   const struct nbt_peer_socket *src,
 				   struct nbt_ntlogon_packet *ntlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
@@ -68,8 +68,8 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
   handle incoming ntlogon mailslot requests
 */
 void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
-				    struct nbt_dgram_packet *packet, 
-				    const char *src_address, int src_port)
+				   struct nbt_dgram_packet *packet, 
+				   const struct nbt_peer_socket *src)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 
@@ -91,7 +91,7 @@ void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	DEBUG(2,("ntlogon request to %s from %s:%d\n", 
-		 nbt_name_string(ntlogon, name), src_address, src_port));
+		 nbt_name_string(ntlogon, name), src->addr, src->port));
 	status = dgram_mailslot_ntlogon_parse(dgmslot, ntlogon, packet, ntlogon);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
@@ -99,11 +99,11 @@ void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (ntlogon->command) {
 	case NTLOGON_SAM_LOGON:
-		nbtd_ntlogon_sam_logon(dgmslot, packet, src_address, src_port, ntlogon);
+		nbtd_ntlogon_sam_logon(dgmslot, packet, src, ntlogon);
 		break;
 	default:
 		DEBUG(2,("unknown ntlogon op %d from %s:%d\n", 
-			 ntlogon->command, src_address, src_port));
+			 ntlogon->command, src->addr, src->port));
 		break;
 	}
 
@@ -112,6 +112,6 @@ void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 failed:
 	DEBUG(2,("nbtd ntlogon handler failed from %s:%d - %s\n",
-		 src_address, src_port, nt_errstr(status)));
+		 src->addr, src->port, nt_errstr(status)));
 	talloc_free(ntlogon);
 }
