@@ -57,6 +57,8 @@ static void wreplsrv_accept(struct stream_connection *conn)
 		return;
 	}
 
+	/* TODO: find out if it's a partner */
+
 	conn->private = wreplconn;
 
 	irpc_add_name(conn->msg_ctx, "wreplsrv_connection");
@@ -130,7 +132,7 @@ static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 	packet_in_blob.data = wreplconn->partial.data + 4;
 	packet_in_blob.length = wreplconn->partial.length - 4;
 
-	call = talloc(wreplconn, struct wreplsrv_in_call);
+	call = talloc_zero(wreplconn, struct wreplsrv_in_call);
 	if (!call) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -165,7 +167,13 @@ static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 	wreplconn->processing = True;
 	status = wreplsrv_in_call(call);
 	wreplconn->processing = False;
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	if (NT_STATUS_IS_ERR(status)) goto failed;
+	if (!NT_STATUS_IS_OK(status)) {
+		/* w2k just ignores invalid packets, so we do */
+		DEBUG(10,("Received WINS-Replication packet was invalid, we just ignore it\n"));
+		talloc_free(call);
+		return;
+	}
 
 	/* and now encode the reply */
 	packet_out_wrap.packet = call->rep_packet;
@@ -194,7 +202,11 @@ static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 	}
 	DLIST_ADD_END(wreplconn->send_queue, rep, struct data_blob_list_item *);
 
-	EVENT_FD_READABLE(conn->event.fde);
+	if (wreplconn->terminate) {
+		EVENT_FD_NOT_READABLE(conn->event.fde);
+	} else {
+		EVENT_FD_READABLE(conn->event.fde);
+	}
 	return;
 
 failed:
@@ -224,6 +236,11 @@ static void wreplsrv_send(struct stream_connection *conn, uint16_t flags)
 			DLIST_REMOVE(wreplconn->send_queue, rep);
 			talloc_free(rep);
 		}
+	}
+
+	if (wreplconn->terminate) {
+		wreplsrv_terminate_connection(wreplconn, "connection terminated after all pending packets are send");
+		return;
 	}
 
 	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
