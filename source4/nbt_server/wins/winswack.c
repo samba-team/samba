@@ -30,8 +30,7 @@ struct wack_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_packet *request_packet;
 	struct winsdb_record *rec;
-	const char *src_address;
-	int src_port;
+	struct nbt_peer_socket src;
 	const char **owner_addresses;
 	const char *reg_address;
 	struct nbt_name_query query;
@@ -44,9 +43,9 @@ struct wack_state {
 static void wins_wack_deny(struct wack_state *state)
 {
 	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
-				     state->src_address, state->src_port, NBT_RCODE_ACT);
-	DEBUG(4,("WINS: denied name registration request for %s from %s\n",
-		 nbt_name_string(state, state->rec->name), state->src_address));
+				     &state->src, NBT_RCODE_ACT);
+	DEBUG(4,("WINS: denied name registration request for %s from %s:%d\n",
+		 nbt_name_string(state, state->rec->name), state->src.addr, state->src.port));
 	talloc_free(state);
 }
 
@@ -68,7 +67,7 @@ static void wins_wack_allow(struct wack_state *state)
 	}
 
 	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
-				     state->src_address, state->src_port, NBT_RCODE_OK);
+				     &state->src, NBT_RCODE_OK);
 
 	rec->addresses = str_list_add(rec->addresses, state->reg_address);
 	if (rec->addresses == NULL) goto failed;
@@ -77,7 +76,7 @@ static void wins_wack_allow(struct wack_state *state)
 	if (now + ttl > rec->expire_time) {
 		rec->expire_time = now + ttl;
 	}
-	rec->registered_by = state->src_address;
+	rec->registered_by = state->src.addr;
 
 	winsdb_modify(state->winssrv, rec);
 
@@ -158,7 +157,7 @@ failed:
 void wins_register_wack(struct nbt_name_socket *nbtsock, 
 			struct nbt_name_packet *packet, 
 			struct winsdb_record *rec,
-			const char *src_address, int src_port)
+			const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -175,11 +174,11 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 	state->nbtsock         = nbtsock;
 	state->request_packet  = talloc_steal(state, packet);
 	state->rec             = talloc_steal(state, rec);
-	state->src_port        = src_port;
 	state->owner_addresses = rec->addresses;
 	state->reg_address     = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-	state->src_address     = talloc_strdup(state, src_address);
-	if (state->src_address == NULL) goto failed;
+	state->src.port        = src->port;
+	state->src.addr        = talloc_strdup(state, src->addr);
+	if (state->src.addr == NULL) goto failed;
 
 	/* setup a name query to the first address */
 	state->query.in.name        = *rec->name;
@@ -198,7 +197,7 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 	/* send a WACK to the client, specifying the maximum time it could
 	   take to check with the owner, plus some slack */
 	ttl = 5 + 4 * str_list_length(rec->addresses);
-	nbtd_wack_reply(nbtsock, packet, src_address, src_port, ttl);
+	nbtd_wack_reply(nbtsock, packet, src, ttl);
 
 	req = nbt_name_query_send(nbtsock, &state->query);
 	if (req == NULL) goto failed;
@@ -209,5 +208,5 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 
 failed:
 	talloc_free(state);
-	nbtd_name_registration_reply(nbtsock, packet, src_address, src_port, NBT_RCODE_SVR);	
+	nbtd_name_registration_reply(nbtsock, packet, src, NBT_RCODE_SVR);	
 }

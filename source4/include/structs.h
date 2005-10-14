@@ -246,6 +246,8 @@ struct nbt_name_refresh_wins;
 struct nbt_name_register_wins;
 struct nbt_name_request;
 
+struct nbt_peer_socket;
+
 struct nbt_dgram_packet;
 struct nbt_dgram_socket;
 struct dgram_mailslot_handler;

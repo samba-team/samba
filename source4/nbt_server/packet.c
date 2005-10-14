@@ -28,9 +28,9 @@
   we received a badly formed packet - log it
 */
 void nbtd_bad_packet(struct nbt_name_packet *packet, 
-		     const char *src_address, const char *reason)
+		     const struct nbt_peer_socket *src, const char *reason)
 {
-	DEBUG(2,("nbtd: bad packet '%s' from %s\n", reason, src_address));
+	DEBUG(2,("nbtd: bad packet '%s' from %s:%d\n", reason, src->addr, src->port));
 	if (DEBUGLVL(5)) {
 		NDR_PRINT_DEBUG(nbt_name_packet, packet);		
 	}
@@ -43,7 +43,7 @@ void nbtd_bad_packet(struct nbt_name_packet *packet,
 */
 BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock, 
 		      struct nbt_name_packet *packet, 
-		      const char *src_address, int src_port)
+		      const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -55,7 +55,7 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 	}
 
 	/* if its not from the nbt port, then it wasn't a broadcast from us */
-	if (src_port != lp_nbt_port()) {
+	if (src->port != lp_nbt_port()) {
 		return False;
 	}
 
@@ -69,7 +69,7 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 	/* we have to loop over our interface list, seeing if its from
 	   one of our own interfaces */
 	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
-		if (strcmp(src_address, iface->ip_address) == 0) {
+		if (strcmp(src->addr, iface->ip_address) == 0) {
 			return True;
 		}
 	}
@@ -83,7 +83,7 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 */
 void nbtd_name_query_reply(struct nbt_name_socket *nbtsock, 
 			   struct nbt_name_packet *request_packet, 
-			   const char *src_address, int src_port,
+			   const struct nbt_peer_socket *src,
 			   struct nbt_name *name, uint32_t ttl,
 			   uint16_t nb_flags, const char **addresses)
 {
@@ -132,10 +132,10 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	}
 
 	DEBUG(7,("Sending name query reply for %s at %s to %s:%d\n", 
-		 nbt_name_string(packet, name), addresses[0], src_address, src_port));
+		 nbt_name_string(packet, name), addresses[0], src->addr, src->port));
 	
 	nbtsrv->stats.total_sent++;
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+	nbt_name_reply_send(nbtsock, src, packet);
 
 failed:
 	talloc_free(packet);
@@ -147,7 +147,7 @@ failed:
 */
 void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock, 
 				    struct nbt_name_packet *request_packet, 
-				    const char *src_address, int src_port)
+				    const struct nbt_peer_socket *src)
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
@@ -176,10 +176,10 @@ void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock,
 	ZERO_STRUCT(packet->answers[0].rdata);
 
 	DEBUG(7,("Sending negative name query reply for %s to %s:%d\n", 
-		 nbt_name_string(packet, name), src_address, src_port));
+		 nbt_name_string(packet, name), src->addr, src->port));
 	
 	nbtsrv->stats.total_sent++;
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+	nbt_name_reply_send(nbtsock, src, packet);
 
 failed:
 	talloc_free(packet);
@@ -190,7 +190,7 @@ failed:
 */
 void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *request_packet, 
-				  const char *src_address, int src_port,
+				  const struct nbt_peer_socket *src,
 				  uint8_t rcode)
 {
 	struct nbt_name_packet *packet;
@@ -223,10 +223,10 @@ void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock,
 
 	DEBUG(7,("Sending %s name registration reply for %s to %s:%d\n", 
 		 rcode==0?"positive":"negative",
-		 nbt_name_string(packet, name), src_address, src_port));
+		 nbt_name_string(packet, name), src->addr, src->port));
 	
 	nbtsrv->stats.total_sent++;
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+	nbt_name_reply_send(nbtsock, src, packet);
 
 failed:
 	talloc_free(packet);
@@ -238,7 +238,7 @@ failed:
 */
 void nbtd_name_release_reply(struct nbt_name_socket *nbtsock, 
 			     struct nbt_name_packet *request_packet, 
-			     const char *src_address, int src_port,
+			     const struct nbt_peer_socket *src,
 			     uint8_t rcode)
 {
 	struct nbt_name_packet *packet;
@@ -269,10 +269,10 @@ void nbtd_name_release_reply(struct nbt_name_socket *nbtsock,
 
 	DEBUG(7,("Sending %s name release reply for %s to %s:%d\n", 
 		 rcode==0?"positive":"negative",
-		 nbt_name_string(packet, name), src_address, src_port));
+		 nbt_name_string(packet, name), src->addr, src->port));
 	
 	nbtsrv->stats.total_sent++;
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+	nbt_name_reply_send(nbtsock, src, packet);
 
 failed:
 	talloc_free(packet);
@@ -284,7 +284,7 @@ failed:
 */
 void nbtd_wack_reply(struct nbt_name_socket *nbtsock, 
 		     struct nbt_name_packet *request_packet, 
-		     const char *src_address, int src_port,
+		     const struct nbt_peer_socket *src,
 		     uint32_t ttl)
 {
 	struct nbt_name_packet *packet;
@@ -316,10 +316,10 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 	RSSVAL(packet->answers[0].rdata.data.data, 0, request_packet->operation);
 
 	DEBUG(7,("Sending WACK reply for %s to %s:%d\n", 
-		 nbt_name_string(packet, name), src_address, src_port));
+		 nbt_name_string(packet, name), src->addr, src->port));
 	
 	nbtsrv->stats.total_sent++;
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+	nbt_name_reply_send(nbtsock, src, packet);
 
 failed:
 	talloc_free(packet);

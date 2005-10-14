@@ -31,6 +31,7 @@ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_request *req;
 	struct nbt_name_packet *packet;
+	struct nbt_peer_socket dest;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return NULL;
@@ -50,8 +51,10 @@ struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 	packet->questions[0].name = io->in.name;
 	packet->questions[0].question_type = NBT_QTYPE_NETBIOS;
 	packet->questions[0].question_class = NBT_QCLASS_IP;
-	
-	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
+
+	dest.port = lp_nbt_port();
+	dest.addr = io->in.dest_addr;
+	req = nbt_name_request_send(nbtsock, &dest, packet,
 				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
@@ -81,7 +84,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	}
 	
 	packet = req->replies[0].packet;
-	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].reply_addr);
+	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest.addr);
 
 	if ((packet->operation & NBT_RCODE) != 0) {
 		status = nbt_rcode_to_ntstatus(packet->operation & NBT_RCODE);
@@ -137,6 +140,7 @@ struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_request *req;
 	struct nbt_name_packet *packet;
+	struct nbt_peer_socket dest;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return NULL;
@@ -150,8 +154,10 @@ struct nbt_name_request *nbt_name_status_send(struct nbt_name_socket *nbtsock,
 	packet->questions[0].name = io->in.name;
 	packet->questions[0].question_type = NBT_QTYPE_STATUS;
 	packet->questions[0].question_class = NBT_QCLASS_IP;
-	
-	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
+
+	dest.port = lp_nbt_port();
+	dest.addr = io->in.dest_addr;
+	req = nbt_name_request_send(nbtsock, &dest, packet,
 				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
@@ -181,7 +187,7 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 	}
 	
 	packet = req->replies[0].packet;
-	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].reply_addr);
+	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest.addr);
 
 	if ((packet->operation & NBT_RCODE) != 0) {
 		status = nbt_rcode_to_ntstatus(packet->operation & NBT_RCODE);
