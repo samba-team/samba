@@ -7,7 +7,7 @@ package Parse::Pidl::Samba3::Types;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(DeclShort DeclLong InitType DissectType AddType);
+@EXPORT_OK = qw(DeclShort DeclLong InitType DissectType AddType StringType);
 
 use strict;
 use Parse::Pidl::Util qw(has_property ParseExpr property_matches);
@@ -102,6 +102,20 @@ sub dissect_string($$$$$)
 
 	$$a = 1;
 	return "smb_io_$t(\"$e->{NAME}\", &$n, 1, ps, depth)";
+}
+
+sub StringType($$)
+{
+	my ($e,$l) = @_;
+	my $nl = GetNextLevel($e,$l);
+
+	if ($l->{IS_VARYING} and $l->{IS_CONFORMANT} and $nl->{DATA_TYPE} eq "uint16") {
+		return ("unistr2", 0);
+	} elsif ($l->{IS_CONFORMANT} and $l->{IS_VARYING} and $nl->{DATA_TYPE} eq "uint8") {
+		return ("string2", 0);
+	} else {
+		fatal($e, "[string] non-varying string not supported for Samba3 yet");
+	}
 }
 
 my $known_types = 

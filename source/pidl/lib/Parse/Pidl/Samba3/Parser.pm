@@ -9,7 +9,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
-use Parse::Pidl::Samba3::Types qw(DeclShort DeclLong InitType DissectType);
+use Parse::Pidl::Samba3::Types qw(DeclShort DeclLong InitType DissectType StringType);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -27,7 +27,7 @@ sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 #TODO:
 # - Add some security checks (array sizes, memory alloc == NULL, etc)
 # - Don't add seperate _p and _d functions if there is no deferred data
-# - [string]
+# - [string] with non-varying arrays
 # - subcontext()
 # - DATA_BLOB
 
@@ -58,7 +58,7 @@ sub DeclareArrayVariables
 				next if ($l->{IS_DEFERRED} and $what == PRIMITIVES);
 				next if (not $l->{IS_DEFERRED} and $what == DEFERRED);
 			}
-			if ($l->{TYPE} eq "ARRAY") {
+			if ($l->{TYPE} eq "ARRAY" and not $l->{IS_ZERO_TERMINATED}) {
 				pidl "uint32 i_$e->{NAME}_$l->{LEVEL_INDEX};";
 				$output = 1;
 			}
@@ -90,9 +90,14 @@ sub ParseElementLevelArray($$$$$$$)
 	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
 	if ($l->{IS_ZERO_TERMINATED}) {
-		fatal($e, "[string] attribute not supported for Samba3 yet");
-		
-		#FIXME
+		my ($t,$f) = StringType($e,$l);
+
+		pidl "if (!prs_io_$t(\"$e->{VARNAME}\", ps, depth, $varname))";
+		pidl "\treturn False;";
+		pidl "";
+
+		$$align = 0;
+		return;
 	}
 
 	my $len = ParseExpr($l->{LENGTH_IS}, $env);
@@ -228,7 +233,9 @@ sub InitLevel($$$$)
 			indent;
 		}
 
-		pidl ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 1;";
+		unless ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
+			pidl ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 1;";
+		}
 		InitLevel($e, GetNextLevel($e,$l), "*$varname", $env);
 		
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -237,6 +244,9 @@ sub InitLevel($$$$)
 			pidl "\t" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 0;";
 			pidl "}";
 		}
+	} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_ZERO_TERMINATED}) {
+		my ($t,$f) = StringType($e,$l);
+		pidl "init_$t(" . ParseExpr($e->{NAME}, $env) . ", $varname, $f);"; 
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		pidl ParseExpr($e->{NAME}, $env) . " = $varname;";
 	} elsif ($l->{TYPE} eq "DATA") {
@@ -256,7 +266,7 @@ sub GenerateEnvElement($$)
 		} elsif ($l->{TYPE} eq "POINTER") {
 			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-		} elsif ($l->{TYPE} eq "ARRAY") {
+		} elsif ($l->{TYPE} eq "ARRAY" and not $l->{IS_ZERO_TERMINATED}) {
 			$env->{"length_$e->{NAME}"} = "v->length_$e->{NAME}";
 			$env->{"size_$e->{NAME}"} = "v->size_$e->{NAME}";
 			$env->{"offset_$e->{NAME}"} = "v->offset_$e->{NAME}";
@@ -360,7 +370,7 @@ sub UnionGenerateEnvElement($)
 		} elsif ($l->{TYPE} eq "POINTER") {
 			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-		} elsif ($l->{TYPE} eq "ARRAY") {
+		} elsif ($l->{TYPE} eq "ARRAY" and not $l->{IS_ZERO_TERMINATED}) {
 			$env->{"length_$e->{NAME}"} = "v->length";
 			$env->{"size_$e->{NAME}"} = "v->size";
 			$env->{"offset_$e->{NAME}"} = "v->offset";
