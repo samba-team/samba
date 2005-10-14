@@ -49,13 +49,13 @@ static struct rpc_request *send_samlogon(struct pam_auth_crap_state *state);
 static void pam_auth_crap_recv_init(struct composite_context *ctx);
 static void pam_auth_crap_recv_samlogon(struct rpc_request *req);
 
-struct composite_context *wb_pam_auth_crap_send(struct wbsrv_call *call,
-						const char *domain,
-						const char *user,
-						const char *workstation,
-						DATA_BLOB chal,
-						DATA_BLOB nt_resp,
-						DATA_BLOB lm_resp)
+struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
+						    const char *domain,
+						    const char *user,
+						    const char *workstation,
+						    DATA_BLOB chal,
+						    DATA_BLOB nt_resp,
+						    DATA_BLOB lm_resp)
 {
 	struct composite_context *result, *ctx;
 	struct pam_auth_crap_state *state;
@@ -228,11 +228,11 @@ static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 	composite_done(state->ctx);
 }
 
-NTSTATUS wb_pam_auth_crap_recv(struct composite_context *c,
-			       TALLOC_CTX *mem_ctx,
-			       DATA_BLOB *info3,
-			       struct netr_UserSessionKey *user_session_key,
-			       struct netr_LMSessionKey *lm_key)
+NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
+				   TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *info3,
+				   struct netr_UserSessionKey *user_session_key,
+				   struct netr_LMSessionKey *lm_key)
 {
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
@@ -248,18 +248,18 @@ NTSTATUS wb_pam_auth_crap_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_pam_auth_crap(struct wbsrv_call *call,
-			  const char *domain, const char *user,
-			  const char *workstation,
-			  DATA_BLOB chal, DATA_BLOB nt_resp,
-			  DATA_BLOB lm_resp, TALLOC_CTX *mem_ctx,
-			  DATA_BLOB *info3,
-			  struct netr_UserSessionKey *user_session_key,
-			  struct netr_LMSessionKey *lm_key)
+NTSTATUS wb_cmd_pam_auth_crap(struct wbsrv_call *call,
+			      const char *domain, const char *user,
+			      const char *workstation,
+			      DATA_BLOB chal, DATA_BLOB nt_resp,
+			      DATA_BLOB lm_resp, TALLOC_CTX *mem_ctx,
+			      DATA_BLOB *info3,
+			      struct netr_UserSessionKey *user_session_key,
+			      struct netr_LMSessionKey *lm_key)
 {
 	struct composite_context *c =
-		wb_pam_auth_crap_send(call, domain, user, workstation,
-				      chal, nt_resp, lm_resp);
-	return wb_pam_auth_crap_recv(c, mem_ctx, info3, user_session_key,
-				     lm_key);
+		wb_cmd_pam_auth_crap_send(call, domain, user, workstation,
+					  chal, nt_resp, lm_resp);
+	return wb_cmd_pam_auth_crap_recv(c, mem_ctx, info3, user_session_key,
+					 lm_key);
 }
