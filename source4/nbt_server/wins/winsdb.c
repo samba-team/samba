@@ -29,37 +29,51 @@
 #include "system/time.h"
 
 /*
-  save the min/max version IDs for the database
+  return the new maxVersion and save it
 */
-static BOOL winsdb_save_version(struct wins_server *winssrv)
+static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 {
-	int i, ret = 0;
+	int ret;
 	struct ldb_context *ldb = winssrv->wins_db;
-	struct ldb_message *msg = ldb_msg_new(winssrv);
-	if (msg == NULL) goto failed;
+	struct ldb_dn *dn;
+	struct ldb_message **res = NULL;
+	struct ldb_message *msg = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
+	uint64_t maxVersion = 0;
 
-	msg->dn = ldb_dn_explode(msg, "CN=VERSION");
-	if (msg->dn == NULL) goto failed;
+	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
+	if (!dn) goto failed;
 
 	ret |= ldb_msg_add_string(msg, "objectClass", "winsEntry");
 	ret |= ldb_msg_add_fmt(msg, "minVersion", "%llu", winssrv->min_version);
 	ret |= ldb_msg_add_fmt(msg, "maxVersion", "%llu", winssrv->max_version);
 	if (ret != 0) goto failed;
 
-	for (i=0;i<msg->num_elements;i++) {
-		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	if (ret == 1) {
+		maxVersion = ldb_msg_find_uint64(res[0], "maxVersion", 0);
 	}
+	maxVersion++;
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) goto failed;
+	msg->dn = dn;
+
+
+	ret = ldb_msg_add_empty(ldb, msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
+	if (ret != 0) goto failed;
+	ret = ldb_msg_add_fmt(ldb, msg, "maxVersion", "%llu", maxVersion);
+	if (ret != 0) goto failed;
 
 	ret = ldb_modify(ldb, msg);
 	if (ret != 0) ret = ldb_add(ldb, msg);
 	if (ret != 0) goto failed;
 
-	talloc_free(msg);
-	return True;
+	talloc_free(tmp_ctx);
+	return maxVersion;
 
 failed:
-	talloc_free(msg);
-	return False;
+	talloc_free(tmp_ctx);
+	return 0;
 }
 
 /*
@@ -312,16 +326,7 @@ failed:
 	return NBT_RCODE_SVR;
 }
 
-
-/*
-  connect to the WINS database
-*/
-NTSTATUS winsdb_init(struct wins_server *winssrv)
+struct ldb_context *winsdb_connect(TALLOC_CTX *mem_ctx)
 {
-	winssrv->wins_db = ldb_wrap_connect(winssrv, lp_wins_url(), 0, NULL);
-	if (winssrv->wins_db == NULL) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	return NT_STATUS_OK;
+	return ldb_wrap_connect(mem_ctx, lp_wins_url(), 0, NULL);
 }
