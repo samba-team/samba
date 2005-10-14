@@ -183,6 +183,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
+#if 0
 static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
 				 char **domain, char **user)
 {
@@ -200,6 +201,7 @@ static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
 
 	return ((*domain != NULL) && (*user != NULL));
 }
+#endif
 
 static void pam_auth_crap_recv(struct composite_context *ctx);
 
@@ -208,7 +210,6 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	struct composite_context *ctx;
 
 	DATA_BLOB chal, nt_resp, lm_resp;
-	char *domain, *user;
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
 
@@ -219,13 +220,10 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	lm_resp.data   = s3call->request.data.auth_crap.lm_resp;
 	lm_resp.length = s3call->request.data.auth_crap.lm_resp_len;
 
-	if (!samba3_parse_domuser(s3call, s3call->request.data.auth_crap.user,
-				  &domain, &user)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	ctx = wb_cmd_pam_auth_crap_send(
-		s3call->call, domain, user,
+		s3call->call, 
+		s3call->request.data.auth_crap.domain,
+		s3call->request.data.auth_crap.user,
 		s3call->request.data.auth_crap.workstation,
 		chal, nt_resp, lm_resp);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
