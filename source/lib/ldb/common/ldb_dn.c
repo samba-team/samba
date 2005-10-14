@@ -853,15 +853,15 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 
 	/* Walk backwards down the DN, grabbing 'dc' components at first */
 	for (i = dn->comp_num - 1 ; i >= 0; i--) {
-		if (strcasecmp(dn->components[i].name, "dc") != 0) {
+		if (ldb_attr_cmp(dn->components[i].name, "dc") != 0) {
 			break;
 		}
 		if (cracked) {
 			cracked = talloc_asprintf(mem_ctx, "%s.%s",
-						  (const char *)dn->components[i].value.data,
+						  ldb_dn_escape_value(mem_ctx, dn->components[i].value),
 						  cracked);
 		} else {
-			cracked = talloc_strdup(mem_ctx, (const char *)dn->components[i].value.data);
+			cracked = ldb_dn_escape_value(mem_ctx, dn->components[i].value);
 		}
 		if (!cracked) {
 			return NULL;
@@ -881,7 +881,7 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 	/* Now walk backwards appending remaining components */
 	for (; i > 0; i--) {
 		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
-					  dn->components[i].value.data);
+					  ldb_dn_escape_value(mem_ctx, dn->components[i].value));
 		if (!cracked) {
 			return NULL;
 		}
@@ -890,10 +890,10 @@ static char *ldb_dn_canonical(void *mem_ctx, const struct ldb_dn *dn, int ex_for
 	/* Last one, possibly a newline for the 'ex' format */
 	if (ex_format) {
 		cracked = talloc_asprintf(mem_ctx, "%s\n%s", cracked, 
-					  dn->components[i].value.data);
+					  ldb_dn_escape_value(mem_ctx, dn->components[i].value));
 	} else {
 		cracked = talloc_asprintf(mem_ctx, "%s/%s", cracked, 
-					  dn->components[i].value.data);
+					  ldb_dn_escape_value(mem_ctx, dn->components[i].value));
 	}
 	return cracked;
 }
