@@ -80,7 +80,7 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 		return wbsrv_samba3_ping(s3call);
 
 	case WINBINDD_INFO:
-		return wbsrv_samba3_domain_name(s3call);
+		return wbsrv_samba3_info(s3call);
 
 	case WINBINDD_DOMAIN_NAME:
 		return wbsrv_samba3_domain_name(s3call);
