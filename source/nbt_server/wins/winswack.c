@@ -54,12 +54,13 @@ static void wins_wack_deny(struct wack_state *state)
 */
 static void wins_wack_allow(struct wack_state *state)
 {
+	NTSTATUS status;
 	uint32_t ttl;
 	time_t now = time(NULL);
 	struct winsdb_record *rec = state->rec, *rec2;
 
-	rec2 = winsdb_load(state->winssrv, rec->name, state);
-	if (rec2 == NULL || rec2->version != rec->version) {
+	status = winsdb_lookup(state->winssrv->wins_db, rec->name, state, &rec2);
+	if (!NT_STATUS_IS_OK(status) || rec2->version != rec->version) {
 		DEBUG(1,("WINS: record %s changed during WACK - failing registration\n",
 			 nbt_name_string(state, rec->name)));
 		wins_wack_deny(state);

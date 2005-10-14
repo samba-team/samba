@@ -205,13 +205,13 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	uint64_t version;
 	const char * const attrs[] = {
 		"winsOwner",
-		"version",
+		"versionID",
 		NULL
 	};
 
 	/* find the record in the WINS database */
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE,
-			 "(objectClass=wins)", attrs, &res);
+			 "(objectClass=winsRecord)", attrs, &res);
 	if (res != NULL) {
 		talloc_steal(tmp_ctx, res);
 	}
@@ -221,7 +221,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 
 	for (i=0; i < ret; i++) {
 		wins_owner     = ldb_msg_find_string(res[i], "winsOwner", NULL);
-		version        = ldb_msg_find_uint64(res[i], "version", 0);
+		version        = ldb_msg_find_uint64(res[i], "versionID", 0);
 
 		if (wins_owner) { 
 			status = wreplsrv_add_table(service,
