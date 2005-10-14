@@ -51,6 +51,16 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start MODULE server_service_wrepl
+[MODULE::server_service_wrepl]
+INIT_FUNCTION = server_service_wrepl_init
+SUBSYSTEM = SERVER_SERVICE
+REQUIRED_SUBSYSTEMS = \
+		WREPL_SRV
+# End MODULE server_service_wrepl
+################################################
+
+################################################
 # Start MODULE server_service_cldapd
 [MODULE::server_service_cldap]
 INIT_FUNCTION = server_service_cldapd_init

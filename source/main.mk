@@ -30,6 +30,7 @@ include ldap_server/config.mk
 include web_server/config.mk
 include winbind/config.mk
 include nbt_server/config.mk
+include wrepl_server/config.mk
 include cldap_server/config.mk
 include auth/gensec/config.mk
 include auth/kerberos/config.mk
