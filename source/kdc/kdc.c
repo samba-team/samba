@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Andrew Tridgell	2005
+   Copyright (C) Stefan Metzmacher	2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@
 
 #include "includes.h"
 #include "smbd/service_task.h"
+#include "smbd/service_stream.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "kdc/kdc.h"
@@ -30,7 +32,54 @@
 #include "dlinklist.h"
 #include "lib/messaging/irpc.h"
 
+/* hold all the info needed to send a reply */
+struct kdc_reply {
+	struct kdc_reply *next, *prev;
+	const char *dest_address;
+	int dest_port;
+	DATA_BLOB packet;
+};
 
+/*
+  top level context structure for the kdc server
+*/
+struct kdc_server {
+	struct task_server *task;
+	krb5_kdc_configuration *config;
+	struct smb_krb5_context *smb_krb5_context;
+};
+
+/* hold information about one kdc socket */
+struct kdc_socket {
+	struct socket_context *sock;
+	struct kdc_server *kdc;
+	struct fd_event *fde;
+
+	/* a queue of outgoing replies that have been deferred */
+	struct kdc_reply *send_queue;
+};
+/*
+  state of an open tcp connection
+*/
+struct kdc_tcp_connection {
+	/* stream connection we belong to */
+	struct stream_connection *conn;
+
+	/* the kdc_server the connection belongs to */
+	struct kdc_server *kdc;
+
+	/* the partial data we've receiced yet */
+	DATA_BLOB partial;
+
+	/* the amount that we used yet from the partial buffer */
+	uint32_t partial_read;
+
+	/* prevent loops when we use half async code, while processing a requuest */
+	BOOL processing;
+
+	/* a queue of outgoing replies that have been deferred */
+	struct data_blob_list_item *send_queue;
+};
 
 /*
   handle fd send events on a KDC socket
@@ -97,8 +146,8 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	talloc_steal(tmp_ctx, src_addr);
 	blob.length = nread;
 	
-	DEBUG(2,("Received krb5 packet of length %d from %s:%d\n", 
-		 (int)blob.length, src_addr, src_port));
+	DEBUG(2,("Received krb5 UDP packet of length %u from %s:%u\n", 
+		 blob.length, src_addr, (uint16_t)src_port));
 	
 	/* TODO:  This really should be in a utility function somewhere */
 	ZERO_STRUCT(src_sock_addr);
@@ -160,14 +209,211 @@ static void kdc_socket_handler(struct event_context *ev, struct fd_event *fde,
 	}
 }
 
+static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
+{
+	stream_terminate_connection(kdcconn->conn, reason);
+}
+
+/*
+  called when we get a new connection
+*/
+static void kdc_tcp_accept(struct stream_connection *conn)
+{
+	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
+	struct kdc_tcp_connection *kdcconn;
+
+	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
+	if (!kdcconn) {
+		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+	kdcconn->conn	= conn;
+	kdcconn->kdc	= kdc;
+	conn->private = kdcconn;
+}
+
+/*
+  receive some data on a winbind connection
+*/
+static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
+{
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, struct kdc_tcp_connection);
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
+	struct data_blob_list_item *rep;
+	krb5_data reply;
+	size_t nread;
+	const char *src_addr;
+	int src_port;
+	struct sockaddr_in src_sock_addr;
+	struct ipv4_addr addr;
+	int ret;
+
+	/* avoid recursion, because of half async code */
+	if (kdcconn->processing) {
+		EVENT_FD_NOT_READABLE(conn->event.fde);
+		return;
+	}
+
+	if (kdcconn->partial.length == 0) {
+		kdcconn->partial = data_blob_talloc(kdcconn, NULL, 4);
+		if (!kdcconn->partial.data) goto nomem;
+
+		kdcconn->partial_read = 0;
+	}
+
+	/* read in the packet length */
+	if (kdcconn->partial_read < 4) {
+		uint32_t packet_length;
+
+		status = socket_recv(conn->socket, 
+				     kdcconn->partial.data + kdcconn->partial_read,
+				     4 - kdcconn->partial_read,
+				     &nread, 0);
+		if (NT_STATUS_IS_ERR(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) return;
+
+		kdcconn->partial_read += nread;
+		if (kdcconn->partial_read != 4) return;
+
+		packet_length = RIVAL(kdcconn->partial.data, 0) + 4;
+
+		kdcconn->partial.data = talloc_realloc(kdcconn, kdcconn->partial.data, 
+						       uint8_t, packet_length);
+		if (!kdcconn->partial.data) goto nomem;
+
+		kdcconn->partial.length = packet_length;
+	}
+
+	/* read in the body */
+	status = socket_recv(conn->socket, 
+			     kdcconn->partial.data + kdcconn->partial_read,
+			     kdcconn->partial.length - kdcconn->partial_read,
+			     &nread, 0);
+	if (NT_STATUS_IS_ERR(status)) goto failed;
+	if (!NT_STATUS_IS_OK(status)) return;
+
+	kdcconn->partial_read += nread;
+	if (kdcconn->partial_read != kdcconn->partial.length) return;
+
+	/*
+	 * we have parsed the request, so we can reset the kdcconn->partial_read,
+	 * maybe we could also free kdcconn->partial, but for now we keep it,
+	 * and overwrite it the next time
+	 */
+	kdcconn->partial_read = 0;
+
+	src_addr = socket_get_peer_addr(kdcconn->conn->socket, tmp_ctx);
+	if (!src_addr) goto nomem;
+	src_port = socket_get_peer_port(kdcconn->conn->socket);
+
+	DEBUG(2,("Received krb5 TCP packet of length %u from %s:%u\n", 
+		 kdcconn->partial.length - 4, src_addr, src_port));
+
+	/* TODO:  This really should be in a utility function somewhere */
+	ZERO_STRUCT(src_sock_addr);
+#ifdef HAVE_SOCK_SIN_LEN
+	src_sock_addr.sin_len		= sizeof(src_sock_addr);
+#endif
+	addr				= interpret_addr2(src_addr);
+	src_sock_addr.sin_addr.s_addr	= addr.addr;
+	src_sock_addr.sin_port		= htons(src_port);
+	src_sock_addr.sin_family	= PF_INET;
+
+	/* Call krb5 */
+	kdcconn->processing = True;
+	ret = krb5_kdc_process_krb5_request(kdcconn->kdc->smb_krb5_context->krb5_context, 
+					    kdcconn->kdc->config,
+					    kdcconn->partial.data + 4, kdcconn->partial.length - 4, 
+					    &reply,
+					    src_addr,
+					    (struct sockaddr *)&src_sock_addr);
+	kdcconn->processing = False;
+	if (ret == -1) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto failed;
+	}
+
+	/* and now encode the reply */
+	rep = talloc(kdcconn, struct data_blob_list_item);
+	if (!rep) {
+		krb5_data_free(&reply);
+		goto nomem;
+	}
+
+	rep->blob = data_blob_talloc(rep, NULL, reply.length + 4);
+	if (!rep->blob.data)  {
+		krb5_data_free(&reply);
+		goto nomem;
+	}
+
+	RSIVAL(rep->blob.data, 0, reply.length);
+	memcpy(rep->blob.data + 4, reply.data, reply.length);	
+	krb5_data_free(&reply);
+
+	if (!kdcconn->send_queue) {
+		EVENT_FD_WRITEABLE(kdcconn->conn->event.fde);
+	}
+	DLIST_ADD_END(kdcconn->send_queue, rep, struct data_blob_list_item *);
+
+	EVENT_FD_READABLE(kdcconn->conn->event.fde);
+
+	/* the call isn't needed any more */
+	talloc_free(tmp_ctx);
+	return;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+failed:
+	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
+}
+
+/*
+  called when we can write to a connection
+*/
+static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
+{
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, struct kdc_tcp_connection);
+	NTSTATUS status;
+
+	while (kdcconn->send_queue) {
+		struct data_blob_list_item *q = kdcconn->send_queue;
+		size_t sendlen;
+
+		status = socket_send(conn->socket, &q->blob, &sendlen, 0);
+		if (NT_STATUS_IS_ERR(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) return;
+
+		q->blob.length -= sendlen;
+		q->blob.data   += sendlen;
+
+		if (q->blob.length == 0) {
+			DLIST_REMOVE(kdcconn->send_queue, q);
+			talloc_free(q);
+		}
+	}
+
+	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
+	return;
+failed:
+	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
+}
+
+static const struct stream_server_ops kdc_tcp_stream_ops = {
+	.name			= "kdc_tcp",
+	.accept_connection	= kdc_tcp_accept,
+	.recv_handler		= kdc_tcp_recv,
+	.send_handler		= kdc_tcp_send
+};
 
 /*
   start listening on the given address
 */
 static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 {
+	const struct model_ops *model_ops;
  	struct kdc_socket *kdc_socket;
 	NTSTATUS status;
+	uint16_t port = lp_krb5_port();
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_socket);
@@ -187,10 +433,29 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 				       socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
 				       kdc_socket_handler, kdc_socket);
 
-	status = socket_listen(kdc_socket->sock, address, lp_krb5_port(), 0, 0);
+	status = socket_listen(kdc_socket->sock, address, port, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 address, lp_krb5_port(), nt_errstr(status)));
+		DEBUG(0,("Failed to bind to %s:%d UDP - %s\n", 
+			 address, port, nt_errstr(status)));
+		talloc_free(kdc_socket);
+		return status;
+	}
+
+	/* within the kdc task we want to be a single process, so
+	   ask for the single process model ops and pass these to the
+	   stream_setup_socket() call. */
+	model_ops = process_model_byname("single");
+	if (!model_ops) {
+		DEBUG(0,("Can't find 'single' process model_ops\n"));
+		talloc_free(kdc_socket);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = stream_setup_socket(kdc->task->event_ctx, model_ops, &kdc_tcp_stream_ops, 
+				     "ip", address, &port, kdc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
+			 address, port, nt_errstr(status)));
 		talloc_free(kdc_socket);
 		return status;
 	}
@@ -202,7 +467,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 /*
   setup our listening sockets on the configured network interfaces
 */
-NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
+static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
 {
 	int num_interfaces = iface_count();
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc);

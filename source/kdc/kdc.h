@@ -29,31 +29,3 @@
 
 krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx, 
 			       krb5_context context, struct HDB **db, const char *arg);
-
-/* hold all the info needed to send a reply */
-struct kdc_reply {
-	struct kdc_reply *next, *prev;
-	const char *dest_address;
-	int dest_port;
-	DATA_BLOB packet;
-};
-
-/*
-  top level context structure for the kdc server
-*/
-struct kdc_server {
-	struct task_server *task;
-	krb5_kdc_configuration *config;
-	struct smb_krb5_context *smb_krb5_context;
-};
-
-/* hold information about one kdc socket */
-struct kdc_socket {
-	struct socket_context *sock;
-	struct kdc_server *kdc;
-	struct fd_event *fde;
-
-	/* a queue of outgoing replies that have been deferred */
-	struct kdc_reply *send_queue;
-};
-
