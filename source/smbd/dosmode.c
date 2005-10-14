@@ -129,14 +129,19 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname, BOOL c
 uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	int result = 0;
+	enum mapreadonly_options ro_opts = (enum mapreadonly_options)lp_map_readonly(SNUM(conn));
 
-	if (lp_acl_check_permissions(SNUM(conn))) {
+	if (ro_opts == MAP_READONLY_YES) {
+		/* Original Samba method - map inverse of user "w" bit. */
+		if ((sbuf->st_mode & S_IWUSR) == 0) {
+			result |= aRONLY;
+		}
+	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
+		/* Check actual permissions for read-only. */
 		if (!can_write_to_file(conn, path, sbuf)) {
 			result |= aRONLY;
 		}
-	} else if ((sbuf->st_mode & S_IWUSR) == 0) {
-		result |= aRONLY;
-	}
+	} /* Else never set the readonly bit. */
 
 	if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
 		result |= aARCH;
