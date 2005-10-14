@@ -1,5 +1,4 @@
 Import('hostenv')
-
 hostenv.Subsystem(
     'cli_utils',
     ['util/asn1.c',

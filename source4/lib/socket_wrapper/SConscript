@@ -1,5 +1,4 @@
 Import('hostenv')
-
 opts = Options(None, ARGUMENTS)
 opts.AddOptions(
 	BoolOption('socket_wrapper','enable socket wrapper',0)
