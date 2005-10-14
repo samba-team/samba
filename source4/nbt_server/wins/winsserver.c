@@ -39,7 +39,7 @@ uint32_t wins_server_ttl(struct wins_server *winssrv, uint32_t ttl)
 static enum wrepl_name_type wrepl_type(uint16_t nb_flags, struct nbt_name *name, BOOL mhomed)
 {
 	/* this copes with the nasty hack that is the type 0x1c name */
-	if (name->type != NBT_NAME_LOGON) {
+	if (name->type == NBT_NAME_LOGON) {
 		return WREPL_TYPE_SGROUP;
 	}
 	if (nb_flags & NBT_NM_GROUP) {
