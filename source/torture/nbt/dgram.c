@@ -35,18 +35,18 @@
 */
 static void netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 			     struct nbt_dgram_packet *packet, 
-			     const char *src_address, int src_port)
+			     const struct nbt_peer_socket *src)
 {
 	NTSTATUS status;
 	struct nbt_netlogon_packet netlogon;
 	int *replies = dgmslot->private;
 
-	printf("netlogon reply from %s:%d\n", src_address, src_port);
+	printf("netlogon reply from %s:%d\n", src->addr, src->port);
 
 	status = dgram_mailslot_netlogon_parse(dgmslot, dgmslot, packet, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to parse netlogon packet from %s:%d\n",
-		       src_address, src_port);
+		       src->addr, src->port);
 		return;
 	}
 
@@ -62,6 +62,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	struct nbt_peer_socket dest;
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
@@ -81,7 +82,6 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, &replies);
-	
 
 	ZERO_STRUCT(logon);
 	logon.command = NETLOGON_QUERY_FOR_PDC;
@@ -94,13 +94,14 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, 
-					      0, &myname, &logon);
+	dest.port = 0;
+	dest.addr = address;
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, &dest,
+					      &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
 		goto failed;
 	}
-
 
 	while (timeval_elapsed(&tv) < 5 && replies == 0) {
 		event_loop_once(dgmsock->event_ctx);
@@ -121,6 +122,7 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	struct nbt_peer_socket dest;
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
@@ -154,8 +156,10 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, 
-					      0, &myname, &logon);
+	dest.port = 0;
+	dest.addr = address;
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, &dest,
+					      &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
 		goto failed;
@@ -180,18 +184,18 @@ failed:
 */
 static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 			     struct nbt_dgram_packet *packet, 
-			     const char *src_address, int src_port)
+			     const struct nbt_peer_socket *src)
 {
 	NTSTATUS status;
 	struct nbt_ntlogon_packet ntlogon;
 	int *replies = dgmslot->private;
 
-	printf("ntlogon reply from %s:%d\n", src_address, src_port);
+	printf("ntlogon reply from %s:%d\n", src->addr, src->port);
 
 	status = dgram_mailslot_ntlogon_parse(dgmslot, dgmslot, packet, &ntlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to parse ntlogon packet from %s:%d\n",
-		       src_address, src_port);
+		       src->addr, src->port);
 		return;
 	}
 
@@ -207,6 +211,7 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	struct nbt_peer_socket dest;
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_ntlogon_packet logon;
 	struct nbt_name myname;
@@ -255,9 +260,10 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
-					     &name, address, 
-					      0, &myname, &logon);
+	dest.port = 0;
+	dest.addr = address;
+	status = dgram_mailslot_ntlogon_send(dgmsock, &name, &dest, 
+					     &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send ntlogon request - %s\n", nt_errstr(status));
 		goto failed;

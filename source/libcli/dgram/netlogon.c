@@ -33,8 +33,7 @@
 */
 NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_name *dest_name,
-				      const char *dest_address,
-				      int dest_port,
+				      const struct nbt_peer_socket *dest,
 				      struct nbt_name *src_name,
 				      struct nbt_netlogon_packet *request)
 {
@@ -52,7 +51,7 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
 				     NBT_MAILSLOT_NETLOGON,
-				     dest_name, dest_address, dest_port, 
+				     dest_name, dest, 
 				     src_name, &blob);
 	talloc_free(tmp_ctx);
 	return status;
@@ -71,6 +70,7 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_name myname;
+	struct nbt_peer_socket dest;
 
 	status = ndr_push_struct_blob(&blob, tmp_ctx, reply, 
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
@@ -81,10 +81,12 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 
 	make_nbt_name_client(&myname, lp_netbios_name());
 
+	dest.port = request->src_port;
+	dest.addr = request->src_addr;
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
 				     mailslot_name,
 				     &request->data.msg.source_name,
-				     request->source, request->src_port,
+				     &dest,
 				     &myname, &blob);
 	talloc_free(tmp_ctx);
 	return status;

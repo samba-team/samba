@@ -32,24 +32,24 @@
 */
 void nbtd_request_defense(struct nbt_name_socket *nbtsock, 
 			  struct nbt_name_packet *packet, 
-			  const char *src_address, int src_port)
+			  const struct nbt_peer_socket *src)
 {
 	struct nbtd_iface_name *iname;
 	struct nbt_name *name;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 
-	NBTD_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
-	NBTD_ASSERT_PACKET(packet, src_address, packet->arcount == 1);
-	NBTD_ASSERT_PACKET(packet, src_address, 
+	NBTD_ASSERT_PACKET(packet, src->addr, packet->qdcount == 1);
+	NBTD_ASSERT_PACKET(packet, src->addr, packet->arcount == 1);
+	NBTD_ASSERT_PACKET(packet, src->addr, 
 			   packet->questions[0].question_type == NBT_QTYPE_NETBIOS);
-	NBTD_ASSERT_PACKET(packet, src_address, 
+	NBTD_ASSERT_PACKET(packet, src->addr, 
 			   packet->questions[0].question_class == NBT_QCLASS_IP);
-	NBTD_ASSERT_PACKET(packet, src_address, 
+	NBTD_ASSERT_PACKET(packet, src->addr, 
 			  packet->additional[0].rr_type == NBT_QTYPE_NETBIOS);
-	NBTD_ASSERT_PACKET(packet, src_address, 
+	NBTD_ASSERT_PACKET(packet, src->addr, 
 			  packet->additional[0].rr_class == NBT_QCLASS_IP);
-	NBTD_ASSERT_PACKET(packet, src_address, 
+	NBTD_ASSERT_PACKET(packet, src->addr, 
 			  packet->additional[0].rdata.netbios.length == 6);
 
 	/* see if we have the requested name on this interface */
@@ -60,10 +60,9 @@ void nbtd_request_defense(struct nbt_name_socket *nbtsock,
 	    !IS_GROUP_NAME(name, iname->nb_flags)) {
 		DEBUG(2,("Defending name %s on %s against %s\n",
 			 nbt_name_string(packet, name), 
-			 iface->bcast_address, src_address));
-		nbtd_name_registration_reply(nbtsock, packet, 
-					     src_address, src_port, NBT_RCODE_ACT);
+			 iface->bcast_address, src->addr));
+		nbtd_name_registration_reply(nbtsock, packet, src, NBT_RCODE_ACT);
 	} else {
-		nbtd_winsserver_request(nbtsock, packet, src_address, src_port);
+		nbtd_winsserver_request(nbtsock, packet, src);
 	}
 }

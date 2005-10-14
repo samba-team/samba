@@ -73,7 +73,7 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 		
 		len = req->encoded.length;
 		status = socket_sendto(nbtsock->sock, &req->encoded, &len, 0, 
-				       req->dest_addr, req->dest_port);
+				       req->dest.addr, req->dest.port);
 		if (NT_STATUS_IS_ERR(status)) goto failed;		
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -153,8 +153,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(nbtsock);
 	NTSTATUS status;
-	const char *src_addr;
-	int src_port;
+	struct nbt_peer_socket src;
 	DATA_BLOB blob;
 	size_t nread, dsize;
 	struct nbt_name_packet *packet;
@@ -173,12 +172,12 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	status = socket_recvfrom(nbtsock->sock, blob.data, blob.length, &nread, 0,
-				 &src_addr, &src_port);
+				 &src.addr, &src.port);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return;
 	}
-	talloc_steal(tmp_ctx, src_addr);
+	talloc_steal(tmp_ctx, src.addr);
 	blob.length = nread;
 
 	packet = talloc(tmp_ctx, struct nbt_name_packet);
@@ -199,7 +198,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Received nbt packet of length %d from %s:%d\n", 
-			  (int)blob.length, src_addr, src_port));
+			  (int)blob.length, src.addr, src.port));
 		NDR_PRINT_DEBUG(nbt_name_packet, packet);
 	}
 
@@ -207,7 +206,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	   handler, if any */
 	if (!(packet->operation & NBT_FLAG_REPLY)) {
 		if (nbtsock->incoming.handler) {
-			nbtsock->incoming.handler(nbtsock, packet, src_addr, src_port);
+			nbtsock->incoming.handler(nbtsock, packet, &src);
 		}
 		talloc_free(tmp_ctx);
 		return;
@@ -217,7 +216,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	req = idr_find(nbtsock->idr, packet->name_trn_id);
 	if (req == NULL) {
 		if (nbtsock->unexpected.handler) {
-			nbtsock->unexpected.handler(nbtsock, packet, src_addr, src_port);
+			nbtsock->unexpected.handler(nbtsock, packet, &src);
 		} else {
 			DEBUG(2,("Failed to match request for incoming name packet id 0x%04x on %p\n",
 				 packet->name_trn_id, nbtsock));
@@ -259,8 +258,8 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		goto done;
 	}
 
-	req->replies[req->num_replies].reply_addr = talloc_steal(req, src_addr);
-	req->replies[req->num_replies].reply_port = src_port;
+	req->replies[req->num_replies].dest.addr = talloc_steal(req, src.addr);
+	req->replies[req->num_replies].dest.port = src.port;
 	req->replies[req->num_replies].packet     = talloc_steal(req, packet);
 	req->num_replies++;
 
@@ -349,7 +348,7 @@ failed:
   send off a nbt name request
 */
 struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock, 
-					       const char *dest_addr, int dest_port,
+					       const struct nbt_peer_socket *dest,
 					       struct nbt_name_packet *request,
 					       int timeout, int retries,
 					       BOOL allow_multiple_replies)
@@ -362,14 +361,14 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	if (req == NULL) goto failed;
 
 	req->nbtsock                = nbtsock;
-	req->dest_port              = dest_port;
 	req->allow_multiple_replies = allow_multiple_replies;
 	req->state                  = NBT_REQUEST_SEND;
 	req->is_reply               = False;
 	req->timeout                = timeout;
 	req->num_retries            = retries;
-	req->dest_addr              = talloc_strdup(req, dest_addr);
-	if (req->dest_addr == NULL) goto failed;
+	req->dest.port              = dest->port;
+	req->dest.addr              = talloc_strdup(req, dest->addr);
+	if (req->dest.addr == NULL) goto failed;
 
 	/* we select a random transaction id unless the user supplied one */
 	if (request->name_trn_id == 0) {
@@ -398,7 +397,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Queueing nbt packet to %s:%d\n", 
-			  req->dest_addr, req->dest_port));
+			  req->dest.addr, req->dest.port));
 		NDR_PRINT_DEBUG(nbt_name_packet, request);
 	}
 
@@ -416,7 +415,7 @@ failed:
   send off a nbt name reply
 */
 NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock, 
-			     const char *dest_addr, int dest_port,
+			     const struct nbt_peer_socket *dest,
 			     struct nbt_name_packet *request)
 {
 	struct nbt_name_request *req;
@@ -426,9 +425,9 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	req->nbtsock   = nbtsock;
-	req->dest_addr = talloc_strdup(req, dest_addr);
-	if (req->dest_addr == NULL) goto failed;
-	req->dest_port = dest_port;
+	req->dest.port = dest->port;
+	req->dest.addr = talloc_strdup(req, dest->addr);
+	if (req->dest.addr == NULL) goto failed;
 	req->state     = NBT_REQUEST_SEND;
 	req->is_reply = True;
 
@@ -481,7 +480,7 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 */
 NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
-						  const char *, int ),
+						  const struct nbt_peer_socket *),
 				  void *private)
 {
 	nbtsock->incoming.handler = handler;

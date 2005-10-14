@@ -35,8 +35,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	NTSTATUS status;
-	const char *src_addr;
-	int src_port;
+	struct nbt_peer_socket src;
 	DATA_BLOB blob;
 	size_t nread, dsize;
 	struct nbt_dgram_packet *packet;
@@ -55,16 +54,16 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	}
 
 	status = socket_recvfrom(dgmsock->sock, blob.data, blob.length, &nread, 0,
-				 &src_addr, &src_port);
+				 &src.addr, &src.port);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return;
 	}
-	talloc_steal(tmp_ctx, src_addr);
+	talloc_steal(tmp_ctx, src.addr);
 	blob.length = nread;
 
 	DEBUG(2,("Received dgram packet of length %d from %s:%d\n", 
-		 (int)blob.length, src_addr, src_port));
+		 (int)blob.length, src.addr, src.port));
 
 	packet = talloc(tmp_ctx, struct nbt_dgram_packet);
 	if (packet == NULL) {
@@ -88,14 +87,14 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 		struct dgram_mailslot_handler *dgmslot;
 		dgmslot = dgram_mailslot_find(dgmsock, mailslot_name);
 		if (dgmslot) {
-			dgmslot->handler(dgmslot, packet, src_addr, src_port);
+			dgmslot->handler(dgmslot, packet, &src);
 		} else {
 			DEBUG(2,("No mailslot handler for '%s'\n", mailslot_name));
 		}
 	} else {
 		/* dispatch if there is a general handler */
 		if (dgmsock->incoming.handler) {
-			dgmsock->incoming.handler(dgmsock, packet, src_addr, src_port);
+			dgmsock->incoming.handler(dgmsock, packet, &src);
 		}
 	}
 
@@ -116,10 +115,10 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
 		
 		len = req->encoded.length;
 		status = socket_sendto(dgmsock->sock, &req->encoded, &len, 0, 
-				       req->dest_addr, req->dest_port);
+				       req->dest.addr, req->dest.port);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("Failed to send datagram of length %u to %s:%d\n",
-				 (unsigned)req->encoded.length, req->dest_addr, req->dest_port));
+				 (unsigned)req->encoded.length, req->dest.addr, req->dest.port));
 			DLIST_REMOVE(dgmsock->send_queue, req);
 			talloc_free(req);
 			continue;
@@ -201,7 +200,7 @@ failed:
 NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 				    void (*handler)(struct nbt_dgram_socket *, 
 						    struct nbt_dgram_packet *, 
-						    const char *, int ),
+						    const struct nbt_peer_socket *),
 				    void *private)
 {
 	dgmsock->incoming.handler = handler;
@@ -216,8 +215,7 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 */
 NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 			struct nbt_dgram_packet *packet,
-			const char *dest_addr,
-			int dest_port)
+			const struct nbt_peer_socket *dest)
 {
 	struct nbt_dgram_request *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
@@ -225,9 +223,9 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 	req = talloc(dgmsock, struct nbt_dgram_request);
 	if (req == NULL) goto failed;
 
-	req->dest_addr = talloc_strdup(req, dest_addr);
-	if (req->dest_addr == NULL) goto failed;
-	req->dest_port = dest_port;
+	req->dest.port = dest->port;
+	req->dest.addr = talloc_strdup(req, dest->addr);
+	if (req->dest.addr == NULL) goto failed;
 
 	status = ndr_push_struct_blob(&req->encoded, req, packet, 
 				      (ndr_push_flags_fn_t)ndr_push_nbt_dgram_packet);

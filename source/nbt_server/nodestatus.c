@@ -30,7 +30,7 @@
 */
 static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock, 
 				   struct nbt_name_packet *request_packet, 
-				   const char *src_address, int src_port,
+				   const struct nbt_peer_socket *src,
 				   struct nbt_name *name, 
 				   struct nbtd_interface *iface)
 {
@@ -84,10 +84,10 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 	ZERO_STRUCT(packet->answers[0].rdata.status.statistics);
 
 	DEBUG(7,("Sending node status reply for %s to %s:%d\n", 
-		 nbt_name_string(packet, name), src_address, src_port));
+		 nbt_name_string(packet, name), src->addr, src->port));
 	
 	nbtsrv->stats.total_sent++;
-	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+	nbt_name_reply_send(nbtsock, src, packet);
 
 failed:
 	talloc_free(packet);
@@ -99,16 +99,16 @@ failed:
 */
 void nbtd_query_status(struct nbt_name_socket *nbtsock, 
 		       struct nbt_name_packet *packet, 
-		       const char *src_address, int src_port)
+		       const struct nbt_peer_socket *src)
 {
 	struct nbt_name *name;
 	struct nbtd_iface_name *iname;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 
-	NBTD_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
-	NBTD_ASSERT_PACKET(packet, src_address, packet->questions[0].question_type == NBT_QTYPE_STATUS);
-	NBTD_ASSERT_PACKET(packet, src_address, packet->questions[0].question_class == NBT_QCLASS_IP);
+	NBTD_ASSERT_PACKET(packet, src->addr, packet->qdcount == 1);
+	NBTD_ASSERT_PACKET(packet, src->addr, packet->questions[0].question_type == NBT_QTYPE_STATUS);
+	NBTD_ASSERT_PACKET(packet, src->addr, packet->questions[0].question_class == NBT_QCLASS_IP);
 
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
@@ -116,10 +116,10 @@ void nbtd_query_status(struct nbt_name_socket *nbtsock,
 	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
 	if (iname == NULL) {
 		DEBUG(7,("Node status query for %s from %s - not found on %s\n",
-			 nbt_name_string(packet, name), src_address, iface->ip_address));
+			 nbt_name_string(packet, name), src->addr, iface->ip_address));
 		return;
 	}
 
-	nbtd_node_status_reply(nbtsock, packet, src_address, src_port, 
+	nbtd_node_status_reply(nbtsock, packet, src, 
 			       &iname->name, iface);
 }

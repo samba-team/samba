@@ -319,7 +319,7 @@
 		dgram_msg_type msg_type;
 		dgram_flags    flags;
 		uint16         dgram_id;
-		ipv4address    source;
+		ipv4address    src_addr;
 		uint16         src_port;
 		[switch_is(msg_type)] dgram_data data;
 	} nbt_dgram_packet;

@@ -41,7 +41,7 @@ uint32_t wins_server_ttl(struct wins_server *winssrv, uint32_t ttl)
 */
 static uint8_t wins_register_new(struct nbt_name_socket *nbtsock, 
 				 struct nbt_name_packet *packet, 
-				 const char *src_address, int src_port)
+				 const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -56,7 +56,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.nb_flags      = nb_flags;
 	rec.state         = WINS_REC_ACTIVE;
 	rec.expire_time   = time(NULL) + ttl;
-	rec.registered_by = src_address;
+	rec.registered_by = src->addr;
 	if (IS_GROUP_NAME(name, nb_flags)) {
 		rec.addresses     = str_list_make(packet, "255.255.255.255", NULL);
 	} else {
@@ -77,7 +77,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock, 
 			       struct nbt_name_packet *packet, 
 			       struct winsdb_record *rec,
-			       const char *src_address, int src_port)
+			       const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -89,7 +89,7 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	if (now + ttl > rec->expire_time) {
 		rec->expire_time   = now + ttl;
 	}
-	rec->registered_by = src_address;
+	rec->registered_by = src->addr;
 
 	DEBUG(5,("WINS: refreshed registration of %s at %s\n",
 		 nbt_name_string(packet, rec->name), address));
@@ -102,7 +102,7 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 */
 static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock, 
 				     struct nbt_name_packet *packet, 
-				     const char *src_address, int src_port)
+				     const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -121,11 +121,11 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL) {
-		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
+		rcode = wins_register_new(nbtsock, packet, src);
 		goto done;
 	} else if (rec->state != WINS_REC_ACTIVE) {
 		winsdb_delete(winssrv, rec);
-		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
+		rcode = wins_register_new(nbtsock, packet, src);
 		goto done;
 	}
 
@@ -140,31 +140,31 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	/* if its an active unique name, and the registration is for a group, then
 	   see if the unique name owner still wants the name */
 	if (!(rec->nb_flags & NBT_NM_GROUP) && (nb_flags & NBT_NM_GROUP)) {
-		wins_register_wack(nbtsock, packet, rec, src_address, src_port);
+		wins_register_wack(nbtsock, packet, rec, src);
 		return;
 	}
 
 	/* if the registration is for a group, then just update the expiry time 
 	   and we are done */
 	if (IS_GROUP_NAME(name, nb_flags)) {
-		wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
+		wins_update_ttl(nbtsock, packet, rec, src);
 		goto done;
 	}
 
 	/* if the registration is for an address that is currently active, then 
 	   just update the expiry time */
 	if (str_list_check(rec->addresses, address)) {
-		wins_update_ttl(nbtsock, packet, rec, src_address, src_port);
+		wins_update_ttl(nbtsock, packet, rec, src);
 		goto done;
 	}
 
 	/* we have to do a WACK to see if the current owner is willing
 	   to give up its claim */	
-	wins_register_wack(nbtsock, packet, rec, src_address, src_port);
+	wins_register_wack(nbtsock, packet, rec, src);
 	return;
 
 done:
-	nbtd_name_registration_reply(nbtsock, packet, src_address, src_port, rcode);
+	nbtd_name_registration_reply(nbtsock, packet, src, rcode);
 }
 
 
@@ -174,7 +174,7 @@ done:
 */
 static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *packet, 
-				  const char *src_address, int src_port)
+				  const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -184,11 +184,11 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL || rec->state != WINS_REC_ACTIVE) {
-		nbtd_negative_name_query_reply(nbtsock, packet, src_address, src_port);
+		nbtd_negative_name_query_reply(nbtsock, packet, src);
 		return;
 	}
 
-	nbtd_name_query_reply(nbtsock, packet, src_address, src_port, name, 
+	nbtd_name_query_reply(nbtsock, packet, src, name, 
 			      0, rec->nb_flags, rec->addresses);
 }
 
@@ -197,7 +197,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 */
 static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock, 
 				    struct nbt_name_packet *packet, 
-				    const char *src_address, int src_port)
+				    const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -214,7 +214,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 
 	/* we only allow releases from an owner - other releases are
 	   silently ignored */
-	if (str_list_check(rec->addresses, src_address)) {
+	if (str_list_check(rec->addresses, src->addr)) {
 		const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 
 		DEBUG(4,("WINS: released name %s at %s\n", nbt_name_string(rec, rec->name), address));
@@ -227,7 +227,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 
 done:
 	/* we match w2k3 by always giving a positive reply to name releases. */
-	nbtd_name_release_reply(nbtsock, packet, src_address, src_port, NBT_RCODE_OK);
+	nbtd_name_release_reply(nbtsock, packet, src, NBT_RCODE_OK);
 }
 
 
@@ -236,7 +236,7 @@ done:
 */
 void nbtd_winsserver_request(struct nbt_name_socket *nbtsock, 
 			     struct nbt_name_packet *packet, 
-			     const char *src_address, int src_port)
+			     const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -247,18 +247,18 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
-		nbtd_winsserver_query(nbtsock, packet, src_address, src_port);
+		nbtd_winsserver_query(nbtsock, packet, src);
 		break;
 
 	case NBT_OPCODE_REGISTER:
 	case NBT_OPCODE_REFRESH:
 	case NBT_OPCODE_REFRESH2:
 	case NBT_OPCODE_MULTI_HOME_REG:
-		nbtd_winsserver_register(nbtsock, packet, src_address, src_port);
+		nbtd_winsserver_register(nbtsock, packet, src);
 		break;
 
 	case NBT_OPCODE_RELEASE:
-		nbtd_winsserver_release(nbtsock, packet, src_address, src_port);
+		nbtd_winsserver_release(nbtsock, packet, src);
 		break;
 	}
 
