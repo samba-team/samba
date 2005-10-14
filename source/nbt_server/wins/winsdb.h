@@ -29,15 +29,6 @@ struct winsdb_addr {
 	time_t expire_time;
 };
 
-#define WINSDB_OWNER_LOCAL	"0.0.0.0"
-#define WINSDB_GROUP_ADDRESS	"255.255.255.255"
-
-struct winsdb_addr {
-	const char *address;
-	const char *wins_owner;
-	time_t expire_time;
-};
-
 /*
   each record in the database contains the following information
 */
@@ -47,7 +38,6 @@ struct winsdb_record {
 	enum wrepl_name_state state;
 	enum wrepl_name_node node;
 	BOOL is_static;
-	const char *wins_owner;
 	time_t expire_time;
 	uint64_t version;
 	const char *wins_owner;
@@ -55,8 +45,6 @@ struct winsdb_record {
 
 	/* only needed for debugging problems */
 	const char *registered_by;
-	struct winsdb_addr **addresses;
-	uint64_t version;
 };
 
 struct wins_server {

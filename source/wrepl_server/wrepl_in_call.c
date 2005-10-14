@@ -29,7 +29,10 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
+#include "wrepl_server/wrepl_out_helpers.h"
+#include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
 
@@ -111,42 +114,12 @@ static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
 	struct wreplsrv_service *service = call->wreplconn->service;
 	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
 	struct wrepl_table *table_out = &call->rep_packet.message.replication.info.table;
-	struct wreplsrv_owner *cur;
-	uint64_t local_max_version;
-	uint32_t i = 0;
+	const char *our_ip = call->wreplconn->our_ip;
 
 	repl_out->command = WREPL_REPL_TABLE_REPLY;
 
-	table_out->partner_count	= 0;
-	table_out->partners		= NULL;
-	table_out->initiator		= WINSDB_OWNER_LOCAL;
-
-	local_max_version = wreplsrv_local_max_version(service);
-	if (local_max_version > 0) {
-		table_out->partner_count++;
-	}
-
-	for (cur = service->table; cur; cur = cur->next) {
-		table_out->partner_count++;
-	}
-
-	table_out->partners = talloc_array(call, struct wrepl_wins_owner, table_out->partner_count);
-	NT_STATUS_HAVE_NO_MEMORY(table_out->partners);
-
-	if (local_max_version > 0) {
-		table_out->partners[i].address		= call->wreplconn->our_ip;
-		table_out->partners[i].min_version	= 0;
-		table_out->partners[i].max_version	= local_max_version;
-		table_out->partners[i].type		= 1;
-		i++;
-	}
-
-	for (cur = service->table; cur; cur = cur->next) {
-		table_out->partners[i] = cur->owner;
-		i++;
-	}
-
-	return NT_STATUS_OK;
+	return wreplsrv_fill_wrepl_table(service, call, table_out,
+					 our_ip, our_ip, True);
 }
 
 static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
@@ -157,42 +130,21 @@ static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
 	return 0;
 }
 
-static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins_name *name, struct winsdb_record *rec)
+static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
+					  const char *our_address,
+					  struct wrepl_wins_name *name,
+					  struct winsdb_record *rec)
 {
-	uint8_t *namebuf;
-	uint32_t namebuf_len;
-	uint32_t name_len;
+	uint32_t num_ips, i;
+	struct wrepl_ip *ips;
 
-	name_len = strlen(rec->name->name);
-	if (name_len > 15) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
+	name->name		= rec->name;
+	talloc_steal(mem_ctx, rec->name);
 
-	namebuf = (uint8_t *)talloc_asprintf(mem_ctx, "%-15s%c%s",
-					    rec->name->name, 'X',
-					    (rec->name->scope?rec->name->scope:""));
-	NT_STATUS_HAVE_NO_MEMORY(namebuf);
-	namebuf_len = strlen((char *)namebuf) + 1;
-
-	/*
-	 * we need to set the type here, and use a place-holder in the talloc_asprintf()
-	 * as the type can be 0x00, and then the namebuf_len = strlen(namebuf); would give wrong results
-	 */
-	namebuf[15] = rec->name->type;
-
-	/* oh wow, what a nasty bug in windows ... */
-	if (rec->name->type == 0x1b) {
-		namebuf[15] = namebuf[0];
-		namebuf[0] = 0x1b;
-	}
-
-	name->name_len		= namebuf_len;
-	name->name		= namebuf;
 	name->id		= rec->version;
 	name->unknown		= WINSDB_GROUP_ADDRESS;
 
-	name->flags		= rec->nb_flags;
-	name->group_flag	= 0;
+	name->flags		= WREPL_NAME_FLAGS(rec->type, rec->state, rec->node, rec->is_static);
 
 	switch (name->flags & 2) {
 	case 0:
@@ -200,8 +152,24 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins
 		talloc_steal(mem_ctx, rec->addresses[0]->address);
 		break;
 	case 2:
-		name->addresses.addresses.num_ips	= 0;
-		name->addresses.addresses.ips		= NULL;
+		num_ips	= winsdb_addr_list_length(rec->addresses);
+		ips	= talloc_array(mem_ctx, struct wrepl_ip, num_ips);
+		NT_STATUS_HAVE_NO_MEMORY(ips);
+
+		for (i = 0; i < num_ips; i++) {
+			if (strcasecmp(WINSDB_OWNER_LOCAL, rec->addresses[i]->wins_owner) == 0) {
+				ips[i].owner	= talloc_strdup(ips, our_address);
+				NT_STATUS_HAVE_NO_MEMORY(ips[i].owner);
+			} else {
+				ips[i].owner	= rec->addresses[i]->wins_owner;
+				talloc_steal(ips, rec->addresses[i]->wins_owner);
+			}
+			ips[i].ip	= rec->addresses[i]->address;
+			talloc_steal(ips, rec->addresses[i]->address);
+		}
+
+		name->addresses.addresses.num_ips	= num_ips;
+		name->addresses.addresses.ips		= ips;
 		break;
 	}
 
@@ -251,7 +219,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * if the partner ask for nothing, or give invalid ranges,
 	 * return an empty list.
 	 */
-	if (owner_in->min_version >= owner_in->max_version) {
+	if (owner_in->min_version > owner_in->max_version) {
 		return NT_STATUS_OK;
 	}
 
@@ -259,19 +227,29 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * if the partner has already all records for nothing, or give invalid ranges,
 	 * return an empty list.
 	 */
-	if (owner_in->min_version >= owner->owner.max_version) {
+	if (owner_in->min_version > owner->owner.max_version) {
 		return NT_STATUS_OK;
 	}
 
-	filter = talloc_asprintf(call, "(&(winsOwner=%s)(objectClass=winsRecord)(state>=%u)(versionID>=%llu)(versionID<=%llu))",
-				 owner->owner.address, WINS_REC_ACTIVE, owner_in->min_version, owner_in->max_version);
+	filter = talloc_asprintf(call,
+				 "(&(winsOwner=%s)(objectClass=winsRecord)"
+				 "(|(recordState=%u)(recordState=%u))"
+				 "(versionID>=%llu)(versionID<=%llu))",
+				 owner->owner.address,
+				 WREPL_STATE_ACTIVE, WREPL_STATE_TOMBSTONE,
+				 owner_in->min_version, owner_in->max_version);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (res != NULL) {
 		talloc_steal(call, res);
 	}
 	if (ret < 0) return  NT_STATUS_INTERNAL_DB_CORRUPTION;
-	if (ret == 0) return NT_STATUS_OK;
+	if (ret == 0) {
+		DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
+			ret, owner_in->address, owner_in->min_version, owner_in->max_version,
+			call->wreplconn->partner->address));
+		return NT_STATUS_OK;
+	}
 
 	names = talloc_array(call, struct wrepl_wins_name, ret);
 	NT_STATUS_HAVE_NO_MEMORY(names);
@@ -280,7 +258,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		status = winsdb_record(res[i], NULL, call, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		status = wreplsrv_record2wins_name(names, &names[i], rec);
+		status = wreplsrv_record2wins_name(names, call->wreplconn->our_ip, &names[i], rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(rec);
 		talloc_free(res[i]);
@@ -289,10 +267,111 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	/* sort the names before we send them */
 	qsort(names, ret, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
 
+	DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
+		ret, owner_in->address, owner_in->min_version, owner_in->max_version,
+		call->wreplconn->partner->address));
+
 	reply_out->num_names	= ret;
 	reply_out->names	= names;
 
 	return NT_STATUS_OK;
+}
+
+struct wreplsrv_in_update_state {
+	struct wreplsrv_in_connection *wrepl_in;
+	struct wreplsrv_out_connection *wrepl_out;
+	struct composite_context *creq;
+	struct wreplsrv_pull_cycle_io cycle_io;
+};
+
+static void wreplsrv_in_update_handler(struct composite_context *creq)
+{
+	struct wreplsrv_in_update_state *update_state = talloc_get_type(creq->async.private_data,
+							struct wreplsrv_in_update_state);
+	NTSTATUS status;
+
+	status = wreplsrv_pull_cycle_recv(creq);
+
+	talloc_free(update_state->wrepl_out);
+
+	wreplsrv_terminate_in_connection(update_state->wrepl_in, nt_errstr(status));
+}
+
+static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
+{
+	struct wreplsrv_in_connection *wrepl_in = call->wreplconn;
+	struct wreplsrv_out_connection *wrepl_out;
+	struct wrepl_table *update_in = &call->req_packet.message.replication.info.table;
+	struct wreplsrv_in_update_state *update_state;
+
+	DEBUG(2,("WREPL_REPL_UPDATE: partner[%s] initiator[%s] num_owners[%u]\n",
+		call->wreplconn->partner->address,
+		update_in->initiator, update_in->partner_count));
+
+	/* 
+	 * we need to flip the connection into a client connection
+	 * and do a WREPL_REPL_SEND_REQUEST's on the that connection
+	 * and then stop this connection
+	 */
+	talloc_free(wrepl_in->conn->event.fde);
+	wrepl_in->conn->event.fde = NULL;
+
+	update_state = talloc(wrepl_in, struct wreplsrv_in_update_state);
+	NT_STATUS_HAVE_NO_MEMORY(update_state);
+
+	wrepl_out = talloc(update_state, struct wreplsrv_out_connection);
+	NT_STATUS_HAVE_NO_MEMORY(wrepl_out);
+	wrepl_out->service		= wrepl_in->service;
+	wrepl_out->partner		= wrepl_in->partner;
+	wrepl_out->assoc_ctx.our_ctx	= wrepl_in->assoc_ctx.our_ctx;
+	wrepl_out->assoc_ctx.peer_ctx	= wrepl_in->assoc_ctx.peer_ctx;
+	wrepl_out->sock			= wrepl_socket_merge(wrepl_out,
+							     wrepl_in->conn->event.ctx,
+							     wrepl_in->conn->socket);
+	NT_STATUS_HAVE_NO_MEMORY(wrepl_out->sock);
+
+	update_state->wrepl_in			= wrepl_in;
+	update_state->wrepl_out			= wrepl_out;
+	update_state->cycle_io.in.partner	= wrepl_out->partner;
+	update_state->cycle_io.in.num_owners	= update_in->partner_count;
+	update_state->cycle_io.in.owners	= update_in->partners;
+	talloc_steal(update_state, update_in->partners);
+	update_state->cycle_io.in.wreplconn	= wrepl_out;
+	update_state->creq = wreplsrv_pull_cycle_send(update_state, &update_state->cycle_io);
+	if (!update_state->creq) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	update_state->creq->async.fn		= wreplsrv_in_update_handler;
+	update_state->creq->async.private_data	= update_state;
+
+	return ERROR_INVALID_PARAMETER;
+}
+
+static NTSTATUS wreplsrv_in_update2(struct wreplsrv_in_call *call)
+{
+	return wreplsrv_in_update(call);
+}
+
+static NTSTATUS wreplsrv_in_inform(struct wreplsrv_in_call *call)
+{
+	struct wrepl_table *inform_in = &call->req_packet.message.replication.info.table;
+	NTSTATUS status;
+
+	DEBUG(2,("WREPL_REPL_INFORM: partner[%s] initiator[%s] num_owners[%u]\n",
+		call->wreplconn->partner->address,
+		inform_in->initiator, inform_in->partner_count));
+
+	status = wreplsrv_sched_inform_action(call->wreplconn->partner, inform_in);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* we don't reply to WREPL_REPL_INFORM messages */
+	return ERROR_INVALID_PARAMETER;
+}
+
+static NTSTATUS wreplsrv_in_inform2(struct wreplsrv_in_call *call)
+{
+	return wreplsrv_in_inform(call);
 }
 
 static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
@@ -318,6 +397,9 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 	switch (repl_in->command) {
 		case WREPL_REPL_TABLE_QUERY:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PUSH)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
 			status = wreplsrv_in_table_query(call);
 			break;
 
@@ -325,6 +407,9 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 			return ERROR_INVALID_PARAMETER;
 
 		case WREPL_REPL_SEND_REQUEST:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PUSH)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
 			status = wreplsrv_in_send_request(call);
 			break;
 
@@ -332,16 +417,32 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 			return ERROR_INVALID_PARAMETER;
 	
 		case WREPL_REPL_UPDATE:
-			return ERROR_INVALID_PARAMETER;
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_update(call);
+			break;
 
-		case WREPL_REPL_5:
-			return ERROR_INVALID_PARAMETER;
+		case WREPL_REPL_UPDATE2:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_update2(call);
+			break;
 
 		case WREPL_REPL_INFORM:
-			return ERROR_INVALID_PARAMETER;
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_inform(call);
+			break;
 
-		case WREPL_REPL_9:
-			return ERROR_INVALID_PARAMETER;
+		case WREPL_REPL_INFORM2:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_inform2(call);
+			break;
 
 		default:
 			return ERROR_INVALID_PARAMETER;
@@ -406,7 +507,8 @@ NTSTATUS wreplsrv_in_call(struct wreplsrv_in_call *call)
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		call->rep_packet.opcode		= WREPL_OPCODE_BITS;
+		/* let the backend to set some of the opcode bits, but always add the standards */
+		call->rep_packet.opcode		|= WREPL_OPCODE_BITS;
 		call->rep_packet.assoc_ctx	= call->wreplconn->assoc_ctx.peer_ctx;
 	}
 

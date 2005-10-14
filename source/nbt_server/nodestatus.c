@@ -106,9 +106,9 @@ void nbtd_query_status(struct nbt_name_socket *nbtsock,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 
-	NBTD_ASSERT_PACKET(packet, src->addr, packet->qdcount == 1);
-	NBTD_ASSERT_PACKET(packet, src->addr, packet->questions[0].question_type == NBT_QTYPE_STATUS);
-	NBTD_ASSERT_PACKET(packet, src->addr, packet->questions[0].question_class == NBT_QCLASS_IP);
+	NBTD_ASSERT_PACKET(packet, src, packet->qdcount == 1);
+	NBTD_ASSERT_PACKET(packet, src, packet->questions[0].question_type == NBT_QTYPE_STATUS);
+	NBTD_ASSERT_PACKET(packet, src, packet->questions[0].question_class == NBT_QCLASS_IP);
 
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
