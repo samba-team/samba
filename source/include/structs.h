@@ -276,6 +276,8 @@ struct wreplsrv_service;
 struct wreplsrv_in_connection;
 struct wreplsrv_in_call;
 
+struct winsdb_record;
+
 struct wrepl_packet;
 struct wrepl_associate;
 struct wrepl_associate_stop;
