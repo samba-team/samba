@@ -57,15 +57,17 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.state         = WINS_REC_ACTIVE;
 	rec.expire_time   = time(NULL) + ttl;
 	rec.registered_by = src->addr;
+	rec.addresses     = winsdb_addr_list_make(packet);
+	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 	if (IS_GROUP_NAME(name, nb_flags)) {
-		rec.addresses     = str_list_make(packet, "255.255.255.255", NULL);
+		rec.addresses     = winsdb_addr_list_add(rec.addresses, "255.255.255.255");
 	} else {
-		rec.addresses     = str_list_make(packet, address, NULL);
+		rec.addresses     = winsdb_addr_list_add(rec.addresses, address);
 	}
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
 	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
-		 nbt_name_string(packet, name), rec.addresses[0]));
+		 nbt_name_string(packet, name), rec.addresses[0]->address));
 	
 	return winsdb_add(winssrv, &rec);
 }
@@ -153,7 +155,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 	/* if the registration is for an address that is currently active, then 
 	   just update the expiry time */
-	if (str_list_check(rec->addresses, address)) {
+	if (winsdb_addr_list_check(rec->addresses, address)) {
 		wins_update_ttl(nbtsock, packet, rec, src);
 		goto done;
 	}
@@ -181,6 +183,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
 	struct winsdb_record *rec;
+	const char **addresses;
 
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL || rec->state != WINS_REC_ACTIVE) {
@@ -188,8 +191,14 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 		return;
 	}
 
+	addresses = winsdb_addr_string_list(packet, rec->addresses);
+	if (addresses == NULL) {
+		nbtd_negative_name_query_reply(nbtsock, packet, src);
+		return;	
+	}
+
 	nbtd_name_query_reply(nbtsock, packet, src, name, 
-			      0, rec->nb_flags, rec->addresses);
+			      0, rec->nb_flags, addresses);
 }
 
 /*
@@ -214,11 +223,11 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 
 	/* we only allow releases from an owner - other releases are
 	   silently ignored */
-	if (str_list_check(rec->addresses, src->addr)) {
+	if (winsdb_addr_list_check(rec->addresses, src->addr)) {
 		const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 
 		DEBUG(4,("WINS: released name %s at %s\n", nbt_name_string(rec, rec->name), address));
-		str_list_remove(rec->addresses, address);
+		winsdb_addr_list_remove(rec->addresses, address);
 		if (rec->addresses[0] == NULL) {
 			rec->state = WINS_REC_RELEASED;
 		}
