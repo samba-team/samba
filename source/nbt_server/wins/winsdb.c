@@ -77,32 +77,6 @@ failed:
 }
 
 /*
-  allocate a new version id for a record
-*/
-static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
-{
-	winssrv->max_version++;
-	if (!winsdb_save_version(winssrv)) {
-		return 0;
-	}
-	return winssrv->max_version;
-}
-
-/*
-  remove a version id
-*/
-static BOOL winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
-{
-	if (version == winssrv->min_version) {
-		winssrv->min_version++;
-		return winsdb_save_version(winssrv);
-	}
-
-	return True;
-}
-
-
-/*
   return a DN for a nbt_name
 */
 static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
@@ -117,6 +91,112 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 		dn = ldb_dn_string_compose(mem_ctx, dn, "scope=%s", name->scope);
 	}
 	return dn;
+}
+
+/*
+ decode the winsdb_addr("address") attribute:
+ "172.31.1.1" or 
+ "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z"
+ are valid records
+*/
+static BOOL winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
+{
+	if (version == winssrv->min_version) {
+		winssrv->min_version++;
+		return winsdb_save_version(winssrv);
+	}
+
+	return True;
+}
+
+/*
+ encode the winsdb_addr("address") attribute like this:
+ "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z"
+*/
+static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *msg, 
+				   const char *attr_name, struct winsdb_addr *addr)
+{
+	struct ldb_val val;
+	const char *str;
+
+	dn = ldb_dn_string_compose(mem_ctx, NULL, "type=%02x", name->type);
+
+	addresses[len]->address = talloc_strdup(addresses[len], address);
+	if (!addresses[len]->address) {
+		talloc_free(addresses);
+		return NULL;
+	}
+
+	addresses[len]->wins_owner = talloc_strdup(addresses[len], wins_owner);
+	if (!addresses[len]->wins_owner) {
+		talloc_free(addresses);
+		return NULL;
+	}
+
+	addresses[len]->expire_time = expire_time;
+
+	addresses[len+1] = NULL;
+
+	return addresses;
+}
+
+void winsdb_addr_list_remove(struct winsdb_addr **addresses, const char *address)
+{
+	size_t i;
+
+	for (i=0; addresses[i]; i++) {
+		if (strcmp(addresses[i]->address, address) == 0) {
+			break;
+		}
+	}
+	if (!addresses[i]) return;
+
+	for (; addresses[i]; i++) {
+		addresses[i] = addresses[i+1];
+	}
+
+	return;
+}
+
+struct winsdb_addr *winsdb_addr_list_check(struct winsdb_addr **addresses, const char *address)
+{
+	size_t i;
+
+	for (i=0; addresses[i]; i++) {
+		if (strcmp(addresses[i]->address, address) == 0) {
+			return addresses[i];
+		}
+	}
+
+	return NULL;
+}
+
+size_t winsdb_addr_list_length(struct winsdb_addr **addresses)
+{
+	size_t i;
+	for (i=0; addresses[i]; i++);
+	return i;
+}
+
+const char **winsdb_addr_string_list(TALLOC_CTX *mem_ctx, struct winsdb_addr **addresses)
+{
+	size_t len = winsdb_addr_list_length(addresses);
+	const char **str_list;
+	size_t i;
+
+	str_list = talloc_array(mem_ctx, const char *, len + 1);
+	if (!str_list) return NULL;
+
+	for (i=0; i < len; i++) {
+		str_list[i] = talloc_strdup(str_list, addresses[i]->address);
+		if (!str_list[i]) {
+			talloc_free(str_list);
+			return NULL;
+		}
+	}
+
+	str_list[len] = NULL;
+	return str_list;
 }
 
 /*
