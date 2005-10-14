@@ -429,14 +429,31 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 #endif
 
 	if (request.length) {
-		if (!msrpc_parse(&request, "CddAA",
+		BOOL parse_ok = msrpc_parse(&request, "CddAA",
 				 "NTLMSSP",
 				 &ntlmssp_command,
 				 &neg_flags,
 				 &cliname,
-				 &domname)) {
+				 &domname);
+
+		if (!parse_ok) {
+			/* PocketPC 2003 sends the cliname and domname strings in unicode,
+			   but doesn't set the unicode bit. Try with a parse string of "CddUU" */
+			SAFE_FREE(cliname);
+			SAFE_FREE(domname);
+			parse_ok = msrpc_parse(&request, "CddUU",
+				 "NTLMSSP",
+				 &ntlmssp_command,
+				 &neg_flags,
+				 &cliname,
+				 &domname);
+		}
+
+		if (!parse_ok) {
 			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate:\n"));
 			dump_data(2, (const char *)request.data, request.length);
+			SAFE_FREE(cliname);
+			SAFE_FREE(domname);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
