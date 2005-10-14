@@ -26,7 +26,6 @@
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/crypto/crypto.h"
-#include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
 
 /*********************************************************************
  Client side NTLMSSP
@@ -90,22 +89,25 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
-	DATA_BLOB struct_blob = data_blob(NULL, 0);
+	DATA_BLOB target_info = data_blob(NULL, 0);
 	char *server_domain;
 	const char *chal_parse_string;
 	const char *auth_gen_string;
-	uint8_t lm_hash[16];
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;
+	int flags = 0;
+	const char *user, *domain;
 
-	const struct samr_Password *nt_hash;
-	const char *user, *domain, *password;
+	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (!msrpc_parse(out_mem_ctx,
+	if (!msrpc_parse(mem_ctx,
 			 &in, "CdBd",
 			 "NTLMSSP",
 			 &ntlmssp_command, 
@@ -113,6 +115,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			 &chal_flags)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#1)\n"));
 		dump_data(2, in.data, in.length);
+		talloc_free(mem_ctx);
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -144,7 +147,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
 	debug_ntlmssp_flags(gensec_ntlmssp_state->neg_flags);
 
-	if (!msrpc_parse(out_mem_ctx,
+	if (!msrpc_parse(mem_ctx,
 			 &in, chal_parse_string,
 			 "NTLMSSP",
 			 &ntlmssp_command, 
@@ -152,143 +155,58 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			 &chal_flags,
 			 &challenge_blob, 8,
 			 &unkn1, &unkn2,
-			 &struct_blob)) {
+			 &target_info)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#2)\n"));
 		dump_data(2, in.data, in.length);
+		talloc_free(mem_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	gensec_ntlmssp_state->server_domain = server_domain;
 
 	if (challenge_blob.length != 8) {
+		talloc_free(mem_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, out_mem_ctx, 
+	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, mem_ctx, 
 						 &user, &domain);
 
-	nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials, out_mem_ctx);
+	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		flags |= CLI_CRED_NTLM2;
+	}
+	if (gensec_ntlmssp_state->use_ntlmv2) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+	if (gensec_ntlmssp_state->use_nt_response) {
+		flags |= CLI_CRED_NTLM_AUTH;
+	}
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
 
-	if (!nt_hash) {
-		static const uint8_t zeros[16];
-		/* do nothing - blobs are zero length */
+	nt_status = cli_credentials_get_ntlm_response(gensec_security->credentials, mem_ctx, 
+						      &flags, challenge_blob, target_info,
+						      &lm_response, &nt_response, 
+						      &lm_session_key, &session_key);
 
-		/* session key is all zeros */
-		session_key = data_blob_talloc(gensec_ntlmssp_state, zeros, 16);
-		lm_session_key = data_blob_talloc(gensec_ntlmssp_state, zeros, 16);
-
-		lm_response = data_blob(NULL, 0);
-		nt_response = data_blob(NULL, 0);
-		
-		/* not doing NLTM2 without a password */
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
-	} else if (gensec_ntlmssp_state->use_ntlmv2) {
-
-		if (!struct_blob.length) {
-			/* be lazy, match win2k - we can't do NTLMv2 without it */
-			DEBUG(1, ("Server did not provide 'target information', required for NTLMv2\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* TODO: if the remote server is standalone, then we should replace 'domain'
-		   with the server name as supplied above */
-		
-		if (!SMBNTLMv2encrypt_hash(gensec_ntlmssp_state,
-					   user, 
-					   domain, 
-					   nt_hash->hash, &challenge_blob, 
-					   &struct_blob, 
-					   &lm_response, &nt_response, 
-					   NULL, &session_key)) {
-			data_blob_free(&challenge_blob);
-			data_blob_free(&struct_blob);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* LM Key is incompatible... */
-		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-
-	} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		struct MD5Context md5_session_nonce_ctx;
-		uint8_t session_nonce[16];
-		uint8_t session_nonce_hash[16];
-		uint8_t user_session_key[16];
-		
-		lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-		generate_random_buffer(lm_response.data, 8);
-		memset(lm_response.data+8, 0, 16);
-
-		memcpy(session_nonce, challenge_blob.data, 8);
-		memcpy(&session_nonce[8], lm_response.data, 8);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 	
-		MD5Init(&md5_session_nonce_ctx);
-		MD5Update(&md5_session_nonce_ctx, challenge_blob.data, 8);
-		MD5Update(&md5_session_nonce_ctx, lm_response.data, 8);
-		MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
-
-		DEBUG(5, ("NTLMSSP challenge set by NTLM2\n"));
-		DEBUG(5, ("challenge is: \n"));
-		dump_data(5, session_nonce_hash, 8);
-		
-		nt_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-		SMBOWFencrypt(nt_hash->hash,
-			      session_nonce_hash,
-			      nt_response.data);
-		
-		session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-
-		SMBsesskeygen_ntv1(nt_hash->hash, user_session_key);
-		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
-		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
-
+	if (!(flags & CLI_CRED_LANMAN_AUTH)) {
 		/* LM Key is incompatible... */
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-	} else {
-		if (gensec_ntlmssp_state->use_nt_response) {
-			nt_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-			SMBOWFencrypt(nt_hash->hash, challenge_blob.data,
-				      nt_response.data);
+	}
 
-			session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-			SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
-			dump_data_pw("NT session key:\n", session_key.data, session_key.length);
-		}
-
-		/* lanman auth is insecure, it may be disabled.  We may also not have a password */
-		if (lp_client_lanman_auth()) {
-			password = cli_credentials_get_password(gensec_security->credentials);
-			if (!password) {
-				lm_response = nt_response;
-			} else {
-				lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-				if (!SMBencrypt(password,challenge_blob.data,
-						lm_response.data)) {
-					/* If the LM password was too long (and therefore the LM hash being
-					   of the first 14 chars only), don't send it */
-					data_blob_free(&lm_response);
-					
-					/* LM Key is incompatible with 'long' passwords */
-					gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-				} else {
-					E_deshash(password, lm_hash);
-					lm_session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-					memcpy(lm_session_key.data, lm_hash, 8);
-					memset(&lm_session_key.data[8], '\0', 8);
-					
-					if (!gensec_ntlmssp_state->use_nt_response) {
-					session_key = lm_session_key;
-					}
-				}
-			}
-		} else {
-			/* LM Key is incompatible... */
-			gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-		}
+	if (!(flags & CLI_CRED_NTLM2)) {
+		/* NTLM2 is incompatible... */
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
 	
 	if ((gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 	    && lp_client_lanman_auth() && lm_session_key.length == 16) {
-		DATA_BLOB new_session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
+		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (lm_response.length == 24) {
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data, 
 						  new_session_key.data);
@@ -318,11 +236,11 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		/* Mark the new session key as the 'real' session key */
-		session_key = data_blob_talloc(gensec_ntlmssp_state, client_session_key, sizeof(client_session_key));
+		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
 	}
 
 	/* this generates the actual auth packet */
-	if (!msrpc_gen(out_mem_ctx, 
+	if (!msrpc_gen(mem_ctx, 
 		       out, auth_gen_string, 
 		       "NTLMSSP", 
 		       NTLMSSP_AUTH, 
@@ -333,18 +251,23 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       cli_credentials_get_workstation(gensec_security->credentials),
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       gensec_ntlmssp_state->neg_flags)) {
-		
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	gensec_ntlmssp_state->session_key = session_key;
+	talloc_steal(gensec_ntlmssp_state, session_key.data);
+
+	talloc_steal(out_mem_ctx, out->data);
 
 	/* The client might be using 56 or 40 bit weakened keys */
 	ntlmssp_weaken_keys(gensec_ntlmssp_state);
 
 	gensec_ntlmssp_state->chal = challenge_blob;
 	gensec_ntlmssp_state->lm_resp = lm_response;
+	talloc_steal(gensec_ntlmssp_state->lm_resp.data, lm_response.data);
 	gensec_ntlmssp_state->nt_resp = nt_response;
+	talloc_steal(gensec_ntlmssp_state->nt_resp.data, nt_response.data);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_DONE;
 
@@ -353,10 +276,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
 				  nt_errstr(nt_status)));
+			talloc_free(mem_ctx);
 			return nt_status;
 		}
 	}
 
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -378,7 +303,7 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(-1, "ntlmssp_client", "send_nt_reponse", True);
 
-	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth() 
+	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth() 
 					  && lp_parm_bool(-1, "ntlmssp_client", "allow_lm_key", False));
 
 	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();

@@ -293,19 +293,6 @@ BOOL cli_credentials_set_domain_callback(struct cli_credentials *cred,
 	return False;
 }
 
-void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
-					      const char **username, 
-					      const char **domain) 
-{
-	if (cred->principal_obtained > cred->username_obtained) {
-		*domain = talloc_strdup(mem_ctx, "");
-		*username = cli_credentials_get_principal(cred, mem_ctx);
-	} else {
-		*domain = cli_credentials_get_domain(cred);
-		*username = cli_credentials_get_username(cred);
-	}
-}
-
 /**
  * Obtain the Kerberos realm for this credentials context.
  * @param cred credentials context

@@ -37,28 +37,6 @@ struct sesssetup_state {
 
 
 /*
-  form an encrypted lanman password from a plaintext password
-  and the server supplied challenge
-*/
-static DATA_BLOB lanman_blob(TALLOC_CTX *mem_ctx, const char *pass, DATA_BLOB challenge)
-{
-	DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, 24);
-	SMBencrypt(pass, challenge.data, blob.data);
-	return blob;
-}
-
-/*
-  form an encrypted NT password from a plaintext password
-  and the server supplied challenge
-*/
-static DATA_BLOB nt_blob(TALLOC_CTX *mem_ctx, const struct samr_Password *nt_hash, DATA_BLOB challenge)
-{
-	DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, 24);
-	SMBOWFencrypt(nt_hash->hash, challenge.data, blob.data);
-	return blob;
-}
-
-/*
   store the user session key for a transport
 */
 static void set_user_session_key(struct smbcli_session *session,
@@ -163,9 +141,19 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 				  struct smb_composite_sesssetup *io,
 				  struct smbcli_request **req) 
 {
+	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
-	const struct samr_Password *nt_hash = cli_credentials_get_nt_hash(io->in.credentials, state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup());
+	DATA_BLOB session_key;
+	int flags = CLI_CRED_NTLM_AUTH;
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth()) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
 
 	state->setup.nt1.level           = RAW_SESSSETUP_NT1;
 	state->setup.nt1.in.bufsize      = session->transport->options.max_xmit;
@@ -175,56 +163,26 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.capabilities = io->in.capabilities;
 	state->setup.nt1.in.os           = "Unix";
 	state->setup.nt1.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
+
 	cli_credentials_get_ntlm_username_domain(io->in.credentials, state, 
 						 &state->setup.nt1.in.user,
 						 &state->setup.nt1.in.domain);
+	
 
-	if (!password) {
-		state->setup.nt1.in.password1 = data_blob(NULL, 0);
-		state->setup.nt1.in.password2 = data_blob(NULL, 0);
-	} else if (session->transport->negotiate.sec_mode & 
-		   NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		DATA_BLOB session_key;
-		if (lp_client_ntlmv2_auth()) {
-			DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_netbios_name(), lp_workgroup());
-			DATA_BLOB lmv2_response, ntlmv2_response, lmv2_session_key;
-			
-			if (!SMBNTLMv2encrypt_hash(state, 
-						   state->setup.nt1.in.user, state->setup.nt1.in.domain, 
-						   nt_hash->hash, &session->transport->negotiate.secblob,
-						   &names_blob,
-						   &lmv2_response, &ntlmv2_response, 
-						   &lmv2_session_key, &session_key)) {
-				data_blob_free(&names_blob);
-				return NT_STATUS_NO_MEMORY;
-			}
-			data_blob_free(&names_blob);
-			data_blob_free(&lmv2_session_key);
-			state->setup.nt1.in.password1 = lmv2_response;
-			state->setup.nt1.in.password2 = ntlmv2_response;
-			
-		} else {
-
-			state->setup.nt1.in.password2 = nt_blob(state, nt_hash,
-								session->transport->negotiate.secblob);
-			if (lp_client_lanman_auth()) {
-				state->setup.nt1.in.password1 = lanman_blob(state, password, 
-									    session->transport->negotiate.secblob);
-			} else {
-				/* if not sending the LM password, send the NT password twice */
-				state->setup.nt1.in.password1 = state->setup.nt1.in.password2;
-			}
-
-			session_key = data_blob_talloc(session, NULL, 16);
-			SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
-		}
+	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state, 
+							      &flags, 
+							      session->transport->negotiate.secblob, 
+							      names_blob,
+							      &state->setup.nt1.in.password1,
+							      &state->setup.nt1.in.password2,
+							      NULL, &session_key);
 
 		smbcli_transport_simple_set_signing(session->transport, session_key, 
 						    state->setup.nt1.in.password2);
 		set_user_session_key(session, &session_key);
 		
 		data_blob_free(&session_key);
-
 	} else if (lp_client_plaintext_auth()) {
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
@@ -249,8 +207,19 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 				  struct smb_composite_sesssetup *io,
 				  struct smbcli_request **req) 
 {
+	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup());
+	DATA_BLOB session_key;
+	int flags = 0;
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth()) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
 
 	state->setup.old.level      = RAW_SESSSETUP_OLD;
 	state->setup.old.in.bufsize = session->transport->options.max_xmit;
@@ -263,15 +232,22 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 						 &state->setup.old.in.user,
 						 &state->setup.old.in.domain);
 	
-	if (!password) {
-		state->setup.old.in.password = data_blob(NULL, 0);
-	} else if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		state->setup.old.in.password = lanman_blob(state, password, 
-							   session->transport->negotiate.secblob);
+	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state, 
+							      &flags, 
+							      session->transport->negotiate.secblob, 
+							      names_blob,
+							      &state->setup.old.in.password,
+							      NULL,
+							      NULL, &session_key);
+		set_user_session_key(session, &session_key);
+		
+		data_blob_free(&session_key);
+	} else if (lp_client_plaintext_auth()) {
+		state->setup.old.in.password = data_blob_talloc(state, password, strlen(password));
 	} else {
-		state->setup.old.in.password = data_blob_talloc(state,
-								password, 
-								strlen(password));
+		/* could match windows client and return 'cannot logon from this workstation', but it just confuses everybody */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
 	*req = smb_raw_sesssetup_send(session, &state->setup);
