@@ -69,13 +69,16 @@ static void wins_wack_allow(struct wack_state *state)
 	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
 				     &state->src, NBT_RCODE_OK);
 
-	rec->addresses = winsdb_addr_list_add(rec->addresses, state->reg_address);
-	if (rec->addresses == NULL) goto failed;
-	
 	ttl = wins_server_ttl(state->winssrv, state->request_packet->additional[0].ttl);
 	if (now + ttl > rec->expire_time) {
 		rec->expire_time = now + ttl;
 	}
+	rec->addresses = winsdb_addr_list_add(rec->addresses,
+					      state->reg_address,
+					      WINSDB_OWNER_LOCAL,
+					      rec->expire_time);
+	if (rec->addresses == NULL) goto failed;
+
 	rec->registered_by = state->src.addr;
 
 	winsdb_modify(state->winssrv, rec);
