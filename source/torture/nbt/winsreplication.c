@@ -1139,6 +1139,9 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	/* 
 	 * unique,released vs. group,released
 	 * => should be replaced
+	 *
+	 * here we need a 2nd round to make sure
+	 * released vs. released is handled correct
 	 */
 	{
 		.line	= __location__,
@@ -1164,32 +1167,27 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.apply_expected	= True
 		}
 	},
-
-	/* 
-	 * unique,released vs. group,released
-	 * => should be replaced
-	 */
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
 		.r1	= {
-			.owner		= &ctx->a,
+			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
-			.state		= WREPL_STATE_RELEASED,
+			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
 			.num_ips	= ARRAY_SIZE(addresses_A_1),
 			.ips		= addresses_A_1,
-			.apply_expected	= False
+			.apply_expected	= False /* this should conflict with the group.released above */
 		},
 		.r2	= {
-			.owner		= &ctx->b,
+			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_GROUP,
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= True
 		}
 	},
