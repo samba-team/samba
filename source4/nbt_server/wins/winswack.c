@@ -69,7 +69,7 @@ static void wins_wack_allow(struct wack_state *state)
 	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
 				     &state->src, NBT_RCODE_OK);
 
-	rec->addresses = str_list_add(rec->addresses, state->reg_address);
+	rec->addresses = winsdb_addr_list_add(rec->addresses, state->reg_address);
 	if (rec->addresses == NULL) goto failed;
 	
 	ttl = wins_server_ttl(state->winssrv, state->request_packet->additional[0].ttl);
@@ -133,11 +133,9 @@ static void wins_wack_handler(struct nbt_name_request *req)
 
 	/* we are going to allow the registration, but first remove any addresses
 	   from the record that aren't in the reply from the client */
-	for (i=0;rec->addresses[i];) {
-		if (!str_list_check(state->query.out.reply_addrs, rec->addresses[i])) {
-			str_list_remove(rec->addresses, rec->addresses[i]);
-		} else {
-			i++;
+	for (i=0; state->query.out.reply_addrs[i]; i++) {
+		if (!winsdb_addr_list_check(rec->addresses, state->query.out.reply_addrs[i])) {
+			winsdb_addr_list_remove(rec->addresses, state->query.out.reply_addrs[i]);
 		}
 	}
 
@@ -174,7 +172,8 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 	state->nbtsock         = nbtsock;
 	state->request_packet  = talloc_steal(state, packet);
 	state->rec             = talloc_steal(state, rec);
-	state->owner_addresses = rec->addresses;
+	state->owner_addresses = winsdb_addr_string_list(state, rec->addresses);
+	if (state->owner_addresses == NULL) goto failed;
 	state->reg_address     = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	state->src.port        = src->port;
 	state->src.addr        = talloc_strdup(state, src->addr);
@@ -196,7 +195,7 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 
 	/* send a WACK to the client, specifying the maximum time it could
 	   take to check with the owner, plus some slack */
-	ttl = 5 + 4 * str_list_length(rec->addresses);
+	ttl = 5 + 4 * winsdb_addr_list_length(rec->addresses);
 	nbtd_wack_reply(nbtsock, packet, src, ttl);
 
 	req = nbt_name_query_send(nbtsock, &state->query);

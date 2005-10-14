@@ -119,22 +119,122 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 	return dn;
 }
 
-static const char *winsdb_addr_decode(TALLOC_CTX *mem_ctx, struct ldb_val *val)
+static struct winsdb_addr *winsdb_addr_decode(TALLOC_CTX *mem_ctx, struct ldb_val *val)
 {
-	const char *addr;
-	addr = talloc_steal(mem_ctx, val->data);
+	struct winsdb_addr *addr;
+
+	addr = talloc(mem_ctx, struct winsdb_addr);
+	if (!addr) return NULL;
+
+	addr->address = talloc_steal(addr, val->data);
+
 	return addr;
 }
 
 static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *msg, 
-				   const char *attr_name, const char *addr)
+				   const char *attr_name, struct winsdb_addr *addr)
 {
 	struct ldb_val val;
 
-	val.data = discard_const_p(uint8_t, addr);
-	val.length = strlen(addr);
+	val.data = discard_const_p(uint8_t, addr->address);
+	val.length = strlen(addr->address);
 
 	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+}
+
+struct winsdb_addr **winsdb_addr_list_make(TALLOC_CTX *mem_ctx)
+{
+	struct winsdb_addr **addresses;
+
+	addresses = talloc_array(mem_ctx, struct winsdb_addr *, 1);
+	if (!addresses) return NULL;
+
+	addresses[0] = NULL;
+
+	return addresses;
+}
+
+struct winsdb_addr **winsdb_addr_list_add(struct winsdb_addr **addresses, const char *address)
+{
+	size_t len = winsdb_addr_list_length(addresses);
+
+	addresses = talloc_realloc(addresses, addresses, struct winsdb_addr *, len + 2);
+	if (!addresses) return NULL;
+
+	addresses[len] = talloc(addresses, struct winsdb_addr);
+	if (!addresses[len]) {
+		talloc_free(addresses);
+		return NULL;
+	}
+
+	addresses[len]->address = talloc_strdup(addresses[len], address);
+	if (!addresses[len]->address) {
+		talloc_free(addresses);
+		return NULL;	
+	}
+
+	addresses[len+1] = NULL;
+
+	return addresses;
+}
+
+void winsdb_addr_list_remove(struct winsdb_addr **addresses, const char *address)
+{
+	size_t i;
+
+	for (i=0; addresses[i]; i++) {
+		if (strcmp(addresses[i]->address, address) == 0) {
+			break;
+		}
+	}
+	if (!addresses[i]) return;
+
+	for (; addresses[i]; i++) {
+		addresses[i] = addresses[i+1];
+	}
+
+	return;
+}
+
+struct winsdb_addr *winsdb_addr_list_check(struct winsdb_addr **addresses, const char *address)
+{
+	size_t i;
+
+	for (i=0; addresses[i]; i++) {
+		if (strcmp(addresses[i]->address, address) == 0) {
+			return addresses[i];
+		}
+	}
+
+	return NULL;
+}
+
+size_t winsdb_addr_list_length(struct winsdb_addr **addresses)
+{
+	size_t i;
+	for (i=0; addresses[i]; i++);
+	return i;
+}
+
+const char **winsdb_addr_string_list(TALLOC_CTX *mem_ctx, struct winsdb_addr **addresses)
+{
+	size_t len = winsdb_addr_list_length(addresses);
+	const char **str_list;
+	size_t i;
+
+	str_list = talloc_array(mem_ctx, const char *, len + 1);
+	if (!str_list) return NULL;
+
+	for (i=0; i < len; i++) {
+		str_list[i] = talloc_strdup(str_list, addresses[i]->address);
+		if (!str_list[i]) {
+			talloc_free(str_list);
+			return NULL;
+		}
+	}
+
+	str_list[len] = NULL;
+	return str_list;
 }
 
 /*
@@ -173,7 +273,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	el = ldb_msg_find_element(res[0], "address");
 	if (el == NULL) goto failed;
 
-	rec->addresses     = talloc_array(rec, const char *, el->num_values+1);
+	rec->addresses     = talloc_array(rec, struct winsdb_addr *, el->num_values+1);
 	if (rec->addresses == NULL) goto failed;
 
 	for (i=0;i<el->num_values;i++) {
