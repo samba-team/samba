@@ -29,10 +29,25 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
+#include "nbt_server/wins/winsdb.h"
+#include "ldb/include/ldb.h"
 
 void wreplsrv_terminate_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
 {
 	stream_terminate_connection(wreplconn->conn, reason);
+}
+
+static struct wreplsrv_partner *wreplsrv_find_partner(struct wreplsrv_service *service, const char *peer_addr)
+{
+	struct wreplsrv_partner *cur;
+
+	for (cur = service->partners; cur; cur = cur->next) {
+		if (strcmp(cur->address, peer_addr) == 0) {
+			return cur;
+		}
+	}
+
+	return NULL;
 }
 
 /*
@@ -42,6 +57,7 @@ static void wreplsrv_accept(struct stream_connection *conn)
 {
 	struct wreplsrv_service *service = talloc_get_type(conn->private, struct wreplsrv_service);
 	struct wreplsrv_in_connection *wreplconn;
+	const char *peer_ip;
 
 	wreplconn = talloc_zero(conn, struct wreplsrv_in_connection);
 	if (!wreplconn) {
@@ -57,7 +73,13 @@ static void wreplsrv_accept(struct stream_connection *conn)
 		return;
 	}
 
-	/* TODO: find out if it's a partner */
+	peer_ip	= socket_get_peer_addr(conn->socket, wreplconn);
+	if (!peer_ip) {
+		wreplsrv_terminate_connection(wreplconn, "wreplsrv_accept: out of memory");
+		return;
+	}
+
+	wreplconn->partner	= wreplsrv_find_partner(service, peer_ip);
 
 	conn->private = wreplconn;
 
@@ -271,10 +293,201 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 }
 
 /*
+  load our replication partners
+*/
+static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
+{
+	struct ldb_message **res = NULL;
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(service);
+	int i;
+
+	/* find the record in the WINS database */
+	ret = ldb_search(service->wins_db, ldb_dn_explode(tmp_ctx, "CN=PARTNERS"), LDB_SCOPE_ONELEVEL,
+			 "(objectClass=wreplPartner)", NULL, &res);
+	if (res != NULL) {
+		talloc_steal(tmp_ctx, res);
+	}
+	if (ret < 0) goto failed;
+	if (ret == 0) goto done;
+
+	for (i=0; i < ret; i++) {
+		struct wreplsrv_partner *partner;
+
+		partner = talloc(service, struct wreplsrv_partner);
+		if (partner == NULL) goto failed;
+
+		partner->address	= ldb_msg_find_string(res[i], "address", NULL);
+		if (!partner->address) goto failed;
+		partner->name		= ldb_msg_find_string(res[i], "name", partner->address);
+		partner->type		= ldb_msg_find_int(res[i], "type", WINSREPL_PARTNER_BOTH);
+		partner->pull.interval	= ldb_msg_find_int(res[i], "pullInterval", WINSREPL_DEFAULT_PULL_INTERVAL);
+		partner->our_address	= ldb_msg_find_string(res[i], "ourAddress", NULL);
+
+		talloc_steal(partner, partner->address);
+		talloc_steal(partner, partner->name);
+		talloc_steal(partner, partner->our_address);
+
+		DLIST_ADD(service->partners, partner);
+	}
+done:
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+failed:
+	talloc_free(tmp_ctx);
+	return NT_STATUS_FOOBAR;
+}
+
+uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
+{
+	int ret;
+	struct ldb_context *ldb = service->wins_db;
+	struct ldb_dn *dn;
+	struct ldb_message **res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(service);
+	uint64_t maxVersion = 0;
+
+	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
+	if (!dn) goto failed;
+
+	/* find the record in the WINS database */
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
+			 NULL, NULL, &res);
+	if (res != NULL) {
+		talloc_steal(tmp_ctx, res);
+	}
+	if (ret < 0) goto failed;
+	if (ret > 1) goto failed;
+
+	if (ret == 1) {
+		maxVersion = ldb_msg_find_uint64(res[0], "maxVersion", 0);
+	}
+
+failed:
+	talloc_free(tmp_ctx);
+	return maxVersion;
+}
+
+static struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_owner *table, const char *wins_owner)
+{
+	struct wreplsrv_owner *cur;
+
+	for (cur = table; cur; cur = cur->next) {
+		if (strcmp(cur->owner.address, wins_owner) == 0) {
+			return cur;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ update the wins_owner_table max_version, if the given version is the highest version
+ if no entry for the wins_owner exists yet, create one
+*/
+static NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
+				   TALLOC_CTX *mem_ctx, struct wreplsrv_owner **_table,
+				   const char *wins_owner, uint64_t version)
+{
+	struct wreplsrv_owner *table = *_table;
+	struct wreplsrv_owner *cur;
+
+	if (strcmp(WINSDB_OWNER_LOCAL, wins_owner) == 0) {
+		return NT_STATUS_OK;
+	}
+
+	cur = wreplsrv_find_owner(table, wins_owner);
+
+	/* if it doesn't exists yet, create one */
+	if (!cur) {
+		cur = talloc_zero(mem_ctx, struct wreplsrv_owner);
+		NT_STATUS_HAVE_NO_MEMORY(cur);
+
+		cur->owner.address	= talloc_strdup(cur, wins_owner);
+		NT_STATUS_HAVE_NO_MEMORY(cur->owner.address);
+		cur->owner.min_version	= 0;
+		cur->owner.max_version	= 0;
+		cur->owner.type		= 1; /* don't know why this is always 1 */
+
+		cur->partner		= wreplsrv_find_partner(service, wins_owner);
+
+		DLIST_ADD(table, cur);
+		*_table = table;
+	}
+
+	/* the min_version is always 0 here, and won't be updated */
+
+	/* if the given version is higher the then current nax_version, update */
+	if (cur->owner.max_version < version) {
+		cur->owner.max_version = version;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  load the partner table
+*/
+static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
+{
+	struct ldb_message **res = NULL;
+	int ret;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(service);
+	int i;
+	const char *wins_owner;
+	uint64_t version;
+	const char * const attrs[] = {
+		"winsOwner",
+		"version",
+		NULL
+	};
+
+	/* find the record in the WINS database */
+	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE,
+			 "(objectClass=wins)", attrs, &res);
+	if (res != NULL) {
+		talloc_steal(tmp_ctx, res);
+	}
+	status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+	if (ret < 0) goto failed;
+	if (ret == 0) goto done;
+
+	for (i=0; i < ret; i++) {
+		wins_owner     = ldb_msg_find_string(res[i], "winsOwner", NULL);
+		version        = ldb_msg_find_uint64(res[i], "version", 0);
+
+		if (wins_owner) { 
+			status = wreplsrv_add_table(service,
+						    service, &service->table,
+						    wins_owner, version);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
+		}
+		talloc_free(res[i]);
+
+		/* TODO: what's abut the per address owners? */
+	}
+done:
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+failed:
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+/*
   setup our replication partners
 */
 static NTSTATUS wreplsrv_setup_partners(struct wreplsrv_service *service)
 {
+	NTSTATUS status;
+
+	status = wreplsrv_load_partners(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = wreplsrv_load_table(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	return NT_STATUS_OK;
 }
 
@@ -309,7 +522,7 @@ static NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
 		for(i = 0; i < num_interfaces; i++) {
 			address = iface_n_ip(i);
 			status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
-						     "ipv4", address, &port, NULL);
+						     "ipv4", address, &port, service);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
 					 address, port, nt_errstr(status)));
@@ -319,7 +532,7 @@ static NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
 	} else {
 		address = lp_socket_address();
 		status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
-					     "ipv4", address, &port, NULL);
+					     "ipv4", address, &port, service);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
 				 address, port, nt_errstr(status)));
