@@ -29,6 +29,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
+#include "nbt_server/wins/winsdb.h"
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -103,9 +104,66 @@ static NTSTATUS wreplsrv_in_stop_association(struct wreplsrv_in_call *call)
 	return wreplsrv_in_stop_assoc_ctx(call);
 }
 
+static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
+{
+	struct wreplsrv_service *service = call->wreplconn->service;
+	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
+	struct wrepl_table *table_out = &call->rep_packet.message.replication.info.table;
+	struct wreplsrv_owner *cur;
+	uint64_t local_max_version;
+	uint32_t i = 0;
+
+	repl_out->command = WREPL_REPL_TABLE_REPLY;
+
+	table_out->partner_count	= 0;
+	table_out->partners		= NULL;
+	table_out->initiator		= WINSDB_OWNER_LOCAL;
+
+	local_max_version = wreplsrv_local_max_version(service);
+	if (local_max_version > 0) {
+		table_out->partner_count++;
+	}
+
+	for (cur = service->table; cur; cur = cur->next) {
+		table_out->partner_count++;
+	}
+
+	table_out->partners = talloc_array(call, struct wrepl_wins_owner, table_out->partner_count);
+	NT_STATUS_HAVE_NO_MEMORY(table_out->partners);
+
+	if (local_max_version > 0) {
+		table_out->partners[i].address		= call->wreplconn->our_ip;
+		table_out->partners[i].min_version	= 0;
+		table_out->partners[i].max_version	= local_max_version;
+		table_out->partners[i].type		= 1;
+		i++;
+	}
+
+	for (cur = service->table; cur; cur = cur->next) {
+		table_out->partners[i] = cur->owner;
+		i++;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
+{
+	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
+	struct wrepl_send_reply *reply_out = &call->rep_packet.message.replication.info.reply;
+
+	repl_out->command = WREPL_REPL_SEND_REPLY;
+
+	reply_out->num_names	= 0;
+	reply_out->names	= NULL;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 {
 	struct wrepl_replication *repl_in = &call->req_packet.message.replication;
+	NTSTATUS status;
 
 	/*
 	 * w2k only check the assoc_ctx if the opcode has the 0x00007800 bits are set
@@ -125,24 +183,40 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 	switch (repl_in->command) {
 		case WREPL_REPL_TABLE_QUERY:
+			status = wreplsrv_in_table_query(call);
 			break;
+
 		case WREPL_REPL_TABLE_REPLY:
-			break;
+			return ERROR_INVALID_PARAMETER;
+
 		case WREPL_REPL_SEND_REQUEST:
+			status = wreplsrv_in_send_request(call);
 			break;
+
 		case WREPL_REPL_SEND_REPLY:
-			break;
+			return ERROR_INVALID_PARAMETER;
+	
 		case WREPL_REPL_UPDATE:
-			break;
+			return ERROR_INVALID_PARAMETER;
+
 		case WREPL_REPL_5:
-			break;
+			return ERROR_INVALID_PARAMETER;
+
 		case WREPL_REPL_INFORM:
-			break;
+			return ERROR_INVALID_PARAMETER;
+
 		case WREPL_REPL_9:
-			break;
+			return ERROR_INVALID_PARAMETER;
+
+		default:
+			return ERROR_INVALID_PARAMETER;
 	}
 
-	return ERROR_INVALID_PARAMETER;
+	if (NT_STATUS_IS_OK(status)) {
+		call->rep_packet.mess_type = WREPL_REPLICATION;
+	}
+
+	return status;
 }
 
 static NTSTATUS wreplsrv_in_invalid_assoc_ctx(struct wreplsrv_in_call *call)
