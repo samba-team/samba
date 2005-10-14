@@ -93,6 +93,46 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 	return dn;
 }
 
+struct nbt_name *winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+{
+	struct nbt_name *name;
+	uint32_t cur = 0;
+
+	name = talloc(mem_ctx, struct nbt_name);
+	if (!name) goto failed;
+
+	if (dn->comp_num > 3) {
+		goto failed;
+	}
+
+	if (dn->comp_num > cur && strcasecmp("scope", dn->components[cur].name) == 0) {
+		name->scope	= talloc_steal(name, dn->components[cur].value.data);
+		cur++;
+	} else {
+		name->scope	= NULL;
+	}
+
+	if (dn->comp_num > cur && strcasecmp("name", dn->components[cur].name) == 0) {
+		name->name	= talloc_steal(name, dn->components[cur].value.data);
+		cur++;
+	} else {
+		name->name	= talloc_strdup(name, "");
+		if (!name->name) goto failed;
+	}
+
+	if (dn->comp_num > cur && strcasecmp("type", dn->components[cur].name) == 0) {
+		name->type	= strtoul((char *)dn->components[cur].value.data, NULL, 16);
+		cur++;
+	} else {
+		goto failed;
+	}
+
+	return name;
+failed:
+	talloc_free(name);
+	return NULL;
+}
+
 /*
  decode the winsdb_addr("address") attribute:
  "172.31.1.1" or 
