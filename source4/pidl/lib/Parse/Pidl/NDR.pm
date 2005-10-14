@@ -31,7 +31,7 @@ require Exporter;
 use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
-@EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred);
+@EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType);
@@ -652,6 +652,17 @@ sub GetPrevLevel($$)
 	}
 
 	return undef;
+}
+
+sub ContainsString($)
+{
+	my ($e) = @_;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		return 1 if ($l->{TYPE} eq "ARRAY" and $l->{IS_ZERO_TERMINATED});
+	}
+
+	return 0;
 }
 
 sub ContainsDeferred($$)
