@@ -61,9 +61,6 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.addresses     = winsdb_addr_list_make(packet);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
-	if (IS_GROUP_NAME(name, nb_flags)) {
-		address = WINSDB_GROUP_ADDRESS;
-	}
 	rec.addresses     = winsdb_addr_list_add(rec.addresses,
 						 address,
 						 WINSDB_OWNER_LOCAL,
@@ -200,10 +197,20 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 		return;
 	}
 
-	addresses = winsdb_addr_string_list(packet, rec->addresses);
-	if (addresses == NULL) {
-		nbtd_negative_name_query_reply(nbtsock, packet, src);
-		return;	
+	if (IS_GROUP_NAME(name, rec->nb_flags)) {
+		addresses = talloc_array(packet, const char *, 2);
+		if (addresses == NULL) {
+			nbtd_negative_name_query_reply(nbtsock, packet, src);
+			return;
+		}
+		addresses[0] = WINSDB_GROUP_ADDRESS;
+		addresses[1] = NULL;
+	} else {
+		addresses = winsdb_addr_string_list(packet, rec->addresses);
+		if (addresses == NULL) {
+			nbtd_negative_name_query_reply(nbtsock, packet, src);
+			return;	
+		}
 	}
 
 	nbtd_name_query_reply(nbtsock, packet, src, name, 
