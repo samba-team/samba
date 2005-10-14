@@ -127,7 +127,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm \
 	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
-	smbcacls pdbedit tdbbackup smbtree ntlm_auth smbcquotas
+	smbcacls pdbedit eventlogadm tdbbackup smbtree ntlm_auth smbcquotas
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -426,6 +426,7 @@ fi
 %{prefix}/bin/smbcquotas
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
+%{prefix}/bin/eventlogadm
 %{prefix}/bin/tdbbackup
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
