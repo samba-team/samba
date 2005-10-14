@@ -613,6 +613,58 @@ failed:
 	return status;
 }
 
+	rec = talloc(mem_ctx, struct winsdb_record);
+	if (rec == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	if (!name) {
+		status = winsdb_nbt_name(rec, msg->dn, &name);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+	}
+
+	/* parse it into a more convenient winsdb_record structure */
+	rec->name           = name;
+	rec->state          = ldb_msg_find_int(msg, "state", WINS_REC_RELEASED);
+	rec->nb_flags       = ldb_msg_find_int(msg, "nbFlags", 0);
+	rec->wins_owner     = ldb_msg_find_string(msg, "winsOwner", NULL);
+	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(msg, "expireTime", NULL));
+	rec->registered_by  = ldb_msg_find_string(msg, "registeredBy", NULL);
+	rec->version        = ldb_msg_find_uint64(msg, "versionID", 0);
+	talloc_steal(rec, rec->wins_owner);
+	talloc_steal(rec, rec->registered_by);
+
+	if (!rec->wins_owner) rec->wins_owner = WINSDB_OWNER_LOCAL;
+
+	el = ldb_msg_find_element(msg, "address");
+	if (el == NULL) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+
+	rec->addresses     = talloc_array(rec, struct winsdb_addr *, el->num_values+1);
+	if (rec->addresses == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		status = winsdb_addr_decode(rec, &el->values[i], rec->addresses, &rec->addresses[i]);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+	}
+	rec->addresses[i] = NULL;
+
+	*_rec = rec;
+	return NT_STATUS_OK;
+failed:
+	if (NT_STATUS_EQUAL(NT_STATUS_INTERNAL_DB_CORRUPTION, status)) {
+		DEBUG(1,("winsdb_record: corrupted record: %s\n", ldb_dn_linearize(rec, msg->dn)));
+	}
+	talloc_free(rec);
+	return status;
+}
+
 /*
   form a ldb_message from a winsdb_record
 */
