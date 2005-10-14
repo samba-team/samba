@@ -331,7 +331,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 
 	DEBUG(5,("_reg_info: looking up value: [%s]\n", name));
 
-	if ( !(regvals = TALLOC_P( p->mem_ctx, REGVAL_CTR )) ) 
+	if ( !(regvals = TALLOC_ZERO_P( p->mem_ctx, REGVAL_CTR )) ) 
 		return WERR_NOMEM;
 	
 	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
@@ -535,6 +535,10 @@ WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE 
 	if ( !fetch_reg_values_specific( regkey, &val, q_u->val_index ) ) {
 		status = WERR_NO_MORE_ITEMS;
 		goto done;
+	}
+
+	if ( val->type == REG_MULTI_SZ ) {
+
 	}
 	
 	DEBUG(10,("_reg_enum_value: retrieved value named  [%s]\n", val->valuename));
