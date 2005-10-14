@@ -67,9 +67,44 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
 /********************************************************************
 ********************************************************************/
 
-static BOOL elog_check_access( EVENTLOG_INFO *info )
+static BOOL elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 {
-	return True;
+	char *tdbname = elog_tdbname( info->logname );
+	SEC_DESC *sec_desc;
+	BOOL ret;
+	NTSTATUS ntstatus;
+	
+	if ( !tdbname ) 
+		return False;
+	
+	/* get the security descriptor for the file */
+	
+	sec_desc = get_nt_acl_no_snum( info, tdbname );
+	SAFE_FREE( tdbname );
+	
+	if ( !sec_desc ) {
+		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s\n", 
+			tdbname));
+		return False;
+	}
+	
+	/* run the check, try for the max allowed */
+	
+	ret = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
+		&info->access_granted, &ntstatus );
+		
+	if ( sec_desc )
+		TALLOC_FREE( sec_desc );
+		
+	if ( !ret ) {
+		DEBUG(8,("elog_check_access: se_access_check() return %s\n",
+			nt_errstr( ntstatus)));
+		return False;
+	}
+	
+	/* we have to have READ permission for a successful open */
+	
+	return ( info->access_granted & SA_RIGHT_FILE_READ_DATA );
 }
 
 /********************************************************************
@@ -106,7 +141,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 	elog->logname = talloc_strdup( elog, logname );
 	
 	/* do the access check */
-	if ( !elog_check_access( elog ) ) {
+	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
 		TALLOC_FREE( elog );
 		return WERR_ACCESS_DENIED;
 	}
@@ -130,7 +165,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 			elog->logname = talloc_strdup( elog, ELOG_APPL );			
 
 			/* do the access check */
-			if ( !elog_check_access( elog ) ) {
+			if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
 				TALLOC_FREE( elog );
 				return WERR_ACCESS_DENIED;
 			}

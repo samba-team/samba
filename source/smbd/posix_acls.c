@@ -4182,3 +4182,58 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 	/* Finally check other write access. */
 	return (psbuf->st_mode & S_IWOTH) ? True : False;
 }
+
+/********************************************************************
+ Pull the NT ACL from a file on disk or the OpenEventlog() access
+ check.  Caller is responsible for freeing the returned security
+ descriptor via TALLOC_FREE().  This is designed for dealing with 
+ user space access checks in smbd outside of the VFS.  For example,
+ checking access rights in OpenEventlog().
+ 
+ Assume we are dealing with files (for now)
+********************************************************************/
+
+SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
+{
+	SEC_DESC *psd, *ret_sd;
+	size_t sd_size;
+	connection_struct conn;
+	files_struct finfo;
+	struct fd_handle fh;
+	fstring path;
+	pstring filename;
+	
+	ZERO_STRUCT( conn );
+	conn.service = -1;
+	
+	if ( !(conn.mem_ctx = talloc_init( "novfs_get_nt_acl" )) ) {
+		DEBUG(0,("novfs_get_nt_acl: talloc() failed!\n"));
+		return NULL;
+	}
+	
+	fstrcpy( path, "/" );
+	string_set(&conn.connectpath, path);
+	
+	if (!smbd_vfs_init(&conn)) {
+		DEBUG(0,("novfs_get_nt_acl: Unable to create a fake connection struct!\n"));
+		return NULL;
+        }
+	
+	ZERO_STRUCT( finfo );
+	ZERO_STRUCT( fh );
+	
+	finfo.fnum = -1;
+	finfo.conn = &conn;
+	finfo.fh = &fh;
+	finfo.fh->fd = -1;
+	pstrcpy( filename, fname );
+	finfo.fsp_name = filename;
+	
+	sd_size = get_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd );
+	
+	ret_sd = dup_sec_desc( ctx, psd );
+	
+	conn_free_internal( &conn );
+	
+	return ret_sd;
+}
