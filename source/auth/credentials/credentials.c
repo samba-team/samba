@@ -533,17 +533,14 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 
 BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(cred);
 	const char *username = cli_credentials_get_username(cred);
 	
 	/* Yes, it is deliberate that we die if we have a NULL pointer
 	 * here - anonymous is "", not NULL, which is 'never specified,
 	 * never guessed', ie programmer bug */
 	if (!username[0]) {
-		talloc_free(tmp_ctx);
 		return True;
 	}
-	
-	talloc_free(tmp_ctx);
+
 	return False;
 }
