@@ -140,20 +140,15 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		
 	elog->logname = talloc_strdup( elog, logname );
 	
-	/* do the access check */
-	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
-		TALLOC_FREE( elog );
-		return WERR_ACCESS_DENIED;
-	}
+	/* Open the tdb first (so that we can create any new tdbs if necessary).
+	   We have to do this as root and then use an internal access check 
+	   on the file permissions since you can only have a tdb open once
+	   in a single process */
 
-	/* having done the nexessary access checks, surround the
-	   tdb open with a {un}become_root() pair since we can
-	   only have one tdb context per eventlog per process */
-	
 	become_root();
 	elog->tdb = elog_open_tdb( elog->logname );
 	unbecome_root();
-	
+
 	if ( !elog->tdb ) {
 		/* according to MSDN, if the logfile cannot be found, we should
 		  default to the "Application" log */
@@ -177,8 +172,16 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		
 		if ( !elog->tdb ) {
 			TALLOC_FREE( elog );
-			return WERR_OBJECT_PATH_INVALID;	/* ??? */		
+			return WERR_ACCESS_DENIED;	/* ??? */		
 		}
+	}
+	
+	/* now do the access check.  Close the tdb if we fail here */
+
+	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
+		elog_close_tdb( elog->tdb );
+		TALLOC_FREE( elog );
+		return WERR_ACCESS_DENIED;
 	}
 	
 	/* create the policy handle */

@@ -46,7 +46,7 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 		tdbfilename));
 
 	tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT, 
-		O_RDWR|O_CREAT|O_TRUNC, 0660 );
+		O_RDWR|O_CREAT|O_TRUNC, 0600 );
 
 	if ( !tdb ) {
 		DEBUG( 0, ( "Can't open tdb for [%s]\n", tdbfilename ) );
@@ -74,10 +74,11 @@ char *elog_tdbname( const char *name )
 {
 	fstring path;
 	char *tdb_fullpath;
-
-	pstr_sprintf( path, "eventlog/%s.tdb", name );
+	char *eventlogdir = lock_path( "eventlog" );
+	
+	pstr_sprintf( path, "%s/%s.tdb", eventlogdir, name );
 	strlower_m( path );
-	tdb_fullpath = SMB_STRDUP( lock_path(path) );
+	tdb_fullpath = SMB_STRDUP( path );
 	
 	return tdb_fullpath;
 }
@@ -324,7 +325,8 @@ TDB_CONTEXT *elog_open_tdb( char *logname )
 	char *tdbfilename;
 	pstring tdbpath;
 	struct elog_open_tdb *tdb_node;
-	
+	char *eventlogdir;
+
 	/* first see if we have an open context */
 	
 	for ( ptr=open_elog_list; ptr; ptr=ptr->next ) {
@@ -333,6 +335,12 @@ TDB_CONTEXT *elog_open_tdb( char *logname )
 			return ptr->tdb;		
 		}
 	}
+	
+	/* make sure that the eventlog dir exists */
+	
+	eventlogdir = lock_path( "eventlog" );
+	if ( !directory_exist( eventlogdir, NULL ) )
+		mkdir( eventlogdir, 0755 );	
 	
 	/* get the path on disk */
 	
