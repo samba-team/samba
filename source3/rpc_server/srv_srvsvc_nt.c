@@ -2275,31 +2275,18 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 
 WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
 {
-	int snum;
 	fstring share_name;
 
-	r_u->status=WERR_OK;
-
-	switch(q_u->type) {
-
+	switch ( q_u->type ) {
 	case 0x9:
-
-		/*check if share name is ok*/
-		/*also check if we already have a share with this name*/
+		/* check if share name is ok. 
+		  TODO: check for invalid characters in name? */
 
 		unistr2_to_ascii(share_name, &q_u->uni_name, sizeof(share_name));
-		snum = find_service(share_name);
-
-		/* Share already exists. */
-		if (snum >= 0)
-			r_u->status = WERR_ALREADY_EXISTS;
 		break;
-
 	default:
-		/*unsupported type*/
-		r_u->status = WERR_UNKNOWN_LEVEL;
-		break;
+		return WERR_UNKNOWN_LEVEL;
 	}
 
-	return r_u->status;
+	return WERR_OK;
 }
