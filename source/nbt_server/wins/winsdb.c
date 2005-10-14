@@ -149,14 +149,79 @@ failed:
  "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z;"
  are valid records
 */
-static BOOL winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
+static NTSTATUS winsdb_addr_decode(struct winsdb_record *rec, struct ldb_val *val,
+				   TALLOC_CTX *mem_ctx, struct winsdb_addr **_addr)
 {
-	if (version == winssrv->min_version) {
-		winssrv->min_version++;
-		return winsdb_save_version(winssrv);
+	NTSTATUS status;
+	struct winsdb_addr *addr;
+	char *address;
+	char *wins_owner;
+	char *expire_time;
+	char *p;
+
+	addr = talloc(mem_ctx, struct winsdb_addr);
+	if (!addr) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
 	}
 
-	return True;
+	address = (char *)val->data;
+
+	p = strchr(address, ';');
+	if (!p) {
+		/* support old entries, with only the address */
+		addr->address		= talloc_steal(addr, val->data);
+		addr->wins_owner	= rec->wins_owner;
+		addr->expire_time	= rec->expire_time;
+		*_addr = addr;
+		return NT_STATUS_OK;
+	}
+
+	*p = '\0';p++;
+	addr->address = talloc_strdup(addr, address);
+	if (!addr->address) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	if (strncmp("winsOwner:", p, 10) != 0) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+	wins_owner = p + 10;
+	p = strchr(wins_owner, ';');
+	if (!p) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+
+	*p = '\0';p++;
+	addr->wins_owner = talloc_strdup(addr, wins_owner);
+	if (!addr->wins_owner) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	if (strncmp("expireTime:", p, 11) != 0) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+
+	expire_time = p + 11;
+	p = strchr(expire_time, ';');
+	if (!p) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+
+	*p = '\0';p++;
+	addr->expire_time = ldap_string_to_time(expire_time);
+
+	*_addr = addr;
+	return NT_STATUS_OK;
+failed:
+	talloc_free(addr);
+	return status;
 }
 
 /*
@@ -783,9 +848,6 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 	const struct ldb_dn *dn;
 	int trans;
 	int ret;
-
-	trans = ldb_transaction_start(ldb);
-	if (trans != LDB_SUCCESS) goto failed;
 
 	if(!winsdb_remove_version(winssrv, rec->version))
 		goto failed;
