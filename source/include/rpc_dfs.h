@@ -187,14 +187,11 @@ typedef struct netdfs_q_dfs_GetManagerVersion {
 } NETDFS_Q_DFS_GETMANAGERVERSION;
 
 typedef struct netdfs_r_dfs_GetManagerVersion {
-	uint32 ptr0_exist_flag;
 	uint32 exist_flag;
 } NETDFS_R_DFS_GETMANAGERVERSION;
 
 typedef struct netdfs_q_dfs_Add {
-	uint32 ptr0_path;
 	UNISTR2 path;
-	uint32 ptr0_server;
 	UNISTR2 server;
 	uint32 ptr0_share;
 	UNISTR2 share;
@@ -208,7 +205,6 @@ typedef struct netdfs_r_dfs_Add {
 } NETDFS_R_DFS_ADD;
 
 typedef struct netdfs_q_dfs_Remove {
-	uint32 ptr0_path;
 	UNISTR2 path;
 	uint32 ptr0_server;
 	UNISTR2 server;
@@ -229,7 +225,6 @@ typedef struct netdfs_r_dfs_SetInfo {
 } NETDFS_R_DFS_SETINFO;
 
 typedef struct netdfs_q_dfs_GetInfo {
-	uint32 ptr0_path;
 	UNISTR2 path;
 	uint32 ptr0_server;
 	UNISTR2 server;
@@ -239,7 +234,6 @@ typedef struct netdfs_q_dfs_GetInfo {
 } NETDFS_Q_DFS_GETINFO;
 
 typedef struct netdfs_r_dfs_GetInfo {
-	uint32 ptr0_info;
 	NETDFS_DFS_INFO_CTR info;
 	WERROR status;
 } NETDFS_R_DFS_GETINFO;

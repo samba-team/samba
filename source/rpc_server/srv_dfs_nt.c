@@ -358,7 +358,6 @@ WERROR _dfs_GetInfo(pipes_struct *p, NETDFS_Q_DFS_GETINFO *q_u,
 	}
 
 	vfs_ChDir(p->conn,p->conn->connectpath);
-	r_u->ptr0_info = 1;
 	r_u->info.switch_value = level;
 	r_u->info.ptr0 = 1;
 	r_u->status = WERR_OK;

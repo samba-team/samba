@@ -1488,7 +1488,6 @@ BOOL init_netdfs_r_dfs_GetManagerVersion(NETDFS_R_DFS_GETMANAGERVERSION *v, uint
 	if (!exist_flag)
 		return False;
 	
-	v->ptr0_exist_flag = 1;
 	v->exist_flag = *exist_flag;
 	
 	return True;
@@ -1514,13 +1513,11 @@ BOOL init_netdfs_q_dfs_Add(NETDFS_Q_DFS_ADD *v, const char *path, const char *se
 	if (!path)
 		return False;
 	
-	v->ptr0_path = 1;
 	init_unistr2(&v->path, path, UNI_FLAGS_NONE);
 	
 	if (!server)
 		return False;
 	
-	v->ptr0_server = 1;
 	init_unistr2(&v->server, server, UNI_FLAGS_NONE);
 	
 	if (share) {
@@ -1627,7 +1624,6 @@ BOOL init_netdfs_q_dfs_Remove(NETDFS_Q_DFS_REMOVE *v, const char *path, const ch
 	if (!path)
 		return False;
 	
-	v->ptr0_path = 1;
 	init_unistr2(&v->path, path, UNI_FLAGS_NONE);
 	
 	if (server) {
@@ -1759,7 +1755,6 @@ BOOL init_netdfs_q_dfs_GetInfo(NETDFS_Q_DFS_GETINFO *v, const char *path, const 
 	if (!path)
 		return False;
 	
-	v->ptr0_path = 1;
 	init_unistr2(&v->path, path, UNI_FLAGS_NONE);
 	
 	if (server) {
@@ -1838,7 +1833,6 @@ BOOL init_netdfs_r_dfs_GetInfo(NETDFS_R_DFS_GETINFO *v, const char *path, const 
 	if (!info)
 		return False;
 	
-	v->ptr0_info = 1;
 	v->info = *info;
 	v->info.switch_value = level;
 	

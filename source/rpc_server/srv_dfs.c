@@ -22,7 +22,7 @@ static BOOL api_dfs_GetManagerVersion(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_GetManagerVersion("", &q_u, data, 0))
 		return False;
 	
@@ -46,7 +46,7 @@ static BOOL api_dfs_Add(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Add("", &q_u, data, 0))
 		return False;
 	
@@ -70,7 +70,7 @@ static BOOL api_dfs_Remove(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Remove("", &q_u, data, 0))
 		return False;
 	
@@ -94,7 +94,7 @@ static BOOL api_dfs_SetInfo(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_SetInfo("", &q_u, data, 0))
 		return False;
 	
@@ -118,7 +118,7 @@ static BOOL api_dfs_GetInfo(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_GetInfo("", &q_u, data, 0))
 		return False;
 	
@@ -142,7 +142,7 @@ static BOOL api_dfs_Enum(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Enum("", &q_u, data, 0))
 		return False;
 	
@@ -166,7 +166,7 @@ static BOOL api_dfs_Rename(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Rename("", &q_u, data, 0))
 		return False;
 	
@@ -190,7 +190,7 @@ static BOOL api_dfs_Move(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Move("", &q_u, data, 0))
 		return False;
 	
@@ -214,7 +214,7 @@ static BOOL api_dfs_ManagerGetConfigInfo(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_ManagerGetConfigInfo("", &q_u, data, 0))
 		return False;
 	
@@ -238,7 +238,7 @@ static BOOL api_dfs_ManagerSendSiteInfo(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_ManagerSendSiteInfo("", &q_u, data, 0))
 		return False;
 	
@@ -262,7 +262,7 @@ static BOOL api_dfs_AddFtRoot(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_AddFtRoot("", &q_u, data, 0))
 		return False;
 	
@@ -286,7 +286,7 @@ static BOOL api_dfs_RemoveFtRoot(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_RemoveFtRoot("", &q_u, data, 0))
 		return False;
 	
@@ -310,7 +310,7 @@ static BOOL api_dfs_AddStdRoot(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_AddStdRoot("", &q_u, data, 0))
 		return False;
 	
@@ -334,7 +334,7 @@ static BOOL api_dfs_RemoveStdRoot(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_RemoveStdRoot("", &q_u, data, 0))
 		return False;
 	
@@ -358,7 +358,7 @@ static BOOL api_dfs_ManagerInitialize(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_ManagerInitialize("", &q_u, data, 0))
 		return False;
 	
@@ -382,7 +382,7 @@ static BOOL api_dfs_AddStdRootForced(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_AddStdRootForced("", &q_u, data, 0))
 		return False;
 	
@@ -406,7 +406,7 @@ static BOOL api_dfs_GetDcAddress(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_GetDcAddress("", &q_u, data, 0))
 		return False;
 	
@@ -430,7 +430,7 @@ static BOOL api_dfs_SetDcAddress(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_SetDcAddress("", &q_u, data, 0))
 		return False;
 	
@@ -454,7 +454,7 @@ static BOOL api_dfs_FlushFtTable(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_FlushFtTable("", &q_u, data, 0))
 		return False;
 	
@@ -478,7 +478,7 @@ static BOOL api_dfs_Add2(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Add2("", &q_u, data, 0))
 		return False;
 	
@@ -502,7 +502,7 @@ static BOOL api_dfs_Remove2(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_Remove2("", &q_u, data, 0))
 		return False;
 	
@@ -526,7 +526,7 @@ static BOOL api_dfs_EnumEx(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_EnumEx("", &q_u, data, 0))
 		return False;
 	
@@ -550,7 +550,7 @@ static BOOL api_dfs_SetInfo2(pipes_struct *p)
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
-
+	
 	if (!netdfs_io_q_dfs_SetInfo2("", &q_u, data, 0))
 		return False;
 	
