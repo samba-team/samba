@@ -32,7 +32,7 @@
  */
 static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot, 
 				struct nbt_dgram_packet *packet, 
-				const char *src_address, int src_port,
+				const struct nbt_peer_socket *src,
 				struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
@@ -90,7 +90,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
  */
 static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot, 
 				 struct nbt_dgram_packet *packet, 
-				 const char *src_address, int src_port,
+				 const struct nbt_peer_socket *src,
 				 struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
@@ -193,7 +193,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 */
 void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 				    struct nbt_dgram_packet *packet, 
-				    const char *src_address, int src_port)
+				    const struct nbt_peer_socket *src)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 
@@ -215,20 +215,20 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	DEBUG(2,("netlogon request to %s from %s:%d\n", 
-		 nbt_name_string(netlogon, name), src_address, src_port));
+		 nbt_name_string(netlogon, name), src->addr, src->port));
 	status = dgram_mailslot_netlogon_parse(dgmslot, netlogon, packet, netlogon);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	switch (netlogon->command) {
 	case NETLOGON_QUERY_FOR_PDC:
-		nbtd_netlogon_getdc(dgmslot, packet, src_address, src_port, netlogon);
+		nbtd_netlogon_getdc(dgmslot, packet, src, netlogon);
 		break;
 	case NETLOGON_QUERY_FOR_PDC2:
-		nbtd_netlogon_getdc2(dgmslot, packet, src_address, src_port, netlogon);
+		nbtd_netlogon_getdc2(dgmslot, packet, src, netlogon);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
-			 netlogon->command, src_address, src_port));
+			 netlogon->command, src->addr, src->port));
 		NDR_PRINT_DEBUG(nbt_netlogon_packet, netlogon);
 		break;
 	}
@@ -238,6 +238,6 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 failed:
 	DEBUG(2,("nbtd netlogon handler failed from %s:%d - %s\n",
-		 src_address, src_port, nt_errstr(status)));
+		 src->addr, src->port, nt_errstr(status)));
 	talloc_free(netlogon);
 }
