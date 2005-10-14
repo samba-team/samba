@@ -22,7 +22,6 @@
 
 #include "librpc/gen_ndr/ndr_nbt.h"
 
-
 /*
   a datagram name request
 */
@@ -30,8 +29,7 @@ struct nbt_dgram_request {
 	struct nbt_dgram_request *next, *prev;
 
 	/* where to send the request */
-	const char *dest_addr;
-	int dest_port;
+	struct nbt_peer_socket dest;
 
 	/* the encoded request */
 	DATA_BLOB encoded;
@@ -56,7 +54,7 @@ struct nbt_dgram_socket {
 	/* what to do with incoming request packets */
 	struct {
 		void (*handler)(struct nbt_dgram_socket *, struct nbt_dgram_packet *, 
-				const char *, int );
+				const struct nbt_peer_socket *src);
 		void *private;
 	} incoming;
 };
@@ -72,7 +70,7 @@ struct nbt_dgram_socket {
 
 typedef void (*dgram_mailslot_handler_t)(struct dgram_mailslot_handler *, 
 					 struct nbt_dgram_packet *, 
-					 const char *, int );
+					 const struct nbt_peer_socket *src);
 
 struct dgram_mailslot_handler {
 	struct dgram_mailslot_handler *next, *prev;
@@ -88,12 +86,11 @@ struct dgram_mailslot_handler {
 /* prototypes */
 NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 			struct nbt_dgram_packet *packet,
-			const char *dest_addr,
-			int dest_port);
+			const struct nbt_peer_socket *dest);
 NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 				    void (*handler)(struct nbt_dgram_socket *, 
 						    struct nbt_dgram_packet *, 
-						    const char *, int ),
+						    const struct nbt_peer_socket *),
 				    void *private);
 struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx, 
 					       struct event_context *event_ctx);
@@ -116,15 +113,13 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 			     enum dgram_msg_type msg_type,
 			     const char *mailslot_name,
 			     struct nbt_name *dest_name,
-			     const char *dest_address,
-			     int dest_port,
+			     const struct nbt_peer_socket *dest,
 			     struct nbt_name *src_name,
 			     DATA_BLOB *request);
 
 NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_name *dest_name,
-				      const char *dest_address,
-				      int dest_port,
+				      const struct nbt_peer_socket *dest,
 				      struct nbt_name *src_name,
 				      struct nbt_netlogon_packet *request);
 NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
@@ -139,8 +134,7 @@ NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
 NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
 				      enum dgram_msg_type msg_type,
 				      struct nbt_name *dest_name,
-				      const char *dest_address,
-				      int dest_port,
+				      const struct nbt_peer_socket *dest,
 				      struct nbt_name *src_name,
 				      struct nbt_ntlogon_packet *request);
 NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,

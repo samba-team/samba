@@ -152,27 +152,27 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 			     enum dgram_msg_type msg_type,
 			     const char *mailslot_name,
 			     struct nbt_name *dest_name,
-			     const char *dest_address,
-			     int dest_port,
+			     const struct nbt_peer_socket *_dest,
 			     struct nbt_name *src_name,
 			     DATA_BLOB *request)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_dgram_packet packet;
+	struct nbt_peer_socket dest = *_dest;
 	struct dgram_message *msg;
 	struct dgram_smb_packet *smb;
 	struct smb_trans_body *trans;
 	NTSTATUS status;
 
-	if (dest_port == 0) {
-		dest_port = lp_dgram_port();
+	if (dest.port == 0) {
+		dest.port = lp_dgram_port();
 	}
 
 	ZERO_STRUCT(packet);
 	packet.msg_type = msg_type;
 	packet.flags = DGRAM_FLAG_FIRST | DGRAM_NODE_NBDD;
 	packet.dgram_id = generate_random() % UINT16_MAX;
-	packet.source = socket_get_my_addr(dgmsock->sock, tmp_ctx);
+	packet.src_addr = socket_get_my_addr(dgmsock->sock, tmp_ctx);
 	packet.src_port = socket_get_my_port(dgmsock->sock);
 
 	msg = &packet.data.msg;
@@ -199,7 +199,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	trans->mailslot_name = mailslot_name;
 	trans->data = *request;
 
-	status = nbt_dgram_send(dgmsock, &packet, dest_address, dest_port);
+	status = nbt_dgram_send(dgmsock, &packet, &dest);
 
 	talloc_free(tmp_ctx);
 
