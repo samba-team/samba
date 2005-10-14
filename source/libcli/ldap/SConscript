@@ -1,0 +1,5 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('cli_ldap',
+		['ldap.c','ldap_client.c','ldap_bind.c','ldap_msg.c','ldap_ndr.c',
+		'ldap_ildap.c'])

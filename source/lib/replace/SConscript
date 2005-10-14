@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 Import('hostenv defines')
+conf = Configure(hostenv)
 
 rep_files = ['replace.c', 'snprintf.c','dlfcn.c']
 
