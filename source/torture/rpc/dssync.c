@@ -279,6 +279,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 	const char *partition = NULL;
 	struct drsuapi_DsGetNCChanges r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
+	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
+	int32_t out_level = 0;
 	struct GUID null_guid;
 	struct dom_sid null_sid;
 	struct {
@@ -403,15 +405,26 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 			}
 
 			if (ret == True && r.out.level == 6) {
-				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
-					r.out.ctr.ctr6.new_highwatermark.tmp_highest_usn,
-					r.out.ctr.ctr6.new_highwatermark.highest_usn));
+				out_level = 6;
+				ctr6 = &r.out.ctr.ctr6;
+			} else if (ret == True && r.out.level == 7
+				   && r.out.ctr.ctr7.level == 6
+				   && r.out.ctr.ctr7.type == DRSUAPI_COMPRESSION_TYPE_MSZIP) {
+				out_level = 6;
+				ctr6 = r.out.ctr.ctr7.ctr.mszip6.ctr6;
+			}
 
-				if (r.out.ctr.ctr6.new_highwatermark.tmp_highest_usn > r.out.ctr.ctr6.new_highwatermark.highest_usn) {
-					r.in.req.req8.highwatermark = r.out.ctr.ctr6.new_highwatermark;
+			if (out_level == 6) {
+				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
+					ctr6->new_highwatermark.tmp_highest_usn,
+					ctr6->new_highwatermark.highest_usn));
+
+				if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
+					r.in.req.req8.highwatermark = ctr6->new_highwatermark;
 					continue;
 				}
 			}
+
 			break;
 		}
 	}
