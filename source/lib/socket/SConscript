@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 Import('hostenv defines')
-
 if hostenv['configure']:
 	conf = hostenv.Configure()
 	for h in ['sys/socket.h','sys/sockio.h','sys/un.h']:
