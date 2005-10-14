@@ -187,7 +187,7 @@ static void smb_krb5_request_timeout(struct event_context *event_ctx,
 				  void *private)
 {
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
-	DEBUG(2,("Timed out smb_krb5 packet\n"));
+	DEBUG(5,("Timed out smb_krb5 packet\n"));
 	smb_krb5->timeout = True;
 }
 
@@ -273,11 +273,15 @@ static krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		status = NT_STATUS_INVALID_PARAMETER;
 		switch (hi->proto) {
 		case KRB5_KRBHST_UDP:
-			status = socket_create(name, SOCKET_TYPE_DGRAM, &smb_krb5->sock, 0);
-			break;
+			if (lp_parm_bool(-1, "krb5", "udp", True)) {
+				status = socket_create(name, SOCKET_TYPE_DGRAM, &smb_krb5->sock, 0);
+				break;
+			}
 		case KRB5_KRBHST_TCP:
-			status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
-			break;
+			if (lp_parm_bool(-1, "krb5", "tcp", True)) {
+				status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
+				break;
+			}
 		case KRB5_KRBHST_HTTP:
 			talloc_free(smb_krb5);
 			return EINVAL;
