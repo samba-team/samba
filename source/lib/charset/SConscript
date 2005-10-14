@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # tastes like -*- python -*-
 
+Import('hostenv')
 
 def _CheckIconvPath(context,path):
 	# Some systems have iconv in libc, some have it in libiconv (OSF/1 and

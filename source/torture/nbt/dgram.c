@@ -262,8 +262,8 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 
 	dest.port = 0;
 	dest.addr = address;
-	status = dgram_mailslot_ntlogon_send(dgmsock, &name, &dest, 
-					     &myname, &logon);
+	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
+					     &name, &dest, &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send ntlogon request - %s\n", nt_errstr(status));
 		goto failed;

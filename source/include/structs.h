@@ -277,9 +277,13 @@ struct wreplsrv_partner;
 struct wreplsrv_owner;
 struct wreplsrv_in_connection;
 struct wreplsrv_in_call;
+struct wreplsrv_out_connection;
+struct wreplsrv_pull_table_io;
+struct wreplsrv_pull_names_io;
+struct wreplsrv_pull_cycle_io;
+struct wreplsrv_push_notify_io;
 
 struct winsdb_record;
-struct winsdb_addr;
 
 struct wrepl_packet;
 struct wrepl_associate;

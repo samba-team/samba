@@ -1,4 +1,3 @@
-Import('hostenv')
 #            tastes like -*- python -*-
 Import('hostenv')
 

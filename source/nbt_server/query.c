@@ -45,10 +45,10 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 		return;
 	}
 
-	NBTD_ASSERT_PACKET(packet, src->addr, packet->qdcount == 1);
-	NBTD_ASSERT_PACKET(packet, src->addr, 
+	NBTD_ASSERT_PACKET(packet, src, packet->qdcount == 1);
+	NBTD_ASSERT_PACKET(packet, src, 
 			   packet->questions[0].question_type == NBT_QTYPE_NETBIOS);
-	NBTD_ASSERT_PACKET(packet, src->addr, 
+	NBTD_ASSERT_PACKET(packet, src, 
 			   packet->questions[0].question_class == NBT_QCLASS_IP);
 
 	/* see if we have the requested name on this interface */

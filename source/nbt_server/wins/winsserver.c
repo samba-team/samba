@@ -70,13 +70,22 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	enum wrepl_name_node node;
 	BOOL mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
 
-	rec.name          = name;
-	rec.nb_flags      = nb_flags;
-	rec.state         = WINS_REC_ACTIVE;
-	rec.wins_owner    = WINSDB_OWNER_LOCAL;
-	rec.expire_time   = time(NULL) + ttl;
-	rec.registered_by = src->addr;
-	rec.addresses     = winsdb_addr_list_make(packet);
+#define WREPL_NODE_NBT_FLAGS(nb_flags) \
+	((nb_flags & NBT_NM_OWNER_TYPE)>>13)
+
+	type	= wrepl_type(nb_flags, name, mhomed);
+	node	= WREPL_NODE_NBT_FLAGS(nb_flags);
+
+	rec.name		= name;
+	rec.type		= type;
+	rec.state		= WREPL_STATE_ACTIVE;
+	rec.node		= node;
+	rec.is_static		= False;
+	rec.expire_time		= time(NULL) + ttl;
+	rec.version		= 0; /* will allocated later */
+	rec.wins_owner		= WINSDB_OWNER_LOCAL;
+	rec.registered_by	= src->addr;
+	rec.addresses		= winsdb_addr_list_make(packet);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
 	rec.addresses     = winsdb_addr_list_add(rec.addresses,
@@ -148,7 +157,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	} else if (!NT_STATUS_IS_OK(status)) {
 		rcode = NBT_RCODE_SVR;
 		goto done;
-	} else if (rec->state != WINS_REC_ACTIVE) {
+	} else if (rec->state != WREPL_STATE_ACTIVE) {
 		winsdb_delete(winssrv, rec);
 		rcode = wins_register_new(nbtsock, packet, src);
 		goto done;
@@ -164,14 +173,14 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 	/* if its an active unique name, and the registration is for a group, then
 	   see if the unique name owner still wants the name */
-	if (!(rec->nb_flags & NBT_NM_GROUP) && (nb_flags & NBT_NM_GROUP)) {
+	if (!(rec->type == WREPL_TYPE_GROUP) && (nb_flags & NBT_NM_GROUP)) {
 		wins_register_wack(nbtsock, packet, rec, src);
 		return;
 	}
 
 	/* if the registration is for a group, then just update the expiry time 
 	   and we are done */
-	if (IS_GROUP_NAME(name, nb_flags)) {
+	if (nb_flags & NBT_NM_GROUP) {
 		wins_update_ttl(nbtsock, packet, rec, src);
 		goto done;
 	}
@@ -217,14 +226,15 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	struct nbt_name *name = &packet->questions[0].name;
 	struct winsdb_record *rec;
 	const char **addresses;
+	uint16_t nb_flags = 0; /* TODO: ... */
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
-	if (!NT_STATUS_IS_OK(status) || rec->state != WINS_REC_ACTIVE) {
+	if (!NT_STATUS_IS_OK(status) || rec->state != WREPL_STATE_ACTIVE) {
 		nbtd_negative_name_query_reply(nbtsock, packet, src);
 		return;
 	}
 
-	if (IS_GROUP_NAME(name, rec->nb_flags)) {
+	if (rec->type == WREPL_TYPE_GROUP) {
 		addresses = talloc_array(packet, const char *, 2);
 		if (addresses == NULL) {
 			nbtd_negative_name_query_reply(nbtsock, packet, src);
@@ -241,7 +251,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	}
 
 	nbtd_name_query_reply(nbtsock, packet, src, name, 
-			      0, rec->nb_flags, addresses);
+			      0, nb_flags, addresses);
 }
 
 /*
@@ -260,8 +270,8 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (!NT_STATUS_IS_OK(status) || 
-	    rec->state != WINS_REC_ACTIVE || 
-	    IS_GROUP_NAME(name, rec->nb_flags)) {
+	    rec->state != WREPL_STATE_ACTIVE || 
+	    rec->type == WREPL_TYPE_GROUP) {
 		goto done;
 	}
 

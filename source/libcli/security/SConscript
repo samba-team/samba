@@ -1,5 +1,0 @@
-Import('hostenv')
-
-hostenv.StaticLibrary('cli_security',
-		['security_token.c','security_descriptor.c','dom_sid.c',
-		 'access_check.c','privilege.c'])

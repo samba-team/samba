@@ -32,7 +32,7 @@
 #include "nbt_server/wins/winsdb.h"
 #include "ldb/include/ldb.h"
 
-static void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
+void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
 {
 	stream_terminate_connection(wreplconn->conn, reason);
 }
@@ -265,6 +265,48 @@ static const struct stream_server_ops wreplsrv_stream_ops = {
 	.recv_handler		= wreplsrv_recv,
 	.send_handler		= wreplsrv_send,
 };
+
+/*
+  called when we get a new connection
+*/
+NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
+				      struct socket_context *sock,
+				      struct wreplsrv_in_connection **_wrepl_in)
+{
+	struct wreplsrv_service *service = partner->service;
+	struct wreplsrv_in_connection *wrepl_in;
+	const struct model_ops *model_ops;
+	struct stream_connection *conn;
+	NTSTATUS status;
+
+	/* within the wrepl task we want to be a single process, so
+	   ask for the single process model ops and pass these to the
+	   stream_setup_socket() call. */
+	model_ops = process_model_byname("single");
+	if (!model_ops) {
+		DEBUG(0,("Can't find 'single' process model_ops"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	wrepl_in = talloc_zero(partner, struct wreplsrv_in_connection);
+	NT_STATUS_HAVE_NO_MEMORY(wrepl_in);
+
+	wrepl_in->service	= service;
+	wrepl_in->partner	= partner;
+	wrepl_in->our_ip	= socket_get_my_addr(sock, wrepl_in);
+	NT_STATUS_HAVE_NO_MEMORY(wrepl_in->our_ip);
+
+	status = stream_new_connection_merge(service->task->event_ctx, model_ops,
+					     sock, &wreplsrv_stream_ops, service->task->msg_ctx,
+					     wrepl_in, &conn);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	wrepl_in->conn		= conn;
+	talloc_steal(conn, wrepl_in);
+
+	*_wrepl_in = wrepl_in;
+	return NT_STATUS_OK;
+}
 
 /*
   startup the wrepl port 42 server sockets
