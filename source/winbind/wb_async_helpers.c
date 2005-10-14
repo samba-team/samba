@@ -533,7 +533,7 @@ struct composite_context *wb_cmd_lookupname_send(struct wbsrv_call *call,
 	if (state->domain->initialized) {
 		ctx = wb_lsa_lookupnames_send(state->domain->lsa_pipe,
 					      state->domain->lsa_policy,
-					      1, &name);
+					      1, &state->name);
 		if (ctx == NULL) goto failed;
 		ctx->async.fn = cmd_lookupname_recv_sid;
 		ctx->async.private_data = state;
@@ -576,10 +576,8 @@ static void cmd_lookupname_recv_sid(struct composite_context *ctx)
 	struct wb_sid_object **sids;
 
 	state->ctx->status = wb_lsa_lookupnames_recv(ctx, state, &sids);
-	state->result = sids[0];
-
 	if (!composite_is_ok(state->ctx)) return;
-
+	state->result = sids[0];
 	composite_done(state->ctx);
 }
 
