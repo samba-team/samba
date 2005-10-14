@@ -269,6 +269,61 @@ static BOOL test_GetInfo(struct DsSyncTest *ctx)
 	return ret;
 }
 
+static void test_analyse_objects(struct DsSyncTest *ctx,
+				 struct drsuapi_DsReplicaObjectListItemEx *cur)
+{
+	if (!lp_parm_bool(-1,"dssync","print_pwd_blobs",False)) {
+		return;	
+	}
+
+	for (; cur; cur = cur->next_object) {
+		const char *dn;
+		BOOL dn_printed = False;
+		uint32_t i;
+
+		if (!cur->object.identifier) continue;
+
+		dn = cur->object.identifier->dn;
+
+		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
+			const char *name = NULL;
+			DATA_BLOB *data = NULL;
+			struct drsuapi_DsReplicaAttribute *attr;
+			attr = &cur->object.attribute_ctr.attributes[i];
+
+			switch (attr->attid) {
+			case DRSUAPI_ATTRIBUTE_dBCSPwd:
+				name	= "dBCSPwd";
+				break;
+			case DRSUAPI_ATTRIBUTE_unicodePwd:
+				name	= "unicodePwd";
+				break;
+			case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+				name	= "ntPwdHistory";
+				break;
+			case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+				name	= "lmPwdHistory";
+				break;
+			default:
+				continue;
+			}
+
+			if (attr->value_ctr.data_blob.num_values != 1) continue;
+
+			if (!attr->value_ctr.data_blob.values[0].data) continue;
+
+			data = attr->value_ctr.data_blob.values[0].data;
+
+			if (!dn_printed) {
+				DEBUG(0,("DN: %s\n", dn));
+				dn_printed = True;
+			}
+			DEBUGADD(0,("ATTR: %s data_blob.length=%u\n",
+				    name, data->length));
+			dump_data(0,data->data, data->length);
+		}
+	}
+}
 
 static BOOL test_FetchData(struct DsSyncTest *ctx)
 {
@@ -418,6 +473,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
 					ctr6->new_highwatermark.tmp_highest_usn,
 					ctr6->new_highwatermark.highest_usn));
+
+				test_analyse_objects(ctx, ctr6->first_object);
 
 				if (ctr6->new_highwatermark.tmp_highest_usn > ctr6->new_highwatermark.highest_usn) {
 					r.in.req.req8.highwatermark = ctr6->new_highwatermark;
