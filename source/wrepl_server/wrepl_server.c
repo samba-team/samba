@@ -258,6 +258,27 @@ static const struct stream_server_ops wreplsrv_stream_ops = {
 };
 
 /*
+  open winsdb
+*/
+static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
+{
+	service->wins_db     = winsdb_connect(service);
+	if (!service->wins_db) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  setup our replication partners
+*/
+static NTSTATUS wreplsrv_setup_partners(struct wreplsrv_service *service)
+{
+	return NT_STATUS_OK;
+}
+
+/*
   startup the wrepl port 42 server sockets
 */
 static NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service)
@@ -326,8 +347,22 @@ static void wreplsrv_task_init(struct task_server *task)
 	task->private = service;
 
 	/*
-	 * TODO: setup up all partners, and open the winsdb
+	 * setup up all partners, and open the winsdb
 	 */
+	status = wreplsrv_open_winsdb(service);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_open_winsdb() failed");
+		return;
+	}
+
+	/*
+	 * setup timed events for each partner we want to pull from
+	 */
+	status = wreplsrv_setup_partners(service);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_partners() failed");
+		return;
+	}
 
 	/* 
 	 * setup listen sockets, so we can anwser requests from our partners,
@@ -338,10 +373,6 @@ static void wreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_sockets() failed");
 		return;
 	}
-
-	/*
-	 * TODO: setup timed events for each partner we want to pull from
-	 */
 
 	irpc_add_name(task->msg_ctx, "wrepl_server");
 }
