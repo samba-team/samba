@@ -272,6 +272,7 @@ struct mutex_ops;
 
 struct ads_struct;
 
+struct wreplsrv_service;
 struct wreplsrv_in_connection;
 struct wreplsrv_in_call;
 

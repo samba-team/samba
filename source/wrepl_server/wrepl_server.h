@@ -24,8 +24,6 @@ struct wreplsrv_service;
 struct wreplsrv_in_connection;
 struct wreplsrv_out_connection;
 struct wreplsrv_partner;
-struct wreplsrv_pull_partner_item;
-struct wreplsrv_push_partner_item;
 
 #define WREPLSRV_VALID_ASSOC_CTX	0x12345678
 #define WREPLSRV_INVALID_ASSOC_CTX	0x0000000a
@@ -97,6 +95,52 @@ struct wreplsrv_out_connection {
 	struct wreplsrv_partner *partner;
 };
 
+enum winsrepl_partner_type {
+	WINSREPL_PARTNER_PULL = 0x1,
+	WINSREPL_PARTNER_PUSH = 0x2,
+	WINSREPL_PARTNER_BOTH = (WINSREPL_PARTNER_PULL | WINSREPL_PARTNER_PUSH)
+};
+
+#define WINSREPL_DEFAULT_PULL_INTERVAL (30*60)
+
+/*
+ this represents one of our configured partners
+*/
+struct wreplsrv_partner {
+	struct wreplsrv_partner *prev,*next;
+
+	/* the netbios name of the partner, mostly just for debugging */
+	const char *name;
+
+	/* the ip-address of the partner */
+	const char *address;
+
+	/* 
+	 * as wins partners identified by ip-address, we need to use a specific source-ip
+	 *  when we want to connect to the partner
+	 */
+	const char *our_address;
+
+	/* the type of the partner, pull, push or both */
+	enum winsrepl_partner_type type;
+
+	/* pull specific options */
+	struct {
+		/* the interval between 2 pull replications to the partner */
+		uint32_t interval;
+	} pull;
+};
+
+struct wreplsrv_owner {
+	struct wreplsrv_owner *prev,*next;
+
+	/* this hold the owner_id (address), min_version, max_version and partner_type */
+	struct wrepl_wins_owner owner;
+
+	/* can be NULL if this owner isn't a configure partner */
+	struct wreplsrv_partner *partner; 
+};
+
 /*
   state of the whole wrepl service
 */
@@ -113,9 +157,6 @@ struct wreplsrv_service {
 	/* all partners (pull and push) */
 	struct wreplsrv_partner *partners;
 
-	/* all pull partners */
-	struct wreplsrv_pull_partner *pull_partners;
-
-	/* all push partners */
-	struct wreplsrv_push_partner *push_partners;
+	/* this is a list of each wins_owner we know about in our database */
+	struct wreplsrv_owner *table;
 };
