@@ -9,7 +9,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
-use Parse::Pidl::Samba3::Types qw(DeclShort);
+use Parse::Pidl::Samba3::Types qw(DeclShort StringType);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -28,11 +28,15 @@ sub ParseElement($)
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
-			return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "top");
+			next if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP");
 			pidl "\tuint32 ptr$l->{POINTER_INDEX}_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 		} elsif ($l->{TYPE} eq "DATA") {
 			pidl "\t" . DeclShort($e) . ";";
+		} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_ZERO_TERMINATED}) {
+			my ($t,$f) = StringType($e,$l);
+			pidl "\t" . uc($t) . " $e->{NAME};";
+			return;
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			if ($l->{IS_CONFORMANT}) {
 				pidl "\tuint32 size_$e->{NAME};";
