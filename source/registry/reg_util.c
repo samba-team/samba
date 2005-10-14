@@ -137,7 +137,10 @@ int regval_convert_multi_sz( uint16 *multi_string, size_t multi_len, char ***val
 	uint16 *wp;
 	
 	*values = NULL;
-	
+
+	if ( !multi_string || !*values )
+		return 0;
+
 	/* just count the NULLs */
 	
 	for ( i=0; (i<multi_len-1) && !(multi_string[i]==0x0 && multi_string[i+1]==0x0); i++ ) {
@@ -183,6 +186,9 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 	size_t buf_size = 0;
 	uint16 *buf, *b;
 	UNISTR2 sz;
+
+	if ( !values || !*buffer )
+		return 0;
 	
 	/* go ahead and alloc some space */
 	
