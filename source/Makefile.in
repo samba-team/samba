@@ -130,7 +130,7 @@ BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
 	bin/tdbtool@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
-	bin/smbcquotas@EXEEXT@
+	bin/smbcquotas@EXEEXT@ bin/wr_eventlog@EXEEXT@
 
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
@@ -614,6 +614,9 @@ SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
 		$(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
+WR_EVENTLOG_OBJ	= utils/wr_eventlog.o rpc_server/srv_eventlog_lib.o \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) 
+
 TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
 RPCTORTURE_OBJ = torture/rpctorture.o \
@@ -750,6 +753,8 @@ debug2html : SHOWFLAGS bin/debug2html@EXEEXT@
 
 smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 
+wr_eventlog: SHOWFLAGS bin/wr_eventlog@EXEEXT@
+
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
@@ -759,7 +764,7 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
-everything: all libsmbclient debug2html smbfilter talloctort modules torture \
+everything: all libsmbclient debug2html smbfilter talloctort modules torture wr_eventlog \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
@@ -971,6 +976,10 @@ bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) @BUILD_POPT@ bin/.dummy
 bin/smbcquotas@EXEEXT@: $(SMBCQUOTAS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBCQUOTAS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/wr_eventlog@EXEEXT@: $(WR_EVENTLOG_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(WR_EVENTLOG_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ 
 
 bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
