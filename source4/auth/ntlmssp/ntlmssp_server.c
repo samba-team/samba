@@ -186,28 +186,16 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 #endif
 
 	if (in.length) {
-		BOOL parse_ok = msrpc_parse(out_mem_ctx,
-				 &in, "CddAA",
-				 "NTLMSSP",
-				 &ntlmssp_command,
-				 &neg_flags,
-				 &cliname,
-				 &domname);
-		if (!parse_ok) {
-			parse_ok = msrpc_parse(out_mem_ctx,
-					 &in, "CddUU",
-					 "NTLMSSP",
-					 &ntlmssp_command,
-					 &neg_flags,
-					 &cliname,
-					 &domname);
-		}
-		if (!parse_ok) {
-			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
+		if ((in.length < 16) || !msrpc_parse(out_mem_ctx, &in, "Cdd",
+							 "NTLMSSP",
+							 &ntlmssp_command,
+							 &neg_flags)) {
+			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse "
+				"NTLMSSP Negotiate of length %u:\n",
+				(unsigned int)in.length ));
 			dump_data(2, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
 		debug_ntlmssp_flags(neg_flags);
 	}
 	
