@@ -405,7 +405,9 @@ static struct MprVar mprWinsEntries(struct samba3 *samba3)
 		ips = mprObject("array");
 
 		for (j = 0; j < samba3->winsdb_entries[i].ip_count; j++) {
-			mprAddArray(&ips, j, mprString(iface_n_ip(i)));
+			const char *addr;
+			addr = sys_inet_ntoa(samba3->winsdb_entries[i].ips[j]);
+			mprAddArray(&ips, j, mprString(addr));
 		}
 
 		mprSetVar(&w, "ips", ips);
