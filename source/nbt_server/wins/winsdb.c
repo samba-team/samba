@@ -514,10 +514,10 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
 	ret |= ldb_msg_add_fmt(msg, "type", "0x%02X", rec->name->type);
-	if (rec->name->name) {
+	if (rec->name->name && *rec->name->name) {
 		ret |= ldb_msg_add_string(msg, "name", rec->name->name);
 	}
-	if (rec->name->scope) {
+	if (rec->name->scope && *rec->name->scope) {
 		ret |= ldb_msg_add_string(msg, "scope", rec->name->scope);
 	}
 	ret |= ldb_msg_add_fmt(msg, "objectClass", "winsRecord");
