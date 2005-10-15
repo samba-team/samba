@@ -76,6 +76,10 @@ struct init_domain_state {
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;
 
+	struct dcerpc_pipe *samr_pipe;
+	struct policy_handle *samr_handle;
+	struct policy_handle *domain_handle;
+
 	struct lsa_QueryInfoPolicy queryinfo;
 };
 
@@ -85,6 +89,7 @@ static void init_domain_recv_netlogoncreds(struct composite_context *ctx);
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
 static void init_domain_recv_lsa(struct composite_context *ctx);
 static void init_domain_recv_queryinfo(struct rpc_request *req);
+static void init_domain_recv_samr(struct composite_context *ctx);
 
 struct composite_context *wb_init_domain_send(struct wbsrv_domain *domain,
 					      struct event_context *event_ctx,
@@ -242,6 +247,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 					  state->domain->schannel_creds,
 					  DCERPC_AUTH_TYPE_SCHANNEL,
 					  NULL);
+	if (!composite_is_ok(state->ctx)) return;
 
 	ctx = wb_connect_lsa_send(state->conn.out.tree,
 				  state->domain->schannel_creds);
@@ -255,9 +261,9 @@ static void init_domain_recv_lsa(struct composite_context *ctx)
 				struct init_domain_state);
 
 	struct rpc_request *req;
-	uint8_t auth_type;
 
-	state->ctx->status = wb_connect_lsa_recv(ctx, state, &auth_type,
+	state->ctx->status = wb_connect_lsa_recv(ctx, state,
+						 &state->domain->lsa_auth_type,
 						 &state->lsa_pipe,
 						 &state->lsa_policy);
 	if (!composite_is_ok(state->ctx)) return;
@@ -283,6 +289,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 	struct init_domain_state *state =
 		talloc_get_type(req->async.private, struct init_domain_state);
 	struct lsa_DomainInfo *dominfo;
+	struct composite_context *ctx;
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
@@ -308,6 +315,28 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 		composite_error(state->ctx, NT_STATUS_INVALID_DOMAIN_STATE);
 		return;
 	}
+
+	state->samr_pipe = dcerpc_pipe_init(state, state->ctx->event_ctx);
+	if (composite_nomem(state->samr_pipe, state->ctx)) return;
+
+	ctx = wb_connect_sam_send(state->conn.out.tree,
+				  state->domain->lsa_auth_type,
+				  state->domain->schannel_creds,
+				  state->domain->sid);
+	composite_continue(state->ctx, ctx,
+			   init_domain_recv_samr, state);
+}
+
+static void init_domain_recv_samr(struct composite_context *ctx)
+{
+	struct init_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_domain_state);
+
+	state->ctx->status = wb_connect_sam_recv(ctx, state, &state->samr_pipe,
+						 &state->samr_handle,
+						 &state->domain_handle);
+	if (!composite_is_ok(state->ctx)) return;
 
 	composite_done(state->ctx);
 }
@@ -336,6 +365,18 @@ NTSTATUS wb_init_domain_recv(struct composite_context *c)
 		talloc_free(domain->lsa_policy);
 		domain->lsa_policy =
 			talloc_steal(domain, state->lsa_policy);
+
+		talloc_free(domain->samr_pipe);
+		domain->samr_pipe =
+			talloc_steal(domain, state->samr_pipe);
+
+		talloc_free(domain->samr_handle);
+		domain->samr_handle =
+			talloc_steal(domain, state->samr_handle);
+
+		talloc_free(domain->domain_handle);
+		domain->domain_handle =
+			talloc_steal(domain, state->domain_handle);
 
 		domain->initialized = True;
 	}

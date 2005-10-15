@@ -990,7 +990,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	return cu_status;
+	return status;
 }
 
 static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx, 
