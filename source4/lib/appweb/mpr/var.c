@@ -2015,7 +2015,7 @@ int64 mprParseInteger64(char *str)
 				if (isdigit(c)) {
 					num64 = (c - '0') + (num64 * radix);
 				} else if (c >= 'a' && c <= 'f') {
-					num64 = (c - 'a') + (num64 * radix);
+					num64 = (c - ('a' - 10)) + (num64 * radix);
 				} else {
 					break;
 				}
@@ -2132,7 +2132,7 @@ int mprParseInteger(char *str)
 				if (isdigit(c)) {
 					num = (c - '0') + (num * radix);
 				} else if (c >= 'a' && c <= 'f') {
-					num = (c - 'a') + (num * radix);
+					num = (c - ('a' - 10)) + (num * radix);
 				} else {
 					break;
 				}
