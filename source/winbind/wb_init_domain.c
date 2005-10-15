@@ -26,6 +26,7 @@
 #include "winbind/wb_async_helpers.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
+#include "dlinklist.h"
 
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/samr.h"
@@ -349,4 +350,115 @@ NTSTATUS wb_init_domain(struct wbsrv_domain *domain,
 	struct composite_context *c =
 		wb_init_domain_send(domain, event_ctx, messaging_ctx);
 	return wb_init_domain_recv(c);
+}
+
+struct queue_domain_state {
+	struct queue_domain_state *prev, *next;
+	struct composite_context *ctx;
+	struct wbsrv_domain *domain;
+	struct composite_context *(*send_fn)(void *p);
+	NTSTATUS (*recv_fn)(struct composite_context *c,
+			    void *p);
+	void *private_data;
+};
+
+static void queue_domain_recv_init(struct composite_context *ctx);
+static void queue_domain_recv_sub(struct composite_context *ctx);
+
+struct composite_context *wb_queue_domain_send(TALLOC_CTX *mem_ctx,
+					       struct wbsrv_domain *domain,
+					       struct event_context *event_ctx,
+					       struct messaging_context *msg_ctx,
+					       struct composite_context *(*send_fn)(void *p),
+					       NTSTATUS (*recv_fn)(struct composite_context *c,
+								   void *p),
+					       void *private_data)
+{
+	struct composite_context *result, *ctx;
+	struct queue_domain_state *state;
+
+	result = talloc(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = event_ctx;
+
+	state = talloc(result, struct queue_domain_state);
+	if (state == NULL) goto failed;
+	state->ctx = result;
+	result->private_data = state;
+
+	state->send_fn = send_fn;
+	state->recv_fn = recv_fn;
+	state->private_data = private_data;
+	state->domain = domain;
+
+	if (domain->busy) {
+		DEBUG(0, ("Domain %s busy\n", domain->name));
+		DLIST_ADD_END(domain->request_queue, state,
+			      struct queue_domain_state *);
+		return result;
+	}
+
+	domain->busy = True;
+
+	if (!domain->initialized) {
+		ctx = wb_init_domain_send(domain, result->event_ctx, msg_ctx);
+		if (ctx == NULL) goto failed;
+		ctx->async.fn = queue_domain_recv_init;
+		ctx->async.private_data = state;
+		return result;
+	}
+
+	ctx = state->send_fn(state->private_data);
+	if (ctx == NULL) goto failed;
+	ctx->async.fn = queue_domain_recv_sub;
+	ctx->async.private_data = state;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void queue_domain_recv_init(struct composite_context *ctx)
+{
+	struct queue_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct queue_domain_state);
+
+	state->ctx->status = wb_init_domain_recv(ctx);
+	if (!composite_is_ok(state->ctx)) return;
+
+	ctx = state->send_fn(state->private_data);
+	composite_continue(state->ctx, ctx, queue_domain_recv_sub, state);
+}
+
+static void queue_domain_recv_sub(struct composite_context *ctx)
+{
+	struct queue_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct queue_domain_state);
+
+	state->ctx->status = state->recv_fn(ctx, state->private_data);
+	state->domain->busy = False;
+
+	if (state->domain->request_queue != NULL) {
+		struct queue_domain_state *s2;
+		s2 = state->domain->request_queue;
+		DLIST_REMOVE(state->domain->request_queue, s2);
+		ctx = s2->send_fn(s2->private_data);
+		composite_continue(s2->ctx, ctx, queue_domain_recv_sub, s2);
+		state->domain->busy = True;
+	}
+
+	if (!composite_is_ok(state->ctx)) return;
+	composite_done(state->ctx);
+}
+
+NTSTATUS wb_queue_domain_recv(struct composite_context *ctx)
+{
+	NTSTATUS status = composite_wait(ctx);
+	talloc_free(ctx);
+	return status;
 }

@@ -23,21 +23,9 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
-#include "winbind/wb_async_helpers.h"
-#include "winbind/wb_server.h"
-#include "smbd/service_stream.h"
 
-#include "librpc/gen_ndr/nbt.h"
-#include "librpc/gen_ndr/samr.h"
-#include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/irpc.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
 #include "libcli/raw/libcliraw.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "libcli/auth/credentials.h"
-
 
 /* Helper to initialize LSA with a specific auth methods. Verify by opening
  * the LSA policy. */
@@ -67,6 +55,7 @@ static struct composite_context *wb_init_lsa_send(struct smbcli_tree *tree,
 	result = talloc(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
 	result->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(result, struct init_lsa_state);
@@ -205,6 +194,7 @@ struct composite_context *wb_connect_lsa_send(struct smbcli_tree *tree,
 	result = talloc(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
 	result->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(result, struct connect_lsa_state);

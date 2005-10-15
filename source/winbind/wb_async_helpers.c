@@ -66,6 +66,7 @@ struct composite_context *wb_finddcs_send(const char *domain_name,
 	result = talloc_zero(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
 	result->event_ctx = event_ctx;
 
 	state = talloc(result, struct finddcs_state);
@@ -197,6 +198,7 @@ struct composite_context *wb_get_schannel_creds_send(struct cli_credentials *wks
 	result = talloc_zero(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
 	result->event_ctx = ev;
 
 	state = talloc(result, struct get_schannel_creds_state);
@@ -384,6 +386,7 @@ struct composite_context *wb_lsa_lookupnames_send(struct dcerpc_pipe *lsa_pipe,
 	result = talloc_zero(NULL, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
 	result->event_ctx = lsa_pipe->conn->event_ctx;
 
 	state = talloc(result, struct lsa_lookupnames_state);
@@ -506,94 +509,68 @@ struct cmd_lookupname_state {
 	struct wb_sid_object *result;
 };
 
-static void cmd_lookupname_recv_init(struct composite_context *ctx);
-static void cmd_lookupname_recv_sid(struct composite_context *ctx);
+static struct composite_context *lookupname_send_req(void *p);
+static NTSTATUS lookupname_recv_req(struct composite_context *ctx, void *p);
 
 struct composite_context *wb_cmd_lookupname_send(struct wbsrv_call *call,
 						 const char *name)
 {
-	struct composite_context *result, *ctx;
 	struct cmd_lookupname_state *state;
 	struct wbsrv_service *service = call->wbconn->listen_socket->service;
 
-	result = talloc_zero(call, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->event_ctx = call->event_ctx;
-
-	state = talloc(result, struct cmd_lookupname_state);
-	if (state == NULL) goto failed;
-	state->ctx = result;
-	result->private_data = state;
-
+	state = talloc(NULL, struct cmd_lookupname_state);
+	state->domain = service->domains;
 	state->call = call;
 	state->name = talloc_strdup(state, name);
-
-	state->domain = service->domains;
-
-	if (state->domain->initialized) {
-		ctx = wb_lsa_lookupnames_send(state->domain->lsa_pipe,
-					      state->domain->lsa_policy,
-					      1, &state->name);
-		if (ctx == NULL) goto failed;
-		ctx->async.fn = cmd_lookupname_recv_sid;
-		ctx->async.private_data = state;
-		return result;
+	state->ctx = wb_queue_domain_send(state, state->domain,
+					  call->event_ctx,
+					  call->wbconn->conn->msg_ctx,
+					  lookupname_send_req,
+					  lookupname_recv_req,
+					  state);
+	if (state->ctx == NULL) {
+		talloc_free(state);
+		return NULL;
 	}
-
-	ctx = wb_init_domain_send(state->domain,
-				  result->event_ctx, 
-				  call->wbconn->conn->msg_ctx);
-	if (ctx == NULL) goto failed;
-	ctx->async.fn = cmd_lookupname_recv_init;
-	ctx->async.private_data = state;
-	return result;
-
- failed:
-	talloc_free(result);
-	return NULL;
+	state->ctx->private_data = state;
+	return state->ctx;
 }
 
-static void cmd_lookupname_recv_init(struct composite_context *ctx)
+static struct composite_context *lookupname_send_req(void *p)
 {
 	struct cmd_lookupname_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct cmd_lookupname_state);
+		talloc_get_type(p, struct cmd_lookupname_state);
 
-	state->ctx->status = wb_init_domain_recv(ctx);
-	if (!composite_is_ok(state->ctx)) return;
-
-	ctx = wb_lsa_lookupnames_send(state->domain->lsa_pipe,
-				      state->domain->lsa_policy,
-				      1, &state->name);
-	composite_continue(state->ctx, ctx, cmd_lookupname_recv_sid, state);
+	return wb_lsa_lookupnames_send(state->domain->lsa_pipe,
+				       state->domain->lsa_policy,
+				       1, &state->name);
 }
 
-static void cmd_lookupname_recv_sid(struct composite_context *ctx)
+static NTSTATUS lookupname_recv_req(struct composite_context *ctx, void *p)
 {
 	struct cmd_lookupname_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct cmd_lookupname_state);
+		talloc_get_type(p, struct cmd_lookupname_state);
 	struct wb_sid_object **sids;
+	NTSTATUS status;
 
-	state->ctx->status = wb_lsa_lookupnames_recv(ctx, state, &sids);
-	if (!composite_is_ok(state->ctx)) return;
-	state->result = sids[0];
-	composite_done(state->ctx);
+	status = wb_lsa_lookupnames_recv(ctx, state, &sids);
+	if (NT_STATUS_IS_OK(status)) {
+		state->result = sids[0];
+	}
+	return status;
 }
 
 NTSTATUS wb_cmd_lookupname_recv(struct composite_context *c,
 				TALLOC_CTX *mem_ctx,
 				struct wb_sid_object **sid)
 {
+	struct cmd_lookupname_state *state =
+		talloc_get_type(c->private_data, struct cmd_lookupname_state);
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		struct cmd_lookupname_state *state =
-			talloc_get_type(c->private_data,
-					struct cmd_lookupname_state);
 		*sid = talloc_steal(mem_ctx, state->result);
 	}
-	talloc_free(c);
+	talloc_free(state);
 	return status;
 }
 
@@ -622,6 +599,7 @@ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 	result = talloc(call, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
 	result->event_ctx = call->event_ctx;
 
 	state = talloc(result, struct cmd_checkmachacc_state);
@@ -668,4 +646,47 @@ NTSTATUS wb_cmd_checkmachacc(struct wbsrv_call *call)
 {
 	struct composite_context *c = wb_cmd_checkmachacc_send(call);
 	return wb_cmd_checkmachacc_recv(c);
+}
+
+static void composite_netr_LogonSamLogon_recv_rpc(struct rpc_request *req);
+
+struct composite_context *composite_netr_LogonSamLogon_send(struct dcerpc_pipe *p,
+							    TALLOC_CTX *mem_ctx,
+							    struct netr_LogonSamLogon *r)
+{
+	struct composite_context *result;
+	struct rpc_request *req;
+
+	result = talloc(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = p->conn->event_ctx;
+
+	req = dcerpc_netr_LogonSamLogon_send(p, mem_ctx, r);
+	if (req == NULL) goto failed;
+	req->async.callback = composite_netr_LogonSamLogon_recv_rpc;
+	req->async.private = result;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void composite_netr_LogonSamLogon_recv_rpc(struct rpc_request *req)
+{
+	struct composite_context *ctx =
+		talloc_get_type(req->async.private, struct composite_context);
+
+	ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(ctx)) return;
+	composite_done(ctx);
+}
+
+NTSTATUS composite_netr_LogonSamLogon_recv(struct composite_context *ctx)
+{
+	NTSTATUS status = composite_wait(ctx);
+	talloc_free(ctx);
+	return status;
 }
