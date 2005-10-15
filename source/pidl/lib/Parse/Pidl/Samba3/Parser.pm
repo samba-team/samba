@@ -27,7 +27,7 @@ sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 #TODO:
 # - Add some security checks (array sizes, memory alloc == NULL, etc)
 # - Don't add seperate _p and _d functions if there is no deferred data
-# - [string] with non-varying arrays
+# - [string] with non-varying arrays and "surrounding" strings 
 # - subcontext()
 # - DATA_BLOB
 
@@ -90,11 +90,13 @@ sub ParseElementLevelArray($$$$$$$)
 	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
 	if ($l->{IS_ZERO_TERMINATED}) {
+		return if ($what == DEFERRED);
+		
 		my ($t,$f) = StringType($e,$l);
 
-		pidl "if (!prs_io_$t(\"$e->{VARNAME}\", ps, depth, $varname))";
+		Align($align, 4);
+		pidl "if (!smb_io_$t(\"$e->{NAME}\", &$varname, 1, ps, depth))";
 		pidl "\treturn False;";
-		pidl "";
 
 		$$align = 0;
 		return;
@@ -246,7 +248,7 @@ sub InitLevel($$$$)
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_ZERO_TERMINATED}) {
 		my ($t,$f) = StringType($e,$l);
-		pidl "init_$t(" . ParseExpr($e->{NAME}, $env) . ", $varname, $f);"; 
+		pidl "init_$t(&" . ParseExpr($e->{NAME}, $env) . ", ".substr($varname, 1) . ", $f);"; 
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		pidl ParseExpr($e->{NAME}, $env) . " = $varname;";
 	} elsif ($l->{TYPE} eq "DATA") {
