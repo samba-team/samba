@@ -287,7 +287,7 @@ static void wrepl_connect_handler(struct event_context *ev, struct fd_event *fde
 
 	wrepl_socket->fde = event_add_fd(wrepl_socket->event_ctx, wrepl_socket, 
 					 socket_get_fd(wrepl_socket->sock), 
-					 0,
+					 EVENT_FD_WRITE,
 					 wrepl_handler, wrepl_socket);
 	if (wrepl_socket->fde == NULL) {
 		req->status = NT_STATUS_NO_MEMORY;
