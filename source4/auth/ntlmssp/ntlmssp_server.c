@@ -176,7 +176,6 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	fstring dnsname, dnsdomname;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
-	char *cliname=NULL, *domname=NULL;
 	const uint8_t *cryptkey;
 	const char *target_name;
 
