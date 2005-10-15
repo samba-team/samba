@@ -18,7 +18,7 @@ SCRIPTDIR=../testprogs/ejs
 PATH=bin:$PATH
 export PATH
 
-for f in NBT-REGISTER NBT-WINS; do
+for f in NBT-REGISTER NBT-WINS NBT-WINSREPLICATION-QUICK; do
     testit "$f" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ $f || failed=`expr $failed + 1`
 done
 
