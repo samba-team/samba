@@ -11,7 +11,7 @@ require Exporter;
 
 use strict;
 use Parse::Pidl::Util qw(has_property ParseExpr property_matches);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -110,7 +110,7 @@ sub StringType($$)
 	my $nl = GetNextLevel($e,$l);
 
 	if ($l->{IS_VARYING} and $l->{IS_CONFORMANT} and $nl->{DATA_TYPE} eq "uint16") {
-		return ("unistr2", 0);
+		return ("unistr2", "UNI_FLAGS_NONE");
 	} elsif ($l->{IS_CONFORMANT} and $l->{IS_VARYING} and $nl->{DATA_TYPE} eq "uint8") {
 		return ("string2", 0);
 	} else {
@@ -282,7 +282,10 @@ sub DeclLong($)
 	my $suffixes = "";
 
 	foreach my $l (@{$e->{LEVELS}}) {
-		if ($l->{TYPE} eq "ARRAY" and not $l->{IS_FIXED}) {
+		if ($l->{TYPE} eq "ARRAY" and $l->{IS_ZERO_TERMINATED}) {
+			$p = "const char";
+			last;
+		} elsif ($l->{TYPE} eq "ARRAY" and not $l->{IS_FIXED}) {
 			$prefixes = "*$prefixes";
 		} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED}) {
 			$suffixes.="[$l->{SIZE_IS}]";
