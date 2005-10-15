@@ -75,7 +75,7 @@ var paths;
 if (options.targetdir != undefined) {
 	paths = new Object();
 	paths.smbconf = sprintf("%s/smb.conf", options.targetdir);
-	var ldbs = new Array("hklm","hkcr","hku","hkcu","hkpd","hkpt","samdb","rootdse","secrets","winsdb");
+	var ldbs = new Array("hklm","hkcr","hku","hkcu","hkpd","hkpt","samdb","rootdse","secrets","wins");
 	for (var i in ldbs) {
 		var n = ldbs[i];
 		paths[n] = sprintf("tdb://%s/%s.ldb", options.targetdir, n);
