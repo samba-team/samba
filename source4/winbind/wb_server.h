@@ -54,6 +54,11 @@ struct wbsrv_domain {
 
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;
+	uint8_t lsa_auth_type;
+
+	struct dcerpc_pipe *samr_pipe;
+	struct policy_handle *samr_handle;
+	struct policy_handle *domain_handle;
 
 	struct dcerpc_pipe *netlogon_auth2_pipe;
 	struct dcerpc_pipe *netlogon_pipe;

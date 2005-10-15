@@ -123,6 +123,57 @@ static void checkmachacc_recv_creds(struct composite_context *ctx)
 	}
 }
 
+static void getdcname_recv_dc(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_getdcname(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+
+	DEBUG(5, ("wbsrv_samba3_getdcname called\n"));
+
+	ctx = wb_cmd_getdcname_send(s3call->call,
+				    s3call->request.domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = getdcname_recv_dc;
+	ctx->async.private_data = s3call;
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void getdcname_recv_dc(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	const char *dcname;
+	NTSTATUS status;
+
+	status = wb_cmd_getdcname_recv(ctx, s3call, &dcname);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	s3call->response.result = WINBINDD_OK;
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.dc_name, dcname);
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &s3call->response;
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
+}
+
 static void lookupname_recv_sid(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
