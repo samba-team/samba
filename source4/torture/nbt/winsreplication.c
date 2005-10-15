@@ -1487,6 +1487,36 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 /*
   test WINS replication operations
 */
+BOOL torture_nbt_winsreplication_quick(void)
+{
+	const char *address;
+	struct nbt_name name;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	NTSTATUS status;
+	BOOL ret = True;
+
+	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
+
+	/* do an initial name resolution to find its IP */
+	status = resolve_name(&name, mem_ctx, &address, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to resolve %s - %s\n",
+		       name.name, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ret &= test_assoc_ctx1(mem_ctx, address);
+	ret &= test_assoc_ctx2(mem_ctx, address);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/*
+  test WINS replication operations
+*/
 BOOL torture_nbt_winsreplication(void)
 {
 	const char *address;
