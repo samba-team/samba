@@ -29,6 +29,7 @@
 
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
+	struct event_context *event_ctx;
 	struct wbsrv_domain *domain;
 	const char *domain_name;
 	const char *user_name;
@@ -45,9 +46,8 @@ struct pam_auth_crap_state {
 	DATA_BLOB info3;
 };
 
-static struct rpc_request *send_samlogon(struct pam_auth_crap_state *state);
-static void pam_auth_crap_recv_init(struct composite_context *ctx);
-static void pam_auth_crap_recv_samlogon(struct rpc_request *req);
+static struct composite_context *crap_samlogon_send_req(void *p);
+static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx, void *p);
 
 struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 						    const char *domain,
@@ -57,22 +57,14 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 						    DATA_BLOB nt_resp,
 						    DATA_BLOB lm_resp)
 {
-	struct composite_context *result, *ctx;
 	struct pam_auth_crap_state *state;
 	struct wbsrv_service *service = call->wbconn->listen_socket->service;
 
-	result = talloc(NULL, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->event_ctx = call->event_ctx;
-	result->async.fn = NULL;
-
-	state = talloc(result, struct pam_auth_crap_state);
+	state = talloc(NULL, struct pam_auth_crap_state);
 	if (state == NULL) goto failed;
-	state->ctx = result;
-	result->private_data = state;
 
 	state->domain = service->domains;
+	state->event_ctx = call->event_ctx;
 
 	state->domain_name = talloc_strdup(state, domain);
 	if (state->domain_name == NULL) goto failed;
@@ -94,45 +86,28 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	if ((lm_resp.data != NULL) &&
 	    (state->lm_resp.data == NULL)) goto failed;
 
-	if (state->domain->initialized) {
-		struct rpc_request *req = send_samlogon(state);
-		if (req == NULL) goto failed;
-		req->async.callback = pam_auth_crap_recv_samlogon;
-		req->async.private = state;
-		return result;
-	}
-
-	ctx = wb_init_domain_send(state->domain, result->event_ctx,
-				  call->wbconn->conn->msg_ctx);
-	if (ctx == NULL) goto failed;
-	ctx->async.fn = pam_auth_crap_recv_init;
-	ctx->async.private_data = state;
-	return result;
+	state->ctx = wb_queue_domain_send(state, state->domain,
+					  call->event_ctx,
+					  call->wbconn->conn->msg_ctx,
+					  crap_samlogon_send_req,
+					  crap_samlogon_recv_req,
+					  state);
+	if (state->ctx == NULL) goto failed;
+	state->ctx->private_data = state;
+	return state->ctx;
 
  failed:
-	talloc_free(result);
+	talloc_free(state);
 	return NULL;
 }
 
-static void pam_auth_crap_recv_init(struct composite_context *ctx)
+static struct composite_context *crap_samlogon_send_req(void *p)
 {
 	struct pam_auth_crap_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct pam_auth_crap_state);
-	struct rpc_request *req;
-
-	state->ctx->status = wb_init_domain_recv(ctx);
-	if (!composite_is_ok(state->ctx)) return;
-
-	req = send_samlogon(state);
-	composite_continue_rpc(state->ctx, req,
-			       pam_auth_crap_recv_samlogon, state);
-}
-
-static struct rpc_request *send_samlogon(struct pam_auth_crap_state *state)
-{
+		talloc_get_type(p, struct pam_auth_crap_state);
 	state->creds_state = cli_credentials_get_netlogon_creds(
 		state->domain->schannel_creds);
+
 	creds_client_authenticator(state->creds_state, &state->auth);
 
 	state->ninfo.identity_info.account_name.string = state->user_name;
@@ -165,42 +140,44 @@ static struct rpc_request *send_samlogon(struct pam_auth_crap_state *state)
 	state->r.in.logon.network = &state->ninfo;
 	state->r.out.return_authenticator = NULL;
 
-	return dcerpc_netr_LogonSamLogon_send(state->domain->netlogon_pipe,
-					      state, &state->r);
+	return composite_netr_LogonSamLogon_send(state->domain->netlogon_pipe,
+						 state, &state->r);
 }
 
-static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
+static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
+				   void *p)
 {
 	struct pam_auth_crap_state *state =
-		talloc_get_type(req->async.private,
-				struct pam_auth_crap_state);
+		talloc_get_type(p, struct pam_auth_crap_state);
 	struct netr_SamBaseInfo *base;
 	DATA_BLOB tmp_blob;
+	NTSTATUS status;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(state->ctx)) return;
-	state->ctx->status = state->r.out.result;
-	if (!composite_is_ok(state->ctx)) return;
+	status = composite_netr_LogonSamLogon_recv(ctx);
+	if (!NT_STATUS_IS_OK(status)) return status;
+
+	status = state->r.out.result;
+	if (!NT_STATUS_IS_OK(status)) return status;
 
 	if ((state->r.out.return_authenticator == NULL) ||
 	    (!creds_client_check(state->creds_state,
 				 &state->r.out.return_authenticator->cred))) {
 		DEBUG(0, ("Credentials check failed!\n"));
-		composite_error(state->ctx, NT_STATUS_ACCESS_DENIED);
-		return;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	creds_decrypt_samlogon(state->creds_state,
 			       state->r.in.validation_level,
 			       &state->r.out.validation);
 
-	state->ctx->status = ndr_push_struct_blob(
-		&tmp_blob, state, state->r.out.validation.sam3,
+	status = ndr_push_struct_blob(
+		&tmp_blob, state,
+		state->r.out.validation.sam3,
 		(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
-	if (!composite_is_ok(state->ctx)) return;
-
+	NT_STATUS_NOT_OK_RETURN(status);
+	
 	state->info3 = data_blob_talloc(state, NULL, tmp_blob.length+4);
-	if (composite_nomem(state->info3.data, state->ctx)) return;
+	NT_STATUS_HAVE_NO_MEMORY(state->info3.data);
 
 	SIVAL(state->info3.data, 0, 1);
 	memcpy(state->info3.data+4, tmp_blob.data, tmp_blob.length);
@@ -218,14 +195,13 @@ static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 		break;
 	}
 	if (base == NULL) {
-		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	state->user_session_key = base->key;
 	state->lm_key = base->LMSessKey;
 
-	composite_done(state->ctx);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,

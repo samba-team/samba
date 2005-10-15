@@ -58,6 +58,9 @@ struct wbsrv_domain {
 	struct dcerpc_pipe *netlogon_auth2_pipe;
 	struct dcerpc_pipe *netlogon_pipe;
 	struct cli_credentials *schannel_creds;
+
+	BOOL busy;
+	struct queue_domain_state *request_queue;
 };
 
 /* 
