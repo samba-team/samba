@@ -228,21 +228,72 @@ unixID: %d", m.sid, domaindn, m.sid, m.type, m.unix_id);
 function upgrade_wins(samba3)
 {
 	var ldif = "";
+	var version_id = 0;
+
 	for (i in samba3.winsentries) {
+		var rType;
+		var rState;
+		var nType;
+		var numIPs = 0;
 		var e = samba3.winsentries[i];
-		
+		var now = sys.nttime();
+		var ttl = sys.unix2nttime(e.ttl);
+
+		version_id++;
+
+		for (var i in e.ips) {
+			numIPs++;
+		}
+
+		if (e.type == 0x1C) {
+			rType = 0x2;
+		} else if (sys.bitAND(e.type, 0x80)) {
+			if (numIPs > 1) {
+				rType = 0x2;
+			} else {
+				rType = 0x1;
+			}
+		} else {
+			if (numIPs > 1) {
+				rType = 0x3;
+			} else {
+				rType = 0x0;
+			}
+		}
+
+		if (ttl > now) {
+			rState = 0x0;/* active */
+		} else {
+			rState = 0x1;/* released */		
+		}
+
+		nType = (sys.bitAND(e.nb_flags,0x60)>>5);
+
 		ldif = ldif + sprintf("
-dn: type=%d,name=%s
+dn: name:%s,type=0x%02X
+type: 0x%02X
 name: %s
-objectClass: wins
-nbFlags: %x
-expires: %s
-", e.type, e.name, e.name, e.type, e.nb_flags, sys.ldaptime(e.ttl));
+objectClass: winsRecord
+recordType: %u
+recordState: %u
+nodeType: %u
+isStatic: 0
+expireTime: %s
+versionID: %llu
+", e.name, e.type, e.type, e.name, 
+   rType, rState, nType, 
+   sys.ldaptime(ttl), version_id);
 
 		for (var i in e.ips) {
 			ldif = ldif + sprintf("address: %s\n", e.ips[i]);
 		}
 	}
+
+	ldif = ldif + sprintf("
+dn: CN=VERSION
+objectClass: winsMaxVersion
+maxVersion: %llu
+", version_id);
 
 	return ldif;
 }
@@ -569,7 +620,7 @@ data: %d
 dn: @MODULES
 changetype: modify
 replace: @LIST
-@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam
+@LIST: samldb,operational,objectguid,rdn_name,samba3sam
 ");
 		if (!ok) {
 			message("Error enabling samba3sam module: " + samdb.errstring() + "\n");
