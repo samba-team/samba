@@ -108,6 +108,7 @@ union netr_Validation;
 struct netr_SamBaseInfo;
 struct netr_SamInfo3;
 struct netr_UserSessionKey;
+struct netr_LogonSamLogon;
 
 struct iface_struct;
 
