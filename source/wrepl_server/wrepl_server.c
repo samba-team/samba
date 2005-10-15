@@ -381,6 +381,10 @@ static void wreplsrv_task_init(struct task_server *task)
  */
 static NTSTATUS wreplsrv_init(struct event_context *event_ctx, const struct model_ops *model_ops)
 {
+	if (!lp_wins_support()) {
+		return NT_STATUS_OK;
+	}
+
 	return task_server_startup(event_ctx, model_ops, wreplsrv_task_init);
 }
 
