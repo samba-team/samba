@@ -257,6 +257,51 @@ static int ejs_sys_lstat(MprVarHandle eid, int argc, char **argv)
 	return 0;
 }
 
+/*
+  bitwise AND
+  usage:
+      var z = sys.bitAND(x, 0x70);
+*/
+static int ejs_sys_bitAND(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	int x, y, z;
+
+	if (argc != 2 || 
+	    !mprVarIsNumber(argv[0]->type) ||
+	    !mprVarIsNumber(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "bitand invalid arguments");
+		return -1;
+	}
+	x = mprToInt(argv[0]);
+	y = mprToInt(argv[1]);
+	z = x & y;
+
+	mpr_Return(eid, mprCreateIntegerVar(z));
+	return 0;
+}
+
+/*
+  bitwise OR
+  usage:
+      var z = sys.bitOR(x, 0x70);
+*/
+static int ejs_sys_bitOR(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	int x, y, z;
+
+	if (argc != 2 || 
+	    !mprVarIsNumber(argv[0]->type) ||
+	    !mprVarIsNumber(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "bitand invalid arguments");
+		return -1;
+	}
+	x = mprToInt(argv[0]);
+	y = mprToInt(argv[1]);
+	z = x | y;
+
+	mpr_Return(eid, mprCreateIntegerVar(z));
+	return 0;
+}
 
 /*
   initialise sys ejs subsystem
@@ -276,6 +321,8 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "file_save", ejs_sys_file_save);
 	mprSetStringCFunction(obj, "stat", ejs_sys_stat);
 	mprSetStringCFunction(obj, "lstat", ejs_sys_lstat);
+	mprSetCFunction(obj, "bitAND", ejs_sys_bitAND);
+	mprSetCFunction(obj, "bitOR", ejs_sys_bitOR);
 
 	return 0;
 }
