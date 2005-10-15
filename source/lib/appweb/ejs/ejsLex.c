@@ -633,12 +633,19 @@ static int getLexicalToken(Ejs *ep, int state)
 				break;
 			}
 			if (tolower(c) == 'x') {
-				if (tokenAddChar(ep, c) < 0) {
-					return EJS_TOK_ERR;
-				}
-				if ((c = inputGetc(ep)) < 0) {
-					break;
-				}
+				do {
+					if (tokenAddChar(ep, c) < 0) {
+						return EJS_TOK_ERR;
+					}
+					if ((c = inputGetc(ep)) < 0) {
+						break;
+					}
+				} while (isdigit(c) || (tolower(c) >= 'a' && tolower(c) <= 'f'));
+
+				mprDestroyVar(&ep->tokenNumber);
+				ep->tokenNumber = mprParseVar(ep->token, type);
+				inputPutback(ep, c);
+				return EJS_TOK_NUMBER;
 			}
 			if (! isdigit(c)) {
 #if BLD_FEATURE_FLOATING_POINT
