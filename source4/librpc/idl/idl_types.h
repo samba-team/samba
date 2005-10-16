@@ -19,11 +19,6 @@
 #define unistr_noterm	[flag(STR_NOTERM|STR_SIZE4|STR_LEN4)] string
 
 /*
-  a UCS2 string prefixed with [size] [offset] [length], all 32 bits
-*/
-#define unistr		[flag(STR_SIZE4|STR_LEN4)] string
-
-/*
   a UCS2 string prefixed with [size], 32 bits
 */
 #define lstring		[flag(STR_SIZE4)] string
