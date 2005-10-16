@@ -33,12 +33,6 @@
 #define astring15       [flag(STR_ASCII|STR_FIXLEN15)] string
 
 /*
-  an ascii string prefixed with [size] [offset] [length], all 32 bits
-  null terminated
-*/
-#define ascstr		[flag(STR_ASCII|STR_SIZE4|STR_LEN4)] string
-
-/*
   an ascii string prefixed with [offset] [length], both 32 bits
   null terminated
 */
