@@ -292,7 +292,11 @@ sub ParseArrayPushHeader($$$$$)
 	my $length;
 
 	if ($l->{IS_ZERO_TERMINATED}) {
-		$size = $length = "ndr_string_length($var_name, sizeof(*$var_name))";
+		if (has_property($e, "charset")) {
+			$size = $length = "ndr_charset_length($var_name, CH_$e->{PROPERTIES}->{charset})";
+		} else {
+			$size = $length = "ndr_string_length($var_name, sizeof(*$var_name))";
+		}
 	} else {
 		$size = ParseExpr($l->{SIZE_IS}, $env);
 		$length = ParseExpr($l->{LENGTH_IS}, $env);
@@ -1125,13 +1129,22 @@ sub ParseStructPush($$)
 	# we need to push the conformant length early, as it fits on
 	# the wire before the structure (and even before the structure
 	# alignment)
-	my $e = $struct->{ELEMENTS}[-1];
 	if (defined($struct->{SURROUNDING_ELEMENT})) {
 		my $e = $struct->{SURROUNDING_ELEMENT};
 
 		if (defined($e->{LEVELS}[0]) and 
 			$e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
-			my $size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env);
+			my $size;
+			
+			if ($e->{LEVELS}[0]->{IS_ZERO_TERMINATED}) {
+				if (has_property($e, "charset")) {
+					$size = "ndr_charset_length(r->$e->{NAME}, CH_$e->{PROPERTIES}->{charset})";
+				} else {
+					$size = "ndr_string_length(r->$e->{NAME}, sizeof(*r->$e->{NAME}))";
+				}
+			} else {
+				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env);
+			}
 
 			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
 		} else {

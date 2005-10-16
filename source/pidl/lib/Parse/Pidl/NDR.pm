@@ -373,7 +373,12 @@ sub ParseStruct($)
 
 	foreach my $x (@{$struct->{ELEMENTS}}) 
 	{
-		push @elements, ParseElement($x);
+		my $e = ParseElement($x);
+		if ($x != $struct->{ELEMENTS}[-1] and 
+			$e->{LEVELS}[0]->{IS_SURROUNDING}) {
+			print "$x->{FILE}:$x->{LINE}: error: conformant member not at end of struct\n";
+		}
+		push @elements, $e;
 	}
 
 	my $e = $elements[-1];

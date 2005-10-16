@@ -40,10 +40,10 @@
 	    [out]	dom_sid *sid
 	    );
 
-        typedef struct {
-                NTSTATUS status;
-                utf8string homedir;
-	        utf8string shell;
+    typedef struct {
+    	NTSTATUS status;
+        [string,charset(UTF8)] uint8 *homedir;
+	   	[string,charset(UTF8)] uint8 *shell;
 	} unixinfo_GetPWUidInfo;
 
 	/******************/
