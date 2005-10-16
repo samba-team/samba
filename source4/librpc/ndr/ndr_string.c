@@ -675,3 +675,10 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, 
 
 	return NT_STATUS_OK;
 }
+
+/* Return number of elements in a string in the specified charset */
+uint32_t ndr_charset_length(const void *var, int chset)
+{
+	/* FIXME: Treat special chars special here, taking chset into account */
+	return strlen(var);
+}
