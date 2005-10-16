@@ -21,28 +21,28 @@
 
 	typedef struct {
 		srvsvc_PlatformId platform_id;
-		unistr *server_name;
-		unistr *domain_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *domain_name;
 		uint32 version_major;
 		uint32 version_minor;
 	} wkssvc_NetWkstaInfo100;
 
 	typedef struct {
 		srvsvc_PlatformId platform_id;
-		unistr *server_name;
-		unistr *domain_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *domain_name;
 		uint32 version_major;
 		uint32 version_minor;
-		unistr *lan_root;
+		[string,charset(UTF16)] uint16 *lan_root;
 	} wkssvc_NetWkstaInfo101;
 
 	typedef struct {
 		srvsvc_PlatformId platform_id;
-		unistr *server_name;
-		unistr *domain_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *domain_name;
 		uint32 version_major;
 		uint32 version_minor;
-		unistr *lan_root;
+		[string,charset(UTF16)] uint16 *lan_root;
 		uint32 logged_on_users;
 	} wkssvc_NetWkstaInfo102;
 
@@ -93,7 +93,7 @@
 	} wkssvc_NetWkstaInfo;
 
 	WERROR wkssvc_NetWkstaGetInfo(
-		[in]   unistr *server_name,
+		[in]   [string,charset(UTF16)] uint16 *server_name,
 		[in]   uint32 level,
 		[out,switch_is(level)]  wkssvc_NetWkstaInfo info
 		);
@@ -102,7 +102,7 @@
 	/******************/
 	/* Function: 0x01 */
 	WERROR wkssvc_NetWkstaSetInfo(
-		[in]   unistr *server_name,
+		[in]   [string,charset(UTF16)] uint16 *server_name,
 		[in]   uint32 level,
 		[in,switch_is(level)]  wkssvc_NetWkstaInfo info,
 		[in,out]   uint32 *parm_error
@@ -127,8 +127,8 @@
 	typedef struct {
 		uint32 quality_of_service;
 		uint32 vc_count;
-		unistr *name;
-		unistr *address;
+		[string,charset(UTF16)] uint16 *name;
+		[string,charset(UTF16)] uint16 *address;
 		uint32 wan_link;
 	} wkssvc_NetWkstaTransportInfo0;
 
@@ -143,7 +143,7 @@
 	} wkssvc_NetWkstaTransportCtr;
 
 	WERROR wkssvc_NetWkstaTransportEnum (
-		[in]         unistr *server_name,
+		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in,out]     uint32 level,
 		[in,out,switch_is(level)] wkssvc_NetWkstaTransportCtr ctr,
 		[in]         uint32 max_buffer,

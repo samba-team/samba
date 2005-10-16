@@ -107,7 +107,7 @@
 	typedef struct {
 		uint32 len; /* ignored */
 		uint8 *root_dir;
-		unistr *object_name;
+		[string,charset(UTF16)] uint16 *object_name;
 		uint32 attributes;
 		security_descriptor *sec_desc;
 		lsa_QosInfo *sec_qos;
@@ -632,7 +632,7 @@
 
 	/* Function:      0x24 */
 	typedef struct {
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 	} lsa_RightAttribute;
 	
 	typedef struct {
@@ -685,7 +685,7 @@
 	/**********************/
 	/* Function:     0x2c */
 	NTSTATUS lsa_OpenPolicy2 (
-		[in,unique]      unistr *system_name,
+		[in,unique]      [string,charset(UTF16)] uint16 *system_name,
 		[in]  lsa_ObjectAttribute *attr,
 		[in]      uint32 access_mask,
 		[out] policy_handle *handle
@@ -698,7 +698,7 @@
 	} lsa_StringPointer;
 
 	NTSTATUS lsa_GetUserName(
-		[in,unique] unistr *system_name,
+		[in,unique] [string,charset(UTF16)] uint16 *system_name,
 		[in,out,unique] lsa_String *account_name,
 		[in,out,unique] lsa_StringPointer *authority_name
 		);

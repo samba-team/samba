@@ -23,7 +23,7 @@ interface netlogon
 	/* Function 0x00 */
 
 	typedef struct {
-		unistr *account_name;
+		[string,charset(UTF16)] uint16 *account_name;
 		uint32 priv;
 		uint32 auth_flags;
 		uint32 logon_count;
@@ -35,16 +35,16 @@ interface netlogon
 		uint32 password_age;
 		time_t pw_can_change;
 		time_t pw_must_change;
-		unistr *computer;
-		unistr *domain;
-		unistr *script_path;
+		[string,charset(UTF16)] uint16 *computer;
+		[string,charset(UTF16)] uint16 *domain;
+		[string,charset(UTF16)] uint16 *script_path;
 		uint32 unknown;
 	} netr_UasInfo;
 
 	WERROR netr_LogonUasLogon(
-		[in]   unistr *server_name,
-		[in]   unistr account_name,
-		[in]   unistr workstation,
+		[in]   [string,charset(UTF16)] uint16 *server_name,
+		[in]   [string,charset(UTF16)] uint16 account_name[],
+		[in]   [string,charset(UTF16)] uint16 workstation[],
 		[out]  netr_UasInfo *info
 		);
 
@@ -58,9 +58,9 @@ interface netlogon
 	} netr_UasLogoffInfo;
 
 	WERROR netr_LogonUasLogoff(
-		[in] unistr *server_name,
-		[in] unistr account_name,
-		[in] unistr workstation,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 account_name[],
+		[in] [string,charset(UTF16)] uint16 workstation[],
 		[out] netr_UasLogoffInfo info
 		);
 
@@ -224,8 +224,8 @@ interface netlogon
 	} netr_Authenticator;
 
 	NTSTATUS netr_LogonSamLogon(
-		[in] unistr *server_name,
-		[in] unistr *workstation,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *workstation,
 		[in] netr_Authenticator *credential,
 		[in][out] netr_Authenticator *return_authenticator,
 		[in]  uint16 logon_level,
@@ -240,8 +240,8 @@ interface netlogon
 	/* Function 0x03 */
 
 	NTSTATUS netr_LogonSamLogoff(
-		[in] unistr *server_name,
-		[in] unistr *computer_name,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *computer_name,
 		[in]      netr_Authenticator *credential,
 		[in][out] netr_Authenticator *return_authenticator,
 		[in] uint16 logon_level,
@@ -254,8 +254,8 @@ interface netlogon
 	/* Function 0x04 */
 
 	NTSTATUS netr_ServerReqChallenge(
-		[in]         unistr *server_name,
-		[in]         unistr computer_name,
+		[in,string,charset(UTF16)] uint16 *server_name,
+		[in,string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials
 		);
 
@@ -266,10 +266,10 @@ interface netlogon
 	declare enum netr_SchannelType;
 
 	NTSTATUS netr_ServerAuthenticate(
-		[in]         unistr *server_name,
-		[in]         unistr account_name,
-		[in]         netr_SchannelType secure_channel_type,
-		[in]         unistr computer_name,
+		[in,string,charset(UTF16)] uint16 *server_name,
+		[in,string,charset(UTF16)] uint16 account_name[],
+		[in]                       netr_SchannelType secure_channel_type,
+		[in,string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials
 		);
 
@@ -278,10 +278,10 @@ interface netlogon
 	/* Function 0x06 */
 
 	NTSTATUS netr_ServerPasswordSet(
-		[in]  unistr *server_name,
-		[in]  unistr account_name,
+		[in]  [string,charset(UTF16)] uint16 *server_name,
+		[in]  [string,charset(UTF16)] uint16 account_name[],
 		[in]  netr_SchannelType secure_channel_type,
-		[in]  unistr computer_name,
+		[in]  [string,charset(UTF16)] uint16 computer_name[],
 		[in]  netr_Authenticator credential,
 		[in]  samr_Password new_password,
 		[out] netr_Authenticator return_authenticator
@@ -294,7 +294,7 @@ interface netlogon
 	declare enum netr_SamDatabaseID;
 
 	typedef struct {
-		unistr *account_name;
+		[string,charset(UTF16)] uint16 *account_name;
 		lsa_String unknown1;
 		lsa_String unknown2;
 		lsa_String unknown3;
@@ -642,8 +642,8 @@ interface netlogon
 		[case(NETR_DELTA_DELETE_TRUST)]    dom_sid2 *sid;
 		[case(NETR_DELTA_ACCOUNT)]         dom_sid2 *sid;
 		[case(NETR_DELTA_DELETE_ACCOUNT)]  dom_sid2 *sid;
-		[case(NETR_DELTA_SECRET)]          unistr *name;
-		[case(NETR_DELTA_DELETE_SECRET)]   unistr *name;
+		[case(NETR_DELTA_SECRET)]          [string,charset(UTF16)] uint16 *name;
+		[case(NETR_DELTA_DELETE_SECRET)]   [string,charset(UTF16)] uint16 *name;
 		[case(NETR_DELTA_DELETE_GROUP2)]   uint32 rid;
 		[case(NETR_DELTA_DELETE_USER2)]    uint32 rid;
 		[case(NETR_DELTA_MODIFY_COUNT)]    ;
@@ -662,8 +662,8 @@ interface netlogon
 
 
 	NTSTATUS netr_DatabaseDeltas(
-		[in]      unistr logon_server,
-		[in]      unistr computername,
+		[in]      [string,charset(UTF16)] uint16 logon_server[],
+		[in]      [string,charset(UTF16)] uint16 computername[],
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
 		[in]      netr_SamDatabaseID database_id,
@@ -677,8 +677,8 @@ interface netlogon
 	/* Function 0x08 */
 
 	NTSTATUS netr_DatabaseSync(
-		[in]     unistr logon_server,
-		[in]     unistr computername,
+		[in]     [string,charset(UTF16)] uint16 logon_server[],
+		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
@@ -704,8 +704,8 @@ interface netlogon
 	} netr_AccountBuffer;
 
 	NTSTATUS netr_AccountDeltas(
-		[in]     unistr *logon_server,
-		[in]     unistr computername,
+		[in]     [string,charset(UTF16)] uint16 *logon_server,
+		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
 		[in]     netr_UAS_INFO_0 uas,
@@ -723,8 +723,8 @@ interface netlogon
 	/* Function 0x0A */
 
 	NTSTATUS netr_AccountSync(
-		[in]      unistr *logon_server,
-		[in]      unistr computername,
+		[in]      [string,charset(UTF16)] uint16 *logon_server,
+		[in]      [string,charset(UTF16)] uint16 computername[],
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
 		[in]      uint32 reference,
@@ -742,9 +742,9 @@ interface netlogon
 	/* Function 0x0B */
 
 	NTSTATUS netr_GetDcName(
-		[in]  unistr logon_server,
-		[in]  unistr *domainname,
-		[out] unistr *dcname
+		[in]  [string,charset(UTF16)] uint16 logon_server[],
+		[in]  [string,charset(UTF16)] uint16 *domainname,
+		[out] [string,charset(UTF16)] uint16 *dcname
 		);
 
 	/*****************/
@@ -758,7 +758,7 @@ interface netlogon
 	typedef struct {
 		uint32 flags;
 		uint32 pdc_connection_status;
-		unistr trusted_dc_name;
+		[string,charset(UTF16)] uint16 trusted_dc_name[];
 		uint32 tc_connection_status;
 	} netr_NETLOGON_INFO_2;
 
@@ -787,7 +787,7 @@ interface netlogon
 	} netr_LogonControlCode;
 
 	WERROR netr_LogonControl(
-		[in]   unistr *logon_server,
+		[in]   [string,charset(UTF16)] uint16 *logon_server,
 		[in]   netr_LogonControlCode function_code,
 		[in]   uint32 level,
 		[out,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION info
@@ -798,9 +798,9 @@ interface netlogon
 	/* Function 0x0D */
 
 	WERROR netr_GetAnyDCName(
-		[in]  unistr *logon_server,
-		[in]  unistr *domainname,
-		[out] unistr *dcname
+		[in]  [string,charset(UTF16)] uint16 *logon_server,
+		[in]  [string,charset(UTF16)] uint16 *domainname,
+		[out] [string,charset(UTF16)] uint16 *dcname
 		);
 
 
@@ -808,14 +808,14 @@ interface netlogon
 	/* Function 0x0E */
 
 	typedef union {
-		[case(NETLOGON_CONTROL_REDISCOVER)]        unistr *domain;
-		[case(NETLOGON_CONTROL_TC_QUERY)]          unistr *domain;
-		[case(NETLOGON_CONTROL_TRANSPORT_NOTIFY)]  unistr *domain;
+		[case(NETLOGON_CONTROL_REDISCOVER)]        [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_TC_QUERY)]          [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_TRANSPORT_NOTIFY)]  [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_SET_DBFLAG)]        uint32 debug_level;
 	} netr_CONTROL_DATA_INFORMATION;
 
 	WERROR netr_LogonControl2(
-		[in]    unistr *logon_server,
+		[in]    [string,charset(UTF16)] uint16 *logon_server,
 		[in]    uint32 function_code,
 		[in]    uint32 level,
 		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
@@ -834,10 +834,10 @@ interface netlogon
 	/* Function 0x0F */
 
 	NTSTATUS netr_ServerAuthenticate2(
-		[in]         unistr *server_name,
-		[in]         unistr account_name,
+		[in]         [string,charset(UTF16)] uint16 *server_name,
+		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,
-		[in]         unistr computer_name,
+		[in]         [string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials,
 		[in,out,ref] uint32 *negotiate_flags
 		);
@@ -847,8 +847,8 @@ interface netlogon
 	/* Function 0x10 */
 
 	NTSTATUS netr_DatabaseSync2(
-		[in]     unistr logon_server,
-		[in]     unistr computername,
+		[in]     [string,charset(UTF16)] uint16 logon_server[],
+		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
 		[in]     netr_SamDatabaseID database_id,
@@ -865,8 +865,8 @@ interface netlogon
 	/* i'm not at all sure how this call works */
 
 	NTSTATUS netr_DatabaseRedo(
-		[in]     unistr logon_server,
-		[in]     unistr computername,
+		[in]     [string,charset(UTF16)] uint16 logon_server[],
+		[in]     [string,charset(UTF16)] uint16 computername[],
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
 		[in][size_is(change_log_entry_size)] uint8 *change_log_entry,
@@ -879,7 +879,7 @@ interface netlogon
 	/* Function 0x12 */
 
 	WERROR netr_LogonControl2Ex(
-		[in]   unistr *logon_server,
+		[in]   [string,charset(UTF16)] uint16 *logon_server,
 		[in]   uint32 function_code,
 		[in]   uint32 level,
 		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
@@ -917,10 +917,10 @@ interface netlogon
 	/****************/
 	/* Function 0x1a */
 	NTSTATUS netr_ServerAuthenticate3(
-		[in]         unistr *server_name,
-		[in]         unistr account_name,
+		[in]         [string,charset(UTF16)] uint16 *server_name,
+		[in]         [string,charset(UTF16)] uint16 account_name[],
 		[in]         netr_SchannelType secure_channel_type,
-		[in]         unistr computer_name,
+		[in]         [string,charset(UTF16)] uint16 computer_name[],
 		[in,out,ref] netr_Credential *credentials,
 		[in,out,ref] uint32 *negotiate_flags,
 		[out,ref]    uint32 *rid
@@ -950,12 +950,12 @@ interface netlogon
 
 	typedef struct {
 		netr_Blob blob;
-		unistr *workstation_domain;
-		unistr *workstation_site;
-		unistr *unknown1;
-		unistr *unknown2;
-		unistr *unknown3;
-		unistr *unknown4;
+		[string,charset(UTF16)] uint16 *workstation_domain;
+		[string,charset(UTF16)] uint16 *workstation_site;
+		[string,charset(UTF16)] uint16 *unknown1;
+		[string,charset(UTF16)] uint16 *unknown2;
+		[string,charset(UTF16)] uint16 *unknown3;
+		[string,charset(UTF16)] uint16 *unknown4;
 		netr_BinaryString blob2;
 		lsa_String product;
 		lsa_String unknown5;
@@ -991,8 +991,8 @@ interface netlogon
 	} netr_DomainInfo;
 	
 	NTSTATUS netr_LogonGetDomainInfo(
-		[in]         unistr server_name,
-		[in]         unistr *computer_name,
+		[in]         [string,charset(UTF16)] uint16 server_name[],
+		[in]         [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref]     netr_Authenticator *credential,
 		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]	     uint32 level,
@@ -1008,10 +1008,10 @@ interface netlogon
 	/*****************/
 	/* Function 0x1e */
 	NTSTATUS netr_ServerPasswordSet2(
-		[in]  unistr *server_name,
-		[in]  unistr account_name,
+		[in]  [string,charset(UTF16)] uint16 *server_name,
+		[in]  [string,charset(UTF16)] uint16 account_name[],
 		[in]  netr_SchannelType secure_channel_type,
-		[in]  unistr computer_name,
+		[in]  [string,charset(UTF16)] uint16 computer_name[],
 		[in]  netr_Authenticator credential,
 		[in]  netr_CryptPassword new_password,
 		[out] netr_Authenticator return_authenticator
@@ -1032,24 +1032,24 @@ interface netlogon
 	/****************/
 	/* Function 0x22 */
 	typedef struct {
-		unistr *dc_unc;
-		unistr *dc_address;
+		[string,charset(UTF16)] uint16 *dc_unc;
+		[string,charset(UTF16)] uint16 *dc_address;
 		int32 dc_address_type;
 		GUID domain_guid;
-		unistr *domain_name;
-		unistr *forest_name;
+		[string,charset(UTF16)] uint16 *domain_name;
+		[string,charset(UTF16)] uint16 *forest_name;
 		uint32 dc_flags;
-		unistr *dc_site_name;
-		unistr *client_site_name;
+		[string,charset(UTF16)] uint16 *dc_site_name;
+		[string,charset(UTF16)] uint16 *client_site_name;
 	} netr_DrsGetDCNameEx2Info;
 
 	WERROR netr_DrsGetDCNameEx2(
-		[in] unistr *server_unc,
-		[in] unistr *client_account,
+		[in] [string,charset(UTF16)] uint16 *server_unc,
+		[in] [string,charset(UTF16)] uint16 *client_account,
 		[in] uint32 mask,
-		[in] unistr *domain_name,
+		[in] [string,charset(UTF16)] uint16 *domain_name,
 		[in] GUID *domain_guid,
-		[in] unistr *site_name,
+		[in] [string,charset(UTF16)] uint16 *site_name,
 		[in] uint32 flags,
 		[out] netr_DrsGetDCNameEx2Info *info
 		);
@@ -1073,8 +1073,8 @@ interface netlogon
 	/****************/
 	/* Function 0x27 */
 	NTSTATUS netr_LogonSamLogonEx(
-		[in] unistr *server_name,
-		[in] unistr *workstation,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *workstation,
 		[in]  uint16 logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
@@ -1113,8 +1113,8 @@ interface netlogon
 	} netr_TrustAttributes;
 
 	typedef struct {
-		unistr			*netbios_name;
-		unistr			*dns_name;
+		[string,charset(UTF16)] uint16			*netbios_name;
+		[string,charset(UTF16)] uint16			*dns_name;
 		netr_TrustFlags		trust_flags;
 		uint32			parent_index;
 		netr_TrustType		trust_type;
@@ -1124,7 +1124,7 @@ interface netlogon
 	} netr_DomainTrust;
 
 	WERROR netr_DsrEnumerateDomainTrusts(
-		[in]                 unistr           *server_name,
+		[in]                 [string,charset(UTF16)] uint16           *server_name,
 		[in]                 netr_TrustFlags  trust_flags,
 		[out]                uint32           count,
 		[out,size_is(count)] netr_DomainTrust *trusts
@@ -1152,8 +1152,8 @@ interface netlogon
 
 	/* this is the ADS varient. I don't yet know what the "flags" are for */
 	NTSTATUS netr_LogonSamLogonWithFlags(
-		[in] unistr *server_name,
-		[in] unistr *workstation,
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *workstation,
 		[in] netr_Authenticator *credential,
 		[in][out] netr_Authenticator *return_authenticator,
 		[in]  uint16 logon_level,
