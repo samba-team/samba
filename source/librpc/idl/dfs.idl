@@ -20,19 +20,19 @@
 	/******************/
 	/* Function: 0x01 */
 	WERROR dfs_Add (
-		[in]     	 unistr *path,
-		[in]     	 unistr *server,
-		[in,unique]         unistr *share,
-		[in,unique]         unistr *comment,
+		[in,string,charset(UTF16)] uint16 *path,
+		[in,string,charset(UTF16)] uint16 *server,
+		[in,unique,string,charset(UTF16)] uint16 *share,
+		[in,unique,string,charset(UTF16)] uint16 *comment,
 		[in]         uint32 flags
 		);
 
 	/******************/
 	/* Function: 0x02 */
 	WERROR dfs_Remove (
-		[in] 	 		unistr *path,
-		[in,unique]     unistr *server,
-		[in,unique]     unistr *share
+		[in,string,charset(UTF16)] uint16 *path,
+		[in,unique,string,charset(UTF16)] uint16 *server,
+		[in,unique,string,charset(UTF16)] uint16 *share
 		);
 
 	/******************/
@@ -46,33 +46,33 @@
 	} dfs_Info0;
 
 	typedef struct {
-		unistr *path;
+		[string,charset(UTF16)] uint16 *path;
 	} dfs_Info1;
 
 	typedef struct {
-		unistr *path;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 state;
 		uint32 num_stores;
 	} dfs_Info2;
 
 	typedef struct {
 		uint32 state;
-		unistr *server;
-		unistr *share;
+		[string,charset(UTF16)] uint16 *server;
+		[string,charset(UTF16)] uint16 *share;
 	} dfs_StorageInfo;
 
 	typedef struct {
-		unistr *path;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 state;
 		uint32 num_stores;
 		[size_is(num_stores)] dfs_StorageInfo *stores;
 	} dfs_Info3;
 
 	typedef struct {
-		unistr *path;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 state;
 		uint32 timeout;
 		GUID   guid;
@@ -81,7 +81,7 @@
 	} dfs_Info4;
 
 	typedef struct {
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 	} dfs_Info100;
 
 	typedef struct {
@@ -93,12 +93,12 @@
 	} dfs_Info102;
 
 	typedef struct {
-		unistr *dom_root;
+		[string,charset(UTF16)] uint16 *dom_root;
 	} dfs_Info200;
 
 	typedef struct {
 		uint32 flags;
-		unistr *dom_root;
+		[string,charset(UTF16)] uint16 *dom_root;
 	} dfs_Info300;
 
 	typedef union {
@@ -113,9 +113,9 @@
 	} dfs_Info;
 
 	WERROR dfs_GetInfo (
-		[in] 	 unistr *path,
-		[in,unique]     unistr *server,
-		[in,unique]     unistr *share,
+		[in,string,charset(UTF16)] uint16 *path,
+		[in,unique,string,charset(UTF16)] uint16 *server,
+		[in,unique,string,charset(UTF16)] uint16 *share,
 		[in]     uint32 level,
 		[out,switch_is(level)] dfs_Info *info
 		);

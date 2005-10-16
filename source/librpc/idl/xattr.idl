@@ -14,8 +14,8 @@
 ]
 interface xattr
 {
-	const string XATTR_DOSATTRIB_NAME = "user.DosAttrib";
-	const string XATTR_DOSATTRIB_ESTIMATED_SIZE = 64;
+	const char *XATTR_DOSATTRIB_NAME = "user.DosAttrib";
+	const int XATTR_DOSATTRIB_ESTIMATED_SIZE = 64;
 
 	/* we store basic dos attributes in a DosAttrib xattr. By
 	   using a union we can cope with new version of this
@@ -56,7 +56,7 @@ interface xattr
 
 
 	/* we store DOS style extended attributes in a DosEAs xattr */
-	const string XATTR_DOSEAS_NAME = "user.DosEAs";
+	const char *XATTR_DOSEAS_NAME = "user.DosEAs";
 
 	typedef struct {
 		utf8string name;
@@ -72,12 +72,12 @@ interface xattr
 	   the streams themselves are stored in
 	   user.DosStream.STREAMNAME or in external files, according
 	   to the flags */
-	const string XATTR_DOSSTREAMS_NAME = "user.DosStreams";
+	const char *XATTR_DOSSTREAMS_NAME = "user.DosStreams";
 
 	const int XATTR_STREAM_FLAG_INTERNAL = 0x00000001;
 
 	/* stream data is stored in attributes with the given prefix */
-	const string XATTR_DOSSTREAM_PREFIX = "user.DosStream.";
+	const char *XATTR_DOSSTREAM_PREFIX = "user.DosStream.";
 
 	const int XATTR_MAX_STREAM_SIZE = 0x4000;
 
@@ -100,7 +100,7 @@ interface xattr
 	   we put this xattr in the security namespace to ensure that
 	   only trusted users can write to the ACL
 	*/
-	const string XATTR_NTACL_NAME = "security.NTACL";
+	const char *XATTR_NTACL_NAME = "security.NTACL";
 
 	typedef [switch_type(uint16)] union {
 		[case(1)] security_descriptor *sd;
