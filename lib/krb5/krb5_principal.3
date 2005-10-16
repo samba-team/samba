@@ -147,6 +147,10 @@ to the string
 .Fa name
 should be freed with
 .Xr free 3 .
+On failure
+.Fa name
+is set to
+.Dv NULL .
 .Fn krb5_unparse_name_fixed
 behaves just like
 .Fn krb5_unparse ,
