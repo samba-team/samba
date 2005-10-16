@@ -430,7 +430,7 @@ interface drsuapi
 	/* UnicodeString values */
 	typedef struct {
 		[range(0,10485760)] uint32 length;
-		[subcontext(4)] nstring *string;
+		[size_is(length),charset(UTF16)] uint16 *string;
 	} drsuapi_DsAttributeValueUnicodeString;
 
 	typedef struct {
