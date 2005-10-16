@@ -68,13 +68,13 @@
 		atsvc_DaysOfMonth days_of_month;
 		atsvc_DaysOfWeek days_of_week;
 		atsvc_Flags flags;
-		unistr *command;
+		[string,charset(UTF16)] uint16 *command;
 	} atsvc_JobInfo;
 
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS atsvc_JobAdd(
-		[in,unique]	 unistr *servername,
+		[in,unique,string,charset(UTF16)] uint16 *servername,
 		[in] atsvc_JobInfo *job_info,
 		[out]	 uint32 job_id
 	);
@@ -82,7 +82,7 @@
 	/******************/
 	/* Function: 0x01 */
 	NTSTATUS atsvc_JobDel(
-		[in,unique]	unistr *servername,
+		[in,unique,string,charset(UTF16)] uint16 *servername,
 		[in]	uint32 min_job_id,
 		[in]	uint32 max_job_id
 	);
@@ -93,7 +93,7 @@
 		atsvc_DaysOfMonth days_of_month;
 		atsvc_DaysOfWeek days_of_week;
 		atsvc_Flags flags;
-		unistr *command;
+		[string,charset(UTF16)] uint16 *command;
 	} atsvc_JobEnumInfo;
 
 	typedef struct {
@@ -104,7 +104,7 @@
 	/******************/
 	/* Function: 0x02 */
 	NTSTATUS atsvc_JobEnum(
-		[in,unique]  unistr *servername,
+		[in,unique,string,charset(UTF16)] uint16 *servername,
 		[in,out] 	 atsvc_enum_ctr *ctr,
 		[in]	     uint32 preferred_max_len,
 		[out]	     uint32 total_entries,
@@ -114,7 +114,7 @@
 	/******************/
 	/* Function: 0x03 */
 	[public] NTSTATUS atsvc_JobGetInfo(
-		[in,unique]	unistr *servername,
+		[in,unique,string,charset(UTF16)]	uint16 *servername,
 		[in]	uint32 job_id,
 		[out,unique]	atsvc_JobInfo *job_info
 	);
