@@ -69,6 +69,13 @@ void composite_trigger_done(struct composite_context *c)
 	event_add_timed(c->event_ctx, c, timeval_zero(), composite_trigger, c);
 }
 
+void composite_trigger_error(struct composite_context *c)
+{
+	c->state = COMPOSITE_STATE_ERROR;
+	/* a zero timeout means immediate */
+	event_add_timed(c->event_ctx, c, timeval_zero(), composite_trigger, c);
+}
+
 
 /*
  * Some composite helpers that are handy if you write larger composite

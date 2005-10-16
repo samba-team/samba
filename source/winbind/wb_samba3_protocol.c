@@ -102,6 +102,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_GETDCNAME:
 		return wbsrv_samba3_getdcname(s3call);
+
+	case WINBINDD_GETUSERDOMGROUPS:
+		return wbsrv_samba3_userdomgroups(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;

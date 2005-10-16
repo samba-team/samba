@@ -610,3 +610,141 @@ NTSTATUS composite_netr_LogonSamLogon_recv(struct composite_context *ctx)
 	return status;
 }
 
+struct samr_getuserdomgroups_state {
+	struct composite_context *ctx;
+	struct dcerpc_pipe *samr_pipe;
+
+	int num_rids;
+	uint32_t *rids;
+
+	struct policy_handle *user_handle;
+	struct samr_OpenUser o;
+	struct samr_GetGroupsForUser g;
+	struct samr_Close c;
+};
+
+static void samr_usergroups_recv_open(struct rpc_request *req);
+static void samr_usergroups_recv_groups(struct rpc_request *req);
+static void samr_usergroups_recv_close(struct rpc_request *req);
+
+struct composite_context *wb_samr_userdomgroups_send(struct dcerpc_pipe *samr_pipe,
+						     struct policy_handle *domain_handle,
+						     uint32_t rid)
+{
+	struct composite_context *result;
+	struct rpc_request *req;
+	struct samr_getuserdomgroups_state *state;
+
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = samr_pipe->conn->event_ctx;
+
+	state = talloc(result, struct samr_getuserdomgroups_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+	state->ctx = result;
+
+	state->samr_pipe = samr_pipe;
+
+	state->user_handle = talloc(state, struct policy_handle);
+	if (state->user_handle == NULL) goto failed;
+
+	state->o.in.domain_handle = domain_handle;
+	state->o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->o.in.rid = rid;
+	state->o.out.user_handle = state->user_handle;
+
+	req = dcerpc_samr_OpenUser_send(state->samr_pipe, state, &state->o);
+	if (req == NULL) goto failed;
+
+	req->async.callback = samr_usergroups_recv_open;
+	req->async.private = state;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+					      
+static void samr_usergroups_recv_open(struct rpc_request *req)
+{
+	struct samr_getuserdomgroups_state *state =
+		talloc_get_type(req->async.private,
+				struct samr_getuserdomgroups_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->o.out.result;
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->g.in.user_handle = state->user_handle;
+
+	req = dcerpc_samr_GetGroupsForUser_send(state->samr_pipe, state,
+						&state->g);
+	composite_continue_rpc(state->ctx, req, samr_usergroups_recv_groups,
+			       state);
+}
+
+static void samr_usergroups_recv_groups(struct rpc_request *req)
+{
+	struct samr_getuserdomgroups_state *state =
+		talloc_get_type(req->async.private,
+				struct samr_getuserdomgroups_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->g.out.result;
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->c.in.handle = state->user_handle;
+	state->c.out.handle = state->user_handle;
+
+	req = dcerpc_samr_Close_send(state->samr_pipe, state, &state->c);
+	composite_continue_rpc(state->ctx, req, samr_usergroups_recv_close,
+			       state);
+}
+
+static void samr_usergroups_recv_close(struct rpc_request *req)
+{
+        struct samr_getuserdomgroups_state *state =
+                talloc_get_type(req->async.private,
+                                struct samr_getuserdomgroups_state);
+
+        state->ctx->status = dcerpc_ndr_request_recv(req);
+        if (!composite_is_ok(state->ctx)) return;
+        state->ctx->status = state->c.out.result;
+        if (!composite_is_ok(state->ctx)) return;
+
+	composite_done(state->ctx);
+}
+
+NTSTATUS wb_samr_userdomgroups_recv(struct composite_context *ctx,
+				    TALLOC_CTX *mem_ctx,
+				    int *num_rids, uint32_t **rids)
+{
+        struct samr_getuserdomgroups_state *state =
+                talloc_get_type(ctx->private_data,
+                                struct samr_getuserdomgroups_state);
+
+	int i;
+	NTSTATUS status = composite_wait(ctx);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	*num_rids = state->g.out.rids->count;
+	*rids = talloc_array(mem_ctx, uint32_t, *num_rids);
+	if (*rids == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<*num_rids; i++) {
+		(*rids)[i] = state->g.out.rids->rids[i].rid;
+	}
+
+ done:
+	talloc_free(ctx);
+	return status;
+}
+	
