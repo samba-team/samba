@@ -7,7 +7,6 @@
   version(0.0),
   depends(lsa,security),
   pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Event Logger")
 ] interface eventlog
 {
@@ -58,8 +57,8 @@
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS eventlog_ClearEventLogW(
-		[in,ref] policy_handle *handle,
-		[in] lsa_String *unknown
+		[in] policy_handle *handle,
+		[in,unique] lsa_String *unknown
 	);
 
 	/******************/
@@ -69,7 +68,7 @@
 	/******************/
 	/* Function: 0x02 */
 	NTSTATUS eventlog_CloseEventLog(
-		[in,out,ref] policy_handle *handle
+		[in,out] policy_handle *handle
 	);
 
 	/******************/
@@ -79,7 +78,7 @@
 	/******************/
 	/* Function: 0x04 */
 	NTSTATUS eventlog_GetNumRecords(
-		[in,ref] policy_handle *handle,
+		[in] policy_handle *handle,
 		[out] uint32 number
 	);
 
@@ -94,12 +93,12 @@
 	/******************/
 	/* Function: 0x07 */
 	NTSTATUS eventlog_OpenEventLogW(
-		[in]	    eventlog_OpenUnknown0 *unknown0,
+		[in,unique]	    eventlog_OpenUnknown0 *unknown0,
 		[in]	    lsa_String logname,
 		[in]	    lsa_String servername,
 		[in]	    uint32 unknown2,
 		[in]	    uint32 unknown3,
-		[out,ref]   policy_handle *handle
+		[out]   policy_handle *handle
 	);
 
 	/******************/
@@ -113,11 +112,11 @@
 	/******************/
 	/* Function: 0x0a */
 	NTSTATUS eventlog_ReadEventLogW(
-		[in,ref] policy_handle *handle,
+		[in] policy_handle *handle,
 		[in] uint32 flags,
 		[in] uint32 offset,
 		[in] uint32 number_of_bytes,
-		[out,ref,size_is(number_of_bytes)] uint8 *data,
+		[out,size_is(number_of_bytes)] uint8 *data,
 		[out] uint32 sent_size,
 		[out] uint32 real_size
 	);
@@ -173,6 +172,6 @@
 	/*****************/
 	/* Function 0x17 */
 	NTSTATUS eventlog_FlushEventLog(
-		[in,ref] policy_handle *handle
+		[in] policy_handle *handle
 	);	
 }
