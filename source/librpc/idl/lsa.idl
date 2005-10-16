@@ -17,7 +17,7 @@
 	typedef [public,noejs] struct {
 		[value(2*strlen_m(string))] uint16 length;
 		[value(2*strlen_m(string))] uint16 size;
-		unistr_noterm *string;
+		[charset(UTF16),size_is(size),length_is(length)] uint8 *string;
 	} lsa_String;
 
 	typedef [public] struct {
