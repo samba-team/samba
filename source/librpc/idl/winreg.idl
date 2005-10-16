@@ -34,7 +34,7 @@
 	typedef [public,noejs] struct {
 		[value(strlen_m_term(name)*2)] uint16 name_len;
 		[value(strlen_m_term(name)*2)] uint16 name_size;
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 	} winreg_String;
 
 	/******************/
