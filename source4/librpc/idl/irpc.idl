@@ -6,7 +6,6 @@
 [ uuid("e770c620-0b06-4b5e-8d87-a26e20f28340"),
   version(1.0),
   pointer_default(unique),
-  pointer_default_top(unique),
   depends(security)
 ] interface irpc
 {
@@ -58,8 +57,8 @@
 		[in] astring my_computername,
 		[in] astring my_accountname,
 		[in] uint32 account_control,
-		[in,ref] dom_sid *domain_sid,
-		[out] astring *dcname
+		[in] dom_sid *domain_sid,
+		[out,unique] astring *dcname
 		);
 
 	/******************************************************

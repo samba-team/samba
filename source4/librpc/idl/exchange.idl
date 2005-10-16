@@ -192,7 +192,6 @@ System Attendant Private Interface
 [
   uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
   pointer_default(unique),
-  pointer_default_top(unique),
   version(0.81),
   helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
@@ -214,9 +213,9 @@ System Attendant Private Interface
 	} EcDoRpcBlob;
 
 	void EcDoRpc(
-		[in,out,ref]	policy_handle	*handle,
+		[in,out]	policy_handle	*handle,
 		[in,out]	EcDoRpcBlob	data,
-		[in,out,ref]	uint16		*length,
+		[in,out]	uint16		*length,
 		[in]		uint16		size
 		);
 

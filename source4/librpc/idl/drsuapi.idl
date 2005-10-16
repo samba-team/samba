@@ -7,7 +7,6 @@
   authservice("ldap"),
   helpstring("Active Directory Replication"),
   pointer_default(unique),
-  pointer_default_top(unique),
   depends(security)
 ] 
 interface drsuapi
@@ -107,15 +106,15 @@ interface drsuapi
 	const string DRSUAPI_DS_BIND_GUID_W2K3	= "6afab99c-6e26-464a-975f-f58f105218bc";
 
 	WERROR drsuapi_DsBind(
-		[in]	    GUID *bind_guid,
-		[in,out]    drsuapi_DsBindInfoCtr *bind_info,
-		[out,ref]   policy_handle *bind_handle
+		[in,unique]	    GUID *bind_guid,
+		[in,out,unique]    drsuapi_DsBindInfoCtr *bind_info,
+		[out]   policy_handle *bind_handle
 		);
 
 	/*****************/
         /* Function 0x01 */
 	WERROR drsuapi_DsUnbind(
-		[in,out,ref] policy_handle *bind_handle
+		[in,out] policy_handle *bind_handle
 		);
 
 	/*****************/
@@ -167,7 +166,7 @@ interface drsuapi
 	} drsuapi_DsReplicaSyncRequest;
 
 	WERROR drsuapi_DsReplicaSync(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in] int32 level,
 		[in,switch_is(level)] drsuapi_DsReplicaSyncRequest req
 		);
@@ -697,7 +696,7 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr;
 
 	WERROR drsuapi_DsGetNCChanges(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in,out] int32 level,
 		[in,switch_is(level)] drsuapi_DsGetNCChangesRequest req,
 		[out,switch_is(level)] drsuapi_DsGetNCChangesCtr ctr
@@ -725,7 +724,7 @@ interface drsuapi
 	} drsuapi_DsReplicaUpdateRefsRequest;
 
 	WERROR drsuapi_DsReplicaUpdateRefs(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in] int32 level,
 		[in,switch_is(level)] drsuapi_DsReplicaUpdateRefsRequest req
 		);
@@ -844,7 +843,7 @@ interface drsuapi
 	} drsuapi_DsNameCtr;
 
 	WERROR drsuapi_DsCrackNames(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsNameRequest req,
 		[out,switch_is(level)] drsuapi_DsNameCtr ctr
@@ -879,8 +878,8 @@ interface drsuapi
 	} drsuapi_DsWriteAccountSpnResult;
 
 	WERROR drsuapi_DsWriteAccountSpn(
-		[in,ref] policy_handle *bind_handle,
-		[in, out] int32 level,
+		[in] policy_handle *bind_handle,
+		[in,out] int32 level,
 		[in,switch_is(level)] drsuapi_DsWriteAccountSpnRequest req,
 		[out,switch_is(level)] drsuapi_DsWriteAccountSpnResult res
 		);
@@ -969,7 +968,7 @@ interface drsuapi
 	} drsuapi_DsGetDCInfoCtr;
 
 	WERROR drsuapi_DsGetDomainControllerInfo(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsGetDCInfoRequest req,
 		[out,switch_is(level)] drsuapi_DsGetDCInfoCtr ctr
@@ -1075,7 +1074,7 @@ interface drsuapi
 	} drsuapi_DsAddEntryCtr;
 
 	WERROR drsuapi_DsAddEntry(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in,out] int32 level,
 		[in,switch_is(level)] drsuapi_DsAddEntryRequest req,
 		[out,switch_is(level)] drsuapi_DsAddEntryCtr ctr
@@ -1355,7 +1354,7 @@ interface drsuapi
 	} drsuapi_DsReplicaInfo;
 
 	WERROR drsuapi_DsReplicaGetInfo(
-		[in,ref] policy_handle *bind_handle,
+		[in] policy_handle *bind_handle,
 		[in] drsuapi_DsReplicaGetInfoLevel level,
 		[in,switch_is(level)] drsuapi_DsReplicaGetInfoRequest req,
 		[out] drsuapi_DsReplicaInfoType info_type,
