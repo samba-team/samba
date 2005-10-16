@@ -268,7 +268,7 @@ interface IRemUnknown2 : IRemUnknown
 	object
 ] interface ICoffeeMachine : IUnknown
 {
-	[helpstring("method MakeCoffee")] WERROR MakeCoffee([in] unistr *flavor);
+	WERROR MakeCoffee([in,string,charset(UTF16)] uint16 *flavor);
 }
 
 [

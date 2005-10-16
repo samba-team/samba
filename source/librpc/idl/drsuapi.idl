@@ -810,7 +810,7 @@ interface drsuapi
 	} drsuapi_DsNameFormat;
 
 	typedef struct {
-		unistr *str;
+		[string,charset(UTF16)] uint16 *str;
 	} drsuapi_DsNameString;
 
 	typedef struct {
@@ -829,8 +829,8 @@ interface drsuapi
 
 	typedef struct {
 		drsuapi_DsNameStatus status;
-		unistr *dns_domain_name;
-		unistr *result_name;
+		[charset(UTF16),string] uint16 *dns_domain_name;
+		[charset(UTF16),string] uint16 *result_name;
 	} drsuapi_DsNameInfo1;
 
 	typedef struct {
@@ -860,7 +860,7 @@ interface drsuapi
 	typedef struct {
 		drsuapi_DsSpnOperation operation;
 		uint32 unknown1;
-		unistr *object_dn;
+		[charset(UTF16),string] uint16 *object_dn;
 		[range(0,10000)] uint32 count;
 		[size_is(count)] drsuapi_DsNameString *spn_names;
 	} drsuapi_DsWriteAccountSpnRequest1;
@@ -895,7 +895,7 @@ interface drsuapi
 	/*****************/
         /* Function 0x10 */
 	typedef struct {
-		unistr *domain_name; /* netbios or dns */
+		[charset(UTF16),string] uint16 *domain_name; /* netbios or dns */
 		int32 level; /* specifies the switch level for the request */
 	} drsuapi_DsGetDCInfoRequest1;
 
@@ -904,11 +904,11 @@ interface drsuapi
 	} drsuapi_DsGetDCInfoRequest;
 
 	typedef struct {
-		unistr *netbios_name;
-		unistr *dns_name;
-		unistr *site_name;
-		unistr *computer_dn;
-		unistr *server_dn;
+		[charset(UTF16),string] uint16 *netbios_name;
+		[charset(UTF16),string] uint16 *dns_name;
+		[charset(UTF16),string] uint16 *site_name;
+		[charset(UTF16),string] uint16 *computer_dn;
+		[charset(UTF16),string] uint16 *server_dn;
 		uint32 is_pdc;
 		uint32 is_enabled;
 	} drsuapi_DsGetDCInfo1;
@@ -919,13 +919,13 @@ interface drsuapi
 	} drsuapi_DsGetDCInfoCtr1;
 
 	typedef struct {
-		unistr *netbios_name;
-		unistr *dns_name;
-		unistr *site_name;
-		unistr *site_dn;
-		unistr *computer_dn;
-		unistr *server_dn;
-		unistr *ntds_dn;
+		[charset(UTF16),string] uint16 *netbios_name;
+		[charset(UTF16),string] uint16 *dns_name;
+		[charset(UTF16),string] uint16 *site_name;
+		[charset(UTF16),string] uint16 *site_dn;
+		[charset(UTF16),string] uint16 *computer_dn;
+		[charset(UTF16),string] uint16 *server_dn;
+		[charset(UTF16),string] uint16 *ntds_dn;
 		uint32 is_pdc;
 		uint32 is_enabled;
 		uint32 is_gc;
@@ -947,7 +947,7 @@ interface drsuapi
 		uint32 unknown4;
 		uint32 unknown5;
 		uint32 unknown6;
-		unistr *server_nt4_account;
+		[charset(UTF16),string] uint16 *server_nt4_account;
 	} drsuapi_DsGetDCInfo01;
 
 	typedef struct {
@@ -1111,17 +1111,17 @@ interface drsuapi
 
 	typedef struct {
 		drsuapi_DsReplicaInfoType info_type;
-		unistr *object_dn;
+		[charset(UTF16),string] uint16 *object_dn;
 		GUID guid1;
 	} drsuapi_DsReplicaGetInfoRequest1;
 
 	typedef struct {
 		drsuapi_DsReplicaInfoType info_type;
-		unistr *object_dn;
+		[charset(UTF16),string] uint16 *object_dn;
 		GUID guid1;
 		uint32 unknown1;
-		unistr *string1;
-		unistr *string2;
+		[charset(UTF16),string] uint16 *string1;
+		[charset(UTF16),string] uint16 *string2;
 		uint32 unknown2;
 	} drsuapi_DsReplicaGetInfoRequest2;
 
@@ -1131,10 +1131,10 @@ interface drsuapi
 	} drsuapi_DsReplicaGetInfoRequest;
 
 	typedef struct {
-		unistr *naming_context_dn;
-		unistr *source_dsa_obj_dn;
-		unistr *source_dsa_address;
-		unistr *transport_obj_dn;
+		[charset(UTF16),string] uint16 *naming_context_dn;
+		[charset(UTF16),string] uint16 *source_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *source_dsa_address;
+		[charset(UTF16),string] uint16 *transport_obj_dn;
 		drsuapi_DsReplicaNeighbourFlags replica_flags;
 		uint32 reserved;
 		GUID naming_context_obj_guid;
@@ -1162,7 +1162,7 @@ interface drsuapi
 	} drsuapi_DsReplicaCoursorCtr;
 
 	typedef struct {
-		unistr *attribute_name;
+		[charset(UTF16),string] uint16 *attribute_name;
 		uint32 version;
 		NTTIME originating_last_changed;
 		GUID originating_dsa_invocation_id;
@@ -1177,7 +1177,7 @@ interface drsuapi
 	} drsuapi_DsReplicaObjMetaDataCtr;
 
 	typedef struct {
-		unistr *dsa_obj_dn;
+		[charset(UTF16),string] uint16 *dsa_obj_dn;
 		GUID dsa_obj_guid;
 		NTTIME first_failure;
 		uint32 num_failures;
@@ -1213,9 +1213,9 @@ interface drsuapi
 		uint32 priority;
 		drsuapi_DsReplicaOpType operation_type;
 		[switch_is(operation_type)] drsuapi_DsRplicaOpOptions options;
-		unistr *nc_dn;
-		unistr *remote_dsa_obj_dn;
-		unistr *remote_dsa_address;
+		[charset(UTF16),string] uint16 *nc_dn;
+		[charset(UTF16),string] uint16 *remote_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *remote_dsa_address;
 		GUID nc_obj_guid;
 		GUID remote_dsa_obj_guid;
 	} drsuapi_DsReplicaOp;
@@ -1227,8 +1227,8 @@ interface drsuapi
 	} drsuapi_DsReplicaOpCtr;
 
 	typedef struct {
-		unistr *attribute_name;
-		unistr *object_dn;
+		[charset(UTF16),string] uint16 *attribute_name;
+		[charset(UTF16),string] uint16 *object_dn;
 		uint32 value_length;
 		[size_is(value_length)] uint8 *value;
 		NTTIME deleted;
@@ -1256,7 +1256,7 @@ interface drsuapi
 		GUID source_dsa_invocation_id;
 		hyper highest_usn;
 		NTTIME last_sync_success;
-		unistr *source_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *source_dsa_obj_dn;
 	} drsuapi_DsReplicaCoursor3;
 
 	typedef struct {
@@ -1266,13 +1266,13 @@ interface drsuapi
 	} drsuapi_DsReplicaCoursor3Ctr;
 
 	typedef struct {
-		unistr *attribute_name;
+		[charset(UTF16),string] uint16 *attribute_name;
 		uint32 version;
 		NTTIME originating_last_changed;
 		GUID originating_dsa_invocation_id;
 		hyper originating_usn;
 		hyper local_usn;
-		unistr *originating_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *originating_dsa_obj_dn;
 	} drsuapi_DsReplicaObjMetaData2;
 
 	typedef struct {
@@ -1282,8 +1282,8 @@ interface drsuapi
 	} drsuapi_DsReplicaObjMetaData2Ctr;
 
 	typedef struct {
-		unistr *attribute_name;
-		unistr *object_dn;
+		[charset(UTF16),string] uint16 *attribute_name;
+		[charset(UTF16),string] uint16 *object_dn;
 		uint32 value_length;
 		[size_is(value_length)] uint8 *value;
 		NTTIME deleted;
@@ -1293,7 +1293,7 @@ interface drsuapi
 		GUID originating_dsa_invocation_id;
 		hyper originating_usn;
 		hyper local_usn;
-		unistr *originating_dsa_obj_dn;
+		[charset(UTF16),string] uint16 *originating_dsa_obj_dn;
 	} drsuapi_DsReplicaAttrValMetaData2;
 
 	typedef struct {
@@ -1319,7 +1319,7 @@ interface drsuapi
 	} drsuapi_DsReplicaConnection04Ctr;
 
 	typedef struct {
-		unistr *str1;
+		[charset(UTF16),string] uint16 *str1;
 		uint32 u1;
 		uint32 u2;
 		uint32 u3;
