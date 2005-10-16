@@ -1084,7 +1084,7 @@
 	/************************/
 	/* Function    0x39     */
 	NTSTATUS samr_Connect2(
-		[in] unistr *system_name,
+		[in,string,charset(UTF16)] uint16 *system_name,
 		[in] uint32 access_mask,
 		[out,ref]  policy_handle *connect_handle
 		);
@@ -1122,7 +1122,7 @@
 	/************************/
 	/* Function    0x3d     */
 	NTSTATUS samr_Connect3(
-		[in] unistr *system_name,
+		[in,string,charset(UTF16)] uint16 *system_name,
 		/* this unknown value seems to be completely ignored by w2k3 */
 		[in] uint32 unknown,
 		[in] uint32 access_mask,
@@ -1132,7 +1132,7 @@
 	/************************/
 	/* Function    0x3e     */
 	NTSTATUS samr_Connect4(
-		[in] unistr *system_name,
+		[in,string,charset(UTF16)] uint16 *system_name,
 		[in] uint32 unknown,
 		[in] uint32 access_mask,
 		[out,ref]  policy_handle *connect_handle
@@ -1179,7 +1179,7 @@
 	} samr_ConnectInfo;
 
 	NTSTATUS samr_Connect5(
-		[in]       unistr             *system_name,
+		[in,string,charset(UTF16)] uint16 *system_name,
 		[in]       uint32             access_mask,
 		[in,out]   uint32             level,
 		[in,out,switch_is(level),ref] samr_ConnectInfo *info,

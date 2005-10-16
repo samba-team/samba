@@ -34,9 +34,9 @@
 	typedef struct {
 		dssetup_DsRole		role;
 		dssetup_DsRoleFlags	flags;
-		unistr			*domain;
-		unistr			*dns_domain;
-		unistr			*forest;
+		[charset(UTF16),string] uint16			*domain;
+		[charset(UTF16),string] uint16			*dns_domain;
+		[charset(UTF16),string] uint16			*forest;
 		GUID			domain_guid;
 	} dssetup_DsRolePrimaryDomInfoBasic;
 

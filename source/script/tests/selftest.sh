@@ -135,9 +135,13 @@ EOF
 
 export KRB5_CONFIG
 
+echo -n "PROVISIONING..."
+
 ./setup/provision $CONFIGURATION --host-name=$SERVER --host-ip=127.0.0.1 \
     --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
+
+echo "DONE"
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
