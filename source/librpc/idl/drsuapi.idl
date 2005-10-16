@@ -98,12 +98,12 @@ interface drsuapi
 	 * 
 	 * maybe the bind_guid could also be the invocation_id see drsuapi_DsReplicaConnection04
 	 */
-	const string DRSUAPI_DS_BIND_GUID = "e24d201a-4fd6-11d1-a3da-0000f875ae0d";
+	const char *DRSUAPI_DS_BIND_GUID = "e24d201a-4fd6-11d1-a3da-0000f875ae0d";
 	/* 
 	 * this magic guid are needed to fetch the whole tree with drsuapi_DsGetNCChanges()
 	 */
-	const string DRSUAPI_DS_BIND_GUID_W2K	= "6abec3d1-3054-41c8-a362-5a0c5b7d5d71";
-	const string DRSUAPI_DS_BIND_GUID_W2K3	= "6afab99c-6e26-464a-975f-f58f105218bc";
+	const char *DRSUAPI_DS_BIND_GUID_W2K	= "6abec3d1-3054-41c8-a362-5a0c5b7d5d71";
+	const char *DRSUAPI_DS_BIND_GUID_W2K3	= "6afab99c-6e26-464a-975f-f58f105218bc";
 
 	WERROR drsuapi_DsBind(
 		[in,unique]	    GUID *bind_guid,
@@ -714,7 +714,7 @@ interface drsuapi
 
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		[ref] ascstr *dest_dsa_dns_name;
+		[ref,charset(DOS),string] uint8 *dest_dsa_dns_name;
 		GUID dest_dsa_guid;
 		drsuapi_DsReplicaUpdateRefsOptions options;
 	} drsuapi_DsReplicaUpdateRefsRequest1;
