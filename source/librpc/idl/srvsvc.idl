@@ -19,7 +19,7 @@
 /* srvsvc_NetCharDev      */
 /**************************/
 	typedef struct {
-		unistr *device;
+		[string,charset(UTF16)] uint16 *device;
 	} srvsvc_NetCharDevInfo0;
 
 	typedef struct {
@@ -28,9 +28,9 @@
 	} srvsvc_NetCharDevCtr0;
 
 	typedef struct {
-		unistr *device;
+		[string,charset(UTF16)] uint16 *device;
 		uint32 status;
-		unistr *user;
+		[string,charset(UTF16)] uint16 *user;
 		uint32 time;
 	} srvsvc_NetCharDevInfo1;
 
@@ -54,7 +54,7 @@
 	/******************/
 	/* Function: 0x00 */
 	WERROR srvsvc_NetCharDevEnum(
-		[in]   unistr *server_unc, 
+		[in]   [string,charset(UTF16)] uint16 *server_unc, 
 		[in,out]   uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetCharDevCtr ctr,
 		[in]   uint32 max_buffer,
@@ -65,8 +65,8 @@
 	/******************/
 	/* Function: 0x01 */
 	WERROR srvsvc_NetCharDevGetInfo(
-		[in]   unistr *server_unc,
-		[in]   unistr device_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 level,
 		[out,switch_is(level)]   srvsvc_NetCharDevInfo info
 		);
@@ -74,8 +74,8 @@
 	/******************/
 	/* Function: 0x02 */
 	WERROR srvsvc_NetCharDevControl(
-		[in]   unistr *server_unc,
-		[in]   unistr device_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 opcode
 		);
 
@@ -83,7 +83,7 @@
 /* srvsvc_NetCharDevQ     */
 /**************************/
 	typedef struct {
-		unistr *device;
+		[string,charset(UTF16)] uint16 *device;
 	} srvsvc_NetCharDevQInfo0;
 
 	typedef struct {
@@ -92,9 +92,9 @@
 	} srvsvc_NetCharDevQCtr0;
 
 	typedef struct {
-		unistr *device;
+		[string,charset(UTF16)] uint16 *device;
 		uint32 priority;
-		unistr *devices;
+		[string,charset(UTF16)] uint16 *devices;
 		uint32 users;
 		uint32 num_ahead;
 	} srvsvc_NetCharDevQInfo1;
@@ -119,8 +119,8 @@
 	/******************/
 	/* Function: 0x03 */
 	WERROR srvsvc_NetCharDevQEnum(
-		[in]   unistr *server_unc,
-		[in]   unistr *user,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *user,
 		[in,out]   uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetCharDevQCtr ctr,
 		[in]   uint32 max_buffer,
@@ -131,9 +131,9 @@
 	/******************/
 	/* Function: 0x04 */
 	WERROR srvsvc_NetCharDevQGetInfo(
-		[in]   unistr *server_unc,
-		[in]   unistr queue_name,
-		[in]   unistr user,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 queue_name[],
+		[in]   [string,charset(UTF16)] uint16 user[],
 		[in]   uint32 level,
 		[out,switch_is(level)]   srvsvc_NetCharDevQInfo info
 		);
@@ -141,8 +141,8 @@
 	/******************/
 	/* Function: 0x05 */
 	WERROR srvsvc_NetCharDevQSetInfo(
-		[in]   unistr *server_unc,
-		[in]   unistr queue_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   uint32 level,
 		[in,switch_is(level)]   srvsvc_NetCharDevQInfo info,
 		[in,out]   uint32 *parm_error
@@ -151,16 +151,16 @@
 	/******************/
 	/* Function: 0x06 */
 	WERROR srvsvc_NetCharDevQPurge(
-		[in]   unistr *server_unc,
-		[in]   unistr queue_name
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 queue_name[]
 		);
 
 	/******************/
 	/* Function: 0x07 */
 	WERROR srvsvc_NetCharDevQPurgeSelf(
-		[in]   unistr *server_unc,
-		[in]   unistr queue_name,
-		[in]   unistr computer_name
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 queue_name[],
+		[in]   [string,charset(UTF16)] uint16 computer_name[]
 		);
 
 /**************************/
@@ -181,8 +181,8 @@
 		uint32 num_open;
 		uint32 num_users;
 		uint32 conn_time;
-		unistr *user;
-		unistr *client;
+		[string,charset(UTF16)] uint16 *user;
+		[string,charset(UTF16)] uint16 *client;
 	} srvsvc_NetConnInfo1;
 
 	typedef struct {
@@ -199,8 +199,8 @@
 	/******************/
 	/* Function: 0x08 */
 	WERROR srvsvc_NetConnEnum(
-		[in]   unistr *server_unc,
-		[in]   unistr *path,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *path,
 		[in,out]   uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetConnCtr ctr,
 		[in]   uint32 max_buffer,
@@ -224,8 +224,8 @@
 		uint32 fid;
 		uint32 permissions;
 		uint32 num_locks;
-		unistr *path;
-		unistr *user;
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *user;
 	} srvsvc_NetFileInfo3;
 
 	typedef struct {
@@ -248,9 +248,9 @@
 	/******************/
 	/* Function: 0x09 */
 	WERROR srvsvc_NetFileEnum(
-		[in]   unistr *server_unc,
-		[in]   unistr *path,
-		[in]   unistr *user,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *path,
+		[in]   [string,charset(UTF16)] uint16 *user,
 		[in,out]   uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetFileCtr ctr,
 		[in]   uint32 max_buffer,
@@ -261,7 +261,7 @@
 	/******************/
 	/* Function: 0x0a */
 	WERROR srvsvc_NetFileGetInfo(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 fid,
 		[in]   uint32 level,
 		[out,switch_is(level)]   srvsvc_NetFileInfo info
@@ -270,7 +270,7 @@
 	/******************/
 	/* Function: 0x0b */
 	WERROR srvsvc_NetFileClose(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 fid	
 		);
 
@@ -278,7 +278,7 @@
 /* srvsvc_NetSess         */
 /**************************/
 	typedef struct {
-		unistr *client;
+		[string,charset(UTF16)] uint16 *client;
 	} srvsvc_NetSessInfo0;
 
 	typedef struct {
@@ -287,8 +287,8 @@
 	} srvsvc_NetSessCtr0;
 
 	typedef struct {
-		unistr *client;
-		unistr *user;
+		[string,charset(UTF16)] uint16 *client;
+		[string,charset(UTF16)] uint16 *user;
 		uint32 num_open;
 		uint32 time;
 		uint32 idle_time;
@@ -301,13 +301,13 @@
 	} srvsvc_NetSessCtr1;
 
 	typedef struct {
-		unistr *client;
-		unistr *user;
+		[string,charset(UTF16)] uint16 *client;
+		[string,charset(UTF16)] uint16 *user;
 		uint32 num_open;
 		uint32 time;
 		uint32 idle_time;
 		uint32 user_flags;
-		unistr *client_type;
+		[string,charset(UTF16)] uint16 *client_type;
 	} srvsvc_NetSessInfo2;
 
 	typedef struct {
@@ -316,8 +316,8 @@
 	} srvsvc_NetSessCtr2;
 
 	typedef struct {
-		unistr *client;
-		unistr *user;
+		[string,charset(UTF16)] uint16 *client;
+		[string,charset(UTF16)] uint16 *user;
 		uint32 time;
 		uint32 idle_time;
 	} srvsvc_NetSessInfo10;
@@ -328,14 +328,14 @@
 	} srvsvc_NetSessCtr10;
 
 	typedef struct {
-		unistr *client;
-		unistr *user;
+		[string,charset(UTF16)] uint16 *client;
+		[string,charset(UTF16)] uint16 *user;
 		uint32 num_open;
 		uint32 time;
 		uint32 idle_time;
 		uint32 user_flags;
-		unistr *client_type;
-		unistr *transport;
+		[string,charset(UTF16)] uint16 *client_type;
+		[string,charset(UTF16)] uint16 *transport;
 	} srvsvc_NetSessInfo502;
 
 	typedef struct {
@@ -355,9 +355,9 @@
 	/******************/
 	/* Function: 0x0c */
 	WERROR srvsvc_NetSessEnum(
-		[in]   unistr *server_unc,
-		[in]   unistr *client,
-		[in]   unistr *user,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *client,
+		[in]   [string,charset(UTF16)] uint16 *user,
 		[in,out]   uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetSessCtr ctr,
 		[in]   uint32 max_buffer,
@@ -368,9 +368,9 @@
 	/******************/
 	/* Function: 0x0d */
 	WERROR srvsvc_NetSessDel(
-		[in]   unistr *server_unc,
-		[in]   unistr *client,
-		[in]   unistr *user
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *client,
+		[in]   [string,charset(UTF16)] uint16 *user
 		);
 
 /**************************/
@@ -397,7 +397,7 @@
 	} srvsvc_ShareType;
 
 	typedef struct {
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 	} srvsvc_NetShareInfo0;
 
 	typedef struct {
@@ -406,9 +406,9 @@
 	} srvsvc_NetShareCtr0;
 
 	typedef struct {
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 		srvsvc_ShareType type;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 	} srvsvc_NetShareInfo1;
 
 	typedef struct {
@@ -417,14 +417,14 @@
 	} srvsvc_NetShareCtr1;
 
 	typedef struct {
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 		srvsvc_ShareType type;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 permissions;
 		uint32 max_users;
 		uint32 current_users;
-		unistr *path;
-		unistr *password;
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *password;
 	} srvsvc_NetShareInfo2;
 
 	typedef struct {
@@ -433,9 +433,9 @@
 	} srvsvc_NetShareCtr2;
 
 	typedef struct {
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 		srvsvc_ShareType type;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 csc_policy;
 	} srvsvc_NetShareInfo501;
 
@@ -445,14 +445,14 @@
 	} srvsvc_NetShareCtr501;
 
 	typedef struct {
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 		srvsvc_ShareType type;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 permissions;
 		int32 max_users;
 		uint32 current_users;
-		unistr *path;
-		unistr *password;
+		[string,charset(UTF16)] uint16 *path;
+		[string,charset(UTF16)] uint16 *password;
 		uint32 unknown;
 		[subcontext(4)] security_descriptor *sd;
 	} srvsvc_NetShareInfo502;
@@ -463,7 +463,7 @@
 	} srvsvc_NetShareCtr502;
 
 	typedef struct {
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 	} srvsvc_NetShareInfo1004;
 
 	typedef struct {
@@ -504,7 +504,7 @@
 	/******************/
 	/* Function: 0x0e */
 	WERROR srvsvc_NetShareAdd(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetShareInfo info,
 		[in,out]   uint32 *parm_error
@@ -513,7 +513,7 @@
 	/******************/
 	/* Function: 0x0f */
 	WERROR srvsvc_NetShareEnumAll (
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,out]   uint32 level,
 		[in,out,switch_is(level)] srvsvc_NetShareCtr ctr,
 		[in]   uint32 max_buffer,
@@ -524,8 +524,8 @@
 	/******************/
 	/* Function: 0x10 */
 	WERROR srvsvc_NetShareGetInfo(
-		[in]   unistr *server_unc,
-		[in]   unistr share_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 level,
 		[out,switch_is(level)] srvsvc_NetShareInfo info
 		);
@@ -533,8 +533,8 @@
 	/******************/
 	/* Function: 0x11 */
 	WERROR srvsvc_NetShareSetInfo(
-		[in]   unistr *server_unc,
-		[in]   unistr share_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetShareInfo info,
 		[in,out]   uint32 *parm_error
@@ -543,24 +543,24 @@
 	/******************/
 	/* Function: 0x12 */
 	WERROR srvsvc_NetShareDel(
-		[in]   unistr *server_unc,
-		[in]   unistr share_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 reserved
 		);
 
 	/******************/
 	/* Function: 0x13 */
 	WERROR srvsvc_NetShareDelSticky(
-		[in]   unistr *server_unc,
-		[in]   unistr share_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 reserved
 		);
 	
 	/******************/
 	/* Function: 0x14 */
 	WERROR srvsvc_NetShareCheck(
-		[in]   unistr *server_unc,
-		[in]   unistr device_name,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[out]  srvsvc_ShareType type
 		);
 
@@ -573,43 +573,43 @@
 
 	typedef struct {
 		srvsvc_PlatformId platform_id;
-		unistr *server_name;
+		[string,charset(UTF16)] uint16 *server_name;
 	} srvsvc_NetSrvInfo100;
 
 	typedef struct {
 		srvsvc_PlatformId platform_id;
-		unistr *server_name;
+		[string,charset(UTF16)] uint16 *server_name;
 		uint32 version_major;
 		uint32 version_minor;
 		svcctl_ServerType server_type;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 	} srvsvc_NetSrvInfo101;
 
 	typedef struct {
 		srvsvc_PlatformId platform_id;
-		unistr *server_name;
+		[string,charset(UTF16)] uint16 *server_name;
 		uint32 ver_major;
 		uint32 ver_minor;
 		svcctl_ServerType server_type;
-		unistr *comment;
+		[string,charset(UTF16)] uint16 *comment;
 		uint32 users;
 		uint32 disc;
 		uint32 hidden;
 		uint32 announce;
 		uint32 anndelta;
 		uint32 licences;
-		unistr *userpath;
+		[string,charset(UTF16)] uint16 *userpath;
 	} srvsvc_NetSrvInfo102;
 
 	typedef struct {
 		uint32 ulist_mtime;
 		uint32 glist_mtime;
 		uint32 alist_mtime;
-		unistr *alerts;
+		[string,charset(UTF16)] uint16 *alerts;
 		uint32 security;
 		uint32 numadmin;
 		uint32 lanmask;
-		unistr *guestaccount;
+		[string,charset(UTF16)] uint16 *guestaccount;
 		uint32 chdevs;
 		uint32 chdevqs;
 		uint32 chdevjobs;
@@ -631,18 +631,18 @@
 		uint32 diskalert;
 		uint32 netioalert;
 		uint32 maxaudits;
-		unistr *srvheuristics;
+		[string,charset(UTF16)] uint16 *srvheuristics;
 	} srvsvc_NetSrvInfo402;
 
 	typedef struct {
 		uint32 ulist_mtime;
 		uint32 glist_mtime;
 		uint32 alist_mtime;
-		unistr *alerts;
+		[string,charset(UTF16)] uint16 *alerts;
 		uint32 security;
 		uint32 numadmin;
 		uint32 lanmask;
-		unistr *guestaccount;
+		[string,charset(UTF16)] uint16 *guestaccount;
 		uint32 chdevs;
 		uint32 chdevqs;
 		uint32 chdevjobs;
@@ -664,10 +664,10 @@
 		uint32 diskalert;
 		uint32 netioalert;
 		uint32 maxaudits;
-		unistr *srvheuristics;
+		[string,charset(UTF16)] uint16 *srvheuristics;
 		uint32 auditedevents;
 		uint32 auditprofile;
-		unistr *autopath;
+		[string,charset(UTF16)] uint16 *autopath;
 	} srvsvc_NetSrvInfo403;
 
 	typedef struct {
@@ -710,7 +710,7 @@
 		uint32 timesource;
 		uint32 acceptdownlevelapis;
 		uint32 lmannounce;
-		unistr *domain;
+		[string,charset(UTF16)] uint16 *domain;
 		uint32 maxcopyreadlen;
 		uint32 maxcopywritelen;
 		uint32 minkeepsearch;
@@ -1011,7 +1011,7 @@
 	/******************/
 	/* Function: 0x15 */
 	WERROR srvsvc_NetSrvGetInfo(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
 		[out,switch_is(level)] srvsvc_NetSrvInfo info
 		);
@@ -1019,7 +1019,7 @@
 	/******************/
 	/* Function: 0x16 */
 	WERROR srvsvc_NetSrvSetInfo(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetSrvInfo info,
 		[in,out]   uint32 *parm_error
@@ -1047,7 +1047,7 @@
 	/******************/
 	/* Function: 0x17 */
 	WERROR srvsvc_NetDiskEnum(
-		[in]      unistr *server_unc,
+		[in]      [string,charset(UTF16)] uint16 *server_unc,
 		[in]      uint32 level,
 		[out]     uint32 count,
 		[in,switch_is(level)] srvsvc_NetDiskCtr ctr,
@@ -1075,10 +1075,10 @@
 
 	typedef struct {
 		uint32 vcs;
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 		srvsvc_NetTransportAddress *addr;
 		uint32 addr_len;
-		unistr *net_addr;
+		[string,charset(UTF16)] uint16 *net_addr;
 	} srvsvc_NetTransportInfo0;
 
 	typedef struct {
@@ -1088,11 +1088,11 @@
 
 	typedef struct {
 		uint32 vcs;
-		unistr *name;
+		[string,charset(UTF16)] uint16 *name;
 		srvsvc_NetTransportAddress *addr;
 		uint32 addr_len;
-		unistr *net_addr;
-		unistr *domain;
+		[string,charset(UTF16)] uint16 *net_addr;
+		[string,charset(UTF16)] uint16 *domain;
 	} srvsvc_NetTransportInfo1;
 
 	typedef struct {
@@ -1142,7 +1142,7 @@
 	/******************/
 	/* Function: 0x1a */
 	WERROR srvsvc_NetTransportEnum(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,out] uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetTransportCtr ctr,
 		[in]   uint32 max_buffer,
@@ -1176,7 +1176,7 @@
 	/******************/
 	/* Function: 0x1c */
 	WERROR srvsvc_NetRemoteTOD(
-		[in]   unistr *server_unc,
+		[in]   [string,charset(UTF16)] uint16 *server_unc,
 		[out]   srvsvc_NetRemoteTODInfo *info
 		);
 
@@ -1232,7 +1232,7 @@
 	/* Note, there must be some way to return entries read vs 
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
-		[in]       unistr *server_unc,
+		[in]       [string,charset(UTF16)] uint16 *server_unc,
 	 	[in,out]   uint32 level,
 		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
 		[in]       uint32 max_buffer,
