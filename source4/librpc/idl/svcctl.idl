@@ -14,7 +14,7 @@
 {
 	typedef struct {
 		uint32 is_locked;
-		unistr *lock_owner;
+		[string,charset(UTF16)] uint16 *lock_owner;
 		uint32 lock_duration;
 	} SERVICE_LOCK_STATUS;
 
@@ -153,29 +153,29 @@
 									  [in] uint32 type,
 									  [in] uint32 start,
 									  [in] uint32 error,
-									  [in] unistr *binary_path,
-									  [in] unistr *load_order_group,
+									  [in] [string,charset(UTF16)] uint16 *binary_path,
+									  [in] [string,charset(UTF16)] uint16 *load_order_group,
 									  [out] uint32 tag_id,
-									  [in] unistr *dependencies,
-									  [in] unistr *service_start_name,
-									  [in] unistr *password,
-									  [in] unistr *display_name);
+									  [in] [string,charset(UTF16)] uint16 *dependencies,
+									  [in] [string,charset(UTF16)] uint16 *service_start_name,
+									  [in] [string,charset(UTF16)] uint16 *password,
+									  [in] [string,charset(UTF16)] uint16 *display_name);
 
 	/*****************/
 	/* Function 0x0c */
 	WERROR svcctl_CreateServiceW([in,ref] policy_handle *handle,
-								[in] unistr *ServiceName,
-								[in] unistr *DisplayName,
+								[in] [string,charset(UTF16)] uint16 *ServiceName,
+								[in] [string,charset(UTF16)] uint16 *DisplayName,
 								[in] uint32 desired_access,
 								[in] uint32 type,
 								[in] uint32 start_type,
 								[in] uint32 error_control,
-								[in] unistr *binary_path,
-								[in] unistr *LoadOrderGroupKey,
+								[in] [string,charset(UTF16)] uint16 *binary_path,
+								[in] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
   								[out] uint32 *TagId,
-								[in] unistr *dependencies,
-								[in] unistr *service_start_name,
-								[in] unistr *password);
+								[in] [string,charset(UTF16)] uint16 *dependencies,
+								[in] [string,charset(UTF16)] uint16 *service_start_name,
+								[in] [string,charset(UTF16)] uint16 *password);
 
 	/*****************/
 	/* Function 0x0d */
@@ -201,15 +201,15 @@
 	/*****************/
 	/* Function 0x0f */
 	WERROR svcctl_OpenSCManagerW(
-					   [in] unistr *MachineName,
-					   [in] unistr *DatabaseName,
+					   [in] [string,charset(UTF16)] uint16 *MachineName,
+					   [in] [string,charset(UTF16)] uint16 *DatabaseName,
 					   [in] uint32 access_mask,
 					   [out,ref] policy_handle *handle);
 
 	/*****************/
 	/* Function 0x10 */
 	WERROR svcctl_OpenServiceW([in,ref] policy_handle *scmanager_handle,
-							  [in] unistr *ServiceName,
+							  [in] [string,charset(UTF16)] uint16 *ServiceName,
 							  [in] uint32 access_mask);
 
 	/*****************/
@@ -234,19 +234,19 @@
 	WERROR svcctl_StartServiceW(
 							   [in,ref] policy_handle *handle,
 							   [in] uint32 NumArgs,
-							   [in,length_is(NumArgs)] unistr *Arguments);
+							   [in,length_is(NumArgs)] [string,charset(UTF16)] uint16 *Arguments);
 
 	/*****************/
 	/* Function 0x14 */
 	WERROR svcctl_GetServiceDisplayNameW([in,ref] policy_handle *handle,
-										[in] unistr *service_name,
-										[out] unistr *display_name,
+										[in] [string,charset(UTF16)] uint16 *service_name,
+										[out] [string,charset(UTF16)] uint16 *display_name,
 										[in,out] uint32 *display_name_length); 
 	/*****************/
 	/* Function 0x15 */
 	WERROR svcctl_GetServiceKeyNameW([in,ref] policy_handle *handle,
-										[in] unistr *service_name,
-										[out] unistr *key_name,
+										[in] [string,charset(UTF16)] uint16 *service_name,
+										[out] [string,charset(UTF16)] uint16 *key_name,
 										[in,out] uint32 *display_name_length);									
 	/*****************/
 	/* Function 0x16 */
@@ -262,29 +262,29 @@
 									  [in] uint32 type,
 									  [in] uint32 start,
 									  [in] uint32 error,
-									  [in] unistr *binary_path,
-									  [in] unistr *load_order_group,
+									  [in] [string,charset(UTF16)] uint16 *binary_path,
+									  [in] [string,charset(UTF16)] uint16 *load_order_group,
 									  [out] uint32 tag_id,
-									  [in] unistr *dependencies,
-									  [in] unistr *service_start_name,
-									  [in] unistr *password,
-									  [in] unistr *display_name);
+									  [in] [string,charset(UTF16)] uint16 *dependencies,
+									  [in] [string,charset(UTF16)] uint16 *service_start_name,
+									  [in] [string,charset(UTF16)] uint16 *password,
+									  [in] [string,charset(UTF16)] uint16 *display_name);
 
 	/*****************/
 	/* Function 0x18 */
 	WERROR svcctl_CreateServiceA([in,ref] policy_handle *handle,
-								[in] unistr *ServiceName,
-								[in] unistr *DisplayName,
+								[in] [string,charset(UTF16)] uint16 *ServiceName,
+								[in] [string,charset(UTF16)] uint16 *DisplayName,
 								[in] uint32 desired_access,
 								[in] uint32 type,
 								[in] uint32 start_type,
 								[in] uint32 error_control,
-								[in] unistr *binary_path,
-								[in] unistr *LoadOrderGroupKey,
+								[in] [string,charset(UTF16)] uint16 *binary_path,
+								[in] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
   								[out] uint32 *TagId,
-								[in] unistr *dependencies,
-								[in] unistr *service_start_name,
-								[in] unistr *password);
+								[in] [string,charset(UTF16)] uint16 *dependencies,
+								[in] [string,charset(UTF16)] uint16 *service_start_name,
+								[in] [string,charset(UTF16)] uint16 *password);
 
 	/*****************/
 	/* Function 0x19 */
@@ -311,15 +311,15 @@
 	/*****************/
 	/* Function 0x1b */
 	WERROR svcctl_OpenSCManagerA(
-					   [in] unistr *MachineName,
-					   [in] unistr *DatabaseName,
+					   [in] [string,charset(UTF16)] uint16 *MachineName,
+					   [in] [string,charset(UTF16)] uint16 *DatabaseName,
 					   [in] uint32 access_mask,
 					   [out,ref] policy_handle *handle);
 
 	/*****************/
 	/* Function 0x1c */
 	WERROR svcctl_OpenServiceA([in,ref] policy_handle *scmanager_handle,
-							  [in] unistr *ServiceName,
+							  [in] [string,charset(UTF16)] uint16 *ServiceName,
 							  [in] uint32 access_mask);
 
 	/*****************/
@@ -344,19 +344,19 @@
 	WERROR svcctl_StartServiceA(
 							   [in,ref] policy_handle *handle,
 							   [in] uint32 NumArgs,
-							   [in,length_is(NumArgs)] unistr *Arguments);
+							   [in,length_is(NumArgs)] [string,charset(UTF16)] uint16 *Arguments);
 
 	/*****************/
 	/* Function 0x20 */
 	WERROR svcctl_GetServiceDisplayNameA([in,ref] policy_handle *handle,
-										[in] unistr *service_name,
-										[out] unistr *display_name,
+										[in] [string,charset(UTF16)] uint16 *service_name,
+										[out] [string,charset(UTF16)] uint16 *display_name,
 										[in,out] uint32 *display_name_length); 
 	/*****************/
 	/* Function 0x21 */
 	WERROR svcctl_GetServiceKeyNameA([in,ref] policy_handle *handle,
-										[in] unistr *service_name,
-										[out] unistr *key_name,
+										[in] [string,charset(UTF16)] uint16 *service_name,
+										[out] [string,charset(UTF16)] uint16 *key_name,
 										[in,out] uint32 *display_name_length);									
 
 	/*****************/
@@ -419,7 +419,7 @@
 								 [out] uint32 bytes_needed,
 								 [out] uint32 service_returned,
 								 [in,out] uint32 *resume_handle, 
-								 [out] unistr *group_name);
+								 [out] [string,charset(UTF16)] uint16 *group_name);
 
 	/*****************/
 	/* Function 0x2a */
@@ -433,7 +433,7 @@
 								 [out] uint32 bytes_needed,
 								 [out] uint32 service_returned,
 								 [in,out] uint32 *resume_handle, 
-								 [out] unistr *group_name);
+								 [out] [string,charset(UTF16)] uint16 *group_name);
 
 	/*****************/
 	/* Function 0x2b */

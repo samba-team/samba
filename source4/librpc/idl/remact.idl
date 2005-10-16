@@ -28,7 +28,7 @@ interface IRemoteActivation
 			[in] ORPCTHIS this,
 			[out] ORPCTHAT that,
 			[in] GUID Clsid,
-			[in] unistr *pwszObjectName,
+			[in] [string,charset(UTF16)] uint16 *pwszObjectName,
 			[in] MInterfacePointer *pObjectStorage,
 			[in] uint32 ClientImpLevel,
 			[in] uint32 Mode,
