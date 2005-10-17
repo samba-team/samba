@@ -340,6 +340,16 @@ static const struct wrepl_ip addresses_A_2[] = {
 	.ip	= TEST_ADDRESS_A_PREFIX".2"
 	}
 };
+static const struct wrepl_ip addresses_A_3_4[] = {
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".4"
+	}
+};
 
 static const struct wrepl_ip addresses_B_1[] = {
 	{
@@ -351,6 +361,16 @@ static const struct wrepl_ip addresses_B_2[] = {
 	{
 	.owner	= TEST_OWNER_B_ADDRESS,
 	.ip	= TEST_ADDRESS_B_PREFIX".2"
+	}
+};
+static const struct wrepl_ip addresses_B_3_4[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".4"
 	}
 };
 
@@ -963,7 +983,6 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 
 /*
  * unique vs normal groups section,
- * TODO: group,released!
  */
 	/* 
 	 * unique,active vs. group,active
@@ -1224,6 +1243,128 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		}
 	},
 
+/*
+ * unique vs special groups section,
+ */
+	/* 
+	 * unique,active vs. sgroup,active
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * unique,active vs. sgroup,tombstone
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. sgroup,active
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. sgroup,tombstone
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True
+		}
+	},
+
+/*
+ * normal groups vs unique section,
+ */
 	/* 
 	 * group,active vs. unique,active
 	 * => should NOT be replaced
@@ -1244,7 +1385,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		.r2	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
-			.state		= WREPL_STATE_TOMBSTONE,
+			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
 			.num_ips	= ARRAY_SIZE(addresses_B_1),
