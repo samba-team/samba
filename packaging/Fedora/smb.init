@@ -37,40 +37,56 @@ fi
 # Check that we can write to it... so non-root users stop here
 [ -w /etc/samba/smb.conf ] || exit 0
 
+# Check whether "netbios disabled" is true
+ISNETBIOSDISABLED=$(testparm -s 2>/dev/null | \
+	sed -n '/\[global\]/,/^$/p' | \
+	grep "disable netbios = Yes" | \
+	awk 'BEGIN{FS=" = "}{print $2}')
+
 
 RETVAL=0
 
 
 start() {
-        KIND="SMB"
+	KIND="SMB"
 	echo -n $"Starting $KIND services: "
 	daemon smbd $SMBDOPTIONS
 	RETVAL=$?
 	echo
-        KIND="NMB"
-	echo -n $"Starting $KIND services: "
-	daemon nmbd $NMBDOPTIONS
-	RETVAL2=$?
-	echo
-	[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && touch /var/lock/subsys/smb || \
-	   RETVAL=1
+	KIND="NMB"
+	if [ x"$ISNETBIOSDISABLED" != x"Yes" ]; then
+		echo -n $"Starting $KIND services: "
+		daemon nmbd $NMBDOPTIONS
+		RETVAL2=$?
+		echo
+		[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && touch /var/lock/subsys/smb || \
+			RETVAL=1
+	else
+		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/smb || \
+			RETVAL=1
+	fi
 	return $RETVAL
 }	
 
 stop() {
-        KIND="SMB"
+	KIND="SMB"
 	echo -n $"Shutting down $KIND services: "
 	killproc smbd -TERM
 	RETVAL=$?
 	[ $RETVAL -eq 0 ] && rm -f /var/run/smbd.pid
 	echo
 	KIND="NMB"
-	echo -n $"Shutting down $KIND services: "
-	killproc nmbd -TERM
-	RETVAL2=$?
-	[ $RETVAL2 -eq 0 ] && rm -f /var/run/nmbd.pid
-	[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb 
-	echo ""
+	if [ x"$ISNETBIOSDISABLED" != x"Yes" ]; then
+		echo -n $"Shutting down $KIND services: "
+		killproc nmbd -TERM
+		RETVAL2=$?
+		[ $RETVAL2 -eq 0 ] && rm -f /var/run/nmbd.pid
+		[ $RETVAL -eq 0 -a $RETVAL2 -eq 0 ] && rm -f /var/lock/subsys/smb 
+		echo ""
+	else
+		[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/smb 
+		echo ""
+	fi
 	return $RETVAL
 }	
 
