@@ -25,7 +25,7 @@
 <programlisting>
 <parameter>remote browse sync = 192.168.2.255 192.168.4.255</parameter>
 </programlisting>
-	the above line would cause &nmbd; to request the master browser on the 
+	the above line would cause <command>nmbd</command> to request the master browser on the 
 	specified subnets or addresses to synchronize their browse lists with 
 	the local server.
 	</para>
