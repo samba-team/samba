@@ -2392,14 +2392,16 @@ static NTSTATUS parse_session_request(struct smbsrv_request *req)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = nbt_name_from_blob(req, &blob, req->smb_conn->negotiate.called_name);
+	status = nbt_name_from_blob(req->smb_conn, &blob,
+				    req->smb_conn->negotiate.called_name);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	blob.data += blob.length;
 	blob.length = ascii_len_n(blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
 	if (blob.length == 0) return NT_STATUS_BAD_NETWORK_NAME;
 
-	status = nbt_name_from_blob(req, &blob, req->smb_conn->negotiate.calling_name);
+	status = nbt_name_from_blob(req->smb_conn, &blob,
+				    req->smb_conn->negotiate.calling_name);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	req->smb_conn->negotiate.done_nbt_session = True;
