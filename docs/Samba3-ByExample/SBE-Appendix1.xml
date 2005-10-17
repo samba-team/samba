@@ -617,7 +617,7 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 
 		<step><para>
 		Install the files shown in <link linkend="sbehap-ldifpata"/> and <link linkend="sbehap-ldifpatb"/> into the directory
-		<filename>/etc/openldap/SambaInit/nit-ldif.pat.</filename> These two files are
+		<filename>/etc/openldap/SambaInit/Init-ldif.pat.</filename> These two files are
                 parts A and B, respectively, of the <filename>init-ldif.pat</filename> file.
 		</para></step>
 
