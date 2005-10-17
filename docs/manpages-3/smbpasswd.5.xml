@@ -120,17 +120,15 @@
 		<varlistentry>
 		<term>Account Flags</term>
 		<listitem><para>This section contains flags that describe 
-		the attributes of the users account. In the Samba 2.2 release 
-		this field is bracketed by '[' and ']' characters and is always 
-		13 characters in length (including the '[' and ']' characters).
+		the attributes of the users account.  This field is bracketed by 
+		'[' and ']' characters and is always 13 characters in length 
+		(including the '[' and ']' characters).
 		The contents of this field may be any of the following characters:
 		</para>
 		
 		<itemizedlist>
 			<listitem><para><emphasis>U</emphasis> - This means 
-			this is a "User" account, i.e. an ordinary user. Only User 
-			and Workstation Trust accounts are currently supported 
-			in the smbpasswd file. </para></listitem>
+			this is a "User" account, i.e. an ordinary user.</para></listitem>
 			
 			<listitem><para><emphasis>N</emphasis> - This means the
 			account has no password (the passwords in the fields LANMAN 
@@ -143,6 +141,9 @@
 			<listitem><para><emphasis>D</emphasis> - This means the account 
 			is disabled and no SMB/CIFS logins  will be allowed for this user. </para></listitem>
 			
+			<listitem><para><emphasis>X</emphasis> - This means the password 
+			does not expire. </para></listitem>
+			
 			<listitem><para><emphasis>W</emphasis> - This means this account 
 			is a "Workstation Trust" account. This kind of account is used 
 			in the Samba PDC code stream to allow Windows NT Workstations 
@@ -151,7 +152,9 @@
 		</itemizedlist>
 		
 		<para>Other flags may be added as the code is extended in future.
-		The rest of this field space is filled in with spaces. </para>
+		The rest of this field space is filled in with spaces. For further
+		information regarding the flags that are supported please refer to the
+		man page for the <command>pdbedit</command> command.</para>
 		</listitem>
 		</varlistentry>
 		
