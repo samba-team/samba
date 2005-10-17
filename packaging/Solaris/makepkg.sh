@@ -46,7 +46,13 @@ add_dynamic_entries()
 	
 	echo "#\n# libsmbclient\n#"
 	echo f none lib/libsmbclient.so 0755 root other
+	echo f none lib/libsmbclient.a 0755 root other
 	echo f none include/libsmbclient.h 0644 root other
+
+	echo "#\n# libmsrpc\n#"
+	echo f none lib/libmsrpc.so 0755 root other
+	echo f none lib/libmsrpc.a 0755 root other
+	echo f none include/libmsrpc.h 0644 root other
 
 	if [ -f lib/smbwrapper.so -a -f bin/smbsh ]; then
 		echo "#\n# smbwrapper\n#"
