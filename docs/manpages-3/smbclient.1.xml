@@ -207,11 +207,13 @@
 		is over 1600 bytes, as this is the limit of the protocol. 
 		</para>
 
-		<para>One useful trick is to cat the message through
-		<command>smbclient</command>. For example: <command>
-		cat mymessage.txt | smbclient -M FRED </command> will 
-		send the message in the file <filename>mymessage.txt</filename> 
-		to the machine FRED. </para>
+		<para>
+		One useful trick is to cat the message through <command>smbclient</command>. For example:
+<programlisting>
+<command>cat mymessage.txt | smbclient -M FRED </command>
+</programlisting>
+		will send the message in the file <filename>mymessage.txt</filename> to the machine FRED.
+		</para>
 
 		<para>You may also find the <parameter>-U</parameter> and 
 		<parameter>-I</parameter> options useful, as they allow you to 
