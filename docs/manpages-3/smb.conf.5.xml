@@ -111,27 +111,25 @@
 	<para>
 	The following sample section defines a file space share.  The user has write access to the path <filename
 	moreinfo="none">/home/bar</filename>.  The share is accessed via the share name <literal>foo</literal>:
-	</para>
-
-<smbconfblock>
+<programlisting>
 	<smbconfsection name="[foo]"/>
 	<smbconfoption name="path">/home/bar</smbconfoption>
 	<smbconfoption name="read only">no</smbconfoption>
-</smbconfblock>
+</programlisting>
+	</para>
 
 	<para>
 	The following sample section defines a printable share.  The share is read-only, but printable. That is,
 	the only write access permitted is via calls to open, write to and close a spool file. The <emphasis>guest
 	ok</emphasis> parameter means access will be permitted as the default guest user (specified elsewhere):
-	</para>
-
-<smbconfblock>
+<programlisting>
 	<smbconfsection name="[aprinter]"/>
 	<smbconfoption name="path">/usr/spool/public</smbconfoption>
 	<smbconfoption name="read only">yes</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
 	<smbconfoption name="guest ok">yes</smbconfoption>
-</smbconfblock>
+</programlisting>
+	</para>
 
 </refsect1>
 
@@ -199,12 +197,11 @@
 		<para>
 		The [homes] section can specify all the parameters a normal service section can specify, though some make more sense 
 		than others. The following is a typical and suitable [homes] section:
+<programlisting>
+<smbconfsection name="[homes]"/>
+<smbconfoption name="read only">no</smbconfoption>
+</programlisting>
 		</para>
-
-	<smbconfblock>
-		<smbconfsection name="[homes]"/>
-		<smbconfoption name="read only">no</smbconfoption>
-	</smbconfblock>
 	
 		<para>
 		An important point is that if guest access is specified in the [homes] section, all home directories will be 
@@ -260,14 +257,13 @@
 		<para>
 		Typically the path specified is that of a world-writeable spool directory with the sticky bit set on 
 		it. A typical [printers] entry looks like this:
+<programlisting>
+<smbconfsection name="[printers]"/>
+<smbconfoption name="path">/usr/spool/public</smbconfoption>
+<smbconfoption name="guest ok">yes</smbconfoption>
+<smbconfoption name="printable">yes</smbconfoption>
+</programlisting>
 		</para>
-
-	<smbconfblock>
-		<smbconfsection name="[printers]"/>
-		<smbconfoption name="path">/usr/spool/public</smbconfoption>
-		<smbconfoption name="guest ok">yes</smbconfoption>
-		<smbconfoption name="printable">yes</smbconfoption>
-	</smbconfblock>
 
 		<para>
 		All aliases given for a printer in the printcap file are legitimate printer names as far as the server is concerned. 
