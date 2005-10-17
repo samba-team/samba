@@ -3043,6 +3043,8 @@ int cac_SvcGetServiceConfig(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sv
 
 /**@}*/ /*SCM_Functions*/
 
+struct rpc_pipe_client *cac_GetPipe(CacServerHandle *hnd, int pi_idx);
+
 #endif /* LIBMSRPC_H */
 
 
