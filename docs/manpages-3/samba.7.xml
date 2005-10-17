@@ -210,14 +210,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><citerefentry><refentrytitle>editreg</refentrytitle>
-		<manvolnum>1</manvolnum></citerefentry></term>
-		<listitem><para><command>editreg</command> is a command-line
-		utility that can edit windows registry files.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term><citerefentry><refentrytitle>profiles</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para><command>profiles</command> is a command-line
