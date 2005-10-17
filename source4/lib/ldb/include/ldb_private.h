@@ -118,7 +118,7 @@ typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, 
 /*
   simplify out of memory handling
 */
-#define ldb_oom(ldb) ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
+#define ldb_oom(ldb) ldb_debug_set(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
 
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
