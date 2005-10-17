@@ -39,6 +39,8 @@ struct CacServerHandleInternal {
    BOOL user_supplied_ctx;
 };
 
+/*used to get a struct rpc_pipe_client* to be passed into rpccli* calls*/
+
 /*nessecary prototypes*/
 BOOL rid_in_list(uint32 rid, uint32 *list, uint32 list_len);
 
@@ -58,6 +60,9 @@ ALIAS_INFO_CTR *cac_MakeAliasInfoCtr(TALLOC_CTX *mem_ctx, CacAliasInfo *info);
 CacDomainInfo *cac_MakeDomainInfo(TALLOC_CTX *mem_ctx, SAM_UNK_INFO_1 *info1, SAM_UNK_INFO_2 *info2, SAM_UNK_INFO_12 *info12);
 CacService *cac_MakeServiceArray(TALLOC_CTX *mem_ctx, ENUM_SERVICES_STATUS *svc, uint32 num_services);
 int cac_InitCacServiceConfig(TALLOC_CTX *mem_ctx, SERVICE_CONFIG *src, CacServiceConfig *dest);
+
+/*moved to libmsrpc.h*/
+/*struct rpc_pipe_client *cac_GetPipe(CacServerHandle *hnd, int pi_idx);*/
 
 SMBCSRV *smbc_attr_server(SMBCCTX *context,
                           const char *server, const char *share, 
