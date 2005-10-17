@@ -69,8 +69,8 @@
 		<varlistentry>
 		<term>password=&lt;arg&gt;</term>
 		<listitem><para>specifies the SMB password. If this
-		option is not given then the environment variable
-		<envar>PASSWD</envar> is used. If it can find
+		option is not given then the environment variable 
+		<literal>PASSWD</literal> is used. If it can find
 		no password <command>smbmount</command> will prompt
 		for a passeword, unless the guest option is
 		given. </para>

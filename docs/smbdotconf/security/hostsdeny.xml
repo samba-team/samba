@@ -10,6 +10,13 @@
     services unless the specific services have their own lists to override 
     this one. Where the lists conflict, the <parameter moreinfo="none">allow</parameter> 
 	list takes precedence.</para>
+
+	<para>
+	In the event that it is necessary to deny all by default, use the keyword
+	ALL (or the netmask <literal>0.0.0.0/0</literal>) and then explicitly specify
+	to the <link linkend="hostsallow">hosts allow</link> parameter those hosts
+	that should be permitted access.
+	</para>
 </description>
 
 <value type="default"><comment>none (i.e., no hosts specifically excluded)</comment></value>
