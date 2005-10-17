@@ -40,6 +40,24 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_VALUE_UINT64(v, correct) do { \
+	if ((v) != (correct)) { \
+		printf("(%s) Incorrect value %s=%llu - should be %llu\n", \
+		       __location__, #v, v, correct); \
+		ret = False; \
+		goto done; \
+	}} while (0)
+
+#define CHECK_VALUE_STRING(v, correct) do { \
+	if ( ((!v) && (correct)) || \
+	     ((v) && (!correct)) || \
+	     ((v) && (correct) && strcmp(v,correct) != 0)) { \
+		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
+		       __location__, #v, v, correct); \
+		ret = False; \
+		goto done; \
+	}} while (0)
+
 #define _NBT_NAME(n,t,s) {\
 	.name	= n,\
 	.type	= t,\
@@ -469,6 +487,7 @@ static BOOL test_wrepl_is_applied(struct test_wrepl_conflict_conn *ctx,
 	BOOL ret = True;
 	NTSTATUS status;
 	struct wrepl_pull_names pull_names;
+	struct wrepl_name *names;
 
 	pull_names.in.assoc_ctx	= ctx->pull_assoc;
 	pull_names.in.partner	= *owner;
@@ -478,6 +497,19 @@ static BOOL test_wrepl_is_applied(struct test_wrepl_conflict_conn *ctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(pull_names.out.num_names, (expected?1:0));
 
+	names = pull_names.out.names;
+
+	if (expected) {
+		uint32_t flags = WREPL_NAME_FLAGS(names[0].type,
+						  names[0].state,
+						  names[0].node,
+						  names[0].is_static);
+		CHECK_VALUE(names[0].name.type, name->name->type);
+		CHECK_VALUE_STRING(names[0].name.name, name->name->name);
+		CHECK_VALUE_STRING(names[0].name.scope, name->name->scope);
+		CHECK_VALUE(flags, name->flags);
+		CHECK_VALUE_UINT64(names[0].version_id, name->id);
+	}
 done:
 	talloc_free(pull_names.out.names);
 	return ret;
@@ -1458,11 +1490,12 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 
 		/* now apply R2 */
 		ret &= test_wrepl_update_one(ctx, records[i].r2.owner, wins_name_r2);
-		if (records[i].r2.apply_expected &&
-		    (records[i].r1.state == WREPL_STATE_RELEASED ||
-		     records[i].r2.state == WREPL_STATE_RELEASED)) {
+		if (records[i].r1.state == WREPL_STATE_RELEASED) {
 			ret &= test_wrepl_is_applied(ctx, records[i].r1.owner,
 						     wins_name_r1, False);
+		} else if (records[i].r1.owner != records[i].r2.owner) {
+			ret &= test_wrepl_is_applied(ctx, records[i].r1.owner,
+						     wins_name_r1, !records[i].r2.apply_expected);
 		}
 		if (records[i].r2.state == WREPL_STATE_RELEASED) {
 			ret &= test_wrepl_is_applied(ctx, records[i].r2.owner,
