@@ -649,7 +649,7 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 			wins_name_cur	= wins_name_tmp;
 
 			if (i > 0) {
-				printf("%s,%s%s vs, %s,%s%s with %s ip(s) => %s\n",
+				printf("%s,%s%s vs. %s,%s%s with %s ip(s) => %s\n",
 					wrepl_name_type_string(records[i-1].type),
 					wrepl_name_state_string(records[i-1].state),
 					(records[i-1].is_static?",static":""),
@@ -705,6 +705,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	struct {
 		const char *line; /* just better debugging */
 		struct nbt_name name;
+		BOOL cleanup;
 		struct {
 			struct wrepl_wins_owner *owner;
 			enum wrepl_name_type type;
@@ -724,6 +725,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
 		.r1	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -1221,6 +1223,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
 		.r1	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -1358,6 +1361,155 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.is_static	= False,
 			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
 			.ips		= addresses_A_3_4,
+			.apply_expected	= True
+		}
+	},
+
+
+/*
+ * unique vs multi homed section,
+ */
+	/* 
+	 * unique,active vs. mhomed,active with different ips
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,active vs. mhomed,tombstone with different ips
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * unique,active vs. mhomed,tombstone with same ips
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. mhomed,active with different ips
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * unique,tombstone vs. mhomed,tombstone with different ips
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
 			.apply_expected	= True
 		}
 	},
@@ -1547,6 +1699,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
 		.r1	= {
 			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -1578,8 +1731,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 
 	for(i=0; ret && i < ARRAY_SIZE(records); i++) {
 
-		if (i > 0) {
-			printf("%s,%s%s vs, %s,%s%s with %s ip(s) => %s\n",
+		if (!records[i].cleanup) {
+			printf("%s,%s%s vs. %s,%s%s with %s ip(s) => %s\n",
 				wrepl_name_type_string(records[i].r1.type),
 				wrepl_name_state_string(records[i].r1.state),
 				(records[i].r1.is_static?",static":""),
