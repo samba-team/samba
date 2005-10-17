@@ -213,8 +213,6 @@ int cac_Connect(CacServerHandle *hnd, const char *srv) {
 
 void cac_FreeHandle(CacServerHandle * hnd) {
    SMBCSRV *srv = NULL;
-   uint32 i     = 0;
-   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd)
       return;
