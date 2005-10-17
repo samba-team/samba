@@ -214,21 +214,17 @@ int cac_Connect(CacServerHandle *hnd, const char *srv) {
 void cac_FreeHandle(CacServerHandle * hnd) {
    SMBCSRV *srv = NULL;
    uint32 i     = 0;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd)
       return;
-   
-   /*see if there are any sessions*/
-   while(i <= PI_MAX_PIPES && hnd->_internal.pipes[i] == False)
-      i++;
 
-   if(i < PI_MAX_PIPES) {
-      /*then one or more sessions are open*/
-      srv = cac_GetServer(hnd);
 
-      if(srv)
-         cli_nt_session_close(&(srv->cli));
+   if(srv) {
+      /*close all pipe sessions*/
+      cli_nt_pipes_close(&(srv->cli));
    }
+
 
    /*only free the context if we created it*/
    if(!hnd->_internal.user_supplied_ctx) {
