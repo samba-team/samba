@@ -1,0 +1,40 @@
+<samba:parameter name="map read only"
+                 context="S"
+				 type="enum"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This controls how the DOS read only attribute should be
+	mapped.
+	</para>
+
+	<para>
+	This parameter can take three different values, which tell <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> how to display the read only attribute on files, where either
+	<smbconfoption name="store dos attributes"/> is set to <constant>No</constant>, or no extended attribute is
+	present.
+	</para>
+
+    <para>The three settings are :</para>
+
+    <itemizedlist>
+		<listitem><para>
+		<constant>Yes</constant> - The read only DOS attribute is mapped to the inverse of the user
+		write bit in the unix permission mode
+		</para></listitem>
+
+		<listitem><para>
+		<constant>Permissions</constant> - The read only DOS attribute is mapped to the effective permissions of
+		the connecting user, as evaluated by <citerefentry><refentrytitle>smbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> by reading the unix permissions and POSIX ACL (if present).
+		</para></listitem>
+
+		<listitem><para>
+		<constant>No</constant> - The read only DOS attribute is unaffected by permissions, and can only be set by
+		the <smbconfoption name="store dos attributes"/> method.  This may be useful for exporting mounted CDs.
+		</para></listitem>
+    </itemizedlist>
+
+</description>
+<value type="default">yes</value>
+</samba:parameter>
