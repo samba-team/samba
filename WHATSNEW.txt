@@ -1,6 +1,6 @@
                    ==================================
                    Release Notes for Samba 3.0.21pre1
-                              Oct XX, 2005
+                              Oct 17, 2005
                    ==================================
 
 This is a preview release of the Samba 3.0.21 code base and
@@ -25,16 +25,113 @@ Changes
 #######
 
 
-Changes since 3.0.20a
---------------------
+Changes since 3.0.20[a-b]
+-------------------------
 
 commits
 -------
+
+o   Jeremy Allison <jra@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
+o   Timur Bakeyev <timur@com.bat.ru>
+o   Ed Boraas <ed.boraas@concordia.ab.ca>.
+o   Gerald (Jerry) Carter <jerry@samba.org>
+o   <core@road-star.jp>
+o   Guenther Deschner <gd@samba.org>
+o   Renaud Duhaut <rd@duhaut.com>
+o   Steven Edwards <steven_ed4153@yahoo.com>.
+o   Rodrigo Fernandez-Vizarra <Rodrigo.Fernandez-Vizarra@Sun.COM>
+o   Steve French <sfrench@us.ibm.com>
+o   Deryck Hodge <deryck@samba.org>
+o   Olaf Imig <Olaf.Imig@bifab.de>
+o   Björn Jacke <bj@sernet.de>
+o   Kevin Jamieson <bugzilla@kevinjamieson.com>
+o   John Janosik <jpjanosi@us.ibm.com>
+o   William Jojo <jojowil@hvcc.edu>
+o   Guenter Kukkukk <guenter.kukkukk@kukkukk.com>
+o   Tom Lackemann <cessnatomny@yahoo.com>
+o   Volker Lendecke <vl@samba.org>
+o   Herb Lewis <herb@samba.org>
+o   Derrell Lipman <derrell@samba.org>
+o   Jason Mader <jason@ncac.gwu.edu>
+o   Marcel <samba.10.maazl@spamgourmet.com>
+o   Jim McDonough <jmcd@us.ibm.com>
+o   Luke Mewburn <lukem@NetBSD.org>
+o   Kalim Moghul <kalim@samba.org>
+o   Lars Müller <lmuelle@samba.org>
+o   Marcel Muller <mueller@maazl.de>
+o   Ricky Nance <ricky.nance@gmail.com>
+o   James Peach <jpeach@sgi.com>
+o   Ed Plese <ed@edplese.com>
+o   Marcin Porwit <mporwit@centeris.com>
+o   Tim Potter <tpot@samba.org>
+o   Denis Sbragion <d.sbragion@infotecna.it>
+o   Fernando Schapachnik <fernando@mecon.gov.ar>
+o   Richard Sharpe <rsharpe@samba.org>
+o   Joerg Sonnenberger <joerg@leaf.dragonflybsd.org>
+o   Simo Sorce <idra@samba.org>
+o   Smitty <smitty@plainjoe.org>
+o   John Terpstra <jht@samba.org>
+o   Andrew Tridgell <tridge@samba.org>
+o   Brett Trotter <blt@iastate.edu>
+o   Mark Weaver <mark-clist@npsl.co.uk>
+o   Jelmer Vernooij <jelmer@samba.org>
+o   Qiao Yang <qyang@stbernard.com>
 
 
 
 
 Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ===============================
+                   Release Notes for Samba 3.0.20b
+                             Oct 12, 2005
+                   ===============================
+
+Common bugs fixed in 3.0.20b include:
+
+  o A crash bug in winbindd
+  o Reporting files as read-only instead of returning the 
+    correct error code of "access denied"
+  o File system quota support defects
+  
+
+######################################################################
+Changes
+#######
+
+
+Changes since 3.0.20a
+---------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3088: Fix error condition for files on a read-write share 
+      which cannot be read due to permissions.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 3070: Fix crash bug in qfsinfo when retrieving fs quota 
+      details.
+    * BUG 1473, 3090: Quota detection and compilation problems on 
+      Solaris.
+
+
+o   Marc Balmer <marc@msys.ch>
+    * Build fixes when builddir != srcdir
+
+
+o   Alex Deiter <tiamat@komi.mts.ru>
+    * BUG 3145: Fix build issue regarding quota support on Solaris.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 3068: Fix for winbindd crashed by empty DC alternative 
+      name.
+
 
       --------------------------------------------------
                    ===============================

@@ -21,10 +21,11 @@
 #include "libmsrpc.h"
 #include "libsmb_internal.h"
 
-#define WAIT_SLEEP_TIME 300
+#define WAIT_SLEEP_TIME 300000
 
 int cac_SvcOpenScm(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenScm *op) {
    SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
    WERROR err;
 
    POLICY_HND *scm_out = NULL;
@@ -41,7 +42,7 @@ int cac_SvcOpenScm(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenScm 
       hnd->status = NT_STATUS_INVALID_PARAMETER;
       return CAC_FAILURE;
    }
-
+   
    srv = cac_GetServer(hnd);
    if(!srv) {
       hnd->status = NT_STATUS_INVALID_CONNECTION;
@@ -50,7 +51,7 @@ int cac_SvcOpenScm(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenScm 
 
    /*initialize for samr pipe if we have to*/
    if(!hnd->_internal.pipes[PI_SVCCTL]) {
-      if(!cli_nt_session_open(&srv->cli, PI_SVCCTL)) {
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SVCCTL, &(hnd->status)))) {
          hnd->status = NT_STATUS_UNSUCCESSFUL;
          return CAC_FAILURE;
       }
@@ -58,15 +59,13 @@ int cac_SvcOpenScm(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenScm 
       hnd->_internal.pipes[PI_SVCCTL] = True;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
    scm_out = talloc(mem_ctx, POLICY_HND);
    if(!scm_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
       return CAC_FAILURE;
    }
 
-   err = cli_svcctl_open_scm( &(srv->cli), mem_ctx, scm_out, op->in.access);
+   err = rpccli_svcctl_open_scm( pipe_hnd, mem_ctx, scm_out, op->in.access);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -78,7 +77,7 @@ int cac_SvcOpenScm(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenScm 
 }
 
 int cac_SvcClose(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *scm_hnd) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    if(!hnd) 
@@ -94,15 +93,13 @@ int cac_SvcClose(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *scm_hnd)
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_close_service( &(srv->cli), mem_ctx, scm_hnd);
+   err = rpccli_svcctl_close_service( pipe_hnd, mem_ctx, scm_hnd);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -112,7 +109,7 @@ int cac_SvcClose(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *scm_hnd)
 }
 
 int cac_SvcEnumServices(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcEnumServices *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    uint32 type_buf  = 0;
@@ -135,18 +132,16 @@ int cac_SvcEnumServices(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcEnu
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SVCCTL;
 
    type_buf = (op->in.type != 0) ? op->in.type : (SVCCTL_TYPE_DRIVER | SVCCTL_TYPE_WIN32);
    state_buf = (op->in.state != 0) ? op->in.state : SVCCTL_STATE_ALL;
 
-   err = cli_svcctl_enumerate_services( &(srv->cli), mem_ctx, op->in.scm_hnd, type_buf, state_buf, &num_svc_out, &svc_buf);
+   err = rpccli_svcctl_enumerate_services( pipe_hnd, mem_ctx, op->in.scm_hnd, type_buf, state_buf, &num_svc_out, &svc_buf);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -167,7 +162,7 @@ int cac_SvcEnumServices(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcEnu
 }
 
 int cac_SvcOpenService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpenService *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    POLICY_HND *svc_hnd_out = NULL;
@@ -185,13 +180,11 @@ int cac_SvcOpenService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpen
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SVCCTL;
 
    svc_hnd_out = talloc(mem_ctx, POLICY_HND);
    if(!svc_hnd_out) {
@@ -199,7 +192,7 @@ int cac_SvcOpenService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpen
       return CAC_FAILURE;
    }
 
-   err = cli_svcctl_open_service( &(srv->cli), mem_ctx, op->in.scm_hnd, svc_hnd_out, op->in.name, op->in.access);
+   err = rpccli_svcctl_open_service( pipe_hnd, mem_ctx, op->in.scm_hnd, svc_hnd_out, op->in.name, op->in.access);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -211,7 +204,7 @@ int cac_SvcOpenService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcOpen
 }
 
 int cac_SvcControlService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcControlService *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_STATUS status_out;
@@ -234,15 +227,13 @@ int cac_SvcControlService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcC
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_control_service( &(srv->cli), mem_ctx, op->in.svc_hnd, op->in.control, &status_out);
+   err = rpccli_svcctl_control_service( pipe_hnd, mem_ctx, op->in.svc_hnd, op->in.control, &status_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -252,7 +243,7 @@ int cac_SvcControlService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcC
 }
 
 int cac_SvcGetStatus(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcGetStatus *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_STATUS status_out;
@@ -270,15 +261,13 @@ int cac_SvcGetStatus(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcGetSta
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_query_status( &(srv->cli), mem_ctx, op->in.svc_hnd, &status_out);
+   err = rpccli_svcctl_query_status( pipe_hnd, mem_ctx, op->in.svc_hnd, &status_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -300,7 +289,7 @@ int cac_SvcGetStatus(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcGetSta
  *      or CAC_SUCCESS if the state is reached
  */
 int cac_WaitForService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *svc_hnd, uint32 state, uint32 timeout, SERVICE_STATUS *status) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
    /*number of milliseconds we have spent*/
    uint32 time_spent = 0;
    WERROR err;
@@ -308,21 +297,21 @@ int cac_WaitForService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *sv
    if(!hnd || !mem_ctx || !svc_hnd || !status)
       return CAC_FAILURE;
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   while(status->state != state && time_spent < (timeout * 1000) && NT_STATUS_IS_OK(hnd->status)) {
+   while(status->state != state && time_spent < (timeout * 1000000) && NT_STATUS_IS_OK(hnd->status)) {
       /*if this is the first call, then we _just_ got the status.. sleep now*/
       usleep(WAIT_SLEEP_TIME);
       time_spent += WAIT_SLEEP_TIME;
 
-      err = cli_svcctl_query_status(&(srv->cli), mem_ctx, svc_hnd, status);
+      err = rpccli_svcctl_query_status(pipe_hnd, mem_ctx, svc_hnd, status);
       hnd->status = werror_to_ntstatus(err);
    }
-   
+
    if(status->state == state) 
       return CAC_SUCCESS;
 
@@ -330,7 +319,7 @@ int cac_WaitForService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *sv
 }
 
 int cac_SvcStartService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcStartService *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_STATUS status_buf;
@@ -353,15 +342,13 @@ int cac_SvcStartService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcSta
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_start_service(&(srv->cli), mem_ctx, op->in.svc_hnd, (const char **)op->in.parms, op->in.num_parms);
+   err = rpccli_svcctl_start_service(pipe_hnd, mem_ctx, op->in.svc_hnd, (const char **)op->in.parms, op->in.num_parms);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -374,7 +361,7 @@ int cac_SvcStartService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcSta
 }
 
 int cac_SvcStopService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcStopService *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_STATUS status_out;
@@ -392,15 +379,13 @@ int cac_SvcStopService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcStop
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_control_service( &(srv->cli), mem_ctx, op->in.svc_hnd, SVCCTL_CONTROL_STOP, &status_out);
+   err = rpccli_svcctl_control_service( pipe_hnd, mem_ctx, op->in.svc_hnd, SVCCTL_CONTROL_STOP, &status_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -415,7 +400,7 @@ int cac_SvcStopService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcStop
 }
 
 int cac_SvcPauseService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcPauseService *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_STATUS status_out;
@@ -433,15 +418,13 @@ int cac_SvcPauseService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcPau
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_control_service( &(srv->cli), mem_ctx, op->in.svc_hnd, SVCCTL_CONTROL_PAUSE, &status_out);
+   err = rpccli_svcctl_control_service( pipe_hnd, mem_ctx, op->in.svc_hnd, SVCCTL_CONTROL_PAUSE, &status_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -456,7 +439,7 @@ int cac_SvcPauseService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcPau
 }
 
 int cac_SvcContinueService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcContinueService *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_STATUS status_out;
@@ -474,15 +457,13 @@ int cac_SvcContinueService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Svc
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_control_service( &(srv->cli), mem_ctx, op->in.svc_hnd, SVCCTL_CONTROL_CONTINUE, &status_out);
+   err = rpccli_svcctl_control_service( pipe_hnd, mem_ctx, op->in.svc_hnd, SVCCTL_CONTROL_CONTINUE, &status_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -497,7 +478,7 @@ int cac_SvcContinueService(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Svc
 }
 
 int cac_SvcGetDisplayName(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcGetDisplayName *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    fstring disp_name_out;
@@ -515,15 +496,13 @@ int cac_SvcGetDisplayName(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcG
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_get_dispname( &(srv->cli), mem_ctx, op->in.svc_hnd, disp_name_out);
+   err = rpccli_svcctl_get_dispname( pipe_hnd, mem_ctx, op->in.svc_hnd, disp_name_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -541,7 +520,7 @@ int cac_SvcGetDisplayName(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcG
 
 
 int cac_SvcGetServiceConfig(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SvcGetServiceConfig *op) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
    WERROR err;
 
    SERVICE_CONFIG config_out;
@@ -559,15 +538,13 @@ int cac_SvcGetServiceConfig(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sv
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SVCCTL);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SVCCTL;
-
-   err = cli_svcctl_query_config( &(srv->cli), mem_ctx, op->in.svc_hnd, &config_out);
+   err = rpccli_svcctl_query_config( pipe_hnd, mem_ctx, op->in.svc_hnd, &config_out);
    hnd->status = werror_to_ntstatus(err);
 
    if(!NT_STATUS_IS_OK(hnd->status))

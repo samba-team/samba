@@ -1,6 +1,7 @@
 /*
  * Samba Unix/Linux SMB client utility 
- * Write Eventlog records to a tdb
+ * Write Eventlog records to a tdb, perform other eventlog related functions
+ *
  *
  * Copyright (C) Brian Moran                2005.
  *
@@ -73,6 +74,10 @@ int main( int argc, char *argv[] )
 	lp_load( dyn_CONFIGFILE, True, False, False );
 
 	exename = argv[0];
+
+#if 1	/* TESTING CODE */
+	eventlog_add_source("System","TestSourceX","SomeTestPathX");
+#endif
 
 	while ( ( opt = getopt( argc, argv, "dh" ) ) != -1 ) {
 		switch ( opt ) {

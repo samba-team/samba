@@ -853,27 +853,29 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
+                if(pol) {
 		pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli, PI_LSARPC, &nt_status);
-                if (!pipe_hnd) {
-                        DEBUG(1, ("cli_nt_session_open fail!\n"));
-                        errno = ENOTSUP;
-                        cli_shutdown(ipc_cli);
-                        return NULL;
-                }
+                        if (!pipe_hnd) {
+                                DEBUG(1, ("cli_nt_session_open fail!\n"));
+                                errno = ENOTSUP;
+                                cli_shutdown(ipc_cli);
+                                return NULL;
+                        }
 
-                /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
-                   but NT sends 0x2000000 so we might as well do it too. */
+                        /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
+                           but NT sends 0x2000000 so we might as well do it too. */
         
-                nt_status = rpccli_lsa_open_policy(pipe_hnd,
-                                                ipc_cli->mem_ctx,
-                                                True, 
-                                                GENERIC_EXECUTE_ACCESS,
-                                                pol);
+                        nt_status = rpccli_lsa_open_policy(pipe_hnd,
+                                                         ipc_cli->mem_ctx,
+                                                         True, 
+                                                         GENERIC_EXECUTE_ACCESS,
+                                                         pol);
         
-                if (!NT_STATUS_IS_OK(nt_status)) {
-                        errno = smbc_errno(context, ipc_cli);
-                        cli_shutdown(ipc_cli);
-                        return NULL;
+                        if (!NT_STATUS_IS_OK(nt_status)) {
+                                errno = smbc_errno(context, ipc_cli);
+                                cli_shutdown(ipc_cli);
+                                return NULL;
+                        }
                 }
 
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
