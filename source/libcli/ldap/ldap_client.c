@@ -556,10 +556,62 @@ NTSTATUS ldap_request_wait(struct ldap_request *req)
 
 
 /*
+  a mapping of ldap response code to strings
+*/
+static const struct {
+	enum ldap_result_code code;
+	const char *str;
+} ldap_code_map[] = {
+#define _LDAP_MAP_CODE(c) { c, #c }
+	_LDAP_MAP_CODE(LDAP_SUCCESS),
+	_LDAP_MAP_CODE(LDAP_OPERATIONS_ERROR),
+	_LDAP_MAP_CODE(LDAP_PROTOCOL_ERROR),
+	_LDAP_MAP_CODE(LDAP_TIME_LIMIT_EXCEEDED),
+	_LDAP_MAP_CODE(LDAP_SIZE_LIMIT_EXCEEDED),
+	_LDAP_MAP_CODE(LDAP_COMPARE_FALSE),
+	_LDAP_MAP_CODE(LDAP_COMPARE_TRUE),
+	_LDAP_MAP_CODE(LDAP_AUTH_METHOD_NOT_SUPPORTED),
+	_LDAP_MAP_CODE(LDAP_STRONG_AUTH_REQUIRED),
+	_LDAP_MAP_CODE(LDAP_REFERRAL),
+	_LDAP_MAP_CODE(LDAP_ADMIN_LIMIT_EXCEEDED),
+	_LDAP_MAP_CODE(LDAP_UNAVAILABLE_CRITICAL_EXTENSION),
+	_LDAP_MAP_CODE(LDAP_CONFIDENTIALITY_REQUIRED),
+	_LDAP_MAP_CODE(LDAP_SASL_BIND_IN_PROGRESS),
+	_LDAP_MAP_CODE(LDAP_NO_SUCH_ATTRIBUTE),
+	_LDAP_MAP_CODE(LDAP_UNDEFINED_ATTRIBUTE_TYPE),
+	_LDAP_MAP_CODE(LDAP_INAPPROPRIATE_MATCHING),
+	_LDAP_MAP_CODE(LDAP_CONSTRAINT_VIOLATION),
+	_LDAP_MAP_CODE(LDAP_ATTRIBUTE_OR_VALUE_EXISTS),
+	_LDAP_MAP_CODE(LDAP_INVALID_ATTRIBUTE_SYNTAX),
+	_LDAP_MAP_CODE(LDAP_NO_SUCH_OBJECT),
+	_LDAP_MAP_CODE(LDAP_ALIAS_PROBLEM),
+	_LDAP_MAP_CODE(LDAP_INVALID_DN_SYNTAX),
+	_LDAP_MAP_CODE(LDAP_ALIAS_DEREFERENCING_PROBLEM),
+	_LDAP_MAP_CODE(LDAP_INAPPROPRIATE_AUTHENTICATION),
+	_LDAP_MAP_CODE(LDAP_INVALID_CREDENTIALS),
+	_LDAP_MAP_CODE(LDAP_INSUFFICIENT_ACCESS_RIGHTs),
+	_LDAP_MAP_CODE(LDAP_BUSY),
+	_LDAP_MAP_CODE(LDAP_UNAVAILABLE),
+	_LDAP_MAP_CODE(LDAP_UNWILLING_TO_PERFORM),
+	_LDAP_MAP_CODE(LDAP_LOOP_DETECT),
+	_LDAP_MAP_CODE(LDAP_NAMING_VIOLATION),
+	_LDAP_MAP_CODE(LDAP_OBJECT_CLASS_VIOLATION),
+	_LDAP_MAP_CODE(LDAP_NOT_ALLOWED_ON_NON_LEAF),
+	_LDAP_MAP_CODE(LDAP_NOT_ALLOWED_ON_RDN),
+	_LDAP_MAP_CODE(LDAP_ENTRY_ALREADY_EXISTS),
+	_LDAP_MAP_CODE(LDAP_OBJECT_CLASS_MODS_PROHIBITED),
+	_LDAP_MAP_CODE(LDAP_AFFECTS_MULTIPLE_DSAS),
+	_LDAP_MAP_CODE(LDAP_OTHER)
+};
+
+/*
   used to setup the status code from a ldap response
 */
 NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r)
 {
+	int i;
+	const char *codename = "unknown";
+
 	if (r->resultcode == LDAP_SUCCESS) {
 		return NT_STATUS_OK;
 	}
@@ -567,8 +619,17 @@ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r
 	if (conn->last_error) {
 		talloc_free(conn->last_error);
 	}
-	conn->last_error = talloc_asprintf(conn, "LDAP error %u - %s <%s> <%s>", 
+
+	for (i=0;i<ARRAY_SIZE(ldap_code_map);i++) {
+		if (r->resultcode == ldap_code_map[i].code) {
+			codename = ldap_code_map[i].str;
+			break;
+		}
+	}
+
+	conn->last_error = talloc_asprintf(conn, "LDAP error %u %s - %s <%s> <%s>", 
 					   r->resultcode,
+					   codename,
 					   r->dn?r->dn:"(NULL)", 
 					   r->errormessage?r->errormessage:"", 
 					   r->referral?r->referral:"");
