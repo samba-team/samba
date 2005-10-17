@@ -138,12 +138,12 @@ int regval_convert_multi_sz( uint16 *multi_string, size_t multi_len, char ***val
 	
 	*values = NULL;
 
-	if ( !multi_string || !*values )
+	if ( !multi_string || !values )
 		return 0;
 
 	/* just count the NULLs */
 	
-	for ( i=0; (i<multi_len-1) && !(multi_string[i]==0x0 && multi_string[i+1]==0x0); i++ ) {
+	for ( i=0; (i<multi_len-1) && !(multi_string[i]==0x0 && multi_string[i+1]==0x0); i+=2 ) {
 		if ( multi_string[i] == 0x0 )
 			num_strings++;
 	}
@@ -187,7 +187,7 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 	uint16 *buf, *b;
 	UNISTR2 sz;
 
-	if ( !values || !*buffer )
+	if ( !values || !buffer )
 		return 0;
 	
 	/* go ahead and alloc some space */
@@ -199,7 +199,7 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 	
 	for ( i=0; values[i]; i++ ) {
 		ZERO_STRUCT( sz );
-		
+		/* DEBUG(0,("regval_build_multi_sz: building [%s]\n",values[i])); */
 		init_unistr2( &sz, values[i], UNI_STR_TERMINATE );
 		
 		/* Alloc some more memory.  Always add one one to account for the 
@@ -214,8 +214,8 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 		buf = b;
 
 		/* copy the unistring2 buffer and increment the size */	
-		
-		memcpy( buf+buf_size, sz.buffer, sz.uni_str_len );
+		/* dump_data(1,sz.buffer,sz.uni_str_len*2); */
+		memcpy( buf+buf_size, sz.buffer, sz.uni_str_len*2 );
 		buf_size += sz.uni_str_len;
 		
 		/* cleanup rather than leaving memory hanging around */
@@ -229,9 +229,5 @@ size_t regval_build_multi_sz( char **values, uint16 **buffer )
 	/* return number of bytes */
 	return buf_size*2;
 }
-
-
-
-
 
 
