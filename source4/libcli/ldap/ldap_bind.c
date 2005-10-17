@@ -240,7 +240,8 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		result = response->r.BindResponse.response.resultcode;
 
 		if (result != LDAP_SUCCESS && result != LDAP_SASL_BIND_IN_PROGRESS) {
-			status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+			status = ldap_check_response(conn, 
+						     &response->r.BindResponse.response);
 			break;
 		}
 
