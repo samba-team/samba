@@ -23,11 +23,11 @@
 	<para>
 	For example:
 <programlisting>
-<command moreinfo="none">remote browse sync = 192.168.2.255 192.168.4.255</command>
+<parameter>remote browse sync = 192.168.2.255 192.168.4.255</parameter>
 </programlisting>
-	the above line would cause <command moreinfo="none">nmbd</command> to request 
-	the master browser on the specified subnets or addresses to 
-	synchronize their browse lists with the local server.
+	the above line would cause &nmbd; to request the master browser on the 
+	specified subnets or addresses to synchronize their browse lists with 
+	the local server.
 	</para>
 
 	<para>
@@ -37,6 +37,12 @@
 	a machine IP address is given Samba makes NO attempt to validate 
 	that the remote machine is available, is listening, nor that it 
 	is in fact the browse master on its segment.
+	</para>
+
+	<para>
+	The <parameter>remote browse sync</parameter> may be used on networks
+	where there is no WINS server, and may be used on disjoint networks where
+	each network has its own WINS server.
 	</para>
 </description>
 
