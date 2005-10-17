@@ -168,8 +168,6 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ldb_reset_err_string(ldb);
-
 	return module->ops->del_transaction(module);
 }
 
@@ -246,7 +244,10 @@ int ldb_add(struct ldb_context *ldb,
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->add_record(module, message);
-		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		if (status != LDB_SUCCESS) {
+			ldb_transaction_cancel(ldb);
+			return status;
+		}
 		return ldb_transaction_commit(ldb);
 	}
 
@@ -274,7 +275,10 @@ int ldb_modify(struct ldb_context *ldb,
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->modify_record(module, message);
-		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		if (status != LDB_SUCCESS) {
+			ldb_transaction_cancel(ldb);
+			return status;
+		}
 		return ldb_transaction_commit(ldb);
 	}
 
@@ -299,7 +303,10 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->delete_record(module, dn);
-		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		if (status != LDB_SUCCESS) {
+			ldb_transaction_cancel(ldb);
+			return status;
+		}
 		return ldb_transaction_commit(ldb);
 	}
 
@@ -323,7 +330,10 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->rename_record(module, olddn, newdn);
-		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		if (status != LDB_SUCCESS) {
+			ldb_transaction_cancel(ldb);
+			return status;
+		}
 		return ldb_transaction_commit(ldb);
 	}
 
