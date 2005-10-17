@@ -323,9 +323,17 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 	}
 	if (ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0 ||
 	    ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
-		char *dn = talloc_strdup(list, (char *)tree->u.equality.value.data);
+		list->dn = talloc_array(list, char *, 1);
+		if (list->dn == NULL) {
+			ldb_oom(module->ldb);
+			return -1;
+		}
+		list->dn[0] = talloc_strdup(list, (char *)tree->u.equality.value.data);
+		if (list->dn[0] == NULL) {
+			ldb_oom(module->ldb);
+			return -1;
+		}
 		list->count = 1;
-		list->dn = &dn;
 		return 1;
 	}
 	return ltdb_index_dn_simple(module, tree, index_list, list);
@@ -698,12 +706,17 @@ int ltdb_search_indexed(struct ldb_module *module,
 
 	if (scope == LDB_SCOPE_BASE) {
 		/* with BASE searches only one DN can match */
-		char *dn = ldb_dn_linearize(dn_list, base);
-		if (dn == NULL) {
+		dn_list->dn = talloc_array(dn_list, char *, 1);
+		if (dn_list->dn == NULL) {
+			ldb_oom(module->ldb);
+			return -1;
+		}
+		dn_list->dn[0] = ldb_dn_linearize(dn_list, base);
+		if (dn_list->dn[0] == NULL) {
+			ldb_oom(module->ldb);
 			return -1;
 		}
 		dn_list->count = 1;
-		dn_list->dn = &dn;
 		ret = 1;
 	} else {
 		ret = ltdb_index_dn(module, tree, ltdb->cache->indexlist, dn_list);
