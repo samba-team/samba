@@ -29,8 +29,7 @@
 	resources. It is safe to install this program suid root, because only 
 	the user who has mounted a filesystem is allowed to unmount it again.  
 	For root it is not necessary to use smbumount. The normal umount 
-	program works perfectly well, but it would certainly be problematic 
-	to make umount setuid root.</para>  
+	program works perfectly well.</para>  
 </refsect1>
 
 <refsect1>
