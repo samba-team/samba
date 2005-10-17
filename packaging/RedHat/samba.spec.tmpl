@@ -187,6 +187,11 @@ install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
+# libmsrpc
+install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{prefix}/lib/
+install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{prefix}/include/
+
 # Install the miscellany
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
