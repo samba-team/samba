@@ -22,6 +22,33 @@
 #include "libmsrpc.h"
 #include "libmsrpc_internal.h"
 
+/*used to get a struct rpc_pipe_client* to be passed into rpccli* calls*/
+struct rpc_pipe_client *cac_GetPipe(CacServerHandle *hnd, int pi_idx) {
+   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
+
+   if(!hnd)
+      return NULL;
+
+   if(hnd->_internal.pipes[pi_idx] == False) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return NULL;
+   }
+
+   srv = cac_GetServer(hnd);
+   if(!srv) {
+      hnd->status = NT_STATUS_INVALID_CONNECTION;
+      return NULL;
+   }
+
+   pipe_hnd = srv->cli.pipe_list;
+
+   while(pipe_hnd != NULL && pipe_hnd->pipe_idx != pi_idx)
+      pipe_hnd = pipe_hnd->next;
+
+   return pipe_hnd;
+}
+
 /*takes a string like HKEY_LOCAL_MACHINE\HARDWARE\ACPI and returns the reg_type code and then a pointer to the start of the path (HARDWARE)*/
 int cac_ParseRegPath(char *path, uint32 *reg_type, char **key_name) {
 

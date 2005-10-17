@@ -31,6 +31,7 @@
 
 int cac_SamConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamConnect *op) {
    SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
    POLICY_HND *sam_out = NULL;
 
    if(!hnd) 
@@ -54,15 +55,18 @@ int cac_SamConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamConnect 
 
    /*initialize for samr pipe if we have to*/
    if(!hnd->_internal.pipes[PI_SAMR]) {
-      if(!cli_nt_session_open(&srv->cli, PI_SAMR)) {
-         hnd->status = NT_STATUS_UNSUCCESSFUL;
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SAMR, &(hnd->status)))) {
          return CAC_FAILURE;
       }
 
       hnd->_internal.pipes[PI_SAMR] = True;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    sam_out = talloc(mem_ctx, POLICY_HND);
    if(!sam_out) {
@@ -71,13 +75,13 @@ int cac_SamConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamConnect 
    }
 
    if(hnd->_internal.srv_level >= SRV_WIN_2K_SP3) {
-      hnd->status = cli_samr_connect4( &(srv->cli), mem_ctx, op->in.access, sam_out);
+      hnd->status = rpccli_samr_connect4( pipe_hnd, mem_ctx, op->in.access, sam_out);
    }
 
    if(hnd->_internal.srv_level < SRV_WIN_2K_SP3 || !NT_STATUS_IS_OK(hnd->status)) {
       /*if sam_connect4 failed, the use sam_connect and lower srv_level*/
 
-      hnd->status = cli_samr_connect( &(srv->cli), mem_ctx, op->in.access, sam_out);
+      hnd->status = rpccli_samr_connect( pipe_hnd, mem_ctx, op->in.access, sam_out);
 
       if(NT_STATUS_IS_OK(hnd->status) && hnd->_internal.srv_level > SRV_WIN_2K) {
          hnd->_internal.srv_level = SRV_WIN_2K;
@@ -93,7 +97,7 @@ int cac_SamConnect(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamConnect 
 }
 
 int cac_SamClose(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *sam) {
-   SMBCSRV *srv        = NULL;
+   struct rpc_pipe_client *pipe_hnd        = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -108,15 +112,13 @@ int cac_SamClose(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *sam) {
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
    
-   hnd->status = cli_samr_close( &(srv->cli), mem_ctx, sam);
+   hnd->status = rpccli_samr_close( pipe_hnd, mem_ctx, sam);
    
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -165,7 +167,7 @@ DOM_SID *cac_get_domain_sid(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, uint32 de
 }
 
 int cac_SamOpenDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenDomain *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_SID *sid_buf;
    POLICY_HND *sam_out;
@@ -186,13 +188,6 @@ int cac_SamOpenDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenD
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
-      return CAC_FAILURE;
-   }
-
-   
    if(!op->in.sam) {
       /*use cac_SamConnect() since it does the session setup*/
       struct SamConnect sc;
@@ -233,6 +228,11 @@ int cac_SamOpenDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenD
       sid_buf = op->in.sid;
    }
 
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    pol_out = talloc(mem_ctx, POLICY_HND);
    if(!pol_out) {
@@ -241,7 +241,7 @@ int cac_SamOpenDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenD
    }
 
    /*now open the domain*/
-   hnd->status = cli_samr_open_domain( &(srv->cli), mem_ctx, sam_out, op->in.access, sid_buf, pol_out);
+   hnd->status = rpccli_samr_open_domain( pipe_hnd, mem_ctx, sam_out, op->in.access, sid_buf, pol_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -253,7 +253,7 @@ int cac_SamOpenDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenD
 }
 
 int cac_SamOpenUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenUser *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 *rid_buf = NULL;
 
@@ -280,18 +280,16 @@ int cac_SamOpenUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenUse
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    if(op->in.rid == 0 && op->in.name) {
       /*lookup the name and then set rid_buf*/
 
-      hnd->status = cli_samr_lookup_names( &(srv->cli), mem_ctx, op->in.dom_hnd, SAMR_LOOKUP_FLAGS, 1, (const char **)&op->in.name, 
+      hnd->status = rpccli_samr_lookup_names( pipe_hnd, mem_ctx, op->in.dom_hnd, SAMR_LOOKUP_FLAGS, 1, (const char **)&op->in.name, 
             &num_rids, &rid_buf, &rid_types); 
 
       if(!NT_STATUS_IS_OK(hnd->status))
@@ -315,7 +313,7 @@ int cac_SamOpenUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenUse
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_open_user(&(srv->cli), mem_ctx, op->in.dom_hnd, op->in.access, *rid_buf, user_out);
+   hnd->status = rpccli_samr_open_user(pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.access, *rid_buf, user_out);
    
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -326,7 +324,7 @@ int cac_SamOpenUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenUse
 }
 
 int cac_SamCreateUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCreateUser *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    POLICY_HND *user_out = NULL;
    uint32 rid_out;
@@ -347,13 +345,11 @@ int cac_SamCreateUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCreat
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    user_out = talloc(mem_ctx, POLICY_HND);
    if(!user_out) {
@@ -361,7 +357,7 @@ int cac_SamCreateUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCreat
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_create_dom_user( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.name, op->in.acb_mask, unknown, user_out, &rid_out);
+   hnd->status = rpccli_samr_create_dom_user( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.name, op->in.acb_mask, unknown, user_out, &rid_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -373,7 +369,7 @@ int cac_SamCreateUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCreat
 }
 
 int cac_SamDeleteUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *user_hnd) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -388,15 +384,13 @@ int cac_SamDeleteUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *use
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_delete_dom_user( &(srv->cli), mem_ctx, user_hnd);
+   hnd->status = rpccli_samr_delete_dom_user( pipe_hnd, mem_ctx, user_hnd);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -405,7 +399,7 @@ int cac_SamDeleteUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *use
 }
 
 int cac_SamEnumUsers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumUsers *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 resume_idx_out = 0;
    char **names_out      = NULL;
@@ -429,17 +423,15 @@ int cac_SamEnumUsers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumUs
    if(op->out.done == True)
       return CAC_FAILURE;
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
    resume_idx_out = op->out.resume_idx;
 
-   hnd->status = cli_samr_enum_dom_users( &(srv->cli), mem_ctx, op->in.dom_hnd, &resume_idx_out, op->in.acb_mask, SAMR_ENUM_MAX_SIZE, 
+   hnd->status = rpccli_samr_enum_dom_users( pipe_hnd, mem_ctx, op->in.dom_hnd, &resume_idx_out, op->in.acb_mask, SAMR_ENUM_MAX_SIZE, 
                                                 &names_out, &rids_out, &num_users_out);
 
 
@@ -460,7 +452,7 @@ int cac_SamEnumUsers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumUs
 }
 
 int cac_SamGetNamesFromRids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetNamesFromRids *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 num_names_out;
    char **names_out;
@@ -495,15 +487,13 @@ int cac_SamGetNamesFromRids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       return CAC_SUCCESS;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_lookup_rids( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.num_rids, op->in.rids, &num_names_out, &names_out, &name_types_out); 
+   hnd->status = rpccli_samr_lookup_rids( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.num_rids, op->in.rids, &num_names_out, &names_out, &name_types_out); 
 
    if(!NT_STATUS_IS_OK(hnd->status) && !NT_STATUS_EQUAL(hnd->status, STATUS_SOME_UNMAPPED))
       return CAC_FAILURE;
@@ -541,7 +531,7 @@ int cac_SamGetNamesFromRids(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 }
 
 int cac_SamGetRidsFromNames(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetRidsFromNames *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 num_rids_out;
    uint32 *rids_out;
@@ -575,15 +565,13 @@ int cac_SamGetRidsFromNames(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       return CAC_SUCCESS;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_lookup_names( &(srv->cli), mem_ctx, op->in.dom_hnd, SAMR_LOOKUP_FLAGS, op->in.num_names, (const char **)op->in.names, 
+   hnd->status = rpccli_samr_lookup_names( pipe_hnd, mem_ctx, op->in.dom_hnd, SAMR_LOOKUP_FLAGS, op->in.num_names, (const char **)op->in.names, 
                                           &num_rids_out, &rids_out, &rid_types_out); 
 
    if(!NT_STATUS_IS_OK(hnd->status) && !NT_STATUS_EQUAL(hnd->status, STATUS_SOME_UNMAPPED))
@@ -625,7 +613,7 @@ int cac_SamGetRidsFromNames(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 
 
 int cac_SamGetGroupsForUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetGroupsForUser *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_GID *groups = NULL;
    uint32 num_groups_out = 0;
@@ -648,15 +636,13 @@ int cac_SamGetGroupsForUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_usergroups(&(srv->cli), mem_ctx, op->in.user_hnd, &num_groups_out, &groups);
+   hnd->status = rpccli_samr_query_usergroups(pipe_hnd, mem_ctx, op->in.user_hnd, &num_groups_out, &groups);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -690,7 +676,7 @@ int cac_SamGetGroupsForUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 
 
 int cac_SamOpenGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenGroup *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    POLICY_HND *group_hnd_out = NULL;
 
@@ -707,13 +693,11 @@ int cac_SamOpenGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenGr
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    group_hnd_out = talloc(mem_ctx, POLICY_HND);
    if(!group_hnd_out) {
@@ -721,7 +705,7 @@ int cac_SamOpenGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenGr
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_open_group( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.access, op->in.rid, group_hnd_out);
+   hnd->status = rpccli_samr_open_group( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.access, op->in.rid, group_hnd_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -732,7 +716,7 @@ int cac_SamOpenGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenGr
 }
 
 int cac_SamCreateGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCreateGroup *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    POLICY_HND *group_hnd_out = NULL;
 
@@ -749,13 +733,11 @@ int cac_SamCreateGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCrea
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    group_hnd_out = talloc(mem_ctx, POLICY_HND);
    if(!group_hnd_out) {
@@ -763,7 +745,7 @@ int cac_SamCreateGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCrea
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_create_dom_group( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.name, op->in.access, group_hnd_out);
+   hnd->status = rpccli_samr_create_dom_group( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.name, op->in.access, group_hnd_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -775,7 +757,7 @@ int cac_SamCreateGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCrea
 }
 
 int cac_SamDeleteGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *group_hnd) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -790,15 +772,13 @@ int cac_SamDeleteGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *gr
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_delete_dom_group( &(srv->cli), mem_ctx, group_hnd);
+   hnd->status = rpccli_samr_delete_dom_group( pipe_hnd, mem_ctx, group_hnd);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -808,7 +788,7 @@ int cac_SamDeleteGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *gr
 }
 
 int cac_SamGetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetGroupMembers *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 num_mem_out;
    uint32 *rids_out;
@@ -827,15 +807,13 @@ int cac_SamGetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_groupmem( &(srv->cli), mem_ctx, op->in.group_hnd, &num_mem_out, &rids_out, &attr_out);
+   hnd->status = rpccli_samr_query_groupmem( pipe_hnd, mem_ctx, op->in.group_hnd, &num_mem_out, &rids_out, &attr_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -849,7 +827,7 @@ int cac_SamGetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
 
 
 int cac_SamAddGroupMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamAddGroupMember *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -864,15 +842,13 @@ int cac_SamAddGroupMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamA
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_add_groupmem( &(srv->cli), mem_ctx, op->in.group_hnd, op->in.rid);
+   hnd->status = rpccli_samr_add_groupmem( pipe_hnd, mem_ctx, op->in.group_hnd, op->in.rid);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -881,7 +857,7 @@ int cac_SamAddGroupMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamA
 }
 
 int cac_SamRemoveGroupMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRemoveGroupMember *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -896,15 +872,13 @@ int cac_SamRemoveGroupMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_del_groupmem( &(srv->cli), mem_ctx, op->in.group_hnd, op->in.rid);
+   hnd->status = rpccli_samr_del_groupmem( pipe_hnd, mem_ctx, op->in.group_hnd, op->in.rid);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -913,7 +887,7 @@ int cac_SamRemoveGroupMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
 }
 
 int cac_SamClearGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *group_hnd) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    int result = CAC_SUCCESS;
 
@@ -938,22 +912,20 @@ int cac_SamClearGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_groupmem(&(srv->cli), mem_ctx, group_hnd, &num_mem, &rid, &attr);
+   hnd->status = rpccli_samr_query_groupmem(pipe_hnd, mem_ctx, group_hnd, &num_mem, &rid, &attr);
    
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
 
    /*try to delete the users one by one*/
    for(i = 0; i < num_mem && NT_STATUS_IS_OK(hnd->status); i++) {
-      hnd->status = cli_samr_del_groupmem(&(srv->cli), mem_ctx, group_hnd, rid[i]);
+      hnd->status = rpccli_samr_del_groupmem(pipe_hnd, mem_ctx, group_hnd, rid[i]);
    }
 
    /*if not all members could be removed, then try to re-add the members that were already deleted*/
@@ -961,7 +933,7 @@ int cac_SamClearGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
       status = NT_STATUS_OK;
 
       for(i -= 1; i >= 0 && NT_STATUS_IS_OK(status); i--) {
-         status = cli_samr_add_groupmem( &(srv->cli), mem_ctx, group_hnd, rid[i]);
+         status = rpccli_samr_add_groupmem( pipe_hnd, mem_ctx, group_hnd, rid[i]);
       }
 
       /*we return with the NTSTATUS error that we got when trying to delete users*/
@@ -975,7 +947,7 @@ int cac_SamClearGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
 }
 
 int cac_SamSetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetGroupMembers *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 i = 0;
    
@@ -992,13 +964,11 @@ int cac_SamSetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    /*use cac_SamClearGroupMembers() to clear them*/
    if(!cac_SamClearGroupMembers(hnd, mem_ctx, op->in.group_hnd))
@@ -1006,7 +976,7 @@ int cac_SamSetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
 
 
    for(i = 0; i < op->in.num_members && NT_STATUS_IS_OK(hnd->status); i++) {
-      hnd->status = cli_samr_add_groupmem( &(srv->cli), mem_ctx, op->in.group_hnd, op->in.rids[i]);
+      hnd->status = rpccli_samr_add_groupmem( pipe_hnd, mem_ctx, op->in.group_hnd, op->in.rids[i]);
    }
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -1017,7 +987,7 @@ int cac_SamSetGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
 }
 
 int cac_SamEnumGroups(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumGroups *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 i              = 0;
 
@@ -1046,17 +1016,15 @@ int cac_SamEnumGroups(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumG
    if(op->out.done == True) /*we return failure so the call will break out of a loop*/
       return CAC_FAILURE;
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
    resume_idx_out = op->out.resume_idx;
 
-   hnd->status = cli_samr_enum_dom_groups( &(srv->cli), mem_ctx, op->in.dom_hnd, &resume_idx_out, SAMR_ENUM_MAX_SIZE, 
+   hnd->status = rpccli_samr_enum_dom_groups( pipe_hnd, mem_ctx, op->in.dom_hnd, &resume_idx_out, SAMR_ENUM_MAX_SIZE, 
                                                 &acct_buf, &num_groups_out);
 
 
@@ -1114,7 +1082,7 @@ int cac_SamEnumGroups(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumG
 }
 
 int cac_SamEnumAliases(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnumAliases *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 i              = 0;
 
@@ -1144,17 +1112,15 @@ int cac_SamEnumAliases(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnum
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
    resume_idx_out = op->out.resume_idx;
 
-   hnd->status = cli_samr_enum_als_groups( &(srv->cli), mem_ctx, op->in.dom_hnd, &resume_idx_out, SAMR_ENUM_MAX_SIZE, 
+   hnd->status = rpccli_samr_enum_als_groups( pipe_hnd, mem_ctx, op->in.dom_hnd, &resume_idx_out, SAMR_ENUM_MAX_SIZE, 
                                                &acct_buf, &num_als_out);
 
 
@@ -1211,7 +1177,7 @@ int cac_SamEnumAliases(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamEnum
 }
 
 int cac_SamCreateAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCreateAlias *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    POLICY_HND *als_hnd_out = NULL;
 
@@ -1228,13 +1194,11 @@ int cac_SamCreateAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCrea
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    als_hnd_out = talloc(mem_ctx, POLICY_HND);
    if(!als_hnd_out) {
@@ -1242,7 +1206,7 @@ int cac_SamCreateAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCrea
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_create_dom_alias( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.name, als_hnd_out);
+   hnd->status = rpccli_samr_create_dom_alias( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.name, als_hnd_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1254,7 +1218,7 @@ int cac_SamCreateAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamCrea
 }
 
 int cac_SamOpenAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenAlias *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    POLICY_HND *als_hnd_out = NULL;
 
@@ -1271,13 +1235,11 @@ int cac_SamOpenAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenAl
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    als_hnd_out = talloc(mem_ctx, POLICY_HND);
    if(!als_hnd_out) {
@@ -1285,7 +1247,7 @@ int cac_SamOpenAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenAl
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_open_alias( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.access, op->in.rid, als_hnd_out);
+   hnd->status = rpccli_samr_open_alias( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.access, op->in.rid, als_hnd_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1296,7 +1258,7 @@ int cac_SamOpenAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamOpenAl
 }
 
 int cac_SamDeleteAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *alias_hnd) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -1311,15 +1273,13 @@ int cac_SamDeleteAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *al
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_delete_dom_alias( &(srv->cli), mem_ctx, alias_hnd);
+   hnd->status = rpccli_samr_delete_dom_alias( pipe_hnd, mem_ctx, alias_hnd);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1329,7 +1289,7 @@ int cac_SamDeleteAlias(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *al
 }
 
 int cac_SamAddAliasMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamAddAliasMember *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -1344,15 +1304,13 @@ int cac_SamAddAliasMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamA
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_add_aliasmem( &(srv->cli), mem_ctx, op->in.alias_hnd, op->in.sid);
+   hnd->status = rpccli_samr_add_aliasmem( pipe_hnd, mem_ctx, op->in.alias_hnd, op->in.sid);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1361,7 +1319,7 @@ int cac_SamAddAliasMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamA
 }
 
 int cac_SamRemoveAliasMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRemoveAliasMember *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -1376,15 +1334,13 @@ int cac_SamRemoveAliasMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_del_aliasmem( &(srv->cli), mem_ctx, op->in.alias_hnd, op->in.sid);
+   hnd->status = rpccli_samr_del_aliasmem( pipe_hnd, mem_ctx, op->in.alias_hnd, op->in.sid);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1393,7 +1349,7 @@ int cac_SamRemoveAliasMember(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
 }
 
 int cac_SamGetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetAliasMembers *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 num_mem_out;
    DOM_SID *sids_out;
@@ -1411,15 +1367,13 @@ int cac_SamGetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_aliasmem( &(srv->cli), mem_ctx, op->in.alias_hnd, &num_mem_out, &sids_out);
+   hnd->status = rpccli_samr_query_aliasmem( pipe_hnd, mem_ctx, op->in.alias_hnd, &num_mem_out, &sids_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1431,7 +1385,7 @@ int cac_SamGetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
 }
 
 int cac_SamClearAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *alias_hnd) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    int result = CAC_SUCCESS;
 
@@ -1455,22 +1409,20 @@ int cac_SamClearAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_aliasmem(&(srv->cli), mem_ctx, alias_hnd, &num_mem, &sid);
+   hnd->status = rpccli_samr_query_aliasmem(pipe_hnd, mem_ctx, alias_hnd, &num_mem, &sid);
    
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
 
    /*try to delete the users one by one*/
    for(i = 0; i < num_mem && NT_STATUS_IS_OK(hnd->status); i++) {
-      hnd->status = cli_samr_del_aliasmem(&(srv->cli), mem_ctx, alias_hnd, &sid[i]);
+      hnd->status = rpccli_samr_del_aliasmem(pipe_hnd, mem_ctx, alias_hnd, &sid[i]);
    }
 
    /*if not all members could be removed, then try to re-add the members that were already deleted*/
@@ -1478,7 +1430,7 @@ int cac_SamClearAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
       status = NT_STATUS_OK;
 
       for(i -= 1; i >= 0 && NT_STATUS_IS_OK(status); i--) {
-         status = cli_samr_add_aliasmem( &(srv->cli), mem_ctx, alias_hnd, &sid[i]);
+         status = rpccli_samr_add_aliasmem( pipe_hnd, mem_ctx, alias_hnd, &sid[i]);
       }
 
       /*we return with the NTSTATUS error that we got when trying to delete users*/
@@ -1491,7 +1443,7 @@ int cac_SamClearAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
 }
 
 int cac_SamSetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetAliasMembers *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    uint32 i = 0;
    
@@ -1508,13 +1460,11 @@ int cac_SamSetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    /*use cac_SamClearAliasMembers() to clear them*/
    if(!cac_SamClearAliasMembers(hnd, mem_ctx, op->in.alias_hnd))
@@ -1522,7 +1472,7 @@ int cac_SamSetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
 
 
    for(i = 0; i < op->in.num_members && NT_STATUS_IS_OK(hnd->status); i++) {
-      hnd->status = cli_samr_add_aliasmem( &(srv->cli), mem_ctx, op->in.alias_hnd, &(op->in.sids[i]));
+      hnd->status = rpccli_samr_add_aliasmem( pipe_hnd, mem_ctx, op->in.alias_hnd, &(op->in.sids[i]));
    }
 
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -1534,6 +1484,7 @@ int cac_SamSetAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sam
 
 int cac_SamUserChangePasswd(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamUserChangePasswd *op) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -1556,17 +1507,20 @@ int cac_SamUserChangePasswd(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 
    /*open a session on SAMR if we don't have one*/
    if(!hnd->_internal.pipes[PI_SAMR]) {
-      if(!cli_nt_session_open(&srv->cli, PI_SAMR)) {
-         hnd->status = NT_STATUS_UNSUCCESSFUL;
+      if(!(pipe_hnd = cli_rpc_pipe_open_noauth(&srv->cli, PI_SAMR, &(hnd->status)))) {
          return CAC_FAILURE;
       }
 
       hnd->_internal.pipes[PI_SAMR] = True;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
-   hnd->status = cli_samr_chgpasswd_user(&(srv->cli), mem_ctx, op->in.username, op->in.new_password, op->in.password);
+   hnd->status = rpccli_samr_chgpasswd_user(pipe_hnd, mem_ctx, op->in.username, op->in.new_password, op->in.password);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1576,6 +1530,7 @@ int cac_SamUserChangePasswd(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 
 int cac_SamEnableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *user_hnd) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR *ctr;
 
@@ -1598,10 +1553,14 @@ int cac_SamEnableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *use
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    /*info_level = 21 is the only level that I have found to work reliably. It would be nice if user_level = 10 worked.*/
-   hnd->status = cli_samr_query_userinfo( &(srv->cli), mem_ctx, user_hnd, 0x10, &ctr);
+   hnd->status = rpccli_samr_query_userinfo( pipe_hnd, mem_ctx, user_hnd, 0x10, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1617,7 +1576,7 @@ int cac_SamEnableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *use
    }
 
    /*now set the userinfo*/
-   hnd->status = cli_samr_set_userinfo2( &(srv->cli), mem_ctx, user_hnd, 0x10, &(srv->cli.user_session_key), ctr);
+   hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, user_hnd, 0x10, &(srv->cli.user_session_key), ctr);
 
    /*this will only work properly if we use set_userinfo2 - fail if it is not supported*/
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -1628,6 +1587,7 @@ int cac_SamEnableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *use
 
 int cac_SamDisableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *user_hnd) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR *ctr;
 
@@ -1650,9 +1610,13 @@ int cac_SamDisableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *us
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
-   hnd->status = cli_samr_query_userinfo( &(srv->cli), mem_ctx, user_hnd, 0x10, &ctr);
+   hnd->status = rpccli_samr_query_userinfo( pipe_hnd, mem_ctx, user_hnd, 0x10, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1666,7 +1630,7 @@ int cac_SamDisableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *us
    ctr->info.id16->acb_info ^= ACB_DISABLED;
 
    /*this will only work properly if we use set_userinfo2*/
-   hnd->status = cli_samr_set_userinfo2( &(srv->cli), mem_ctx, user_hnd, 0x10, &(srv->cli.user_session_key), ctr);
+   hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, user_hnd, 0x10, &(srv->cli.user_session_key), ctr);
 
    /*this will only work properly if we use set_userinfo2 fail if it is not supported*/
    if(!NT_STATUS_IS_OK(hnd->status))
@@ -1677,6 +1641,7 @@ int cac_SamDisableUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_HND *us
 
 int cac_SamSetPassword(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetPassword *op) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR ctr;
    SAM_USER_INFO_24 info24;
@@ -1701,7 +1666,11 @@ int cac_SamSetPassword(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetP
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    ZERO_STRUCT(ctr);
    ZERO_STRUCT(info24);
@@ -1713,7 +1682,7 @@ int cac_SamSetPassword(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetP
    ctr.switch_value = 24;
    ctr.info.id24 = &info24;
 
-   hnd->status = cli_samr_set_userinfo( &(srv->cli), mem_ctx, op->in.user_hnd, 24, &(srv->cli.user_session_key), &ctr);
+   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 24, &(srv->cli.user_session_key), &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1722,7 +1691,7 @@ int cac_SamSetPassword(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetP
 }
 
 int cac_SamGetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetUserInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR *ctr;
 
@@ -1739,15 +1708,13 @@ int cac_SamGetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetU
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_userinfo( &(srv->cli), mem_ctx, op->in.user_hnd, 21, &ctr);
+   hnd->status = rpccli_samr_query_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1764,6 +1731,7 @@ int cac_SamGetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetU
 
 int cac_SamSetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetUserInfo *op) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR *ctr;
 
@@ -1792,14 +1760,18 @@ int cac_SamSetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetU
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
    if(hnd->_internal.srv_level >= SRV_WIN_NT4) {
-      hnd->status = cli_samr_set_userinfo2( &(srv->cli), mem_ctx, op->in.user_hnd, 21, &(srv->cli.user_session_key), ctr);
+      hnd->status = rpccli_samr_set_userinfo2( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &(srv->cli.user_session_key), ctr);
    }
 
    if(hnd->_internal.srv_level < SRV_WIN_NT4 || !NT_STATUS_IS_OK(hnd->status)) {
-      hnd->status = cli_samr_set_userinfo( &(srv->cli), mem_ctx, op->in.user_hnd, 21, &(srv->cli.user_session_key), ctr);
+      hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 21, &(srv->cli.user_session_key), ctr);
 
       if(NT_STATUS_IS_OK(hnd->status) && hnd->_internal.srv_level > SRV_WIN_NT4) {
          hnd->_internal.srv_level = SRV_WIN_NT4;
@@ -1815,7 +1787,7 @@ int cac_SamSetUserInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetU
 
 
 int cac_SamGetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetUserInfoCtr *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR *ctr_out;
 
@@ -1832,15 +1804,13 @@ int cac_SamGetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamG
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_userinfo( &(srv->cli), mem_ctx, op->in.user_hnd, op->in.info_class, &ctr_out);
+   hnd->status = rpccli_samr_query_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, op->in.info_class, &ctr_out);
 
    if(!NT_STATUS_IS_OK(hnd->status)) 
       return CAC_FAILURE;
@@ -1852,6 +1822,7 @@ int cac_SamGetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamG
 
 int cac_SamSetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetUserInfoCtr *op) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    if(!hnd) 
       return CAC_FAILURE;
@@ -1872,10 +1843,14 @@ int cac_SamSetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamS
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
 
 
-   hnd->status = cli_samr_set_userinfo( &(srv->cli), mem_ctx, op->in.user_hnd, op->in.ctr->switch_value, &(srv->cli.user_session_key), op->in.ctr);
+   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, op->in.ctr->switch_value, &(srv->cli.user_session_key), op->in.ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1886,6 +1861,7 @@ int cac_SamSetUserInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamS
 
 int cac_SamRenameUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRenameUser *op) {
    SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_USERINFO_CTR ctr;
    SAM_USER_INFO_7 info7;
@@ -1909,7 +1885,11 @@ int cac_SamRenameUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRenam
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
+      return CAC_FAILURE;
+   }
    
    ZERO_STRUCT(ctr);
    ZERO_STRUCT(info7);
@@ -1919,7 +1899,7 @@ int cac_SamRenameUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRenam
    ctr.switch_value = 7;
    ctr.info.id7 = &info7;
 
-   hnd->status = cli_samr_set_userinfo( &(srv->cli), mem_ctx, op->in.user_hnd, 7, &(srv->cli.user_session_key), &ctr);
+   hnd->status = rpccli_samr_set_userinfo( pipe_hnd, mem_ctx, op->in.user_hnd, 7, &(srv->cli.user_session_key), &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1929,7 +1909,7 @@ int cac_SamRenameUser(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRenam
 
 
 int cac_SamGetGroupInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetGroupInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    GROUP_INFO_CTR *ctr;
 
@@ -1946,16 +1926,15 @@ int cac_SamGetGroupInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGet
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
 
    /*get a GROUP_INFO_1 structure*/
-   hnd->status = cli_samr_query_groupinfo( &(srv->cli), mem_ctx, op->in.group_hnd, 1, &ctr);
+   hnd->status = rpccli_samr_query_groupinfo( pipe_hnd, mem_ctx, op->in.group_hnd, 1, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -1970,7 +1949,7 @@ int cac_SamGetGroupInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGet
 }
 
 int cac_SamSetGroupInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetGroupInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    GROUP_INFO_CTR *ctr = NULL;
 
@@ -1993,15 +1972,13 @@ int cac_SamSetGroupInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSet
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_set_groupinfo(&(srv->cli), mem_ctx, op->in.group_hnd, ctr);
+   hnd->status = rpccli_samr_set_groupinfo(pipe_hnd, mem_ctx, op->in.group_hnd, ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2010,7 +1987,7 @@ int cac_SamSetGroupInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSet
 }
 
 int cac_SamRenameGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRenameGroup *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    GROUP_INFO_CTR ctr;
 
@@ -2027,20 +2004,18 @@ int cac_SamRenameGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRena
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
    
    ZERO_STRUCT(ctr);
 
    init_samr_group_info2(&ctr.group.info2, op->in.new_name);
    ctr.switch_value1 = 2;
    
-   hnd->status = cli_samr_set_groupinfo( &(srv->cli), mem_ctx, op->in.group_hnd, &ctr);
+   hnd->status = rpccli_samr_set_groupinfo( pipe_hnd, mem_ctx, op->in.group_hnd, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2049,7 +2024,7 @@ int cac_SamRenameGroup(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamRena
 }
 
 int cac_SamGetAliasInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetAliasInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    ALIAS_INFO_CTR ctr;
 
@@ -2066,16 +2041,14 @@ int cac_SamGetAliasInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGet
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
    /*get a GROUP_INFO_1 structure*/
-   hnd->status = cli_samr_query_alias_info( &(srv->cli), mem_ctx, op->in.alias_hnd, 1, &ctr);
+   hnd->status = rpccli_samr_query_alias_info( pipe_hnd, mem_ctx, op->in.alias_hnd, 1, &ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2091,7 +2064,7 @@ int cac_SamGetAliasInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGet
 }
 
 int cac_SamSetAliasInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSetAliasInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    ALIAS_INFO_CTR *ctr = NULL;
 
@@ -2114,15 +2087,13 @@ int cac_SamSetAliasInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSet
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_set_aliasinfo(&(srv->cli), mem_ctx, op->in.alias_hnd, ctr);
+   hnd->status = rpccli_samr_set_aliasinfo(pipe_hnd, mem_ctx, op->in.alias_hnd, ctr);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2131,7 +2102,7 @@ int cac_SamSetAliasInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamSet
 }
 
 int cac_SamGetDomainInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetDomainInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_UNK_CTR ctr;
    SAM_UNK_INFO_1 info1;
@@ -2157,16 +2128,14 @@ int cac_SamGetDomainInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGe
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
    /*first try with info 1*/
-   hnd->status = cli_samr_query_dom_info( &(srv->cli), mem_ctx, op->in.dom_hnd, 1, &ctr);
+   hnd->status = rpccli_samr_query_dom_info( pipe_hnd, mem_ctx, op->in.dom_hnd, 1, &ctr);
 
    if(NT_STATUS_IS_OK(hnd->status)) {
       /*then we buffer the SAM_UNK_INFO_1 structure*/
@@ -2180,7 +2149,7 @@ int cac_SamGetDomainInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGe
    }
 
    /*try again for the next one*/
-   hnd->status = cli_samr_query_dom_info( &(srv->cli), mem_ctx, op->in.dom_hnd, 2, &ctr);
+   hnd->status = rpccli_samr_query_dom_info( pipe_hnd, mem_ctx, op->in.dom_hnd, 2, &ctr);
 
    if(NT_STATUS_IS_OK(hnd->status)) {
       /*store the info*/
@@ -2194,7 +2163,7 @@ int cac_SamGetDomainInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGe
    }
 
    /*once more*/
-   hnd->status = cli_samr_query_dom_info( &(srv->cli), mem_ctx, op->in.dom_hnd, 12, &ctr);
+   hnd->status = rpccli_samr_query_dom_info( pipe_hnd, mem_ctx, op->in.dom_hnd, 12, &ctr);
 
    if(NT_STATUS_IS_OK(hnd->status)) {
       info12 = ctr.info.inf12;
@@ -2225,7 +2194,7 @@ int cac_SamGetDomainInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGe
 }
 
 int cac_SamGetDomainInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetDomainInfoCtr *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_UNK_CTR *ctr_out;
 
@@ -2242,13 +2211,11 @@ int cac_SamGetDomainInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    ctr_out = talloc(mem_ctx, SAM_UNK_CTR);
    if(!ctr_out) {
@@ -2256,7 +2223,7 @@ int cac_SamGetDomainInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_query_dom_info( &(srv->cli), mem_ctx, op->in.dom_hnd, op->in.info_class, ctr_out);
+   hnd->status = rpccli_samr_query_dom_info( pipe_hnd, mem_ctx, op->in.dom_hnd, op->in.info_class, ctr_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2267,7 +2234,7 @@ int cac_SamGetDomainInfoCtr(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct Sa
 }
 
 int cac_SamGetDisplayInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetDisplayInfo *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    SAM_DISPINFO_CTR ctr_out;
 
@@ -2293,13 +2260,11 @@ int cac_SamGetDisplayInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamG
    if(op->out.done == True) /*this is done so we can use the function as a loop condition*/
       return CAC_FAILURE;
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    if(op->in.max_entries == 0 || op->in.max_size == 0) {
       get_query_dispinfo_params(op->out.loop_count, &max_entries_buf, &max_size_buf);
@@ -2311,7 +2276,7 @@ int cac_SamGetDisplayInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamG
 
    resume_idx_out = op->out.resume_idx;
 
-   hnd->status = cli_samr_query_dispinfo( &(srv->cli), mem_ctx, op->in.dom_hnd, &resume_idx_out, op->in.info_class, 
+   hnd->status = rpccli_samr_query_dispinfo( pipe_hnd, mem_ctx, op->in.dom_hnd, &resume_idx_out, op->in.info_class, 
                                              &num_entries_out, max_entries_buf, max_size_buf, &ctr_out);
 
    if(!NT_STATUS_IS_OK(hnd->status) && !NT_STATUS_EQUAL(hnd->status, STATUS_MORE_ENTRIES)) {
@@ -2335,7 +2300,7 @@ int cac_SamGetDisplayInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamG
 }
 
 int cac_SamLookupDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamLookupDomain *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    DOM_SID *sid_out = NULL;
    
@@ -2352,13 +2317,11 @@ int cac_SamLookupDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamLoo
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    sid_out = talloc(mem_ctx, DOM_SID);
    if(!sid_out) {
@@ -2366,7 +2329,7 @@ int cac_SamLookupDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamLoo
       return CAC_FAILURE;
    }
 
-   hnd->status = cli_samr_lookup_domain( &(srv->cli), mem_ctx, op->in.sam, op->in.name, sid_out);
+   hnd->status = rpccli_samr_lookup_domain( pipe_hnd, mem_ctx, op->in.sam, op->in.name, sid_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2377,7 +2340,7 @@ int cac_SamLookupDomain(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamLoo
 }
 
 int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamGetSecurityObject *op) {
-   SMBCSRV *srv = NULL;
+   struct rpc_pipe_client *pipe_hnd = NULL;
 
    /*this number taken from rpcclient/cmd_samr.c, I think it is the only supported level*/
    uint16 info_level = 4;
@@ -2397,15 +2360,13 @@ int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
       return CAC_FAILURE;
    }
 
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
+   pipe_hnd = cac_GetPipe(hnd, PI_SAMR);
+   if(!pipe_hnd) {
+      hnd->status = NT_STATUS_INVALID_HANDLE;
       return CAC_FAILURE;
    }
 
-   srv->cli.pipe_idx = PI_SAMR;
-
-   hnd->status = cli_samr_query_sec_obj(&(srv->cli), mem_ctx, op->in.pol, info_level, mem_ctx, &sec_out);
+   hnd->status = rpccli_samr_query_sec_obj(pipe_hnd, mem_ctx, op->in.pol, info_level, mem_ctx, &sec_out);
 
    if(!NT_STATUS_IS_OK(hnd->status))
       return CAC_FAILURE;
@@ -2416,8 +2377,6 @@ int cac_SamGetSecurityObject(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct S
 }
 
 int cac_SamFlush(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamFlush *op) {
-   SMBCSRV *srv = NULL;
-
    struct SamOpenDomain od;
 
    if(!hnd) 
@@ -2432,14 +2391,6 @@ int cac_SamFlush(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct SamFlush *op)
       hnd->status = NT_STATUS_INVALID_PARAMETER;
       return CAC_FAILURE;
    }
-
-   srv = cac_GetServer(hnd);
-   if(!srv) {
-      hnd->status = NT_STATUS_INVALID_CONNECTION;
-      return CAC_FAILURE;
-   }
-
-   srv->cli.pipe_idx = PI_SAMR;
 
    if(!cac_SamClose(hnd, mem_ctx, op->in.dom_hnd))
       return CAC_FAILURE;
