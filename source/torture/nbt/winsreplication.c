@@ -705,6 +705,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	struct {
 		const char *line; /* just better debugging */
 		struct nbt_name name;
+		BOOL extra; /* not the worst case, this is an extra test */
 		BOOL cleanup;
 		struct {
 			struct wrepl_wins_owner *owner;
@@ -758,6 +759,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -787,6 +789,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -816,6 +819,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -845,6 +849,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -903,6 +908,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -1051,6 +1057,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -1096,8 +1103,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_RELEASED,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1272,8 +1279,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
-			.ips		= addresses_B_3_4,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1301,8 +1308,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
-			.ips		= addresses_B_3_4,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1405,6 +1412,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_UNIQUE,
@@ -1540,8 +1548,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1569,8 +1577,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1598,8 +1606,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1627,8 +1635,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1656,8 +1664,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1685,8 +1693,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
 			.apply_expected	= False
 		}
 	},
@@ -1895,7 +1903,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 
 	/* 
 	 * group,tombstone vs. group,tombstone
-	 * => should NOT be replaced
+	 * => should be replaced
 	 */
 	{
 		.line	= __location__,
@@ -2035,8 +2043,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_RELEASED,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_A_1),
-			.ips		= addresses_A_1,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
 			.apply_expected	= False
 		}
 	},
@@ -2089,8 +2097,8 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_A_1),
-			.ips		= addresses_A_1,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
 			.apply_expected	= False
 		}
 	},
@@ -2126,7 +2134,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 
 	/* 
 	 * group,tombstone vs. sgroup,tombstone
-	 * => should NOT be replaced
+	 * => should be replaced
 	 */
 	{
 		.line	= __location__,
@@ -2144,6 +2152,237 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		.r2	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		}
+	},
+
+/*
+ * normal groups vs multi homed section,
+ */
+	/* 
+	 * group,active vs. mhomed,active
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * group,active vs. mhomed,tombstone
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * group,released vs. mhomed,active
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_RELEASED,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * group,released vs. mhomed,released
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_RELEASED,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_RELEASED,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= False
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * group,released vs. mhomed,tombstone
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_RELEASED,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		}
+	},
+
+	/* 
+	 * group,tombstone vs. mhomed,active
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		}
+	},
+
+	/* 
+	 * group,tombstone vs. mhomed,tombstone
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_MHOMED,
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
@@ -2192,6 +2431,19 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	printf("Test Replica Conflicts with different owners\n");
 
 	for(i=0; ret && i < ARRAY_SIZE(records); i++) {
+	
+		if (!records[i].extra && !records[i].cleanup) {
+			/* we should test the worst cases */
+			if (records[i].r2.apply_expected && records[i].r1.ips==records[i].r2.ips) {
+				printf("(%s) Programmer error, invalid record[%u]: %s\n",
+					__location__, i, records[i].line);
+				return False;
+			} else if (!records[i].r2.apply_expected && records[i].r1.ips!=records[i].r2.ips) {
+				printf("(%s) Programmer error, invalid record[%u]: %s\n",
+					__location__, i, records[i].line);
+				return False;
+			}
+		}
 
 		if (!records[i].cleanup) {
 			printf("%s,%s%s vs. %s,%s%s with %s ip(s) => %s\n",
