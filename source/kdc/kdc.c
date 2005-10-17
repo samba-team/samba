@@ -57,6 +57,14 @@ struct kdc_socket {
 
 	/* a queue of outgoing replies that have been deferred */
 	struct kdc_reply *send_queue;
+
+	int (*process)(krb5_context context, 
+		       krb5_kdc_configuration *config,
+		       unsigned char *buf, 
+		       size_t len, 
+		       krb5_data *reply,
+		       const char *from,
+		       struct sockaddr *addr);
 };
 /*
   state of an open tcp connection
@@ -79,6 +87,14 @@ struct kdc_tcp_connection {
 
 	/* a queue of outgoing replies that have been deferred */
 	struct data_blob_list_item *send_queue;
+
+	int (*process)(krb5_context context, 
+					     krb5_kdc_configuration *config,
+					     unsigned char *buf, 
+					     size_t len, 
+					     krb5_data *reply,
+					     const char *from,
+					     struct sockaddr *addr);
 };
 
 /*
@@ -160,12 +176,12 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	src_sock_addr.sin_family      = PF_INET;
 	
 	/* Call krb5 */
-	ret = krb5_kdc_process_krb5_request(kdc_socket->kdc->smb_krb5_context->krb5_context, 
-					    kdc_socket->kdc->config,
-					    blob.data, blob.length, 
-					    &reply,
-					    src_addr,
-					    (struct sockaddr *)&src_sock_addr);
+	ret = kdc_socket->process(kdc_socket->kdc->smb_krb5_context->krb5_context, 
+				  kdc_socket->kdc->config,
+				  blob.data, blob.length, 
+				  &reply,
+				  src_addr,
+				  (struct sockaddr *)&src_sock_addr);
 	if (ret == -1) {
 		talloc_free(tmp_ctx);
 		return;
@@ -227,13 +243,14 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
 		return;
 	}
-	kdcconn->conn	= conn;
-	kdcconn->kdc	= kdc;
-	conn->private = kdcconn;
+	kdcconn->conn	 = conn;
+	kdcconn->kdc	 = kdc;
+	kdcconn->process = krb5_kdc_process_krb5_request;
+	conn->private    = kdcconn;
 }
 
 /*
-  receive some data on a winbind connection
+  receive some data on a KDC connection
 */
 static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 {
@@ -322,12 +339,12 @@ static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 
 	/* Call krb5 */
 	kdcconn->processing = True;
-	ret = krb5_kdc_process_krb5_request(kdcconn->kdc->smb_krb5_context->krb5_context, 
-					    kdcconn->kdc->config,
-					    kdcconn->partial.data + 4, kdcconn->partial.length - 4, 
-					    &reply,
-					    src_addr,
-					    (struct sockaddr *)&src_sock_addr);
+	ret = kdcconn->process(kdcconn->kdc->smb_krb5_context->krb5_context, 
+			       kdcconn->kdc->config,
+			       kdcconn->partial.data + 4, kdcconn->partial.length - 4, 
+			       &reply,
+			       src_addr,
+			       (struct sockaddr *)&src_sock_addr);
 	kdcconn->processing = False;
 	if (ret == -1) {
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -426,6 +443,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 
 	kdc_socket->kdc = kdc;
 	kdc_socket->send_queue = NULL;
+	kdc_socket->process = krb5_kdc_process_krb5_request;
 
 	talloc_steal(kdc_socket, kdc_socket->sock);
 
