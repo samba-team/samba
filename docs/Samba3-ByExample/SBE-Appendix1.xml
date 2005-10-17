@@ -938,6 +938,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: Idmap
 
+dn: ou=Domains,dc=INETDOMAIN,dc=TLDORG
+objectClass: top
+objectClass: organizationalUnit
+ou: Domains
+
 dn: sambaDomainName=DOMNAME,ou=Domains,dc=INETDOMAIN,dc=TLDORG
 objectClass: sambaDomain
 sambaDomainName: DOMNAME
