@@ -58,12 +58,11 @@
 	<variablelist>
 		<varlistentry>
 		<term>username=&lt;arg&gt;</term>
-		<listitem><para>specifies the username to connect as. If
-		this is not given, then the environment variable <envar>
-		USER</envar> is used. This option can also take the
-		form "user%password" or "user/workgroup" or
-		"user/workgroup%password" to allow the password and workgroup
-		to be specified as part of the username.</para></listitem>
+		<listitem><para>
+		specifies the username to connect as. If this is not given, then the environment variable <envar> USER</envar>
+		is used. This option can also take the form "user%password" or "user/workgroup" or "user/workgroup%password"
+		to allow the password and workgroup to be specified as part of the username.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -75,11 +74,9 @@
 		</para>
 
 		<para>
-		Note that passwords which contain the argument delimiter
-		character (i.e. a comma ',') will failed to be parsed correctly
-		on the command line.  However, the same password defined
-		in the PASSWD environment variable or a credentials file (see
-		below) will be read correctly.
+		Note that passwords which contain the argument delimiter character (i.e. a comma ',') will failed to be parsed
+		correctly on the command line.  However, the same password defined in the PASSWD environment variable or a
+		credentials file (see below) will be read correctly.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -261,6 +258,17 @@ password = &lt;value&gt;
 	<para>The variable <envar>PASSWD_FILE</envar> may contain the pathname
 	of a file to read the password from. A single line of input is
 	read and used as the password.</para>
+</refsect1>
+
+<refsect1>
+	<title>OTHER COMMANDS</title>
+
+	<para>
+	File systems that have been mounted using the <command>smbmount</command>
+	can be unmounted using the <command>smbumount</command> or the UNIX system
+	<command>umount</command> command.
+	</para>
+
 </refsect1>
 
 
