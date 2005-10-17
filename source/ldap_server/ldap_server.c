@@ -462,6 +462,17 @@ static NTSTATUS add_socket(struct event_context *event_context,
 		}
 	}
 
+	/* if we are a PDC, then also enable the global catalog server port, 3268 */
+	if (lp_server_role() == ROLE_DOMAIN_PDC) {
+		port = 3268;
+		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+					     "ipv4", address, &port, ldap_service);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
+				 address, port, nt_errstr(status)));
+		}
+	}
+
 	return status;
 }
 
