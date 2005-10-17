@@ -167,7 +167,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static int negprot_spnego(char *p)
+static int negprot_spnego(char *p, uint8 *pkeylen)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
@@ -177,7 +177,6 @@ static int negprot_spnego(char *p)
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
 				   NULL};
-	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 	int len;
 
 	global_spnego_negotiated = True;
@@ -198,20 +197,23 @@ static int negprot_spnego(char *p)
 	}
 #endif
 
-#if 0
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
 
-	   we can't do this until we teach our sesssion setup parser to know
-	   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)
+	   OLD COMMENT : "we can't do this until we teach our sesssion setup parser to know
+		   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)"
+
+	   Our sessionsetup code now handles raw NTLMSSP connects, so we can go
+	   back to doing what W2K3 does here. This is needed to make PocketPC 2003
+	   CIFS connections work with SPNEGO. See bugzilla bugs #1828 and #3133
+	   for details. JRA.
+
 	*/
-	if (lp_security() != SEC_ADS) {
-		memcpy(p, guid, 16);
-		return 16;
-	}
-#endif
+
 	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
-		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
+		memcpy(p, guid, 16);
+		*pkeylen = 0;
+		return 16;
 	} else {
 		fstring myname;
 		char *host_princ_s = NULL;
@@ -223,6 +225,11 @@ static int negprot_spnego(char *p)
 	}
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
+	if (len > 256) {
+		DEBUG(0,("negprot_spnego: blob length too long (%d)\n", len));
+		len = 255;
+	}
+	*pkeylen = len;
 	data_blob_free(&blob);
 	return len;
 }
@@ -323,16 +330,17 @@ static int reply_nt1(char *inbuf, char *outbuf)
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
 			get_challenge(p);
-			SSVALS(outbuf,smb_vwv16+1,8);
+			SCVAL(outbuf,smb_vwv16+1,8);
 			p += 8;
 		}
 		p += srvstr_push(outbuf, p, lp_workgroup(), -1, 
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		int len = negprot_spnego(p);
+		uint8 keylen;
+		int len = negprot_spnego(p, &keylen);
 		
-		SSVALS(outbuf,smb_vwv16+1,len);
+		SCVAL(outbuf,smb_vwv16+1,keylen);
 		p += len;
 		DEBUG(3,("using SPNEGO\n"));
 	}

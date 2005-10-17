@@ -151,6 +151,7 @@ typedef struct
 	char *szNameResolveOrder;
 	char *szPanicAction;
 	char *szAddUserScript;
+        char *szRenameUserScript;
 	char *szDelUserScript;
 	char *szAddGroupScript;
 	char *szDelGroupScript;
@@ -438,6 +439,7 @@ typedef struct
 	int iallocation_roundup_size;
 	int iAioReadSize;
 	int iAioWriteSize;
+	int iMap_readonly;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -571,6 +573,7 @@ static service sDefault = {
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
+	MAP_READONLY_YES,	/* iMap_readonly */
 	
 	NULL,			/* Parametric options */
 
@@ -688,6 +691,18 @@ static const struct enum_list enum_announce_as[] = {
 	{ANNOUNCE_AS_NT_WORKSTATION, "NT Workstation"},
 	{ANNOUNCE_AS_WIN95, "win95"},
 	{ANNOUNCE_AS_WFW, "WfW"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_map_readonly[] = {
+	{MAP_READONLY_NO, "no"},
+	{MAP_READONLY_NO, "false"},
+	{MAP_READONLY_NO, "0"},
+	{MAP_READONLY_YES, "yes"},
+	{MAP_READONLY_YES, "true"},
+	{MAP_READONLY_YES, "1"},
+	{MAP_READONLY_PERMISSIONS, "permissions"},
+	{MAP_READONLY_PERMISSIONS, "perms"},
 	{-1, NULL}
 };
 
@@ -1045,9 +1060,11 @@ static struct parm_struct parm_table[] = {
 	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
 	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
 	{"veto oplock files", P_STRING, P_LOCAL, &sDefault.szVetoOplockFiles, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
-	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"map archive", P_BOOL, P_LOCAL, &sDefault.bMap_archive, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"map readonly", P_ENUM, P_LOCAL, &sDefault.iMap_readonly, NULL, enum_map_readonly, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"map read only", P_ENUM, P_LOCAL, &sDefault.iMap_readonly, NULL, enum_map_readonly, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled names", P_BOOL, P_LOCAL, &sDefault.bMangledNames, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled map", P_STRING, P_LOCAL, &sDefault.szMangledMap, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED }, 
 	{"max stat cache size", P_INTEGER, P_GLOBAL, &Globals.iMaxStatCacheSize, NULL, NULL, FLAG_ADVANCED}, 
@@ -1061,6 +1078,7 @@ static struct parm_struct parm_table[] = {
 	{N_("Logon Options"), P_SEP, P_SEPARATOR}, 
 
 	{"add user script", P_STRING, P_GLOBAL, &Globals.szAddUserScript, NULL, NULL, FLAG_ADVANCED}, 
+        {"rename user script", P_STRING, P_GLOBAL, &Globals.szRenameUserScript, NULL, NULL, FLAG_ADVANCED},
 	{"delete user script", P_STRING, P_GLOBAL, &Globals.szDelUserScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"add group script", P_STRING, P_GLOBAL, &Globals.szAddGroupScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"delete group script", P_STRING, P_GLOBAL, &Globals.szDelGroupScript, NULL, NULL, FLAG_ADVANCED}, 
@@ -1734,6 +1752,7 @@ FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
+FN_GLOBAL_STRING(lp_renameuser_script, &Globals.szRenameUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 
 FN_GLOBAL_CONST_STRING(lp_guestaccount, &Globals.szGuestaccount)
@@ -1992,6 +2011,7 @@ FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
+FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)

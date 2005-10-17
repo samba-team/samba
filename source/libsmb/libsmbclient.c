@@ -5539,6 +5539,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 
         if (!smbc_initialized) {
                 /* Do some library wide intialisations the first time we get called */
+		BOOL conf_loaded = False;
 
                 /* Set this to what the user wants */
                 DEBUGLEVEL = context->debug;
@@ -5547,16 +5548,22 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 
                 /* Here we would open the smb.conf file if needed ... */
                 
-                home = getenv("HOME");
-
-                slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
-                
                 load_interfaces();  /* Load the list of interfaces ... */
                 
                 in_client = True; /* FIXME, make a param */
 
-                if (!lp_load(conf, True, False, False)) {
-
+                home = getenv("HOME");
+		if (home) {
+			slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
+			if (lp_load(conf, True, False, False)) {
+				conf_loaded = True;
+			} else {
+                                DEBUG(5, ("Could not load config file: %s\n",
+                                          conf));
+			}
+               	}
+ 
+		if (!conf_loaded) {
                         /*
                          * Well, if that failed, try the dyn_CONFIGFILE
                          * Which points to the standard locn, and if that
@@ -5565,10 +5572,9 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
                          */
 
                         if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
-                                DEBUG(5, ("Could not load either config file: "
-                                          "%s or %s\n",
-                                          conf, dyn_CONFIGFILE));
-                        } else {
+                                DEBUG(5, ("Could not load config file: %s\n",
+                                          dyn_CONFIGFILE));
+                        } else if (home) {
                                 /*
                                  * We loaded the global config file.  Now lets
                                  * load user-specific modifications to the

@@ -175,7 +175,7 @@ static BOOL read_init_file( const char *servicename, struct rcinit_file_informat
 	struct rcinit_file_information *info;
 	pstring filepath, str;
 	XFILE *f;
-	char *p, *s;
+	char *p;
 		
 	if ( !(info = TALLOC_ZERO_P( NULL, struct rcinit_file_information ) ) )
 		return False;
@@ -189,7 +189,7 @@ static BOOL read_init_file( const char *servicename, struct rcinit_file_informat
 		return False;
 	}
 	
-	while ( (s = x_fgets( str, sizeof(str)-1, f )) != NULL ) {
+	while ( (x_fgets( str, sizeof(str)-1, f )) != NULL ) {
 		/* ignore everything that is not a full line 
 		   comment starting with a '#' */
 		   
@@ -325,6 +325,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 
 	if ( !(svc_subkeys = TALLOC_ZERO_P( key_service, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		regkey_close_internal( key_service );
 		return;
 	}
 	
@@ -336,6 +337,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	
 	if ( !(values = TALLOC_ZERO_P( key_service, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		regkey_close_internal( key_service );
 		return;
 	}
 
@@ -344,7 +346,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 
 	/* cleanup the service key*/
 
-	TALLOC_FREE( key_service );
+	regkey_close_internal( key_service );
 
 	/* now add the security descriptor */
 
@@ -354,17 +356,19 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
+		regkey_close_internal( key_secdesc );
 		return;
 	}
 
 	if ( !(values = TALLOC_ZERO_P( key_secdesc, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		regkey_close_internal( key_secdesc );
 		return;
 	}
 
 	if ( !(sd = construct_service_sd(key_secdesc)) ) {
 		DEBUG(0,("add_new_svc_name: Failed to create default sec_desc!\n"));
-		TALLOC_FREE( key_secdesc );
+		regkey_close_internal( key_secdesc );
 		return;
 	}
 	
@@ -381,7 +385,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 	/* finally cleanup the Security key */
 	
 	prs_mem_free( &ps );
-	TALLOC_FREE( key_secdesc );
+	regkey_close_internal( key_secdesc );
 
 	return;
 }
@@ -396,7 +400,6 @@ void svcctl_init_keys( void )
 	REGSUBKEY_CTR *subkeys;
 	REGISTRY_KEY *key = NULL;
 	WERROR wresult;
-	BOOL new_services = False;
 	
 	/* bad mojo here if the lookup failed.  Should not happen */
 	
@@ -413,6 +416,7 @@ void svcctl_init_keys( void )
 	
 	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
 		DEBUG(0,("init_services_keys: talloc() failed!\n"));
+		regkey_close_internal( key );
 		return;
 	}
 	
@@ -432,11 +436,9 @@ void svcctl_init_keys( void )
 		/* Add the new service key and initialize the appropriate values */
 
 		add_new_svc_name( key, subkeys, service_list[i] );
-
-		new_services = True;
 	}
 
-	TALLOC_FREE( key );
+	regkey_close_internal( key );
 
 	/* initialize the control hooks */
 
@@ -474,7 +476,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		TALLOC_FREE( key );
+		regkey_close_internal( key );
 		return NULL;
 	}
 
@@ -483,7 +485,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	if ( !(val = regval_ctr_getvalue( values, "Security" )) ) {
 		DEBUG(6,("svcctl_get_secdesc: constructing default secdesc for service [%s]\n", 
 			name));
-		TALLOC_FREE( key );
+		regkey_close_internal( key );
 		return construct_service_sd( ctx );
 	}
 	
@@ -494,7 +496,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	prs_give_memory( &ps, regval_data_p(val), regval_size(val), False );
 	
 	if ( !sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
-		TALLOC_FREE( key );
+		regkey_close_internal( key );
 		return construct_service_sd( ctx );
 	}
 	
@@ -503,7 +505,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	/* finally cleanup the Security key */
 	
 	prs_mem_free( &ps );
-	TALLOC_FREE( key );
+	regkey_close_internal( key );
 
 	return ret_sd;
 }
@@ -532,7 +534,7 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
-		TALLOC_FREE( key );
+		regkey_close_internal( key );
 		goto fail;
 	}
 
@@ -543,12 +545,13 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 
 	rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
 
-	TALLOC_FREE( key );
+	regkey_close_internal( key );
 	
 	return display_name;
 
 fail:
 	/* default to returning the service name */
+	regkey_close_internal( key );
 	fstrcpy( display_name, name );
 	return display_name;
 }
@@ -577,7 +580,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
-		TALLOC_FREE( key );
+		regkey_close_internal( key );
 		return NULL;
 	}
 
@@ -588,7 +591,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	else
 		rpcstr_pull( description, regval_data_p(val), sizeof(description), regval_size(val), 0 );
 
-	TALLOC_FREE( key );
+	regkey_close_internal( key );
 	
 	return description;
 }
@@ -616,13 +619,13 @@ REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 
 	if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: talloc() failed!\n"));
-		TALLOC_FREE( key );
+		regkey_close_internal( key );
 		return NULL;
 	}
 	
 	fetch_reg_values( key, values );
 
-	TALLOC_FREE( key );
+	regkey_close_internal( key );
 	
 	return values;
 }

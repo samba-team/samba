@@ -27,6 +27,10 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+/* logged when starting the various Samba daemons */
+#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2005"
+
+
 #if defined(LARGE_SMB_OFF_T)
 #define BUFFER_SIZE (128*1024)
 #else /* no large readwrite possible */
@@ -1718,5 +1722,8 @@ struct uuid {
 typedef struct uuid_flat {
 	uint8 info[UUID_FLAT_SIZE];
 } UUID_FLAT;
+
+/* map readonly options */
+enum mapreadonly_options {MAP_READONLY_NO, MAP_READONLY_YES, MAP_READONLY_PERMISSIONS};
 
 #endif /* _SMB_H */

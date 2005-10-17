@@ -514,6 +514,14 @@ static int do_list_queue_empty(void)
 
 static void do_list_helper(const char *mntpoint, file_info *f, const char *mask, void *state)
 {
+	char *dir_end;
+
+	/* save the directory */
+	pstrcpy( f->dir, mask );
+	if ( (dir_end = strrchr( f->dir, '\\' )) != NULL ) {
+		*dir_end = '\0';
+	}
+
 	if (f->mode & aDIR) {
 		if (do_list_dirs && do_this_one(f)) {
 			do_list_fn(f);
@@ -1613,8 +1621,7 @@ static void do_del(file_info *finfo)
 {
 	pstring mask;
 
-	pstrcpy(mask,cur_dir);
-	pstrcat(mask,finfo->name);
+	pstr_sprintf( mask, "%s\\%s", finfo->dir, finfo->name );
 
 	if (finfo->mode & aDIR) 
 		return;

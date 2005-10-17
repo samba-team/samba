@@ -22,6 +22,8 @@
 
 #ifdef WITH_FAKE_KASERVER
 
+#define NO_ASN1_TYPEDEFS 1
+
 #include <afs/stds.h>
 #include <afs/afs.h>
 #include <afs/auth.h>

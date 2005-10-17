@@ -419,7 +419,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	fstring dnsname, dnsdomname;
 	uint32 neg_flags = 0;
 	uint32 ntlmssp_command, chal_flags;
-	char *cliname=NULL, *domname=NULL;
 	const uint8 *cryptkey;
 	const char *target_name;
 
@@ -429,23 +428,15 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 #endif
 
 	if (request.length) {
-		if (!msrpc_parse(&request, "CddAA",
-				 "NTLMSSP",
-				 &ntlmssp_command,
-				 &neg_flags,
-				 &cliname,
-				 &domname)) {
-			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate:\n"));
+		if ((request.length < 16) || !msrpc_parse(&request, "Cdd",
+							"NTLMSSP",
+							&ntlmssp_command,
+							&neg_flags)) {
+			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate of length %u\n",
+				(unsigned int)request.length));
 			dump_data(2, (const char *)request.data, request.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
-		DEBUG(10, ("ntlmssp_server_negotiate: client = %s, domain = %s\n",
-				cliname ? cliname : "", domname ? domname : ""));
-
-		SAFE_FREE(cliname);
-		SAFE_FREE(domname);
-		
 		debug_ntlmssp_flags(neg_flags);
 	}
 	

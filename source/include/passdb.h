@@ -269,7 +269,7 @@ struct pdb_search {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 9
+#define PASSDB_INTERFACE_VERSION 10
 
 typedef struct pdb_context 
 {
@@ -294,6 +294,8 @@ typedef struct pdb_context
 	NTSTATUS (*pdb_update_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
 	
 	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
+	
+	NTSTATUS (*pdb_rename_sam_account)(struct pdb_context *, SAM_ACCOUNT *oldname, const char *newname);
 
 	NTSTATUS (*pdb_update_login_attempts)(struct pdb_context *context, SAM_ACCOUNT *sam_acct, BOOL success);
 
@@ -421,6 +423,8 @@ typedef struct pdb_methods
 	NTSTATUS (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
 	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
+	
+	NTSTATUS (*rename_sam_account)(struct pdb_methods *, SAM_ACCOUNT *oldname, const char *newname);
 	
 	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, SAM_ACCOUNT *sam_acct, BOOL success);
 

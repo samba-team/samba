@@ -52,21 +52,28 @@ obj_list = string.split(samba_objs)
 libraries = []
 library_dirs = []
 
+next_is_path = 0
+next_is_flag = 0
+
 for lib in string.split(samba_libs):
-    if lib[0:2] == "-l":
+    if next_is_path != 0:
+        library_dirs.append(lib);
+        next_is_path = 0;
+    elif next_is_flag != 0:
+        next_is_flag = 0;
+    elif lib == "-Wl,-rpath":
+        next_is_path = 1;
+    elif lib[0:2] in ("-l","-pthread"):
         libraries.append(lib[2:])
-        continue
-    if lib[0:8] == "-pthread":
-        libraries.append(lib[2:])
-        continue
-    if lib[0:2] == "-L":
+    elif lib[0:2] == "-L":
         library_dirs.append(lib[2:])
-        continue
-    if lib[0:2] == "-W":
-        # Skip linker flags
-        continue
-    print "Unknown entry '%s' in $LIBS variable passed to setup.py" % lib
-    sys.exit(1)
+    elif lib[0:2] in ("-W","-s"):
+        pass # Skip linker flags
+    elif lib[0:2] == "-z":
+        next_is_flag = 1 # Skip linker flags
+    else:
+        print "Unknown entry '%s' in $LIBS variable passed to setup.py" % lib
+        sys.exit(1)
 
 flags_list = string.split(samba_cflags)
 

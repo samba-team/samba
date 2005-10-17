@@ -47,11 +47,15 @@
 #define EVENTLOG_AUDIT_FAILURE        0x0010
 
 /* Defines for TDB keys */
-#define  VN_oldest_entry  "INFO/oldest_entry"
-#define  VN_next_record   "INFO/next_record"
-#define  VN_version       "INFO/version"
-#define  VN_maxsize       "INFO/maxsize"
-#define  VN_retention     "INFO/retention"
+#define  EVT_OLDEST_ENTRY  "INFO/oldest_entry"
+#define  EVT_NEXT_RECORD   "INFO/next_record"
+#define  EVT_VERSION       "INFO/version"
+#define  EVT_MAXSIZE       "INFO/maxsize"
+#define  EVT_RETENTION     "INFO/retention"
+
+#define ELOG_APPL	"Application"
+#define ELOG_SYS	"System"
+#define ELOG_SEC	"Security"
 
 #define  EVENTLOG_DATABASE_VERSION_V1    1
 

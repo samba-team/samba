@@ -43,7 +43,7 @@ static struct generic_mapping reg_generic_map =
  
 static void free_regkey_info(void *ptr)
 {
-	TALLOC_FREE( ptr );
+	regkey_close_internal( (REGISTRY_KEY*)ptr );
 }
 
 /******************************************************************
@@ -99,9 +99,8 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 	
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, *keyinfo ) ) {
 		result = WERR_BADFILE; 
-		TALLOC_FREE( *keyinfo );
+		regkey_close_internal( *keyinfo );
 	}
-	
 	
 	return result;
 }
@@ -332,7 +331,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 
 	DEBUG(5,("_reg_info: looking up value: [%s]\n", name));
 
-	if ( !(regvals = TALLOC_P( p->mem_ctx, REGVAL_CTR )) ) 
+	if ( !(regvals = TALLOC_ZERO_P( p->mem_ctx, REGVAL_CTR )) ) 
 		return WERR_NOMEM;
 	
 	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
@@ -537,6 +536,22 @@ WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE 
 		status = WERR_NO_MORE_ITEMS;
 		goto done;
 	}
+
+#if 0	/* JERRY TEST CODE */
+	if ( val->type == REG_MULTI_SZ ) {
+		char **str;
+		int num_strings = regval_convert_multi_sz( (uint16*)regval_data_p(val), regval_size(val), &str );
+		uint16 *buffer;
+		size_t buf_size;
+		
+		
+		if ( num_strings )
+			buf_size = regval_build_multi_sz( str, &buffer );
+		
+		TALLOC_FREE( str );
+		TALLOC_FREE( buffer );
+	}
+#endif
 	
 	DEBUG(10,("_reg_enum_value: retrieved value named  [%s]\n", val->valuename));
 	

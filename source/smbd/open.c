@@ -628,7 +628,7 @@ static BOOL is_delete_request(files_struct *fsp) {
 
 static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 {
-	int i, num_level2;
+	int i;
 	struct share_mode_entry *exclusive = NULL;
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
@@ -637,8 +637,6 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 		fsp->oplock_type = NO_OPLOCK;
 		return False;
 	}
-
-	num_level2 = 0;
 
 	if (lck->num_share_modes == 0) {
 		/* No files open at all: Directly grant whatever the client
@@ -1715,7 +1713,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
 			} else {
-				DEBUG(5, ("open_file_shared: failed to reset "
+				DEBUG(5, ("open_file_shared: reset "
 					  "attributes of file %s to 0%o\n",
 					fname, (unsigned int)new_unx_mode));
 				ret = 0; /* Don't do the fchmod below. */
