@@ -1368,6 +1368,12 @@ seconds, ADDRESS+ is one or more addresses corresponding to the registration, an
 for the registration.
 </para>
 
+<note><para>
+A change that has been made to the <filename>wins.dat</filename> will not take effect until &nmbd; has been
+restarted. It should be noted that since the <filename>wins.dat</filename> file changes dynamically, &nmbd;
+should be stopped before editting this file. Do not forget to restart &nmbd; when this file has been editted.
+</para></note>
+
 <para>
 A typical dynamic entry looks like this:
 <programlisting>
