@@ -245,7 +245,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	state->domain_name
-		= samdb_search_string(state->sam_ldb, mem_ctx, NULL, "nETBIOSName", 
+		= samdb_search_string(state->sam_ldb, state, NULL, "nETBIOSName", 
 				      "(&(objectclass=crossRef)(ncName=%s))", ldb_dn_linearize(mem_ctx, state->domain_dn));
 	
 	if (!state->domain_name) {
@@ -255,14 +255,14 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
-	state->builtin_dn = samdb_search_dn(state->sam_ldb, mem_ctx, state->domain_dn, "(objectClass=builtinDomain)");
+	state->builtin_dn = samdb_search_dn(state->sam_ldb, state, state->domain_dn, "(objectClass=builtinDomain)");
 	if (!state->builtin_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	/* work out the system_dn - useful for so many calls its worth
 	   fetching here */
-	state->system_dn = samdb_search_dn(state->sam_ldb, mem_ctx,
+	state->system_dn = samdb_search_dn(state->sam_ldb, state,
 					   state->domain_dn, "(&(objectClass=container)(cn=System))");
 	if (!state->system_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
