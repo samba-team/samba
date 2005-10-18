@@ -612,21 +612,24 @@ uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 	return i+1;
 }
 
-NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, const void *_var, uint32_t count, uint32_t element_size)
+NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint32_t element_size)
 {
-	const char *var = _var;
 	uint32_t i;
+	struct ndr_pull_save save_offset;
 
-	var += element_size*(count-1);
+	ndr_pull_save(ndr, &save_offset);
+	ndr_pull_advance(ndr, (count - 1) * element_size);
+	NDR_PULL_NEED_BYTES(ndr, element_size);
 
 	for (i = 0; i < element_size; i++) {
-		 if (var[i] != 0) {
-			return NT_STATUS_UNSUCCESSFUL;
+		 if (ndr->data[ndr->offset+i] != 0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "String terminator not present or outside string boundaries");
 		 }
 	}
 
-	return NT_STATUS_OK;
+	ndr_pull_restore(ndr, &save_offset);
 
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
