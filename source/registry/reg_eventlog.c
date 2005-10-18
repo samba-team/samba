@@ -84,6 +84,7 @@ BOOL eventlog_init_keys( void )
 			 evtlogpath ) );
 		regdb_fetch_values( evtlogpath, values );
 
+
 		if ( !regval_ctr_key_exists( values, "MaxSize" ) ) {
 
 			/* assume we have none, add them all */
@@ -153,6 +154,7 @@ BOOL eventlog_init_keys( void )
 	}
 
 	return True;
+
 }
 
 /*********************************************************************
@@ -181,7 +183,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 	int i;
 	int numsources;
 
-	for ( i=0; elogs[i]; i++ ) {
+	for ( i = 0; elogs[i]; i++ ) {
 		if ( strequal( elogs[i], eventlog ) )
 			break;
 	}
@@ -207,11 +209,11 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	regdb_fetch_values( evtlogpath, values );
 
+
 	if ( !( rval = regval_ctr_getvalue( values, "Sources" ) ) ) {
 		DEBUG( 0, ( "No Sources value for [%s]!\n", eventlog ) );
 		return False;
 	}
-
 	/* perhaps this adding a new string to a multi_sz should be a fn? */
 	/* check to see if it's there already */
 
@@ -220,10 +222,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 		       ( "Wrong type for Sources, should be REG_MULTI_SZ\n" ) );
 		return False;
 	}
-
 	/* convert to a 'regulah' chars to do some comparisons */
-
-	DEBUG( 0, ( "Rval size is %d\n", rval->size ) );
 
 	already_in = False;
 	wrklist = NULL;
@@ -232,18 +231,15 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 	       regval_convert_multi_sz( ( uint16 * ) rval->data_p, rval->size,
 					&wrklist ) ) > 0 ) {
 
-		DEBUG( 10, ( "numsources is %d\n", numsources ) );
 		ii = numsources;
 		/* see if it's in there already */
 		wp = wrklist;
+
 		while ( ii && wp && *wp ) {
-			DEBUG( 5,
-			       ( "Comparing [%s] to [%s]\n", sourcename,
-				 *wp ) );
 			if ( strequal( *wp, sourcename ) ) {
 				DEBUG( 5,
-				       ( "Source name %s already exists, \n",
-					 sourcename ) );
+				       ( "Source name [%s] already in list for [%s] \n",
+					 sourcename, eventlog ) );
 				already_in = True;
 				break;
 			}
@@ -269,26 +265,23 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 			DEBUG( 0, ( "talloc() failed \n" ) );
 			return False;
 		}
-		DEBUG( 0, ( "Number of sources [%d]\n", numsources ) );
 		memcpy( wp, wrklist, sizeof( char * ) * numsources );
 		*( wp + numsources ) = ( char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
 		mbytes = regval_build_multi_sz( wp, &msz_wp );
-		DEBUG( 0, ( "Number of mbytes [%d]\n", mbytes ) );
-		dump_data( 1, (char*)msz_wp, mbytes );
+		dump_data( 1, ( char * ) msz_wp, mbytes );
 		regval_ctr_addvalue( values, "Sources", REG_MULTI_SZ,
 				     ( char * ) msz_wp, mbytes );
 		regdb_store_values( evtlogpath, values );
 		TALLOC_FREE( msz_wp );
 	} else {
-		DEBUG( 0,
+		DEBUG( 3,
 		       ( "Source name [%s] found in existing list of sources\n",
 			 sourcename ) );
 	}
 	TALLOC_FREE( values );
-
-	DEBUG( 5,
-	       ( "Added source to sources string, now adding subkeys\n" ) );
+	if ( wrklist )
+		TALLOC_FREE( wrklist );	/*  */
 
 	if ( !( subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR ) ) ) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );

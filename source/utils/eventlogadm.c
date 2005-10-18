@@ -1,3 +1,4 @@
+
 /*
  * Samba Unix/Linux SMB client utility 
  * Write Eventlog records to a tdb, perform other eventlog related functions
@@ -26,7 +27,6 @@
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_UTIL_EVENTLOG
 
-Eventlog_entry ee;
 
 extern int optind;
 extern char *optarg;
@@ -35,9 +35,12 @@ int opt_debug = 0;
 
 static void usage( char *s )
 {
-	printf( "\nUsage: %s [-d] [-h] <Eventlog Name>\n", s );
-	printf( "\t-d\tturn debug on\n" );
-	printf( "\t-h\tdisplay help\n\n" );
+	printf( "\nUsage: %s [OPTION]\n\n", s );
+	printf( " -o write <Eventlog Name> \t\t\t\t\tWrites records to eventlog from STDIN\n" );
+	printf( " -o addsource <EventlogName> <sourcename> <msgfileDLLname> \tAdds the specified source & DLL eventlog registry entry\n" );
+	printf( "\nMiscellaneous options:\n" );
+	printf( " -d\t\t\t\t\t\t\t\tturn debug on\n" );
+	printf( " -h\t\t\t\t\t\t\t\tdisplay help\n\n" );
 }
 
 static void display_eventlog_names( void )
@@ -53,73 +56,52 @@ static void display_eventlog_names( void )
 	}
 }
 
-int main( int argc, char *argv[] )
+int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
+{
+
+	if ( argc < 3 ) {
+		printf( "need more arguments:\n" );
+		printf( "-o addsource EventlogName SourceName /path/to/eventlogmsg.dll\n" );
+		return -1;
+	}
+	/* must open the registry before we access it */
+	if ( !regdb_init(  ) ) {
+		printf( "Can't open the registry.\n" );
+		return -1;
+	}
+
+	if ( !eventlog_add_source( argv[0], argv[1], argv[2] ) )
+		return -2;
+	return 0;
+}
+
+int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 {
 	FILE *f1;
+	char *argfname;
+	TDB_CONTEXT *elog_tdb;
 
 	/* fixed constants are bad bad bad  */
 	pstring linein;
 	BOOL is_eor;
-	int pret, opt;
-	int rcnum;
-	char *argfname, *exename;
-	char *tdbname;
-
-
-	TDB_CONTEXT *elog_tdb;
-
-	opt_debug = 0;		/* todo set this from getopts */
-
-
-	lp_load( dyn_CONFIGFILE, True, False, False );
-
-	exename = argv[0];
-
-#if 1	/* TESTING CODE */
-	eventlog_add_source("System","TestSourceX","SomeTestPathX");
-#endif
-
-	while ( ( opt = getopt( argc, argv, "dh" ) ) != -1 ) {
-		switch ( opt ) {
-		case 'h':
-			usage( argv[0] );
-			display_eventlog_names(  );
-			exit( 0 );
-			break;
-
-		case 'd':
-			opt_debug = 1;
-			break;
-		}
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if ( argc < 1 ) {
-		usage( exename );
-		exit( 1 );
-	}
-
-
+	Eventlog_entry ee;
+	int pret, rcnum;
 
 	f1 = stdin;
-
 	if ( !f1 ) {
 		printf( "Can't open STDIN\n" );
 		return -1;
 	}
 
-
-	if ( opt_debug ) {
-		printf( "Starting %s for eventlog [%s]\n", exename, argv[0] );
+	if ( debugflag ) {
+		printf( "Starting write for eventlog [%s]\n", argv[0] );
 		display_eventlog_names(  );
 	}
 
 	argfname = argv[0];
 
-	if ( !(elog_tdb = elog_open_tdb( argfname ) ) ) {
-		printf( "can't open the eventlog TDB (%s)\n", tdbname );
+	if ( !( elog_tdb = elog_open_tdb( argfname ) ) ) {
+		printf( "can't open the eventlog TDB (%s)\n", argfname );
 		return -1;
 	}
 
@@ -129,27 +111,26 @@ int main( int argc, char *argv[] )
 		fgets( linein, sizeof( linein ) - 1, f1 );
 		linein[strlen( linein ) - 1] = 0;	/* whack the line delimiter */
 
-		if ( opt_debug )
+		if ( debugflag )
 			printf( "Read line [%s]\n", linein );
 
 		is_eor = False;
 
+
 		pret = parse_logentry( ( char * ) &linein, &ee, &is_eor );
+		/* should we do something with the return code? */
 
 		if ( is_eor ) {
 			fixup_eventlog_entry( &ee );
 
 			if ( opt_debug )
-				printf( "record number [%d], tg [%d] , tw [%d]\n", 
-					ee.record.record_number, 
-					ee.record.time_generated, 
-					ee.record.time_written );
+				printf( "record number [%d], tg [%d] , tw [%d]\n", ee.record.record_number, ee.record.time_generated, ee.record.time_written );
 
 			if ( ee.record.time_generated != 0 ) {
 
 				/* printf("Writing to the event log\n"); */
 
-				rcnum = write_eventlog_tdb( elog_tdb, &ee ); 
+				rcnum = write_eventlog_tdb( elog_tdb, &ee );
 				if ( !rcnum ) {
 					printf( "Can't write to the event log\n" );
 				} else {
@@ -168,4 +149,77 @@ int main( int argc, char *argv[] )
 	tdb_close( elog_tdb );
 
 	return 0;
+}
+
+/* would be nice to use the popT stuff here, however doing so forces us to drag in a lot of other infrastructure */
+
+int main( int argc, char *argv[] )
+{
+	int opt, rc;
+	char *exename;
+	char *srcname, *eventlogname;
+
+
+	fstring opname;
+
+	opt_debug = 0;		/* todo set this from getopts */
+
+	lp_load( dyn_CONFIGFILE, True, False, False );
+
+	exename = argv[0];
+	srcname = NULL;
+
+	/* default */
+
+	fstrcpy( opname, "write" );	/* the default */
+
+#if 0				/* TESTING CODE */
+	eventlog_add_source( "System", "TestSourceX", "SomeTestPathX" );
+#endif
+	while ( ( opt = getopt( argc, argv, "dho:" ) ) != EOF ) {
+		switch ( opt ) {
+
+		case 'o':
+			fstrcpy( opname, optarg );
+			break;
+
+		case 'h':
+			usage( argv[0] );
+			display_eventlog_names(  );
+			exit( 0 );
+			break;
+
+		case 'd':
+			opt_debug = 1;
+			break;
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+
+	if ( argc < 1 ) {
+		printf( "\nNot enough arguments!\n" );
+		usage( exename );
+		exit( 1 );
+	}
+
+	/*  note that the separate command types should call usage if they need to... */
+	eventlogname = *argv;
+	while ( 1 ) {
+		if ( !StrCaseCmp( opname, "addsource" ) ) {
+			rc = DoAddSourceCommand( argc, argv, opt_debug,
+						 exename );
+			break;
+		}
+		if ( !StrCaseCmp( opname, "write" ) ) {
+			rc = DoWriteCommand( argc, argv, opt_debug, exename );
+			break;
+		}
+		printf( "unknown command [%s]\n", opname );
+		usage( exename );
+		exit( 1 );
+		break;
+	}
+	return rc;
 }
