@@ -1431,7 +1431,7 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, int len)
 	dump_data(100, ps->sess_key, 16);
 	dump_data(100, q, len);
 #endif
-	SamOEMhash((uchar *) q, ps->sess_key, len);
+	SamOEMhash((uchar *) q, (const unsigned char *)ps->sess_key, len);
 
 #ifdef DEBUG_PASSWORD
 	dump_data(100, q, len);

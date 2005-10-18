@@ -100,7 +100,7 @@ static int export_database (struct pdb_context *in, struct pdb_context
 
 static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 	GROUP_MAP *maps = NULL;
-	int i, entries = 0;
+	size_t i, entries = 0;
 
 	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
 							&maps, &entries,

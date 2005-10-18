@@ -1797,8 +1797,8 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	BOOL ret = False;
 	DOM_SID *sids;
 	gid_t *gids;
-	int num_groups;
-	int i;
+	size_t num_groups;
+	size_t i;
 	fstring grp_domain;
 	fstring grp_name;
 	enum SID_NAME_USE grp_type;

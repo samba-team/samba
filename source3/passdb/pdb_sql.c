@@ -526,7 +526,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
  							config_value_write(location,
  											   "logon hours column",
  											   CONFIG_LOGON_HOURS),
- 							pdb_get_hours(newpwd));
+ 							(const char *)pdb_get_hours(newpwd));
  	}
 
  	if (!some_field_affected) {

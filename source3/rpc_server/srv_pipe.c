@@ -173,7 +173,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 
 	/* Copy the sign/seal padding data. */
 	if (ss_padding_len) {
-		unsigned char pad[8];
+		char pad[8];
 
 		memset(pad, '\0', 8);
 		if (!prs_copy_data_in(&outgoing_pdu, pad, ss_padding_len)) {
@@ -210,9 +210,9 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 		case PIPE_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = ntlmssp_seal_packet(a->ntlmssp_state,
-							prs_data_p(&outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+							(unsigned char *)prs_data_p(&outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 							data_len + ss_padding_len,
-							prs_data_p(&outgoing_pdu),
+							(unsigned char *)prs_data_p(&outgoing_pdu),
 							(size_t)prs_offset(&outgoing_pdu),
 							&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -224,9 +224,9 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 		case PIPE_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			status = ntlmssp_sign_packet(a->ntlmssp_state,
-							prs_data_p(&outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+							(unsigned char *)prs_data_p(&outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 							data_len + ss_padding_len,
-							prs_data_p(&outgoing_pdu),
+							(unsigned char *)prs_data_p(&outgoing_pdu),
 							(size_t)prs_offset(&outgoing_pdu),
 							&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -241,7 +241,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 	}
 
 	/* Append the auth blob. */
-	if (!prs_copy_data_in(&outgoing_pdu, auth_blob.data, NTLMSSP_SIG_SIZE)) {
+	if (!prs_copy_data_in(&outgoing_pdu, (char *)auth_blob.data, NTLMSSP_SIG_SIZE)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes auth blob.\n",
 				(unsigned int)NTLMSSP_SIG_SIZE));
 		data_blob_free(&auth_blob);
@@ -731,7 +731,7 @@ BOOL api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 
 	blob = data_blob(NULL,p->hdr.auth_len);
 
-	if (!prs_copy_data_out(blob.data, rpc_in_p, p->hdr.auth_len)) {
+	if (!prs_copy_data_out((char *)blob.data, rpc_in_p, p->hdr.auth_len)) {
 		DEBUG(0,("api_pipe_bind_auth3: Failed to pull %u bytes - the response blob.\n",
 			(unsigned int)p->hdr.auth_len ));
 		goto err;
@@ -1036,7 +1036,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	/* Grab the SPNEGO blob. */
 	blob = data_blob(NULL,p->hdr.auth_len);
 
-	if (!prs_copy_data_out(blob.data, rpc_in_p, p->hdr.auth_len)) {
+	if (!prs_copy_data_out((char *)blob.data, rpc_in_p, p->hdr.auth_len)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to pull %u bytes - the SPNEGO auth header.\n",
 			(unsigned int)p->hdr.auth_len ));
 		goto err;
@@ -1103,7 +1103,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 		goto err;
 	}
 
-	if (!prs_copy_data_in(pout_auth, response.data, response.length)) {
+	if (!prs_copy_data_in(pout_auth, (char *)response.data, response.length)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: marshalling of data blob failed.\n"));
 		goto err;
 	}
@@ -1154,7 +1154,7 @@ static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 	/* Grab the SPNEGO blob. */
 	spnego_blob = data_blob(NULL,p->hdr.auth_len);
 
-	if (!prs_copy_data_out(spnego_blob.data, rpc_in_p, p->hdr.auth_len)) {
+	if (!prs_copy_data_out((char *)spnego_blob.data, rpc_in_p, p->hdr.auth_len)) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: Failed to pull %u bytes - the SPNEGO auth header.\n",
 			(unsigned int)p->hdr.auth_len ));
 		goto err;
@@ -1306,13 +1306,13 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	/* Grab the NTLMSSP blob. */
 	blob = data_blob(NULL,p->hdr.auth_len);
 
-	if (!prs_copy_data_out(blob.data, rpc_in_p, p->hdr.auth_len)) {
+	if (!prs_copy_data_out((char *)blob.data, rpc_in_p, p->hdr.auth_len)) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: Failed to pull %u bytes - the NTLM auth header.\n",
 			(unsigned int)p->hdr.auth_len ));
 		goto err;
 	}
 
-	if (strncmp(blob.data, "NTLMSSP", 7) != 0) {
+	if (strncmp((char *)blob.data, "NTLMSSP", 7) != 0) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: Failed to read NTLMSSP in blob\n"));
                 goto err;
         }
@@ -1341,7 +1341,7 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		goto err;
 	}
 
-	if (!prs_copy_data_in(pout_auth, response.data, response.length)) {
+	if (!prs_copy_data_in(pout_auth, (char *)response.data, response.length)) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of data blob failed.\n"));
 		goto err;
 	}
@@ -1896,7 +1896,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 		return False;
 	}
 
-	auth_blob.data = prs_data_p(rpc_in) + prs_offset(rpc_in);
+	auth_blob.data = (unsigned char *)prs_data_p(rpc_in) + prs_offset(rpc_in);
 	auth_blob.length = auth_len;
 	
 	switch (p->auth.auth_level) {

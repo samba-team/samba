@@ -26,7 +26,7 @@ extern struct unix_error_map unix_dos_nt_errmap[];
 extern uint32 global_client_caps;
 /* these can be set by some functions to override the error codes */
 static int override_ERR_class;
-static int override_ERR_code;
+static uint32 override_ERR_code;
 static NTSTATUS override_ERR_ntstatus;
 
 /****************************************************************************
