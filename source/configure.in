@@ -4311,6 +4311,7 @@ AC_ARG_WITH(acl-support,
 	*solaris*)
 		AC_MSG_RESULT(Using solaris ACLs)
 		AC_DEFINE(HAVE_SOLARIS_ACLS,1,[Whether solaris ACLs are available])
+		LIBS="$LIBS -lsec"
 		;;
 	*hpux*)
 		AC_MSG_RESULT(Using HPUX ACLs)
