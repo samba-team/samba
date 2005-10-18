@@ -1,4 +1,3 @@
-
                    ==================================
                    Release Notes for Samba 3.0.21pre1
                               Oct 18, 2005
@@ -39,7 +38,11 @@ smb.conf changes
 
     Parameter Name                      Action
     --------------                      ------
-    map readonly			New
+    eventlog list			New
+    iprint server			New
+    map read only			New
+    rename user script			New
+    svcctl list 			Renamed from 'enable svcctl'
 
 
 Changes since 3.0.20[a-b]
