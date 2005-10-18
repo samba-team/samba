@@ -24,7 +24,7 @@ New features introduced in Samba 3.0.21pre1 include:
   o The capability to manage Unix services using the Win32 
     Service Control API.
   o The capability to view external Unix log files via the
-     Microsoft Event Viewer.
+    Microsoft Event Viewer.
   o New libmsrpc share library for application developers.
   o Rewrite of CIFS oplock implementation.
 
