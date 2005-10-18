@@ -923,6 +923,15 @@ sub ParseMemCtxPullEnd($$)
 	pidl "NDR_PULL_SET_MEM_CTX(ndr, $mem_r_ctx, $mem_r_flags);";
 }
 
+sub CheckStringTerminator($$$$)
+{
+	my ($ndr,$e,$l,$length) = @_;
+	my $nl = GetNextLevel($e, $l);
+
+	# Make sure last element is zero!
+	pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $length, sizeof($nl->{DATA_TYPE}_t)));";
+}
+
 sub ParseElementPullLevel
 {
 	my($e,$l,$ndr,$var_name,$env,$primitives,$deferred) = @_;
@@ -945,14 +954,16 @@ sub ParseElementPullLevel
 			my $nl = GetNextLevel($e, $l);
 
 			if (is_charset_array($e,$l)) {
+				if ($l->{IS_ZERO_TERMINATED}) {
+					CheckStringTerminator($ndr, $e, $l, $length);
+				}
 				pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				return;
 			} elsif (has_fast_array($e, $l)) {
-				pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
 				if ($l->{IS_ZERO_TERMINATED}) {
-					# Make sure last element is zero!
-					pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, $length, sizeof(*$var_name)));";
+					CheckStringTerminator($ndr,$e,$l,$length);
 				}
+				pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
 				return;
 			}
 		} elsif ($l->{TYPE} eq "POINTER") {
@@ -1002,16 +1013,17 @@ sub ParseElementPullLevel
 		ParseMemCtxPullStart($e,$l, $array_name);
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
-			pidl "for ($counter = 0; $counter < $length; $counter++) {";
-			indent;
-			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
-			deindent;
-			pidl "}";
+			my $nl = GetNextLevel($e,$l);
 
 			if ($l->{IS_ZERO_TERMINATED}) {
-				# Make sure last element is zero!
-				pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, $length, sizeof(*$var_name)));";
+				CheckStringTerminator($ndr,$e,$l,$length);
 			}
+
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementPullLevel($e, $nl, $ndr, $var_name, $env, 1, 0);
+			deindent;
+			pidl "}";
 		}
 
 		if ($deferred and ContainsDeferred($e, $l)) {
