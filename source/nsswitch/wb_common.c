@@ -234,7 +234,8 @@ static int winbind_named_pipe_sock(const char *dir)
 		struct timeval tv;
 		fd_set w_fds;
 		int ret;
-		int connect_errno = 0, errnosize;
+		int connect_errno = 0;
+		socklen_t errnosize;
 
 		if (wait_time >= CONNECT_TIMEOUT)
 			goto error_out;

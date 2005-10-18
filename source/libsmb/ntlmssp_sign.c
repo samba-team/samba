@@ -43,7 +43,7 @@ static void calc_ntlmv2_key(unsigned char subkey[16],
 	struct MD5Context ctx3;
 	MD5Init(&ctx3);
 	MD5Update(&ctx3, session_key.data, session_key.length);
-	MD5Update(&ctx3, constant, strlen(constant)+1);
+	MD5Update(&ctx3, (const unsigned char *)constant, strlen(constant)+1);
 	MD5Final(subkey, &ctx3);
 }
 
@@ -196,10 +196,10 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 		if (local_sig.length != sig->length ||
 				memcmp(local_sig.data, sig->data, sig->length) != 0) {
 			DEBUG(5, ("BAD SIG NTLM2: wanted signature of\n"));
-			dump_data(5, local_sig.data, local_sig.length);
+			dump_data(5, (const char *)local_sig.data, local_sig.length);
 
 			DEBUG(5, ("BAD SIG: got signature of\n"));
-			dump_data(5, sig->data, sig->length);
+			dump_data(5, (const char *)sig->data, sig->length);
 
 			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature!\n"));
 			data_blob_free(&local_sig);
@@ -209,10 +209,10 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
 		if (local_sig.length != sig->length ||
 				memcmp(local_sig.data + 8, sig->data + 8, sig->length - 8) != 0) {
 			DEBUG(5, ("BAD SIG NTLM1: wanted signature of\n"));
-			dump_data(5, local_sig.data, local_sig.length);
+			dump_data(5, (const char *)local_sig.data, local_sig.length);
 
 			DEBUG(5, ("BAD SIG: got signature of\n"));
-			dump_data(5, sig->data, sig->length);
+			dump_data(5, (const char *)sig->data, sig->length);
 
 			DEBUG(0, ("NTLMSSP NTLM1 packet check failed due to invalid signature!\n"));
 			data_blob_free(&local_sig);

@@ -96,7 +96,7 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 
 	for ( i=0; i<nk->num_values; i++ ) {
 		regval_ctr_addvalue( values, nk->values[i].valuename, nk->values[i].type,
-			nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
+			(const char *)nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */

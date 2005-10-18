@@ -373,7 +373,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		
 #ifdef DEBUG_PASSWORD
 		DEBUG(10,("Unencrypted password (len %d):\n",(int)plaintext_password.length));
-		dump_data(100, plaintext_password.data, plaintext_password.length);
+		dump_data(100, (const char *)plaintext_password.data, plaintext_password.length);
 #endif
 
 		SMBencrypt( (const char *)plaintext_password.data, (const uchar*)chal, local_lm_response);
@@ -693,7 +693,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
  ******************************************************************************/
 
 static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
-                                int *n_groups, DOM_SID **groups, gid_t **unix_groups)
+                                size_t *n_groups, DOM_SID **groups, gid_t **unix_groups)
 {
 	int		n_unix_groups;
 	int		i;
@@ -787,7 +787,7 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 	NTSTATUS nt_status;
 	const DOM_SID *user_sid = pdb_get_user_sid(sampass);
 	const DOM_SID *group_sid = pdb_get_group_sid(sampass);
-	int       n_groupSIDs = 0;
+	size_t       n_groupSIDs = 0;
 	DOM_SID  *groupSIDs   = NULL;
 	gid_t    *unix_groups = NULL;
 	NT_USER_TOKEN *token;
@@ -1197,7 +1197,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	uid_t uid;
 	gid_t gid;
 
-	int n_lgroupSIDs;
+	size_t n_lgroupSIDs;
 	DOM_SID *lgroupSIDs   = NULL;
 
 	gid_t *unix_groups = NULL;

@@ -476,7 +476,7 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 
 	SAFE_FREE(password);
 
-	lm_response.length = strlen(lm_response.data);
+	lm_response.length = strlen((const char *)lm_response.data);
 
 	switch (break_which) {
 	case BREAK_NONE:

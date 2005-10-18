@@ -2130,7 +2130,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		DATA_BLOB header;
 
 		_smb_setlen(outbuf,nread);
-		header.data = outbuf;
+		header.data = (uint8 *)outbuf;
 		header.length = 4;
 		header.free = NULL;
 
@@ -2509,7 +2509,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
 		SCVAL(outbuf,smb_vwv0,0xFF);
 		set_message(outbuf,12,smb_maxcnt,False);
-		header.data = outbuf;
+		header.data = (uint8 *)outbuf;
 		header.length = data - outbuf;
 		header.free = NULL;
 

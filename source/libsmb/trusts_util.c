@@ -31,8 +31,8 @@
 **********************************************************/
 
 static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-					 unsigned char orig_trust_passwd_hash[16],
-					 unsigned char new_trust_passwd_hash[16],
+					 const unsigned char orig_trust_passwd_hash[16],
+					 const unsigned char new_trust_passwd_hash[16],
 					 uint32 sec_channel_type)
 {
 	NTSTATUS result;

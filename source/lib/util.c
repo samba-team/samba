@@ -282,25 +282,25 @@ const char *tmpdir(void)
 ****************************************************************************/
 
 void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
-			     gid_t **gids, int *num)
+			     gid_t **gids, size_t *num_gids)
 {
 	int i;
 
-	for (i=0; i<*num; i++) {
+	for (i=0; i<*num_gids; i++) {
 		if ((*gids)[i] == gid)
 			return;
 	}
 
 	if (mem_ctx != NULL)
-		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num+1);
+		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
 	else
-		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num+1);
+		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num_gids+1);
 
 	if (*gids == NULL)
 		return;
 
-	(*gids)[*num] = gid;
-	*num += 1;
+	(*gids)[*num_gids] = gid;
+	*num_gids += 1;
 }
 
 /****************************************************************************
@@ -2093,7 +2093,7 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 	DEBUG(11, ("%s", msg));
 	if (data != NULL && len > 0)
 	{
-		dump_data(11, data, len);
+		dump_data(11, (const char *)data, len);
 	}
 #endif
 }

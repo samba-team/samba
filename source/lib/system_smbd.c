@@ -27,15 +27,58 @@
 #include "includes.h"
 
 #ifndef HAVE_GETGROUPLIST
+
+static int int_compare( int *a, int *b )
+{
+	if ( *a == *b )
+		return 0;
+	else if ( *a < *b )
+		return -1;
+	else
+		return 1;
+}
+
+void remove_duplicate_gids( int *num_groups, gid_t *groups )
+{
+	int i;
+	int count = *num_groups;
+
+	if ( *num_groups <= 0 || !groups )
+		return;
+
+	DEBUG(8,("remove_duplicate_gids: Enter %d gids\n", *num_groups));
+
+	qsort( groups, *num_groups, sizeof(gid_t), QSORT_CAST int_compare );
+
+	for ( i=1; i<count; ) {
+		if ( groups[i-1] == groups[i] ) {
+			memmove( &groups[i-1], &groups[i], (count - i + 1)*sizeof(gid_t) );
+
+			/* decrement the total number of groups and do not increment
+			   the loop counter */
+			count--;
+			continue;
+		}
+		i++;
+	}
+
+	*num_groups = count;
+
+	DEBUG(8,("remove_duplicate_gids: Exit %d gids\n", *num_groups));
+
+	return;
+}
+
 /*
   This is a *much* faster way of getting the list of groups for a user
-  without changing the current supplemenrary group list. The old
+  without changing the current supplementary group list. The old
   method used getgrent() which could take 20 minutes on a really big
   network with hundeds of thousands of groups and users. The new method
   takes a couple of seconds.
 
   NOTE!! this function only works if it is called as root!
   */
+
 static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
 	gid_t *gids_saved;
@@ -52,7 +95,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 		/* this shouldn't happen */
 		return -1;
 	}
-	
+
 	gids_saved = SMB_MALLOC_ARRAY(gid_t, ngrp_saved+1);
 	if (!gids_saved) {
 		errno = ENOMEM;
@@ -79,18 +122,26 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 	setgid(gid);
 
 	num_gids = getgroups(0, NULL);
+	if (num_gids == -1) {
+		SAFE_FREE(gids_saved);
+		/* very strange! */
+		return -1;
+	}
+
 	if (num_gids + 1 > *grpcnt) {
 		*grpcnt = num_gids + 1;
 		ret = -1;
 	} else {
 		ret = getgroups(*grpcnt - 1, &groups[1]);
-		if (ret >= 0) {
-			groups[0] = gid;
-			*grpcnt = ret + 1;
+		if (ret < 0) {
+			SAFE_FREE(gids_saved);
+			/* very strange! */
+			return -1;
 		}
-		
-		/* remove any duplicates gids in the list */
+		groups[0] = gid;
+		*grpcnt = ret + 1;
 
+		/* remove any duplicates gids in the list */
 		remove_duplicate_gids( grpcnt, groups );
 	}
 
@@ -103,7 +154,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 		free(gids_saved);
 		return -1;
 	}
-	
+
 	free(gids_saved);
 	return ret;
 }
@@ -140,9 +191,10 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 }
 
 BOOL getgroups_user(const char *user, gid_t primary_gid,
-		    gid_t **ret_groups, int *ngroups)
+		    gid_t **ret_groups, size_t *p_ngroups)
 {
-	int ngrp, max_grp;
+	size_t ngrp;
+	int max_grp;
 	gid_t *temp_groups;
 	gid_t *groups;
 	int i;
@@ -154,9 +206,8 @@ BOOL getgroups_user(const char *user, gid_t primary_gid,
 	}
 
 	if (sys_getgrouplist(user, primary_gid, temp_groups, &max_grp) == -1) {
-		
 		gid_t *groups_tmp;
-		
+
 		groups_tmp = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
 		
 		if (!groups_tmp) {
@@ -183,7 +234,7 @@ BOOL getgroups_user(const char *user, gid_t primary_gid,
 	for (i=0; i<max_grp; i++)
 		add_gid_to_array_unique(NULL, temp_groups[i], &groups, &ngrp);
 
-	*ngroups = ngrp;
+	*p_ngroups = ngrp;
 	*ret_groups = groups;
 	SAFE_FREE(temp_groups);
 	return True;
@@ -192,34 +243,34 @@ BOOL getgroups_user(const char *user, gid_t primary_gid,
 NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 					    const char *username,
 					    gid_t primary_gid,
-					    DOM_SID **sids,
-					    gid_t **gids,
-					    int *num_groups)
+					    DOM_SID **pp_sids,
+					    gid_t **pp_gids,
+					    size_t *p_num_groups)
 {
-	int i;
+	size_t i;
 
-	if (!getgroups_user(username, primary_gid, gids, num_groups)) {
+	if (!getgroups_user(username, primary_gid, pp_gids, p_num_groups)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (*num_groups == 0) {
+	if (*p_num_groups == 0) {
 		smb_panic("primary group missing");
 	}
 
-	*sids = SMB_MALLOC_ARRAY(DOM_SID, *num_groups);
+	*pp_sids = SMB_MALLOC_ARRAY(DOM_SID, *p_num_groups);
 
-	if (*sids == NULL) {
-		SAFE_FREE(gids);
+	if (*pp_sids == NULL) {
+		SAFE_FREE(pp_gids);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<*num_groups; i++) {
-		if (!NT_STATUS_IS_OK(gid_to_sid(&(*sids)[i], (*gids)[i]))) {
+	for (i=0; i<*p_num_groups; i++) {
+		if (!NT_STATUS_IS_OK(gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]))) {
 			DEBUG(1, ("get_user_groups: failed to convert "
 				  "gid %ld to a sid!\n", 
-				  (long int)(*gids)[i+1]));
-			SAFE_FREE(*sids);
-			SAFE_FREE(*gids);
+				  (long int)(*pp_gids)[i+1]));
+			SAFE_FREE(*pp_sids);
+			SAFE_FREE(*pp_gids);
 			return NT_STATUS_NO_SUCH_USER;
 		}
 	}

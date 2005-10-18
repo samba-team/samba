@@ -44,9 +44,9 @@ BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBencrypt: lm#, challenge, response\n"));
-	dump_data(100, (char *)p21, 16);
+	dump_data(100, (const char *)p21, 16);
 	dump_data(100, (const char *)c8, 8);
-	dump_data(100, (char *)p24, 24);
+	dump_data(100, (const char *)p24, 24);
 #endif
 
 	return ret;
@@ -198,8 +198,8 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
 	dump_data(100, (const char *)user, user_byte_len);
 	dump_data(100, (const char *)domain, domain_byte_len);
-	dump_data(100, owf, 16);
-	dump_data(100, kr_buf, 16);
+	dump_data(100, (const char *)owf, 16);
+	dump_data(100, (const char *)kr_buf, 16);
 #endif
 
 	SAFE_FREE(user);
@@ -271,9 +271,9 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
-	dump_data(100, srv_chal->data, srv_chal->length);
-	dump_data(100, cli_chal->data, cli_chal->length);
-	dump_data(100, resp_buf, 16);
+	dump_data(100, (const char *)srv_chal->data, srv_chal->length);
+	dump_data(100, (const char *)cli_chal->data, cli_chal->length);
+	dump_data(100, (const char *)resp_buf, 16);
 #endif
 }
 
@@ -290,7 +290,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
-	dump_data(100, sess_key, 16);
+	dump_data(100, (const char *)sess_key, 16);
 #endif
 }
 
@@ -304,7 +304,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv1:\n"));
-	dump_data(100, sess_key, 16);
+	dump_data(100, (const char *)sess_key, 16);
 #endif
 }
 
@@ -324,7 +324,7 @@ void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_lmv1_jerry:\n"));
-	dump_data(100, sess_key, 16);
+	dump_data(100, (const char *)sess_key, 16);
 #endif
 }
 
@@ -506,7 +506,7 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 	byte_len = IVAL(in_buffer, 512);
 
 #ifdef DEBUG_PASSWORD
-	dump_data(100, in_buffer, 516);
+	dump_data(100, (const char *)in_buffer, 516);
 #endif
 
 	/* Password cannot be longer than the size of the password buffer */
@@ -522,7 +522,7 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (char *)new_pwrd, *new_pw_len);
+	dump_data(100, (const char *)new_pwrd, *new_pw_len);
 	DEBUG(100,("multibyte len:%d\n", *new_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif

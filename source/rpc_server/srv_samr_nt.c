@@ -1688,9 +1688,9 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DOM_SID  sid;
 	DOM_SID *sids;
 	DOM_GID *gids = NULL;
-	int num_groups = 0;
+	size_t num_groups = 0;
 	gid_t *unix_gids;
-	int i, num_gids;
+	size_t i, num_gids;
 	uint32 acc_granted;
 	BOOL ret;
 	NTSTATUS result;
@@ -2988,10 +2988,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	int num_alias_rids;
+	size_t num_alias_rids;
 	uint32 *alias_rids;
 	struct samr_info *info = NULL;
-	int i;
+	size_t i;
 		
 	NTSTATUS ntstatus1;
 	NTSTATUS ntstatus2;
@@ -3052,9 +3052,8 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 
 NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
 {
-	int i;
-
-	int num_sids = 0;
+	size_t i;
+	size_t num_sids = 0;
 	DOM_SID2 *sid;
 	DOM_SID *sids=NULL;
 
@@ -3165,7 +3164,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 {
 	DOM_SID group_sid;
 	fstring group_sid_str;
-	int i, num_members;
+	size_t i, num_members;
 
 	uint32 *rid=NULL;
 	uint32 *attr=NULL;

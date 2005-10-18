@@ -872,10 +872,10 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 				counter_data->ByteLength = counter->CounterOffset + counter->CounterSize + sizeof(counter_data->ByteLength);
 				temp = TALLOC_REALLOC_ARRAY(ps->mem_ctx, 
 							    temp, 
-							    uint8, 
+							    char, 
 							    counter_data->ByteLength- sizeof(counter_data->ByteLength));
 				memset(temp, 0, counter_data->ByteLength - sizeof(counter_data->ByteLength));
-				src_addr = counter_data->data;
+				src_addr = (char *)counter_data->data;
 				for(i = 0; i < object[obj].NumCounters; i++)
 				{
 					counter = &(object[obj].counters[i]);

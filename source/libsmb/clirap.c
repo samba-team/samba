@@ -294,7 +294,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
                              const char *old_password)
 {
   pstring param;
-  char data[532];
+  unsigned char data[532];
   char *p = param;
   unsigned char old_pw_hash[16];
   unsigned char new_pw_hash[16];
@@ -332,7 +332,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   
 #ifdef DEBUG_PASSWORD
   DEBUG(100,("make_oem_passwd_hash\n"));
-  dump_data(100, data, 516);
+  dump_data(100, (char *)data, 516);
 #endif
   SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
@@ -350,7 +350,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
-                    data,data_len,0                       /* data, length, max */
+                    (char *)data,data_len,0                       /* data, length, max */
                    ) == False) {
     DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
               user ));

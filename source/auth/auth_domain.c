@@ -119,7 +119,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		/* We need to set up a creds chain on an unauthenticated netlogon pipe. */
 		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 		uint32 sec_chan_type = 0;
-		char machine_pwd[16];
+		unsigned char machine_pwd[16];
 
 		if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
 			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
