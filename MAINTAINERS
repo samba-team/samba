@@ -21,10 +21,19 @@ Feature/Function	Developer
 ----------------	---------
 
 documentation 		John Terpstra <jht@samba.org>
+
 libmsrpc		Chris Nichols <skel@samba.org>
+
 libsmbclient		Derrell Lipman <derrell@samba.org>
-pdb_mysql		Jelmer Vernooij <jelmer@samba.org>
+
+pdb_*sql		<samba-pdbsql@samba.org>
+			Peter Rindfuss: pdb_mysql
+			Darrell McGuire: pdb_mysql
+			Ulrich Meis: pdb_pgsql 
+			Filip Jirsák: pdb_pgsql
+
 printing		Gerald (Jerry) Carter <jerry@samba.org>
+
 samba-vscan		Rainer Link <rainer@openantivirus.org>
 
 
