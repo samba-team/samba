@@ -366,11 +366,15 @@ fi
 /%{_lib}/libnss_wins.so*
 /%{_lib}/libnss_winbind.so*
 /%{_lib}/security/pam_winbind.so
+%{_includedir}/libsmbclient.h
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so
+%{_includedir}/libmsrpc.h
+%{_libdir}/libmsrpc.a
+%{_libdir}/libmsrpc.so
 %{_libdir}/samba/charset/CP*.so
 %{_libdir}/samba/idmap/idmap*.so
-%{_includedir}/libsmbclient.h
+%{_libdir}/samba/auth/script.so
 %{_bindir}/testparm
 %{_bindir}/smbpasswd
 # %{_bindir}/make_printerdef
