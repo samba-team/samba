@@ -1729,20 +1729,29 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 				NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
-	BOOL ret = True;
+	BOOL ret;
 
 	switch (level) {
 		case 2:
-			/* printer->info_2  is already a valid printer */
+			/* allocate memory if needed.  Messy because 
+			   convert_printer_info is used to update an existing 
+			   printer or build a new one */
+
+			if ( !printer->info_2 ) {
+				printer->info_2 = TALLOC_ZERO_P( printer, NT_PRINTER_INFO_LEVEL_2 );
+				if ( !printer->info_2 ) {
+					DEBUG(0,("convert_printer_info: talloc() failed!\n"));
+					return False;
+				}
+			}
+
 			ret = uni_2_asc_printer_info_2(uni->info_2, printer->info_2);
 			printer->info_2->setuptime = time(NULL);
 
-			break;
-		default:
-			break;
+			return ret;
 	}
 
-	return ret;
+	return False;
 }
 
 static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *uni,
