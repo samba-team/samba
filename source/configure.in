@@ -461,7 +461,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
