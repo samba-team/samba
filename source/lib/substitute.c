@@ -280,8 +280,8 @@ static char *automount_path(const char *user_name)
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
 	if (lp_nis_home_map()) {
-		char *home_path_start;
-		char *automount_value = automount_lookup(user_name);
+		const char *home_path_start;
+		const char *automount_value = automount_lookup(user_name);
 
 		if(strlen(automount_value) > 0) {
 			home_path_start = strchr_m(automount_value,':');
