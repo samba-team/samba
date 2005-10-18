@@ -1433,12 +1433,15 @@ installmsg: installdirs
 installswat: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installclientlib: installdirs libsmbclient
+installclientlib: installdirs libsmbclient libmsrpc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(LIBDIR)
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
+	-$(INSTALLCLIENTCMD_SH) bin/libmsrpc.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLCLIENTCMD_A) bin/libmsrpc.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
 
 # Python extensions
 
