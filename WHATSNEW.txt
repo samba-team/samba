@@ -1,6 +1,7 @@
+
                    ==================================
                    Release Notes for Samba 3.0.21pre1
-                              Oct 17, 2005
+                              Oct 18, 2005
                    ==================================
 
 This is a preview release of the Samba 3.0.21 code base and
@@ -13,16 +14,32 @@ upgrade Samba 3.0 release.
 
 Common bugs fixed in 3.0.21pre1 include:
 
-  o 
+  o Missing groups in a user's token when logging in via kerberos
+  o Incompatibilities with newer MS Windows hotfixes and 
+    embedded OS platforms
 
-Additional features introduced in Samba 3.0.21pre1 include:
+New features introduced in Samba 3.0.21pre1 include:
 
-  o 
+  o Complete NTLMv2 support by consolidating authentication
+    mechanism used at the CIFS and RPC layers.
+  o The capability to manage Unix services using the Win32 
+    Service Control API.
+  o The capability to view external Unix log files via the
+     Microsoft Event Viewer.
+  o New libmsrpc share library for application developers.
+  o Rewrite of CIFS oplock implementation.
 
 
 ######################################################################
 Changes
 #######
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    map readonly			New
 
 
 Changes since 3.0.20[a-b]
@@ -32,53 +49,108 @@ commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
-o   Andrew Bartlett <abartlet@samba.org>
-o   Timur Bakeyev <timur@com.bat.ru>
-o   Ed Boraas <ed.boraas@concordia.ab.ca>.
+    * BUG 1828: Fixed SPNEGO issues with PocketPC clients.
+    * Added 'map readonly' parameter.
+    * BUG 3166: Fix crash in libsmbclient if the $HOME environment is
+      not defined.
+    * Maintain schannel client session keys in volatile 
+      $(privatedir)/schannel_store.tdb.
+    * BUG 2769: Ensure we mangle filenames ending in a space
+    * Catch corner case of renaming a symlinked directory into 
+      itself
+    * Ensure that smb.conf requests for hidden files are honored, 
+      even when DOS attributes are stored in EA's
+    * Add new auth method "auth_script" for calling an external 
+      program
+    * BUG 2152: Fix for mangled filenames when the client does 
+      support long filenames
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
-o   <core@road-star.jp>
+    * Eventlog and ServiceControl support.
+    * BUG 1051: store the directory path so we can send the full 
+      name in the unlink call from smbclient.
+    * Use reference count strategy for keeping the registry tdb 
+      open.
+    * Convert internal registry objects to new hierarchical talloc
+    * Allow the root user a free pass for access checks in the
+      registry and service control checks.
+    * Sanity checks in the privilege code to prevent empty SID 
+      entries
+    * Add basic infrastructure for 'make test' when the socket 
+      wrapper library is configured at compile time
+    * Convert profiles utility to use the current regfio interface 
+      for reading and writing user profiles
+    * Remove netsamlogon_cache interface
+    * Ensure that print jobs are removed even when the cancel 
+      command is received before the print cache has been updated
+
+
 o   Guenther Deschner <gd@samba.org>
-o   Renaud Duhaut <rd@duhaut.com>
-o   Steven Edwards <steven_ed4153@yahoo.com>.
-o   Rodrigo Fernandez-Vizarra <Rodrigo.Fernandez-Vizarra@Sun.COM>
-o   Steve French <sfrench@us.ibm.com>
+    * Fixed compile problems and warnings with newer OpenLDAP 
+      and OpenSSL libs
+    * Fix bug when enumerating trusted domains via 'wbinfo -m'
+    * Parse the MS Kerberos PAC to obtain the user group 
+      membership during logon.
+    * Add support for SeRestorePrivilege to allow a process to 
+      change the ownership of a file to any arbitrary account
+    * Fix password history storage when using Novell eDirectory for 
+      ldapsam storage
+    * Backport Kerberos PAC parsing from Samba 4 branch in order to
+      correctly create the NT User Token when logging into a Samba 
+      member server
+
+
 o   Deryck Hodge <deryck@samba.org>
-o   Olaf Imig <Olaf.Imig@bifab.de>
-o   Björn Jacke <bj@sernet.de>
-o   Kevin Jamieson <bugzilla@kevinjamieson.com>
-o   John Janosik <jpjanosi@us.ibm.com>
-o   William Jojo <jojowil@hvcc.edu>
-o   Guenter Kukkukk <guenter.kukkukk@kukkukk.com>
-o   Tom Lackemann <cessnatomny@yahoo.com>
+    * Allow control of syslog facility and level in audit vfs modules.
+
+
+o   S Murthy Kambhampaty <smk_va@yahoo.com>
+    * Patches for Fedora RPM specfile and init script
+
+
 o   Volker Lendecke <vl@samba.org>
-o   Herb Lewis <herb@samba.org>
-o   Derrell Lipman <derrell@samba.org>
+    * New oplock implementation.
+    * Add assert() call if winbindd cannot locate the domain SID in 
+      secrets.tdb on startup
+
+
 o   Jason Mader <jason@ncac.gwu.edu>
-o   Marcel <samba.10.maazl@spamgourmet.com>
+    * Removed compiler various warnings.
+
+
 o   Jim McDonough <jmcd@us.ibm.com>
-o   Luke Mewburn <lukem@NetBSD.org>
-o   Kalim Moghul <kalim@samba.org>
-o   Lars Müller <lmuelle@samba.org>
-o   Marcel Muller <mueller@maazl.de>
-o   Ricky Nance <ricky.nance@gmail.com>
+    * BUG 2961 (partial): Add rename support for user accounts to tdbsam
+
+
+o   Stefan Metzmacher <metze@samba.org>    
+    * Fix setting of quotas on linux kernel with the struct 
+      if_dqblk interface
+    * Enable sysquota interfact on Linux by default
+
+
+o   Brian Moran <bmoran@centeris.com>
+    * Eventlog and ServiceControl support.
+    * Added eventlogadm tool for writing Eventlog records.
+
+
+o   Chris Nicholls <skel@samba.org>
+    * New libmsrpc library (Google SoC Project).
+
+
 o   James Peach <jpeach@sgi.com>
-o   Ed Plese <ed@edplese.com>
+    * Fix parsing error for smb ports parameter.
+
+
 o   Marcin Porwit <mporwit@centeris.com>
-o   Tim Potter <tpot@samba.org>
-o   Denis Sbragion <d.sbragion@infotecna.it>
-o   Fernando Schapachnik <fernando@mecon.gov.ar>
-o   Richard Sharpe <rsharpe@samba.org>
-o   Joerg Sonnenberger <joerg@leaf.dragonflybsd.org>
-o   Simo Sorce <idra@samba.org>
-o   Smitty <smitty@plainjoe.org>
-o   John Terpstra <jht@samba.org>
-o   Andrew Tridgell <tridge@samba.org>
-o   Brett Trotter <blt@iastate.edu>
-o   Mark Weaver <mark-clist@npsl.co.uk>
-o   Jelmer Vernooij <jelmer@samba.org>
-o   Qiao Yang <qyang@stbernard.com>
+    * Eventlog and ServiceControl support.
 
 
+o   Joel Smith <joel.j.smith@novell.com>
+    * Add iPrint printing backend support.
+
+o   Toomas Soome <Toomas.Soome@mls.ee>
+    * Implement host lookups in nss_winbind.so.1 on Solaris
 
 
 Release Notes for older release follow:
