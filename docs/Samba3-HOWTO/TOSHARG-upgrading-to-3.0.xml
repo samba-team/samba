@@ -289,6 +289,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>kernel change notify</para></listitem>
 	<listitem><para>mangle prefix</para></listitem>
 	<listitem><para>map acl inherit</para></listitem>
+	<listitem><para>map read only</para></listitem>
 	<listitem><para>max stat cache size</para></listitem>
 	<listitem><para>msdfs proxy</para></listitem>
 	<listitem><para>set quota command</para></listitem>
