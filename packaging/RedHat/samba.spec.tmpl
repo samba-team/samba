@@ -114,7 +114,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/samba
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{help,include,using_samba}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba
@@ -445,10 +445,8 @@ fi
 %{prefix}/lib/libsmbclient.a
 %{prefix}/lib/libsmbclient.so
 %{prefix}/share/swat/help/*
-%{prefix}/share/swat/images/*
 %{prefix}/share/swat/include/*.html
 %{prefix}/share/swat/lang/*/help/*
-%{prefix}/share/swat/lang/*/images/*
 %{prefix}/share/swat/using_samba/*
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
