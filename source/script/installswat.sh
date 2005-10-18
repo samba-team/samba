@@ -87,7 +87,7 @@ done
 
 if [ -d $SRCDIR../docs/htmldocs/ ]; then
 
-    for dir in htmldocs/ htmldocs/Samba-HOWTO-Collection htmldocs/Samba-Guide htmldocs/Samba-Developers-Guide
+    for dir in htmldocs/manpages htmldocs/Samba3-ByExample  htmldocs/Samba3-Developers-Guide  htmldocs/Samba3-HOWTO
     do 
     
       if [ ! -d $SRCDIR../docs/$dir ]; then
