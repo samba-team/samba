@@ -529,6 +529,15 @@ static BOOL test_wrepl_is_applied(struct test_wrepl_conflict_conn *ctx,
 		CHECK_VALUE_STRING(names[0].name.scope, name->name->scope);
 		CHECK_VALUE(flags, name->flags);
 		CHECK_VALUE_UINT64(names[0].version_id, name->id);
+
+		if (flags & 2) {
+			CHECK_VALUE(names[0].num_addresses,
+				    name->addresses.addresses.num_ips);
+		} else {
+			CHECK_VALUE(names[0].num_addresses, 1);
+			CHECK_VALUE_STRING(names[0].addresses[0].address,
+					   name->addresses.ip);
+		}
 	}
 done:
 	talloc_free(pull_names.out.names);
