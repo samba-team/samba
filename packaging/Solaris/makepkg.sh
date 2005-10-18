@@ -9,7 +9,7 @@
 INSTALL_BASE=/opt/samba
 
 SBINPROGS="smbd nmbd winbindd swat"
-BINPROGS="findsmb nmblookup pdbedit rpcclient smbclient smbcquotas smbspool smbtar tdbbackup testparm wbinfo net ntlm_auth profiles smbcacls smbcontrol smbpasswd smbstatus smbtree tdbdump"
+BINPROGS="findsmb nmblookup eventlogadm pdbedit rpcclient smbclient smbcquotas smbspool smbtar tdbbackup testparm wbinfo net ntlm_auth profiles smbcacls smbcontrol smbpasswd smbstatus smbtree tdbdump"
 MSGFILES="de.msg en.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
 VFSLIBS="audit.so default_quota.so extd_audit.so full_audit.so readonly.so shadow_copy.so cap.so expand_msdfs.so fake_perms.so netatalk.so recycle.so"
 DATFILES="lowcase.dat upcase.dat valid.dat"
@@ -46,7 +46,13 @@ add_dynamic_entries()
 	
 	echo "#\n# libsmbclient\n#"
 	echo f none lib/libsmbclient.so 0755 root other
+	echo f none lib/libsmbclient.a 0755 root other
 	echo f none include/libsmbclient.h 0644 root other
+
+	echo "#\n# libmsrpc\n#"
+	echo f none lib/libmsrpc.so 0755 root other
+	echo f none lib/libmsrpc.a 0755 root other
+	echo f none include/libmsrpc.h 0644 root other
 
 	if [ -f lib/smbwrapper.so -a -f bin/smbsh ]; then
 		echo "#\n# smbwrapper\n#"
