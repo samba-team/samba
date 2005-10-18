@@ -63,9 +63,9 @@ A credential cache holds the tickets for a user. A given user can have
 several credential caches, one for each realm where the user have the
 initial tickets (the first krbtgt).
 
-The credential cache data can be store several diffrent way, each for
-diffrent proposes. File credential (FILE) caches and processes based
-(KCM) caches are for permanent storage, while memory caches (MEMORY)
+The credential cache data can be stored internally in diffrent way, each of them for
+diffrent proposes.  File credential (FILE) caches and processes based
+(KCM) caches are for permanent storage. While memory caches (MEMORY)
 are local caches to the local process.
 
 Caches are opened with @manpage{krb5_cc_resolve,3} or created with
