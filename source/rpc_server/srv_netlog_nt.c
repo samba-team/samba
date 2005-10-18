@@ -337,7 +337,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	creds_server_init(p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
-			p->dc->mach_pw,
+			(const char *)p->dc->mach_pw,
 			&srv_chal_out);	
 
 	/* Check client credentials are valid. */
@@ -414,7 +414,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	creds_server_init(p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
-			p->dc->mach_pw,
+			(const char *)p->dc->mach_pw,
 			&srv_chal_out);	
 
 	/* Check client credentials are valid. */

@@ -104,7 +104,7 @@ PRIVS privs[] = {
 };
 
 typedef struct {
-	int count;
+	size_t count;
 	DOM_SID *list;
 } SID_LIST;
 

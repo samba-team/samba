@@ -239,7 +239,7 @@ enum winbindd_result winbindd_dual_lookupsids(struct winbindd_domain *domain,
 {
 	NTSTATUS status;
 	DOM_SID *sids = NULL;
-	int i, num_sids = 0;
+	size_t i, num_sids = 0;
 
 	char **domains, **names;
 	enum SID_NAME_USE *types;
@@ -331,7 +331,7 @@ void winbindd_lookupsids(struct winbindd_cli_state *state)
 {
 	DOM_SID *sids = NULL;
 	DOM_SID **sidptrs;
-	int i, num_sids = 0;
+	size_t i, num_sids = 0;
 
 	DEBUG(3, ("[%5lu]: lookupsids %s\n", (unsigned long)state->pid, 
 		  state->request.data.sid));

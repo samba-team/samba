@@ -35,7 +35,7 @@ struct groupmembers_state {
 	enum SID_NAME_USE group_type;
 
 	ssize_t member_array_size; /* For add_to_large_array */
-	int num_finished, num_members;
+	uint32 num_finished, num_members;
 	struct sid_ctr *members;
 	struct sid_ctr **lookup_ctrs;
 

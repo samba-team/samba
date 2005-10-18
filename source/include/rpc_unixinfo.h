@@ -81,7 +81,7 @@ struct unixinfo_getpwuid {
 };
 
 typedef struct unixinfo_r_getpwuid {
-	int count;
+	uint32 count;
 	struct unixinfo_getpwuid *info;
 	NTSTATUS status;
 } UNIXINFO_R_GETPWUID;

@@ -400,8 +400,8 @@ static BOOL group_map_remove(const DOM_SID *sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
-			int *num_entries, BOOL unix_only)
+static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+			size_t *p_num_entries, BOOL unix_only)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -409,15 +409,15 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	GROUP_MAP map;
 	GROUP_MAP *mapt;
 	int ret;
-	int entries=0;
+	size_t entries=0;
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
-	*num_entries=0;
-	*rmap=NULL;
+	*p_num_entries=0;
+	*pp_rmap=NULL;
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
@@ -458,14 +458,14 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 		decode_sid_name_use(group_type, map.sid_name_use);
 		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n", map.nt_name ,group_type));
 
-		mapt= SMB_REALLOC_ARRAY((*rmap), GROUP_MAP, entries+1);
+		mapt= SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
 			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
-			SAFE_FREE(*rmap);
+			SAFE_FREE(*pp_rmap);
 			return False;
 		}
 		else
-			(*rmap) = mapt;
+			(*pp_rmap) = mapt;
 
 		mapt[entries].gid = map.gid;
 		sid_copy( &mapt[entries].sid, &map.sid);
@@ -477,7 +477,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 	}
 
-	*num_entries=entries;
+	*p_num_entries=entries;
 
 	return True;
 }
@@ -486,7 +486,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
  * store a list of aliases a SID is member of hanging off MEMBEROF/SID. */
 
 static NTSTATUS one_alias_membership(const DOM_SID *member,
-				     DOM_SID **sids, int *num)
+				     DOM_SID **sids, size_t *num)
 {
 	fstring key, string_sid;
 	TDB_DATA kbuf, dbuf;
@@ -528,10 +528,10 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS alias_memberships(const DOM_SID *members, int num_members,
-				  DOM_SID **sids, int *num)
+static NTSTATUS alias_memberships(const DOM_SID *members, size_t num_members,
+				  DOM_SID **sids, size_t *num)
 {
-	int i;
+	size_t i;
 
 	*num = 0;
 	*sids = NULL;
@@ -547,7 +547,7 @@ static NTSTATUS alias_memberships(const DOM_SID *members, int num_members,
 static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	DOM_SID *sids;
-	int i, num;
+	size_t i, num;
 
 	/* This feels the wrong way round, but the on-disk data structure
 	 * dictates it this way. */
@@ -622,7 +622,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 struct aliasmem_closure {
 	const DOM_SID *alias;
 	DOM_SID **sids;
-	int *num;
+	size_t *num;
 };
 
 static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
@@ -671,7 +671,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 {
 	GROUP_MAP map;
 	struct aliasmem_closure closure;
@@ -703,7 +703,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	NTSTATUS result;
 	DOM_SID *sids;
-	int i, num;
+	size_t i, num;
 	BOOL found = False;
 	char *member_string;
 	TDB_DATA kbuf, dbuf;
@@ -1136,10 +1136,10 @@ NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
+					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only)
 {
-	return enum_group_mapping(sid_name_use, rmap, num_entries, unix_only) ?
+	return enum_group_mapping(sid_name_use, pp_rmap, p_num_entries, unix_only) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1247,22 +1247,22 @@ NTSTATUS pdb_default_del_aliasmem(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
-				   const DOM_SID *alias, DOM_SID **members,
-				   int *num_members)
+				   const DOM_SID *alias, DOM_SID **pp_members,
+				   size_t *p_num_members)
 {
-	return enum_aliasmem(alias, members, num_members);
+	return enum_aliasmem(alias, pp_members, p_num_members);
 }
 
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
 				       const DOM_SID *members,
-				       int num_members,
-				       uint32 **alias_rids,
-				       int *num_alias_rids)
+				       size_t num_members,
+				       uint32 **pp_alias_rids,
+				       size_t *p_num_alias_rids)
 {
 	DOM_SID *alias_sids;
-	int i, num_alias_sids;
+	size_t i, num_alias_sids;
 	NTSTATUS result;
 
 	alias_sids = NULL;
@@ -1274,17 +1274,17 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	*alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
-	if (*alias_rids == NULL)
+	*pp_alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
+	if (*pp_alias_rids == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	*num_alias_rids = 0;
+	*p_num_alias_rids = 0;
 
 	for (i=0; i<num_alias_sids; i++) {
 		if (!sid_peek_check_rid(domain_sid, &alias_sids[i],
-					&(*alias_rids)[*num_alias_rids]))
+					&(*pp_alias_rids)[*p_num_alias_rids]))
 			continue;
-		*num_alias_rids += 1;
+		*p_num_alias_rids += 1;
 	}
 
 	SAFE_FREE(alias_sids);
@@ -1334,7 +1334,7 @@ NTSTATUS pdb_nop_delete_group_mapping_entry(struct pdb_methods *methods,
 
 NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
+					   GROUP_MAP **rmap, size_t *num_entries,
 					   BOOL unix_only)
 {
 	return NT_STATUS_UNSUCCESSFUL;

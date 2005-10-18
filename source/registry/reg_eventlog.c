@@ -226,7 +226,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	already_in = False;
 	wrklist = NULL;
-	dump_data( 1, rval->data_p, rval->size );
+	dump_data( 1, (const char *)rval->data_p, rval->size );
 	if ( ( numsources =
 	       regval_convert_multi_sz( ( uint16 * ) rval->data_p, rval->size,
 					&wrklist ) ) > 0 ) {

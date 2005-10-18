@@ -348,7 +348,7 @@ void cred_hash2(unsigned char *out, const unsigned char *in, const unsigned char
 	des_crypt56(out, buf, key2, 1);
 }
 
-void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key, int forw)
+void cred_hash3(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
 {
         static unsigned char key2[8];
 

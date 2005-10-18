@@ -491,7 +491,7 @@ static NTSTATUS context_delete_group_mapping_entry(struct pdb_context *context,
 
 static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
+					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -502,15 +502,15 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->enum_group_mapping(context->pdb_methods,
-							sid_name_use, rmap,
-							num_entries, unix_only);
+							sid_name_use, pp_rmap,
+							p_num_entries, unix_only);
 }
 
 static NTSTATUS context_enum_group_members(struct pdb_context *context,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *group,
-					   uint32 **member_rids,
-					   int *num_members)
+					   uint32 **pp_member_rids,
+					   size_t *p_num_members)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -521,15 +521,15 @@ static NTSTATUS context_enum_group_members(struct pdb_context *context,
 
 	return context->pdb_methods->enum_group_members(context->pdb_methods,
 							mem_ctx, group,
-							member_rids,
-							num_members);
+							pp_member_rids,
+							p_num_members);
 }
 
 static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
 					       const char *username,
 					       gid_t primary_gid,
-					       DOM_SID **sids, gid_t **gids,
-					       int *num_groups)
+					       DOM_SID **pp_sids, gid_t **pp_gids,
+					       size_t *p_num_groups)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -540,7 +540,7 @@ static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
 
 	return context->pdb_methods->
 		enum_group_memberships(context->pdb_methods, username,
-				       primary_gid, sids, gids, num_groups);
+				       primary_gid, pp_sids, pp_gids, p_num_groups);
 }
 
 static NTSTATUS context_find_alias(struct pdb_context *context,
@@ -645,8 +645,8 @@ static NTSTATUS context_del_aliasmem(struct pdb_context *context,
 }
 	
 static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
-				      const DOM_SID *alias, DOM_SID **members,
-				      int *num)
+				      const DOM_SID *alias, DOM_SID **pp_members,
+				      size_t *p_num)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -656,16 +656,16 @@ static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->enum_aliasmem(context->pdb_methods,
-						   alias, members, num);
+						   alias, pp_members, p_num);
 }
 	
 static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
 					       TALLOC_CTX *mem_ctx,
 					       const DOM_SID *domain_sid,
 					       const DOM_SID *members,
-					       int num_members,
-					       uint32 **alias_rids,
-					       int *num_alias_rids)
+					       size_t num_members,
+					       uint32 **pp_alias_rids,
+					       size_t *p_num_alias_rids)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -677,16 +677,16 @@ static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
 	return context->pdb_methods->
 		enum_alias_memberships(context->pdb_methods, mem_ctx,
 				       domain_sid, members, num_members,
-				       alias_rids, num_alias_rids);
+				       pp_alias_rids, p_num_alias_rids);
 }
 
 static NTSTATUS context_lookup_rids(struct pdb_context *context,
 				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
-				    int num_rids,
+				    size_t num_rids,
 				    uint32 *rids,
-				    const char ***names,
-				    uint32 **attrs)
+				    const char ***pp_names,
+				    uint32 **pp_attrs)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -697,7 +697,7 @@ static NTSTATUS context_lookup_rids(struct pdb_context *context,
 
 	return context->pdb_methods->lookup_rids(context->pdb_methods,
 						 mem_ctx, domain_sid, num_rids,
-						 rids, names, attrs);
+						 rids, pp_names, pp_attrs);
 }
 
 static NTSTATUS context_get_account_policy(struct pdb_context *context,
@@ -1238,8 +1238,8 @@ BOOL pdb_delete_group_mapping_entry(DOM_SID sid)
 			       pdb_delete_group_mapping_entry(pdb_context, sid));
 }
 
-BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
-			    int *num_entries, BOOL unix_only)
+BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
+			    size_t *p_num_entries, BOOL unix_only)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1249,13 +1249,13 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 
 	return NT_STATUS_IS_OK(pdb_context->
 			       pdb_enum_group_mapping(pdb_context, sid_name_use,
-						      rmap, num_entries, unix_only));
+						      pp_rmap, p_num_entries, unix_only));
 }
 
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				const DOM_SID *sid,
-				uint32 **member_rids,
-				int *num_members)
+				uint32 **pp_member_rids,
+				size_t *p_num_members)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1264,12 +1264,12 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 	}
 
 	return pdb_context->pdb_enum_group_members(pdb_context, mem_ctx, sid, 
-						   member_rids, num_members);
+						   pp_member_rids, p_num_members);
 }
 
 NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
-				    DOM_SID **sids, gid_t **gids,
-				    int *num_groups)
+				    DOM_SID **pp_sids, gid_t **pp_gids,
+				    size_t *p_num_groups)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1278,8 +1278,8 @@ NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
 	}
 
 	return pdb_context->pdb_enum_group_memberships(pdb_context, username,
-						       primary_gid, sids, gids,
-						       num_groups);
+						       primary_gid, pp_sids, pp_gids,
+						       p_num_groups);
 }
 
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
@@ -1367,7 +1367,7 @@ BOOL pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 }
 
 BOOL pdb_enum_aliasmem(const DOM_SID *alias,
-		       DOM_SID **members, int *num_members)
+		       DOM_SID **pp_members, size_t *p_num_members)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1377,12 +1377,12 @@ BOOL pdb_enum_aliasmem(const DOM_SID *alias,
 
 	return NT_STATUS_IS_OK(pdb_context->
 			       pdb_enum_aliasmem(pdb_context, alias,
-						 members, num_members));
+						 pp_members, p_num_members));
 }
 
 BOOL pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
-				const DOM_SID *members, int num_members,
-				uint32 **alias_rids, int *num_alias_rids)
+				const DOM_SID *members, size_t num_members,
+				uint32 **pp_alias_rids, size_t *p_num_alias_rids)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1394,8 +1394,8 @@ BOOL pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 			       pdb_enum_alias_memberships(pdb_context, mem_ctx,
 							  domain_sid,
 							  members, num_members,
-							  alias_rids,
-							  num_alias_rids));
+							  pp_alias_rids,
+							  p_num_alias_rids));
 }
 
 NTSTATUS pdb_lookup_rids(TALLOC_CTX *mem_ctx,
@@ -1534,33 +1534,32 @@ static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq
 }
 
 static void add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
-				    uid_t uid, uid_t **uids, int *num)
+				    uid_t uid, uid_t **pp_uids, size_t *p_num)
 {
-	int i;
+	size_t i;
 
-	for (i=0; i<*num; i++) {
-		if ((*uids)[i] == uid)
+	for (i=0; i<*p_num; i++) {
+		if ((*pp_uids)[i] == uid)
 			return;
 	}
 	
-	*uids = TALLOC_REALLOC_ARRAY(mem_ctx, *uids, uid_t, *num+1);
+	*pp_uids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_uids, uid_t, *p_num+1);
 
-	if (*uids == NULL)
+	if (*pp_uids == NULL)
 		return;
 
-	(*uids)[*num] = uid;
-	*num += 1;
+	(*pp_uids)[*p_num] = uid;
+	*p_num += 1;
 }
 
-static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **uids,
-			   int *num)
+static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size_t *p_num)
 {
 	struct group *grp;
 	char **gr;
 	struct sys_pwent *userlist, *user;
  
-	*uids = NULL;
-	*num = 0;
+	*pp_uids = NULL;
+	*p_num = 0;
 
 	/* We only look at our own sam, so don't care about imported stuff */
 
@@ -1578,7 +1577,7 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **uids,
 	for (user = userlist; user != NULL; user = user->next) {
 		if (user->pw_gid != gid)
 			continue;
-		add_uid_to_array_unique(mem_ctx, user->pw_uid, uids, num);
+		add_uid_to_array_unique(mem_ctx, user->pw_uid, pp_uids, p_num);
 	}
 
 	pwent_free(userlist);
@@ -1590,7 +1589,7 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **uids,
 
 		if (pw == NULL)
 			continue;
-		add_uid_to_array_unique(mem_ctx, pw->pw_uid, uids, num);
+		add_uid_to_array_unique(mem_ctx, pw->pw_uid, pp_uids, p_num);
 	}
 
 	winbind_on();
@@ -1601,15 +1600,15 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **uids,
 NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 					TALLOC_CTX *mem_ctx,
 					const DOM_SID *group,
-					uint32 **member_rids,
-					int *num_members)
+					uint32 **pp_member_rids,
+					size_t *p_num_members)
 {
 	gid_t gid;
 	uid_t *uids;
-	int i, num_uids;
+	size_t i, num_uids;
 
-	*member_rids = NULL;
-	*num_members = 0;
+	*pp_member_rids = NULL;
+	*p_num_members = 0;
 
 	if (!NT_STATUS_IS_OK(sid_to_gid(group, &gid)))
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -1620,7 +1619,7 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	if (num_uids == 0)
 		return NT_STATUS_OK;
 
-	*member_rids = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_uids);
+	*pp_member_rids = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_uids);
 
 	for (i=0; i<num_uids; i++) {
 		DOM_SID sid;
@@ -1636,8 +1635,8 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 			continue;
 		}
 
-		sid_peek_rid(&sid, &(*member_rids)[*num_members]);
-		*num_members += 1;
+		sid_peek_rid(&sid, &(*pp_member_rids)[*p_num_members]);
+		*p_num_members += 1;
 	}
 
 	return NT_STATUS_OK;
@@ -1838,7 +1837,7 @@ static BOOL pdb_default_search_users(struct pdb_methods *methods,
 
 struct group_search {
 	GROUP_MAP *groups;
-	int num_groups, current_group;
+	size_t num_groups, current_group;
 };
 
 static BOOL next_entry_groups(struct pdb_search *s,

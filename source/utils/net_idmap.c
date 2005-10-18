@@ -76,8 +76,8 @@ static int net_idmap_dump(int argc, const char **argv)
 
 struct hwms {
 	BOOL ok;
-	int user_hwm;
-	int group_hwm;
+	uid_t user_hwm;
+	gid_t group_hwm;
 };
 
 static int net_idmap_find_max_id(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
@@ -160,8 +160,8 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 		goto done;
 	}
 
-	if ((tdb_store_int32(idmap_tdb, "USER HWM", hwms.user_hwm) != 0) ||
-	    (tdb_store_int32(idmap_tdb, "GROUP HWM", hwms.group_hwm) != 0)) {
+	if ((tdb_store_int32(idmap_tdb, "USER HWM", (int32)hwms.user_hwm) != 0) ||
+	    (tdb_store_int32(idmap_tdb, "GROUP HWM", (int32)hwms.group_hwm) != 0)) {
 		d_printf("Could not store HWMs\n");
 		goto done;
 	}

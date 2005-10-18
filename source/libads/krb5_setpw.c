@@ -341,7 +341,8 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 {
 	krb5_auth_context auth_context = NULL;
 	krb5_data ap_req, chpw_req, chpw_rep;
-	int ret, sock, addr_len;
+	int ret, sock;
+	socklen_t addr_len;
 	struct sockaddr remote_addr, local_addr;
 	krb5_address local_kaddr, remote_kaddr;
 

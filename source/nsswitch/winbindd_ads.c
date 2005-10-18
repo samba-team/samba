@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind ADS backend functions
@@ -456,7 +456,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
 				      const char *user_dn, 
 				      DOM_SID *primary_group,
-				      uint32 *num_groups, DOM_SID **user_sids)
+				      size_t *p_num_groups, DOM_SID **user_sids)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -467,6 +467,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
 	char *escaped_dn;
+	size_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups_alt\n"));
 
@@ -504,10 +505,10 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	count = ads_count_replies(ads, res);
 	
 	*user_sids = NULL;
-	*num_groups = 0;
+	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	add_sid_to_array(mem_ctx, primary_group, user_sids, num_groups);
+	add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups);
 
 	if (count > 0) {
 		for (msg = ads_first_entry(ads, res); msg;
@@ -520,11 +521,12 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 			}
 
 			add_sid_to_array(mem_ctx, &group_sid, user_sids,
-					 num_groups);
+					 &num_groups);
 		}
 
 	}
 
+	*p_num_groups = num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups (alt) for dn=%s\n", user_dn));
@@ -539,7 +541,7 @@ done:
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *sid, 
-				  uint32 *num_groups, DOM_SID **user_sids)
+				  uint32 *p_num_groups, DOM_SID **user_sids)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"tokenGroups", "primaryGroupID", NULL};
@@ -553,9 +555,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	uint32 primary_group_rid;
 	fstring sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	size_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
-	*num_groups = 0;
+	*p_num_groups = 0;
 
 	ads = ads_cached_connection(domain);
 	
@@ -603,15 +606,17 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
 	if (count == 0) {
-		return lookup_usergroups_alt(domain, mem_ctx, user_dn, 
+		status = lookup_usergroups_alt(domain, mem_ctx, user_dn, 
 					     &primary_group,
-					     num_groups, user_sids);
+					     &num_groups, user_sids);
+		*p_num_groups = (uint32)num_groups;
+		return status;
 	}
 
 	*user_sids = NULL;
-	*num_groups = 0;
+	num_groups = 0;
 
-	add_sid_to_array(mem_ctx, &primary_group, user_sids, num_groups);
+	add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups);
 	
 	for (i=0;i<count;i++) {
 
@@ -621,9 +626,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		}
 			       
 		add_sid_to_array_unique(mem_ctx, &sids[i],
-					user_sids, num_groups);
+					user_sids, &num_groups);
 	}
 
+	*p_num_groups = (uint32)num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups for sid=%s\n",

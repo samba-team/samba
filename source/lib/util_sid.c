@@ -637,7 +637,7 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
 ********************************************************************/
 
 void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
-		      DOM_SID **sids, int *num)
+		      DOM_SID **sids, size_t *num)
 {
 	if (mem_ctx != NULL)
 		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
@@ -660,9 +660,9 @@ void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 ********************************************************************/
 
 void add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			     DOM_SID **sids, int *num_sids)
+			     DOM_SID **sids, size_t *num_sids)
 {
-	int i;
+	size_t i;
 
 	for (i=0; i<(*num_sids); i++) {
 		if (sid_compare(sid, &(*sids)[i]) == 0)
@@ -676,10 +676,10 @@ void add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Remove SID from an array
 ********************************************************************/
 
-void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, int *num)
+void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
 {
 	DOM_SID *sid_list = *sids;
-	int i;
+	size_t i;
 
 	for ( i=0; i<*num; i++ ) {
 
@@ -700,4 +700,3 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, int *num)
 	
 	return;
 }
-
