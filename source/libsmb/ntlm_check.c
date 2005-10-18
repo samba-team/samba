@@ -65,13 +65,13 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |\n"));
-	dump_data(100, part_passwd, 16);
+	dump_data(100, (const char *)part_passwd, 16);
 	DEBUGADD(100,("Password from client was |\n"));
-	dump_data(100, nt_response->data, nt_response->length);
+	dump_data(100, (const char *)nt_response->data, nt_response->length);
 	DEBUGADD(100,("Given challenge was |\n"));
-	dump_data(100, sec_blob->data, sec_blob->length);
+	dump_data(100, (const char *)sec_blob->data, sec_blob->length);
 	DEBUGADD(100,("Value from encryption was |\n"));
-	dump_data(100, p24, 24);
+	dump_data(100, (const char *)p24, 24);
 #endif
 	return (memcmp(p24, nt_response->data, 24) == 0);
 }
@@ -136,15 +136,15 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |\n"));
-	dump_data(100, part_passwd, 16);
+	dump_data(100, (const char *)part_passwd, 16);
 	DEBUGADD(100,("Password from client was |\n"));
-	dump_data(100, ntv2_response->data, ntv2_response->length);
+	dump_data(100, (const char *)ntv2_response->data, ntv2_response->length);
 	DEBUGADD(100,("Variable data from client was |\n"));
-	dump_data(100, client_key_data.data, client_key_data.length);
+	dump_data(100, (const char *)client_key_data.data, client_key_data.length);
 	DEBUGADD(100,("Given challenge was |\n"));
-	dump_data(100, sec_blob->data, sec_blob->length);
+	dump_data(100, (const char *)sec_blob->data, sec_blob->length);
 	DEBUGADD(100,("Value from encryption was |\n"));
-	dump_data(100, value_from_encryption, 16);
+	dump_data(100, (const char *)value_from_encryption, 16);
 #endif
 	data_blob_clear_free(&client_key_data);
 	res = (memcmp(value_from_encryption, client_response, 16) == 0);

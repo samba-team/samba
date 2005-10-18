@@ -2059,13 +2059,13 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		}
 
 		value.size = len*2;
-		value.data_p = TALLOC_ARRAY(mem_ctx, char, value.size);
+		value.data_p = TALLOC_ARRAY(mem_ctx, unsigned char, value.size);
 		if (value.data_p == NULL) {
 			result = WERR_NOMEM;
 			goto done;
 		}
 
-		p = value.data_p;
+		p = (char *)value.data_p;
 		len = value.size;
 		for (i=4; i<argc; i++) {
 			size_t l = (strlen(argv[i])+1)*2;

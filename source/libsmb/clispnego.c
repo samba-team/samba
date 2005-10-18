@@ -26,7 +26,7 @@
   generate a negTokenInit packet given a GUID, a list of supported
   OIDs (the mechanisms) and a principal name string 
 */
-DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16], 
+DATA_BLOB spnego_gen_negTokenInit(char guid[16], 
 				  const char *OIDs[], 
 				  const char *principal)
 {

@@ -505,7 +505,7 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8_t **buf, size_t *len,
 		return False;
 
 	va_start(ap, fmt);
-	len2 = tdb_pack_va((*buf)+(*len), len1, fmt, ap);
+	len2 = tdb_pack_va((char *)(*buf)+(*len), len1, fmt, ap);
 	va_end(ap);
 
 	if (len1 != len2)

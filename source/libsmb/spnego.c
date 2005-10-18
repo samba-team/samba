@@ -45,9 +45,11 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			token->mechTypes = SMB_MALLOC_P(const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
+				char *p_oid = NULL;
 				token->mechTypes = 
 					SMB_REALLOC_ARRAY(token->mechTypes, const char *, i + 2);
-				asn1_read_OID(asn1, &token->mechTypes[i]);
+				asn1_read_OID(asn1, &p_oid);
+				token->mechTypes[i] = p_oid;
 			}
 			token->mechTypes[i] = NULL;
 			
@@ -317,7 +319,7 @@ BOOL free_spnego_data(SPNEGO_DATA *spnego)
 		if (spnego->negTokenInit.mechTypes) {
 			int i;
 			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
-				free(spnego->negTokenInit.mechTypes[i]);
+				free(CONST_DISCARD(char *,spnego->negTokenInit.mechTypes[i]));
 			}
 			free(spnego->negTokenInit.mechTypes);
 		}

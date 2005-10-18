@@ -4800,7 +4800,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 		LOGON_HRS hrs;
 		uchar pwbuf[516];
 
-		encode_pw_buffer((char *)pwbuf, argv[1], STR_UNICODE);
+		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
 
 		ZERO_STRUCT(ctr);
 		ZERO_STRUCT(p23);

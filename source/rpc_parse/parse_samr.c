@@ -7050,12 +7050,12 @@ void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
 	init_unistr2(&q_u->uni_user_name, user_name, UNI_FLAGS_NONE);
 	init_uni_hdr(&q_u->hdr_user_name, &q_u->uni_user_name);
 
-	init_enc_passwd(&q_u->nt_newpass, nt_newpass);
+	init_enc_passwd(&q_u->nt_newpass, (const char *)nt_newpass);
 	init_enc_hash(&q_u->nt_oldhash, nt_oldhash);
 
 	q_u->unknown = 0x01;
 
-	init_enc_passwd(&q_u->lm_newpass, lm_newpass);
+	init_enc_passwd(&q_u->lm_newpass, (const char *)lm_newpass);
 	init_enc_hash(&q_u->lm_oldhash, lm_oldhash);
 }
 

@@ -255,7 +255,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				const char *server_name,
 				const char *domain,
 				const char *machine_account,
-				const char machine_pwd[16],
+				const unsigned char machine_pwd[16],
 				uint32 sec_chan_type,
 				uint32 *neg_flags_inout)
 {
@@ -435,8 +435,8 @@ NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	creds_client_step(cli->dc, &clnt_creds);
 
-	prs_set_session_key(&qbuf, cli->dc->sess_key);
-	prs_set_session_key(&rbuf, cli->dc->sess_key);
+	prs_set_session_key(&qbuf, (const char *)cli->dc->sess_key);
+	prs_set_session_key(&rbuf, (const char *)cli->dc->sess_key);
 
 	init_net_q_sam_sync(&q, cli->dc->remote_machine, global_myname(),
                             &clnt_creds, &ret_creds, database_id, next_rid);
@@ -564,7 +564,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash,
-                              cli->dc->sess_key, lm_owf_user_pwd,
+                              (const char *)cli->dc->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
                 break;
@@ -740,7 +740,7 @@ LSA Server Password Set.
 ****************************************************************************/
 
 NTSTATUS rpccli_net_srv_pwset(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			   const char *machine_name, uint8 hashed_mach_pwd[16])
+			   const char *machine_name, const uint8 hashed_mach_pwd[16])
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 

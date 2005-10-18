@@ -172,7 +172,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	DATA_BLOB blob;
 	nstring dos_name;
 	fstring unix_name;
-	uint8 guid[17];
+	char guid[17];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
@@ -186,7 +186,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
-	safe_strcpy((char *)guid, dos_name, sizeof(guid)-1);
+	safe_strcpy(guid, dos_name, sizeof(guid)-1);
 
 #ifdef DEVELOPER
 	/* valgrind fixer... */

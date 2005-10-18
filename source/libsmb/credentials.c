@@ -115,7 +115,7 @@ void creds_server_init(struct dcinfo *dc,
 {
 	DEBUG(10,("creds_server_init: client chal : %s\n", credstr(clnt_chal->data) ));
 	DEBUG(10,("creds_server_init: server chal : %s\n", credstr(srv_chal->data) ));
-	dump_data_pw("creds_server_init: machine pass", mach_pw, 16);
+	dump_data_pw("creds_server_init: machine pass", (const unsigned char *)mach_pw, 16);
 
 	/* Just in case this isn't already there */
 	memcpy(dc->mach_pw, mach_pw, 16);
@@ -205,14 +205,14 @@ BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRE
 void creds_client_init(struct dcinfo *dc,
 			DOM_CHAL *clnt_chal,
 			DOM_CHAL *srv_chal,
-			const char mach_pw[16],
+			const unsigned char mach_pw[16],
 			DOM_CHAL *init_chal_out)
 {
 	dc->sequence = time(NULL);
 
 	DEBUG(10,("creds_client_init: client chal : %s\n", credstr(clnt_chal->data) ));
 	DEBUG(10,("creds_client_init: server chal : %s\n", credstr(srv_chal->data) ));
-	dump_data_pw("creds_client_init: machine pass", mach_pw, 16);
+	dump_data_pw("creds_client_init: machine pass", (const unsigned char *)mach_pw, 16);
 
 	/* Just in case this isn't already there */
 	memcpy(dc->mach_pw, mach_pw, 16);

@@ -669,7 +669,7 @@ int pdb_nds_get_password(
 	LDAP *ld = ldap_state->ldap_struct;
 	int rc = -1;
 
-	rc = nmasldap_get_password(ld, object_dn, pwd_len, pwd);
+	rc = nmasldap_get_password(ld, object_dn, pwd_len, (unsigned char *)pwd);
 	if (rc == LDAP_SUCCESS) {
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("nmasldap_get_password returned %s for %s\n", pwd, object_dn));

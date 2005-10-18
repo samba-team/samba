@@ -564,7 +564,7 @@ struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status
 	centry = SMB_XMALLOC_P(struct cache_entry);
 
 	centry->len = 8192; /* reasonable default */
-	centry->data = SMB_XMALLOC_ARRAY(char, centry->len);
+	centry->data = SMB_XMALLOC_ARRAY(uint8, centry->len);
 	centry->ofs = 0;
 	centry->sequence_number = domain->sequence_number;
 	centry_put_uint32(centry, NT_STATUS_V(status));
