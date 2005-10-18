@@ -14,6 +14,7 @@ MSGFILES="de.msg en.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
 VFSLIBS="audit.so default_quota.so extd_audit.so full_audit.so readonly.so shadow_copy.so cap.so expand_msdfs.so fake_perms.so netatalk.so recycle.so"
 DATFILES="lowcase.dat upcase.dat valid.dat"
 CHARSETLIBS="CP437.so CP850.so"
+AUTHLIBS="auth_script.so"
 
 add_dynamic_entries() 
 {
@@ -42,6 +43,9 @@ add_dynamic_entries()
 	done
  	for file in $CHARSETLIBS; do
 		echo f none lib/charset/$file 0755 root other
+	done
+ 	for file in $AUTHLIBS; do
+		echo f none lib/auth/$file 0755 root other
 	done
 	
 	echo "#\n# libsmbclient\n#"
