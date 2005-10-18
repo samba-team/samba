@@ -128,26 +128,28 @@ char* reg_remaining_path( const char *key )
 /**********************************************************************
 *********************************************************************/
 
-int regval_convert_multi_sz( uint16 *multi_string, size_t multi_len, char ***values )
+int regval_convert_multi_sz( uint16 *multi_string, size_t byte_len, char ***values )
 {
 	char **sz;
 	int i;
 	int num_strings = 0;
 	fstring buffer;
 	uint16 *wp;
+	size_t multi_len = byte_len / 2;
 	
-	*values = NULL;
-
 	if ( !multi_string || !values )
 		return 0;
 
+	*values = NULL;
+
 	/* just count the NULLs */
 	
-	for ( i=0; (i<multi_len-1) && !(multi_string[i]==0x0 && multi_string[i+1]==0x0); i+=2 ) {
-		if ( multi_string[i] == 0x0 )
+	for ( i=0; (i<multi_len-1) && !(multi_string[i]==0x0 && multi_string[i+1]==0x0); i++ ) {
+		/* peek ahead */
+		if ( multi_string[i+1] == 0x0 )
 			num_strings++;
 	}
-	
+
 	if ( num_strings == 0 )
 		return 0;
 	
