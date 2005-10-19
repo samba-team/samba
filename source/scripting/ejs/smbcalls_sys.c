@@ -72,12 +72,13 @@ static int ejs_sys_nttime(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_sys_unix2nttime(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	NTTIME nt;
+	struct MprVar v;
 	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
 		ejsSetErrorMsg(eid, "sys_unix2nttime invalid arguments");
 		return -1;
 	}
 	unix_to_nt_time(&nt, mprVarToNumber(argv[0]));
-	struct MprVar v = mprCreateNumberVar(nt);
+	v = mprCreateNumberVar(nt);
 	mpr_Return(eid, v);
 	return 0;
 }
