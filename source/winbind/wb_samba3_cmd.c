@@ -192,7 +192,6 @@ NTSTATUS wbsrv_samba3_userdomgroups(struct wbsrv_samba3_call *s3call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	;
 	ctx = wb_cmd_userdomgroups_send(
 		s3call->call->wbconn->listen_socket->service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
@@ -558,6 +557,82 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 
  done:
 	if (!NT_STATUS_IS_OK(status)) {
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
+}
+
+static void list_trustdom_recv_doms(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_list_trustdom(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
+
+	DEBUG(5, ("wbsrv_samba3_list_trustdom called\n"));
+
+	ctx = wb_cmd_list_trustdoms_send(service);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = list_trustdom_recv_doms;
+	ctx->async.private_data = s3call;
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void list_trustdom_recv_doms(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	int i, num_domains;
+	struct wb_dom_info **domains;
+	NTSTATUS status;
+	char *result;
+
+	status = wb_cmd_list_trustdoms_recv(ctx, s3call, &num_domains,
+					    &domains);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	result = talloc_strdup(s3call, "");
+	if (result == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_domains; i++) {
+		result = talloc_asprintf_append(
+			result, "%s\\%s\\%s",
+			domains[i]->name, domains[i]->name,
+			dom_sid_string(s3call, domains[i]->sid));
+	}
+
+	if (result == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	s3call->response.result = WINBINDD_OK;
+	if (num_domains > 0) {
+		s3call->response.extra_data = result;
+		s3call->response.length += strlen(result)+1;
+	}
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &s3call->response;
 		resp->result = WINBINDD_ERROR;
 		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
 					nt_errstr(status));

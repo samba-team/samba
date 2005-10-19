@@ -109,6 +109,15 @@ struct composite_context *wb_sid2domain_send(struct wbsrv_service *service,
 	state->result = find_domain_from_sid(service, sid);
 	if (state->result != NULL) {
 		result->status = NT_STATUS_OK;
+		if (!state->result->initialized) {
+			ctx = wb_init_domain_send(state->result,
+						  service->task->event_ctx,
+						  service->task->msg_ctx);
+			if (ctx == NULL) goto failed;
+			ctx->async.fn = sid2domain_recv_init;
+			ctx->async.private_data = state;
+			return result;
+		}
 		composite_trigger_done(result);
 		return result;
 	}

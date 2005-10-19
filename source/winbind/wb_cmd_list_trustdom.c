@@ -22,9 +22,11 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
+#include "winbind/wb_async_helpers.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
 #include "smbd/service_task.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 
 /* List trusted domains. To avoid the trouble with having to wait for other
  * conflicting requests waiting for the lsa pipe we're opening our own lsa
@@ -35,10 +37,10 @@ struct cmd_list_trustdom_state {
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;
 	int num_domains;
-	struct wb_dom_info *domains;
+	struct wb_dom_info **domains;
 
 	uint32_t resume_handle;
-	struct lsa_DomainList domains;
+	struct lsa_DomainList domainlist;
 	struct lsa_EnumTrustDom r;
 };
 
@@ -62,8 +64,6 @@ struct composite_context *wb_cmd_list_trustdoms_send(struct wbsrv_service *servi
 	state->ctx = result;
 	result->private_data = state;
 
-	state->service = service;
-
 	ctx = wb_sid2domain_send(service, service->primary_sid);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = cmd_list_trustdoms_recv_domain;
@@ -86,8 +86,8 @@ static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx)
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
 
-	tree = dcerpc_smb_tree(domain->lsa_pipe);
-	if (composite_nomem(tree, state->tree)) return;
+	tree = dcerpc_smb_tree(domain->lsa_pipe->conn);
+	if (composite_nomem(tree, state->ctx)) return;
 
 	ctx = wb_init_lsa_send(tree, domain->lsa_auth_type,
 			       domain->schannel_creds);
@@ -107,11 +107,18 @@ static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx)
 					      &state->lsa_policy);
 	if (!composite_is_ok(state->ctx)) return;
 
+	state->num_domains = 0;
+	state->domains = NULL;
+
+	state->domainlist.count = 0;
+	state->domainlist.domains = NULL;
+
 	state->resume_handle = 0;
-	state->r.in.policy_handle = state->lsa_policy;
+	state->r.in.handle = state->lsa_policy;
 	state->r.in.resume_handle = &state->resume_handle;
 	state->r.in.max_size = 1000;
 	state->r.out.resume_handle = &state->resume_handle;
+	state->r.out.domains = &state->domainlist;
 
 	req = dcerpc_lsa_EnumTrustDom_send(state->lsa_pipe, state, &state->r);
 	composite_continue_rpc(state->ctx, req, cmd_list_trustdoms_recv_doms,
@@ -120,5 +127,74 @@ static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx)
 
 static void cmd_list_trustdoms_recv_doms(struct rpc_request *req)
 {
+	struct cmd_list_trustdom_state *state =
+		talloc_get_type(req->async.private,
+				struct cmd_list_trustdom_state);
+	int i, old_num_domains;
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->r.out.result;
+
+	if (!NT_STATUS_IS_OK(state->ctx->status) &&
+	    !NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_NO_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(state->ctx->status, STATUS_MORE_ENTRIES)) {
+		composite_error(state->ctx, state->ctx->status);
+		return;
+	}
+
+	old_num_domains = state->num_domains;
+
+	state->num_domains += state->r.out.domains->count;
+	state->domains = talloc_realloc(state, state->domains,
+					struct wb_dom_info *,
+					state->num_domains);
+	if (composite_nomem(state->domains, state->ctx)) return;
+
+	for (i=0; i<state->r.out.domains->count; i++) {
+		int j = i+old_num_domains;
+		state->domains[j] = talloc(state->domains,
+					   struct wb_dom_info);
+		if (composite_nomem(state->domains[i], state->ctx)) return;
+		state->domains[j]->name = talloc_steal(
+			state->domains[j],
+			state->r.out.domains->domains[i].name.string);
+		state->domains[j]->sid = talloc_steal(
+			state->domains[j],
+			state->r.out.domains->domains[i].sid);
+	}
+
+	if (NT_STATUS_IS_OK(state->ctx->status)) {
+		composite_done(state->ctx);
+		return;
+	}
+
+	state->domainlist.count = 0;
+	state->domainlist.domains = NULL;
+	state->r.in.handle = state->lsa_policy;
+	state->r.in.resume_handle = &state->resume_handle;
+	state->r.in.max_size = 1000;
+	state->r.out.resume_handle = &state->resume_handle;
+	state->r.out.domains = &state->domainlist;
 	
+	req = dcerpc_lsa_EnumTrustDom_send(state->lsa_pipe, state, &state->r);
+	composite_continue_rpc(state->ctx, req, cmd_list_trustdoms_recv_doms,
+			       state);
+}
+
+NTSTATUS wb_cmd_list_trustdoms_recv(struct composite_context *ctx,
+				    TALLOC_CTX *mem_ctx,
+				    int *num_domains,
+				    struct wb_dom_info ***domains)
+{
+	NTSTATUS status = composite_wait(ctx);
+	if (NT_STATUS_IS_OK(status)) {
+		struct cmd_list_trustdom_state *state =
+			talloc_get_type(ctx->private_data,
+					struct cmd_list_trustdom_state);
+		*num_domains = state->num_domains;
+		*domains = talloc_steal(mem_ctx, state->domains);
+	}
+	talloc_free(ctx);
+	return status;
 }
