@@ -113,6 +113,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_GETUSERSIDS:
 		return wbsrv_samba3_usersids(s3call);
+
+	case WINBINDD_LIST_TRUSTDOM:
+		return wbsrv_samba3_list_trustdom(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;

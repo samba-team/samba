@@ -265,6 +265,7 @@ struct wins_server;
 
 struct nbt_dc_name;
 struct wb_sid_object;
+struct wb_dom_info;
 
 struct cldap_socket;
 struct cldapd_server;

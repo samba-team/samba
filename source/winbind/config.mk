@@ -19,6 +19,7 @@ INIT_OBJ_FILES = \
 		winbind/wb_cmd_getdcname.o \
 		winbind/wb_cmd_userdomgroups.o \
 		winbind/wb_cmd_usersids.o \
+		winbind/wb_cmd_list_trustdom.o \
 		winbind/wb_pam_auth.o \
 		winbind/wb_async_helpers.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
