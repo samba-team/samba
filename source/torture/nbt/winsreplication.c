@@ -325,7 +325,7 @@ struct test_wrepl_conflict_conn {
 #define TEST_OWNER_B_ADDRESS "127.66.66.1"
 #define TEST_ADDRESS_B_PREFIX "127.0.66"
 
-	struct wrepl_wins_owner a, b;
+	struct wrepl_wins_owner a, b, c;
 };
 
 static const struct wrepl_ip addresses_A_1[] = {
@@ -409,6 +409,11 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 	ctx->b.min_version	= 0;
 	ctx->b.type		= 1;
 
+	ctx->c.address		= address;
+	ctx->c.max_version	= 0;
+	ctx->c.min_version	= 0;
+	ctx->c.type		= 1;
+
 	pull_table.in.assoc_ctx	= ctx->pull_assoc;
 	status = wrepl_pull_table(ctx->pull, ctx->pull, &pull_table);
 	if (!NT_STATUS_IS_OK(status)) return NULL;
@@ -420,7 +425,11 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		}
 		if (strcmp(TEST_OWNER_B_ADDRESS,pull_table.out.partners[i].address)==0) {
 			ctx->b.max_version	= pull_table.out.partners[i].max_version;
-			ctx->b.min_version	= pull_table.out.partners[i].min_version;		
+			ctx->b.min_version	= pull_table.out.partners[i].min_version;
+		}
+		if (strcmp(address,pull_table.out.partners[i].address)==0) {
+			ctx->c.max_version	= pull_table.out.partners[i].max_version;
+			ctx->c.min_version	= pull_table.out.partners[i].min_version;
 		}
 	}
 
@@ -542,6 +551,46 @@ static BOOL test_wrepl_is_applied(struct test_wrepl_conflict_conn *ctx,
 done:
 	talloc_free(pull_names.out.names);
 	return ret;
+}
+
+static BOOL test_wrepl_is_merged(struct test_wrepl_conflict_conn *ctx,
+				 const struct wrepl_wins_name *name1,
+				 const struct wrepl_wins_name *name2)
+{
+	return True;
+#if 0
+	BOOL ret = True;
+	NTSTATUS status;
+	struct wrepl_pull_names pull_names;
+	struct wrepl_name *names;
+	uint32_t num_ips;
+
+	pull_names.in.assoc_ctx	= ctx->pull_assoc;
+	pull_names.in.partner	= ctx->c;
+	pull_names.in.partner.min_version = ctx->c.max_version-1;
+
+	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(pull_names.out.num_names, 1);
+
+	names = pull_names.out.names;
+
+	num_ips = name1->addresses.addresses.num_ips + name2->addresses.addresses.num_ips;
+
+	CHECK_VALUE(names[0].name.type, name1->name->type);
+	CHECK_VALUE_STRING(names[0].name.name, name1->name->name);
+	CHECK_VALUE_STRING(names[0].name.scope, name1->name->scope);
+	CHECK_VALUE(names[0].type, WREPL_TYPE_SGROUP);
+	CHECK_VALUE(names[0].state, (num_ips>0?WREPL_STATE_ACTIVE:WREPL_STATE_RELEASED));
+	CHECK_VALUE_UINT64(names[0].version_id, ctx->c.max_version);
+
+	CHECK_VALUE(names[0].num_addresses,
+		    name1->addresses.addresses.num_ips+
+		    name2->addresses.addresses.num_ips);
+done:
+	talloc_free(pull_names.out.names);
+	return ret;
+#endif
 }
 
 static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
@@ -725,6 +774,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			uint32_t num_ips;
 			const struct wrepl_ip *ips;
 			BOOL apply_expected;
+			BOOL merge_expected;
 		} r1, r2;
 	} records[] = {
 	/* 
@@ -2755,6 +2805,91 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		}
 	},
 
+/*
+ * special group vs special group section,
+ */
+	/* 
+	 * sgroup,active vs. sgroup,active
+	 * => should be merged
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER_SG", 0x00, NULL),
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected = False,
+			.merge_expected = True
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER_SG", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+			.merge_expected	= False
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER_SG", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True
+		}
+	},
+
 	/* 
 	 * This should be the last record in this array,
 	 * we need to make sure the we leave a tombstoned unique entry
@@ -2864,14 +2999,18 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		if (records[i].r1.state == WREPL_STATE_RELEASED) {
 			ret &= test_wrepl_is_applied(ctx, records[i].r1.owner,
 						     wins_name_r1, False);
+		} else if (records[i].r2.merge_expected) {
+			ret &= test_wrepl_is_merged(ctx, wins_name_r1, wins_name_r2);		
 		} else if (records[i].r1.owner != records[i].r2.owner) {
+			BOOL _expected;
+			_expected = (records[i].r1.apply_expected && !records[i].r2.apply_expected);
 			ret &= test_wrepl_is_applied(ctx, records[i].r1.owner,
-						     wins_name_r1, !records[i].r2.apply_expected);
+						     wins_name_r1, _expected);
 		}
 		if (records[i].r2.state == WREPL_STATE_RELEASED) {
 			ret &= test_wrepl_is_applied(ctx, records[i].r2.owner,
 						     wins_name_r2, False);
-		} else {
+		} else if (!records[i].r2.merge_expected) {
 			ret &= test_wrepl_is_applied(ctx, records[i].r2.owner,
 						     wins_name_r2, records[i].r2.apply_expected);
 		}
