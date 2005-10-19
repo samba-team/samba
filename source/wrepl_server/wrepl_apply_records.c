@@ -192,6 +192,12 @@ static enum _R_ACTION replace_replica_replica_sgroup_vs_X(struct winsdb_record *
 }
 
 /*
+MHOMED,ACTIVE vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+MHOMED,ACTIVE vs. UNIQUE,TOMBSTONE with same ip(s) => NOT REPLACE
+MHOMED,RELEASED vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+MHOMED,RELEASED vs. UNIQUE,TOMBSTONE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. UNIQUE,TOMBSTONE with different ip(s) => REPLACE
 MHOMED,ACTIVE vs. GROUP,ACTIVE with different ip(s) => REPLACE
 MHOMED,ACTIVE vs. GROUP,TOMBSTONE with same ip(s) => NOT REPLACE
 MHOMED,RELEASED vs. GROUP,ACTIVE with different ip(s) => REPLACE
@@ -207,7 +213,7 @@ MHOMED,TOMBSTONE vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
 */
 static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
 {
-	if (R_IS_UNIQUE(r2) || R_IS_MHOMED(r2)) {
+	if (R_IS_MHOMED(r2)) {
 		/* not handled here: MERGE */
 		return R_DO_MERGE;
 	}
@@ -217,7 +223,7 @@ static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *
 		return R_DO_REPLACE;
 	}
 
-	if (R_IS_GROUP(r2) && R_IS_ACTIVE(r2)) {
+	if (!R_IS_SGROUP(r2) && R_IS_ACTIVE(r2)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
 	}
