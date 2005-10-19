@@ -313,6 +313,29 @@ test_def_cc_name(krb5_context context)
 }
 
 static void
+test_cache_find(krb5_context context, const char *type, const char *principal,
+		int find)
+{
+    krb5_principal client;
+    krb5_error_code ret;
+    krb5_ccache id = NULL;
+
+    ret = krb5_parse_name(context, principal, &client);
+    if (ret)
+	krb5_err(context, 1, ret, "parse_name for %s failed", principal);
+    
+    ret = krb5_cc_cache_match(context, client, type, &id);
+    if (ret && find)
+	krb5_err(context, 1, ret, "cc_cache_match for %s failed", principal);
+    if (ret == 0 && !find)
+	krb5_err(context, 1, ret, "cc_cache_match for %s found", principal);
+
+    if (id)
+	krb5_cc_close(context, id);
+}
+
+
+static void
 test_cache_iter(krb5_context context, const char *type, int destroy)
 {
     krb5_cc_cache_cursor cursor;
@@ -323,7 +346,7 @@ test_cache_iter(krb5_context context, const char *type, int destroy)
     if (ret == KRB5_CC_NOSUPP)
 	return;
     else if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_cache_get_first");
+	krb5_err(context, 1, ret, "krb5_cc_cache_get_first(%s)", type);
 
 
     while ((ret = krb5_cc_cache_next (context, cursor, &id)) == 0) {
@@ -350,6 +373,57 @@ test_cache_iter(krb5_context context, const char *type, int destroy)
 
     krb5_cc_cache_end_seq_get(context, cursor);
 }
+
+static void
+test_copy(krb5_context context, const char *fromtype, const char *totype)
+{
+    const krb5_cc_ops *from, *to;
+    krb5_ccache fromid, toid;
+    krb5_error_code ret;
+    krb5_principal p, p2;
+
+    from = krb5_cc_get_prefix_ops(context, fromtype);
+    if (from == NULL)
+	krb5_errx(context, 1, "%s isn't a type", fromtype);
+
+    to = krb5_cc_get_prefix_ops(context, totype);
+    if (to == NULL)
+	krb5_errx(context, 1, "%s isn't a type", totype);
+
+    ret = krb5_parse_name(context, "lha@SU.SE", &p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+
+    ret = krb5_cc_gen_new(context, from, &fromid);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+
+    ret = krb5_cc_initialize(context, fromid, p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+    ret = krb5_cc_gen_new(context, to, &toid);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+
+    ret = krb5_cc_copy_cache(context, fromid, toid);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_copy_cache");
+
+    ret = krb5_cc_get_principal(context, toid, &p2);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_get_principal");
+
+    if (krb5_principal_compare(context, p, p2) == FALSE)
+	krb5_errx(context, 1, "p != p2");
+
+    krb5_free_principal(context, p);
+    krb5_free_principal(context, p2);
+
+    krb5_cc_destroy(context, fromid);
+    krb5_cc_destroy(context, toid);
+}
+
 
 static struct getargs args[] = {
     {"debug",	'd',	arg_flag,	&debug_flag,
@@ -404,14 +478,25 @@ main(int argc, char **argv)
     test_cache_iter(context, "MEMORY", 0);
     {
 	krb5_ccache id;
+	krb5_principal p;
 	krb5_cc_new_unique(context, "MEMORY", "bar", &id);
 	krb5_cc_new_unique(context, "MEMORY", "baz", &id);
+	krb5_parse_name(context, "lha@SU.SE", &p);
+	krb5_cc_initialize(context, id, p);
+	krb5_free_principal(context, p);
     }
+
+    test_cache_find(context, "MEMORY", "lha@SU.SE", 1);
+    test_cache_find(context, "MEMORY", "hulabundulahotentot@SU.SE", 0);
+
     test_cache_iter(context, "MEMORY", 0);
     test_cache_iter(context, "MEMORY", 1);
     test_cache_iter(context, "MEMORY", 0);
     test_cache_iter(context, "FILE", 0);
     test_cache_iter(context, "API", 0);
+
+    test_copy(context, "FILE", "MEMORY");
+    test_copy(context, "MEMORY", "FILE");
 
     krb5_free_context(context);
 
