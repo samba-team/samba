@@ -391,6 +391,7 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_serverReference		= 0x00090203,
 		DRSUAPI_ATTRIBUTE_objectCategory		= 0x0009030e,
 		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
+		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,		
 		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
 		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c
 	} drsuapi_DsAttributeId;
