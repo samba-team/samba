@@ -35,15 +35,274 @@
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
 
-NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsrv_pull_names_io *names_io)
+enum _R_ACTION {
+	R_DO_ADD	= 1,
+	R_DO_REPLACE	= 2,
+	R_NOT_REPLACE	= 3,
+	R_DO_MERGE	= 4
+};
+
+static const char *_R_ACTION_enum_string(enum _R_ACTION action)
+{
+	switch (action) {
+	case R_DO_ADD:		return "ADD";
+	case R_DO_REPLACE:	return "REPLACE";
+	case R_NOT_REPLACE:	return "NOT_REPLACE";
+	case R_DO_MERGE:	return "MERGE";
+	}
+
+	return "enum _R_ACTION unknown";
+}
+
+#define R_IS_ACTIVE(r) ((r)->state == WREPL_STATE_ACTIVE)
+#define R_IS_RELEASED(r) ((r)->state == WREPL_STATE_RELEASED)
+#define R_IS_TOMBSTONE(r) ((r)->state == WREPL_STATE_TOMBSTONE)
+
+#define R_IS_UNIQUE(r) ((r)->type == WREPL_TYPE_UNIQUE)
+#define R_IS_GROUP(r) ((r)->type == WREPL_TYPE_GROUP)
+#define R_IS_SGROUP(r) ((r)->type == WREPL_TYPE_SGROUP)
+#define R_IS_MHOMED(r) ((r)->type == WREPL_TYPE_MHOMED)
+
+static enum _R_ACTION replace_same_owner(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	/* TODO: we need to look closer at how special groups are handled */
+
+	/* REPLACE */
+	return R_DO_REPLACE;
+}
+
+/*
+UNIQUE,ACTIVE vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+UNIQUE,ACTIVE vs. UNIQUE,TOMBSTONE with different ip(s) => NOT REPLACE
+UNIQUE,RELEASED vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+UNIQUE,RELEASED vs. UNIQUE,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. UNIQUE,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,ACTIVE vs. GROUP,ACTIVE with different ip(s) => REPLACE
+UNIQUE,ACTIVE vs. GROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+UNIQUE,RELEASED vs. GROUP,ACTIVE with different ip(s) => REPLACE
+UNIQUE,RELEASED vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. GROUP,ACTIVE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,ACTIVE vs. SGROUP,ACTIVE with same ip(s) => NOT REPLACE
+UNIQUE,ACTIVE vs. SGROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+UNIQUE,RELEASED vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+UNIQUE,RELEASED vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,ACTIVE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+UNIQUE,ACTIVE vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
+UNIQUE,RELEASED vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+UNIQUE,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+UNIQUE,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
+*/
+static enum _R_ACTION replace_replica_replica_unique_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (!R_IS_ACTIVE(r1)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	if (!R_IS_SGROUP(r2) && R_IS_ACTIVE(r2)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+/*
+GROUP,ACTIVE vs. UNIQUE,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,ACTIVE vs. UNIQUE,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,RELEASED vs. UNIQUE,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,RELEASED vs. UNIQUE,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,TOMBSTONE vs. UNIQUE,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,TOMBSTONE vs. UNIQUE,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,ACTIVE vs. GROUP,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,ACTIVE vs. GROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,RELEASED vs. GROUP,ACTIVE with different ip(s) => REPLACE
+GROUP,RELEASED vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+GROUP,TOMBSTONE vs. GROUP,ACTIVE with different ip(s) => REPLACE
+GROUP,TOMBSTONE vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+GROUP,ACTIVE vs. SGROUP,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,ACTIVE vs. SGROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,RELEASED vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+GROUP,RELEASED vs. SGROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,TOMBSTONE vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+GROUP,TOMBSTONE vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+GROUP,ACTIVE vs. MHOMED,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,ACTIVE vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,RELEASED vs. MHOMED,ACTIVE with same ip(s) => NOT REPLACE
+GROUP,RELEASED vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
+GROUP,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+GROUP,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
+*/
+static enum _R_ACTION replace_replica_replica_group_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (!R_IS_ACTIVE(r1) && R_IS_GROUP(r2)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	if (R_IS_TOMBSTONE(r1) && !R_IS_UNIQUE(r2)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+/*
+SGROUP,ACTIVE vs. UNIQUE,ACTIVE with same ip(s) => NOT REPLACE
+SGROUP,ACTIVE vs. UNIQUE,TOMBSTONE with same ip(s) => NOT REPLACE
+SGROUP,RELEASED vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+SGROUP,RELEASED vs. UNIQUE,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. UNIQUE,ACTIVE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. UNIQUE,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,ACTIVE vs. GROUP,ACTIVE with same ip(s) => NOT REPLACE
+SGROUP,ACTIVE vs. GROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+SGROUP,RELEASED vs. GROUP,ACTIVE with different ip(s) => REPLACE
+SGROUP,RELEASED vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. GROUP,ACTIVE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,ACTIVE vs. MHOMED,ACTIVE with same ip(s) => NOT REPLACE
+SGROUP,ACTIVE vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
+SGROUP,RELEASED vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+SGROUP,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
+*/
+static enum _R_ACTION replace_replica_replica_sgroup_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (R_IS_SGROUP(r2)) {
+		/* not handled here: MERGE */
+		return R_DO_MERGE;
+	}
+
+	if (!R_IS_ACTIVE(r1)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+/*
+MHOMED,ACTIVE vs. GROUP,ACTIVE with different ip(s) => REPLACE
+MHOMED,ACTIVE vs. GROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+MHOMED,RELEASED vs. GROUP,ACTIVE with different ip(s) => REPLACE
+MHOMED,RELEASED vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. GROUP,ACTIVE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+MHOMED,ACTIVE vs. SGROUP,ACTIVE with same ip(s) => NOT REPLACE
+MHOMED,ACTIVE vs. SGROUP,TOMBSTONE with same ip(s) => NOT REPLACE
+MHOMED,RELEASED vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+MHOMED,RELEASED vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+*/
+static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (R_IS_UNIQUE(r2) || R_IS_MHOMED(r2)) {
+		/* not handled here: MERGE */
+		return R_DO_MERGE;
+	}
+
+	if (!R_IS_ACTIVE(r1)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	if (R_IS_GROUP(r2) && R_IS_ACTIVE(r2)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
+					  TALLOC_CTX *mem_ctx,
+					  struct wrepl_wins_owner *owner,
+					  struct wrepl_name *name)
 {
 	NTSTATUS status;
+	struct winsdb_record *rec = NULL;
+	enum _R_ACTION action = R_NOT_REPLACE;
+	BOOL same_owner = False;
+	BOOL replica_vs_replica = False;
+	BOOL local_vs_replica = False;
+
+	status = winsdb_lookup(partner->service->wins_db,
+			       &name->name, mem_ctx, &rec);
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		rec = NULL;
+		action = R_DO_ADD;
+		status = NT_STATUS_OK;
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (rec) {
+		if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
+			local_vs_replica = True;
+		} else if (strcmp(rec->wins_owner, owner->address)==0) {
+			same_owner = True;
+		} else {
+			replica_vs_replica = True;
+		}
+	}
+
+	if (rec && same_owner) {
+		action = replace_same_owner(rec, name);
+	} else if (rec && replica_vs_replica) {
+		switch (rec->type) {
+		case WREPL_TYPE_UNIQUE:
+			action = replace_replica_replica_unique_vs_X(rec, name);
+			break;
+		case WREPL_TYPE_GROUP:
+			action = replace_replica_replica_group_vs_X(rec, name);
+			break;
+		case WREPL_TYPE_SGROUP:
+			action = replace_replica_replica_sgroup_vs_X(rec, name);
+			break;
+		case WREPL_TYPE_MHOMED:
+			action = replace_replica_replica_mhomed_vs_X(rec, name);
+			break;
+		}
+	} else if (rec && local_vs_replica) {
+		/* TODO: */
+	}
+
+	/* TODO: !!! */
+	DEBUG(0,("TODO: apply record %s: %s\n",
+		 nbt_name_string(mem_ctx, &name->name), _R_ACTION_enum_string(action)));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsrv_pull_names_io *names_io)
+{
+	TALLOC_CTX *tmp_mem = talloc_new(partner);
+	NTSTATUS status;
+	uint32_t i;
 
 	/* TODO: ! */
 	DEBUG(0,("TODO: apply records count[%u]:owner[%s]:min[%llu]:max[%llu]:partner[%s]\n",
 		names_io->out.num_names, names_io->in.owner.address,
 		names_io->in.owner.min_version, names_io->in.owner.max_version,
 		partner->address));
+
+	for (i=0; i < names_io->out.num_names; i++) {
+		status = wreplsrv_apply_one_record(partner, tmp_mem,
+						   &names_io->in.owner,
+						   &names_io->out.names[i]);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
 
 	status = wreplsrv_add_table(partner->service,
 				    partner->service,
