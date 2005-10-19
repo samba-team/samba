@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -763,5 +763,64 @@ krb5_cc_cache_end_seq_get (krb5_context context,
     cursor->ops = NULL;
     free(cursor);
     return ret;
+}
+
+/*
+ * Search for a matching credential cache of type `type' that have the
+ * `principal' as the default principal. If NULL is used for `type',
+ * the default type is used. On success, `id' needs to be freed with
+ * krb5_cc_close or krb5_cc_destroy. On failure, error code is
+ * returned and `id' is set to NULL.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_match (krb5_context context,
+		     krb5_principal client,
+		     const char *type,
+		     krb5_ccache *id)
+{
+    krb5_cc_cache_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache cache = NULL;
+
+    *id = NULL;
+
+    ret = krb5_cc_cache_get_first (context, type, &cursor);
+    if (ret)
+	return ret;
+
+    while ((ret = krb5_cc_cache_next (context, cursor, &cache)) == 0) {
+	krb5_principal principal;
+
+	ret = krb5_cc_get_principal(context, cache, &principal);
+	if (ret == 0) {
+	    krb5_boolean match;
+	    
+	    match = krb5_principal_compare(context, principal, client);
+	    krb5_free_principal(context, principal);
+	    if (match)
+		break;
+	}
+
+	krb5_cc_close(context, cache);
+	cache = NULL;
+    }
+
+    krb5_cc_cache_end_seq_get(context, cursor);
+
+    if (cache == NULL) {
+	char *str;
+
+	krb5_unparse_name(context, client, &str);
+
+	krb5_set_error_string(context, "Principal %s not found in a "
+			  "credential cache", str ? str : "<out of memory>");
+	if (str)
+	    free(str);
+	return KRB5_CC_NOTFOUND;
+    }
+    *id = cache;
+
+    return 0;
 }
 
