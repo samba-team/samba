@@ -210,14 +210,15 @@ MHOMED,RELEASED vs. SGROUP,ACTIVE with different ip(s) => REPLACE
 MHOMED,RELEASED vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
 MHOMED,TOMBSTONE vs. SGROUP,ACTIVE with different ip(s) => REPLACE
 MHOMED,TOMBSTONE vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+MHOMED,ACTIVE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+MHOMED,ACTIVE vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
+MHOMED,RELEASED vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+MHOMED,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
+MHOMED,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 */
 static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
 {
-	if (R_IS_MHOMED(r2)) {
-		/* not handled here: MERGE */
-		return R_DO_MERGE;
-	}
-
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
