@@ -495,6 +495,8 @@ main(int argc, char **argv)
     test_cache_iter(context, "FILE", 0);
     test_cache_iter(context, "API", 0);
 
+    test_copy(context, "FILE", "FILE");
+    test_copy(context, "MEMORY", "MEMORY");
     test_copy(context, "FILE", "MEMORY");
     test_copy(context, "MEMORY", "FILE");
 
