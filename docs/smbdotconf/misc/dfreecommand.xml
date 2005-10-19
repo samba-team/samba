@@ -1,5 +1,5 @@
 <samba:parameter name="dfree command"
-	         context="G"
+	         context="S"
 			 type="string"
 		 advanced="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
@@ -11,11 +11,18 @@
 	with Ultrix, but may occur with other operating systems. The
 	symptom that was seen was an error of &quot;Abort Retry
 	Ignore&quot; at the end of each directory listing.</para>
-		
+
 	<para>This setting allows the replacement of the internal routines to
 	calculate the total disk space and amount available with an external
 	routine. The example below gives a possible script that might fulfill
 	this function.</para>
+
+	<para>In Samba version 3.0.21 this parameter has been changed to be
+	a per-share parameter, and in addition the parameter
+	<smbconfoption name="dfree cache time"/>dfree cache time was added
+	to allow the output of this script to be cached for systems under
+	heavy load.
+	</para>
 
 	<para>The external program will be passed a single parameter indicating 
 	a directory in the filesystem being queried. This will typically consist
