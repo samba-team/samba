@@ -88,6 +88,13 @@ static BOOL elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 		return False;
 	}
 	
+	/* root free pass */
+
+	if ( geteuid() == sec_initial_uid() ) {
+		DEBUG(5,("elog_check_access: using root's token\n"));
+		token = get_root_nt_token();
+	}
+
 	/* run the check, try for the max allowed */
 	
 	ret = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
