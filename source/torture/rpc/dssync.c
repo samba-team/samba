@@ -331,6 +331,9 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 			case DRSUAPI_ATTRIBUTE_lmPwdHistory:
 				name	= "lmPwdHistory";
 				break;
+			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+				name	= "supplementalCredentials";
+				break;
 			default:
 				continue;
 			}

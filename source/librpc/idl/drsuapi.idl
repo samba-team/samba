@@ -374,24 +374,25 @@ interface drsuapi
 	} drsuapi_DsObjectClassId;
 
 	typedef [flag(NDR_PAHEX),v1_enum,public] enum {
-		DRSUAPI_ATTRIBUTE_objectClass		= 0x00000000,
-		DRSUAPI_ATTRIBUTE_description		= 0x0000000d,
-		DRSUAPI_ATTRIBUTE_member		= 0x0000001f,
-		DRSUAPI_ATTRIBUTE_hasMasterNCs		= 0x0002000e,
-		DRSUAPI_ATTRIBUTE_invocationId		= 0x00020073,
-		DRSUAPI_ATTRIBUTE_dMDLocation		= 0x00020024,
-		DRSUAPI_ATTRIBUTE_ntSecurityDescriptor	= 0x00020119,
-		DRSUAPI_ATTRIBUTE_objectSid		= 0x00090092,
-		DRSUAPI_ATTRIBUTE_dBCSPwd		= 0x00090037,/* lmPwdHash */
-		DRSUAPI_ATTRIBUTE_unicodePwd		= 0x0009005a,/* ntPwdHash */
-		DRSUAPI_ATTRIBUTE_ntPwdHistory		= 0x0009005e,
-		DRSUAPI_ATTRIBUTE_lmPwdHistory		= 0x000900a0,
-		DRSUAPI_ATTRIBUTE_systemFlags		= 0x00090177,
-		DRSUAPI_ATTRIBUTE_serverReference	= 0x00090203,
-		DRSUAPI_ATTRIBUTE_objectCategory	= 0x0009030e,
-		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version	= 0x000905b3,
-		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs	= 0x0009071c,
-		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs	= 0x0009072c
+		DRSUAPI_ATTRIBUTE_objectClass			= 0x00000000,
+		DRSUAPI_ATTRIBUTE_description			= 0x0000000d,
+		DRSUAPI_ATTRIBUTE_member			= 0x0000001f,
+		DRSUAPI_ATTRIBUTE_hasMasterNCs			= 0x0002000e,
+		DRSUAPI_ATTRIBUTE_invocationId			= 0x00020073,
+		DRSUAPI_ATTRIBUTE_dMDLocation			= 0x00020024,
+		DRSUAPI_ATTRIBUTE_ntSecurityDescriptor		= 0x00020119,
+		DRSUAPI_ATTRIBUTE_objectSid			= 0x00090092,
+		DRSUAPI_ATTRIBUTE_dBCSPwd			= 0x00090037,/* lmPwdHash */
+		DRSUAPI_ATTRIBUTE_unicodePwd			= 0x0009005a,/* ntPwdHash */
+		DRSUAPI_ATTRIBUTE_ntPwdHistory			= 0x0009005e,
+		DRSUAPI_ATTRIBUTE_lmPwdHistory			= 0x000900a0,
+		DRSUAPI_ATTRIBUTE_supplementalCredentials	= 0x0009007d,
+		DRSUAPI_ATTRIBUTE_systemFlags			= 0x00090177,
+		DRSUAPI_ATTRIBUTE_serverReference		= 0x00090203,
+		DRSUAPI_ATTRIBUTE_objectCategory		= 0x0009030e,
+		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
+		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
+		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c
 	} drsuapi_DsAttributeId;
 
 	/* Generic DATA_BLOB values */
