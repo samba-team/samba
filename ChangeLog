@@ -1,5 +1,7 @@
 2005-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/programming.texi: Text about Kerberos errors.
+	
 	* lib/krb5/pkinit.c: Try both ReplyKey and ReplyKey-Win2k for the
 	Windows case to support the updated -09 protocol (using
 	asChecksum). Tell KDC we support this by sending
