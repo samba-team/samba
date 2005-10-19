@@ -63,10 +63,9 @@ static const char *_R_ACTION_enum_string(enum _R_ACTION action)
 #define R_IS_SGROUP(r) ((r)->type == WREPL_TYPE_SGROUP)
 #define R_IS_MHOMED(r) ((r)->type == WREPL_TYPE_MHOMED)
 
+/* blindly overwrite records from the same owner in all cases */
 static enum _R_ACTION replace_same_owner(struct winsdb_record *r1, struct wrepl_name *r2)
 {
-	/* TODO: we need to look closer at how special groups are handled */
-
 	/* REPLACE */
 	return R_DO_REPLACE;
 }
