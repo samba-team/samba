@@ -194,7 +194,7 @@ static void sid2domain_recv_init(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct sid2domain_state);
 
-	state->ctx->status = wb_init_domain_recv(state->ctx);
+	state->ctx->status = wb_init_domain_recv(ctx);
 	if (!composite_is_ok(state->ctx)) return;
 
 	composite_done(state->ctx);
