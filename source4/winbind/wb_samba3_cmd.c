@@ -128,10 +128,12 @@ static void getdcname_recv_dc(struct composite_context *ctx);
 NTSTATUS wbsrv_samba3_getdcname(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
 
 	DEBUG(5, ("wbsrv_samba3_getdcname called\n"));
 
-	ctx = wb_cmd_getdcname_send(s3call->call,
+	ctx = wb_cmd_getdcname_send(service, service->domains,
 				    s3call->request.domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
@@ -190,7 +192,9 @@ NTSTATUS wbsrv_samba3_userdomgroups(struct wbsrv_samba3_call *s3call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ctx = wb_cmd_userdomgroups_send(s3call->call, sid);
+	;
+	ctx = wb_cmd_userdomgroups_send(
+		s3call->call->wbconn->listen_socket->service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = userdomgroups_recv_groups;
@@ -252,15 +256,106 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 	}
 }
 
+static void usersids_recv_sids(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_usersids(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct dom_sid *sid;
+
+	DEBUG(5, ("wbsrv_samba3_usersids called\n"));
+
+	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	if (sid == NULL) {
+		DEBUG(5, ("Could not parse sid %s\n",
+			  s3call->request.data.sid));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ctx = wb_cmd_usersids_send(
+		s3call->call->wbconn->listen_socket->service, sid);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = usersids_recv_sids;
+	ctx->async.private_data = s3call;
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void usersids_recv_sids(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	int i, num_sids;
+	struct dom_sid **sids;
+	char *sids_string;
+	NTSTATUS status;
+
+	status = wb_cmd_usersids_recv(ctx, s3call, &num_sids, &sids);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	sids_string = talloc_strdup(s3call, "");
+	if (sids_string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		sids_string = talloc_asprintf_append(
+			sids_string, "%s\n", dom_sid_string(s3call, sids[i]));
+		if (sids_string == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	s3call->response.result = WINBINDD_OK;
+	s3call->response.extra_data = sids_string;
+	s3call->response.length += strlen(sids_string);
+	s3call->response.data.num_entries = num_sids;
+
+	/* Hmmmm. Nasty protocol -- who invented the zeros between the
+	 * SIDs? Hmmm. Could have been me -- vl */
+
+	while (*sids_string != '\0') {
+		if ((*sids_string) == '\n') {
+			*sids_string = '\0';
+		}
+		sids_string += 1;
+	}
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &s3call->response;
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
+}
+
 static void lookupname_recv_sid(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
 
 	DEBUG(5, ("wbsrv_samba3_lookupname called\n"));
 
-	ctx = wb_cmd_lookupname_send(s3call->call,
+	ctx = wb_cmd_lookupname_send(service, service->domains,
+				     s3call->request.data.name.dom_name,
 				     s3call->request.data.name.name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
@@ -286,6 +381,70 @@ static void lookupname_recv_sid(struct composite_context *ctx)
 	s3call->response.data.sid.type = sid->type;
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.sid.sid,
 				dom_sid_string(s3call, sid->sid));
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &s3call->response;
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
+}
+
+static void lookupsid_recv_name(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_lookupsid(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
+	struct dom_sid *sid;
+
+	DEBUG(5, ("wbsrv_samba3_lookupsid called\n"));
+
+	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	if (sid == NULL) {
+		DEBUG(5, ("Could not parse sid %s\n",
+			  s3call->request.data.sid));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ctx = wb_cmd_lookupsid_send(service, service->domains, sid);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	/* setup the callbacks */
+	ctx->async.fn = lookupsid_recv_name;
+	ctx->async.private_data	= s3call;
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void lookupsid_recv_name(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	struct wb_sid_object *sid;
+	NTSTATUS status;
+
+	status = wb_cmd_lookupsid_recv(ctx, s3call, &sid);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	s3call->response.result = WINBINDD_OK;
+	s3call->response.data.name.type = sid->type;
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.name.dom_name,
+				sid->domain);
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.name.name, sid->name);
 
  done:
 	if (!NT_STATUS_IS_OK(status)) {

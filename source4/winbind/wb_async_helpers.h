@@ -33,3 +33,8 @@ struct wb_sid_object {
 	const char *domain;
 	const char *name;
 };
+
+struct wb_dom_info {
+	const char *name;
+	const struct dom_sid *sid;
+};
