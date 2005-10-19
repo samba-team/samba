@@ -46,7 +46,7 @@ SMB_BIG_UINT vfswrap_disk_free(vfs_handle_struct *handle, connection_struct *con
 {
 	SMB_BIG_UINT result;
 
-	result = sys_disk_free(path, small_query, bsize, dfree, dsize);
+	result = sys_disk_free(conn, path, small_query, bsize, dfree, dsize);
 	return result;
 }
 
