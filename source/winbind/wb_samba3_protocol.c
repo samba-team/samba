@@ -69,6 +69,8 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	DEBUG(10, ("Got winbind samba3 request %d\n", s3call->request.cmd));
 
+	s3call->response.length = sizeof(s3call->response);
+
 	switch(s3call->request.cmd) {
 	case WINBINDD_INTERFACE_VERSION:
 		return wbsrv_samba3_interface_version(s3call);
@@ -94,6 +96,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 	case WINBINDD_LOOKUPNAME:
 		return wbsrv_samba3_lookupname(s3call);
 
+	case WINBINDD_LOOKUPSID:
+		return wbsrv_samba3_lookupsid(s3call);
+
 	case WINBINDD_PAM_AUTH:
 		return wbsrv_samba3_pam_auth(s3call);
 
@@ -105,6 +110,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_GETUSERDOMGROUPS:
 		return wbsrv_samba3_userdomgroups(s3call);
+
+	case WINBINDD_GETUSERSIDS:
+		return wbsrv_samba3_usersids(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;
@@ -121,17 +129,17 @@ NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_call *call, TALLOC_CTX *mem_ctx, D
 
 	extra_data = s3call->response.extra_data;
 	if (extra_data) {
-		extra_data_len = strlen((char *)s3call->response.extra_data) + 1;
+		extra_data_len = s3call->response.length -
+			sizeof(s3call->response);
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, sizeof(s3call->response) + extra_data_len);
+	blob = data_blob_talloc(mem_ctx, NULL, s3call->response.length);
 	NT_STATUS_HAVE_NO_MEMORY(blob.data);
 
 	/* don't push real pointer values into sockets */
 	if (extra_data) {
 		s3call->response.extra_data = (void *)0xFFFFFFFF;
 	}
-	s3call->response.length = sizeof(s3call->response) + extra_data_len;
 	memcpy(blob.data, &s3call->response, sizeof(s3call->response));
 	/* set back the pointer */
 	s3call->response.extra_data = extra_data;

@@ -140,6 +140,7 @@ typedef struct
 	char **server_services;
 	char *ntptr_providor;
 	char *szWinbindSeparator;
+	BOOL bWinbindSealedPipes;
 	char *swat_directory;
 	BOOL tls_enabled;
 	char *tls_keyfile;
@@ -550,6 +551,7 @@ static struct parm_struct parm_table[] = {
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"winbind sealed pipes", P_BOOL, P_GLOBAL, &Globals.bWinbindSealedPipes, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -671,6 +673,7 @@ static void init_globals(void)
 	do_parameter("WINSsupport", "False", NULL);
 
 	do_parameter("winbind separator", "\\", NULL);
+	do_parameter("winbind sealed pipes", "True", NULL);
 
 	do_parameter("client signing", "Yes", NULL);
 	do_parameter("server signing", "auto", NULL);
@@ -812,6 +815,7 @@ FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &Globals.bWinbindSealedPipes)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)

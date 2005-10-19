@@ -24,49 +24,49 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/service_task.h"
 
 struct cmd_lookupname_state {
 	struct composite_context *ctx;
-	struct wbsrv_call *call;
-	struct wbsrv_domain *domain;
 	const char *name;
 	struct wb_sid_object *result;
 };
 
-static struct composite_context *lookupname_send_req(void *p);
+static struct composite_context *lookupname_send_req(struct wbsrv_domain *domain, void *p);
 static NTSTATUS lookupname_recv_req(struct composite_context *ctx, void *p);
 
-struct composite_context *wb_cmd_lookupname_send(struct wbsrv_call *call,
+struct composite_context *wb_cmd_lookupname_send(struct wbsrv_service *service,
+						 struct wbsrv_domain *domain,
+						 const char *dom_name,
 						 const char *name)
 {
 	struct cmd_lookupname_state *state;
-	struct wbsrv_service *service = call->wbconn->listen_socket->service;
 
 	state = talloc(NULL, struct cmd_lookupname_state);
-	state->domain = service->domains;
-	state->call = call;
-	state->name = talloc_strdup(state, name);
-	state->ctx = wb_queue_domain_send(state, state->domain,
-					  call->event_ctx,
-					  call->wbconn->conn->msg_ctx,
-					  lookupname_send_req,
-					  lookupname_recv_req,
-					  state);
-	if (state->ctx == NULL) {
-		talloc_free(state);
-		return NULL;
-	}
+	state->name = talloc_asprintf(state, "%s\\%s", dom_name, name);
+	if (state->name == NULL) goto failed;
+	state->ctx = wb_domain_request_send(state, service,
+					    service->primary_sid,
+					    lookupname_send_req,
+					    lookupname_recv_req,
+					    state);
+	if (state->ctx == NULL) goto failed;
 	state->ctx->private_data = state;
 	return state->ctx;
+
+ failed:
+	talloc_free(state);
+	return NULL;
 }
 
-static struct composite_context *lookupname_send_req(void *p)
+static struct composite_context *lookupname_send_req(struct wbsrv_domain *domain,
+						     void *p)
 {
 	struct cmd_lookupname_state *state =
 		talloc_get_type(p, struct cmd_lookupname_state);
 
-	return wb_lsa_lookupnames_send(state->domain->lsa_pipe,
-				       state->domain->lsa_policy,
+	return wb_lsa_lookupnames_send(domain->lsa_pipe,
+				       domain->lsa_policy,
 				       1, &state->name);
 }
 
@@ -98,10 +98,13 @@ NTSTATUS wb_cmd_lookupname_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_cmd_lookupname(struct wbsrv_call *call, const char *name,
+NTSTATUS wb_cmd_lookupname(struct wbsrv_service *service,
+			   struct wbsrv_domain *domain,
+			   const char *dom_name,
+			   const char *name,
 			   TALLOC_CTX *mem_ctx, struct wb_sid_object **sid)
 {
 	struct composite_context *c =
-		wb_cmd_lookupname_send(call, name);
+		wb_cmd_lookupname_send(service, domain, dom_name, name);
 	return wb_cmd_lookupname_recv(c, mem_ctx, sid);
 }

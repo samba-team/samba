@@ -45,9 +45,9 @@ struct init_lsa_state {
 static void init_lsa_recv_pipe(struct composite_context *ctx);
 static void init_lsa_recv_openpol(struct rpc_request *req);
 
-static struct composite_context *wb_init_lsa_send(struct smbcli_tree *tree,
-						  uint8_t auth_type,
-						  struct cli_credentials *creds)
+struct composite_context *wb_init_lsa_send(struct smbcli_tree *tree,
+					   uint8_t auth_type,
+					   struct cli_credentials *creds)
 {
 	struct composite_context *result, *ctx;
 	struct init_lsa_state *state;
@@ -147,10 +147,10 @@ static void init_lsa_recv_openpol(struct rpc_request *req)
 	composite_done(state->ctx);
 }
 
-static NTSTATUS wb_init_lsa_recv(struct composite_context *c,
-				 TALLOC_CTX *mem_ctx,
-				 struct dcerpc_pipe **lsa_pipe,
-				 struct policy_handle **lsa_policy)
+NTSTATUS wb_init_lsa_recv(struct composite_context *c,
+			  TALLOC_CTX *mem_ctx,
+			  struct dcerpc_pipe **lsa_pipe,
+			  struct policy_handle **lsa_policy)
 {
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {

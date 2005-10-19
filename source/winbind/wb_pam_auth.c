@@ -30,7 +30,6 @@
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
 	struct event_context *event_ctx;
-	struct wbsrv_domain *domain;
 	const char *domain_name;
 	const char *user_name;
 	const char *workstation;
@@ -46,7 +45,8 @@ struct pam_auth_crap_state {
 	DATA_BLOB info3;
 };
 
-static struct composite_context *crap_samlogon_send_req(void *p);
+static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *domain,
+							void *p);
 static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx, void *p);
 
 struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
@@ -63,7 +63,6 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	state = talloc(NULL, struct pam_auth_crap_state);
 	if (state == NULL) goto failed;
 
-	state->domain = service->domains;
 	state->event_ctx = call->event_ctx;
 
 	state->domain_name = talloc_strdup(state, domain);
@@ -86,12 +85,11 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	if ((lm_resp.data != NULL) &&
 	    (state->lm_resp.data == NULL)) goto failed;
 
-	state->ctx = wb_queue_domain_send(state, state->domain,
-					  call->event_ctx,
-					  call->wbconn->conn->msg_ctx,
-					  crap_samlogon_send_req,
-					  crap_samlogon_recv_req,
-					  state);
+	state->ctx = wb_domain_request_send(state, service,
+					    service->primary_sid,
+					    crap_samlogon_send_req,
+					    crap_samlogon_recv_req,
+					    state);
 	if (state->ctx == NULL) goto failed;
 	state->ctx->private_data = state;
 	return state->ctx;
@@ -101,12 +99,13 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	return NULL;
 }
 
-static struct composite_context *crap_samlogon_send_req(void *p)
+static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *domain,
+							void *p)
 {
 	struct pam_auth_crap_state *state =
 		talloc_get_type(p, struct pam_auth_crap_state);
-	state->creds_state = cli_credentials_get_netlogon_creds(
-		state->domain->schannel_creds);
+	state->creds_state =
+		cli_credentials_get_netlogon_creds(domain->schannel_creds);
 
 	creds_client_authenticator(state->creds_state, &state->auth);
 
@@ -127,12 +126,11 @@ static struct composite_context *crap_samlogon_send_req(void *p)
 	state->ninfo.lm.data = state->lm_resp.data;
 
 	state->r.in.server_name = talloc_asprintf(
-		state, "\\\\%s",
-		dcerpc_server_name(state->domain->netlogon_pipe));
+		state, "\\\\%s", dcerpc_server_name(domain->netlogon_pipe));
 	if (state->r.in.server_name == NULL) return NULL;
 
-	state->r.in.workstation = cli_credentials_get_workstation(
-		state->domain->schannel_creds);
+	state->r.in.workstation =
+		cli_credentials_get_workstation(domain->schannel_creds);
 	state->r.in.credential = &state->auth;
 	state->r.in.return_authenticator = &state->auth2;
 	state->r.in.logon_level = 2;
@@ -140,7 +138,7 @@ static struct composite_context *crap_samlogon_send_req(void *p)
 	state->r.in.logon.network = &state->ninfo;
 	state->r.out.return_authenticator = NULL;
 
-	return composite_netr_LogonSamLogon_send(state->domain->netlogon_pipe,
+	return composite_netr_LogonSamLogon_send(domain->netlogon_pipe,
 						 state, &state->r);
 }
 

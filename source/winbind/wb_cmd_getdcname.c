@@ -24,6 +24,7 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/service_task.h"
 
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
@@ -63,7 +64,7 @@ static void composite_netr_GetAnyDCName_recv_rpc(struct rpc_request *req)
 	composite_done(ctx);
 }
 
-NTSTATUS composite_netr_GetAnyDCName_recv(struct composite_context *ctx)
+static NTSTATUS composite_netr_GetAnyDCName_recv(struct composite_context *ctx)
 {
 	NTSTATUS status = composite_wait(ctx);
 	talloc_free(ctx);
@@ -72,30 +73,28 @@ NTSTATUS composite_netr_GetAnyDCName_recv(struct composite_context *ctx)
 
 struct cmd_getdcname_state {
 	struct composite_context *ctx;
-	struct wbsrv_domain *domain;
 	const char *domain_name;
 
 	struct netr_GetAnyDCName g;
 };
 
-static struct composite_context *getdcname_send_req(void *p);
+static struct composite_context *getdcname_send_req(struct wbsrv_domain *domain,
+						    void *p);
 static NTSTATUS getdcname_recv_req(struct composite_context *ctx, void *p);
 
-struct composite_context *wb_cmd_getdcname_send(struct wbsrv_call *call,
-						const char *domain)
+struct composite_context *wb_cmd_getdcname_send(struct wbsrv_service *service,
+						struct wbsrv_domain *domain,
+						const char *domain_name)
 {
 	struct cmd_getdcname_state *state;
-	struct wbsrv_service *service = call->wbconn->listen_socket->service;
 
 	state = talloc(NULL, struct cmd_getdcname_state);
-	state->domain = service->domains;
-	state->domain_name = talloc_strdup(state, domain);
-	state->ctx = wb_queue_domain_send(state, state->domain,
-					  call->event_ctx,
-					  call->wbconn->conn->msg_ctx,
-					  getdcname_send_req,
-					  getdcname_recv_req,
-					  state);
+	state->domain_name = talloc_strdup(state, domain_name);
+	state->ctx = wb_domain_request_send(state, service,
+					    service->primary_sid,
+					    getdcname_send_req,
+					    getdcname_recv_req,
+					    state);
 	if (state->ctx == NULL) {
 		talloc_free(state);
 		return NULL;
@@ -104,17 +103,17 @@ struct composite_context *wb_cmd_getdcname_send(struct wbsrv_call *call,
 	return state->ctx;
 }
 
-static struct composite_context *getdcname_send_req(void *p)
+static struct composite_context *getdcname_send_req(struct wbsrv_domain *domain, void *p)
 {
 	struct cmd_getdcname_state *state =
 		talloc_get_type(p, struct cmd_getdcname_state);
 
 	state->g.in.logon_server = talloc_asprintf(
 		state, "\\\\%s",
-		dcerpc_server_name(state->domain->netlogon_pipe));
+		dcerpc_server_name(domain->netlogon_pipe));
 	state->g.in.domainname = state->domain_name;
 
-	return composite_netr_GetAnyDCName_send(state->domain->netlogon_pipe,
+	return composite_netr_GetAnyDCName_send(domain->netlogon_pipe,
 						state, &state->g);
 }
 
