@@ -360,6 +360,163 @@ NTSTATUS wb_get_schannel_creds(struct cli_credentials *wks_creds,
 	return wb_get_schannel_creds_recv(c, mem_ctx, netlogon_pipe);
 }
 
+struct lsa_lookupsids_state {
+	struct composite_context *ctx;
+	int num_sids;
+	struct lsa_LookupSids r;
+	struct lsa_SidArray sids;
+	struct lsa_TransNameArray names;
+	uint32_t count;
+	struct wb_sid_object **result;
+};
+
+static void lsa_lookupsids_recv_names(struct rpc_request *req);
+
+struct composite_context *wb_lsa_lookupsids_send(struct dcerpc_pipe *lsa_pipe,
+						 struct policy_handle *handle,
+						 int num_sids,
+						 const struct dom_sid **sids)
+{
+	struct composite_context *result;
+	struct rpc_request *req;
+	struct lsa_lookupsids_state *state;
+	int i;
+
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = lsa_pipe->conn->event_ctx;
+
+	state = talloc(result, struct lsa_lookupsids_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+	state->ctx = result;
+
+	state->sids.num_sids = num_sids;
+	state->sids.sids = talloc_array(state, struct lsa_SidPtr, num_sids);
+	if (state->sids.sids == NULL) goto failed;
+
+	for (i=0; i<num_sids; i++) {
+		state->sids.sids[i].sid = dom_sid_dup(state->sids.sids,
+						      sids[i]);
+		if (state->sids.sids[i].sid == NULL) goto failed;
+	}
+
+	state->count = 0;
+	state->num_sids = num_sids;
+	state->names.count = 0;
+	state->names.names = NULL;
+
+	state->r.in.handle = handle;
+	state->r.in.sids = &state->sids;
+	state->r.in.names = &state->names;
+	state->r.in.level = 1;
+	state->r.in.count = &state->count;
+	state->r.out.names = &state->names;
+	state->r.out.count = &state->count;
+
+	req = dcerpc_lsa_LookupSids_send(lsa_pipe, state, &state->r);
+	if (req == NULL) goto failed;
+
+	req->async.callback = lsa_lookupsids_recv_names;
+	req->async.private = state;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void lsa_lookupsids_recv_names(struct rpc_request *req)
+{
+	struct lsa_lookupsids_state *state =
+		talloc_get_type(req->async.private,
+				struct lsa_lookupsids_state);
+	int i;
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->r.out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status) &&
+	    !NT_STATUS_EQUAL(state->ctx->status, STATUS_SOME_UNMAPPED)) {
+		composite_error(state->ctx, state->ctx->status);
+		return;
+	}
+
+	state->result = talloc_array(state, struct wb_sid_object *,
+				     state->num_sids);
+	if (composite_nomem(state->result, state->ctx)) return;
+
+	for (i=0; i<state->num_sids; i++) {
+		struct lsa_TranslatedName *name =
+			&state->r.out.names->names[i];
+		struct lsa_TrustInformation *dom;
+
+		state->result[i] = talloc_zero(state->result,
+					       struct wb_sid_object);
+		if (composite_nomem(state->result[i], state->ctx)) return;
+
+		state->result[i]->type = name->sid_type;
+		if (state->result[i]->type == SID_NAME_UNKNOWN) {
+			continue;
+		}
+
+		if (name->sid_index >= state->r.out.domains->count) {
+			composite_error(state->ctx,
+					NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+
+		dom = &state->r.out.domains->domains[name->sid_index];
+		state->result[i]->domain = talloc_reference(state->result[i],
+							    dom->name.string);
+		if ((name->sid_type == SID_NAME_DOMAIN) ||
+		    (name->name.string == NULL)) {
+			state->result[i]->name =
+				talloc_strdup(state->result[i], "");
+		} else {
+			state->result[i]->name =
+				talloc_steal(state->result[i],
+					     name->name.string);
+		}
+
+		if (composite_nomem(state->result[i]->name, state->ctx)) {
+			return;
+		}
+	}
+
+	composite_done(state->ctx);
+}
+
+NTSTATUS wb_lsa_lookupsids_recv(struct composite_context *c,
+				TALLOC_CTX *mem_ctx,
+				struct wb_sid_object ***names)
+{
+	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct lsa_lookupsids_state *state =
+			talloc_get_type(c->private_data,
+					struct lsa_lookupsids_state);
+		*names = talloc_steal(mem_ctx, state->result);
+	}
+	talloc_free(c);
+	return status;
+}
+
+NTSTATUS wb_lsa_lookupsids(struct dcerpc_pipe *lsa_pipe,
+			   struct policy_handle *handle,
+			   int num_sids, const struct dom_sid **sids,
+			   TALLOC_CTX *mem_ctx,
+			   struct wb_sid_object ***names)
+{
+	struct composite_context *c =
+		wb_lsa_lookupsids_send(lsa_pipe, handle, num_sids, sids);
+	return wb_lsa_lookupnames_recv(c, mem_ctx, names);
+}
+
+			   
+
 struct lsa_lookupnames_state {
 	struct composite_context *ctx;
 	uint32_t num_names;
@@ -747,4 +904,3 @@ NTSTATUS wb_samr_userdomgroups_recv(struct composite_context *ctx,
 	talloc_free(ctx);
 	return status;
 }
-	

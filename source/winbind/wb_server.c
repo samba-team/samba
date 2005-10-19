@@ -312,6 +312,8 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
+	service->primary_sid = talloc_reference(service, service->domains->sid);
+
 	/* setup the unprivileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;

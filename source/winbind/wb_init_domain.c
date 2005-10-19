@@ -26,6 +26,7 @@
 #include "winbind/wb_async_helpers.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/service_task.h"
 #include "dlinklist.h"
 
 #include "librpc/gen_ndr/nbt.h"
@@ -84,6 +85,7 @@ struct init_domain_state {
 };
 
 static void init_domain_recv_dcs(struct composite_context *ctx);
+static void init_domain_recv_dcip(struct composite_context *ctx);
 static void init_domain_recv_tree(struct composite_context *ctx);
 static void init_domain_recv_netlogoncreds(struct composite_context *ctx);
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
@@ -110,6 +112,17 @@ struct composite_context *wb_init_domain_send(struct wbsrv_domain *domain,
 	result->private_data = state;
 
 	state->domain = domain;
+
+	if (domain->dcname != NULL) {
+		struct nbt_name name;
+		make_nbt_name(&name, domain->dcname, 0x20);
+		ctx = resolve_name_send(&name, result->event_ctx,
+					lp_name_resolve_order());
+		if (ctx == NULL) goto failed;
+		ctx->async.fn = init_domain_recv_dcip;
+		ctx->async.private_data = state;
+		return result;
+	}
 
 	if (state->domain->schannel_creds != NULL) {
 		talloc_free(state->domain->schannel_creds);
@@ -175,6 +188,31 @@ static void init_domain_recv_dcs(struct composite_context *ctx)
 	composite_continue(state->ctx, ctx, init_domain_recv_tree, state);
 }
 
+static void init_domain_recv_dcip(struct composite_context *ctx)
+{
+	struct init_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_domain_state);
+	const char *dcaddr;
+
+	state->ctx->status = resolve_name_recv(ctx, state, &dcaddr);
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->conn.in.dest_host = dcaddr;
+	state->conn.in.port = 0;
+	state->conn.in.called_name = state->domain->dcname;
+	state->conn.in.service = "IPC$";
+	state->conn.in.service_type = "IPC";
+	state->conn.in.workgroup = state->domain->name;
+	state->conn.in.credentials = state->domain->schannel_creds;
+
+	state->conn.in.fallback_to_anonymous = True;
+
+	ctx = smb_composite_connect_send(&state->conn, state,
+					 state->ctx->event_ctx);
+	composite_continue(state->ctx, ctx, init_domain_recv_tree, state);
+}
+
 static void init_domain_recv_tree(struct composite_context *ctx)
 {
 	struct init_domain_state *state =
@@ -184,7 +222,8 @@ static void init_domain_recv_tree(struct composite_context *ctx)
 	state->ctx->status = smb_composite_connect_recv(ctx, state);
 	if (!composite_is_ok(state->ctx)) return;
 
-	if (state->domain->schannel_creds == NULL) {
+	if ((state->domain->schannel_creds == NULL) ||
+	    cli_credentials_is_anonymous(state->domain->schannel_creds)) {
 		/* No chance to open netlogon */
 		ctx = wb_connect_lsa_send(state->conn.out.tree, NULL);
 		composite_continue(state->ctx, ctx,
@@ -211,6 +250,15 @@ static void init_domain_recv_netlogoncreds(struct composite_context *ctx)
 	if (!composite_is_ok(state->ctx)) return;
 
 	talloc_unlink(state, state->conn.out.tree); /* The pipe owns it now */
+
+	if (!lp_winbind_sealed_pipes()) {
+		state->netlogon_pipe = talloc_reference(state,
+							state->auth2_pipe);
+		ctx = wb_connect_lsa_send(state->conn.out.tree, NULL);
+		composite_continue(state->ctx, ctx, init_domain_recv_lsa,
+				   state);
+		return;
+	}
 
 	state->netlogon_pipe = dcerpc_pipe_init(state, state->ctx->event_ctx);
 	if (composite_nomem(state->netlogon_pipe, state->ctx)) return;
@@ -272,7 +320,6 @@ static void init_domain_recv_lsa(struct composite_context *ctx)
 		/* Give the tree to the LSA pipe. If auth2_pipe exists we have
 		 * given it to that already */
 		talloc_unlink(state, state->conn.out.tree);
-		state->conn.out.tree = NULL;
 	}
 
 	state->queryinfo.in.handle = state->lsa_policy;
@@ -391,115 +438,4 @@ NTSTATUS wb_init_domain(struct wbsrv_domain *domain,
 	struct composite_context *c =
 		wb_init_domain_send(domain, event_ctx, messaging_ctx);
 	return wb_init_domain_recv(c);
-}
-
-struct queue_domain_state {
-	struct queue_domain_state *prev, *next;
-	struct composite_context *ctx;
-	struct wbsrv_domain *domain;
-	struct composite_context *(*send_fn)(void *p);
-	NTSTATUS (*recv_fn)(struct composite_context *c,
-			    void *p);
-	void *private_data;
-};
-
-static void queue_domain_recv_init(struct composite_context *ctx);
-static void queue_domain_recv_sub(struct composite_context *ctx);
-
-struct composite_context *wb_queue_domain_send(TALLOC_CTX *mem_ctx,
-					       struct wbsrv_domain *domain,
-					       struct event_context *event_ctx,
-					       struct messaging_context *msg_ctx,
-					       struct composite_context *(*send_fn)(void *p),
-					       NTSTATUS (*recv_fn)(struct composite_context *c,
-								   void *p),
-					       void *private_data)
-{
-	struct composite_context *result, *ctx;
-	struct queue_domain_state *state;
-
-	result = talloc(mem_ctx, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = event_ctx;
-
-	state = talloc(result, struct queue_domain_state);
-	if (state == NULL) goto failed;
-	state->ctx = result;
-	result->private_data = state;
-
-	state->send_fn = send_fn;
-	state->recv_fn = recv_fn;
-	state->private_data = private_data;
-	state->domain = domain;
-
-	if (domain->busy) {
-		DEBUG(0, ("Domain %s busy\n", domain->name));
-		DLIST_ADD_END(domain->request_queue, state,
-			      struct queue_domain_state *);
-		return result;
-	}
-
-	domain->busy = True;
-
-	if (!domain->initialized) {
-		ctx = wb_init_domain_send(domain, result->event_ctx, msg_ctx);
-		if (ctx == NULL) goto failed;
-		ctx->async.fn = queue_domain_recv_init;
-		ctx->async.private_data = state;
-		return result;
-	}
-
-	ctx = state->send_fn(state->private_data);
-	if (ctx == NULL) goto failed;
-	ctx->async.fn = queue_domain_recv_sub;
-	ctx->async.private_data = state;
-	return result;
-
- failed:
-	talloc_free(result);
-	return NULL;
-}
-
-static void queue_domain_recv_init(struct composite_context *ctx)
-{
-	struct queue_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct queue_domain_state);
-
-	state->ctx->status = wb_init_domain_recv(ctx);
-	if (!composite_is_ok(state->ctx)) return;
-
-	ctx = state->send_fn(state->private_data);
-	composite_continue(state->ctx, ctx, queue_domain_recv_sub, state);
-}
-
-static void queue_domain_recv_sub(struct composite_context *ctx)
-{
-	struct queue_domain_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct queue_domain_state);
-
-	state->ctx->status = state->recv_fn(ctx, state->private_data);
-	state->domain->busy = False;
-
-	if (state->domain->request_queue != NULL) {
-		struct queue_domain_state *s2;
-		s2 = state->domain->request_queue;
-		DLIST_REMOVE(state->domain->request_queue, s2);
-		ctx = s2->send_fn(s2->private_data);
-		composite_continue(s2->ctx, ctx, queue_domain_recv_sub, s2);
-		state->domain->busy = True;
-	}
-
-	if (!composite_is_ok(state->ctx)) return;
-	composite_done(state->ctx);
-}
-
-NTSTATUS wb_queue_domain_recv(struct composite_context *ctx)
-{
-	NTSTATUS status = composite_wait(ctx);
-	talloc_free(ctx);
-	return status;
 }

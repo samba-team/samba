@@ -33,6 +33,7 @@
 struct wbsrv_service {
 	struct task_server *task;
 
+	const struct dom_sid *primary_sid;
 	struct wbsrv_domain *domains;
 };
 
@@ -51,6 +52,7 @@ struct wbsrv_domain {
 
 	const char *name;
 	const struct dom_sid *sid;
+	const char *dcname;
 
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;
@@ -65,7 +67,7 @@ struct wbsrv_domain {
 	struct cli_credentials *schannel_creds;
 
 	BOOL busy;
-	struct queue_domain_state *request_queue;
+	struct domain_request_state *request_queue;
 };
 
 /* 
