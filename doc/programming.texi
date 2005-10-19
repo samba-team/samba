@@ -81,6 +81,23 @@ See also manual page for @manpage{krb5_ccache,3}
 
 @subsection Kerberos errors
 
+Kerberos errors are based on the com_err library.  All error codes are
+32-bit signed numbers, the first 24 bits define what subsystem the
+error originates from, and last 8 bits are 255 error codes withing the
+library.  Each error code have fixed string associated with it.  For
+example, the error-code -1765328383 have the symbolic name
+KRB5KDC_ERR_NAME_EXP, and associated error string ``Client's entry in
+database has expired''.
+
+This is a great improvment compared to just getting one of the unix
+error-codes back.  However, Heimdal have an extention to pass back
+customized errors messages.  Instead of getting ``Key table entry not
+found'', the user might back ``failed to find
+host/host.example.com@@EXAMLE.COM(kvno 3) in keytab /etc/krb5.keytab
+(des-cbc-crc)''.  This improves the chance that the user find the
+cause of the error so you should use the customized error message
+whenever its avaible.
+
 See also manual page for @manpage{krb5_get_error_string,3} and
 @manpage{krb5_get_err_text,3}.
 
