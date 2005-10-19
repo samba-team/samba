@@ -109,7 +109,6 @@ typedef struct
 	char *szPidDir;
 	char *szRootdir;
 	char *szDefaultService;
-	char *szDfree;
 	char *szGetQuota;
 	char *szSetQuota;
 	char *szMsgCommand;
@@ -358,6 +357,7 @@ typedef struct
 	char **szVfsObjects;
 	char *szMSDfsProxy;
 	char *szAioWriteBehind;
+	char *szDfree;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
 	int iMaxReportedPrintJobs;
@@ -376,6 +376,7 @@ typedef struct
 	int iOplockContentionLimit;
 	int iCSCPolicy;
 	int iBlock_size;
+	int iDfreeCacheTime;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
 	int  iCaseSensitive;
@@ -492,6 +493,7 @@ static service sDefault = {
 	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
 	NULL,			/* szAioWriteBehind */
+	NULL,			/* szDfree */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
 	0,			/* iMaxReportedPrintJobs */
@@ -509,7 +511,8 @@ static service sDefault = {
 	DEFAULT_PRINTING,	/* iPrinting */
 	2,			/* iOplockContentionLimit */
 	0,			/* iCSCPolicy */
-	1024,           /* iBlock_size */
+	1024,           	/* iBlock_size */
+	0,			/* iDfreeCacheTime */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
 	Auto,			/* case sensitive */
@@ -1180,7 +1183,8 @@ static struct parm_struct parm_table[] = {
 	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED}, 
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED}, 
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, FLAG_ADVANCED}, 
-	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, FLAG_ADVANCED}, 
+	{"dfree cache time", P_STRING, P_LOCAL, &sDefault.iDfreeCacheTime, NULL, NULL, FLAG_ADVANCED}, 
+	{"dfree command", P_STRING, P_LOCAL, &sDefault.szDfree, NULL, NULL, FLAG_ADVANCED}, 
 	{"get quota command", P_STRING, P_GLOBAL, &Globals.szGetQuota, NULL, NULL, FLAG_ADVANCED}, 
 	{"set quota command", P_STRING, P_GLOBAL, &Globals.szSetQuota, NULL, NULL, FLAG_ADVANCED}, 
 	{"remote announce", P_STRING, P_GLOBAL, &Globals.szRemoteAnnounce, NULL, NULL, FLAG_ADVANCED}, 
@@ -1721,7 +1725,6 @@ FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
-FN_GLOBAL_STRING(lp_dfree_command, &Globals.szDfree)
 FN_GLOBAL_STRING(lp_get_quota_command, &Globals.szGetQuota)
 FN_GLOBAL_STRING(lp_set_quota_command, &Globals.szSetQuota)
 FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
@@ -1933,6 +1936,7 @@ FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
+FN_LOCAL_STRING(lp_dfree_command, szDfree)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
@@ -2007,6 +2011,7 @@ FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
+FN_LOCAL_INTEGER(lp_dfree_cache_time, iDfreeCacheTime)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
