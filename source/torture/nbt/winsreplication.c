@@ -676,6 +676,20 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 		.num_ips	= ARRAY_SIZE(addresses_A_1),
 		.ips		= addresses_A_1,
 		},{
+		.type		= WREPL_TYPE_SGROUP,
+		.state		= WREPL_STATE_ACTIVE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+		.ips		= addresses_A_3_4,
+		},{
+		.type		= WREPL_TYPE_SGROUP,
+		.state		= WREPL_STATE_TOMBSTONE,
+		.node		= WREPL_NODE_B,
+		.is_static	= False,
+		.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+		.ips		= addresses_B_3_4,
+		},{
 		/* the last one should always be a unique,tomstone record! */
 		.type		= WREPL_TYPE_UNIQUE,
 		.state		= WREPL_STATE_TOMBSTONE,
