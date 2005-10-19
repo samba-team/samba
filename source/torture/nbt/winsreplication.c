@@ -2944,6 +2944,25 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		}
 
 		if (!records[i].cleanup) {
+			const char *expected;
+			const char *ips;
+
+			if (records[i].r2.merge_expected) {
+				expected = "MERGE";
+			} else if (records[i].r2.apply_expected) {
+				expected = "REPLACE";
+			} else {
+				expected = "NOT REPLACE";
+			}
+
+			if (!records[i].r1.ips && !records[i].r2.ips) {
+				ips = "no";
+			} else if (records[i].r1.ips==records[i].r2.ips) {
+				ips = "same";
+			} else {
+				ips = "different";
+			}
+
 			printf("%s,%s%s vs. %s,%s%s with %s ip(s) => %s\n",
 				wrepl_name_type_string(records[i].r1.type),
 				wrepl_name_state_string(records[i].r1.state),
@@ -2951,8 +2970,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 				wrepl_name_type_string(records[i].r2.type),
 				wrepl_name_state_string(records[i].r2.state),
 				(records[i].r2.is_static?",static":""),
-				(records[i].r1.ips==records[i].r2.ips?"same":"different"),
-				(records[i].r2.apply_expected?"REPLACE":"NOT REPLACE"));
+				ips, expected);
 		}
 
 		/*
