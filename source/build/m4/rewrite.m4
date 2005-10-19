@@ -448,13 +448,6 @@ if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
     AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
 fi
 
-AC_CACHE_CHECK([for ftruncate needs root],samba_cv_FTRUNCATE_NEEDS_ROOT,[
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/ftruncroot.c"],
-           samba_cv_FTRUNCATE_NEEDS_ROOT=yes,samba_cv_FTRUNCATE_NEEDS_ROOT=no,samba_cv_FTRUNCATE_NEEDS_ROOT=cross)])
-if test x"$samba_cv_FTRUNCATE_NEEDS_ROOT" = x"yes"; then
-    AC_DEFINE(FTRUNCATE_NEEDS_ROOT,1,[Whether ftruncate() needs root])
-fi
-
 AC_CACHE_CHECK([for st_blocks in struct stat],samba_cv_HAVE_STAT_ST_BLOCKS,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/stat.h>
