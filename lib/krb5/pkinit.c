@@ -764,6 +764,10 @@ pk_mk_padata(krb5_context context,
     ret = krb5_padata_add(context, md, pa_type, buf.data, buf.length);
     if (ret)
 	free(buf.data);
+
+    if (ret == 0 && compat == COMPAT_WIN2K)
+	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
+
 out:
     free_ContentInfo(&content_info);
 
@@ -1180,7 +1184,7 @@ _krb5_pk_verify_sign(krb5_context context,
     return ret;
 }
 
- static krb5_error_code
+static krb5_error_code
 get_reply_key_win(krb5_context context,
 		  const krb5_data *content,
 		  unsigned nonce,
@@ -1502,7 +1506,9 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     switch(type) {
     case COMPAT_WIN2K:
-	ret = get_reply_key_win(context, &content, nonce, key);
+	ret = get_reply_key(context, &content, req_buffer, key);
+	if (ret != 0)
+	    ret = get_reply_key_win(context, &content, nonce, key);
 	break;
     case COMPAT_IETF:
 	ret = get_reply_key(context, &content, req_buffer, key);
