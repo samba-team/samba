@@ -60,6 +60,7 @@ static int net_lookup_host(int argc, const char **argv)
 	return 0;
 }
 
+#ifdef HAVE_LDAP
 static void print_ldap_srvlist(char *srvlist)
 {
 	char *cur, *next;
@@ -80,7 +81,7 @@ static void print_ldap_srvlist(char *srvlist)
 		cur = next;
 	} while (next);
 }
-		
+#endif
 
 static int net_lookup_ldap(int argc, const char **argv)
 {

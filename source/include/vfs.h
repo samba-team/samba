@@ -3,7 +3,7 @@
    VFS structures and parameters
    Copyright (C) Jeremy Allison                         1999-2005
    Copyright (C) Tim Potter				1999
-   Copyright (C) Alexander Bokovoy			2002
+   Copyright (C) Alexander Bokovoy			2002-2005
    Copyright (C) Stefan (metze) Metzmacher		2003
    
    This program is free software; you can redistribute it and/or modify
@@ -60,7 +60,8 @@
    Also include aio calls. JRA. */
 /* Changed to version 13 as the internal structure of files_struct has changed. JRA */
 /* Changed to version 14 as the we had to change DIR to SMB_STRUCT_DIR. JRA */
-#define SMB_VFS_INTERFACE_VERSION 14
+/* Changed to version 15 as the we added the statvfs call. JRA */
+#define SMB_VFS_INTERFACE_VERSION 15
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -82,6 +83,7 @@ struct vfs_handle_struct;
 struct connection_struct;
 struct files_struct;
 struct security_descriptor_info;
+struct vfs_statvfs_struct;
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
@@ -101,7 +103,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GET_QUOTA,
 	SMB_VFS_OP_SET_QUOTA,
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
-
+	SMB_VFS_OP_STATVFS,
 
 	/* Directory operations */
 
@@ -222,6 +224,7 @@ struct vfs_ops {
 		int (*get_quota)(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*set_quota)(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
+		int (*statvfs)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, struct vfs_statvfs_struct *statbuf);
 		
 		/* Directory operations */
 		
@@ -334,6 +337,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *get_quota;
 		struct vfs_handle_struct *set_quota;
 		struct vfs_handle_struct *get_shadow_copy_data;
+		struct vfs_handle_struct *statvfs;
 
 		/* Directory operations */
 
@@ -478,7 +482,7 @@ typedef enum _vfs_op_layer {
     using this information.
 */
 
-typedef struct _vfs_op_tuple {
+typedef struct vfs_op_tuple {
 	void* op;
 	vfs_op_type type;
 	vfs_op_layer layer;
@@ -493,6 +497,34 @@ typedef struct vfs_handle_struct {
 	void *data;
 	void (*free_data)(void **data);
 } vfs_handle_struct;
+
+
+typedef struct vfs_statvfs_struct {
+	/* For undefined recommended transfer size return -1 in that field */
+	uint32 OptimalTransferSize;  /* bsize on some os, iosize on other os */
+	uint32 BlockSize; 
+
+	/*
+	 The next three fields are in terms of the block size.
+	 (above). If block size is unknown, 4096 would be a
+	 reasonable block size for a server to report. 
+	 Note that returning the blocks/blocksavail removes need
+	 to make a second call (to QFSInfo level 0x103 to get this info.
+	 UserBlockAvail is typically less than or equal to BlocksAvail,
+	 if no distinction is made return the same value in each.
+	*/
+
+	SMB_BIG_UINT TotalBlocks;
+	SMB_BIG_UINT BlocksAvail;       /* bfree */
+	SMB_BIG_UINT UserBlocksAvail;   /* bavail */
+
+	/* For undefined Node fields or FSID return -1 */
+	SMB_BIG_UINT TotalFileNodes;
+	SMB_BIG_UINT FreeFileNodes;
+	SMB_BIG_UINT FsIdentifier;   /* fsid */
+	/* NB Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call */
+	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
+} vfs_statvfs_struct;
 
 
 #define SMB_VFS_HANDLE_GET_DATA(handle, datap, type, ret) { \
