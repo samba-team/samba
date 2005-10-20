@@ -211,6 +211,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *FQDN_1779_name;
 	struct ldb_dn *FQDN_1779_dn;
 	struct ldb_dn *realm_dn;
+	const char *realm_dn_str;
 	const char *realm_canonical;
 	const char *realm_canonical_ex;
 	const char *user_principal_name;
@@ -311,7 +312,8 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 	
-	realm_dn =  ldb_dn_explode(mem_ctx, r.out.ctr.ctr1->array[0].result_name);
+	realm_dn_str = r.out.ctr.ctr1->array[0].result_name;
+	realm_dn =  ldb_dn_explode(mem_ctx, realm_dn_str);
 	realm_canonical = ldb_dn_canonical_string(mem_ctx, realm_dn);
 
 	if (strcmp(realm_canonical, 
@@ -558,6 +560,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = talloc_asprintf(mem_ctx, "krbtgt"),
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			},
+			{ 
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "kadmin/changepw"),
+				.status = DRSUAPI_DS_NAME_STATUS_OK,
+				.expected_str = talloc_asprintf(mem_ctx, "CN=krbtgt,CN=Users,%s", realm_dn_str)
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
