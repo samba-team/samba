@@ -223,13 +223,13 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	pipe_state->creds->account_name = talloc_reference(pipe_state->creds, r->in.account_name);
+	pipe_state->creds->account_name = talloc_steal(pipe_state->creds, r->in.account_name);
 	
-	pipe_state->creds->computer_name = talloc_reference(pipe_state->creds, r->in.computer_name);
+	pipe_state->creds->computer_name = talloc_steal(pipe_state->creds, r->in.computer_name);
 
 	pipe_state->creds->secure_channel_type = r->in.secure_channel_type;
 
-	pipe_state->creds->rid = *r->out.rid;
+	pipe_state->creds->sid = samdb_result_dom_sid(pipe_state->creds, msgs[0], "objectSid");
 
 	pipe_state->creds->domain = talloc_strdup(pipe_state->creds, lp_workgroup());
 
@@ -305,19 +305,8 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 {
 	struct server_pipe_state *pipe_state = dce_call->context->private;
 
-	void *sam_ctx;
-	int num_records;
-	int num_records_domain;
-	int ret;
-	struct ldb_message **msgs;
-	struct ldb_message **msgs_domain;
+	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
-	struct ldb_message *mod;
-	struct dom_sid *domain_sid;
-
-	const char *attrs[] = {"objectSid", NULL };
-
-	const char **domain_attrs = attrs;
 
 	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -326,79 +315,18 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-	/* pull the user attributes */
-	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
-				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   pipe_state->creds->account_name);
-	if (num_records == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
- 	}
 
-	if (num_records == 0) {
-		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
-			 pipe_state->creds->account_name));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (num_records > 1) {
-		DEBUG(0,("Found %d records matching user [%s]\n", num_records, 
-			 pipe_state->creds->account_name));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
-	if (!domain_sid) {
-		DEBUG(0,("no objectSid in user record\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* find the domain's DN */
-	num_records_domain = gendb_search(sam_ctx, mem_ctx, NULL, 
-					  &msgs_domain, domain_attrs,
-					  "(&(objectSid=%s)(objectclass=domain))", 
-					  ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
-	if (num_records_domain == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	if (num_records_domain == 0) {
-		DEBUG(3,("Couldn't find domain [%s] in samdb.\n", 
-			 dom_sid_string(mem_ctx, domain_sid)));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (num_records_domain > 1) {
-		DEBUG(0,("Found %d records matching domain [%s]\n", 
-			 num_records_domain, dom_sid_string(mem_ctx, domain_sid)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	mod = talloc_zero(mem_ctx, struct ldb_message);
-	NT_STATUS_HAVE_NO_MEMORY(mod);
-	mod->dn = talloc_reference(mod, msgs[0]->dn);
-    
 	creds_des_decrypt(pipe_state->creds, &r->in.new_password);
 
-	/* set the password - samdb needs to know both the domain and user DNs,
-	   so the domain password policy can be used */
-	nt_status = samdb_set_password(sam_ctx, mod,
-				       msgs[0]->dn,
-				       msgs_domain[0]->dn,
-				       mod,
-				       NULL, /* Don't have plaintext */
-				       NULL, &r->in.new_password,
-				       False, /* This is not considered a password change */
-				       False, /* don't restrict this password change (match w2k3) */
-				       NULL);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	ret = samdb_replace(sam_ctx, mem_ctx, mod);
-	if (ret != 0) {
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
+	/* Using the sid for the account as the key, set the password */
+	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx, 
+					   pipe_state->creds->sid,
+					   NULL, /* Don't have plaintext */
+					   NULL, &r->in.new_password,
+					   False, /* This is not considered a password change */
+					   False, /* don't restrict this password change (match w2k3) */
+					   NULL, NULL);
+	return nt_status;
 }
 
 
@@ -1013,23 +941,13 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 {
 	struct server_pipe_state *pipe_state = dce_call->context->private;
 
-	void *sam_ctx;
-	int num_records;
-	int num_records_domain;
-	int ret;
-	struct ldb_message **msgs;
-	struct ldb_message **msgs_domain;
+	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
-	struct ldb_message *mod;
-	struct dom_sid *domain_sid;
 	char new_pass[512];
 	uint32_t new_pass_len;
+	BOOL ret;
 
 	struct samr_CryptPassword password_buf;
-
-	const char *attrs[] = {"objectSid", NULL };
-
-	const char **domain_attrs = attrs;
 
 	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -1038,58 +956,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
-	/* pull the user attributes */
-	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
-				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   pipe_state->creds->account_name);
-	if (num_records == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
- 	}
 
-	if (num_records == 0) {
-		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
-			 pipe_state->creds->account_name));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (num_records > 1) {
-		DEBUG(0,("Found %d records matching user [%s]\n", num_records, 
-			 pipe_state->creds->account_name));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
-	if (!domain_sid) {
-		DEBUG(0,("no objectSid in user record\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* find the domain's DN */
-	num_records_domain = gendb_search(sam_ctx, mem_ctx, NULL, 
-					  &msgs_domain, domain_attrs,
-					  "(&(objectSid=%s)(objectclass=domain))", 
-					  ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
-	if (num_records_domain == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	if (num_records_domain == 0) {
-		DEBUG(3,("Couldn't find domain [%s] in samdb.\n", 
-			 ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (num_records_domain > 1) {
-		DEBUG(0,("Found %d records matching domain [%s]\n", 
-			 num_records_domain, 
-			 ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	mod = talloc_zero(mem_ctx, struct ldb_message);
-	NT_STATUS_HAVE_NO_MEMORY(mod);
-	mod->dn = talloc_reference(mod, msgs[0]->dn);
-    
 	memcpy(password_buf.data, r->in.new_password.data, 512);
 	SIVAL(password_buf.data,512,r->in.new_password.length);
 	creds_arcfour_crypt(pipe_state->creds, password_buf.data, 516);
@@ -1101,26 +968,15 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* set the password - samdb needs to know both the domain and user DNs,
-	   so the domain password policy can be used */
-	nt_status = samdb_set_password(sam_ctx, mod,
-				       msgs[0]->dn,
-				       msgs_domain[0]->dn,
-				       mod, new_pass, /* we have plaintext */
-				       NULL, NULL,
-				       False, /* This is not considered a password change */
-				       False, /* don't restrict this password change (match w2k3) */
-				       NULL);
-	ZERO_STRUCT(new_pass);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	ret = samdb_replace(sam_ctx, mem_ctx, mod);
-	if (ret != 0) {
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
+	/* Using the sid for the account as the key, set the password */
+	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
+					   pipe_state->creds->sid,
+					   new_pass, /* we have plaintext */
+					   NULL, NULL,
+					   False, /* This is not considered a password change */
+					   False, /* don't restrict this password change (match w2k3) */
+					   NULL, NULL);
+	return nt_status;
 }
 
 
