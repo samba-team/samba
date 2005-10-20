@@ -43,7 +43,7 @@ struct gensec_gssapi_state {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_ccache ccache;
 	const char *ccache_name;
-	krb5_keytab keytab;
+	struct keytab_container *keytab;
 
 	gss_cred_id_t cred;
 };
@@ -154,6 +154,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 {
 	NTSTATUS nt_status;
 	OM_uint32 maj_stat, min_stat;
+	int ret;
 	gss_buffer_desc name_token;
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *machine_account;
@@ -165,45 +166,43 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = gensec_security->private_data;
 
-	machine_account = cli_credentials_init(gensec_gssapi_state);
-	cli_credentials_set_conf(machine_account);
-	nt_status = cli_credentials_set_machine_account(machine_account);
+	machine_account = gensec_get_credentials(gensec_security);
 	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3, ("Could not obtain machine account credentials from the local database\n"));
-		talloc_free(machine_account);
-		return nt_status;
+	if (!machine_account) {
+		DEBUG(3, ("No machine account credentials specified\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	} else {
-		nt_status = create_memory_keytab(gensec_gssapi_state,
-						 machine_account, 
-						 gensec_gssapi_state->smb_krb5_context,
-						 &gensec_gssapi_state->keytab);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		ret = cli_credentials_get_keytab(machine_account, &gensec_gssapi_state->keytab);
+		if (ret) {
 			DEBUG(3, ("Could not create memory keytab!\n"));
-			talloc_free(machine_account);
-			return nt_status;
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	}
 
 	name_token.value = cli_credentials_get_principal(machine_account, 
 							 machine_account);
-	name_token.length = strlen(name_token.value);
 
-	maj_stat = gss_import_name (&min_stat,
-				    &name_token,
-				    GSS_C_NT_USER_NAME,
-				    &gensec_gssapi_state->server_name);
-	talloc_free(machine_account);
+	/* This might have been explicity set to NULL, ie use what the client calls us */
+	if (name_token.value) {
+		name_token.length = strlen(name_token.value);
+		
+		maj_stat = gss_import_name (&min_stat,
+					    &name_token,
+					    GSS_C_NT_USER_NAME,
+					    &gensec_gssapi_state->server_name);
 
-	if (maj_stat) {
-		DEBUG(2, ("GSS Import name of %s failed: %s\n",
-			  (char *)name_token.value,
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_UNSUCCESSFUL;
+		if (maj_stat) {
+			DEBUG(2, ("GSS Import name of %s failed: %s\n",
+				  (char *)name_token.value,
+				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		gensec_gssapi_state->server_name = GSS_C_NO_NAME;
 	}
 
 	maj_stat = gsskrb5_acquire_cred(&min_stat, 
-					gensec_gssapi_state->keytab, NULL,
+					gensec_gssapi_state->keytab->keytab, NULL,
 					gensec_gssapi_state->server_name,
 					GSS_C_INDEFINITE,
 					GSS_C_NULL_OID_SET,

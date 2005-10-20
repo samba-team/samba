@@ -48,10 +48,12 @@ struct cli_credentials {
 	enum credentials_obtained realm_obtained;
 	enum credentials_obtained ccache_obtained;
 	enum credentials_obtained principal_obtained;
+	enum credentials_obtained keytab_obtained;
 
 	const char *workstation;
 	const char *username;
 	const char *password;
+	const char *old_password;
 	const char *domain;
 	const char *realm;
 	const char *principal;
@@ -59,6 +61,7 @@ struct cli_credentials {
 	struct samr_Password *nt_hash;
 
 	struct ccache_container *ccache;
+	struct keytab_container *keytab;
 
 	const char *(*workstation_cb) (struct cli_credentials *);
 	const char *(*password_cb) (struct cli_credentials *);
@@ -73,6 +76,8 @@ struct cli_credentials {
 	struct creds_CredentialState *netlogon_creds;
 	enum netr_SchannelType secure_channel_type;
 	int kvno;
+
+	struct smb_krb5_context *smb_krb5_context;
 
 	/* We are flagged to get machine account details from the
 	 * secrets.ldb when we are asked for a username or password */

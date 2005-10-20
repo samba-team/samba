@@ -439,7 +439,7 @@ const char *gensec_get_name_by_oid(const char *oid_string)
 	if (ops) {
 		return ops->name;
 	}
-	return NULL;
+	return oid_string;
 }
 	
 
@@ -484,6 +484,22 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 	gensec_security->ops = gensec_security_by_sasl_name(sasl_name);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for sasl_name=%s\n", sasl_name));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return gensec_start_mech(gensec_security);
+}
+
+/** 
+ * Start a GENSEC sub-mechanism by an internal name
+ *
+ */
+
+NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
+					const char *name) 
+{
+	gensec_security->ops = gensec_security_by_name(name);
+	if (!gensec_security->ops) {
+		DEBUG(3, ("Could not find GENSEC backend for name=%s\n", name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return gensec_start_mech(gensec_security);

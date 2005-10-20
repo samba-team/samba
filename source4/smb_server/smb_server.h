@@ -194,8 +194,8 @@ struct smbsrv_connection {
 		/* authentication context for multi-part negprot */
 		struct auth_context *auth_context;
 	
-		/* state of NTLMSSP auth */
-		struct auth_ntlmssp_state *ntlmssp_state;
+		/* reference to the kerberos keytab, or machine trust account */
+		struct cli_credentials *server_credentials;
 	
 		/* did we tell the client we support encrypted passwords? */
 		BOOL encrypted_passwords;
