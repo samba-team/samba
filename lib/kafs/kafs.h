@@ -101,6 +101,7 @@ struct ClearToken {
    The other functions will generate a SIGSYS if AFS is not supported */
 
 int k_hasafs (void);
+int k_hasafs_recheck (void);
 
 int krb_afslog (const char *cell, const char *realm);
 int krb_afslog_uid (const char *cell, const char *realm, uid_t uid);

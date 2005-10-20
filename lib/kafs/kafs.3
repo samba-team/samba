@@ -36,6 +36,7 @@
 .Dt KAFS 3
 .Sh NAME
 .Nm k_hasafs ,
+.Nm k_hasafs_recheck ,
 .Nm k_pioctl ,
 .Nm k_unlog ,
 .Nm k_setpag ,
@@ -57,6 +58,8 @@ AFS cache manager access library (libkafs, -lkafs)
 .Fn k_afs_cell_of_file "const char *path" "char *cell" "int len"
 .Ft int
 .Fn k_hasafs "void"
+.Ft int
+.Fn k_hasafs_recheck "void"
 .Ft int
 .Fn k_pioctl "char *a_path" "int o_opcode" "struct ViceIoctl *a_paramsP" "int a_followSymlinks"
 .Ft int
@@ -85,6 +88,13 @@ presence of AFS in the kernel, none of the other functions should be
 called before
 .Fn k_hasafs
 is called, or if it fails.
+.Pp
+.Fn k_hasafs_recheck
+forces a recheck if a AFS client has started since last time
+.Fn k_hasafs
+or
+.Fn k_hasafs_recheck
+was called.
 .Pp
 .Fn kafs_set_verbose
 set a log function that will be called each time the kafs library does
