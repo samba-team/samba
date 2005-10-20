@@ -14,7 +14,7 @@
     <manvolnum>8</manvolnum></citerefentry> what to do with user 
     login requests that don't match a valid UNIX user in some way.</para>
 
-    <para>The three settings are :</para>
+    <para>The four settings are :</para>
 
     <itemizedlist>
 	<listitem>
