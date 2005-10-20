@@ -822,6 +822,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	time_t authtime;
 	krb5_principal principal;
 	char *principal_string;
+	DATA_BLOB pac_blob;
+	DATA_BLOB unwrapped_pac;
 	
 	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
 	    || (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
@@ -866,12 +868,19 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 								       KRB5_AUTHDATA_IF_RELEVANT,
 								       &pac);
 	}
+
+	if (maj_stat == 0) {
+		pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
+		gss_release_buffer(&min_stat, &pac);
+
+		if (!unwrap_pac(mem_ctx, &pac_blob, &unwrapped_pac)) {
+			/* No pac actually present */
+			maj_stat = 1;
+		}
+	}
 	
 	if (maj_stat == 0) {
 		krb5_error_code ret;
-		DATA_BLOB pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
-		pac_blob = unwrap_pac(mem_ctx, &pac_blob);
-		gss_release_buffer(&min_stat, &pac);
 
 		ret = krb5_parse_name(gensec_gssapi_state->smb_krb5_context->krb5_context,
 				      principal_string, &principal);
@@ -881,7 +890,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		}
 		
 		/* decode and verify the pac */
-		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, pac_blob,
+		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, unwrapped_pac,
 						    gensec_gssapi_state->smb_krb5_context->krb5_context,
 						    NULL, keyblock, principal, authtime);
 		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);

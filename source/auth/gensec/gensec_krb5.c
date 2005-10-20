@@ -471,7 +471,7 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
 					 struct auth_session_info **_session_info) 
 {
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
@@ -479,45 +479,44 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	krb5_const_principal client_principal;
 	
-	DATA_BLOB pac_wrapped;
 	DATA_BLOB pac;
+
+	BOOL got_auth_data;
 
 	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	pac_wrapped = get_auth_data_from_tkt(mem_ctx, gensec_krb5_state->ticket);
-
-	pac = unwrap_pac(mem_ctx, &pac_wrapped);
-
-	client_principal = get_principal_from_tkt(gensec_krb5_state->ticket);
-
-	/* decode and verify the pac */
-	nt_status = kerberos_pac_logon_info(gensec_krb5_state, &logon_info, pac,
-					    gensec_krb5_state->smb_krb5_context->krb5_context,
-					    NULL, gensec_krb5_state->keyblock,
-					    client_principal,
-					    gensec_krb5_state->ticket->ticket.authtime);
+	
+	got_auth_data = get_auth_data_from_tkt(mem_ctx, &pac, gensec_krb5_state->ticket);
 
 	/* IF we have the PAC - otherwise we need to get this
 	 * data from elsewere - local ldb, or (TODO) lookup of some
 	 * kind... 
-	 *
-	 * when heimdal can generate the PAC, we should fail if there's
-	 * no PAC present
 	 */
+	if (got_auth_data) {
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		union netr_Validation validation;
-		validation.sam3 = &logon_info->info3;
-		nt_status = make_server_info_netlogon_validation(gensec_krb5_state, 
-								 NULL,
-								 3, &validation,
-								 &server_info); 
+		client_principal = get_principal_from_tkt(gensec_krb5_state->ticket);
+		
+		/* decode and verify the pac */
+		nt_status = kerberos_pac_logon_info(gensec_krb5_state, &logon_info, pac,
+						    gensec_krb5_state->smb_krb5_context->krb5_context,
+						    NULL, gensec_krb5_state->keyblock,
+						    client_principal,
+						    gensec_krb5_state->ticket->ticket.authtime);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			union netr_Validation validation;
+			validation.sam3 = &logon_info->info3;
+			nt_status = make_server_info_netlogon_validation(gensec_krb5_state, 
+									 NULL,
+									 3, &validation,
+									 &server_info); 
+		}
 		talloc_free(mem_ctx);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-	} else {
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		/* NO pac, or can't parse or verify it */
 		krb5_error_code ret;
 		DATA_BLOB user_sess_key = data_blob(NULL, 0);
 		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
