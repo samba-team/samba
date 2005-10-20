@@ -1,3 +1,20 @@
+2005-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afssys.c (k_hasafs_recheck): new function, allow rechecking if
+	AFS client have started now, internaly it resets the internal
+	state from k_hasafs() and retry retry the probing. The problem
+	with calling k_hasaf() is that is plays around with signals, and
+	that cases problem for some systems/applications.
+	
+2005-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kafs_locl.h: Maybe include <sys/sysctl.h>.
+
+	* afssys.c: Mac OS X 10.4 needs a runtime check if we are going to
+	use the syscall, there is no cpp define to use to check the
+	version.  Every after 10.0 (darwin 8.0) uses the /dev/ version of
+	the pioctl.
+	
 2005-10-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afssys.c: Support the new MacOS X 10.4 ioctl interface that is a
