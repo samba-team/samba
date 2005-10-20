@@ -836,13 +836,14 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	struct ldb_dn *user_dn;
 	struct ldb_message *msg;
-	int count;
 	int ret;
 
 	user_dn = samdb_search_dn(ctx, mem_ctx, NULL, 
-				  "((objectSid=%s)(objectClass=user))", 
+				  "(&(objectSid=%s)(objectClass=user))", 
 				  ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
-	if (count != 1) {
+	if (!user_dn) {
+		DEBUG(3, ("samdb_set_password_sid: SID %s not found in samdb, returning NO_SUCH_USER\n",
+			  dom_sid_string(mem_ctx, user_sid)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
