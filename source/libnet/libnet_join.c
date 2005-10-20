@@ -657,8 +657,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, tmp_ctx, &lsa_open_policy); 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
-						"lsa_OpenPolicy2 failed: %s",
-						nt_errstr(status));
+						      "lsa_OpenPolicy2 failed: %s",
+						      nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
 	}
