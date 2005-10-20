@@ -117,6 +117,7 @@ struct krb5_pk_init_ctx_data {
     DH *dh;
     krb5_data *clientDHNonce;
     struct krb5_dh_moduli **m;
+    int require_binding;
 };
 
 void KRB5_LIB_FUNCTION
@@ -783,8 +784,7 @@ _krb5_pk_mk_padata(krb5_context context,
 		   METHOD_DATA *md)
 {
     krb5_pk_init_ctx ctx = c;
-    krb5_error_code ret;
-    int win2k_compat;
+    int win2k_compat, type;
 
     win2k_compat = krb5_config_get_bool_default(context, NULL,
 						FALSE,
@@ -796,17 +796,18 @@ _krb5_pk_mk_padata(krb5_context context,
 	win2k_compat = 1;
 
     if (win2k_compat) {
-	ret = pk_mk_padata(context, COMPAT_WIN2K, ctx, req_body, nonce, md);
-	if (ret)
-	    goto out;
-    } else {
-	ret = pk_mk_padata(context, COMPAT_IETF, ctx, req_body, nonce, md);
-	if (ret)
-	    goto out;
-    }
+	ctx->require_binding = 
+	    krb5_config_get_bool_default(context, NULL,
+					 FALSE,
+					 "realms",
+					 req_body->realm,
+					 "win2k_pkinit_require_binding",
+					 NULL);
+	type = COMPAT_WIN2K;
+    } else
+	type = COMPAT_IETF;
 
- out:
-    return ret;
+    return pk_mk_padata(context, type, ctx, req_body, nonce, md);
 }
 
 static krb5_boolean
@@ -1507,7 +1508,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     switch(type) {
     case COMPAT_WIN2K:
 	ret = get_reply_key(context, &content, req_buffer, key);
-	if (ret != 0)
+	if (ret != 0 && ctx->require_binding == 0)
 	    ret = get_reply_key_win(context, &content, nonce, key);
 	break;
     case COMPAT_IETF:
@@ -2743,6 +2744,8 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     opt->opt_private->pk_init_ctx->dh = NULL;
     opt->opt_private->pk_init_ctx->id = NULL;
     opt->opt_private->pk_init_ctx->clientDHNonce = NULL;
+    opt->opt_private->pk_init_ctx->require_binding = 0;
+
     ret = _krb5_pk_load_openssl_id(context,
 				   &opt->opt_private->pk_init_ctx->id,
 				   user_id,
