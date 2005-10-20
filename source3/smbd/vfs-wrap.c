@@ -86,6 +86,11 @@ int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_
 	return -1;  /* Not implemented. */
 }
     
+int vfswrap_statvfs(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, vfs_statvfs_struct *statbuf)
+{
+	return sys_statvfs(path, statbuf);
+}
+
 /* Directory operations */
 
 SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)

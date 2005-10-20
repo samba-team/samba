@@ -4,6 +4,7 @@
    Copyright (C) Jeremy Allison			1994-2003
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005
+   Copyright (C) Steve French			2005
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -2402,6 +2403,38 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP))); /* We have POSIX ACLs and pathname capability. */
 			break;
+
+		case SMB_QUERY_POSIX_FS_INFO:
+		{
+			int rc;
+			vfs_statvfs_struct svfs;
+
+			if (!lp_unix_extensions())
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			
+			rc = SMB_VFS_STATVFS(conn, ".", &svfs);
+
+			if (!rc) {
+				data_len = 56;
+				SIVAL(pdata,0,svfs.OptimalTransferSize);
+				SIVAL(pdata,4,svfs.BlockSize);
+				SBIG_UINT(pdata,8,svfs.TotalBlocks);
+				SBIG_UINT(pdata,16,svfs.BlocksAvail);
+				SBIG_UINT(pdata,24,svfs.UserBlocksAvail);
+				SBIG_UINT(pdata,32,svfs.TotalFileNodes);
+				SBIG_UINT(pdata,40,svfs.FreeFileNodes);
+				SBIG_UINT(pdata,48,svfs.FsIdentifier);
+				DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_POSIX_FS_INFO succsessful\n"));
+#ifdef EOPNOTSUPP
+			} else if (rc == EOPNOTSUPP) {
+				return ERROR_DOS(ERRDOS, ERRunknownlevel);
+#endif /* EOPNOTSUPP */
+			} else {
+				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+				return ERROR_DOS(ERRSRV,ERRerror);
+			}
+			break;
+		}
 
 		case SMB_MAC_QUERY_FS_INFO:
 			/*

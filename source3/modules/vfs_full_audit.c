@@ -85,6 +85,10 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
                                 struct files_struct *fsp,
                                 SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
+static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
+				struct connection_struct *conn,
+				const char *path,
+				struct vfs_statvfs_struct *statbuf);
 
 static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
 			  const char *fname, const char *mask, uint32 attr);
@@ -317,6 +321,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_statvfs),	SMB_VFS_OP_STATVFS,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* Directory operations */
 
@@ -518,6 +524,7 @@ static struct {
 	{ SMB_VFS_OP_GET_QUOTA,	"get_quota" },
 	{ SMB_VFS_OP_SET_QUOTA,	"set_quota" },
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
+	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
 	{ SMB_VFS_OP_SEEKDIR,   "seekdir" },
@@ -860,6 +867,20 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data, labels);
 
 	do_log(SMB_VFS_OP_GET_SHADOW_COPY_DATA, (result >= 0), handle, "");
+
+	return result;
+}
+
+static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
+				struct connection_struct *conn,
+				const char *path,
+				struct vfs_statvfs_struct *statbuf)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_STATVFS(handle, conn, path, statbuf);
+
+	do_log(SMB_VFS_OP_STATVFS, (result >= 0), handle, "");
 
 	return result;
 }

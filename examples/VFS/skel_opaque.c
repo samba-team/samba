@@ -71,6 +71,11 @@ static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fs
 	return vfswrap_get_shadow_copy_data(NULL, fsp, shadow_copy_data, labels);
 }
 
+static int skel_statvfs(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, struct vfs_statvfs_struct *statbuf)
+{
+	return vfswrap_statvfs(NULL, conn, path, statbuf);
+}
+
 static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	return vfswrap_opendir(NULL, conn, fname, mask, attr);
@@ -534,6 +539,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_get_quota),			SMB_VFS_OP_GET_QUOTA,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_set_quota),			SMB_VFS_OP_SET_QUOTA,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_get_shadow_copy_data),		SMB_VFS_OP_GET_SHADOW_COPY_DATA,SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_statvfs),			SMB_VFS_OP_STATVFS,		SMB_VFS_LAYER_OPAQUE},
 
 	/* Directory operations */
 
