@@ -57,6 +57,7 @@ struct cli_credentials {
 	const char *domain;
 	const char *realm;
 	const char *principal;
+	const char *salt_principal;
 
 	struct samr_Password *nt_hash;
 
