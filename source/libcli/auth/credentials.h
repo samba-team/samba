@@ -33,7 +33,7 @@ struct creds_CredentialState {
 	const char *domain;
 	const char *computer_name;
 	const char *account_name;
-	uint32_t rid;
+	struct dom_sid *sid;
 };
 
 /* for the timebeing, use the same neg flags as Samba3. */
