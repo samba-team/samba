@@ -262,12 +262,12 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 	uint32 conv;
   
-	if (StrnCaseCmp( sidstr, "S-", 2)) {
+	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
 		DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
 		return False;
 	}
 
-	ZERO_STRUCTP(sidout);
+//	ZERO_STRUCTP(sidout);
 
 	/* Get the revision number. */
 	p = sidstr + 2;
