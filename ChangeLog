@@ -1,3 +1,8 @@
+2005-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Add option to require binding between reply
+	and response for the win2k version of the protocol.
+	
 2005-10-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/programming.texi: Text about Kerberos errors.
