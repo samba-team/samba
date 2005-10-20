@@ -411,6 +411,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
 	const struct gensec_security_ops_wrapper *all_sec;
+	const char *principal = NULL;
 
 	mechTypes = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
 
@@ -461,11 +462,19 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_out.negTokenInit.reqFlags = 0;
 		
 		if (spnego_state->state_position == SPNEGO_SERVER_START) {
+			/* server credentails */
+			struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+			if (creds) {
+				principal = cli_credentials_get_principal(creds, out_mem_ctx);
+			}
+		}
+		if (principal) {
 			spnego_out.negTokenInit.mechListMIC
-				= data_blob_string_const(talloc_asprintf(out_mem_ctx, "%s$@%s", lp_netbios_name(), lp_realm()));
+				= data_blob_string_const(principal);
 		} else {
 			spnego_out.negTokenInit.mechListMIC = null_data_blob;
 		}
+
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
 		
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
