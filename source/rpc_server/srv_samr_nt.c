@@ -2429,7 +2429,9 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 {
 	fstring new_name;
+	SAM_ACCOUNT *check_acct = NULL;
 	NTSTATUS rc;
+	BOOL check_rc;
 
 	if (id7 == NULL) {
 		DEBUG(5, ("set_user_info_7: NULL id7\n"));
@@ -2441,6 +2443,24 @@ static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 	        DEBUG(5, ("set_user_info_7: failed to get new username\n"));
 		pdb_free_sam(&pwd);
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* check to see if the new username already exists.  Note: we can't
+	   reliably lock all backends, so there is potentially the 
+	   possibility that a user can be created in between this check and
+	   the rename.  The rename should fail, but may not get the
+	   exact same failure status code.  I think this is small enough
+	   of a window for this type of operation and the results are
+	   simply that the rename fails with a slightly different status
+	   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
+
+	pdb_init_sam(&check_acct);
+	check_rc = pdb_getsampwnam(check_acct, new_name);
+	pdb_free_sam(&check_acct);
+
+	if (check_rc == True) {
+		/* this account exists: say so */
+		return NT_STATUS_USER_EXISTS;
 	}
 
 	rc = pdb_rename_sam_account(pwd, new_name);
