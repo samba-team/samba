@@ -7413,12 +7413,10 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	int	snum;
 	WERROR err = WERR_OK;
 
-	if ((printer = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL)) == NULL) {
+	if ( !(printer = TALLOC_ZERO_P(NULL, NT_PRINTER_INFO_LEVEL)) ) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
 		return WERR_NOMEM;
 	}
-
-	ZERO_STRUCTP(printer);
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	if (!convert_printer_info(info, printer, 2)) {
