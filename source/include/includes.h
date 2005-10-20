@@ -1489,6 +1489,7 @@ BOOL smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ2);
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts);
+PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
 #endif /* HAVE_KRB5 */
 
 
