@@ -326,6 +326,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		req_push_str(req, NULL, lp_netbios_name(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
+		struct cli_credentials *server_credentials;
 		struct gensec_security *gensec_security;
 		DATA_BLOB null_data_blob = data_blob(NULL, 0);
 		DATA_BLOB blob;
@@ -333,18 +334,37 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 							 &gensec_security,
 							 req->smb_conn->connection->event.ctx);
 		
-		if (req->smb_conn->negotiate.auth_context) {
-			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");
-			return;
-		}
-
-		req->smb_conn->negotiate.auth_context = NULL;
-		
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
 			smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
 			return;
 		}
+
+		if (req->smb_conn->negotiate.auth_context) {
+			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");
+			return;
+		}
+
+		server_credentials 
+			= cli_credentials_init(req);
+		if (!server_credentials) {
+			smbsrv_terminate_connection(req->smb_conn, "Failed to init server credentials\n");
+			return;
+		}
+		
+		cli_credentials_set_conf(server_credentials);
+		nt_status = cli_credentials_set_machine_account(server_credentials);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(nt_status)));
+			talloc_free(server_credentials);
+			server_credentials = NULL;
+		}
+
+		req->smb_conn->negotiate.server_credentials = talloc_steal(req->smb_conn, server_credentials);
+
+		gensec_set_target_service(gensec_security, "cifs");
+
+		gensec_set_credentials(gensec_security, server_credentials);
 
 		nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
 		

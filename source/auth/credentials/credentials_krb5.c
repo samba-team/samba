@@ -26,6 +26,22 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 
+int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
+				     struct smb_krb5_context **smb_krb5_context) 
+{
+	int ret;
+	if (cred->smb_krb5_context) {
+		*smb_krb5_context = cred->smb_krb5_context;
+		return 0;
+	}
+
+	ret = smb_krb5_init_context(cred, &cred->smb_krb5_context);
+	if (ret) {
+		return ret;
+	}
+	*smb_krb5_context = cred->smb_krb5_context;
+	return 0;
+}
 
 int cli_credentials_set_from_ccache(struct cli_credentials *cred, 
 				    enum credentials_obtained obtained)
@@ -95,11 +111,13 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_init_context(ccc, &ccc->smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
 		return ret;
 	}
+	talloc_reference(ccc, ccc->smb_krb5_context);
+
 	if (name) {
 		ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, name, &ccc->ccache);
 		if (ret) {
@@ -162,7 +180,7 @@ int cli_credentials_new_ccache(struct cli_credentials *cred)
 	}
 
 	ccache_name = talloc_asprintf(ccc, "MEMORY:%s", 
-			      rand_string);
+				      rand_string);
 	talloc_free(rand_string);
 
 	if (!ccache_name) {
@@ -170,12 +188,12 @@ int cli_credentials_new_ccache(struct cli_credentials *cred)
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_init_context(ccc, &ccc->smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(cred, &ccc->smb_krb5_context);
 	if (ret) {
-		talloc_free(ccache_name);
 		talloc_free(ccc);
 		return ret;
 	}
+	talloc_reference(ccc, ccc->smb_krb5_context);
 
 	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name, &ccc->ccache);
 	if (ret) {
@@ -224,6 +242,41 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		return ret;
 	}
 	*ccc = cred->ccache;
+	return ret;
+}
+
+int cli_credentials_get_keytab(struct cli_credentials *cred, 
+			       struct keytab_container **_ktc)
+{
+	krb5_error_code ret;
+	struct keytab_container *ktc;
+	struct smb_krb5_context *smb_krb5_context;
+
+	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
+					  cred->username_obtained))) {
+		*_ktc = cred->keytab;
+		return 0;
+	}
+
+	if (cli_credentials_is_anonymous(cred)) {
+		return EINVAL;
+	}
+
+	ret = cli_credentials_get_krb5_context(cred, &smb_krb5_context);
+	if (ret) {
+		return ret;
+	}
+
+	ret = create_memory_keytab(cred, cred, smb_krb5_context, &ktc);
+	if (ret) {
+		return ret;
+	}
+
+	cred->keytab_obtained = (MAX(cred->principal_obtained, 
+				     cred->username_obtained));
+
+	cred->keytab = ktc;
+	*_ktc = cred->keytab;
 	return ret;
 }
 

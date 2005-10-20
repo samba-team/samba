@@ -392,6 +392,16 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		if (opt_workstation) {
 			cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
 		}
+		
+		switch (stdio_helper_mode) {
+		case GSS_SPNEGO_SERVER:
+		case SQUID_2_5_NTLMSSP:
+			cli_credentials_set_machine_account(creds);
+			break;
+		default:
+			break;
+		}
+
 		gensec_set_credentials(state->gensec_state, creds);
 
 		switch (stdio_helper_mode) {

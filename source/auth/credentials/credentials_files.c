@@ -164,7 +164,9 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
+static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+					    const char *base,
+					    const char *filter)
 {
 	TALLOC_CTX *mem_ctx;
 	
@@ -184,6 +186,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	
 	const char *machine_account;
 	const char *password;
+	const char *old_password;
 	const char *domain;
 	const char *realm;
 	enum netr_SchannelType sct;
@@ -201,10 +204,9 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 
 	/* search for the secret record */
 	ldb_ret = gendb_search(ldb,
-			       mem_ctx, ldb_dn_explode(mem_ctx, SECRETS_PRIMARY_DOMAIN_DN), 
+			       mem_ctx, ldb_dn_explode(mem_ctx, base), 
 			       &msgs, attrs,
-			       SECRETS_PRIMARY_DOMAIN_FILTER, 
-			       cli_credentials_get_domain(cred));
+			       "%s", filter);
 	if (ldb_ret == 0) {
 		DEBUG(1, ("Could not find join record to domain: %s\n",
 			  cli_credentials_get_domain(cred)));
@@ -218,6 +220,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	}
 	
 	password = ldb_msg_find_string(msgs[0], "secret", NULL);
+	old_password = ldb_msg_find_string(msgs[0], "priorSecret", NULL);
 
 	machine_account = ldb_msg_find_string(msgs[0], "samAccountName", NULL);
 
@@ -275,6 +278,52 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	talloc_free(mem_ctx);
 	
 	return NT_STATUS_OK;
+}
+
+/**
+ * Fill in credentials for the machine trust account, from the secrets database.
+ * 
+ * @param cred Credentials structure to fill in
+ * @retval NTSTATUS error detailing any failure
+ */
+NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
+{
+	char *filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
+				       cli_credentials_get_domain(cred));
+	return cli_credentials_set_secrets(cred, SECRETS_PRIMARY_DOMAIN_DN,
+					   filter);
+}
+
+/**
+ * Fill in credentials for the machine trust account, from the secrets database.
+ * 
+ * @param cred Credentials structure to fill in
+ * @retval NTSTATUS error detailing any failure
+ */
+NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
+{
+	char *filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
+				       cli_credentials_get_realm(cred),
+				       cli_credentials_get_domain(cred));
+	return cli_credentials_set_secrets(cred, SECRETS_PRINCIPALS_DN,
+					   filter);
+}
+
+/**
+ * Fill in credentials for the machine trust account, from the secrets database.
+ * 
+ * @param cred Credentials structure to fill in
+ * @retval NTSTATUS error detailing any failure
+ */
+NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
+					      const char *serviceprincipal)
+{
+	char *filter = talloc_asprintf(cred, SECRETS_PRINCIPAL_SEARCH,
+				       cli_credentials_get_realm(cred),
+				       cli_credentials_get_domain(cred),
+				       serviceprincipal);
+	return cli_credentials_set_secrets(cred, SECRETS_PRINCIPALS_DN,
+					   filter);
 }
 
 /**

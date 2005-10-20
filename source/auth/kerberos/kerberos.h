@@ -28,6 +28,12 @@ struct ccache_container {
 	krb5_ccache ccache;
 };
 
+
+struct keytab_container {
+	struct smb_krb5_context *smb_krb5_context;
+	krb5_keytab keytab;
+};
+
 /* not really ASN.1, but RFC 1964 */
 #define TOK_ID_KRB_AP_REQ	"\x01\x00"
 #define TOK_ID_KRB_AP_REP	"\x02\x00"
@@ -81,14 +87,15 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 				krb5_data *outbuf);
 DATA_BLOB get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
 				 krb5_ticket *tkt);
-NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
-			   struct smb_krb5_context *smb_krb5_context,
-			   krb5_auth_context *auth_context,
-			   const char *realm, const char *service, 
-			   const DATA_BLOB *enc_ticket, 
-			   krb5_ticket **tkt,
-			   DATA_BLOB *ap_rep,
-			   krb5_keyblock **keyblock);
+ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
+			    struct smb_krb5_context *smb_krb5_context,
+			    krb5_auth_context *auth_context,
+			    struct cli_credentials *machine_account,
+			    const char *service, 
+			    const DATA_BLOB *enc_ticket, 
+			    krb5_ticket **tkt,
+			    DATA_BLOB *ap_rep,
+			    krb5_keyblock **keyblock);
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 			       krb5_principal principal, const char *password, 
 			       time_t *expire_time, time_t *kdc_time);
@@ -115,10 +122,10 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 					   struct cli_credentials *credentials, 
 					   struct smb_krb5_context *smb_krb5_context,
 					   krb5_principal *princ);
-NTSTATUS create_memory_keytab(TALLOC_CTX *parent_ctx,
-			      struct cli_credentials *machine_account,
-			      struct smb_krb5_context *smb_krb5_context,
-			      krb5_keytab *keytab);
+int create_memory_keytab(TALLOC_CTX *parent_ctx,
+			  struct cli_credentials *machine_account,
+			  struct smb_krb5_context *smb_krb5_context,
+			 struct keytab_container **keytab_container); 
 NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     struct PAC_DATA **pac_data_out,
 			     DATA_BLOB blob,
