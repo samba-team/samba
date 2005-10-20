@@ -501,10 +501,17 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 	/* here we need to set the attrs lists for domain and result lookups */
 	switch (format_desired) {
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779:
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX: {
 		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
 		const char * const _result_attrs[] = { NULL};
+		
+		domain_attrs = _domain_attrs;
+		result_attrs = _result_attrs;
+		break;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
+		const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
+		const char * const _result_attrs[] = { "canonicalName", NULL };
 		
 		domain_attrs = _domain_attrs;
 		result_attrs = _result_attrs;
@@ -614,16 +621,18 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
 	}
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL:
-		return DsCrackNameOneSyntactical(mem_ctx, 
-						 DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
-						 DRSUAPI_DS_NAME_FORMAT_CANONICAL,
-						 result_res[0]->dn, name, info1);
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
+		info1->result_name	= samdb_result_string(result_res[0], "canonicalName", NULL);
+		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
+		return WERR_OK;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX: {
+		/* Not in the virtual ldb attribute */
 		return DsCrackNameOneSyntactical(mem_ctx, 
 						 DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
 						 DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX,
 						 result_res[0]->dn, name, info1);
+	}
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
 		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result_res[0], "objectSid");
 		const char *_acc = "", *_dom = "";
@@ -651,14 +660,14 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 				return WERR_OK;
 			}
 			dom_sid->num_auths--;
-			ldb_ret = gendb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res2, attrs,
+			ldb_ret = gendb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res, attrs,
 					       "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
 			}
-			ldb_ret = gendb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res, domain_attrs,
-					       "(ncName=%s)", ldb_dn_linearize(mem_ctx, domain_res2[0]->dn));
+			ldb_ret = gendb_search(b_state->sam_ctx, mem_ctx, NULL, &domain_res2, domain_attrs,
+					       "(ncName=%s)", ldb_dn_linearize(mem_ctx, domain_res[0]->dn));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
@@ -711,7 +720,7 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
   drsuapi_DsCrackNames 
 */
 WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsCrackNames *r)
+				   struct drsuapi_DsCrackNames *r)
 {
 	WERROR status;
 	struct drsuapi_bind_state *b_state;
