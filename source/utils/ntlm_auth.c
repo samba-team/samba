@@ -795,7 +795,6 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
-	TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 
 	char *user = NULL;
 	char *domain = NULL;
@@ -898,6 +897,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 #ifdef HAVE_KRB5
 		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
 
+			TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 			char *principal;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
