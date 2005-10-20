@@ -46,7 +46,12 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->domain_obtained = CRED_UNINITIALISED;
 	cred->realm_obtained = CRED_UNINITIALISED;
 	cred->ccache_obtained = CRED_UNINITIALISED;
+	cred->keytab_obtained = CRED_UNINITIALISED;
 	cred->principal_obtained = CRED_UNINITIALISED;
+
+	cred->old_password = NULL;
+	cred->smb_krb5_context = NULL;
+
 	return cred;
 }
 
@@ -207,6 +212,28 @@ BOOL cli_credentials_set_password_callback(struct cli_credentials *cred,
 	}
 
 	return False;
+}
+
+/**
+ * Obtain the 'old' password for this credentials context (used for join accounts).
+ * @param cred credentials context
+ * @retval If set, the cleartext password, otherwise NULL
+ */
+const char *cli_credentials_get_old_password(struct cli_credentials *cred)
+{
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
+	return cred->old_password;
+}
+
+BOOL cli_credentials_set_old_password(struct cli_credentials *cred, 
+				      const char *val, 
+				      enum credentials_obtained obtained)
+{
+	cred->old_password = talloc_strdup(cred, val);
+	return True;
 }
 
 /**

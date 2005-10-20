@@ -86,6 +86,10 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
 
+	if (!gensec_get_credentials(gensec_security)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	gensec_krb5_state = talloc(gensec_security, struct gensec_krb5_state);
 	if (!gensec_krb5_state) {
 		return NT_STATUS_NO_MEMORY;
@@ -185,7 +189,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	gensec_krb5_state = gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 
-	ret = cli_credentials_get_ccache(gensec_security->credentials, &ccache_container);
+	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), &ccache_container);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: cli_credentials_get_ccache failed: %s\n", 
 			 error_message(ret)));
@@ -391,7 +395,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 			nt_status = ads_verify_ticket(out_mem_ctx, 
 						      gensec_krb5_state->smb_krb5_context,
 						      &gensec_krb5_state->auth_context, 
-						      lp_realm(), 
+						      gensec_get_credentials(gensec_security),
 						      gensec_get_target_service(gensec_security), &unwrapped_in, 
 						      &gensec_krb5_state->ticket, &unwrapped_out,
 						      &gensec_krb5_state->keyblock);
@@ -400,7 +404,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 			nt_status = ads_verify_ticket(out_mem_ctx, 
 						      gensec_krb5_state->smb_krb5_context,
 						      &gensec_krb5_state->auth_context, 
-						      lp_realm(), 
+						      gensec_get_credentials(gensec_security),
 						      gensec_get_target_service(gensec_security), 
 						      &in, 
 						      &gensec_krb5_state->ticket, &unwrapped_out,

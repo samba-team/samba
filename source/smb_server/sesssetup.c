@@ -293,6 +293,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return status;
 		}
 
+		gensec_set_credentials(gensec_ctx, req->smb_conn->negotiate.server_credentials);
+
 		gensec_set_target_service(gensec_ctx, "cifs");
 
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);

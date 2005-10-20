@@ -64,156 +64,6 @@ DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 }
 
 /**********************************************************************************
- Try to verify a ticket using the system keytab... the system keytab has kvno -1 entries, so
- it's more like what microsoft does... see comment in utils/net_ads.c in the
- ads_keytab_add_entry function for details.
-***********************************************************************************/
-
-static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_context context, 
-						krb5_auth_context *auth_context,
-						const char *service,
-						const krb5_data *p_packet, 
-						krb5_flags *ap_req_options,
-						krb5_ticket **pp_tkt,
-						krb5_keyblock **keyblock)
-{
-	krb5_error_code ret = 0;
-	krb5_keytab keytab = NULL;
-	krb5_kt_cursor kt_cursor;
-	krb5_keytab_entry kt_entry;
-	char *valid_princ_formats[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-	char *entry_princ_s = NULL;
-	const char *my_name, *my_fqdn;
-	int i;
-	int number_matched_principals = 0;
-	const char *last_error_message;
-
-	/* Generate the list of principal names which we expect
-	 * clients might want to use for authenticating to the file
-	 * service.  We allow name$,{host,service}/{name,fqdn,name.REALM}.
-	 * (where service is specified by the caller) */
-
-	my_name = lp_netbios_name();
-
-	my_fqdn = name_to_fqdn(mem_ctx, my_name);
-
-	asprintf(&valid_princ_formats[0], "%s$@%s", my_name, lp_realm());
-	asprintf(&valid_princ_formats[1], "host/%s@%s", my_name, lp_realm());
-	asprintf(&valid_princ_formats[2], "host/%s@%s", my_fqdn, lp_realm());
-	asprintf(&valid_princ_formats[3], "host/%s.%s@%s", my_name, lp_realm(), lp_realm());
-	asprintf(&valid_princ_formats[4], "%s/%s@%s", service, my_name, lp_realm());
-	asprintf(&valid_princ_formats[5], "%s/%s@%s", service, my_fqdn, lp_realm());
-	asprintf(&valid_princ_formats[6], "%s/%s.%s@%s", service, my_name, lp_realm(), lp_realm());
-
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(kt_cursor);
-
-	ret = krb5_kt_default(context, &keytab);
-	if (ret) {
-		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_default failed (%s)\n", 
-			  last_error_message));
-		goto out;
-	}
-
-	/* Iterate through the keytab.  For each key, if the principal
-	 * name case-insensitively matches one of the allowed formats,
-	 * try verifying the ticket using that principal. */
-
-	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
-	if (ret == KRB5_KT_END || ret == ENOENT ) {
-		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
-	} else if (ret) {
-		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
-		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_start_seq_get failed (%s)\n", 
-			  last_error_message));
-	} else {
-		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN; /* Pick an error... */
-		last_error_message = "No principals in Keytab";
-		while (ret && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
-			krb5_error_code upn_ret;
-			upn_ret = krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
-			if (upn_ret) {
-				last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
-				DEBUG(1, ("ads_keytab_verify_ticket: krb5_unparse_name failed (%s)\n", 
-					  last_error_message));
-				ret = upn_ret;
-				break;
-			}
-			for (i = 0; i < ARRAY_SIZE(valid_princ_formats); i++) {
-				if (!strequal(entry_princ_s, valid_princ_formats[i])) {
-					continue;
-				}
-
-				number_matched_principals++;
-				*pp_tkt = NULL;
-				ret = krb5_rd_req_return_keyblock(context, auth_context, p_packet, 
-								  kt_entry.principal, keytab, 
-								  ap_req_options, pp_tkt, keyblock);
-				if (ret) {
-					last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
-					DEBUG(10, ("ads_keytab_verify_ticket: krb5_rd_req(%s) failed: %s\n",
-						   entry_princ_s, last_error_message));
-				} else {
-					DEBUG(3,("ads_keytab_verify_ticket: krb5_rd_req succeeded for principal %s\n",
-						 entry_princ_s));
-					break;
-				}
-			}
-
-			/* Free the name we parsed. */
-			krb5_free_unparsed_name(context, entry_princ_s);
-			entry_princ_s = NULL;
-
-			/* Free the entry we just read. */
-			smb_krb5_kt_free_entry(context, &kt_entry);
-			ZERO_STRUCT(kt_entry);
-		}
-		krb5_kt_end_seq_get(context, keytab, &kt_cursor);
-	}
-
-	ZERO_STRUCT(kt_cursor);
-
-  out:
-
-	if (ret) {
-		if (!number_matched_principals) {
-			DEBUG(3, ("ads_keytab_verify_ticket: no keytab principals matched expected file service name.\n"));
-		} else {
-			DEBUG(3, ("ads_keytab_verify_ticket: krb5_rd_req failed for all %d matched keytab principals\n",
-				number_matched_principals));
-		}
-		DEBUG(3, ("ads_keytab_verify_ticket: last error: %s\n", last_error_message));
-	}
-
-	if (entry_princ_s) {
-		krb5_free_unparsed_name(context, entry_princ_s);
-	}
-
-	{
-		krb5_keytab_entry zero_kt_entry;
-		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
-			smb_krb5_kt_free_entry(context, &kt_entry);
-		}
-	}
-
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&kt_cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &kt_cursor);
-		}
-	}
-
-	if (keytab) {
-		krb5_kt_close(context, keytab);
-	}
-
-	return ret;
-}
-
-/**********************************************************************************
  Verify an incoming ticket and parse out the principal name and 
  authorization_data if available.
 ***********************************************************************************/
@@ -221,7 +71,8 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
  NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
 			    struct smb_krb5_context *smb_krb5_context,
 			    krb5_auth_context *auth_context,
-			    const char *realm, const char *service, 
+			    struct cli_credentials *machine_account,
+			    const char *service, 
 			    const DATA_BLOB *enc_ticket, 
 			    krb5_ticket **tkt,
 			    DATA_BLOB *ap_rep,
@@ -229,32 +80,12 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 {
 	krb5_keyblock *local_keyblock;
 	krb5_data packet;
-	krb5_principal salt_princ;
 	int ret;
 	krb5_flags ap_req_options = 0;
+	krb5_principal server;
 
-	NTSTATUS creds_nt_status, status;
-	struct cli_credentials *machine_account;
+	struct keytab_container *keytab_container;
 
-	machine_account = cli_credentials_init(mem_ctx);
-	cli_credentials_set_conf(machine_account);
-	creds_nt_status = cli_credentials_set_machine_account(machine_account);
-	
-	if (!NT_STATUS_IS_OK(creds_nt_status)) {
-		DEBUG(3, ("Could not obtain machine account credentials from the local database\n"));
-		talloc_free(machine_account);
-		machine_account = NULL;
-	} else {
-		ret = salt_principal_from_credentials(mem_ctx, machine_account, 
-						      smb_krb5_context, 
-						      &salt_princ);
-		if (ret) {
-			DEBUG(1,("ads_verify_ticket: maksing salt principal failed (%s)\n",
-				 error_message(ret)));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-	}
-	
 	/* This whole process is far more complex than I would
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
@@ -268,24 +99,18 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 	packet.length = enc_ticket->length;
 	packet.data = (krb5_pointer)enc_ticket->data;
 
-	ret = ads_keytab_verify_ticket(mem_ctx, smb_krb5_context->krb5_context, auth_context, 
-				       service, &packet, &ap_req_options, tkt, &local_keyblock);
-	if (ret && machine_account) {
-		krb5_keytab keytab;
-		krb5_principal server;
-		status = create_memory_keytab(mem_ctx, machine_account, smb_krb5_context, 
-					      &keytab);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, 
-						 &server);
-		if (ret == 0) {
-			ret = krb5_rd_req_return_keyblock(smb_krb5_context->krb5_context, auth_context, &packet,
-							  server,
-							  keytab, &ap_req_options, tkt,
-							  &local_keyblock);
-		}
+	ret = cli_credentials_get_keytab(machine_account, &keytab_container);
+	if (ret) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, 
+					 &server);
+	if (ret == 0) {
+		ret = krb5_rd_req_return_keyblock(smb_krb5_context->krb5_context, auth_context, &packet,
+						  server,
+						  keytab_container->keytab, &ap_req_options, tkt,
+						  &local_keyblock);
 	}
 
 	if (ret) {

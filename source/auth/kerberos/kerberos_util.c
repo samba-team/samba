@@ -33,11 +33,6 @@ struct principal_container {
 	krb5_principal principal;
 };
 
-struct keytab_container {
-	struct smb_krb5_context *smb_krb5_context;
-	krb5_keytab keytab;
-};
-
 static int free_principal(void *ptr) {
 	struct principal_container *pc = ptr;
 	/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
@@ -111,7 +106,8 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 
 	if (!princ_string) {
 		talloc_free(mem_ctx);
-		return EINVAL;
+		princ = NULL;
+		return 0;
 	}
 
 	ret = krb5_parse_name(smb_krb5_context->krb5_context,
@@ -131,9 +127,9 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
  */
 
  krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
-			  struct cli_credentials *credentials,
-			  struct smb_krb5_context *smb_krb5_context,
-			  krb5_ccache ccache) 
+				 struct cli_credentials *credentials,
+				 struct smb_krb5_context *smb_krb5_context,
+				 krb5_ccache ccache) 
 {
 	krb5_error_code ret;
 	const char *password;
@@ -216,36 +212,40 @@ static int free_keytab(void *ptr) {
 	return 0;
 }
 
- NTSTATUS create_memory_keytab(TALLOC_CTX *parent_ctx,
-			       struct cli_credentials *machine_account,
-			       struct smb_krb5_context *smb_krb5_context,
-			       krb5_keytab *keytab) 
+ int create_memory_keytab(TALLOC_CTX *parent_ctx,
+			  struct cli_credentials *machine_account,
+			  struct smb_krb5_context *smb_krb5_context,
+			  struct keytab_container **keytab_container) 
 {
 	krb5_error_code ret;
 	const char *password_s;
+	char *old_secret;
 	krb5_data password;
-	int i;
-	struct keytab_container *mem_ctx = talloc(parent_ctx, struct keytab_container);
+	int i, kvno;
 	krb5_enctype *enctypes;
 	krb5_principal salt_princ;
 	krb5_principal princ;
-	
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	krb5_keytab keytab;
 
-	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, "MEMORY:", keytab);
+	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	if (!mem_ctx) {
+		return ENOMEM;
+	}
+	
+	*keytab_container = talloc(mem_ctx, struct keytab_container);
+
+	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, "MEMORY:", &keytab);
 	if (ret) {
 		DEBUG(1,("failed to generate a new krb5 keytab: %s\n", 
 			 error_message(ret)));
 		talloc_free(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		return ret;
 	}
 
-	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
-	mem_ctx->keytab = *keytab;
+	(*keytab_container)->smb_krb5_context = talloc_reference(*keytab_container, smb_krb5_context);
+	(*keytab_container)->keytab = keytab;
 
-	talloc_set_destructor(mem_ctx, free_keytab);
+	talloc_set_destructor(*keytab_container, free_keytab);
 
 	ret = salt_principal_from_credentials(mem_ctx, machine_account, 
 					      smb_krb5_context, 
@@ -255,7 +255,7 @@ static int free_keytab(void *ptr) {
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		return ret;
 	}
 
 	ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, &princ);
@@ -264,10 +264,10 @@ static int free_keytab(void *ptr) {
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		return ret;
 	}
 
-	password_s = talloc_strdup(mem_ctx, cli_credentials_get_password(machine_account));
+	password_s = cli_credentials_get_password(machine_account);
 	if (!password_s) {
 		/* If we don't have the plaintext password, try for
 		 * the MD4 password hash */
@@ -279,7 +279,7 @@ static int free_keytab(void *ptr) {
 			talloc_free(mem_ctx);
 			DEBUG(1, ("create_memory_keytab: Domain trust informaton for account %s not available\n",
 				  cli_credentials_get_principal(machine_account, mem_ctx)));
-			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			return EINVAL;
 		}
 		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
 					 ENCTYPE_ARCFOUR_HMAC,
@@ -289,12 +289,12 @@ static int free_keytab(void *ptr) {
 			DEBUG(1, ("create_memory_keytab: krb5_keyblock_init failed: %s\n",
 				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 							     ret, mem_ctx)));
-			return NT_STATUS_INTERNAL_ERROR;
+			return ret;
 		}
 
 		entry.principal = princ;
 		entry.vno       = cli_credentials_get_kvno(machine_account);
-		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, *keytab, &entry);
+		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
 		if (ret) {
 			DEBUG(1, ("Failed to add ARCFOUR_HMAC (only) entry for %s to keytab: %s",
 				  cli_credentials_get_principal(machine_account, mem_ctx), 
@@ -302,11 +302,14 @@ static int free_keytab(void *ptr) {
 							     ret, mem_ctx)));
 			talloc_free(mem_ctx);
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
-			return NT_STATUS_INTERNAL_ERROR;
+			return ret;
 		}
 		
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
-		return NT_STATUS_OK;
+
+		talloc_steal(parent_ctx, *keytab_container);
+		talloc_free(mem_ctx);
+		return 0;
 	}
 		
 	/* good, we actually have the real plaintext */
@@ -317,24 +320,25 @@ static int free_keytab(void *ptr) {
 		DEBUG(1,("create_memory_keytab: getting encrption types failed (%s)\n",
 			 error_message(ret)));
 		talloc_free(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
+		return ret;
 	}
 
 	password.data = discard_const_p(char *, password_s);
 	password.length = strlen(password_s);
-	
+	kvno = cli_credentials_get_kvno(machine_account);
+
 	for (i=0; enctypes[i]; i++) {
 		krb5_keytab_entry entry;
 		ret = create_kerberos_key_from_string(smb_krb5_context->krb5_context, 
 						      salt_princ, &password, &entry.keyblock, enctypes[i]);
 		if (ret) {
 			talloc_free(mem_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
+			return ret;
 		}
 
                 entry.principal = princ;
-                entry.vno       = cli_credentials_get_kvno(machine_account);
-		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, *keytab, &entry);
+                entry.vno       = kvno;
+		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
 		if (ret) {
 			DEBUG(1, ("Failed to add entry for %s to keytab: %s",
 				  cli_credentials_get_principal(machine_account, mem_ctx), 
@@ -342,15 +346,48 @@ static int free_keytab(void *ptr) {
 							     ret, mem_ctx)));
 			talloc_free(mem_ctx);
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
-			return NT_STATUS_INTERNAL_ERROR;
+			return ret;
 		}
 		
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 	}
 
+	old_secret = cli_credentials_get_old_password(machine_account);
+	if (kvno != 0 && old_secret) {
+		password.data = discard_const_p(char *, old_secret);
+		password.length = strlen(old_secret);
+		
+		for (i=0; enctypes[i]; i++) {
+			krb5_keytab_entry entry;
+			ret = create_kerberos_key_from_string(smb_krb5_context->krb5_context, 
+							      salt_princ, &password, &entry.keyblock, enctypes[i]);
+			if (ret) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+			
+			entry.principal = princ;
+			entry.vno       = kvno - 1;
+			ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
+			if (ret) {
+				DEBUG(1, ("Failed to add 'old password' entry for %s to keytab: %s",
+					  cli_credentials_get_principal(machine_account, mem_ctx), 
+					  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+								     ret, mem_ctx)));
+				talloc_free(mem_ctx);
+				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+				return ret;
+			}
+			
+			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+		}
+	}
+
 	free_kerberos_etypes(smb_krb5_context->krb5_context, enctypes);
 
-	return NT_STATUS_OK;
+	talloc_steal(parent_ctx, *keytab_container);
+	talloc_free(mem_ctx);
+	return 0;
 }
 
 
