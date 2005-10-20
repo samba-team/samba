@@ -6,6 +6,7 @@
    Copyright (C) Jeremy Allison  		1999
    Copyright (C) Stefan (metze) Metzmacher 	2002
    Copyright (C) Simo Sorce 			2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -256,63 +257,55 @@ const char *sid_string_static(const DOM_SID *sid)
    
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
-	pstring tok;
-	char *q;
 	const char *p;
+	char *q;
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-	uint32 ia;
+	uint32 conv;
   
 	if (StrnCaseCmp( sidstr, "S-", 2)) {
 		DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
 		return False;
 	}
 
-	memset((char *)sidout, '\0', sizeof(DOM_SID));
-
-	p = q = SMB_STRDUP(sidstr + 2);
-	if (p == NULL) {
-		DEBUG(0, ("string_to_sid: out of memory!\n"));
-		return False;
-	}
-
-	if (!next_token(&p, tok, "-", sizeof(tok))) {
-		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-		SAFE_FREE(q);
-		return False;
-	}
+	ZERO_STRUCTP(sidout);
 
 	/* Get the revision number. */
-	sidout->sid_rev_num = (uint8)strtoul(tok, NULL, 10);
-
-	if (!next_token(&p, tok, "-", sizeof(tok))) {
+	p = sidstr + 2;
+	conv = (uint32) strtoul(p, &q, 10);
+	if (!q || (*q != '-')) {
 		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-		SAFE_FREE(q);
 		return False;
 	}
+	sidout->sid_rev_num = (uint8) conv;
+	q++;
 
+	/* get identauth */
+	conv = (uint32) strtoul(q, &q, 10);
+	if (!q || (*q != '-')) {
+		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		return False;
+	}
 	/* identauth in decimal should be <  2^32 */
-	ia = (uint32)strtoul(tok, NULL, 10);
-
-	/* NOTE - the ia value is in big-endian format. */
+	/* NOTE - the conv value is in big-endian format. */
 	sidout->id_auth[0] = 0;
 	sidout->id_auth[1] = 0;
-	sidout->id_auth[2] = (ia & 0xff000000) >> 24;
-	sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
-	sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
-	sidout->id_auth[5] = (ia & 0x000000ff);
+	sidout->id_auth[2] = (conv & 0xff000000) >> 24;
+	sidout->id_auth[3] = (conv & 0x00ff0000) >> 16;
+	sidout->id_auth[4] = (conv & 0x0000ff00) >> 8;
+	sidout->id_auth[5] = (conv & 0x000000ff);
 
+	q++;
 	sidout->num_auths = 0;
 
-	while(next_token(&p, tok, "-", sizeof(tok)) && 
-		sidout->num_auths < MAXSUBAUTHS) {
-		/* 
-		 * NOTE - the subauths are in native machine-endian format. They
-		 * are converted to little-endian when linearized onto the wire.
-		 */
-		sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
+	for(conv = (uint32) strtoul(q, &q, 10);
+	    q && (*q =='-' || *q =='\0') && (sidout->num_auths < MAXSUBAUTHS);
+	    conv = (uint32) strtoul(q, &q, 10)) {
+		sid_append_rid(sidout, conv);
+		if (*q == '\0')
+			break;
+		q++;
 	}
-
-	SAFE_FREE(q);
+		
 	return True;
 }
 
