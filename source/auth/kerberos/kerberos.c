@@ -35,32 +35,6 @@
 #define LIBADS_CCACHE_NAME "MEMORY:libads"
 
 /*
-  we use a prompter to avoid a crash bug in the kerberos libs when 
-  dealing with empty passwords
-  this prompter is just a string copy ...
-*/
-static krb5_error_code 
-kerb_prompter(krb5_context ctx, void *data,
-	       const char *name,
-	       const char *banner,
-	       int num_prompts,
-	       krb5_prompt prompts[])
-{
-	if (num_prompts == 0) return 0;
-
-	memset(prompts[0].reply->data, '\0', prompts[0].reply->length);
-	if (prompts[0].reply->length > 0) {
-		if (data) {
-			strncpy(prompts[0].reply->data, data, prompts[0].reply->length-1);
-			prompts[0].reply->length = strlen(prompts[0].reply->data);
-		} else {
-			prompts[0].reply->length = 0;
-		}
-	}
-	return 0;
-}
-
-/*
   simulate a kinit, putting the tgt in the given credentials cache. 
   Orignally by remus@snapserver.com
  
@@ -120,7 +94,7 @@ kerb_prompter(krb5_context ctx, void *data,
 	krb5_get_init_creds_opt_init(&options);
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, principal, password, 
-						 kerb_prompter, 
+						 NULL, 
 						 NULL, 0, NULL, &options))) {
 		return code;
 	}
