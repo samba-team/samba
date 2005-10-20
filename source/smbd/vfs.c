@@ -57,6 +57,7 @@ static struct vfs_ops default_vfs = {
 		vfswrap_get_quota,
 		vfswrap_set_quota,
 		vfswrap_get_shadow_copy_data,
+		vfswrap_statvfs,
 	
 		/* Directory operations */
 	
