@@ -192,15 +192,15 @@ function setup_ldb(ldif, dbname, subobj)
 
 	ldb.filename = dbname;
 
-	var ok = ldb.connect(dbname);
-	assert(ok);
+	var connect_ok = ldb.connect(dbname);
+	assert(connect_ok);
 
 	if (erase) {
 		ldb_erase(ldb);	
 	}
 
-	ok = ldb.add(data);
-	assert(ok);
+	var add_ok = ldb.add(data);
+	assert(add_ok);
 }
 
 /*
