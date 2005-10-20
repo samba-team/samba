@@ -71,7 +71,6 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	struct ldb_val val, seed;
 	char *f;
 	char *sct;
-	char *rid;
 	int ret;
 
 	ldb = schannel_db_connect(mem_ctx);
@@ -89,13 +88,6 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	sct = talloc_asprintf(mem_ctx, "%u", (unsigned int)creds->secure_channel_type);
 
 	if (sct == NULL) {
-		talloc_free(ldb);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rid = talloc_asprintf(mem_ctx, "%u", (unsigned int)creds->rid);
-
-	if (rid == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -126,7 +118,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_string(msg, "accountName", creds->account_name);
 	ldb_msg_add_string(msg, "computerName", creds->computer_name);
 	ldb_msg_add_string(msg, "flatname", creds->domain);
-	ldb_msg_add_string(msg, "rid", rid);
+	samdb_msg_add_dom_sid(ldb, mem_ctx, msg, "objectSid", creds->sid);
 
 	ldb_delete(ldb, msg->dn);
 
@@ -209,7 +201,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 
 	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_string(res[0], "flatname", NULL));
 
-	(*creds)->rid = ldb_msg_find_uint(res[0], "rid", 0);
+	(*creds)->sid = samdb_result_dom_sid(*creds, res[0], "objectSid");
 
 	talloc_free(ldb);
 
