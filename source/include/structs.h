@@ -101,6 +101,7 @@ struct samr_Password;
 struct samr_CryptPassword;
 struct samr_CryptPasswordEx;
 struct samr_LogonHours;
+struct samr_DomInfo1;
 
 struct netr_Credential;
 struct netr_Authenticator;
@@ -328,3 +329,5 @@ struct param_section;
 struct param;
 
 struct socket_context;
+
+struct _krb5_krb_auth_data;
