@@ -182,6 +182,7 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		"secureChannelType",
 		"ntPwdHash",
 		"msDS-KeyVersionNumber",
+		"saltPrincipal",
 		NULL
 	};
 	
@@ -191,6 +192,7 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	const char *domain;
 	const char *realm;
 	enum netr_SchannelType sct;
+	const char *salt_principal;
 	
 	/* ok, we are going to get it now, don't recurse back here */
 	cred->machine_account_pending = False;
@@ -209,13 +211,13 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 			       &msgs, attrs,
 			       "%s", filter);
 	if (ldb_ret == 0) {
-		DEBUG(1, ("Could not find join record to domain: %s\n",
-			  cli_credentials_get_domain(cred)));
+		DEBUG(1, ("Could not find entry to match filter: %s\n",
+			  filter));
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else if (ldb_ret != 1) {
-		DEBUG(1, ("Found more than one (%d) join records to domain: %s\n",
-			  ldb_ret, cli_credentials_get_domain(cred)));
+		DEBUG(1, ("Found more than one (%d) entry to match filter: %s\n",
+			  ldb_ret, filter));
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -231,6 +233,9 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
+
+	salt_principal = ldb_msg_find_string(msgs[0], "saltPrincipal", NULL);
+	cli_credentials_set_salt_principal(cred, salt_principal);
 	
 	sct = ldb_msg_find_int(msgs[0], "secureChannelType", 0);
 	if (sct) { 

@@ -299,3 +299,12 @@ int cli_credentials_get_kvno(struct cli_credentials *cred)
 	return cred->kvno;
 }
 
+const char *cli_credentials_get_salt_principal(struct cli_credentials *cred) 
+{
+	return cred->salt_principal;
+}
+
+void cli_credentials_set_salt_principal(struct cli_credentials *cred, const char *principal) 
+{
+	cred->salt_principal = talloc_strdup(cred, principal);
+}
