@@ -340,7 +340,7 @@ function provision_guess()
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
-	rdn_list = split(".", subobj.REALM);
+	rdn_list = split(".", subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
 	return subobj;
 }
