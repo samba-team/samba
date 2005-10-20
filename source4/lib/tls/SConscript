@@ -1,7 +1,0 @@
-Import('hostenv')
-hostenv.Library('tls', ['tls.c', 'tlscert.c'])
-
-if hostenv['configure']:
-    conf = hostenv.Configure()
-    conf.CheckLibWithHeader('gnutls', 'gnutls/gnutls.h', 'c', 'gnutls_global_init()')
-    conf.Finish()

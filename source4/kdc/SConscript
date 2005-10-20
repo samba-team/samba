@@ -1,2 +1,0 @@
-Import('hostenv')
-hostenv.Library('kdc',['kdc.c','pac-glue.c','hdb-ldb.c'])
