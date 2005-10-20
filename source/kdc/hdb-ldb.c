@@ -116,6 +116,9 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
+		if (ent_type == HDB_LDB_ENT_TYPE_SERVER || ent_type == HDB_LDB_ENT_TYPE_ANY) {
+			flags.server = 1;
+		}
 		flags.invalid = 0;
 	}
 	
@@ -144,8 +147,9 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 		flags.invalid = 0;
 	}
 
+	/* Not permitted to act as a client if disabled */
 	if (userAccountControl & UF_ACCOUNTDISABLE) {
-		flags.invalid = 1;
+		flags.client = 0;
 	}
 	if (userAccountControl & UF_LOCKOUT) {
 		flags.invalid = 1;
