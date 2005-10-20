@@ -164,38 +164,11 @@ map_syscall_name_to_number (const char *str, int *res)
 static int 
 try_ioctlpath(const char *path, int entrypoint)
 {
-    int fd, ret, saved_errno;
-
+    int fd;
     fd = open(path, O_RDWR);
     if (fd < 0)
 	return 1;
-    switch (entrypoint) {
-    case LINUX_PROC_POINT: {
-	struct procdata data = { 0, 0, 0, 0, AFSCALL_PIOCTL };
-	data.param2 = (unsigned long)VIOCGETTOK;
-	ret = ioctl(fd, VIOC_SYSCALL_PROC, &data);
-	break;
-    }
-    case MACOS_DEV_POINT: {
-	struct devdata data = { AFSCALL_PIOCTL, 0, 0, 0, 0, 0, 0, 0 };
-	data.param2 = (unsigned long)VIOCGETTOK;
-	ret = ioctl(fd, VIOC_SYSCALL_DEV, &data);
-	break;
-    }
-    default:
-	abort();
-    }
-    saved_errno = errno;
     close(fd);
-    /* 
-     * Be quite liberal in what error are ok, the first is the one
-     * that should trigger given that params is NULL.
-     */
-    if (ret && 
-	(saved_errno != EFAULT &&
-	 saved_errno != EDOM && 
-	 saved_errno != ENOTCONN))
-	return 1;
     afs_ioctlpath = strdup(path);
     if (afs_ioctlpath == NULL)
 	return 1;
