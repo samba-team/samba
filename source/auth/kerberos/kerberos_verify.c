@@ -33,36 +33,6 @@
 
 #ifdef HAVE_KRB5
 
-DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
-{
-	DATA_BLOB out;
-	DATA_BLOB pac_contents = data_blob(NULL, 0);
-	struct asn1_data data;
-	int data_type;
-	if (!auth_data->length) {
-		return data_blob(NULL, 0);
-	}
-
-	asn1_load(&data, *auth_data);
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_start_tag(&data, ASN1_CONTEXT(0));
-	asn1_read_Integer(&data, &data_type);
-	asn1_end_tag(&data);
-	asn1_start_tag(&data, ASN1_CONTEXT(1));
-	asn1_read_OctetString(&data, &pac_contents);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_end_tag(&data);
-	asn1_free(&data);
-
-	out = data_blob_talloc(mem_ctx, pac_contents.data, pac_contents.length);
-
-	data_blob_free(&pac_contents);
-
-	return out;
-}
-
 /**********************************************************************************
  Verify an incoming ticket and parse out the principal name and 
  authorization_data if available.
@@ -83,6 +53,7 @@ DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 	int ret;
 	krb5_flags ap_req_options = 0;
 	krb5_principal server;
+	krb5_data packet_out;
 
 	struct keytab_container *keytab_container;
 
@@ -119,23 +90,19 @@ DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 		return NT_STATUS_LOGON_FAILURE;
 	}
 	*keyblock = local_keyblock;
-
-	if (ap_req_options & AP_OPTS_MUTUAL_REQUIRED) {
-		krb5_data packet_out;
-		ret = krb5_mk_rep(smb_krb5_context->krb5_context, *auth_context, &packet_out);
-		if (ret) {
-			krb5_free_ticket(smb_krb5_context->krb5_context, *tkt);
-			
-			DEBUG(3,("ads_verify_ticket: Failed to generate mutual authentication reply (%s)\n",
-				 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
-			return NT_STATUS_LOGON_FAILURE;
-		}
+	
+	
+	ret = krb5_mk_rep(smb_krb5_context->krb5_context, *auth_context, &packet_out);
+	if (ret) {
+		krb5_free_ticket(smb_krb5_context->krb5_context, *tkt);
 		
-		*ap_rep = data_blob_talloc(mem_ctx, packet_out.data, packet_out.length);
-		krb5_free_data_contents(smb_krb5_context->krb5_context, &packet_out);
-	} else {
-		*ap_rep = data_blob(NULL, 0);
+		DEBUG(3,("ads_verify_ticket: Failed to generate mutual authentication reply (%s)\n",
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
+		return NT_STATUS_LOGON_FAILURE;
 	}
+		
+	*ap_rep = data_blob_talloc(mem_ctx, packet_out.data, packet_out.length);
+	krb5_free_data_contents(smb_krb5_context->krb5_context, &packet_out);
 
 	return NT_STATUS_OK;
 }
