@@ -175,6 +175,7 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	struct ldb_message **msgs;
 	const char *attrs[] = {
 		"secret",
+		"priorSecret",
 		"samAccountName",
 		"flatname",
 		"realm",
