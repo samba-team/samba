@@ -1,5 +1,0 @@
-Import('hostenv')
-hostenv.Library('smb_server', 
-		['smb_server.c','conn.c','negprot.c','nttrans.c','session.c',
-		 'reply.c','request.c','search.c','service.c','sesssetup.c',
-		 'srvtime.c','trans2.c','signing.c','management.c'])

@@ -1,5 +1,0 @@
-Import('hostenv')
-hostenv.Library('ntptr_simple_ldb',
-		['simple_ldb/ntptr_simple_ldb.c'])
-hostenv.Library('ntptr',
-		['ntptr_base.c','ntptr_interface.c'])

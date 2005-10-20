@@ -1,6 +1,0 @@
-Import('hostenv')
-
-hostenv.Library('winbind',[ 'wb_server.c',
-			'wb_samba3_protocol.c'
-			'wb_samba3_cmd.c'
-			])

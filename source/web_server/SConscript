@@ -1,3 +1,0 @@
-Import('hostenv')
-
-hostenv.Library('web_server',['web_server.c','http.c'])

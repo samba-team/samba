@@ -1,5 +1,0 @@
-Import('hostenv')
-
-hostenv.Library('mpr',['mpr/miniMpr.c','mpr/var.c'])
-hostenv.Library('ejs',['ejs/ejsLib.c','ejs/ejsLex.c','ejs/ejsParser.c','ejs/ejsProcs.c'])
-hostenv.Library('esp',['esp/esp.c','esp/espProcs.c'])
