@@ -401,6 +401,7 @@ sub Function($$$)
 	pidl_code "$ifname\_dissect\_${fn_name}_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
 	pidl_code "{";
 	indent;
+	pidl_code "guint32 status;\n";
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$_->{DIRECTION}})) {
 			pidl_code "$dissectornames{$_->{NAME}}";
@@ -411,10 +412,15 @@ sub Function($$$)
 
 	if (not defined($fn->{RETURN_TYPE})) {
 	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS") {
-		pidl_code "offset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf\_$ifname\_status, NULL);";
+		pidl_code "offset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf\_$ifname\_status, &status);\n";
+		pidl_code "if (status != 0 && check_col(pinfo->cinfo, COL_INFO))";
+		pidl_code "\tcol_append_fstr(pinfo->cinfo, COL_INFO, \", Error: %s\", val_to_str(status, NT_errors, \"Unknown NT status 0x%08x\"));\n";
 		$hf_used{"hf\_$ifname\_status"} = 1;
 	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
-		pidl_code "offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf\_$ifname\_werror, NULL);";
+		pidl_code "offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf\_$ifname\_werror, &status);\n";
+		pidl_code "if (status != 0 && check_col(pinfo->cinfo, COL_INFO))";
+		pidl_code "\tcol_append_fstr(pinfo->cinfo, COL_INFO, \", Error: %s\", val_to_str(status, DOS_errors, \"Unknown DOS error 0x%08x\"));\n";
+		
 		$hf_used{"hf\_$ifname\_werror"} = 1;
 	} else {
 		print "$fn->{FILE}:$fn->{LINE}: error: return type `$fn->{RETURN_TYPE}' not yet supported\n";
