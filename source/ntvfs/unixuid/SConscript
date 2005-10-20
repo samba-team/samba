@@ -1,3 +1,0 @@
-Import('hostenv')
-
-hostenv.Library('ntvfs_unixuid',['vfs_unixuid.c'])
