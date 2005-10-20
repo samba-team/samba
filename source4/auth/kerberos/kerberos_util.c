@@ -50,37 +50,43 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	char *machine_username;
 	char *salt_body;
 	char *lower_realm;
+	char *salt_principal;
 	struct principal_container *mem_ctx = talloc(parent_ctx, struct principal_container);
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
-	
-	machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account));
 
-	if (!machine_username) {
-		talloc_free(mem_ctx);
+	salt_principal = cli_credentials_get_salt_principal(machine_account);
+	if (salt_principal) {
+		ret = krb5_parse_name(smb_krb5_context->krb5_context, salt_principal, salt_princ); 
+	} else {
+		machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account));
+		
+		if (!machine_username) {
+			talloc_free(mem_ctx);
+			return ENOMEM;
+		}
+		
+		if (machine_username[strlen(machine_username)-1] == '$') {
+			machine_username[strlen(machine_username)-1] = '\0';
+		}
+		lower_realm = strlower_talloc(mem_ctx, cli_credentials_get_realm(machine_account));
+		if (!lower_realm) {
+			talloc_free(mem_ctx);
+			return ENOMEM;
+		}
+		
+		salt_body = talloc_asprintf(mem_ctx, "%s.%s", machine_username, 
+					    lower_realm);
+		if (!salt_body) {
+			talloc_free(mem_ctx);
 		return ENOMEM;
-	}
-
-	if (machine_username[strlen(machine_username)-1] == '$') {
-		machine_username[strlen(machine_username)-1] = '\0';
-	}
-	lower_realm = strlower_talloc(mem_ctx, cli_credentials_get_realm(machine_account));
-	if (!lower_realm) {
-		talloc_free(mem_ctx);
-		return ENOMEM;
-	}
-
-	salt_body = talloc_asprintf(mem_ctx, "%s.%s", machine_username, 
-				    lower_realm);
-	if (!salt_body) {
-		talloc_free(mem_ctx);
-		return ENOMEM;
-	}
-	
-	ret = krb5_make_principal(smb_krb5_context->krb5_context, salt_princ, 
-				  cli_credentials_get_realm(machine_account), 
-				  "host", salt_body, NULL);
+		}
+		
+		ret = krb5_make_principal(smb_krb5_context->krb5_context, salt_princ, 
+					  cli_credentials_get_realm(machine_account), 
+					  "host", salt_body, NULL);
+	} 
 
 	if (ret == 0) {
 		mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
