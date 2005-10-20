@@ -252,7 +252,7 @@ function provision(subobj, message, blank, paths)
 	/*
 	  some options need to be upper/lower case
 	*/
-	subobj.REALM       = strlower(subobj.REALM);
+	subobj.REALM       = strupper(subobj.REALM);
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
 	subobj.DOMAIN      = strupper(subobj.DOMAIN);
 	assert(valid_netbios_name(subobj.DOMAIN));
@@ -309,7 +309,7 @@ function provision_guess()
 	var rdn_list;
 	random_init(local);
 
-	subobj.REALM        = lp.get("realm");
+	subobj.REALM        = strupper(lp.get("realm"));
 	subobj.DOMAIN       = lp.get("workgroup");
 	subobj.HOSTNAME     = hostname();
 
