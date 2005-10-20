@@ -1870,6 +1870,52 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ Renames a SAM_ACCOUNT
+ - The "rename user script" has full responsibility for changing everything
+***************************************************************************/
+
+static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
+					   SAM_ACCOUNT *old_acct, 
+					   const char *newname)
+{
+	const char *oldname;
+	int rc;
+	pstring rename_script;
+
+	if (!old_acct) {
+		DEBUG(0, ("ldapsam_rename_sam_account: old_acct was NULL!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!newname) {
+		DEBUG(0, ("ldapsam_rename_sam_account: newname was NULL!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+		
+	oldname = pdb_get_username(old_acct);
+
+        /* rename the posix user */
+        pstrcpy(rename_script, lp_renameuser_script());
+
+	if (!(*rename_script))
+		return NT_STATUS_ACCESS_DENIED;
+
+	DEBUG (3, ("ldapsam_rename_sam_account: Renaming user %s to %s.\n", 
+		   oldname, newname));
+
+	pstring_sub(rename_script, "%unew", newname);
+	pstring_sub(rename_script, "%uold", oldname);
+	rc = smbrun(rename_script, NULL);
+
+	DEBUG(rc ? 0 : 3,("Running the command `%s' gave %d\n", 
+			  rename_script, rc));
+
+	if (rc)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
+}
+
 /**********************************************************************
  Helper function to determine for update_sam_account whether
  we need LDAP modification.
@@ -4203,6 +4249,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->add_sam_account = ldapsam_add_sam_account;
 	(*pdb_method)->update_sam_account = ldapsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = ldapsam_delete_sam_account;
+	(*pdb_method)->rename_sam_account = ldapsam_rename_sam_account;
 
 	(*pdb_method)->getgrsid = ldapsam_getgrsid;
 	(*pdb_method)->getgrgid = ldapsam_getgrgid;
