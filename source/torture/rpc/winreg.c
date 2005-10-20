@@ -686,12 +686,15 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
-static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, winreg_open_fn open_fn)
+static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		      const char *name, winreg_open_fn open_fn)
 {
 	struct policy_handle handle, newhandle;
 	BOOL ret = True, created = False, deleted = False;
 	struct winreg_OpenHKLM r;
 	NTSTATUS status;
+
+	printf("Testing %s\n", name);
 
 	r.in.system_name = 0;
 	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -791,10 +794,13 @@ BOOL torture_rpc_winreg(void)
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	winreg_open_fn open_fns[] = { (winreg_open_fn)dcerpc_winreg_OpenHKLM, 
-				       (winreg_open_fn)dcerpc_winreg_OpenHKU,
-				       (winreg_open_fn)dcerpc_winreg_OpenHKCR,
-				       (winreg_open_fn)dcerpc_winreg_OpenHKCU };
+	struct {
+		const char *name;
+		winreg_open_fn fn;
+	} open_fns[] = {{"OpenHKLM", (winreg_open_fn)dcerpc_winreg_OpenHKLM },
+			{"OpenHKU",  (winreg_open_fn)dcerpc_winreg_OpenHKU },
+			{"OpenHKCR", (winreg_open_fn)dcerpc_winreg_OpenHKCR },
+			{"OpenHKCU", (winreg_open_fn)dcerpc_winreg_OpenHKCU }};
 	int i;
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
@@ -819,7 +825,7 @@ BOOL torture_rpc_winreg(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
-		if (!test_Open(p, mem_ctx, open_fns[i]))
+		if (!test_Open(p, mem_ctx, open_fns[i].name, open_fns[i].fn))
 			ret = False;
 	}
 
