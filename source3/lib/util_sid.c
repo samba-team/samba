@@ -267,7 +267,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 		return False;
 	}
 
-//	ZERO_STRUCTP(sidout);
+	ZERO_STRUCTP(sidout);
 
 	/* Get the revision number. */
 	p = sidstr + 2;
