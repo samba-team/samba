@@ -156,7 +156,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	fstring real_username;
 	BOOL map_domainuser_to_guest = False;
 	PAC_LOGON_INFO *logon_info = NULL;
-	int i;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(pac_data);
