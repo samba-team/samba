@@ -62,6 +62,6 @@ struct machine_acct_pass {
 #define SECRETS_PRIMARY_DOMAIN_FILTER "(&(flatname=%s)(objectclass=primaryDomain))"
 #define SECRETS_PRIMARY_REALM_FILTER "(&(realm=%s)(objectclass=primaryDomain))"
 #define SECRETS_KRBTGT_SEARCH "(&((|(realm=%s)(flatname=%s))(samAccountName=krbtgt)))"
-#define SECRETS_PRINCIPAL_SEARCH "(&((|(realm=%s)(flatname=%s))(servicePrincipalName=%s)))"
+#define SECRETS_PRINCIPAL_SEARCH "(&(|(realm=%s)(flatname=%s))(servicePrincipalName=%s))"
 
 #endif /* _SECRETS_H */
