@@ -100,11 +100,9 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC SASL[%s] server code: %s\n", 
 				req->creds.SASL.mechanism, nt_errstr(status)));
-			goto reply;
 		}
 	}
 
-reply:
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
 		return NT_STATUS_NO_MEMORY;
