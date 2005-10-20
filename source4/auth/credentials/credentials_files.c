@@ -232,10 +232,8 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	}
 	
 	sct = ldb_msg_find_int(msgs[0], "secureChannelType", 0);
-	if (!sct) { 
-		DEBUG(1, ("Domain join for acocunt %s did not have a secureChannelType set!\n",
-			  machine_account));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	if (sct) { 
+		cli_credentials_set_secure_channel_type(cred, sct);
 	}
 	
 	if (!password) {
@@ -256,8 +254,6 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		}
 	}
 	
-	cli_credentials_set_secure_channel_type(cred, sct);
-
 	domain = ldb_msg_find_string(msgs[0], "flatname", NULL);
 	if (domain) {
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
