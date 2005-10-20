@@ -4,7 +4,8 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+   Copyright (C) Guenther Deschner 2005
+  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -25,6 +26,7 @@
 #include "system/kerberos.h"
 #include "system/time.h"
 #include "auth/kerberos/kerberos.h"
+#include "asn_1.h"
 
 #ifdef HAVE_KRB5
 
@@ -157,23 +159,107 @@
 }
 #endif
 
- DATA_BLOB get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
- 	 		    krb5_ticket *tkt)
+BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
 {
-	DATA_BLOB auth_data = data_blob(NULL, 0); 
+	DATA_BLOB pac_contents;
+	struct asn1_data data;
+	int data_type;
+
+	if (!auth_data->length) {
+		return False;
+	}
+
+	asn1_load(&data, *auth_data);
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_read_Integer(&data, &data_type);
+	
+	if (data_type != KRB5_AUTHDATA_WIN2K_PAC ) {
+		DEBUG(10,("authorization data is not a Windows PAC (type: %d)\n", data_type));
+		asn1_free(&data);
+		return False;
+	}
+	
+	asn1_end_tag(&data);
+	asn1_start_tag(&data, ASN1_CONTEXT(1));
+	asn1_read_OctetString(&data, &pac_contents);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_free(&data);
+
+	*unwrapped_pac_data = data_blob_talloc(mem_ctx, pac_contents.data, pac_contents.length);
+
+	data_blob_free(&pac_contents);
+
+	return True;
+}
+
+ BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt)
+{
+	DATA_BLOB auth_data_wrapped;
+	BOOL got_auth_data_pac = False;
+	int i;
+	
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
-	if (tkt && tkt->enc_part2 
-	    && tkt->enc_part2->authorization_data
-	    && tkt->enc_part2->authorization_data[0]
-	    && tkt->enc_part2->authorization_data[0]->length)
-		auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
-			tkt->enc_part2->authorization_data[0]->length);
+	if (tkt->enc_part2 && tkt->enc_part2->authorization_data && 
+	    tkt->enc_part2->authorization_data[0] && 
+	    tkt->enc_part2->authorization_data[0]->length)
+	{
+		for (i = 0; tkt->enc_part2->authorization_data[i] != NULL; i++) {
+		
+			if (tkt->enc_part2->authorization_data[i]->ad_type != 
+			    KRB5_AUTHDATA_IF_RELEVANT) {
+				DEBUG(10,("get_auth_data_from_tkt: ad_type is %d\n", 
+					tkt->enc_part2->authorization_data[i]->ad_type));
+				continue;
+			}
+
+			auth_data_wrapped = data_blob(tkt->enc_part2->authorization_data[i]->contents,
+						      tkt->enc_part2->authorization_data[i]->length);
+
+			/* check if it is a PAC */
+			got_auth_data_pac = unwrap_pac(mem_ctx, &auth_data_wrapped, auth_data);
+			data_blob_free(&auth_data_wrapped);
+			
+			if (!got_auth_data_pac) {
+				continue;
+			}
+		}
+
+		return got_auth_data_pac;
+	}
+		
 #else
-	if (tkt && tkt->ticket.authorization_data && tkt->ticket.authorization_data->len)
-		auth_data = data_blob(tkt->ticket.authorization_data->val->ad_data.data,
-			tkt->ticket.authorization_data->val->ad_data.length);
+	if (tkt->ticket.authorization_data && 
+	    tkt->ticket.authorization_data->len)
+	{
+		for (i = 0; i < tkt->ticket.authorization_data->len; i++) {
+			
+			if (tkt->ticket.authorization_data->val[i].ad_type != 
+			    KRB5_AUTHDATA_IF_RELEVANT) {
+				DEBUG(10,("get_auth_data_from_tkt: ad_type is %d\n", 
+					tkt->ticket.authorization_data->val[i].ad_type));
+				continue;
+			}
+
+			auth_data_wrapped = data_blob(tkt->ticket.authorization_data->val[i].ad_data.data,
+						      tkt->ticket.authorization_data->val[i].ad_data.length);
+
+			/* check if it is a PAC */
+			got_auth_data_pac = unwrap_pac(mem_ctx, &auth_data_wrapped, auth_data);
+			data_blob_free(&auth_data_wrapped);
+			
+			if (!got_auth_data_pac) {
+				continue;
+			}
+		}
+
+		return got_auth_data_pac;
+	}
 #endif
-	return auth_data;
+	return False;
 }
 
  krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt)
