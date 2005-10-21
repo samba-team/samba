@@ -82,9 +82,20 @@ static OM_uint32 acquire_initiator_cred
     ret = GSS_S_FAILURE;
     memset(&cred, 0, sizeof(cred));
 
-    kret = krb5_cc_default(gssapi_krb5_context, &ccache);
-    if (kret)
-	goto end;
+    /* If we have a preferred principal, lets try to find it in all
+     * caches, otherwise, fall back to default cache.  Ignore
+     * errors. */
+    if (handle->principal)
+	kret = krb5_cc_cache_match (gssapi_krb5_context,
+				    handle->principal,
+				    NULL,
+				    &ccache);
+    
+    if (ccache == NULL) {
+	kret = krb5_cc_default(gssapi_krb5_context, &ccache);
+	if (kret)
+	    goto end;
+    }
     kret = krb5_cc_get_principal(gssapi_krb5_context, ccache,
 	&def_princ);
     if (kret != 0) {
