@@ -5,12 +5,12 @@
 [BINARY::net]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/net/net.o \
-		utils/net/net_password.o \
-		utils/net/net_time.o \
-		utils/net/net_join.o \
-		utils/net/net_vampire.o \
-		utils/net/net_user.o
+		net.o \
+		net_password.o \
+		net_time.o \
+		net_join.o \
+		net_vampire.o \
+		net_user.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \

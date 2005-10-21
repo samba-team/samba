@@ -4,10 +4,10 @@
 # Start SUBSYSTEM GTKSMB
 [SUBSYSTEM::GTKSMB]
 NOPROTO = YES
-INIT_OBJ_FILES = gtk/common/gtk-smb.o 
-ADD_OBJ_FILES = gtk/common/select.o \
-		gtk/common/gtk_events.o \
-		gtk/common/credentials.o
+INIT_OBJ_FILES = common/gtk-smb.o 
+ADD_OBJ_FILES = common/select.o \
+		common/gtk_events.o \
+		common/credentials.o
 REQUIRED_SUBSYSTEMS = CHARSET LIBBASIC EXT_LIB_gtk RPC_NDR_SAMR
 # End SUBSYSTEM GTKSMB
 ##############################
@@ -16,9 +16,9 @@ REQUIRED_SUBSYSTEMS = CHARSET LIBBASIC EXT_LIB_gtk RPC_NDR_SAMR
 # Start BINARY gregedit
 [BINARY::gregedit]
 INSTALLDIR = BINDIR
-OBJ_FILES = gtk/tools/gregedit.o
+OBJ_FILES = tools/gregedit.o
 REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE REGISTRY GTKSMB
-MANPAGE = gtk/man/gregedit.1
+MANPAGE = man/gregedit.1
 # End BINARY gregedit
 ################################################
 
@@ -26,7 +26,7 @@ MANPAGE = gtk/man/gregedit.1
 # Start BINARY gepdump 
 [BINARY::gepdump]
 INSTALLDIR = BINDIR
-OBJ_FILES = gtk/tools/gepdump.o
+OBJ_FILES = tools/gepdump.o
 REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE GTKSMB RPC_NDR_EPMAPPER RPC_NDR_MGMT
 # End BINARY gepdump 
 ################################################
@@ -35,7 +35,7 @@ REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE GTKSMB RPC_NDR_EPMAPPER RPC_NDR_MGMT
 # Start BINARY gwcrontab
 [BINARY::gwcrontab]
 INSTALLDIR = BINDIR
-OBJ_FILES = gtk/tools/gwcrontab.o
+OBJ_FILES = tools/gwcrontab.o
 REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE GTKSMB RPC_NDR_ATSVC
 # End BINARY gwcrontab
 ################################################
@@ -44,7 +44,7 @@ REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE GTKSMB RPC_NDR_ATSVC
 # Start BINARY gwsam
 [BINARY::gwsam]
 INSTALLDIR = BINDIR
-OBJ_FILES = gtk/tools/gwsam.o gtk/tools/gwsam_user.o
+OBJ_FILES = tools/gwsam.o tools/gwsam_user.o
 REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE RPC_NDR_SAMR GTKSMB
 # End BINARY gwsam
 ################################################

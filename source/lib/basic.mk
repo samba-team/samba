@@ -1,29 +1,45 @@
 # LIB BASIC subsystem
+include com/config.mk
+include samba3/config.mk
+include socket/config.mk
+include charset/config.mk
+include ldb/config.mk
+include talloc/config.mk
+include tdb/config.mk
+include tls/config.mk
+include registry/config.mk
+include messaging/config.mk
+include events/config.mk
+include popt/config.mk
+include cmdline/config.mk
+include socket_wrapper/config.mk
+include appweb/config.mk
+include replace/config.mk
 
 ##############################
 # Start SUBSYSTEM LIBNETIF
 [SUBSYSTEM::LIBNETIF]
 INIT_OBJ_FILES = \
-		lib/netif/interface.o
+		netif/interface.o
 ADD_OBJ_FILES = \
-		lib/netif/netif.o
+		netif/netif.o
 # End SUBSYSTEM LIBNETIF
 ##############################
 
 [SUBSYSTEM::TDR]
-INIT_OBJ_FILES = lib/tdr/tdr.o
+INIT_OBJ_FILES = tdr/tdr.o
 
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
 [SUBSYSTEM::LIBCRYPTO]
 NOPROTO = YES
 INIT_OBJ_FILES = \
-		lib/crypto/crc32.o
+		crypto/crc32.o
 ADD_OBJ_FILES = \
-		lib/crypto/md5.o \
-		lib/crypto/hmacmd5.o \
-		lib/crypto/md4.o \
-		lib/crypto/arcfour.o
+		crypto/md5.o \
+		crypto/hmacmd5.o \
+		crypto/md4.o \
+		crypto/arcfour.o
 # End SUBSYSTEM LIBCRYPTO
 ##############################
 
@@ -31,42 +47,42 @@ ADD_OBJ_FILES = \
 # Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
 INIT_OBJ_FILES = \
-		lib/compression/mszip.o
+		compression/mszip.o
 # End SUBSYSTEM LIBCOMPRESION
 ################################################
 
 [SUBSYSTEM::GENCACHE]
 OBJ_FILES = \
-		lib/gencache.o \
+		gencache.o \
 
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
-INIT_OBJ_FILES = lib/version.o
+INIT_OBJ_FILES = version.o
 ADD_OBJ_FILES = \
-		lib/xfile.o \
-		lib/debug.o \
-		lib/fault.o \
-		lib/signal.o \
-		lib/system.o \
-		lib/time.o \
-		lib/genrand.o \
-		lib/dprintf.o \
-		lib/util_str.o \
-		lib/util_strlist.o \
-		lib/util_unistr.o \
-		lib/util_file.o \
-		lib/data_blob.o \
-		lib/util.o \
-		lib/util_sock.o \
-		lib/substitute.o \
-		lib/fsusage.o \
-		lib/ms_fnmatch.o \
-		lib/select.o \
-		lib/mutex.o \
-		lib/idtree.o \
-		lib/db_wrap.o \
-		lib/gendb.o
+		xfile.o \
+		debug.o \
+		fault.o \
+		signal.o \
+		system.o \
+		time.o \
+		genrand.o \
+		dprintf.o \
+		util_str.o \
+		util_strlist.o \
+		util_unistr.o \
+		util_file.o \
+		data_blob.o \
+		util.o \
+		util_sock.o \
+		substitute.o \
+		fsusage.o \
+		ms_fnmatch.o \
+		select.o \
+		mutex.o \
+		idtree.o \
+		db_wrap.o \
+		gendb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
 		SOCKET_WRAPPER CONFIG
@@ -74,7 +90,7 @@ REQUIRED_SUBSYSTEMS = \
 ##############################
 
 [SUBSYSTEM::PIDFILE]
-OBJ_FILES = lib/pidfile.o
+OBJ_FILES = pidfile.o
 
 [SUBSYSTEM::UNIX_PRIVS]
-OBJ_FILES = lib/unix_privs.o
+OBJ_FILES = unix_privs.o

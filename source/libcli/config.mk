@@ -1,71 +1,75 @@
+include auth/config.mk
+include ldap/config.mk
+include security/config.mk
+
 [SUBSYSTEM::LIBCLI_UTILS]
-ADD_OBJ_FILES = libcli/util/asn1.o \
-		libcli/util/doserr.o \
-		libcli/util/errormap.o \
-		libcli/util/clierror.o \
-		libcli/util/nterr.o \
-		libcli/util/smbdes.o
+ADD_OBJ_FILES = util/asn1.o \
+		util/doserr.o \
+		util/errormap.o \
+		util/clierror.o \
+		util/nterr.o \
+		util/smbdes.o
 
 [SUBSYSTEM::LIBCLI_LSA]
-ADD_OBJ_FILES = libcli/util/clilsa.o
+ADD_OBJ_FILES = util/clilsa.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 
 [SUBSYSTEM::LIBCLI_COMPOSITE]
 ADD_OBJ_FILES = \
-	libcli/composite/composite.o
+	composite/composite.o
 REQUIRED_SUBSYSTEMS = LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_SMB_COMPOSITE]
 ADD_OBJ_FILES = \
-	libcli/smb_composite/loadfile.o \
-	libcli/smb_composite/savefile.o \
-	libcli/smb_composite/connect.o \
-	libcli/smb_composite/connect_multi.o \
-	libcli/smb_composite/sesssetup.o \
-	libcli/smb_composite/fetchfile.o \
-	libcli/smb_composite/appendacl.o \
-	libcli/smb_composite/fsinfo.o 
+	smb_composite/loadfile.o \
+	smb_composite/savefile.o \
+	smb_composite/connect.o \
+	smb_composite/connect_multi.o \
+	smb_composite/sesssetup.o \
+	smb_composite/fetchfile.o \
+	smb_composite/appendacl.o \
+	smb_composite/fsinfo.o 
 REQUIRED_SUBSYSTEMS = LIBCLI_COMPOSITE
 
 [SUBSYSTEM::LIBCLI_NBT]
 ADD_OBJ_FILES = \
-	libcli/nbt/nbtname.o \
-	libcli/nbt/nbtsocket.o \
-	libcli/nbt/namequery.o \
-	libcli/nbt/nameregister.o \
-	libcli/nbt/namerefresh.o \
-	libcli/nbt/namerelease.o
+	nbt/nbtname.o \
+	nbt/nbtsocket.o \
+	nbt/namequery.o \
+	nbt/nameregister.o \
+	nbt/namerefresh.o \
+	nbt/namerelease.o
 REQUIRED_SUBSYSTEMS = NDR_RAW NDR_NBT SOCKET LIBCLI_COMPOSITE LIBEVENTS \
 	LIB_SECURITY_NDR
 
 [SUBSYSTEM::LIBCLI_DGRAM]
 ADD_OBJ_FILES = \
-	libcli/dgram/dgramsocket.o \
-	libcli/dgram/mailslot.o \
-	libcli/dgram/netlogon.o \
-	libcli/dgram/ntlogon.o \
-	libcli/dgram/browse.o
+	dgram/dgramsocket.o \
+	dgram/mailslot.o \
+	dgram/netlogon.o \
+	dgram/ntlogon.o \
+	dgram/browse.o
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [SUBSYSTEM::LIBCLI_CLDAP]
 ADD_OBJ_FILES = \
-	libcli/cldap/cldap.o
+	cldap/cldap.o
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_LDAP
 
 [SUBSYSTEM::LIBCLI_WREPL]
 ADD_OBJ_FILES = \
-	libcli/wrepl/winsrepl.o
+	wrepl/winsrepl.o
 REQUIRED_SUBSYSTEMS = NDR_WINSREPL SOCKET LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
 ADD_OBJ_FILES = \
-	libcli/resolve/resolve.o \
-	libcli/resolve/nbtlist.o \
-	libcli/resolve/bcast.o \
-	libcli/resolve/wins.o \
-	libcli/resolve/host.o
+	resolve/resolve.o \
+	resolve/nbtlist.o \
+	resolve/bcast.o \
+	resolve/wins.o \
+	resolve/host.o
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [SUBSYSTEM::LIBCLI]
@@ -75,34 +79,34 @@ REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH \
 
 [SUBSYSTEM::LIBSMB]
 REQUIRED_SUBSYSTEMS = LIBCLI SOCKET
-ADD_OBJ_FILES = libcli/clireadwrite.o \
-		libcli/cliconnect.o \
-		libcli/clifile.o \
-		libcli/clilist.o \
-		libcli/clitrans2.o \
-		libcli/climessage.o \
-		libcli/clideltree.o
+ADD_OBJ_FILES = clireadwrite.o \
+		cliconnect.o \
+		clifile.o \
+		clilist.o \
+		clitrans2.o \
+		climessage.o \
+		clideltree.o
 
 [SUBSYSTEM::LIBCLI_RAW]
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW_KRB5
-OBJ_FILES = libcli/raw/rawfile.o \
-		libcli/raw/smb_signing.o \
-		libcli/raw/clisocket.o \
-		libcli/raw/clitransport.o \
-		libcli/raw/clisession.o \
-		libcli/raw/clitree.o \
-		libcli/raw/rawrequest.o \
-		libcli/raw/rawreadwrite.o \
-		libcli/raw/rawsearch.o \
-		libcli/raw/rawsetfileinfo.o \
-		libcli/raw/raweas.o \
-		libcli/raw/rawtrans.o \
-		libcli/raw/clioplock.o \
-		libcli/raw/rawnegotiate.o \
-		libcli/raw/rawfsinfo.o \
-		libcli/raw/rawfileinfo.o \
-		libcli/raw/rawnotify.o \
-		libcli/raw/rawioctl.o \
-		libcli/raw/rawacl.o \
-		libcli/raw/rawdate.o \
-		libcli/raw/rawlpq.o
+OBJ_FILES = raw/rawfile.o \
+		raw/smb_signing.o \
+		raw/clisocket.o \
+		raw/clitransport.o \
+		raw/clisession.o \
+		raw/clitree.o \
+		raw/rawrequest.o \
+		raw/rawreadwrite.o \
+		raw/rawsearch.o \
+		raw/rawsetfileinfo.o \
+		raw/raweas.o \
+		raw/rawtrans.o \
+		raw/clioplock.o \
+		raw/rawnegotiate.o \
+		raw/rawfsinfo.o \
+		raw/rawfileinfo.o \
+		raw/rawnotify.o \
+		raw/rawioctl.o \
+		raw/rawacl.o \
+		raw/rawdate.o \
+		raw/rawlpq.o

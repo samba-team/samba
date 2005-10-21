@@ -5,7 +5,7 @@
 [MODULE::libldb_objectguid]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/objectguid.o
+		samdb/ldb_modules/objectguid.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_RAW NDR_MISC
 # End MODULE libldb_objectguid
@@ -16,7 +16,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::libldb_samldb]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/samldb.o
+		samdb/ldb_modules/samldb.o
 #
 # End MODULE libldb_samldb
 ################################################
@@ -26,7 +26,7 @@ INIT_OBJ_FILES = \
 [MODULE::libldb_samba3sam]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/samba3sam.o
+		samdb/ldb_modules/samba3sam.o
 #
 # End MODULE libldb_samldb
 ################################################
@@ -36,7 +36,7 @@ INIT_OBJ_FILES = \
 [MODULE::libldb_proxy]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		dsdb/samdb/ldb_modules/proxy.o
+		samdb/ldb_modules/proxy.o
 #
 # End MODULE libldb_proxy
 ################################################
@@ -45,10 +45,10 @@ INIT_OBJ_FILES = \
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
 INIT_OBJ_FILES = \
-		dsdb/samdb/samdb.o
+		samdb/samdb.o
 ADD_OBJ_FILES = \
-		dsdb/samdb/samdb_privilege.o \
-		dsdb/common/flag_mapping.o
+		samdb/samdb_privilege.o \
+		common/flag_mapping.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON
 #

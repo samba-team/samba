@@ -10,6 +10,21 @@
 package output;
 use strict;
 
+sub add_dir($$)
+{
+	my ($dir,$files) = @_;
+	my @ret = ();
+	
+	foreach (@$files) {
+		$_ = "$dir/$_";
+		s/\/\//\//g;
+		s/\/([^\/\.]+)\/\.\.\//\//g;
+		push (@ret, $_);
+	}
+	
+	return @ret;
+}
+
 sub generate_mergedobj($)
 {
 	my $subsys = shift;
@@ -93,9 +108,9 @@ sub create_output($)
 		next if not defined($part->{OUTPUT_TYPE});
 
 		# Combine object lists
-		push(@{$part->{OBJ_LIST}}, @{$part->{INIT_OBJ_FILES}}) if defined($part->{INIT_OBJ_FILES});
-		push(@{$part->{OBJ_LIST}}, @{$part->{ADD_OBJ_FILES}}) if defined($part->{ADD_OBJ_FILES});
-		push(@{$part->{OBJ_LIST}}, @{$part->{OBJ_FILES}}) if defined($part->{OBJ_FILES});
+		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{INIT_OBJ_FILES})) if defined($part->{INIT_OBJ_FILES});
+		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{ADD_OBJ_FILES})) if defined($part->{ADD_OBJ_FILES});
+		push(@{$part->{OBJ_LIST}}, add_dir($part->{BASEDIR}, $part->{OBJ_FILES})) if defined($part->{OBJ_FILES});
 
 		if ((not defined($part->{OBJ_LIST}) or 
 			scalar(@{$part->{OBJ_LIST}}) == 0) and 

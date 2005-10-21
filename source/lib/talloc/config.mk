@@ -1,10 +1,10 @@
 ################################################
 # Start SUBSYSTEM LIBTALLOC
 [SUBSYSTEM::LIBTALLOC]
-INIT_OBJ_FILES = lib/talloc/talloc.o
+INIT_OBJ_FILES = talloc.o
 REQUIRED_SUBSYSTEMS = LIBREPLACE
 NOPROTO = YES
-MANPAGE = lib/talloc/talloc.3
+MANPAGE = talloc.3
 # End SUBSYSTEM LIBTALLOC
 ################################################
 

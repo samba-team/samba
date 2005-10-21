@@ -6,7 +6,7 @@
 INIT_FUNCTION = registry_nt4_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_nt4.o
+		reg_backend_nt4.o
 REQUIRED_SUBSYSTEMS = TDR_REGF
 # End MODULE registry_nt4
 ################################################
@@ -14,7 +14,7 @@ REQUIRED_SUBSYSTEMS = TDR_REGF
 [SUBSYSTEM::TDR_REGF]
 REQUIRED_SUBSYSTEMS = TDR 
 NOPROTO = YES
-INIT_OBJ_FILES = lib/registry/tdr_regf.o
+INIT_OBJ_FILES = tdr_regf.o
 
 lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: lib/registry/regf.idl
@@ -26,7 +26,7 @@ lib/registry/tdr_regf.c: lib/registry/regf.idl
 INIT_FUNCTION = registry_w95_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_w95.o
+		reg_backend_w95.o
 # End MODULE registry_w95
 ################################################
 
@@ -36,7 +36,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = registry_dir_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_dir.o
+		reg_backend_dir.o
 # End MODULE registry_dir
 ################################################
 
@@ -46,7 +46,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = registry_rpc_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_rpc.o
+		reg_backend_rpc.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 # End MODULE registry_rpc
 ################################################
@@ -59,7 +59,7 @@ REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 INIT_FUNCTION = registry_gconf_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_gconf.o
+		reg_backend_gconf.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 # End MODULE registry_gconf
 ################################################
@@ -70,7 +70,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 INIT_FUNCTION = registry_ldb_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
-		lib/registry/reg_backend_ldb.o
+		reg_backend_ldb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB
 # End MODULE registry_ldb
@@ -80,11 +80,11 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM REGISTRY
 [SUBSYSTEM::REGISTRY]
 INIT_OBJ_FILES = \
-		lib/registry/common/reg_interface.o
+		common/reg_interface.o
 ADD_OBJ_FILES = \
-		lib/registry/common/reg_util.o \
-		lib/registry/reg_samba.o \
-		lib/registry/patchfile.o
+		common/reg_util.o \
+		reg_samba.o \
+		patchfile.o
 REQUIRED_SUBSYSTEMS = \
 		LIBBASIC
 # End MODULE registry_ldb
@@ -107,10 +107,10 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::regdiff]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/registry/tools/regdiff.o
+		tools/regdiff.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
-MANPAGE = lib/registry/man/regdiff.1
+MANPAGE = man/regdiff.1
 # End BINARY regdiff
 ################################################
 
@@ -119,10 +119,10 @@ MANPAGE = lib/registry/man/regdiff.1
 [BINARY::regpatch]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/registry/tools/regpatch.o
+		tools/regpatch.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
-MANPAGE = lib/registry/man/regpatch.1
+MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
 
@@ -131,10 +131,10 @@ MANPAGE = lib/registry/man/regpatch.1
 [BINARY::regshell]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/registry/tools/regshell.o
+		tools/regshell.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
-MANPAGE = lib/registry/man/regshell.1
+MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################
 
@@ -143,9 +143,9 @@ MANPAGE = lib/registry/man/regshell.1
 [BINARY::regtree]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/registry/tools/regtree.o
+		tools/regtree.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
-MANPAGE = lib/registry/man/regtree.1
+MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################

@@ -3,7 +3,7 @@
 [MODULE::libldb_operational]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		lib/ldb/modules/operational.o
+		modules/operational.o
 # End MODULE libldb_operational
 ################################################
 
@@ -12,7 +12,7 @@ INIT_OBJ_FILES = \
 [MODULE::libldb_rdn_name]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		lib/ldb/modules/rdn_name.o
+		modules/rdn_name.o
 # End MODULE libldb_rdn_name
 ################################################
 
@@ -21,7 +21,7 @@ INIT_OBJ_FILES = \
 [MODULE::libldb_schema]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		lib/ldb/modules/schema.o
+		modules/schema.o
 # End MODULE libldb_schema
 ################################################
 
@@ -30,7 +30,7 @@ INIT_OBJ_FILES = \
 [MODULE::libldb_ildap]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		lib/ldb/ldb_ildap/ldb_ildap.o
+		ldb_ildap/ldb_ildap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_LDAP
 NOPROTO = YES
@@ -41,7 +41,7 @@ NOPROTO = YES
 # Start MODULE libldb_map
 [MODULE::libldb_map]
 SUBSYSTEM = LIBLDB
-INIT_OBJ_FILES = lib/ldb/modules/ldb_map.o
+INIT_OBJ_FILES = modules/ldb_map.o
 # End MODULE libldb_map
 ################################################
 
@@ -50,7 +50,7 @@ INIT_OBJ_FILES = lib/ldb/modules/ldb_map.o
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		lib/ldb/ldb_sqlite3/ldb_sqlite3.o
+		ldb_sqlite3/ldb_sqlite3.o
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_SQLITE3
 NOPROTO = YES
@@ -62,13 +62,13 @@ NOPROTO = YES
 [MODULE::libldb_tdb]
 SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
-		lib/ldb/ldb_tdb/ldb_tdb.o
+		ldb_tdb/ldb_tdb.o
 ADD_OBJ_FILES = \
-		lib/ldb/ldb_tdb/ldb_search.o \
-		lib/ldb/ldb_tdb/ldb_pack.o \
-		lib/ldb/ldb_tdb/ldb_index.o \
-		lib/ldb/ldb_tdb/ldb_cache.o \
-		lib/ldb/ldb_tdb/ldb_tdb_wrap.o
+		ldb_tdb/ldb_search.o \
+		ldb_tdb/ldb_pack.o \
+		ldb_tdb/ldb_index.o \
+		ldb_tdb/ldb_cache.o \
+		ldb_tdb/ldb_tdb_wrap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 NOPROTO = YES
@@ -79,22 +79,22 @@ NOPROTO = YES
 # Start SUBSYSTEM LIBLDB
 [SUBSYSTEM::LIBLDB]
 INIT_OBJ_FILES = \
-		lib/ldb/common/ldb.o
+		common/ldb.o
 ADD_OBJ_FILES = \
-		lib/ldb/common/ldb_ldif.o \
-		lib/ldb/common/ldb_parse.o \
-		lib/ldb/common/ldb_msg.o \
-		lib/ldb/common/ldb_utf8.o \
-		lib/ldb/common/ldb_debug.o \
-		lib/ldb/common/ldb_modules.o \
-		lib/ldb/common/ldb_match.o \
-		lib/ldb/common/ldb_attributes.o \
-		lib/ldb/common/attrib_handlers.o \
-		lib/ldb/common/ldb_dn.o
+		common/ldb_ldif.o \
+		common/ldb_parse.o \
+		common/ldb_msg.o \
+		common/ldb_utf8.o \
+		common/ldb_debug.o \
+		common/ldb_modules.o \
+		common/ldb_match.o \
+		common/ldb_attributes.o \
+		common/attrib_handlers.o \
+		common/ldb_dn.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC LDBSAMBA
 NOPROTO = YES
-MANPAGE = lib/ldb/man/ldb.3
+MANPAGE = man/ldb.3
 #
 # End SUBSYSTEM LIBLDB
 ################################################
@@ -115,7 +115,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 OBJ_FILES = \
-		lib/ldb/samba/ldif_handlers.o
+		samba/ldif_handlers.o
 # End SUBSYSTEM LDBSAMBA
 ################################################
 
@@ -123,7 +123,7 @@ OBJ_FILES = \
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
 OBJ_FILES= \
-		lib/ldb/tools/cmdline.o
+		tools/cmdline.o
 REQUIRED_SUBSYSTEMS = LIBLDB LIBCMDLINE LIBBASIC
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
@@ -133,10 +133,10 @@ REQUIRED_SUBSYSTEMS = LIBLDB LIBCMDLINE LIBBASIC
 [BINARY::ldbadd]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		lib/ldb/tools/ldbadd.o
+		tools/ldbadd.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/ldbadd.1
+MANPAGE = man/ldbadd.1
 # End BINARY ldbadd
 ################################################
 
@@ -145,10 +145,10 @@ MANPAGE = lib/ldb/man/ldbadd.1
 [BINARY::ldbdel]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/ldbdel.o
+		tools/ldbdel.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/ldbdel.1
+MANPAGE = man/ldbdel.1
 # End BINARY ldbdel
 ################################################
 
@@ -157,10 +157,10 @@ MANPAGE = lib/ldb/man/ldbdel.1
 [BINARY::ldbmodify]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/ldbmodify.o
+		tools/ldbmodify.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/ldbmodify.1
+MANPAGE = man/ldbmodify.1
 # End BINARY ldbmodify
 ################################################
 
@@ -169,10 +169,10 @@ MANPAGE = lib/ldb/man/ldbmodify.1
 [BINARY::ldbsearch]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/ldbsearch.o
+		tools/ldbsearch.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE 
-MANPAGE = lib/ldb/man/ldbsearch.1
+MANPAGE = man/ldbsearch.1
 # End BINARY ldbsearch
 ################################################
 
@@ -181,10 +181,10 @@ MANPAGE = lib/ldb/man/ldbsearch.1
 [BINARY::ldbedit]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/ldbedit.o
+		tools/ldbedit.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/ldbedit.1
+MANPAGE = man/ldbedit.1
 # End BINARY ldbedit
 ################################################
 
@@ -193,10 +193,10 @@ MANPAGE = lib/ldb/man/ldbedit.1
 [BINARY::ldbrename]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/ldbrename.o
+		tools/ldbrename.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/ldbrename.1
+MANPAGE = man/ldbrename.1
 # End BINARY ldbrename
 ################################################
 
@@ -205,7 +205,7 @@ MANPAGE = lib/ldb/man/ldbrename.1
 [BINARY::ldbtest]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/ldbtest.o
+		tools/ldbtest.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
 # End BINARY ldbtest
@@ -216,7 +216,7 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::oLschema2ldif]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/ldb/tools/oLschema2ldif.o
+		tools/oLschema2ldif.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
 # End BINARY oLschema2ldif
