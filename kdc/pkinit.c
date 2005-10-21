@@ -322,7 +322,9 @@ integer_to_BN(krb5_context context, const char *field, heim_integer *f)
 }
 
 static krb5_error_code
-get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
+get_dh_param(krb5_context context,
+	     krb5_kdc_configuration *config,
+	     SubjectPublicKeyInfo *dh_key_info,
 	     pk_client_params *client_params)
 {
     DomainParameters dhparam;
@@ -362,7 +364,7 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
     }
 
 
-    ret = _krb5_dh_group_ok(context, 0, 
+    ret = _krb5_dh_group_ok(context, config->pkinit_dh_min_bits, 
 			    &dhparam.p, &dhparam.g, &dhparam.q, moduli,
 			    &client_params->dh_group_name);
     if (ret)
@@ -699,7 +701,8 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    ret = get_dh_param(context, ap.clientPublicValue, client_params);
+	    ret = get_dh_param(context, config, 
+			       ap.clientPublicValue, client_params);
 	    if (ret) {
 		free_AuthPack(&ap);
 		goto out;
