@@ -1388,7 +1388,7 @@ again:
 	DEBUG(3,("Connecting to host=%s\n", dest_host));
 	
 	if (!cli_connect(cli, dest_host, &ip)) {
-		DEBUG(1,("cli_full_connection: failed to connect to %s (%s)\n",
+		DEBUG(1,("cli_start_connection: failed to connect to %s (%s)\n",
 			 nmb_namestr(&called), inet_ntoa(ip)));
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
