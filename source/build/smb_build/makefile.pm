@@ -191,7 +191,7 @@ sub _prepare_manpages($)
 	my @mp_list = ();
 
 	foreach (values %$ctx) {
-		push (@mp_list, $_->{MANPAGE}) if (defined($_->{MANPAGE}) and $_->{MANPAGE} ne "");
+		push (@mp_list, "$_->{BASEDIR}/$_->{MANPAGE}") if (defined($_->{MANPAGE}) and $_->{MANPAGE} ne "");
 	}
 	
 	my $mp = array2oneperline(\@mp_list);

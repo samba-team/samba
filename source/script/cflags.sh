@@ -11,7 +11,7 @@ check_flags()
     NAME=$1
     (
      while read tag flags; do
-	 if [ "$tag" = "$NAME" ]; then
+	 if [ "$tag" = "$NAME" ] || [ "./$tag" = "$NAME" ]; then
 	     echo "$flags"
 	     exit 0;
 	 fi
