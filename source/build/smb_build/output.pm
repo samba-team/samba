@@ -14,6 +14,8 @@ sub add_dir($$)
 {
 	my ($dir,$files) = @_;
 	my @ret = ();
+
+	$dir =~ s/^\.\///g;
 	
 	foreach (@$files) {
 		$_ = "$dir/$_";
