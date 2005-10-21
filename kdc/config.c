@@ -526,6 +526,15 @@ krb5_kdc_configuration *configure(krb5_context context, int argc, char **argv)
 					 "pkinit-principal-in-certificate",
 					 NULL);
     }
+
+    config->pkinit_dh_min_bits =
+	krb5_config_get_int_default(context, 
+				     NULL, 
+				     0,
+				     "kdc",
+				     "pkinit-dh-min-bits",
+				     NULL);
+
 #endif
 
     if(config->v4_realm == NULL && (config->enable_kaserver || config->enable_v4)){
