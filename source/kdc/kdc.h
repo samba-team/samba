@@ -29,3 +29,14 @@
 
 krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx, 
 			       krb5_context context, struct HDB **db, const char *arg);
+
+/*
+  top level context structure for the kdc server
+*/
+struct kdc_server {
+	struct task_server *task;
+	krb5_kdc_configuration *config;
+	struct smb_krb5_context *smb_krb5_context;
+};
+
+
