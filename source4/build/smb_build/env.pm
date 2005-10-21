@@ -12,10 +12,12 @@ use smb_build::input;
 
 use strict;
 
-sub new
+sub new($$)
 { 
+	my ($name, $config) = @_;
 	my $self = { };
-	bless $self;
+	bless $self, $name;
+	$self->set_config($config);
 	return $self;
 }
 
