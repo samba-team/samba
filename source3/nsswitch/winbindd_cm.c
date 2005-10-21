@@ -581,17 +581,17 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
 static void dcip_to_name( const char *domainname, const char *realm, 
                           const DOM_SID *sid, struct in_addr ip, fstring name )
 {
-	int i;
 
 	/* try GETDC requests first */
 	
-	send_getdc_request(ip, domainname, sid);
-	smb_msleep(100);
-
-	for (i=0; i<5; i++) {
-		if (receive_getdc_response(ip, domainname, name))
-			return;
-		smb_msleep(500);
+	if (send_getdc_request(ip, domainname, sid)) {
+		int i;
+		smb_msleep(100);
+		for (i=0; i<5; i++) {
+			if (receive_getdc_response(ip, domainname, name))
+				return;
+			smb_msleep(500);
+		}
 	}
 
 	/* try node status request */
