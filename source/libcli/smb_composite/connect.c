@@ -173,6 +173,11 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 		cli_credentials_set_conf(state->io_setup->in.credentials);
 		cli_credentials_set_anonymous(state->io_setup->in.credentials);
 
+		/* If the preceding attempt was with extended security, we
+		 * have been given a uid in the NTLMSSP_CHALLENGE reply. This
+		 * would lead to an invalid uid in the anonymous fallback */
+		state->session->vuid = 0;
+
 		state->creq = smb_composite_sesssetup_send(state->session,
 							   state->io_setup);
 		NT_STATUS_HAVE_NO_MEMORY(state->creq);
