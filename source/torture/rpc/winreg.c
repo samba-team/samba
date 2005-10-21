@@ -402,9 +402,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("Testing EnumKey\n\n");
 
-	class.length = 0;
-	class.size   = 0;
-	class.name   = NULL;
+	class.name   = "";
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;
@@ -414,8 +412,6 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.last_changed_time = &t;
 
 	do {
-		name.length = 0;
-		name.size   = 1024;
 		name.name   = NULL;
 
 		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
@@ -536,8 +532,6 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("testing EnumValue\n");
 
-	name.length = 0;
-	name.size   = 1024;
 	name.name   = "";
 
 	r.in.handle = handle;

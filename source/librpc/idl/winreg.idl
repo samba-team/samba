@@ -130,11 +130,8 @@
 	);
 
 	typedef struct {
-		/* we can't use value(strlen_m(name)*2) here as it
-		   doesn't propogate to the length_is() property
-		   below. Jelmer, can this be fixed? */
-		uint16 length; 
-		uint16 size;
+		[value(strlen_m(name)*2)] uint16 length; 
+		[value(strlen_m(name)*2)] uint16 size;
 		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
 	} winreg_StringBuf;
 
