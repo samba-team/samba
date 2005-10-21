@@ -566,12 +566,11 @@ static NTSTATUS gensec_krb5_wrap(struct gensec_security *gensec_security,
 	krb5_auth_context auth_context = gensec_krb5_state->auth_context;
 	krb5_error_code ret;
 	krb5_data input, output;
-	krb5_replay_data replay;
 	input.length = in->length;
 	input.data = in->data;
 	
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-		ret = krb5_mk_priv(context, auth_context, &input, &output, &replay);
+		ret = krb5_mk_priv(context, auth_context, &input, &output, NULL);
 		if (ret) {
 			DEBUG(1, ("krb5_mk_priv failed: %s\n", 
 				  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
