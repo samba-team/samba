@@ -74,6 +74,9 @@ typedef struct krb5_kdc_configuration {
     krb5_boolean enable_pkinit_princ_in_cert;
 
     krb5_log_facility *logf;
+
+    int pkinit_dh_min_bits;
+
 } krb5_kdc_configuration;
 
 #include <kdc-protos.h>
