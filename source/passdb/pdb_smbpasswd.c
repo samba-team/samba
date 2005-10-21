@@ -1481,7 +1481,6 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 					      SAM_ACCOUNT *old_acct,
 					      const char *newname)
 {
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	pstring rename_script;
 	SAM_ACCOUNT *new_acct = NULL;
 	BOOL interim_account = False;

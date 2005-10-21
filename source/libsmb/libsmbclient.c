@@ -30,14 +30,13 @@
 /*
  * DOS Attribute values (used internally)
  */
-typedef struct DOS_ATTR_DESC
-{
-    int mode;
-    unsigned long long size;
-    time_t a_time;
-    time_t c_time;
-    time_t m_time;
-    unsigned long long inode;
+typedef struct DOS_ATTR_DESC {
+	int mode;
+	SMB_OFF_T size;
+	time_t a_time;
+	time_t c_time;
+	time_t m_time;
+	SMB_INO_T inode;
 } DOS_ATTR_DESC;
 
 
@@ -3738,36 +3737,36 @@ static void dos_attr_parse(SMBCCTX *context,
 		}
 
 		if (StrnCaseCmp(tok, "SIZE:", 5) == 0) {
-                        dad->size = strtoll(tok+5, NULL, 10);
+                        dad->size = (SMB_OFF_T)atof(tok+5);
 			continue;
 		}
 
 		if (StrnCaseCmp(tok, "A_TIME:", 7) == 0) {
-                        dad->a_time = strtoll(tok+7, NULL, 10);
+                        dad->a_time = (time_t)strtol(tok+7, NULL, 10);
 			continue;
 		}
 
 		if (StrnCaseCmp(tok, "C_TIME:", 7) == 0) {
-                        dad->c_time = strtoll(tok+7, NULL, 10);
+                        dad->c_time = (time_t)strtol(tok+7, NULL, 10);
 			continue;
 		}
 
 		if (StrnCaseCmp(tok, "M_TIME:", 7) == 0) {
-                        dad->m_time = strtoll(tok+7, NULL, 10);
+                        dad->m_time = (time_t)strtol(tok+7, NULL, 10);
 			continue;
 		}
 
 		if (StrnCaseCmp(tok, "INODE:", 6) == 0) {
-                        dad->inode = strtoll(tok+6, NULL, 10);
+                        dad->inode = (SMB_INO_T)atof(tok+6);
 			continue;
 		}
 	}
 }
 
-
 /***************************************************** 
-retrieve the acls for a file
+ Retrieve the acls for a file.
 *******************************************************/
+
 static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                     struct cli_state *ipc_cli, POLICY_HND *pol,
                     char *filename, char *attr_name, char *buf, int bufsize)
@@ -4201,8 +4200,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                 if (determine_size) {
                                         p = talloc_asprintf(
                                                 ctx,
-                                                ",SIZE:%llu",
-                                                (unsigned long long) size);
+                                                ",SIZE:%.0f",
+                                                (double)size);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4210,15 +4209,15 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     ",SIZE:%llu",
-                                                     (unsigned long long) size);
+                                                     ",SIZE:%.0f",
+                                                     (double)size);
                                 }
                         } else if (StrCaseCmp(name, "size") == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(
                                                 ctx,
-                                                "%llu",
-                                                (unsigned long long) size);
+                                                "%.0f",
+                                                (double)size);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4226,8 +4225,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%llu",
-                                                     (unsigned long long) size);
+                                                     "%.0f",
+                                                     (double)size);
                                 }
                         }
         
@@ -4356,8 +4355,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                 if (determine_size) {
                                         p = talloc_asprintf(
                                                 ctx,
-                                                ",INODE:%llu",
-                                                (unsigned long long) ino);
+                                                ",INODE:%.0f",
+                                                (double)ino);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4365,15 +4364,15 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     ",INODE:%llu",
-                                                     (unsigned long long) ino);
+                                                     ",INODE:%.0f",
+                                                     (double) ino);
                                 }
                         } else if (StrCaseCmp(name, "inode") == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(
                                                 ctx,
-                                                "%llu",
-                                                (unsigned long long) ino);
+                                                "%.0f",
+                                                (double) ino);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -4381,8 +4380,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%llu",
-                                                     (unsigned long long) ino);
+                                                     "%.0f",
+                                                     (double) ino);
                                 }
                         }
         
