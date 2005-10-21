@@ -2639,11 +2639,21 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 		  char **name)
 {
     int i;
+
+    if (name)
+	*name = NULL;
+
     for (i = 0; moduli[i] != NULL; i++) {
 	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
 	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
 	    heim_integer_cmp(&moduli[i]->q, q) == 0)
 	{
+	    if (bits && bits > moduli[i]->bits) {
+		krb5_set_error_string(context, "PKINIT: DH group parameter %s "
+				      "no accepted, not enough bits generated",
+				      moduli[i]->name);
+		return KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
+	    }
 	    if (name)
 		*name = strdup(moduli[i]->name);
 	    return 0;
