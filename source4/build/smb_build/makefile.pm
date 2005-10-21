@@ -563,18 +563,6 @@ __EOD__
 	return $output;
 }
 
-sub _prepare_custom_rule($)
-{
-	my $ctx = shift;
-	return "
-$ctx->{NAME}: bin/.TARGET_$ctx->{NAME}
-
-bin/.TARGET_$ctx->{NAME}:
-	$ctx->{CMD}
-	touch bin/.TARGET_$ctx->{NAME}
-";
-}
-
 sub _prepare_clean_rules($)
 {
 	my ($self) = @_;
@@ -663,7 +651,6 @@ sub _prepare_rule_lists($$)
 		($output .= _prepare_static_library_rule($key)) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 		($output .= _prepare_shared_library_rule($key)) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 		($output .= _prepare_binary_rule($key)) if $key->{OUTPUT_TYPE} eq "BINARY";
-		($output .= _prepare_custom_rule($key) ) if $key->{TYPE} eq "TARGET";
 	}
 
 	$output .= _prepare_clean_rules($self);
