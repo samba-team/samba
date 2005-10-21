@@ -4,33 +4,33 @@
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_posix_init 
 INIT_OBJ_FILES = \
-		ntvfs/posix/vfs_posix.o
+		vfs_posix.o
 ADD_OBJ_FILES = \
-		ntvfs/posix/pvfs_util.o \
-		ntvfs/posix/pvfs_search.o \
-		ntvfs/posix/pvfs_dirlist.o \
-		ntvfs/posix/pvfs_fileinfo.o \
-		ntvfs/posix/pvfs_unlink.o \
-		ntvfs/posix/pvfs_mkdir.o \
-		ntvfs/posix/pvfs_open.o \
-		ntvfs/posix/pvfs_read.o \
-		ntvfs/posix/pvfs_flush.o \
-		ntvfs/posix/pvfs_write.o \
-		ntvfs/posix/pvfs_fsinfo.o \
-		ntvfs/posix/pvfs_qfileinfo.o \
-		ntvfs/posix/pvfs_setfileinfo.o \
-		ntvfs/posix/pvfs_rename.o \
-		ntvfs/posix/pvfs_resolve.o \
-		ntvfs/posix/pvfs_shortname.o \
-		ntvfs/posix/pvfs_lock.o \
-		ntvfs/posix/pvfs_wait.o \
-		ntvfs/posix/pvfs_seek.o \
-		ntvfs/posix/pvfs_ioctl.o \
-		ntvfs/posix/pvfs_xattr.o \
-		ntvfs/posix/pvfs_streams.o \
-		ntvfs/posix/pvfs_acl.o \
-		ntvfs/posix/xattr_system.o \
-		ntvfs/posix/xattr_tdb.o
+		pvfs_util.o \
+		pvfs_search.o \
+		pvfs_dirlist.o \
+		pvfs_fileinfo.o \
+		pvfs_unlink.o \
+		pvfs_mkdir.o \
+		pvfs_open.o \
+		pvfs_read.o \
+		pvfs_flush.o \
+		pvfs_write.o \
+		pvfs_fsinfo.o \
+		pvfs_qfileinfo.o \
+		pvfs_setfileinfo.o \
+		pvfs_rename.o \
+		pvfs_resolve.o \
+		pvfs_shortname.o \
+		pvfs_lock.o \
+		pvfs_wait.o \
+		pvfs_seek.o \
+		pvfs_ioctl.o \
+		pvfs_xattr.o \
+		pvfs_streams.o \
+		pvfs_acl.o \
+		xattr_system.o \
+		xattr_tdb.o
 REQUIRED_SUBSYSTEMS = NDR_XATTR ntvfs_common EXT_LIB_XATTR EXT_LIB_BLKID
 # End MODULE ntvfs_posix
 ################################################

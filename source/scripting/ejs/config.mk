@@ -2,7 +2,7 @@
 # Start LIBRARY EJSRPC
 [SUBSYSTEM::EJSRPC]
 OBJ_FILES = \
-		scripting/ejs/ejsrpc.o
+		ejsrpc.o
 REQUIRED_SUBSYSTEMS = RPC_EJS
 NOPROTO = YES
 # End SUBSYSTEM EJSRPC
@@ -12,23 +12,23 @@ NOPROTO = YES
 # Start LIBRARY SMBCALLS
 [SUBSYSTEM::SMBCALLS]
 OBJ_FILES = \
-		scripting/ejs/smbcalls.o \
-		scripting/ejs/smbcalls_config.o \
-		scripting/ejs/smbcalls_ldb.o \
-		scripting/ejs/smbcalls_nbt.o \
-		scripting/ejs/smbcalls_cli.o \
-		scripting/ejs/smbcalls_rpc.o \
-		scripting/ejs/smbcalls_auth.o \
-		scripting/ejs/smbcalls_options.o \
-		scripting/ejs/smbcalls_nss.o \
-		scripting/ejs/smbcalls_string.o \
-		scripting/ejs/smbcalls_data.o \
-		scripting/ejs/smbcalls_rand.o \
-		scripting/ejs/smbcalls_sys.o \
-		scripting/ejs/smbcalls_creds.o \
-		scripting/ejs/smbcalls_samba3.o \
-		scripting/ejs/smbcalls_param.o \
-		scripting/ejs/mprutil.o
+		smbcalls.o \
+		smbcalls_config.o \
+		smbcalls_ldb.o \
+		smbcalls_nbt.o \
+		smbcalls_cli.o \
+		smbcalls_rpc.o \
+		smbcalls_auth.o \
+		smbcalls_options.o \
+		smbcalls_nss.o \
+		smbcalls_string.o \
+		smbcalls_data.o \
+		smbcalls_rand.o \
+		smbcalls_sys.o \
+		smbcalls_creds.o \
+		smbcalls_samba3.o \
+		smbcalls_param.o \
+		mprutil.o
 REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING LIBSAMBA3
 # End SUBSYSTEM SMBCALLS
 #######################
@@ -38,7 +38,7 @@ REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING LIBSAMBA3
 [BINARY::smbscript]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		scripting/ejs/smbscript.o
+		smbscript.o
 REQUIRED_SUBSYSTEMS = EJS LIBBASIC SMBCALLS CONFIG LIBSMB RPC LIBCMDLINE
 # End BINARY SMBSCRIPT
 #######################

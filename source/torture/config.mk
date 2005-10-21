@@ -4,22 +4,22 @@
 # Start SUBSYSTEM TORTURE_BASIC
 [SUBSYSTEM::TORTURE_BASIC]
 ADD_OBJ_FILES = \
-		torture/basic/scanner.o \
-		torture/basic/utable.o \
-		torture/basic/charset.o \
-		torture/basic/mangle_test.o \
-		torture/basic/denytest.o \
-		torture/basic/aliases.o \
-		torture/basic/locking.o \
-		torture/basic/secleak.o \
-		torture/basic/rename.o \
-		torture/basic/dir.o \
-		torture/basic/delete.o \
-		torture/basic/unlink.o \
-		torture/basic/disconnect.o \
-		torture/basic/delaywrite.o \
-		torture/basic/attr.o \
-		torture/basic/properties.o 
+		basic/scanner.o \
+		basic/utable.o \
+		basic/charset.o \
+		basic/mangle_test.o \
+		basic/denytest.o \
+		basic/aliases.o \
+		basic/locking.o \
+		basic/secleak.o \
+		basic/rename.o \
+		basic/dir.o \
+		basic/delete.o \
+		basic/unlink.o \
+		basic/disconnect.o \
+		basic/delaywrite.o \
+		basic/attr.o \
+		basic/properties.o 
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB 
 # End SUBSYSTEM TORTURE_BASIC
@@ -29,29 +29,29 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_BASIC
 [SUBSYSTEM::TORTURE_RAW]
 ADD_OBJ_FILES = \
-		torture/raw/qfsinfo.o \
-		torture/raw/qfileinfo.o \
-		torture/raw/setfileinfo.o \
-		torture/raw/search.o \
-		torture/raw/close.o \
-		torture/raw/open.o \
-		torture/raw/mkdir.o \
-		torture/raw/oplock.o \
-		torture/raw/notify.o \
-		torture/raw/mux.o \
-		torture/raw/ioctl.o \
-		torture/raw/chkpath.o \
-		torture/raw/unlink.o \
-		torture/raw/read.o \
-		torture/raw/context.o \
-		torture/raw/write.o \
-		torture/raw/lock.o \
-		torture/raw/rename.o \
-		torture/raw/eas.o \
-		torture/raw/streams.o \
-		torture/raw/acls.o \
-		torture/raw/seek.o \
-		torture/raw/composite.o
+		raw/qfsinfo.o \
+		raw/qfileinfo.o \
+		raw/setfileinfo.o \
+		raw/search.o \
+		raw/close.o \
+		raw/open.o \
+		raw/mkdir.o \
+		raw/oplock.o \
+		raw/notify.o \
+		raw/mux.o \
+		raw/ioctl.o \
+		raw/chkpath.o \
+		raw/unlink.o \
+		raw/read.o \
+		raw/context.o \
+		raw/write.o \
+		raw/lock.o \
+		raw/rename.o \
+		raw/eas.o \
+		raw/streams.o \
+		raw/acls.o \
+		raw/seek.o \
+		raw/composite.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB LIBCLI_LSA
 # End SUBSYSTEM TORTURE_RAW
@@ -61,7 +61,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_COM
 [SUBSYSTEM::TORTURE_COM]
 ADD_OBJ_FILES = \
-		torture/com/simple.o
+		com/simple.o
 REQUIRED_SUBSYSTEMS = \
 		COM DCOM
 # End SUBSYSTEM TORTURE_COM
@@ -71,43 +71,43 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_RPC
 [SUBSYSTEM::TORTURE_RPC]
 ADD_OBJ_FILES = \
-		torture/rpc/join.o \
-		torture/rpc/lsa.o \
-		torture/rpc/session_key.o \
-		torture/rpc/echo.o \
-		torture/rpc/dcom.o \
-		torture/rpc/dfs.o \
-		torture/rpc/drsuapi.o \
-		torture/rpc/drsuapi_cracknames.o \
-		torture/rpc/dssync.o \
-		torture/rpc/spoolss.o \
-		torture/rpc/unixinfo.o \
-		torture/rpc/samr.o \
-		torture/rpc/wkssvc.o \
-		torture/rpc/srvsvc.o \
-		torture/rpc/svcctl.o \
-		torture/rpc/atsvc.o \
-		torture/rpc/eventlog.o \
-		torture/rpc/epmapper.o \
-		torture/rpc/winreg.o \
-		torture/rpc/initshutdown.o \
-		torture/rpc/oxidresolve.o \
-		torture/rpc/remact.o \
-		torture/rpc/mgmt.o \
-		torture/rpc/scanner.o \
-		torture/rpc/autoidl.o \
-		torture/rpc/countcalls.o \
-		torture/rpc/testjoin.o \
-		torture/rpc/xplogin.o \
-		torture/rpc/schannel.o \
-		torture/rpc/netlogon.o \
-		torture/rpc/samlogon.o \
-		torture/rpc/samsync.o \
-		torture/rpc/rot.o \
-		torture/rpc/bind.o \
-		torture/rpc/dssetup.o \
-		torture/rpc/alter_context.o \
-		torture/rpc/bench.o
+		rpc/join.o \
+		rpc/lsa.o \
+		rpc/session_key.o \
+		rpc/echo.o \
+		rpc/dcom.o \
+		rpc/dfs.o \
+		rpc/drsuapi.o \
+		rpc/drsuapi_cracknames.o \
+		rpc/dssync.o \
+		rpc/spoolss.o \
+		rpc/unixinfo.o \
+		rpc/samr.o \
+		rpc/wkssvc.o \
+		rpc/srvsvc.o \
+		rpc/svcctl.o \
+		rpc/atsvc.o \
+		rpc/eventlog.o \
+		rpc/epmapper.o \
+		rpc/winreg.o \
+		rpc/initshutdown.o \
+		rpc/oxidresolve.o \
+		rpc/remact.o \
+		rpc/mgmt.o \
+		rpc/scanner.o \
+		rpc/autoidl.o \
+		rpc/countcalls.o \
+		rpc/testjoin.o \
+		rpc/xplogin.o \
+		rpc/schannel.o \
+		rpc/netlogon.o \
+		rpc/samlogon.o \
+		rpc/samsync.o \
+		rpc/rot.o \
+		rpc/bind.o \
+		rpc/dssetup.o \
+		rpc/alter_context.o \
+		rpc/bench.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_ALL RPC_NDR_UNIXINFO RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
@@ -122,7 +122,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_RAP
 [SUBSYSTEM::TORTURE_RAP]
 ADD_OBJ_FILES = \
-		torture/rap/rap.o
+		rap/rap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_RAP
@@ -132,8 +132,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_AUTH
 [SUBSYSTEM::TORTURE_AUTH]
 ADD_OBJ_FILES = \
-		torture/auth/ntlmssp.o \
-		torture/auth/pac.o
+		auth/ntlmssp.o \
+		auth/pac.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB GENSEC AUTH
 # End SUBSYSTEM TORTURE_AUTH
@@ -143,17 +143,17 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_LOCAL
 [SUBSYSTEM::TORTURE_LOCAL]
 ADD_OBJ_FILES = \
-		torture/local/iconv.o \
-		lib/talloc/testsuite.o \
-		torture/local/messaging.o \
-		torture/local/binding_string.o \
-		torture/local/idtree.o \
-		torture/local/socket.o \
-		torture/local/irpc.o \
-		torture/local/registry.o \
-		torture/local/resolve.o \
-		torture/local/util_strlist.o \
-		torture/local/util_file.o
+		local/iconv.o \
+		../lib/talloc/testsuite.o \
+		local/messaging.o \
+		local/binding_string.o \
+		local/idtree.o \
+		local/socket.o \
+		local/irpc.o \
+		local/registry.o \
+		local/resolve.o \
+		local/util_strlist.o \
+		local/util_file.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		MESSAGING \
@@ -165,8 +165,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_NBENCH
 [SUBSYSTEM::TORTURE_NBENCH]
 ADD_OBJ_FILES = \
-		torture/nbench/nbio.o \
-		torture/nbench/nbench.o
+		nbench/nbio.o \
+		nbench/nbench.o
 # End SUBSYSTEM TORTURE_NBENCH
 #################################
 
@@ -174,10 +174,10 @@ ADD_OBJ_FILES = \
 # Start SUBSYSTEM TORTURE_LDAP
 [SUBSYSTEM::TORTURE_LDAP]
 ADD_OBJ_FILES = \
-		torture/ldap/common.o \
-		torture/ldap/basic.o \
-		torture/ldap/cldap.o \
-		torture/ldap/cldapbench.o
+		ldap/common.o \
+		ldap/basic.o \
+		ldap/cldap.o \
+		ldap/cldapbench.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_LDAP LIBCLI_CLDAP
 # End SUBSYSTEM TORTURE_LDAP
@@ -187,12 +187,12 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_NBT
 [SUBSYSTEM::TORTURE_NBT]
 ADD_OBJ_FILES = \
-		torture/nbt/query.o \
-		torture/nbt/register.o \
-		torture/nbt/wins.o \
-		torture/nbt/winsbench.o \
-		torture/nbt/winsreplication.o \
-		torture/nbt/dgram.o
+		nbt/query.o \
+		nbt/register.o \
+		nbt/wins.o \
+		nbt/winsbench.o \
+		nbt/winsreplication.o \
+		nbt/dgram.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB LIBCLI_NBT LIBCLI_WREPL
 # End SUBSYSTEM TORTURE_NBT
@@ -202,13 +202,13 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_NET
 [SUBSYSTEM::TORTURE_NET]
 ADD_OBJ_FILES = \
-		torture/libnet/userinfo.o \
-		torture/libnet/userman.o \
-		torture/libnet/domain.o \
-		torture/libnet/libnet_lookup.o \
-		torture/libnet/libnet_user.o \
-		torture/libnet/libnet_share.o \
-		torture/libnet/libnet_rpc.o
+		libnet/userinfo.o \
+		libnet/userman.o \
+		libnet/domain.o \
+		libnet/libnet_lookup.o \
+		libnet/libnet_user.o \
+		libnet/libnet_share.o \
+		libnet/libnet_rpc.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_ALL RPC_NDR_SAMR LIBNET
 # End SUBSYSTEM TORTURE_NET
@@ -219,8 +219,8 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::smbtorture]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		torture/torture.o \
-		torture/torture_util.o
+		torture.o \
+		torture_util.o
 REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \
@@ -236,7 +236,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC
-MANPAGE = torture/man/smbtorture.1
+MANPAGE = man/smbtorture.1
 # End BINARY smbtorture
 #################################
 
@@ -245,15 +245,15 @@ MANPAGE = torture/man/smbtorture.1
 [BINARY::gentest]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		torture/gentest.o \
-		torture/torture_util.o
+		gentest.o \
+		torture_util.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
 		LIBBASIC \
 		LIBCMDLINE \
 		RPC
-MANPAGE = torture/man/gentest.1
+MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
 
@@ -262,14 +262,14 @@ MANPAGE = torture/man/gentest.1
 [BINARY::masktest]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		torture/masktest.o
+		masktest.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
 		LIBBASIC \
 		LIBCMDLINE \
 		RPC
-MANPAGE = torture/man/masktest.1
+MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
 
@@ -278,15 +278,15 @@ MANPAGE = torture/man/masktest.1
 [BINARY::locktest]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		torture/locktest.o \
-		torture/torture_util.o
+		locktest.o \
+		torture_util.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
 		LIBBASIC \
 		LIBCMDLINE \
 		RPC
-MANPAGE = torture/man/locktest.1
+MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
 

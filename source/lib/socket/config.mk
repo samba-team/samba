@@ -4,7 +4,7 @@
 [MODULE::socket_ipv4]
 SUBSYSTEM = SOCKET
 INIT_OBJ_FILES = \
-		lib/socket/socket_ipv4.o
+		socket_ipv4.o
 NOPROTO=YES
 # End MODULE socket_ipv4
 ################################################
@@ -14,7 +14,7 @@ NOPROTO=YES
 [MODULE::socket_ipv6]
 SUBSYSTEM = SOCKET
 INIT_OBJ_FILES = \
-		lib/socket/socket_ipv6.o
+		socket_ipv6.o
 NOPROTO=YES
 # End MODULE socket_ipv6
 ################################################
@@ -24,7 +24,7 @@ NOPROTO=YES
 [MODULE::socket_unix]
 SUBSYSTEM = SOCKET
 INIT_OBJ_FILES = \
-		lib/socket/socket_unix.o
+		socket_unix.o
 NOPROTO=YES
 # End MODULE socket_unix
 ################################################
@@ -33,10 +33,10 @@ NOPROTO=YES
 # Start SUBSYSTEM SOCKET
 [SUBSYSTEM::SOCKET]
 INIT_OBJ_FILES = \
-		lib/socket/socket.o
+		socket.o
 ADD_OBJ_FILES = \
-		lib/socket/access.o \
-		lib/socket/connect.o
+		access.o \
+		connect.o
 NOPROTO=YES
 # End SUBSYSTEM SOCKET
 ################################################

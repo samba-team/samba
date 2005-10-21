@@ -2,21 +2,21 @@
 # Start SUBSYSTEM LIBNET
 [SUBSYSTEM::LIBNET]
 INIT_OBJ_FILES = \
-		libnet/libnet.o
+		libnet.o
 ADD_OBJ_FILES = \
-		libnet/libnet_passwd.o \
-		libnet/libnet_time.o \
-		libnet/libnet_rpc.o \
-		libnet/libnet_join.o \
-		libnet/libnet_vampire.o \
-		libnet/libnet_samdump.o \
-		libnet/libnet_samsync_ldb.o \
-		libnet/libnet_user.o \
-		libnet/libnet_share.o \
-		libnet/libnet_lookup.o \
-		libnet/userinfo.o \
-		libnet/userman.o \
-		libnet/domain.o 
+		libnet_passwd.o \
+		libnet_time.o \
+		libnet_rpc.o \
+		libnet_join.o \
+		libnet_vampire.o \
+		libnet_samdump.o \
+		libnet_samsync_ldb.o \
+		libnet_user.o \
+		libnet_share.o \
+		libnet_lookup.o \
+		userinfo.o \
+		userman.o \
+		domain.o 
 REQUIRED_SUBSYSTEMS = RPC_NDR_SAMR RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBSAMBA3 LIBCLI_CLDAP
 # End SUBSYSTEM LIBNET
 #################################

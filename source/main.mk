@@ -9,20 +9,6 @@ include libnet/config.mk
 include auth/config.mk
 include nsswitch/config.mk
 include lib/basic.mk
-include lib/samba3/config.mk
-include lib/socket/config.mk
-include lib/charset/config.mk
-include lib/ldb/config.mk
-include lib/talloc/config.mk
-include lib/tdb/config.mk
-include lib/tls/config.mk
-include lib/registry/config.mk
-include lib/messaging/config.mk
-include lib/events/config.mk
-include lib/popt/config.mk
-include lib/cmdline/config.mk
-include lib/socket_wrapper/config.mk
-include lib/appweb/config.mk
 include param/config.mk
 include smb_server/config.mk
 include rpc_server/config.mk
@@ -32,29 +18,16 @@ include winbind/config.mk
 include nbt_server/config.mk
 include wrepl_server/config.mk
 include cldap_server/config.mk
-include auth/gensec/config.mk
-include auth/kerberos/config.mk
-include auth/ntlmssp/config.mk
-include auth/credentials/config.mk
-include libcli/auth/config.mk
-include libcli/ldap/config.mk
-include libcli/config.mk
 include utils/net/config.mk
 include utils/config.mk
-include ntvfs/posix/config.mk
 include ntvfs/config.mk
-include ntvfs/unixuid/config.mk
 include ntptr/config.mk
 include torture/config.mk
 include librpc/config.mk
 include client/config.mk
 include libcli/config.mk
-include libcli/security/config.mk
-include lib/com/config.mk
 include scripting/config.mk
 include kdc/config.mk
-include lib/replace/config.mk
-include scripting/ejs/config.mk
 
 all: binary_asn1_compile binary_compile_et binaries
 binaries: $(BIN_PROGS) $(SBIN_PROGS)

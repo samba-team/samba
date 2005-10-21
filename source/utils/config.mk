@@ -5,14 +5,14 @@
 [BINARY::ndrdump]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/ndrdump.o
+		ndrdump.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
 		NDR_ALL \
 		RPC
-MANPAGE = utils/man/ndrdump.1
+MANPAGE = man/ndrdump.1
 # FIXME: ndrdump shouldn't have to depend on RPC...
 # End BINARY ndrdump
 #################################
@@ -22,14 +22,14 @@ MANPAGE = utils/man/ndrdump.1
 [BINARY::ntlm_auth]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/ntlm_auth.o
+		ntlm_auth.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
 		LIBSMB \
 		RPC
-MANPAGE = utils/man/ntlm_auth.1
+MANPAGE = man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################
 
@@ -38,7 +38,7 @@ MANPAGE = utils/man/ntlm_auth.1
 [BINARY::getntacl]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/getntacl.o
+		getntacl.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
@@ -54,7 +54,7 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::setntacl]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/setntacl.o
+		setntacl.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
@@ -68,7 +68,7 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::setnttoken]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/setnttoken.o
+		setnttoken.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
@@ -84,7 +84,7 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::nmblookup]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		utils/nmblookup.o
+		nmblookup.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \

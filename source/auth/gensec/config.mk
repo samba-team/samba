@@ -2,7 +2,7 @@
 # Start SUBSYSTEM GENSEC
 [SUBSYSTEM::GENSEC]
 INIT_FUNCTION = gensec_init
-INIT_OBJ_FILES = auth/gensec/gensec.o
+INIT_OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \
 		SCHANNELDB
 # End SUBSYSTEM GENSEC
@@ -13,7 +13,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::gensec_krb5]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_krb5_init
-INIT_OBJ_FILES = auth/gensec/gensec_krb5.o 
+INIT_OBJ_FILES = gensec_krb5.o 
 REQUIRED_SUBSYSTEMS = KERBEROS AUTH
 # End MODULE gensec_krb5
 ################################################
@@ -23,7 +23,7 @@ REQUIRED_SUBSYSTEMS = KERBEROS AUTH
 [MODULE::gensec_gssapi]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_gssapi_init
-INIT_OBJ_FILES = auth/gensec/gensec_gssapi.o 
+INIT_OBJ_FILES = gensec_gssapi.o 
 REQUIRED_SUBSYSTEMS = KERBEROS AUTH
 # End MODULE gensec_gssapi
 ################################################
@@ -33,9 +33,9 @@ REQUIRED_SUBSYSTEMS = KERBEROS AUTH
 [MODULE::gensec_spnego]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_spnego_init
-INIT_OBJ_FILES = auth/gensec/spnego.o
+INIT_OBJ_FILES = spnego.o
 ADD_OBJ_FILES = \
-		auth/gensec/spnego_parse.o
+		spnego_parse.o
 # End MODULE gensec_spnego
 ################################################
 
@@ -44,9 +44,9 @@ ADD_OBJ_FILES = \
 [MODULE::gensec_schannel]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_schannel_init
-INIT_OBJ_FILES = auth/gensec/schannel.o
+INIT_OBJ_FILES = schannel.o
 ADD_OBJ_FILES = \
-		auth/gensec/schannel_sign.o
+		schannel_sign.o
 REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
 # End MODULE gensec_schannel
 ################################################
@@ -55,7 +55,7 @@ REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
 INIT_OBJ_FILES = \
-		auth/gensec/schannel_state.o
+		schannel_state.o
 #
 # End SUBSYSTEM SCHANNELDB
 ################################################

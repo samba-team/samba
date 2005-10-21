@@ -1,4 +1,6 @@
 # NTVFS Server subsystem
+include posix/config.mk
+include unixuid/config.mk
 
 ################################################
 # Start MODULE ntvfs_cifs
@@ -6,7 +8,7 @@
 INIT_FUNCTION = ntvfs_cifs_init 
 SUBSYSTEM = NTVFS
 INIT_OBJ_FILES = \
-		ntvfs/cifs/vfs_cifs.o
+		cifs/vfs_cifs.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI
 # End MODULE ntvfs_cifs
@@ -18,9 +20,9 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = ntvfs_simple_init 
 SUBSYSTEM = NTVFS
 INIT_OBJ_FILES = \
-		ntvfs/simple/vfs_simple.o
+		simple/vfs_simple.o
 ADD_OBJ_FILES = \
-		ntvfs/simple/svfs_util.o
+		simple/svfs_util.o
 # End MODULE ntvfs_cifs
 ################################################
 
@@ -30,7 +32,7 @@ ADD_OBJ_FILES = \
 INIT_FUNCTION = ntvfs_print_init 
 SUBSYSTEM = NTVFS
 INIT_OBJ_FILES = \
-		ntvfs/print/vfs_print.o
+		print/vfs_print.o
 # End MODULE ntvfs_print
 ################################################
 
@@ -40,9 +42,9 @@ INIT_OBJ_FILES = \
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_ipc_init 
 INIT_OBJ_FILES = \
-		ntvfs/ipc/vfs_ipc.o \
-		ntvfs/ipc/ipc_rap.o \
-		ntvfs/ipc/rap_server.o
+		ipc/vfs_ipc.o \
+		ipc/ipc_rap.o \
+		ipc/rap_server.o
 # End MODULE ntvfs_ipc
 ################################################
 
@@ -54,7 +56,7 @@ INIT_OBJ_FILES = \
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_nbench_init 
 INIT_OBJ_FILES = \
-		ntvfs/nbench/vfs_nbench.o
+		nbench/vfs_nbench.o
 # End MODULE ntvfs_nbench
 ################################################
 
@@ -62,9 +64,9 @@ INIT_OBJ_FILES = \
 # Start SUBSYSTEM ntvfs_common
 [SUBSYSTEM::ntvfs_common]
 ADD_OBJ_FILES = \
-		ntvfs/common/brlock.o \
-		ntvfs/common/opendb.o \
-		ntvfs/common/sidmap.o
+		common/brlock.o \
+		common/opendb.o \
+		common/sidmap.o
 # End SUBSYSTEM ntvfs_common
 ################################################
 
@@ -73,11 +75,11 @@ ADD_OBJ_FILES = \
 # Start SUBSYSTEM NTVFS
 [SUBSYSTEM::NTVFS]
 INIT_OBJ_FILES = \
-		ntvfs/ntvfs_base.o
+		ntvfs_base.o
 ADD_OBJ_FILES = \
-		ntvfs/ntvfs_generic.o \
-		ntvfs/ntvfs_interface.o \
-		ntvfs/ntvfs_util.o
+		ntvfs_generic.o \
+		ntvfs_interface.o \
+		ntvfs_util.o
 #
 # End SUBSYSTEM NTVFS
 ################################################

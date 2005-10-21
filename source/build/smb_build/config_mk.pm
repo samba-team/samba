@@ -8,6 +8,7 @@
 
 package smb_build::config_mk;
 use smb_build::input;
+use File::Basename;
 
 use strict;
 
@@ -131,7 +132,7 @@ sub run_config_mk($$)
 
 		# include
 		if ($line =~ /^include (.*)$/) {
-			$makefile .= run_config_mk($input, $1);
+			$makefile .= run_config_mk($input, dirname($filename)."/$1");
 			next;
 		}
 
@@ -171,6 +172,7 @@ sub run_config_mk($$)
 
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
+		$input->{$name}{BASEDIR} = dirname($filename);
 
 		foreach my $key (values %{$result->{$section}}) {
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
