@@ -37,6 +37,12 @@ sub set_config($$)
 	if ($self->{config}->{exec_prefix} eq "NONE") {
 		$self->{config}->{exec_prefix} = $self->{config}->{prefix};
 	}
+	
+	if ($self->{config}->{developer} eq "yes") {
+		$self->{developer} = 1;
+	} else {
+		$self->{developer} = 0;
+	}
 }
 
 

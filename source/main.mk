@@ -1,4 +1,5 @@
-# master list of build config files for Samba4
+all: binary_asn1_compile binary_compile_et binaries
+
 include heimdal_build/config.mk
 include config.mk
 include dsdb/config.mk
@@ -29,7 +30,6 @@ include libcli/config.mk
 include scripting/config.mk
 include kdc/config.mk
 
-all: binary_asn1_compile binary_compile_et binaries
 binaries: $(BIN_PROGS) $(SBIN_PROGS)
 manpages: $(MANPAGES)
 everything: all
