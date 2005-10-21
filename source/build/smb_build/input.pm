@@ -106,17 +106,6 @@ sub check_library($$)
 	$lib->{OUTPUT_TYPE} = "SHARED_LIBRARY";
 }
 
-sub check_target($$)
-{
-	my ($INPUT, $bin) = @_;
-
-	if (!defined($bin->{CMD})) {
-		print "CMD not defined for target!\n";
-	}
-
-	$bin->{OUTPUT_TYPE} = "CUSTOM";
-}
-
 sub check_binary($$)
 {
 	my ($INPUT, $bin) = @_;
@@ -179,7 +168,6 @@ sub check($$)
 		check_module($INPUT, $part) if ($part->{TYPE} eq "MODULE");
 		check_library($INPUT, $part) if ($part->{TYPE} eq "LIBRARY");
 		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
-		check_target($INPUT, $part) if ($part->{TYPE} eq "TARGET");
 	}
 
 	my %depend = %$INPUT;
