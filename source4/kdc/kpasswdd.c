@@ -224,7 +224,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 	switch (version) {
 	case KRB5_KPASSWD_VERS_CHANGEPW:
 	{
-		char *password = talloc_strndup(mem_ctx, input->data, input->length);
+		char *password = talloc_strndup(mem_ctx, (const char *)input->data, input->length);
 		if (!password) {
 			return False;
 		}
@@ -308,7 +308,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 		status = samdb_set_password(samdb, mem_ctx,
 					    set_password_on_dn, NULL,
 					    msg, password, NULL, NULL, 
-					    False, /* this is a user password change */
+					    False, /* this is not a user password change */
 					    True, /* run restriction tests */
 					    &reject_reason, &dominfo);
 
