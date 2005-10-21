@@ -162,6 +162,7 @@ typedef struct
 	int dgram_port;
 	int cldap_port;
 	int krb5_port;
+	int kpasswd_port;
 	int web_port;
 	char *socket_options;
 	BOOL bWINSsupport;
@@ -445,6 +446,7 @@ static struct parm_struct parm_table[] = {
 	{"dgram port", P_INTEGER, P_GLOBAL, &Globals.dgram_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"cldap port", P_INTEGER, P_GLOBAL, &Globals.cldap_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"krb5 port", P_INTEGER, P_GLOBAL, &Globals.krb5_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"kpasswd port", P_INTEGER, P_GLOBAL, &Globals.kpasswd_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"web port", P_INTEGER, P_GLOBAL, &Globals.web_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls enabled", P_BOOL, P_GLOBAL, &Globals.tls_enabled, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"tls keyfile", P_STRING, P_GLOBAL, &Globals.tls_keyfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -685,6 +687,7 @@ static void init_globals(void)
 	do_parameter("dgram port", "138", NULL);
 	do_parameter("cldap port", "389", NULL);
 	do_parameter("krb5 port", "88", NULL);
+	do_parameter("kpasswd port", "464", NULL);
 	do_parameter("web port", "901", NULL);
 	do_parameter("swat directory", dyn_SWATDIR, NULL);
 
@@ -799,6 +802,7 @@ FN_GLOBAL_INTEGER(lp_nbt_port, &Globals.nbt_port)
 FN_GLOBAL_INTEGER(lp_dgram_port, &Globals.dgram_port)
 FN_GLOBAL_INTEGER(lp_cldap_port, &Globals.cldap_port)
 FN_GLOBAL_INTEGER(lp_krb5_port, &Globals.krb5_port)
+FN_GLOBAL_INTEGER(lp_kpasswd_port, &Globals.kpasswd_port)
 FN_GLOBAL_INTEGER(lp_web_port, &Globals.web_port)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_swat_directory, &Globals.swat_directory)

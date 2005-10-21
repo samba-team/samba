@@ -40,15 +40,6 @@ struct kdc_reply {
 	DATA_BLOB packet;
 };
 
-/*
-  top level context structure for the kdc server
-*/
-struct kdc_server {
-	struct task_server *task;
-	krb5_kdc_configuration *config;
-	struct smb_krb5_context *smb_krb5_context;
-};
-
 /* hold information about one kdc socket */
 struct kdc_socket {
 	struct socket_context *sock;
@@ -58,13 +49,12 @@ struct kdc_socket {
 	/* a queue of outgoing replies that have been deferred */
 	struct kdc_reply *send_queue;
 
-	int (*process)(krb5_context context, 
-		       krb5_kdc_configuration *config,
-		       unsigned char *buf, 
-		       size_t len, 
-		       krb5_data *reply,
-		       const char *from,
-		       struct sockaddr *addr);
+	BOOL (*process)(struct kdc_server *kdc,
+			TALLOC_CTX *mem_ctx, 
+			DATA_BLOB *input, 
+			DATA_BLOB *reply,
+			const char *from,
+			int src_port);
 };
 /*
   state of an open tcp connection
@@ -88,13 +78,12 @@ struct kdc_tcp_connection {
 	/* a queue of outgoing replies that have been deferred */
 	struct data_blob_list_item *send_queue;
 
-	int (*process)(krb5_context context, 
-					     krb5_kdc_configuration *config,
-					     unsigned char *buf, 
-					     size_t len, 
-					     krb5_data *reply,
-					     const char *from,
-					     struct sockaddr *addr);
+	BOOL (*process)(struct kdc_server *kdc,
+			 TALLOC_CTX *mem_ctx, 
+			 DATA_BLOB *input, 
+			 DATA_BLOB *reply,
+			 const char *from,
+			 int src_port);
 };
 
 /*
@@ -132,12 +121,10 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc_socket);
 	DATA_BLOB blob;
 	struct kdc_reply *rep;
-	krb5_data reply;
+	DATA_BLOB reply;
 	size_t nread, dsize;
 	const char *src_addr;
 	int src_port;
-	struct sockaddr_in src_sock_addr;
-	struct ipv4_addr addr;
 	int ret;
 
 	status = socket_pending(kdc_socket->sock, &dsize);
@@ -165,24 +152,13 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	DEBUG(2,("Received krb5 UDP packet of length %u from %s:%u\n", 
 		 blob.length, src_addr, (uint16_t)src_port));
 	
-	/* TODO:  This really should be in a utility function somewhere */
-	ZERO_STRUCT(src_sock_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-	src_sock_addr.sin_len         = sizeof(src_sock_addr);
-#endif
-	addr                     = interpret_addr2(src_addr);
-	src_sock_addr.sin_addr.s_addr = addr.addr;
-	src_sock_addr.sin_port        = htons(src_port);
-	src_sock_addr.sin_family      = PF_INET;
-	
 	/* Call krb5 */
-	ret = kdc_socket->process(kdc_socket->kdc->smb_krb5_context->krb5_context, 
-				  kdc_socket->kdc->config,
-				  blob.data, blob.length, 
+	ret = kdc_socket->process(kdc_socket->kdc, 
+				  tmp_ctx, 
+				  &blob,  
 				  &reply,
-				  src_addr,
-				  (struct sockaddr *)&src_sock_addr);
-	if (ret == -1) {
+				  src_addr, src_port);
+	if (!ret) {
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -190,14 +166,13 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	/* queue a pending reply */
 	rep = talloc(kdc_socket, struct kdc_reply);
 	if (rep == NULL) {
-		krb5_data_free(&reply);
 		talloc_free(tmp_ctx);
 		return;
 	}
 	rep->dest_address = talloc_steal(rep, src_addr);
 	rep->dest_port    = src_port;
-	rep->packet       = data_blob_talloc(rep, reply.data, reply.length);
-	krb5_data_free(&reply);
+	rep->packet       = reply;
+	talloc_steal(rep, reply.data);
 
 	if (rep->packet.data == NULL) {
 		talloc_free(rep);
@@ -231,25 +206,6 @@ static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, con
 }
 
 /*
-  called when we get a new connection
-*/
-static void kdc_tcp_accept(struct stream_connection *conn)
-{
-	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
-	struct kdc_tcp_connection *kdcconn;
-
-	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
-	if (!kdcconn) {
-		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
-		return;
-	}
-	kdcconn->conn	 = conn;
-	kdcconn->kdc	 = kdc;
-	kdcconn->process = krb5_kdc_process_krb5_request;
-	conn->private    = kdcconn;
-}
-
-/*
   receive some data on a KDC connection
 */
 static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
@@ -258,13 +214,11 @@ static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
 	struct data_blob_list_item *rep;
-	krb5_data reply;
 	size_t nread;
 	const char *src_addr;
 	int src_port;
-	struct sockaddr_in src_sock_addr;
-	struct ipv4_addr addr;
 	int ret;
+	DATA_BLOB input, reply;
 
 	/* avoid recursion, because of half async code */
 	if (kdcconn->processing) {
@@ -327,26 +281,17 @@ static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 	DEBUG(2,("Received krb5 TCP packet of length %u from %s:%u\n", 
 		 kdcconn->partial.length - 4, src_addr, src_port));
 
-	/* TODO:  This really should be in a utility function somewhere */
-	ZERO_STRUCT(src_sock_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-	src_sock_addr.sin_len		= sizeof(src_sock_addr);
-#endif
-	addr				= interpret_addr2(src_addr);
-	src_sock_addr.sin_addr.s_addr	= addr.addr;
-	src_sock_addr.sin_port		= htons(src_port);
-	src_sock_addr.sin_family	= PF_INET;
-
 	/* Call krb5 */
 	kdcconn->processing = True;
-	ret = kdcconn->process(kdcconn->kdc->smb_krb5_context->krb5_context, 
-			       kdcconn->kdc->config,
-			       kdcconn->partial.data + 4, kdcconn->partial.length - 4, 
+	input = data_blob_const(kdcconn->partial.data + 4, kdcconn->partial.length - 4); 
+
+	ret = kdcconn->process(kdcconn->kdc, 
+			       tmp_ctx,
+			       &input,
 			       &reply,
-			       src_addr,
-			       (struct sockaddr *)&src_sock_addr);
+			       src_addr, src_port);
 	kdcconn->processing = False;
-	if (ret == -1) {
+	if (!ret) {
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto failed;
 	}
@@ -354,19 +299,16 @@ static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 	/* and now encode the reply */
 	rep = talloc(kdcconn, struct data_blob_list_item);
 	if (!rep) {
-		krb5_data_free(&reply);
 		goto nomem;
 	}
 
 	rep->blob = data_blob_talloc(rep, NULL, reply.length + 4);
-	if (!rep->blob.data)  {
-		krb5_data_free(&reply);
+	if (!rep->blob.data) {
 		goto nomem;
 	}
 
 	RSIVAL(rep->blob.data, 0, reply.length);
 	memcpy(rep->blob.data + 4, reply.data, reply.length);	
-	krb5_data_free(&reply);
 
 	if (!kdcconn->send_queue) {
 		EVENT_FD_WRITEABLE(kdcconn->conn->event.fde);
@@ -415,9 +357,97 @@ failed:
 	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
 }
 
+/**
+   Wrapper for krb5_kdc_process_krb5_request, converting to/from Samba
+   calling conventions
+*/
+
+static BOOL kdc_process(struct kdc_server *kdc,
+			TALLOC_CTX *mem_ctx, 
+			DATA_BLOB *input, 
+			DATA_BLOB *reply,
+			const char *src_addr,
+			int src_port)
+{
+	int ret;	
+	krb5_data k5_reply;
+	struct ipv4_addr addr;
+	struct sockaddr_in src_sock_addr;
+
+	/* TODO:  This really should be in a utility function somewhere */
+	ZERO_STRUCT(src_sock_addr);
+#ifdef HAVE_SOCK_SIN_LEN
+	src_sock_addr.sin_len		= sizeof(src_sock_addr);
+#endif
+	addr				= interpret_addr2(src_addr);
+	src_sock_addr.sin_addr.s_addr	= addr.addr;
+	src_sock_addr.sin_port		= htons(src_port);
+	src_sock_addr.sin_family	= PF_INET;
+
+	
+	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context, 
+					    kdc->config,
+					    input->data, input->length,
+					    &k5_reply,
+					    src_addr,
+					    (struct sockaddr *)&src_sock_addr);
+	if (ret == -1) {
+		*reply = data_blob(NULL, 0);
+		return False;
+	}
+	*reply = data_blob_talloc(mem_ctx, k5_reply.data, k5_reply.length);
+	krb5_data_free(&k5_reply);
+	return True;
+}
+
+/*
+  called when we get a new connection
+*/
+static void kdc_tcp_accept(struct stream_connection *conn)
+{
+	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
+	struct kdc_tcp_connection *kdcconn;
+
+	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
+	if (!kdcconn) {
+		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+	kdcconn->conn	 = conn;
+	kdcconn->kdc	 = kdc;
+	kdcconn->process = kdc_process;
+	conn->private    = kdcconn;
+}
+
 static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.name			= "kdc_tcp",
 	.accept_connection	= kdc_tcp_accept,
+	.recv_handler		= kdc_tcp_recv,
+	.send_handler		= kdc_tcp_send
+};
+
+/*
+  called when we get a new connection
+*/
+void kpasswdd_tcp_accept(struct stream_connection *conn)
+{
+	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
+	struct kdc_tcp_connection *kdcconn;
+
+	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
+	if (!kdcconn) {
+		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+	kdcconn->conn	 = conn;
+	kdcconn->kdc	 = kdc;
+	kdcconn->process = kpasswdd_process;
+	conn->private    = kdcconn;
+}
+
+static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
+	.name			= "kpasswdd_tcp",
+	.accept_connection	= kpasswdd_tcp_accept,
 	.recv_handler		= kdc_tcp_recv,
 	.send_handler		= kdc_tcp_send
 };
@@ -429,11 +459,16 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 {
 	const struct model_ops *model_ops;
  	struct kdc_socket *kdc_socket;
+ 	struct kdc_socket *kpasswd_socket;
 	NTSTATUS status;
-	uint16_t port = lp_krb5_port();
+	uint16_t kdc_port = lp_krb5_port();
+	uint16_t kpasswd_port = lp_kpasswd_port();
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
 	NT_STATUS_HAVE_NO_MEMORY(kdc_socket);
+
+	kpasswd_socket = talloc(kdc, struct kdc_socket);
+	NT_STATUS_HAVE_NO_MEMORY(kpasswd_socket);
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kdc_socket->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -441,9 +476,15 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 		return status;
 	}
 
+	status = socket_create("ip", SOCKET_TYPE_DGRAM, &kpasswd_socket->sock, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(kpasswd_socket);
+		return status;
+	}
+
 	kdc_socket->kdc = kdc;
 	kdc_socket->send_queue = NULL;
-	kdc_socket->process = krb5_kdc_process_krb5_request;
+	kdc_socket->process = kdc_process;
 
 	talloc_steal(kdc_socket, kdc_socket->sock);
 
@@ -451,11 +492,29 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 				       socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
 				       kdc_socket_handler, kdc_socket);
 
-	status = socket_listen(kdc_socket->sock, address, port, 0, 0);
+	status = socket_listen(kdc_socket->sock, address, kdc_port, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%d UDP - %s\n", 
-			 address, port, nt_errstr(status)));
+		DEBUG(0,("Failed to bind to %s:%d UDP for kdc - %s\n", 
+			 address, kdc_port, nt_errstr(status)));
 		talloc_free(kdc_socket);
+		return status;
+	}
+
+	kpasswd_socket->kdc = kdc;
+	kpasswd_socket->send_queue = NULL;
+	kpasswd_socket->process = kpasswdd_process;
+
+	talloc_steal(kpasswd_socket, kpasswd_socket->sock);
+
+	kpasswd_socket->fde = event_add_fd(kdc->task->event_ctx, kdc, 
+					   socket_get_fd(kpasswd_socket->sock), EVENT_FD_READ,
+					   kdc_socket_handler, kpasswd_socket);
+	
+	status = socket_listen(kpasswd_socket->sock, address, kpasswd_port, 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s:%d UDP for kpasswd - %s\n", 
+			 address, kpasswd_port, nt_errstr(status)));
+		talloc_free(kpasswd_socket);
 		return status;
 	}
 
@@ -469,11 +528,22 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = stream_setup_socket(kdc->task->event_ctx, model_ops, &kdc_tcp_stream_ops, 
-				     "ip", address, &port, kdc);
+	status = stream_setup_socket(kdc->task->event_ctx, model_ops, 
+				     &kdc_tcp_stream_ops, 
+				     "ip", address, &kdc_port, kdc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
-			 address, port, nt_errstr(status)));
+			 address, kdc_port, nt_errstr(status)));
+		talloc_free(kdc_socket);
+		return status;
+	}
+
+	status = stream_setup_socket(kdc->task->event_ctx, model_ops, 
+				     &kpasswdd_tcp_stream_ops, 
+				     "ip", address, &kpasswd_port, kdc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
+			 address, kpasswd_port, nt_errstr(status)));
 		talloc_free(kdc_socket);
 		return status;
 	}
@@ -565,7 +635,7 @@ static void kdc_task_init(struct task_server *task)
 	kdc->config->num_db = 1;
 		
 	ret = hdb_ldb_create(kdc, kdc->smb_krb5_context->krb5_context, 
-			     &kdc->config->db[0], lp_sam_url());
+			     &kdc->config->db[0], NULL);
 	if (ret != 0) {
 		DEBUG(1, ("kdc_task_init: hdb_ldb_create fails: %s\n", 
 			  smb_get_krb5_error_message(kdc->smb_krb5_context->krb5_context, ret, kdc))); 

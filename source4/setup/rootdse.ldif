@@ -24,7 +24,7 @@ supportedLDAPVersion: 3
 highestCommittedUSN: _DYNAMIC_
 supportedSASLMechanisms: GSS-SPNEGO
 dnsHostName: ${DNSNAME}
-ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${DNSDOMAIN}
+ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
 serverName: CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,${BASEDN}
 isSynchronized: _DYNAMIC_
 domainFunctionality: 0
