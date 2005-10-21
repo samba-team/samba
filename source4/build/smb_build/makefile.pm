@@ -8,47 +8,36 @@
 ###########################################################
 
 package makefile;
-use config qw(%config);
 use strict;
 
-sub _prepare_path_vars()
+sub _prepare_path_vars($)
 {
+	my ($env) = @_;
 	my $output;
 
-	$config{srcdir} = '.';
-	$config{builddir} = '.';
-
-	if ($config{prefix} eq "NONE") {
-		$config{prefix} = $config{ac_default_prefix};
-	}
-
-	if ($config{exec_prefix} eq "NONE") {
-		$config{exec_prefix} = $config{prefix};
-	}
-
 	$output = << "__EOD__";
-prefix = $config{prefix}
-exec_prefix = $config{exec_prefix}
-selftest_prefix = $config{selftest_prefix}
-VPATH = $config{srcdir}
-srcdir = $config{srcdir}
-builddir = $config{builddir}
+prefix = $env->{config}->{prefix}
+exec_prefix = $env->{config}->{exec_prefix}
+selftest_prefix = $env->{config}->{selftest_prefix}
+VPATH = $env->{config}->{srcdir}
+srcdir = $env->{config}->{srcdir}
+builddir = $env->{config}->{builddir}
 
-BASEDIR = $config{prefix}
-BINDIR = $config{bindir}
-SBINDIR = $config{sbindir}
-datadir = $config{datadir}
-LIBDIR = $config{libdir}
-CONFIGDIR = $config{configdir}
-localstatedir = $config{localstatedir}
-SWATDIR = $config{swatdir}
-VARDIR = $config{localstatedir}
-LOGFILEBASE = $config{logfilebase}
-NCALRPCDIR = $config{localstatedir}/ncalrpc
-LOCKDIR = $config{lockdir}
-PIDDIR = $config{piddir}
-MANDIR = $config{mandir}
-PRIVATEDIR = $config{privatedir}
+BASEDIR = $env->{config}->{prefix}
+BINDIR = $env->{config}->{bindir}
+SBINDIR = $env->{config}->{sbindir}
+datadir = $env->{config}->{datadir}
+LIBDIR = $env->{config}->{libdir}
+CONFIGDIR = $env->{config}->{configdir}
+localstatedir = $env->{config}->{localstatedir}
+SWATDIR = $env->{config}->{swatdir}
+VARDIR = $env->{config}->{localstatedir}
+LOGFILEBASE = $env->{config}->{logfilebase}
+NCALRPCDIR = $env->{config}->{localstatedir}/ncalrpc
+LOCKDIR = $env->{config}->{lockdir}
+PIDDIR = $env->{config}->{piddir}
+MANDIR = $env->{config}->{mandir}
+PRIVATEDIR = $env->{config}->{privatedir}
 
 __EOD__
 	
@@ -74,42 +63,44 @@ __EOD__
 	return $output;
 }
 
-sub _prepare_compiler_linker()
+sub _prepare_compiler_linker($)
 {
+	my ($env) = @_;
+
 	return << "__EOD__";
-SHELL=$config{SHELL}
+SHELL=$env->{config}->{SHELL}
 
-PERL=$config{PERL}
+PERL=$env->{config}->{PERL}
 
-CC=$config{CC}
-CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $config{CFLAGS} $config{CPPFLAGS}
-PICFLAG=$config{PICFLAG}
-HOSTCC=$config{HOSTCC}
+CC=$env->{config}->{CC}
+CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $env->{config}->{CFLAGS} $env->{config}->{CPPFLAGS}
+PICFLAG=$env->{config}->{PICFLAG}
+HOSTCC=$env->{config}->{HOSTCC}
 
-CPP=$config{CPP}
-CPPFLAGS=$config{CPPFLAGS}
+CPP=$env->{config}->{CPP}
+CPPFLAGS=$env->{config}->{CPPFLAGS}
 
-LD=$config{LD}
-LD_FLAGS=$config{LDFLAGS} 
+LD=$env->{config}->{LD}
+LD_FLAGS=$env->{config}->{LDFLAGS} 
 
-STLD=$config{AR}
+STLD=$env->{config}->{AR}
 STLD_FLAGS=-rc
 
-SHLD=$config{CC}
-SHLD_FLAGS=$config{LDSHFLAGS}
-SONAMEFLAG=$config{SONAMEFLAG}
-SHLIBEXT=$config{SHLIBEXT}
+SHLD=$env->{config}->{CC}
+SHLD_FLAGS=$env->{config}->{LDSHFLAGS}
+SONAMEFLAG=$env->{config}->{SONAMEFLAG}
+SHLIBEXT=$env->{config}->{SHLIBEXT}
 
-XSLTPROC=$config{XSLTPROC}
+XSLTPROC=$env->{config}->{XSLTPROC}
 
-LEX=$config{LEX}
-YACC=$config{YACC}
-YAPP=$config{YAPP}
-PIDL_ARGS=$config{PIDL_ARGS}
+LEX=$env->{config}->{LEX}
+YACC=$env->{config}->{YACC}
+YAPP=$env->{config}->{YAPP}
+PIDL_ARGS=$env->{config}->{PIDL_ARGS}
 
-GCOV=$config{GCOV}
+GCOV=$env->{config}->{GCOV}
 
-DEFAULT_TEST_TARGET=$config{DEFAULT_TEST_TARGET}
+DEFAULT_TEST_TARGET=$env->{config}->{DEFAULT_TEST_TARGET}
 
 __EOD__
 }
@@ -201,9 +192,9 @@ MANPAGES = $mp
 __EOD__
 }
 
-sub _prepare_dummy_MAKEDIR()
+sub _prepare_dummy_MAKEDIR($$)
 {
-	my $ctx = shift;
+	my ($env,$ctx) = @_;
 
 	my $ret = << '__EOD__';
 bin/.dummy:
@@ -213,7 +204,7 @@ dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
 	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
 __EOD__
-	if ($config{BROKEN_CC} eq "yes") {
+	if ($env->{config}->{BROKEN_CC} eq "yes") {
 		$ret .= '	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
 ';
 	}
@@ -247,9 +238,9 @@ __EOD__
 # $comment -	just a comment what this rule should do
 #
 # $output -		the resulting output buffer
-sub _prepare_std_CC_rule($$$$$)
+sub _prepare_std_CC_rule($$$$$$)
 {
-	my ($src,$dst,$flags,$message,$comment) = @_;
+	my ($env,$src,$dst,$flags,$message,$comment) = @_;
 
 	my $ret = << "__EOD__";
 # $comment
@@ -257,21 +248,23 @@ sub _prepare_std_CC_rule($$$$$)
 	\@echo $message \$\*.$src
 	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$< -o \$\@
 __EOD__
-	if ($config{BROKEN_CC} eq "yes") {
+	if ($env->{config}->{BROKEN_CC} eq "yes") {
 		$ret.= '	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
 ';
 	}
 	return $ret."\n";
 }
 
-sub _prepare_hostcc_rule()
+sub _prepare_hostcc_rule($)
 {
+	my ($env) = @_;
+	
 	my $ret = << "__EOD__";
 .c.ho:
 	\@echo Compiling \$\*.c with host compiler
 	\@\$(HOSTCC) `script/cflags.sh \$\@` \$(CFLAGS) -c \$< -o \$\@
 __EOD__
-	if ($config{BROKEN_CC} eq "yes") {
+	if ($env->{config}->{BROKEN_CC} eq "yes") {
 		$ret .= '	-mv `echo $@ | sed \'s%^.*/%%g\' -e \'s%\.ho$$%.o%\'` $@
 ';
 	}
@@ -527,8 +520,9 @@ bin/.TARGET_$ctx->{NAME}:
 ";
 }
 
-sub _prepare_clean_rules()
+sub _prepare_clean_rules($)
 {
+	my ($env) = @_;
 	my $output = << '__EOD__';
 clean: heimdal_clean
 	@echo Removing headers
@@ -554,7 +548,7 @@ distclean: clean
 	-rm -f lib/registry/winregistry.pc
 __EOD__
 
-	if ($config{developer} eq "yes") {
+	if ($env->{config}->{developer} eq "yes") {
 		$output .= "\t\@-rm -f \$(_ALL_OBJS_OBJS:.o=.d)\n";
 	}
 
@@ -601,9 +595,9 @@ sub _prepare_target_settings($)
 	return $output;
 }
 
-sub _prepare_rule_lists($)
+sub _prepare_rule_lists($$)
 {
-	my $depend = shift;
+	my ($env,$depend) = @_;
 	my $output = "";
 
 	foreach my $key (values %{$depend}) {
@@ -617,7 +611,7 @@ sub _prepare_rule_lists($)
 		($output .= _prepare_custom_rule($key) ) if $key->{TYPE} eq "TARGET";
 	}
 
-	$output .= _prepare_clean_rules();
+	$output .= _prepare_clean_rules($env);
 
 	return $output;
 }
@@ -630,9 +624,9 @@ sub _prepare_rule_lists($)
 # $OUTPUT -	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub _prepare_makefile($)
+sub _prepare_makefile($$)
 {
-	my ($CTX) = @_;
+	my ($env,$CTX) = @_;
 	my $output;
 
 	$output  = "############################################\n";
@@ -640,14 +634,14 @@ sub _prepare_makefile($)
 	$output .= "############################################\n";
 	$output .= "\n";
 
-	$output .= _prepare_path_vars();
-	$output .= _prepare_compiler_linker();
+	$output .= _prepare_path_vars($env);
+	$output .= _prepare_compiler_linker($env);
 	$output .= _prepare_default_rule();
 	$output .= _prepare_SUFFIXES();
-	$output .= _prepare_dummy_MAKEDIR();
-	$output .= _prepare_hostcc_rule();
-	$output .= _prepare_std_CC_rule("c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_dummy_MAKEDIR($env, $CTX);
+	$output .= _prepare_hostcc_rule($env);
+	$output .= _prepare_std_CC_rule($env, "c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule($env, "h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_depend_CC_rule();
 	
@@ -658,10 +652,10 @@ sub _prepare_makefile($)
 	$output .= _prepare_manpages($CTX);
 	$output .= _prepare_binaries($CTX);
 	$output .= _prepare_target_settings($CTX);
-	$output .= _prepare_rule_lists($CTX);
+	$output .= _prepare_rule_lists($env, $CTX);
 	$output .= _prepare_config_status();
 
-	if ($config{developer} eq "yes") {
+	if ($env->{config}->{developer} eq "yes") {
 		$output .= <<__EOD__
 #-include \$(_ALL_OBJS_OBJS:.o=.d)
 IDL_FILES = \$(wildcard librpc/idl/*.idl)
@@ -683,12 +677,12 @@ __EOD__
 # $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile($$$)
+sub create_makefile($$$$)
 {
-	my ($CTX, $mk, $file) = @_;
+	my ($CTX, $env, $mk, $file) = @_;
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
-	print MAKEFILE _prepare_makefile($CTX) . $mk;
+	print MAKEFILE _prepare_makefile($env, $CTX) . $mk;
 	close(MAKEFILE);
 
 	print "build/smb_build/main.pl: creating $file\n";
