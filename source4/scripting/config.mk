@@ -1,3 +1,5 @@
+include ejs/config.mk
+
 #######################
 # Start LIBRARY swig_tdb
 [LIBRARY::swig_tdb]

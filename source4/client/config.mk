@@ -5,7 +5,7 @@
 [BINARY::smbclient]
 INSTALLDIR = BINDIR
 OBJ_FILES = \
-		client/client.o
+		client.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \

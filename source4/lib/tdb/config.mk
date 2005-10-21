@@ -2,10 +2,10 @@
 # Start SUBSYSTEM LIBTDB
 [SUBSYSTEM::LIBTDB]
 INIT_OBJ_FILES = \
-		lib/tdb/common/tdb.o
-ADD_OBJ_FILES = lib/tdb/common/dump.o lib/tdb/common/io.o lib/tdb/common/lock.o \
-	lib/tdb/common/open.o lib/tdb/common/traverse.o lib/tdb/common/freelist.o \
-	lib/tdb/common/error.o lib/tdb/common/transaction.o lib/tdb/common/tdbutil.o
+		common/tdb.o
+ADD_OBJ_FILES = common/dump.o common/io.o common/lock.o \
+	common/open.o common/traverse.o common/freelist.o \
+	common/error.o common/transaction.o common/tdbutil.o
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
@@ -31,7 +31,7 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 ENABLE = NO
 OBJ_FILES= \
-		lib/tdb/tools/tdbtool.o
+		tools/tdbtool.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 # End BINARY tdbtool
@@ -42,7 +42,7 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::tdbtorture]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/tdb/tools/tdbtorture.o
+		tools/tdbtorture.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 # End BINARY tdbtorture
@@ -53,7 +53,7 @@ REQUIRED_SUBSYSTEMS = \
 [BINARY::tdbdump]
 INSTALLDIR = BINDIR
 OBJ_FILES= \
-		lib/tdb/tools/tdbdump.o
+		tools/tdbdump.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 # End BINARY tdbdump
@@ -65,7 +65,7 @@ REQUIRED_SUBSYSTEMS = \
 INSTALLDIR = BINDIR
 ENABLE = NO
 OBJ_FILES= \
-		lib/tdb/tools/tdbbackup.o
+		tools/tdbbackup.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 # End BINARY tdbbackup

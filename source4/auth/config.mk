@@ -1,4 +1,8 @@
 # AUTH Server subsystem
+include gensec/config.mk
+include kerberos/config.mk
+include ntlmssp/config.mk
+include credentials/config.mk
 
 #######################
 # Start MODULE auth_sam
@@ -6,7 +10,7 @@
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
-		auth/auth_sam.o
+		auth_sam.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB
 # End MODULE auth_sam
@@ -18,7 +22,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = auth_anonymous_init
 SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
-		auth/auth_anonymous.o
+		auth_anonymous.o
 # End MODULE auth_anonymous
 #######################
 
@@ -28,7 +32,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
-		auth/auth_winbind.o
+		auth_winbind.o
 REQUIRED_SUBSYSTEMS = \
 		LIB_WINBIND_CLIENT \
 		NDR_NETLOGON NDR_RAW
@@ -41,7 +45,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = auth_domain_init
 SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
-		auth/auth_domain.o
+		auth_domain.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_NETLOGON NDR_RAW
 # End MODULE auth_winbind
@@ -53,7 +57,7 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = auth_developer_init
 SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
-		auth/auth_developer.o
+		auth_developer.o
 # End MODULE auth_developer
 #######################
 
@@ -63,23 +67,23 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
-		auth/auth_unix.o
+		auth_unix.o
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_CRYPT EXT_LIB_PAM PAM_ERRORS
 # End MODULE auth_unix
 #######################
 
 [SUBSYSTEM::PAM_ERRORS]
-OBJ_FILES = auth/pam_errors.o
+OBJ_FILES = pam_errors.o
 
 #######################
 # Start SUBSYSTEM AUTH
 [SUBSYSTEM::AUTH]
 INIT_OBJ_FILES = \
-		auth/auth.o
+		auth.o
 ADD_OBJ_FILES = \
-		auth/auth_util.o \
-		auth/auth_sam_reply.o \
-		auth/ntlm_check.o
+		auth_util.o \
+		auth_sam_reply.o \
+		ntlm_check.o
 # End SUBSYSTEM AUTH
 #######################

@@ -6,7 +6,7 @@
 INIT_FUNCTION = process_model_single_init 
 SUBSYSTEM = PROCESS_MODEL
 INIT_OBJ_FILES = \
-		smbd/process_single.o
+		process_single.o
 # End MODULE process_model_single
 ################################################
 
@@ -16,7 +16,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = process_model_standard_init 
 SUBSYSTEM = PROCESS_MODEL
 INIT_OBJ_FILES = \
-		smbd/process_standard.o
+		process_standard.o
 # End MODULE process_model_standard
 ################################################
 
@@ -26,7 +26,7 @@ INIT_OBJ_FILES = \
 INIT_FUNCTION = process_model_thread_init 
 SUBSYSTEM = PROCESS_MODEL
 INIT_OBJ_FILES = \
-		smbd/process_thread.o
+		process_thread.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
 # End MODULE process_model_thread
 ################################################
@@ -35,7 +35,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_PTHREAD
 # Start SUBSYSTEM PROCESS_MODEL
 [SUBSYSTEM::PROCESS_MODEL]
 INIT_OBJ_FILES = \
-		smbd/process_model.o
+		process_model.o
 #
 # End SUBSYSTEM PROCESS_MODEL
 ################################################
