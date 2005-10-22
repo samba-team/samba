@@ -1,5 +1,11 @@
-2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* pop_dropinfo.c: Check return value from asprintf instead of
+	string != NULL since it undefined behavior on Linux. From Björn
+	Sandell
+	
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* pop_user.c: avoid 'unused variable' warnings
 
 2005-05-10  Dave Love  <fx@gnu.org>

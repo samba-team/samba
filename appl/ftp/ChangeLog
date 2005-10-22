@@ -1,3 +1,18 @@
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/ls.c: Check return value from asprintf instead of string !=
+	NULL since it undefined behavior on Linux. From Björn Sandell
+
+	* ftpd/gss_userok.c: Check return value from asprintf instead of
+	string != NULL since it undefined behavior on Linux. From Björn
+	Sandell
+
+	* ftpd/ftpd.c: Check return value from asprintf instead of string
+	!= NULL since it undefined behavior on Linux. From Björn Sandell
+
+	* ftp/gssapi.c: Check return value from asprintf instead of string
+	!= NULL since it undefined behavior on Linux. From Björn Sandell
+	
 2005-10-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftp/ftp.1: document -x
