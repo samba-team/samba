@@ -41,7 +41,7 @@
 	/* Function: 0x00 */
 	WERROR winreg_OpenHKCR(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -49,7 +49,7 @@
 	/* Function: 0x01 */
 	WERROR winreg_OpenHKCU(
 	        [in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -57,7 +57,7 @@
 	/* Function: 0x02 */
 	WERROR winreg_OpenHKLM(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -65,7 +65,7 @@
 	/* Function: 0x03 */
 	WERROR winreg_OpenHKPD(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -73,7 +73,7 @@
 	/* Function: 0x04 */
 	WERROR winreg_OpenHKU(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -109,7 +109,7 @@
 		[in] winreg_String name,
 		[in] winreg_String class,
 		[in] uint32 options,
-		[in] uint32 access_required,
+		[in] uint32 access_mask,
 		[in,unique] winreg_SecBuf *secdesc,
 		[out,ref] policy_handle *new_handle,
 		[in,out,unique] winreg_CreateAction *action_taken
@@ -292,7 +292,7 @@
 	/* Function: 0x1b */
 	WERROR winreg_OpenHKCC(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -300,7 +300,7 @@
 	/* Function: 0x1c */
 	WERROR winreg_OpenHKDD(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -341,7 +341,7 @@
 	/* Function: 0x20 */
 	WERROR winreg_OpenHKPT(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -349,7 +349,7 @@
 	/* Function: 0x21 */
 	WERROR winreg_OpenHKPN(
 		[in]      uint16 *system_name,
-		[in]      uint32 access_required,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 	);
 

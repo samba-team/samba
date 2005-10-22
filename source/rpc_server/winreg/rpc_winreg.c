@@ -122,7 +122,7 @@ static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	error = reg_key_add_name(newh, (struct registry_key *)h->data, r->in.name.name, 
-				 r->in.access_required, 
+				 r->in.access_mask, 
 				 r->in.secdesc?&sd:NULL, 
 				 (struct registry_key **)&newh->data);
 	if (W_ERROR_IS_OK(error)) {
