@@ -32,6 +32,7 @@
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-k</arg>
+		<arg choice="opt">-P</arg>
 	</cmdsynopsis>
 		
 	<cmdsynopsis>
@@ -236,6 +237,12 @@
 		default. </para></listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term>-P</term>
+		<listitem><para>
+		Make queries to the external server using the machine account of the local server.
+		</para></listitem>
+		</varlistentry>
 		
 		&stdarg.help;
 		
@@ -257,8 +264,6 @@
 		above. </para></listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>-E</term>
 		<listitem><para>This parameter causes the client to write messages 
@@ -269,7 +274,6 @@
 		- typically the user's tty. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>-L</term>
 		<listitem><para>This option allows you to look at what services 
@@ -279,7 +283,6 @@
 		match your TCP/IP DNS host names or if you are trying to reach a 
 		host on another network. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>-t terminal code</term>
@@ -296,7 +299,6 @@
 		CWjunet, CWhex, CWcap. This is not a complete list, check the Samba 
 		source code for the complete list. </para></listitem>
 		</varlistentry>
-		
 			
 		<varlistentry>	
 		<term>-b buffersize</term>
@@ -427,14 +429,11 @@
 		</listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>-D initial directory</term>
 		<listitem><para>Change to initial directory before starting. Probably 
 		only of any use with the tar -T option. </para></listitem>
 		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term>-c command string</term>
@@ -445,6 +444,7 @@
 		<para>This is particularly useful in scripts and for printing stdin 
 		to the server, e.g. <command>-c 'print -'</command>. </para></listitem>
 		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
@@ -494,7 +494,6 @@
 		be displayed. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>! [shell command]</term>
 		<listitem><para>If <replaceable>shell command</replaceable> is specified, the !  
@@ -503,14 +502,12 @@
 		</para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>altname file</term>
 		<listitem><para>The client will request that the server return
 		the "alternate" name (the 8.3 name) for a file or directory.
 		</para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>case_sensitive</term>
@@ -522,16 +519,12 @@
 		</para></listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>cancel jobid0 [jobid1] ... [jobidN]</term>
 		<listitem><para>The client will request that the server cancel
 		the printjobs identified by the given numeric print job ids.
 		</para></listitem>
 		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term>chmod file mode in octal</term>
@@ -540,8 +533,6 @@
 		change the UNIX permissions to the given octal mode, in standard UNIX format.
 		</para></listitem>
 		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term>chown file uid gid</term>
@@ -552,8 +543,6 @@
 		This may be addressed in future versions of the CIFS UNIX extensions.
 		</para></listitem>
 		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term>cd [directory name]</term>
@@ -566,14 +555,12 @@
 		directory on the server will be reported. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>del &lt;mask&gt;</term>
 		<listitem><para>The client will request that the server attempt 
 		to delete all files matching <replaceable>mask</replaceable> from the current working 
 		directory on the server. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>dir &lt;mask&gt;</term>
@@ -582,13 +569,11 @@
 		and displayed. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>exit</term>
 		<listitem><para>Terminate the connection with the server and exit 
 		from the program. </para></listitem> 
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>get &lt;remote file name&gt; [local file name]</term>
@@ -599,13 +584,10 @@
 		lowercase command. </para></listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>help [command]</term>
 		<listitem><para>See the ? command above. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>lcd [directory name]</term>
@@ -619,7 +601,6 @@
 		</para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>link target linkname</term>
 		<listitem><para>This command depends on the server supporting the CIFS
@@ -628,8 +609,6 @@
 		must not exist.
 		</para></listitem>
 		</varlistentry>
-
-
 
 		<varlistentry>
 		<term>lowercase</term>
@@ -642,13 +621,10 @@
 		lowercase filenames are the norm on UNIX systems. </para></listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>ls &lt;mask&gt;</term>
 		<listitem><para>See the dir command above. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>mask &lt;mask&gt;</term>
@@ -675,12 +651,10 @@
 		mask back to "*" after using the mget or mput commands. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>md &lt;directory name&gt;</term>
 		<listitem><para>See the mkdir command. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>mget &lt;mask&gt;</term>
@@ -693,13 +667,11 @@
 		<command>smbclient</command> are binary. See also the lowercase command. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>mkdir &lt;directory name&gt;</term>
 		<listitem><para>Create a new directory on the server (user access 
 		privileges permitting) with the specified name. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>mput &lt;mask&gt;</term>
@@ -713,14 +685,11 @@
 		are binary. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>print &lt;file name&gt;</term>
 		<listitem><para>Print the specified file from the local machine 
 		through a printable service on the server. </para></listitem>
 		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term>prompt</term>
@@ -733,7 +702,6 @@
 		</para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>put &lt;local file name&gt; [remote file name]</term>
 		<listitem><para>Copy the file called <filename>local file name</filename> from the 
@@ -743,26 +711,21 @@
 		</para></listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>queue</term>
 		<listitem><para>Displays the print queue, showing the job id, 
 		name, size and current status. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>quit</term>
 		<listitem><para>See the exit command. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>rd &lt;directory name&gt;</term>
 		<listitem><para>See the rmdir command. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>recurse</term>
@@ -782,21 +745,17 @@
 		using the mask command will be ignored. </para></listitem>
 		</varlistentry>
 		
-		
-		
 		<varlistentry>
 		<term>rm &lt;mask&gt;</term>
 		<listitem><para>Remove all files matching <replaceable>mask</replaceable> from the current 
 		working directory on the server. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
 		<term>rmdir &lt;directory name&gt;</term>
  		<listitem><para>Remove the specified directory (user access 
 		privileges permitting) from the server. </para></listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</term>
