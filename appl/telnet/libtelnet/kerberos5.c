@@ -115,17 +115,17 @@ static krb5_context context;
 static krb5_auth_context auth_context;
 
 static int
-Data(Authenticator *ap, int type, void *d, int c)
+Data(Authenticator *ap, int type, const void *d, int c)
 {
-    unsigned char *cd = (unsigned char *)d;
+    const unsigned char *cp, *cd = d;
     unsigned char *p0, *p;
     size_t len = sizeof(str_data) + 3 + 2;
     int ret;
 
     if (c == -1)
-	c = strlen((char*)cd);
+	c = strlen((const char*)cd);
 
-    for (p = cd; p - cd < c; p++, len++)
+    for (cp = cd; cp - cd < c; p++, len++)
 	if (*p == IAC)
 	    len++;
 
@@ -391,15 +391,20 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 
 	krb5_free_principal (context, server);
 	if (ret) {
+	    const char *errbuf2 = "Read req failed";
 	    char *errbuf;
+	    int ret2;
 
-	    asprintf(&errbuf,
-		     "Read req failed: %s",
-		     krb5_get_err_text(context, ret));
-	    Data(ap, KRB_REJECT, errbuf, -1);
+	    ret2 = asprintf(&errbuf,
+			    "Read req failed: %s",
+			    krb5_get_err_text(context, ret));
+	    if (ret2 != -1)
+		errbuf2 = errbuf;
+	    Data(ap, KRB_REJECT, errbuf2, -1);
 	    if (auth_debug_mode)
-		printf("%s\r\n", errbuf);
-	    free (errbuf);
+		printf("%s\r\n", errbuf2);
+	    if (ret2 != -1)
+		free (errbuf);
 	    return;
 	}
 	
@@ -415,13 +420,19 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 						     sizeof(foo));
 
 	    if (ret) {
+		const char *errbuf2 = "Bad checksum";
 		char *errbuf;
-		asprintf(&errbuf, "Bad checksum: %s", 
-			 krb5_get_err_text(context, ret));
-		Data(ap, KRB_REJECT, errbuf, -1);
+		int ret2;
+
+		ret2 = asprintf(&errbuf, "Bad checksum: %s", 
+				krb5_get_err_text(context, ret));
+		if (ret2 != -1)
+		    errbuf2 = errbuf;
+		Data(ap, KRB_REJECT, errbuf2, -1);
 		if (auth_debug_mode)
-		    printf ("%s\r\n", errbuf);
-		free(errbuf);
+		    printf ("%s\r\n", errbuf2);
+		if (ret2 != -1)
+		    free(errbuf);
 		return;
 	    }
 	}
@@ -500,18 +511,18 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    }
 
 	} else {
+	    const char *msg2 = "user is not authorized to login";
 	    char *msg;
 
-	    asprintf (&msg, "user `%s' is not authorized to "
+	    ret = asprintf (&msg, "user `%s' is not authorized to "
 		      "login as `%s'", 
 		      name ? name : "<unknown>",
 		      UserNameRequested ? UserNameRequested : "<nobody>");
-	    if (msg == NULL)
-		Data(ap, KRB_REJECT, NULL, 0);
-	    else {
-		Data(ap, KRB_REJECT, (void *)msg, -1);
+	    if (ret != -1)
+		msg2 = msg;
+	    Data(ap, KRB_REJECT, (void *)msg2, -1);
+	    if (ret != -1)
 		free(msg);
-	    }
 	    auth_finished (ap, AUTH_REJECT);
 	    krb5_free_keyblock_contents(context, key_block);
 	    break;
@@ -561,19 +572,21 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 			     ccache,
 			     &inbuf);
 	if(ret) {
+	    const char *errbuf2 = "Read forwarded creds failed";
 	    char *errbuf;
+	    int ret2;
 
-	    asprintf (&errbuf,
-		      "Read forwarded creds failed: %s",
-		      krb5_get_err_text (context, ret));
-	    if(errbuf == NULL)
-		Data(ap, KRB_FORWARD_REJECT, NULL, 0);
-	    else
-		Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
+	    ret2 = asprintf (&errbuf,
+			     "Read forwarded creds failed: %s",
+			     krb5_get_err_text (context, ret));
+	    if (ret2 != -1)
+		errbuf2 = errbuf;
+	    Data(ap, KRB_FORWARD_REJECT, errbuf, -1);
 	    if (auth_debug_mode)
 		printf("Could not read forwarded credentials: %s\r\n",
 		       errbuf);
-	    free (errbuf);
+	    if (ret2 != -1)
+		free (errbuf);
 	} else {
 	    Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
 #if defined(DCE)
