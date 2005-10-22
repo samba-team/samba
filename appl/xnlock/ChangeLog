@@ -1,3 +1,8 @@
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* xnlock.c: Check return value from asprintf instead of string !=
+	NULL since it undefined behavior on Linux. From Björn Sandell
+	
 2005-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* xnlock.c: use NULL as last argument to execl, not 0

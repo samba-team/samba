@@ -1,3 +1,17 @@
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/commands.c: Check return value from asprintf instead of
+	string != NULL since it undefined behavior on Linux. From Björn
+	Sandell
+
+	* libtelnet/kerberos5.c: Check return value from asprintf instead
+	of string != NULL since it undefined behavior on Linux. From Björn
+	Sandell
+
+	* libtelnet/kerberos.c: Check return value from asprintf instead
+	of string != NULL since it undefined behavior on Linux. From Björn
+	Sandell
+	
 2005-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/telnetd.c: Fix printing of /etc/issue{,.net}.
