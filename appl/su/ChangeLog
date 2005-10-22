@@ -1,3 +1,8 @@
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* su.c: Check return value from asprintf instead of string != NULL
+	since it undefined behavior on Linux. From Björn Sandell
+	
 2005-05-10  Dave Love  <fx@gnu.org>
 
 	* su.c: Include <crypt.h>.

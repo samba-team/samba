@@ -1,3 +1,11 @@
+2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rshd.c: Check return value from asprintf instead of string !=
+	NULL since it undefined behavior on Linux. From Björn Sandell
+
+	* rsh.c: Check return value from asprintf instead of string !=
+	NULL since it undefined behavior on Linux. From Björn Sandell
+
 2005-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rshd.c: init some important variables and check that they are
