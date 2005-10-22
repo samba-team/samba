@@ -116,7 +116,7 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	init_winreg_String(&r.in.name, name);	
 	init_winreg_String(&r.in.class, class);
 	r.in.options = 0x0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
 	r.in.secdesc = NULL;
 
@@ -178,7 +178,7 @@ static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	init_winreg_String(&r.in.name, name);	
 	init_winreg_String(&r.in.class, class);
 	r.in.options = 0x0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
 	r.in.secdesc = &secbuf;
 
@@ -691,7 +691,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing %s\n", name);
 
 	r.in.system_name = 0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 	
 	status = open_fn(p, mem_ctx, &r);
