@@ -347,14 +347,15 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    Data(ap, KRB_ACCEPT, NULL, 0);
 	} else {
 	    char *msg;
+	    int ret;
 
-	    asprintf (&msg, "user `%s' is not authorized to "
-		      "login as `%s'", 
-		      krb_unparse_name_long(adat.pname, 
-					    adat.pinst, 
-					    adat.prealm), 
-		      UserNameRequested ? UserNameRequested : "<nobody>");
-	    if (msg == NULL)
+	    ret = asprintf (&msg, "user `%s' is not authorized to "
+			    "login as `%s'", 
+			    krb_unparse_name_long(adat.pname, 
+						  adat.pinst, 
+						  adat.prealm), 
+			    UserNameRequested ? UserNameRequested : "<nobody>");
+	    if (ret == -1)
 		Data(ap, KRB_REJECT, NULL, 0);
 	    else {
 		Data(ap, KRB_REJECT, (void *)msg, -1);
