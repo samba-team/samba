@@ -1582,6 +1582,7 @@ env_init(void)
 	    || strncmp((char *)ep->value, "unix:", 5) == 0)) {
 		char hbuf[256+1];
 		char *cp2 = strchr((char *)ep->value, ':');
+		int error;
 
 		/* XXX - should be k_gethostname? */
 		gethostname(hbuf, 256);
@@ -1590,7 +1591,6 @@ env_init(void)
 		/* If this is not the full name, try to get it via DNS */
 		if (strchr(hbuf, '.') == 0) {
 			struct addrinfo hints, *ai, *a;
-			int error;
 
 			memset (&hints, 0, sizeof(hints));
 			hints.ai_flags = AI_CANONNAME;
@@ -1608,9 +1608,11 @@ env_init(void)
 			}
 		}
 
-		asprintf (&cp, "%s%s", hbuf, cp2);
-		free (ep->value);
-		ep->value = (unsigned char *)cp;
+		error = asprintf (&cp, "%s%s", hbuf, cp2);
+		if (error != -1) {
+		    free (ep->value);
+		    ep->value = (unsigned char *)cp;
+		}
 	}
 	/*
 	 * If USER is not defined, but LOGNAME is, then add

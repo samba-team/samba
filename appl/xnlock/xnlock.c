@@ -244,9 +244,10 @@ init_words (int argc, char **argv)
 		appres.file = argv[i];
 		i++;
 	    } else {
-		asprintf (&appres.file,
+		int ret;
+		ret = asprintf (&appres.file,
 			  "%s/.msgfile", getenv("HOME"));
-		if (appres.file == NULL)
+		if (ret == -1)
 		    errx (1, "cannot allocate memory for message");
 	    }
 	} else if(strcmp(argv[i], "--version") == 0) {
