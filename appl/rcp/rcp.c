@@ -179,6 +179,7 @@ toremote(char *targ, int argc, char **argv)
 	for (i = 0; i < argc - 1; i++) {
 		src = colon(argv[i]);
 		if (src) {			/* remote to remote */
+			int ret;
 			*src++ = 0;
 			if (*src == 0)
 				src = ".";
@@ -190,28 +191,27 @@ toremote(char *targ, int argc, char **argv)
 					suser = pwd->pw_name;
 				else if (!okname(suser))
 					continue;
-				asprintf(&bp,
+				ret = asprintf(&bp,
 				    "%s%s %s -l %s -n %s %s '%s%s%s:%s'",
 					 _PATH_RSH, eflag ? " -e" : "", 
 					 host, suser, cmd, src,
 				    tuser ? tuser : "", tuser ? "@" : "",
 				    thost, targ);
 			} else {
-				asprintf(&bp,
+				ret = asprintf(&bp,
 					 "exec %s%s %s -n %s %s '%s%s%s:%s'",
 					 _PATH_RSH, eflag ? " -e" : "", 
 					 argv[i], cmd, src,
 					 tuser ? tuser : "", tuser ? "@" : "",
 					 thost, targ);
 			}
-			if (bp == NULL)
+			if (ret == -1)
 				err (1, "malloc");
 			susystem(bp, userid);
 			free(bp);
 		} else {			/* local to remote */
 			if (remin == -1) {
-				asprintf(&bp, "%s -t %s", cmd, targ);
-				if (bp == NULL)
+				if (asprintf(&bp, "%s -t %s", cmd, targ) == -1)
 					err (1, "malloc");
 				host = thost;
 
@@ -235,11 +235,13 @@ tolocal(int argc, char **argv)
 	char *bp, *host, *src, *suser;
 
 	for (i = 0; i < argc - 1; i++) {
+		int ret;
+
 		if (!(src = colon(argv[i]))) {		/* Local to local. */
-			asprintf(&bp, "exec %s%s%s %s %s", _PATH_CP,
+			ret = asprintf(&bp, "exec %s%s%s %s %s", _PATH_CP,
 			    iamrecursive ? " -PR" : "", pflag ? " -p" : "",
 			    argv[i], argv[argc - 1]);
-			if (bp == NULL)
+			if (ret == -1)
 				err (1, "malloc");
 			if (susystem(bp, userid))
 				++errs;
@@ -260,8 +262,8 @@ tolocal(int argc, char **argv)
 			else if (!okname(suser))
 				continue;
 		}
-		asprintf(&bp, "%s -f %s", cmd, src);
-		if (bp == NULL)
+		ret = asprintf(&bp, "%s -f %s", cmd, src);
+		if (ret == -1)
 			err (1, "malloc");
 		if (do_cmd(host, suser, bp, &remin, &remout) < 0) {
 			free(bp);
