@@ -39,7 +39,7 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	NTSTATUS status; \
 	\
 	r.in.system_name = 0; \
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED; \
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED; \
 	r.out.handle = hnd;\
 	\
 	status = dcerpc_winreg_Open ## u(p, mem_ctx, &r); \
@@ -253,7 +253,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, const struct registry_key *parent
 	r.in.handle = parent->backend_data;
 	r.out.new_handle = talloc(mem_ctx, struct policy_handle);	
 	r.in.options = 0;
-	r.in.access_required = access_mask;
+	r.in.access_mask = access_mask;
 	r.in.secdesc = NULL;
 
 	status = dcerpc_winreg_CreateKey((struct dcerpc_pipe *)(parent->hive->backend_data), mem_ctx, &r);
