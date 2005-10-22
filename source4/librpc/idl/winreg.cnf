@@ -1,3 +1,12 @@
 IMPORT security_secinfo 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf_winreg_winreg_GetKeySecurity_sec_info, NULL);
 
-INFO_KEY OpenKey.Ke
+HF_FIELD hf_winreg_access_required "Access Required" "winreg.access_required" FT_UINT32 BASE_HEX NULL 0 "" "" ""
+
+HF_RENAME hf_winreg_winreg_OpenHKCR_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_OpenHKLM_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_OpenHKU_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_CreateKey_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_OpenHKCC_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_OpenHKDD_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_OpenHKPT_access_required hf_winreg_access_required
+HF_RENAME hf_winreg_winreg_OpenHKPN_access_required hf_winreg_access_required
