@@ -105,8 +105,7 @@ gss_userok(void *app_data, char *username)
 
            chown (ticketfile, kpw->pw_uid, kpw->pw_gid);
            
-	   asprintf(&k5ccname, "FILE:%s", ticketfile);
-	   if (k5ccname) {
+	   if (asprintf(&k5ccname, "FILE:%s", ticketfile) != -1) {
 	       esetenv ("KRB5CCNAME", k5ccname, 1);
 	   }
 	   afslog(NULL, 1);

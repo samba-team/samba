@@ -310,8 +310,11 @@ sec_vfprintf2(FILE *f, const char *fmt, va_list ap)
     if(data_prot == prot_clear)
 	return vfprintf(f, fmt, ap);
     else {
-	vasprintf(&buf, fmt, ap);
-	ret = buffer_write(&out_buffer, buf, strlen(buf));
+	int len;
+	len = vasprintf(&buf, fmt, ap);
+	if (len == -1)
+	    return len;
+	ret = buffer_write(&out_buffer, buf, len);
 	free(buf);
 	return ret;
     }
@@ -379,7 +382,10 @@ sec_vfprintf(FILE *f, const char *fmt, va_list ap)
     if(!sec_complete)
 	return vfprintf(f, fmt, ap);
     
-    vasprintf(&buf, fmt, ap);
+    if (vasprintf(&buf, fmt, ap) == -1) {
+	printf("Failed to allocate command.\n");
+	return -1;
+    }
     len = (*mech->encode)(app_data, buf, strlen(buf), command_prot, &enc);
     free(buf);
     if(len < 0) {

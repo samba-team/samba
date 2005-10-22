@@ -1023,9 +1023,10 @@ retrieve(const char *cmd, char *name)
 			*tail = c;
 			if (p->rev_cmd != NULL) {
 			    char *ext;
+			    int ret;
 
-			    asprintf(&ext, "%s%s", name, p->ext);
-			    if (ext != NULL) { 
+			    ret = asprintf(&ext, "%s%s", name, p->ext);
+			    if (ret != -1) {
   			        if (access(ext, R_OK) == 0) {
 				    snprintf (line, sizeof(line),
 					      p->rev_cmd, ext);

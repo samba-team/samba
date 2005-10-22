@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -306,7 +306,7 @@ import_name(const char *kname, const char *host, gss_name_t *target_name)
     gss_buffer_desc name;
 
     name.length = asprintf((char**)&name.value, "%s@%s", kname, host);
-    if (name.value == NULL) {
+    if (name.length == -1) {
 	printf("Out of memory\n");
 	return AUTH_ERROR;
     }
