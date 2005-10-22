@@ -121,7 +121,8 @@ exec_shell(const char *shell, int fallback)
 	p++;
     else
 	p = shell;
-    asprintf(&sh, "-%s", p);
+    if (asprintf(&sh, "-%s", p) == -1)
+	errx(1, "Out of memory");
     execle(shell, sh, NULL, env);
     if(fallback){
 	warnx("Can't exec %s, trying %s", 

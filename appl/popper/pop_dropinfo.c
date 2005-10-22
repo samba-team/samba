@@ -97,8 +97,7 @@ add_missing_headers(POP *p, MsgInfoList *mp)
 {
 #if defined(UIDL) || defined(XOVER)
     if (mp->msg_id == NULL) {
-	asprintf(&mp->msg_id, "no-message-id-%d", mp->number);
-	if(mp->msg_id == NULL) {
+	if (asprintf(&mp->msg_id, "no-message-id-%d", mp->number) == -1)
 	    fclose (p->drop);
 	    p->msg_count = 0;
 	    return pop_msg (p,POP_FAILURE,
