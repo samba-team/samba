@@ -376,6 +376,8 @@ recv_krb5_auth (int s, u_char *buf,
 				  ntohs(socket_get_port (thisaddr)),
 				  *cmd,
 				  *server_username);
+    if (cksum_data.length == -1)
+	syslog_and_die ("asprintf: out of memory");
 
     status = krb5_verify_authenticator_checksum(context, 
 						auth_context,
@@ -632,19 +634,25 @@ setup_environment (char ***env, const struct passwd *pwd)
     e = *env;
     e = realloc(e, (i + 7) * sizeof(char *));
 
-    asprintf (&e[i++], "USER=%s",  pwd->pw_name);
-    asprintf (&e[i++], "HOME=%s",  pwd->pw_dir);
-    asprintf (&e[i++], "SHELL=%s", pwd->pw_shell);
+    if (asprintf (&e[i++], "USER=%s",  pwd->pw_name) == -1)
+	syslog_and_die ("asprintf: out of memory");
+    if (asprintf (&e[i++], "HOME=%s",  pwd->pw_dir) == -1)
+	syslog_and_die ("asprintf: out of memory");
+    if (asprintf (&e[i++], "SHELL=%s", pwd->pw_shell) == -1)
+	syslog_and_die ("asprintf: out of memory");
     if (! path) {
-	asprintf (&e[i++], "PATH=%s",  _PATH_DEFPATH);
+	if (asprintf (&e[i++], "PATH=%s",  _PATH_DEFPATH) == -1)
+	    syslog_and_die ("asprintf: out of memory");
     }
     asprintf (&e[i++], "SSH_CLIENT=only_to_make_bash_happy");
 #if defined(DCE)
     if (getenv("KRB5CCNAME"))
-	asprintf (&e[i++], "KRB5CCNAME=%s",  getenv("KRB5CCNAME"));
+	if (asprintf (&e[i++], "KRB5CCNAME=%s",  getenv("KRB5CCNAME")) == -1)
+	    syslog_and_die ("asprintf: out of memory");
 #else
     if (do_unique_tkfile)
-	asprintf (&e[i++], "KRB5CCNAME=%s", tkfile);
+	if (asprintf (&e[i++], "KRB5CCNAME=%s", tkfile) == -1)
+	    syslog_and_die ("asprintf: out of memory");
 #endif
     e[i++] = NULL;
     *env = e;

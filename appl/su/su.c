@@ -248,8 +248,10 @@ krb5_start_session(void)
 
     ret = krb5_cc_copy_cache(context, ccache, ccache2);
 
-    asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
-	     krb5_cc_get_name(context, ccache2));
+    ret = asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
+		   krb5_cc_get_name(context, ccache2));
+    if (ret == -1)
+	errx(1, "malloc - out of memory");
     esetenv("KRB5CCNAME", cc_name, 1);
 
     /* we want to export this even if we don't directly support KRB4 */
@@ -299,9 +301,11 @@ krb_verify(const struct passwd *login_info,
        krb_kuserok(name, instance, realm, su_info->pw_name) == 0) {
 	char password[128];
 	char *prompt;
-	asprintf (&prompt, 
+	ret = asprintf (&prompt, 
 		  "%s's Password: ",
 		  krb_unparse_name_long (name, instance, realm));
+	if (ret == -1)
+	    return (1);
 	if (UI_UTIL_read_pw_string (password, sizeof (password), prompt, 0)) {
 	    memset (password, 0, sizeof (password));
 	    free(prompt);
@@ -515,9 +519,10 @@ main(int argc, char **argv)
 	if (args == NULL)
 	    err (1, "malloc");
 	i = 0;
-	if(full_login)
-	    asprintf(&args[i++], "-%s", p);
-	else
+	if(full_login) {
+	    if (asprintf(&args[i++], "-%s", p) == -1)
+		errx (1, "malloc");
+	} else
 	    args[i++] = p;
 	if (cmd) {
 	   args[i++] = "-c";

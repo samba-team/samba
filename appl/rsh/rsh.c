@@ -325,6 +325,10 @@ send_krb5_auth(int s,
 				  do_encrypt ? "-x " : "",
 				  cmd,
 				  remote_user);
+    if (cksum_data.length == -1) {
+	warnx ("%s: failed to allocate command", hostname);
+	return 1;
+    }
 
     ap_opts = 0;
 
