@@ -879,6 +879,10 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		}
 	}
 	
+	/* IF we have the PAC - otherwise we need to get this
+	 * data from elsewere - local ldb, or (TODO) lookup of some
+	 * kind... 
+	 */
 	if (maj_stat == 0) {
 		krb5_error_code ret;
 
@@ -912,42 +916,9 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	}
 	
 	if (maj_stat) {
-		krb5_error_code ret;
-		DATA_BLOB user_sess_key = data_blob(NULL, 0);
-		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-		/* IF we have the PAC - otherwise we need to get this
-		 * data from elsewere - local ldb, or (TODO) lookup of some
-		 * kind... 
-		 *
-		 * when heimdal can generate the PAC, we should fail if there's
-		 * no PAC present
-		 */
-
-		char *account_name;
-		const char *realm;
-		ret = krb5_parse_name(gensec_gssapi_state->smb_krb5_context->krb5_context,
-				      principal_string, &principal);
-		if (ret) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		
-		realm = krb5_principal_get_realm(gensec_gssapi_state->smb_krb5_context->krb5_context, 
-						 principal);
-		ret = krb5_unparse_name_norealm(gensec_gssapi_state->smb_krb5_context->krb5_context, 
-						principal, &account_name);
-		if (ret) {
-			krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		DEBUG(1, ("Unable to use PAC, resorting to local user lookup!\n"));
-		nt_status = sam_get_server_info(mem_ctx, account_name, realm,
-						user_sess_key, lm_sess_key,
-						&server_info);
-		free(account_name);
-		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
+		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,
+							  &server_info);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);

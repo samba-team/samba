@@ -78,6 +78,7 @@ struct ntptr_context;
 struct ntptr_GenericHandle;
 
 struct drsuapi_DsCrackNames;
+struct drsuapi_DsNameInfo1;
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
 

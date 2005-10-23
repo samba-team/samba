@@ -26,6 +26,31 @@
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
 
+const char *user_attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash",
+		       "userAccountControl",
+		       "pwdLastSet",
+		       "accountExpires",
+		       "objectSid",
+		       "userWorkstations",
+		       
+		       /* required for server_info, not access control: */
+		       "sAMAccountName",
+		       "displayName",
+		       "scriptPath",
+		       "profilePath",
+		       "homeDirectory",
+		       "homeDrive",
+		       "lastLogon",
+		       "lastLogoff",
+		       "accountExpires",
+		       "badPwdCount",
+		       "logonCount",
+		       "primaryGroupID",
+		       NULL,
+};
+
+const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
+
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
@@ -217,31 +242,6 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 
 	const struct ldb_dn *domain_dn = NULL;
 
-	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash",
-			       "userAccountControl",
-			       "pwdLastSet",
-			       "accountExpires",
-			       "objectSid",
-			       "userWorkstations",
-			       
-			       /* required for server_info, not access control: */
-			       "sAMAccountName",
-			       "displayName",
-			       "scriptPath",
-			       "profilePath",
-			       "homeDirectory",
-			       "homeDrive",
-			       "lastLogon",
-			       "lastLogoff",
-			       "accountExpires",
-			       "badPwdCount",
-			       "logonCount",
-			       "primaryGroupID",
-			       NULL,
-	};
-
-	const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
-
 	if (domain_name) {
 		/* find the domain's DN */
 		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
@@ -267,7 +267,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	}
 
 	/* pull the user attributes */
-	ret = gendb_search(sam_ctx, mem_ctx, domain_dn, &msgs, attrs,
+	ret = gendb_search(sam_ctx, mem_ctx, domain_dn, &msgs, user_attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))", 
 			   account_name);
 	if (ret == -1) {
@@ -511,32 +511,61 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_server_info(TALLOC_CTX *mem_ctx, const char *account_name, const char *domain_name,
-			     DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
-			     struct auth_serversupplied_info **server_info)
+NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principal,
+				       struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
+	DATA_BLOB user_sess_key = data_blob(NULL, 0);
+	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 
+	struct ldb_dn *user_dn, *domain_dn;
 	struct ldb_message **msgs;
-	struct ldb_message **domain_msgs;
-	void *sam_ctx;
+	struct ldb_message **msgs_domain;
+	struct ldb_context *sam_ctx;
 
-	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	int ret_domain, ret;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sam_ctx = samdb_connect(tmp_ctx, system_session(tmp_ctx));
 	if (sam_ctx == NULL) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	nt_status = authsam_search_account(mem_ctx, sam_ctx, account_name, domain_name, &msgs, &domain_msgs);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal, &user_dn, &domain_dn);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+	
+	/* grab domain info */
+	ret_domain = gendb_search_dn(sam_ctx, tmp_ctx,
+				     domain_dn, &msgs_domain, domain_attrs);
 
-	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs, domain_msgs,
+	if (ret_domain != 1) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	/* pull the user attributes */
+	ret = gendb_search_dn(sam_ctx, tmp_ctx, 
+			      user_dn, &msgs, user_attrs);
+	if (ret != 1) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs, msgs_domain,
 					     user_sess_key, lm_sess_key,
 					     server_info);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	talloc_free(msgs);
-	talloc_free(domain_msgs);
-
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
 	return NT_STATUS_OK;
 }
 
