@@ -129,6 +129,8 @@ static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *dom
 		state, "\\\\%s", dcerpc_server_name(domain->netlogon_pipe));
 	if (state->r.in.server_name == NULL) return NULL;
 
+	ZERO_STRUCT(state->auth2);
+
 	state->r.in.workstation =
 		cli_credentials_get_workstation(domain->schannel_creds);
 	state->r.in.credential = &state->auth;
@@ -208,17 +210,16 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 				   struct netr_UserSessionKey *user_session_key,
 				   struct netr_LMSessionKey *lm_key)
 {
+	struct pam_auth_crap_state *state =
+		talloc_get_type(c->private_data, struct pam_auth_crap_state);
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		struct pam_auth_crap_state *state =
-			talloc_get_type(c->private_data,
-					struct pam_auth_crap_state);
 		info3->length = state->info3.length;
 		info3->data = talloc_steal(mem_ctx, state->info3.data);
 		*user_session_key = state->user_session_key;
 		*lm_key = state->lm_key;
 	}
-	talloc_free(c);
+	talloc_free(state);
 	return status;
 }
 
