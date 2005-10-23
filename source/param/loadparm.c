@@ -2452,7 +2452,7 @@ static char *canonicalize_servicename(const char *src)
 	static fstring canon; /* is fstring large enough? */
 	int dst_idx = 0;
 
-	for (; *src != '\0'; src++) {
+	for (; *src != '\0'; src += next_mb_char_size(src)) {
 		if (isspace(*src)) {
 			continue;
 		}
