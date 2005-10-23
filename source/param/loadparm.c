@@ -73,7 +73,7 @@ extern enum protocol_types Protocol;
 #endif
 
 /* some helpful bits */
-#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
 #define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
 
 int keepalive = DEFAULT_KEEPALIVE;
@@ -587,6 +587,9 @@ static service sDefault = {
 static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
+static TDB_CONTEXT *ServiceHash;
+static int *invalid_services = NULL;
+static int num_invalid_services = 0;
 static BOOL bInGlobalSection = True;
 static BOOL bGlobalOnly = False;
 static int server_role;
@@ -2037,6 +2040,9 @@ static BOOL service_ok(int iService);
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue);
 static BOOL do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
+static BOOL hash_a_service(const char *name, int number);
+static void free_service_byindex(int iService);
+static char * canonicalize_servicename(const char *name);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -2329,6 +2335,26 @@ static void free_service(service *pservice)
 	ZERO_STRUCTP(pservice);
 }
 
+
+/***************************************************************************
+ remove a service indexed in the ServicePtrs array from the ServiceHash
+ and free the dynamically allocated parts
+***************************************************************************/
+
+static void free_service_byindex(int idx)
+{
+	if (!LP_SNUM_OK(idx)) {
+		return;
+	}
+
+	ServicePtrs[idx]->valid = False;
+	invalid_services[num_invalid_services++] = idx;
+	if (ServicePtrs[idx]->szService) {
+		tdb_delete_bystring(ServiceHash, ServicePtrs[idx]->szService);
+	}
+	free_service(ServicePtrs[idx]);
+}
+
 /***************************************************************************
  Add a new service to the services array initialising it with the given 
  service. 
@@ -2364,32 +2390,41 @@ static int add_a_service(const service *pservice, const char *name)
 	}
 
 	/* find an invalid one */
-	for (i = 0; i < iNumServices; i++)
-		if (!ServicePtrs[i]->valid)
-			break;
+	i = iNumServices;
+	if (num_invalid_services > 0) {
+		i = invalid_services[--num_invalid_services];
+	}
 
 	/* if not, then create one */
 	if (i == iNumServices) {
 		service **tsp;
+		int *tinvalid;
 		
 		tsp = SMB_REALLOC_ARRAY(ServicePtrs, service *, num_to_alloc);
-					   
-		if (!tsp) {
+		if (tsp == NULL) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 			return (-1);
 		}
-		else {
-			ServicePtrs = tsp;
-			ServicePtrs[iNumServices] = SMB_MALLOC_P(service);
-		}
+		ServicePtrs = tsp;
+		ServicePtrs[iNumServices] = SMB_MALLOC_P(service);
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
 			return (-1);
 		}
-
 		iNumServices++;
-	} else
-		free_service(ServicePtrs[i]);
+
+		/* enlarge invalid_services here for now... */
+		tinvalid = SMB_REALLOC_ARRAY(invalid_services, int,
+					     num_to_alloc);
+		if (tinvalid == NULL) {
+			DEBUG(0,("add_a_service: failed to enlarge "
+				 "invalid_services!\n"));
+			return (-1);
+		}
+		invalid_services = tinvalid;
+	} else {
+		free_service_byindex(i);
+	}
 
 	ServicePtrs[i]->valid = True;
 
@@ -2400,8 +2435,55 @@ static int add_a_service(const service *pservice, const char *name)
 		
 	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
 		i, ServicePtrs[i]->szService));
+
+	if (!hash_a_service(ServicePtrs[i]->szService, i)) {
+		return (-1);
+	}
 		
 	return (i);
+}
+
+/***************************************************************************
+  Convert a string to uppercase and remove whitespaces.
+***************************************************************************/
+
+static char *canonicalize_servicename(const char *src)
+{
+	static fstring canon; /* is fstring large enough? */
+	int dst_idx = 0;
+
+	for (; *src != '\0'; src++) {
+		if (isspace(*src)) {
+			continue;
+		}
+		if (dst_idx == sizeof(canon) - 1) {
+			return NULL;
+		}
+		canon[dst_idx++] = toupper(*src);
+	}
+	canon[dst_idx] = '\0';
+	return canon;
+}
+
+/***************************************************************************
+  Add a name/index pair for the services array to the hash table.
+***************************************************************************/
+
+static BOOL hash_a_service(const char *name, int idx)
+{
+	if (ServiceHash == NULL) {
+		DEBUG(10,("hash_a_service: creating tdb servicehash\n"));
+		ServiceHash = tdb_open("servicehash", 1031, TDB_INTERNAL, 
+                                        (O_RDWR|O_CREAT), 0644);
+		if (ServiceHash == NULL) {
+			DEBUG(0,("hash_a_service: open tdb servicehash failed!\n"));
+			return False;
+		}
+	}
+	DEBUG(10,("hash_a_service: hashing index %d for service name %s\n",
+			idx, name));
+        tdb_store_int32(ServiceHash, canonicalize_servicename(name), idx);
+	return True;
 }
 
 /***************************************************************************
@@ -2636,16 +2718,20 @@ Find a service by name. Otherwise works like get_service.
 
 static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 {
-	int iService;
+	int iService = -1;
 
-	for (iService = iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) &&
-		    strwicmp(ServicePtrs[iService]->szService, pszServiceName) == 0) {
-			if (pserviceDest != NULL)
-				copy_service(pserviceDest, ServicePtrs[iService], NULL);
-			break;
+	if (ServiceHash != NULL) {
+		iService = tdb_fetch_int32(ServiceHash, 
+				canonicalize_servicename(pszServiceName));
+		if (LP_SNUM_OK(iService)) {
+			if (pserviceDest != NULL) {
+				copy_service(pserviceDest, 
+						ServicePtrs[iService], NULL);
+			}
+		} else {
+			iService = -1;
 		}
-
+	}
 	return (iService);
 }
 
@@ -3916,8 +4002,7 @@ void lp_killunused(BOOL (*snumused) (int))
 			continue;
 
 		if (!snumused || !snumused(i)) {
-			ServicePtrs[i]->valid = False;
-			free_service(ServicePtrs[i]);
+			free_service_byindex(i);
 		}
 	}
 }
@@ -3929,8 +4014,7 @@ void lp_killunused(BOOL (*snumused) (int))
 void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn)) {
-		ServicePtrs[iServiceIn]->valid = False;
-		free_service(ServicePtrs[iServiceIn]);
+		free_service_byindex(iServiceIn);
 	}
 }
 
@@ -4346,6 +4430,7 @@ BOOL lp_preferred_master(void)
 void lp_remove_service(int snum)
 {
 	ServicePtrs[snum]->valid = False;
+	invalid_services[num_invalid_services++] = snum;
 }
 
 /*******************************************************************
