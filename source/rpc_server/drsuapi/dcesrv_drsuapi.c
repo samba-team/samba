@@ -201,10 +201,57 @@ static WERROR DRSUAPI_GET_NT4_CHANGELOG(struct dcesrv_call_state *dce_call, TALL
 
 
 /* 
-  drsuapi_DsCrackNames => drsuapip_cracknames.c
+  drsuapi_DsCrackNames 
 */
-static WERROR (*drsuapi_DsCrackNames)(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsCrackNames *r) = dcesrv_drsuapi_DsCrackNames;
+WERROR drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			    struct drsuapi_DsCrackNames *r)
+{
+	WERROR status;
+	struct drsuapi_bind_state *b_state;
+	struct dcesrv_handle *h;
+
+	r->out.level = r->in.level;
+	ZERO_STRUCT(r->out.ctr);
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
+	b_state = h->data;
+
+	switch (r->in.level) {
+		case 1: {
+			struct drsuapi_DsNameCtr1 *ctr1;
+			struct drsuapi_DsNameInfo1 *names;
+			int count;
+			int i;
+
+			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
+			WERR_TALLOC_CHECK(ctr1);
+
+			count = r->in.req.req1.count;
+			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
+			WERR_TALLOC_CHECK(names);
+
+			for (i=0; i < count; i++) {
+				status = DsCrackNameOneName(b_state->sam_ctx, mem_ctx,
+							    r->in.req.req1.format_flags,
+							    r->in.req.req1.format_offered,
+							    r->in.req.req1.format_desired,
+							    r->in.req.req1.names[i].str,
+							    &names[i]);
+				if (!W_ERROR_IS_OK(status)) {
+					return status;
+				}
+			}
+
+			ctr1->count = count;
+			ctr1->array = names;
+			r->out.ctr.ctr1 = ctr1;
+
+			return WERR_OK;
+		}
+	}
+	
+	return WERR_UNKNOWN_LEVEL;
+}
 
 /* 
   drsuapi_DsWriteAccountSpn 
