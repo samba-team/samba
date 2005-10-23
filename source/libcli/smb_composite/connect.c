@@ -355,7 +355,11 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 
 	conn->in.hostnames = talloc_array(state->conn, const char *, 1);
 	NT_STATUS_HAVE_NO_MEMORY(conn->in.hostnames);
-	conn->in.hostnames[0] = state->io->in.dest_host;
+	if (state->io->in.called_name != NULL) {
+		conn->in.hostnames[0] = state->io->in.called_name;
+	} else {
+		conn->in.hostnames[0] = state->io->in.dest_host;
+	}
 	
 	conn->in.ports = NULL;
 	if (state->io->in.port != 0) {
