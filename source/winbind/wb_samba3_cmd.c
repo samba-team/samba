@@ -35,6 +35,26 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
+static void wbsrv_samba3_async_epilogue(NTSTATUS status,
+					struct wbsrv_samba3_call *s3call)
+{
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &s3call->response;
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+	}
+}
+
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
@@ -46,29 +66,32 @@ NTSTATUS wbsrv_samba3_info(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	s3call->response.data.info.winbind_separator = *lp_winbind_separator();
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.info.samba_version, SAMBA_VERSION_STRING);
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.info.samba_version,
+				SAMBA_VERSION_STRING);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_domain_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.domain_name, lp_workgroup());
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.domain_name,
+				lp_workgroup());
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.netbios_name, lp_netbios_name());
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.netbios_name,
+				lp_netbios_name());
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
-	s3call->response.extra_data		= smbd_tmp_path(s3call,
-						  WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+	s3call->response.extra_data =
+		smbd_tmp_path(s3call, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
 	NT_STATUS_HAVE_NO_MEMORY(s3call->response.extra_data);
 	return NT_STATUS_OK;
 }
@@ -104,23 +127,9 @@ static void checkmachacc_recv_creds(struct composite_context *ctx)
 	NTSTATUS status;
 
 	status = wb_cmd_checkmachacc_recv(ctx);
-	if (NT_STATUS_IS_OK(status)) {
-		s3call->response.result = WINBINDD_OK;
-	} else {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+
+	s3call->response.result = WINBINDD_OK;
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 static void getdcname_recv_dc(struct composite_context *ctx);
@@ -158,22 +167,7 @@ static void getdcname_recv_dc(struct composite_context *ctx)
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.dc_name, dcname);
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 static void userdomgroups_recv_groups(struct composite_context *ctx);
@@ -237,22 +231,7 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 	s3call->response.data.num_entries = num_sids;
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 static void usersids_recv_sids(struct composite_context *ctx);
@@ -325,22 +304,7 @@ static void usersids_recv_sids(struct composite_context *ctx)
 	}
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 static void lookupname_recv_sid(struct composite_context *ctx);
@@ -382,22 +346,7 @@ static void lookupname_recv_sid(struct composite_context *ctx)
 				dom_sid_string(s3call, sid->sid));
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 static void lookupsid_recv_name(struct composite_context *ctx);
@@ -446,22 +395,7 @@ static void lookupsid_recv_name(struct composite_context *ctx)
 	WBSRV_SAMBA3_SET_STRING(s3call->response.data.name.name, sid->name);
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
@@ -556,21 +490,7 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	resp->result = WINBINDD_OK;
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
 static void list_trustdom_recv_doms(struct composite_context *ctx);
@@ -631,20 +551,5 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
 	}
 
  done:
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
-		resp->result = WINBINDD_ERROR;
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
-					nt_errstr(status));
-		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
-	}
-
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	wbsrv_samba3_async_epilogue(status, s3call);
 }
