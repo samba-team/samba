@@ -176,8 +176,6 @@ INIT_FUNCTION = dcerpc_server_drsuapi_init
 SUBSYSTEM = DCERPC
 INIT_OBJ_FILES = \
 		drsuapi/dcesrv_drsuapi.o
-ADD_OBJ_FILES = \
-		drsuapi/drsuapi_cracknames.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
 		DCERPC_COMMON \

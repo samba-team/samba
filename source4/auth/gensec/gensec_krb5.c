@@ -518,23 +518,16 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* NO pac, or can't parse or verify it */
 		krb5_error_code ret;
-		DATA_BLOB user_sess_key = data_blob(NULL, 0);
-		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-
-		char *account_name;
-		const char *realm = krb5_principal_get_realm(gensec_krb5_state->smb_krb5_context->krb5_context, 
-							     get_principal_from_tkt(gensec_krb5_state->ticket));
-		ret = krb5_unparse_name_norealm(gensec_krb5_state->smb_krb5_context->krb5_context, 
-						get_principal_from_tkt(gensec_krb5_state->ticket), &account_name);
+		char *principal_string;
+		ret = krb5_unparse_name(gensec_krb5_state->smb_krb5_context->krb5_context, 
+					get_principal_from_tkt(gensec_krb5_state->ticket), &principal_string);
 		if (ret) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* TODO: should we pass the krb5 session key in here? */
-		nt_status = sam_get_server_info(mem_ctx, account_name, realm,
-						user_sess_key, lm_sess_key,
-						&server_info);
-		free(account_name);
+		nt_status = sam_get_server_info_principal(mem_ctx, principal_string,
+							  &server_info);
+		free(principal_string);
 		
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);

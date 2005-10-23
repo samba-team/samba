@@ -37,10 +37,6 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				   const struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
 				   struct drsuapi_DsNameInfo1 *info1);
-static WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
-				 uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
-				 const char *name, struct drsuapi_DsNameInfo1 *info1);
-
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					uint32_t format_offered, uint32_t format_desired,
 					const struct ldb_dn *name_dn, const char *name, 
@@ -242,9 +238,9 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
-				 uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
-				 const char *name, struct drsuapi_DsNameInfo1 *info1)
+WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+			  uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
+			  const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	krb5_error_code ret;
 	const char *domain_filter = NULL;
@@ -716,59 +712,6 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	return WERR_INVALID_PARAM;
 }
 
-/* 
-  drsuapi_DsCrackNames 
-*/
-WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				   struct drsuapi_DsCrackNames *r)
-{
-	WERROR status;
-	struct drsuapi_bind_state *b_state;
-	struct dcesrv_handle *h;
-
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.ctr);
-
-	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
-	b_state = h->data;
-
-	switch (r->in.level) {
-		case 1: {
-			struct drsuapi_DsNameCtr1 *ctr1;
-			struct drsuapi_DsNameInfo1 *names;
-			int count;
-			int i;
-
-			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
-			WERR_TALLOC_CHECK(ctr1);
-
-			count = r->in.req.req1.count;
-			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
-			WERR_TALLOC_CHECK(names);
-
-			for (i=0; i < count; i++) {
-				status = DsCrackNameOneName(b_state->sam_ctx, mem_ctx,
-							    r->in.req.req1.format_flags,
-							    r->in.req.req1.format_offered,
-							    r->in.req.req1.format_desired,
-							    r->in.req.req1.names[i].str,
-							    &names[i]);
-				if (!W_ERROR_IS_OK(status)) {
-					return status;
-				}
-			}
-
-			ctr1->count = count;
-			ctr1->array = names;
-			r->out.ctr.ctr1 = ctr1;
-
-			return WERR_OK;
-		}
-	}
-	
-	return WERR_UNKNOWN_LEVEL;
-}
-
 NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx, 
 				   TALLOC_CTX *mem_ctx, 
 				   const char *user_principal_name, 
@@ -776,7 +719,6 @@ NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx,
 				   struct ldb_dn **domain_dn) 
 {
 	WERROR werr;
-	NTSTATUS status;
 	struct drsuapi_DsNameInfo1 info1;
 	werr = DsCrackNameOneName(sam_ctx, mem_ctx, 0,
 				  DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
@@ -784,7 +726,7 @@ NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx,
 				  user_principal_name,
 				  &info1);
 	if (!W_ERROR_IS_OK(werr)) {
-		return NT_STATUS_NO_MEMORY;
+		return werror_to_ntstatus(werr);
 	}
 	switch (info1.status) {
 	case DRSUAPI_DS_NAME_STATUS_OK:
@@ -808,7 +750,7 @@ NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx,
 							  info1.dns_domain_name),
 					  &info1);
 		if (!W_ERROR_IS_OK(werr)) {
-			return NT_STATUS_NO_MEMORY;
+			return werror_to_ntstatus(werr);
 		}
 		switch (info1.status) {
 		case DRSUAPI_DS_NAME_STATUS_OK:
