@@ -292,6 +292,10 @@ sub ElementLevel($$$$$)
 			if ($conformance->{imports}->{$l->{DATA_TYPE}}) {
 				$call = $conformance->{imports}->{$l->{DATA_TYPE}}->{DATA};	
 				$conformance->{imports}->{$l->{DATA_TYPE}}->{USED} = 1;
+ 		        } elsif (defined($conformance->{imports}->{"$pn.$e->{NAME}"})) {
+ 			        $call = $conformance->{imports}->{"$pn.$e->{NAME}"}->{DATA};
+				$conformance->{imports}->{"$pn.$e->{NAME}"}->{USED} = 1;
+			    
 			} elsif (defined($conformance->{types}->{$l->{DATA_TYPE}})) {
 				$call= $conformance->{types}->{$l->{DATA_TYPE}}->{DISSECTOR_NAME};
 				$conformance->{types}->{$l->{DATA_TYPE}}->{USED} = 1;
