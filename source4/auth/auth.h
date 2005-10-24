@@ -94,6 +94,7 @@ struct auth_serversupplied_info
 	const char *profile_path;
 	const char *home_directory;
 	const char *home_drive;
+	const char *logon_server;
 	
 	NTTIME last_logon;
 	NTTIME last_logoff;
