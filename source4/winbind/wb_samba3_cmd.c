@@ -436,9 +436,9 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 
 	chal.data      = s3call->request.data.auth_crap.chal;
 	chal.length    = sizeof(s3call->request.data.auth_crap.chal);
-	nt_resp.data   = s3call->request.data.auth_crap.nt_resp;
+	nt_resp.data   = (uint8_t *)s3call->request.data.auth_crap.nt_resp;
 	nt_resp.length = s3call->request.data.auth_crap.nt_resp_len;
-	lm_resp.data   = s3call->request.data.auth_crap.lm_resp;
+	lm_resp.data   = (uint8_t *)s3call->request.data.auth_crap.lm_resp;
 	lm_resp.length = s3call->request.data.auth_crap.lm_resp_len;
 
 	ctx = wb_cmd_pam_auth_crap_send(
