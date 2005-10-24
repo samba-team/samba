@@ -62,6 +62,8 @@ struct wbsrv_domain {
 	struct policy_handle *samr_handle;
 	struct policy_handle *domain_handle;
 
+	struct ldap_connection *ldap_conn;
+
 	struct dcerpc_pipe *netlogon_auth2_pipe;
 	struct dcerpc_pipe *netlogon_pipe;
 	struct cli_credentials *schannel_creds;
