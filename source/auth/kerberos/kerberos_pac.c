@@ -487,7 +487,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret;
 	struct PAC_DATA *pac_data = talloc(mem_ctx, struct PAC_DATA);
 	struct netr_SamInfo3 *sam3;
-	struct timeval tv = timeval_current();
 	union PAC_INFO *u_LOGON_INFO;
 	struct PAC_LOGON_INFO *LOGON_INFO;
 	union PAC_INFO *u_LOGON_NAME;
@@ -573,7 +572,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	u_LOGON_INFO->logon_info.info		= LOGON_INFO;
 	LOGON_INFO->info3 = *sam3;
-	LOGON_INFO->info3.base.last_logon	= timeval_to_nttime(&tv);
 
 	ret = krb5_unparse_name_norealm(context, client_principal, &name);
 	if (ret) {

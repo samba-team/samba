@@ -327,6 +327,7 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 	server_info->profile_path = talloc_reference(server_info, base->profile_path.string);
 	server_info->home_directory = talloc_reference(server_info, base->home_directory.string);
 	server_info->home_drive = talloc_reference(server_info, base->home_drive.string);
+	server_info->logon_server = talloc_reference(server_info, base->logon_server.string);
 	server_info->last_logon = base->last_logon;
 	server_info->last_logoff = base->last_logoff;
 	server_info->acct_expiry = base->acct_expiry;

@@ -272,7 +272,7 @@ static BOOL torture_pac_saved_check(void)
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "PAC saved check");
 	DATA_BLOB tmp_blob, validate_blob;
-	struct PAC_DATA *pac_data;
+	struct PAC_DATA *pac_data, pac_data2;
 	struct PAC_LOGON_INFO *logon_info;
 	union netr_Validation validation;
 	const char *pac_file, *pac_kdc_key, *pac_member_key;
@@ -516,6 +516,85 @@ static BOOL torture_pac_saved_check(void)
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
 		DEBUG(0, ("(saved test) PAC push failed: length[%u] matches, but data does not\n",
+			  (unsigned)tmp_blob.length));
+		DEBUG(0, ("tmp_data:\n"));
+		dump_data(0, tmp_blob.data, tmp_blob.length);
+		DEBUG(0, ("validate_blob:\n"));
+		dump_data(0, validate_blob.data, validate_blob.length);
+
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ret = kerberos_create_pac(mem_ctx, 
+				  server_info_out,
+				  smb_krb5_context->krb5_context,
+				  &krbtgt_keyblock,
+				  &server_keyblock,
+				  client_principal, authtime,
+				  &validate_blob);
+
+	if (ret != 0) {
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
+
+		DEBUG(0, ("(saved test) regnerated PAC create failed\n"));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	dump_data(10,validate_blob.data,validate_blob.length);
+
+	/* compare both the length and the data bytes after a
+	 * pull/push cycle.  This ensures we use the exact same
+	 * pointer, padding etc algorithms as win2k3.
+	 */
+	if (tmp_blob.length != validate_blob.length) {
+		nt_status = ndr_pull_struct_blob(&validate_blob, mem_ctx, &pac_data2,
+					      (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0,("can't parse the PAC\n"));
+			return False;
+		}
+		
+		NDR_PRINT_DEBUG(PAC_DATA, pac_data);
+
+		NDR_PRINT_DEBUG(PAC_DATA, &pac_data2);
+
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
+
+		DEBUG(0, ("(saved test) PAC regenerate failed: original buffer length[%u] != created buffer length[%u]\n",
+				(unsigned)tmp_blob.length, (unsigned)validate_blob.length));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	if (memcmp(tmp_blob.data, validate_blob.data, tmp_blob.length) != 0) {
+		nt_status = ndr_pull_struct_blob(&validate_blob, mem_ctx, &pac_data2,
+					      (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0,("can't parse the PAC\n"));
+			return False;
+		}
+		
+		NDR_PRINT_DEBUG(PAC_DATA, pac_data);
+
+		NDR_PRINT_DEBUG(PAC_DATA, &pac_data2);
+
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
+
+		DEBUG(0, ("(saved test) PAC regenerate failed: length[%u] matches, but data does not\n",
 			  (unsigned)tmp_blob.length));
 		DEBUG(0, ("tmp_data:\n"));
 		dump_data(0, tmp_blob.data, tmp_blob.length);
