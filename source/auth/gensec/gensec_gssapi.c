@@ -155,7 +155,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 	NTSTATUS nt_status;
 	OM_uint32 maj_stat, min_stat;
 	int ret;
-	gss_buffer_desc name_token;
+	const char *principal;
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *machine_account;
 
@@ -179,12 +179,15 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		}
 	}
 
-	name_token.value = cli_credentials_get_principal(machine_account, 
-							 machine_account);
+	principal = cli_credentials_get_principal(machine_account, 
+						  machine_account);
 
 	/* This might have been explicity set to NULL, ie use what the client calls us */
-	if (name_token.value) {
-		name_token.length = strlen(name_token.value);
+	if (principal) {
+		gss_buffer_desc name_token;
+
+		name_token.value  = discard_const_p(uint8_t, principal);
+		name_token.length = strlen(principal);
 		
 		maj_stat = gss_import_name (&min_stat,
 					    &name_token,
@@ -260,9 +263,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	name_token.value = cli_credentials_get_principal(creds, 
-							 gensec_gssapi_state);
-	name_token.length = strlen(name_token.value);
+	principal = cli_credentials_get_principal(creds, 
+						  gensec_gssapi_state);
+	name_token.value  = discard_const_p(uint8_t, principal);
+	name_token.length = strlen(principal);
 
 	maj_stat = gss_import_name (&min_stat,
 				    &name_token,
@@ -277,14 +281,18 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal()) {
-		name_token.value = gensec_get_target_principal(gensec_security);
-		name_token.length = strlen(name_token.value);
+		name_token.value  = discard_const_p(uint8_t, principal);
+		name_token.length = strlen(principal);
+
 		name_type = GSS_C_NULL_OID;
 	} else {
-		name_token.value = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
-						   gensec_get_target_service(gensec_security), 
-						   hostname);
-		name_token.length = strlen(name_token.value);
+		principal = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
+					    gensec_get_target_service(gensec_security), 
+					    hostname);
+
+		name_token.value  = discard_const_p(uint8_t, principal);
+		name_token.length = strlen(principal);
+
 		name_type = GSS_C_NT_HOSTBASED_SERVICE;
 	}		
 
