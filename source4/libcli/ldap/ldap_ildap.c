@@ -180,7 +180,7 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 	msg->r.SearchRequest.attributesonly = attributesonly;
 	msg->r.SearchRequest.tree = tree;
 	msg->r.SearchRequest.num_attributes = n;
-	msg->r.SearchRequest.attributes = attrs;
+	msg->r.SearchRequest.attributes = discard_const(attrs);
 
 	req = ldap_request_send(conn, msg);
 	talloc_steal(msg, req);
@@ -224,7 +224,8 @@ NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn,
 {
 	struct ldb_parse_tree *tree = ldb_parse_tree(conn, expression);
 	NTSTATUS status;
-	status = ildap_search(conn, basedn, scope, tree, attrs, attributesonly, results);
+	status = ildap_search_bytree(conn, basedn, scope, tree, attrs,
+				     attributesonly, results);
 	talloc_free(tree);
 	return status;
 }
