@@ -999,8 +999,6 @@ struct LsaRemovePrivileges {
 
    } in;
 
-   struct {
-   } out;
 };
 
 /** 
@@ -1025,8 +1023,6 @@ struct LsaClearPrivileges {
       char *name;
    } in;
 
-   struct {
-   } out;
 };
 
 /** 
