@@ -357,7 +357,7 @@ static BOOL torture_pac_saved_check(void)
 
 	pac_file = lp_parm_string(-1,"torture","pac_file");
 	if (pac_file) {
-		tmp_blob.data = file_load(pac_file, &tmp_blob.length, mem_ctx);
+		tmp_blob.data = (uint8_t *)file_load(pac_file, &tmp_blob.length, mem_ctx);
 		printf("(saved test) Loaded pac of size %d from %s\n", tmp_blob.length, pac_file);
 	} else {
 		tmp_blob = data_blob(saved_pac, sizeof(saved_pac));
