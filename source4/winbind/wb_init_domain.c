@@ -65,9 +65,11 @@
 struct init_domain_state {
 	struct composite_context *ctx;
 	struct wbsrv_domain *domain;
+	struct wbsrv_service *service;
 
 	int num_dcs;
 	struct nbt_dc_name *dcs;
+	const char *dcaddr;
 
 	struct smb_composite_connect conn;
 
@@ -81,6 +83,8 @@ struct init_domain_state {
 	struct policy_handle *samr_handle;
 	struct policy_handle *domain_handle;
 
+	struct ldap_connection *ldap_conn;
+
 	struct lsa_QueryInfoPolicy queryinfo;
 };
 
@@ -91,11 +95,11 @@ static void init_domain_recv_netlogoncreds(struct composite_context *ctx);
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
 static void init_domain_recv_lsa(struct composite_context *ctx);
 static void init_domain_recv_queryinfo(struct rpc_request *req);
+static void init_domain_recv_ldapconn(struct composite_context *ctx);
 static void init_domain_recv_samr(struct composite_context *ctx);
 
-struct composite_context *wb_init_domain_send(struct wbsrv_domain *domain,
-					      struct event_context *event_ctx,
-					      struct messaging_context *msg_ctx)
+struct composite_context *wb_init_domain_send(struct wbsrv_service *service,
+					      struct wbsrv_domain *domain)
 {
 	struct composite_context *result, *ctx;
 	struct init_domain_state *state;
@@ -104,13 +108,14 @@ struct composite_context *wb_init_domain_send(struct wbsrv_domain *domain,
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
-	result->event_ctx = event_ctx;
+	result->event_ctx = service->task->event_ctx;
 
 	state = talloc_zero(result, struct init_domain_state);
 	if (state == NULL) goto failed;
 	state->ctx = result;
 	result->private_data = state;
 
+	state->service = service;
 	state->domain = domain;
 
 	if (domain->dcname != NULL) {
@@ -136,7 +141,8 @@ struct composite_context *wb_init_domain_send(struct wbsrv_domain *domain,
 						    schannel_creds);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
-	ctx = wb_finddcs_send(domain->name, domain->sid, event_ctx, msg_ctx);
+	ctx = wb_finddcs_send(domain->name, domain->sid, result->event_ctx,
+			      service->task->msg_ctx);
 	if (ctx == NULL) goto failed;
 
 	ctx->async.fn = init_domain_recv_dcs;
@@ -162,6 +168,8 @@ static void init_domain_recv_dcs(struct composite_context *ctx)
 		composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
 		return;
 	}
+
+	state->dcaddr = state->dcs[0].address;
 
 	state->conn.in.dest_host = state->dcs[0].address;
 	state->conn.in.port = 0;
@@ -193,12 +201,11 @@ static void init_domain_recv_dcip(struct composite_context *ctx)
 	struct init_domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);
-	const char *dcaddr;
 
-	state->ctx->status = resolve_name_recv(ctx, state, &dcaddr);
+	state->ctx->status = resolve_name_recv(ctx, state, &state->dcaddr);
 	if (!composite_is_ok(state->ctx)) return;
 
-	state->conn.in.dest_host = dcaddr;
+	state->conn.in.dest_host = state->dcaddr;
 	state->conn.in.port = 0;
 	state->conn.in.called_name = state->domain->dcname;
 	state->conn.in.service = "IPC$";
@@ -218,24 +225,24 @@ static void init_domain_recv_tree(struct composite_context *ctx)
 	struct init_domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);
-
 	state->ctx->status = smb_composite_connect_recv(ctx, state);
 	if (!composite_is_ok(state->ctx)) return;
 
-	if ((state->domain->schannel_creds == NULL) ||
-	    cli_credentials_is_anonymous(state->domain->schannel_creds)) {
-		/* No chance to open netlogon */
-		ctx = wb_connect_lsa_send(state->conn.out.tree, NULL);
+	if ((state->domain->schannel_creds != NULL) &&
+	    (!cli_credentials_is_anonymous(state->domain->schannel_creds)) &&
+	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
+	     (dom_sid_equal(state->domain->sid,
+			    state->service->primary_sid)))) {
+		ctx = wb_get_schannel_creds_send(state->domain->schannel_creds,
+						 state->conn.out.tree,
+						 state->ctx->event_ctx);
 		composite_continue(state->ctx, ctx,
-				   init_domain_recv_lsa, state);
+				   init_domain_recv_netlogoncreds, state);
 		return;
 	}
 
-	ctx = wb_get_schannel_creds_send(state->domain->schannel_creds,
-					 state->conn.out.tree,
-					 state->ctx->event_ctx);
-	composite_continue(state->ctx, ctx,
-			   init_domain_recv_netlogoncreds, state);
+	ctx = wb_connect_lsa_send(state->conn.out.tree, NULL);
+	composite_continue(state->ctx, ctx, init_domain_recv_lsa, state);
 }
 
 static void init_domain_recv_netlogoncreds(struct composite_context *ctx)
@@ -337,6 +344,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 		talloc_get_type(req->async.private, struct init_domain_state);
 	struct lsa_DomainInfo *dominfo;
 	struct composite_context *ctx;
+	const char *ldap_url;
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(state->ctx)) return;
@@ -363,6 +371,26 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 		return;
 	}
 
+	state->ldap_conn = ldap_new_connection(state, state->ctx->event_ctx);
+	composite_nomem(state->ldap_conn, state->ctx);
+
+	ldap_url = talloc_asprintf(state, "ldap://%s/", state->dcaddr);
+	composite_nomem(ldap_url, state->ctx);
+
+	ctx = ldap_connect_send(state->ldap_conn, ldap_url);
+	composite_continue(state->ctx, ctx, init_domain_recv_ldapconn, state);
+}
+
+static void init_domain_recv_ldapconn(struct composite_context *ctx)
+{
+	struct init_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_domain_state);
+
+	state->ctx->status = ldap_connect_recv(ctx);
+	DEBUG(0, ("ldap_connect returned %s\n",
+		  nt_errstr(state->ctx->status)));
+
 	state->samr_pipe = dcerpc_pipe_init(state, state->ctx->event_ctx);
 	if (composite_nomem(state->samr_pipe, state->ctx)) return;
 
@@ -370,8 +398,7 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
 				  state->domain->lsa_auth_type,
 				  state->domain->schannel_creds,
 				  state->domain->sid);
-	composite_continue(state->ctx, ctx,
-			   init_domain_recv_samr, state);
+	composite_continue(state->ctx, ctx, init_domain_recv_samr, state);
 }
 
 static void init_domain_recv_samr(struct composite_context *ctx)
@@ -431,11 +458,10 @@ NTSTATUS wb_init_domain_recv(struct composite_context *c)
 	return status;
 }
 
-NTSTATUS wb_init_domain(struct wbsrv_domain *domain,
-			struct event_context *event_ctx,
-			struct messaging_context *messaging_ctx)
+NTSTATUS wb_init_domain(struct wbsrv_service *service,
+			struct wbsrv_domain *domain)
 {
 	struct composite_context *c =
-		wb_init_domain_send(domain, event_ctx, messaging_ctx);
+		wb_init_domain_send(service, domain);
 	return wb_init_domain_recv(c);
 }

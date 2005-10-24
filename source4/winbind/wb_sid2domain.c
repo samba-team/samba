@@ -110,9 +110,7 @@ struct composite_context *wb_sid2domain_send(struct wbsrv_service *service,
 	if (state->result != NULL) {
 		result->status = NT_STATUS_OK;
 		if (!state->result->initialized) {
-			ctx = wb_init_domain_send(state->result,
-						  service->task->event_ctx,
-						  service->task->msg_ctx);
+			ctx = wb_init_domain_send(service, state->result);
 			if (ctx == NULL) goto failed;
 			ctx->async.fn = sid2domain_recv_init;
 			ctx->async.private_data = state;
@@ -186,14 +184,12 @@ static void sid2domain_recv_dcname(struct composite_context *ctx)
 	state->result->schannel_creds = cli_credentials_init(state->result);
 	if (composite_nomem(state->result->schannel_creds, state->ctx)) return;
 	cli_credentials_set_conf(state->result->schannel_creds);
-	cli_credentials_set_anonymous(state->result->schannel_creds);
+	cli_credentials_set_machine_account(state->result->schannel_creds);
 
 	talloc_steal(state->service, state->result);
 	DLIST_ADD(state->service->domains, state->result);
 
-	ctx = wb_init_domain_send(state->result,
-				  state->service->task->event_ctx,
-				  state->service->task->msg_ctx);
+	ctx = wb_init_domain_send(state->service, state->result);
 	composite_continue(state->ctx, ctx, sid2domain_recv_init, state);
 }
 
