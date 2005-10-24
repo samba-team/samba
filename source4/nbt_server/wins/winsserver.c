@@ -150,6 +150,12 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		goto done;
 	}
 
+	/* w2k3 refuses 0x1C names with out marked as group */
+	if (name->type == NBT_NAME_LOGON && !(nb_flags & NBT_NM_GROUP)) {
+		rcode = NBT_RCODE_RFS;
+		goto done;
+	}
+
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		rcode = wins_register_new(nbtsock, packet, src);
