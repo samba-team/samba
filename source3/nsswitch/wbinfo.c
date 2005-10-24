@@ -117,6 +117,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 	NSS_STATUS result;
 	int i;
 	
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
@@ -146,6 +147,7 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	int i;
 	const char *s;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
@@ -173,6 +175,7 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 	struct winbindd_response response;
 	NSS_STATUS result;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
