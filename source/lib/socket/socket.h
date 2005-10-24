@@ -140,6 +140,14 @@ BOOL socket_check_access(struct socket_context *sock,
 			 const char *service_name,
 			 const char **allow_list, const char **deny_list);
 
+struct composite_context *socket_connect_send(struct socket_context *sock,
+					      const char *my_address,
+					      int my_port,
+					      const char *server_address,
+					      int server_port,
+					      uint32_t flags,
+					      struct event_context *event_ctx);
+NTSTATUS socket_connect_recv(struct composite_context *ctx);
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   const char *my_address, int my_port,
 			   const char *server_address, int server_port,

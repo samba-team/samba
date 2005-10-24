@@ -686,8 +686,7 @@ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 
 	state->domain = service->domains;
 
-	ctx = wb_init_domain_send(state->domain, result->event_ctx, 
-				  call->wbconn->conn->msg_ctx);
+	ctx = wb_init_domain_send(service, state->domain);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = cmd_checkmachacc_recv_init;
 	ctx->async.private_data = state;

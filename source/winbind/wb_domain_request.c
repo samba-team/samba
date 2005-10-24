@@ -102,9 +102,7 @@ static void domain_request_recv_domain(struct composite_context *ctx)
 	state->domain->busy = True;
 
 	if (!state->domain->initialized) {
-		ctx = wb_init_domain_send(state->domain,
-					  state->service->task->event_ctx,
-					  state->service->task->msg_ctx);
+		ctx = wb_init_domain_send(state->service, state->domain);
 		composite_continue(state->ctx, ctx, domain_request_recv_init,
 				   state);
 		return;
