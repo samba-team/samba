@@ -484,6 +484,9 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	server_info->home_drive = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
+	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
+
 	server_info->last_logon = samdb_result_nttime(msgs[0], "lastLogon", 0);
 	server_info->last_logoff = samdb_result_nttime(msgs[0], "lastLogoff", 0);
 	server_info->acct_expiry = samdb_result_nttime(msgs[0], "accountExpires", 0);

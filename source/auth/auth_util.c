@@ -409,6 +409,9 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, struct auth_serversuppl
 	server_info->home_drive = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
+	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
+
 	server_info->last_logon = 0;
 	server_info->last_logoff = 0;
 	server_info->acct_expiry = 0;
@@ -475,6 +478,9 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied
 
 	server_info->home_drive = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+
+	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
 	server_info->last_logon = 0;
 	server_info->last_logoff = 0;
