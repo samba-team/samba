@@ -28,8 +28,9 @@ OBJ_FILES = \
 		smbcalls_creds.o \
 		smbcalls_samba3.o \
 		smbcalls_param.o \
+		ejsnet.o \
 		mprutil.o
-REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING LIBSAMBA3
+REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING LIBSAMBA3 LIBNET
 # End SUBSYSTEM SMBCALLS
 #######################
 

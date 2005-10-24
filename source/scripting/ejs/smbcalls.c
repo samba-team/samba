@@ -131,6 +131,7 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_samba3();
 	smb_setup_ejs_param();
 	smb_setup_ejs_datablob();
+	ejsnet_setup();
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
