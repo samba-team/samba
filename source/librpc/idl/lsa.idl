@@ -930,7 +930,16 @@
 		);
 
 	/* Function 0x4d */
-	NTSTATUS lsa_LSARLOOKUPNAMES4();
+	NTSTATUS lsa_LookupNames4(
+		[in,range(0,1000)] uint32 num_names,
+		[in,size_is(num_names)]  lsa_String names[],
+		[out,unique]        lsa_RefDomainList *domains,
+		[in,out] lsa_TransSidArray3 *sids,
+		[in]         uint16 level,
+		[in,out] uint32 *count,
+		[in]         uint32 unknown1,
+		[in]         uint32 unknown2
+		);
 
 	/* Function 0x4e */
 	NTSTATUS lsa_LSAROPENPOLICYSCE();

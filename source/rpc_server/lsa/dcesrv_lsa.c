@@ -2515,22 +2515,17 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 
 
 /*
-  lsa_LookupNames3
+  lsa_LookupNames4
 */
-static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call,
+static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call,
 				 TALLOC_CTX *mem_ctx,
-				 struct lsa_LookupNames3 *r)
+				 struct lsa_LookupNames4 *r)
 {
 	struct lsa_policy_state *state;
-	struct dcesrv_handle *h;
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
 	r->out.domains = NULL;
-
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
 
 	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
 	if (r->out.domains == NULL) {
@@ -2587,6 +2582,35 @@ static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].unknown     = 0;
 	}
 	
+	return status;
+}
+
+/* 
+  lsa_LookupNames3
+*/
+static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				 struct lsa_LookupNames3 *r)
+{
+	struct lsa_LookupNames4 r2;
+	NTSTATUS status;
+	struct dcesrv_handle *h;
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+	
+	r2.in.num_names = r->in.num_names;
+	r2.in.names = r->in.names;
+	r2.in.sids = r->in.sids;
+	r2.in.count = r->in.count;
+	r2.in.unknown1 = r->in.unknown1;
+	r2.in.unknown2 = r->in.unknown2;
+	
+	status = lsa_LookupNames4(dce_call, mem_ctx, &r2);
+	if (dce_call->fault_code != 0) {
+		return status;
+	}
+	
+	r->out.domains = r2.out.domains;
+	r->out.sids = r2.out.sids;
+	r->out.count = r2.out.count;
 	return status;
 }
 
@@ -2860,15 +2884,6 @@ static NTSTATUS lsa_CREDRRENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-
-/* 
-  lsa_LSARLOOKUPNAMES4 
-*/
-static NTSTATUS lsa_LSARLOOKUPNAMES4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LSARLOOKUPNAMES4 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
 
 
 /* 
