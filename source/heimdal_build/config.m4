@@ -212,16 +212,16 @@ SMB_BINARY_ENABLE(compile_et, NO)
 AC_PROG_LEX
 AC_PROG_YACC
 
-# to enable kerberos, unpack a heimdal source tree in the heimdal directory
-# of the samba source tree
-if test -d heimdal; then
-	AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
-	CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb -Iheimdal/kdc -Iheimdal/lib/roken -Iheimdal/lib/des"
-	HAVE_KRB5=YES
-	SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, YES)
-	SMB_BINARY_ENABLE(asn1_compile, YES)
-	SMB_BINARY_ENABLE(compile_et, YES)
-fi
+# Portions of heimdal kerberos are unpacked into source/heimdal
+# of the samba source tree.  
+
+# if we ever get to using a host kerberos, we might add conditionals here
+AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
+CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb -Iheimdal/kdc -Iheimdal/lib/roken -Iheimdal/lib/des"
+HAVE_KRB5=YES
+SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, YES)
+SMB_BINARY_ENABLE(asn1_compile, YES)
+SMB_BINARY_ENABLE(compile_et, YES)
 
 # only add getaddrinfo and related functions if needed
 SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, NO)
