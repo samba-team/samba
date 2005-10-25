@@ -227,7 +227,11 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 	
 	*drsuapi_binding = *samr_binding;
-	drsuapi_binding->transport = NCACN_IP_TCP;
+
+	/* DRSUAPI is only available on IP_TCP, and locally on NCALRPC */
+	if (drsuapi_binding->transport != NCALRPC) {
+		drsuapi_binding->transport = NCACN_IP_TCP;
+	}
 	drsuapi_binding->endpoint = NULL;
 	drsuapi_binding->flags |= DCERPC_SEAL;
 
@@ -655,51 +659,56 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	lsa_open_policy.out.handle = &lsa_p_handle;
 
 	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, tmp_ctx, &lsa_open_policy); 
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "lsa_OpenPolicy2 failed: %s",
-						      nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return status;
-	}
-	
-	/* Look to see if this is ADS (a fault indicates NT4 or Samba 3.0) */
 
-	lsa_query_info2.in.handle = &lsa_p_handle;
-	lsa_query_info2.in.level = LSA_POLICY_INFO_DNS;
-
-	status = dcerpc_lsa_QueryInfoPolicy2(lsa_pipe, tmp_ctx, 		
-					     &lsa_query_info2);
-	
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+	/* This now fails on ncacn_ip_tcp against Win2k3 SP1 */
+	if (NT_STATUS_IS_OK(status)) {
+		/* Look to see if this is ADS (a fault indicates NT4 or Samba 3.0) */
+		
+		lsa_query_info2.in.handle = &lsa_p_handle;
+		lsa_query_info2.in.level = LSA_POLICY_INFO_DNS;
+		
+		status = dcerpc_lsa_QueryInfoPolicy2(lsa_pipe, tmp_ctx, 		
+						     &lsa_query_info2);
+		
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			if (!NT_STATUS_IS_OK(status)) {
+				r->out.error_string = talloc_asprintf(mem_ctx,
+								      "lsa_QueryInfoPolicy2 failed: %s",
+								      nt_errstr(status));
+				talloc_free(tmp_ctx);
+				return status;
+			}
+			realm = lsa_query_info2.out.info->dns.dns_domain.string;
+		}
+		
+		/* Grab the domain SID (regardless of the result of the previous call */
+		
+		lsa_query_info.in.handle = &lsa_p_handle;
+		lsa_query_info.in.level = LSA_POLICY_INFO_DOMAIN;
+		
+		status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, tmp_ctx, 
+						    &lsa_query_info);
+		
 		if (!NT_STATUS_IS_OK(status)) {
 			r->out.error_string = talloc_asprintf(mem_ctx,
-							"lsa_QueryInfoPolicy2 failed: %s",
-							nt_errstr(status));
+							      "lsa_QueryInfoPolicy2 failed: %s",
+							      nt_errstr(status));
 			talloc_free(tmp_ctx);
 			return status;
 		}
-		realm = lsa_query_info2.out.info->dns.dns_domain.string;
+		
+		domain_sid = lsa_query_info.out.info->domain.sid;
+		domain_name = lsa_query_info.out.info->domain.name.string;
+	} else {
+		/* Cause the code further down to try this with just SAMR */
+		domain_sid = NULL;
+		if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
+			domain_name = talloc_strdup(tmp_ctx, r->in.domain_name);
+		} else {
+			/* Bugger, we just lost our way to automaticly find the domain name */
+			domain_name = talloc_strdup(tmp_ctx, lp_workgroup());
+		}
 	}
-
-	/* Grab the domain SID (regardless of the result of the previous call */
-
-	lsa_query_info.in.handle = &lsa_p_handle;
-	lsa_query_info.in.level = LSA_POLICY_INFO_DOMAIN;
-
-	status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, tmp_ctx, 
-					     &lsa_query_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"lsa_QueryInfoPolicy2 failed: %s",
-						nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return status;
-	}
-
-	domain_sid = lsa_query_info.out.info->domain.sid;
-	domain_name = lsa_query_info.out.info->domain.name.string;
 
 	DEBUG(0, ("Joining domain %s\n", domain_name));
 
@@ -766,16 +775,25 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	/* check result of samr_Connect */
-	if (!NT_STATUS_IS_OK(sc.out.result)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"samr_Connect failed: %s",
-						nt_errstr(sc.out.result));
-		status = sc.out.result;
-		talloc_free(tmp_ctx);
-		return status;
+	/* Perhaps we didn't get a SID above, because we are against ncacn_ip_tcp */
+	if (!domain_sid) {
+		struct lsa_String name;
+		struct samr_LookupDomain l;
+		name.string = domain_name;
+		l.in.connect_handle = &p_handle;
+		l.in.domain_name = &name;
+		
+		status = dcerpc_samr_LookupDomain(samr_pipe, tmp_ctx, &l);
+		if (!NT_STATUS_IS_OK(status)) {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "SAMR LookupDomain failed: %s",
+							      nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
+		}
+		domain_sid = l.out.sid;
 	}
-	
+
 	/* prepare samr_OpenDomain */
 	ZERO_STRUCT(d_handle);
 	od.in.connect_handle = &p_handle;

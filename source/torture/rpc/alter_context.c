@@ -31,7 +31,7 @@ BOOL torture_rpc_alter_context(void)
         struct dcerpc_pipe *p, *p2;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct policy_handle handle;
+	struct policy_handle *handle;
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;
 
@@ -70,8 +70,10 @@ BOOL torture_rpc_alter_context(void)
 	printf("testing DSSETUP pipe operations\n");
 	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
 
-	if (!test_lsa_Close(p, mem_ctx, &handle)) {
-		ret = False;
+	if (handle) {
+		if (!test_lsa_Close(p, mem_ctx, handle)) {
+			ret = False;
+		}
 	}
 
 	syntax = p->syntax;
@@ -94,8 +96,10 @@ BOOL torture_rpc_alter_context(void)
 		ret = False;
 	}
 
-	if (!test_lsa_Close(p, mem_ctx, &handle)) {
-		ret = False;
+	if (handle) {
+		if (!test_lsa_Close(p, mem_ctx, handle)) {
+			ret = False;
+		}
 	}
 
 	printf("testing DSSETUP pipe operations\n");
