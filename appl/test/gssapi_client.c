@@ -115,7 +115,9 @@ proto (int sock, const char *hostname, const char *service)
 
     name_token.length = asprintf ((char **)&name_token.value,
 				  "%s@%s", service, hostname);
-
+    if (name_token.length == -1)
+	errx(1, "malloc - out of memory");
+	
     maj_stat = gss_import_name (&min_stat,
 				&name_token,
 				GSS_C_NT_HOSTBASED_SERVICE,
