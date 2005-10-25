@@ -360,7 +360,7 @@ static BOOL torture_pac_saved_check(void)
 		tmp_blob.data = (uint8_t *)file_load(pac_file, &tmp_blob.length, mem_ctx);
 		printf("(saved test) Loaded pac of size %d from %s\n", tmp_blob.length, pac_file);
 	} else {
-		tmp_blob = data_blob(saved_pac, sizeof(saved_pac));
+		tmp_blob = data_blob_talloc(mem_ctx, saved_pac, sizeof(saved_pac));
 	}
 	
 	dump_data(10,tmp_blob.data,tmp_blob.length);
