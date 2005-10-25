@@ -68,9 +68,8 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *dom_sid;
+	DOM_SID *dom_sid = NULL;
 	struct uuid *dom_guid;
-	fstring sid_str;
 	char *domain_name = NULL;
 	char *dns_name = NULL;
 	char *forest_name = NULL;
@@ -114,12 +113,16 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 	
-	sid_to_string(sid_str, dom_sid);
-
-	if (domain_name)
-		printf("domain %s has sid %s\n", domain_name, sid_str);
-	else
+	if (domain_name) {
+		if (dom_sid == NULL) {
+			printf("got no sid for domain %s\n", domain_name);
+		} else {
+			printf("domain %s has sid %s\n", domain_name,
+			       sid_string_static(dom_sid));
+		}
+	} else {
 		printf("could not query info for level %d\n", info_class);
+	}
 
 	if (dns_name)
 		printf("domain dns name is %s\n", dns_name);
