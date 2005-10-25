@@ -2343,15 +2343,20 @@ static void free_service(service *pservice)
 
 static void free_service_byindex(int idx)
 {
-	if (!LP_SNUM_OK(idx)) {
+	if ( !LP_SNUM_OK(idx) ) 
 		return;
-	}
 
 	ServicePtrs[idx]->valid = False;
 	invalid_services[num_invalid_services++] = idx;
+
+	/* we have to cleanup the hash record */
+
 	if (ServicePtrs[idx]->szService) {
-		tdb_delete_bystring(ServiceHash, ServicePtrs[idx]->szService);
+		char *canon_name = canonicalize_servicename( ServicePtrs[idx]->szService );
+		
+		tdb_delete_bystring(ServiceHash, canon_name );
 	}
+
 	free_service(ServicePtrs[idx]);
 }
 
@@ -2452,6 +2457,15 @@ static char *canonicalize_servicename(const char *src)
 	static fstring canon; /* is fstring large enough? */
 	int dst_idx = 0;
 
+	if ( !src ) {
+		DEBUG(0,("canonicalize_servicename: NULL source name!\n"));
+		return NULL;
+	}
+
+	fstrcpy( canon, src );
+	strupper_m( canon );
+
+#if 0 
 	for (; *src != '\0'; src += next_mb_char_size(src)) {
 		if (isspace(*src)) {
 			continue;
@@ -2462,6 +2476,8 @@ static char *canonicalize_servicename(const char *src)
 		canon[dst_idx++] = toupper(*src);
 	}
 	canon[dst_idx] = '\0';
+#endif
+
 	return canon;
 }
 
@@ -2471,18 +2487,26 @@ static char *canonicalize_servicename(const char *src)
 
 static BOOL hash_a_service(const char *name, int idx)
 {
-	if (ServiceHash == NULL) {
+	char *canon_name;
+
+	if ( !ServiceHash ) {
 		DEBUG(10,("hash_a_service: creating tdb servicehash\n"));
 		ServiceHash = tdb_open("servicehash", 1031, TDB_INTERNAL, 
-                                        (O_RDWR|O_CREAT), 0644);
-		if (ServiceHash == NULL) {
+                                        (O_RDWR|O_CREAT), 0600);
+		if ( !ServiceHash ) {
 			DEBUG(0,("hash_a_service: open tdb servicehash failed!\n"));
 			return False;
 		}
 	}
+
 	DEBUG(10,("hash_a_service: hashing index %d for service name %s\n",
-			idx, name));
-        tdb_store_int32(ServiceHash, canonicalize_servicename(name), idx);
+		idx, name));
+
+	if ( !(canon_name = canonicalize_servicename( name )) )
+		return False;
+
+        tdb_store_int32(ServiceHash, canon_name, idx);
+
 	return True;
 }
 
@@ -2719,19 +2743,23 @@ Find a service by name. Otherwise works like get_service.
 static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 {
 	int iService = -1;
+	char *canon_name;
 
 	if (ServiceHash != NULL) {
-		iService = tdb_fetch_int32(ServiceHash, 
-				canonicalize_servicename(pszServiceName));
+		if ( !(canon_name = canonicalize_servicename( pszServiceName )) )
+			return -1;
+
+		iService = tdb_fetch_int32(ServiceHash, canon_name );
+
 		if (LP_SNUM_OK(iService)) {
 			if (pserviceDest != NULL) {
-				copy_service(pserviceDest, 
-						ServicePtrs[iService], NULL);
+				copy_service(pserviceDest, ServicePtrs[iService], NULL);
 			}
 		} else {
 			iService = -1;
 		}
 	}
+
 	return (iService);
 }
 
