@@ -24,7 +24,7 @@ function __winreg_open_hive(hive)
 {
 	var io = irpcObj();
 	io.input.system_name = NULL;
-	io.input.access_required = this.SEC_FLAG_MAXIMUM_ALLOWED;
+	io.input.access_mask = this.SEC_FLAG_MAXIMUM_ALLOWED;
 	var status;
 	if (hive == "HKLM") {
 		status = this.winreg_OpenHKLM(io);
@@ -248,7 +248,7 @@ function __winreg_create_key(path, key)
 	io.input.name = key;
 	io.input.class = NULL;
 	io.input.options = 0;
-	io.input.access_required = this.SEC_FLAG_MAXIMUM_ALLOWED;
+	io.input.access_mask = this.SEC_FLAG_MAXIMUM_ALLOWED;
 	io.input.secdesc = NULL;
 	io.input.action_taken = 0;	
 
