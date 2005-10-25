@@ -478,7 +478,7 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	state = h->data;
 
 	ret = gendb_search(state->sam_ldb, mem_ctx, state->builtin_dn, &res, attrs, 
-			   "privilege=*");
+			   "(|(privilege=*)(objectSid=*))");
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -2525,6 +2525,11 @@ static NTSTATUS lsa_LookupNames4(struct dcesrv_call_state *dce_call,
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
+	status = lsa_get_policy_state(dce_call, mem_ctx, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	r->out.domains = NULL;
 
 	r->out.domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
@@ -2602,6 +2607,9 @@ static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	r2.in.count = r->in.count;
 	r2.in.unknown1 = r->in.unknown1;
 	r2.in.unknown2 = r->in.unknown2;
+	r2.out.domains = r->out.domains;
+	r2.out.sids = r->out.sids;
+	r2.out.count = r->out.count;
 	
 	status = lsa_LookupNames4(dce_call, mem_ctx, &r2);
 	if (dce_call->fault_code != 0) {
