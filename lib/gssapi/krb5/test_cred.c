@@ -38,6 +38,38 @@
 RCSID("$Id$");
 
 static void
+gss_print_errors (int min_stat)
+{
+    OM_uint32 new_stat;
+    OM_uint32 msg_ctx = 0;
+    gss_buffer_desc status_string;
+    OM_uint32 ret;
+
+    do {
+	ret = gss_display_status (&new_stat,
+				  min_stat,
+				  GSS_C_MECH_CODE,
+				  GSS_C_NO_OID,
+				  &msg_ctx,
+				  &status_string);
+	fprintf (stderr, "%s\n", (char *)status_string.value);
+	gss_release_buffer (&new_stat, &status_string);
+    } while (!GSS_ERROR(ret) && msg_ctx != 0);
+}
+
+static void
+gss_err(int exitval, int status, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    vwarnx (fmt, args);
+    gss_print_errors (status);
+    va_end(args);
+    exit (exitval);
+}
+
+static void
 acquire_release_loop(gss_name_t name, int counter, gss_cred_usage_t usage)
 {
     OM_uint32 maj_stat, min_stat;
@@ -53,11 +85,13 @@ acquire_release_loop(gss_name_t name, int counter, gss_cred_usage_t usage)
 				    NULL,
 				    NULL);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "aquire %d %d != GSS_S_COMPLETE", i, (int)maj_stat);
+	    gss_err(1, min_stat, "aquire %d %d != GSS_S_COMPLETE", 
+		    i, (int)maj_stat);
 				    
 	maj_stat = gss_release_cred(&min_stat, &cred);
 	if (maj_stat != GSS_S_COMPLETE)
-	    errx(1, "release %d %d != GSS_S_COMPLETE", i, (int)maj_stat);
+	    gss_err(1, min_stat, "release %d %d != GSS_S_COMPLETE", 
+		    i, (int)maj_stat);
     }
 }
 
@@ -76,7 +110,7 @@ acquire_add_release_add(gss_name_t name, gss_cred_usage_t usage)
 				NULL,
 				NULL);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "aquire %d != GSS_S_COMPLETE", (int)maj_stat);
+	gss_err(1, min_stat, "aquire %d != GSS_S_COMPLETE", (int)maj_stat);
     
     maj_stat = gss_add_cred(&min_stat,
 			    cred,
@@ -91,11 +125,11 @@ acquire_add_release_add(gss_name_t name, gss_cred_usage_t usage)
 			    NULL);
 			    
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "add_cred %d != GSS_S_COMPLETE", (int)maj_stat);
+	gss_err(1, min_stat, "add_cred %d != GSS_S_COMPLETE", (int)maj_stat);
 
     maj_stat = gss_release_cred(&min_stat, &cred);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "release %d != GSS_S_COMPLETE", (int)maj_stat);
+	gss_err(1, min_stat, "release %d != GSS_S_COMPLETE", (int)maj_stat);
 
     maj_stat = gss_add_cred(&min_stat,
 			    cred2,
@@ -111,11 +145,11 @@ acquire_add_release_add(gss_name_t name, gss_cred_usage_t usage)
 
     maj_stat = gss_release_cred(&min_stat, &cred2);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "release 2 %d != GSS_S_COMPLETE", (int)maj_stat);
+	gss_err(1, min_stat, "release 2 %d != GSS_S_COMPLETE", (int)maj_stat);
 
     maj_stat = gss_release_cred(&min_stat, &cred3);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "release 2 %d != GSS_S_COMPLETE", (int)maj_stat);
+	gss_err(1, min_stat, "release 2 %d != GSS_S_COMPLETE", (int)maj_stat);
 }
 
 static int version_flag = 0;
