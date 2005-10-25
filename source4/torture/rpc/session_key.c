@@ -163,7 +163,7 @@ BOOL torture_rpc_lsa_secrets(void)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct policy_handle handle;
+	struct policy_handle *handle;
 
 	mem_ctx = talloc_init("torture_rpc_lsa_secrets");
 
@@ -181,7 +181,7 @@ BOOL torture_rpc_lsa_secrets(void)
 		ret = False;
 	}
 
-	if (!test_CreateSecret_basic(p, mem_ctx, &handle)) {
+	if (!test_CreateSecret_basic(p, mem_ctx, handle)) {
 		ret = False;
 	}
 

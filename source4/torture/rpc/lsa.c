@@ -58,6 +58,11 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	status = dcerpc_lsa_OpenPolicy(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			printf("not considering %s to be an error\n", nt_errstr(status));
+			return True;
+		}
 		printf("OpenPolicy failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -67,7 +72,7 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 
 BOOL test_lsa_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			  struct policy_handle *handle)
+			  struct policy_handle **handle)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -75,6 +80,11 @@ BOOL test_lsa_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	printf("\ntesting OpenPolicy2\n");
+
+	*handle = talloc(mem_ctx, struct policy_handle);
+	if (!*handle) {
+		return False;
+	}
 
 	qos.len = 0;
 	qos.impersonation_level = 2;
@@ -91,10 +101,17 @@ BOOL test_lsa_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.system_name = "\\";
 	r.in.attr = &attr;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.handle = handle;
+	r.out.handle = *handle;
 
 	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			printf("not considering %s to be an error\n", nt_errstr(status));
+			talloc_free(*handle);
+			*handle = NULL;
+			return True;
+		}
 		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -233,6 +250,48 @@ static BOOL test_LookupNames3(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_LookupNames4(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx, 
+			      struct lsa_TransNameArray2 *tnames)
+{
+	struct lsa_LookupNames4 r;
+	struct lsa_TransSidArray3 sids;
+	struct lsa_String *names;
+	uint32_t count = 0;
+	NTSTATUS status;
+	int i;
+
+	printf("\nTesting LookupNames4 with %d names\n", tnames->count);
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	names = talloc_array(mem_ctx, struct lsa_String, tnames->count);
+	for (i=0;i<tnames->count;i++) {
+		init_lsa_String(&names[i], tnames->names[i].name.string);
+	}
+
+	r.in.num_names = tnames->count;
+	r.in.names = names;
+	r.in.sids = &sids;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.in.unknown1 = 0;
+	r.in.unknown2 = 0;
+	r.out.count = &count;
+	r.out.sids = &sids;
+
+	status = dcerpc_lsa_LookupNames4(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		printf("LookupNames4 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	return True;
+}
+
 
 static BOOL test_LookupSids(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx, 
@@ -319,7 +378,6 @@ static BOOL test_LookupSids2(struct dcerpc_pipe *p,
 
 static BOOL test_LookupSids3(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx, 
-			    struct policy_handle *handle,
 			    struct lsa_SidArray *sids)
 {
 	struct lsa_LookupSids3 r;
@@ -355,28 +413,23 @@ static BOOL test_LookupSids3(struct dcerpc_pipe *p,
 
 	printf("\n");
 
-	if (!test_LookupNames3(p, mem_ctx, handle, &names)) {
+	if (!test_LookupNames4(p, mem_ctx, &names)) {
 		return False;
 	}
 
 	return True;
 }
 
-static BOOL test_many_LookupSids(struct dcerpc_pipe *p, 
-				 TALLOC_CTX *mem_ctx, 
-				 struct policy_handle *handle)
+BOOL test_many_LookupSids(struct dcerpc_pipe *p, 
+			  TALLOC_CTX *mem_ctx, 
+			  struct policy_handle *handle)
 {
-	struct lsa_LookupSids r;
-	struct lsa_TransNameArray names;
 	uint32_t count;
 	NTSTATUS status;
 	struct lsa_SidArray sids;
 	int i;
 
 	printf("\nTesting LookupSids with lots of SIDs\n");
-
-	names.count = 0;
-	names.names = NULL;
 
 	sids.num_sids = 100;
 
@@ -389,25 +442,68 @@ static BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 
 	count = sids.num_sids;
 
-	r.in.handle = handle;
-	r.in.sids = &sids;
-	r.in.names = &names;
-	r.in.level = 1;
-	r.in.count = &names.count;
-	r.out.count = &count;
-	r.out.names = &names;
+	if (handle) {
+		struct lsa_LookupSids r;
+		struct lsa_TransNameArray names;
+		names.count = 0;
+		names.names = NULL;
 
-	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-		printf("LookupSids failed - %s\n", nt_errstr(status));
-		return False;
+		r.in.handle = handle;
+		r.in.sids = &sids;
+		r.in.names = &names;
+		r.in.level = 1;
+		r.in.count = &names.count;
+		r.out.count = &count;
+		r.out.names = &names;
+		
+		status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+			printf("LookupSids failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		
+		printf("\n");
+		
+		if (!test_LookupNames(p, mem_ctx, handle, &names)) {
+			return False;
+		}
+	} else {
+		struct lsa_LookupSids3 r;
+		struct lsa_TransNameArray2 names;
+
+		names.count = 0;
+		names.names = NULL;
+
+		printf("\nTesting LookupSids3\n");
+		
+		r.in.sids = &sids;
+		r.in.names = &names;
+		r.in.level = 1;
+		r.in.count = &count;
+		r.in.unknown1 = 0;
+		r.in.unknown2 = 0;
+		r.out.count = &count;
+		r.out.names = &names;
+		
+		status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+			    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+				printf("not considering %s to be an error\n", nt_errstr(status));
+				return True;
+			}
+			printf("LookupSids3 failed - %s\n", 
+			       nt_errstr(status));
+			return False;
+		}
+		if (!test_LookupNames4(p, mem_ctx, &names)) {
+			return False;
+		}
 	}
 
 	printf("\n");
 
-	if (!test_LookupNames(p, mem_ctx, handle, &names)) {
-		return False;
-	}
+
 
 	return True;
 }
@@ -1097,7 +1193,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 			return False;
 		}
 
-		if (!test_LookupSids3(p, mem_ctx, handle, &sids1)) {
+		if (!test_LookupSids3(p, mem_ctx, &sids1)) {
 			return False;
 		}
 
@@ -1637,7 +1733,7 @@ BOOL torture_rpc_lsa(void)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct policy_handle handle;
+	struct policy_handle *handle;
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
 
@@ -1659,56 +1755,64 @@ BOOL torture_rpc_lsa(void)
 		ret = False;
 	}
 
-	if (!test_QueryDomainInfoPolicy(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_many_LookupSids(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateAccount(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateSecret(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateTrustedDomain(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_EnumAccounts(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_EnumPrivs(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryInfoPolicy(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryInfoPolicy2(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_GetUserName(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
+	if (handle) {
+		if (!test_QueryDomainInfoPolicy(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_CreateAccount(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_CreateSecret(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_CreateTrustedDomain(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_EnumAccounts(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_EnumPrivs(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_QueryInfoPolicy(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_QueryInfoPolicy2(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_GetUserName(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
 #if 0
-	if (!test_Delete(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+		if (!test_Delete(p, mem_ctx, handle)) {
+			ret = False;
+		}
 #endif
-	
-	if (!test_lsa_Close(p, mem_ctx, &handle)) {
-		ret = False;
+		
+		if (!test_many_LookupSids(p, mem_ctx, handle)) {
+			ret = False;
+		}
+		
+		if (!test_lsa_Close(p, mem_ctx, handle)) {
+			ret = False;
+		}
+	} else {
+		if (!test_many_LookupSids(p, mem_ctx, handle)) {
+			ret = False;
+		}
 	}
+		
 
+	
 	talloc_free(mem_ctx);
 
 	return ret;
