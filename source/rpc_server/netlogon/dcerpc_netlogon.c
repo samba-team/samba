@@ -351,7 +351,7 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 
 /* 
-  netr_LogonSamLogonWithFlags
+  netr_LogonSamLogonEx
 
   This version of the function allows other wrappers to say 'do not check the credentials'
 */
