@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: acquire_cred.c,v 1.22 2005/01/05 02:32:26 lukeh Exp $");
+RCSID("$Id: acquire_cred.c,v 1.23 2005/10/21 12:44:08 lha Exp $");
 
 static krb5_error_code
 get_keytab(krb5_context context, krb5_keytab *keytab)
@@ -83,9 +83,23 @@ static OM_uint32 acquire_initiator_cred
     ret = GSS_S_FAILURE;
     memset(&cred, 0, sizeof(cred));
 
+    /* If we have a preferred principal, lets try to find it in all
+     * caches, otherwise, fall back to default cache.  Ignore
+     * errors. */
+    if (ccache == NULL && handle->principal) {
+	kret = krb5_cc_cache_match (gssapi_krb5_context,
+				    handle->principal,
+				    NULL,
+				    &ccache);
+	if (kret) {
+	    ccache = NULL;
+	} else {
+	    made_ccache = TRUE;
+	}
+    }
     if (ccache == NULL) {
-	kret = krb5_cc_default(context, &ccache);
-        if (kret)
+	kret = krb5_cc_default(gssapi_krb5_context, &ccache);
+	if (kret)
 	    goto end;
         made_ccache = TRUE;
     }

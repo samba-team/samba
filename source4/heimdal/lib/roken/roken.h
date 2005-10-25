@@ -32,11 +32,14 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken.h.in,v 1.177 2005/08/05 09:06:29 lha Exp $ */
+/* $Id: roken.h.in,v 1.178 2005/09/28 03:04:54 lha Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 #include <string.h>
 #include <signal.h>
 
@@ -137,6 +140,12 @@ typedef int ssize_t;
 #include <roken-common.h>
 
 ROKEN_CPP_START
+
+#ifdef HAVE_UINTPTR_T
+#define rk_UNCONST(x) ((void *)(uintptr_t)(const void *)(x))
+#else
+#define rk_UNCONST(x) ((void *)(unsigned long)(const void *)(x))
+#endif
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid

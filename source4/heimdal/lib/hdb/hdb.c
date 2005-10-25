@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c,v 1.55 2005/08/19 13:07:03 lha Exp $");
+RCSID("$Id: hdb.c,v 1.56 2005/10/19 13:51:40 lha Exp $");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -170,7 +170,7 @@ hdb_check_db_format(krb5_context context, HDB *db)
 {
     krb5_data tag;
     krb5_data version;
-    krb5_error_code ret;
+    krb5_error_code ret, ret2;
     unsigned ver;
     int foo;
 
@@ -181,9 +181,11 @@ hdb_check_db_format(krb5_context context, HDB *db)
     tag.data = HDB_DB_FORMAT_ENTRY;
     tag.length = strlen(tag.data);
     ret = (*db->hdb__get)(context, db, tag, &version);
-    db->hdb_unlock(context, db);
+    ret2 = db->hdb_unlock(context, db);
     if(ret)
 	return ret;
+    if (ret2)
+	return ret2;
     foo = sscanf(version.data, "%u", &ver);
     krb5_data_free (&version);
     if (foo != 1)
@@ -196,7 +198,7 @@ hdb_check_db_format(krb5_context context, HDB *db)
 krb5_error_code
 hdb_init_db(krb5_context context, HDB *db)
 {
-    krb5_error_code ret;
+    krb5_error_code ret, ret2;
     krb5_data tag;
     krb5_data version;
     char ver[32];
@@ -215,10 +217,10 @@ hdb_init_db(krb5_context context, HDB *db)
     version.data = ver;
     version.length = strlen(version.data) + 1; /* zero terminated */
     ret = (*db->hdb__put)(context, db, 0, tag, version);
-    ret = db->hdb_unlock(context, db);
+    ret2 = db->hdb_unlock(context, db);
     if (ret)
 	return ret;
-    return ret;
+    return ret2;
 }
 
 #ifdef HAVE_DLOPEN

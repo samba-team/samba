@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.237 2005/07/09 14:47:21 lha Exp $ */
+/* $Id: krb5.h,v 1.239 2005/10/12 12:39:28 lha Exp $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -368,6 +368,8 @@ typedef struct krb5_creds {
     krb5_ticket_flags flags;
 } krb5_creds;
 
+typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
+
 typedef struct krb5_cc_ops {
     const char *prefix;
     const char* (*get_name)(krb5_context, krb5_ccache);
@@ -388,6 +390,9 @@ typedef struct krb5_cc_ops {
 				   krb5_flags, krb5_creds*);
     krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
     int (*get_version)(krb5_context, krb5_ccache);
+    krb5_error_code (*get_cache_first)(krb5_context, krb5_cc_cursor *);
+    krb5_error_code (*get_cache_next)(krb5_context, krb5_cc_cursor, krb5_ccache *);
+    krb5_error_code (*end_cache_get)(krb5_context, krb5_cc_cursor);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -659,7 +664,7 @@ typedef struct _krb5_get_init_creds_opt {
     krb5_preauthtype *preauth_list;
     int preauth_list_length;
     krb5_data *salt;
-    struct _krb5_get_init_creds_opt_private *private;
+    struct _krb5_get_init_creds_opt_private *opt_private;
 } krb5_get_init_creds_opt;
 
 #define KRB5_GET_INIT_CREDS_OPT_TKT_LIFE	0x0001

@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken-common.h,v 1.62 2005/09/01 18:47:35 lha Exp $ */
+/* $Id: roken-common.h,v 1.64 2005/09/28 03:05:58 lha Exp $ */
 
 #ifndef __ROKEN_COMMON_H__
 #define __ROKEN_COMMON_H__
@@ -258,8 +258,6 @@
 #define __attribute__(x)
 #endif
 
-#define rk_UNCONST(x) ((void *)(unsigned long)(const void *)(x))
-
 ROKEN_CPP_START
 
 #ifndef IRIX4 /* fix for compiler bug */
@@ -396,6 +394,8 @@ rk_strpoolprintf(struct rk_strpool *, const char *, ...)
 void ROKEN_LIB_FUNCTION
 rk_strpoolfree(struct rk_strpool *);
 
+void ROKEN_LIB_FUNCTION
+rk_dumpdata (const char *, const void *, size_t);
 
 ROKEN_CPP_END
 

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.62 2005/09/20 23:21:36 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.75 2005/10/21 17:18:38 lha Exp $");
 
 #ifdef PKINIT
 
@@ -57,11 +57,8 @@ RCSID("$Id: pkinit.c,v 1.62 2005/09/20 23:21:36 lha Exp $");
 
 enum {
     COMPAT_WIN2K = 1,
-    COMPAT_19 = 2,
-    COMPAT_27 = 3
+    COMPAT_IETF = 2
 };
-
-
 
 #define OPENSSL_ASN1_MALLOC_ENCODE(T, B, BL, S, R)			\
 {									\
@@ -107,11 +104,21 @@ struct krb5_pk_cert {
     X509 *cert;
 };
 
+struct krb5_dh_moduli {
+    char *name;
+    unsigned long bits;
+    heim_integer p;
+    heim_integer g;
+    heim_integer q;
+};
+
 struct krb5_pk_init_ctx_data {
     struct krb5_pk_identity *id;
     DH *dh;
+    krb5_data *clientDHNonce;
+    struct krb5_dh_moduli **m;
+    int require_binding;
 };
-
 
 void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free(struct krb5_pk_cert *cert)
@@ -133,6 +140,20 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
     BN_bn2bin(bn, integer->data);
     integer->negative = bn->neg;
     return 0;
+}
+
+static BIGNUM *
+integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
+{
+    BIGNUM *bn;
+
+    bn = BN_bin2bn((const unsigned char *)f->data, f->length, NULL);
+    if (bn == NULL) {
+	krb5_set_error_string(context, "PKINIT: parsing BN failed %s", field);
+	return NULL;
+    }
+    bn->neg = f->negative;
+    return bn;
 }
 
 /*
@@ -251,7 +272,8 @@ _krb5_pk_create_sign(krb5_context context,
     krb5_data buf;
     SignedData sd;
     EVP_MD_CTX md;
-    int len, i;
+    int i;
+    unsigned len;
     size_t size;
     
     X509_NAME *issuer_name;
@@ -444,74 +466,9 @@ _krb5_pk_create_sign(krb5_context context,
 }
 
 static krb5_error_code
-build_auth_pack_win2k(krb5_context context,
-                      unsigned nonce,
-                      const KDC_REQ_BODY *body,
-                      AuthPack_Win2k *a)
-{
-    krb5_error_code ret;
-    krb5_timestamp sec;
-    int32_t usec;
-
-    /* fill in PKAuthenticator */
-    ret = copy_PrincipalName(body->sname, &a->pkAuthenticator.kdcName);
-    if (ret)
-	return ret;
-    ret = copy_Realm(&body->realm, &a->pkAuthenticator.kdcRealm);
-    if (ret)
-	return ret;
-
-    krb5_us_timeofday(context, &sec, &usec);
-    a->pkAuthenticator.ctime = sec;
-    a->pkAuthenticator.cusec = usec;
-    a->pkAuthenticator.nonce = nonce;
-
-    return 0;
-}
-
-static krb5_error_code
-build_auth_pack_19(krb5_context context,
-		   unsigned nonce,
-		   const KDC_REQ_BODY *body,
-		   AuthPack_19 *a)
-{
-    size_t buf_size, len;
-    krb5_cksumtype cksum;
-    krb5_error_code ret;
-    void *buf;
-    krb5_timestamp sec;
-    int32_t usec;
-
-    krb5_clear_error_string(context);
-
-    /* XXX some PACKETCABLE needs implemetations need md5 */
-    cksum = CKSUMTYPE_RSA_MD5;
-
-    krb5_us_timeofday(context, &sec, &usec);
-    a->pkAuthenticator.ctime = sec;
-    a->pkAuthenticator.nonce = nonce;
-
-    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, body, &len, ret);
-    if (ret)
-	return ret;
-    if (buf_size != len)
-	krb5_abortx(context, "internal error in ASN.1 encoder");
-
-    ret = krb5_create_checksum(context,
-			       NULL,
-			       0,
-			       cksum,
-			       buf,
-			       len,
-			       &a->pkAuthenticator.paChecksum);
-    free(buf);
-
-    return ret;
-}
-
-static krb5_error_code
 build_auth_pack(krb5_context context,
 		unsigned nonce,
+		krb5_pk_init_ctx ctx,
 		DH *dh,
 		const KDC_REQ_BODY *body,
 		AuthPack *a)
@@ -545,17 +502,38 @@ build_auth_pack(krb5_context context,
 			       len,
 			       &checksum);
     free(buf);
-    if (ret == 0) {
-	ret = krb5_data_copy(&a->pkAuthenticator.paChecksum,
-			     checksum.checksum.data, checksum.checksum.length);
-	free_Checksum(&checksum);
-    }
+    if (ret) 
+	return ret;
 
-    if (ret == 0 && dh) {
+    ret = krb5_data_copy(&a->pkAuthenticator.paChecksum,
+			 checksum.checksum.data, checksum.checksum.length);
+    free_Checksum(&checksum);
+    if (ret)
+	return ret;
+
+    if (dh) {
 	DomainParameters dp;
 	heim_integer dh_pub_key;
 	krb5_data dhbuf;
 	size_t size;
+
+	if (1 /* support_cached_dh */) {
+	    ALLOC(a->clientDHNonce, 1);
+	    if (a->clientDHNonce == NULL) {
+		krb5_clear_error_string(context);
+		return ENOMEM;
+	    }
+	    ret = krb5_data_alloc(a->clientDHNonce, 40);
+	    if (a->clientDHNonce == NULL) {
+		krb5_clear_error_string(context);
+		return ENOMEM;
+	    }
+	    memset(a->clientDHNonce->data, 0, a->clientDHNonce->length);
+	    ret = krb5_copy_data(context, a->clientDHNonce, 
+				 &ctx->clientDHNonce);
+	    if (ret)
+		return ret;
+	}
 
 	ALLOC(a->clientPublicValue, 1);
 	if (a->clientPublicValue == NULL)
@@ -606,20 +584,11 @@ build_auth_pack(krb5_context context,
 	if (ret)
 	    return ret;
 
-	dhbuf.length = length_heim_integer(&dh_pub_key);
-	dhbuf.data = malloc(dhbuf.length);
-	if (dhbuf.data == NULL) {
-	    free_heim_integer(&dh_pub_key);
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    return ret;
-	}
-	ret = der_put_heim_integer((char *)dhbuf.data + dhbuf.length - 1,
-				   dhbuf.length, &dh_pub_key, &size);
+	ASN1_MALLOC_ENCODE(DHPublicKey, dhbuf.data, dhbuf.length,
+			   &dh_pub_key, &size, ret);
 	free_heim_integer(&dh_pub_key);
-	if (ret) {
-	    free(dhbuf.data);
+	if (ret)
 	    return ret;
-	}
 	if (size != dhbuf.length)
 	    krb5_abortx(context, "asn1 internal error");
 
@@ -663,26 +632,39 @@ pk_mk_padata(krb5_context context,
     struct ContentInfo content_info;
     krb5_error_code ret;
     const heim_oid *oid;
-    PA_PK_AS_REQ req;
     size_t size;
     krb5_data buf, sd_buf;
     int pa_type;
 
     krb5_data_zero(&buf);
     krb5_data_zero(&sd_buf);
-    memset(&req, 0, sizeof(req));
     memset(&content_info, 0, sizeof(content_info));
 
     if (compat == COMPAT_WIN2K) {
 	AuthPack_Win2k ap;
+	krb5_timestamp sec;
+	int32_t usec;
 
 	memset(&ap, 0, sizeof(ap));
 
-	ret = build_auth_pack_win2k(context, nonce, req_body, &ap);
+	/* fill in PKAuthenticator */
+	ret = copy_PrincipalName(req_body->sname, &ap.pkAuthenticator.kdcName);
 	if (ret) {
 	    free_AuthPack_Win2k(&ap);
+	    krb5_clear_error_string(context);
 	    goto out;
 	}
+	ret = copy_Realm(&req_body->realm, &ap.pkAuthenticator.kdcRealm);
+	if (ret) {
+	    free_AuthPack_Win2k(&ap);
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+
+	krb5_us_timeofday(context, &sec, &usec);
+	ap.pkAuthenticator.ctime = sec;
+	ap.pkAuthenticator.cusec = usec;
+	ap.pkAuthenticator.nonce = nonce;
 
 	ASN1_MALLOC_ENCODE(AuthPack_Win2k, buf.data, buf.length,
 			   &ap, &size, ret);
@@ -695,33 +677,12 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkcs7_data();
-    } else if (compat == COMPAT_19) {
-	AuthPack_19 ap;
-	
-	memset(&ap, 0, sizeof(ap));
-
-	ret = build_auth_pack_19(context, nonce, req_body, &ap);
-	if (ret) {
-	    free_AuthPack_19(&ap);
-	    goto out;
-	}
-
-	ASN1_MALLOC_ENCODE(AuthPack_19, buf.data, buf.length, &ap, &size, ret);
-	free_AuthPack_19(&ap);
-	if (ret) {
-	    krb5_set_error_string(context, "AuthPack_19: %d", ret);
-	    goto out;
-	}
-	if (buf.length != size)
-	    krb5_abortx(context, "internal ASN1 encoder error");
-
-	oid = oid_id_pkauthdata();
-    } else if (compat == COMPAT_27) {
+    } else if (compat == COMPAT_IETF) {
 	AuthPack ap;
 	
 	memset(&ap, 0, sizeof(ap));
 
-	ret = build_auth_pack(context, nonce, ctx->dh, req_body, &ap);
+	ret = build_auth_pack(context, nonce, ctx, ctx->dh, req_body, &ap);
 	if (ret) {
 	    free_AuthPack(&ap);
 	    goto out;
@@ -755,9 +716,12 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	goto out;
 
-    /* XXX tell the kdc what CAs the client is willing to accept */
-    req.trustedCertifiers = NULL;
-    req.kdcPkId = NULL;
+    ASN1_MALLOC_ENCODE(ContentInfo, buf.data, buf.length,
+		       &content_info, &size, ret);
+    if (ret)
+	goto out;
+    if (buf.length != size)
+	krb5_abortx(context, "Internal ASN1 encoder error");
 
     if (compat == COMPAT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
@@ -766,59 +730,28 @@ pk_mk_padata(krb5_context context,
 
 	memset(&winreq, 0, sizeof(winreq));
 
-	ASN1_MALLOC_ENCODE(ContentInfo,
-			   winreq.signed_auth_pack.data,
-			   winreq.signed_auth_pack.length,
-			   &content_info,
-			   &size,
-			   ret);
-	if (ret)
-	    goto out;
-	if (winreq.signed_auth_pack.length != size)
-	    krb5_abortx(context, "Internal ASN1 encoder error");
+	winreq.signed_auth_pack = buf;
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_Win2k, buf.data, buf.length,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
 
-    } else if (compat == COMPAT_19) {
-	PA_PK_AS_REQ_19 req_19;
-
-	pa_type = KRB5_PADATA_PK_AS_REQ_19;
-
-	memset(&req_19, 0, sizeof(req_19));
-
-	ret = copy_ContentInfo(&content_info, &req_19.signedAuthPack);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-	req_19.kdcCert = NULL;
-	req_19.trustedCertifiers = NULL;
-	req_19.encryptionCert = NULL;
-
-	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_19, buf.data, buf.length,
-			   &req_19, &size, ret);
-
-	free_PA_PK_AS_REQ_19(&req_19);
-
-    } else if (compat == COMPAT_27) {
+    } else if (compat == COMPAT_IETF) {
+	PA_PK_AS_REQ req;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
 
-	ASN1_MALLOC_ENCODE(ContentInfo,
-			   req.signedAuthPack.data,
-			   req.signedAuthPack.length,
-			   &content_info,
-			   &size,
-			   ret);
-	if (ret)
-	    goto out;
-	if (req.signedAuthPack.length != size)
-	    krb5_abortx(context, "Internal ASN1 encoder error");
+	memset(&req, 0, sizeof(req));
+	req.signedAuthPack = buf;	
+
+	/* XXX tell the kdc what CAs the client is willing to accept */
+	req.trustedCertifiers = NULL;
+	req.kdcPkId = NULL;
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
 			   &req, &size, ret);
+
+	free_PA_PK_AS_REQ(&req);
 
     } else
 	krb5_abortx(context, "internal pkinit error");
@@ -832,7 +765,11 @@ pk_mk_padata(krb5_context context,
     ret = krb5_padata_add(context, md, pa_type, buf.data, buf.length);
     if (ret)
 	free(buf.data);
- out:
+
+    if (ret == 0 && compat == COMPAT_WIN2K)
+	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
+
+out:
     free_ContentInfo(&content_info);
 
     return ret;
@@ -847,11 +784,7 @@ _krb5_pk_mk_padata(krb5_context context,
 		   METHOD_DATA *md)
 {
     krb5_pk_init_ctx ctx = c;
-    krb5_error_code ret;
-    size_t size;
-    krb5_data buf;
-    const char *provisioning_server;
-    int win2k_compat;
+    int win2k_compat, type;
 
     win2k_compat = krb5_config_get_bool_default(context, NULL,
 						FALSE,
@@ -863,45 +796,18 @@ _krb5_pk_mk_padata(krb5_context context,
 	win2k_compat = 1;
 
     if (win2k_compat) {
-	ret = pk_mk_padata(context, COMPAT_WIN2K, ctx, req_body, nonce, md);
-	if (ret)
-	    goto out;
-    } else {
-#if 0
-	ret = pk_mk_padata(context, COMPAT_19, ctx, req_body, nonce, md);
-	if (ret)
-	    goto out;
-#endif
-	ret = pk_mk_padata(context, COMPAT_27, ctx, req_body, nonce, md);
-	if (ret)
-	    goto out;
-    }
+	ctx->require_binding = 
+	    krb5_config_get_bool_default(context, NULL,
+					 FALSE,
+					 "realms",
+					 req_body->realm,
+					 "win2k_pkinit_require_binding",
+					 NULL);
+	type = COMPAT_WIN2K;
+    } else
+	type = COMPAT_IETF;
 
-    provisioning_server =
-	krb5_config_get_string(context, NULL,
-			       "realms",
-			       req_body->realm,
-			       "packet-cable-provisioning-server",
-			       NULL);
-
-    if (provisioning_server) {
-	/* PacketCable requires the PROV-SRV-LOCATION authenticator */
-	const PROV_SRV_LOCATION prov_server = rk_UNCONST(provisioning_server);
-
-	ASN1_MALLOC_ENCODE(PROV_SRV_LOCATION, buf.data, buf.length,
-			   &prov_server, &size, ret);
-	if (ret)
-	    goto out;
-	if (buf.length != size)
-	    krb5_abortx(context, "Internal ASN1 encoder error");
-
-	/* PacketCable uses -1 (application specific) as the auth data type */
-	ret = krb5_padata_add(context, md, -1, buf.data, buf.length);
-	if (ret)
-	    free(buf.data);
-    }
- out:
-    return ret;
+    return pk_mk_padata(context, type, ctx, req_body, nonce, md);
 }
 
 static krb5_boolean
@@ -997,7 +903,7 @@ pk_verify_chain_standard(krb5_context context,
     int i;
     int ret;
 
-    ret = KRB5_KDC_ERROR_CLIENT_NAME_MISMATCH;
+    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
     for (i = 0; i < sk_X509_num(chain); i++) {
 	cert = sk_X509_value(chain, i);
 	if (pk_peer_compare(context, client, cert) == TRUE) {
@@ -1037,7 +943,7 @@ pk_verify_chain_standard(krb5_context context,
 	ret = 0;
 	break;
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-	ret = KRB5_KDC_ERROR_CANT_VERIFY_CERTIFICATE;
+	ret = KRB5_KDC_ERR_CANT_VERIFY_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: failed to verify "
 			      "certificate: %s ",
 			      X509_verify_cert_error_string(store_ctx->error));
@@ -1048,7 +954,7 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_NOT_YET_VALID:
     case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
     case X509_V_ERR_CERT_HAS_EXPIRED:
-	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: invalid certificate: %s ",
 			      X509_verify_cert_error_string(store_ctx->error));
 	break;
@@ -1058,13 +964,13 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_CHAIN_TOO_LONG:
     case X509_V_ERR_PATH_LENGTH_EXCEEDED:
     case X509_V_ERR_INVALID_CA:
-	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: unknown CA or can't "
 			      "verify certificate: %s",
 			      X509_verify_cert_error_string(store_ctx->error));
 	break;
     default:
-	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE; /* XXX */
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE; /* XXX */
 	krb5_set_error_string(context, "PKINIT: failed to verify "
 			      "certificate: %s (%ld) ",
 			      X509_verify_cert_error_string(store_ctx->error),
@@ -1131,7 +1037,7 @@ cert_to_X509(krb5_context context, CertificateSet *set,
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_verify_sign(krb5_context context,
-		     const char *data,
+		     const void *data,
 		     size_t length,
 		     struct krb5_pk_identity *id,
 		     heim_oid *contentType,
@@ -1280,41 +1186,41 @@ _krb5_pk_verify_sign(krb5_context context,
 }
 
 static krb5_error_code
-get_reply_key_19(krb5_context context,
-		 const krb5_data *content,
-		 unsigned nonce,
-		 krb5_keyblock **key)
+get_reply_key_win(krb5_context context,
+		  const krb5_data *content,
+		  unsigned nonce,
+		  krb5_keyblock **key)
 {
-    ReplyKeyPack_19 key_pack;
+    ReplyKeyPack_Win2k key_pack;
     krb5_error_code ret;
     size_t size;
 
-    ret = decode_ReplyKeyPack_19(content->data,
-				 content->length,
-				 &key_pack,
-				 &size);
+    ret = decode_ReplyKeyPack_Win2k(content->data,
+				    content->length,
+				    &key_pack,
+				    &size);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT decoding reply key failed");
-	free_ReplyKeyPack_19(&key_pack);
+	free_ReplyKeyPack_Win2k(&key_pack);
 	return ret;
     }
      
     if (key_pack.nonce != nonce) {
 	krb5_set_error_string(context, "PKINIT enckey nonce is wrong");
-	free_ReplyKeyPack_19(&key_pack);
+	free_ReplyKeyPack_Win2k(&key_pack);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
 	krb5_set_error_string(context, "PKINIT failed allocating reply key");
-	free_ReplyKeyPack_19(&key_pack);
+	free_ReplyKeyPack_Win2k(&key_pack);
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
 
     ret = copy_EncryptionKey(&key_pack.replyKey, *key);
-    free_ReplyKeyPack_19(&key_pack);
+    free_ReplyKeyPack_Win2k(&key_pack);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT failed copying reply key");
 	free(*key);
@@ -1399,6 +1305,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
                       ContentInfo *rep,
 		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
+		      const krb5_krbhst_info *hi,
 	       	      unsigned nonce,
 		      const krb5_data *req_buffer,
 	       	      PA_DATA *pa,
@@ -1413,7 +1320,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     int length;
     size_t size;
     X509 *user_cert;
-    char *p;
+    void *p;
     krb5_boolean bret;
     krb5_data content;
     heim_oid contentType = { 0, NULL };
@@ -1481,13 +1388,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
 
   
-    /* verify content type */
-    if (type == COMPAT_WIN2K) {
-	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_data())) {
-	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	    goto out;
-	}
-    } else {
+    /* 
+     * Try to verify content type. We can't do this for W2K case
+     * because W2K/W2K3 sends id-pkcs7-data, but Windows Vista sends
+     * id-pkcs7-signedData to all versions, even W2K clients.
+     */
+
+    if (type != COMPAT_WIN2K) {
 	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_signedData())) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1563,7 +1470,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	}
 	p = ci.content->data;
 	length = ci.content->length;
-    } 
+    }
 
     ret = _krb5_pk_verify_sign(context, 
 			       p,
@@ -1582,6 +1489,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
+#if 0
     if (type == COMPAT_WIN2K) {
 	if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
@@ -1595,13 +1503,15 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
     }
+#endif
 
     switch(type) {
     case COMPAT_WIN2K:
-    case COMPAT_19:
-	ret = get_reply_key_19(context, &content, nonce, key);
+	ret = get_reply_key(context, &content, req_buffer, key);
+	if (ret != 0 && ctx->require_binding == 0)
+	    ret = get_reply_key_win(context, &content, nonce, key);
 	break;
-    case COMPAT_27:
+    case COMPAT_IETF:
 	ret = get_reply_key(context, &content, req_buffer, key);
 	break;
     }
@@ -1628,6 +1538,7 @@ pk_rd_pa_reply_dh(krb5_context context,
                   ContentInfo *rep,
 		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
+		  const krb5_krbhst_info *hi,
 		  const DHNonce *c_n,
 		  const DHNonce *k_n,
                   unsigned nonce,
@@ -1674,7 +1585,8 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
 
     if (heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
-	ret = KRB5KRB_AP_ERR_MSG_TYPE; /* XXX */
+	krb5_set_error_string(context, "pkinit - dh reply contains wrong oid");
+	ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	goto out;
     }
 
@@ -1799,6 +1711,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_rd_pa_reply(krb5_context context,
 		     void *c,
 		     krb5_enctype etype,
+		     const krb5_krbhst_info *hi,
 		     unsigned nonce,
 		     const krb5_data *req_buffer,
 		     PA_DATA *pa,
@@ -1836,8 +1749,10 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		free_PA_PK_AS_REP(&rep);
 		break;
 	    }
-	    ret = pk_rd_pa_reply_dh(context, &ci, ctx,
-				    etype, NULL, NULL, nonce, pa, key);
+	    ret = pk_rd_pa_reply_dh(context, &ci, ctx, etype, hi,
+				    ctx->clientDHNonce,
+				    rep.u.dhInfo.serverDHNonce,
+				    nonce, pa, key);
 	    free_ContentInfo(&ci);
 	    free_PA_PK_AS_REP(&rep);
 
@@ -1854,8 +1769,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				      "ContentInfo: %d", ret);
 		break;
 	    }
-	    ret = pk_rd_pa_reply_enckey(context, COMPAT_27, &ci, ctx,
-					etype, nonce, req_buffer, pa, key);
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_IETF, &ci, ctx,
+					etype, hi, nonce, req_buffer, pa, key);
 	    free_ContentInfo(&ci);
 	    return ret;
 	default:
@@ -1867,40 +1782,6 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	}
 	if (ret == 0)
 	    return ret;
-    }
-
-    /* Check for PK-INIT -19 */
-    {
-	PA_PK_AS_REP_19 rep19;
-
-	memset(&rep19, 0, sizeof(rep19));
-
-	ret = decode_PA_PK_AS_REP_19(pa->padata_value.data,
-				     pa->padata_value.length,
-				     &rep19,
-				     &size);
-	if (ret == 0) {
-	    switch(rep19.element) {
-	    case choice_PA_PK_AS_REP_19_dhSignedData:
-		ret = pk_rd_pa_reply_dh(context, &rep19.u.dhSignedData, ctx,
-					etype, NULL, NULL, 
-					nonce, pa, key);
-		break;
-	    case choice_PA_PK_AS_REP_19_encKeyPack:
-		ret = pk_rd_pa_reply_enckey(context, COMPAT_19,
-					    &rep19.u.encKeyPack, ctx,
-					    etype, nonce, NULL, pa, key);
-		break;
-	    default:
-		krb5_set_error_string(context, "PKINIT: -19 reply invalid "
-				      "content type");
-		ret = EINVAL;
-		break;
-	    }
-	    free_PA_PK_AS_REP_19(&rep19);
-	    if (ret == 0)
-		return 0;
-	}
     }
 
     /* Check for Windows encoding of the AS-REP pa data */ 
@@ -1918,6 +1799,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				  "pkinit reply %d", ret);
 	    return ret;
 	}
+
+	krb5_clear_error_string(context);
 	
 	switch (w2krep.element) {
 	case choice_PA_PK_AS_REP_Win2k_encKeyPack:
@@ -1934,7 +1817,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		return ret;
 	    }
 	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &ci, ctx,
-					etype, nonce, NULL, pa, key);
+					etype, hi, nonce, NULL, pa, key);
 	    free_ContentInfo(&ci);
 	    break;
 	default:
@@ -2546,6 +2429,264 @@ _krb5_pk_load_openssl_id(krb5_context context,
     return ret;
 }
 
+static int
+parse_integer(krb5_context context, char **p, const char *file, int lineno, 
+	      const char *name, heim_integer *integer)
+{
+    int ret;
+    char *p1;
+    p1 = strsep(p, " \t");
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "moduli file %s missing %s on line %d",
+			      file, name, lineno);
+	return EINVAL;
+    }
+    ret = der_parse_hex_heim_integer(p1, integer);
+    if (ret) {
+	krb5_set_error_string(context, "moduli file %s failed parsing %s "
+			      "on line %d",
+			      file, name, lineno);
+	return ret;
+    }
+
+    return 0;
+}
+
+krb5_error_code
+_krb5_parse_moduli_line(krb5_context context, 
+			const char *file,
+			int lineno,
+			char *p,
+			struct krb5_dh_moduli **m)
+{
+    struct krb5_dh_moduli *m1;
+    char *p1;
+    int ret;
+
+    *m = NULL;
+
+    m1 = calloc(1, sizeof(*m1));
+    if (m1 == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
+
+    while (isspace((unsigned char)*p))
+	p++;
+    if (*p  == '#')
+	return 0;
+    ret = EINVAL;
+
+    p1 = strsep(&p, " \t");
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "moduli file %s missing name "
+			      "on line %d", file, lineno);
+	goto out;
+    }
+    m1->name = strdup(p1);
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "malloc - out of memeory");
+	ret = ENOMEM;
+	goto out;
+    }
+
+    p1 = strsep(&p, " \t");
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "moduli file %s missing bits on line %d",
+			      file, lineno);
+	goto out;
+    }
+
+    m1->bits = atoi(p1);
+    if (m1->bits == 0) {
+	krb5_set_error_string(context, "moduli file %s have un-parsable "
+			      "bits on line %d", file, lineno);
+	goto out;
+    }
+	
+    ret = parse_integer(context, &p, file, lineno, "p", &m1->p);
+    if (ret)
+	goto out;
+    ret = parse_integer(context, &p, file, lineno, "g", &m1->g);
+    if (ret)
+	goto out;
+    ret = parse_integer(context, &p, file, lineno, "q", &m1->q);
+    if (ret)
+	goto out;
+
+    *m = m1;
+
+    return 0;
+out:
+    free(m1->name);
+    free_heim_integer(&m1->p);
+    free_heim_integer(&m1->g);
+    free_heim_integer(&m1->q);
+    free(m1);
+    return ret;
+}
+
+static void
+_krb5_free_moduli(struct krb5_dh_moduli **moduli)
+{
+    int i;
+    for (i = 0; moduli[i] != NULL; i++) {
+	free(moduli[i]->name);
+	free_heim_integer(&moduli[i]->p);
+	free_heim_integer(&moduli[i]->g);
+	free_heim_integer(&moduli[i]->q);
+	free(moduli[i]);
+    }
+    free(moduli);
+}
+
+static const char *default_moduli =
+    /* bits */
+    "RFC2412-MODP-group2 "
+    "1024 "
+    /* p */
+    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
+    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
+    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
+    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
+    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
+    "FFFFFFFF" "FFFFFFFF "
+    /* g */
+    "02 "
+    /* q */
+    "7FFFFFFF" "FFFFFFFF" "E487ED51" "10B4611A" "62633145" "C06E0E68"
+    "94812704" "4533E63A" "0105DF53" "1D89CD91" "28A5043C" "C71A026E"
+    "F7CA8CD9" "E69D218D" "98158536" "F92F8A1B" "A7F09AB6" "B6A8E122"
+    "F242DABB" "312F3F63" "7A262174" "D31BF6B5" "85FFAE5B" "7A035BF6"
+    "F71C35FD" "AD44CFD2" "D74F9208" "BE258FF3" "24943328" "F67329C0"
+    "FFFFFFFF" "FFFFFFFF";
+
+
+krb5_error_code
+_krb5_parse_moduli(krb5_context context, const char *file,
+		   struct krb5_dh_moduli ***moduli)
+{
+    /* comment bits P G Q */
+    krb5_error_code ret;
+    struct krb5_dh_moduli **m = NULL, **m2;
+    char buf[4096];
+    FILE *f;
+    int lineno = 0, n = 0;
+
+    *moduli = NULL;
+
+    m = calloc(1, sizeof(m[0]) * 2);
+    if (m == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    strlcpy(buf, default_moduli, sizeof(buf));
+    ret = _krb5_parse_moduli_line(context, "builtin", 1, buf,  &m[0]);
+    if (ret) {
+	_krb5_free_moduli(m);
+	return ret;
+    }
+    n = 1;
+
+    if (file == NULL) {
+	*moduli = m;
+	return 0;
+    }
+
+    f = fopen(file, "r");
+    if (f == NULL) {
+	*moduli = m;
+	return 0;
+    }
+
+    while(fgets(buf, sizeof(buf), f) != NULL) {
+	struct krb5_dh_moduli *element;
+
+	buf[strcspn(buf, "\n")] = '\0';
+	lineno++;
+
+	m2 = realloc(m, (n + 2) * sizeof(m[0]));
+	if (m2 == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    _krb5_free_moduli(m);
+	    return ENOMEM;
+	}
+	m = m2;
+	
+	m[n] = NULL;
+
+	ret = _krb5_parse_moduli_line(context, file, lineno, buf,  &element);
+	if (ret) {
+	    _krb5_free_moduli(m);
+	    return ret;
+	}
+	if (element == NULL)
+	    continue;
+
+	m[n] = element;
+	m[n + 1] = NULL;
+	n++;
+    }
+    *moduli = m;
+    return 0;
+}
+
+krb5_error_code
+_krb5_dh_group_ok(krb5_context context, unsigned long bits,
+		  heim_integer *p, heim_integer *g, heim_integer *q,
+		  struct krb5_dh_moduli **moduli,
+		  char **name)
+{
+    int i;
+
+    if (name)
+	*name = NULL;
+
+    for (i = 0; moduli[i] != NULL; i++) {
+	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
+	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
+	    heim_integer_cmp(&moduli[i]->q, q) == 0)
+	{
+	    if (bits && bits > moduli[i]->bits) {
+		krb5_set_error_string(context, "PKINIT: DH group parameter %s "
+				      "no accepted, not enough bits generated",
+				      moduli[i]->name);
+		return KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
+	    }
+	    if (name)
+		*name = strdup(moduli[i]->name);
+	    return 0;
+	}
+    }
+    krb5_set_error_string(context, "PKINIT: DH group parameter no ok");
+    return KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
+}
+
+static krb5_error_code
+select_dh_group(krb5_context context, DH *dh, unsigned long bits, 
+		struct krb5_dh_moduli **moduli)
+{
+    const struct krb5_dh_moduli *m;
+
+    m = moduli[1]; /* XXX */
+    if (m == NULL)
+	m = moduli[0]; /* XXX */
+
+    dh->p = integer_to_BN(context, "p", &m->p);
+    if (dh->p == NULL)
+	return ENOMEM;
+    dh->g = integer_to_BN(context, "g", &m->g);
+    if (dh->g == NULL)
+	return ENOMEM;
+    dh->q = integer_to_BN(context, "q", &m->q);
+    if (dh->q == NULL)
+	return ENOMEM;
+
+    return 0;
+}
+
+
 #endif /* PKINIT */
 
 void KRB5_LIB_FUNCTION
@@ -2554,9 +2695,9 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 #ifdef PKINIT
     krb5_pk_init_ctx ctx;
 
-    if (opt->private == NULL || opt->private->pk_init_ctx == NULL)
+    if (opt->opt_private == NULL || opt->opt_private->pk_init_ctx == NULL)
 	return;
-    ctx = opt->private->pk_init_ctx;
+    ctx = opt->opt_private->pk_init_ctx;
     if (ctx->dh)
 	DH_free(ctx->dh);
 	ctx->dh = NULL;
@@ -2572,10 +2713,16 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	    ENGINE_free(ctx->id->engine);
 		ctx->id->engine = NULL;
 	}
+	if (ctx->clientDHNonce) {
+	    krb5_free_data(NULL, ctx->clientDHNonce);
+	    ctx->clientDHNonce = NULL;
+	}
+	if (ctx->m)
+	    _krb5_free_moduli(ctx->m);
 	free(ctx->id);
 	ctx->id = NULL;
     }
-    opt->private->pk_init_ctx = NULL;
+    opt->opt_private->pk_init_ctx = NULL;
 #endif
 }
     
@@ -2593,79 +2740,73 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 #ifdef PKINIT
     krb5_error_code ret;
 
-    if (opt->private == NULL) {
+    if (opt->opt_private == NULL) {
 	krb5_set_error_string(context, "PKINIT: on non extendable opt");
 	return EINVAL;
     }
 
-    opt->private->pk_init_ctx = malloc(sizeof(*opt->private->pk_init_ctx));
-    if (opt->private->pk_init_ctx == NULL) {
+    opt->opt_private->pk_init_ctx = 
+	calloc(1, sizeof(*opt->opt_private->pk_init_ctx));
+    if (opt->opt_private->pk_init_ctx == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
-    opt->private->pk_init_ctx->dh = NULL;
-    opt->private->pk_init_ctx->id = NULL;
+    opt->opt_private->pk_init_ctx->dh = NULL;
+    opt->opt_private->pk_init_ctx->id = NULL;
+    opt->opt_private->pk_init_ctx->clientDHNonce = NULL;
+    opt->opt_private->pk_init_ctx->require_binding = 0;
+
     ret = _krb5_pk_load_openssl_id(context,
-				   &opt->private->pk_init_ctx->id,
+				   &opt->opt_private->pk_init_ctx->id,
 				   user_id,
 				   x509_anchors,
 				   prompter,
 				   prompter_data,
 				   password);
     if (ret) {
-	free(opt->private->pk_init_ctx);
-	opt->private->pk_init_ctx = NULL;
+	free(opt->opt_private->pk_init_ctx);
+	opt->opt_private->pk_init_ctx = NULL;
+	return ret;
     }
 
-    /* XXX */
-    if (ret == 0 && (flags & 1) && !(flags & 2)) { 
-	DH *dh;
-	const char *P =
-            "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
-            "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
-            "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
-            "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
-            "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
-            "FFFFFFFF" "FFFFFFFF";
-	const char *G = "2";
-	const char *Q =
-	    "7FFFFFFF" "FFFFFFFF" "E487ED51" "10B4611A" "62633145" "C06E0E68"
-	    "94812704" "4533E63A" "0105DF53" "1D89CD91" "28A5043C" "C71A026E"
-	    "F7CA8CD9" "E69D218D" "98158536" "F92F8A1B" "A7F09AB6" "B6A8E122"
-	    "F242DABB" "312F3F63" "7A262174" "D31BF6B5" "85FFAE5B" "7A035BF6"
-	    "F71C35FD" "AD44CFD2" "D74F9208" "BE258FF3" "24943328" "F67329C0"
-	    "FFFFFFFF" "FFFFFFFF";
+    if ((flags & 2) == 0) {
+	const char *moduli_file;
 
-	dh = DH_new();
-	if (dh == NULL) {
+	moduli_file = krb5_config_get_string_default(context, NULL,
+						     MODULI_FILE,
+						     "libdefaults",
+						     "moduli",
+						     NULL);
+
+	ret = _krb5_parse_moduli(context, moduli_file, 
+				 &opt->opt_private->pk_init_ctx->m);
+	if (ret) {
+	    _krb5_get_init_creds_opt_free_pkinit(opt);
+	    return ret;
+	}
+	
+	opt->opt_private->pk_init_ctx->dh = DH_new();
+	if (opt->opt_private->pk_init_ctx->dh == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
-	opt->private->pk_init_ctx->dh = dh;
-	if (!BN_hex2bn(&dh->p, P)) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+
+	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->dh, 0, 
+			      opt->opt_private->pk_init_ctx->m);
+	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ENOMEM;
+	    return ret;
 	}
-	if (!BN_hex2bn(&dh->g, G)) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ENOMEM;
-	}
-	if (!BN_hex2bn(&dh->q, Q)) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ENOMEM;
-	}
-	/* XXX generate a new key for each request ? */
-	if (DH_generate_key(dh) != 1) {
+
+	if (DH_generate_key(opt->opt_private->pk_init_ctx->dh) != 1) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
     }
-    return ret;
+
+    return 0;
 #else
     krb5_set_error_string(context, "no support for PKINIT compiled in");
     return EINVAL;

@@ -31,6 +31,12 @@ _krb5_aes_cts_encrypt (
 	unsigned char */*ivec*/,
 	const int /*encryptp*/);
 
+krb5_error_code
+_krb5_cc_allocate (
+	krb5_context /*context*/,
+	const krb5_cc_ops */*ops*/,
+	krb5_ccache */*id*/);
+
 void
 _krb5_crc_init_table (void);
 
@@ -39,6 +45,16 @@ _krb5_crc_update (
 	const char */*p*/,
 	size_t /*len*/,
 	u_int32_t /*res*/);
+
+krb5_error_code
+_krb5_dh_group_ok (
+	krb5_context /*context*/,
+	unsigned long /*bits*/,
+	heim_integer */*p*/,
+	heim_integer */*g*/,
+	heim_integer */*q*/,
+	struct krb5_dh_moduli **/*moduli*/,
+	char **/*name*/);
 
 krb5_error_code
 _krb5_expand_default_cc_name (
@@ -60,6 +76,9 @@ _krb5_extract_ticket (
 	krb5_boolean /*ignore_cname*/,
 	krb5_decrypt_proc /*decrypt_proc*/,
 	krb5_const_pointer /*decryptarg*/);
+
+void
+_krb5_free_krbhst_info (krb5_krbhst_info */*hi*/);
 
 krb5_error_code
 _krb5_get_default_principal_local (
@@ -234,6 +253,12 @@ _krb5_krb_time_to_life (
 	time_t /*end*/);
 
 krb5_error_code
+_krb5_krbhost_info_move (
+	krb5_context /*context*/,
+	krb5_krbhst_info */*from*/,
+	krb5_krbhst_info **/*to*/);
+
+krb5_error_code
 _krb5_mk_req_internal (
 	krb5_context /*context*/,
 	krb5_auth_context */*auth_context*/,
@@ -256,6 +281,20 @@ _krb5_oid_to_enctype (
 	krb5_context /*context*/,
 	const heim_oid */*oid*/,
 	krb5_enctype */*etype*/);
+
+krb5_error_code
+_krb5_parse_moduli (
+	krb5_context /*context*/,
+	const char */*file*/,
+	struct krb5_dh_moduli ***/*moduli*/);
+
+krb5_error_code
+_krb5_parse_moduli_line (
+	krb5_context /*context*/,
+	const char */*file*/,
+	int /*lineno*/,
+	char */*p*/,
+	struct krb5_dh_moduli **/*m*/);
 
 void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free (struct krb5_pk_cert */*cert*/);
@@ -308,6 +347,7 @@ _krb5_pk_rd_pa_reply (
 	krb5_context /*context*/,
 	void */*c*/,
 	krb5_enctype /*etype*/,
+	const krb5_krbhst_info */*hi*/,
 	unsigned /*nonce*/,
 	const krb5_data */*req_buffer*/,
 	PA_DATA */*pa*/,
@@ -316,7 +356,7 @@ _krb5_pk_rd_pa_reply (
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_verify_sign (
 	krb5_context /*context*/,
-	const char */*data*/,
+	const void */*data*/,
 	size_t /*length*/,
 	struct krb5_pk_identity */*id*/,
 	heim_oid */*contentType*/,
