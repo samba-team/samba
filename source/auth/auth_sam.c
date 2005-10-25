@@ -546,8 +546,8 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principa
 	}
 	
 	/* grab domain info */
-	ret_domain = gendb_search_dn(sam_ctx, tmp_ctx,
-				     domain_dn, &msgs_domain, domain_attrs);
+	ret_domain = gendb_search(sam_ctx, tmp_ctx, NULL, &msgs_domain, domain_attrs,
+				  "(ncName=%s)", ldb_dn_linearize(tmp_ctx, domain_dn));
 
 	if (ret_domain != 1) {
 		talloc_free(tmp_ctx);
