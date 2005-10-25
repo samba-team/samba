@@ -337,9 +337,6 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 
 	p->conn = conn;
 
-	/* Ensure the connection isn't idled whilst this pipe is open. */
-	p->conn->num_files_open++;
-
 	p->vuid  = vuid;
 
 	p->endian = RPC_LITTLE_ENDIAN;
@@ -1155,8 +1152,6 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	SAFE_FREE(p->pipe_user.groups);
 
 	DLIST_REMOVE(InternalPipes, p);
-
-	p->conn->num_files_open--;
 
 	ZERO_STRUCTP(p);
 
