@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/cmdline/popt_common.h"
 
-#define TEST_MACHINE_NAME "schanneltest"
+#define TEST_MACHINE_NAME "schannel"
 
 /*
   do some samr ops using the schannel connection
@@ -52,19 +52,24 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	status = dcerpc_samr_Connect(p, mem_ctx, &connect);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connect failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	opendom.in.connect_handle = &handle;
-	opendom.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	opendom.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
-	opendom.out.domain_handle = &domain_handle;
-
-	status = dcerpc_samr_OpenDomain(p, mem_ctx, &opendom);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return False;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("Connect failed (expected, schannel mapped to anonymous): %s\n",
+			       nt_errstr(status));
+		} else {
+			printf("Connect failed - %s\n", nt_errstr(status));
+			return False;
+		}
+	} else {
+		opendom.in.connect_handle = &handle;
+		opendom.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		opendom.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
+		opendom.out.domain_handle = &domain_handle;
+		
+		status = dcerpc_samr_OpenDomain(p, mem_ctx, &opendom);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("OpenDomain failed - %s\n", nt_errstr(status));
+			return False;
+		}
 	}
 
 	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
@@ -73,8 +78,10 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=0;i<5;i++) {
 		status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetDomPwInfo op %d failed - %s\n", i, nt_errstr(status));
-			return False;
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+				printf("GetDomPwInfo op %d failed - %s\n", i, nt_errstr(status));
+				return False;
+			}
 		}
 	}
 
@@ -91,7 +98,6 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	struct lsa_StringPointer authority_name_p;
-	int i;
 
 	printf("\nTesting GetUserName\n");
 
@@ -100,33 +106,37 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.authority_name = &authority_name_p;
 	authority_name_p.string = NULL;
 
-	/* do several ops to test credential chaining */
-	for (i=0;i<5;i++) {
-		status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
-		
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("GetUserName failed - %s\n", nt_errstr(status));
+	/* do several ops to test credential chaining and various operations */
+	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
+	
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+		printf("not considering %s to be an error\n", nt_errstr(status));
+	} else if (!NT_STATUS_IS_OK(status)) {
+		printf("GetUserName failed - %s\n", nt_errstr(status));
+		return False;
+	} else {
+		if (!r.out.account_name) {
 			return False;
-		} else {
-			if (!r.out.account_name) {
-				return False;
-			}
-
-			if (strcmp(r.out.account_name->string, "ANONYMOUS LOGON") != 0) {
-				printf("GetUserName returned wrong user: %s, expected %s\n",
-				       r.out.account_name->string, "ANONYMOUS LOGON");
-				return False;
-			}
-			if (!r.out.authority_name || !r.out.authority_name->string) {
-				return False;
-			}
-
-			if (strcmp(r.out.authority_name->string->string, "NT AUTHORITY") != 0) {
-				printf("GetUserName returned wrong user: %s, expected %s\n",
-				       r.out.authority_name->string->string, "NT AUTHORITY");
-				return False;
-			}
 		}
+		
+		if (strcmp(r.out.account_name->string, "ANONYMOUS LOGON") != 0) {
+			printf("GetUserName returned wrong user: %s, expected %s\n",
+			       r.out.account_name->string, "ANONYMOUS LOGON");
+			return False;
+		}
+		if (!r.out.authority_name || !r.out.authority_name->string) {
+			return False;
+		}
+		
+		if (strcmp(r.out.authority_name->string->string, "NT AUTHORITY") != 0) {
+			printf("GetUserName returned wrong user: %s, expected %s\n",
+			       r.out.authority_name->string->string, "NT AUTHORITY");
+			return False;
+		}
+	}
+	if (!test_many_LookupSids(p, mem_ctx, NULL)) {
+		printf("LsaLookupSids3 failed!\n");
+		return False;
 	}
 
 	return ret;
@@ -137,6 +147,7 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
   try a netlogon SamLogon
 */
 static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct cli_credentials *credentials, 
 			      struct creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -148,12 +159,12 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int i;
 	BOOL ret = True;
 
-	ninfo.identity_info.domain_name.string = lp_workgroup();
+	ninfo.identity_info.domain_name.string = cli_credentials_get_domain(cmdline_credentials);
 	ninfo.identity_info.parameter_control = 0;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
 	ninfo.identity_info.account_name.string = username;
-	ninfo.identity_info.workstation.string = TEST_MACHINE_NAME;
+	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 	generate_random_buffer(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 	ninfo.nt.length = 24;
@@ -165,7 +176,7 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = TEST_MACHINE_NAME;
+	r.in.workstation = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;
@@ -195,7 +206,7 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
  */
 static BOOL test_schannel(TALLOC_CTX *mem_ctx, 
 			  uint16_t acct_flags, uint32_t dcerpc_flags,
-			  uint32_t schannel_type)
+			  int i)
 {
 	BOOL ret = True;
 
@@ -211,7 +222,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel context");
 
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, 
+	join_ctx = torture_join_domain(talloc_asprintf(mem_ctx, "%s%d", TEST_MACHINE_NAME, i), 
 				       acct_flags, &credentials);
 	if (!join_ctx) {
 		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
@@ -241,11 +252,6 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	if (!test_samr_ops(p, test_ctx)) {
 		printf("Failed to process schannel secured SAMR ops\n");
 		ret = False;
-	}
-
-	status = dcerpc_schannel_creds(p->conn->security_state.generic_state, test_ctx, &creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
 	}
 
 	/* Also test that when we connect to the netlogon pipe, that
@@ -282,7 +288,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	}
 
 	/* do a couple of logins */
-	if (!test_netlogon_ops(p_netlogon, test_ctx, creds)) {
+	if (!test_netlogon_ops(p_netlogon, test_ctx, credentials, creds)) {
 		printf("Failed to process schannel secured NETLOGON ops\n");
 		ret = False;
 	}
@@ -336,16 +342,15 @@ BOOL torture_rpc_schannel(void)
 	struct {
 		uint16_t acct_flags;
 		uint32_t dcerpc_flags;
-		uint32_t schannel_type;
 	} tests[] = {
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN,                       3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL,                       3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128, 3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128, 3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN,                               3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL,                               3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128,         3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128,         3 }
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN},
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL},
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128},
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128 }
 	};
 	int i;
 
@@ -353,9 +358,10 @@ BOOL torture_rpc_schannel(void)
 
 	for (i=0;i<ARRAY_SIZE(tests);i++) {
 		if (!test_schannel(mem_ctx, 
-				   tests[i].acct_flags, tests[i].dcerpc_flags, tests[i].schannel_type)) {
-			printf("Failed with acct_flags=0x%x dcerpc_flags=0x%x schannel_type=%d\n",
-			       tests[i].acct_flags, tests[i].dcerpc_flags, tests[i].schannel_type);
+				   tests[i].acct_flags, tests[i].dcerpc_flags,
+				   i)) {
+			printf("Failed with acct_flags=0x%x dcerpc_flags=0x%x \n",
+			       tests[i].acct_flags, tests[i].dcerpc_flags);
 			ret = False;
 			break;
 		}
