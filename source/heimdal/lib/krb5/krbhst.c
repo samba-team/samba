@@ -34,7 +34,7 @@
 #include "krb5_locl.h"
 #include <resolve.h>
 
-RCSID("$Id: krbhst.c,v 1.52 2005/06/17 04:23:26 lha Exp $");
+RCSID("$Id: krbhst.c,v 1.53 2005/10/08 15:40:50 lha Exp $");
 
 static int
 string_to_proto(const char *string)
@@ -228,13 +228,36 @@ parse_hostspec(krb5_context context, struct krb5_krbhst_data *kd,
     return hi;
 }
 
-static void
-free_krbhst_info(krb5_krbhst_info *hi)
+void
+_krb5_free_krbhst_info(krb5_krbhst_info *hi)
 {
     if (hi->ai != NULL)
 	freeaddrinfo(hi->ai);
     free(hi);
 }
+
+krb5_error_code
+_krb5_krbhost_info_move(krb5_context context,
+			krb5_krbhst_info *from,
+			krb5_krbhst_info **to)
+{
+    /* trailing NUL is included in structure */
+    *to = calloc(1, sizeof(**to) + strlen(from->hostname)); 
+    if(*to == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
+
+    (*to)->proto = from->proto;
+    (*to)->port = from->port;
+    (*to)->def_port = from->def_port;
+    (*to)->ai = from->ai;
+    from->ai = NULL;
+    (*to)->next = NULL;
+    strcpy((*to)->hostname, from->hostname);
+    return 0;
+}
+
 
 static void
 append_host_hostinfo(struct krb5_krbhst_data *kd, struct krb5_krbhst_info *host)
@@ -245,7 +268,7 @@ append_host_hostinfo(struct krb5_krbhst_data *kd, struct krb5_krbhst_info *host)
 	if(h->proto == host->proto && 
 	   h->port == host->port && 
 	   strcmp(h->hostname, host->hostname) == 0) {
-	    free_krbhst_info(host);
+	    _krb5_free_krbhst_info(host);
 	    return;
 	}
     *kd->end = host;
@@ -752,7 +775,7 @@ krb5_krbhst_free(krb5_context context, krb5_krbhst_handle handle)
 
     for (h = handle->hosts; h != NULL; h = next) {
 	next = h->next;
-	free_krbhst_info(h);
+	_krb5_free_krbhst_info(h);
     }
 
     free(handle->realm);

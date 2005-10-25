@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: der.h,v 1.29 2005/07/12 06:27:19 lha Exp $ */
+/* $Id: der.h,v 1.30 2005/10/07 03:48:00 lha Exp $ */
 
 #ifndef __DER_H__
 #define __DER_H__
@@ -239,5 +239,8 @@ const char *	der_get_type_name(unsigned);
 int		der_get_type_num(const char *);
 const char *	der_get_tag_name(unsigned);
 int		der_get_tag_num(const char *);
+
+int		der_parse_hex_heim_integer(const char *, heim_integer *);
+int		der_print_hex_heim_integer(const heim_integer *, char **);
 
 #endif /* __DER_H__ */

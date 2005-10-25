@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c,v 1.71 2005/06/16 20:19:57 lha Exp $");
+RCSID("$Id: cache.c,v 1.73 2005/10/19 17:30:40 lha Exp $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -77,6 +77,29 @@ krb5_cc_register(krb5_context context,
 }
 
 /*
+ * Allocate the memory for a `id' and the that function table to
+ * `ops'. Returns 0 or and error code.
+ */
+
+krb5_error_code
+_krb5_cc_allocate(krb5_context context, 
+		  const krb5_cc_ops *ops,
+		  krb5_ccache *id)
+{
+    krb5_ccache p;
+
+    p = malloc (sizeof(*p));
+    if(p == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return KRB5_CC_NOMEM;
+    }
+    p->ops = ops;
+    *id = p;
+
+    return 0;
+}
+
+/*
  * Allocate memory for a new ccache in `id' with operations `ops'
  * and name `residual'.
  * Return 0 or an error code.
@@ -89,18 +112,13 @@ allocate_ccache (krb5_context context,
 		 krb5_ccache *id)
 {
     krb5_error_code ret;
-    krb5_ccache p;
 
-    p = malloc(sizeof(*p));
-    if(p == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return KRB5_CC_NOMEM;
-    }
-    p->ops = ops;
-    *id = p;
-    ret = p->ops->resolve(context, id, residual);
+    ret = _krb5_cc_allocate(context, ops, id);
+    if (ret)
+	return ret;
+    ret = (*id)->ops->resolve(context, id, residual);
     if(ret)
-	free(p);
+	free(*id);
     return ret;
 }
 
@@ -145,16 +163,12 @@ krb5_cc_gen_new(krb5_context context,
 		const krb5_cc_ops *ops,
 		krb5_ccache *id)
 {
-    krb5_ccache p;
+    krb5_error_code ret;
 
-    p = malloc (sizeof(*p));
-    if (p == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return KRB5_CC_NOMEM;
-    }
-    p->ops = ops;
-    *id = p;
-    return p->ops->gen_new(context, id);
+    ret = _krb5_cc_allocate(context, ops, id);
+    if (ret)
+	return ret;
+    return (*id)->ops->gen_new(context, id);
 }
 
 /*
@@ -641,17 +655,172 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
 
 /*
  * Get the cc ops that is registered in `context' to handle the
- * `prefix'. Returns NULL if ops not found.
+ * `prefix'. `prefix' can be a complete credential cache name or a
+ * prefix, the function will only use part up to the first colon (:)
+ * if there is one.  Returns NULL if ops not found.
  */
 
 const krb5_cc_ops *
 krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 {
+    char *p, *p1;
     int i;
+    
+    p = strdup(prefix);
+    if (p == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return NULL;
+    }
+    p1 = strchr(p, ':');
+    if (p1)
+	*p1 = '\0';
 
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
-	if(strcmp(context->cc_ops[i].prefix, prefix) == 0)
+	if(strcmp(context->cc_ops[i].prefix, p) == 0) {
+	    free(p);
 	    return &context->cc_ops[i];
+	}
     }
+    free(p);
     return NULL;
 }
+
+struct krb5_cc_cache_cursor_data {
+    const krb5_cc_ops *ops;
+    krb5_cc_cursor cursor;
+};
+
+/*
+ * Start iterating over all caches of `type'. If `type' is NULL, the
+ * default type is * used. `cursor' is initialized to the beginning.
+ * Return 0 or an error code.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_get_first (krb5_context context,
+			 const char *type,
+			 krb5_cc_cache_cursor *cursor)
+{
+    const krb5_cc_ops *ops;
+    krb5_error_code ret;
+
+    if (type == NULL)
+	type = krb5_cc_default_name(context);
+
+    ops = krb5_cc_get_prefix_ops(context, type);
+    if (ops == NULL) {
+	krb5_set_error_string(context, "Unknown type \"%s\" when iterating "
+			      "trying to iterate the credential caches", type);
+	return KRB5_CC_UNKNOWN_TYPE;
+    }
+
+    if (ops->get_cache_first == NULL) {
+	krb5_set_error_string(context, "Credential cache type %s doesn't support "
+			      "iterations over caches", ops->prefix);
+	return KRB5_CC_NOSUPP;
+    }
+
+    *cursor = calloc(1, sizeof(**cursor));
+    if (*cursor == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
+
+    (*cursor)->ops = ops;
+
+    ret = ops->get_cache_first(context, &(*cursor)->cursor);
+    if (ret) {
+	free(*cursor);
+	*cursor = NULL;
+    }
+    return ret;
+}
+
+/*
+ * Retrieve the next cache pointed to by (`cursor') in `id'
+ * and advance `cursor'.
+ * Return 0 or an error code.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_next (krb5_context context,
+		   krb5_cc_cache_cursor cursor,
+		   krb5_ccache *id)
+{
+    return cursor->ops->get_cache_next(context, cursor->cursor, id);
+}
+
+/*
+ * Destroy the cursor `cursor'.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_end_seq_get (krb5_context context,
+			   krb5_cc_cache_cursor cursor)
+{
+    krb5_error_code ret;
+    ret = cursor->ops->end_cache_get(context, cursor->cursor);
+    cursor->ops = NULL;
+    free(cursor);
+    return ret;
+}
+
+/*
+ * Search for a matching credential cache of type `type' that have the
+ * `principal' as the default principal. If NULL is used for `type',
+ * the default type is used. On success, `id' needs to be freed with
+ * krb5_cc_close or krb5_cc_destroy. On failure, error code is
+ * returned and `id' is set to NULL.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_match (krb5_context context,
+		     krb5_principal client,
+		     const char *type,
+		     krb5_ccache *id)
+{
+    krb5_cc_cache_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache cache = NULL;
+
+    *id = NULL;
+
+    ret = krb5_cc_cache_get_first (context, type, &cursor);
+    if (ret)
+	return ret;
+
+    while ((ret = krb5_cc_cache_next (context, cursor, &cache)) == 0) {
+	krb5_principal principal;
+
+	ret = krb5_cc_get_principal(context, cache, &principal);
+	if (ret == 0) {
+	    krb5_boolean match;
+	    
+	    match = krb5_principal_compare(context, principal, client);
+	    krb5_free_principal(context, principal);
+	    if (match)
+		break;
+	}
+
+	krb5_cc_close(context, cache);
+	cache = NULL;
+    }
+
+    krb5_cc_cache_end_seq_get(context, cursor);
+
+    if (cache == NULL) {
+	char *str;
+
+	krb5_unparse_name(context, client, &str);
+
+	krb5_set_error_string(context, "Principal %s not found in a "
+			  "credential cache", str ? str : "<out of memory>");
+	if (str)
+	    free(str);
+	return KRB5_CC_NOTFOUND;
+    }
+    *id = cache;
+
+    return 0;
+}
+

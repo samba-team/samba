@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002, 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_keyfile.c,v 1.16 2005/01/08 22:57:18 lha Exp $");
+RCSID("$Id: keytab_keyfile.c,v 1.17 2005/09/30 11:20:53 lha Exp $");
 
 /* afs keyfile operations --------------------------------------- */
 
@@ -288,9 +288,16 @@ akf_add_entry(krb5_context context,
     krb5_storage *sp;
 
 
-    if (entry->keyblock.keyvalue.length != 8 
-	|| entry->keyblock.keytype != ETYPE_DES_CBC_MD5)
+    if (entry->keyblock.keyvalue.length != 8)
 	return 0;
+    switch(entry->keyblock.keytype) {
+    case ETYPE_DES_CBC_CRC:
+    case ETYPE_DES_CBC_MD4:
+    case ETYPE_DES_CBC_MD5:
+	break;
+    default:
+	return 0;
+    }
 
     fd = open (d->filename, O_RDWR | O_BINARY);
     if (fd < 0) {
@@ -329,50 +336,72 @@ akf_add_entry(krb5_context context,
 	    return ret;
 	}
     }
+
+    /*
+     * Make sure we don't add the entry twice, assumes the DES
+     * encryption types are all the same key.
+     */
+    if (len > 0) {
+	int32_t kvno;
+	int i;
+
+	for (i = 0; i < len; i++) {
+	    ret = krb5_ret_int32(sp, &kvno);
+	    if (ret) {
+		krb5_set_error_string (context, "Failed got get kvno ");
+		goto out;
+	    }
+	    if(krb5_storage_seek(sp, 8, SEEK_CUR) < 0) {
+		krb5_set_error_string (context, "seek: %s", strerror(ret));
+		goto out;
+	    }
+	    if (kvno == entry->vno) {
+		ret = 0;
+		goto out;
+	    }
+	}
+    }
+
     len++;
 	
     if(krb5_storage_seek(sp, 0, SEEK_SET) < 0) {
 	ret = errno;
-	krb5_storage_free(sp);
-	close(fd);
 	krb5_set_error_string (context, "seek: %s", strerror(ret));
-	return ret;
+	goto out;
     }
 	
     ret = krb5_store_int32(sp, len);
     if(ret) {
-	krb5_storage_free(sp);
-	close(fd);
+	krb5_set_error_string(context, "keytab keyfile failed new length");
 	return ret;
     }
-		
 
     if(krb5_storage_seek(sp, (len - 1) * (8 + 4), SEEK_CUR) < 0) {
 	ret = errno;
-	krb5_storage_free(sp);
-	close(fd);
-	krb5_set_error_string (context, "seek: %s", strerror(ret));
-	return ret;
+	krb5_set_error_string (context, "seek to end: %s", strerror(ret));
+	goto out;
     }
 	
     ret = krb5_store_int32(sp, entry->vno);
     if(ret) {
-	krb5_storage_free(sp);
-	close(fd);
-	return ret;
+	krb5_set_error_string(context, "keytab keyfile failed store kvno");
+	goto out;
     }
     ret = krb5_storage_write(sp, entry->keyblock.keyvalue.data, 
 			     entry->keyblock.keyvalue.length);
     if(ret != entry->keyblock.keyvalue.length) {
-	krb5_storage_free(sp);
-	close(fd);
-	if(ret < 0)
-	    return errno;
-	return ENOTTY;
+	if (ret < 0)
+	    ret = errno;
+	else
+	    ret = ENOTTY;
+	krb5_set_error_string(context, "keytab keyfile failed to add key");
+	goto out;
     }
+    ret = 0;
+out:
     krb5_storage_free(sp);
     close (fd);
-    return 0;
+    return ret;
 }
 
 const krb5_kt_ops krb5_akf_ops = {
