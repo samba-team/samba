@@ -35,7 +35,7 @@
  */
 
 /* 
- * $Id: kdc.h,v 1.4 2005/06/30 01:50:42 lha Exp $ 
+ * $Id: kdc.h,v 1.5 2005/10/21 17:11:21 lha Exp $ 
  */
 
 #ifndef __KDC_H__
@@ -74,6 +74,9 @@ typedef struct krb5_kdc_configuration {
     krb5_boolean enable_pkinit_princ_in_cert;
 
     krb5_log_facility *logf;
+
+    int pkinit_dh_min_bits;
+
 } krb5_kdc_configuration;
 
 #include <kdc-protos.h>

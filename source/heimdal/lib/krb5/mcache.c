@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: mcache.c,v 1.19 2004/04/25 19:25:35 joda Exp $");
+RCSID("$Id: mcache.c,v 1.20 2005/09/30 11:16:04 lha Exp $");
 
 typedef struct krb5_mcache {
     char *name;
@@ -162,20 +162,25 @@ mcc_initialize(krb5_context context,
 				&m->primary_principal);
 }
 
-static krb5_error_code
-mcc_close(krb5_context context,
-	  krb5_ccache id)
+static int
+mcc_close_internal(krb5_mcache *m)
 {
-    krb5_mcache *m = MCACHE(id);
-
     if (--m->refcnt != 0)
 	return 0;
 
     if (MISDEAD(m)) {
 	free (m->name);
-	krb5_data_free(&id->data);
+	return 1;
     }
+    return 0;
+}
 
+static krb5_error_code
+mcc_close(krb5_context context,
+	  krb5_ccache id)
+{
+    if (mcc_close_internal(MCACHE(id)))
+	krb5_data_free(&id->data);
     return 0;
 }
 
@@ -334,6 +339,70 @@ mcc_set_flags(krb5_context context,
     return 0; /* XXX */
 }
 		    
+struct mcache_iter {
+    krb5_mcache *cache;
+};
+
+static krb5_error_code
+mcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
+{
+    struct mcache_iter *iter;
+
+    iter = calloc(1, sizeof(*iter));
+    if (iter == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }    
+
+    HEIMDAL_MUTEX_lock(&mcc_mutex);
+    iter->cache = mcc_head;
+    if (iter->cache)
+	iter->cache->refcnt++;
+    HEIMDAL_MUTEX_unlock(&mcc_mutex);
+
+    *cursor = iter;
+    return 0;
+}
+
+static krb5_error_code
+mcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
+{
+    struct mcache_iter *iter = cursor;
+    krb5_error_code ret;
+    krb5_mcache *m;
+
+    if (iter->cache == NULL)
+	return KRB5_CC_END;
+
+    HEIMDAL_MUTEX_lock(&mcc_mutex);
+    m = iter->cache;
+    if (m->next)
+	m->next->refcnt++;
+    iter->cache = m->next;
+    HEIMDAL_MUTEX_unlock(&mcc_mutex);
+
+    ret = _krb5_cc_allocate(context, &krb5_mcc_ops, id);
+    if (ret)
+	return ret;
+
+    (*id)->data.data = m;
+    (*id)->data.length = sizeof(*m);
+
+    return 0;
+}
+
+static krb5_error_code
+mcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
+{
+    struct mcache_iter *iter = cursor;
+
+    if (iter->cache)
+	mcc_close_internal(iter->cache);
+    iter->cache = NULL;
+    free(iter);
+    return 0;
+}
+
 const krb5_cc_ops krb5_mcc_ops = {
     "MEMORY",
     mcc_get_name,
@@ -349,5 +418,9 @@ const krb5_cc_ops krb5_mcc_ops = {
     mcc_get_next,
     mcc_end_get,
     mcc_remove_cred,
-    mcc_set_flags
+    mcc_set_flags,
+    NULL,
+    mcc_get_cache_first,
+    mcc_get_cache_next,
+    mcc_end_cache_get
 };

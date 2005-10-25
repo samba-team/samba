@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c,v 1.88 2005/08/13 08:25:32 lha Exp $");
+RCSID("$Id: init_creds_pw.c,v 1.90 2005/10/12 12:45:11 lha Exp $");
 
 typedef struct krb5_get_init_creds_ctx {
     krb5_kdc_flags flags;
@@ -275,11 +275,11 @@ get_init_creds_common(krb5_context context,
 	options = &default_opt;
     }
 
-    if (options->private) {
-	ctx->password = options->private->password;
-	ctx->key_proc = options->private->key_proc;
-	ctx->req_pac = options->private->req_pac;
-	ctx->pk_init_ctx = options->private->pk_init_ctx;
+    if (options->opt_private) {
+	ctx->password = options->opt_private->password;
+	ctx->key_proc = options->opt_private->key_proc;
+	ctx->req_pac = options->opt_private->req_pac;
+	ctx->pk_init_ctx = options->opt_private->pk_init_ctx;
     } else
 	ctx->req_pac = KRB5_PA_PAC_DONT_CARE;
 
@@ -1014,10 +1014,10 @@ pa_data_to_md_pkinit(krb5_context context,
 	return 0;
 #ifdef PKINIT
     return _krb5_pk_mk_padata(context,
-			      ctx->pk_init_ctx,
-			      &a->req_body,
-			      ctx->pk_nonce,
-			      md);
+			     ctx->pk_init_ctx,
+			     &a->req_body,
+			     ctx->pk_nonce,
+			     md);
 #else
     krb5_set_error_string(context, "no support for PKINIT compiled in");
     return EINVAL;
@@ -1114,6 +1114,7 @@ process_pa_data_to_key(krb5_context context,
 		       krb5_creds *creds,
 		       AS_REQ *a,
 		       krb5_kdc_rep *rep,
+		       const krb5_krbhst_info *hi,
 		       krb5_keyblock **key)
 {
     struct pa_info_data paid, *ppaid = NULL;
@@ -1158,6 +1159,7 @@ process_pa_data_to_key(krb5_context context,
 	ret = _krb5_pk_rd_pa_reply(context,
 				   ctx->pk_init_ctx,
 				   etype,
+				   hi,
 				   ctx->pk_nonce,
 				   &ctx->req_buffer,
 				   pa,
@@ -1194,6 +1196,8 @@ init_cred_loop(krb5_context context,
     size_t len;
     size_t size;
     int send_to_kdc_flags = 0;
+    krb5_krbhst_info *hi = NULL;
+
 
     memset(&md, 0, sizeof(md));
     memset(&rep, 0, sizeof(rep));
@@ -1321,7 +1325,7 @@ init_cred_loop(krb5_context context,
 	krb5_keyblock *key = NULL;
 
 	ret = process_pa_data_to_key(context, ctx, creds, 
-				     &ctx->as_req, &rep, &key);
+				     &ctx->as_req, &rep, hi, &key);
 	if (ret)
 	    goto out;
 	
@@ -1462,8 +1466,8 @@ krb5_get_init_creds_password(krb5_context context,
 	return ret;
 
     if (password == NULL &&
-	options->private->password == NULL &&
-	options->private->pk_init_ctx == NULL)
+	options->opt_private->password == NULL &&
+	options->opt_private->pk_init_ctx == NULL)
     {
 	krb5_prompt prompt;
 	krb5_data password_data;
@@ -1491,7 +1495,7 @@ krb5_get_init_creds_password(krb5_context context,
 	password = password_data.data;
     }
 
-    if (options->private->password == NULL) {
+    if (options->opt_private->password == NULL) {
 	ret = krb5_get_init_creds_opt_set_pa_password(context, options,
 						      password, NULL);
 	if (ret) {

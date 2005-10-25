@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h,v 1.81 2005/05/29 14:28:39 lha Exp $ */
+/* $Id: krb5_locl.h,v 1.83 2005/10/07 12:08:02 lha Exp $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -141,6 +141,7 @@ struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
 typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
+struct krb5_dh_moduli;
 
 /* v4 glue */
 struct _krb5_krb_auth_data;
@@ -160,6 +161,8 @@ struct _krb5_krb_auth_data;
 /* should this be public? */
 #define KEYTAB_DEFAULT "ANY:FILE:" SYSCONFDIR "/krb5.keytab,krb4:" SYSCONFDIR "/srvtab"
 #define KEYTAB_DEFAULT_MODIFY "FILE:" SYSCONFDIR "/krb5.keytab"
+
+#define MODULI_FILE SYSCONFDIR "/krb5.moduli"
 
 #ifndef O_BINARY
 #define O_BINARY 0

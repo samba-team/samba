@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c,v 1.24 2005/07/13 08:22:50 lha Exp $");
+RCSID("$Id: rd_cred.c,v 1.25 2005/09/23 03:37:57 lha Exp $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -99,24 +99,49 @@ krb5_rd_cred(krb5_context context,
 	enc_krb_cred_part_data.length = cred.enc_part.cipher.length;
 	enc_krb_cred_part_data.data   = cred.enc_part.cipher.data;
     } else {
-	if (auth_context->remote_subkey)
+	/* Try both subkey and session key.
+	 * 
+	 * RFC2140 claims we should use the session key, but Heimdal
+	 * before 0.8 used the remote subkey if it was send in the
+	 * auth_context.
+	 */
+
+	if (auth_context->remote_subkey) {
 	    ret = krb5_crypto_init(context, auth_context->remote_subkey,
 				   0, &crypto);
-	else
+	    if (ret)
+		goto out;
+
+	    ret = krb5_decrypt_EncryptedData(context,
+					     crypto,
+					     KRB5_KU_KRB_CRED,
+					     &cred.enc_part,
+					     &enc_krb_cred_part_data);
+	    
+	    krb5_crypto_destroy(context, crypto);
+	}
+
+	/* 
+	 * If there was not subkey, or we failed using subkey, 
+	 * retry using the session key
+	 */
+	if (auth_context->remote_subkey == NULL || ret == KRB5KRB_AP_ERR_BAD_INTEGRITY)
+	{
+
 	    ret = krb5_crypto_init(context, auth_context->keyblock,
 				   0, &crypto);
-	/* DK: MIT rsh */
 
-	if (ret)
-	    goto out;
-       
-	ret = krb5_decrypt_EncryptedData(context,
-					 crypto,
-					 KRB5_KU_KRB_CRED,
-					 &cred.enc_part,
-					 &enc_krb_cred_part_data);
-       
-	krb5_crypto_destroy(context, crypto);
+	    if (ret)
+		goto out;
+	    
+	    ret = krb5_decrypt_EncryptedData(context,
+					     crypto,
+					     KRB5_KU_KRB_CRED,
+					     &cred.enc_part,
+					     &enc_krb_cred_part_data);
+	    
+	    krb5_crypto_destroy(context, crypto);
+	}
 	if (ret)
 	    goto out;
     }

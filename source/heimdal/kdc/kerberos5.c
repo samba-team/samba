@@ -855,11 +855,6 @@ _kdc_as_rep(krb5_context context,
 	    ;
 	if (pa == NULL) {
 	    i = 0;
-	    if((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ_19)))
-		;
-	}
-	if (pa == NULL) {
-	    i = 0;
 	    if((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ_WIN)))
 		;
 	}
@@ -887,12 +882,14 @@ _kdc_as_rep(krb5_context context,
 		e_text = "PKINIT certificate not allowed to "
 		    "impersonate principal";
 		_kdc_pk_free_client_param(context, pkp);
+
+		kdc_log(context, config, 0, "%s", e_text);
 		pkp = NULL;
 		goto ts_enc;
 	    }
 	    found_pa = 1;
 	    et.flags.pre_authent = 1;
-	    kdc_log(context, config, 2,
+	    kdc_log(context, config, 0,
 		    "PKINIT pre-authentication succeeded -- %s using %s", 
 		    client_name, client_cert);
 	    free(client_cert);
@@ -1055,12 +1052,6 @@ _kdc_as_rep(krb5_context context,
 	ret = realloc_method_data(&method_data);
 	pa = &method_data.val[method_data.len-1];
 	pa->padata_type		= KRB5_PADATA_PK_AS_REQ;
-	pa->padata_value.length	= 0;
-	pa->padata_value.data	= NULL;
-
-	ret = realloc_method_data(&method_data);
-	pa = &method_data.val[method_data.len-1];
-	pa->padata_type		= KRB5_PADATA_PK_AS_REQ_19;
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 #endif

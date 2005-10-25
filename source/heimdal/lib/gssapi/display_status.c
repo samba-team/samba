@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: display_status.c,v 1.13 2005/08/23 08:30:55 lha Exp $");
+RCSID("$Id: display_status.c,v 1.14 2005/10/12 07:23:03 lha Exp $");
 
 static const char *
 calling_error(OM_uint32 v)
@@ -112,25 +112,47 @@ supplementary_error(OM_uint32 v)
 }
 
 void
-gssapi_krb5_set_error_string (void)
+gssapi_krb5_clear_status (void)
 {
     struct gssapi_thr_context *ctx = gssapi_get_thread_context(1);
-    char *e;
-
     if (ctx == NULL)
 	return;
     HEIMDAL_MUTEX_lock(&ctx->mutex);
     if (ctx->error_string)
 	free(ctx->error_string);
-    e = krb5_get_error_string(gssapi_krb5_context);
-    if (e == NULL)
-	ctx->error_string = NULL;
-    else {
-	/* ignore failures, will use status code instead */
-	ctx->error_string = strdup(e); 
-	krb5_free_error_string(gssapi_krb5_context, e);
-    }
+    ctx->error_string = NULL;
     HEIMDAL_MUTEX_unlock(&ctx->mutex);
+}
+
+void
+gssapi_krb5_set_status (const char *fmt, ...)
+{
+    struct gssapi_thr_context *ctx = gssapi_get_thread_context(1);
+    va_list args;
+
+    if (ctx == NULL)
+	return;
+    HEIMDAL_MUTEX_lock(&ctx->mutex);
+    va_start(args, fmt);
+    if (ctx->error_string)
+	free(ctx->error_string);
+    /* ignore failures, will use status code instead */
+    vasprintf(&ctx->error_string, fmt, args);
+    va_end(args);
+    HEIMDAL_MUTEX_unlock(&ctx->mutex);
+}
+
+void
+gssapi_krb5_set_error_string (void)
+{
+    char *e;
+
+    e = krb5_get_error_string(gssapi_krb5_context);
+    if (e) {
+	gssapi_krb5_set_status("%s", e);
+	krb5_free_error_string(gssapi_krb5_context, e);
+    } else
+	gssapi_krb5_clear_status();
 }
 
 char *

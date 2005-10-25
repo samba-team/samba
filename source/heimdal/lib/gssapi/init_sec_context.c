@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: init_sec_context.c,v 1.59 2005/08/11 10:47:25 lha Exp $");
+RCSID("$Id: init_sec_context.c,v 1.60 2005/10/12 07:25:18 lha Exp $");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
@@ -848,16 +848,23 @@ spnego_reply
     ret = der_match_tag_and_length((const char *)indata.data,
 				   indata.length,
 				   ASN1_C_CONTEXT, CONS, 1, &len, &taglen);
-    if (ret)
-	return ret;
+    if (ret) {
+	gssapi_krb5_set_status("Failed to decode NegToken choice");
+	*minor_status = ret;
+	return GSS_S_FAILURE;
+    }
 
-    if(len > indata.length - taglen)
-	return ASN1_OVERRUN;
+    if(len > indata.length - taglen) {
+	gssapi_krb5_set_status("Buffer overrun in NegToken choice");
+	*minor_status = ASN1_OVERRUN;
+	return GSS_S_FAILURE;
+    }
 
     ret = decode_NegTokenTarg((const char *)indata.data + taglen, 
 			      len, &targ, NULL);
     if (ret) {
-	*minor_status = ENOMEM;
+	gssapi_krb5_set_status("Failed to decode NegTokenTarg");
+	*minor_status = ret;
 	return GSS_S_FAILURE;
     }
 

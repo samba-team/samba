@@ -535,6 +535,30 @@ krb5_c_verify_checksum (
 	const krb5_checksum */*cksum*/,
 	krb5_boolean */*valid*/);
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_end_seq_get (
+	krb5_context /*context*/,
+	krb5_cc_cache_cursor /*cursor*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_get_first (
+	krb5_context /*context*/,
+	const char */*type*/,
+	krb5_cc_cache_cursor */*cursor*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_match (
+	krb5_context /*context*/,
+	krb5_principal /*client*/,
+	const char */*type*/,
+	krb5_ccache */*id*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_next (
+	krb5_context /*context*/,
+	krb5_cc_cache_cursor /*cursor*/,
+	krb5_ccache */*id*/);
+
 void KRB5_LIB_FUNCTION
 krb5_cc_clear_mcred (krb5_creds */*mcred*/);
 
@@ -2867,6 +2891,13 @@ krb5_set_real_time (
 	krb5_timestamp /*sec*/,
 	int32_t /*usec*/);
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_send_recv_func (
+	krb5_context /*context*/,
+	krb5_send_and_recv_func_t /*func*/,
+	krb5_send_and_recv_close_func_t /*close_fn*/,
+	void */*data*/);
+
 void KRB5_LIB_FUNCTION
 krb5_set_use_admin_kdc (
 	krb5_context /*context*/,
@@ -3432,11 +3463,6 @@ krb5_write_safe_message (
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_xfree (void */*ptr*/);
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_send_recv_func(krb5_context context,
-			krb5_send_and_recv_func_t func,
-			krb5_send_and_recv_close_func_t close_fn,
-			void *data);
 
 #ifdef __cplusplus
 }

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_locl.h,v 1.40 2005/06/16 20:34:03 lha Exp $ */
+/* $Id: gssapi_locl.h,v 1.41 2005/10/12 15:20:37 lha Exp $ */
 
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H
@@ -244,6 +244,12 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
 
 int
 gss_oid_equal(const gss_OID a, const gss_OID b);
+
+void
+gssapi_krb5_clear_status (void);
+
+void
+gssapi_krb5_set_status (const char *fmt, ...);
 
 void
 gssapi_krb5_set_error_string (void);
