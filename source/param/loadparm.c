@@ -2455,7 +2455,6 @@ static int add_a_service(const service *pservice, const char *name)
 static char *canonicalize_servicename(const char *src)
 {
 	static fstring canon; /* is fstring large enough? */
-	int dst_idx = 0;
 
 	if ( !src ) {
 		DEBUG(0,("canonicalize_servicename: NULL source name!\n"));
@@ -2464,19 +2463,6 @@ static char *canonicalize_servicename(const char *src)
 
 	fstrcpy( canon, src );
 	strupper_m( canon );
-
-#if 0 
-	for (; *src != '\0'; src += next_mb_char_size(src)) {
-		if (isspace(*src)) {
-			continue;
-		}
-		if (dst_idx == sizeof(canon) - 1) {
-			return NULL;
-		}
-		canon[dst_idx++] = toupper(*src);
-	}
-	canon[dst_idx] = '\0';
-#endif
 
 	return canon;
 }
