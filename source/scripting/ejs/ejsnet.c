@@ -106,10 +106,17 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 	req.in.user_name   = argv[0];
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "error when creating user: %s", nt_errstr(status));
+	}
 
 	talloc_free(mem_ctx);
+	mpr_Return(eid, mprNTSTATUS(status));
+	return 0;
+
 done:
-	return NT_STATUS_IS_OK(status) ? 0 : -1;
+	talloc_free(mem_ctx);
+	return -1;
 }
 
 
