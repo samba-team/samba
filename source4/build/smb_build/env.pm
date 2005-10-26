@@ -45,5 +45,28 @@ sub set_config($$)
 	}
 }
 
+sub PkgConfig($$$$$$)
+{
+	my ($self,$path,$name,$libs,$cflags,$version) = @_;
+
+	print __FILE__.": creating $path\n";
+
+	open(OUT, ">$path") or die("Can't open $path: $!");
+
+	print OUT <<"__EOF__";
+prefix=$self->{config}->{prefix}
+exec_prefix=$self->{config}->{exec_prefix}
+libdir=$self->{config}->{libdir}
+includedir=$self->{config}->{includedir}
+
+__EOF__
+
+	print OUT "Name: $name\n";
+	print OUT "Version: $version\n";
+	print OUT "Libs: $libs\n";
+	print OUT "Cflags: $cflags\n";
+
+	close(OUT);
+}
 
 1;
