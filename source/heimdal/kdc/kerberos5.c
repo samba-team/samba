@@ -1821,6 +1821,7 @@ tgs_make_reply(krb5_context context,
 	    if_relevant->val[0].ad_data.length = pac.length;
 
 	    ASN1_MALLOC_ENCODE(AuthorizationData, buf, buf_size, if_relevant, &len, ret);
+	    free_AuthorizationData(if_relevant);
 	    
 	    auth_data = NULL;
 	    ALLOC(auth_data);
