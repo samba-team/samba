@@ -77,7 +77,10 @@ NOPROTO = YES
 
 ################################################
 # Start SUBSYSTEM LIBLDB
-[SUBSYSTEM::LIBLDB]
+[LIBRARY::LIBLDB]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		common/ldb.o
 ADD_OBJ_FILES = \
@@ -97,18 +100,6 @@ NOPROTO = YES
 MANPAGE = man/ldb.3
 #
 # End SUBSYSTEM LIBLDB
-################################################
-
-################################################
-# Start LIBRARY LIBLDB
-[LIBRARY::libldb]
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
-RELEASE_VERSION = 1
-REQUIRED_SUBSYSTEMS = \
-		LIBLDB
-#
-# End LIBRARY LIBLDB
 ################################################
 
 ################################################

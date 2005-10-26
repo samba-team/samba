@@ -1,6 +1,9 @@
 ################################################
 # Start SUBSYSTEM LIBTDB
-[SUBSYSTEM::LIBTDB]
+[LIBRARY::LIBTDB]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		common/tdb.o
 ADD_OBJ_FILES = common/dump.o common/io.o common/lock.o \
@@ -11,18 +14,6 @@ REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
 #
 # End SUBSYSTEM LIBLDB
-################################################
-
-################################################
-# Start LIBRARY LIBTDB
-[LIBRARY::libtdb]
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
-RELEASE_VERSION = 1
-REQUIRED_SUBSYSTEMS = \
-		LIBTDB
-#
-# End LIBRARY LIBLDB
 ################################################
 
 ################################################
