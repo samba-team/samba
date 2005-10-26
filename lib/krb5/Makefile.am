@@ -217,6 +217,7 @@ man_MANS =					\
 	krb5_rcache.3				\
 	krb5_rd_error.3				\
 	krb5_set_default_realm.3		\
+	krb5_set_password.3			\
 	krb5_storage.3				\
 	krb5_string_to_key.3			\
 	krb5_ticket.3				\
