@@ -35,6 +35,52 @@
 
 RCSID("$Id$");
 
+OM_uint32
+_gssapi_krb5_ccache_lifetime(OM_uint32 *minor_status,
+			     krb5_ccache id,
+			     krb5_principal principal,
+			     OM_uint32 *lifetime)
+{
+    krb5_creds in_cred, *out_cred;
+    krb5_const_realm realm;
+    krb5_error_code kret;
+
+    memset(&in_cred, 0, sizeof(in_cred));
+    in_cred.client = principal;
+	
+    realm = krb5_principal_get_realm(gssapi_krb5_context,  principal);
+    if (realm == NULL) {
+	gssapi_krb5_clear_status ();
+	*minor_status = KRB5_PRINC_NOMATCH; /* XXX */
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_make_principal(gssapi_krb5_context, &in_cred.server, 
+			       realm, KRB5_TGS_NAME, realm, NULL);
+    if (kret) {
+	gssapi_krb5_set_error_string();
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_get_credentials(gssapi_krb5_context, 0, 
+				id, &in_cred, &out_cred);
+    krb5_free_principal(gssapi_krb5_context, in_cred.server);
+    if (kret) {
+	gssapi_krb5_set_error_string();
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    *lifetime = out_cred->times.endtime;
+    krb5_free_creds(gssapi_krb5_context, out_cred);
+
+    return GSS_S_COMPLETE;
+}
+
+
+
+
 static krb5_error_code
 get_keytab(krb5_keytab *keytab)
 {
@@ -148,32 +194,14 @@ static OM_uint32 acquire_initiator_cred
 	    goto end;
 	handle->lifetime = cred.times.endtime;
     } else {
-	krb5_creds in_cred, *out_cred;
-	krb5_const_realm realm;
 
-	memset(&in_cred, 0, sizeof(in_cred));
-	in_cred.client = handle->principal;
-	
-	realm = krb5_principal_get_realm(gssapi_krb5_context, 
-					 handle->principal);
-	if (realm == NULL) {
-	    kret = KRB5_PRINC_NOMATCH; /* XXX */
+	ret = _gssapi_krb5_ccache_lifetime(minor_status,
+					   ccache,
+					   handle->principal,
+					   &handle->lifetime);
+	if (ret != GSS_S_COMPLETE)
 	    goto end;
-	}
-
-	kret = krb5_make_principal(gssapi_krb5_context, &in_cred.server, 
-				   realm, KRB5_TGS_NAME, realm, NULL);
-	if (kret)
-	    goto end;
-
-	kret = krb5_get_credentials(gssapi_krb5_context, 0, 
-				    ccache, &in_cred, &out_cred);
-	krb5_free_principal(gssapi_krb5_context, in_cred.server);
-	if (kret)
-	    goto end;
-
-	handle->lifetime = out_cred->times.endtime;
-	krb5_free_creds(gssapi_krb5_context, out_cred);
+	kret = 0;
     }
 
     handle->ccache = ccache;
