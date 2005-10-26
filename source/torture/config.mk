@@ -252,7 +252,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
 		LIBCMDLINE \
-		RPC
+		LIBRPC
 MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
@@ -268,7 +268,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
 		LIBCMDLINE \
-		RPC
+		LIBRPC
 MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
@@ -285,7 +285,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBBASIC \
 		LIBCMDLINE \
-		RPC
+		LIBRPC
 MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################

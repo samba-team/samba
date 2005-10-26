@@ -31,6 +31,8 @@ include scripting/config.mk
 include kdc/config.mk
 
 binaries: $(BIN_PROGS) $(SBIN_PROGS)
+libraries: $(STATIC_LIBS) $(SHARED_LIBS)
+headers: $(PUBLIC_HEADERS)
 manpages: $(MANPAGES)
 everything: all
 
@@ -40,6 +42,7 @@ showlayout:
 	@echo "  bindir:  $(BINDIR)"
 	@echo "  sbindir: $(SBINDIR)"
 	@echo "  libdir:  $(LIBDIR)"
+	@echo "  includedir:  $(INCLUDEDIR)"
 	@echo "  vardir:  $(VARDIR)"
 	@echo "  privatedir:  $(PRIVATEDIR)"
 	@echo "  piddir:   $(PIDDIR)"
@@ -55,7 +58,8 @@ showflags:
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
 	@echo "  LIBS = $(LIBS)"
 
-install: showlayout installbin installdat installswat installmisc
+install: showlayout installbin installdat installswat installmisc installlib \
+	installheader
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -72,6 +76,13 @@ installbin: binaries installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
+installlib: libraries installdirs
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS) 
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS)
+
+installheader: headers installdirs
+	@$(SHELL) $(srcdir)/script/installheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS)
+
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
 
@@ -84,7 +95,7 @@ installman: installdirs
 installmisc: installdirs
 	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(BINDIR)
 
-uninstall: uninstallbin uninstallman uninstallmisc
+uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader
 
 uninstallmisc:
 	#FIXME
@@ -93,9 +104,15 @@ uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
 
+uninstalllib:
+	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS)
+	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS) 
+
+uninstallheader:
+	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS)
+
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
-
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`

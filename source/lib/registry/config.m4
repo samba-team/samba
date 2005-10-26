@@ -5,8 +5,6 @@ if test t$BLDSHARED = ttrue; then
 fi
 LIBWINREG=libwinregistry
 
-AC_CONFIG_FILES(lib/registry/winregistry.pc)
-
 SMB_MODULE_DEFAULT(registry_gconf, NOT)
 
 SMB_EXT_LIB_FROM_PKGCONFIG(gconf, gconf-2.0)

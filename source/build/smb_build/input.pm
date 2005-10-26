@@ -83,6 +83,7 @@ sub check_module($$)
 	if ($mod->{CHOSEN_BUILD} eq "SHARED") {
 		$mod->{ENABLE} = "YES";
 		$mod->{OUTPUT_TYPE} = "SHARED_LIBRARY";
+		$mod->{INSTALLDIR} = "LIBDIR/$mod->{SUBSYSTEM}";
 		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM});
 		printf("Module: %s...shared\n",$mod->{NAME});
 	} elsif ($mod->{CHOSEN_BUILD} eq "STATIC") {
@@ -107,6 +108,8 @@ sub check_library($$)
 	}
 
 	$lib->{OUTPUT_TYPE} = $library_output_type;
+
+	$lib->{INSTALLDIR} = "LIBDIR";
 }
 
 sub check_binary($$)
