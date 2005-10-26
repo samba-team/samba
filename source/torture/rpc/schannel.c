@@ -154,26 +154,52 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
-	const char *username = cli_credentials_get_username(cmdline_credentials);
-	const char *password = cli_credentials_get_password(cmdline_credentials);
+	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int i;
 	BOOL ret = True;
+	int flags = CLI_CRED_NTLM_AUTH;
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
 
-	ninfo.identity_info.domain_name.string = cli_credentials_get_domain(cmdline_credentials);
+	if (lp_client_ntlmv2_auth()) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+
+	cli_credentials_get_ntlm_username_domain(cmdline_credentials, mem_ctx, 
+						 &ninfo.identity_info.account_name.string,
+						 &ninfo.identity_info.domain_name.string);
+	
+	generate_random_buffer(ninfo.challenge, 
+			       sizeof(ninfo.challenge));
+	chal = data_blob_const(ninfo.challenge, 
+			       sizeof(ninfo.challenge));
+
+	names_blob = NTLMv2_generate_names_blob(mem_ctx, cli_credentials_get_workstation(credentials), 
+						cli_credentials_get_domain(credentials));
+
+	status = cli_credentials_get_ntlm_response(cmdline_credentials, mem_ctx, 
+						   &flags, 
+						   chal,
+						   names_blob,
+						   &lm_resp, &nt_resp,
+						   NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_credentials_get_ntlm_response failed: %s\n", 
+		       nt_errstr(status));
+		return False;
+	}
+
+	ninfo.lm.data = lm_resp.data;
+	ninfo.lm.length = lm_resp.length;
+
+	ninfo.nt.data = nt_resp.data;
+	ninfo.nt.length = nt_resp.length;
+
 	ninfo.identity_info.parameter_control = 0;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.account_name.string = username;
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
-	generate_random_buffer(ninfo.challenge, 
-			       sizeof(ninfo.challenge));
-	ninfo.nt.length = 24;
-	ninfo.nt.data = talloc_size(mem_ctx, 24);
-	SMBNTencrypt(password, ninfo.challenge, ninfo.nt.data);
-	ninfo.lm.length = 24;
-	ninfo.lm.data = talloc_size(mem_ctx, 24);
-	SMBencrypt(password, ninfo.challenge, ninfo.lm.data);
-
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.workstation = cli_credentials_get_workstation(credentials);
@@ -182,7 +208,7 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.logon_level = 2;
 	r.in.logon.network = &ninfo;
 
-	printf("Testing LogonSamLogon with name %s\n", username);
+	printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
 	
 	for (i=2;i<3;i++) {
 		ZERO_STRUCT(auth2);
@@ -191,6 +217,11 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.validation_level = i;
 		
 		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonSamLogon failed: %s\n", 
+			       nt_errstr(status));
+			return False;
+		}
 		
 		if (!creds_client_check(creds, &r.out.return_authenticator->cred)) {
 			printf("Credential chaining failed\n");
