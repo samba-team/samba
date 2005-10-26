@@ -1,3 +1,9 @@
+2005-10-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* install-catman.sh: Add variable INSTALL_CATPAGES that controls
+	if cat pages are installed, defaults to true. From Johnny Lam
+	<jlam@pkgsrc.org>.
+	
 2005-09-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken-frag.m4: Check for <stdint.h> and uintptr_t
