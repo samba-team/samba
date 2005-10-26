@@ -67,7 +67,7 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 		lm_response = data_blob(NULL, 0);
 		nt_response = data_blob(NULL, 0);
 		
-		/* not doing NLTM2 without a password */
+		/* not doing NTLM2 without a password */
 		*flags &= ~CLI_CRED_NTLM2;
 	} else if (*flags & CLI_CRED_NTLMv2_AUTH) {
 
