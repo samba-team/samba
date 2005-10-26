@@ -17,11 +17,16 @@ sub new($$)
 	my ($name, $config) = @_;
 	my $self = { };
 	bless $self, $name;
-	$self->set_config($config);
+
+	$self->{items} = {};
+	$self->{info} = {};
+	
+	$self->_set_config($config);
+
 	return $self;
 }
 
-sub set_config($$)
+sub _set_config($$)
 {
 	my ($self, $config) = @_;
 
@@ -67,6 +72,30 @@ __EOF__
 	print OUT "Cflags: $cflags\n";
 
 	close(OUT);
+}
+
+sub Import($$)
+{
+	my ($self,$items) = @_;
+
+	foreach (keys %$items) {
+		if (defined($self->{items})) {
+			print "Warning: Importing $_ twice!\n";
+		}
+		$self->{items}->{$_} = $items->{$_};
+	}
+}
+
+sub GetInfo($$)
+{
+	my ($self,$name) = @_;
+
+	unless (defined($self->{info}->{$name})) 
+	{
+		$self->{info}->{$name} = $self->{items}->Build($self);
+	}
+
+	return $self->{info}->{$name};
 }
 
 1;
