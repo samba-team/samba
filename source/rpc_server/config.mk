@@ -208,7 +208,7 @@ ADD_OBJ_FILES = \
 		handles.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_AUTH \
-		NDR_RAW
+		LIBNDR
 #
 # End SUBSYSTEM DCERPC
 ################################################

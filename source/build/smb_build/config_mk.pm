@@ -76,7 +76,8 @@ my $section_types = {
 		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
-		"INSTALLDIR"		=> "string",
+
+		"PUBLIC_HEADERS" => "list"
 		}
 };
 

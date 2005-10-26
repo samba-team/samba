@@ -12,6 +12,7 @@ ADD_OBJ_FILES = common/dump.o common/io.o common/lock.o \
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
+PUBLIC_HEADERS = include/tdb.h
 #
 # End SUBSYSTEM LIBLDB
 ################################################

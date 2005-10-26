@@ -90,6 +90,7 @@ ADD_OBJ_FILES = \
 		patchfile.o
 REQUIRED_SUBSYSTEMS = \
 		LIBBASIC
+PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
 ################################################
 

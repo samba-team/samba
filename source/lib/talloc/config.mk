@@ -8,6 +8,7 @@ INIT_OBJ_FILES = talloc.o
 REQUIRED_SUBSYSTEMS = LIBREPLACE
 NOPROTO = YES
 MANPAGE = talloc.3
+PUBLIC_HEADERS = talloc.h
 #
 # End LIBRARY LIBTALLOC
 ################################################
