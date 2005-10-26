@@ -16,8 +16,6 @@ dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name)
 dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 dnl
-dnl SMB_LIBRARY_ENABLE(name,default_build)
-dnl
 dnl SMB_BINARY_ENABLE(name,default_build)
 dnl
 dnl #######################################################
@@ -148,13 +146,6 @@ LDFLAGS = $5
 # End Ext Lib $1
 ###################################
 "
-])
-
-dnl SMB_LIBRARY_ENABLE(name,default_build)
-AC_DEFUN([SMB_LIBRARY_ENABLE],
-[
-SMB_INFO_ENABLES="$SMB_INFO_ENABLES
-\$enabled{$1} = \"$2\";"
 ])
 
 dnl SMB_BINARY_ENABLE(name,default_build)

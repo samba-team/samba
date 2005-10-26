@@ -55,6 +55,9 @@ INIT_OBJ_FILES = \
 OBJ_FILES = \
 		gencache.o \
 
+[SUBSYSTEM::MODULE]
+OBJ_FILES = module.o
+
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
