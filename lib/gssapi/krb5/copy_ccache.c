@@ -61,6 +61,87 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+
+OM_uint32
+gss_krb5_import_ccache(OM_uint32 *minor_status,
+		       krb5_ccache in,
+		       gss_cred_id_t *cred)
+{
+    krb5_error_code kret;
+    gss_cred_id_t handle;
+    OM_uint32 ret;
+
+    *cred = NULL;
+
+    GSSAPI_KRB5_INIT ();
+
+    handle = (gss_cred_id_t)calloc(1, sizeof(*handle));
+    if (handle == GSS_C_NO_CREDENTIAL) {
+	gssapi_krb5_clear_status ();
+	*minor_status = ENOMEM;
+        return (GSS_S_FAILURE);
+    }
+    HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
+
+    handle->usage = GSS_C_INITIATE;
+
+    kret = krb5_cc_get_principal(gssapi_krb5_context, in, &handle->principal);
+    if (kret) {
+	free(handle);
+	gssapi_krb5_set_error_string ();
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    ret = _gssapi_krb5_ccache_lifetime(minor_status,
+				       in,
+				       handle->principal,
+				       &handle->lifetime);
+    if (ret != GSS_S_COMPLETE) {
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+	free(handle);
+	return ret;
+    }
+
+    ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
+    if (ret == GSS_S_COMPLETE)
+    	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				     &handle->mechanisms);
+    if (ret != GSS_S_COMPLETE) {
+	gssapi_krb5_set_error_string ();
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+	free(handle);
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_cc_gen_new(gssapi_krb5_context,
+			   &krb5_mcc_ops,
+			   &handle->ccache);
+    if (kret) {
+	gssapi_krb5_set_error_string ();
+	gss_release_oid_set(NULL, &handle->mechanisms);
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+	free(handle);
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_cc_copy_cache(gssapi_krb5_context, in, handle->ccache);
+    if (kret) {
+	gssapi_krb5_set_error_string ();
+	gss_release_oid_set(NULL, &handle->mechanisms);
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+	free(handle);
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+    *minor_status = 0;
+    *cred = handle;
+    return GSS_S_COMPLETE;
+}
+
+
 OM_uint32
 gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
 					    gss_ctx_id_t context_handle,
