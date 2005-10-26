@@ -873,18 +873,13 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	if (maj_stat == 0) {
 		maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
 								       gensec_gssapi_state->gssapi_context, 
-								       KRB5_AUTHDATA_IF_RELEVANT,
+								       KRB5_AUTHDATA_WIN2K_PAC,
 								       &pac);
 	}
 
 	if (maj_stat == 0) {
 		pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
 		gss_release_buffer(&min_stat, &pac);
-
-		if (!unwrap_pac(mem_ctx, &pac_blob, &unwrapped_pac)) {
-			/* No pac actually present */
-			maj_stat = 1;
-		}
 	}
 	
 	/* IF we have the PAC - otherwise we need to get this
@@ -902,7 +897,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		}
 		
 		/* decode and verify the pac */
-		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, unwrapped_pac,
+		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, pac_blob,
 						    gensec_gssapi_state->smb_krb5_context->krb5_context,
 						    NULL, keyblock, principal, authtime);
 		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);

@@ -191,6 +191,7 @@ ADD_OBJ_FILES = \
 	../heimdal/lib/asn1/der_copy.o \
 	../heimdal/lib/asn1/der_cmp.o \
 	../heimdal/lib/asn1/asn1_AD_IF_RELEVANT.o \
+	../heimdal/lib/asn1/asn1_AD_KDCIssued.o \
 	../heimdal/lib/asn1/asn1_APOptions.o \
 	../heimdal/lib/asn1/asn1_AP_REP.o \
 	../heimdal/lib/asn1/asn1_AP_REQ.o \
