@@ -38,7 +38,26 @@ if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
 
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
 my $OUTPUT = output::create_output($DEPEND);
-my $mkenv = new smb_build::makefile(\%config::config, $OUTPUT, $mkfile);
+my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
+
+foreach my $key (values %$OUTPUT) {
+	next unless defined $key->{OUTPUT_TYPE};
+
+	$mkenv->MergedObj($key) if $key->{OUTPUT_TYPE} eq "MERGEDOBJ";
+	$mkenv->ObjList($key) if $key->{OUTPUT_TYPE} eq "OBJLIST";
+	$mkenv->StaticLibrary($key) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
+	$mkenv->PkgConfig($key) if ($key->{OUTPUT_TYPE} eq "SHARED_LIBRARY") and
+						defined($key->{MAJOR_VERSION});
+	$mkenv->SharedLibrary($key) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
+	$mkenv->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
+	$mkenv->Manpage($key) if defined($key->{MANPAGE});
+	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
+}
+
+# FIXME: These two lines are a hack
+$mkenv->ProtoHeader($OUTPUT->{PROTO});
+$mkenv->ProtoHeader($OUTPUT->{ALL_OBJS});
+
 $mkenv->write("Makefile");
 smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
 
