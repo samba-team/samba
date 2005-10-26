@@ -7,7 +7,7 @@ SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
 		samdb/ldb_modules/objectguid.o
 REQUIRED_SUBSYSTEMS = \
-		NDR_RAW NDR_MISC
+		LIBNDR NDR_MISC
 # End MODULE libldb_objectguid
 ################################################
 

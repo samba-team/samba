@@ -47,6 +47,8 @@ sub new($$$$)
 	$self->_prepare_dummy_MAKEDIR($CTX);
 	$self->_prepare_manpages($CTX);
 	$self->_prepare_binaries($CTX);
+	$self->_prepare_libraries($CTX);
+	$self->_prepare_headers($CTX);
 	$self->_prepare_target_settings($CTX);
 	$self->_prepare_rule_lists($CTX);
 	$self->_prepare_clean_rules();
@@ -91,6 +93,7 @@ BINDIR = $self->{config}->{bindir}
 SBINDIR = $self->{config}->{sbindir}
 datadir = $self->{config}->{datadir}
 LIBDIR = $self->{config}->{libdir}
+INCLUDEDIR = $self->{config}->{includedir}
 CONFIGDIR = $self->{config}->{configdir}
 localstatedir = $self->{config}->{localstatedir}
 SWATDIR = $self->{config}->{swatdir}
@@ -207,6 +210,44 @@ Makefile: config.status $deps
 	./config.status
 
 ");
+}
+
+sub _prepare_headers($$)
+{
+	my ($self, $ctx) = @_;
+
+	my @headers = ();
+	
+	foreach (values %$ctx) {
+		next unless defined $_->{PUBLIC_HEADERS};
+
+		foreach my $h (@{$_->{PUBLIC_HEADERS}}) {
+			push (@headers, "$_->{BASEDIR}/$h");
+		}
+	}
+	
+	$self->output("PUBLIC_HEADERS = " . array2oneperline(\@headers) . "\n");
+}
+
+sub _prepare_libraries($$)
+{
+	my ($self, $ctx) = @_;
+
+	my @shared_list = ();
+	my @static_list = ();
+
+	foreach (values %$ctx) {
+		next unless defined $_->{OUTPUT_TYPE};
+		next unless defined($_->{INSTALLDIR});
+		next unless ($_->{INSTALLDIR} eq "LIBDIR");
+
+		push(@shared_list, $_->{OUTPUT}) if ($_->{OUTPUT_TYPE} eq "SHARED_LIBRARY");
+		push(@static_list, $_->{OUTPUT}) if ($_->{OUTPUT_TYPE} eq "STATIC_LIBRARY");
+	}
+
+	$self->output("STATIC_LIBS = " . array2oneperline(\@static_list) . "\n");
+	$self->output("SHARED_LIBS = " . array2oneperline(\@shared_list) . "\n");
+
 }
 
 sub _prepare_binaries($$)

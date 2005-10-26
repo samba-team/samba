@@ -98,6 +98,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC LDBSAMBA
 NOPROTO = YES
 MANPAGE = man/ldb.3
+PUBLIC_HEADERS = include/ldb.h
 #
 # End SUBSYSTEM LIBLDB
 ################################################
