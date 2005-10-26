@@ -1,5 +1,11 @@
 2005-10-26  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* Makefile.am: build test_kcred
+	
+	* gss_acquire_cred.3: Document gss_krb5_import_ccache
 
+	* gssapi.3: Sort and add gss_krb5_import_ccache.
+	
 	* acquire_cred.c (_gssapi_krb5_ccache_lifetime): break out code
 	used to extract lifetime from a credential cache
 
