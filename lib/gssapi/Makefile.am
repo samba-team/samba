@@ -94,5 +94,5 @@ TESTS = test_sequence
 
 check_PROGRAMS = test_acquire_cred $(TESTS)
 
-noinst_PROGRAMS = test_cred
+noinst_PROGRAMS = test_cred test_kcred
 LDADD = libgssapi.la $(LIB_roken)
