@@ -108,7 +108,7 @@ sub create_smb_build_h($$)
 	print SMB_BUILD_H $output;
 	close(SMB_BUILD_H);
 
-	print "build/smb_build/main.pl: creating $file\n";
+	print __FILE__.": creating $file\n";
 	return;	
 }
 1;

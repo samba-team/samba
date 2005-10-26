@@ -199,7 +199,6 @@ distclean: clean
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
 	-rm -f config.pm config.mk
-	-rm -f lib/registry/winregistry.pc
 
 removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
