@@ -473,30 +473,44 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct PAC_LOGON_INFO *logon_info;
 
-	krb5_const_principal client_principal;
+	krb5_principal client_principal;
 	
 	DATA_BLOB pac;
+	krb5_data pac_data;
 
-	BOOL got_auth_data;
+	krb5_error_code ret;
 
 	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	got_auth_data = get_auth_data_from_tkt(mem_ctx, &pac, gensec_krb5_state->ticket);
+	ret = krb5_ticket_get_authorization_data_type(context, gensec_krb5_state->ticket, 
+						      KRB5_AUTHDATA_WIN2K_PAC, 
+						      &pac_data);
+	
+	if (ret) {
+		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
+			  smb_get_krb5_error_message(context, 
+						     ret, mem_ctx)));
+	} else {
+		pac = data_blob_talloc(mem_ctx, pac_data.data, pac_data.length);
+		if (!pac.data) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-	/* IF we have the PAC - otherwise we need to get this
-	 * data from elsewere - local ldb, or (TODO) lookup of some
-	 * kind... 
-	 */
-	if (got_auth_data) {
-
-		client_principal = get_principal_from_tkt(gensec_krb5_state->ticket);
+		ret = krb5_ticket_get_client(context, gensec_krb5_state->ticket, &client_principal);
+		if (ret) {
+			DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
+				  smb_get_krb5_error_message(context, 
+							     ret, mem_ctx)));
+			return NT_STATUS_NO_MEMORY;
+		}
 		
 		/* decode and verify the pac */
 		nt_status = kerberos_pac_logon_info(gensec_krb5_state, &logon_info, pac,
@@ -504,6 +518,8 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						    NULL, gensec_krb5_state->keyblock,
 						    client_principal,
 						    gensec_krb5_state->ticket->ticket.authtime);
+		krb5_free_principal(context, client_principal);
+
 		if (NT_STATUS_IS_OK(nt_status)) {
 			union netr_Validation validation;
 			validation.sam3 = &logon_info->info3;
@@ -515,12 +531,26 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		talloc_free(mem_ctx);
 	}
 
+		
+		
+	/* IF we have the PAC - otherwise we need to get this
+	 * data from elsewere - local ldb, or (TODO) lookup of some
+	 * kind... 
+	 */
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* NO pac, or can't parse or verify it */
-		krb5_error_code ret;
 		char *principal_string;
+		ret = krb5_ticket_get_client(context, gensec_krb5_state->ticket, &client_principal);
+		if (ret) {
+			DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
+				  smb_get_krb5_error_message(context, 
+							     ret, mem_ctx)));
+			return NT_STATUS_NO_MEMORY;
+		}
+		
 		ret = krb5_unparse_name(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					get_principal_from_tkt(gensec_krb5_state->ticket), &principal_string);
+					client_principal, &principal_string);
+		krb5_free_principal(context, client_principal);
 		if (ret) {
 			return NT_STATUS_NO_MEMORY;
 		}
