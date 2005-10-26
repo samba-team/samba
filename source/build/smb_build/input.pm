@@ -10,7 +10,10 @@
 use strict;
 package smb_build::input;
 
-my $subsystem_default_output_type = "MERGEDOBJ";
+use vars qw($library_output_type $subsystem_output_type);
+
+$library_output_type = "OBJ_LIST";
+$subsystem_output_type = "OBJ_LIST";
 my $srcdir = ".";
 
 sub strtrim($)
@@ -41,7 +44,7 @@ sub check_subsystem($$)
 	}
 	
 	unless(defined($subsys->{OUTPUT_TYPE})) {
-		$subsys->{OUTPUT_TYPE} = $subsystem_default_output_type;
+		$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
 	}
 }
 
@@ -86,7 +89,7 @@ sub check_module($$)
 		$mod->{ENABLE} = "YES";
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 		printf("Module: %s...static\n",$mod->{NAME});
-		$mod->{OUTPUT_TYPE} = $subsystem_default_output_type;
+		$mod->{OUTPUT_TYPE} = $subsystem_output_type;
 	} else {
 		$mod->{ENABLE} = "NO";
 		printf("Module: %s...not\n",$mod->{NAME});
@@ -103,7 +106,7 @@ sub check_library($$)
 		return;
 	}
 
-	$lib->{OUTPUT_TYPE} = "SHARED_LIBRARY";
+	$lib->{OUTPUT_TYPE} = $library_output_type;
 }
 
 sub check_binary($$)
@@ -144,8 +147,6 @@ sub calc_unique_deps($$)
 sub check($$)
 {
 	my ($INPUT, $enabled) = @_;
-
-	($subsystem_default_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
 
 	foreach my $part (values %$INPUT) {
 		if (defined($enabled->{$part->{NAME}})) { 

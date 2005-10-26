@@ -20,6 +20,22 @@ use strict;
 my $INPUT = {};
 
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, "main.mk");
+
+if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"})) {
+	$smb_build::input::subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE};
+} elsif ($config::config{BLDMERGED} eq "true") {
+	$smb_build::input::subsystem_output_type = "MERGEDOBJ";
+}
+
+if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
+	$smb_build::input::subsystem_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
+} elsif ($config::config{BLDSHARED} eq "true") {
+	# FIXME: This should really be SHARED_LIBRARY
+	$smb_build::input::subsystem_output_type = "MERGEDOBJ";
+} elsif ($config::config{BLDMERGED} eq "true") {
+	$smb_build::input::subsystem_output_type = "MERGEDOBJ";
+}
+
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
 my $OUTPUT = output::create_output($DEPEND);
 my $mkenv = new smb_build::makefile(\%config::config, $OUTPUT, $mkfile);
