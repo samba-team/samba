@@ -254,6 +254,10 @@ _gss_check_compat(OM_uint32 *, gss_name_t, const char *,
 OM_uint32
 gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 
+OM_uint32
+_gssapi_krb5_ccache_lifetime(OM_uint32 *, krb5_ccache, 
+			     krb5_principal, OM_uint32 *);
+
 /* sequence */
 
 OM_uint32
