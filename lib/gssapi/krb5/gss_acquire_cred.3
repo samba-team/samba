@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd September  9, 2003
+.Dd October 26, 2005
 .Dt GSS_ACQUIRE_CRED 3
 .Os HEIMDAL
 .Sh NAME
@@ -63,6 +63,7 @@
 .Nm gss_krb5_compat_des3_mic ,
 .Nm gss_krb5_copy_ccache ,
 .Nm gsskrb5_extract_authz_data_from_sec_context ,
+.Nm gss_krb5_import_ccache ,
 .Nm gss_krb5_get_tkt_flags ,
 .Nm gss_process_context_token ,
 .Nm gss_release_buffer ,
@@ -304,6 +305,12 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "gss_ctx_id_t context_handle"
 .Fa "int ad_type"
 .Fa "gss_buffer_t ad_data"
+.Fc
+.Ft OM_uint32
+.Fo gss_krb5_import_ccache
+.Fa "OM_uint32 *minor"
+.Fa "krb5_ccache out"
+.Fa "gss_cred_id_t *cred"
 .Fc
 .Ft OM_uint32
 .Fo gss_krb5_get_tkt_flags
@@ -612,6 +619,10 @@ initiator to the acceptor when using token delegation in the Kerberos
 mechanism.
 The acceptor receives the delegated token in the last argument to
 .Fn gss_accept_sec_context .
+.Pp
+.Fn gss_krb5_import_ccache
+will import the krb5 credentials into gss credential so it can be used
+withing GSS-API.
 .Pp
 .Fn gsskrb5_register_acceptor_identity
 sets the Kerberos 5 principal that the acceptor will use.
