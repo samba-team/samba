@@ -58,6 +58,22 @@ showflags:
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
 	@echo "  LIBS = $(LIBS)"
 
+# The permissions to give the executables
+INSTALLPERMS = 0755
+
+# set these to where to find various files
+# These can be overridden by command line switches (see smbd(8))
+# or in smb.conf (see smb.conf(5))
+CONFIGFILE = $(CONFIGDIR)/smb.conf
+LMHOSTSFILE = $(CONFIGDIR)/lmhosts
+
+PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
+	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
+	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DLIBDIR=\"$(LIBDIR)\" \
+	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
+	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
+	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
+
 install: showlayout installbin installdat installswat installmisc installlib \
 	installheader
 
@@ -114,6 +130,9 @@ uninstallheader:
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
+Makefile: config.status $(MK_FILES)
+	./config.status
+
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`
 
@@ -159,6 +178,38 @@ basics: include/config.h \
 	idl \
 	heimdal_basics
 
+clean: heimdal_clean
+	@echo Removing headers
+	@-rm -f include/proto.h
+	@echo Removing objects
+	@-find . -name '*.o' -exec rm -f '{}' \;
+	@echo Removing binaries
+	@-rm -f $(BIN_PROGS) $(SBIN_PROGS)
+	@echo Removing dummy targets
+	@-rm -f bin/.*_*
+	@echo Removing generated files
+	@-rm -rf librpc/gen_* 
+	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
+
+distclean: clean
+	-rm -f bin/.dummy
+	-rm -f include/config.h include/smb_build.h
+	-rm -f Makefile 
+	-rm -f config.status
+	-rm -f config.log config.cache
+	-rm -f samba4-deps.dot
+	-rm -f config.pm config.mk
+	-rm -f lib/registry/winregistry.pc
+
+removebackup:
+	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
+
+realdistclean: distclean removebackup
+	-rm -f include/config.h.in
+	-rm -f include/version.h
+	-rm -f configure
+	-rm -f $(MANPAGES)
+
 test: $(DEFAULT_TEST_TARGET)
 
 test-swrap: all
@@ -174,6 +225,19 @@ valgrindtest: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
+bin/.dummy:
+	@: >> $@ || : > $@
+
+###############################################################################
+# File types
+###############################################################################
+
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .ho
+
+.c.d:
+	@echo "Generating dependencies for $<"
+	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
+
 .y.c:
 	@echo "Building $< with $(YACC)"
 	@-$(srcdir)/script/yacc_compile.sh "$(YACC)" "$<" "$@"
@@ -181,3 +245,17 @@ valgrindtest: all
 .l.c:
 	@echo "Building $< with $(LEX)"
 	@-$(srcdir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+
+DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
+
+.1.xml.1:
+	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
+
+.3.xml.3:
+	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
+
+.5.xml.5:
+	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
+
+.7.xml.7:
+	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
