@@ -309,6 +309,12 @@ Samba makes extensive use of the principal manipulation functions in
 Heimdal, including the known structure behind krb_principal and
 krb5_realm (a char *).
 
+Authz data extraction
+---------------------
+
+We use krb5_ticket_get_authorization_data_type(), and expect it to
+return the correct authz data, even if wrapped in an AD-IFRELEVENT container.
+
 
 KDC Extensions
 --------------
@@ -391,14 +397,6 @@ PAC Correctness
 ---------------
 
 We need to put the PAC into the TGT, not just the service ticket.  
-
-Authz data extraction
----------------------
-
-We need to parse the authz data field correctly, and have a generic
-rouitine to get at particular types of data, no matter their inclusion
-in 'if relevent' or other stuctures.  This should be a utlity function
-we can use in both the client libs and KDC.
 
 Forwarded tickets
 -----------------
