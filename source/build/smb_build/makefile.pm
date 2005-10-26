@@ -13,9 +13,9 @@ use strict;
 
 use base 'smb_build::env';
 
-sub new($$$$)
+sub new($$$)
 {
-	my ($myname, $config, $CTX, $mkfile) = @_;
+	my ($myname, $config, $mkfile) = @_;
 	my $self = new smb_build::env($config);
 	
 	bless($self, $myname);
@@ -43,31 +43,6 @@ sub new($$$$)
 	$self->_prepare_hostcc_rule();
 	$self->_prepare_std_CC_rule("c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
 	$self->_prepare_std_CC_rule("h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
-
-	$self->_prepare_mk_files();
-
-	$self->_prepare_dummy_MAKEDIR($CTX);
-
-	foreach my $key (values %$CTX) {
-		if (defined($key->{OBJ_LIST})) {
-			$self->_prepare_obj_list($key->{TYPE}, $key);
-			$self->_prepare_cflags($key->{TYPE}, $key);
-		}
-	}
-	
-	foreach my $key (values %$CTX) {
-		next unless defined $key->{OUTPUT_TYPE};
-
-		$self->MergedObj($key) if $key->{OUTPUT_TYPE} eq "MERGEDOBJ";
-		$self->ObjList($key) if $key->{OUTPUT_TYPE} eq "OBJLIST";
-		$self->StaticLibrary($key) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
-		$self->PkgConfig($key) if ($key->{OUTPUT_TYPE} eq "SHARED_LIBRARY") and
-							defined($key->{MAJOR_VERSION});
-		$self->SharedLibrary($key) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
-		$self->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
-		$self->Manpage($key) if defined($key->{MANPAGE});
-		$self->Header($key) if defined($key->{PUBLIC_HEADERS});
-	}
 
 	return $self;
 }
@@ -169,9 +144,9 @@ sub _prepare_mk_files($)
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
 }
 
-sub _prepare_dummy_MAKEDIR($$)
+sub _prepare_dummy_MAKEDIR($)
 {
-	my ($self,$ctx) = @_;
+	my ($self) = @_;
 
 	$self->output(<< '__EOD__'
 dynconfig.o: dynconfig.c Makefile
@@ -263,6 +238,9 @@ sub SharedLibrary($$)
 
 	push (@{$self->{shared_libs}}, $ctx->{OUTPUT});
 
+	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
+
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	my $tmpshlink = array2oneperline($ctx->{LINK_LIST});
 	my $tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
@@ -307,6 +285,8 @@ sub MergedObj($$)
 
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
+	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
 	$self->output("$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n");
 
 	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n");
@@ -323,6 +303,8 @@ sub ObjList($$)
 
 	return unless $ctx->{TARGET};
 
+	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
 	$self->output("$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n");
 	$self->output("$ctx->{TARGET}: ");
 	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n");
@@ -334,6 +316,9 @@ sub StaticLibrary($$)
 	my ($self,$ctx) = @_;
 
 	push (@{$self->{static_libs}}, $ctx->{OUTPUT});
+
+	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
 
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	my $tmpstlink = array2oneperline($ctx->{LINK_LIST});
@@ -375,6 +360,8 @@ sub Binary($$)
 		push (@{$self->{bin_progs}}, $ctx->{TARGET});
 	}
 
+	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	my $tmplink = array2oneperline($ctx->{LINK_LIST});
 	my $tmpflag = array2oneperline($ctx->{LINK_FLAGS});
@@ -419,6 +406,13 @@ sub PkgConfig($$)
 	smb_build::env::PkgConfig($self,$path,$ctx->{NAME},"FIXME",join(' ', @{$ctx->{CFLAGS}}), "$ctx->{MAJOR_VERSION}.$ctx->{MINOR_VERSION}.$ctx->{RELEASE_VERSION}"); 
 }
 
+sub ProtoHeader($$)
+{
+	my ($self,$ctx) = @_;
+
+	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+}
+
 sub write($$)
 {
 	my ($self,$file) = @_;
@@ -431,6 +425,9 @@ sub write($$)
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 
+
+	$self->_prepare_mk_files();
+
 	if ($self->{developer}) {
 		$self->output(<<__EOD__
 #-include \$(_ALL_OBJS_OBJS:.o=.d)
@@ -441,6 +438,8 @@ IDL_FILES = \$(wildcard librpc/idl/*.idl)
 __EOD__
 );
 	}
+
+	$self->_prepare_dummy_MAKEDIR();
 
 	$self->output($self->{mkfile});
 
