@@ -78,7 +78,10 @@ REQUIRED_SUBSYSTEMS = \
 
 ################################################
 # Start SUBSYSTEM REGISTRY
-[SUBSYSTEM::REGISTRY]
+[LIBRARY::REGISTRY]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		common/reg_interface.o
 ADD_OBJ_FILES = \
@@ -88,18 +91,6 @@ ADD_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBBASIC
 # End MODULE registry_ldb
-################################################
-
-################################################
-# Start LIBRARY libwinregistry
-[LIBRARY::libwinregistry]
-MAJOR_VERSION = 0
-MINOR_VERSION = 0
-RELEASE_VERSION = 1
-REQUIRED_SUBSYSTEMS = \
-		REGISTRY
-#
-# End LIBRARY libwinregistry
 ################################################
 
 ################################################

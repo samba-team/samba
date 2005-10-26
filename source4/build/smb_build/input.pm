@@ -161,10 +161,7 @@ sub check($$)
 
 	foreach my $k (keys %$INPUT) {
 		my $part = $INPUT->{$k};
-		if (not defined($part->{TYPE})) {
-			print STDERR "$k does not have a type set.. Perhaps it's only mentioned in a .m4 but not in a .mk file?\n";
-			next;
-		}
+
 		check_subsystem($INPUT, $part) if ($part->{TYPE} eq "SUBSYSTEM");
 		check_module($INPUT, $part) if ($part->{TYPE} eq "MODULE");
 		check_library($INPUT, $part) if ($part->{TYPE} eq "LIBRARY");
