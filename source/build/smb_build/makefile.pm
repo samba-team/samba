@@ -26,6 +26,7 @@ sub new($$$$)
 	$self->{static_libs} = [];
 	$self->{shared_libs} = [];
 	$self->{headers} = [];
+	$self->{pc_files} = [];
 	$self->{output} = "";
 
 	$self->{mkfile} = $mkfile;
@@ -60,6 +61,8 @@ sub new($$$$)
 		$self->MergedObj($key) if $key->{OUTPUT_TYPE} eq "MERGEDOBJ";
 		$self->ObjList($key) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 		$self->StaticLibrary($key) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
+		$self->PkgConfig($key) if ($key->{OUTPUT_TYPE} eq "SHARED_LIBRARY") and
+							defined($key->{MAJOR_VERSION});
 		$self->SharedLibrary($key) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 		$self->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
 		$self->Manpage($key) if defined($key->{MANPAGE});
@@ -405,6 +408,17 @@ sub Manpage($$)
 	push (@{$self->{manpages}}, "$dir/$ctx->{MANPAGE}");
 }
 
+sub PkgConfig($$)
+{
+	my ($self,$ctx) = @_;
+	
+	my $path = "$ctx->{BASEDIR}/$ctx->{NAME}.pc";
+
+	push (@{$self->{pc_files}}, $path);
+
+	smb_build::env::PkgConfig($self,$path,$ctx->{NAME},"FIXME",join(' ', @{$ctx->{CFLAGS}}), "$ctx->{MAJOR_VERSION}.$ctx->{MINOR_VERSION}.$ctx->{RELEASE_VERSION}"); 
+}
+
 sub write($$)
 {
 	my ($self,$file) = @_;
@@ -415,6 +429,7 @@ sub write($$)
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
+	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 
 	if ($self->{developer}) {
 		$self->output(<<__EOD__
@@ -433,8 +448,7 @@ __EOD__
 	print MAKEFILE $self->{output};
 	close(MAKEFILE);
 
-	print "build/smb_build/main.pl: creating $file\n";
-	return;	
+	print __FILE__.": creating $file\n";
 }
 
 1;
