@@ -1,3 +1,30 @@
+2005-10-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/klist.c: In the list caches view, rename the Status field
+	to Expires.
+
+	* lib/krb5/krb5_encrypt.3: Fix mdoc for
+	krb5_encrypt_EncryptedData, Johnny Lam <jlam@pkgsrc.org>
+	
+2005-10-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/gssapi_client.c: Check return value from asprintf
+	instead of string != NULL since it undefined behavior on
+	Linux. From Björn Sandell
+	
+2005-10-21  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (_krb5_dh_group_ok): if not enough bits are
+	generated from the DH groups, fail.
+
+	* kdc/pkinit.c (get_dh_param): Pass down config so this function
+	can check pkinit_dh_min_bits
+
+	* kdc/config.c: Fill in pkinit_dh_min_bits from configuration
+	file.
+
+	* kdc/kdc.h: Add pkinit_dh_min_bits to krb5_kdc_configuration.
+	
 2005-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Add option to require binding between reply
