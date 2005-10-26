@@ -9,6 +9,7 @@ mkinstalldirs="$1"; shift
 srcdir="$1"; shift
 manbase="$1"; shift
 suffix="$1"; shift
+catinstall="${INSTALL_CATPAGES-yes}"
 
 for f in "$@"; do
 	base=`echo "$f" | sed 's/\(.*\)\.\([^.]*\)$/\1/'`
@@ -17,7 +18,7 @@ for f in "$@"; do
 	catdir="$manbase/cat$section"
 	c="$base.cat$section"
 
-	if test -f "$srcdir/$c"; then
+	if test "$catinstall" = yes -a -f "$srcdir/$c"; then
 		if test \! -d "$catdir"; then
 			eval "$mkinstalldirs $catdir"
 		fi
@@ -36,7 +37,7 @@ for f in "$@"; do
 					break
 				fi
 			done
-			if test -f "$srcdir/$c"; then
+			if test "$catinstall" = yes -a -f "$srcdir/$c"; then
 				target="$catdir/$link.$suffix"
 				for cmd in "ln -f $catdir/$base.$suffix $target" \
 					   "ln -fs $base.$suffix $target" \
