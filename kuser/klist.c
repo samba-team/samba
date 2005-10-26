@@ -60,7 +60,6 @@ printable_time_long(time_t t)
 #define COL_PRINCIPAL		"  Principal"
 #define COL_PRINCIPAL_KVNO	"  Principal (kvno)"
 #define COL_CACHENAME		"  Cache name"
-#define COL_STATUS		"  Status"
 
 static void
 print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
@@ -305,7 +304,8 @@ print_tickets (krb5_context context,
 static int
 check_for_tgt (krb5_context context,
 	       krb5_ccache ccache,
-	       krb5_principal principal)
+	       krb5_principal principal,
+	       time_t *expiration)
 {
     krb5_error_code ret;
     krb5_creds pattern;
@@ -331,7 +331,12 @@ check_for_tgt (krb5_context context,
 	    return 1;
 	krb5_err (context, 1, ret, "krb5_cc_retrieve_cred");
     }
+
     expired = time(NULL) > creds.times.endtime;
+
+    if (expiration)
+	*expiration = creds.times.endtime;
+
     krb5_free_cred_contents (context, &creds);
 
     return expired;
@@ -585,7 +590,7 @@ display_v5_ccache (const char *cred_cache, int do_test, int do_verbose,
 	    krb5_err (context, 1, ret, "krb5_cc_get_principal");
     }
     if (do_test)
-	exit_status = check_for_tgt (context, ccache, principal);
+	exit_status = check_for_tgt (context, ccache, principal, NULL);
     else
 	print_tickets (context, ccache, principal, do_verbose, do_flags);
 
@@ -624,7 +629,7 @@ list_caches(void)
     ct = rtbl_create();
     rtbl_add_column(ct, COL_PRINCIPAL, 0);
     rtbl_add_column(ct, COL_CACHENAME, 0);
-    rtbl_add_column(ct, COL_STATUS, 0);
+    rtbl_add_column(ct, COL_EXPIRES, 0);
     rtbl_set_prefix(ct, "   ");
     rtbl_set_column_prefix(ct, COL_PRINCIPAL, "");
 
@@ -634,15 +639,17 @@ list_caches(void)
 
 	ret = krb5_cc_get_principal(context, id, &principal);
 	if (ret == 0) {
-	    int expired = check_for_tgt (context, id, principal);
+	    time_t t;
+	    int expired = check_for_tgt (context, id, principal, &t);
 
 	    ret = krb5_unparse_name(context, principal, &name);
 	    if (ret == 0) {
 		rtbl_add_column_entry(ct, COL_PRINCIPAL, name);
 		rtbl_add_column_entry(ct, COL_CACHENAME,
 				      krb5_cc_get_name(context, id));
-		rtbl_add_column_entry(ct, COL_STATUS,
-				      expired ? "Expired" : "Valid");
+		rtbl_add_column_entry(ct, COL_EXPIRES,
+				      expired ? ">>> Expired <<<" : 
+				      printable_time(t));
 		free(name);
 		krb5_free_principal(context, principal);
 	    }
