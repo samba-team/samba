@@ -76,7 +76,7 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
-	WERROR status;
+	NTSTATUS status;
 } EVENTLOG_R_OPEN_EVENTLOG;
 
 
@@ -88,7 +88,7 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
-	WERROR status;
+	NTSTATUS status;
 } EVENTLOG_R_CLOSE_EVENTLOG;
 
 
@@ -100,7 +100,7 @@ typedef struct {
 
 typedef struct {
 	uint32 num_records;
-	WERROR status;
+	NTSTATUS status;
 } EVENTLOG_R_GET_NUM_RECORDS;
 
 
@@ -112,7 +112,7 @@ typedef struct {
 
 typedef struct {
 	uint32 oldest_entry;
-	WERROR status;
+	NTSTATUS status;
 } EVENTLOG_R_GET_OLDEST_ENTRY;
 
 
@@ -175,7 +175,7 @@ typedef struct {
 	uint8 *end_of_entries_padding;
 	uint32 sent_size;
 	uint32 real_size;
-	WERROR status;
+	NTSTATUS status;
 } EVENTLOG_R_READ_EVENTLOG;
 
 
@@ -187,7 +187,7 @@ typedef struct {
 } EVENTLOG_Q_CLEAR_EVENTLOG;
 
 typedef struct {
-	WERROR status;
+	NTSTATUS status;
 } EVENTLOG_R_CLEAR_EVENTLOG;
 
 #endif /* _RPC_EVENTLOG_H */
