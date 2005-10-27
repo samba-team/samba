@@ -831,7 +831,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	krb5_principal principal;
 	char *principal_string;
 	DATA_BLOB pac_blob;
-	DATA_BLOB unwrapped_pac;
 	
 	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
 	    || (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
