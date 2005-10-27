@@ -960,8 +960,9 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
 		  fsp->fsp_name ));
 
-	if (fsp->is_directory || fsp->is_stat)
+	if (fsp->is_stat) {
 		return True;
+	}
 
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 	if (lck == NULL) {

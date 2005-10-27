@@ -195,12 +195,12 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
 
 	if (lck == NULL) {
-		DEBUG(0, ("Could not get share mode lock\n"));
+		DEBUG(0, ("close_file: Could not get share mode lock for file %s\n", fsp->fsp_name));
 		return EINVAL;
 	}
 
 	if (!del_share_mode(lck, fsp)) {
-		DEBUG(0, ("Could not delete share entry\n"));
+		DEBUG(0, ("close_file: Could not delete share entry for file %s\n", fsp->fsp_name));
 	}
 
 	delete_file = lck->delete_on_close;
@@ -297,6 +297,9 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
   
 static int close_directory(files_struct *fsp, BOOL normal_close)
 {
+	struct share_mode_lock *lck = 0;
+	BOOL delete_dir = False;
+
 	remove_pending_change_notify_requests_by_fid(fsp);
 
 	/*
@@ -304,8 +307,33 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 * reference to a directory also.
 	 */
 
-	if (normal_close &&
-	    get_delete_on_close_flag(fsp->dev, fsp->inode, fsp->fsp_name)) {
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
+
+	if (lck == NULL) {
+		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));
+		return EINVAL;
+	}
+
+	if (!del_share_mode(lck, fsp)) {
+		DEBUG(0, ("close_directory: Could not delete share entry for %s\n", fsp->fsp_name));
+	}
+
+	delete_dir = lck->delete_on_close;
+
+	if (delete_dir) {
+		int i;
+		/* See if others still have the file open. If this is the
+		 * case, then don't delete */
+		for (i=0; i<lck->num_share_modes; i++) {
+			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
+				delete_dir = False;
+				break;
+			}
+		}
+	}
+
+
+	if (normal_close && delete_dir) {
 		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));
@@ -320,6 +348,8 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 		}
 		process_pending_change_notify_queue((time_t)0);
 	}
+
+	talloc_free(lck);
 
 	/*
 	 * Do the code common to files and directories.
