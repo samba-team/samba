@@ -622,84 +622,6 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 	return 0;
 }
 
-static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
-					    TALLOC_CTX *mem_ctx,
-					    const struct ldb_dn *realm_dn,
-					    const char *alias_from,
-					    char **alias_to)
-{
-	int i;
-	int count;
-	struct ldb_message **msg;
-	struct ldb_message_element *spnmappings;
-	struct ldb_dn *service_dn = ldb_dn_string_compose(mem_ctx, realm_dn,
-						"CN=Directory Service,CN=Windows NT"
-						",CN=Services,CN=Configuration");
-	char *service_dn_str = ldb_dn_linearize(mem_ctx, service_dn);
-	const char *directory_attrs[] = {
-		"sPNMappings", 
-		NULL
-	};
-
-	count = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
-			   directory_attrs, &msg);
-	talloc_steal(mem_ctx, msg);
-
-	if (count < 1) {
-		krb5_warnx(context, "ldb_search: dn: %s not found: %d", service_dn_str, count);
-		krb5_set_error_string(context, "ldb_search: dn: %s not found: %d", service_dn_str, count);
-		return HDB_ERR_NOENTRY;
-	} else if (count > 1) {
-		krb5_warnx(context, "ldb_search: dn: %s found %d times!", service_dn_str, count);
-		krb5_set_error_string(context, "ldb_search: dn: %s found %d times!", service_dn_str, count);
-		return HDB_ERR_NOENTRY;
-	}
-	
-	spnmappings = ldb_msg_find_element(msg[0], "sPNMappings");
-	if (!spnmappings || spnmappings->num_values == 0) {
-		krb5_warnx(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn_str);
-		krb5_set_error_string(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn_str);
-		return HDB_ERR_NOENTRY;
-	}
-
-	for (i = 0; i < spnmappings->num_values; i++) {
-		char *mapping, *p, *str;
-		mapping = talloc_strdup(mem_ctx, 
-					(const char *)spnmappings->values[i].data);
-		if (!mapping) {
-			krb5_warnx(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn_str);
-			krb5_set_error_string(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn_str);
-			return HDB_ERR_NOENTRY;
-		}
-		
-		/* C string manipulation sucks */
-		
-		p = strchr(mapping, '=');
-		if (!p) {
-			krb5_warnx(context, "ldb_search: dn: %s sPNMapping malformed: %s", 
-				   service_dn_str, mapping);
-			krb5_set_error_string(context, "ldb_search: dn: %s sPNMapping malformed: %s", 
-					      service_dn_str, mapping);
-			return HDB_ERR_NOENTRY;
-		}
-		p[0] = '\0';
-		p++;
-		do {
-			str = p;
-			p = strchr(p, ',');
-			if (p) {
-				p[0] = '\0';
-				p++;
-			}
-			if (strcasecmp(str, alias_from) == 0) {
-				*alias_to = mapping;
-				return 0;
-			}
-		} while (p);
-	}
-	krb5_warnx(context, "LDB_lookup_spn_alias: no alias for service %s applicable", alias_from);
-	return HDB_ERR_NOENTRY;
-}
 
 static krb5_error_code LDB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
@@ -755,35 +677,8 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
 	 * is in our db, then direct the caller at our primary
 	 * krgtgt */
-	
-	switch (ent_type) {
-	case HDB_ENT_TYPE_SERVER:
-		if (principal->name.name_string.len == 2
-		    && (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)
-		    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
-					 mem_ctx, principal->name.name_string.val[1], &realm_fixed_msg) == 0)) {
-			const char *dnsdomain = ldb_msg_find_string(realm_fixed_msg[0], "dnsDomain", NULL);
-			char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
-			if (!realm_fixed) {
-				krb5_set_error_string(context, "strupper_talloc: out of memory");
-				talloc_free(mem_ctx);
-				return ENOMEM;
-			}
 
-			free(principal->name.name_string.val[1]);
-			principal->name.name_string.val[1] = strdup(realm_fixed);
-			talloc_free(realm_fixed);
-			if (!principal->name.name_string.val[1]) {
-				krb5_set_error_string(context, "LDB_fetch: strdup() failed!");
-				talloc_free(mem_ctx);
-				return ENOMEM;
-			}
-			ldb_ent_type = HDB_LDB_ENT_TYPE_KRBTGT;
-			break;
-		} else {
-			ldb_ent_type = HDB_LDB_ENT_TYPE_SERVER;
-			break;
-		}
+	switch (ent_type) {
 	case HDB_ENT_TYPE_CLIENT:
 	{
 		int ldb_ret;
@@ -829,6 +724,92 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		talloc_free(mem_ctx);
 		return ret;
 	}
+	case HDB_ENT_TYPE_SERVER:
+		if ((principal->name.name_string.len == 2)
+			&& (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)) {
+			/* krbtgt case.  Either us or a trusted realm */
+			
+		} else if (principal->name.name_string.len >= 2) {
+			/* 'normal server' case */
+			int ldb_ret;
+			NTSTATUS nt_status;
+			struct ldb_dn *user_dn, *domain_dn;
+			char *principal_string;
+			ldb_ent_type = HDB_LDB_ENT_TYPE_SERVER;
+			
+			ret = krb5_unparse_name_norealm(context, principal, &principal_string);
+			
+			if (ret != 0) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+			
+			/* At this point we may find the host is known to be
+			 * in a different realm, so we should generate a
+			 * referral instead */
+			nt_status = crack_service_principal_name((struct ldb_context *)db->hdb_db,
+								 mem_ctx, principal_string, 
+								 &user_dn, &domain_dn);
+			free(principal_string);
+			
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				talloc_free(mem_ctx);
+				return HDB_ERR_NOENTRY;
+			}
+			
+			ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
+						  mem_ctx, user_dn, &msg, krb5_attrs);
+			
+			if (ldb_ret != 1) {
+			return HDB_ERR_NOENTRY;
+			}
+			
+			ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
+						  mem_ctx, domain_dn, &realm_msg, realm_attrs);
+			
+			if (ldb_ret != 1) {
+				return HDB_ERR_NOENTRY;
+			}
+			
+			ret = LDB_message2entry(context, db, mem_ctx, 
+						principal, ldb_ent_type, 
+						realm_msg[0], msg[0], entry);
+			talloc_free(mem_ctx);
+			return ret;
+			
+		} else {
+			/* server as client principal case, but we must not lookup userPrincipalNames */
+		}
+	}
+
+	switch (ent_type) {
+	case HDB_ENT_TYPE_SERVER:
+		if (principal->name.name_string.len == 2
+		    && (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)
+		    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
+					 mem_ctx, principal->name.name_string.val[1], &realm_fixed_msg) == 0)) {
+			const char *dnsdomain = ldb_msg_find_string(realm_fixed_msg[0], "dnsDomain", NULL);
+			char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
+			if (!realm_fixed) {
+				krb5_set_error_string(context, "strupper_talloc: out of memory");
+				talloc_free(mem_ctx);
+				return ENOMEM;
+			}
+
+			free(principal->name.name_string.val[1]);
+			principal->name.name_string.val[1] = strdup(realm_fixed);
+			talloc_free(realm_fixed);
+			if (!principal->name.name_string.val[1]) {
+				krb5_set_error_string(context, "LDB_fetch: strdup() failed!");
+				talloc_free(mem_ctx);
+				return ENOMEM;
+			}
+			ldb_ent_type = HDB_LDB_ENT_TYPE_KRBTGT;
+			break;
+		} else {
+			ldb_ent_type = HDB_LDB_ENT_TYPE_SERVER;
+			break;
+		}
 	case HDB_ENT_TYPE_ANY:
 		ldb_ent_type = HDB_LDB_ENT_TYPE_ANY;
 		break;
@@ -856,66 +837,11 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 				   principal, ldb_ent_type, realm_dn, &msg);
 
 	if (ret != 0) {
-		char *alias_from = principal->name.name_string.val[0];
-		char *alias_to;
-		Principal alias_principal;
-		
-		/* Try again with a servicePrincipal alias */
-		if (ent_type != HDB_LDB_ENT_TYPE_SERVER && ent_type != HDB_LDB_ENT_TYPE_ANY) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		if (principal->name.name_string.len < 2) {
-			krb5_warnx(context, "LDB_fetch: could not find principal in DB, alias not applicable");
-			krb5_set_error_string(context, "LDB_fetch: could not find principal in DB, alias not applicable");
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* Look for the list of aliases */
-		ret = LDB_lookup_spn_alias(context, 
-					   (struct ldb_context *)db->hdb_db, mem_ctx, 
-					   realm_dn, alias_from, 
-					   &alias_to);
-		if (ret != 0) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		ret = copy_Principal(principal, &alias_principal);
-		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: could not copy principal");
-			krb5_set_error_string(context, "LDB_fetch: could not copy principal");
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* ooh, very nasty playing around in the Principal... */
-		free(alias_principal.name.name_string.val[0]);
-		alias_principal.name.name_string.val[0] = strdup(alias_to);
-		if (!alias_principal.name.name_string.val[0]) {
-			krb5_warnx(context, "LDB_fetch: strdup() failed");
-			krb5_set_error_string(context, "LDB_fetch: strdup() failed");
-			ret = ENOMEM;
-			talloc_free(mem_ctx);
-			free_Principal(&alias_principal);
-			return ret;
-		}
-
-		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
-					   mem_ctx, 
-					   &alias_principal, ent_type, realm_dn, &msg);
-		free_Principal(&alias_principal);
-
-		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: could not find alias principal in DB");
-			krb5_set_error_string(context, "LDB_fetch: could not find alias principal in DB");
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-	}
-	if (ret == 0) {
+		krb5_warnx(context, "LDB_fetch: could not find principal in DB");
+		krb5_set_error_string(context, "LDB_fetch: could not find principal in DB");
+		talloc_free(mem_ctx);
+		return ret;
+	} else {
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
 					realm_msg[0], msg[0], entry);
