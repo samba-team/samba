@@ -557,6 +557,9 @@ BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
 			    r_t->ptr_dcname, ps, depth))
 		return False;
 
+	if (!prs_align(ps))
+		return False;
+
 	if (!prs_ntstatus("status", ps, depth, &r_t->status))
 		return False;
 
