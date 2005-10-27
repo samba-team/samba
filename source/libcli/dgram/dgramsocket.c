@@ -117,8 +117,9 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
 		status = socket_sendto(dgmsock->sock, &req->encoded, &len, 0, 
 				       req->dest.addr, req->dest.port);
 		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(3,("Failed to send datagram of length %u to %s:%d\n",
-				 (unsigned)req->encoded.length, req->dest.addr, req->dest.port));
+			DEBUG(3,("Failed to send datagram of length %u to %s:%d: %s\n",
+				 (unsigned)req->encoded.length, req->dest.addr, req->dest.port, 
+				 nt_errstr(status)));
 			DLIST_REMOVE(dgmsock->send_queue, req);
 			talloc_free(req);
 			continue;
