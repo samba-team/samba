@@ -4,7 +4,6 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   Copyright (C) Guenther Deschner 2005
   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +25,6 @@
 #include "system/kerberos.h"
 #include "system/time.h"
 #include "auth/kerberos/kerberos.h"
-#include "asn_1.h"
 
 #ifdef HAVE_KRB5
 
