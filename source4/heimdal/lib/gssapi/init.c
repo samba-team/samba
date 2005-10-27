@@ -89,17 +89,19 @@ gssapi_get_thread_context(int createp)
     return NULL;
 }
 
-krb5_error_code
-gssapi_krb5_init (void)
-{
-    krb5_error_code ret = 0;
 #ifdef _SAMBA_BUILD_
+/* Init krb5 with an event context.  Disgusting Samba-specific hack */
+
+krb5_error_code 
+gssapi_krb5_init_ev (void *event_context)
+{
     static struct smb_krb5_context *smb_krb5_context;
+    krb5_error_code ret = 0;
 
     HEIMDAL_MUTEX_lock(&gssapi_krb5_context_mutex);
 
     if(smb_krb5_context == NULL) {
-	ret = smb_krb5_init_context(NULL, &smb_krb5_context);
+	ret = smb_krb5_init_context(event_context, &smb_krb5_context);
     }
     if (ret == 0 && !created_key) {
 	HEIMDAL_key_create(&gssapi_context_key, 
@@ -116,6 +118,16 @@ gssapi_krb5_init (void)
     }
 
     HEIMDAL_MUTEX_unlock(&gssapi_krb5_context_mutex);
+    return ret;
+}
+#endif
+
+krb5_error_code
+gssapi_krb5_init (void)
+{
+    krb5_error_code ret = 0;
+#ifdef _SAMBA_BUILD_
+    ret = gssapi_krb5_init_ev(NULL);
 #else 
     HEIMDAL_MUTEX_lock(&gssapi_krb5_context_mutex);
 
