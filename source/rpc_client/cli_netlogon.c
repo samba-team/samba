@@ -387,7 +387,7 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 	prs_struct qbuf, rbuf;
 	NET_Q_GETDCNAME q;
 	NET_R_GETDCNAME r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -405,7 +405,7 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 		net_io_r_getdcname,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(result = r.status)) {
 		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
 	}
 
