@@ -259,7 +259,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				uint32 sec_chan_type,
 				uint32 *neg_flags_inout)
 {
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_CHAL clnt_chal_send;
 	DOM_CHAL srv_chal_recv;
 	struct dcinfo *dc;
@@ -405,7 +405,9 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 		net_io_r_getdcname,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
 	}
 
