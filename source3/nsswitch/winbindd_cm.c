@@ -116,6 +116,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	struct rpc_pipe_client *netlogon_pipe;
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
+	const char *server_name;
 
 	fstring tmp;
 	char *p;
@@ -142,13 +143,21 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 		return False;
 	}
 
-	result = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, domain->dcname,
+	server_name = talloc_asprintf(mem_ctx, "\\\\%s", our_domain->dcname);
+	if (server_name == NULL) {
+		return False;
+	}
+
+	result = rpccli_netlogon_getdcname(netlogon_pipe, mem_ctx, server_name,
 					   domain->name, tmp);
 
 	talloc_destroy(mem_ctx);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("rpccli_netlogon_getdcname failed: %s\n",
+			   nt_errstr(result)));
 		return False;
+	}
 
 	/* cli_netlogon_getdcname gives us a name with \\ */
 	p = tmp;
@@ -160,6 +169,8 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	}
 
 	fstrcpy(dcname, p);
+
+	DEBUG(10, ("rpccli_netlogon_getdcname returned %s\n", dcname));
 
 	if (!resolve_name(dcname, dc_ip, 0x20)) {
 		return False;
@@ -417,8 +428,10 @@ static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			      const char *dcname, struct in_addr ip,
 			      struct dc_name_ip **dcs, int *num)
 {
-	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname)))
+	if (!NT_STATUS_IS_OK(check_negative_conn_cache(domain_name, dcname))) {
+		DEBUG(10, ("DC %s was in the negative conn cache\n", dcname));
 		return False;
+	}
 
 	*dcs = TALLOC_REALLOC_ARRAY(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
 
@@ -657,6 +670,8 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		&& get_dc_name_via_netlogon(domain, dcname, &ip) 
 		&& add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs) )
 	{
+		DEBUG(10, ("Retrieved DC %s at %s via netlogon\n",
+			   dcname, inet_ntoa(ip)));
 		return True;
 	}
 
