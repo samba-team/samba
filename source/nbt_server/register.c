@@ -271,10 +271,10 @@ void nbtd_register_names(struct nbtd_server *nbtsrv)
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_PDC:
 		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_PDC, nb_flags);
-		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags);
+		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags | NBT_NM_GROUP);
 		break;
 	case ROLE_DOMAIN_BDC:
-		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags);
+		nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_LOGON, nb_flags | NBT_NM_GROUP);
 	default:
 		break;
 	}
