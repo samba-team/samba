@@ -46,8 +46,8 @@
 	ret = krb5_unparse_name(context, client, &principal_string);
 
 	if (ret != 0) {
-		krb5_set_error_string(context, "get pac: could not parse principal");
-		krb5_warnx(context, "get pac: could not parse principal");
+		krb5_set_error_string(context, "get pac: could not unparse principal");
+		krb5_warnx(context, "get pac: could not unparse principal");
 		talloc_free(mem_ctx);
 		return ret;
 	}
