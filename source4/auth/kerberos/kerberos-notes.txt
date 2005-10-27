@@ -236,10 +236,13 @@ the kerberos libraries
  - gsskrb5_acquire_creds() (takes keytab and/or ccache as input
    parameters, see keytab and state machine discussion)
 
+ - gss_krb5_copy_service_keyblock() (get the key used to actually
+   encrypt the ticket to the server, because the same key is used for
+   the PAC validation).
  - gsskrb5_extract_authtime_from_sec_context (get authtime from
    kerberos ticket)
  - gsskrb5_extract_authz_data_from_sec_context (get authdata from
-   ticket, ie the PAC)
+   ticket, ie the PAC.  Must unwrap the data if in an AD-IFRELEVENT)
  - gsskrb5_wrap_size (find out how big the wrapped packet will be,
    given input length).
 
@@ -282,17 +285,9 @@ cifs/foo@realm (winxp clients, using netbios)
 
 as well as all case variations on the above.  
 
-Because that all got 'too hard' to put into a keytab (and because we
-still wanted to supply a keytab to the GSSAPI code), a 'wildcard'
-keytab was devised.  MEMORY_WILDCARD: is much like MEMORY:, except it
-only matches on kvno, rather than on the principal name.
-
-Another way of handling this amy be to declare "" as a wildcard name,
-or perhaps allow principal names to be fnmatch() or regex expressions.
-
-Hmm, looking over the code again, I'm really not sure we need this...
-We should be able to just specify the same principal as a desired name
-(GSSAPI) and principal (keytab).
+Because that all got 'too hard' to put into a real keytab (and because we
+still wanted to supply a keytab to the GSSAPI code), we use in-memory
+keytabs, and specify the target name.
 
 Extra Heimdal functions used
 ----------------------------
@@ -357,6 +352,10 @@ consistancy in the handling of requests, binding to sockets etc.
 To handle TCP, we will use of our socket layer in much the same way as
 we deal with TCP for CIFS.  Tridge has promised this generalisation.
 
+For the client, we likewise must take over the socket functions, so
+that our single thread smbd will not lock up talking to itself.  (We
+allow processing while waiting for packets in our socket routines).
+
 Kerberos logging support
 ------------------------
 
@@ -414,7 +413,7 @@ accounts, and perform other controls.
 Kpasswd server
 --------------
 
-I have a partial kpasswd server which needs finishing, and a client
-testsuite written, either via the krb5 API or directly against GENSEC
-and the ASN.1 routines.
+I have a partial kpasswd server which needs finishing, and a we need a
+client testsuite written, either via the krb5 API or directly against
+GENSEC and the ASN.1 routines.
 
