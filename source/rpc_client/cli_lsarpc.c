@@ -74,7 +74,9 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
 #ifdef __INSURE__
 		pol->marker = MALLOC(1);
@@ -119,7 +121,9 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		*pol = r.pol;
 #ifdef __INSURE__
 		pol->marker = (char *)malloc(1);
@@ -153,7 +157,9 @@ NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 #ifdef __INSURE__
 		SAFE_FREE(pol->marker);
 #endif
@@ -379,7 +385,9 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		lsa_io_r_query,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -465,7 +473,9 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 		lsa_io_r_query_info2,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -618,7 +628,9 @@ NTSTATUS rpccli_lsa_enum_privilege(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 		lsa_io_r_enum_privs,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -685,7 +697,9 @@ NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 		lsa_io_r_priv_get_dispname,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -725,7 +739,7 @@ NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -789,7 +803,9 @@ NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	/* Return output parameters */
 
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		*user_pol = r.pol;
 	}
 
@@ -825,7 +841,9 @@ NTSTATUS rpccli_lsa_open_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	/* Return output parameters */
 
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		*user_pol = r.pol;
 	}
 
@@ -861,7 +879,9 @@ NTSTATUS rpccli_lsa_enum_privsaccount(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	/* Return output parameters */
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -910,7 +930,9 @@ NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		lsa_io_r_lookup_priv_value,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -949,7 +971,9 @@ NTSTATUS rpccli_lsa_query_secobj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 		lsa_io_r_query_sec_obj,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -993,7 +1017,9 @@ NTSTATUS rpccli_lsa_enum_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX 
 		lsa_io_r_enum_acct_rights,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -1051,7 +1077,9 @@ NTSTATUS rpccli_lsa_add_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *
 		lsa_io_r_add_acct_rights,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 done:
@@ -1084,7 +1112,9 @@ NTSTATUS rpccli_lsa_remove_account_rights(struct rpc_pipe_client *cli, TALLOC_CT
 		lsa_io_r_remove_acct_rights,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 done:
@@ -1223,7 +1253,9 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 
 	/* Return output parameters */
 	
-	if (NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
 		*trustdom_pol = r.handle;
 	}
 
@@ -1254,7 +1286,9 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLO
 		lsa_io_r_query_trusted_domain_info,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -1289,7 +1323,9 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli
 		lsa_io_r_query_trusted_domain_info,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -1324,7 +1360,9 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cl
 		lsa_io_r_query_trusted_domain_info,
 		NT_STATUS_UNSUCCESSFUL);
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
