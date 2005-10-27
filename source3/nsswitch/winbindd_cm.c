@@ -65,17 +65,6 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 
-/****************************************************************** 
-   Disabling schannl on the LSA pipe for now since 
-   both Win2K-SP4 SR1 & Win2K3-SP1 fail the open_policy() 
-   call (return codes 0xc0020042 and 0xc0020041 respectively).
-   We really need to fix this soon.  Had to disable on the 
-   SAMR pipe as well for now.   --jerry
-******************************************************************/
-
-/* #define DISABLE_SCHANNEL_WIN2K3_SP1	1 */
-
-
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
    entry set > 0, or the "Additional restrictions for anonymous
@@ -1021,7 +1010,6 @@ done:
 	return;
 }
 
-#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
 static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 				   struct dcinfo **ppdc)
 {
@@ -1043,13 +1031,14 @@ static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 	*ppdc = domain->conn.netlogon_pipe->dc;
 	return True;
 }
-#endif
 
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
+	fstring conn_pwd;
+	struct dcinfo *p_dcinfo;
 
 	result = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1058,99 +1047,121 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	conn = &domain->conn;
 
-	if (conn->samr_pipe == NULL) {
-		/*
-		 * No SAMR pipe yet. Attempt to get an NTLMSSP SPNEGO
-		 * authenticated sign and sealed pipe using the machine
-		 * account password by preference. If we can't - try schannel,
-		 * if that fails, try anonymous.
-		 */
-
-		fstring conn_pwd;
-		pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
-		if (conn->cli->user_name[0] && conn->cli->domain[0] &&
-		    conn_pwd[0]) {
-			/* We have an authenticated connection. Use
-			   a NTLMSSP SPNEGO authenticated SAMR pipe with
-			   sign & seal. */
-			conn->samr_pipe = cli_rpc_pipe_open_spnego_ntlmssp
-				(conn->cli, PI_SAMR, PIPE_AUTH_LEVEL_PRIVACY,
-				 conn->cli->domain, conn->cli->user_name,
-				 conn_pwd, &result);
-
-			if (conn->samr_pipe == NULL) {
-				DEBUG(10,("cm_connect_sam: failed to connect "
-					  "to SAMR pipe for domain %s using "
-					  "NTLMSSP authenticated pipe: user "
-					  "%s\\%s. Error was %s\n",
-					  domain->name, conn->cli->domain,
-					  conn->cli->user_name,
-					  nt_errstr(result)));
-			} else {
-				DEBUG(10,("cm_connect_sam: connected to SAMR "
-					  "pipe for domain %s using NTLMSSP "
-					  "authenticated pipe: user %s\\%s\n",
-					  domain->name, conn->cli->domain,
-					  conn->cli->user_name ));
-			}
-		}
-
-#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-		/* Fall back to schannel if it's a W2K pre-SP1 box. */
-		if (conn->samr_pipe == NULL) {
-			struct dcinfo *p_dcinfo;
-
-			if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-				conn->samr_pipe =
-					cli_rpc_pipe_open_schannel_with_key
-					(conn->cli, PI_SAMR,
-					 PIPE_AUTH_LEVEL_PRIVACY,
-					 domain->name, p_dcinfo,
-					 &result);
-			}
-			if (conn->samr_pipe == NULL) {
-				DEBUG(10,("cm_connect_sam: failed to connect "
-					  "to SAMR pipe for domain %s using "
-					  "schannel authenticated. Error "
-					  "was %s\n", domain->name,
-					  nt_errstr(result) ));
-			} else {
-				DEBUG(10,("cm_connect_sam: connected to SAMR "
-					  "pipe for domain %s using schannel."
-					  "\n", domain->name ));
-			}
-		}
-#endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
-
-		/* Finally fall back to anonymous. */
-		if (conn->samr_pipe == NULL) {
-			conn->samr_pipe =
-				cli_rpc_pipe_open_noauth(conn->cli, PI_SAMR,
-							 &result);
-		}
-
-		if (conn->samr_pipe == NULL) {
-			result = NT_STATUS_PIPE_NOT_AVAILABLE;
-			goto done;
-		}
-
-		result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-					     SEC_RIGHTS_MAXIMUM_ALLOWED,
-					     &conn->sam_connect_handle);
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10,("cm_connect_sam: rpccli_samr_connect failed "
-				  "for domain %s Error was %s\n",
-				  domain->name, nt_errstr(result) ));
-			goto done;
-		}
-
-		result = rpccli_samr_open_domain(conn->samr_pipe,
-						 mem_ctx,
-						 &conn->sam_connect_handle,
-						 SEC_RIGHTS_MAXIMUM_ALLOWED,
-						 &domain->sid,
-						 &conn->sam_domain_handle);
+	if (conn->samr_pipe != NULL) {
+		goto done;
 	}
+
+	/*
+	 * No SAMR pipe yet. Attempt to get an NTLMSSP SPNEGO authenticated
+	 * sign and sealed pipe using the machine account password by
+	 * preference. If we can't - try schannel, if that fails, try
+	 * anonymous.
+	 */
+
+	pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
+	if ((conn->cli->user_name[0] == '\0') ||
+	    (conn->cli->domain[0] == '\0') || 
+	    (conn_pwd[0] == '\0')) {
+		DEBUG(10, ("cm_connect_sam: No no user available for "
+			   "domain %s, trying schannel\n", conn->cli->domain));
+		goto schannel;
+	}
+
+	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
+	   authenticated SAMR pipe with sign & seal. */
+	conn->samr_pipe =
+		cli_rpc_pipe_open_spnego_ntlmssp(conn->cli, PI_SAMR,
+						 PIPE_AUTH_LEVEL_PRIVACY,
+						 conn->cli->domain,
+						 conn->cli->user_name,
+						 conn_pwd, &result);
+
+	if (conn->samr_pipe == NULL) {
+		DEBUG(10,("cm_connect_sam: failed to connect to SAMR "
+			  "pipe for domain %s using NTLMSSP "
+			  "authenticated pipe: user %s\\%s. Error was "
+			  "%s\n", domain->name, conn->cli->domain,
+			  conn->cli->user_name, nt_errstr(result)));
+		goto schannel;
+	}
+
+	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for "
+		  "domain %s using NTLMSSP authenticated "
+		  "pipe: user %s\\%s\n", domain->name,
+		  conn->cli->domain, conn->cli->user_name ));
+
+	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &conn->sam_connect_handle);
+	if (NT_STATUS_IS_OK(result)) {
+		goto open_domain;
+	}
+	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_connect "
+		  "failed for domain %s, error was %s. Trying schannel\n",
+		  domain->name, nt_errstr(result) ));
+	cli_rpc_pipe_close(conn->samr_pipe);
+
+ schannel:
+
+	/* Fall back to schannel if it's a W2K pre-SP1 box. */
+
+	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
+			   "for domain %s, trying anon\n", conn->cli->domain));
+		goto anonymous;
+	}
+	conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key
+		(conn->cli, PI_SAMR, PIPE_AUTH_LEVEL_PRIVACY,
+		 domain->name, p_dcinfo, &result);
+
+	if (conn->samr_pipe == NULL) {
+		DEBUG(10,("cm_connect_sam: failed to connect to SAMR pipe for "
+			  "domain %s using schannel. Error was %s\n",
+			  domain->name, nt_errstr(result) ));
+		goto anonymous;
+	}
+	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for domain %s using "
+		  "schannel.\n", domain->name ));
+
+	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &conn->sam_connect_handle);
+	if (NT_STATUS_IS_OK(result)) {
+		goto open_domain;
+	}
+	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_connect failed "
+		  "for domain %s, error was %s. Trying anonymous\n",
+		  domain->name, nt_errstr(result) ));
+	cli_rpc_pipe_close(conn->samr_pipe);
+
+ anonymous:
+
+	/* Finally fall back to anonymous. */
+	conn->samr_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_SAMR,
+						   &result);
+
+	if (conn->samr_pipe == NULL) {
+		result = NT_STATUS_PIPE_NOT_AVAILABLE;
+		goto done;
+	}
+
+	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &conn->sam_connect_handle);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("cm_connect_sam: rpccli_samr_connect failed "
+			  "for domain %s Error was %s\n",
+			  domain->name, nt_errstr(result) ));
+		goto done;
+	}
+
+ open_domain:
+	result = rpccli_samr_open_domain(conn->samr_pipe,
+					 mem_ctx,
+					 &conn->sam_connect_handle,
+					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 &domain->sid,
+					 &conn->sam_domain_handle);
 
  done:
 
@@ -1169,6 +1180,8 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
+	fstring conn_pwd;
+	struct dcinfo *p_dcinfo;
 
 	result = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(result))
@@ -1176,80 +1189,96 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	conn = &domain->conn;
 
-	if (conn->lsa_pipe == NULL) {
-		fstring conn_pwd;
-		pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
-		if (conn->cli->user_name[0] && conn->cli->domain[0] &&
-		    conn_pwd[0]) {
-			/* We have an authenticated connection. Use
-			   a NTLMSSP SPNEGO authenticated LSA pipe with
-			   sign & seal. */
-			conn->lsa_pipe = cli_rpc_pipe_open_spnego_ntlmssp
-				(conn->cli, PI_LSARPC, PIPE_AUTH_LEVEL_PRIVACY,
-				 conn->cli->domain, conn->cli->user_name,
-				 conn_pwd, &result);
-
-			if (conn->lsa_pipe == NULL) {
-				DEBUG(10,("cm_connect_lsa: failed to connect "
-					  "to LSA pipe for domain %s using "
-					  "NTLMSSP authenticated pipe: user "
-					  "%s\\%s. Error was %s\n",
-					  domain->name, conn->cli->domain,
-					  conn->cli->user_name,
-					  nt_errstr(result)));
-			} else {
-				DEBUG(10,("cm_connect_lsa: connected to LSA "
-					  "pipe for domain %s using NTLMSSP "
-					  "authenticated pipe: user %s\\%s\n",
-					  domain->name, conn->cli->domain,
-					  conn->cli->user_name ));
-			}
-		}
-		
-#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-		/* Fall back to schannel if it's a W2K pre-SP1 box. */
-		if (conn->lsa_pipe == NULL) {
-			struct dcinfo *p_dcinfo;
-
-			if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-				conn->lsa_pipe =
-					cli_rpc_pipe_open_schannel_with_key
-					(conn->cli, PI_LSARPC,
-					 PIPE_AUTH_LEVEL_PRIVACY,
-					 domain->name, p_dcinfo,
-					 &result);
-			}
-			if (conn->lsa_pipe == NULL) {
-				DEBUG(10,("cm_connect_lsa: failed to connect "
-					  "to LSA pipe for domain %s using "
-					  "schannel authenticated. Error "
-					  "was %s\n", domain->name,
-					  nt_errstr(result) ));
-			} else {
-				DEBUG(10,("cm_connect_lsa: connected to LSA "
-					  "pipe for domain %s using schannel."
-					  "\n", domain->name ));
-			}
-		}
-#endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
-
-		/* Finally fall back to anonymous. */
-		if (conn->lsa_pipe == NULL) {
-			conn->lsa_pipe = cli_rpc_pipe_open_noauth(conn->cli,
-								PI_LSARPC,
-								&result);
-		}
-
-		if (conn->lsa_pipe == NULL) {
-			result = NT_STATUS_PIPE_NOT_AVAILABLE;
-			goto done;
-		}
-
-		result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
-						SEC_RIGHTS_MAXIMUM_ALLOWED,
-						&conn->lsa_policy);
+	if (conn->lsa_pipe != NULL) {
+		goto done;
 	}
 
+	pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
+	if ((conn->cli->user_name[0] == '\0') ||
+	    (conn->cli->domain[0] == '\0') || 
+	    (conn_pwd[0] == '\0')) {
+		DEBUG(10, ("cm_connect_lsa: No no user available for "
+			   "domain %s, trying schannel\n", conn->cli->domain));
+		goto schannel;
+	}
+
+	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
+	 * authenticated LSA pipe with sign & seal. */
+	conn->lsa_pipe = cli_rpc_pipe_open_spnego_ntlmssp
+		(conn->cli, PI_LSARPC, PIPE_AUTH_LEVEL_PRIVACY,
+		 conn->cli->domain, conn->cli->user_name, conn_pwd, &result);
+
+	if (conn->lsa_pipe == NULL) {
+		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
+			  "domain %s using NTLMSSP authenticated pipe: user "
+			  "%s\\%s. Error was %s. Trying schannel.\n",
+			  domain->name, conn->cli->domain,
+			  conn->cli->user_name, nt_errstr(result)));
+		goto schannel;
+	}
+
+	DEBUG(10,("cm_connect_lsa: connected to LSA pipe for domain %s using "
+		  "NTLMSSP authenticated pipe: user %s\\%s\n",
+		  domain->name, conn->cli->domain, conn->cli->user_name ));
+
+	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&conn->lsa_policy);
+	if (NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
+		  "schannel\n"));
+
+	cli_rpc_pipe_close(conn->lsa_pipe);
+
+ schannel:
+
+	/* Fall back to schannel if it's a W2K pre-SP1 box. */
+
+	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
+			   "for domain %s, trying anon\n", conn->cli->domain));
+		goto anonymous;
+	}
+	conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key
+		(conn->cli, PI_LSARPC, PIPE_AUTH_LEVEL_PRIVACY,
+		 domain->name, p_dcinfo, &result);
+
+	if (conn->lsa_pipe == NULL) {
+		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
+			  "domain %s using schannel. Error was %s\n",
+			  domain->name, nt_errstr(result) ));
+		goto anonymous;
+	}
+	DEBUG(10,("cm_connect_lsa: connected to LSA pipe for domain %s using "
+		  "schannel.\n", domain->name ));
+
+	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&conn->lsa_policy);
+	if (NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	DEBUG(10,("cm_connect_lsa: rpccli_lsa_open_policy failed, trying "
+		  "anonymous\n"));
+
+	cli_rpc_pipe_close(conn->lsa_pipe);
+
+ anonymous:
+
+	conn->lsa_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_LSARPC,
+						  &result);
+	if (conn->lsa_pipe == NULL) {
+		result = NT_STATUS_PIPE_NOT_AVAILABLE;
+		goto done;
+	}
+
+	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&conn->lsa_policy);
  done:
 	if (!NT_STATUS_IS_OK(result)) {
 		invalidate_cm_connection(conn);
