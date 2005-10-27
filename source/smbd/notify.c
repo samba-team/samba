@@ -82,13 +82,14 @@ static void change_notify_remove(struct change_notify *cnbp)
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
+void remove_pending_change_notify_requests_by_fid(files_struct *fsp, NTSTATUS status)
 {
 	struct change_notify *cnbp, *next;
 
 	for (cnbp=change_notify_list; cnbp; cnbp=next) {
 		next=cnbp->next;
 		if (cnbp->fsp->fnum == fsp->fnum) {
+			change_notify_reply_packet(cnbp->request_buf,status);
 			change_notify_remove(cnbp);
 		}
 	}
@@ -116,7 +117,7 @@ void remove_pending_change_notify_requests_by_mid(int mid)
  Always send reply.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
+void remove_pending_change_notify_requests_by_filename(files_struct *fsp, NTSTATUS status)
 {
 	struct change_notify *cnbp, *next;
 
@@ -127,7 +128,7 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
 		 * the filename are identical.
 		 */
 		if((cnbp->fsp->conn == fsp->conn) && strequal(cnbp->fsp->fsp_name,fsp->fsp_name)) {
-			change_notify_reply_packet(cnbp->request_buf,NT_STATUS_CANCELLED);
+			change_notify_reply_packet(cnbp->request_buf,status);
 			change_notify_remove(cnbp);
 		}
 	}
