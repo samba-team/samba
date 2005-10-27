@@ -29,7 +29,10 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
 #include "system/filesys.h"
+#include "system/kerberos.h"
 
+/* For sepecifiying event context to GSSAPI below */
+#include "heimdal/lib/gssapi/gssapi_locl.h"
 
 /*
   recursively delete a directory tree
@@ -235,6 +238,9 @@ static int binary_smbd_main(int argc, const char *argv[])
 		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
 		return 1;
 	}
+
+	/* Hack to ensure that GSSAPI uses the right event context */
+	gssapi_krb5_init_ev(event_ctx);
 
 	/* wait for events - this is where smbd sits for most of its
 	   life */

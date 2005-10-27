@@ -108,6 +108,7 @@ struct gssapi_thr_context {
  */
 
 krb5_error_code gssapi_krb5_init (void);
+krb5_error_code gssapi_krb5_init_ev (void *event_context);
 
 #define GSSAPI_KRB5_INIT() do {					\
     krb5_error_code kret_gss_init;				\
