@@ -231,7 +231,7 @@ out:
 /*
  * Extract the authorization data type of `type' from the
  * 'ticket'. Store the field in `data'. This function is to use for
- * kerberos applications
+ * kerberos applications.
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
