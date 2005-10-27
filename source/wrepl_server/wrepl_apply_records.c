@@ -232,6 +232,138 @@ static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *
 	return R_NOT_REPLACE;
 }
 
+/*
+
+released:
+_UR_UA_SI<00> => REPLACE
+_UR_UA_DI<00> => REPLACE
+_UR_UT_SI<00> => REPLACE
+_UR_UT_DI<00> => REPLACE
+_UR_GA_SI<00> => REPLACE
+_UR_GA_DI<00> => REPLACE
+_UR_GT_SI<00> => REPLACE
+_UR_GT_DI<00> => REPLACE
+_UR_SA_SI<00> => REPLACE
+_UR_SA_DI<00> => REPLACE
+_UR_ST_SI<00> => REPLACE
+_UR_ST_DI<00> => REPLACE
+_UR_MA_SI<00> => REPLACE
+_UR_MA_DI<00> => REPLACE
+_UR_MT_SI<00> => REPLACE
+_UR_MT_DI<00> => REPLACE
+*/
+static enum _R_ACTION replace_owned_released_replica_unique_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (!R_IS_ACTIVE(r1)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+/*
+
+released:
+_GR_UA_SI<00> => NOT REPLACE
+_GR_UA_DI<00> => NOT REPLACE
+_GR_UT_SI<00> => NOT REPLACE
+_GR_UT_DI<00> => NOT REPLACE
+_GR_GA_SI<00> => REPLACE
+_GR_GA_DI<00> => REPLACE
+_GR_GT_SI<00> => REPLACE
+_GR_GT_DI<00> => REPLACE
+_GR_SA_SI<00> => NOT REPLACE
+_GR_SA_DI<00> => NOT REPLACE
+_GR_ST_SI<00> => NOT REPLACE
+_GR_ST_DI<00> => NOT REPLACE
+_GR_MA_SI<00> => NOT REPLACE
+_GR_MA_DI<00> => NOT REPLACE
+_GR_MT_SI<00> => NOT REPLACE
+_GR_MT_DI<00> => NOT REPLACE
+*/
+static enum _R_ACTION replace_owned_released_replica_group_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (!R_IS_ACTIVE(r1)) {
+		if (R_IS_GROUP(r2)) {
+			/* REPLACE */
+			return R_DO_REPLACE;
+		}
+
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+/*
+
+released:
+_SR_UA_SI<1c> => REPLACE
+_SR_UA_DI<1c> => REPLACE
+_SR_UT_SI<1c> => REPLACE
+_SR_UT_DI<1c> => REPLACE
+_SR_GA_SI<1c> => REPLACE
+_SR_GA_DI<1c> => REPLACE
+_SR_GT_SI<1c> => REPLACE
+_SR_GT_DI<1c> => REPLACE
+_SR_SA_SI<1c> => REPLACE
+_SR_SA_DI<1c> => REPLACE
+_SR_ST_SI<1c> => REPLACE
+_SR_ST_DI<1c> => REPLACE
+_SR_MA_SI<1c> => REPLACE
+_SR_MA_DI<1c> => REPLACE
+_SR_MT_SI<1c> => REPLACE
+_SR_MT_DI<1c> => REPLACE
+*/
+static enum _R_ACTION replace_owned_released_replica_sgroup_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (!R_IS_ACTIVE(r1)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+/*
+
+released:
+_MR_UA_SI<00> => REPLACE
+_MR_UA_DI<00> => REPLACE
+_MR_UT_SI<00> => REPLACE
+_MR_UT_DI<00> => REPLACE
+_MR_GA_SI<00> => REPLACE
+_MR_GA_DI<00> => REPLACE
+_MR_GT_SI<00> => REPLACE
+_MR_GT_DI<00> => REPLACE
+_MR_SA_SI<00> => REPLACE
+_MR_SA_DI<00> => REPLACE
+_MR_ST_SI<00> => REPLACE
+_MR_ST_DI<00> => REPLACE
+_MR_MA_SI<00> => REPLACE
+_MR_MA_DI<00> => REPLACE
+_MR_MT_SI<00> => REPLACE
+_MR_MT_DI<00> => REPLACE
+*/
+static enum _R_ACTION replace_owned_released_replica_mhomed_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	if (!R_IS_ACTIVE(r1)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* TODO: */
+
+	/* NOT REPLACE */
+	return R_NOT_REPLACE;
+}
+
+
 static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 					  TALLOC_CTX *mem_ctx,
 					  struct wrepl_wins_owner *owner,
@@ -281,7 +413,20 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 			break;
 		}
 	} else if (rec && local_vs_replica) {
-		/* TODO: */
+		switch (rec->type) {
+		case WREPL_TYPE_UNIQUE:
+			action = replace_owned_released_replica_unique_vs_X(rec, name);
+			break;
+		case WREPL_TYPE_GROUP:
+			action = replace_owned_released_replica_group_vs_X(rec, name);
+			break;
+		case WREPL_TYPE_SGROUP:
+			action = replace_owned_released_replica_sgroup_vs_X(rec, name);
+			break;
+		case WREPL_TYPE_MHOMED:
+			action = replace_owned_released_replica_mhomed_vs_X(rec, name);
+			break;
+		}
 	}
 
 	/* TODO: !!! */
