@@ -120,9 +120,8 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %lu, sock %d, rbl %d, wbl %d\n",
-				  (unsigned long)tmp->pid, tmp->sock, tmp->read_buf_len, 
-				  tmp->write_buf_len));
+			DEBUG(2, ("\t\tpid %lu, sock %d\n",
+				  (unsigned long)tmp->pid, tmp->sock));
 		}
 	}
 }
@@ -707,8 +706,7 @@ static BOOL remove_idle_client(void)
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->read_buf_len == 0 && state->write_buf_len == 0 &&
-		    state->response.result != WINBINDD_PENDING &&
+		if (state->response.result != WINBINDD_PENDING &&
 		    !state->getpwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
