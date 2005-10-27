@@ -79,6 +79,17 @@ static const char * const krb5_attrs[] = {
 	NULL
 };
 
+const char *cross_ref_attrs[] = {
+	"nCName", 
+	NULL
+};
+
+const char *realm_attrs[] = {
+	"dnsDomain", 
+	"maxPwdAge",
+	NULL
+};
+
 static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, KerberosTime default_val)
 {
     const char *tmp;
@@ -562,17 +573,6 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 	struct ldb_message **cross_ref_msg;
 	struct ldb_message **msg;
 
-	const char *cross_ref_attrs[] = {
-		"nCName", 
-		NULL
-	};
-
-	const char *realm_attrs[] = {
-		"dnsDomain", 
-		"maxPwdAge",
-		NULL
-	};
-
 	cross_ref_filter = talloc_asprintf(mem_ctx, 
 					   "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
 					   realm, realm);
@@ -752,19 +752,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		return ENOMEM;
 	}
 
-	realm = krb5_principal_get_realm(context, principal);
-
-	ret = LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db, 
-			       mem_ctx, realm, &realm_msg);
-	if (ret != 0) {
-		krb5_warnx(context, "LDB_fetch: could not find realm");
-		talloc_free(mem_ctx);
-		return HDB_ERR_NOENTRY;
-	}
-
-	realm_dn = realm_msg[0]->dn;
-
-	/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
+		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
 	 * is in our db, then direct the caller at our primary
 	 * krgtgt */
 	
@@ -791,13 +779,56 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 				return ENOMEM;
 			}
 			ldb_ent_type = HDB_LDB_ENT_TYPE_KRBTGT;
+			break;
 		} else {
 			ldb_ent_type = HDB_LDB_ENT_TYPE_SERVER;
+			break;
 		}
-		break;
 	case HDB_ENT_TYPE_CLIENT:
+	{
+		int ldb_ret;
+		NTSTATUS nt_status;
+		struct ldb_dn *user_dn, *domain_dn;
+		char *principal_string;
 		ldb_ent_type = HDB_LDB_ENT_TYPE_CLIENT;
-		break;
+
+		ret = krb5_unparse_name(context, principal, &principal_string);
+		
+		if (ret != 0) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		nt_status = crack_user_principal_name((struct ldb_context *)db->hdb_db,
+						      mem_ctx, principal_string, 
+						      &user_dn, &domain_dn);
+		free(principal_string);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return HDB_ERR_NOENTRY;
+		}
+
+		ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
+					  mem_ctx, user_dn, &msg, krb5_attrs);
+
+		if (ldb_ret != 1) {
+			return HDB_ERR_NOENTRY;
+		}
+
+		ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
+					  mem_ctx, domain_dn, &realm_msg, realm_attrs);
+
+		if (ldb_ret != 1) {
+			return HDB_ERR_NOENTRY;
+		}
+
+		ret = LDB_message2entry(context, db, mem_ctx, 
+					principal, ldb_ent_type, 
+					realm_msg[0], msg[0], entry);
+		talloc_free(mem_ctx);
+		return ret;
+	}
 	case HDB_ENT_TYPE_ANY:
 		ldb_ent_type = HDB_LDB_ENT_TYPE_ANY;
 		break;
@@ -806,6 +837,19 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		talloc_free(mem_ctx);
 		return HDB_ERR_NOENTRY;
 	}
+
+
+	realm = krb5_principal_get_realm(context, principal);
+
+	ret = LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db, 
+			       mem_ctx, realm, &realm_msg);
+	if (ret != 0) {
+		krb5_warnx(context, "LDB_fetch: could not find realm");
+		talloc_free(mem_ctx);
+		return HDB_ERR_NOENTRY;
+	}
+
+	realm_dn = realm_msg[0]->dn;
 
 	ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 				   mem_ctx, 
