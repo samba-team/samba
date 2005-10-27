@@ -300,8 +300,6 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	struct share_mode_lock *lck = 0;
 	BOOL delete_dir = False;
 
-	remove_pending_change_notify_requests_by_fid(fsp);
-
 	/*
 	 * NT can set delete_on_close of the last open
 	 * reference to a directory also.
@@ -320,18 +318,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 
 	delete_dir = lck->delete_on_close;
 
-	if (delete_dir) {
-		int i;
-		/* See if others still have the file open. If this is the
-		 * case, then don't delete */
-		for (i=0; i<lck->num_share_modes; i++) {
-			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
-				delete_dir = False;
-				break;
-			}
-		}
-	}
-
+	talloc_free(lck);
 
 	if (normal_close && delete_dir) {
 		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
@@ -344,12 +331,14 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 		 */
 
 		if(ok) {
-			remove_pending_change_notify_requests_by_filename(fsp);
+			remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_DELETE_PENDING);
+			remove_pending_change_notify_requests_by_filename(fsp, NT_STATUS_DELETE_PENDING);
+
 		}
 		process_pending_change_notify_queue((time_t)0);
+	} else {
+		remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_CANCELLED);
 	}
-
-	talloc_free(lck);
 
 	/*
 	 * Do the code common to files and directories.
