@@ -1,0 +1,6 @@
+# $Id$
+# validate verify cert chain1 chain2
+# s(kip) p(ass) f(ail)
+p s TrustAnchorRootCertificate.crt
+p p AllCertificatesNoPoliciesTest2EE.crt NoPoliciesCACert.crt
+p f BadSignedCACert.crt
