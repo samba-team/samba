@@ -770,3 +770,62 @@ NTSTATUS crack_user_principal_name(struct ldb_context *sam_ctx,
 	return NT_STATUS_OK;
 	
 }
+
+NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx, 
+				      TALLOC_CTX *mem_ctx, 
+				      const char *service_principal_name, 
+				      struct ldb_dn **user_dn,
+				      struct ldb_dn **domain_dn) 
+{
+	WERROR werr;
+	struct drsuapi_DsNameInfo1 info1;
+	werr = DsCrackNameOneName(sam_ctx, mem_ctx, 0,
+				  DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				  DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
+				  service_principal_name,
+				  &info1);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
+	}
+	switch (info1.status) {
+	case DRSUAPI_DS_NAME_STATUS_OK:
+		break;
+	case DRSUAPI_DS_NAME_STATUS_NOT_FOUND:
+	case DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY:
+	case DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE:
+		return NT_STATUS_NO_SUCH_USER;
+	case DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR:
+	default:
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	*user_dn = ldb_dn_explode(mem_ctx, info1.result_name);
+	
+	if (domain_dn) {
+		werr = DsCrackNameOneName(sam_ctx, mem_ctx, 0,
+					  DRSUAPI_DS_NAME_FORMAT_CANONICAL,
+					  DRSUAPI_DS_NAME_FORMAT_FQDN_1779, 
+					  talloc_asprintf(mem_ctx, "%s/", 
+							  info1.dns_domain_name),
+					  &info1);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werror_to_ntstatus(werr);
+		}
+		switch (info1.status) {
+		case DRSUAPI_DS_NAME_STATUS_OK:
+			break;
+		case DRSUAPI_DS_NAME_STATUS_NOT_FOUND:
+		case DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY:
+		case DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE:
+			return NT_STATUS_NO_SUCH_USER;
+		case DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR:
+		default:
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		
+		*domain_dn = ldb_dn_explode(mem_ctx, info1.result_name);
+	}
+
+	return NT_STATUS_OK;
+	
+}
