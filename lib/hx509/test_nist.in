@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+# (Royal Institute of Technology, Stockholm, Sweden). 
+# All rights reserved. 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions 
+# are met: 
+#
+# 1. Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer. 
+#
+# 2. Redistributions in binary form must reproduce the above copyright 
+#    notice, this list of conditions and the following disclaimer in the 
+#    documentation and/or other materials provided with the distribution. 
+#
+# 3. Neither the name of the Institute nor the names of its contributors 
+#    may be used to endorse or promote products derived from this software 
+#    without specific prior written permission. 
+#
+# THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+# SUCH DAMAGE. 
+#
+# $Id$
+#
+
+srcdir="@srcdir@"
+nistdir=/sources/pki/nist/PKITS_data/certs
+
+test -d "$nistdir" || exit 77
+
+while read validate verify cert chain1 chain2 ; do
+    expr "$validate" : "#" > /dev/null && continue
+
+    if ./hxtool validate $nistdir/$cert > /dev/null; then
+	if test "$validate" = "f"; then
+	    echo "validate passed on fail: $cert"
+	    exit 1
+	fi
+    else
+	if test "$validate" = "p"; then
+	    echo "validate failed on pass: $cert"
+	    exit 1
+	fi
+    fi
+
+    if test "$verify" = "s"; then
+	continue
+    fi
+
+    args="anchor:FILE:$nistdir/TrustAnchorRootCertificate.crt"
+    if test "X$chain1" != "X"; then
+	args="chain:FILE:$nistdir/$chain1 $args"
+    fi
+    if test "X$chain2" != "X"; then
+	args="chain:FILE:$nistdir/$chain2 $args"
+    fi
+
+    if ./hxtool verify cert:FILE:$nistdir/$cert $args > /dev/null ; then
+	if test "$verify" = "f"; then
+	    echo "validate passed on fail: $cert"
+	    exit 1
+	fi
+    else
+	if test "$verify" = "p"; then
+	    echo "validate failed on pass: $cert"
+	    exit 1
+	fi
+    fi
+
+done < $srcdir/data/nist-data
+
+
+echo "done!"
+
+exit 0
