@@ -50,7 +50,7 @@ static void get_rand_seed(int *new_seed)
 /* close the secrets database */
 void secrets_shutdown(void)
 {
-	talloc_free(tdb);
+       talloc_free(tdb);
 }
 
 /* open up the secrets database */
@@ -86,40 +86,6 @@ BOOL secrets_init(void)
 
 	return True;
 }
-
-/* read a entry from the secrets database - the caller must free the result
-   if size is non-null then the size of the entry is put in there
- */
-static void *secrets_fetch(const char *key, size_t *size)
-{
-	TDB_DATA kbuf, dbuf;
-	secrets_init();
-	if (!tdb)
-		return NULL;
-	kbuf.dptr = (uint8_t *)strdup(key);
-	kbuf.dsize = strlen(key);
-	dbuf = tdb_fetch(tdb->tdb, kbuf);
-	if (size)
-		*size = dbuf.dsize;
-	free(kbuf.dptr);
-	return dbuf.dptr;
-}
-
-/************************************************************************
- Routine to fetch the plaintext machine account password for a realm
-the password is assumed to be a null terminated ascii string
-************************************************************************/
-char *secrets_fetch_machine_password(const char *domain)
-{
-	char *key;
-	char *ret;
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
-	strupper(key);
-	ret = (char *)secrets_fetch(key, NULL);
-	free(key);
-	return ret;
-}
-
 
 /*
   connect to the schannel ldb
