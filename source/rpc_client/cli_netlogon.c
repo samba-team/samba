@@ -388,13 +388,15 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 	NET_Q_GETDCNAME q;
 	NET_R_GETDCNAME r;
 	NTSTATUS result;
+	fstring mydcname_slash;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise input parameters */
 
-	init_net_q_getdcname(&q, mydcname, domainname);
+	slprintf(mydcname_slash, sizeof(fstring)-1, "\\\\%s", mydcname);
+	init_net_q_getdcname(&q, mydcname_slash, domainname);
 
 	/* Marshall data and send request */
 
