@@ -3821,8 +3821,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	return ret;
 }
 
-
-static BOOL test_conflict_owned_vs_replica(struct test_wrepl_conflict_conn *ctx)
+static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_conn *ctx)
 {
 	BOOL ret = True;
 	NTSTATUS status;
@@ -5006,11 +5005,395 @@ static BOOL test_conflict_owned_vs_replica(struct test_wrepl_conflict_conn *ctx)
 			.apply_expected	= True
 		},
 	},
+	/*
+	 * mhomed,released vs. unique,active with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_UA_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. unique,active with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_UA_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. unique,tombstone with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_UT_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. unique,tombstone with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_UT_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. group,active with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_GA_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. group,active with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_GA_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. group,tombstone with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_GT_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. group,tombstone with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_GT_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. sgroup,active with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_SA_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. sgroup,active with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_SA_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. sgroup,tombstone with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_ST_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. sgroup,tombstone with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_ST_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. mhomed,active with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_MA_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. mhomed,active with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_MA_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. mhomed,tombstone with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_MT_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,released vs. mhomed,tombstone with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MR_MT_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= True,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
 	};
 
 	if (!ctx) return False;
 
-	printf("Test Replica records vs. owned records\n");
+	printf("Test Replica records vs. owned released records\n");
 
 	for(i=0; ret && i < ARRAY_SIZE(records); i++) {
 		printf("%s => %s\n", nbt_name_string(ctx, &records[i].name),
@@ -5132,6 +5515,269 @@ done:
 	return ret;
 }
 
+static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_conn *ctx)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct wrepl_wins_name wins_name_;
+	struct wrepl_wins_name *wins_name = &wins_name_;
+	struct nbt_name_register name_register_;
+	struct nbt_name_register *name_register = &name_register_;
+	struct nbt_name_release release_;
+	struct nbt_name_release *release = &release_;
+	uint32_t i;
+	struct {
+		const char *line; /* just better debugging */
+		struct nbt_name name;
+		struct {
+			uint32_t nb_flags;
+			BOOL mhomed;
+			uint32_t num_ips;
+			const struct wrepl_ip *ips;
+			BOOL release;
+			BOOL apply_expected;
+		} wins;
+		struct {
+			enum wrepl_name_type type;
+			enum wrepl_name_state state;
+			enum wrepl_name_node node;
+			BOOL is_static;
+			uint32_t num_ips;
+			const struct wrepl_ip *ips;
+			BOOL apply_expected;
+		} replica;
+	} records[] = {
+#if 0
+	/*
+	 * unique,active vs. unique,active with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UA_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= False,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. unique,active with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UA_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= False,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. unique,tombstone with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UT_SI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= False,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. unique,tombstone with different ip(s)
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UT_DI", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.release	= False,
+			.apply_expected	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+#endif
+	};
+
+	if (!ctx) return False;
+
+	if (!ctx->nbt_root_port) {
+		printf("SKIP: Test Replica records vs. owned active records: not bound to port[%d]\n",
+			lp_nbt_port());
+		return True;
+	}
+
+	printf("Test Replica records vs. owned active records\n");
+
+	for(i=0; ret && i < ARRAY_SIZE(records); i++) {
+		printf("%s => %s\n", nbt_name_string(ctx, &records[i].name),
+			(records[i].replica.apply_expected?"REPLACE":"NOT REPLACE"));
+
+		/*
+		 * Setup Register
+		 */
+		name_register->in.name		= records[i].name;
+		name_register->in.dest_addr	= ctx->address;
+		name_register->in.address	= records[i].wins.ips[0].ip;
+		name_register->in.nb_flags	= records[i].wins.nb_flags;
+		name_register->in.register_demand= False;
+		name_register->in.broadcast	= False;
+		name_register->in.multi_homed	= records[i].wins.mhomed;
+		name_register->in.ttl		= 300000;
+		name_register->in.timeout	= 70;
+		name_register->in.retries	= 0;
+
+		status = nbt_name_register(ctx->nbtsock, ctx, name_register);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			printf("No response from %s for name register\n", ctx->address);
+			ret = False;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Bad response from %s for name register - %s\n",
+			       ctx->address, nt_errstr(status));
+			ret = False;
+		}
+		CHECK_VALUE(name_register->out.rcode, 0);
+		CHECK_VALUE_STRING(name_register->out.reply_from, ctx->address);
+		CHECK_VALUE(name_register->out.name.type, records[i].name.type);
+		CHECK_VALUE_STRING(name_register->out.name.name, records[i].name.name);
+		CHECK_VALUE_STRING(name_register->out.name.scope, records[i].name.scope);
+		CHECK_VALUE_STRING(name_register->out.reply_addr, records[i].wins.ips[0].ip);
+
+		if (records[i].wins.release) {
+			release->in.name	= records[i].name;
+			release->in.dest_addr	= ctx->address;
+			release->in.address	= records[i].wins.ips[0].ip;
+			release->in.nb_flags	= records[i].wins.nb_flags;
+			release->in.broadcast	= False;
+			release->in.timeout	= 30;
+			release->in.retries	= 0;
+
+			status = nbt_name_release(ctx->nbtsock, ctx, release);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				printf("No response from %s for name release\n", ctx->address);
+				return False;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("Bad response from %s for name query - %s\n",
+				       ctx->address, nt_errstr(status));
+				return False;
+			}
+			CHECK_VALUE(release->out.rcode, 0);
+		}
+
+		/*
+		 * Setup Replica
+		 */
+		wins_name->name		= &records[i].name;
+		wins_name->flags	= WREPL_NAME_FLAGS(records[i].replica.type,
+							   records[i].replica.state,
+							   records[i].replica.node,
+							   records[i].replica.is_static);
+		wins_name->id		= ++ctx->b.max_version;
+		if (wins_name->flags & 2) {
+			wins_name->addresses.addresses.num_ips = records[i].replica.num_ips;
+			wins_name->addresses.addresses.ips     = discard_const(records[i].replica.ips);
+		} else {
+			wins_name->addresses.ip = records[i].replica.ips[0].ip;
+		}
+		wins_name->unknown	= "255.255.255.255";
+
+		ret &= test_wrepl_update_one(ctx, &ctx->b, wins_name);
+		ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name,
+					     records[i].replica.apply_expected);
+
+		if (records[i].replica.apply_expected) {
+			wins_name->name		= &records[i].name;
+			wins_name->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_UNIQUE,
+								   WREPL_STATE_TOMBSTONE,
+								   WREPL_NODE_B, False);
+			wins_name->id		= ++ctx->b.max_version;
+			wins_name->addresses.ip = addresses_B_1[0].ip;
+			wins_name->unknown	= "255.255.255.255";
+
+			ret &= test_wrepl_update_one(ctx, &ctx->b, wins_name);
+			ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name, True);
+		} else {
+			release->in.name	= records[i].name;
+			release->in.dest_addr	= ctx->address;
+			release->in.address	= records[i].wins.ips[0].ip;
+			release->in.nb_flags	= records[i].wins.nb_flags;
+			release->in.broadcast	= False;
+			release->in.timeout	= 30;
+			release->in.retries	= 0;
+
+			status = nbt_name_release(ctx->nbtsock, ctx, release);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				printf("No response from %s for name release\n", ctx->address);
+				return False;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("Bad response from %s for name query - %s\n",
+				       ctx->address, nt_errstr(status));
+				return False;
+			}
+			CHECK_VALUE(release->out.rcode, 0);
+		}
+done:
+		if (!ret) {
+			printf("conflict handled wrong or record[%u]: %s\n", i, records[i].line);
+			return ret;
+		}
+	}
+
+	return ret;
+}
+
+
 /*
   test WINS replication operations
 */
@@ -5194,7 +5840,8 @@ BOOL torture_nbt_winsreplication(void)
 
 	ret &= test_conflict_same_owner(ctx);
 	ret &= test_conflict_different_owner(ctx);
-	ret &= test_conflict_owned_vs_replica(ctx);
+	ret &= test_conflict_owned_released_vs_replica(ctx);
+	ret &= test_conflict_owned_active_vs_replica(ctx);
 
 	talloc_free(mem_ctx);
 
