@@ -60,7 +60,6 @@ struct winbindd_cli_state {
 	int sock;                                 /* Open socket from client */
 	struct fd_event fd_event;
 	pid_t pid;                                /* pid of client */
-	int read_buf_len, write_buf_len;          /* Indexes in request/response */
 	BOOL finished;                            /* Can delete from list */
 	BOOL write_extra_data;                    /* Write extra_data field */
 	time_t last_access;                       /* Time of last access (read or write) */
