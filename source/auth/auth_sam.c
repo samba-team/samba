@@ -370,6 +370,13 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
+	/* You can only do an interactive login to normal accounts */
+	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
+		if (!(acct_flags & ACB_NORMAL)) {
+			return NT_STATUS_NO_SUCH_USER;
+		}
+	}
+
 	nt_status = samdb_result_passwords(mem_ctx, msgs[0], &lm_pwd, &nt_pwd);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 

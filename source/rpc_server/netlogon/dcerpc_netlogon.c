@@ -417,6 +417,9 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 			return NT_STATUS_NO_MEMORY;
 		}
 		*user_info->password.hash.nt = r->in.logon.password->ntpassword;
+
+		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
+
 		break;		
 	case 2:
 	case 6:

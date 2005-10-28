@@ -39,6 +39,7 @@
 #define USER_INFO_CASE_INSENSITIVE_USERNAME 0x01 /* username may be in any case */
 #define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
 #define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* dont check unix account status */
+#define USER_INFO_INTERACTIVE_LOGON         0x08 /* dont check unix account status */
 
 enum auth_password_state {
 	AUTH_PASSWORD_RESPONSE,

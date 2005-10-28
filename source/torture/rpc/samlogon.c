@@ -304,6 +304,8 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 			return True;
 		}
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
+	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
+		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
@@ -633,6 +635,8 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 			return True;
 		}
 		return break_which == BREAK_BOTH;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
+		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
@@ -798,6 +802,8 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 		if (samlogon_state->old_password) {
 			return True;
 		}
+		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
+	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
@@ -1181,6 +1187,8 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 			return True;
 		}
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
+	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
+		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
@@ -1387,7 +1395,8 @@ BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   const char *comment,
 			   const char *workstation_name,
 			   const char *account_domain, const char *account_name,
-			   const char *plain_pass, NTSTATUS expected_error)
+			   const char *plain_pass, uint32_t parameter_control, 
+			   NTSTATUS expected_error)
 {
 	NTSTATUS status;
 	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_InteractiveLogon function-level context");
@@ -1411,7 +1420,7 @@ BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.flags = 0;
 
 	pinfo.identity_info.domain_name.string = account_domain;
-	pinfo.identity_info.parameter_control = 0;
+	pinfo.identity_info.parameter_control = parameter_control;
 	pinfo.identity_info.logon_id_low = 0;
 	pinfo.identity_info.logon_id_high = 0;
 	pinfo.identity_info.account_name.string = account_name;
@@ -1581,7 +1590,7 @@ BOOL torture_rpc_samlogon(void)
 						cli_credentials_get_domain(cmdline_credentials)
 					),
 				.password      = cli_credentials_get_password(cmdline_credentials),
-				.network_login = False,
+				.network_login = False, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK
 			},
@@ -1634,7 +1643,7 @@ BOOL torture_rpc_samlogon(void)
 								cli_credentials_get_domain(machine_credentials)
 					), 
 				.password      = cli_credentials_get_password(machine_credentials),
-				.network_login = False,
+				.network_login = False, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
 				.parameter_control = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT
 			},
@@ -1680,7 +1689,7 @@ BOOL torture_rpc_samlogon(void)
 								 TEST_USER_NAME,
 								 userdomain),
 				.password      = user_password,
-				.network_login = False,
+				.network_login = False, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK
 			},
@@ -1706,6 +1715,7 @@ BOOL torture_rpc_samlogon(void)
 						   usercreds[ci].domain,
 						   usercreds[ci].username,
 						   usercreds[ci].password,
+						   usercreds[ci].parameter_control,
 						   usercreds[ci].expected_interactive_error)) {
 				ret = False;
 			}
@@ -1736,6 +1746,7 @@ BOOL torture_rpc_samlogon(void)
 						   usercreds[0].domain,
 						   usercreds[0].username,
 						   usercreds[0].password,
+						   usercreds[0].parameter_control,
 						   usercreds[0].expected_interactive_error)) {
 				ret = False;
 			}
@@ -1748,7 +1759,7 @@ BOOL torture_rpc_samlogon(void)
 						   usercreds[0].password,
 						   usercreds[0].parameter_control,
 						   usercreds[0].expected_network_error,
-						   usercreds[ci].old_password,
+						   usercreds[0].old_password,
 						   1)) {
 					ret = False;
 				}
