@@ -1579,6 +1579,15 @@ BOOL torture_rpc_samlogon(void)
 				.parameter_control = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT
 			},
 			{
+				.comment      = "machine domain\\user",
+				.domain       = cli_credentials_get_domain(machine_credentials),
+				.username     = cli_credentials_get_username(machine_credentials),
+				.password     = cli_credentials_get_password(machine_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
+				.expected_network_error = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+			},
+			{
 				.comment       = "machine realm\\user",
 				.domain        = cli_credentials_get_realm(machine_credentials),
 				.username      = cli_credentials_get_username(machine_credentials),
