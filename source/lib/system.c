@@ -1367,7 +1367,7 @@ int sys_dup2(int oldfd, int newfd)
 
 /**************************************************************************
  Wrappers for extented attribute calls. Based on the Linux package with
- support for IRIX also. Expand as other systems have them.
+ support for IRIX and (Net|Free)BSD also. Expand as other systems have them.
 ****************************************************************************/
 
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
@@ -1376,9 +1376,21 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 	return getxattr(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FILE)
 	char *s;
+	ssize_t retval;
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
+	/*
+	 * The BSD implementation has a nasty habit of silently truncating
+	 * the returned value to the size of the buffer, so we have to check
+	 * that the buffer is large enough to fit the returned value.
+	 */
+	retval = extattr_get_file(path, attrnamespace, attrname, NULL, 0);
+
+	if(retval > size) {
+		errno = ERANGE;
+		return -1;
+	}
 
 	return extattr_get_file(path, attrnamespace, attrname, value, size);
 #elif defined(HAVE_ATTR_GET)
@@ -1403,9 +1415,17 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 	return lgetxattr(path, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_LINK)
 	char *s;
+	ssize_t retval;
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
+
+	retval = extattr_get_link(path, attrnamespace, attrname, NULL, 0);
+
+	if(retval > size) {
+		errno = ERANGE;
+		return -1;
+	}
 
 	return extattr_get_link(path, attrnamespace, attrname, value, size);
 #elif defined(HAVE_ATTR_GET)
@@ -1430,9 +1450,17 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	return fgetxattr(filedes, name, value, size);
 #elif defined(HAVE_EXTATTR_GET_FD)
 	char *s;
+	ssize_t retval;
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
+
+	retval = extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0);
+
+	if(retval > size) {
+		errno = ERANGE;
+		return -1;
+	}
 
 	return extattr_get_fd(filedes, attrnamespace, attrname, value, size);
 #elif defined(HAVE_ATTR_GETF)
@@ -1747,7 +1775,24 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
-
+	if (flags) {
+		/* Check attribute existence */
+		retval = extattr_get_file(path, attrnamespace, attrname, NULL, 0);
+		if (retval < 0) {
+			/* REPLACE attribute, that doesn't exist */
+			if (flags & XATTR_REPLACE && errno == ENOATTR) {
+				errno = ENOATTR;
+				return -1;
+			}
+		}
+		else {
+			/* CREATE attribute, that already exists */
+			if (flags & XATTR_CREATE) {
+				errno = EEXIST;
+				return -1;
+			}
+		}
+	}
 	retval = extattr_set_file(path, attrnamespace, attrname, value, size);
 	return (retval < 0) ? -1 : 0;
 #elif defined(HAVE_ATTR_SET)
@@ -1775,6 +1820,24 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
+	if (flags) {
+		/* Check attribute existence */
+		retval = extattr_get_link(path, attrnamespace, attrname, NULL, 0);
+		if (retval < 0) {
+			/* REPLACE attribute, that doesn't exist */
+			if (flags & XATTR_REPLACE && errno == ENOATTR) {
+				errno = ENOATTR;
+				return -1;
+			}
+		}
+		else {
+			/* CREATE attribute, that already exists */
+			if (flags & XATTR_CREATE) {
+				errno = EEXIST;
+				return -1;
+			}
+		}
+	}
 
 	retval = extattr_set_link(path, attrnamespace, attrname, value, size);
 	return (retval < 0) ? -1 : 0;
@@ -1803,7 +1866,24 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
-
+	if (flags) {
+		/* Check attribute existence */
+		retval = extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0);
+		if (retval < 0) {
+			/* REPLACE attribute, that doesn't exist */
+			if (flags & XATTR_REPLACE && errno == ENOATTR) {
+				errno = ENOATTR;
+				return -1;
+			}
+		}
+		else {
+			/* CREATE attribute, that already exists */
+			if (flags & XATTR_CREATE) {
+				errno = EEXIST;
+				return -1;
+			}
+		}
+	}
 	retval = extattr_set_fd(filedes, attrnamespace, attrname, value, size);
 	return (retval < 0) ? -1 : 0;
 #elif defined(HAVE_ATTR_SETF)
