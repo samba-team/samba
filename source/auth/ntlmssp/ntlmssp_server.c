@@ -689,6 +689,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	user_info->logon_parameters = MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
 	user_info->flags = 0;
 	user_info->mapped_state = False;
 	user_info->client.account_name = gensec_ntlmssp_state->user;

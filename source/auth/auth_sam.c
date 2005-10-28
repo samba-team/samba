@@ -105,7 +105,8 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		break;
 		
 	case AUTH_PASSWORD_RESPONSE:
-		status = ntlm_password_check(mem_ctx, &auth_context->challenge.data, 
+		status = ntlm_password_check(mem_ctx, user_info->logon_parameters, 
+					     &auth_context->challenge.data, 
 					     &user_info->password.response.lanman, 
 					     &user_info->password.response.nt,
 					     user_info->mapped.account_name,
@@ -133,6 +134,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
  (ie not disabled, expired and the like).
 ****************************************************************************/
 static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
+				   uint32_t logon_parameters,
 				   uint16_t acct_flags,
 				   NTTIME acct_expiry,
 				   NTTIME must_change_time,
@@ -204,20 +206,23 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_WORKSTATION;
 		}
 	}
-
+	
 	if (acct_flags & ACB_DOMTRUST) {
 		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", user_info->mapped.account_name));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 	}
-
-	if (acct_flags & ACB_SVRTRUST) {
-		DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", user_info->mapped.account_name));
-		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+	
+	if (!(logon_parameters & MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT)) {
+		if (acct_flags & ACB_SVRTRUST) {
+			DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", user_info->mapped.account_name));
+			return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+		}
 	}
-
-	if (acct_flags & ACB_WSTRUST) {
-		DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", user_info->mapped.account_name));
-		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+	if (!(logon_parameters & MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT)) {
+		if (acct_flags & ACB_WSTRUST) {
+			DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", user_info->mapped.account_name));
+			return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -381,7 +386,9 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 
 	workstation_list = samdb_result_string(msgs[0], "userWorkstations", NULL);
 
-	nt_status = authsam_account_ok(mem_ctx, acct_flags, 
+	nt_status = authsam_account_ok(mem_ctx, 
+				       user_info->logon_parameters,
+				       acct_flags, 
 				       acct_expiry, 
 				       must_change_time, 
 				       last_set_time, 
