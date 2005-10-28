@@ -408,7 +408,27 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_principal principal;
 		char *unparsed_name_short;
 		ret = krb5_parse_name_norealm(smb_krb5_context->krb5_context, name, &principal);
-		if (ret || (principal->name.name_string.len < 2)) {
+		if (ret) {
+			/* perhaps it's a principal with a realm, so return the right 'domain only' response */
+			char **realm;
+			ret = krb5_parse_name_mustrealm(smb_krb5_context->krb5_context, name, &principal);
+			if (ret) {
+				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+				return WERR_OK;
+			}
+				
+			/* This isn't an allocation assignemnt, so it is free'ed with the krb5_free_principal */
+			realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
+
+			info1->dns_domain_name	= talloc_strdup(info1, *realm);
+			krb5_free_principal(smb_krb5_context->krb5_context, principal);
+	
+			WERR_TALLOC_CHECK(info1->dns_domain_name);
+
+			info1->status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
+			return WERR_OK;
+			
+		} else if (principal->name.name_string.len < 2) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			return WERR_OK;
 		}
