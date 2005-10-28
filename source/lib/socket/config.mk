@@ -36,6 +36,7 @@ INIT_OBJ_FILES = \
 		socket.o
 ADD_OBJ_FILES = \
 		access.o \
+		connect_multi.o \
 		connect.o
 NOPROTO=YES
 # End SUBSYSTEM SOCKET
