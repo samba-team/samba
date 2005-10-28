@@ -41,7 +41,6 @@ struct connect_state {
 	struct smbcli_socket *sock;
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
-	struct smb_composite_connectmulti *conn;
 	struct smb_composite_connect *io;
 	union smb_tcon *io_tcon;
 	struct smb_composite_sesssetup *io_setup;
@@ -73,7 +72,7 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 
 
 /*
-  a tree connect request has competed
+  a tree connect request has completed
 */
 static NTSTATUS connect_tcon(struct composite_context *c, 
 			     struct smb_composite_connect *io)
@@ -232,7 +231,7 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 }
 
 /*
-  a negprot request has competed
+  a negprot request has completed
 */
 static NTSTATUS connect_negprot(struct composite_context *c, 
 				struct smb_composite_connect *io)
@@ -271,7 +270,7 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 
 
 /*
-  a session request operation has competed
+  a session request operation has completed
 */
 static NTSTATUS connect_session_request(struct composite_context *c, 
 					struct smb_composite_connect *io)
@@ -287,7 +286,7 @@ static NTSTATUS connect_session_request(struct composite_context *c,
 }
 
 /*
-  a socket connection operation has competed
+  a socket connection operation has completed
 */
 static NTSTATUS connect_socket(struct composite_context *c, 
 			       struct smb_composite_connect *io)
@@ -296,10 +295,8 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	NTSTATUS status;
 	struct nbt_name calling, called;
 
-	status = smb_composite_connectmulti_recv(state->creq, state);
+	status = smbcli_sock_connect_recv(state->creq, state, &state->sock);
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	state->sock = state->conn->out.socket;
 
 	/* the socket is up - we can initialise the smbcli transport layer */
 	state->transport = smbcli_transport_init(state->sock, state, True);
@@ -339,37 +336,12 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 	NTSTATUS status;
 	const char *address;
-	struct smb_composite_connectmulti *conn;
 
 	status = resolve_name_recv(state->creq, state, &address);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	conn = talloc(state, struct smb_composite_connectmulti);
-	NT_STATUS_HAVE_NO_MEMORY(conn);
-	state->conn = conn;
-	conn->in.num_dests = 1;
-
-	conn->in.addresses = talloc_array(state->conn, const char *, 1);
-	NT_STATUS_HAVE_NO_MEMORY(conn->in.addresses);
-	conn->in.addresses[0] = address;
-
-	conn->in.hostnames = talloc_array(state->conn, const char *, 1);
-	NT_STATUS_HAVE_NO_MEMORY(conn->in.hostnames);
-	if (state->io->in.called_name != NULL) {
-		conn->in.hostnames[0] = state->io->in.called_name;
-	} else {
-		conn->in.hostnames[0] = state->io->in.dest_host;
-	}
-	
-	conn->in.ports = NULL;
-	if (state->io->in.port != 0) {
-		conn->in.ports = talloc_array(state->conn, int, 1);
-		NT_STATUS_HAVE_NO_MEMORY(conn->in.ports);
-		conn->in.ports[0] = state->io->in.port;
-	}
-
-	state->creq = smb_composite_connectmulti_send(conn, state,
-						      c->event_ctx);
+	state->creq = smbcli_sock_connect_send(state, address, io->in.port,
+					       io->in.dest_host, c->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;

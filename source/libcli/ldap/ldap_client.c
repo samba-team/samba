@@ -428,17 +428,8 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 		return result;
 	}
 
-	state->ctx->status = socket_create("ipv4", SOCKET_TYPE_STREAM,
-					   &conn->sock, 0);
-	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		composite_trigger_error(state->ctx);
-		return result;
-	}
-
-	talloc_steal(conn, conn->sock);
-
-	ctx = socket_connect_send(conn->sock, NULL, 0, conn->host,
-				  conn->port, 0, conn->event.event_ctx);
+	ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
+					conn->event.event_ctx);
 	if (ctx == NULL) goto failed;
 
 	ctx->async.fn = ldap_connect_recv_conn;
@@ -456,8 +447,10 @@ static void ldap_connect_recv_conn(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct ldap_connect_state);
 	struct ldap_connection *conn = state->conn;
+	uint16_t port;
 
-	state->ctx->status = socket_connect_recv(ctx);
+	state->ctx->status = socket_connect_multi_recv(ctx, state, &conn->sock,
+						       &port);
 	if (!composite_is_ok(state->ctx)) return;
 
 	/* setup a handler for events on this socket */

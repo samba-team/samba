@@ -27,206 +27,130 @@
 #include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
 
-/*
-  this private structure is used during async connection handling
-*/
-struct clisocket_connect {
-	int port_num;
-	int *iports;
-	struct smbcli_socket *sock;
-	const char *dest_host_addr;
-	const char *dest_hostname;
+struct sock_connect_state {
+	struct composite_context *ctx;
+	const char *host_name;
+	int num_ports;
+	uint16_t *ports;
+	struct smbcli_socket *result;
 };
-
-
-/*
-  create a smbcli_socket context
-  The event_ctx is optional - if not supplied one will be created
-*/
-struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx)
-{
-	struct smbcli_socket *sock;
-
-	sock = talloc_zero(mem_ctx, struct smbcli_socket);
-	if (!sock) {
-		return NULL;
-	}
-
-	if (event_ctx) {
-		sock->event.ctx = talloc_reference(sock, event_ctx);
-	} else {
-		sock->event.ctx = event_context_init(sock);
-	}
-	if (sock->event.ctx == NULL) {
-		talloc_free(sock);
-		return NULL;
-	}
-
-	/* ensure we don't get SIGPIPE */
-	BlockSignals(True,SIGPIPE);
-
-	return sock;
-}
-
-static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock, 
-					const char *hostaddr, int port, 
-					struct composite_context *c);
-
-/*
-  handle socket write events during an async connect. These happen when the OS
-  has either completed the connect() or has returned an error
-*/
-static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_event *fde, 
-					uint16_t flags, void *private_data)
-{
-	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
-	struct clisocket_connect *conn = talloc_get_type(c->private_data, struct clisocket_connect);
-	int i;
-	
-	c->status = socket_connect_complete(conn->sock->sock, 0);
-	if (NT_STATUS_IS_OK(c->status)) {
-		socket_set_option(conn->sock->sock, lp_socket_options(), NULL);
-		conn->sock->hostname = talloc_strdup(conn->sock, conn->dest_hostname);
-		c->state = COMPOSITE_STATE_DONE;
-		if (c->async.fn) {
-			c->async.fn(c);
-		}
-		return;
-	}
-
-	/* that port failed - try the next port */
-	for (i=conn->port_num+1;conn->iports[i];i++) {
-		conn->port_num = i;
-		c->status = smbcli_sock_connect_one(conn->sock, 
-						    conn->dest_host_addr, 
-						    conn->iports[i], c);
-		if (NT_STATUS_IS_OK(c->status) ||
-		    NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			return;
-		}
-	}
-
-	c->state = COMPOSITE_STATE_ERROR;
-	if (c->async.fn) {
-		c->async.fn(c);
-	}
-}
-
-
-/*
-  try to connect to the given address/port
-*/
-static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock, 
-					const char *hostaddr, int port,
-					struct composite_context *c)
-{
-	NTSTATUS status;
-
-	if (sock->sock) {
-		talloc_free(sock->sock);
-		sock->sock = NULL;
-	}
-	talloc_free(sock->event.fde);
-
-	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock->sock, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	talloc_steal(sock, sock->sock);
-
-	/* we initially look for write - see the man page on
-	   non-blocking connect */
-	sock->event.fde = event_add_fd(sock->event.ctx, sock, socket_get_fd(sock->sock), 
-				       EVENT_FD_WRITE, smbcli_sock_connect_handler, c);
-
-	sock->port = port;
-	set_blocking(socket_get_fd(sock->sock), False);
-
-	return socket_connect(sock->sock, NULL, 0, hostaddr, port, 0);
-}
-					
 
 /*
   connect a smbcli_socket context to an IP/port pair
   if port is 0 then choose 445 then 139
-
-  this is the async send side of the interface
 */
-struct composite_context *smbcli_sock_connect_send(struct smbcli_socket *sock, 
-						   const char *host_addr, int port,
-						   const char *host_name)
+
+static void smbcli_sock_connect_recv_conn(struct composite_context *ctx);
+
+struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
+						   const char *host_addr,
+						   int port,
+						   const char *host_name,
+						   struct event_context *event_ctx)
 {
-	struct composite_context *c;
-	struct clisocket_connect *conn;
-	int i;
+	struct composite_context *result, *ctx;
+	struct sock_connect_state *state;
 
-	c = talloc_zero(sock, struct composite_context);
-	if (c == NULL) return NULL;
+	result = talloc_zero(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
 
-	c->event_ctx = sock->event.ctx;
+	if (event_ctx != NULL) {
+		result->event_ctx = talloc_reference(result, event_ctx);
+	} else {
+		result->event_ctx = event_context_init(result);
+	}
 
-	conn = talloc(c, struct clisocket_connect);
-	if (conn == NULL) goto failed;
+	if (result->event_ctx == NULL) goto failed;
 
-	conn->sock = sock;
+	state = talloc(result, struct sock_connect_state);
+	if (state == NULL) goto failed;
+	state->ctx = result;
+	result->private_data = state;
 
-	/* work out what ports we will try */
+	state->host_name = talloc_strdup(state, host_name);
+	if (state->host_name == NULL) goto failed;
+
 	if (port == 0) {
 		const char **ports = lp_smb_ports();
+		int i;
+
 		for (i=0;ports[i];i++) /* noop */ ;
-		conn->iports = talloc_array(c, int, i+1);
-		if (conn->iports == NULL) goto failed;
+		if (i == 0) {
+			DEBUG(3, ("no smb ports defined\n"));
+			goto failed;
+		}
+		state->num_ports = i;
+		state->ports = talloc_array(state, uint16_t, i);
+		if (state->ports == NULL) goto failed;
 		for (i=0;ports[i];i++) {
-			conn->iports[i] = atoi(ports[i]);
+			state->ports[i] = atoi(ports[i]);
 		}
-		conn->iports[i] = 0;
 	} else {
-		conn->iports = talloc_array(c, int, 2);
-		if (conn->iports == NULL) goto failed;
-		conn->iports[0] = port;
-		conn->iports[1] = 0;
+		state->ports = talloc_array(state, uint16_t, 1);
+		if (state->ports == NULL) goto failed;
+		state->num_ports = 1;
+		state->ports[0] = port;
 	}
 
-	conn->dest_host_addr = talloc_strdup(c, host_addr);
-	if (conn->dest_host_addr == NULL) goto failed;
+	ctx = socket_connect_multi_send(state, host_addr,
+					state->num_ports, state->ports,
+					state->ctx->event_ctx);
+	if (ctx == NULL) goto failed;
+	ctx->async.fn = smbcli_sock_connect_recv_conn;
+	ctx->async.private_data = state;
+	return result;
 
-	conn->dest_hostname = talloc_strdup(c, host_name);
-	if (conn->dest_hostname == NULL) goto failed;
-
-	c->private_data	= conn;
-	c->state	= COMPOSITE_STATE_IN_PROGRESS;
-
-	/* startup the connect process for each port in turn until one
-	   succeeds or tells us that it is pending */
-	for (i=0;conn->iports[i];i++) {
-		conn->port_num = i;
-		conn->sock->port = conn->iports[i];
-		c->status = smbcli_sock_connect_one(sock, 
-						    conn->dest_host_addr, 
-						    conn->iports[i], c);
-		if (NT_STATUS_IS_OK(c->status) ||
-		    NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			return c;
-		}
-	}
-
-	c->state = COMPOSITE_STATE_ERROR;
-	return c;
-	
 failed:
-	talloc_free(c);
+	talloc_free(result);
 	return NULL;
+}
+
+static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
+{
+	struct sock_connect_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct sock_connect_state);
+	struct socket_context *sock;
+	uint16_t port;
+
+	state->ctx->status = socket_connect_multi_recv(ctx, state, &sock,
+						       &port);
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->ctx->status =
+		socket_set_option(sock, lp_socket_options(), NULL);
+	if (!composite_is_ok(state->ctx)) return;
+
+
+	state->result = talloc_zero(state, struct smbcli_socket);
+	if (composite_nomem(state->result, state->ctx)) return;
+
+	state->result->sock = talloc_steal(state->result, sock);
+	state->result->port = port;
+	state->result->hostname = talloc_steal(sock, state->host_name);
+
+	state->result->event.ctx =
+		talloc_reference(state->result, state->ctx->event_ctx);
+	if (composite_nomem(state->result->event.ctx, state->ctx)) return;
+
+	composite_done(state->ctx);
 }
 
 /*
   finish a smbcli_sock_connect_send() operation
 */
-NTSTATUS smbcli_sock_connect_recv(struct composite_context *c)
+NTSTATUS smbcli_sock_connect_recv(struct composite_context *c,
+				  TALLOC_CTX *mem_ctx,
+				  struct smbcli_socket **result)
 {
-	NTSTATUS status;
-	status = composite_wait(c);
+	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct sock_connect_state *state =
+			talloc_get_type(c->private_data,
+					struct sock_connect_state);
+		*result = talloc_steal(mem_ctx, state->result);
+	}
 	talloc_free(c);
 	return status;
 }
@@ -237,17 +161,16 @@ NTSTATUS smbcli_sock_connect_recv(struct composite_context *c)
 
   sync version of the function
 */
-NTSTATUS smbcli_sock_connect(struct smbcli_socket *sock, const char *host_addr, int port,
-			     const char *host_name)
+NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
+			     const char *host_addr, int port,
+			     const char *host_name,
+			     struct event_context *event_ctx,
+			     struct smbcli_socket **result)
 {
-	struct composite_context *c;
-
-	c = smbcli_sock_connect_send(sock, host_addr, port, host_name);
-	if (c == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return smbcli_sock_connect_recv(c);
+	struct composite_context *c =
+		smbcli_sock_connect_send(mem_ctx, host_addr, port, host_name,
+					 event_ctx);
+	return smbcli_sock_connect_recv(c, mem_ctx, result);
 }
 
 
@@ -306,15 +229,39 @@ NTSTATUS smbcli_sock_read(struct smbcli_socket *sock, uint8_t *data,
 /****************************************************************************
 resolve a hostname and connect 
 ****************************************************************************/
-BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, int port)
+struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
+						 TALLOC_CTX *mem_ctx,
+						 struct event_context *event_ctx)
 {
 	int name_type = NBT_NAME_SERVER;
 	const char *address;
 	NTSTATUS status;
 	struct nbt_name nbt_name;
 	char *name, *p;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct smbcli_socket *result;
 
-	name = talloc_strdup(sock, host);
+	if (tmp_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NULL;
+	}
+
+	name = talloc_strdup(tmp_ctx, host);
+	if (name == NULL) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	if (event_ctx == NULL) {
+		event_ctx = event_context_init(mem_ctx);
+	}
+
+	if (event_ctx == NULL) {
+		DEBUG(0, ("event_context_init failed\n"));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
 	/* allow hostnames of the form NAME#xx and do a netbios lookup */
 	if ((p = strchr(name, '#'))) {
@@ -322,16 +269,25 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 		*p = 0;
 	}
 
-	nbt_name.name = name;
-	nbt_name.type = name_type;
-	nbt_name.scope = NULL;
+	make_nbt_name(&nbt_name, host, name_type);
 	
-	status = resolve_name(&nbt_name, sock, &address, sock->event.ctx);
+	status = resolve_name(&nbt_name, tmp_ctx, &address, event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		return False;
 	}
 
-	status = smbcli_sock_connect(sock, address, port, name);
+	status = smbcli_sock_connect(mem_ctx, address, port, name, event_ctx,
+				     &result);
 
-	return NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(9, ("smbcli_sock_connect failed: %s\n",
+			  nt_errstr(status)));
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return result;
 }
