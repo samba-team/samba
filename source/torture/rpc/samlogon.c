@@ -55,6 +55,7 @@ struct samlogon_state {
 	struct netr_Authenticator auth, auth2;
 	struct creds_CredentialState *creds;
 	NTSTATUS expected_error;
+	BOOL old_password; /* Allow an old password to be accepted or rejected without error, as well as session key bugs */
 	DATA_BLOB chall;
 };
 
@@ -298,10 +299,12 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		if (break_which == NO_NT && !lm_good) {
 			return True;
 		}
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
-	}
-
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -416,7 +419,13 @@ static BOOL test_ntlm_in_lm(struct samlogon_state *samlogon_state, char **error_
 				   user_session_key,
 				   error_string);
 	
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
+		return False;
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -507,7 +516,13 @@ static BOOL test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
 				   user_session_key,
 				   error_string);
 	
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
+		return False;
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -612,11 +627,13 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 	data_blob_free(&ntlmv2_response);
 
 
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
 		return break_which == BREAK_BOTH;
-	}
-
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -777,10 +794,12 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 
 
 	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
-	}
-
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -1055,7 +1074,13 @@ static BOOL test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 				   user_session_key,
 				   error_string);
 	
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
+		return False;
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -1147,14 +1172,16 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 				   error_string);
 	
 	if (NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, nt_status)) {
+		/* for 'old' passwords, we allow the server to be OK or wrong password */
+		if (samlogon_state->old_password) {
+			return True;
+		}
 		/* for 'long' passwords, the LM password is invalid */
 		if (break_which == NO_NT && !lm_good) {
 			return True;
 		}
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
-	}
-
-	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
 		SAFE_FREE(*error_string);
 		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
 		return False;
@@ -1267,7 +1294,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  const char *comment,
 			  const char *account_domain, const char *account_name, 
 			  const char *plain_pass, uint32_t parameter_control,
-			  NTSTATUS expected_error,
+			  NTSTATUS expected_error, BOOL old_password,
 			  int n_subtests)
 {
 	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_SamLogon function-level context");
@@ -1292,6 +1319,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.expected_error = expected_error;
 	samlogon_state.chall = data_blob_talloc(fn_ctx, NULL, 8);
 	samlogon_state.parameter_control = parameter_control;
+	samlogon_state.old_password = old_password;
 
 	generate_random_buffer(samlogon_state.chall.data, 8);
 	samlogon_state.r_flags.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
@@ -1524,6 +1552,7 @@ BOOL torture_rpc_samlogon(void)
 			NTSTATUS expected_interactive_error;
 			NTSTATUS expected_network_error;
 			uint32_t parameter_control;
+			BOOL old_password; /* Allow an old password to be accepted or rejected without error, as well as session key bugs */
 		} usercreds[] = {
 			{
 				.comment       = "domain\\user",
@@ -1663,7 +1692,8 @@ BOOL torture_rpc_samlogon(void)
 				.password      = old_user_password,
 				.network_login = True,
 				.expected_interactive_error = NT_STATUS_WRONG_PASSWORD,
-				.expected_network_error     = NT_STATUS_OK
+				.expected_network_error     = NT_STATUS_OK,
+				.old_password  = True
 			}
 		};
 		
@@ -1688,6 +1718,7 @@ BOOL torture_rpc_samlogon(void)
 						   usercreds[ci].password,
 						   usercreds[ci].parameter_control,
 						   usercreds[ci].expected_network_error,
+						   usercreds[ci].old_password,
 						   0)) {
 					ret = False;
 				}
@@ -1717,6 +1748,7 @@ BOOL torture_rpc_samlogon(void)
 						   usercreds[0].password,
 						   usercreds[0].parameter_control,
 						   usercreds[0].expected_network_error,
+						   usercreds[ci].old_password,
 						   1)) {
 					ret = False;
 				}
