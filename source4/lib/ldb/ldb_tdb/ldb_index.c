@@ -321,8 +321,7 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 	if (ldb_attr_cmp(tree->u.equality.attr, LTDB_OBJECTCLASS) == 0) {
 		return ltdb_index_dn_objectclass(module, tree, index_list, list);
 	}
-	if (ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0 ||
-	    ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
+	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
 		list->dn = talloc_array(list, char *, 1);
 		if (list->dn == NULL) {
 			ldb_oom(module->ldb);
