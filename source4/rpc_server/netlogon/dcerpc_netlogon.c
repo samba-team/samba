@@ -400,9 +400,10 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 						dce_call->event_ctx);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		user_info->client.account_name = r->in.logon.network->identity_info.account_name.string;
-		user_info->client.domain_name = r->in.logon.network->identity_info.domain_name.string;
-		user_info->workstation_name = r->in.logon.network->identity_info.workstation.string;
+		user_info->logon_parameters = r->in.logon.password->identity_info.parameter_control;
+		user_info->client.account_name = r->in.logon.password->identity_info.account_name.string;
+		user_info->client.domain_name = r->in.logon.password->identity_info.domain_name.string;
+		user_info->workstation_name = r->in.logon.password->identity_info.workstation.string;
 		
 		user_info->password_state = AUTH_PASSWORD_HASH;
 		user_info->password.hash.lanman = talloc(user_info, struct samr_Password);
@@ -428,6 +429,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 		nt_status = auth_context_set_challenge(auth_context, r->in.logon.network->challenge, "netr_LogonSamLogonWithFlags");
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
+		user_info->logon_parameters = r->in.logon.network->identity_info.parameter_control;
 		user_info->client.account_name = r->in.logon.network->identity_info.account_name.string;
 		user_info->client.domain_name = r->in.logon.network->identity_info.domain_name.string;
 		user_info->workstation_name = r->in.logon.network->identity_info.workstation.string;
