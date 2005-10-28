@@ -1119,14 +1119,12 @@ int ltdb_reindex(struct ldb_module *module)
 	/* first traverse the database deleting any @INDEX records */
 	ret = tdb_traverse(ltdb->tdb, delete_index, NULL);
 	if (ret == -1) {
-		errno = EIO;
 		return -1;
 	}
 
 	/* now traverse adding any indexes for normal LDB records */
 	ret = tdb_traverse(ltdb->tdb, re_index, module);
 	if (ret == -1) {
-		errno = EIO;
 		return -1;
 	}
 

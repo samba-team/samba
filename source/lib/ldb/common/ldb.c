@@ -223,6 +223,24 @@ int ldb_search_bytree(struct ldb_context *ldb,
 }
 
 /*
+  check for an error return from an op 
+  if an op fails, but has not setup an error string, then setup one now
+*/
+static int ldb_op_finish(struct ldb_context *ldb, int status)
+{
+	if (status == LDB_SUCCESS) {
+		return ldb_transaction_commit(ldb);
+	}
+	if (ldb->err_string == NULL) {
+		/* no error string was setup by the backend */
+		ldb_set_errstring(ldb->modules, 
+				  talloc_asprintf(ldb, "ldb error %d", status));
+	}
+	ldb_transaction_cancel(ldb);
+	return status;
+}
+
+/*
   add a record to the database. Will fail if a record with the given class and key
   already exists
 */
@@ -244,11 +262,7 @@ int ldb_add(struct ldb_context *ldb,
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->add_record(module, message);
-		if (status != LDB_SUCCESS) {
-			ldb_transaction_cancel(ldb);
-			return status;
-		}
-		return ldb_transaction_commit(ldb);
+		return ldb_op_finish(ldb, status);
 	}
 
 	return module->ops->add_record(module, message);
@@ -275,11 +289,7 @@ int ldb_modify(struct ldb_context *ldb,
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->modify_record(module, message);
-		if (status != LDB_SUCCESS) {
-			ldb_transaction_cancel(ldb);
-			return status;
-		}
-		return ldb_transaction_commit(ldb);
+		return ldb_op_finish(ldb, status);
 	}
 
 	return module->ops->modify_record(module, message);
@@ -303,11 +313,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->delete_record(module, dn);
-		if (status != LDB_SUCCESS) {
-			ldb_transaction_cancel(ldb);
-			return status;
-		}
-		return ldb_transaction_commit(ldb);
+		return ldb_op_finish(ldb, status);
 	}
 
 	return module->ops->delete_record(module, dn);
@@ -330,11 +336,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 		if (status != LDB_SUCCESS) return status;
 
 		status = module->ops->rename_record(module, olddn, newdn);
-		if (status != LDB_SUCCESS) {
-			ldb_transaction_cancel(ldb);
-			return status;
-		}
-		return ldb_transaction_commit(ldb);
+		return ldb_op_finish(ldb, status);
 	}
 
 	return module->ops->rename_record(module, olddn, newdn);

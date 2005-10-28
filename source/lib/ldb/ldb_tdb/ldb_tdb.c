@@ -41,6 +41,37 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
+
+/*
+  map a tdb error code to a ldb error code
+*/
+static int ltdb_err_map(enum TDB_ERROR tdb_code)
+{
+	switch (tdb_code) {
+	case TDB_SUCCESS:
+		return LDB_SUCCESS;
+	case TDB_ERR_CORRUPT:
+	case TDB_ERR_OOM:
+	case TDB_ERR_EINVAL:
+		return LDB_ERR_OPERATIONS_ERROR;
+	case TDB_ERR_IO:
+		return LDB_ERR_PROTOCOL_ERROR;
+	case TDB_ERR_LOCK:
+	case TDB_ERR_NOLOCK:
+		return LDB_ERR_BUSY;
+	case TDB_ERR_LOCK_TIMEOUT:
+		return LDB_ERR_TIME_LIMIT_EXCEEDED;
+	case TDB_ERR_EXISTS:
+		return LDB_ERR_ENTRY_ALREADY_EXISTS;
+	case TDB_ERR_NOEXIST:
+		return LDB_ERR_NO_SUCH_OBJECT;
+	case TDB_ERR_RDONLY:
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+	return LDB_ERR_OTHER;
+}
+
+
 /*
   form a TDB_DATA for a record key
   caller frees
@@ -168,7 +199,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 
 	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
 	if (ret == -1) {
-		ret = LDB_ERR_OTHER;
+		ret = ltdb_err_map(tdb_error(ltdb->tdb));
 		goto done;
 	}
 	
@@ -229,7 +260,9 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 	ret = tdb_delete(ltdb->tdb, tdb_key);
 	talloc_free(tdb_key.dptr);
 
-	if (ret != 0) ret = LDB_ERR_OTHER;
+	if (ret != 0) {
+		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+	}
 
 	return ret;
 }
@@ -450,7 +483,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		talloc_free(tdb_key.dptr);
-		return LDB_ERR_OTHER;
+		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
 	msg2 = talloc(tdb_key.dptr, struct ldb_message);
@@ -672,7 +705,7 @@ static int ltdb_start_trans(struct ldb_module *module)
 	struct ltdb_private *ltdb = module->private_data;
 
 	if (tdb_transaction_start(ltdb->tdb) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
 	return LDB_SUCCESS;
@@ -683,7 +716,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 	struct ltdb_private *ltdb = module->private_data;
 
 	if (tdb_transaction_commit(ltdb->tdb) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
 	return LDB_SUCCESS;
@@ -694,7 +727,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 	struct ltdb_private *ltdb = module->private_data;
 
 	if (tdb_transaction_cancel(ltdb->tdb) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
 	return LDB_SUCCESS;
