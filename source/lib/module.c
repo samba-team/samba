@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "system/dir.h"
 
 static BOOL load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
@@ -31,7 +30,7 @@ static BOOL load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", dir, name);
 
-	handle = dlopen(path, 0);
+	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
 		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
 		return False;
@@ -56,23 +55,16 @@ static BOOL load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
 	return ret;
 }
 
-BOOL load_modules(const char *subsystem)
+BOOL load_modules(const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
-	char *dir_path;
 	BOOL ret;
 	TALLOC_CTX *mem_ctx;
 	
 	mem_ctx = talloc_init(NULL);
 
-	dir_path = talloc_asprintf(mem_ctx, "%s/%s", dyn_LIBDIR, subsystem);
-	if (!dir_path) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	dir = opendir(subsystem);
+	dir = opendir(path);
 	if (dir == NULL) {
 		talloc_free(mem_ctx);
 		return False;
@@ -82,7 +74,7 @@ BOOL load_modules(const char *subsystem)
 		if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
 			continue;
 
-		ret &= load_module(mem_ctx, dir_path, entry->d_name);
+		ret &= load_module(mem_ctx, path, entry->d_name);
 	}
 
 	closedir(dir);
