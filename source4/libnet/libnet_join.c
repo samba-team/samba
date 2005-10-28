@@ -390,7 +390,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	msg->dn = msgs[0]->dn;
 
 	{
-		const char *service_principal_name[2];
+		int i;
+		const char *service_principal_name[6];
 		const char *dns_host_name = strlower_talloc(tmp_ctx, 
 							    talloc_asprintf(tmp_ctx, 
 									    "%s.%s", 
@@ -404,17 +405,18 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		}
 
 		service_principal_name[0] = talloc_asprintf(tmp_ctx, "host/%s", dns_host_name);
-		if (!service_principal_name[0]) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		service_principal_name[1] = talloc_asprintf(tmp_ctx, "host/%s", strlower_talloc(tmp_ctx, r->in.netbios_name));
-		if (!service_principal_name[1]) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+		service_principal_name[2] = talloc_asprintf(tmp_ctx, "host/%s/%s", dns_host_name, realm);
+		service_principal_name[3] = talloc_asprintf(tmp_ctx, "host/%s/%s", strlower_talloc(tmp_ctx, r->in.netbios_name), realm);
+		service_principal_name[4] = talloc_asprintf(tmp_ctx, "host/%s/%s", dns_host_name, r->out.domain_name);
+		service_principal_name[5] = talloc_asprintf(tmp_ctx, "host/%s/%s", strlower_talloc(tmp_ctx, r->in.netbios_name), r->out.domain_name);
+		
+		for (i=0; i < ARRAY_SIZE(service_principal_name); i++) {
+			if (!service_principal_name[i]) {
+				r->out.error_string = NULL;
+				talloc_free(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "dNSHostName", dns_host_name);
@@ -502,9 +504,11 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	r->out.kvno = kvno;
 
-	status = libnet_JoinSite(ctx,
-				 drsuapi_pipe, drsuapi_bind_handle,
-				 remote_ldb, r);
+	if (r->in.acct_type ==  ACB_SVRTRUST) {
+		status = libnet_JoinSite(ctx,
+					 drsuapi_pipe, drsuapi_bind_handle,
+					 remote_ldb, r);
+	}
 	talloc_free(tmp_ctx);
 
 	return status;
@@ -1000,10 +1004,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* Now, if it was AD, then we want to start looking changing a
 	 * few more things.  Otherwise, we are done. */
-	if (realm 
-	    && (r->in.acct_type ==  ACB_SVRTRUST) 
-	    && (!NT_STATUS_EQUAL(cu_status, NT_STATUS_USER_EXISTS))) {
-		
+	if (realm) {
 		status = libnet_JoinADSDomain(ctx, r);
 		return status;
 	}
