@@ -391,7 +391,8 @@ struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
 
 /* useful functions for ldb_message structure manipulation */
 int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
-int ldb_attr_cmp(const char *dn1, const char *dn2);
+int ldb_attr_cmp(const char *attr1, const char *attr2);
+int ldb_attr_dn(const char *attr);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
 
 /* create an empty message */

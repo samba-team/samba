@@ -80,3 +80,15 @@ int ldb_attr_cmp(const char *attr1, const char *attr2)
 {
 	return ldb_caseless_cmp(attr1, attr2);
 }
+
+/*
+  we accept either 'dn' or 'distinguishedName' for a distinguishedName
+*/
+int ldb_attr_dn(const char *attr)
+{
+	if (ldb_attr_cmp(attr, "dn") == 0 ||
+	    ldb_attr_cmp(attr, "distinguishedName") == 0) {
+		return 0;
+	}
+	return -1;
+}
