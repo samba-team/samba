@@ -213,7 +213,7 @@ static void msg_reload_services(int msg_type, struct process_id src, void *buf, 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
 static void msg_shutdown(int msg_type, struct process_id src, void *buf, size_t len)
 {
-	terminate();
+	do_sigterm = True;
 }
 
 static struct winbindd_dispatch_table {
