@@ -12,7 +12,6 @@ use smb_build::smb_build_h;
 use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
-use smb_build::dot;
 use smb_build::env;
 use config;
 use strict;
@@ -71,9 +70,5 @@ $mkenv->ProtoHeader($OUTPUT->{ALL_OBJS});
 
 $mkenv->write("Makefile");
 smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
-
-open DOTTY, ">samba4-deps.dot";
-print DOTTY dot::generate($DEPEND);
-close DOTTY;
 
 1;
