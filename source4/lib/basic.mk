@@ -59,9 +59,6 @@ INIT_OBJ_FILES = \
 OBJ_FILES = \
 		gencache.o \
 
-[SUBSYSTEM::MODULE]
-OBJ_FILES = module.o
-
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
@@ -89,7 +86,8 @@ ADD_OBJ_FILES = \
 		mutex.o \
 		idtree.o \
 		db_wrap.o \
-		gendb.o
+		gendb.o \
+		module.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
 		SOCKET_WRAPPER CONFIG
