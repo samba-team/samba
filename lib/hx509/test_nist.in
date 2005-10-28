@@ -43,6 +43,9 @@ test -d "$nistdir" || exit 77
 
 while read validate verify cert chain1 chain2 ; do
     expr "$validate" : "#" > /dev/null && continue
+    
+    test "$validate" = "end" && break
+    echo -n .
 
     if ./hxtool validate $nistdir/$cert > /dev/null; then
 	if test "$validate" = "f"; then
