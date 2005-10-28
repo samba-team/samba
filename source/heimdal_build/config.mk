@@ -447,7 +447,7 @@ heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 
 #######################
 # Start SUBSYSTEM HEIMDAL
-[SUBSYSTEM::HEIMDAL]
+[LIBRARY::HEIMDAL]
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = \
 		HEIMDAL_GSSAPI HEIMDAL_KRB5 \

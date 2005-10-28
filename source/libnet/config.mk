@@ -1,6 +1,9 @@
 #################################
 # Start SUBSYSTEM LIBNET
-[SUBSYSTEM::LIBNET]
+[LIBRARY::LIBNET]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		libnet.o
 ADD_OBJ_FILES = \

@@ -26,7 +26,6 @@ my $section_types = {
 		"OBJ_FILES"		=> "list",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
-		"TARGET_DEPS"		=> "list",
 
 		"ENABLE"		=> "bool",
 		"NOPROTO"		=> "bool",
@@ -42,7 +41,6 @@ my $section_types = {
 		"OBJ_FILES"		=> "list",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
-		"TARGET_DEPS"		=> "list",
 
 		"ENABLE"		=> "bool",
 		"NOPROTO"		=> "bool",
@@ -53,7 +51,6 @@ my $section_types = {
 		"OBJ_FILES"		=> "list",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
-		"TARGET_DEPS"		=> "list",
 
 		"ENABLE"		=> "bool",
 		"NOPROTO"		=> "bool",
@@ -65,12 +62,15 @@ my $section_types = {
 		"MAJOR_VERSION"		=> "string",
 		"MINOR_VERSION"		=> "string",
 		"RELEASE_VERSION"	=> "string",
+
+		"INIT_FUNCTION"		=> "string",
 		"INIT_OBJ_FILES"	=> "list",
 		"ADD_OBJ_FILES"		=> "list",
 		"OBJ_FILES"		=> "list",
 
+		"DESCRIPTION" => "string",
+
 		"REQUIRED_SUBSYSTEMS"	=> "list",
-		"TARGET_DEPS"		=> "list",
 
 		"ENABLE"		=> "bool",
 		"NOPROTO"		=> "bool",

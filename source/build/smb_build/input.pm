@@ -39,7 +39,7 @@ sub check_subsystem($$)
 {
 	my ($INPUT, $subsys) = @_;
 	if ($subsys->{ENABLE} ne "YES") {
-		printf("Subsystem: %s disabled!\n",$subsys->{NAME});
+		printf("Subsystem `%s' disabled\n",$subsys->{NAME});
 		return;
 	}
 	
@@ -54,7 +54,6 @@ sub check_module($$)
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
-
 	($mod->{DEFAULT_BUILD} = "STATIC") if not defined($mod->{DEFAULT_BUILD});
 	
 	my $use_default = 0;
@@ -62,7 +61,6 @@ sub check_module($$)
 	if (!(defined($INPUT->{$mod->{SUBSYSTEM}}))) {
 		$mod->{BUILD} = "NOT";
 		$mod->{ENABLE} = "NO";
-		printf("Module: %s...PARENT SUBSYSTEM ($mod->{SUBSYSTEM}) DISABLED\n",$mod->{NAME});
 		return;
 	}
 
@@ -85,15 +83,13 @@ sub check_module($$)
 		$mod->{OUTPUT_TYPE} = "SHARED_LIBRARY";
 		$mod->{INSTALLDIR} = "LIBDIR/$mod->{SUBSYSTEM}";
 		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM});
-		printf("Module: %s...shared\n",$mod->{NAME});
 	} elsif ($mod->{CHOSEN_BUILD} eq "STATIC") {
 		$mod->{ENABLE} = "YES";
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
-		printf("Module: %s...static\n",$mod->{NAME});
 		$mod->{OUTPUT_TYPE} = $subsystem_output_type;
 	} else {
 		$mod->{ENABLE} = "NO";
-		printf("Module: %s...not\n",$mod->{NAME});
+		printf("Module `%s' disabled\n",$mod->{NAME});
 		return;
 	}
 }
@@ -103,11 +99,17 @@ sub check_library($$)
 	my ($INPUT, $lib) = @_;
 
 	if ($lib->{ENABLE} ne "YES") {
-		printf("Library: %s...disabled\n",$lib->{NAME});
+		printf("Library `%s' disabled\n",$lib->{NAME});
 		return;
 	}
 
+
 	$lib->{OUTPUT_TYPE} = $library_output_type;
+
+	unless (defined($lib->{MAJOR_VERSION})) {
+		print "$lib->{NAME}: Please specify MAJOR_VERSION\n";
+		return;
+	}
 
 	$lib->{INSTALLDIR} = "LIBDIR";
 }
@@ -117,7 +119,7 @@ sub check_binary($$)
 	my ($INPUT, $bin) = @_;
 
 	if ($bin->{ENABLE} ne "YES") {
-		printf("Binary: %s...disabled\n",$bin->{NAME});
+		printf("Binary `%s' disabled\n",$bin->{NAME});
 		return;
 	}
 
@@ -133,8 +135,11 @@ sub calc_unique_deps($$)
 
 	foreach my $dep (@{$deps}) {
 		if (not defined($udeps->{$$dep->{NAME}})) {
-			$udeps->{$$dep->{NAME}} = "BUSY";
-			calc_unique_deps($$dep->{DEPENDENCIES}, $udeps);
+      		   if (defined ($$dep->{OUTPUT_TYPE}) && (($$dep->{OUTPUT_TYPE} eq "OBJ_LIST")
+			    or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ"))) {
+   			        $udeps->{$$dep->{NAME}} = "BUSY";
+			        calc_unique_deps($$dep->{DEPENDENCIES}, $udeps);
+		        }
 			$udeps->{$$dep->{NAME}} = $$dep;
 		}
 	}

@@ -34,7 +34,7 @@ SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
 		auth_winbind.o
 REQUIRED_SUBSYSTEMS = \
-		LIB_WINBIND_CLIENT \
+		LIBWINBIND_CLIENT \
 		NDR_NETLOGON LIBNDR
 # End MODULE auth_winbind
 #######################

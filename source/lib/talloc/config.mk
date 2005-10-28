@@ -9,6 +9,7 @@ REQUIRED_SUBSYSTEMS = LIBREPLACE
 NOPROTO = YES
 MANPAGE = talloc.3
 PUBLIC_HEADERS = talloc.h
+DESCRIPTION = A hierarchical pool based memory system with destructors
 #
 # End LIBRARY LIBTALLOC
 ################################################

@@ -185,6 +185,8 @@ clean: heimdal_clean
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing binaries
 	@-rm -f $(BIN_PROGS) $(SBIN_PROGS)
+	@echo Removing libraries
+	@-rm -f bin/*.$(SHLIBEXT).*
 	@echo Removing dummy targets
 	@-rm -f bin/.*_*
 	@echo Removing generated files
