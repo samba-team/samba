@@ -44,32 +44,42 @@ sub generate_objlist($)
 sub generate_shared_library($)
 {
 	my $lib = shift;
+	my $link_name;
 
 	@{$lib->{DEPEND_LIST}} = ();
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
-	$lib->{LIBRARY_NAME} = lc($lib->{NAME}).".so";
-	$lib->{TARGET} = "bin/lib$lib->{LIBRARY_NAME}";
+
+	$link_name = $lib->{NAME};
+	$link_name =~ s/^LIB//;
+	$link_name = lc($link_name);
+
+	$lib->{LIBRARY_NAME} = "lib$link_name.\$(SHLIBEXT)";
+	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
 	if (defined($lib->{MAJOR_VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
-		$lib->{TARGET} = "bin/lib$lib->{LIBRARY_REALNAME}";
+		$lib->{TARGET} = "bin/$lib->{LIBRARY_REALNAME}";
 		@{$lib->{LINK_FLAGS}} = ("\$(SONAMEFLAG)$lib->{LIBRARY_SONAME}");
 	}
-	$lib->{OUTPUT} = "-l".lc($lib->{NAME});
+	$lib->{OUTPUT} = "-l$link_name";
 }
 
 sub generate_static_library($)
 {
 	my $lib = shift;
+	my $link_name;
 
 	@{$lib->{DEPEND_LIST}} = ();
 
-	$lib->{LIBRARY_NAME} = lc($lib->{NAME}).".a";
+	$link_name = $lib->{NAME};
+	$link_name =~ s/^LIB//;
+
+	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	@{$lib->{LINK_FLAGS}} = ();
 
-	$lib->{TARGET} = "bin/lib$lib->{LIBRARY_NAME}";
-	$lib->{OUTPUT} = "-l".lc($lib->{NAME});
+	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
+	$lib->{OUTPUT} = "-l".lc($link_name);
 }
 
 sub generate_binary($)
@@ -145,8 +155,11 @@ sub create_output($)
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
-			push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
-
+			if (defined($elem->{OUTPUT_TYPE}) and ($elem->{OUTPUT_TYPE} eq "SHARED_LIBRARY")) {
+			    push(@{$part->{DEPEND_LIST}}, "bin/$elem->{LIBRARY_NAME}");			    
+			} else { 
+			    push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
+			}
 			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
 				$part->{OUTPUT_TYPE} eq "BINARY" and 
 				defined($elem->{INIT_FUNCTION}) and 

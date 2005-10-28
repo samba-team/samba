@@ -23,8 +23,6 @@
 #define __GTK_SMB_H__
 
 
-#ifdef HAVE_GTK
-
 #define GTK_DISABLE_DEPRECATED
 #include <gtk/gtk.h>
 
@@ -58,8 +56,6 @@ struct _GtkRpcBindingDialogClass
 #define GTK_RPC_BINDING_DIALOG(obj)          GTK_CHECK_CAST (obj, gtk_rpc_binding_dialog_get_type (), GtkRpcBindingDialog)
 #define GTK_RPC_BINDING_DIALOG_CLASS(klass)  GTK_CHECK_CLASS_CAST (klass, gtk_rpc_binding_dialog_class_get_type (), GtkRpcBindingDialogClass)
 #define IS_GTK_RPC_BINDING_DIALOG(obj)       GTK_CHECK_TYPE (obj, gtk_rpc_binding_dialog_get_type ())
-
-#endif
 
 /* subsystem prototypes */
 GtkWidget *create_gtk_samba_about_dialog (const char *appname);
