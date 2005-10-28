@@ -766,10 +766,17 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
 		if ((strlen(domain->dcname) > 0) &&
-		    NT_STATUS_IS_OK(check_negative_conn_cache(domain->name,
-							      domain->dcname))) {
+		    NT_STATUS_IS_OK(check_negative_conn_cache(
+					    domain->name, domain->dcname)) &&
+		    (resolve_name(domain->dcname, &domain->dcaddr.sin_addr,
+				  0x20))) {
 			int dummy;
-			if (!open_any_socket_out(&domain->dcaddr, 1, 10000,
+			struct sockaddr_in addrs[2];
+			addrs[0] = domain->dcaddr;
+			addrs[0].sin_port = htons(445);
+			addrs[1] = domain->dcaddr;
+			addrs[1].sin_port = htons(139);
+			if (!open_any_socket_out(addrs, 2, 10000,
 						 &dummy, &fd)) {
 				fd = -1;
 			}
