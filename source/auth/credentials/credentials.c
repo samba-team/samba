@@ -301,7 +301,10 @@ BOOL cli_credentials_set_domain(struct cli_credentials *cred,
 				enum credentials_obtained obtained)
 {
 	if (obtained >= cred->domain_obtained) {
-		cred->domain = talloc_strdup(cred, val);
+		/* it is important that the domain be in upper case,
+		 * particularly for the sensitive NTLMv2
+		 * calculations */
+		cred->domain = strupper_talloc(cred, val);
 		cred->domain_obtained = obtained;
 		return True;
 	}
