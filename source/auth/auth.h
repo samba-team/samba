@@ -51,6 +51,8 @@ struct auth_usersupplied_info
 	const char *workstation_name;
 	const char *remote_host;
 
+	uint32_t logon_parameters;
+
 	BOOL mapped_state;
 	/* the values the client gives us */
 	struct {

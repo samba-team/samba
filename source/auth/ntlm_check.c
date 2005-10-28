@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/crypto/crypto.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 /****************************************************************************
  Core of smb password checking routine.
@@ -274,6 +275,7 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
+			     uint32_t logon_parameters,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
 			     const DATA_BLOB *nt_response,
@@ -297,8 +299,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	*user_sess_key = data_blob(NULL, 0);
 
 	/* Check for cleartext netlogon. Used by Exchange 5.5. */
-	if (challenge->length == sizeof(zeros) && 
-	    (memcmp(challenge->data, zeros, challenge->length) == 0 )) {
+	if ((logon_parameters & MSV1_0_CLEARTEXT_PASSWORD_ALLOWED)
+	    && challenge->length == sizeof(zeros) 
+	    && (memcmp(challenge->data, zeros, challenge->length) == 0 )) {
 		struct samr_Password client_nt;
 		struct samr_Password client_lm;
 		uint8_t dospwd[14]; 
