@@ -232,6 +232,7 @@ static int free_keytab(void *ptr) {
 	krb5_principal salt_princ;
 	krb5_principal princ;
 	krb5_keytab keytab;
+	char *enctype_string = NULL;
 
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	if (!mem_ctx) {
@@ -257,7 +258,7 @@ static int free_keytab(void *ptr) {
 					      smb_krb5_context, 
 					      &salt_princ);
 	if (ret) {
-		DEBUG(1,("create_memory_keytab: maksing salt principal failed (%s)\n",
+		DEBUG(1,("create_memory_keytab: makeing salt principal failed (%s)\n",
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
@@ -266,7 +267,7 @@ static int free_keytab(void *ptr) {
 
 	ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, &princ);
 	if (ret) {
-		DEBUG(1,("create_memory_keytab: maksing krb5 principal failed (%s)\n",
+		DEBUG(1,("create_memory_keytab: makeing krb5 principal failed (%s)\n",
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
@@ -311,6 +312,13 @@ static int free_keytab(void *ptr) {
 			return ret;
 		}
 		
+		krb5_keytype_to_string(smb_krb5_context->krb5_context, ENCTYPE_ARCFOUR_HMAC, &enctype_string);
+		DEBUG(5, ("Added %s(kvno %d) to keytab (%s)\n", 
+			  cli_credentials_get_principal(machine_account, mem_ctx),
+			  cli_credentials_get_kvno(machine_account),
+			  enctype_string));
+		free(enctype_string);		
+
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 
 		talloc_steal(parent_ctx, *keytab_container);
@@ -354,6 +362,14 @@ static int free_keytab(void *ptr) {
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 			return ret;
 		}
+
+		enctype_string = NULL;
+		krb5_keytype_to_string(smb_krb5_context->krb5_context, enctypes[i], &enctype_string);
+		DEBUG(5, ("Added %s(kvno %d) to keytab (%s)\n", 
+			  cli_credentials_get_principal(machine_account, mem_ctx),
+			  cli_credentials_get_kvno(machine_account),
+			  enctype_string));
+		free(enctype_string);		
 		
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 	}
@@ -385,6 +401,14 @@ static int free_keytab(void *ptr) {
 				return ret;
 			}
 			
+			enctype_string = NULL;
+			krb5_keytype_to_string(smb_krb5_context->krb5_context, enctypes[i], &enctype_string);
+			DEBUG(5, ("Added %s(kvno %d) to keytab (%s)\n", 
+				  cli_credentials_get_principal(machine_account, mem_ctx),
+				  cli_credentials_get_kvno(machine_account),
+			  enctype_string));
+			free(enctype_string);		
+
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 		}
 	}
