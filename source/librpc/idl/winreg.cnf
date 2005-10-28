@@ -50,5 +50,3 @@ HF_RENAME hf_winreg_winreg_OpenHKCC_handle hf_winreg_handle
 HF_RENAME hf_winreg_winreg_OpenHKDD_handle hf_winreg_handle
 HF_RENAME hf_winreg_winreg_OpenHKPT_handle hf_winreg_handle
 HF_RENAME hf_winreg_winreg_OpenHKPN_handle hf_winreg_handle
-
-IMPORT KeySecurityData.data if (((dcerpc_info *)pinfo->private_data)->conformant_run) return offset; offset = dissect_nt_sec_desc(tvb, offset, pinfo, tree, drep, FALSE, -1, NULL);
