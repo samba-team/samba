@@ -157,14 +157,13 @@ function ldb_erase(ldb)
 	for (i=0;i<res.length;i++) {
 		ldb.del(res[i].dn);
 	}
-	res = ldb.search("(objectclass=*)", attrs);
+	res = ldb.search("(|(objectclass=*)(dn=*))", attrs);
 	if (res.length != 0) {
 		ldb_delete(ldb);
 		return;
 	}
 	assert(res.length == 0);
 }
-
 
 /*
   setup a ldb in the private dir
