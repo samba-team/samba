@@ -37,6 +37,8 @@
 srcdir="@srcdir@"
 nistdir=/sources/pki/nist/PKITS_data/certs
 
+echo "nist tests"
+
 test -d "$nistdir" || exit 77
 
 while read validate verify cert chain1 chain2 ; do
