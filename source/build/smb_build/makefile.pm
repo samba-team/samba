@@ -91,6 +91,11 @@ sub _prepare_compiler_linker($)
 {
 	my ($self) = @_;
 
+	my $devld = "";
+	if ($self->{developer}) {
+		$devld = " \$(DEVEL_LDFLAGS)";
+	}
+
 	$self->output(<< "__EOD__"
 SHELL=$self->{config}->{SHELL}
 
@@ -104,14 +109,15 @@ HOSTCC=$self->{config}->{HOSTCC}
 CPP=$self->{config}->{CPP}
 CPPFLAGS=$self->{config}->{CPPFLAGS}
 
-LD=$self->{config}->{LD}
-LD_FLAGS=$self->{config}->{LDFLAGS} 
+DEVEL_LDFLAGS=-Wl,-rpath,bin/
+LD=$self->{config}->{LD} 
+LDFLAGS=$self->{config}->{LDFLAGS} -Lbin/$devld
 
 STLD=$self->{config}->{AR}
-STLD_FLAGS=-rc
+STLD_FLAGS=-rc -Lbin/
 
 SHLD=$self->{config}->{CC}
-SHLD_FLAGS=$self->{config}->{LDSHFLAGS}
+SHLD_FLAGS=$self->{config}->{LDSHFLAGS} -Lbin/$devld
 SONAMEFLAG=$self->{config}->{SONAMEFLAG}
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
@@ -236,7 +242,7 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{shared_libs}}, $ctx->{OUTPUT});
+	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_NAME}");
 
 	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
 	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
@@ -374,7 +380,7 @@ BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 #
 bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST) \$(BINARY_$ctx->{NAME}_OBJS)
 	\@echo Linking \$\@
-	\@\$(CC) \$(LD_FLAGS) -o \$\@ \\
+	\@\$(CC) \$(LDFLAGS) -o \$\@ \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_LIST) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS)
@@ -399,11 +405,23 @@ sub PkgConfig($$)
 {
 	my ($self,$ctx) = @_;
 	
-	my $path = "$ctx->{BASEDIR}/$ctx->{NAME}.pc";
+	my $link_name = $ctx->{NAME};
+
+	$link_name =~ s/^LIB//g;
+	$link_name = lc($link_name);
+
+	my $path = "$ctx->{BASEDIR}/$link_name.pc";
 
 	push (@{$self->{pc_files}}, $path);
 
-	smb_build::env::PkgConfig($self,$path,$ctx->{NAME},"FIXME",join(' ', @{$ctx->{CFLAGS}}), "$ctx->{MAJOR_VERSION}.$ctx->{MINOR_VERSION}.$ctx->{RELEASE_VERSION}"); 
+	smb_build::env::PkgConfig($self,
+		$path,
+		$link_name,
+		$ctx->{OUTPUT},
+		join(' ', @{$ctx->{CFLAGS}}), 
+		"$ctx->{MAJOR_VERSION}.$ctx->{MINOR_VERSION}.$ctx->{RELEASE_VERSION}",
+		$ctx->{DESCRIPTION}
+	); 
 }
 
 sub ProtoHeader($$)

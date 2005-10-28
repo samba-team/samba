@@ -50,9 +50,9 @@ sub _set_config($$)
 	}
 }
 
-sub PkgConfig($$$$$$)
+sub PkgConfig($$$$$$$)
 {
-	my ($self,$path,$name,$libs,$cflags,$version) = @_;
+	my ($self,$path,$name,$libs,$cflags,$version,$desc) = @_;
 
 	print __FILE__.": creating $path\n";
 
@@ -67,9 +67,12 @@ includedir=$self->{config}->{includedir}
 __EOF__
 
 	print OUT "Name: $name\n";
+	if (defined($desc)) {
+		print OUT "Description: $desc\n";
+	}
 	print OUT "Version: $version\n";
-	print OUT "Libs: $libs\n";
-	print OUT "Cflags: $cflags\n";
+	print OUT "Libs: -L\${libdir} $libs\n";
+	print OUT "Cflags: -I\${includedir} $cflags\n";
 
 	close(OUT);
 }

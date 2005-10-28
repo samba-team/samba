@@ -26,7 +26,10 @@ ADD_OBJ_FILES = \
 # End SUBSYSTEM LIBNETIF
 ##############################
 
-[SUBSYSTEM::TDR]
+[LIBRARY::TDR]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
 INIT_OBJ_FILES = tdr/tdr.o
 
 ##############################

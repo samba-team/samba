@@ -2,7 +2,10 @@
 
 ##############################
 # Start SUBSYSTEM GTKSMB
-[SUBSYSTEM::GTKSMB]
+[LIBRARY::GTKSMB]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
 NOPROTO = YES
 INIT_OBJ_FILES = common/gtk-smb.o 
 ADD_OBJ_FILES = common/select.o \
