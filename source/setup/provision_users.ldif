@@ -108,6 +108,10 @@ isCriticalSystemObject: TRUE
 unicodePwd: ${MACHINEPASS}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
+servicePrincipalName: HOST/${DNSNAME}/${REALM}
+servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
+servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
+servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
 msDS-KeyVersionNumber: 1
 
 
