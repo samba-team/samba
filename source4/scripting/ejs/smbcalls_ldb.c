@@ -129,7 +129,7 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 	const char *ldifstring;
 	struct ldb_context *ldb;
 	struct ldb_ldif *ldif;
-	int ret = 0;
+	int ret = 0, count=0;
 
 	if (argc != 1) {
 		ejsSetErrorMsg(eid, "ldb.add/modify invalid arguments");
@@ -148,9 +148,15 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 	}
 
 	while ((ldif = ldb_ldif_read_string(ldb, &ldifstring))) {
+		count++;
 		ret = fn(ldb, ldif->msg);
 		talloc_free(ldif);
 		if (ret != 0) break;
+	}
+
+	if (count == 0) {
+		ejsSetErrorMsg(eid, "ldb.add/modify invalid ldif");
+		return -1;
 	}
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
@@ -383,8 +389,6 @@ static int ejs_ldbClose(MprVarHandle eid, int argc, struct MprVar **argv)
 	if (ldb == NULL) {
 		return -1;
 	}
-
-	talloc_free(ldb);
 
 	mprSetThisPtr(eid, "db", NULL);
 	mpr_Return(eid, mprCreateBoolVar(True));
