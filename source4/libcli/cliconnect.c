@@ -32,13 +32,9 @@ BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 {
 	struct smbcli_socket *sock;
 
-	sock = smbcli_sock_init(cli, NULL);
-	if (!sock) return False;
+	sock = smbcli_sock_connect_byname(server, 0, NULL, NULL);
 
-	if (!smbcli_sock_connect_byname(sock, server, 0)) {
-		talloc_free(sock);
-		return False;
-	}
+	if (sock == NULL) return False;
 	
 	cli->transport = smbcli_transport_init(sock, cli, True);
 	if (!cli->transport) {

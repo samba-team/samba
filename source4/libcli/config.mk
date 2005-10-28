@@ -24,7 +24,6 @@ ADD_OBJ_FILES = \
 	smb_composite/loadfile.o \
 	smb_composite/savefile.o \
 	smb_composite/connect.o \
-	smb_composite/connect_multi.o \
 	smb_composite/sesssetup.o \
 	smb_composite/fetchfile.o \
 	smb_composite/appendacl.o \
