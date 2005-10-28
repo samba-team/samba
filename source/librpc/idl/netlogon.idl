@@ -85,6 +85,10 @@ interface netlogon
 		[size_is(size/2),length_is(length/2)] uint16 *bindata;
 	} netr_AcctLockStr;
 
+	const int MSV1_0_CLEARTEXT_PASSWORD_ALLOWED = 0x002;
+	const int MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT = 0x020;
+	const int MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT = 0x800;
+
 	typedef struct {
 		lsa_String  domain_name;
 		uint32      parameter_control;
