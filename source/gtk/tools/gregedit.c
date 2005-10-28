@@ -545,11 +545,12 @@ static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
 	if (result == GTK_RESPONSE_OK) 
 	{
 		WERROR error;
-		struct registry_value *val;
+		DATA_BLOB data;
+		uint32_t data_type;
 		
-		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val->data_type, &val->data);
+		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &data_type, &data);
 		
-		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data);
+		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), data_type, data);
 
 		if (!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(NULL, "Error while setting value", error);
@@ -566,11 +567,12 @@ static void on_set_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 	if (result == GTK_RESPONSE_OK) 
 	{
 		WERROR error;
-		struct registry_value *val;
+		uint32_t data_type;
+		DATA_BLOB data;
 		
-		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val->data_type, &val->data);
+		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &data_type, &data);
 		
-		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data);
+		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), data_type, data);
 
 		if (!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(NULL, "Error while setting value", error);
