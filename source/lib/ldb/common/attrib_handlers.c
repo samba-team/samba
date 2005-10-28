@@ -232,7 +232,7 @@ static int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
 {
 	time_t t1, t2;
 	t1 = ldb_string_to_time((char *)v1->data);
-	t1 = ldb_string_to_time((char *)v1->data);
+	t2 = ldb_string_to_time((char *)v2->data);
 	return (int)t2 - (int)t1;
 }
 
