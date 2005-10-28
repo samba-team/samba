@@ -4,6 +4,7 @@
 
    Copyright (C) Stefan Metzmacher	2005
    Copyright (C) Volker Lendecke	2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -398,32 +399,6 @@ static void lookupsid_recv_name(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
-NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
-{
-	s3call->response.result			= WINBINDD_ERROR;
-	return NT_STATUS_OK;
-}
-
-#if 0
-static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
-				 char **domain, char **user)
-{
-	char *p = strchr(domuser, *lp_winbind_separator());
-
-	if (p == NULL) {
-		*domain = talloc_strdup(mem_ctx, lp_workgroup());
-	} else {
-		*domain = talloc_strndup(mem_ctx, domuser,
-					 PTR_DIFF(p, domuser));
-		domuser = p+1;
-	}
-
-	*user = talloc_strdup(mem_ctx, domuser);
-
-	return ((*domain != NULL) && (*user != NULL));
-}
-#endif
-
 static void pam_auth_crap_recv(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
@@ -465,9 +440,10 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	DATA_BLOB info3;
 	struct netr_UserSessionKey user_session_key;
 	struct netr_LMSessionKey lm_key;
-
+	char *unix_username;
+	
 	status = wb_cmd_pam_auth_crap_recv(ctx, s3call, &info3,
-					   &user_session_key, &lm_key);
+					   &user_session_key, &lm_key, &unix_username);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	if (s3call->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
@@ -487,6 +463,70 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 		       sizeof(s3call->response.data.auth.first_8_lm_hash));
 	}
 	
+	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
+		s3call->response.extra_data = unix_username;
+		s3call->response.length += strlen(unix_username)+1;
+	}
+
+	resp->result = WINBINDD_OK;
+
+ done:
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
+
+static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
+				 char **domain, char **user)
+{
+	char *p = strchr(domuser, *lp_winbind_separator());
+
+	if (p == NULL) {
+		*domain = talloc_strdup(mem_ctx, lp_workgroup());
+	} else {
+		*domain = talloc_strndup(mem_ctx, domuser,
+					 PTR_DIFF(p, domuser));
+		domuser = p+1;
+	}
+
+	*user = talloc_strdup(mem_ctx, domuser);
+
+	return ((*domain != NULL) && (*user != NULL));
+}
+
+static void pam_auth_recv(struct composite_context *ctx);
+
+NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	char *user, *domain;
+	if (!samba3_parse_domuser(s3call, 
+				 s3call->request.data.auth.user,
+				 &domain, &user)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	ctx = wb_cmd_pam_auth_send(
+		s3call->call, domain, user,
+		s3call->request.data.auth.pass);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = pam_auth_recv;
+	ctx->async.private_data = s3call;
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void pam_auth_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	struct winbindd_response *resp = &s3call->response;
+	NTSTATUS status;
+
+	status = wb_cmd_pam_auth_recv(ctx);
+
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
 	resp->result = WINBINDD_OK;
 
  done:
