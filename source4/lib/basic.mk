@@ -27,6 +27,7 @@ ADD_OBJ_FILES = \
 ##############################
 
 [LIBRARY::TDR]
+PUBLIC_HEADERS = tdr/tdr.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1

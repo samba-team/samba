@@ -37,6 +37,16 @@ if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
 	$smb_build::input::library_output_type = "MERGEDOBJ";
 }
 
+if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
+	$smb_build::input::module_output_type = $ENV{MODULE_OUTPUT_TYPE};
+} elsif ($config::config{BLDSHARED} eq "true") {
+	#FIXME: This should eventually become SHARED_LIBRARY 
+	# rather then MERGEDOBJ once I'm certain it works ok -- jelmer
+	$smb_build::input::module_output_type = "MERGEDOBJ";
+} elsif ($config::config{BLDMERGED} eq "true") {
+	$smb_build::input::module_output_type = "MERGEDOBJ";
+}
+
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
 my $OUTPUT = output::create_output($DEPEND);
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);

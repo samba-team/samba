@@ -7,6 +7,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 NOPROTO = YES
+PUBLIC_HEADERS = common/gtk-smb.h common/select.h
 INIT_OBJ_FILES = common/gtk-smb.o 
 ADD_OBJ_FILES = common/select.o \
 		common/gtk_events.o \

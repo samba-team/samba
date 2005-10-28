@@ -10,10 +10,11 @@
 use strict;
 package smb_build::input;
 
-use vars qw($library_output_type $subsystem_output_type);
+use vars qw($library_output_type $subsystem_output_type $module_output_type);
 
 $library_output_type = "OBJ_LIST";
 $subsystem_output_type = "OBJ_LIST";
+$module_output_type = "OBJ_LIST";
 my $srcdir = ".";
 
 sub strtrim($)
@@ -54,43 +55,32 @@ sub check_module($$)
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
-	($mod->{DEFAULT_BUILD} = "STATIC") if not defined($mod->{DEFAULT_BUILD});
-	
 	my $use_default = 0;
 
 	if (!(defined($INPUT->{$mod->{SUBSYSTEM}}))) {
-		$mod->{BUILD} = "NOT";
 		$mod->{ENABLE} = "NO";
 		return;
 	}
 
-	if (($mod->{ENABLE} eq "STATIC") or 
-	 	($mod->{ENABLE} eq "NOT") or 
-		($mod->{ENABLE} eq "SHARED")) {
-		$mod->{DEFAULT_BUILD} = $mod->{ENABLE};
-	} elsif ($mod->{ENABLE} ne "YES")
+	if ($mod->{ENABLE} ne "YES")
 	{
-		$mod->{CHOSEN_BUILD} = "NOT";
-	}
-
-	if (not defined($mod->{CHOSEN_BUILD}) or $mod->{CHOSEN_BUILD} eq "DEFAULT") 
-	{
-		$mod->{CHOSEN_BUILD} = $mod->{DEFAULT_BUILD};
-	}
-
-	if ($mod->{CHOSEN_BUILD} eq "SHARED") {
-		$mod->{ENABLE} = "YES";
-		$mod->{OUTPUT_TYPE} = "SHARED_LIBRARY";
-		$mod->{INSTALLDIR} = "LIBDIR/$mod->{SUBSYSTEM}";
-		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM});
-	} elsif ($mod->{CHOSEN_BUILD} eq "STATIC") {
-		$mod->{ENABLE} = "YES";
-		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
-		$mod->{OUTPUT_TYPE} = $subsystem_output_type;
-	} else {
-		$mod->{ENABLE} = "NO";
 		printf("Module `%s' disabled\n",$mod->{NAME});
 		return;
+	}
+
+	if (defined($mod->{CHOSEN_BUILD}) and $mod->{CHOSEN_BUILD} ne "DEFAULT") 
+	{
+		$mod->{OUTPUT_TYPE} = $mod->{CHOSEN_BUILD};
+	} else {
+		$mod->{OUTPUT_TYPE} = $module_output_type;
+	}
+
+	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY" or 
+	    $mod->{OUTPUT_TYPE} eq "STATIC_LIBRARY") {
+		$mod->{INSTALLDIR} = "LIBDIR/$mod->{SUBSYSTEM}";
+		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM});
+	} else {
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 	}
 }
 

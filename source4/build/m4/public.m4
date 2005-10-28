@@ -4,10 +4,6 @@ dnl Copyright (C) 2004 Stefan Metzmacher
 dnl Copyright (C) 2004-2005 Jelmer Vernooij
 dnl Published under the GPL
 dnl
-dnl SMB_MODULE_DEFAULT(name,default_build)
-dnl
-dnl SMB_SUBSYSTEM_ENABLE(name,default_build)
-dnl
 dnl SMB_SUBSYSTEM(name,init_obj_files,add_obj_files,required_subsystems)
 dnl
 dnl SMB_EXT_LIB_ENABLE(name,default_build)
@@ -16,36 +12,15 @@ dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name)
 dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 dnl
-dnl SMB_BINARY_ENABLE(name,default_build)
+dnl SMB_ENABLE(name,default_build)
 dnl
 dnl #######################################################
 dnl ### And now the implementation			###
 dnl #######################################################
 
-dnl SMB_MODULE_DEFAULT(name,default_build)
-AC_DEFUN([SMB_MODULE_DEFAULT],
-[
-	[SMB_MODULE_DEFAULT][$1]="$2"
-SMB_INFO_ENABLES="$SMB_INFO_ENABLES
-\$enabled{$1} = \"$2\";"
-])
-
-dnl SMB_SUBSYSTEM_ENABLE(name,default_build)
-AC_DEFUN([SMB_SUBSYSTEM_ENABLE],
-[
-	[SMB_SUBSYSTEM_ENABLE_][$1]="$2"
-SMB_INFO_ENABLES="$SMB_INFO_ENABLES
-\$enabled{$1} = \"$2\";"
-])
-
 dnl SMB_SUBSYSTEM(name,init_obj_files,add_obj_files,required_subsystems)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
-
-	if test -z "$[SMB_SUBSYSTEM_ENABLE_][$1]"; then
-		[SMB_SUBSYSTEM_ENABLE_][$1]="YES";
-	fi
-
 	if test -z "$[SMB_SUBSYSTEM_NOPROTO_][$1]"; then
 		[SMB_SUBSYSTEM_NOPROTO_][$1]="NO";
 	fi
@@ -148,10 +123,10 @@ LDFLAGS = $5
 "
 ])
 
-dnl SMB_BINARY_ENABLE(name,default_build)
-AC_DEFUN([SMB_BINARY_ENABLE],
+dnl SMB_ENABLE(name,default_build)
+AC_DEFUN([SMB_ENABLE],
 [
-	[SMB_BINARY_ENABLE_][$1]="$2";
+	[SMB_ENABLE_][$1]="$2";
 
 SMB_INFO_ENABLES="$SMB_INFO_ENABLES
 \$enabled{$1} = \"$2\";"
