@@ -1,6 +1,6 @@
 dnl # Server process model subsystem
 
-SMB_MODULE_DEFAULT(process_model_thread,NOT)
+SMB_ENABLE(process_model_thread,NO)
 
 #################################################
 # check for pthread support
@@ -13,7 +13,7 @@ AC_ARG_WITH(pthreads,
 		if test x"$ac_cv_func_pread" != x"yes" -o x"$ac_cv_func_pwrite" != x"yes";then
 			AC_MSG_ERROR([You cannot enable threads when you don't have pread/pwrite!])
 		fi
-		SMB_MODULE_DEFAULT(process_model_thread,STATIC)
+		SMB_ENABLE(process_model_thread,YES)
 		SMB_EXT_LIB_ENABLE(PTHREAD,YES)
 	;;
 	*)

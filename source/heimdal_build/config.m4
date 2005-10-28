@@ -205,9 +205,9 @@ SMB_EXT_LIB(RESOLV,[${RESOLV_LIBS}],[${RESOLV_CFLAGS}],[${RESOLV_CPPFLAGS}],[${R
 
 
 # these are disabled unless heimdal is found below
-SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, NO)
-SMB_BINARY_ENABLE(asn1_compile, NO)
-SMB_BINARY_ENABLE(compile_et, NO)
+SMB_ENABLE(KERBEROS_LIB, NO)
+SMB_ENABLE(asn1_compile, NO)
+SMB_ENABLE(compile_et, NO)
 
 AC_PROG_LEX
 AC_PROG_YACC
@@ -219,30 +219,30 @@ AC_PROG_YACC
 AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
 CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb -Iheimdal/kdc -Iheimdal/lib/roken -Iheimdal/lib/des"
 HAVE_KRB5=YES
-SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, YES)
-SMB_BINARY_ENABLE(asn1_compile, YES)
-SMB_BINARY_ENABLE(compile_et, YES)
+SMB_ENABLE(KERBEROS_LIB, YES)
+SMB_ENABLE(asn1_compile, YES)
+SMB_ENABLE(compile_et, YES)
 
 # only add getaddrinfo and related functions if needed
-SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_ADDRINFO, NO)
 if test t$ac_cv_func_getaddrinfo != tyes; then
-	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
 fi
 
 # only add inet_aton if needed
-SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
 if test t$ac_cv_func_inet_aton != tyes; then
-	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
 fi
 
 # only add gai_strerror if needed
-SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, NO)
 AC_CHECK_FUNC(gai_strerror)
 if test t$ac_cv_func_gai_strerror != tyes; then
     AC_SEARCH_LIBS_EXT(gai_strerror, [xnet], XNET_LIBS)
     AC_CHECK_FUNC_EXT(gai_strerror, $XNET_LIBS)
     if test t$ac_cv_func_ext_gai_strerror != tyes; then
-	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
     else
 	AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether gai_strerror() is available])
     fi
