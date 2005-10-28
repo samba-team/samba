@@ -75,7 +75,7 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
 
 install: showlayout installbin installdat installswat installmisc installlib \
-	installheader
+	installheader installpidl
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -138,6 +138,12 @@ etags:
 
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
+
+pidl/Makefile: pidl/Makefile.PL
+	cd pidl && $(PERL) Makefile.PL
+
+installpidl: pidl/Makefile
+	cd pidl && $(MAKE) install
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL $(PIDL_ARGS)
