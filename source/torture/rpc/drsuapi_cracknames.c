@@ -564,6 +564,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			{ 
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "Looking for the kadmin/changepw service as a serivce principal",
 				.str = talloc_asprintf(mem_ctx, "kadmin/changepw"),
 				.status = DRSUAPI_DS_NAME_STATUS_OK,
 				.expected_str = talloc_asprintf(mem_ctx, "CN=krbtgt,CN=Users,%s", realm_dn_str)
@@ -575,6 +576,36 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 						       test_dc, dns_domain,
 						       dns_domain),
 				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
+						       test_dc, dns_domain,
+						       "BOGUS"),
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s@%s", 
+						       test_dc, "REALLY",
+						       "BOGUS"),
+				.status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "cifs/%s.%s", 
+						       test_dc, dns_domain),
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = talloc_asprintf(mem_ctx, "cifs/%s", 
+						       test_dc),
+				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID,
