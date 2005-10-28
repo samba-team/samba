@@ -40,19 +40,19 @@ for bindoptions in seal,validate,padcheck bigendian; do
  done
 done
 
-testok $0 $failed
+for bindoptions in connect validate ; do
+ for transport in ncalrpc; do
+     case $transport in
+	 ncalrpc) tests=$slow_ncalrpc_tests ;;
+	 ncacn_np) tests=$slow_ncacn_np_tests ;;
+	 ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
+     esac
+   for t in $tests; do
+    name="$t on $transport with $bindoptions"
+    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*" || failed=`expr $failed + 1`
+   done
+ done
+done
 
-#for bindoptions in connect validate padcheck bigendian bigendian,seal; do
-# for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
-#     case $transport in
-#	 ncalrpc) tests=$slow_ncalrpc_tests ;;
-#	 ncacn_np) tests=$slow_ncacn_np_tests ;;
-#	 ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
-#     esac
-#   for t in $tests; do
-#    name="$t on $transport with $bindoptions"
-#    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*" || failed=`expr $failed + 1`
-#   done
-# done
-#done
+testok $0 $failed
 
