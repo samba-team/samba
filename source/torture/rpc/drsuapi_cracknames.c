@@ -637,6 +637,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.comment = "Full Machine account as service principal",
+				.str = user_principal_name,
+				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
+			},
+			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.comment = "Realm as an NT4 domain lookup",
