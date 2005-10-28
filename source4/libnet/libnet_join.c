@@ -417,21 +417,15 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 				talloc_free(tmp_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
+			rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "servicePrincipalName", service_principal_name[i]);
+			if (rtn == -1) {
+				r->out.error_string = NULL;
+				talloc_free(tmp_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "dNSHostName", dns_host_name);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "servicePrincipalName", service_principal_name[0]);
-		if (rtn == -1) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "servicePrincipalName", service_principal_name[1]);
 		if (rtn == -1) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
