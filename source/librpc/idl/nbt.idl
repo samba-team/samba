@@ -536,8 +536,9 @@
 	/*******************************************/
 	/* \MAILSLOT\NET\NTLOGON mailslot requests */
 	typedef enum {
-		NTLOGON_SAM_LOGON       = 0x12,
-		NTLOGON_SAM_LOGON_REPLY = 0x13
+		NTLOGON_SAM_LOGON         = 0x12,
+		NTLOGON_SAM_LOGON_REPLY   = 0x13,
+		NTLOGON_SAM_LOGON_REPLY15 = 0x15
 	} nbt_ntlogon_command;
 
 	typedef struct {
@@ -566,6 +567,7 @@
 	typedef [nodiscriminant] union {
 		[case(NTLOGON_SAM_LOGON)]       nbt_ntlogon_sam_logon logon;
 		[case(NTLOGON_SAM_LOGON_REPLY)] nbt_ntlogon_sam_logon_reply reply;
+		[case(NTLOGON_SAM_LOGON_REPLY15)] nbt_ntlogon_sam_logon_reply reply;
 	} nbt_ntlogon_request;
 
 	typedef [flag(NDR_NOALIGN),public] struct {

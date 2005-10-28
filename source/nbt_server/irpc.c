@@ -81,7 +81,8 @@ static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot,
 	case NTLOGON_SAM_LOGON:
 		DEBUG(0, ("Huh -- got NTLOGON_SAM_LOGON as reply\n"));
 		break;
-	case NTLOGON_SAM_LOGON_REPLY: {
+	case NTLOGON_SAM_LOGON_REPLY:
+	case NTLOGON_SAM_LOGON_REPLY15: {
 		const char *p = ntlogon.req.reply.server;
 
 		DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
