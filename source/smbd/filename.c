@@ -445,9 +445,18 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	 * read from the directory and then mangled by the mangle_map()
 	 * call. We need to mangle both names or neither.
 	 * (JRA).
+	 *
+	 * Fix for bug found by Dina Fine. If in case sensitive mode then
+	 * the mangle cache is no good (3 letter extension could be wrong
+	 * case - so don't demangle in this case - leave as mangled and
+	 * allow the mangling of the directory entry read (which is done
+	 * case insensitively) to match instead. This will lead to more
+	 * false positive matches but we fail completely without it. JRA.
 	 */
-	if (mangled)
+
+	if (mangled && !conn->case_sensitive) {
 		mangled = !mangle_check_cache( name, maxlength, SNUM(conn));
+	}
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(conn, path, NULL, 0))) {
