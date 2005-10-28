@@ -167,6 +167,8 @@ static NTSTATUS local_pw_check_specified(const char *username,
 		
 		
 		nt_status = ntlm_password_check(mem_ctx, 
+						MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
+						MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						challenge,
 						lm_response,
 						nt_response,
