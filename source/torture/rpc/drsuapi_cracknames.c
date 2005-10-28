@@ -215,6 +215,7 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	const char *realm_canonical;
 	const char *realm_canonical_ex;
 	const char *user_principal_name;
+	char *user_principal_name_short;
 	const char *service_principal_name;
 	const char *canonical_name;
 	const char *canonical_ex_name;
@@ -398,6 +399,12 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	canonical_ex_name = ldb_dn_canonical_ex_string(mem_ctx, FQDN_1779_dn);
 
 	user_principal_name = talloc_asprintf(mem_ctx, "%s$@%s", test_dc, dns_domain);
+
+	/* form up a user@DOMAIN */
+	user_principal_name_short = talloc_asprintf(mem_ctx, "%s$@%s", test_dc, nt4_domain);
+	/* variable nt4_domain includs a trailing \ */
+	user_principal_name_short[strlen(user_principal_name_short) - 1] = '\0';
+	
 	service_principal_name = talloc_asprintf(mem_ctx, "HOST/%s", test_dc);
 	{
 		
@@ -414,6 +421,13 @@ BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = user_principal_name,
+				.expected_str = FQDN_1779_name,
+				.status = DRSUAPI_DS_NAME_STATUS_OK
+			},
+			{
+				.format_offered	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+				.str = user_principal_name_short,
 				.expected_str = FQDN_1779_name,
 				.status = DRSUAPI_DS_NAME_STATUS_OK
 			},
