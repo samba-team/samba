@@ -78,6 +78,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	}
 	
 	user_info->mapped_state = False;
+	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->old.in.user;
 	user_info->client.domain_name = sess->old.in.domain;
@@ -187,6 +188,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	}
 	
 	user_info->mapped_state = False;
+	user_info->logon_parameters = 0;
 	user_info->flags = 0;
 	user_info->client.account_name = sess->nt1.in.user;
 	user_info->client.domain_name = sess->nt1.in.domain;
