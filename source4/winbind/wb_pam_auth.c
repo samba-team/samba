@@ -4,6 +4,7 @@
    Authenticate a user
 
    Copyright (C) Volker Lendecke 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -201,6 +202,16 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 	state->user_session_key = base->key;
 	state->lm_key = base->LMSessKey;
 
+	/* Give the caller the most accurate username possible */
+	if (base->account_name.string) {
+		state->user_name = base->account_name.string;
+		talloc_steal(state, base->account_name.string);
+	}
+	if (base->domain.string) {
+		state->domain_name = base->domain.string;
+		talloc_steal(state, base->domain.string);
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -208,7 +219,8 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 				   TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *info3,
 				   struct netr_UserSessionKey *user_session_key,
-				   struct netr_LMSessionKey *lm_key)
+				   struct netr_LMSessionKey *lm_key,
+				   char **unix_username)
 {
 	struct pam_auth_crap_state *state =
 		talloc_get_type(c->private_data, struct pam_auth_crap_state);
@@ -218,6 +230,12 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 		info3->data = talloc_steal(mem_ctx, state->info3.data);
 		*user_session_key = state->user_session_key;
 		*lm_key = state->lm_key;
+		*unix_username = talloc_asprintf(mem_ctx, "%s%s%s", 
+						 state->domain_name, lp_winbind_separator(),
+						 state->user_name);
+		if (!*unix_username) {
+			status = NT_STATUS_NO_MEMORY;
+		}
 	}
 	talloc_free(state);
 	return status;
@@ -230,11 +248,92 @@ NTSTATUS wb_cmd_pam_auth_crap(struct wbsrv_call *call,
 			      DATA_BLOB lm_resp, TALLOC_CTX *mem_ctx,
 			      DATA_BLOB *info3,
 			      struct netr_UserSessionKey *user_session_key,
-			      struct netr_LMSessionKey *lm_key)
+			      struct netr_LMSessionKey *lm_key,
+			      char **unix_username)
 {
 	struct composite_context *c =
 		wb_cmd_pam_auth_crap_send(call, domain, user, workstation,
 					  chal, nt_resp, lm_resp);
 	return wb_cmd_pam_auth_crap_recv(c, mem_ctx, info3, user_session_key,
-					 lm_key);
+					 lm_key, unix_username);
+}
+
+struct composite_context *wb_cmd_pam_auth_send(struct wbsrv_call *call,
+					       const char *domain,
+					       const char *user,
+					       const char *password)
+{
+	struct composite_context *c;
+	struct cli_credentials *credentials;
+	const char *workstation;
+	NTSTATUS status;
+
+	DATA_BLOB chal, nt_resp, lm_resp, names_blob;
+	int flags = CLI_CRED_NTLM_AUTH;
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth()) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+
+	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
+
+	credentials = cli_credentials_init(call);
+	if (!credentials) {
+		return NULL;
+	}
+	cli_credentials_set_conf(credentials);
+	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
+
+	cli_credentials_set_password(credentials, password, CRED_SPECIFIED);
+
+	chal = data_blob_talloc(call, NULL, 8);
+	if (!chal.data) {
+		return NULL;
+	}
+	generate_random_buffer(chal.data, chal.length);
+	cli_credentials_get_ntlm_username_domain(credentials, call,
+						 &user, &domain);
+	/* for best compatability with multiple vitual netbios names
+	 * on the host, this should be generated from the
+	 * cli_credentials associated with the machine account */
+	workstation = cli_credentials_get_workstation(credentials);
+
+	names_blob = NTLMv2_generate_names_blob(call, cli_credentials_get_workstation(credentials), 
+						cli_credentials_get_domain(credentials));
+
+	status = cli_credentials_get_ntlm_response(credentials, call, 
+						   &flags, 
+						   chal,
+						   names_blob,
+						   &lm_resp, &nt_resp,
+						   NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	c = wb_cmd_pam_auth_crap_send(call, domain, user, workstation,
+				      chal, nt_resp, lm_resp);
+	return c;
+}
+
+NTSTATUS wb_cmd_pam_auth_recv(struct composite_context *c)
+{
+	struct pam_auth_crap_state *state =
+		talloc_get_type(c->private_data, struct pam_auth_crap_state);
+	NTSTATUS status = composite_wait(c);
+	talloc_free(state);
+	return status;
+}
+
+NTSTATUS wb_cmd_pam_auth(struct wbsrv_call *call,
+			 const char *domain, const char *user,
+			 const char *password)
+{
+	struct composite_context *c =
+		wb_cmd_pam_auth_send(call, domain, user, 
+				     password);
+	return wb_cmd_pam_auth_recv(c);
 }
