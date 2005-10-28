@@ -93,7 +93,7 @@ static int ejs_strstr(MprVarHandle eid, int argc, char **argv)
   usage:
      list = split(".", "a.foo.bar");
 
-  NOTE: does not take a regular expression, unlink perl split()
+  NOTE: does not take a regular expression, unlike perl split()
 */
 static int ejs_split(MprVarHandle eid, int argc, char **argv)
 {
