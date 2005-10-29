@@ -804,11 +804,11 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Any data in this call is an EA list. */
-	if (total_data && !lp_ea_support(SNUM(conn))) {
+	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
 	}
 
-	if (total_data) {
+	if (total_data != 4) {
 		if (total_data < 10) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -828,6 +828,8 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 			talloc_destroy(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
+	} else if (IVAL(pdata,0) != 4) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -3736,6 +3738,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			TALLOC_CTX *ctx = NULL;
 
 			if (total_data < 10) {
+
+				/* OS/2 workplace shell seems to send SET_EA requests of "null"
+				   length. They seem to have no effect. Bug #3212. JRA */
+
+				if ((total_data == 4) && (IVAL(pdata,0) == 4)) {
+					/* We're done. We only get EA info in this call. */
+					SSVAL(params,0,0);
+					send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+					return(-1);
+				}
+
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
@@ -4489,11 +4502,17 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Any data in this call is an EA list. */
-	if (total_data && !lp_ea_support(SNUM(conn))) {
+	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
 	}
 
-	if (total_data) {
+	/*
+	 * OS/2 workplace shell seems to send SET_EA requests of "null"
+	 * length (4 bytes containing IVAL 4).
+	 * They seem to have no effect. Bug #3212. JRA.
+	 */
+
+	if (total_data != 4) {
 		if (total_data < 10) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -4513,6 +4532,8 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 			talloc_destroy(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
+	} else if (IVAL(pdata,0) != 4) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	if (check_name(directory,conn)) {
