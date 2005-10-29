@@ -1,6 +1,6 @@
 0. Samba Team Notes:
-This package is targeted at the current stable release of debian distribution
-(woody) running on a 2.4.x kernel.
+This package is targeted at the woody release of debian distribution
+running on a 2.4.x kernel.
 This package has been made by Simo Sorce on behalf of the Samba Team.
 Do not use Debian BTS to report bugs, it's not a debian project package.
 Thanks to Eloy Paris and Steve "Vorlon" Langasek for the work they've done
