@@ -430,6 +430,10 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
 		       gensec_gssapi_state->gss_oid->length) == 0)) {
 		switch (min_stat) {
+		case KRB5_KDC_UNREACH:
+			DEBUG(3, ("Cannot reach a KDC we require: %s\n",
+				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
 			DEBUG(3, ("Server is not registered with our KDC: %s\n", 
 				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
