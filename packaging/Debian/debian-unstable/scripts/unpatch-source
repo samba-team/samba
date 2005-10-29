@@ -15,6 +15,6 @@ done
 #mv -f ${TMPFILE} source/VERSION
 
 # Regenerate configure only if it is older than configure.in
-[ source/configure -ot source/configure.in ] && (cd source && autoheader && autoconf)
+[ source/configure -ot source/configure.in ] && (cd source && sh ./autogen.sh)
 
 exit 0

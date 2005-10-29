@@ -1,34 +1,24 @@
-#
-#    Translators, if you are not familiar with the PO format, gettext
-#    documentation is worth reading, especially sections dedicated to
-#    this format, e.g. by running:
-#         info -n '(gettext)PO Files'
-#         info -n '(gettext)Header Entry'
-#
-#    Some information specific to po-debconf are available at
-#            /usr/share/doc/po-debconf/README-trans
-#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-#
-#    Developers do not need to manually edit POT or PO files.
-#
-#, fuzzy
+# Turkish translation of samba.
+# This file is distributed under the same license as the samba package.
+# Mehmet TÃ¼rker <mturker@innova.com.tr>, 2004. 
+# 
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: samba\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2005-08-13 17:05-0700\n"
-"PO-Revision-Date: 2003-09-09 09:26+0900\n"
-"Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
-"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"PO-Revision-Date: 2004-06-01 09:42+0300\n"
+"Last-Translator: Mehmet TÃ¼rker <mturker@innova.com.tr>\n"
+"Language-Team: Turkish <debian-l10n-turkish@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=EUC-JP\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "Character Set for Unix filesystem"
-msgstr "Unix ¥Õ¥¡¥¤¥ë¥·¥¹¥Æ¥à¸þ¤±¤ÎÊ¸»ú¥»¥Ã¥È"
+msgstr "Unix dosya sistemi iÃ§in karakter seti"
 
 #. Type: string
 #. Description
@@ -39,22 +29,22 @@ msgid ""
 "specify the character set you wish to use for theis new option, which "
 "controls how Samba interprets filenames on the file system."
 msgstr ""
-"¸½ºß¡¢smb.conf ¤ËÀßÄêºÑ¤ß¤Î \"character set\" ¤¬¤¢¤ê¤Þ¤¹¡£Samba 3.0 ¤Ç¤Ï¡¢¤³"
-"¤Î¥ª¥×¥·¥ç¥ó¤Ï¿·¤·¤¤¥ª¥×¥·¥ç¥ó \"unix charset\" ¤ËÃÖ¤­´¹¤¨¤é¤ì¤Æ¤¤¤Þ¤¹¡£"
-"Samba ¤¬¥Õ¥¡¥¤¥ë¥·¥¹¥Æ¥à¤Î¥Õ¥¡¥¤¥ëÌ¾¤ò¤É¤Î¤è¤¦¤Ë²ò¼á¤¹¤ë¤«¤òÀ©¸æ¤¹¤ë¤³¤Î¿·¤·"
-"¤¤¥ª¥×¥·¥ç¥ó¤Î¤¿¤á¤Ë¡¢´õË¾¤¹¤ëÊ¸»ú¥»¥Ã¥È¤ò»ØÄê¤·¤Æ¤¯¤À¤µ¤¤¡£"
+"HalihazÄ±rda smb.conf yapÄ±landÄ±rma dosyanÄ±zda \"character set\" ayarÄ± mevcut. "
+"Samba 3.0'da bu seÃ§enek yenisiyle: \"unix charset\" ile deÄŸiÅŸtirildi. LÃ¼tfen "
+"Samba'nÄ±n sistemdeki dosya isimlerini Ã§evirirken dikkate aldÄ±ÄŸÄ± bu yeni "
+"seÃ§enekle kullanÄ±lmasÄ±nÄ± istediÄŸiniz karakter setini girin."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "If you leave this option blank, your smb.conf will not be changed."
-msgstr "¤³¤Î¥ª¥×¥·¥ç¥ó¤ò¶õ¤Î¤Þ¤Þ¤Ë¤¹¤ë¤È¡¢smb.conf ¤ÏÊÑ¹¹¤µ¤ì¤Þ¤»¤ó¡£"
+msgstr "Bu seÃ§eneÄŸi boÅŸ bÄ±rakÄ±rsanÄ±z, smb.conf dosyanÄ±z deÄŸiÅŸtirilmeyecektir."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:13
 msgid "Character Set for DOS clients"
-msgstr "DOS ¥¯¥é¥¤¥¢¥ó¥È¸þ¤±¤ÎÊ¸»ú¥»¥Ã¥È"
+msgstr "DOS istemcileri iÃ§in karakter seti"
 
 #. Type: string
 #. Description
@@ -67,18 +57,21 @@ msgid ""
 "needed to support Windows clients, it is only for DOS clients.  If you leave "
 "this option blank, your smb.conf will not be changed."
 msgstr ""
-"¸½ºß¡¢smb.conf ¤ËÀßÄêºÑ¤ß¤Î \"client code page\" ¤¬¤¢¤ê¤Þ¤¹¡£Samba 3.0 ¤Ç¤Ï¡¢"
-"¤³¤Î¥ª¥×¥·¥ç¥ó¤Ï¿·¤·¤¤¥ª¥×¥·¥ç¥ó \"dos charset\" ¤ËÃÖ¤­´¹¤¨¤é¤ì¤Æ¤¤¤Þ¤¹¡£¤³¤Î"
-"¿·¤·¤¤¥ª¥×¥·¥ç¥ó¤Î¤¿¤á¤Ë¡¢´õË¾¤¹¤ëÊ¸»ú¥»¥Ã¥È¤ò»ØÄê¤·¤Æ¤¯¤À¤µ¤¤¡£¤Û¤È¤ó¤É¤Î¾ì"
-"¹ç¡¢¥Ç¥Õ¥©¥ë¥È¤ÎÁªÂò¤Î¤Þ¤Þ¤Ç½½Ê¬¤Ç¤·¤ç¤¦¡£¤³¤Î¥ª¥×¥·¥ç¥ó¤Ï Windows ¥¯¥é¥¤¥¢¥ó"
-"¥È¥µ¥Ý¡¼¥È¤Ë¤ÏÉ¬Í×¤Ê¤¯¡¢DOS ¥¯¥é¥¤¥¢¥ó¥È¤Î¤ß¤Î¤¿¤á¤Ç¤¢¤ë¤³¤È¤òÃí°Õ¤·¤Æ¤ª¤­¤Þ"
-"¤¹¡£¤³¤Î¥ª¥×¥·¥ç¥ó¤ò¶õ¤Î¤Þ¤Þ¤Ë¤¹¤ë¤È¡¢smb.conf ¤ÏÊÑ¹¹¤µ¤ì¤Þ¤»¤ó¡£"
+"HalihazÄ±rda smb.conf yapÄ±landÄ±rma dosyanÄ±zda \"client code page\" ayarÄ± "
+"mevcut.  Samba 3.0'da bu seÃ§enek \"dos charset\" seÃ§eneÄŸiyle deÄŸiÅŸtirildi.  "
+"LÃ¼tfen bu yeni seÃ§enekle beraber kullanmak iÃ§in bir karakter seti seÃ§in.  "
+"Ã‡oÄŸu durumda Ã¶ntanÄ±mlÄ± olarak seÃ§ilmiÅŸ bulunan seÃ§enek uygundur.  AklÄ±nÄ±zda "
+"bulunsun bu seÃ§enek Windows istemcilerini desteklemek iÃ§in gerekli deÄŸildir, "
+"sadece DOS istemcileri iÃ§indir.  EÄŸer bu seÃ§eneÄŸi boÅŸ bÄ±rakÄ±rsanÄ±z smb.conf "
+"dosyanÄ±z deÄŸiÅŸtirilmeyecektir."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid "Modify smb.conf to use WINS settings from DHCP?"
-msgstr "DHCP ¤«¤é WINS ÀßÄê¤ò»È¤¦¤è¤¦ smb.conf ¤òÊÑ¹¹¤·¤Þ¤¹¤«?"
+msgstr ""
+"WINS ayarlarÄ±nÄ± DHCP'den kullanmak iÃ§in smb.conf dosyasÄ±nda deÄŸiÅŸiklik "
+"yapÄ±lsÄ±n mÄ±?"
 
 #. Type: boolean
 #. Description
@@ -90,11 +83,11 @@ msgid ""
 "to your smb.conf file so that DHCP-provided WINS settings will automatically "
 "be read from /etc/samba/dhcp.conf."
 msgstr ""
-"¤¢¤Ê¤¿¤Î¥³¥ó¥Ô¥å¡¼¥¿¤¬¥Í¥Ã¥È¥ï¡¼¥¯¾å¤Î DHCP ¥µ¡¼¥Ð¤«¤é IP ¥¢¥É¥ì¥¹¾ðÊó¤ò¼èÆÀ"
-"¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢DHCP ¥µ¡¼¥Ð¤Ï¥Í¥Ã¥È¥ï¡¼¥¯¾å¤Ë¤¢¤ë WINS ¥µ¡¼¥Ð (NetBIOS "
-"¥Í¡¼¥à¥µ¡¼¥Ð) ¤Ë¤Ä¤¤¤Æ¤Î¾ðÊó¤òÄó¶¡¤¹¤ë¤³¤È¤â¤Ç¤­¤Þ¤¹¡£DHCP ¤ÇÄó¶¡¤µ¤ì¤ë WINS "
-"ÀßÄê¤Ï /etc/samba/dhcp.conf ¤«¤é¼«Æ°Åª¤ËÆÉ¤ß¹þ¤Þ¤ì¤ë¤¿¤á¡¢smb.conf ¥Õ¥¡¥¤¥ë¤ò"
-"ÊÑ¹¹¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£"
+"EÄŸer bilgisayarÄ±nÄ±z IP adresini aÄŸÄ±nÄ±zdaki bir DHCP sunucusundan alÄ±yorsa, "
+"DHCP sunucusu ayrÄ±ca aÄŸÄ±nÄ±zda bulunan WINS sunucularÄ± (\"NetBIOS alanadÄ± "
+"sunucularÄ±\") hakkÄ±nda da bilgi verebilir.  Bu, smb.conf dosyanÄ±zda DHCP "
+"tarafÄ±ndan sunulan WINS ayarlarÄ±nÄ±n otomatik olarak /etc/samba/dhcp.conf "
+"dosyasÄ±ndan okunmasÄ±nÄ± saÄŸlayan bir deÄŸiÅŸikliÄŸi gerektirir."
 
 #. Type: boolean
 #. Description
@@ -103,14 +96,14 @@ msgid ""
 "You must have the dhcp3-client package installed to take advantage of this "
 "feature."
 msgstr ""
-"¤³¤Îµ¡Ç½¤ò»È¤¦¤¿¤á¤Ë¤Ï¡¢dhcp3-client ¥Ñ¥Ã¥±¡¼¥¸¤¬¥¤¥ó¥¹¥È¡¼¥ë¤µ¤ì¤Æ¤¤¤ëÉ¬Í×¤¬"
-"¤¢¤ê¤Þ¤¹¡£"
+"Bu Ã¶zellikten yararlanabilmek iÃ§in dhcp3-client paketinin kurulmuÅŸ olmasÄ± "
+"gerekir."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid "Configure smb.conf through debconf?"
-msgstr "debconf ¤òÄÌ¤·¤Æ smb.conf ¤òÀßÄê¤·¤Þ¤¹¤«?"
+msgstr "\"smb.conf\" dosyasÄ± debconf ile yapÄ±landÄ±rÄ±lsÄ±n mÄ±?"
 
 #. Type: boolean
 #. Description
@@ -122,11 +115,12 @@ msgid ""
 "line or an option that spans multiple lines, which could confuse debconf and "
 "require you to edit your smb.conf by hand to get it working again."
 msgstr ""
-"Samba ¤ÎÀßÄê¤Î»Ä¤ê¤ÎÉôÊ¬¤Ï¡¢Samba ¥×¥í¥°¥é¥à (nmbd ¤ª¤è¤Ó smbd) ¤òÀßÄê¤¹¤ë¤Î"
-"¤Ë»È¤¦¥Õ¥¡¥¤¥ë /etc/samba/smb.conf ¤Ë¤¢¤ë¥Ñ¥é¥á¡¼¥¿¤Ë±Æ¶Á¤¹¤ë¼ÁÌä¤Ç¤¹¡£¸½ºß"
-"¤Î smb.conf ¤Ï¡¢'include' ¹Ô¤Þ¤¿¤ÏÊ£¿ô¹Ô¤Ë¤Þ¤¿¤¬¤ë¥ª¥×¥·¥ç¥ó¤ò´Þ¤ó¤Ç¤¤¤Þ¤¹¡£"
-"¤³¤ì¤Ï debconf ¤òº®Íð¤µ¤»¤ë²ÄÇ½À­¤¬¤¢¤ê¡¢ºÆ¤Ó debconf ¤¬ºîÆ°¤¹¤ë¤è¤¦¤Ë¤¹¤Ù¤¯ "
-"smb.conf ¤Î¼êÆ°¤Ç¤Î½¤Àµ¤òÉ¬Í×¤È¤·¤Þ¤¹¡£"
+"Geri kalan Samba yapÄ±landÄ±rmasÄ± Samba uygulamalarÄ±nÄ± (nmbd ve smbd) "
+"yapÄ±landÄ±rmak iÃ§in kullanÄ±lan /etc/samba/smb.conf dosyasÄ±ndaki parametreleri "
+"etkileyen sorularla devam edecektir. Mevcut smb.conf dosyasÄ±, debconf'u "
+"ÅŸaÅŸÄ±rtabilecek ve smb.conf dosyanÄ±zÄ± elle deÄŸiÅŸtirilmesi zorunda kÄ±lacak bir "
+"'include' satÄ±rÄ± veya birden fazla satÄ±r boyunca devam eden bir seÃ§enek "
+"iÃ§eriyor."
 
 #. Type: boolean
 #. Description
@@ -137,15 +131,17 @@ msgid ""
 "periodic configuration enhancements.  Therefore, use of debconf is "
 "recommended if possible."
 msgstr ""
-"smb.conf ¤ÎÀßÄê¤Ë debconf ¤ò»È¤ï¤Ê¤¤¾ì¹ç¡¢¤¹¤Ù¤Æ¤ÎÀßÄê¤ÎÊÑ¹¹¤ò¤¢¤Ê¤¿¼«¿È¤¬ÌÌ"
-"ÅÝ¤ò¸«¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£¤³¤ì¤ÏÄê´üÅª¤ÊÀßÄê²þÁ±¤Ë¤Ï¸þ¤¤¤Æ¤¤¤Þ¤»¤ó¡£¤½¤Î¤¿¤á¡¢"
-"²ÄÇ½¤Ê¤é debconf ¤ò»È¤¦¤Î¤¬¤ª´«¤á¤Ç¤¹¡£"
+"EÄŸer smb.conf'u yapÄ±landÄ±rmak iÃ§in debconf'u kullanmÄ±yorsanÄ±z bÃ¼tÃ¼n "
+"yapÄ±landÄ±rma deÄŸiÅŸikliklerini kendiniz elle yapmanÄ±z gerekir.  Bu durumda "
+"periyodik olarak sunulan yapÄ±landÄ±rma iyileÅŸtirmelerinden de "
+"yararlanamayacaksÄ±nÄ±z.  Bu nedenlerle eÄŸer mÃ¼mkÃ¼nse debconf kullanÄ±mÄ± "
+"tavsiye edilir."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:52
 msgid "Workgroup/Domain Name?"
-msgstr "¥ï¡¼¥¯¥°¥ë¡¼¥×/¥É¥á¥¤¥óÌ¾¤Ï²¿¤Ç¤¹¤«?"
+msgstr "Ã‡alÄ±ÅŸma Grubu/Etki AlanÄ± Ä°smi?"
 
 #. Type: string
 #. Description
@@ -155,15 +151,16 @@ msgid ""
 "by clients. Note that this parameter also controls the Domain name used with "
 "the security=domain setting."
 msgstr ""
-"¤³¤ì¤Ï¥¯¥é¥¤¥¢¥ó¥È¤«¤é¾È²ñ¤µ¤ì¤¿ºÝ¤Ë¤¢¤Ê¤¿¤Î¥µ¡¼¥Ð¤¬¸½¤ì¤ë¥ï¡¼¥¯¥°¥ë¡¼¥×¤òÀ©"
-"¸æ¤·¤Þ¤¹¡£¤³¤Î¥Ñ¥é¥á¡¼¥¿¤Ï security=domain ÀßÄê¤¬»È¤ï¤ì¤¿¤È¤­¤Î¥É¥á¥¤¥óÌ¾¤âÀ©"
-"¸æ¤·¤Þ¤¹¡£"
+"Bu ayar, sunucunuzun istemciler tarafÄ±ndan sorgulandÄ±ÄŸÄ±nda hangi Ã‡alÄ±ÅŸma "
+"Grubu iÃ§erisinde gÃ¶zÃ¼keceÄŸini kontrol eder. AklÄ±nÄ±zda bulunsun, bu parametre "
+"ayrÄ±ca security=domain ayarÄ± ile beraber kullanÄ±lacak Etki AlanÄ±nÄ± da "
+"kontrol eder."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:60
 msgid "Use password encryption?"
-msgstr "¥Ñ¥¹¥ï¡¼¥É¤Î°Å¹æ²½¤ò»È¤¤¤Þ¤¹¤«?"
+msgstr "Parola ÅŸifrelenmesi kullanÄ±lsÄ±n mÄ±?"
 
 #. Type: boolean
 #. Description
@@ -176,17 +173,18 @@ msgid ""
 "and that you set passwords in there for each user using the smbpasswd "
 "command."
 msgstr ""
-"ºÇ¶á¤Î Windows ¥¯¥é¥¤¥¢¥ó¥È¤Ï°Å¹æ²½¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤Ã¤Æ SMB ¥µ¡¼¥Ð¤È¤ä¤ê"
-"¼è¤ê¤·¤Þ¤¹¡£¥¯¥ê¥¢¥Æ¥­¥¹¥È¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¤¤¿¤¤¾ì¹ç¤Ï¡¢¤¢¤Ê¤¿¤Î Windows ¤Î¥ì¥¸"
-"¥¹¥È¥ê¤Î¥Ñ¥é¥á¡¼¥¿¤òÊÑ¹¹¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£°Å¹æ²½¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¦¤³¤È"
-"¤ò¿ä¾©¤·¤Þ¤¹¡£¤³¤¦¤¹¤ë¾ì¹ç¡¢Í­¸ú¤Ê /etc/samba/smbpasswd ¥Õ¥¡¥¤¥ë¤¬¤¢¤ë¤³¤È¤ò"
-"³ÎÇ§¤·¡¢³Æ¥æ¡¼¥¶¤Î¥Ñ¥¹¥ï¡¼¥É¤Ï smbpasswd ¥³¥Þ¥ó¥É¤ò»È¤Ã¤ÆÀßÄê¤·¤Þ¤¹¡£"
+"Yeni Windows istemcileri SBM sunucularÄ±yla ÅŸifrelenmiÅŸ parolalar kullanarak "
+"iletiÅŸim kurarlar. EÄŸer dÃ¼z metin parolalarÄ± kullanmak istiyorsanÄ±z Windows "
+"registry iÃ§inde bir parametreyi deÄŸiÅŸtirmelisiniz. EÄŸer bu iÅŸlemi "
+"yapmÄ±ÅŸsanÄ±z, geÃ§erli bir /etc/samba/smbpasswd dosyanÄ±z olduÄŸundan ve buraya "
+"smbpasswd komutu kullanarak bÃ¼tÃ¼n kullanÄ±cÄ±lar iÃ§in parola kaydÄ± "
+"eklendiÄŸinden emin olun."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:4
 msgid "Create samba password database, /var/lib/samba/passdb.tdb?"
-msgstr "Samba ¥Ñ¥¹¥ï¡¼¥É¥Ç¡¼¥¿¥Ù¡¼¥¹ /var/lib/samba/passdb.tdb ¤òºîÀ®¤·¤Þ¤¹¤«?"
+msgstr "Samba parola veritabanÄ± /var/lib/samba/passwd.tdb yaratÄ±lsÄ±n mÄ±?"
 
 #. Type: boolean
 #. Description
@@ -202,21 +200,21 @@ msgid ""
 "doc/samba-doc/htmldocs/ENCRYPTION.html from the samba-doc package for more "
 "details."
 msgstr ""
-"Windows ¤Î¤Û¤È¤ó¤É¤Î¥Ð¡¼¥¸¥ç¥ó¤Î¥Ç¥Õ¥©¥ë¥È¤È¸ß´¹À­¤òÊÝ¤Ä¤¿¤á¡¢Samba ¤Ï°Å¹æ²½"
-"¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤Ã¤ÆÀßÄê¤µ¤ì¤Þ¤¹¡£¤³¤ì¤Ï¥æ¡¼¥¶¤Î¥Ñ¥¹¥ï¡¼¥É¤ò /etc/passwd "
-"¤È¤ÏÊÌ¤Î¥Õ¥¡¥¤¥ë¤Ë³ÊÇ¼¤¹¤ë¤³¤È¤òÉ¬Í×¤È¤·¤Þ¤¹¡£¤³¤Î¥Õ¥¡¥¤¥ë¤Ï¼«Æ°Åª¤ËºîÀ®¤¹¤ë"
-"¤³¤È¤¬¤Ç¤­¤Þ¤¹¤¬¡¢¥Ñ¥¹¥ï¡¼¥É¤Ï smbpasswd ¤ò¼Â¹Ô¤·¤Æ¼êÆ°¤Ç (¤¢¤Ê¤¿¤¢¤ë¤¤¤Ï¥æ¡¼"
-"¥¶¤¬) ÄÉ²Ã¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤º¡¢¾­Íè¤ËÅÏ¤Ã¤ÆºÇ¿·¾õÂÖ¤òÊÝ¤ÁÂ³¤±¤ë¤è¤¦À°¤¨¤Æ¤ª¤¯É¬"
-"Í×¤¬¤¢¤ê¤Þ¤¹¡£¤³¤Î¥Õ¥¡¥¤¥ë¤òºîÀ®¤·¤Ê¤¤¾ì¹ç¡¢¥×¥ì¥¤¥ó¥Æ¥­¥¹¥È¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¦"
-"¤è¤¦ Samba (¤ª¤è¤Ó¤ª¤½¤é¤¯¤¢¤Ê¤¿¤Î¥¯¥é¥¤¥¢¥ó¥È¥Þ¥·¥ó) ¤ÎºÆÀßÄê¤¬É¬Í×¤Ç¤¹¡£¾Ü"
-"ºÙ¤Ë¤Ä¤¤¤Æ¤Ï¡¢samba-doc ¥Ñ¥Ã¥±¡¼¥¸¤Ë¤¢¤ë /usr/share/doc/samba-doc/htmldocs/"
-"ENCRYPTION.html ¤ò»²¾È¤·¤Æ¤¯¤À¤µ¤¤¡£"
+"Windows'un Ã§oÄŸu sÃ¼rÃ¼mÃ¼yle uyumlu olmasÄ± iÃ§in, Samba'nÄ±n ÅŸifreli parolalarÄ± "
+"kullanmak Ã¼zere yapÄ±landÄ±rÄ±lmasÄ± gerekir.  Bu iÅŸlem kullanÄ±cÄ± parolalarÄ±nÄ±n /"
+"etc/passwd dosyasÄ±ndan farklÄ± bir yerde saklanmasÄ±nÄ± gerektirir. Bu dosya "
+"otomatik olarak yaratÄ±labilir, fakat parolalarÄ±n (siz veya kullanÄ±cÄ± "
+"tarafÄ±ndan) smbpasswd Ã§alÄ±ÅŸtÄ±rÄ±larak elle girilmesi ve gelecekte de gÃ¼ncel "
+"tutulmasÄ± gerekir.  EÄŸer bunu yaratmazsanÄ±z, dÃ¼z metin parolalar "
+"kullanabilmek iÃ§in samba'yÄ± (ve muhtemelen istemci makineleri) yeniden "
+"yapÄ±landÄ±rmanÄ±z gerekir. Daha ayrÄ±ntÄ±lÄ± bilgi iÃ§in samba-doc paketinden "
+"Ã§Ä±kan /usr/share/doc/samba-doc/htmldocs/ENCRYPTION.html'ye baÅŸvurun."
 
 #. Type: note
 #. Description
 #: ../samba.templates:17
 msgid "Samba's log files have moved."
-msgstr "Samba ¤Î¥í¥°¥Õ¥¡¥¤¥ë¤Ï°ÜÆ°¤µ¤ì¤Þ¤·¤¿¡£"
+msgstr "Samba'nÄ±n gÃ¼nce dosyalarÄ± taÅŸÄ±ndÄ±."
 
 #. Type: note
 #. Description
@@ -226,9 +224,9 @@ msgid ""
 "both Samba daemons (nmbd and smbd) are now stored in /var/log/samba/. The "
 "names of the files are log.nmbd and log.smbd, for nmbd and smbd respectively."
 msgstr ""
-"Debian ¸þ¤±¤Î Samba 2.2 ¤Î½é´ü¥Ñ¥Ã¥±¡¼¥¸¤«¤é¡¢Î¾ Samba ¥Ç¡¼¥â¥ó (nmbd ¤ª¤è¤Ó "
-"smbd) ¤Î¥í¥°¥Õ¥¡¥¤¥ë¤Ï /var/log/samba ¤Ë³ÊÇ¼¤µ¤ì¤ë¤è¤¦¤Ë¤Ê¤Ã¤Æ¤¤¤Þ¤¹¡£¥Õ¥¡¥¤"
-"¥ëÌ¾¤Ï nmbd ¤È smbd ¤ÇÊÌ¸Ä¤Ë¤Ê¤ë¤è¤¦¡¢log.nmbd ¤ª¤è¤Ó log.smbd ¤È¤Ê¤ê¤Þ¤¹¡£"
+"Samba 2.2'nin ilk paketlerinden itibaren, Samba artalan sÃ¼reÃ§lerine (nmbd ve "
+"smbd) ait Debian gÃ¼nce dosyalarÄ± artÄ±k /var/log/samba altÄ±nda saklanÄ±yor. Bu "
+"dosyalarÄ±n isimleri nmbd ve smbd iÃ§in sÄ±rasÄ±yla log.nmbd ve log.smbd'dir."
 
 #. Type: note
 #. Description
@@ -236,13 +234,14 @@ msgstr ""
 msgid ""
 "The old log files that were in /var/log/ will be moved to the new location "
 "for you."
-msgstr "/var/log/ ¤Ë¤¢¤Ã¤¿¸Å¤¤¥í¥°¥Õ¥¡¥¤¥ë¤Ï¿·¤·¤¤¾ì½ê¤Ë°ÜÆ°¤µ¤ì¤Þ¤¹¡£"
+msgstr ""
+"/var/log/ iÃ§inde bulunan eski gÃ¼nce dosyalarÄ± yeni bir konuma taÅŸÄ±nacak."
 
 #. Type: note
 #. Description
 #: ../samba.templates:28
 msgid "Running nmbd from inetd is no longer supported"
-msgstr "inetd ¤«¤é¤Î nmbd ¤Î¼Â¹Ô¤Ï¤â¤¦¥µ¥Ý¡¼¥È¤µ¤ì¤Þ¤»¤ó"
+msgstr "Nmbd'nin inetd'den Ã§alÄ±ÅŸtÄ±rÄ±lmasÄ± artÄ±k desteklenmiyor"
 
 #. Type: note
 #. Description
@@ -253,22 +252,23 @@ msgid ""
 "If you have modified your /etc/init.d/samba startup script, you may need to "
 "adjust it by hand now so that nmbd will start."
 msgstr ""
-"¤¢¤Ê¤¿¤Î¥·¥¹¥Æ¥à¤Ë¤Ï inetd ¤«¤é nmbd ¤ª¤è¤Ó smbd ¤òµ¯Æ°¤¹¤ë°ÊÁ°¤ÎÀßÄê¤¬¤¢¤ê¤Þ"
-"¤¹¡£¥Ð¡¼¥¸¥ç¥ó 2.999+3.0.alpha20-4 °Ê¹ß¤Ç¤Ï¡¢nmbd ¤Ï inetd ¤«¤é¤Ï¤â¤¦µ¯Æ°¤·¤Þ"
-"¤»¤ó¡£/etc/init.d/samba ¥¹¥¿¡¼¥È¥¢¥Ã¥×¥¹¥¯¥ê¥×¥È¤òÊÑ¹¹¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢"
-"nmbd ¤¬µ¯Æ°¤¹¤ë¤è¤¦¼êÆ°¤ÇÄ´À°¤¹¤ëÉ¬Í×¤¬¤¢¤ë¤Ç¤·¤ç¤¦¡£"
+"Sisteminiz, nmbd ve smbd'yi inetd Ã¼zerinden Ã§alÄ±ÅŸtÄ±racak ÅŸekilde "
+"ayarlanmÄ±ÅŸ.  SÃ¼rÃ¼m 2.999+3.0.alpha20-4'ten sonra artÄ±k nmbd inetd'den "
+"Ã§alÄ±ÅŸtÄ±rÄ±lmÄ±yor.  EÄŸer /etc/init.d/samba baÅŸlangÄ±Ã§ betiÄŸini kendiniz "
+"dÃ¼zenlediyseniz, nmbd'nin Ã§alÄ±ÅŸabilmesi iÃ§in bu dosyayÄ± elle ayarlamak "
+"zorunda kalabilirsiniz."
 
 #. Type: select
 #. Choices
 #: ../samba.templates:36
 msgid "daemons, inetd"
-msgstr "¥Ç¡¼¥â¥ó, inetd"
+msgstr "artalan sÃ¼reÃ§leri, inetd"
 
 #. Type: select
 #. Description
 #: ../samba.templates:38
 msgid "How do you want to run Samba?"
-msgstr "¤É¤Î¤è¤¦¤Ë Samba ¤ò¼Â¹Ô¤·¤¿¤¤¤Ç¤¹¤«?"
+msgstr "Samba'nÄ±n nasÄ±l Ã§alÄ±ÅŸmasÄ±nÄ± istersiniz?"
 
 #. Type: select
 #. Description
@@ -277,14 +277,14 @@ msgid ""
 "The Samba daemon smbd can run as a normal daemon or from inetd. Running as a "
 "daemon is the recommended approach."
 msgstr ""
-"Samba ¥Ç¡¼¥â¥ó smbd ¤ÏÄÌ¾ï¤Î¥Ç¡¼¥â¥ó¤È¤·¤Æ¤Î¼Â¹Ô¤Þ¤¿¤Ï inetd ¤«¤é¤Î¼Â¹Ô¤¬¤Ç¤­"
-"¤Þ¤¹¡£¥Ç¡¼¥â¥ó¤È¤·¤Æ¼Â¹Ô¤¹¤ë¤Î¤¬¤ª´«¤á¤Î¼êÃÊ¤Ç¤¹¡£"
+"Samba artalan sÃ¼reci smbd, normal bir artalan sÃ¼reci olarak veya inetd'den "
+"Ã§alÄ±ÅŸabilir. Tavsiye edilen yaklaÅŸÄ±m artalan sÃ¼reci olarak Ã§alÄ±ÅŸtÄ±rmaktÄ±r."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:45
 msgid "Move /etc/samba/smbpasswd to /var/lib/samba/passdb.tdb?"
-msgstr "/etc/samba/smbpasswd ¤ò /var/lib/samba/passdb.tdb ¤Ë°ÜÆ°¤·¤Þ¤¹¤«?"
+msgstr "/etc/samba/smbpasswd /var/lib/samba/passwd.tdb'ye taÅŸÄ±nsÄ±n mÄ±?"
 
 #. Type: boolean
 #. Description
@@ -296,16 +296,17 @@ msgid ""
 "plan to use another pdb backend (e.g., LDAP) instead, you should answer 'no' "
 "here."
 msgstr ""
-"Samba 3.0 ¤Ç¤Ï¡¢/etc/samba/smbpasswd ¥Õ¥¡¥¤¥ë¤ËÂå¤ï¤ë¡¢¤è¤ê¿·¤·¤¤¡¢¤è¤ê´°Á´"
-"¤Ê SAM ¥Ç¡¼¥¿¥Ù¡¼¥¹¥¤¥ó¥¿¡¼¥Õ¥§¥¤¥¹¤¬Æ³Æþ¤µ¤ì¤Æ¤¤¤Þ¤¹¡£´ûÂ¸¤Î smbpasswd ¥Õ¥¡"
-"¥¤¥ë¤ò /var/lib/samba/passdb.tdb ¤Ë°Ü¹Ô¤·¤Þ¤¹¤«? ÊÌ¤Î pdb ¥Ð¥Ã¥¯¥¨¥ó¥É (LDAP "
-"¤Ê¤É) ¤òÂå¤ï¤ê¤Ë·×²è¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢¤³¤³¤Ç¤Ï '¤¤¤¤¤¨' ¤ÈÅú¤¨¤ë¤Ù¤­¤Ç¤¹¡£"
+"Samba 3.0, /etc/samba/smbpasswd'nin yerini alan yeni ve daha eksiksiz bir "
+"SAM veritabanÄ± arayÃ¼zÃ¼ ile birlikte geliyor. Mevcut smbpasswd dosyasÄ±nÄ±n /"
+"var/lib/samba/passdb.tbd dosyasÄ±na dÃ¶nÃ¼ÅŸtÃ¼rÃ¼lmesini ister misiniz?  EÄŸer "
+"baÅŸka bir pdb arkayÃ¼zÃ¼ (Ã¶r. LDAP) kullanmayÄ± planlÄ±yorsanÄ±z, burada 'hayÄ±r' "
+"cevabÄ±nÄ± vermelisiniz."
 
 #. Type: note
 #. Description
 #: ../swat.templates:3
 msgid "Your smb.conf will be re-written!"
-msgstr "¤¢¤Ê¤¿¤Î smb.conf ¤Ï½ñ¤­Ä¾¤µ¤ì¤Þ¤¹!"
+msgstr "Smb.conf dosyanÄ±z tekrar yazÄ±lacak!"
 
 #. Type: note
 #. Description
@@ -315,7 +316,7 @@ msgid ""
 "delete all comments, include= and copy= options. If you have a carefully "
 "crafted smb.conf then back it up or don't use SWAT!"
 msgstr ""
-"SWAT ¤Ï¤¢¤Ê¤¿¤Î smb.conf ¥Õ¥¡¥¤¥ë¤ò½ñ¤­Ä¾¤·¤Þ¤¹¡£SWAT ¤Ï¥¨¥ó¥È¥ê¤òºÆÊÔÀ®¤·¡¢"
-"¤¹¤Ù¤Æ¤Î¥³¥á¥ó¥È¤ª¤è¤Ó include= ¤È copy= ¥ª¥×¥·¥ç¥ó¤òºï½ü¤·¤Þ¤¹¡£¿µ½Å¤ËºîÀ®¤µ"
-"¤ì¤¿ smb.conf ¤ò»ý¤Ã¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢¥Ð¥Ã¥¯¥¢¥Ã¥×¤·¤Æ¤ª¤¯¤«¡¢SWAT ¤ò»È¤ï¤Ê¤¤"
-"¤Ç¤¯¤À¤µ¤¤!"
+"SWAT smb.conf dosyanÄ±zÄ±n Ã¼zerine yazacak. Bu iÅŸlem kayÄ±tlarÄ± tekrar "
+"dÃ¼zenleyecek, bÃ¼tÃ¼n yorumlarÄ±, include= ve copy= seÃ§eneklerini silecek. EÄŸer "
+"Ã¶zel olarak tasarladÄ±ÄŸÄ±nÄ±z bir smb.conf dosyanÄ±z varsa, bunu yedekleyin veya "
+"SWAT kullanmayÄ±n!"
