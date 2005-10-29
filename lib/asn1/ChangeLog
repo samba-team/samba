@@ -1,5 +1,15 @@
+2005-10-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add some X9.57 (DSA) oids, sort lines
+
+	* rfc2459.asn1: Add some X9.57 (DSA) oids.
+	
 2005-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Remove pk-init-19 support.
+	
+	* pkinit.asn1: Fix comment
+	
 	* check-der.c: Add tests for parse and print functions for
 	heim_integer.
 
