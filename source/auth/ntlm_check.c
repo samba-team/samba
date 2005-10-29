@@ -310,26 +310,27 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	    && (memcmp(challenge->data, zeros, challenge->length) == 0 )) {
 		struct samr_Password client_nt;
 		struct samr_Password client_lm;
-		uint8_t dospwd[15]; 
-		char *unix_pw;
+		char *unix_pw = NULL;
+		BOOL lm_ok;
 
 		DEBUG(4,("ntlm_password_check: checking plaintext passwords for user %s\n",
 			 username));
 		mdfour(client_nt.hash, nt_response->data, nt_response->length);
-		ZERO_STRUCT(dospwd);
 		
-		convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
-				      lm_response->data, lm_response->length, 
-				      (void **)&unix_pw);
-
-		/* Only the fisrt 14 chars are considered, password need not be null terminated. */
-		push_ascii(dospwd, unix_pw, sizeof(dospwd), STR_UPPER);
-		
-		/* we *might* need to upper-case the string here */
-		E_P16((const uint8_t *)dospwd, client_lm.hash);
-		
+		if (lm_response->length && 
+		    (convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
+					  lm_response->data, lm_response->length, 
+					   (void **)&unix_pw) != -1)) {
+			if (E_deshash(unix_pw, client_lm.hash)) {
+				lm_ok = True;
+			} else {
+				lm_ok = False;
+			}
+		} else {
+			lm_ok = False;
+		}
 		return hash_password_check(mem_ctx, 
-					   lm_response->length ? &client_lm : NULL, 
+					   lm_ok ? &client_lm : NULL, 
 					   nt_response->length ? &client_nt : NULL, 
 					   username,  
 					   stored_lanman, stored_nt);
