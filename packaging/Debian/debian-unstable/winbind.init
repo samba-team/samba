@@ -14,29 +14,33 @@ unset TMPDIR
 # See if the daemon is there
 test -x $DAEMON || exit 0
 
+. /lib/lsb/init-functions
+
 case "$1" in
 	start)
-		echo -n "Starting the Winbind daemon: winbindd"
+		log_daemon_msg "Starting the Winbind daemon" "winbind"
 
 		start-stop-daemon --start --quiet --exec $DAEMON
 
-		echo "."
+		log_end_msg $?
 		;;
+
 	stop)
-		echo -n "Stopping the Winbind daemon: winbindd"
+		log_daemon_msg "Stopping the Winbind daemon" "winbind"
 
 		start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
 
-		echo "."
+		log_end_msg $?
 		;;
+
 	restart|force-reload)
-		echo -n "Restarting the Winbind daemon: winbindd"
+		log_daemon_msg "Restarting the Winbind daemon" "winbind"
 
 		start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
 		sleep 2
 		start-stop-daemon --start --quiet --exec $DAEMON
 
-		echo "."
+		log_end_msg $?
 		;;
 	*)
 		echo "Usage: /etc/init.d/winbind {start|stop|restart|force-reload}"
