@@ -99,6 +99,7 @@ struct hx509_crypto;
 
 struct hx509_private_key {
     EVP_PKEY *private_key;
+    const heim_oid *signature_alg;
     /* supported key operations */
     /* context pointer to backend */
     /* function pointer to backend */
@@ -227,12 +228,12 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
-rsa_create_signature(const struct signature_alg *sig_alg,
-		     const hx509_private_key signer,
-		     const AlgorithmIdentifier *alg,
-		     const heim_octet_string *data,
-		     AlgorithmIdentifier *signatureAlgorithm,
-		     heim_octet_string *sig)
+create_signature(const struct signature_alg *sig_alg,
+		 const hx509_private_key signer,
+		 const AlgorithmIdentifier *alg,
+		 const heim_octet_string *data,
+		 AlgorithmIdentifier *signatureAlgorithm,
+		 heim_octet_string *sig)
 {
     const heim_oid *digest_oid, *sig_oid;
     const EVP_MD *mdtype;
@@ -243,7 +244,7 @@ rsa_create_signature(const struct signature_alg *sig_alg,
     if (alg)
 	sig_oid = &alg->algorithm;
     else
-	sig_oid = oid_id_pkcs1_sha1WithRSAEncryption();
+	sig_oid = signer->signature_alg;
 
     if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
 	mdtype = EVP_sha1();
@@ -251,6 +252,12 @@ rsa_create_signature(const struct signature_alg *sig_alg,
     } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
 	mdtype = EVP_md5();
 	digest_oid = oid_id_pkcs2_md5();
+    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+	mdtype = EVP_md5();
+	digest_oid = oid_id_pkcs2_md5();
+    } else if (heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
+	mdtype = EVP_sha1();
+	digest_oid = oid_id_secsig_sha_1();
     } else
 	return HX509_ALG_NOT_SUPP;
 
@@ -289,6 +296,7 @@ rsa_parse_private_key(const struct signature_alg *sig_alg,
     private_key->private_key = d2i_PrivateKey(EVP_PKEY_RSA, NULL, &p, len);
     if (private_key->private_key == NULL)
 	return EINVAL;
+    private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
 
     return 0;
 }
@@ -367,6 +375,24 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
 
     return ret;
 }
+
+static int
+dsa_parse_private_key(const struct signature_alg *sig_alg,
+		      const void *data,
+		      size_t len,
+		      hx509_private_key private_key)
+{
+    unsigned char *p = rk_UNCONST(data);
+
+    private_key->private_key = d2i_PrivateKey(EVP_PKEY_DSA, NULL, &p, len);
+    if (private_key->private_key == NULL)
+	return EINVAL;
+
+    private_key->signature_alg = oid_id_dsa_with_sha1();
+
+    return 0;
+}
+
 
 static int
 sha1_verify_signature(const struct signature_alg *sig_alg,
@@ -479,7 +505,7 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     NULL,
     PROVIDE_CONF,
     rsa_verify_signature,
-    rsa_create_signature,
+    create_signature,
     rsa_parse_private_key
 };
 
@@ -490,7 +516,7 @@ static struct signature_alg rsa_with_sha1_alg = {
     &id_sha1_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
-    rsa_create_signature,
+    create_signature,
     rsa_parse_private_key
 };
 
@@ -501,7 +527,7 @@ static struct signature_alg rsa_with_md5_alg = {
     &id_md5_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
-    rsa_create_signature,
+    create_signature,
     rsa_parse_private_key
 };
 
@@ -512,7 +538,7 @@ static struct signature_alg rsa_with_md2_alg = {
     &id_md2_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
-    rsa_create_signature,
+    create_signature,
     rsa_parse_private_key
 };
 
@@ -522,7 +548,9 @@ static struct signature_alg dsa_sha1_alg = {
     &id_dsa_oid, 
     &id_sha1_oid,
     PROVIDE_CONF,
-    dsa_verify_signature
+    dsa_verify_signature,
+    create_signature,
+    dsa_parse_private_key
 };
 
 static struct signature_alg sha1_alg = {
