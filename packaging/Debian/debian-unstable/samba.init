@@ -19,22 +19,29 @@ unset TMPDIR
 # See if the daemons are there
 test -x /usr/sbin/nmbd -a -x /usr/sbin/smbd || exit 0
 
+. /lib/lsb/init-functions
+
 case "$1" in
 	start)
-		echo -n "Starting Samba daemons:"
+		log_daemon_msg "Starting Samba daemons" "nmbd"
 
-		echo -n " nmbd"
-		start-stop-daemon --start --quiet --exec /usr/sbin/nmbd -- -D
-
-		if [ "$RUN_MODE" != "inetd" ]; then
-			echo -n " smbd"
-			start-stop-daemon --start --quiet --exec /usr/sbin/smbd -- -D
+		if ! start-stop-daemon --start --quiet --oknodo --exec /usr/sbin/nmbd -- -D; then
+			log_end_msg 1
+			exit 1
 		fi
 
-		echo "."
+		if [ "$RUN_MODE" != "inetd" ]; then
+			log_progress_msg "smbd"
+			if ! start-stop-daemon --start --quiet --oknodo --exec /usr/sbin/smbd -- -D; then
+				log_end_msg 1
+				exit 1
+			fi
+		fi
+
+		log_end_msg 0
 		;;
 	stop)
-		echo -n "Stopping Samba daemons: "
+		log_daemon_msg "Stopping Samba daemons" "nmbd"
 
 		start-stop-daemon --stop --quiet --pidfile $NMBDPID
 		# Wait a little and remove stale PID file
@@ -45,9 +52,9 @@ case "$1" in
 			# remove it (should be removed by nmbd itself IMHO.)
 			rm -f $NMBDPID
 		fi
-		echo -n "nmbd"
 
 		if [ "$RUN_MODE" != "inetd" ]; then
+			log_progress_msg "smbd"
 			start-stop-daemon --stop --quiet --pidfile $SMBDPID
 			# Wait a little and remove stale PID file
 			sleep 1
@@ -57,17 +64,17 @@ case "$1" in
 				# remove it (should be removed by smbd itself IMHO.)
 				rm -f $SMBDPID
 			fi
-			echo -n " smbd"
 		fi
 
-		echo "."
+		log_end_msg 0
 
 		;;
 	reload)
-		echo -n "Reloading /etc/samba/smb.conf (smbd only)"
+		log_daemon_msg "Reloading /etc/samba/smb.conf" "smbd only"
+
 		start-stop-daemon --stop --signal HUP --pidfile $SMBDPID
 
-		echo "."
+		log_end_msg 0
 		;;
 	restart|force-reload)
 		$0 stop
