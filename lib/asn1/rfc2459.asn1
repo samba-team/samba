@@ -52,6 +52,13 @@ id-dhpublicnumber OBJECT IDENTIFIER ::= {
         iso(1) member-body(2) us(840) ansi-x942(10046)
         number-type(2) 1 }
 
+id-x9-57 OBJECT IDENTIFIER ::= {
+        iso(1) member-body(2) us(840) ansi-x942(10046)
+	4 }
+
+id-dsa OBJECT IDENTIFIER ::=		{ id-x9-57 1 }
+id-dsa-with-sha1 OBJECT IDENTIFIER ::=		{ id-x9-57 3 }
+
 id-x509-ce OBJECT IDENTIFIER ::= {joint-iso-ccitt(2) ds(5) 29}
 
 AlgorithmIdentifier ::= SEQUENCE {
