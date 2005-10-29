@@ -56,7 +56,8 @@ EOFMAGICNUMBER1234
 #	moving the files in the old directories (/var/samba/ and
 #	/var/state/samba) to the new FHS-compliant directories.
 
-if [ -d /var/samba/ ]; then
+if [ -d /var/samba/ ] && [ -n "$2" ] && dpkg --compare-versions "$2" lt 2.0.7-4
+then
 	mv /var/samba/* /var/lib/samba/ 2>/dev/null || true
 	rmdir /var/samba/
 fi
@@ -64,7 +65,8 @@ fi
 # Default for anything we don't know about (see next two 'for' loops)
 #	is /var/lib/samba -- guaranteed not to accidentally tromp on any 
 #	files the admin thought were safe.
-if [ -d /var/state/samba ]; then
+if [ -d /var/state/samba ] && [ -n "$2" ] && dpkg --compare-versions "$2" lt 2.2.3-4
+then
 	mv /var/state/samba/* /var/lib/samba/ 2>/dev/null || true
 	rmdir /var/state/samba/
 

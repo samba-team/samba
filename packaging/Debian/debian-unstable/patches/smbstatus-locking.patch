@@ -1,7 +1,7 @@
 diff -uNr samba-2.999+3.0.alpha21.orig/source/utils/status.c samba-2.999+3.0.alpha21/source/utils/status.c
 --- samba-2.999+3.0.alpha21.orig/source/utils/status.c	2002-11-26 20:54:22.000000000 -0600
 +++ samba-2.999+3.0.alpha21/source/utils/status.c	2002-12-16 23:37:14.000000000 -0600
-@@ -667,6 +667,16 @@
+@@ -686,6 +686,16 @@
  	if (!shares_only) {
  		int ret;
  

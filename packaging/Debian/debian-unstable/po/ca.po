@@ -1,34 +1,24 @@
+# samba (debconf) translation to Catalan.
+# Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+# Aleix Badia i Bosch <abadia@ica.es> 2004
 #
-#    Translators, if you are not familiar with the PO format, gettext
-#    documentation is worth reading, especially sections dedicated to
-#    this format, e.g. by running:
-#         info -n '(gettext)PO Files'
-#         info -n '(gettext)Header Entry'
-#
-#    Some information specific to po-debconf are available at
-#            /usr/share/doc/po-debconf/README-trans
-#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-#
-#    Developers do not need to manually edit POT or PO files.
-#
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: samba_3.0.0beta2-1_templates\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2005-08-13 17:05-0700\n"
-"PO-Revision-Date: 2003-09-09 09:26+0900\n"
-"Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
-"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"PO-Revision-Date: 2004-03-13 21:32-0500\n"
+"Last-Translator: Steve Langasek <vorlon@debian.org>\n"
+"Language-Team: Debian L10n Catalan <debian-l10n-catalan@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=EUC-JP\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "Character Set for Unix filesystem"
-msgstr "Unix ¥Õ¥¡¥¤¥ë¥·¥¹¥Æ¥à¸þ¤±¤ÎÊ¸»ú¥»¥Ã¥È"
+msgstr "Joc de caràcters pel sistema de fitxers de Unix"
 
 #. Type: string
 #. Description
@@ -39,22 +29,23 @@ msgid ""
 "specify the character set you wish to use for theis new option, which "
 "controls how Samba interprets filenames on the file system."
 msgstr ""
-"¸½ºß¡¢smb.conf ¤ËÀßÄêºÑ¤ß¤Î \"character set\" ¤¬¤¢¤ê¤Þ¤¹¡£Samba 3.0 ¤Ç¤Ï¡¢¤³"
-"¤Î¥ª¥×¥·¥ç¥ó¤Ï¿·¤·¤¤¥ª¥×¥·¥ç¥ó \"unix charset\" ¤ËÃÖ¤­´¹¤¨¤é¤ì¤Æ¤¤¤Þ¤¹¡£"
-"Samba ¤¬¥Õ¥¡¥¤¥ë¥·¥¹¥Æ¥à¤Î¥Õ¥¡¥¤¥ëÌ¾¤ò¤É¤Î¤è¤¦¤Ë²ò¼á¤¹¤ë¤«¤òÀ©¸æ¤¹¤ë¤³¤Î¿·¤·"
-"¤¤¥ª¥×¥·¥ç¥ó¤Î¤¿¤á¤Ë¡¢´õË¾¤¹¤ëÊ¸»ú¥»¥Ã¥È¤ò»ØÄê¤·¤Æ¤¯¤À¤µ¤¤¡£"
+"El fitxer smb.conf actual té configurat un \"character set\".  En la versió "
+"3.0 de Samba, aquesta opció es reemplaça per l'opció \"unix charset\". "
+"Especifiqueu el joc de caràcters que voleu utilitzar per a aquesta nova "
+"opció que controla el mode que el Samba interpreta els noms de fitxers del "
+"sistema de fitxers."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "If you leave this option blank, your smb.conf will not be changed."
-msgstr "¤³¤Î¥ª¥×¥·¥ç¥ó¤ò¶õ¤Î¤Þ¤Þ¤Ë¤¹¤ë¤È¡¢smb.conf ¤ÏÊÑ¹¹¤µ¤ì¤Þ¤»¤ó¡£"
+msgstr "Si deixeu aquesta opció en blanc no es modificarà el smb.conf."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:13
 msgid "Character Set for DOS clients"
-msgstr "DOS ¥¯¥é¥¤¥¢¥ó¥È¸þ¤±¤ÎÊ¸»ú¥»¥Ã¥È"
+msgstr "Joc de caràcters pels clients DOS"
 
 #. Type: string
 #. Description
@@ -67,18 +58,20 @@ msgid ""
 "needed to support Windows clients, it is only for DOS clients.  If you leave "
 "this option blank, your smb.conf will not be changed."
 msgstr ""
-"¸½ºß¡¢smb.conf ¤ËÀßÄêºÑ¤ß¤Î \"client code page\" ¤¬¤¢¤ê¤Þ¤¹¡£Samba 3.0 ¤Ç¤Ï¡¢"
-"¤³¤Î¥ª¥×¥·¥ç¥ó¤Ï¿·¤·¤¤¥ª¥×¥·¥ç¥ó \"dos charset\" ¤ËÃÖ¤­´¹¤¨¤é¤ì¤Æ¤¤¤Þ¤¹¡£¤³¤Î"
-"¿·¤·¤¤¥ª¥×¥·¥ç¥ó¤Î¤¿¤á¤Ë¡¢´õË¾¤¹¤ëÊ¸»ú¥»¥Ã¥È¤ò»ØÄê¤·¤Æ¤¯¤À¤µ¤¤¡£¤Û¤È¤ó¤É¤Î¾ì"
-"¹ç¡¢¥Ç¥Õ¥©¥ë¥È¤ÎÁªÂò¤Î¤Þ¤Þ¤Ç½½Ê¬¤Ç¤·¤ç¤¦¡£¤³¤Î¥ª¥×¥·¥ç¥ó¤Ï Windows ¥¯¥é¥¤¥¢¥ó"
-"¥È¥µ¥Ý¡¼¥È¤Ë¤ÏÉ¬Í×¤Ê¤¯¡¢DOS ¥¯¥é¥¤¥¢¥ó¥È¤Î¤ß¤Î¤¿¤á¤Ç¤¢¤ë¤³¤È¤òÃí°Õ¤·¤Æ¤ª¤­¤Þ"
-"¤¹¡£¤³¤Î¥ª¥×¥·¥ç¥ó¤ò¶õ¤Î¤Þ¤Þ¤Ë¤¹¤ë¤È¡¢smb.conf ¤ÏÊÑ¹¹¤µ¤ì¤Þ¤»¤ó¡£"
+"El fitxer smb.conf actual té configurat un \"client code page\".  En la "
+"versió 3.0 de Samba, aquesta opció es reemplaça per l'opció \"dos charset\". "
+"L'opció per defecte és suficient en la majoria del casos. Recordeu que "
+"aquesta opció no és necessària pel suport dels clients de Windows, només és "
+"pels clients de DOS. Si deixeu aquesta opció en blanc no es canviarà el smb."
+"conf."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid "Modify smb.conf to use WINS settings from DHCP?"
-msgstr "DHCP ¤«¤é WINS ÀßÄê¤ò»È¤¦¤è¤¦ smb.conf ¤òÊÑ¹¹¤·¤Þ¤¹¤«?"
+msgstr ""
+"Voleu modificar el smb.conf perquè utilitza els paràmetres de configuració "
+"del WINS del DHCP?"
 
 #. Type: boolean
 #. Description
@@ -90,11 +83,12 @@ msgid ""
 "to your smb.conf file so that DHCP-provided WINS settings will automatically "
 "be read from /etc/samba/dhcp.conf."
 msgstr ""
-"¤¢¤Ê¤¿¤Î¥³¥ó¥Ô¥å¡¼¥¿¤¬¥Í¥Ã¥È¥ï¡¼¥¯¾å¤Î DHCP ¥µ¡¼¥Ð¤«¤é IP ¥¢¥É¥ì¥¹¾ðÊó¤ò¼èÆÀ"
-"¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢DHCP ¥µ¡¼¥Ð¤Ï¥Í¥Ã¥È¥ï¡¼¥¯¾å¤Ë¤¢¤ë WINS ¥µ¡¼¥Ð (NetBIOS "
-"¥Í¡¼¥à¥µ¡¼¥Ð) ¤Ë¤Ä¤¤¤Æ¤Î¾ðÊó¤òÄó¶¡¤¹¤ë¤³¤È¤â¤Ç¤­¤Þ¤¹¡£DHCP ¤ÇÄó¶¡¤µ¤ì¤ë WINS "
-"ÀßÄê¤Ï /etc/samba/dhcp.conf ¤«¤é¼«Æ°Åª¤ËÆÉ¤ß¹þ¤Þ¤ì¤ë¤¿¤á¡¢smb.conf ¥Õ¥¡¥¤¥ë¤ò"
-"ÊÑ¹¹¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£"
+"Si el vostre ordinador obté la informació referent a la IP a través d'un "
+"servidor de DHCP, aquest també li donarà informació sobre els servidors de "
+"WINS (\"servidors de nom de NetBIOS\") presents a la xarxa. Aquesta opció "
+"precisa d'una modificació del fitxer smb.conf per tal que els paràmetres de "
+"WINS obtinguts a través del DHCP s'obtinguin a través de la lectura de /etc/"
+"samba/dhcp.conf"
 
 #. Type: boolean
 #. Description
@@ -103,14 +97,14 @@ msgid ""
 "You must have the dhcp3-client package installed to take advantage of this "
 "feature."
 msgstr ""
-"¤³¤Îµ¡Ç½¤ò»È¤¦¤¿¤á¤Ë¤Ï¡¢dhcp3-client ¥Ñ¥Ã¥±¡¼¥¸¤¬¥¤¥ó¥¹¥È¡¼¥ë¤µ¤ì¤Æ¤¤¤ëÉ¬Í×¤¬"
-"¤¢¤ê¤Þ¤¹¡£"
+"Per beneficiar-vos d'aquesta característica cal que tingueu instal·lat el "
+"paquet dhcp3-client."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid "Configure smb.conf through debconf?"
-msgstr "debconf ¤òÄÌ¤·¤Æ smb.conf ¤òÀßÄê¤·¤Þ¤¹¤«?"
+msgstr "Voleu configurar el smb.conf a través del debconf?"
 
 #. Type: boolean
 #. Description
@@ -122,11 +116,11 @@ msgid ""
 "line or an option that spans multiple lines, which could confuse debconf and "
 "require you to edit your smb.conf by hand to get it working again."
 msgstr ""
-"Samba ¤ÎÀßÄê¤Î»Ä¤ê¤ÎÉôÊ¬¤Ï¡¢Samba ¥×¥í¥°¥é¥à (nmbd ¤ª¤è¤Ó smbd) ¤òÀßÄê¤¹¤ë¤Î"
-"¤Ë»È¤¦¥Õ¥¡¥¤¥ë /etc/samba/smb.conf ¤Ë¤¢¤ë¥Ñ¥é¥á¡¼¥¿¤Ë±Æ¶Á¤¹¤ë¼ÁÌä¤Ç¤¹¡£¸½ºß"
-"¤Î smb.conf ¤Ï¡¢'include' ¹Ô¤Þ¤¿¤ÏÊ£¿ô¹Ô¤Ë¤Þ¤¿¤¬¤ë¥ª¥×¥·¥ç¥ó¤ò´Þ¤ó¤Ç¤¤¤Þ¤¹¡£"
-"¤³¤ì¤Ï debconf ¤òº®Íð¤µ¤»¤ë²ÄÇ½À­¤¬¤¢¤ê¡¢ºÆ¤Ó debconf ¤¬ºîÆ°¤¹¤ë¤è¤¦¤Ë¤¹¤Ù¤¯ "
-"smb.conf ¤Î¼êÆ°¤Ç¤Î½¤Àµ¤òÉ¬Í×¤È¤·¤Þ¤¹¡£"
+"La resta de la configuració del Samba tracta amb qüestions que afecten els "
+"paràmetres del fitxer de configuració els programes de Samba /etc/samba/smb."
+"conf. La versió actual del smb.conf conté una línia 'include' o una opció "
+"que abarca múltiples línies que podria confondre al debconf i precisa de la "
+"seva edició manual per poder-lo fer funcionar de nou."
 
 #. Type: boolean
 #. Description
@@ -137,15 +131,15 @@ msgid ""
 "periodic configuration enhancements.  Therefore, use of debconf is "
 "recommended if possible."
 msgstr ""
-"smb.conf ¤ÎÀßÄê¤Ë debconf ¤ò»È¤ï¤Ê¤¤¾ì¹ç¡¢¤¹¤Ù¤Æ¤ÎÀßÄê¤ÎÊÑ¹¹¤ò¤¢¤Ê¤¿¼«¿È¤¬ÌÌ"
-"ÅÝ¤ò¸«¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£¤³¤ì¤ÏÄê´üÅª¤ÊÀßÄê²þÁ±¤Ë¤Ï¸þ¤¤¤Æ¤¤¤Þ¤»¤ó¡£¤½¤Î¤¿¤á¡¢"
-"²ÄÇ½¤Ê¤é debconf ¤ò»È¤¦¤Î¤¬¤ª´«¤á¤Ç¤¹¡£"
+"Si no utilitzeu el debconf per configurar el smb.conf, haureu de gestionar "
+"manualment qualsevol canvi de la configuració, i no us podreu beneficiar de "
+"les millores.  La seva utilització és recomenable en cas que sigui possible."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:52
 msgid "Workgroup/Domain Name?"
-msgstr "¥ï¡¼¥¯¥°¥ë¡¼¥×/¥É¥á¥¤¥óÌ¾¤Ï²¿¤Ç¤¹¤«?"
+msgstr "Grup de treball/nom del domini?"
 
 #. Type: string
 #. Description
@@ -155,15 +149,15 @@ msgid ""
 "by clients. Note that this parameter also controls the Domain name used with "
 "the security=domain setting."
 msgstr ""
-"¤³¤ì¤Ï¥¯¥é¥¤¥¢¥ó¥È¤«¤é¾È²ñ¤µ¤ì¤¿ºÝ¤Ë¤¢¤Ê¤¿¤Î¥µ¡¼¥Ð¤¬¸½¤ì¤ë¥ï¡¼¥¯¥°¥ë¡¼¥×¤òÀ©"
-"¸æ¤·¤Þ¤¹¡£¤³¤Î¥Ñ¥é¥á¡¼¥¿¤Ï security=domain ÀßÄê¤¬»È¤ï¤ì¤¿¤È¤­¤Î¥É¥á¥¤¥óÌ¾¤âÀ©"
-"¸æ¤·¤Þ¤¹¡£"
+"Aquesta opció defineix en quin grup de treball apareixerà el vostre servidor "
+"quan ho consultin els clients. Recordeu que aquest paràmetre també controla "
+"el nom de domini utilitzat pel paràmetre de configuració security=domain."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:60
 msgid "Use password encryption?"
-msgstr "¥Ñ¥¹¥ï¡¼¥É¤Î°Å¹æ²½¤ò»È¤¤¤Þ¤¹¤«?"
+msgstr "Voleu utilitzar l'encriptació de contrasenyes?"
 
 #. Type: boolean
 #. Description
@@ -176,17 +170,19 @@ msgid ""
 "and that you set passwords in there for each user using the smbpasswd "
 "command."
 msgstr ""
-"ºÇ¶á¤Î Windows ¥¯¥é¥¤¥¢¥ó¥È¤Ï°Å¹æ²½¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤Ã¤Æ SMB ¥µ¡¼¥Ð¤È¤ä¤ê"
-"¼è¤ê¤·¤Þ¤¹¡£¥¯¥ê¥¢¥Æ¥­¥¹¥È¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¤¤¿¤¤¾ì¹ç¤Ï¡¢¤¢¤Ê¤¿¤Î Windows ¤Î¥ì¥¸"
-"¥¹¥È¥ê¤Î¥Ñ¥é¥á¡¼¥¿¤òÊÑ¹¹¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£°Å¹æ²½¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¦¤³¤È"
-"¤ò¿ä¾©¤·¤Þ¤¹¡£¤³¤¦¤¹¤ë¾ì¹ç¡¢Í­¸ú¤Ê /etc/samba/smbpasswd ¥Õ¥¡¥¤¥ë¤¬¤¢¤ë¤³¤È¤ò"
-"³ÎÇ§¤·¡¢³Æ¥æ¡¼¥¶¤Î¥Ñ¥¹¥ï¡¼¥É¤Ï smbpasswd ¥³¥Þ¥ó¥É¤ò»È¤Ã¤ÆÀßÄê¤·¤Þ¤¹¡£"
+"Els clients de Windows més recents es comuniquen amb els servidors de Samba "
+"utilitzant contrasenyes encriptades. Si voleu utilitzar contrasenyes amb "
+"text pla, haureu de modificar el vostre registre de Windows. És recomanable "
+"utilitzar contrasenyes encriptades. Si ho feu, assegureu-vos de tenir un "
+"fitxer /etc/samba/smbpasswd vàlid i que hi especifiqueu la contrasenya de "
+"cada usuari utilitzant l'ordre smbpasswd."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:4
 msgid "Create samba password database, /var/lib/samba/passdb.tdb?"
-msgstr "Samba ¥Ñ¥¹¥ï¡¼¥É¥Ç¡¼¥¿¥Ù¡¼¥¹ /var/lib/samba/passdb.tdb ¤òºîÀ®¤·¤Þ¤¹¤«?"
+msgstr ""
+"Es crea la base de dades de contrasenyes de Samba, /var/lib/samba/passdb.tdb?"
 
 #. Type: boolean
 #. Description
@@ -202,21 +198,22 @@ msgid ""
 "doc/samba-doc/htmldocs/ENCRYPTION.html from the samba-doc package for more "
 "details."
 msgstr ""
-"Windows ¤Î¤Û¤È¤ó¤É¤Î¥Ð¡¼¥¸¥ç¥ó¤Î¥Ç¥Õ¥©¥ë¥È¤È¸ß´¹À­¤òÊÝ¤Ä¤¿¤á¡¢Samba ¤Ï°Å¹æ²½"
-"¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤Ã¤ÆÀßÄê¤µ¤ì¤Þ¤¹¡£¤³¤ì¤Ï¥æ¡¼¥¶¤Î¥Ñ¥¹¥ï¡¼¥É¤ò /etc/passwd "
-"¤È¤ÏÊÌ¤Î¥Õ¥¡¥¤¥ë¤Ë³ÊÇ¼¤¹¤ë¤³¤È¤òÉ¬Í×¤È¤·¤Þ¤¹¡£¤³¤Î¥Õ¥¡¥¤¥ë¤Ï¼«Æ°Åª¤ËºîÀ®¤¹¤ë"
-"¤³¤È¤¬¤Ç¤­¤Þ¤¹¤¬¡¢¥Ñ¥¹¥ï¡¼¥É¤Ï smbpasswd ¤ò¼Â¹Ô¤·¤Æ¼êÆ°¤Ç (¤¢¤Ê¤¿¤¢¤ë¤¤¤Ï¥æ¡¼"
-"¥¶¤¬) ÄÉ²Ã¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤º¡¢¾­Íè¤ËÅÏ¤Ã¤ÆºÇ¿·¾õÂÖ¤òÊÝ¤ÁÂ³¤±¤ë¤è¤¦À°¤¨¤Æ¤ª¤¯É¬"
-"Í×¤¬¤¢¤ê¤Þ¤¹¡£¤³¤Î¥Õ¥¡¥¤¥ë¤òºîÀ®¤·¤Ê¤¤¾ì¹ç¡¢¥×¥ì¥¤¥ó¥Æ¥­¥¹¥È¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¦"
-"¤è¤¦ Samba (¤ª¤è¤Ó¤ª¤½¤é¤¯¤¢¤Ê¤¿¤Î¥¯¥é¥¤¥¢¥ó¥È¥Þ¥·¥ó) ¤ÎºÆÀßÄê¤¬É¬Í×¤Ç¤¹¡£¾Ü"
-"ºÙ¤Ë¤Ä¤¤¤Æ¤Ï¡¢samba-doc ¥Ñ¥Ã¥±¡¼¥¸¤Ë¤¢¤ë /usr/share/doc/samba-doc/htmldocs/"
-"ENCRYPTION.html ¤ò»²¾È¤·¤Æ¤¯¤À¤µ¤¤¡£"
+"El Samba s'ha de configurar perquè utilitzi contrasenyes encriptades per tal "
+"que sigui compatible amb la majoria de versions de Windows per defecte. Això "
+"implica que les contrasenyes d'usuari s'emmagatzemin a un fitxer diferent "
+"del /etc/passwd. Aquest fitxer es pot crear automàticament, però les "
+"contrasenyes s'han d'afegir manualment (per vós o per l'usuari) executant "
+"l'ordre smbpasswd i cal que us organitzeu per tenir-lo actualitzat en un "
+"futur.  Si no el creeu, haureu de reconfigurar el Samba (i probablement els "
+"vostres ordinadors clients) per tal que utilitzin contrasenyes de text pla. "
+"Per més informació feu una ullada a /usr/share/doc/samba-doc/htmldocs/"
+"ENCRYPTION.html del paquet samba-doc."
 
 #. Type: note
 #. Description
 #: ../samba.templates:17
 msgid "Samba's log files have moved."
-msgstr "Samba ¤Î¥í¥°¥Õ¥¡¥¤¥ë¤Ï°ÜÆ°¤µ¤ì¤Þ¤·¤¿¡£"
+msgstr "S'han desplaçat els fitxers de registre de Samba."
 
 #. Type: note
 #. Description
@@ -226,9 +223,9 @@ msgid ""
 "both Samba daemons (nmbd and smbd) are now stored in /var/log/samba/. The "
 "names of the files are log.nmbd and log.smbd, for nmbd and smbd respectively."
 msgstr ""
-"Debian ¸þ¤±¤Î Samba 2.2 ¤Î½é´ü¥Ñ¥Ã¥±¡¼¥¸¤«¤é¡¢Î¾ Samba ¥Ç¡¼¥â¥ó (nmbd ¤ª¤è¤Ó "
-"smbd) ¤Î¥í¥°¥Õ¥¡¥¤¥ë¤Ï /var/log/samba ¤Ë³ÊÇ¼¤µ¤ì¤ë¤è¤¦¤Ë¤Ê¤Ã¤Æ¤¤¤Þ¤¹¡£¥Õ¥¡¥¤"
-"¥ëÌ¾¤Ï nmbd ¤È smbd ¤ÇÊÌ¸Ä¤Ë¤Ê¤ë¤è¤¦¡¢log.nmbd ¤ª¤è¤Ó log.smbd ¤È¤Ê¤ê¤Þ¤¹¡£"
+"Els fitxers de registre dels dos dimonis de Samba (nmbd i smbd) es desen a /"
+"var/log/samba des de la primera versió dels paquets de Samba 2.2 per Debian. "
+"Els noms dels fitxers són, respectivament, log.nmbd i log.smbd."
 
 #. Type: note
 #. Description
@@ -236,13 +233,15 @@ msgstr ""
 msgid ""
 "The old log files that were in /var/log/ will be moved to the new location "
 "for you."
-msgstr "/var/log/ ¤Ë¤¢¤Ã¤¿¸Å¤¤¥í¥°¥Õ¥¡¥¤¥ë¤Ï¿·¤·¤¤¾ì½ê¤Ë°ÜÆ°¤µ¤ì¤Þ¤¹¡£"
+msgstr ""
+"Els fitxers de registre antics que estaven a /var/log/ es desplacen a la "
+"nova ubicació."
 
 #. Type: note
 #. Description
 #: ../samba.templates:28
 msgid "Running nmbd from inetd is no longer supported"
-msgstr "inetd ¤«¤é¤Î nmbd ¤Î¼Â¹Ô¤Ï¤â¤¦¥µ¥Ý¡¼¥È¤µ¤ì¤Þ¤»¤ó"
+msgstr "L'execució del nmbd a través del inetd ja no estarà suportada."
 
 #. Type: note
 #. Description
@@ -253,22 +252,23 @@ msgid ""
 "If you have modified your /etc/init.d/samba startup script, you may need to "
 "adjust it by hand now so that nmbd will start."
 msgstr ""
-"¤¢¤Ê¤¿¤Î¥·¥¹¥Æ¥à¤Ë¤Ï inetd ¤«¤é nmbd ¤ª¤è¤Ó smbd ¤òµ¯Æ°¤¹¤ë°ÊÁ°¤ÎÀßÄê¤¬¤¢¤ê¤Þ"
-"¤¹¡£¥Ð¡¼¥¸¥ç¥ó 2.999+3.0.alpha20-4 °Ê¹ß¤Ç¤Ï¡¢nmbd ¤Ï inetd ¤«¤é¤Ï¤â¤¦µ¯Æ°¤·¤Þ"
-"¤»¤ó¡£/etc/init.d/samba ¥¹¥¿¡¼¥È¥¢¥Ã¥×¥¹¥¯¥ê¥×¥È¤òÊÑ¹¹¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢"
-"nmbd ¤¬µ¯Æ°¤¹¤ë¤è¤¦¼êÆ°¤ÇÄ´À°¤¹¤ëÉ¬Í×¤¬¤¢¤ë¤Ç¤·¤ç¤¦¡£"
+"El vostre sistema estava prèviament configurat perquè inicies el nmbd i el "
+"smbd a través del inetd. A partir de la versió 2.999+3.0alpha20-4 el nmbd no "
+"es pot iniciar a través del inetd.  Si heu modificat la seqüència "
+"d'arrencada /etc/init.d/samba, l'haureu de modificar manualment per tal que "
+"s'iniciï com a dimoni."
 
 #. Type: select
 #. Choices
 #: ../samba.templates:36
 msgid "daemons, inetd"
-msgstr "¥Ç¡¼¥â¥ó, inetd"
+msgstr "dimonis, inetd"
 
 #. Type: select
 #. Description
 #: ../samba.templates:38
 msgid "How do you want to run Samba?"
-msgstr "¤É¤Î¤è¤¦¤Ë Samba ¤ò¼Â¹Ô¤·¤¿¤¤¤Ç¤¹¤«?"
+msgstr "Com voleu executar el Samba?"
 
 #. Type: select
 #. Description
@@ -277,14 +277,14 @@ msgid ""
 "The Samba daemon smbd can run as a normal daemon or from inetd. Running as a "
 "daemon is the recommended approach."
 msgstr ""
-"Samba ¥Ç¡¼¥â¥ó smbd ¤ÏÄÌ¾ï¤Î¥Ç¡¼¥â¥ó¤È¤·¤Æ¤Î¼Â¹Ô¤Þ¤¿¤Ï inetd ¤«¤é¤Î¼Â¹Ô¤¬¤Ç¤­"
-"¤Þ¤¹¡£¥Ç¡¼¥â¥ó¤È¤·¤Æ¼Â¹Ô¤¹¤ë¤Î¤¬¤ª´«¤á¤Î¼êÃÊ¤Ç¤¹¡£"
+"El dimoni de Samba pot executar-se com un dimoni normal o des del inetd. És "
+"recomanable executar-lo com un dimoni."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:45
 msgid "Move /etc/samba/smbpasswd to /var/lib/samba/passdb.tdb?"
-msgstr "/etc/samba/smbpasswd ¤ò /var/lib/samba/passdb.tdb ¤Ë°ÜÆ°¤·¤Þ¤¹¤«?"
+msgstr "Es desplaça etc/samba/smbpasswd a /var/lib/samba/passdb.tdb?"
 
 #. Type: boolean
 #. Description
@@ -296,16 +296,16 @@ msgid ""
 "plan to use another pdb backend (e.g., LDAP) instead, you should answer 'no' "
 "here."
 msgstr ""
-"Samba 3.0 ¤Ç¤Ï¡¢/etc/samba/smbpasswd ¥Õ¥¡¥¤¥ë¤ËÂå¤ï¤ë¡¢¤è¤ê¿·¤·¤¤¡¢¤è¤ê´°Á´"
-"¤Ê SAM ¥Ç¡¼¥¿¥Ù¡¼¥¹¥¤¥ó¥¿¡¼¥Õ¥§¥¤¥¹¤¬Æ³Æþ¤µ¤ì¤Æ¤¤¤Þ¤¹¡£´ûÂ¸¤Î smbpasswd ¥Õ¥¡"
-"¥¤¥ë¤ò /var/lib/samba/passdb.tdb ¤Ë°Ü¹Ô¤·¤Þ¤¹¤«? ÊÌ¤Î pdb ¥Ð¥Ã¥¯¥¨¥ó¥É (LDAP "
-"¤Ê¤É) ¤òÂå¤ï¤ê¤Ë·×²è¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢¤³¤³¤Ç¤Ï '¤¤¤¤¤¨' ¤ÈÅú¤¨¤ë¤Ù¤­¤Ç¤¹¡£"
+"El Samba 3.0 introdueix una interfície de base de dades de SAM més nova i "
+"completa que reemplaça el fitxer /etc/samba/smbpassd.  Voleu que es migri el "
+"fitxer smbpasswd a /var/lib/samba/passdb.tdb?  Si la vostra intenció és "
+"utilitzar un altre pdb (ex, LDAP), haurieu de respondre 'no' aquí."
 
 #. Type: note
 #. Description
 #: ../swat.templates:3
 msgid "Your smb.conf will be re-written!"
-msgstr "¤¢¤Ê¤¿¤Î smb.conf ¤Ï½ñ¤­Ä¾¤µ¤ì¤Þ¤¹!"
+msgstr "El vostre smb.conf es reescriurà"
 
 #. Type: note
 #. Description
@@ -315,7 +315,6 @@ msgid ""
 "delete all comments, include= and copy= options. If you have a carefully "
 "crafted smb.conf then back it up or don't use SWAT!"
 msgstr ""
-"SWAT ¤Ï¤¢¤Ê¤¿¤Î smb.conf ¥Õ¥¡¥¤¥ë¤ò½ñ¤­Ä¾¤·¤Þ¤¹¡£SWAT ¤Ï¥¨¥ó¥È¥ê¤òºÆÊÔÀ®¤·¡¢"
-"¤¹¤Ù¤Æ¤Î¥³¥á¥ó¥È¤ª¤è¤Ó include= ¤È copy= ¥ª¥×¥·¥ç¥ó¤òºï½ü¤·¤Þ¤¹¡£¿µ½Å¤ËºîÀ®¤µ"
-"¤ì¤¿ smb.conf ¤ò»ý¤Ã¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢¥Ð¥Ã¥¯¥¢¥Ã¥×¤·¤Æ¤ª¤¯¤«¡¢SWAT ¤ò»È¤ï¤Ê¤¤"
-"¤Ç¤¯¤À¤µ¤¤!"
+"El SWAT reescriurà el vostre fitxer smb.conf. Reorganitzarà les entrades i "
+"suprimirà els comentaris i les opcions include= i copy=.  Si teniu un smb."
+"conf molt elaborat feu una còpia de seguretat o no utilitzeu el SWAT."

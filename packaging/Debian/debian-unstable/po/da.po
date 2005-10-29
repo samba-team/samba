@@ -1,34 +1,25 @@
+# translation of da.po to Danish
+# translation of samba Debian debconf template to Danish
+# Claus Hindsgaul <claus_h@image.dk>, 2004.
 #
-#    Translators, if you are not familiar with the PO format, gettext
-#    documentation is worth reading, especially sections dedicated to
-#    this format, e.g. by running:
-#         info -n '(gettext)PO Files'
-#         info -n '(gettext)Header Entry'
-#
-#    Some information specific to po-debconf are available at
-#            /usr/share/doc/po-debconf/README-trans
-#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-#
-#    Developers do not need to manually edit POT or PO files.
-#
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: da\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2005-08-13 17:05-0700\n"
-"PO-Revision-Date: 2003-09-09 09:26+0900\n"
-"Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
-"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"PO-Revision-Date: 2004-02-15 17:23+0100\n"
+"Last-Translator: Claus Hindsgaul <claus_h@image.dk>\n"
+"Language-Team: Danish <dansk@klid.dk>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=EUC-JP\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.0.2\n"
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "Character Set for Unix filesystem"
-msgstr "Unix ファイルシステム向けの文字セット"
+msgstr "Tegns脱t til Unix-filsystemet"
 
 #. Type: string
 #. Description
@@ -39,22 +30,22 @@ msgid ""
 "specify the character set you wish to use for theis new option, which "
 "controls how Samba interprets filenames on the file system."
 msgstr ""
-"現在、smb.conf に設定済みの \"character set\" があります。Samba 3.0 では、こ"
-"のオプションは新しいオプション \"unix charset\" に置き換えられています。"
-"Samba がファイルシステムのファイル名をどのように解釈するかを制御するこの新し"
-"いオプションのために、希望する文字セットを指定してください。"
+"Du har en \"character set\"-indstilling i din smb.conf. I Samba 3.0 "
+"erstattes denne af en ny indstilling, \"unix charset\". Angiv det tegns脱t, "
+"du 淡nsker at bruge i denne nye indstilling, som styrer hvordan Samba tolker "
+"filnavne p奪 systemet."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "If you leave this option blank, your smb.conf will not be changed."
-msgstr "このオプションを空のままにすると、smb.conf は変更されません。"
+msgstr "Hvis du ikke skriver noget her, vil din smb.conf ikke blive 脱ndret."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:13
 msgid "Character Set for DOS clients"
-msgstr "DOS クライアント向けの文字セット"
+msgstr "Tegns脱t til DOS-klienter"
 
 #. Type: string
 #. Description
@@ -67,18 +58,18 @@ msgid ""
 "needed to support Windows clients, it is only for DOS clients.  If you leave "
 "this option blank, your smb.conf will not be changed."
 msgstr ""
-"現在、smb.conf に設定済みの \"client code page\" があります。Samba 3.0 では、"
-"このオプションは新しいオプション \"dos charset\" に置き換えられています。この"
-"新しいオプションのために、希望する文字セットを指定してください。ほとんどの場"
-"合、デフォルトの選択のままで十分でしょう。このオプションは Windows クライアン"
-"トサポートには必要なく、DOS クライアントのみのためであることを注意しておきま"
-"す。このオプションを空のままにすると、smb.conf は変更されません。"
+"Du har en \"client code page\"-indstilling i din smb.conf. I Samba 3.0 "
+"erstattes denne af en ny indstilling, \"dos charset\". Angiv det tegns脱t, du "
+"淡nsker at bruge i denne nye indstilling. I de fleste tilf脱lde vil det "
+"forvalgte v脱re nok. Bem脱rk at denne indstilling ikke kr脱ves for at "
+"underst淡tte Windows-klienter; den g脱lder kun DOS-klienter. Hvis du ikke "
+"skriver noget her, vil smb.conf ikke blive 脱ndret."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid "Modify smb.conf to use WINS settings from DHCP?"
-msgstr "DHCP から WINS 設定を使うよう smb.conf を変更しますか?"
+msgstr "Ret smb.conf, s奪 den benytter WINS-indstillinger fra DHCP?"
 
 #. Type: boolean
 #. Description
@@ -90,11 +81,11 @@ msgid ""
 "to your smb.conf file so that DHCP-provided WINS settings will automatically "
 "be read from /etc/samba/dhcp.conf."
 msgstr ""
-"あなたのコンピュータがネットワーク上の DHCP サーバから IP アドレス情報を取得"
-"しているのであれば、DHCP サーバはネットワーク上にある WINS サーバ (NetBIOS "
-"ネームサーバ) についての情報を提供することもできます。DHCP で提供される WINS "
-"設定は /etc/samba/dhcp.conf から自動的に読み込まれるため、smb.conf ファイルを"
-"変更する必要があります。"
+"Hvis din computer f奪r IP-adresseoplysninger fra en DHCP-server p奪 netv脱rket, "
+"kan DHCP-serveren ogs奪 give oplysninger om WINS-servere (\"NetBIOS "
+"navneservere\") p奪 netv脱rket. Dette kr脱ver en 脱ndring i din smb.conf-fil, s奪 "
+"WINS-indstillingerne fra DHCP-serveren automatisk indl脱ses fra /etc/samba/"
+"dhcp.conf."
 
 #. Type: boolean
 #. Description
@@ -103,14 +94,14 @@ msgid ""
 "You must have the dhcp3-client package installed to take advantage of this "
 "feature."
 msgstr ""
-"この機能を使うためには、dhcp3-client パッケージがインストールされている必要が"
-"あります。"
+"Ud skal have pakken dhcp3-client installeret for at kunne udnytte denne "
+"funktion."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid "Configure smb.conf through debconf?"
-msgstr "debconf を通して smb.conf を設定しますか?"
+msgstr "S脱t smb.conf op med debconf?"
 
 #. Type: boolean
 #. Description
@@ -122,11 +113,12 @@ msgid ""
 "line or an option that spans multiple lines, which could confuse debconf and "
 "require you to edit your smb.conf by hand to get it working again."
 msgstr ""
-"Samba の設定の残りの部分は、Samba プログラム (nmbd および smbd) を設定するの"
-"に使うファイル /etc/samba/smb.conf にあるパラメータに影響する質問です。現在"
-"の smb.conf は、'include' 行または複数行にまたがるオプションを含んでいます。"
-"これは debconf を混乱させる可能性があり、再び debconf が作動するようにすべく "
-"smb.conf の手動での修正を必要とします。"
+"Resten af Samba-ops脱tningen drejer sig om sp淡rgsm奪l om indstillingerne i "
+"filen /etc/samba/smb.conf, som benyttes til at s脱tte Samba-programmerne "
+"(nmbd og smbd) op. Din nuv脱rende smb.conf indeholder en 'include'-linje "
+"eller en indstilling, der fylder flere linjer, hvilket kan forvirre debconf "
+"og kr脱ve at du redigerer din smb.conf selv for at f奪 Samba til at fungere "
+"igen."
 
 #. Type: boolean
 #. Description
@@ -137,15 +129,16 @@ msgid ""
 "periodic configuration enhancements.  Therefore, use of debconf is "
 "recommended if possible."
 msgstr ""
-"smb.conf の設定に debconf を使わない場合、すべての設定の変更をあなた自身が面"
-"倒を見る必要があります。これは定期的な設定改善には向いていません。そのため、"
-"可能なら debconf を使うのがお勧めです。"
+"Hvis du ikke bruger debconf til at s脱tte smb.conf op, m奪 du selv h奪ndtere "
+"脱ndringer i ops脱tningen, og vil ikke kunne drage nytte af de l淡bende "
+"forbedringer i ops脱tningen. Derfor anbefales brugen af debconf, hvis det er "
+"muligt."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:52
 msgid "Workgroup/Domain Name?"
-msgstr "ワークグループ/ドメイン名は何ですか?"
+msgstr "Navn p奪 arbejdsgruppe/dom脱ne?"
 
 #. Type: string
 #. Description
@@ -155,15 +148,15 @@ msgid ""
 "by clients. Note that this parameter also controls the Domain name used with "
 "the security=domain setting."
 msgstr ""
-"これはクライアントから照会された際にあなたのサーバが現れるワークグループを制"
-"御します。このパラメータは security=domain 設定が使われたときのドメイン名も制"
-"御します。"
+"Dette styrer hvilken arbejdsgruppe din server til tilh淡re, n奪r den bliver "
+"spurgt af klienter. Bem脱rk at dette ogs奪 styrer det dom脱nenavn, der bruges "
+"med indstillingen \"security=domain\"."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:60
 msgid "Use password encryption?"
-msgstr "パスワードの暗号化を使いますか?"
+msgstr "Krypt辿r adgangskoder?"
 
 #. Type: boolean
 #. Description
@@ -176,17 +169,18 @@ msgid ""
 "and that you set passwords in there for each user using the smbpasswd "
 "command."
 msgstr ""
-"最近の Windows クライアントは暗号化されたパスワードを使って SMB サーバとやり"
-"取りします。クリアテキストパスワードを使いたい場合は、あなたの Windows のレジ"
-"ストリのパラメータを変更する必要があります。暗号化されたパスワードを使うこと"
-"を推奨します。こうする場合、有効な /etc/samba/smbpasswd ファイルがあることを"
-"確認し、各ユーザのパスワードは smbpasswd コマンドを使って設定します。"
+"Nyere Windows-klienter kommunikerer med SMB-servere med krypterede "
+"adgangskoder. Hvis du vil bruge adgangkoder i klar tekst, bliver du n淡dt til "
+"at 脱ndre en indstilling i Windows' registreringsdatabase. Det anbefales at "
+"du bruger krypterede adgangskoder. Hvis du g淡r, s奪 s淡rg for at du har en "
+"gyldig /etc/samba/smbpasswd-fil og at du her angiver adgangskoder for hver "
+"bruger med kommandoen smbpasswd."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:4
 msgid "Create samba password database, /var/lib/samba/passdb.tdb?"
-msgstr "Samba パスワードデータベース /var/lib/samba/passdb.tdb を作成しますか?"
+msgstr "Opret samba-adgangskodedatabasen /var/lib/samba/passdb.tdb?"
 
 #. Type: boolean
 #. Description
@@ -202,21 +196,21 @@ msgid ""
 "doc/samba-doc/htmldocs/ENCRYPTION.html from the samba-doc package for more "
 "details."
 msgstr ""
-"Windows のほとんどのバージョンのデフォルトと互換性を保つため、Samba は暗号化"
-"されたパスワードを使って設定されます。これはユーザのパスワードを /etc/passwd "
-"とは別のファイルに格納することを必要とします。このファイルは自動的に作成する"
-"ことができますが、パスワードは smbpasswd を実行して手動で (あなたあるいはユー"
-"ザが) 追加しなければならず、将来に渡って最新状態を保ち続けるよう整えておく必"
-"要があります。このファイルを作成しない場合、プレインテキストパスワードを使う"
-"よう Samba (およびおそらくあなたのクライアントマシン) の再設定が必要です。詳"
-"細については、samba-doc パッケージにある /usr/share/doc/samba-doc/htmldocs/"
-"ENCRYPTION.html を参照してください。"
+"For at v脱re kompatibel med standardindstillingerne i de fleste udgaver af "
+"Windows, skal Samba v脱re sat op til at benytte krypterede adgangskoder. Det "
+"kr脱ver at brugernes adgangskoder gemmes i en anden fil end /etc/passwd. "
+"Denne fil kan oprettes automatisk, men adgangskoderne er n淡dt til at blive "
+"tilf淡jet manuelt (af dig eller af brugeren) ved at k淡re smbpasswd, og du "
+"skal holde den opdateret i fremtiden. Hvis du ikke opretter den, er du n淡dt "
+"til at s脱tte samba (og sikkert ogs奪 dine klientmaskiner) op til at benytte "
+"adgangskoder i klar tekst. Se /usr/share/doc/samba-doc/htmldocs/ENCRYPTION."
+"html i pakken samba-doc for flere detaljer."
 
 #. Type: note
 #. Description
 #: ../samba.templates:17
 msgid "Samba's log files have moved."
-msgstr "Samba のログファイルは移動されました。"
+msgstr "Sambas logfiler er flyttet."
 
 #. Type: note
 #. Description
@@ -226,9 +220,9 @@ msgid ""
 "both Samba daemons (nmbd and smbd) are now stored in /var/log/samba/. The "
 "names of the files are log.nmbd and log.smbd, for nmbd and smbd respectively."
 msgstr ""
-"Debian 向けの Samba 2.2 の初期パッケージから、両 Samba デーモン (nmbd および "
-"smbd) のログファイルは /var/log/samba に格納されるようになっています。ファイ"
-"ル名は nmbd と smbd で別個になるよう、log.nmbd および log.smbd となります。"
+"Fra og med de f淡rste Samba 2.2-Debianpakker, bliver begge Samba-d脱monernes "
+"(nmbd og smbd) logfiler gemt i /var/log/samba/. Filernes navne er log.nmbd "
+"og log.smbd."
 
 #. Type: note
 #. Description
@@ -236,13 +230,15 @@ msgstr ""
 msgid ""
 "The old log files that were in /var/log/ will be moved to the new location "
 "for you."
-msgstr "/var/log/ にあった古いログファイルは新しい場所に移動されます。"
+msgstr ""
+"De gamle logfiler, der var i /var/log vil blive flyttet til den nye "
+"placering for dig."
 
 #. Type: note
 #. Description
 #: ../samba.templates:28
 msgid "Running nmbd from inetd is no longer supported"
-msgstr "inetd からの nmbd の実行はもうサポートされません"
+msgstr "K淡rsel af nmbd fra inetd underst淡ttes ikke l脱ngere."
 
 #. Type: note
 #. Description
@@ -253,22 +249,22 @@ msgid ""
 "If you have modified your /etc/init.d/samba startup script, you may need to "
 "adjust it by hand now so that nmbd will start."
 msgstr ""
-"あなたのシステムには inetd から nmbd および smbd を起動する以前の設定がありま"
-"す。バージョン 2.999+3.0.alpha20-4 以降では、nmbd は inetd からはもう起動しま"
-"せん。/etc/init.d/samba スタートアップスクリプトを変更しているのであれば、"
-"nmbd が起動するよう手動で調整する必要があるでしょう。"
+"Dit system var tidligere sat op til at starte nmbd og smbd fra inetd. Fra og "
+"med version 2.999+3.0.alpha20-4 kan nmbd ikke l脱ngere startes med inetd. "
+"Hvis du har rettet din opstartsskript /etc/init.d/samba, kan du v脱re n淡dt "
+"til at justere det manuelt nu, s奪 nmbd bliver startet."
 
 #. Type: select
 #. Choices
 #: ../samba.templates:36
 msgid "daemons, inetd"
-msgstr "デーモン, inetd"
+msgstr "d脱moner, inetd"
 
 #. Type: select
 #. Description
 #: ../samba.templates:38
 msgid "How do you want to run Samba?"
-msgstr "どのように Samba を実行したいですか?"
+msgstr "Hvordan skal Samba k淡res?"
 
 #. Type: select
 #. Description
@@ -277,14 +273,14 @@ msgid ""
 "The Samba daemon smbd can run as a normal daemon or from inetd. Running as a "
 "daemon is the recommended approach."
 msgstr ""
-"Samba デーモン smbd は通常のデーモンとしての実行または inetd からの実行ができ"
-"ます。デーモンとして実行するのがお勧めの手段です。"
+"Samba-d脱monen smbd kan k淡re som en almindelig d脱mon eller fra inetd. Det "
+"anbefales at k淡re den som d脱mon."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:45
 msgid "Move /etc/samba/smbpasswd to /var/lib/samba/passdb.tdb?"
-msgstr "/etc/samba/smbpasswd を /var/lib/samba/passdb.tdb に移動しますか?"
+msgstr "Flyt /etc/samba/smbpasswd til /var/lib/samba/passdb.tdb?"
 
 #. Type: boolean
 #. Description
@@ -296,16 +292,16 @@ msgid ""
 "plan to use another pdb backend (e.g., LDAP) instead, you should answer 'no' "
 "here."
 msgstr ""
-"Samba 3.0 では、/etc/samba/smbpasswd ファイルに代わる、より新しい、より完全"
-"な SAM データベースインターフェイスが導入されています。既存の smbpasswd ファ"
-"イルを /var/lib/samba/passdb.tdb に移行しますか? 別の pdb バックエンド (LDAP "
-"など) を代わりに計画しているのであれば、ここでは 'いいえ' と答えるべきです。"
+"Samba 3.0 har en nyere og mere komplet SAM-databasegr脱nseflade, som "
+"erstatter filen /etc/samba/smbpasswd. Vil du have din eksisterende smbpasswd-"
+"fil overf淡rt til /var/lib/samba/passdb.tdb?`Hvis du i stedet planl脱gger at "
+"bruge en anden pdb-h奪ndtering (f.eks. LDAP), b淡r du afvise dette."
 
 #. Type: note
 #. Description
 #: ../swat.templates:3
 msgid "Your smb.conf will be re-written!"
-msgstr "あなたの smb.conf は書き直されます!"
+msgstr "Din smb.conf vil blive omskrevet!"
 
 #. Type: note
 #. Description
@@ -315,7 +311,7 @@ msgid ""
 "delete all comments, include= and copy= options. If you have a carefully "
 "crafted smb.conf then back it up or don't use SWAT!"
 msgstr ""
-"SWAT はあなたの smb.conf ファイルを書き直します。SWAT はエントリを再編成し、"
-"すべてのコメントおよび include= と copy= オプションを削除します。慎重に作成さ"
-"れた smb.conf を持っているのであれば、バックアップしておくか、SWAT を使わない"
-"でください!"
+"SWAT vil overskrive din smb.conf-fil. Den vil flytte rundt p奪 linjerne og "
+"slette alle kommentarer, og linjer med \"include=\" og \"copy=\". Hvis du "
+"har brugt tid p奪 at lave din egen smb.conf, s奪 tag en sikkerhedskopi eller "
+"undlad at benytte SWAT!"

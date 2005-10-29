@@ -1,7 +1,8 @@
 README
-docs/Samba-HOWTO-Collection.pdf
+docs/Samba3-ByExample.pdf
+docs/Samba3-Developers-Guide.pdf
+docs/Samba3-HOWTO.pdf
 docs/THANKS
 docs/history
-docs/faq/
 docs/htmldocs/
-docs/Registry/
+docs/registry/

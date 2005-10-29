@@ -123,7 +123,7 @@ diff -uNr samba-3.0alpha22.orig/source/client/smbmount.c samba-3.0alpha22/source
          if ((fd = open(MOUNTED"~", O_RDWR|O_CREAT|O_EXCL, 0600)) == -1) {
                  DEBUG(0,("%d: Can't get "MOUNTED"~ lock file", sys_getpid()));
                  return;
-@@ -466,6 +470,9 @@
+@@ -467,6 +471,9 @@
  	args[i++] = "-s";
  	args[i++] = svc2;
  
@@ -133,7 +133,7 @@ diff -uNr samba-3.0alpha22.orig/source/client/smbmount.c samba-3.0alpha22/source
  	if (mount_ro) {
  		args[i++] = "-r";
  	}
-@@ -661,7 +668,7 @@
+@@ -662,7 +669,7 @@
  ****************************************************************************/
  static void usage(void)
  {
@@ -142,7 +142,7 @@ diff -uNr samba-3.0alpha22.orig/source/client/smbmount.c samba-3.0alpha22/source
  
  	printf("Version %s\n\n",VERSION);
  
-@@ -739,8 +746,13 @@
+@@ -740,8 +747,13 @@
  	argc -= 2;
  	argv += 2;
  

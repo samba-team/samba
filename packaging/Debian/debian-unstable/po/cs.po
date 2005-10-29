@@ -11,24 +11,23 @@
 #
 #    Developers do not need to manually edit POT or PO files.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: samba\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2005-08-13 17:05-0700\n"
-"PO-Revision-Date: 2003-09-09 09:26+0900\n"
-"Last-Translator: Kenshi Muto <kmuto@debian.org>\n"
-"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"PO-Revision-Date: 2004-03-05 12:04+0100\n"
+"Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
+"Language-Team: Czech <provoz@debian.cz>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=EUC-JP\n"
+"Content-Type: text/plain; charset=ISO-8859-2\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "Character Set for Unix filesystem"
-msgstr "Unix ¥Õ¥¡¥¤¥ë¥·¥¹¥Æ¥à¸þ¤±¤ÎÊ¸»ú¥»¥Ã¥È"
+msgstr "Znaková sada pro unixový souborový systém"
 
 #. Type: string
 #. Description
@@ -39,22 +38,22 @@ msgid ""
 "specify the character set you wish to use for theis new option, which "
 "controls how Samba interprets filenames on the file system."
 msgstr ""
-"¸½ºß¡¢smb.conf ¤ËÀßÄêºÑ¤ß¤Î \"character set\" ¤¬¤¢¤ê¤Þ¤¹¡£Samba 3.0 ¤Ç¤Ï¡¢¤³"
-"¤Î¥ª¥×¥·¥ç¥ó¤Ï¿·¤·¤¤¥ª¥×¥·¥ç¥ó \"unix charset\" ¤ËÃÖ¤­´¹¤¨¤é¤ì¤Æ¤¤¤Þ¤¹¡£"
-"Samba ¤¬¥Õ¥¡¥¤¥ë¥·¥¹¥Æ¥à¤Î¥Õ¥¡¥¤¥ëÌ¾¤ò¤É¤Î¤è¤¦¤Ë²ò¼á¤¹¤ë¤«¤òÀ©¸æ¤¹¤ë¤³¤Î¿·¤·"
-"¤¤¥ª¥×¥·¥ç¥ó¤Î¤¿¤á¤Ë¡¢´õË¾¤¹¤ëÊ¸»ú¥»¥Ã¥È¤ò»ØÄê¤·¤Æ¤¯¤À¤µ¤¤¡£"
+"Momentálnì máte ve svém smb.conf nastavenou volbu \"character set\". V Sambì "
+"3.0 je tato volba nahrazena volbou \"unix charset\". Zadejte, prosím, "
+"znakovou sadu, kterou chcete pou¾ít pro novou volbu. Tímto nastavíte, jak má "
+"Samba interpretovat názvy souborù v souborovém systému."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "If you leave this option blank, your smb.conf will not be changed."
-msgstr "¤³¤Î¥ª¥×¥·¥ç¥ó¤ò¶õ¤Î¤Þ¤Þ¤Ë¤¹¤ë¤È¡¢smb.conf ¤ÏÊÑ¹¹¤µ¤ì¤Þ¤»¤ó¡£"
+msgstr "Pokud nezadáte nic, vá¹ smb.conf se nezmìní."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:13
 msgid "Character Set for DOS clients"
-msgstr "DOS ¥¯¥é¥¤¥¢¥ó¥È¸þ¤±¤ÎÊ¸»ú¥»¥Ã¥È"
+msgstr "Znaková sada pro DOSové klienty."
 
 #. Type: string
 #. Description
@@ -67,18 +66,18 @@ msgid ""
 "needed to support Windows clients, it is only for DOS clients.  If you leave "
 "this option blank, your smb.conf will not be changed."
 msgstr ""
-"¸½ºß¡¢smb.conf ¤ËÀßÄêºÑ¤ß¤Î \"client code page\" ¤¬¤¢¤ê¤Þ¤¹¡£Samba 3.0 ¤Ç¤Ï¡¢"
-"¤³¤Î¥ª¥×¥·¥ç¥ó¤Ï¿·¤·¤¤¥ª¥×¥·¥ç¥ó \"dos charset\" ¤ËÃÖ¤­´¹¤¨¤é¤ì¤Æ¤¤¤Þ¤¹¡£¤³¤Î"
-"¿·¤·¤¤¥ª¥×¥·¥ç¥ó¤Î¤¿¤á¤Ë¡¢´õË¾¤¹¤ëÊ¸»ú¥»¥Ã¥È¤ò»ØÄê¤·¤Æ¤¯¤À¤µ¤¤¡£¤Û¤È¤ó¤É¤Î¾ì"
-"¹ç¡¢¥Ç¥Õ¥©¥ë¥È¤ÎÁªÂò¤Î¤Þ¤Þ¤Ç½½Ê¬¤Ç¤·¤ç¤¦¡£¤³¤Î¥ª¥×¥·¥ç¥ó¤Ï Windows ¥¯¥é¥¤¥¢¥ó"
-"¥È¥µ¥Ý¡¼¥È¤Ë¤ÏÉ¬Í×¤Ê¤¯¡¢DOS ¥¯¥é¥¤¥¢¥ó¥È¤Î¤ß¤Î¤¿¤á¤Ç¤¢¤ë¤³¤È¤òÃí°Õ¤·¤Æ¤ª¤­¤Þ"
-"¤¹¡£¤³¤Î¥ª¥×¥·¥ç¥ó¤ò¶õ¤Î¤Þ¤Þ¤Ë¤¹¤ë¤È¡¢smb.conf ¤ÏÊÑ¹¹¤µ¤ì¤Þ¤»¤ó¡£"
+"Momentálnì máte ve svém smb.conf nastavenou volbu \"client code page\". V "
+"Sambì 3.0 je tato volba nahrazena volbou \"dos charset\". Zadejte, prosím, "
+"znakovou sadu, kterou chcete pou¾ít pro novou volbu. Ve vìt¹inì pøípadù "
+"postaèuje implicitní hodnota. Tato volba není potøebná pro Windowsové "
+"klienty, pouze pro DOSové klienty. Pokud nezadáte nic, vá¹ smb.conf se "
+"nezmìní."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid "Modify smb.conf to use WINS settings from DHCP?"
-msgstr "DHCP ¤«¤é WINS ÀßÄê¤ò»È¤¦¤è¤¦ smb.conf ¤òÊÑ¹¹¤·¤Þ¤¹¤«?"
+msgstr "Upravit smb.conf, aby pou¾íval WINS nastavení z DHCP?"
 
 #. Type: boolean
 #. Description
@@ -90,11 +89,11 @@ msgid ""
 "to your smb.conf file so that DHCP-provided WINS settings will automatically "
 "be read from /etc/samba/dhcp.conf."
 msgstr ""
-"¤¢¤Ê¤¿¤Î¥³¥ó¥Ô¥å¡¼¥¿¤¬¥Í¥Ã¥È¥ï¡¼¥¯¾å¤Î DHCP ¥µ¡¼¥Ð¤«¤é IP ¥¢¥É¥ì¥¹¾ðÊó¤ò¼èÆÀ"
-"¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢DHCP ¥µ¡¼¥Ð¤Ï¥Í¥Ã¥È¥ï¡¼¥¯¾å¤Ë¤¢¤ë WINS ¥µ¡¼¥Ð (NetBIOS "
-"¥Í¡¼¥à¥µ¡¼¥Ð) ¤Ë¤Ä¤¤¤Æ¤Î¾ðÊó¤òÄó¶¡¤¹¤ë¤³¤È¤â¤Ç¤­¤Þ¤¹¡£DHCP ¤ÇÄó¶¡¤µ¤ì¤ë WINS "
-"ÀßÄê¤Ï /etc/samba/dhcp.conf ¤«¤é¼«Æ°Åª¤ËÆÉ¤ß¹þ¤Þ¤ì¤ë¤¿¤á¡¢smb.conf ¥Õ¥¡¥¤¥ë¤ò"
-"ÊÑ¹¹¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£"
+"Pokud vá¹ poèítaè získává IP adresu z DHCP serveru, mù¾ete vám tento server "
+"nabízet také informace o WINS serverech (jmenných serverech NetBIOSu), které "
+"jsou dostupné ve va¹í síti. To vy¾aduje zásah do souboru smb.conf, kde se "
+"nastaví, aby se informace o WINS serverech naèítaly ze souboru /etc/samba/"
+"dhcp.conf."
 
 #. Type: boolean
 #. Description
@@ -103,14 +102,13 @@ msgid ""
 "You must have the dhcp3-client package installed to take advantage of this "
 "feature."
 msgstr ""
-"¤³¤Îµ¡Ç½¤ò»È¤¦¤¿¤á¤Ë¤Ï¡¢dhcp3-client ¥Ñ¥Ã¥±¡¼¥¸¤¬¥¤¥ó¥¹¥È¡¼¥ë¤µ¤ì¤Æ¤¤¤ëÉ¬Í×¤¬"
-"¤¢¤ê¤Þ¤¹¡£"
+"Pro vyu¾ití této vlastnosti musíte mít nainstalovaný balík dhcp3-client."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid "Configure smb.conf through debconf?"
-msgstr "debconf ¤òÄÌ¤·¤Æ smb.conf ¤òÀßÄê¤·¤Þ¤¹¤«?"
+msgstr "Konfigurovat smb.conf pøes debconf?"
 
 #. Type: boolean
 #. Description
@@ -122,11 +120,11 @@ msgid ""
 "line or an option that spans multiple lines, which could confuse debconf and "
 "require you to edit your smb.conf by hand to get it working again."
 msgstr ""
-"Samba ¤ÎÀßÄê¤Î»Ä¤ê¤ÎÉôÊ¬¤Ï¡¢Samba ¥×¥í¥°¥é¥à (nmbd ¤ª¤è¤Ó smbd) ¤òÀßÄê¤¹¤ë¤Î"
-"¤Ë»È¤¦¥Õ¥¡¥¤¥ë /etc/samba/smb.conf ¤Ë¤¢¤ë¥Ñ¥é¥á¡¼¥¿¤Ë±Æ¶Á¤¹¤ë¼ÁÌä¤Ç¤¹¡£¸½ºß"
-"¤Î smb.conf ¤Ï¡¢'include' ¹Ô¤Þ¤¿¤ÏÊ£¿ô¹Ô¤Ë¤Þ¤¿¤¬¤ë¥ª¥×¥·¥ç¥ó¤ò´Þ¤ó¤Ç¤¤¤Þ¤¹¡£"
-"¤³¤ì¤Ï debconf ¤òº®Íð¤µ¤»¤ë²ÄÇ½À­¤¬¤¢¤ê¡¢ºÆ¤Ó debconf ¤¬ºîÆ°¤¹¤ë¤è¤¦¤Ë¤¹¤Ù¤¯ "
-"smb.conf ¤Î¼êÆ°¤Ç¤Î½¤Àµ¤òÉ¬Í×¤È¤·¤Þ¤¹¡£"
+"Zbytek konfigurace Samby se zabývá otázkami, které mìní parametry v /etc/"
+"samba/smb.conf, co¾ je soubor pou¾ívaný pro nastavení programù nmbd a smbd "
+"(dohromady tvoøí Sambu). Vá¹ stávající smb.conf obsahuje øádek 'include' "
+"nebo volbu, která se táhne pøes více øádkù, co¾ mù¾e zmást debconf a mù¾e "
+"zpùsobit, ¾e pro znovuzprovoznìní Samby budete muset upravit smb.conf ruènì."
 
 #. Type: boolean
 #. Description
@@ -137,15 +135,15 @@ msgid ""
 "periodic configuration enhancements.  Therefore, use of debconf is "
 "recommended if possible."
 msgstr ""
-"smb.conf ¤ÎÀßÄê¤Ë debconf ¤ò»È¤ï¤Ê¤¤¾ì¹ç¡¢¤¹¤Ù¤Æ¤ÎÀßÄê¤ÎÊÑ¹¹¤ò¤¢¤Ê¤¿¼«¿È¤¬ÌÌ"
-"ÅÝ¤ò¸«¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£¤³¤ì¤ÏÄê´üÅª¤ÊÀßÄê²þÁ±¤Ë¤Ï¸þ¤¤¤Æ¤¤¤Þ¤»¤ó¡£¤½¤Î¤¿¤á¡¢"
-"²ÄÇ½¤Ê¤é debconf ¤ò»È¤¦¤Î¤¬¤ª´«¤á¤Ç¤¹¡£"
+"Pokud pro konfiguraci smb.conf nepou¾íváte debconf, budete muset zvládnout "
+"v¹echna nastavení sami a nebudete moci vyu¾ívat výhod pravidelných vylep¹ení "
+"tohoto souboru. Z tohoto pohledu je pou¾ití debconf doporuèená volba."
 
 #. Type: string
 #. Description
 #: ../samba-common.templates:52
 msgid "Workgroup/Domain Name?"
-msgstr "¥ï¡¼¥¯¥°¥ë¡¼¥×/¥É¥á¥¤¥óÌ¾¤Ï²¿¤Ç¤¹¤«?"
+msgstr "Skupina/Doménové jméno?"
 
 #. Type: string
 #. Description
@@ -155,15 +153,14 @@ msgid ""
 "by clients. Note that this parameter also controls the Domain name used with "
 "the security=domain setting."
 msgstr ""
-"¤³¤ì¤Ï¥¯¥é¥¤¥¢¥ó¥È¤«¤é¾È²ñ¤µ¤ì¤¿ºÝ¤Ë¤¢¤Ê¤¿¤Î¥µ¡¼¥Ð¤¬¸½¤ì¤ë¥ï¡¼¥¯¥°¥ë¡¼¥×¤òÀ©"
-"¸æ¤·¤Þ¤¹¡£¤³¤Î¥Ñ¥é¥á¡¼¥¿¤Ï security=domain ÀßÄê¤¬»È¤ï¤ì¤¿¤È¤­¤Î¥É¥á¥¤¥óÌ¾¤âÀ©"
-"¸æ¤·¤Þ¤¹¡£"
+"Zde mù¾ete zadat jméno skupiny, do které má server patøit. Tímto parametrem "
+"také nastavíte doménové jméno pou¾ívané s nastavením security=domain."
 
 #. Type: boolean
 #. Description
 #: ../samba-common.templates:60
 msgid "Use password encryption?"
-msgstr "¥Ñ¥¹¥ï¡¼¥É¤Î°Å¹æ²½¤ò»È¤¤¤Þ¤¹¤«?"
+msgstr "Pou¾ít ¹ifrování hesel?"
 
 #. Type: boolean
 #. Description
@@ -176,17 +173,17 @@ msgid ""
 "and that you set passwords in there for each user using the smbpasswd "
 "command."
 msgstr ""
-"ºÇ¶á¤Î Windows ¥¯¥é¥¤¥¢¥ó¥È¤Ï°Å¹æ²½¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤Ã¤Æ SMB ¥µ¡¼¥Ð¤È¤ä¤ê"
-"¼è¤ê¤·¤Þ¤¹¡£¥¯¥ê¥¢¥Æ¥­¥¹¥È¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¤¤¿¤¤¾ì¹ç¤Ï¡¢¤¢¤Ê¤¿¤Î Windows ¤Î¥ì¥¸"
-"¥¹¥È¥ê¤Î¥Ñ¥é¥á¡¼¥¿¤òÊÑ¹¹¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£°Å¹æ²½¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¦¤³¤È"
-"¤ò¿ä¾©¤·¤Þ¤¹¡£¤³¤¦¤¹¤ë¾ì¹ç¡¢Í­¸ú¤Ê /etc/samba/smbpasswd ¥Õ¥¡¥¤¥ë¤¬¤¢¤ë¤³¤È¤ò"
-"³ÎÇ§¤·¡¢³Æ¥æ¡¼¥¶¤Î¥Ñ¥¹¥ï¡¼¥É¤Ï smbpasswd ¥³¥Þ¥ó¥É¤ò»È¤Ã¤ÆÀßÄê¤·¤Þ¤¹¡£"
+"Souèasní windowsoví klienti pou¾ívají pøi komunikaci se SMB servery "
+"za¹ifrovaná hesla. Pokud chcete pou¾ít hesla neza¹ifrovaná, musíte zmìnit "
+"jeden parametr v registrech systému Windows. Doporuèujeme pou¾ívat "
+"za¹ifrovaná hesla. Hesla mù¾ete jednotlivým u¾ivatelùm pøidat pøíkazem "
+"smbpasswd."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:4
 msgid "Create samba password database, /var/lib/samba/passdb.tdb?"
-msgstr "Samba ¥Ñ¥¹¥ï¡¼¥É¥Ç¡¼¥¿¥Ù¡¼¥¹ /var/lib/samba/passdb.tdb ¤òºîÀ®¤·¤Þ¤¹¤«?"
+msgstr "Vytvoøit databázi hesel /var/lib/samba/passdb.tdb?"
 
 #. Type: boolean
 #. Description
@@ -202,21 +199,21 @@ msgid ""
 "doc/samba-doc/htmldocs/ENCRYPTION.html from the samba-doc package for more "
 "details."
 msgstr ""
-"Windows ¤Î¤Û¤È¤ó¤É¤Î¥Ð¡¼¥¸¥ç¥ó¤Î¥Ç¥Õ¥©¥ë¥È¤È¸ß´¹À­¤òÊÝ¤Ä¤¿¤á¡¢Samba ¤Ï°Å¹æ²½"
-"¤µ¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò»È¤Ã¤ÆÀßÄê¤µ¤ì¤Þ¤¹¡£¤³¤ì¤Ï¥æ¡¼¥¶¤Î¥Ñ¥¹¥ï¡¼¥É¤ò /etc/passwd "
-"¤È¤ÏÊÌ¤Î¥Õ¥¡¥¤¥ë¤Ë³ÊÇ¼¤¹¤ë¤³¤È¤òÉ¬Í×¤È¤·¤Þ¤¹¡£¤³¤Î¥Õ¥¡¥¤¥ë¤Ï¼«Æ°Åª¤ËºîÀ®¤¹¤ë"
-"¤³¤È¤¬¤Ç¤­¤Þ¤¹¤¬¡¢¥Ñ¥¹¥ï¡¼¥É¤Ï smbpasswd ¤ò¼Â¹Ô¤·¤Æ¼êÆ°¤Ç (¤¢¤Ê¤¿¤¢¤ë¤¤¤Ï¥æ¡¼"
-"¥¶¤¬) ÄÉ²Ã¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤º¡¢¾­Íè¤ËÅÏ¤Ã¤ÆºÇ¿·¾õÂÖ¤òÊÝ¤ÁÂ³¤±¤ë¤è¤¦À°¤¨¤Æ¤ª¤¯É¬"
-"Í×¤¬¤¢¤ê¤Þ¤¹¡£¤³¤Î¥Õ¥¡¥¤¥ë¤òºîÀ®¤·¤Ê¤¤¾ì¹ç¡¢¥×¥ì¥¤¥ó¥Æ¥­¥¹¥È¥Ñ¥¹¥ï¡¼¥É¤ò»È¤¦"
-"¤è¤¦ Samba (¤ª¤è¤Ó¤ª¤½¤é¤¯¤¢¤Ê¤¿¤Î¥¯¥é¥¤¥¢¥ó¥È¥Þ¥·¥ó) ¤ÎºÆÀßÄê¤¬É¬Í×¤Ç¤¹¡£¾Ü"
-"ºÙ¤Ë¤Ä¤¤¤Æ¤Ï¡¢samba-doc ¥Ñ¥Ã¥±¡¼¥¸¤Ë¤¢¤ë /usr/share/doc/samba-doc/htmldocs/"
-"ENCRYPTION.html ¤ò»²¾È¤·¤Æ¤¯¤À¤µ¤¤¡£"
+"Pro dosa¾ení co nejvìt¹í kompatibility s vìt¹inou verzí systému Windows musí "
+"být Samba nastavena, aby pou¾ívala ¹ifrovaná hesla. To vy¾aduje, aby byla "
+"hesla uchována mimo souboru /etc/passwd. Po¾adovaný soubor mù¾ete nechat "
+"vytvoøit automaticky, ale hesla do nìj musí být pøidána ruènì programem "
+"smbpasswd (buï vámi, nebo u¾ivatelem) a také jej musíte udr¾ovat "
+"aktualizovaný. Pokud jej nevytvoøíte, budete muset nastavit Sambu (a "
+"pravdìpodobnì také klienty), aby pou¾ívala ne¹ifrovaná hesla. Podrobnosti "
+"naleznete v /usr/share/doc/samba-doc/htmldocs/ENCRYPTION.html z balíku samba-"
+"doc."
 
 #. Type: note
 #. Description
 #: ../samba.templates:17
 msgid "Samba's log files have moved."
-msgstr "Samba ¤Î¥í¥°¥Õ¥¡¥¤¥ë¤Ï°ÜÆ°¤µ¤ì¤Þ¤·¤¿¡£"
+msgstr "Logovací soubory Samby se pøesunuly."
 
 #. Type: note
 #. Description
@@ -226,9 +223,9 @@ msgid ""
 "both Samba daemons (nmbd and smbd) are now stored in /var/log/samba/. The "
 "names of the files are log.nmbd and log.smbd, for nmbd and smbd respectively."
 msgstr ""
-"Debian ¸þ¤±¤Î Samba 2.2 ¤Î½é´ü¥Ñ¥Ã¥±¡¼¥¸¤«¤é¡¢Î¾ Samba ¥Ç¡¼¥â¥ó (nmbd ¤ª¤è¤Ó "
-"smbd) ¤Î¥í¥°¥Õ¥¡¥¤¥ë¤Ï /var/log/samba ¤Ë³ÊÇ¼¤µ¤ì¤ë¤è¤¦¤Ë¤Ê¤Ã¤Æ¤¤¤Þ¤¹¡£¥Õ¥¡¥¤"
-"¥ëÌ¾¤Ï nmbd ¤È smbd ¤ÇÊÌ¸Ä¤Ë¤Ê¤ë¤è¤¦¡¢log.nmbd ¤ª¤è¤Ó log.smbd ¤È¤Ê¤ê¤Þ¤¹¡£"
+"Od prvních debianích balíèkù Samby verze 2.2 jsou logovací soubory obou "
+"serverù (nmbd a smbd) umístìny ve /var/log/samba/. Názvy pøíslu¹ných souborù "
+"jsou log.nmbd a log.smbd."
 
 #. Type: note
 #. Description
@@ -236,13 +233,14 @@ msgstr ""
 msgid ""
 "The old log files that were in /var/log/ will be moved to the new location "
 "for you."
-msgstr "/var/log/ ¤Ë¤¢¤Ã¤¿¸Å¤¤¥í¥°¥Õ¥¡¥¤¥ë¤Ï¿·¤·¤¤¾ì½ê¤Ë°ÜÆ°¤µ¤ì¤Þ¤¹¡£"
+msgstr ""
+"Staré soubory z adresáøe /var/log/ budou pøesunuty na nové místo automaticky."
 
 #. Type: note
 #. Description
 #: ../samba.templates:28
 msgid "Running nmbd from inetd is no longer supported"
-msgstr "inetd ¤«¤é¤Î nmbd ¤Î¼Â¹Ô¤Ï¤â¤¦¥µ¥Ý¡¼¥È¤µ¤ì¤Þ¤»¤ó"
+msgstr "Spou¹tìní nmbd z inetd ji¾ není podporováno"
 
 #. Type: note
 #. Description
@@ -253,22 +251,22 @@ msgid ""
 "If you have modified your /etc/init.d/samba startup script, you may need to "
 "adjust it by hand now so that nmbd will start."
 msgstr ""
-"¤¢¤Ê¤¿¤Î¥·¥¹¥Æ¥à¤Ë¤Ï inetd ¤«¤é nmbd ¤ª¤è¤Ó smbd ¤òµ¯Æ°¤¹¤ë°ÊÁ°¤ÎÀßÄê¤¬¤¢¤ê¤Þ"
-"¤¹¡£¥Ð¡¼¥¸¥ç¥ó 2.999+3.0.alpha20-4 °Ê¹ß¤Ç¤Ï¡¢nmbd ¤Ï inetd ¤«¤é¤Ï¤â¤¦µ¯Æ°¤·¤Þ"
-"¤»¤ó¡£/etc/init.d/samba ¥¹¥¿¡¼¥È¥¢¥Ã¥×¥¹¥¯¥ê¥×¥È¤òÊÑ¹¹¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢"
-"nmbd ¤¬µ¯Æ°¤¹¤ë¤è¤¦¼êÆ°¤ÇÄ´À°¤¹¤ëÉ¬Í×¤¬¤¢¤ë¤Ç¤·¤ç¤¦¡£"
+"Vá¹ systém byl pùvodnì nastaven, aby spou¹tìl nmbd a smbd z inetd. Od verze "
+"2.999+3.0.alpha20-4 ji¾ nelze nmbd spou¹tìt z inetd. Pokud jste si upravili "
+"startovací skript /etc/init.d/samba, mo¾ná jej nyní budete muset upravit pro "
+"korektní start nmbd."
 
 #. Type: select
 #. Choices
 #: ../samba.templates:36
 msgid "daemons, inetd"
-msgstr "¥Ç¡¼¥â¥ó, inetd"
+msgstr "démoni, inetd"
 
 #. Type: select
 #. Description
 #: ../samba.templates:38
 msgid "How do you want to run Samba?"
-msgstr "¤É¤Î¤è¤¦¤Ë Samba ¤ò¼Â¹Ô¤·¤¿¤¤¤Ç¤¹¤«?"
+msgstr "Jak chcete spou¹tìt Sambu?"
 
 #. Type: select
 #. Description
@@ -277,14 +275,14 @@ msgid ""
 "The Samba daemon smbd can run as a normal daemon or from inetd. Running as a "
 "daemon is the recommended approach."
 msgstr ""
-"Samba ¥Ç¡¼¥â¥ó smbd ¤ÏÄÌ¾ï¤Î¥Ç¡¼¥â¥ó¤È¤·¤Æ¤Î¼Â¹Ô¤Þ¤¿¤Ï inetd ¤«¤é¤Î¼Â¹Ô¤¬¤Ç¤­"
-"¤Þ¤¹¡£¥Ç¡¼¥â¥ó¤È¤·¤Æ¼Â¹Ô¤¹¤ë¤Î¤¬¤ª´«¤á¤Î¼êÃÊ¤Ç¤¹¡£"
+"Server Samby smbd mù¾e bì¾et jako obyèejný démon (doporuèeno), nebo se mù¾e "
+"spou¹tìt z inetd."
 
 #. Type: boolean
 #. Description
 #: ../samba.templates:45
 msgid "Move /etc/samba/smbpasswd to /var/lib/samba/passdb.tdb?"
-msgstr "/etc/samba/smbpasswd ¤ò /var/lib/samba/passdb.tdb ¤Ë°ÜÆ°¤·¤Þ¤¹¤«?"
+msgstr "Pøesunout /etc/samba/smbpasswd do /var/lib/samba/passdb.tdb?"
 
 #. Type: boolean
 #. Description
@@ -296,16 +294,16 @@ msgid ""
 "plan to use another pdb backend (e.g., LDAP) instead, you should answer 'no' "
 "here."
 msgstr ""
-"Samba 3.0 ¤Ç¤Ï¡¢/etc/samba/smbpasswd ¥Õ¥¡¥¤¥ë¤ËÂå¤ï¤ë¡¢¤è¤ê¿·¤·¤¤¡¢¤è¤ê´°Á´"
-"¤Ê SAM ¥Ç¡¼¥¿¥Ù¡¼¥¹¥¤¥ó¥¿¡¼¥Õ¥§¥¤¥¹¤¬Æ³Æþ¤µ¤ì¤Æ¤¤¤Þ¤¹¡£´ûÂ¸¤Î smbpasswd ¥Õ¥¡"
-"¥¤¥ë¤ò /var/lib/samba/passdb.tdb ¤Ë°Ü¹Ô¤·¤Þ¤¹¤«? ÊÌ¤Î pdb ¥Ð¥Ã¥¯¥¨¥ó¥É (LDAP "
-"¤Ê¤É) ¤òÂå¤ï¤ê¤Ë·×²è¤·¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢¤³¤³¤Ç¤Ï '¤¤¤¤¤¨' ¤ÈÅú¤¨¤ë¤Ù¤­¤Ç¤¹¡£"
+"Samba 3.0 zavedla nové, kompletnìj¹í rozhraní k SAM databázi, je¾ pøekonává "
+"pùvodní soubor /etc/samba/smbpasswd. Chcete pøevést stávající soubor "
+"smbpasswd na /var/lib/samba/passwd.tdb? Pokud plánujete pou¾ít jinou pdb "
+"databázi (tøeba LDAP), mìli byste odponìdìt 'ne'."
 
 #. Type: note
 #. Description
 #: ../swat.templates:3
 msgid "Your smb.conf will be re-written!"
-msgstr "¤¢¤Ê¤¿¤Î smb.conf ¤Ï½ñ¤­Ä¾¤µ¤ì¤Þ¤¹!"
+msgstr "Vá¹ smb.conf bude pøepsán!"
 
 #. Type: note
 #. Description
@@ -315,7 +313,6 @@ msgid ""
 "delete all comments, include= and copy= options. If you have a carefully "
 "crafted smb.conf then back it up or don't use SWAT!"
 msgstr ""
-"SWAT ¤Ï¤¢¤Ê¤¿¤Î smb.conf ¥Õ¥¡¥¤¥ë¤ò½ñ¤­Ä¾¤·¤Þ¤¹¡£SWAT ¤Ï¥¨¥ó¥È¥ê¤òºÆÊÔÀ®¤·¡¢"
-"¤¹¤Ù¤Æ¤Î¥³¥á¥ó¥È¤ª¤è¤Ó include= ¤È copy= ¥ª¥×¥·¥ç¥ó¤òºï½ü¤·¤Þ¤¹¡£¿µ½Å¤ËºîÀ®¤µ"
-"¤ì¤¿ smb.conf ¤ò»ý¤Ã¤Æ¤¤¤ë¤Î¤Ç¤¢¤ì¤Ð¡¢¥Ð¥Ã¥¯¥¢¥Ã¥×¤·¤Æ¤ª¤¯¤«¡¢SWAT ¤ò»È¤ï¤Ê¤¤"
-"¤Ç¤¯¤À¤µ¤¤!"
+"SWAT pøepí¹e vá¹ soubor smb.conf. Mj. pøeskládá polo¾ky a sma¾e v¹echny "
+"komentáøe a volby include= a copy=. Pokud máte pracnì odladìný smb.conf, tak "
+"si jej zazálohujte, nebo nepou¾ívejte SWAT!"
