@@ -175,7 +175,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	const char *hostname;
 	krb5_flags ap_req_options = AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED;
 
-	char *principal;
+	const char *principal;
 	krb5_data in_data;
 
 	hostname = gensec_get_target_hostname(gensec_security);
