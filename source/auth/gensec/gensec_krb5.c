@@ -240,6 +240,10 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
 			  hostname, smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+	case KRB5_KDC_UNREACH:
+		DEBUG(3, ("Cannot reach a KDC we require to contact host [%s]: %s\n",
+			  hostname, smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
+		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 	case KRB5KRB_AP_ERR_TKT_EXPIRED:
 	case KRB5_CC_END:
