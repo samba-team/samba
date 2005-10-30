@@ -35,11 +35,11 @@ struct keytab_container {
 };
 
 /* not really ASN.1, but RFC 1964 */
-#define TOK_ID_KRB_AP_REQ	"\x01\x00"
-#define TOK_ID_KRB_AP_REP	"\x02\x00"
-#define TOK_ID_KRB_ERROR	"\x03\x00"
-#define TOK_ID_GSS_GETMIC	"\x01\x01"
-#define TOK_ID_GSS_WRAP		"\x02\x01"
+#define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
+#define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")
+#define TOK_ID_KRB_ERROR	((const uint8_t *)"\x03\x00")
+#define TOK_ID_GSS_GETMIC	((const uint8_t *)"\x01\x01")
+#define TOK_ID_GSS_WRAP		((const uint8_t *)"\x02\x01")
 
 #ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
 #define KRB5_KEY_TYPE(k)	((k)->keytype)
