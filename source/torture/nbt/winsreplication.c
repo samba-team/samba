@@ -5900,6 +5900,141 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.apply_expected	= False
 		},
 	},
+/* 
+ * unique vs. multi homed section
+ */
+	/*
+	 * unique,active vs. mhomed,active with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MA_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,active with different ip(s), positive response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MA_DI_P", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,active with different ip(s), negative response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MA_DI_N", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= False,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MT_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MT_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
 	};
 
 	if (!ctx) return False;
