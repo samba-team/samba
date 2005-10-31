@@ -775,7 +775,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return(ERROR_DOS(ERRSRV,ERRaccess));
 	}
 
-	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status, False);
+	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1614,6 +1614,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	BOOL out_of_space = False;
 	int space_remaining;
 	BOOL bad_path = False;
+	BOOL mask_contains_wcard = False;
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
@@ -1654,7 +1655,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return(ERROR_DOS(ERRDOS,ERRunknownlevel));
 	}
 
-	srvstr_get_path(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, True);
+	srvstr_get_path_wcard(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}
@@ -1672,10 +1673,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	p = strrchr_m(directory,'/');
 	if(p == NULL) {
 		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
-		if((directory[0] == '.') && (directory[1] == '\0'))
+		if((directory[0] == '.') && (directory[1] == '\0')) {
 			pstrcpy(mask,"*");
-		else
+			mask_contains_wcard = True;
+		} else {
 			pstrcpy(mask,directory);
+		}
 		pstrcpy(directory,"./");
 	} else {
 		pstrcpy(mask,p+1);
@@ -1733,7 +1736,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, dirtype);
+	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype);
 	if (dptr_num < 0) {
 		talloc_destroy(ea_ctx);
 		return(UNIXERROR(ERRDOS,ERRbadfile));
@@ -1868,6 +1871,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	BOOL close_if_end = (findnext_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
 	BOOL requires_resume_key = (findnext_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
 	BOOL continue_bit = (findnext_flags & FLAG_TRANS2_FIND_CONTINUE);
+	BOOL mask_contains_wcard = False;
 	pstring resume_name;
 	pstring mask;
 	pstring directory;
@@ -1889,7 +1893,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	*mask = *directory = *resume_name = 0;
 
-	srvstr_get_path(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, True);
+	srvstr_get_path_wcard(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
 		   complain (it thinks we're asking for the directory above the shared
@@ -2854,7 +2858,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
 
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status, False);
+		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -3659,7 +3663,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 
 		info_level = SVAL(params,0);    
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status, False);
+		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -4217,7 +4221,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			char *newname = fname;
 
 			/* Set a hard link. */
-			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE, &status, False);
+			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4251,7 +4255,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			overwrite = (CVAL(pdata,0) ? True : False);
 			root_fid = IVAL(pdata,4);
 			len = IVAL(pdata,8);
-			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status, False);
+			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4278,7 +4282,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			} else {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 					fname, newname ));
-				status = rename_internals(conn, fname, base_name, 0, overwrite);
+				status = rename_internals(conn, fname, base_name, 0, overwrite, False);
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
@@ -4489,7 +4493,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE, &status, False);
+	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
