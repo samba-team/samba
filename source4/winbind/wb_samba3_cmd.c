@@ -36,17 +36,38 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
-static void wbsrv_samba3_async_epilogue(NTSTATUS status,
-					struct wbsrv_samba3_call *s3call)
+static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
+					     struct wbsrv_samba3_call *s3call)
 {
+	struct winbindd_response *resp = &s3call->response;
 	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_response *resp = &s3call->response;
 		resp->result = WINBINDD_ERROR;
 		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
 					nt_errstr(status));
 		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
-					nt_errstr(status));
-		resp->data.auth.pam_error = nt_status_to_pam(status);
+					get_friendly_nt_error_msg(status));
+	} else {
+		resp->result = WINBINDD_OK;
+	}
+
+	resp->data.auth.pam_error = nt_status_to_pam(status);
+	resp->data.auth.nt_status = NT_STATUS_V(status);
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+	}
+}
+
+static void wbsrv_samba3_async_epilogue(NTSTATUS status,
+					struct wbsrv_samba3_call *s3call)
+{
+	struct winbindd_response *resp = &s3call->response;
+	if (NT_STATUS_IS_OK(status)) {
+		resp->result = WINBINDD_OK;
+	} else {
+		resp->result = WINBINDD_ERROR;
 	}
 
 	status = wbsrv_send_reply(s3call->call);
@@ -129,8 +150,7 @@ static void checkmachacc_recv_creds(struct composite_context *ctx)
 
 	status = wb_cmd_checkmachacc_recv(ctx);
 
-	s3call->response.result = WINBINDD_OK;
-	wbsrv_samba3_async_epilogue(status, s3call);
+	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
 
 static void getdcname_recv_dc(struct composite_context *ctx);
@@ -404,20 +424,20 @@ static void pam_auth_crap_recv(struct composite_context *ctx);
 NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
-
 	DATA_BLOB chal, nt_resp, lm_resp;
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
 
-	chal.data      = s3call->request.data.auth_crap.chal;
-	chal.length    = sizeof(s3call->request.data.auth_crap.chal);
-	nt_resp.data   = (uint8_t *)s3call->request.data.auth_crap.nt_resp;
-	nt_resp.length = s3call->request.data.auth_crap.nt_resp_len;
-	lm_resp.data   = (uint8_t *)s3call->request.data.auth_crap.lm_resp;
-	lm_resp.length = s3call->request.data.auth_crap.lm_resp_len;
+	chal.data       = s3call->request.data.auth_crap.chal;
+	chal.length     = sizeof(s3call->request.data.auth_crap.chal);
+	nt_resp.data    = (uint8_t *)s3call->request.data.auth_crap.nt_resp;
+	nt_resp.length  = s3call->request.data.auth_crap.nt_resp_len;
+	lm_resp.data    = (uint8_t *)s3call->request.data.auth_crap.lm_resp;
+	lm_resp.length  = s3call->request.data.auth_crap.lm_resp_len;
 
 	ctx = wb_cmd_pam_auth_crap_send(
 		s3call->call, 
+		s3call->request.data.auth_crap.logon_parameters,
 		s3call->request.data.auth_crap.domain,
 		s3call->request.data.auth_crap.user,
 		s3call->request.data.auth_crap.workstation,
@@ -435,7 +455,6 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	struct wbsrv_samba3_call *s3call =
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
-	struct winbindd_response *resp = &s3call->response;
 	NTSTATUS status;
 	DATA_BLOB info3;
 	struct netr_UserSessionKey user_session_key;
@@ -468,10 +487,8 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 		s3call->response.length += strlen(unix_username)+1;
 	}
 
-	resp->result = WINBINDD_OK;
-
  done:
-	wbsrv_samba3_async_epilogue(status, s3call);
+	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
 
 static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
@@ -520,17 +537,14 @@ static void pam_auth_recv(struct composite_context *ctx)
 	struct wbsrv_samba3_call *s3call =
 		talloc_get_type(ctx->async.private_data,
 				struct wbsrv_samba3_call);
-	struct winbindd_response *resp = &s3call->response;
 	NTSTATUS status;
 
 	status = wb_cmd_pam_auth_recv(ctx);
 
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	resp->result = WINBINDD_OK;
-
  done:
-	wbsrv_samba3_async_epilogue(status, s3call);
+	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
 
 static void list_trustdom_recv_doms(struct composite_context *ctx);
