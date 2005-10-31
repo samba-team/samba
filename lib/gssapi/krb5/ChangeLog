@@ -1,5 +1,14 @@
 2005-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gss_acquire_cred.3: Document that gss_krb5_import_ccache is copy
+	by reference.
+
+	* copy_ccache.c (gss_krb5_import_ccache): Instead of making a copy
+	of the ccache, make a reference by getting the name and resolving
+	the name. This way the cache is shared, this flipp side is of
+	course that if someone calls krb5_cc_destroy the cache is lost for
+	everyone.
+	
 	* test_kcred.c: Remove memory leaks.
 	
 2005-10-26  Love Hörnquist Åstrand  <lha@it.su.se>
