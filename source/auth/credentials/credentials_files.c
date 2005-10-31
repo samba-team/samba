@@ -197,6 +197,9 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	/* ok, we are going to get it now, don't recurse back here */
 	cred->machine_account_pending = False;
 
+	/* some other parts of the system will key off this */
+	cred->machine_account = True;
+
 	mem_ctx = talloc_named(cred, 0, "cli_credentials fetch machine password");
 	/* Local secrets are stored in secrets.ldb */
 	ldb = secrets_db_connect(mem_ctx);
