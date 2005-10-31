@@ -125,8 +125,8 @@ Data(Authenticator *ap, int type, const void *d, int c)
     if (c == -1)
 	c = strlen((const char*)cd);
 
-    for (cp = cd; cp - cd < c; p++, len++)
-	if (*p == IAC)
+    for (cp = cd; cp - cd < c; cp++, len++)
+	if (*cp == IAC)
 	    len++;
 
     p0 = malloc(len);
