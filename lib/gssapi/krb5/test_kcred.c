@@ -98,9 +98,21 @@ copy_import(void)
     if (usage1 != usage1)
 	errx(1, "usage not equal");
 
+    gss_release_cred(&min_stat, &cred1);
+    gss_release_cred(&min_stat, &cred2);
+
+    gss_release_name(&min_stat, &name1);
+    gss_release_name(&min_stat, &name2);
+
 #if 0
     compare(mechs1, mechs2);
 #endif
+
+    gss_release_oid_set(&min_stat, &mechs1);
+    gss_release_oid_set(&min_stat, &mechs2);
+
+    krb5_cc_destroy(context, id);
+    krb5_free_context(context);
 }
 
 static struct getargs args[] = {
