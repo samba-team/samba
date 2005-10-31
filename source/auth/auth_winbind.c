@@ -71,6 +71,9 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 	request.flags = WBFLAG_PAM_INFO3_NDR;
+
+	request.data.auth_crap.logon_parameters = user_info->logon_parameters;
+
 	winbind_strcpy(request.data.auth_crap.user, 
 		       user_info->client.account_name);
 	winbind_strcpy(request.data.auth_crap.domain, 
