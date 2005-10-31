@@ -163,6 +163,8 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 
 	if (bindings && bindings[0]) {
 		binding = bindings[0];
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	samsync_ctx = talloc_named(mem_ctx, 0, "SamSync top context");
