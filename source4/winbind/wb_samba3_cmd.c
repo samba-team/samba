@@ -36,6 +36,10 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
+/* 
+   Send off the reply to an async Samba3 query, handling filling in the PAM, NTSTATUS and string errors.
+*/
+
 static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 					     struct wbsrv_samba3_call *s3call)
 {
@@ -60,6 +64,10 @@ static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 	}
 }
 
+/* 
+   Send of a generic reply to a Samba3 query
+*/
+
 static void wbsrv_samba3_async_epilogue(NTSTATUS status,
 					struct wbsrv_samba3_call *s3call)
 {
@@ -76,6 +84,10 @@ static void wbsrv_samba3_async_epilogue(NTSTATUS status,
 					   "wbsrv_queue_reply() failed");
 	}
 }
+
+/* 
+   Boilerplate commands, simple queries without network traffic 
+*/
 
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 {
@@ -124,6 +136,11 @@ NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
+/* 
+   Validate that we have a working pipe to the domain controller.
+   Return any NT error found in the process
+*/
+
 static void checkmachacc_recv_creds(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
@@ -152,6 +169,11 @@ static void checkmachacc_recv_creds(struct composite_context *ctx)
 
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
+
+/*
+  Find the name of a suitable domain controller, by query on the
+  netlogon pipe to the DC.  
+*/
 
 static void getdcname_recv_dc(struct composite_context *ctx);
 
@@ -190,6 +212,10 @@ static void getdcname_recv_dc(struct composite_context *ctx)
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
+
+/* 
+   Lookup a user's domain groups
+*/
 
 static void userdomgroups_recv_groups(struct composite_context *ctx);
 
@@ -255,6 +281,9 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
+/* 
+   Lookup the list of SIDs for a user 
+*/
 static void usersids_recv_sids(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_usersids(struct wbsrv_samba3_call *s3call)
@@ -328,6 +357,10 @@ static void usersids_recv_sids(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
+/* 
+   Lookup a DOMAIN\\user style name, and return a SID
+*/
+
 static void lookupname_recv_sid(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
@@ -369,6 +402,10 @@ static void lookupname_recv_sid(struct composite_context *ctx)
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
+
+/* 
+   Lookup a SID, and return a DOMAIN\\user style name
+*/
 
 static void lookupsid_recv_name(struct composite_context *ctx);
 
@@ -418,6 +455,16 @@ static void lookupsid_recv_name(struct composite_context *ctx)
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
+
+/*
+  Challenge-response authentication.  This interface is used by
+  ntlm_auth and the smbd auth subsystem to pass NTLM authentication
+  requests along a common pipe to the domain controller.  
+
+  The return value (in the async reply) may include the 'info3'
+  (effectivly most things you would want to know about the user), or
+  the NT and LM session keys seperated.
+*/
 
 static void pam_auth_crap_recv(struct composite_context *ctx);
 
@@ -491,6 +538,9 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
 
+/* Helper function: Split a domain\\user string into it's parts,
+ * because the client supplies it as one string */
+
 static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
 				 char **domain, char **user)
 {
@@ -508,6 +558,13 @@ static BOOL samba3_parse_domuser(TALLOC_CTX *mem_ctx, const char *domuser,
 
 	return ((*domain != NULL) && (*user != NULL));
 }
+
+/* Plaintext authentication 
+   
+   This interface is used by ntlm_auth in it's 'basic' authentication
+   mode, as well as by pam_winbind to authenticate users where we are
+   given a plaintext password.
+*/
 
 static void pam_auth_recv(struct composite_context *ctx);
 
@@ -546,6 +603,10 @@ static void pam_auth_recv(struct composite_context *ctx)
  done:
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
+
+/* 
+   List trusted domains
+*/
 
 static void list_trustdom_recv_doms(struct composite_context *ctx);
 
