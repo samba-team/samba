@@ -84,4 +84,7 @@ struct cli_credentials {
 	 * secrets.ldb when we are asked for a username or password */
 
 	BOOL machine_account_pending;
+	
+	/* Is this a machine account? */
+	BOOL machine_account;
 };

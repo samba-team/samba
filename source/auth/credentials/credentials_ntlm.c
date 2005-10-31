@@ -56,6 +56,18 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 
 	cli_credentials_get_ntlm_username_domain(cred, mem_ctx, &user, &domain);
 
+	/* If we are sending a username@realm login (see function
+	 * above), then we will not send LM, it will not be
+	 * accepted */
+	if (cred->principal_obtained > cred->username_obtained) {
+		*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
+	}
+
+	/* Likewise if we are a machine account (avoid protocol downgrade attacks) */
+	if (cred->principal_obtained > cred->username_obtained) {
+		*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
+	}
+
 	if (!nt_hash) {
 		static const uint8_t zeros[16];
 		/* do nothing - blobs are zero length */
