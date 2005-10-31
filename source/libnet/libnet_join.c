@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "libcli/cldap/cldap.h"
 #include "include/secrets.h"
 #include "librpc/gen_ndr/drsuapi.h"
@@ -138,10 +139,44 @@ static NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	}
 
 	msg->dn = server_dn; 
-	msg->elements->flags = LDB_FLAG_MOD_ADD;
 
 	rtn = ldb_add(remote_ldb, msg);
-	if (rtn != 0) {
+	if (rtn == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		int i;
+		
+		/* make a 'modify' msg, and only for serverReference */
+		msg = ldb_msg_new(tmp_ctx);
+		if (!msg) {
+			libnet_r->out.error_string = NULL;
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		msg->dn = server_dn; 
+
+		rtn = ldb_msg_add_string(msg, "serverReference",libnet_r->out.account_dn_str);
+		if (rtn != 0) {
+			libnet_r->out.error_string = NULL;
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		/* mark all the message elements (should be just one)
+		   as LDB_FLAG_MOD_REPLACE */
+		for (i=0;i<msg->num_elements;i++) {
+			msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+		}
+
+		rtn = ldb_modify(remote_ldb, msg);
+		if (rtn != 0) {
+			libnet_r->out.error_string
+				= talloc_asprintf(libnet_r,
+						  "Failed to modify server entry %s: %s: %d",
+						  server_dn_str,
+						  ldb_errstring(remote_ldb), rtn);
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else if (rtn != 0) {
 		libnet_r->out.error_string
 			= talloc_asprintf(libnet_r,
 				"Failed to add server entry %s: %s: %d",
