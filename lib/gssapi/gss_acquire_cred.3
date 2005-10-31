@@ -623,6 +623,16 @@ The acceptor receives the delegated token in the last argument to
 .Fn gss_krb5_import_ccache
 will import the krb5 credentials into gss credential so it can be used
 withing GSS-API.
+The
+.Fa ccache
+is copied by reference and thus shared, so if the credential is destroyed
+with
+.Fa krb5_cc_destroy ,
+all users of thep
+.Fa gss_cred_id_t
+returned by
+.Fn gss_krb5_import_ccache
+will fail.
 .Pp
 .Fn gsskrb5_register_acceptor_identity
 sets the Kerberos 5 principal that the acceptor will use.
