@@ -127,7 +127,7 @@ struct composite_context *wb_sid2domain_send(struct wbsrv_service *service,
 		return result;
 	}
 
-	ctx = wb_cmd_lookupsid_send(service, state->my_domain, state->sid);
+	ctx = wb_cmd_lookupsid_send(state, service, state->sid);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = sid2domain_recv_name;
 	ctx->async.private_data = state;

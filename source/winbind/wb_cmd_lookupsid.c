@@ -35,12 +35,13 @@ struct cmd_lookupsid_state {
 static struct composite_context *lookupsid_send_req(struct wbsrv_domain *domain, void *p);
 static NTSTATUS lookupsid_recv_req(struct composite_context *ctx, void *p);
 
-struct composite_context *wb_cmd_lookupsid_send(struct wbsrv_service *service,
+struct composite_context *wb_cmd_lookupsid_send(TALLOC_CTX *mem_ctx,
+						struct wbsrv_service *service,
 						const struct dom_sid *sid)
 {
 	struct cmd_lookupsid_state *state;
 
-	state = talloc(NULL, struct cmd_lookupsid_state);
+	state = talloc(mem_ctx, struct cmd_lookupsid_state);
 	state->sid = dom_sid_dup(state, sid);
 	if (state->sid == NULL) goto failed;
 	state->ctx = wb_domain_request_send(state, service,
@@ -95,11 +96,11 @@ NTSTATUS wb_cmd_lookupsid_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_cmd_lookupsid(struct wbsrv_service *service,
+NTSTATUS wb_cmd_lookupsid(TALLOC_CTX *mem_ctx, struct wbsrv_service *service,
 			  const struct dom_sid *sid,
-			  TALLOC_CTX *mem_ctx, struct wb_sid_object **name)
+			  struct wb_sid_object **name)
 {
 	struct composite_context *c =
-		wb_cmd_lookupsid_send(service, sid);
+		wb_cmd_lookupsid_send(mem_ctx, service, sid);
 	return wb_cmd_lookupsid_recv(c, mem_ctx, name);
 }

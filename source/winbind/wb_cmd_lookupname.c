@@ -35,13 +35,14 @@ struct cmd_lookupname_state {
 static struct composite_context *lookupname_send_req(struct wbsrv_domain *domain, void *p);
 static NTSTATUS lookupname_recv_req(struct composite_context *ctx, void *p);
 
-struct composite_context *wb_cmd_lookupname_send(struct wbsrv_service *service,
+struct composite_context *wb_cmd_lookupname_send(TALLOC_CTX *mem_ctx,
+						 struct wbsrv_service *service,
 						 const char *dom_name,
 						 const char *name)
 {
 	struct cmd_lookupname_state *state;
 
-	state = talloc(NULL, struct cmd_lookupname_state);
+	state = talloc(mem_ctx, struct cmd_lookupname_state);
 	state->name = talloc_asprintf(state, "%s\\%s", dom_name, name);
 	if (state->name == NULL) goto failed;
 	state->ctx = wb_domain_request_send(state, service,
@@ -97,12 +98,13 @@ NTSTATUS wb_cmd_lookupname_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_cmd_lookupname(struct wbsrv_service *service,
+NTSTATUS wb_cmd_lookupname(TALLOC_CTX *mem_ctx,
+			   struct wbsrv_service *service,
 			   const char *dom_name,
 			   const char *name,
-			   TALLOC_CTX *mem_ctx, struct wb_sid_object **sid)
+			   struct wb_sid_object **sid)
 {
 	struct composite_context *c =
-		wb_cmd_lookupname_send(service, dom_name, name);
+		wb_cmd_lookupname_send(mem_ctx, service, dom_name, name);
 	return wb_cmd_lookupname_recv(c, mem_ctx, sid);
 }

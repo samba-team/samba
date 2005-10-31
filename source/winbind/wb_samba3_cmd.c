@@ -371,7 +371,7 @@ NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_lookupname called\n"));
 
-	ctx = wb_cmd_lookupname_send(service,
+	ctx = wb_cmd_lookupname_send(s3call, service,
 				     s3call->request.data.name.dom_name,
 				     s3call->request.data.name.name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
@@ -425,7 +425,7 @@ NTSTATUS wbsrv_samba3_lookupsid(struct wbsrv_samba3_call *s3call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ctx = wb_cmd_lookupsid_send(service, sid);
+	ctx = wb_cmd_lookupsid_send(s3call, service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	/* setup the callbacks */
