@@ -36,7 +36,6 @@ static struct composite_context *lookupsid_send_req(struct wbsrv_domain *domain,
 static NTSTATUS lookupsid_recv_req(struct composite_context *ctx, void *p);
 
 struct composite_context *wb_cmd_lookupsid_send(struct wbsrv_service *service,
-						struct wbsrv_domain *domain,
 						const struct dom_sid *sid)
 {
 	struct cmd_lookupsid_state *state;
@@ -97,11 +96,10 @@ NTSTATUS wb_cmd_lookupsid_recv(struct composite_context *c,
 }
 
 NTSTATUS wb_cmd_lookupsid(struct wbsrv_service *service,
-			  struct wbsrv_domain *domain,
 			  const struct dom_sid *sid,
 			  TALLOC_CTX *mem_ctx, struct wb_sid_object **name)
 {
 	struct composite_context *c =
-		wb_cmd_lookupsid_send(service, domain, sid);
+		wb_cmd_lookupsid_send(service, sid);
 	return wb_cmd_lookupsid_recv(c, mem_ctx, name);
 }
