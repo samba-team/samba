@@ -5791,6 +5791,115 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.apply_expected	= False
 		},
 	},
+/* 
+ * unique vs. special group section
+ */
+	/*
+	 * unique,active vs. sgroup,active with same ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_SA_SI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. group,active with different ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_SA_DI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. sgroup,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_ST_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. sgroup,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_ST_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
 	};
 
 	if (!ctx) return False;
