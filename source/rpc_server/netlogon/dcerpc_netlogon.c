@@ -720,16 +720,6 @@ static WERROR netr_NETRENUMERATETRUSTEDDOMAINS(struct dcesrv_call_state *dce_cal
 
 
 /* 
-  netr_DSRGETDCNAME 
-*/
-static WERROR netr_DSRGETDCNAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRGETDCNAME *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   netr_NETRLOGONDUMMYROUTINE1 
 */
 static WERROR netr_NETRLOGONDUMMYROUTINE1(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -779,21 +769,12 @@ static WERROR netr_NETRLOGONCOMPUTECLIENTDIGEST(struct dcesrv_call_state *dce_ca
 }
 
 
-/* 
-  netr_DSRGETDCNAMEX 
-*/
-static WERROR netr_DSRGETDCNAMEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRGETDCNAMEX *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
 
 /* 
-  netr_DSRGETSITENAME 
+  netr_DsRGetSiteName
 */
-static WERROR netr_DSRGETSITENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRGETSITENAME *r)
+static WERROR netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct netr_DsRGetSiteName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -1016,10 +997,10 @@ static WERROR netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TA
 
 
 /* 
-  netr_DrsGetDCNameEx2
+  netr_DsRGetDCNameEx2
 */
-static WERROR netr_DrsGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DrsGetDCNameEx2 *r)
+static WERROR netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				   struct netr_DsRGetDCNameEx2 *r)
 {
 	const char * const attrs[] = { "dnsDomain", "objectGUID", NULL };
 	void *sam_ctx;
@@ -1040,7 +1021,7 @@ static WERROR netr_DrsGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return WERR_NO_SUCH_DOMAIN;
 	}
 
-	r->out.info = talloc(mem_ctx, struct netr_DrsGetDCNameEx2Info);
+	r->out.info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
 	if (!r->out.info) {
 		return WERR_NOMEM;
 	}
@@ -1061,6 +1042,60 @@ static WERROR netr_DrsGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return WERR_OK;
 }
 
+/* 
+  netr_DsRGetDCNameEx
+*/
+static WERROR netr_DsRGetDCNameEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct netr_DsRGetDCNameEx *r)
+{
+	struct netr_DsRGetDCNameEx2 r2;
+	WERROR werr;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.server_unc = r->in.server_unc;
+	r2.in.client_account = NULL;
+	r2.in.mask = 0;
+	r2.in.domain_guid = r->in.domain_guid;
+	r2.in.domain_name = r->in.domain_name;
+	r2.in.site_name = r->in.site_name;
+	r2.in.flags = r->in.flags;
+	r2.out.info = NULL;
+
+	werr = netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
+	
+	r->out.info = r2.out.info;
+	
+	return werr;
+}
+
+/* 
+  netr_DsRGetDCName
+*/
+static WERROR netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				struct netr_DsRGetDCName *r)
+{
+	struct netr_DsRGetDCNameEx2 r2;
+	WERROR werr;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.server_unc = r->in.server_unc;
+	r2.in.client_account = NULL;
+	r2.in.mask = 0;
+	r2.in.domain_name = r->in.domain_name;
+	r2.in.domain_guid = r->in.domain_guid;
+	
+	r2.in.site_name = NULL; /* should fill in from site GUID */
+	r2.in.flags = r->in.flags;
+	r2.out.info = NULL;
+
+	werr = netr_DsRGetDCNameEx2(dce_call, mem_ctx, &r2);
+	
+	r->out.info = r2.out.info;
+	
+	return werr;
+}
 
 /* 
   netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN 
