@@ -112,8 +112,6 @@ struct test_join *torture_create_testuser(const char *username,
 	uint32_t rid;
 	DATA_BLOB session_key;
 	struct lsa_String name;
-	struct lsa_String comment;
-	struct lsa_String full_name;
 	
 	int policy_min_pw_len = 0;
 	struct test_join *join;
@@ -243,15 +241,15 @@ again:
 
 	u.info21.acct_flags = acct_type;
 	u.info21.fields_present = SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_DESCRIPTION | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
-	comment.string = talloc_asprintf(join, 
-					 "Tortured by Samba4: %s", 
-					 timestring(join, time(NULL)));
-	u.info21.comment = comment;
-	full_name.string = talloc_asprintf(join, 
-					 "Torture account for Samba4: %s", 
-					 timestring(join, time(NULL)));
-	u.info21.full_name = full_name;
 
+	u.info21.comment.string = talloc_asprintf(join, 
+						  "Tortured by Samba4: %s", 
+						  timestring(join, time(NULL)));
+	
+	u.info21.full_name.string = talloc_asprintf(join, 
+						    "Torture account for Samba4: %s", 
+						    timestring(join, time(NULL)));
+	
 	u.info21.description.string = talloc_asprintf(join, 
 					 "Samba4 torture account created by host %s: %s", 
 					 lp_netbios_name(), timestring(join, time(NULL)));
@@ -286,8 +284,6 @@ struct test_join *torture_join_domain(const char *machine_name,
 	struct test_join *tj;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
-	struct lsa_String comment;
-	struct lsa_String full_name;
 	
 	tj = talloc(NULL, struct test_join);
 	if (!tj) return NULL;
@@ -320,6 +316,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 	}
 	
 	libnet_r->in.acct_type = acct_flags;
+	libnet_r->in.recreate_account = True;
 
 	status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
@@ -356,15 +353,13 @@ struct test_join *torture_join_domain(const char *machine_name,
 	s.in.level = 21;
 
 	u.info21.fields_present = SAMR_FIELD_DESCRIPTION | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
-	comment.string = talloc_asprintf(tj, 
-					 "Tortured by Samba4: %s", 
-					 timestring(tj, time(NULL)));
-	u.info21.comment = comment;
-	full_name.string = talloc_asprintf(tj, 
-					 "Torture account for Samba4: %s", 
-					 timestring(tj, time(NULL)));
-	u.info21.full_name = full_name;
-
+	u.info21.comment.string = talloc_asprintf(tj, 
+						  "Tortured by Samba4: %s", 
+						  timestring(tj, time(NULL)));
+	u.info21.full_name.string = talloc_asprintf(tj, 
+						    "Torture account for Samba4: %s", 
+						    timestring(tj, time(NULL)));
+	
 	u.info21.description.string = talloc_asprintf(tj, 
 						      "Samba4 torture account created by host %s: %s", 
 						      lp_netbios_name(), timestring(tj, time(NULL)));
@@ -415,7 +410,6 @@ struct policy_handle *torture_join_samr_user_policy(struct test_join *join)
 
 NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *libnet_r)
 {
-	NTSTATUS status;
 	int rtn;
 	TALLOC_CTX *tmp_ctx;
 
@@ -474,7 +468,7 @@ NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain 
 	DEBUG(0, ("%s removed successfully.\n", libnet_r->out.server_dn_str));
 
 	talloc_free(tmp_ctx); 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
