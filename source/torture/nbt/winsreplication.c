@@ -5517,6 +5517,8 @@ struct test_conflict_owned_active_vs_replica_struct {
 	struct {
 		uint32_t timeout;
 		BOOL positive;
+		BOOL expect_release;
+		BOOL ret;
 	} defend;
 	struct {
 		enum wrepl_name_type type;
@@ -5680,6 +5682,115 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.apply_expected	= False
 		},
 	},
+/* 
+ * unique vs. group section
+ */
+	/*
+	 * unique,active vs. group,active with same ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_GA_SI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. group,active with different ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_GA_DI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. group,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_GT_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. group,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_GT_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_1_num,
+			.ips		= ctx->addresses_1,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
 	};
 
 	if (!ctx) return False;
@@ -5758,10 +5869,12 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		 * test_conflict_owned_active_vs_replica_handler()
 		 */
 		end = timeval_current_ofs(records[i].defend.timeout,0);
+		records[i].defend.ret = True;
 		while (records[i].defend.timeout > 0) {
 			event_loop_once(ctx->nbtsock_srv->event_ctx);
 			if (timeval_expired(&end)) break;
 		}
+		ret &= records[i].defend.ret;
 
 		ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name,
 					     records[i].replica.apply_expected);
@@ -5798,6 +5911,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			}
 			CHECK_VALUE(release->out.rcode, 0);
 		}
+
 done:
 		if (!ret) {
 			printf("conflict handled wrong or record[%u]: %s\n", i, records[i].line);
@@ -5808,22 +5922,6 @@ done:
 	return ret;
 }
 
-static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock, 
-							  struct nbt_name_packet *req_packet, 
-							  const struct nbt_peer_socket *src)
-{
-	struct nbt_name *name;
-	struct nbt_name_packet *rep_packet;
-	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
-
-	switch (req_packet->operation & NBT_OPCODE) {
-	case NBT_OPCODE_QUERY:
-		break;
-	default:
-		printf("%s: unexpected incoming packet\n", __location__);
-		return;
-	}
-
 #define _NBT_ASSERT(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %s (%d)\n", \
@@ -5831,12 +5929,6 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 		return; \
 	} \
 } while (0)
-
-	_NBT_ASSERT(req_packet->qdcount, 1);
-	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
-	_NBT_ASSERT(req_packet->questions[0].question_class, NBT_QCLASS_IP);
-
-	name = &req_packet->questions[0].name;
 
 #define _NBT_ASSERT_STRING(v, correct) do { \
 	if ( ((!v) && (correct)) || \
@@ -5848,9 +5940,25 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 	} \
 } while (0)
 
+static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_socket *nbtsock, 
+								struct nbt_name_packet *req_packet, 
+								const struct nbt_peer_socket *src)
+{
+	struct nbt_name *name;
+	struct nbt_name_packet *rep_packet;
+	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
+
+	_NBT_ASSERT(req_packet->qdcount, 1);
+	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
+	_NBT_ASSERT(req_packet->questions[0].question_class, NBT_QCLASS_IP);
+
+	name = &req_packet->questions[0].name;
+
 	_NBT_ASSERT(name->type, rec->name.type);
 	_NBT_ASSERT_STRING(name->name, rec->name.name);
 	_NBT_ASSERT_STRING(name->scope, rec->name.scope);
+
+	_NBT_ASSERT(rec->defend.expect_release, False);
 
 	rep_packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (rep_packet == NULL) return;
@@ -5862,7 +5970,6 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 	if (rep_packet->answers == NULL) return;
 
 	rep_packet->answers[0].name      = *name;
-	rep_packet->answers[0].rr_type   = NBT_QTYPE_NULL;
 	rep_packet->answers[0].rr_class  = NBT_QCLASS_IP;
 	rep_packet->answers[0].ttl       = 0;
 
@@ -5876,6 +5983,8 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 					NBT_FLAG_AUTHORITIVE |
 					NBT_FLAG_RECURSION_DESIRED |
 					NBT_FLAG_RECURSION_AVAIL;
+
+		rep_packet->answers[0].rr_type   = NBT_QTYPE_NETBIOS;
 
 		rep_packet->answers[0].rdata.netbios.length = rec->wins.num_ips*6;
 		rep_packet->answers[0].rdata.netbios.addresses = 
@@ -5897,6 +6006,9 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 					NBT_OPCODE_QUERY | 
 					NBT_FLAG_AUTHORITIVE |
 					NBT_RCODE_NAM;
+
+		rep_packet->answers[0].rr_type   = NBT_QTYPE_NULL;
+
 		ZERO_STRUCT(rep_packet->answers[0].rdata);
 
 		DEBUG(2,("Sending negative name query reply for %s to %s:%d\n", 
@@ -5909,7 +6021,81 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 	/* make sure we push the reply to the wire */
 	event_loop_once(nbtsock->event_ctx);
 
-	rec->defend.timeout = 0;
+	rec->defend.timeout	= 0;
+	rec->defend.ret		= True;
+}
+
+static void test_conflict_owned_active_vs_replica_handler_release(struct nbt_name_socket *nbtsock, 
+								  struct nbt_name_packet *req_packet, 
+								  const struct nbt_peer_socket *src)
+{
+	struct nbt_name *name;
+	struct nbt_name_packet *rep_packet;
+	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
+
+	_NBT_ASSERT(req_packet->qdcount, 1);
+	_NBT_ASSERT(req_packet->questions[0].question_type, NBT_QTYPE_NETBIOS);
+	_NBT_ASSERT(req_packet->questions[0].question_class, NBT_QCLASS_IP);
+
+	name = &req_packet->questions[0].name;
+
+	_NBT_ASSERT(name->type, rec->name.type);
+	_NBT_ASSERT_STRING(name->name, rec->name.name);
+	_NBT_ASSERT_STRING(name->scope, rec->name.scope);
+
+	_NBT_ASSERT(rec->defend.expect_release, True);
+
+	rep_packet = talloc_zero(nbtsock, struct nbt_name_packet);
+	if (rep_packet == NULL) return;
+
+	rep_packet->name_trn_id	= req_packet->name_trn_id;
+	rep_packet->ancount	= 1;
+	rep_packet->operation	= 
+				NBT_FLAG_REPLY | 
+				NBT_OPCODE_RELEASE |
+				NBT_FLAG_AUTHORITIVE;
+
+	rep_packet->answers	= talloc_array(rep_packet, struct nbt_res_rec, 1);
+	if (rep_packet->answers == NULL) return;
+
+	rep_packet->answers[0].name	= *name;
+	rep_packet->answers[0].rr_type	= NBT_QTYPE_NETBIOS;
+	rep_packet->answers[0].rr_class	= NBT_QCLASS_IP;
+	rep_packet->answers[0].ttl	= req_packet->additional[0].ttl;
+	rep_packet->answers[0].rdata    = req_packet->additional[0].rdata;
+
+	DEBUG(2,("Sending name release reply for %s to %s:%d\n", 
+		nbt_name_string(rep_packet, name), src->addr, src->port));
+
+	nbt_name_reply_send(nbtsock, src, rep_packet);
+	talloc_free(rep_packet);
+
+	/* make sure we push the reply to the wire */
+	event_loop_once(nbtsock->event_ctx);
+
+	rec->defend.timeout	= 0;
+	rec->defend.ret		= True;
+}
+
+static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock, 
+							  struct nbt_name_packet *req_packet, 
+							  const struct nbt_peer_socket *src)
+{
+	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
+
+	rec->defend.ret = False;
+
+	switch (req_packet->operation & NBT_OPCODE) {
+	case NBT_OPCODE_QUERY:
+		test_conflict_owned_active_vs_replica_handler_query(nbtsock, req_packet, src);
+		break;
+	case NBT_OPCODE_RELEASE:
+		test_conflict_owned_active_vs_replica_handler_release(nbtsock, req_packet, src);
+		break;
+	default:
+		printf("%s: unexpected incoming packet\n", __location__);
+		return;
+	}
 }
 
 /*
