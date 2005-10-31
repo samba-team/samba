@@ -797,13 +797,13 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("OpenSecret failed - %s\n", nt_errstr(status));
-			ret = False;
+			return False;
 		}
 		
 		status = dcerpc_fetch_session_key(p, &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
-			ret = False;
+			return False;
 		}
 		
 		enc_key = sess_encrypt_string(secret1, &session_key);
@@ -820,7 +820,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("SetSecret failed - %s\n", nt_errstr(status));
-			ret = False;
+			return False;
 		}
 		
 		r3.in.sec_handle = &sec_handle;
@@ -916,12 +916,14 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QuerySecret failed - %s\n", nt_errstr(status));
 			ret = False;
+			secret4 = NULL;
 		} else {
 
 			if (r6.out.new_val->buf == NULL || r6.out.old_val->buf == NULL 
 				|| r6.out.new_mtime == NULL || r6.out.old_mtime == NULL) {
 				printf("Both secret buffers and both times not returned\n");
 				ret = False;
+				secret4 = NULL;
 			} else {
 				blob1.data = r6.out.new_val->buf->data;
 				blob1.length = r6.out.new_val->buf->size;
