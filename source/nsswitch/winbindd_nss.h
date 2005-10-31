@@ -37,7 +37,7 @@ typedef char winbind_string[256];
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 11
+#define WINBIND_INTERFACE_VERSION 12
 
 /* Socket commands */
 
@@ -203,6 +203,7 @@ struct winbindd_request {
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
+			uint32_t logon_parameters;
                         winbind_string user;
                         winbind_string domain;
                         winbind_string lm_resp;
