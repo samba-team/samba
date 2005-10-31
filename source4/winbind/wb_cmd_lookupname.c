@@ -36,7 +36,6 @@ static struct composite_context *lookupname_send_req(struct wbsrv_domain *domain
 static NTSTATUS lookupname_recv_req(struct composite_context *ctx, void *p);
 
 struct composite_context *wb_cmd_lookupname_send(struct wbsrv_service *service,
-						 struct wbsrv_domain *domain,
 						 const char *dom_name,
 						 const char *name)
 {
@@ -99,12 +98,11 @@ NTSTATUS wb_cmd_lookupname_recv(struct composite_context *c,
 }
 
 NTSTATUS wb_cmd_lookupname(struct wbsrv_service *service,
-			   struct wbsrv_domain *domain,
 			   const char *dom_name,
 			   const char *name,
 			   TALLOC_CTX *mem_ctx, struct wb_sid_object **sid)
 {
 	struct composite_context *c =
-		wb_cmd_lookupname_send(service, domain, dom_name, name);
+		wb_cmd_lookupname_send(service, dom_name, name);
 	return wb_cmd_lookupname_recv(c, mem_ctx, sid);
 }
