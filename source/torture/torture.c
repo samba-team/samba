@@ -4424,6 +4424,9 @@ static BOOL run_eatest(int dummy)
 	/* Setting EA's to zero length deletes them. Test this */
 	printf("Now deleting all EA's - case indepenent....\n");
 
+#if 1
+	cli_set_ea_path(cli, fname, "", "", 0);
+#else
 	for (i = 0; i < 20; i++) {
 		fstring ea_name;
 		slprintf(ea_name, sizeof(ea_name), "ea_%d", i);
@@ -4432,7 +4435,8 @@ static BOOL run_eatest(int dummy)
 			return False;
 		}
 	}
-	
+#endif
+
 	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
 		printf("ea_get list failed - %s\n", cli_errstr(cli));
 		correct = False;

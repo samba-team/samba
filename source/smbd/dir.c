@@ -382,7 +382,7 @@ static void dptr_close_oldest(BOOL old)
 ****************************************************************************/
 
 int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
-		const char *wcard, uint32 attr)
+		const char *wcard, BOOL wcard_has_wild, uint32 attr)
 {
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
@@ -500,7 +500,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
 		dptr->has_wild = True;
 	} else {
-		dptr->has_wild = ms_has_wild(wcard);
+		dptr->has_wild = wcard_has_wild;
 	}
 
 	dptr->attr = attr;

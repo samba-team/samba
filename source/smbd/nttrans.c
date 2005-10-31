@@ -541,7 +541,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 
 		if(!dir_fsp->is_directory) {
 
-			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status,False);
+			srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(status);
@@ -583,14 +583,14 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 			dir_name_len++;
 		}
 
-		srvstr_get_path(inbuf, rel_fname, smb_buf(inbuf), sizeof(rel_fname), 0, STR_TERMINATE, &status,False);
+		srvstr_get_path(inbuf, rel_fname, smb_buf(inbuf), sizeof(rel_fname), 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
 		pstrcat(fname, rel_fname);
 	} else {
-		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status,False);
+		srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
@@ -939,7 +939,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
-	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
+	srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -1195,7 +1195,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		}
 
 		if(!dir_fsp->is_directory) {
-			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
+			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -1229,14 +1229,14 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		{
 			pstring tmpname;
-			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status, False);
+			srvstr_get_path(inbuf, tmpname, params+53, sizeof(tmpname), parameter_count-53, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 			pstrcat(fname, tmpname);
 		}
 	} else {
-		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
+		srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -1738,13 +1738,14 @@ int reply_ntrename(connection_struct *conn,
 	pstring newname;
 	char *p;
 	NTSTATUS status;
+	BOOL path_contains_wcard = False;
 	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, True);
+	p += srvstr_get_path_wcard(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status, &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1762,7 +1763,7 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p++;
-	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status, False);
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
@@ -1775,13 +1776,18 @@ int reply_ntrename(connection_struct *conn,
 	
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(conn, oldname, newname, attrs, False);
+			status = rename_internals(conn, oldname, newname, attrs, False, path_contains_wcard);
 			break;
 		case RENAME_FLAG_HARD_LINK:
 			status = hardlink_internals(conn, oldname, newname);
 			break;
 		case RENAME_FLAG_COPY:
-			status = copy_internals(conn, oldname, newname, attrs);
+			if (path_contains_wcard) {
+				/* No wildcards. */
+				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+			} else {
+				status = copy_internals(conn, oldname, newname, attrs);
+			}
 			break;
 		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -1878,6 +1884,7 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	pstring new_name;
 	files_struct *fsp = NULL;
 	BOOL replace_if_exists = False;
+	BOOL path_contains_wcard = False;
 	NTSTATUS status;
 
         if(parameter_count < 4) {
@@ -1887,13 +1894,13 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	CHECK_FSP(fsp, conn);
-	srvstr_get_path(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status, True);
+	srvstr_get_path_wcard(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE, &status, &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
 	status = rename_internals(conn, fsp->fsp_name,
-				  new_name, 0, replace_if_exists);
+				  new_name, 0, replace_if_exists, path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status))
 		return ERROR_NT(status);
 
