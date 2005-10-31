@@ -3859,6 +3859,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			BOOL apply_expected;
 		} replica;
 	} records[] = {
+/* 
+ * unique vs. unique section
+ */
 	/*
 	 * unique,released vs. unique,active with same ip(s)
 	 */
@@ -3951,6 +3954,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * unique vs. group section
+ */
 	/*
 	 * unique,released vs. group,active with same ip(s)
 	 */
@@ -4043,6 +4049,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * unique vs. special group section
+ */
 	/*
 	 * unique,released vs. sgroup,active with same ip(s)
 	 */
@@ -4135,6 +4144,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * unique vs. multi homed section
+ */
 	/*
 	 * unique,released vs. mhomed,active with same ip(s)
 	 */
@@ -4227,6 +4239,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * group vs. unique section
+ */
 	/*
 	 * group,released vs. unique,active with same ip(s)
 	 */
@@ -4319,6 +4334,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= False
 		},
 	},
+/* 
+ * group vs. group section
+ */
 	/*
 	 * group,released vs. group,active with same ip(s)
 	 */
@@ -4411,6 +4429,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * group vs. special group section
+ */
 	/*
 	 * group,released vs. sgroup,active with same ip(s)
 	 */
@@ -4503,6 +4524,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= False
 		},
 	},
+/* 
+ * group vs. multi homed section
+ */
 	/*
 	 * group,released vs. mhomed,active with same ip(s)
 	 */
@@ -4595,6 +4619,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= False
 		},
 	},
+/* 
+ * special group vs. unique section
+ */
 	/*
 	 * sgroup,released vs. unique,active with same ip(s)
 	 */
@@ -4687,6 +4714,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * special group vs. group section
+ */
 	/*
 	 * sgroup,released vs. group,active with same ip(s)
 	 */
@@ -4779,6 +4809,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * special group vs. special group section
+ */
 	/*
 	 * sgroup,released vs. sgroup,active with same ip(s)
 	 */
@@ -4871,6 +4904,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * special group vs. multi homed section
+ */
 	/*
 	 * sgroup,released vs. mhomed,active with same ip(s)
 	 */
@@ -4963,6 +4999,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * multi homed vs. unique section
+ */
 	/*
 	 * mhomed,released vs. unique,active with same ip(s)
 	 */
@@ -5055,6 +5094,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * multi homed vs. group section
+ */
 	/*
 	 * mhomed,released vs. group,active with same ip(s)
 	 */
@@ -5147,6 +5189,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * multi homed vs. special group section
+ */
 	/*
 	 * mhomed,released vs. sgroup,active with same ip(s)
 	 */
@@ -5239,6 +5284,9 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.apply_expected	= True
 		},
 	},
+/* 
+ * multi homed vs. multi homed section
+ */
 	/*
 	 * mhomed,released vs. mhomed,active with same ip(s)
 	 */
@@ -5497,6 +5545,9 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	struct nbt_name_release *release = &release_;
 	uint32_t i;
 	struct test_conflict_owned_active_vs_replica_struct records[] = {
+/* 
+ * unique vs. unique section
+ */
 	/*
 	 * unique,active vs. unique,active with same ip(s), unchecked
 	 */
