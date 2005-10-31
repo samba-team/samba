@@ -114,7 +114,8 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path *pdp, BOOL 
 
 	/* rest is reqpath */
 	if (allow_wcards) {
-		check_path_syntax_wcard(pdp->reqpath, p+1);
+		BOOL path_contains_wcard;
+		check_path_syntax_wcard(pdp->reqpath, p+1, &path_contains_wcard);
 	} else {
 		check_path_syntax(pdp->reqpath, p+1);
 	}
