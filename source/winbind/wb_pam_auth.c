@@ -31,6 +31,7 @@
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
 	struct event_context *event_ctx;
+	uint32_t logon_parameters;
 	const char *domain_name;
 	const char *user_name;
 	const char *workstation;
@@ -51,6 +52,7 @@ static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *dom
 static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx, void *p);
 
 struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
+						    uint32_t logon_parameters,
 						    const char *domain,
 						    const char *user,
 						    const char *workstation,
@@ -65,6 +67,8 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	if (state == NULL) goto failed;
 
 	state->event_ctx = call->event_ctx;
+
+	state->logon_parameters = logon_parameters;
 
 	state->domain_name = talloc_strdup(state, domain);
 	if (state->domain_name == NULL) goto failed;
@@ -112,7 +116,7 @@ static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *dom
 
 	state->ninfo.identity_info.account_name.string = state->user_name;
 	state->ninfo.identity_info.domain_name.string =  state->domain_name;
-	state->ninfo.identity_info.parameter_control = 0;
+	state->ninfo.identity_info.parameter_control = state->logon_parameters;
 	state->ninfo.identity_info.logon_id_low = 0;
 	state->ninfo.identity_info.logon_id_high = 0;
 	state->ninfo.identity_info.workstation.string = state->workstation;
@@ -242,6 +246,7 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 }
 
 NTSTATUS wb_cmd_pam_auth_crap(struct wbsrv_call *call,
+			      uint32_t logon_parameters,
 			      const char *domain, const char *user,
 			      const char *workstation,
 			      DATA_BLOB chal, DATA_BLOB nt_resp,
@@ -252,7 +257,8 @@ NTSTATUS wb_cmd_pam_auth_crap(struct wbsrv_call *call,
 			      char **unix_username)
 {
 	struct composite_context *c =
-		wb_cmd_pam_auth_crap_send(call, domain, user, workstation,
+		wb_cmd_pam_auth_crap_send(call, logon_parameters, 
+					  domain, user, workstation,
 					  chal, nt_resp, lm_resp);
 	return wb_cmd_pam_auth_crap_recv(c, mem_ctx, info3, user_session_key,
 					 lm_key, unix_username);
@@ -314,7 +320,8 @@ struct composite_context *wb_cmd_pam_auth_send(struct wbsrv_call *call,
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	c = wb_cmd_pam_auth_crap_send(call, domain, user, workstation,
+	c = wb_cmd_pam_auth_crap_send(call, 0 /* logon parameters */, 
+				      domain, user, workstation,
 				      chal, nt_resp, lm_resp);
 	return c;
 }
