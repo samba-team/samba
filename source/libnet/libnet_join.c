@@ -144,9 +144,9 @@ static NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	if (rtn != 0) {
 		libnet_r->out.error_string
 			= talloc_asprintf(libnet_r,
-				"Failed to add server entry %s: %s.",
+				"Failed to add server entry %s: %s: %d",
 				server_dn_str,
-				ldb_errstring(remote_ldb));
+					  ldb_errstring(remote_ldb), rtn);
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -881,6 +881,36 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			talloc_free(tmp_ctx);
 			return status;
 		}
+
+		if (r->in.recreate_account) {
+			struct samr_DeleteUser d;
+			d.in.user_handle = u_handle;
+			d.out.user_handle = u_handle;
+			status = dcerpc_samr_DeleteUser(samr_pipe, mem_ctx, &d);
+			if (!NT_STATUS_IS_OK(status)) {
+				r->out.error_string = talloc_asprintf(mem_ctx,
+								      "samr_DeleteUser (for recreate) of [%s] failed: %s",
+								      r->in.account_name,
+								      nt_errstr(status));
+				talloc_free(tmp_ctx);
+				return status;
+			}
+
+			/* We want to recreate, so delete and another samr_CreateUser2 */
+			
+			/* &cu filled in above */
+			cu_status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);			
+			status = cu_status;
+			if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+				r->out.error_string = talloc_asprintf(mem_ctx,
+								      "samr_CreateUser2 (recreate) for [%s] failed: %s\n",
+								      r->in.domain_name, nt_errstr(status));
+				talloc_free(tmp_ctx);
+				return status;
+			}
+			DEBUG(0, ("Recreated account in domain %s\n", domain_name));
+
+		}
 	}
 	/* Find out what password policy this user has */
 	pwp.in.user_handle = u_handle;
@@ -1093,6 +1123,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	r2->in.netbios_name	= netbios_name;
 	r2->in.level		= LIBNET_JOINDOMAIN_AUTOMATIC;
 	r2->in.acct_type	= acct_type;
+	r2->in.recreate_account = False;
 	status = libnet_JoinDomain(ctx, r2, r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, r2->out.error_string);
