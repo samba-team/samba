@@ -35,6 +35,21 @@
 	}\
 } while(0)
 
+
+/*
+  map an error code from ldb to ldap
+*/
+static int sldb_map_error(struct ldapsrv_partition *partition, int ldb_ret,
+			  const char **errstr)
+{
+	struct ldb_context *samdb = talloc_get_type(partition->private, 
+						    struct ldb_context);
+	*errstr = ldb_errstring(samdb);
+
+	/* its 1:1 for now */
+	return ldb_ret;
+}
+
 /*
   connect to the sam database
 */
@@ -219,7 +234,7 @@ reply:
 }
 
 static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_AddRequest *r)
+			 struct ldap_AddRequest *r)
 {
 	void *local_ctx;
 	struct ldb_dn *dn;
@@ -293,16 +308,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_add(samdb, msg);
-		if (ldb_ret == 0) {
-			result = LDAP_SUCCESS;
-			errstr = NULL;
-		} else {
-			/* currently we have no way to tell if there was an internal ldb error
-		 	 * or if the object was not found, return the most probable error
-		 	 */
-			result = LDAP_OPERATIONS_ERROR;
-			errstr = ldb_errstring(samdb);
-		}
+		result = sldb_map_error(partition, ldb_ret, &errstr);
 	}
 
 	add_result = &add_reply->msg->r.AddResponse;
@@ -345,16 +351,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_delete(samdb, dn);
-		if (ldb_ret == 0) {
-			result = LDAP_SUCCESS;
-			errstr = NULL;
-		} else {
-			/* currently we have no way to tell if there was an internal ldb error
-			 * or if the object was not found, return the most probable error
-			 */
-			result = LDAP_NO_SUCH_OBJECT;
-			errstr = ldb_errstring(samdb);
-		}
+		result = sldb_map_error(partition, ldb_ret, &errstr);
 	}
 
 	del_result = &del_reply->msg->r.DelResponse;
@@ -455,16 +452,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_modify(samdb, msg);
-		if (ldb_ret == 0) {
-			result = LDAP_SUCCESS;
-			errstr = NULL;
-		} else {
-			/* currently we have no way to tell if there was an internal ldb error
-		 	 * or if the object was not found, return the most probable error
-		 	 */
-			result = LDAP_OPERATIONS_ERROR;
-			errstr = ldb_errstring(samdb);
-		}
+		result = sldb_map_error(partition, ldb_ret, &errstr);
 	}
 
 	modify_result = &modify_reply->msg->r.AddResponse;
@@ -614,16 +602,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_rename(samdb, olddn, newdn);
-		if (ldb_ret == 0) {
-			result = LDAP_SUCCESS;
-			errstr = NULL;
-		} else {
-			/* currently we have no way to tell if there was an internal ldb error
-			 * or if the object was not found, return the most probable error
-			 */
-			result = LDAP_NO_SUCH_OBJECT;
-			errstr = ldb_errstring(samdb);
-		}
+		result = sldb_map_error(partition, ldb_ret, &errstr);
 	}
 
 	modifydn = &modifydn_r->msg->r.ModifyDNResponse;
