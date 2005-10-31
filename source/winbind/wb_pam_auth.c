@@ -28,6 +28,7 @@
 #include "smbd/service_stream.h"
 #include "libcli/auth/credentials.h"
 
+/* Oh, there is so much to keep an eye on when authenticating a user.  Oh my! */
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
 	struct event_context *event_ctx;
@@ -50,6 +51,14 @@ struct pam_auth_crap_state {
 static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *domain,
 							void *p);
 static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx, void *p);
+
+/* NTLM authentication.
+
+  Fill parameters into a control block to pass to the next function.
+  No application logic, this is done by the helper function paramters
+  to wb_domain_request_send()
+
+*/
 
 struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 						    uint32_t logon_parameters,
@@ -104,6 +113,11 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	return NULL;
 }
 
+/*  
+    NTLM Authentication
+
+    Send of a SamLogon request to authenticate a user.
+*/
 static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *domain,
 							void *p)
 {
@@ -149,6 +163,11 @@ static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *dom
 						 state, &state->r);
 }
 
+/* 
+   NTLM Authentication 
+   
+   Check the SamLogon reply, decrypt and parse out the session keys and the info3 structure
+*/
 static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 				   void *p)
 {
@@ -161,9 +180,6 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 	status = composite_netr_LogonSamLogon_recv(ctx);
 	if (!NT_STATUS_IS_OK(status)) return status;
 
-	status = state->r.out.result;
-	if (!NT_STATUS_IS_OK(status)) return status;
-
 	if ((state->r.out.return_authenticator == NULL) ||
 	    (!creds_client_check(state->creds_state,
 				 &state->r.out.return_authenticator->cred))) {
@@ -171,6 +187,12 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	status = state->r.out.result;
+	if (!NT_STATUS_IS_OK(status)) return status;
+
+	/* Decrypt the session keys before we reform the info3, so the
+	 * person on the other end of winbindd pipe doesn't have to.
+	 * They won't have the encryption key anyway */
 	creds_decrypt_samlogon(state->creds_state,
 			       state->r.in.validation_level,
 			       &state->r.out.validation);
@@ -180,13 +202,17 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 		state->r.out.validation.sam3,
 		(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
 	NT_STATUS_NOT_OK_RETURN(status);
-	
+
+	/* The Samba3 protocol is a bit broken (due to non-IDL
+	 * heritage, so for compatability we must add a non-zero 4
+	 * bytes to the info3 */
 	state->info3 = data_blob_talloc(state, NULL, tmp_blob.length+4);
 	NT_STATUS_HAVE_NO_MEMORY(state->info3.data);
 
 	SIVAL(state->info3.data, 0, 1);
 	memcpy(state->info3.data+4, tmp_blob.data, tmp_blob.length);
 
+	/* We actually only ask for level 3, and assume it above, but anyway... */
 	base = NULL;
 	switch(state->r.in.validation_level) {
 	case 2:
@@ -206,7 +232,9 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 	state->user_session_key = base->key;
 	state->lm_key = base->LMSessKey;
 
-	/* Give the caller the most accurate username possible */
+	/* Give the caller the most accurate username possible.
+	 * Assists where case sensitive comparisons may be done by our
+	 * ntlm_auth callers */
 	if (base->account_name.string) {
 		state->user_name = base->account_name.string;
 		talloc_steal(state, base->account_name.string);
