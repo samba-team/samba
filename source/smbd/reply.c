@@ -1004,7 +1004,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	SMB_BIG_UINT dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
-	if (SMB_VFS_DISK_FREE(conn,".",True,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+	if (get_dfree_info(conn,".",True,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
 		END_PROFILE(SMBdskattr);
 		return(UNIXERROR(ERRHRD,ERRgeneral));
 	}
