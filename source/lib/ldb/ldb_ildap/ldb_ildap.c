@@ -32,15 +32,33 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_errors.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 
 struct ildb_private {
 	struct ldap_connection *ldap;
-	NTSTATUS last_rc;
 	struct ldb_message *rootDSE;
+	struct ldb_context *ldb;
 };
+
+
+/*
+  map an ildap NTSTATUS to a ldb error code
+*/
+static int ildb_map_error(struct ildb_private *ildb, NTSTATUS status)
+{
+	if (NT_STATUS_IS_OK(status)) {
+		return LDB_SUCCESS;
+	}
+	talloc_free(ildb->ldb->err_string);
+	ildb->ldb->err_string = talloc_strdup(ildb, ldap_errstr(ildb->ldap, status));
+	if (NT_STATUS_IS_LDAP(status)) {
+		return NT_STATUS_LDAP_CODE(status);
+	}
+	return LDB_ERR_OPERATIONS_ERROR;
+}
 
 /*
   rename a record
@@ -52,19 +70,22 @@ static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	int ret = 0;
 	char *old_dn;
 	char *newrdn, *parentdn;
+	NTSTATUS status;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(olddn) || ldb_dn_is_special(newdn)) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	local_ctx = talloc_named(ildb, 0, "ildb_rename local context");
 	if (local_ctx == NULL) {
-		return -1;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto failed;
 	}
 
 	old_dn = ldb_dn_linearize(local_ctx, olddn);
 	if (old_dn == NULL) {
+		ret = LDB_ERR_INVALID_DN_SYNTAX;
 		goto failed;
 	}
 
@@ -72,26 +93,22 @@ static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 					    newdn->components[0].name,
 					    ldb_dn_escape_value(ildb, newdn->components[0].value));
 	if (newrdn == NULL) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto failed;
 	}
 
 	parentdn = ldb_dn_linearize(local_ctx, ldb_dn_get_parent(ildb, newdn));
 	if (parentdn == NULL) {
+		ret = LDB_ERR_INVALID_DN_SYNTAX;
 		goto failed;
 	}
 
-	ildb->last_rc = ildap_rename(ildb->ldap, old_dn, newrdn, parentdn, True);
-	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
-		ret = -1;
-	}
-
-	talloc_free(local_ctx);
-	return ret;
+	status = ildap_rename(ildb->ldap, old_dn, newrdn, parentdn, True);
+	ret = ildb_map_error(ildb, status);
 
 failed:
 	talloc_free(local_ctx);
-	return -1;
+	return ret;
 }
 
 /*
@@ -102,19 +119,20 @@ static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	struct ildb_private *ildb = module->private_data;
 	char *del_dn;
 	int ret = 0;
+	NTSTATUS status;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(dn)) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 	
 	del_dn = ldb_dn_linearize(ildb, dn);
-
-	ildb->last_rc = ildap_delete(ildb->ldap, del_dn);
-	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
-		ret = -1;
+	if (del_dn == NULL) {
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
+
+	status = ildap_delete(ildb->ldap, del_dn);
+	ret = ildb_map_error(ildb, status);
 
 	talloc_free(del_dn);
 
@@ -135,6 +153,7 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	int count, i;
 	struct ldap_message **ldapres, *msg;
 	char *search_base;
+	NTSTATUS status;
 
 	if (scope == LDB_SCOPE_DEFAULT) {
 		scope = LDB_SCOPE_SUBTREE;
@@ -163,11 +182,11 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 		return -1;
 	}
 
-	ildb->last_rc = ildap_search_bytree(ildb->ldap, search_base, scope, tree, attrs, 
+	status = ildap_search_bytree(ildb->ldap, search_base, scope, tree, attrs, 
 					    0, &ldapres);
 	talloc_free(search_base);
-	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
+	if (!NT_STATUS_IS_OK(status)) {
+		ildb_map_error(ildb, status);
 		return -1;
 	}
 
@@ -280,28 +299,26 @@ static int ildb_add(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldap_mod **mods;
 	char *dn;
 	int ret = 0;
+	NTSTATUS status;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(msg->dn)) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	mods = ildb_msg_to_mods(ldb, msg, 0);
 	if (mods == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	dn = ldb_dn_linearize(mods, msg->dn);
 	if (dn == NULL) {
 		talloc_free(mods);
-		return -1;
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	ildb->last_rc = ildap_add(ildb->ldap, dn, mods);
-	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
-		ret = -1;
-	}
+	status = ildap_add(ildb->ldap, dn, mods);
+	ret = ildb_map_error(ildb, status);
 
 	talloc_free(mods);
 
@@ -319,28 +336,26 @@ static int ildb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldap_mod **mods;
 	char *dn;
 	int ret = 0;
+	NTSTATUS status;
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(msg->dn)) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	mods = ildb_msg_to_mods(ldb, msg, 1);
 	if (mods == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	dn = ldb_dn_linearize(mods, msg->dn);
 	if (dn == NULL) {
 		talloc_free(mods);
-		return -1;
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
-	ildb->last_rc = ildap_modify(ildb->ldap, dn, mods);
-	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
-		ret = -1;
-	}
+	status = ildap_modify(ildb->ldap, dn, mods);
+	ret = ildb_map_error(ildb, status);
 
 	talloc_free(mods);
 
@@ -418,6 +433,7 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	ildb->rootDSE = NULL;
+	ildb->ldb     = ldb;
 
 	ildb->ldap = ldap_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
 	if (!ildb->ldap) {
