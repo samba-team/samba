@@ -319,21 +319,6 @@ struct test_join *torture_join_domain(const char *machine_name,
 	libnet_r->in.recreate_account = True;
 
 	status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		struct samr_DeleteUser d;
-		d.in.user_handle = libnet_r->out.user_handle;
-		d.out.user_handle = libnet_r->out.user_handle;
-		
-		/* Delete machine account */
-		status = dcerpc_samr_DeleteUser(libnet_r->out.samr_pipe, tj, &d);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Delete of machine account failed\n");
-		} else {
-			printf("Delete of machine account was successful.\n");
-		}
-		status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
-	}
-
 	if (!NT_STATUS_IS_OK(status)) {
 		if (libnet_r->out.error_string) {
 			DEBUG(0, ("Domain join failed - %s.\n", libnet_r->out.error_string));
