@@ -1136,6 +1136,19 @@ static BOOL test_netr_DsRGetSiteName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 		}
 	}
+	r.in.computer_name		= talloc_asprintf(mem_ctx, "\\\\%s", computer_name);
+	printf("Testing netr_DsRGetSiteName with broken computer name: %s\n", r.in.computer_name);
+
+	status = dcerpc_netr_DsRGetSiteName(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("netr_DsRGetSiteName - %s\n", 
+		       nt_errstr(status));
+		ret = False;
+	} else if (!W_ERROR_EQUAL(r.out.result, WERR_INVALID_COMPUTERNAME)) {
+		printf("netr_DsRGetSiteName - incorrect error return %s, expected %s\n", 
+		       win_errstr(r.out.result), win_errstr(WERR_INVALID_COMPUTERNAME));
+		ret = False;
+	}
 	return ret;
 }
 
