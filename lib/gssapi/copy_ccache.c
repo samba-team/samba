@@ -108,37 +108,44 @@ gss_krb5_import_ccache(OM_uint32 *minor_status,
     	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
 				     &handle->mechanisms);
     if (ret != GSS_S_COMPLETE) {
-	gssapi_krb5_set_error_string ();
 	krb5_free_principal(gssapi_krb5_context, handle->principal);
 	free(handle);
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     }
 
-    kret = krb5_cc_gen_new(gssapi_krb5_context,
-			   &krb5_mcc_ops,
-			   &handle->ccache);
-    if (kret) {
-	gssapi_krb5_set_error_string ();
-	gss_release_oid_set(NULL, &handle->mechanisms);
-	krb5_free_principal(gssapi_krb5_context, handle->principal);
-	free(handle);
-	*minor_status = kret;
-	return GSS_S_FAILURE;
+    {
+	const char *type, *name;
+	char *str;
+
+	type = krb5_cc_get_type(gssapi_krb5_context, in);
+	name = krb5_cc_get_name(gssapi_krb5_context, in);
+	
+	if (asprintf(&str, "%s:%s", type, name) == -1) {
+	    krb5_set_error_string(gssapi_krb5_context,
+				  "malloc - out of memory");
+	    kret = ENOMEM;
+	    goto out;
+	}
+
+	kret = krb5_cc_resolve(gssapi_krb5_context, str, &handle->ccache);
+	free(str);
+	if (kret)
+	    goto out;
     }
 
-    kret = krb5_cc_copy_cache(gssapi_krb5_context, in, handle->ccache);
-    if (kret) {
-	gssapi_krb5_set_error_string ();
-	gss_release_oid_set(NULL, &handle->mechanisms);
-	krb5_free_principal(gssapi_krb5_context, handle->principal);
-	free(handle);
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
     *minor_status = 0;
     *cred = handle;
     return GSS_S_COMPLETE;
+
+out:
+    gssapi_krb5_set_error_string ();
+    if (handle->principal)
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
+    free(handle);
+    *minor_status = kret;
+    return GSS_S_FAILURE;
 }
 
 
