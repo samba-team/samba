@@ -275,11 +275,15 @@ group:  files winbind
 auth  required    /lib/security/pam_securetty.so
 auth  required	  /lib/security/pam_nologin.so
 auth  sufficient  /lib/security/pam_winbind.so
-auth  required    /lib/security/pam_pwdb.so \
+auth  required    /lib/security/pam_unix.so \
                   use_first_pass shadow nullok
 </programlisting>
 	</para>
   
+	<note><para>
+	The PAM module pam_unix has recently replaced the module pam_pwdb.
+	Some Linux systems use the module pam_unix2 in place of pam_unix.
+	</para></note>
 
 	<para>Note in particular the use of the <parameter>sufficient
 	</parameter> keyword and the <parameter>use_first_pass</parameter> keyword. </para>
