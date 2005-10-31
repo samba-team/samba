@@ -1,4 +1,9 @@
-2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* libtelnet/kerberos5.c (Data): Use right variable. From Tomas
+	Olsson
+	
+2005-10-22  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* telnet/commands.c: Check return value from asprintf instead of
 	string != NULL since it undefined behavior on Linux. From Björn
