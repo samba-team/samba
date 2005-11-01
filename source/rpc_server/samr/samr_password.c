@@ -830,7 +830,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				struct samr_Password *ntNewHash,
 				BOOL user_change,
 				BOOL restrictions,
-				uint32_t *reject_reason,
+				enum samr_RejectReason *reject_reason,
 				struct samr_DomInfo1 **_dominfo) 
 {
 	NTSTATUS nt_status;
