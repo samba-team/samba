@@ -315,9 +315,9 @@ BOOL locking_init(int read_only)
 		return True;
 
 	tdb = tdb_open_log(lock_path("locking.tdb"), 
-		       0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
-		       read_only?O_RDONLY:O_RDWR|O_CREAT,
-		       0644);
+			SMB_OPEN_DATABASE_TDB_HASH_SIZE, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
+			read_only?O_RDONLY:O_RDWR|O_CREAT,
+			0644);
 
 	if (!tdb) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
