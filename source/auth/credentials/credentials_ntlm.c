@@ -64,7 +64,7 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 	}
 
 	/* Likewise if we are a machine account (avoid protocol downgrade attacks) */
-	if (cred->principal_obtained > cred->username_obtained) {
+	if (cred->machine_account) {
 		*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
 	}
 
