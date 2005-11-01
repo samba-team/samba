@@ -199,7 +199,7 @@ AC_SUBST(dpagaix_ldflags)
 AC_ARG_ENABLE([afs-support],
 	AC_HELP_STRING([--disable-afs-support],
 		[if you don't want support for AFS]))
-if test "$enabls_afs_support" = no; then
+if test "$enable_afs_support" = no; then
 	AC_DEFINE(NO_AFS, 1, [Define if you don't wan't support for AFS.])
 fi
 
