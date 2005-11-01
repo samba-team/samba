@@ -130,6 +130,7 @@ static BOOL kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 			reject_string = "Password does not meet complexity requirements";
 			break;
 		case SAMR_REJECT_OTHER:
+		default:
 			reject_string = talloc_asprintf(mem_ctx, "Password must be at least %d characters long, and cannot match any of your %d previous passwords",
 							dominfo->min_password_length, dominfo->password_history_length);
 			break;
@@ -209,7 +210,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 	struct ldb_message *msg = ldb_msg_new(gensec_security);
 	krb5_context context = kdc->smb_krb5_context->krb5_context;
 	int ret;
-	if (!samdb || !msg) {
+	if (!msg) {
 		return False;
 	}
 
