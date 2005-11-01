@@ -115,18 +115,11 @@ gss_krb5_import_ccache(OM_uint32 *minor_status,
     }
 
     {
-	const char *type, *name;
 	char *str;
 
-	type = krb5_cc_get_type(gssapi_krb5_context, in);
-	name = krb5_cc_get_name(gssapi_krb5_context, in);
-	
-	if (asprintf(&str, "%s:%s", type, name) == -1) {
-	    krb5_set_error_string(gssapi_krb5_context,
-				  "malloc - out of memory");
-	    kret = ENOMEM;
+	kret = krb5_cc_get_full_name(gssapi_krb5_context, in, &str);
+	if (kret)
 	    goto out;
-	}
 
 	kret = krb5_cc_resolve(gssapi_krb5_context, str, &handle->ccache);
 	free(str);
