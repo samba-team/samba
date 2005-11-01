@@ -40,18 +40,6 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 #######################
-# Start MODULE auth_domain
-[MODULE::auth_domain]
-INIT_FUNCTION = auth_domain_init
-SUBSYSTEM = AUTH
-INIT_OBJ_FILES = \
-		auth_domain.o
-REQUIRED_SUBSYSTEMS = \
-		NDR_NETLOGON LIBNDR
-# End MODULE auth_winbind
-#######################
-
-#######################
 # Start MODULE auth_developer
 [MODULE::auth_developer]
 INIT_FUNCTION = auth_developer_init
