@@ -48,6 +48,7 @@
 .Nm krb5_cc_destroy ,
 .Nm krb5_cc_end_seq_get ,
 .Nm krb5_cc_gen_new ,
+.Nm krb5_cc_get_full_name ,
 .Nm krb5_cc_get_name ,
 .Nm krb5_cc_get_ops ,
 .Nm krb5_cc_get_prefix_ops ,
@@ -122,6 +123,12 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "const krb5_cc_ops *ops"
 .Fa "krb5_ccache *id"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_cc_get_full_name
+.Fa "krb5_context context"
+.Fa "krb5_ccache id"
+.Fa "char **str"
 .Fc
 .Ft "const char *"
 .Fo krb5_cc_get_name
@@ -338,6 +345,19 @@ copys the contents of
 .Fa from
 to
 .Fa to .
+.Pp
+.Fn krb5_cc_get_full_name
+returns the complete resolvable name of the credential cache
+.Fa id
+in
+.Fa str .
+.Fa str
+should be freed with
+.Xr free 3 .
+Returns 0 or an error, on error
+.Fa *str
+is set to
+.Dv NULL .
 .Pp
 .Fn krb5_cc_get_name
 returns the name of the credential cache
