@@ -72,6 +72,8 @@ static int ejs_doauth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *user
 	user_info->flags = USER_INFO_CASE_INSENSITIVE_USERNAME |
 		USER_INFO_DONT_CHECK_UNIX_ACCOUNT;
 
+	user_info->logon_parameters = 0;
+
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
@@ -135,7 +137,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	auth = mprObject("auth");
 
-	if (domain && strcmp("System User", domain) == 0) {
+	if (domain && (strcmp("System User", domain) == 0)) {
 		ejs_doauth(tmp_ctx, &auth, username, password, domain, remote_host, "unix");
 	} else {
 		ejs_doauth(tmp_ctx, &auth, username, password, domain, remote_host, "sam");
