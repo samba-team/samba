@@ -33,7 +33,9 @@
 	config is that stable.
 	</para>
 
-<para>See <smbconfoption name="NetworkBrowsing"/>.</para>
+	<para>
+	See the chapter on Network Browsing in the Samba-HOWTO book.
+	</para>
 </description>
 
 <value type="default"></value>
