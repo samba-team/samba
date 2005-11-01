@@ -2062,8 +2062,9 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	pstring name;
 	uint32 dirtype;
 	NTSTATUS status;
-	START_PROFILE(SMBunlink);
 	BOOL path_contains_wcard = False;
+
+	START_PROFILE(SMBunlink);
 
 	dirtype = SVAL(inbuf,smb_vwv0);
 	
