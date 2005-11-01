@@ -1,3 +1,17 @@
+2005-11-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: Spelling, From Michael Banck <mbanck@debian.org>
+	
+2005-10-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/headers.h: Maybe include <sys/param.h>.
+
+2005-10-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/ticket.c (krb5_ticket_get_authorization_data_type):
+	understand KRB5_AUTHDATA_IF_RELEVANT and KRB5_AUTHDATA_AND_OR (but
+	have KRB5_AUTHDATA_KDC_ISSUED commented out for now)
+	
 2005-10-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/klist.c: In the list caches view, rename the Status field
