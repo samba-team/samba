@@ -33,269 +33,369 @@
 /**********************************************************************
 **********************************************************************/
 
-static void decode_printer_info_0(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
+static BOOL decode_printer_info_0(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 				uint32 returned, PRINTER_INFO_0 **info)
 {
-        uint32 i;
-        PRINTER_INFO_0  *inf;
+	uint32 i;
+	PRINTER_INFO_0  *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_0, returned);
+	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_0, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_0));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_printer_info_0("", buffer, &inf[i], 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_printer_info_0("", buffer, &inf[i], 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
+
+static BOOL decode_printer_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 				uint32 returned, PRINTER_INFO_1 **info)
 {
-        uint32 i;
-        PRINTER_INFO_1  *inf;
+	uint32 i;
+	PRINTER_INFO_1  *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_1, returned);
+	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_1, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_1));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_printer_info_1("", buffer, &inf[i], 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_printer_info_1("", buffer, &inf[i], 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_printer_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 				uint32 returned, PRINTER_INFO_2 **info)
 {
-        uint32 i;
-        PRINTER_INFO_2  *inf;
+	uint32 i;
+	PRINTER_INFO_2  *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_2, returned);
+	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_2, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_2));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
+	for (i=0; i<returned; i++) {
 		/* a little initialization as we go */
 		inf[i].secdesc = NULL;
-                smb_io_printer_info_2("", buffer, &inf[i], 0);
-        }
+		if (!smb_io_printer_info_2("", buffer, &inf[i], 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_printer_info_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 				uint32 returned, PRINTER_INFO_3 **info)
 {
-        uint32 i;
-        PRINTER_INFO_3  *inf;
+	uint32 i;
+	PRINTER_INFO_3  *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_3, returned);
+	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_3, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_3));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
+	for (i=0; i<returned; i++) {
 		inf[i].secdesc = NULL;
-                smb_io_printer_info_3("", buffer, &inf[i], 0);
-        }
+		if (!smb_io_printer_info_3("", buffer, &inf[i], 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_7(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
+
+static BOOL decode_printer_info_7(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 				uint32 returned, PRINTER_INFO_7 **info)
 {
 	uint32 i;
 	PRINTER_INFO_7  *inf;
 
 	inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_7, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PRINTER_INFO_7));
 
 	prs_set_offset(&buffer->prs,0);
 
 	for (i=0; i<returned; i++) {
-		smb_io_printer_info_7("", buffer, &inf[i], 0);
+		if (!smb_io_printer_info_7("", buffer, &inf[i], 0)) {
+			return False;
+		}
 	}
 
 	*info=inf;
+	return True;
 }
 
 
 /**********************************************************************
 **********************************************************************/
-static void decode_port_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_port_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, PORT_INFO_1 **info)
 {
-        uint32 i;
-        PORT_INFO_1 *inf;
+	uint32 i;
+	PORT_INFO_1 *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_1, returned);
+	inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_1, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PORT_INFO_1));
 
-        prs_set_offset(&buffer->prs, 0);
+	prs_set_offset(&buffer->prs, 0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_port_info_1("", buffer, &(inf[i]), 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_port_info_1("", buffer, &(inf[i]), 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_port_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_port_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, PORT_INFO_2 **info)
 {
-        uint32 i;
-        PORT_INFO_2 *inf;
+	uint32 i;
+	PORT_INFO_2 *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_2, returned);
+	inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_2, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(PORT_INFO_2));
 
-        prs_set_offset(&buffer->prs, 0);
+	prs_set_offset(&buffer->prs, 0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_port_info_2("", buffer, &(inf[i]), 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_port_info_2("", buffer, &(inf[i]), 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_printer_driver_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, DRIVER_INFO_1 **info)
 {
-        uint32 i;
-        DRIVER_INFO_1 *inf;
+	uint32 i;
+	DRIVER_INFO_1 *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_1, returned);
+	inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_1, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_1));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_printer_driver_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, DRIVER_INFO_2 **info)
 {
-        uint32 i;
-        DRIVER_INFO_2 *inf;
+	uint32 i;
+	DRIVER_INFO_2 *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_2, returned);
+	inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_2, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_2));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+
+static BOOL decode_printer_driver_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, DRIVER_INFO_3 **info)
 {
-        uint32 i;
-        DRIVER_INFO_3 *inf;
+	uint32 i;
+	DRIVER_INFO_3 *inf;
 
-        inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_3, returned);
+	inf=TALLOC_ARRAY(mem_ctx, DRIVER_INFO_3, returned);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, returned*sizeof(DRIVER_INFO_3));
 
 	prs_set_offset(&buffer->prs,0);
 
-        for (i=0; i<returned; i++) {
-                smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
-        }
+	for (i=0; i<returned; i++) {
+		if (!smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0)) {
+			return False;
+		}
+	}
 
-        *info=inf;
+	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
+
+static BOOL decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 			uint32 returned, DRIVER_DIRECTORY_1 **info
 )
 {
 	DRIVER_DIRECTORY_1 *inf;
  
-        inf=TALLOC_P(mem_ctx, DRIVER_DIRECTORY_1);
+	inf=TALLOC_P(mem_ctx, DRIVER_DIRECTORY_1);
+	if (!inf) {
+		return False;
+	}
 	memset(inf, 0, sizeof(DRIVER_DIRECTORY_1));
 
-        prs_set_offset(&buffer->prs, 0);
+	prs_set_offset(&buffer->prs, 0);
 
-        smb_io_driverdir_1("", buffer, inf, 0);
+	if (!smb_io_driverdir_1("", buffer, inf, 0)) {
+		return False;
+	}
  
 	*info=inf;
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
 
-static void decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+static BOOL decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_1 **jobs)
 {
 	uint32 i;
 
 	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
+	if (!jobs) {
+		return False;
+	}
 	prs_set_offset(&buffer->prs,0);
 
-	for (i = 0; i < num_jobs; i++) 
-		smb_io_job_info_1("", buffer, &((*jobs)[i]), 0);
+	for (i = 0; i < num_jobs; i++) {
+		if (!smb_io_job_info_1("", buffer, &((*jobs)[i]), 0)) {
+			return False;
+		}
+	}
+
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
 
-static void decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+static BOOL decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_2 **jobs)
 {
 	uint32 i;
 
 	*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_2, num_jobs);
+	if (!jobs) {
+		return False;
+	}
 	prs_set_offset(&buffer->prs,0);
 
-	for (i = 0; i < num_jobs; i++) 
-		smb_io_job_info_2("", buffer, &((*jobs)[i]), 0);
+	for (i = 0; i < num_jobs; i++) {
+		if (!smb_io_job_info_2("", buffer, &((*jobs)[i]), 0)) {
+			return False;
+		}
+	}
+
+	return True;
 }
 
 /**********************************************************************
 **********************************************************************/
 
-static void decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
+static BOOL decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			   uint32 num_forms, FORM_1 **forms)
 {
 	int i;
 
 	*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
+	if (!forms) {
+		return False;
+	}
 	prs_set_offset(&buffer->prs,0);
 
-	for (i = 0; i < num_forms; i++)
-		smb_io_form_1("", buffer, &((*forms)[i]), 0);
+	for (i = 0; i < num_forms; i++) {
+		if (!smb_io_form_1("", buffer, &((*forms)[i]), 0)) {
+			return False;
+		}
+	}
+
+	return True;
 }
 
 /**********************************************************************
@@ -401,19 +501,29 @@ WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 	switch (level) {
 	case 0:
-		decode_printer_info_0(mem_ctx, out.buffer, out.returned, &ctr->printers_0);
+		if (!decode_printer_info_0(mem_ctx, out.buffer, out.returned, &ctr->printers_0)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 1:
-		decode_printer_info_1(mem_ctx, out.buffer, out.returned, &ctr->printers_1);
+		if (!decode_printer_info_1(mem_ctx, out.buffer, out.returned, &ctr->printers_1)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 2:
-		decode_printer_info_2(mem_ctx, out.buffer, out.returned, &ctr->printers_2);
+		if (!decode_printer_info_2(mem_ctx, out.buffer, out.returned, &ctr->printers_2)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 3:
-		decode_printer_info_3(mem_ctx, out.buffer, out.returned, &ctr->printers_3);
+		if (!decode_printer_info_3(mem_ctx, out.buffer, out.returned, &ctr->printers_3)) {
+			WERR_GENERAL_FAILURE;
+		}
 		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}			
-	
+
 	*num_printers = out.returned;
 
 	return out.status;
@@ -471,12 +581,18 @@ WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	
 	switch (level) {
 	case 1:
-		decode_port_info_1(mem_ctx, out.buffer, out.returned, &ctr->port.info_1);
+		if (!decode_port_info_1(mem_ctx, out.buffer, out.returned, &ctr->port.info_1)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 2:
-		decode_port_info_2(mem_ctx, out.buffer, out.returned, &ctr->port.info_2);
+		if (!decode_port_info_2(mem_ctx, out.buffer, out.returned, &ctr->port.info_2)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
-	}			
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
 
 	*num_ports = out.returned;
 
@@ -534,21 +650,33 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 		
 	switch (level) {
 	case 0:
-		decode_printer_info_0(mem_ctx, out.buffer, 1, &ctr->printers_0);
+		if (!decode_printer_info_0(mem_ctx, out.buffer, 1, &ctr->printers_0)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 1:
-		decode_printer_info_1(mem_ctx, out.buffer, 1, &ctr->printers_1);
+		if (!decode_printer_info_1(mem_ctx, out.buffer, 1, &ctr->printers_1)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 2:
-		decode_printer_info_2(mem_ctx, out.buffer, 1, &ctr->printers_2);
+		if (!decode_printer_info_2(mem_ctx, out.buffer, 1, &ctr->printers_2)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 3:
-		decode_printer_info_3(mem_ctx, out.buffer, 1, &ctr->printers_3);
+		if (!decode_printer_info_3(mem_ctx, out.buffer, 1, &ctr->printers_3)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 7:
-		decode_printer_info_7(mem_ctx, out.buffer, 1, &ctr->printers_7);
+		if (!decode_printer_info_7(mem_ctx, out.buffer, 1, &ctr->printers_7)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
-	}			
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
 
 	return out.status;
 }
@@ -635,14 +763,22 @@ WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
 
 	switch (level) {
 	case 1:
-		decode_printer_driver_1(mem_ctx, out.buffer, 1, &ctr->info1);
+		if (!decode_printer_driver_1(mem_ctx, out.buffer, 1, &ctr->info1)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 2:
-		decode_printer_driver_2(mem_ctx, out.buffer, 1, &ctr->info2);
+		if (!decode_printer_driver_2(mem_ctx, out.buffer, 1, &ctr->info2)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 3:
-		decode_printer_driver_3(mem_ctx, out.buffer, 1, &ctr->info3);
+		if (!decode_printer_driver_3(mem_ctx, out.buffer, 1, &ctr->info3)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	return out.status;	
@@ -709,14 +845,22 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 
 		switch (level) {
 		case 1:
-			decode_printer_driver_1(mem_ctx, out.buffer, out.returned, &ctr->info1);
+			if (!decode_printer_driver_1(mem_ctx, out.buffer, out.returned, &ctr->info1)) {
+				return WERR_GENERAL_FAILURE;
+			}
 			break;
 		case 2:
-			decode_printer_driver_2(mem_ctx, out.buffer, out.returned, &ctr->info2);
+			if (!decode_printer_driver_2(mem_ctx, out.buffer, out.returned, &ctr->info2)) {
+				return WERR_GENERAL_FAILURE;
+			}
 			break;
 		case 3:
-			decode_printer_driver_3(mem_ctx, out.buffer, out.returned, &ctr->info3);
+			if (!decode_printer_driver_3(mem_ctx, out.buffer, out.returned, &ctr->info3)) {
+				return WERR_GENERAL_FAILURE;
+			}
 			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
 		}
 	}
 
@@ -778,7 +922,9 @@ WERROR rpccli_spoolss_getprinterdriverdir (struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(out.status))
 		return out.status;
 		
-	decode_printerdriverdir_1(mem_ctx, out.buffer, 1, &ctr->info1);
+	if (!decode_printerdriverdir_1(mem_ctx, out.buffer, 1, &ctr->info1)) {
+		return WERR_GENERAL_FAILURE;
+	}
 
 	return out.status;
 }
@@ -1062,7 +1208,9 @@ WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(out.status))
 		return out.status;
 
-	smb_io_form_1("", out.buffer, form, 0);
+	if (!smb_io_form_1("", out.buffer, form, 0)) {
+		return WERR_GENERAL_FAILURE;
+	}
 
 	return out.status;
 }
@@ -1141,7 +1289,9 @@ WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 
 	*num_forms = out.numofforms;
 	
-	decode_forms_1(mem_ctx, out.buffer, *num_forms, forms);
+	if (!decode_forms_1(mem_ctx, out.buffer, *num_forms, forms)) {
+		return WERR_GENERAL_FAILURE;
+	}
 
 	return out.status;
 }
@@ -1197,14 +1347,18 @@ WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		
 	switch(level) {
 	case 1:
-		decode_jobs_1(mem_ctx, out.buffer, out.returned, &ctr->job.job_info_1);
+		if (!decode_jobs_1(mem_ctx, out.buffer, out.returned, &ctr->job.job_info_1)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 2:
-		decode_jobs_2(mem_ctx, out.buffer, out.returned, &ctr->job.job_info_2);
+		if (!decode_jobs_2(mem_ctx, out.buffer, out.returned, &ctr->job.job_info_2)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	default:
 		DEBUG(3, ("unsupported info level %d", level));
-		break;
+		return WERR_UNKNOWN_LEVEL;
 	}
 	
 	*returned = out.returned;
@@ -1287,11 +1441,17 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	switch(level) {
 	case 1:
-		decode_jobs_1(mem_ctx, out.buffer, 1, &ctr->job.job_info_1);
+		if (!decode_jobs_1(mem_ctx, out.buffer, 1, &ctr->job.job_info_1)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
 	case 2:
-		decode_jobs_2(mem_ctx, out.buffer, 1, &ctr->job.job_info_2);
+		if (!decode_jobs_2(mem_ctx, out.buffer, 1, &ctr->job.job_info_2)) {
+			return WERR_GENERAL_FAILURE;
+		}
 		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	return out.status;
@@ -1788,6 +1948,9 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	
 	if (keylist) {
 		*keylist = SMB_MALLOC_ARRAY(uint16, out.keys.buf_len);
+		if (!*keylist) {
+			return WERR_NOMEM;
+		}
 		memcpy(*keylist, out.keys.buffer, out.keys.buf_len * 2);
 		if (len)
 			*len = out.keys.buf_len * 2;
