@@ -15,9 +15,9 @@
     LaserJet 5L</command>.</para>
 		
     <para>
-    The need for the file is due to the printer driver namespace problem described in <link
-    linkend="classicalprinting">the chapter on Classical Printing in the book Samba3-HOWTO</link>.  For more
-    details on OS/2 clients, please refer to <link linkend="Other-Clients"/>.
+    The need for the file is due to the printer driver namespace problem described in 
+    the chapter on Classical Printing in the Samba3-HOWTO book.  For more
+    details on OS/2 clients, please refer to chapter on other clients in the Samba3-HOWTO book.
     </para>
 </description>
 <value type="default"/>
