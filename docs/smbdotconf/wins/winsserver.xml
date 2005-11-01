@@ -21,7 +21,7 @@
 	<note><para>You need to set up Samba to point 
 	to a WINS server if you have multiple subnets and wish cross-subnet 
 	browsing to work correctly.</para></note>
-	<para>See the <link linkend="NetworkBrowsing"/>.</para>
+	<para>See the chapter in the Samba3-HOWTO on Network Browsing.</para>
 </description>
 
 <value type="default"></value>

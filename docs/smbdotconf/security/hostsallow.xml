@@ -5,8 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>allow hosts</synonym>
 <description>
-    <para>A synonym for this parameter is <parameter moreinfo="none">allow 
-    hosts</parameter>.</para>
+    <para>A synonym for this parameter is <smbconfoption name="allow hosts"/>.</para>
 		
     <para>This parameter is a comma, space, or tab delimited 
     set of hosts which are permitted to access a service.</para>
@@ -17,9 +16,9 @@
 
     <para>You can specify the hosts by name or IP number. For 
     example, you could restrict access to only the hosts on a 
-    Class C subnet with something like <command moreinfo="none">allow hosts = 150.203.5.
-    </command>. The full syntax of the list is described in the man 
-    page <filename moreinfo="none">hosts_access(5)</filename>. Note that this man
+    Class C subnet with something like <command>allow hosts = 150.203.5.</command>.
+	The full syntax of the list is described in the man 
+    page <filename>hosts_access(5)</filename>. Note that this man
     page may not be present on your system, so a brief description will
     be given here also.</para>
 
