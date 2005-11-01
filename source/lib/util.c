@@ -1356,12 +1356,8 @@ char *automount_lookup(const char *user_name)
   	} else {
 		if ((nis_error = yp_match(nis_domain, nis_map, user_name, strlen(user_name),
 				&nis_result, &nis_result_len)) == 0) {
-			if (!nis_error && nis_result_len >= sizeof(pstring)) {
-				nis_result_len = sizeof(pstring)-1;
-			}
 			fstrcpy(last_key, user_name);
-			strncpy(last_value, nis_result, nis_result_len);
-			last_value[nis_result_len] = '\0';
+			pstrcpy(last_value, nis_result);
 			strip_mount_options(&last_value);
 
 		} else if(nis_error == YPERR_KEY) {
@@ -1682,8 +1678,7 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 
 	/* Get the last component of the unix name. */
 	p = strrchr_m(name, '/');
-	strncpy(last_component, p ? ++p : name, sizeof(last_component)-1);
-	last_component[sizeof(last_component)-1] = '\0'; 
+	pstrcpy(last_component, p ? ++p : name);
 
 	for(; namelist->name != NULL; namelist++) {
 		if(namelist->is_wild) {

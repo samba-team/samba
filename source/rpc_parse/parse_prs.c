@@ -1274,32 +1274,6 @@ BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_
 	return True;
 }
 
-BOOL prs_string_alloc(const char *name, prs_struct *ps, int depth,
-		      const char **str)
-{
-	size_t len;
-	char *tmp_str;
-
-	if (UNMARSHALLING(ps))
-		len = strlen(&ps->data_p[ps->data_offset]);
-	else
-		len = strlen(*str);
-
-	tmp_str = PRS_ALLOC_MEM(ps, char, len+1);
-
-	if (tmp_str == NULL)
-		return False;
-
-	if (MARSHALLING(ps))
-		strncpy(tmp_str, *str, len);
-
-	if (!prs_string(name, ps, depth, tmp_str, len+1))
-		return False;
-
-	*str = tmp_str;
-	return True;
-}
-
 /*******************************************************************
  prs_uint16 wrapper. Call this and it sets up a pointer to where the
  uint16 should be stored, or gets the size if reading.
