@@ -172,10 +172,14 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 {
 	struct smb_composite_connect io;
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(parent_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	io.in.dest_host = dest_host;
 	io.in.port = port;
-	io.in.called_name = strupper_talloc(parent_ctx, dest_host);
+	io.in.called_name = strupper_talloc(tmp_ctx, dest_host);
 	io.in.service = service;
 	io.in.service_type = service_type;
 	io.in.credentials = credentials;
@@ -186,6 +190,6 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	if (NT_STATUS_IS_OK(status)) {
 		*ret_tree = io.out.tree;
 	}
-
+	talloc_free(tmp_ctx);
 	return status;
 }
