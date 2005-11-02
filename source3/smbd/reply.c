@@ -5126,7 +5126,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
 		(locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 	BOOL err;
 	BOOL my_lock_ctx = False;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	START_PROFILE(SMBlockingX);
 	
