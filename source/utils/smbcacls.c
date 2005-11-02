@@ -231,7 +231,9 @@ static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
 	char *p;
 	const char *cp;
 	fstring tok;
-	unsigned atype, aflags, amask;
+	unsigned int atype = 0;
+	unsigned int aflags = 0;
+	unsigned int amask = 0;
 	DOM_SID sid;
 	SEC_ACCESS mask;
 	const struct perm_value *v;
