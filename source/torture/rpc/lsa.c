@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "lib/events/events.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
@@ -457,7 +458,8 @@ BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 		r.out.names = &names;
 		
 		status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 			printf("LookupSids failed - %s\n", nt_errstr(status));
 			return False;
 		}
@@ -506,6 +508,83 @@ BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 
 
 	return True;
+}
+
+#define NUM_ASYNC_REQUESTS 1000
+
+static void lookupsids_cb(struct rpc_request *req)
+{
+	int *replies = (int *)req->async.private;
+	NTSTATUS status;
+
+	status = dcerpc_ndr_request_recv(req);
+	DEBUG(3, ("lookupsids returned %s\n", nt_errstr(status)));
+	if (!NT_STATUS_IS_OK(status)) {
+		*replies = -1;
+	}
+
+	*replies += 1;
+}
+
+static BOOL test_LookupSids_async(struct dcerpc_pipe *p, 
+				  TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	struct lsa_SidArray sids;
+	struct lsa_SidPtr sidptr;
+
+	uint32_t count[NUM_ASYNC_REQUESTS];
+	struct lsa_TransNameArray names[NUM_ASYNC_REQUESTS];
+	struct lsa_LookupSids r[NUM_ASYNC_REQUESTS];
+	struct rpc_request **req;
+
+	int i, replies;
+	BOOL ret = True;
+
+	printf("\nTesting %d async lookupsids request\n", 100);
+
+	req = talloc_array(mem_ctx, struct rpc_request *, NUM_ASYNC_REQUESTS);
+
+	sids.num_sids = 1;
+	sids.sids = &sidptr;
+	sidptr.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-545");
+
+	replies = 0;
+
+	for (i=0; i<NUM_ASYNC_REQUESTS; i++) {
+		count[i] = 0;
+		names[i].count = 0;
+		names[i].names = NULL;
+
+		r[i].in.handle = handle;
+		r[i].in.sids = &sids;
+		r[i].in.names = &names[i];
+		r[i].in.level = 1;
+		r[i].in.count = &names[i].count;
+		r[i].out.count = &count[i];
+		r[i].out.names = &names[i];
+		
+		req[i] = dcerpc_lsa_LookupSids_send(p, req, &r[i]);
+		if (req[i] == NULL) {
+			ret = False;
+			break;
+		}
+
+		req[i]->async.callback = lookupsids_cb;
+		req[i]->async.private = &replies;
+	}
+
+	while (replies < NUM_ASYNC_REQUESTS) {
+		event_loop_once(p->conn->event_ctx);
+		if (replies < 0) {
+			ret = False;
+			break;
+		}
+	}
+
+	talloc_free(req);
+
+	return ret;
 }
 
 static BOOL test_LookupPrivValue(struct dcerpc_pipe *p, 
@@ -1758,6 +1837,10 @@ BOOL torture_rpc_lsa(void)
 	}
 
 	if (handle) {
+		if (!test_LookupSids_async(p, mem_ctx, handle)) {
+			ret = False;
+		}
+
 		if (!test_QueryDomainInfoPolicy(p, mem_ctx, handle)) {
 			ret = False;
 		}
@@ -1813,8 +1896,6 @@ BOOL torture_rpc_lsa(void)
 		}
 	}
 		
-
-	
 	talloc_free(mem_ctx);
 
 	return ret;

@@ -28,6 +28,8 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
+static void dcerpc_ship_next_request(struct dcerpc_connection *c);
+
 static struct dcerpc_interface_list *dcerpc_pipes = NULL;
 
 /*
@@ -857,6 +859,10 @@ req_done:
 	if (req->async.callback) {
 		req->async.callback(req);
 	}
+
+	if (c->request_queue != NULL) {
+		dcerpc_ship_next_request(c);
+	}
 }
 
 /*
@@ -893,16 +899,13 @@ static int dcerpc_req_destructor(void *ptr)
 /*
   perform the send side of a async dcerpc request
 */
-struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
-					const struct GUID *object,
-					uint16_t opnum,
-					DATA_BLOB *stub_data)
+static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
+					       const struct GUID *object,
+					       uint16_t opnum,
+					       BOOL async,
+					       DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
-	struct ncacn_packet pkt;
-	DATA_BLOB blob;
-	uint32_t remaining, chunk_size;
-	BOOL first_packet = True;
 
 	p->conn->transport.recv_data = dcerpc_request_recv_data;
 
@@ -918,7 +921,68 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->payload = data_blob(NULL, 0);
 	req->flags = 0;
 	req->fault_code = 0;
+	req->async_call = async;
 	req->async.callback = NULL;
+
+	if (object != NULL) {
+		req->object = talloc_memdup(req, object, sizeof(*object));
+		if (req->object == NULL) {
+			talloc_free(req);
+			return NULL;
+		}
+	} else {
+		req->object = NULL;
+	}
+
+	req->opnum = opnum;
+	req->request_data.length = stub_data->length;
+	req->request_data.data = talloc_reference(req, stub_data->data);
+	if (req->request_data.data == NULL) {
+		return NULL;
+	}
+
+	DLIST_ADD_END(p->conn->request_queue, req, struct rpc_request *);
+
+	dcerpc_ship_next_request(p->conn);
+
+	if (p->request_timeout) {
+		event_add_timed(dcerpc_event_context(p), req, 
+				timeval_current_ofs(p->request_timeout, 0), 
+				dcerpc_timeout_handler, req);
+	}
+
+	talloc_set_destructor(req, dcerpc_req_destructor);
+	return req;
+}
+
+/*
+  Send a request using the transport
+*/
+
+static void dcerpc_ship_next_request(struct dcerpc_connection *c)
+{
+	struct rpc_request *req;
+	struct dcerpc_pipe *p;
+	DATA_BLOB *stub_data;
+	struct ncacn_packet pkt;
+	DATA_BLOB blob;
+	uint32_t remaining, chunk_size;
+	BOOL first_packet = True;
+
+	req = c->request_queue;
+	if (req == NULL) {
+		return;
+	}
+
+	p = req->p;
+	stub_data = &req->request_data;
+
+	if (!req->async_call && (c->pending != NULL)) {
+		return;
+	}
+
+	DLIST_REMOVE(c->request_queue, req);
+	DLIST_ADD(c->pending, req);
 
 	init_ncacn_hdr(p->conn, &pkt);
 
@@ -934,15 +998,13 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	pkt.pfc_flags = 0;
 	pkt.u.request.alloc_hint = remaining;
 	pkt.u.request.context_id = p->context_id;
-	pkt.u.request.opnum = opnum;
+	pkt.u.request.opnum = req->opnum;
 
-	if (object) {
-		pkt.u.request.object.object = *object;
+	if (req->object) {
+		pkt.u.request.object.object = *req->object;
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_ORPC;
-		chunk_size -= ndr_size_GUID(object,0);
+		chunk_size -= ndr_size_GUID(req->object,0);
 	}
-
-	DLIST_ADD(p->conn->pending, req);
 
 	/* we send a series of pdus without waiting for a reply */
 	while (remaining > 0 || first_packet) {
@@ -968,28 +1030,18 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
-			return req;
+			return;
 		}
 		
 		req->status = p->conn->transport.send_request(p->conn, &blob, last_frag);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
-			return req;
+			return;
 		}		
 
 		remaining -= chunk;
 	}
-
-	if (p->request_timeout) {
-		event_add_timed(dcerpc_event_context(p), req, 
-				timeval_current_ofs(p->request_timeout, 0), 
-				dcerpc_timeout_handler, req);
-	}
-
-	talloc_set_destructor(req, dcerpc_req_destructor);
-
-	return req;
 }
 
 /*
@@ -1036,13 +1088,14 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
 			struct GUID *object,
 			uint16_t opnum,
+			BOOL async,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
 			DATA_BLOB *stub_data_out)
 {
 	struct rpc_request *req;
 
-	req = dcerpc_request_send(p, object, opnum, stub_data_in);
+	req = dcerpc_request_send(p, object, opnum, async, stub_data_in);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1251,7 +1304,8 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	dump_data(10, request.data, request.length);
 
 	/* make the actual dcerpc request */
-	req = dcerpc_request_send(p, object, opnum, &request);
+	req = dcerpc_request_send(p, object, opnum, table->calls[opnum].async,
+				  &request);
 
 	if (req != NULL) {
 		req->ndr.table = table;
