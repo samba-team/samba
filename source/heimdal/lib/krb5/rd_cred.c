@@ -101,7 +101,7 @@ krb5_rd_cred(krb5_context context,
     } else {
 	/* Try both subkey and session key.
 	 * 
-	 * RFC2140 claims we should use the session key, but Heimdal
+	 * RFC4120 claims we should use the session key, but Heimdal
 	 * before 0.8 used the remote subkey if it was send in the
 	 * auth_context.
 	 */
