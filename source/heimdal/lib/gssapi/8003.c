@@ -182,9 +182,18 @@ gssapi_krb5_verify_8003_checksum(
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
     }
-
+    
+    /* This is the case where Samba3 has built GSSAPI out of
+     * krb5 the 'dodgy' way.  We have to accept the non-GSSAPI
+     * checksum because windows does */
+    
+    if(cksum->cksumtype != CKSUMTYPE_GSSAPI) {
+	    *flags = 0;
+	    return GSS_S_COMPLETE;
+    }
+    
     /* XXX should handle checksums > 24 bytes */
-    if(cksum->cksumtype != CKSUMTYPE_GSSAPI || cksum->checksum.length < 24) {
+    if(cksum->checksum.length < 24) {
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
     }
