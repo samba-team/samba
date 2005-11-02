@@ -32,6 +32,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
+#include "auth/auth.h"
 
 /* this is stored in ntvfs_private */
 struct cvfs_private {
@@ -106,11 +107,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		remote_share = sharename;
 	}
 
-	if (!host || !user || !pass || !domain) {
-		DEBUG(1,("CIFS backend: You must supply server, user, password and domain\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
 	private = talloc(req->tcon, struct cvfs_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
@@ -119,11 +115,23 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = private;
 
-	credentials = cli_credentials_init(private);
-	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
-	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
-	cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
-	cli_credentials_set_workstation(credentials, "vfs_cifs", CRED_SPECIFIED);
+	if (!host) {
+		DEBUG(1,("CIFS backend: You must supply server\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	} 
+	
+	if (user && pass && domain) {
+		credentials = cli_credentials_init(private);
+		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
+		cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
+		cli_credentials_set_workstation(credentials, "vfs_cifs", CRED_SPECIFIED);
+	} else if (req->session->session_info->credentials) {
+		credentials = req->session->session_info->credentials;
+	} else {
+		DEBUG(1,("CIFS backend: You must supply server, user, password and domain or have delegated credentials\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* connect to the server, using the smbd event context */
 	io.in.dest_host = host;

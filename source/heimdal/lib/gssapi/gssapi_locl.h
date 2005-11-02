@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_locl.h,v 1.41 2005/10/12 15:20:37 lha Exp $ */
+/* $Id: gssapi_locl.h,v 1.42 2005/10/26 11:23:48 lha Exp $ */
 
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H
@@ -79,12 +79,13 @@ typedef struct gss_ctx_id_t_desc_struct {
 
 typedef struct gss_cred_id_t_desc_struct {
   gss_name_t principal;
+  int cred_flags;
+#define GSS_CF_DESTROY_CRED_ON_RELEASE	1
   krb5_boolean made_keytab;
   struct krb5_keytab_data *keytab;
   OM_uint32 lifetime;
   gss_cred_usage_t usage;
   gss_OID_set mechanisms;
-  krb5_boolean made_ccache;
   struct krb5_ccache_data *ccache;
   HEIMDAL_MUTEX cred_id_mutex;
 } gss_cred_id_t_desc;
@@ -108,7 +109,6 @@ struct gssapi_thr_context {
  */
 
 krb5_error_code gssapi_krb5_init (void);
-krb5_error_code gssapi_krb5_init_ev (void *event_context);
 
 #define GSSAPI_KRB5_INIT() do {					\
     krb5_error_code kret_gss_init;				\
@@ -270,6 +270,10 @@ _gss_check_compat(OM_uint32 *, gss_name_t, const char *,
 
 OM_uint32
 gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
+
+OM_uint32
+_gssapi_krb5_ccache_lifetime(OM_uint32 *, krb5_ccache, 
+			     krb5_principal, OM_uint32 *);
 
 /* sequence */
 

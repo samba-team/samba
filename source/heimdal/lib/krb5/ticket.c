@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: ticket.c,v 1.12 2004/05/25 21:44:47 lha Exp $");
+RCSID("$Id: ticket.c,v 1.14 2005/10/27 13:21:42 lha Exp $");
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_ticket(krb5_context context,
@@ -151,6 +151,7 @@ find_type_in_ad(krb5_context context,
 		goto out;
 	    break;
 	}
+#if 0 /* XXX test */
 	case KRB5_AUTHDATA_KDC_ISSUED: {
 	    AD_KDCIssued child;
 
@@ -199,6 +200,7 @@ find_type_in_ad(krb5_context context,
 		goto out;
 	    break;
 	}
+#endif
 	case KRB5_AUTHDATA_AND_OR:
 	    if (!failp)
 		break;
@@ -229,7 +231,7 @@ out:
 /*
  * Extract the authorization data type of `type' from the
  * 'ticket'. Store the field in `data'. This function is to use for
- * kerberos applications
+ * kerberos applications.
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
