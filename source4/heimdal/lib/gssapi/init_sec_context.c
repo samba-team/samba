@@ -162,7 +162,7 @@ _gsskrb5_create_ctx(
 static OM_uint32
 gsskrb5_get_creds(
 	OM_uint32 * minor_status,
-	const gss_cred_id_t initiator_cred_handle,
+	krb5_ccache ccache,
 	gss_ctx_id_t * context_handle,
 	const gss_name_t target_name,
 	OM_uint32 time_req,
@@ -172,21 +172,9 @@ gsskrb5_get_creds(
 	OM_uint32 ret;
 	krb5_error_code kret;
 	krb5_creds this_cred;
-	krb5_ccache ccache = NULL;
 	OM_uint32 lifetime_rec;
 
 	*cred = NULL;
-
-	if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
-		kret = krb5_cc_default (gssapi_krb5_context, &ccache);
-		if (kret) {
-			gssapi_krb5_set_error_string ();
-			*minor_status = kret;
-			return GSS_S_FAILURE;
-		}
-	} else {
-		ccache = initiator_cred_handle->ccache;
-	}
 
 	kret = krb5_cc_get_principal(gssapi_krb5_context,
 				     ccache,
@@ -245,10 +233,6 @@ gsskrb5_get_creds(
 	}
 
 	if (time_rec) *time_rec = lifetime_rec;
-
-	if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
-		krb5_cc_close(gssapi_krb5_context, ccache);
-	}
 
 	return GSS_S_COMPLETE;
 }
@@ -351,7 +335,7 @@ do_delegation (krb5_auth_context ac,
 static OM_uint32
 gsskrb5_initiator_start
 (OM_uint32 * minor_status,
- const gss_cred_id_t initiator_cred_handle,
+ krb5_ccache ccache,
  gss_ctx_id_t * context_handle,
  const gss_name_t target_name,
  const gss_OID mech_type,
@@ -369,7 +353,6 @@ gsskrb5_initiator_start
     krb5_flags ap_options;
     krb5_creds *cred = NULL;
     krb5_data outbuf;
-    krb5_ccache ccache = NULL;
     u_int32_t flags;
     krb5_data authenticator;
     Checksum cksum;
@@ -383,7 +366,7 @@ gsskrb5_initiator_start
 
 	/* We need to get the credentials for the requested target */
 	ret = gsskrb5_get_creds(minor_status,
-				initiator_cred_handle,
+				ccache, 
 				context_handle,
 				target_name,
 				time_req,
@@ -543,7 +526,7 @@ gsskrb5_initiator_start
 static OM_uint32
 gsskrb5_initiator_wait_for_mutual(
 	OM_uint32 * minor_status,
-	const gss_cred_id_t initiator_cred_handle,
+	krb5_ccache ccache,
 	gss_ctx_id_t * context_handle,
 	const gss_name_t target_name,
 	const gss_OID mech_type,
@@ -697,6 +680,8 @@ gsskrb5_init_sec_context
 	   )
 {
 	OM_uint32 ret;
+	krb5_error_code kret;
+	krb5_ccache ccache = NULL;
 
 	if (*context_handle == GSS_C_NO_CONTEXT) {
 		ret = _gsskrb5_create_ctx(minor_status,
@@ -708,12 +693,23 @@ gsskrb5_init_sec_context
 
 	if (actual_mech_type) *actual_mech_type = GSS_KRB5_MECHANISM;
 
+	if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
+		kret = krb5_cc_default (gssapi_krb5_context, &ccache);
+		if (kret) {
+			gssapi_krb5_set_error_string ();
+			*minor_status = kret;
+			return GSS_S_FAILURE;
+		}
+	} else {
+		ccache = initiator_cred_handle->ccache;
+	}
+
 	HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
 
 	switch ((*context_handle)->state) {
 	case INITIATOR_START:
 		ret = gsskrb5_initiator_start(minor_status,
-					      initiator_cred_handle,
+					      ccache,
 					      context_handle,
 					      target_name,
 					      mech_type,
@@ -727,7 +723,7 @@ gsskrb5_init_sec_context
 		break;
 	case INITIATOR_WAIT_FOR_MUTAL:
 		ret = gsskrb5_initiator_wait_for_mutual(minor_status,
-							initiator_cred_handle,
+							ccache,
 							context_handle,
 							target_name,
 							mech_type,
@@ -769,6 +765,10 @@ gsskrb5_init_sec_context
 		/* TODO: is this correct here? --metze */
 		ret =  GSS_S_BAD_STATUS;
 		break;
+	}
+
+	if (initiator_cred_handle == GSS_C_NO_CREDENTIAL) {
+		krb5_cc_close(gssapi_krb5_context, ccache);
 	}
 
 	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);

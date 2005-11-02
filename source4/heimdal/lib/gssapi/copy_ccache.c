@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: copy_ccache.c,v 1.7 2003/09/01 15:11:09 lha Exp $");
+RCSID("$Id: copy_ccache.c,v 1.9 2005/10/31 16:02:08 lha Exp $");
 
 OM_uint32
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
@@ -60,6 +60,94 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
+
+
+OM_uint32
+gss_krb5_import_ccache(OM_uint32 *minor_status,
+		       krb5_ccache in,
+		       gss_cred_id_t *cred)
+{
+    krb5_error_code kret;
+    gss_cred_id_t handle;
+    OM_uint32 ret;
+
+    *cred = NULL;
+
+    GSSAPI_KRB5_INIT ();
+
+    handle = (gss_cred_id_t)calloc(1, sizeof(*handle));
+    if (handle == GSS_C_NO_CREDENTIAL) {
+	gssapi_krb5_clear_status ();
+	*minor_status = ENOMEM;
+        return (GSS_S_FAILURE);
+    }
+    HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
+
+    handle->usage = GSS_C_INITIATE;
+
+    kret = krb5_cc_get_principal(gssapi_krb5_context, in, &handle->principal);
+    if (kret) {
+	free(handle);
+	gssapi_krb5_set_error_string ();
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    ret = _gssapi_krb5_ccache_lifetime(minor_status,
+				       in,
+				       handle->principal,
+				       &handle->lifetime);
+    if (ret != GSS_S_COMPLETE) {
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+	free(handle);
+	return ret;
+    }
+
+    ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
+    if (ret == GSS_S_COMPLETE)
+    	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				     &handle->mechanisms);
+    if (ret != GSS_S_COMPLETE) {
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+	free(handle);
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    {
+	const char *type, *name;
+	char *str;
+
+	type = krb5_cc_get_type(gssapi_krb5_context, in);
+	name = krb5_cc_get_name(gssapi_krb5_context, in);
+	
+	if (asprintf(&str, "%s:%s", type, name) == -1) {
+	    krb5_set_error_string(gssapi_krb5_context,
+				  "malloc - out of memory");
+	    kret = ENOMEM;
+	    goto out;
+	}
+
+	kret = krb5_cc_resolve(gssapi_krb5_context, str, &handle->ccache);
+	free(str);
+	if (kret)
+	    goto out;
+    }
+
+    *minor_status = 0;
+    *cred = handle;
+    return GSS_S_COMPLETE;
+
+out:
+    gssapi_krb5_set_error_string ();
+    if (handle->principal)
+	krb5_free_principal(gssapi_krb5_context, handle->principal);
+    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
+    free(handle);
+    *minor_status = kret;
+    return GSS_S_FAILURE;
+}
+
 
 OM_uint32
 gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,

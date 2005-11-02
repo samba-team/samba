@@ -46,6 +46,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->domain_obtained = CRED_UNINITIALISED;
 	cred->realm_obtained = CRED_UNINITIALISED;
 	cred->ccache_obtained = CRED_UNINITIALISED;
+	cred->gss_creds_obtained = CRED_UNINITIALISED;
 	cred->keytab_obtained = CRED_UNINITIALISED;
 	cred->principal_obtained = CRED_UNINITIALISED;
 

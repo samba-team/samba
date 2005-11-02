@@ -29,6 +29,11 @@ struct ccache_container {
 };
 
 
+struct gssapi_creds_container {
+	gss_cred_id_t creds;
+};
+
+
 struct keytab_container {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_keytab keytab;
@@ -155,5 +160,10 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 				     krb5_principal client_principal,
 				     time_t tgs_authtime,
 				     DATA_BLOB *pac);
+
+ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+					  gss_cred_id_t gssapi_cred,
+					  enum credentials_obtained obtained); 
+
 #endif /* HAVE_KRB5 */
 

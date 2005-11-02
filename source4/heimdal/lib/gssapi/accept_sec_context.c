@@ -239,7 +239,7 @@ gsskrb5_acceptor_ready(
 	OM_uint32 ret;
 	int32_t seq_number;
 	int is_cfx = 0;
-	u_int32_t flags = (*context_handle)->flags;
+	u_int32_t *flags = &(*context_handle)->flags;
 
 	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				      (*context_handle)->auth_context,
@@ -249,11 +249,11 @@ gsskrb5_acceptor_ready(
 
 	ret = _gssapi_msg_order_create(minor_status,
 				       &(*context_handle)->order,
-				       _gssapi_msg_order_f(flags),
+				       _gssapi_msg_order_f(*flags),
 				       seq_number, 0, is_cfx);
 	if (ret) return ret;
 
-	if (!(flags & GSS_C_MUTUAL_FLAG) && _gssapi_msg_order_f(flags)) {
+	if (!(*flags & GSS_C_MUTUAL_FLAG) && _gssapi_msg_order_f(*flags)) {
 		krb5_auth_con_setlocalseqnumber(gssapi_krb5_context,
 						(*context_handle)->auth_context,
 						seq_number);
@@ -262,11 +262,14 @@ gsskrb5_acceptor_ready(
 	/*
 	 * We should handle the delegation ticket, in case it's there
 	 */
-	if ((*context_handle)->fwd_data.length > 0 && (flags & GSS_C_DELEG_FLAG)) {
+	if ((*context_handle)->fwd_data.length > 0 && (*flags & GSS_C_DELEG_FLAG)) {
 		ret = gsskrb5_accept_delegated_token(minor_status,
 						     context_handle,
 						     delegated_cred_handle);
 		if (ret) return ret;
+	} else {
+		/* Well, looks like it wasn't there after all */
+		*flags &= ~GSS_C_DELEG_FLAG;
 	}
 
 	(*context_handle)->state	= ACCEPTOR_READY;
@@ -297,10 +300,9 @@ gsskrb5_acceptor_start
     krb5_ticket *ticket = NULL;
     krb5_keytab keytab = NULL;
     krb5_keyblock *keyblock = NULL;
-    krb5_data fwd_data;
     int is_cfx = 0;
 
-    krb5_data_zero (&fwd_data);
+    krb5_data_zero (&(*context_handle)->fwd_data);
 
     /*
      * We may, or may not, have an escapsulation.
@@ -415,7 +417,7 @@ gsskrb5_acceptor_start
 					       input_chan_bindings,
 					       authenticator->cksum,
 					       &flags,
-					       &fwd_data);
+					       &(*context_handle)->fwd_data);
 	krb5_free_authenticator(gssapi_krb5_context, &authenticator);
 	if (ret) {
 	    return ret;
@@ -461,15 +463,9 @@ gsskrb5_acceptor_start
 	    }
     }
     
-    /*
-     * We need to send the flags back to the caller
-     */
     flags |= GSS_C_TRANS_FLAG;
 
-    if (ret_flags)
-	*ret_flags = flags;
-    
-    /* And remember them for later */
+    /* Remember the flags */
     
     (*context_handle)->lifetime = ticket->ticket.endtime;
     (*context_handle)->flags = flags;
@@ -491,11 +487,23 @@ gsskrb5_acceptor_start
      * When GSS_C_DCE_STYLE is in use, we need ask for a AP-REP from the client
      */
     if (flags & GSS_C_DCE_STYLE) {
+	    if (ret_flags) {
+		    /* Return flags to caller, but we haven't processed delgations yet */
+		    *ret_flags = flags & ~GSS_C_DELEG_FLAG;
+	    }
+    
 	    (*context_handle)->state = ACCEPTOR_WAIT_FOR_DCESTYLE;
 	    return GSS_S_CONTINUE_NEEDED;
     }
 
-    return gsskrb5_acceptor_ready(minor_status, context_handle, delegated_cred_handle);
+    ret = gsskrb5_acceptor_ready(minor_status, context_handle, delegated_cred_handle);
+
+    /*
+     * We need to send the flags back to the caller
+     */
+    
+    *ret_flags = (*context_handle)->flags;
+    return ret;
 }
 
 static OM_uint32

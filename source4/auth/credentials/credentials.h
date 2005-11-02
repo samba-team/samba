@@ -47,6 +47,7 @@ struct cli_credentials {
 	enum credentials_obtained domain_obtained;
 	enum credentials_obtained realm_obtained;
 	enum credentials_obtained ccache_obtained;
+	enum credentials_obtained gss_creds_obtained;
 	enum credentials_obtained principal_obtained;
 	enum credentials_obtained keytab_obtained;
 
@@ -62,6 +63,7 @@ struct cli_credentials {
 	struct samr_Password *nt_hash;
 
 	struct ccache_container *ccache;
+	struct gssapi_creds_container *gssapi_creds;
 	struct keytab_container *keytab;
 
 	const char *(*workstation_cb) (struct cli_credentials *);

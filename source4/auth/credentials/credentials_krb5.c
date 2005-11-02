@@ -85,7 +85,7 @@ int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 	return 0;
 }
 
-
+/* Free a memory ccache */
 static int free_mccache(void *ptr) {
 	struct ccache_container *ccc = ptr;
 	krb5_cc_destroy(ccc->smb_krb5_context->krb5_context, ccc->ccache);
@@ -93,6 +93,7 @@ static int free_mccache(void *ptr) {
 	return 0;
 }
 
+/* Free a disk-based ccache */
 static int free_dccache(void *ptr) {
 	struct ccache_container *ccc = ptr;
 	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
@@ -163,7 +164,7 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 }
 
 
-int cli_credentials_new_ccache(struct cli_credentials *cred)
+int cli_credentials_new_ccache(struct cli_credentials *cred, struct ccache_container **_ccc)
 {
 	krb5_error_code ret;
 	char *rand_string;
@@ -211,6 +212,10 @@ int cli_credentials_new_ccache(struct cli_credentials *cred)
 	talloc_steal(cred, ccc);
 	talloc_free(ccache_name);
 
+	if (_ccc) {
+		*_ccc = ccc;
+	}
+
 	return ret;
 }
 
@@ -228,7 +233,7 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_new_ccache(cred);
+	ret = cli_credentials_new_ccache(cred, NULL);
 	if (ret) {
 		return ret;
 	}
@@ -242,6 +247,108 @@ int cli_credentials_get_ccache(struct cli_credentials *cred,
 		return ret;
 	}
 	*ccc = cred->ccache;
+	return ret;
+}
+
+static int free_gssapi_creds(void *ptr) {
+	OM_uint32 min_stat, maj_stat;
+	struct gssapi_creds_container *gcc = ptr;
+	maj_stat = gss_release_cred(&min_stat, 
+				    &gcc->creds);
+	return 0;
+}
+
+int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
+					 struct gssapi_creds_container **_gcc) 
+{
+	int ret = 0;
+	OM_uint32 maj_stat, min_stat;
+	struct gssapi_creds_container *gcc;
+	struct ccache_container *ccache;
+	if (cred->gss_creds_obtained >= (MAX(cred->ccache_obtained, 
+					     MAX(cred->principal_obtained, 
+						 cred->username_obtained)))) {
+		*_gcc = cred->gssapi_creds;
+		return 0;
+	}
+	ret = cli_credentials_get_ccache(cred, 
+					 &ccache);
+	if (ret) {
+		DEBUG(1, ("Failed to get CCACHE for GSSAPI client: %s\n", error_message(ret)));
+		return ret;
+	}
+
+	gcc = talloc(cred, struct gssapi_creds_container);
+	if (!gcc) {
+		return ENOMEM;
+	}
+
+	maj_stat = gss_krb5_import_ccache(&min_stat, ccache->ccache, 
+					   &gcc->creds);
+	if (maj_stat) {
+		if (min_stat) {
+			ret = min_stat;
+		} else {
+			ret = EINVAL;
+		}
+	}
+	if (ret == 0) {
+		cred->gss_creds_obtained = cred->ccache_obtained;
+		talloc_set_destructor(gcc, free_gssapi_creds);
+		cred->gssapi_creds = gcc;
+		*_gcc = gcc;
+	}
+	return ret;
+}
+
+/**
+   Set a gssapi cred_id_t into the credentails system.
+
+   This grabs the credentials both 'intact' and getting the krb5
+   ccache out of it.  This routine can be generalised in future for
+   the case where we deal with GSSAPI mechs other than krb5.
+
+   On sucess, the caller must not free gssapi_cred, as it now belongs
+   to the credentials system.
+*/
+
+ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
+					  gss_cred_id_t gssapi_cred,
+					  enum credentials_obtained obtained) 
+{
+	int ret;
+	OM_uint32 maj_stat, min_stat;
+	struct ccache_container *ccc;
+	struct gssapi_creds_container *gcc = talloc(cred, struct gssapi_creds_container);
+	if (!gcc) {
+		return ENOMEM;
+	}
+
+	ret = cli_credentials_new_ccache(cred, &ccc);
+	if (ret != 0) {
+		return ret;
+	}
+
+	maj_stat = gss_krb5_copy_ccache(&min_stat, 
+					gssapi_cred, ccc->ccache);
+	if (maj_stat) {
+		if (min_stat) {
+			ret = min_stat;
+		} else {
+			ret = EINVAL;
+		}
+	}
+
+	if (ret == 0) {
+		ret = cli_credentials_set_from_ccache(cred, obtained);
+	}
+	if (ret == 0) {
+		gcc->creds = gssapi_cred;
+		talloc_set_destructor(gcc, free_gssapi_creds);
+		
+		cred->gss_creds_obtained = obtained;
+		cred->gssapi_creds = gcc;
+	}
 	return ret;
 }
 
