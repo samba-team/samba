@@ -258,6 +258,11 @@ case "$host_os" in
 		LDSHFLAGS="-G"
 		AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 		;;
+	*-vms)
+		BLDMERGED="false"
+		BLDSHARED="false"
+		LDSHFLAGS=""
+		;;
 	*vos*) AC_DEFINE(STAT_ST_BLOCKSIZE,4096)
 		BLDSHARED="false"
 		BLDMERGED="false"
