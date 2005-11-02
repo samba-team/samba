@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h,v 1.37 2005/02/21 08:48:15 lukeh Exp $ */
+/* $Id: gssapi.h,v 1.38 2005/10/26 11:22:13 lha Exp $ */
 
 #ifndef GSSAPI_H_
 #define GSSAPI_H_
@@ -778,7 +778,6 @@ OM_uint32 gss_unseal
 OM_uint32 gsskrb5_acquire_cred
            (OM_uint32 * minor_status,
 	    struct krb5_keytab_data *keytab,
-	    struct krb5_ccache_data *ccache,
             const gss_name_t desired_name,
             OM_uint32 time_req,
             const gss_OID_set desired_mechs,
@@ -805,6 +804,11 @@ OM_uint32 gss_krb5_copy_service_keyblock
         (OM_uint32 *minor_status,
 	 gss_ctx_id_t context_handle,
 	 struct EncryptionKey **out);
+
+OM_uint32
+gss_krb5_import_ccache(OM_uint32 */*minor*/,
+		       struct krb5_ccache_data * /*in*/,
+		       gss_cred_id_t */*out*/);
 
 OM_uint32 gss_krb5_get_tkt_flags
 	(OM_uint32 */*minor*/,

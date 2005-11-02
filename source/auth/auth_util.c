@@ -526,6 +526,8 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 					  &session_info->security_token);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
+	session_info->credentials = NULL;
+
 	*_session_info = session_info;
 	return NT_STATUS_OK;
 }

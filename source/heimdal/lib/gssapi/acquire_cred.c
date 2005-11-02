@@ -33,7 +33,53 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: acquire_cred.c,v 1.23 2005/10/21 12:44:08 lha Exp $");
+RCSID("$Id: acquire_cred.c,v 1.24 2005/10/26 11:25:16 lha Exp $");
+
+OM_uint32
+_gssapi_krb5_ccache_lifetime(OM_uint32 *minor_status,
+			     krb5_ccache id,
+			     krb5_principal principal,
+			     OM_uint32 *lifetime)
+{
+    krb5_creds in_cred, *out_cred;
+    krb5_const_realm realm;
+    krb5_error_code kret;
+
+    memset(&in_cred, 0, sizeof(in_cred));
+    in_cred.client = principal;
+	
+    realm = krb5_principal_get_realm(gssapi_krb5_context,  principal);
+    if (realm == NULL) {
+	gssapi_krb5_clear_status ();
+	*minor_status = KRB5_PRINC_NOMATCH; /* XXX */
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_make_principal(gssapi_krb5_context, &in_cred.server, 
+			       realm, KRB5_TGS_NAME, realm, NULL);
+    if (kret) {
+	gssapi_krb5_set_error_string();
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    kret = krb5_get_credentials(gssapi_krb5_context, 0, 
+				id, &in_cred, &out_cred);
+    krb5_free_principal(gssapi_krb5_context, in_cred.server);
+    if (kret) {
+	gssapi_krb5_set_error_string();
+	*minor_status = kret;
+	return GSS_S_FAILURE;
+    }
+
+    *lifetime = out_cred->times.endtime;
+    krb5_free_creds(gssapi_krb5_context, out_cred);
+
+    return GSS_S_COMPLETE;
+}
+
+
+
 
 static krb5_error_code
 get_keytab(krb5_context context, krb5_keytab *keytab)
@@ -61,7 +107,6 @@ static OM_uint32 acquire_initiator_cred
 		  (OM_uint32 * minor_status,
 		   krb5_context context,
 		   krb5_keytab keytab,
-		   krb5_ccache ccache,
 		   const gss_name_t desired_name,
 		   OM_uint32 time_req,
 		   const gss_OID_set desired_mechs,
@@ -75,10 +120,11 @@ static OM_uint32 acquire_initiator_cred
     krb5_creds cred;
     krb5_principal def_princ;
     krb5_get_init_creds_opt *opt;
+    krb5_ccache ccache;
     krb5_error_code kret;
-    krb5_boolean made_ccache = FALSE;
     krb5_boolean made_keytab = FALSE;
 
+    ccache = NULL;
     def_princ = NULL;
     ret = GSS_S_FAILURE;
     memset(&cred, 0, sizeof(cred));
@@ -86,29 +132,22 @@ static OM_uint32 acquire_initiator_cred
     /* If we have a preferred principal, lets try to find it in all
      * caches, otherwise, fall back to default cache.  Ignore
      * errors. */
-    if (ccache == NULL && handle->principal) {
+    if (handle->principal)
 	kret = krb5_cc_cache_match (gssapi_krb5_context,
 				    handle->principal,
 				    NULL,
 				    &ccache);
-	if (kret) {
-	    ccache = NULL;
-	} else {
-	    made_ccache = TRUE;
-	}
-    }
+    
     if (ccache == NULL) {
 	kret = krb5_cc_default(gssapi_krb5_context, &ccache);
 	if (kret)
 	    goto end;
-        made_ccache = TRUE;
     }
     kret = krb5_cc_get_principal(context, ccache,
 	&def_princ);
     if (kret != 0) {
 	/* we'll try to use a keytab below */
 	krb5_cc_destroy(context, ccache);
-	made_ccache = FALSE;
 	ccache = NULL;
 	kret = 0;
     } else if (handle->principal == NULL)  {
@@ -133,65 +172,41 @@ static OM_uint32 acquire_initiator_cred
 	    if (kret)
 		goto end;
 	}
-	if (keytab != NULL) {
-	    kret = get_keytab(context, &keytab);
-	    if (kret)
-	        goto end;
-            made_keytab = TRUE;
-	}
-	kret = krb5_get_init_creds_opt_alloc(context, &opt);
+	kret = get_keytab(context, &keytab);
 	if (kret)
 	    goto end;
-	kret = krb5_get_init_creds_keytab(context, &cred,
+	kret = krb5_get_init_creds_opt_alloc(gssapi_krb5_context, &opt);
+	if (kret)
+	    goto end;
+	kret = krb5_get_init_creds_keytab(gssapi_krb5_context, &cred,
 	    handle->principal, keytab, 0, NULL, opt);
 	krb5_get_init_creds_opt_free(opt);
 	if (kret)
 	    goto end;
-	if (ccache == NULL) {
-	    kret = krb5_cc_gen_new(context, &krb5_mcc_ops,
-				   &ccache);
-	    if (kret)
-	        goto end;
-            made_ccache = TRUE;
-	}
-	kret = krb5_cc_initialize(context, ccache, cred.client);
+	kret = krb5_cc_gen_new(gssapi_krb5_context, &krb5_mcc_ops,
+		&ccache);
 	if (kret)
 	    goto end;
-	kret = krb5_cc_store_cred(context, ccache, &cred);
+	kret = krb5_cc_initialize(gssapi_krb5_context, ccache, cred.client);
+	if (kret)
+	    goto end;
+	kret = krb5_cc_store_cred(gssapi_krb5_context, ccache, &cred);
 	if (kret)
 	    goto end;
 	handle->lifetime = cred.times.endtime;
+	handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
     } else {
-	krb5_creds in_cred, *out_cred;
-	krb5_const_realm realm;
 
-	memset(&in_cred, 0, sizeof(in_cred));
-	in_cred.client = handle->principal;
-	
-	realm = krb5_principal_get_realm(context, 
-					 handle->principal);
-	if (realm == NULL) {
-	    kret = KRB5_PRINC_NOMATCH; /* XXX */
+	ret = _gssapi_krb5_ccache_lifetime(minor_status,
+					   ccache,
+					   handle->principal,
+					   &handle->lifetime);
+	if (ret != GSS_S_COMPLETE)
 	    goto end;
-	}
-
-	kret = krb5_make_principal(context, &in_cred.server, 
-				   realm, KRB5_TGS_NAME, realm, NULL);
-	if (kret)
-	    goto end;
-
-	kret = krb5_get_credentials(context, 0, 
-				    ccache, &in_cred, &out_cred);
-	krb5_free_principal(context, in_cred.server);
-	if (kret)
-	    goto end;
-
-	handle->lifetime = out_cred->times.endtime;
-	krb5_free_creds(context, out_cred);
+	kret = 0;
     }
 
     handle->ccache = ccache;
-    handle->made_ccache = made_ccache;
     ret = GSS_S_COMPLETE;
 
 end:
@@ -202,8 +217,8 @@ end:
     if (made_keytab)
 	krb5_kt_close(context, keytab);
     if (ret != GSS_S_COMPLETE) {
-	if (made_ccache)
-	    krb5_cc_close(context, ccache);
+	if (ccache != NULL)
+	    krb5_cc_close(gssapi_krb5_context, ccache);
 	if (kret != 0) {
 	    *minor_status = kret;
 	    gssapi_krb5_set_error_string ();
@@ -255,7 +270,6 @@ end:
 OM_uint32 gsskrb5_acquire_cred
            (OM_uint32 * minor_status,
 	    struct krb5_keytab_data *keytab,
-	    struct krb5_ccache_data *ccache,
             const gss_name_t desired_name,
             OM_uint32 time_req,
             const gss_OID_set desired_mechs,
@@ -314,7 +328,7 @@ OM_uint32 gsskrb5_acquire_cred
     }
     if (cred_usage == GSS_C_INITIATE || cred_usage == GSS_C_BOTH) {
 	ret = acquire_initiator_cred(minor_status, gssapi_krb5_context, 
-				     keytab, ccache, 
+				     keytab, 
 				     desired_name, time_req,
 				     desired_mechs, cred_usage, 
 				     handle, actual_mechs, time_rec);
@@ -379,7 +393,7 @@ OM_uint32 gss_acquire_cred
            )
 {
 	return gsskrb5_acquire_cred(minor_status,
-				    NULL, NULL,
+				    NULL, 
 				    desired_name,
 				    time_req,
 				    desired_mechs,

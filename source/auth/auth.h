@@ -118,6 +118,7 @@ struct auth_session_info {
 	struct security_token *security_token;
 	struct auth_serversupplied_info *server_info;
 	DATA_BLOB session_key;
+	struct cli_credentials *credentials;
 };
 
 struct auth_method_context;

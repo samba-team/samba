@@ -44,8 +44,10 @@ struct gensec_gssapi_state {
 	krb5_ccache ccache;
 	const char *ccache_name;
 	struct keytab_container *keytab;
+	struct gssapi_creds_container *client_cred;
 
 	gss_cred_id_t cred;
+	gss_cred_id_t delegated_cred_handle;
 };
 
 static char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
@@ -83,6 +85,10 @@ static int gensec_gssapi_destory(void *ptr)
 		maj_stat = gss_release_cred(&min_stat, 
 					    &gensec_gssapi_state->cred);
 	}
+	if (gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
+		maj_stat = gss_release_cred(&min_stat, 
+					    &gensec_gssapi_state->delegated_cred_handle);
+	}
 
 	if (gensec_gssapi_state->gssapi_context != GSS_C_NO_CONTEXT) {
 		maj_stat = gss_delete_sec_context (&min_stat,
@@ -118,13 +124,14 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	/* TODO: Fill in channel bindings */
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
-	gensec_gssapi_state->want_flags = GSS_C_MUTUAL_FLAG;
+	gensec_gssapi_state->want_flags = GSS_C_MUTUAL_FLAG | GSS_C_DELEG_FLAG;
 	gensec_gssapi_state->got_flags = 0;
 
 	gensec_gssapi_state->session_key = data_blob(NULL, 0);
 	gensec_gssapi_state->pac = data_blob(NULL, 0);
 
 	gensec_gssapi_state->cred = GSS_C_NO_CREDENTIAL;
+	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 
 	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destory); 
 
@@ -205,7 +212,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 	}
 
 	maj_stat = gsskrb5_acquire_cred(&min_stat, 
-					gensec_gssapi_state->keytab->keytab, NULL,
+					gensec_gssapi_state->keytab->keytab, 
 					gensec_gssapi_state->server_name,
 					GSS_C_INDEFINITE,
 					GSS_C_NULL_OID_SET,
@@ -227,7 +234,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
-	struct ccache_container *ccache;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
@@ -235,6 +241,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	OM_uint32 maj_stat, min_stat;
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	const char *principal;
+	struct gssapi_creds_container *gcc;
 
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -255,29 +262,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	}
 
 	gensec_gssapi_state = gensec_security->private_data;
-
-	ret = cli_credentials_get_ccache(creds, 
-					 &ccache);
-	if (ret) {
-		DEBUG(1, ("Failed to get CCACHE for gensec_gssapi: %s\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	principal = cli_credentials_get_principal(creds, 
-						  gensec_gssapi_state);
-	name_token.value  = discard_const_p(uint8_t, principal);
-	name_token.length = strlen(principal);
-
-	maj_stat = gss_import_name (&min_stat,
-				    &name_token,
-				    GSS_C_NT_USER_NAME,
-				    &gensec_gssapi_state->client_name);
-	if (maj_stat) {
-		DEBUG(2, ("GSS Import name of %s failed: %s\n",
-			  (char *)name_token.value,
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal()) {
@@ -307,27 +291,19 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	maj_stat = gsskrb5_acquire_cred(&min_stat, 
-					NULL, ccache->ccache,
-					gensec_gssapi_state->client_name,
-					GSS_C_INDEFINITE,
-					GSS_C_NULL_OID_SET,
-					GSS_C_INITIATE,
-					&gensec_gssapi_state->cred,
-					NULL, 
-					NULL);
-	if (maj_stat) {
-		switch (min_stat) {
-		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
-			DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
-				  hostname, gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-			return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
-		default:
-			DEBUG(1, ("Aquiring initiator credentails failed: %s\n", 
-				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	ret = cli_credentials_get_client_gss_creds(creds, &gcc);
+	switch (ret) {
+	case 0:
+		break;
+	case KRB5_KDC_UNREACH:
+		DEBUG(3, ("Cannot reach a KDC we require\n"));
+		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+	default:
+		DEBUG(1, ("Aquiring initiator credentails failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	gensec_gssapi_state->client_cred = gcc;
 
 	return NT_STATUS_OK;
 }
@@ -369,7 +345,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				   const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	OM_uint32 maj_stat, min_stat;
 	OM_uint32 min_stat2;
 	gss_buffer_desc input_token, output_token;
@@ -381,7 +357,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	case GENSEC_CLIENT:
 	{
 		maj_stat = gss_init_sec_context(&min_stat, 
-						gensec_gssapi_state->cred,
+						gensec_gssapi_state->client_cred->creds,
 						&gensec_gssapi_state->gssapi_context, 
 						gensec_gssapi_state->server_name, 
 						discard_const_p(gss_OID_desc, gensec_gssapi_state->gss_oid),
@@ -407,7 +383,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 						  &output_token, 
 						  &gensec_gssapi_state->got_flags, 
 						  NULL, 
-						  NULL);
+						  &gensec_gssapi_state->delegated_cred_handle);
 		gensec_gssapi_state->gss_oid = gss_oid_p;
 		break;
 	}
@@ -419,6 +395,12 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	if (maj_stat == GSS_S_COMPLETE) {
 		*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
 		gss_release_buffer(&min_stat2, &output_token);
+
+		if (gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG) {
+			DEBUG(5, ("gensec_gssapi: credentials were delegated\n"));
+		} else {
+			DEBUG(5, ("gensec_gssapi: NO credentials were delegated\n"));
+		}
 
 		return NT_STATUS_OK;
 	} else if (maj_stat == GSS_S_CONTINUE_NEEDED) {
@@ -941,6 +923,27 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	nt_status = gensec_gssapi_session_key(gensec_security, &session_info->session_key);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
+	if (!(gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG)) {
+		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client"));
+	} else {
+		krb5_error_code ret;
+		DEBUG(10, ("gensec_gssapi: delegated credentials supplied by client\n"));
+		session_info->credentials = cli_credentials_init(session_info);
+		if (!session_info->credentials) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		cli_credentials_set_conf(session_info->credentials);
+		
+		ret = cli_credentials_set_client_gss_creds(session_info->credentials, 
+							   gensec_gssapi_state->delegated_cred_handle,
+							   CRED_SPECIFIED);
+		if (ret) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		/* It has been taken from this place... */
+		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+	}
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
