@@ -46,7 +46,8 @@ class_attrs = new Array("objectClass",
 			"objectClassCategory", "subClassOf", 
 			"defaultObjectCategory", "defaultHidingValue", 
 			"systemFlags", "systemOnly", "defaultSecurityDescriptor",
-			"objectCategory");
+			"objectCategory", "possibleInferiors", "displaySpecification",
+			"schemaIDGUID");
 
 attrib_attrs = new Array("objectClass", "lDAPDisplayName", 
 			 "isSingleValued", "linkID", "systemFlags", "systemOnly",
@@ -91,6 +92,24 @@ function obj_attribute(name) {
 }
 
 
+syntaxmap = new Object();
+syntaxmap['2.5.5.9']  = '1.3.6.1.4.1.1466.115.121.1.27';
+syntaxmap['2.5.5.10'] = '1.3.6.1.4.1.1466.115.121.1.40';
+syntaxmap['2.5.5.11'] = '1.3.6.1.4.1.1466.115.121.1.24';
+syntaxmap['2.5.5.12'] = '1.3.6.1.4.1.1466.115.121.1.15';
+
+/*
+  map some attribute syntaxes from some apparently MS specific
+  syntaxes to the standard syntaxes
+*/
+function map_attribute_syntax(s) {
+	if (syntaxmap[s] != undefined) {
+		return syntaxmap[s];
+	}
+	return s;
+}
+
+
 /*
   fix a string DN to use ${BASEDN}
 */
@@ -108,6 +127,7 @@ function fix_dn(dn) {
 function write_ldif_one(o, attrs) {
 	var i;
 	printf("dn: CN=%s,CN=Schema,CN=Configuration,${BASEDN}\n", o.name);
+	printf("cn: %s\n", o.name);
 	printf("name: %s\n", o.name);
 	for (i=0;i<attrs.length;i++) {
 		var a = attrs[i];
@@ -476,7 +496,8 @@ function write_aggregate_ditcontentrule(class) {
 */
 function write_aggregate_attribute(attrib) {
 	printf("attributeTypes: ( %s NAME '%s' SYNTAX '%s' ", 
-	       attrib.attributeID, attrib.name, attrib.attributeSyntax);
+	       attrib.attributeID, attrib.name, 
+	       map_attribute_syntax(attrib.attributeSyntax));
 	if (attrib['isSingleValued'] == "TRUE") {
 		printf("SINGLE-VALUE ");
 	}
@@ -492,7 +513,6 @@ function write_aggregate() {
 	print("objectClass: top
 objectClass: subSchema
 cn: Aggregate
-distinguishedName: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
 instanceType: 4
 name: Aggregate
 objectCategory: CN=SubSchema,CN=Schema,CN=Configuration,${BASEDN}
