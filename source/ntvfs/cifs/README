@@ -3,8 +3,13 @@ backend that talks to a remote CIFS server. The primary aim of this
 backend is for debugging and development, although some poeple may
 find it useful as a CIFS gateway.
 
+There are two modes of operation: Password specified and delegated
+credentials.
 
-Here is a typical config:
+Password specified:
+-------------------
+
+This uses a static username/password in the config file, example:
 
 [myshare]
 	ntvfs handler = cifs
@@ -13,4 +18,23 @@ Here is a typical config:
 	cifs:password = mypass
 	cifs:domain = TESTDOM
 	cifs:share = test
+
+
+Delegated credentials:
+----------------------
+
+If your incoming user is authenticated with Kerberos, and the machine
+account for this Samba4 proxy server is 'trusted for delegation', then
+the Samba4 proxy can forward the client's credentials to the target.
+
+You must be joined to the domain (net join <domain> member).
+
+To set 'trusted for delegation' with MMC, see the checkbox in the
+Computer account property page under Users and Computers.
+
+[myshare]
+	ntvfs handler = cifs
+	cifs:server = myserver
+	cifs:share = test
+
 
