@@ -24,7 +24,7 @@ function smbsrv_sessions()
 	}
 
 	/* gather the results into a single array */
-	var i, count=0, ret = new Object();
+	var i, count=0, ret = new Array(0);
 	for (i=0;i<io.results.length;i++) {
 		var sessions = io.results[i].info.sessions.sessions;
 		var j;
@@ -33,7 +33,6 @@ function smbsrv_sessions()
 			count++;
 		}
 	}
-	ret.length = count;
 	return ret;
 }
 
