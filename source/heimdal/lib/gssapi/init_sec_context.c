@@ -275,7 +275,7 @@ do_delegation (krb5_auth_context ac,
 	       krb5_creds *cred,
 	       const gss_name_t target_name,
 	       krb5_data *fwd_data,
-	       int *flags)
+	       u_int32_t *flags)
 {
     krb5_creds creds;
     krb5_kdc_flags fwd_flags;
@@ -406,9 +406,26 @@ gsskrb5_initiator_start
 		flags = 0;
 		ap_options = 0;
 
+		/* 
+		 * If the realm policy approves a delegation, lets check local
+		 * policy if the credentials should be delegated, defafult to
+		 * false.
+		 */
+		if (cred->flags.b.ok_as_delegate) {
+			krb5_boolean delegate = FALSE;
+			
+			_gss_check_compat(NULL, target_name, "ok-as-delegate",
+					  &delegate, TRUE);
+			krb5_appdefault_boolean(gssapi_krb5_context,
+						"gssapi", target_name->realm,
+						"ok-as-delegate", delegate, &delegate);
+			if (delegate)
+				req_flags |= GSS_C_DELEG_FLAG;
+		}
+
 		if (req_flags & GSS_C_DELEG_FLAG) {
 			do_delegation((*context_handle)->auth_context,
-					      ccache, cred, target_name, &fwd_data, &flags);
+				      ccache, cred, target_name, &fwd_data, &flags);
 		}
 
 		if (req_flags & GSS_C_MUTUAL_FLAG) {
@@ -542,8 +559,8 @@ gsskrb5_initiator_wait_for_mutual(
 	krb5_error_code kret;
 	krb5_data inbuf;
 	u_int32_t flags = (*context_handle)->flags;
-	OM_uint32 l_seq_number;
-	OM_uint32 r_seq_number;
+	int32_t l_seq_number;
+	int32_t r_seq_number;
 	
 	/* We need to decapsulate the AP_REP if GSS_C_DCE_STYLE isn't in use */
 	{
