@@ -116,76 +116,34 @@ gsskrb5_is_cfx(gss_ctx_id_t context_handle, int *is_cfx)
 
 static OM_uint32
 gsskrb5_accept_delegated_token
-           (OM_uint32 * minor_status,
-            gss_ctx_id_t * context_handle,
-	    krb5_data *fwd_data,
-	    OM_uint32 *flags,
-	    krb5_principal principal,
-            gss_cred_id_t * delegated_cred_handle
-	   )
+(OM_uint32 * minor_status,
+ gss_ctx_id_t * context_handle,
+ krb5_data *fwd_data,
+ OM_uint32 *flags,
+ krb5_principal principal,
+ gss_cred_id_t * delegated_cred_handle
+    )
 {
     krb5_ccache ccache = NULL;
     krb5_error_code kret;
-    int32_t ac_flags, ret;
-    gss_cred_id_t handle = NULL;
+    int32_t ac_flags, ret = GSS_S_COMPLETE;
       
-    if (delegated_cred_handle == NULL) {
-	/* XXX Create a new delegated_cred_handle? */
+    *minor_status = 0;
 
-	ret = 0;
-
+    /* XXX Create a new delegated_cred_handle? */
+    if (delegated_cred_handle == NULL)
 	kret = krb5_cc_default (gssapi_krb5_context, &ccache);
-	if (kret) {
-	    *flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
-    } else {
-
-	*delegated_cred_handle = NULL;
-	
-	handle = calloc(1, sizeof(*handle));
-	if (handle == NULL) {
-	    ret = GSS_S_FAILURE;
-	    *minor_status = ENOMEM;
-	    krb5_set_error_string(gssapi_krb5_context, "out of memory");
-	    gssapi_krb5_set_error_string();
-	    *flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
-	if ((ret = gss_duplicate_name(minor_status, principal,
-				      &handle->principal)) != 0) {
-	    *flags &= ~GSS_C_DELEG_FLAG;
-	    ret = 0;
-	    goto end_fwd;
-	}
-	kret = krb5_cc_gen_new (gssapi_krb5_context,
-				&krb5_mcc_ops,
-				&handle->ccache);
-	if (kret) {
-	    *flags &= ~GSS_C_DELEG_FLAG;
-	    ret = 0;
-	    goto end_fwd;
-	}
-	ccache = handle->ccache;
-
-	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
-	if (ret) {
-	    *flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
-	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-				     &handle->mechanisms);
-	if (ret) {
-	    *flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
+    else
+	kret = krb5_cc_gen_new (gssapi_krb5_context, &krb5_mcc_ops, &ccache);
+    if (kret) {
+	*flags &= ~GSS_C_DELEG_FLAG;
+	goto out;
     }
 
     kret = krb5_cc_initialize(gssapi_krb5_context, ccache, principal);
     if (kret) {
 	*flags &= ~GSS_C_DELEG_FLAG;
-	ret = 0;
-	goto end_fwd;
+	goto out;
     }
       
     krb5_auth_con_removeflags(gssapi_krb5_context,
@@ -205,29 +163,27 @@ gsskrb5_accept_delegated_token
 	*flags &= ~GSS_C_DELEG_FLAG;
 	ret = GSS_S_FAILURE;
 	*minor_status = kret;
-	goto end_fwd;
+	goto out;
     }
- end_fwd:
-    /* if there was some kind of failure, clean up internal structures */
-    if ((*flags & GSS_C_DELEG_FLAG) == 0) {
-	if (handle) {
-	    if (handle->principal)
-		gss_release_name(minor_status, &handle->principal);
-	    if (handle->mechanisms)
-		gss_release_oid_set(NULL, &handle->mechanisms);
-	    if (handle->ccache)
-		krb5_cc_destroy(gssapi_krb5_context, handle->ccache);
-	    free(handle);
-	    handle = NULL;
-	}
-    }
-    if (delegated_cred_handle == NULL) {
-	if (ccache)
-	    krb5_cc_close(gssapi_krb5_context, ccache);
-    }
-    if (handle)
-	*delegated_cred_handle = handle;
 
+    if (delegated_cred_handle) {
+	ret = gss_krb5_import_ccache(minor_status,
+				     ccache,
+				     delegated_cred_handle);
+	if (ret != GSS_S_COMPLETE)
+	    goto out;
+
+	(*delegated_cred_handle)->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
+	ccache = NULL;
+    }
+
+out:
+    if (ccache) {
+	if (delegated_cred_handle == NULL)
+	    krb5_cc_close(gssapi_krb5_context, ccache);
+	else
+	    krb5_cc_destroy(gssapi_krb5_context, ccache);
+    }
     return ret;
 }
 
@@ -506,7 +462,7 @@ gsskrb5_accept_sec_context
 	ret = gssapi_krb5_encapsulate (minor_status,
 				       &outbuf,
 				       output_token,
-				       "\x02\x00",
+				       (u_char *)"\x02\x00",
 				       GSS_KRB5_MECHANISM);
 	krb5_data_free (&outbuf);
 	if (ret)
@@ -845,7 +801,7 @@ spnego_accept_sec_context
     if(len > data.length - taglen)
 	return ASN1_OVERRUN;
 
-    ret = decode_NegTokenInit((const char *)data.data + taglen, len,
+    ret = decode_NegTokenInit((const unsigned char *)data.data + taglen, len,
 			      &ni, &ni_len);
     if (ret)
 	return GSS_S_DEFECTIVE_TOKEN;
@@ -856,7 +812,7 @@ spnego_accept_sec_context
     }
 
     for (i = 0; !found && i < ni.mechTypes->len; ++i) {
-	char mechbuf[17];
+	unsigned char mechbuf[17];
 	size_t mech_len;
 
 	ret = der_put_oid (mechbuf + sizeof(mechbuf) - 1,
