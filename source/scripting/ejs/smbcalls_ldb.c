@@ -397,6 +397,84 @@ static int ejs_ldbClose(MprVarHandle eid, int argc, struct MprVar **argv)
 
 
 /*
+  start a ldb transaction
+  usage:
+   ok = ldb.transaction_start();
+*/
+static int ejs_ldbTransactionStart(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	if (argc != 0) {
+		ejsSetErrorMsg(eid, "ldb.transaction_start invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	ret = ldb_transaction_start(ldb);
+
+	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	return 0;
+}
+
+/*
+  cancel a ldb transaction
+  usage:
+   ok = ldb.transaction_cancel();
+*/
+static int ejs_ldbTransactionCancel(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	if (argc != 0) {
+		ejsSetErrorMsg(eid, "ldb.transaction_cancel invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	ret = ldb_transaction_cancel(ldb);
+
+	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	return 0;
+}
+
+/*
+  commit a ldb transaction
+  usage:
+   ok = ldb.transaction_commit();
+*/
+static int ejs_ldbTransactionCommit(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	if (argc != 0) {
+		ejsSetErrorMsg(eid, "ldb.transaction_commit invalid arguments");
+		return -1;
+	}
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	ret = ldb_transaction_commit(ldb);
+
+	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	return 0;
+}
+
+/*
   initialise ldb ejs subsystem
 */
 static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -413,6 +491,9 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "encode", ejs_base64encode);
 	mprSetCFunction(ldb, "decode", ejs_base64decode);
 	mprSetCFunction(ldb, "close", ejs_ldbClose);
+	mprSetCFunction(ldb, "transaction_start", ejs_ldbTransactionStart);
+	mprSetCFunction(ldb, "transaction_cancel", ejs_ldbTransactionCancel);
+	mprSetCFunction(ldb, "transaction_commit", ejs_ldbTransactionCommit);
 	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
 	mprSetVar(ldb, "SCOPE_ONE", mprCreateNumberVar(LDB_SCOPE_ONELEVEL));
 	mprSetVar(ldb, "SCOPE_SUBTREE", mprCreateNumberVar(LDB_SCOPE_SUBTREE));
