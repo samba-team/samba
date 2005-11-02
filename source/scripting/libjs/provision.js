@@ -166,7 +166,6 @@ function ldb_erase(ldb)
 		return;
 	}
 	assert(res.length == 0);
-	ldb_delete(ldb);
 }
 
 /*
