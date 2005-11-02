@@ -33,6 +33,14 @@ struct MprVar mprObject(const char *name)
 }
 
 /*
+  return a empty mpr array
+*/
+struct MprVar mprArray(const char *name)
+{
+	return ejsCreateArray(name && *name?name:"(NULL)", 0);
+}
+
+/*
   find a mpr component, allowing for sub objects, using the '.' convention
 */
  NTSTATUS mprGetVar(struct MprVar **v, const char *name)
@@ -101,7 +109,6 @@ struct MprVar mprObject(const char *name)
 	char idx[16];
 	mprItoa(i, idx, sizeof(idx));
 	mprSetVar(var, idx, v);
-	mprSetVar(var, "length", mprCreateIntegerVar(i+1));
 }
 
 /*
@@ -112,12 +119,9 @@ struct MprVar mprList(const char *name, const char **list)
 	struct MprVar var;
 	int i;
 
-	var = mprObject(name);
+	var = mprArray(name);
 	for (i=0;list && list[i];i++) {
 		mprAddArray(&var, i, mprString(list[i]));
-	}
-	if (i==0) {
-		mprSetVar(&var, "length", mprCreateIntegerVar(i));
 	}
 	return var;
 }
@@ -182,7 +186,7 @@ static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *
 			val = mprData(v.data, v.length);
 		} else {
 			int j;
-			val = mprObject(el->name);
+			val = mprArray(el->name);
 			for (j=0;j<el->num_values;j++) {
 				if (attr->ldif_write_fn(ldb, msg, 
 							&el->values[j], &v) != 0) {
@@ -214,12 +218,9 @@ struct MprVar mprLdbArray(struct ldb_context *ldb,
 	struct MprVar res;
 	int i;
 
-	res = mprObject(name);
+	res = mprArray(name);
 	for (i=0;i<count;i++) {
 		mprAddArray(&res, i, mprLdbMessage(ldb, msg[i]));
-	}
-	if (i==0) {
-		mprSetVar(&res, "length", mprCreateIntegerVar(0));
 	}
 	return res;
 }
@@ -230,6 +231,9 @@ struct MprVar mprLdbArray(struct ldb_context *ldb,
  */
 const char *mprToString(const struct MprVar *v)
 {
+	if (v->trigger) {
+		mprReadProperty(v, 0);
+	}
 	if (!mprVarIsString(v->type)) return NULL;
 	return v->string;
 }
@@ -239,6 +243,9 @@ const char *mprToString(const struct MprVar *v)
  */
 int mprToInt(const struct MprVar *v)
 {
+	if (v->trigger) {
+		mprReadProperty(v, 0);
+	}
 	if (!mprVarIsNumber(v->type)) return 0;
 	return mprVarToNumber(v);
 }

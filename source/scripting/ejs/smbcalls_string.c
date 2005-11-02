@@ -109,7 +109,7 @@ static int ejs_split(MprVarHandle eid, int argc, char **argv)
 	separator = argv[0];
 	s = argv[1];
 
-	ret = mprObject("list");
+	ret = mprArray("list");
 
 	while ((p = strstr(s, separator))) {
 		char *s2 = talloc_strndup(tmp_ctx, s, (int)(p-s));
