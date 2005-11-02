@@ -216,10 +216,10 @@ The chapters in this part each cover specific Samba features.
 
 <!-- Comment out the following line to include the manpages.
 	 *Please* do not commit with the two lines below enabled! -->
-<!-- -->
+<!--
 	<?latex \cleardoublepage ?>
 	<xi:include href="manpages.xml"/>
-<!-- -->
+-->
 	<?latex \cleardoublepage ?>
 
 <xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
