@@ -312,7 +312,9 @@ static int parseStmt(Ejs *ep, int state, int flags)
 					flags | EJS_FLAGS_DELETE) != EJS_STATE_EXPR_DONE) {
 				goto error;
 			}
-			mprDeleteProperty(ep->currentObj, ep->currentProperty->name);
+			if (flags & EJS_FLAGS_EXE) {
+				mprDeleteProperty(ep->currentObj, ep->currentProperty->name);
+			}
 			done++;
 			break;
 
