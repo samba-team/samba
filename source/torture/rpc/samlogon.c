@@ -1475,7 +1475,7 @@ BOOL torture_rpc_samlogon(void)
 	BOOL ret = True;
 	struct test_join *join_ctx;
 	struct test_join *user_ctx;
-	const char *user_password;
+	char *user_password;
 	const char *old_user_password;
 	char *test_machine_account;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -1512,7 +1512,7 @@ BOOL torture_rpc_samlogon(void)
 	user_ctx = torture_create_testuser(TEST_USER_NAME,
 					   userdomain,
 					   ACB_NORMAL, 
-					   &user_password);
+					   (const char **)&user_password);
 	if (!user_ctx) {
 		printf("Failed to join as Workstation\n");
 		return False;
