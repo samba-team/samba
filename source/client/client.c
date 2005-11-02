@@ -77,9 +77,6 @@ static uint_t put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
-/* some forward declarations */
-static struct smbcli_state *do_connect(const char *server, const char *share, struct cli_credentials *cred);
-
 
 /*******************************************************************
  Reduce a file name, removing .. elements.
@@ -2919,14 +2916,6 @@ static int process_command_string(char *cmd)
 	const char *ptr;
 	int rc = 0;
 
-	/* establish the connection if not already */
-	
-	if (!cli) {
-		cli = do_connect(desthost, service, cmdline_credentials);
-		if (!cli)
-			return 0;
-	}
-	
 	while (cmd[0] != '\0')    {
 		char *p;
 		fstring tok;
@@ -3208,23 +3197,30 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *do_connect(const char *server, const char *share, struct cli_credentials *cred)
+static struct smbcli_state *do_connect(TALLOC_CTX *mem_ctx, 
+				       const char *server, const char *share, struct cli_credentials *cred)
 {
 	struct smbcli_state *c;
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NULL;
+	}
 
 	if (strncmp(share, "\\\\", 2) == 0 ||
 	    strncmp(share, "//", 2) == 0) {
-		smbcli_parse_unc(share, NULL, &server, &share);
+		smbcli_parse_unc(share, tmp_ctx, &server, &share);
 	}
 	
-	status = smbcli_full_connection(NULL, &c, server,
+	status = smbcli_full_connection(mem_ctx, &c, server,
 					share, NULL, cred, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
+	talloc_free(tmp_ctx);
 
 	return c;
 }
@@ -3237,7 +3233,12 @@ static int process(char *base_directory)
 {
 	int rc = 0;
 
-	cli = do_connect(desthost, service, cmdline_credentials);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		return 1;
+	}
+
+	cli = do_connect(mem_ctx, desthost, service, cmdline_credentials);
 	if (!cli) {
 		return 1;
 	}
@@ -3250,7 +3251,7 @@ static int process(char *base_directory)
 		process_stdin();
 	}
   
-	talloc_free(cli);
+	talloc_free(mem_ctx);
 	return rc;
 }
 
