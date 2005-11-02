@@ -31,7 +31,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 			       const char *expr,
 			       const char **attrs, void **res)
 {
-	ADS_STATUS status;
+	ADS_STATUS status = ADS_SUCCESS;
 	int count = 3;
 	char *bp;
 

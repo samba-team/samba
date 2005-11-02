@@ -799,7 +799,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 
 	SAM_DISPINFO_CTR *ctr;
 	uint32 temp_size=0, total_data_size=0;
-	NTSTATUS disp_ret;
+	NTSTATUS disp_ret = NT_STATUS_UNSUCCESSFUL;
 	uint32 num_account = 0;
 	enum remote_arch_types ra_type = get_remote_arch();
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
