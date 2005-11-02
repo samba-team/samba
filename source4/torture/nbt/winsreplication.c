@@ -335,8 +335,11 @@ struct test_wrepl_conflict_conn {
 
 	struct nbt_name_socket *nbtsock_srv;
 
-	uint32_t addresses_1_num;
-	struct wrepl_ip *addresses_1;
+	uint32_t addresses_best_num;
+	struct wrepl_ip *addresses_best;
+
+	uint32_t addresses_all_num;
+	struct wrepl_ip *addresses_all;
 };
 
 static const struct wrepl_ip addresses_A_1[] = {
@@ -464,11 +467,20 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		ctx->nbtsock_srv = NULL;
 	}
 
-	ctx->addresses_1_num = 1;
-	ctx->addresses_1 = talloc_array(ctx, struct wrepl_ip, ctx->addresses_1_num);
-	if (!ctx->addresses_1) return NULL;
-	ctx->addresses_1[0].owner	= ctx->c.address;
-	ctx->addresses_1[0].ip		= ctx->myaddr;
+	ctx->addresses_best_num = 1;
+	ctx->addresses_best = talloc_array(ctx, struct wrepl_ip, ctx->addresses_best_num);
+	if (!ctx->addresses_best) return NULL;
+	ctx->addresses_best[0].owner	= ctx->c.address;
+	ctx->addresses_best[0].ip	= ctx->myaddr;
+
+	ctx->addresses_all_num = iface_count();
+	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, ctx->addresses_all_num);
+	if (!ctx->addresses_all) return NULL;
+	for (i=0; i < ctx->addresses_all_num; i++) {
+		ctx->addresses_all[i].owner	= ctx->c.address;
+		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_n_ip(i));
+		if (!ctx->addresses_all[i].ip) return NULL;
+	}
 
 	return ctx;
 }
@@ -3871,8 +3883,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -3880,8 +3892,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -3894,8 +3906,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -3917,8 +3929,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -3926,8 +3938,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -3940,8 +3952,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -3966,8 +3978,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -3975,8 +3987,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -3989,8 +4001,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4012,8 +4024,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4021,8 +4033,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4035,8 +4047,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4061,8 +4073,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4070,8 +4082,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4084,8 +4096,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4107,8 +4119,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4116,8 +4128,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4130,8 +4142,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4156,8 +4168,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4165,8 +4177,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4179,8 +4191,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4202,8 +4214,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4211,8 +4223,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4225,8 +4237,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4251,8 +4263,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4260,8 +4272,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -4274,8 +4286,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4297,8 +4309,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4306,8 +4318,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -4320,8 +4332,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4346,8 +4358,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4355,8 +4367,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4369,8 +4381,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4392,8 +4404,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4401,8 +4413,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4415,8 +4427,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4441,8 +4453,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4450,8 +4462,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -4464,8 +4476,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4487,8 +4499,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4496,8 +4508,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -4510,8 +4522,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4536,8 +4548,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4545,8 +4557,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -4559,8 +4571,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4582,8 +4594,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4591,8 +4603,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -4605,8 +4617,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4631,8 +4643,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4640,8 +4652,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4654,8 +4666,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4677,8 +4689,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4686,8 +4698,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4700,8 +4712,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4726,8 +4738,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4735,8 +4747,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4749,8 +4761,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4772,8 +4784,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4781,8 +4793,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4795,8 +4807,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4821,8 +4833,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4830,8 +4842,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4844,8 +4856,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4867,8 +4879,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4876,8 +4888,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4890,8 +4902,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4916,8 +4928,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4925,8 +4937,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4939,8 +4951,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4962,8 +4974,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -4971,8 +4983,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -4985,8 +4997,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5011,8 +5023,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5020,8 +5032,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5034,8 +5046,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5057,8 +5069,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5066,8 +5078,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5080,8 +5092,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5106,8 +5118,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5115,8 +5127,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5129,8 +5141,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5152,8 +5164,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5161,8 +5173,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5175,8 +5187,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5201,8 +5213,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5210,8 +5222,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5224,8 +5236,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5247,8 +5259,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5256,8 +5268,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5270,8 +5282,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5296,8 +5308,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5305,8 +5317,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5319,8 +5331,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5342,8 +5354,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5351,8 +5363,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5365,8 +5377,8 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.replica= {
@@ -5559,8 +5571,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5571,8 +5583,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5585,8 +5597,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5612,8 +5624,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5639,8 +5651,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5651,8 +5663,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -5665,8 +5677,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5694,8 +5706,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5707,8 +5719,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5721,8 +5733,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5748,8 +5760,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5760,8 +5772,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -5774,8 +5786,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5803,8 +5815,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5816,8 +5828,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -5830,8 +5842,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5857,8 +5869,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5869,8 +5881,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -5883,8 +5895,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5912,8 +5924,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5924,8 +5936,34 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,active with superset ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MA_SP_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_all_num,
+			.ips		= ctx->addresses_all,
 			.apply_expected	= True
 		},
 	},
@@ -5938,8 +5976,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5951,8 +5989,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
 			.apply_expected	= False
 		},
 	},
@@ -5965,8 +6003,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -5978,8 +6016,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
 			.apply_expected	= True
 		},
 	},
@@ -5992,8 +6030,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6004,8 +6042,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6018,8 +6056,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6030,8 +6068,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
 			.apply_expected	= False
 		},
 	},
@@ -6047,8 +6085,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6059,8 +6097,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6073,8 +6111,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6099,8 +6137,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6111,8 +6149,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6125,8 +6163,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6154,8 +6192,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6166,8 +6204,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 	},
@@ -6180,8 +6218,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6206,8 +6244,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6218,8 +6256,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6232,8 +6270,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6261,8 +6299,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6273,8 +6311,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6287,8 +6325,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6313,8 +6351,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6325,8 +6363,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6339,8 +6377,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6368,8 +6406,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6380,8 +6418,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6394,8 +6432,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6420,8 +6458,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6432,8 +6470,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6446,8 +6484,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6475,8 +6513,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6487,8 +6525,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6501,8 +6539,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6527,8 +6565,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6539,8 +6577,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6553,8 +6591,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6582,8 +6620,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6594,8 +6632,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6608,8 +6646,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6634,8 +6672,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6646,8 +6684,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6660,8 +6698,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6689,8 +6727,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6701,8 +6739,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6715,8 +6753,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6741,8 +6779,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6753,8 +6791,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_TOMBSTONE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= False
 		},
 	},
@@ -6767,8 +6805,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.wins	= {
 			.nb_flags	= NBT_NM_GROUP,
 			.mhomed		= False,
-			.num_ips	= ctx->addresses_1_num,
-			.ips		= ctx->addresses_1,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
 			.apply_expected	= True
 		},
 		.defend	= {
@@ -6781,6 +6819,520 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.is_static	= False,
 			.num_ips	= ARRAY_SIZE(addresses_B_1),
 			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+/* 
+ * multi homed vs. unique section
+ */
+	/*
+	 * mhomed,active vs. unique,active with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_UA_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. unique,active with different ip(s), positive response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_UA_DI_P", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. unique,active with different ip(s), negative response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_UA_DI_N", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= False,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. unique,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_UT_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. unique,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_UT_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+/* 
+ * multi homed vs. normal group section
+ */
+	/*
+	 * mhomed,active vs. group,active with same ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_GA_SI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. group,active with different ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_GA_DI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. group,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_GT_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. group,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_GT_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_GROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+/* 
+ * multi homed vs. special group section
+ */
+	/*
+	 * mhomed,active vs. sgroup,active with same ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_SA_SI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. group,active with different ip(s), release expected
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_SA_DI_R", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.expect_release	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. sgroup,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_ST_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. sgroup,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_ST_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+/* 
+ * multi homed vs. multi homed section
+ */
+	/*
+	 * mhomed,active vs. mhomed,active with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with superset ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SP_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_all_num,
+			.ips		= ctx->addresses_all,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with different ip(s), positive response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_DI_P", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with different ip(s), negative response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_DI_N", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= False,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,tombstone with same ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MT_SI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,tombstone with different ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MT_DI_U", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
 			.apply_expected	= False
 		},
 	},
