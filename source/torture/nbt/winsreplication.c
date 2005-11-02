@@ -5531,6 +5531,9 @@ struct test_conflict_owned_active_vs_replica_struct {
 		BOOL positive;
 		BOOL expect_release;
 		BOOL ret;
+		/* when num_ips == 0, then .wins.ips are used */
+		uint32_t num_ips;
+		const struct wrepl_ip *ips;
 	} defend;
 	struct {
 		enum wrepl_name_type type;
@@ -5604,6 +5607,35 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.defend	= {
 			.timeout	= 10,
 			.positive	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. unique,active with different ip(s), positive response other ips
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UA_DI_O", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
 		},
 		.replica= {
 			.type		= WREPL_TYPE_UNIQUE,
@@ -5983,6 +6015,35 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.defend	= {
 			.timeout	= 10,
 			.positive	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,active with different ip(s), positive response other ips
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MA_DI_O", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
 		},
 		.replica= {
 			.type		= WREPL_TYPE_MHOMED,
@@ -6879,6 +6940,35 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		},
 	},
 	/*
+	 * mhomed,active vs. unique,active with different ip(s), positive response other ips
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_UA_DI_O", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= False
+		},
+	},
+	/*
 	 * mhomed,active vs. unique,active with different ip(s), negative response
 	 */
 	{
@@ -7252,8 +7342,37 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_1),
-			.ips		= addresses_B_1,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with different ip(s), positive response other ips
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_DI_O", 0x00, NULL),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
 			.apply_expected	= False
 		},
 	},
@@ -7519,7 +7638,16 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 	rep_packet->answers[0].ttl       = 0;
 
 	if (rec->defend.positive) {
-		uint32_t i;
+		uint32_t i, num_ips;
+		const struct wrepl_ip *ips;		
+
+		if (rec->defend.num_ips > 0) {
+			num_ips	= rec->defend.num_ips;
+			ips	= rec->defend.ips;
+		} else {
+			num_ips	= rec->wins.num_ips;
+			ips	= rec->wins.ips;
+		}
 
 		/* send a positive reply */
 		rep_packet->operation	= 
@@ -7531,16 +7659,16 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 
 		rep_packet->answers[0].rr_type   = NBT_QTYPE_NETBIOS;
 
-		rep_packet->answers[0].rdata.netbios.length = rec->wins.num_ips*6;
+		rep_packet->answers[0].rdata.netbios.length = num_ips*6;
 		rep_packet->answers[0].rdata.netbios.addresses = 
-			talloc_array(rep_packet->answers, struct nbt_rdata_address, rec->wins.num_ips);
+			talloc_array(rep_packet->answers, struct nbt_rdata_address, num_ips);
 		if (rep_packet->answers[0].rdata.netbios.addresses == NULL) return;
 
-		for (i=0; i < rec->wins.num_ips; i++) {
+		for (i=0; i < num_ips; i++) {
 			struct nbt_rdata_address *addr = 
 				&rep_packet->answers[0].rdata.netbios.addresses[i];
 			addr->nb_flags	= rec->wins.nb_flags;
-			addr->ipaddr	= rec->wins.ips[i].ip;
+			addr->ipaddr	= ips[i].ip;
 		}
 		DEBUG(2,("Sending positive name query reply for %s to %s:%d\n", 
 			nbt_name_string(rep_packet, name), src->addr, src->port));
