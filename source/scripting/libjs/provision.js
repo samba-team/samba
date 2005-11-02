@@ -128,9 +128,12 @@ function hostname()
 function ldb_delete(ldb)
 {
 	println("Deleting " + ldb.filename);
-	sys.unlink(ldb.filename);
+	var lp = loadparm_init();
+	sys.unlink(sprintf("%s/%s", lp.get("private dir"), ldb.filename));
+	ldb.transaction_cancel();
 	ldb.close();
 	var ok = ldb.connect(ldb.filename);
+	ldb.transaction_start();
 	assert(ok);
 }
 
@@ -148,7 +151,7 @@ function ldb_erase(ldb)
 	ldb.del("@MODULES");
 
 	/* and the rest */
-	var res = ldb.search("(|(objectclass=*)(dn=*))", attrs);
+	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", attrs);
 	var i;
 	if (typeof(res) == "undefined") {
 		ldb_delete(ldb);
@@ -157,12 +160,13 @@ function ldb_erase(ldb)
 	for (i=0;i<res.length;i++) {
 		ldb.del(res[i].dn);
 	}
-	res = ldb.search("(|(objectclass=*)(dn=*))", attrs);
+	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", attrs);
 	if (res.length != 0) {
 		ldb_delete(ldb);
 		return;
 	}
 	assert(res.length == 0);
+	ldb_delete(ldb);
 }
 
 /*
@@ -194,12 +198,15 @@ function setup_ldb(ldif, dbname, subobj)
 	var connect_ok = ldb.connect(dbname);
 	assert(connect_ok);
 
+	ldb.transaction_start();
+
 	if (erase) {
 		ldb_erase(ldb);	
 	}
 
 	var add_ok = ldb.add(data);
 	assert(add_ok);
+	ldb.transaction_commit();
 }
 
 /*
@@ -279,6 +286,8 @@ function provision(subobj, message, blank, paths)
 	setup_ldb("hklm.ldif", paths.hklm, subobj);
 	message("Setting up sam.ldb attributes\n");
 	setup_ldb("provision_init.ldif", paths.samdb, subobj);
+//	message("Setting up sam.ldb objectclasses\n");
+//	setup_ldb("schema_classes.ldif", paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb templates\n");
 	setup_ldb("provision_templates.ldif", paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb data\n");
@@ -394,6 +403,8 @@ function newuser(username, unixname, password, message)
 	var ok = ldb.connect(samdb);
 	assert(ok);
 
+	ldb.transaction_start();
+
 	/* find the DNs for the domain and the domain users group */
 	var domain_dn = searchone(ldb, "objectClass=domainDNS", "dn");
 	assert(domain_dn != undefined);
@@ -451,7 +462,11 @@ member: %s
 	/*
 	  modify the userAccountControl to remove the disabled bit
 	*/
-	return enable_account(ldb, user_dn);
+	ok = enable_account(ldb, user_dn);
+	if (ok) {
+		ldb.transaction_commit();
+	}
+	return ok;
 }
 
 // Check whether a name is valid as a NetBIOS name. 
