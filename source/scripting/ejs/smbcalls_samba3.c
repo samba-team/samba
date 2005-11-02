@@ -31,14 +31,14 @@ static struct MprVar mprRegistry(struct samba3_regdb *reg)
 	struct MprVar mpv = mprObject("registry"), ks, vs, k, v;
 	int i, j;
 
-	ks = mprObject("array");
+	ks = mprArray("array");
 
 	for (i = 0; i < reg->key_count; i++) {
 		k = mprObject("regkey");
 
 		mprSetVar(&k, "name", mprString(reg->keys[i].name));
 
-		vs = mprObject("array");
+		vs = mprArray("array");
 		
 		for (j = 0; j < reg->keys[i].value_count; j++) {
 			v = mprObject("regval");
@@ -90,7 +90,7 @@ static struct MprVar mprIdmapDb(struct samba3_idmapdb *db)
 	mprSetVar(&mpv, "user_hwm", mprCreateIntegerVar(db->user_hwm));
 	mprSetVar(&mpv, "group_hwm", mprCreateIntegerVar(db->group_hwm));
 
-	mps = mprObject("array");
+	mps = mprArray("array");
 
 	for (i = 0; i < db->mapping_count; i++) {
 		char *tmp;
@@ -120,7 +120,7 @@ static struct MprVar mprIdmapDb(struct samba3_idmapdb *db)
 
 static struct MprVar mprGroupMappings(struct samba3_groupdb *db)
 {
-	struct MprVar mpv = mprObject("array"), g;
+	struct MprVar mpv = mprArray("array"), g;
 	int i;
 
 	for (i = 0; i < db->groupmap_count; i++) {
@@ -161,7 +161,7 @@ static struct MprVar mprAliases(struct samba3_groupdb *db)
 		mprSetVar(&a, "sid", mprString(tmp));
 		talloc_free(tmp);
 
-		am = mprObject("array");
+		am = mprArray("array");
 
 		for (j = 0; j < db->aliases[i].member_count; j++) {
 			tmp = dom_sid_string(NULL, db->aliases[i].members[j]);
@@ -218,7 +218,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 	struct MprVar mpv = mprObject("samba3_secrets"), es, e;
 	int i;
 
-	es = mprObject("array");
+	es = mprArray("array");
 
 	for (i = 0; i < sec->ldappw_count; i++) {
 		e = mprObject("ldappw");
@@ -231,7 +231,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 	mprSetVar(&mpv, "ldappws", es);
 
-	es = mprObject("array");
+	es = mprArray("array");
 
 	for (i = 0; i < sec->domain_count; i++) {
 		mprAddArray(&es, i, mprDomainSecrets(&sec->domains[i]));
@@ -243,7 +243,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 	mprSetVar(&mpv, "domains", es);
 
-	es = mprObject("trusted_domains");
+	es = mprArray("trusted_domains");
 
 	for (i = 0; i < sec->trusted_domain_count; i++) {
 		struct MprVar ns;
@@ -251,7 +251,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 		int j;
 		e = mprObject("trusted_domain");
 
-		ns = mprObject("array");
+		ns = mprArray("array");
 
 		for (j = 0; j < sec->trusted_domains[i].uni_name_len; j++) {
 			mprAddArray(&ns, j, mprString(sec->trusted_domains[i].uni_name[j]));
@@ -275,7 +275,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 	mprSetVar(&mpv, "trusted_domains", es);
 	
-	es = mprObject("array");
+	es = mprArray("array");
 
 	for (i = 0; i < sec->afs_keyfile_count; i++) {
 		struct MprVar ks;
@@ -284,7 +284,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 		mprSetVar(&e, "cell", mprString(sec->afs_keyfiles[i].cell));
 
-		ks = mprObject("array");
+		ks = mprArray("array");
 		
 		for (j = 0; j < 8; j++) {
 			struct MprVar k = mprObject("entry");
@@ -318,7 +318,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 static struct MprVar mprShares(struct samba3 *samba3)
 {
-	struct MprVar mpv = mprObject("array"), s;
+	struct MprVar mpv = mprArray("array"), s;
 	int i;
 
 	for (i = 0; i < samba3->share_count; i++) {
@@ -340,7 +340,7 @@ static struct MprVar mprShares(struct samba3 *samba3)
 
 static struct MprVar mprSamAccounts(struct samba3 *samba3)
 {
-	struct MprVar mpv = mprObject("array"), m;
+	struct MprVar mpv = mprArray("array"), m;
 	int i;
 
 	for (i = 0; i < samba3->samaccount_count; i++) {
@@ -391,7 +391,7 @@ static struct MprVar mprSamAccounts(struct samba3 *samba3)
 
 static struct MprVar mprWinsEntries(struct samba3 *samba3)
 {
-	struct MprVar mpv = mprObject("array");
+	struct MprVar mpv = mprArray("array");
 	int i, j;
 
 	for (i = 0; i < samba3->winsdb_count; i++) {

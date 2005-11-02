@@ -88,7 +88,7 @@ static int ejs_blobToArray(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto failed;
 	}
 
-	array = mprObject("array");
+	array = mprArray("array");
 	
 	for (i=0;i<blob->length;i++) {
 		mprAddArray(&array, i, mprCreateNumberVar(blob->data[i]));

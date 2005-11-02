@@ -32,7 +32,7 @@
 static int ejs_sys_interfaces(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	int i, count = iface_count();
-	struct MprVar ret = mprObject("interfaces");
+	struct MprVar ret = mprArray("interfaces");
 	for (i=0;i<count;i++) {
 		mprAddArray(&ret, i, mprString(iface_n_ip(i)));
 	}

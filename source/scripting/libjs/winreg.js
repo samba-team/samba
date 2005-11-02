@@ -51,16 +51,13 @@ function __winreg_open_path(path)
 {
 	var s = string_init();
 	var i, components = s.split('\\', path);
-	var list = new Object();
-
-	list.length = 0;
 
 	/* cope with a leading slash */
 	if (components[0] == '') {
 		for (i=0;i<(components.length-1);i++) {
 			components[i] = components[i+1];
 		}
-		components.length--;
+		delete(components[i]);
 	}
 	
 	if (components.length == 0) {
@@ -108,8 +105,7 @@ function __winreg_open_path(path)
 */
 function __winreg_enum_path(path)
 {
-	var list = new Object();
-	list.length = 0;
+	var list = new Array(0);
 
 	if (path == null || path == "\\" || path == "") {
 		return new Array("HKLM", "HKU");
@@ -155,7 +151,6 @@ function __winreg_enum_path(path)
 			return list;
 		}
 		list[list.length] = out.name.name;
-		list.length++;
 	}
 
 	this.close(handle);
@@ -174,8 +169,7 @@ function __winreg_enum_path(path)
 function __winreg_enum_values(path)
 {
 	var data = datablob_init();
-	var list = new Object();
-	list.length = 0;
+	var list = new Array(0);
 
 	var handle = this.open_path(path);
 	if (handle == undefined) {
@@ -224,7 +218,6 @@ function __winreg_enum_values(path)
 		el.value = data.regToVar(el.rawvalue, el.type);
 		el.size  = out.size;
 		list[list.length] = el;
-		list.length++;
 	}
 
 	this.close(handle);
