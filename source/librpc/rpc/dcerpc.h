@@ -69,8 +69,11 @@ struct dcerpc_connection {
 		void (*recv_data)(struct dcerpc_connection *, DATA_BLOB *, NTSTATUS status);
 	} transport;
 
-	/* pending requests */
+	/* Requests that have been sent, waiting for a reply */
 	struct rpc_request *pending;
+
+	/* Sync requests waiting to be shipped */
+	struct rpc_request *request_queue;
 
 	/* private pointer for pending full requests */
 	void *full_request_private;
@@ -145,6 +148,7 @@ struct dcerpc_interface_call {
 	ndr_push_flags_fn_t ndr_push;
 	ndr_pull_flags_fn_t ndr_pull;
 	ndr_print_function_t ndr_print;
+	BOOL async;
 };
 
 struct dcerpc_endpoint_list {
@@ -203,6 +207,11 @@ struct rpc_request {
 	DATA_BLOB payload;
 	uint_t flags;
 	uint32_t fault_code;
+
+	const struct GUID *object;
+	uint16_t opnum;
+	DATA_BLOB request_data;
+	BOOL async_call;
 
 	/* use by the ndr level async recv call */
 	struct {
