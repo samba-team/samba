@@ -124,7 +124,14 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	/* TODO: Fill in channel bindings */
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
-	gensec_gssapi_state->want_flags = GSS_C_MUTUAL_FLAG | GSS_C_DELEG_FLAG;
+	gensec_gssapi_state->want_flags = 0;
+	if (lp_parm_bool(-1, "gensec_gssapi", "mutual", True)) {
+		gensec_gssapi_state->want_flags |= GSS_C_MUTUAL_FLAG;
+	}
+	if (lp_parm_bool(-1, "gensec_gssapi", "delegation", False)) {
+		gensec_gssapi_state->want_flags |= GSS_C_DELEG_FLAG;
+	}
+
 	gensec_gssapi_state->got_flags = 0;
 
 	gensec_gssapi_state->session_key = data_blob(NULL, 0);
