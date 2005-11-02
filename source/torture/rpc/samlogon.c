@@ -231,6 +231,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			break;
 		}
 		break;
+	default:
+		/* can't happen */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 		
 	if (!base) {
