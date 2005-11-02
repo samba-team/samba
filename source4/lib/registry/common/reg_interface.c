@@ -416,7 +416,6 @@ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, const struct registry_key *parent, 
 	}
 	
 	(*newkey)->hive = parent->hive;
-	(*newkey)->backend_data = talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name);
 
 	return WERR_OK;
 }
