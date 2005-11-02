@@ -332,20 +332,19 @@ init_auth
     }
     
     /* 
-     * If the realm policy approves a delegation, lets check local
-     * policy if the credentials should be delegated, defafult to
-     * false.
+     * If the credential doesn't have ok-as-delegate, check what local
+     * policy say about ok-as-delegate, default is FALSE that makes
+     * code ignore all this, but if its TRUE, strip of the
+     * GSS_C_DELEG_FLAG.
      */
-    if (cred->flags.b.ok_as_delegate) {
-	krb5_boolean delegate = FALSE;
+    if (!cred->flags.b.ok_as_delegate) {
+	krb5_boolean delegate;
     
-	_gss_check_compat(NULL, target_name, "ok-as-delegate",
-			  &delegate, TRUE);
 	krb5_appdefault_boolean(gssapi_krb5_context,
 				"gssapi", target_name->realm,
-				"ok-as-delegate", delegate, &delegate);
+				"ok-as-delegate", FALSE, &delegate);
 	if (delegate)
-	    req_flags |= GSS_C_DELEG_FLAG;
+	    req_flags &= ~GSS_C_DELEG_FLAG;
     }
 
     flags = 0;
