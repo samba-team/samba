@@ -193,6 +193,7 @@ static OM_uint32 acquire_initiator_cred
 	if (kret)
 	    goto end;
 	handle->lifetime = cred.times.endtime;
+	handle->cred_flags |= GSS_CF_DESTROY_CRED_ON_RELEASE;
     } else {
 
 	ret = _gssapi_krb5_ccache_lifetime(minor_status,
