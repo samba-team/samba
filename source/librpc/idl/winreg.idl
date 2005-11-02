@@ -131,7 +131,10 @@
 
 	typedef struct {
 		[value(strlen_m(name)*2)] uint16 length; 
-		[value(strlen_m(name)*2)] uint16 size;
+		/* size cannot be auto-set by value() as it is the
+		   amount of space the server is allowed to use for this
+		   string in the reply, not its current size */
+		uint16 size;
 		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
 	} winreg_StringBuf;
 

@@ -403,6 +403,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing EnumKey\n\n");
 
 	class.name   = "";
+	class.size   = 1024;
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;
@@ -413,6 +414,7 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	do {
 		name.name   = NULL;
+		name.size   = 1024;
 
 		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
 
@@ -533,6 +535,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("testing EnumValue\n");
 
 	name.name   = "";
+	name.size   = 1024;
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;
@@ -684,7 +687,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		      const char *name, winreg_open_fn open_fn)
 {
 	struct policy_handle handle, newhandle;
-	BOOL ret = True, created = False, deleted = False;
+	BOOL ret = True, created = False, created2 = False, deleted = False;
 	struct winreg_OpenHKLM r;
 	NTSTATUS status;
 
@@ -742,20 +745,17 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (created && !test_CreateKey_sd(p, mem_ctx, &handle, TEST_KEY2, 
+	if (created && test_CreateKey_sd(p, mem_ctx, &handle, TEST_KEY2, 
 					  NULL, &newhandle)) {
-		printf("CreateKey failed - not considering a failure\n");
-		created = False;
-	} else {
-		created = True;
+		created2 = True;
 	}
 
-	if (created && !test_GetKeySecurity(p, mem_ctx, &newhandle)) {
+	if (created2 && !test_GetKeySecurity(p, mem_ctx, &newhandle)) {
 		printf("GetKeySecurity failed\n");
 		ret = False;
 	}
 
-	if (created && !test_CloseKey(p, mem_ctx, &newhandle)) {
+	if (created2 && !test_CloseKey(p, mem_ctx, &newhandle)) {
 		printf("CloseKey failed\n");
 		ret = False;
 	}
