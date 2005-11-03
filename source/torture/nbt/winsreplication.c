@@ -331,15 +331,24 @@ struct test_wrepl_conflict_conn {
 	struct wrepl_wins_owner a, b, c;
 
 	const char *myaddr;
+	const char *myaddr2;
 	struct nbt_name_socket *nbtsock;
+	struct nbt_name_socket *nbtsock2;
 
 	struct nbt_name_socket *nbtsock_srv;
+	struct nbt_name_socket *nbtsock_srv2;
 
 	uint32_t addresses_best_num;
 	struct wrepl_ip *addresses_best;
 
+	uint32_t addresses_best2_num;
+	struct wrepl_ip *addresses_best2;
+
 	uint32_t addresses_all_num;
 	struct wrepl_ip *addresses_all;
+
+	uint32_t addresses_mhomed_num;
+	struct wrepl_ip *addresses_mhomed;
 };
 
 static const struct wrepl_ip addresses_A_1[] = {
@@ -452,6 +461,13 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 	ctx->myaddr = talloc_strdup(mem_ctx, iface_best_ip(address));
 	if (!ctx->myaddr) return NULL;
 
+	for (i = 0; i < iface_count(); i++) {
+		if (strcmp(ctx->myaddr, iface_n_ip(i)) == 0) continue;
+		ctx->myaddr2 = talloc_strdup(mem_ctx, iface_n_ip(i));
+		if (!ctx->myaddr2) return NULL;
+		break;
+	}
+
 	ctx->nbtsock = nbt_name_socket_init(ctx, NULL);
 	if (!ctx->nbtsock) return NULL;
 
@@ -467,19 +483,52 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		ctx->nbtsock_srv = NULL;
 	}
 
+	if (ctx->myaddr2) {
+		ctx->nbtsock2 = nbt_name_socket_init(ctx, NULL);
+		if (!ctx->nbtsock2) return NULL;
+
+		status = socket_listen(ctx->nbtsock2->sock, ctx->myaddr2, 0, 0, 0);
+		if (!NT_STATUS_IS_OK(status)) return NULL;
+
+		ctx->nbtsock_srv2 = nbt_name_socket_init(ctx, ctx->nbtsock_srv->event_ctx);
+		if (!ctx->nbtsock_srv2) return NULL;
+
+		status = socket_listen(ctx->nbtsock_srv2->sock, ctx->myaddr2, lp_nbt_port(), 0, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(ctx->nbtsock_srv2);
+			ctx->nbtsock_srv2 = NULL;
+		}
+	}
+
 	ctx->addresses_best_num = 1;
 	ctx->addresses_best = talloc_array(ctx, struct wrepl_ip, ctx->addresses_best_num);
 	if (!ctx->addresses_best) return NULL;
-	ctx->addresses_best[0].owner	= ctx->c.address;
+	ctx->addresses_best[0].owner	= ctx->b.address;
 	ctx->addresses_best[0].ip	= ctx->myaddr;
 
 	ctx->addresses_all_num = iface_count();
 	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, ctx->addresses_all_num);
 	if (!ctx->addresses_all) return NULL;
 	for (i=0; i < ctx->addresses_all_num; i++) {
-		ctx->addresses_all[i].owner	= ctx->c.address;
+		ctx->addresses_all[i].owner	= ctx->b.address;
 		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_n_ip(i));
 		if (!ctx->addresses_all[i].ip) return NULL;
+	}
+
+	if (ctx->nbtsock_srv2) {
+		ctx->addresses_best2_num = 1;
+		ctx->addresses_best2 = talloc_array(ctx, struct wrepl_ip, ctx->addresses_best2_num);
+		if (!ctx->addresses_best2) return NULL;
+		ctx->addresses_best2[0].owner	= ctx->b.address;
+		ctx->addresses_best2[0].ip	= ctx->myaddr2;
+
+		ctx->addresses_mhomed_num = 2;
+		ctx->addresses_mhomed = talloc_array(ctx, struct wrepl_ip, ctx->addresses_mhomed_num);
+		if (!ctx->addresses_mhomed) return NULL;
+		ctx->addresses_mhomed[0].owner	= ctx->b.address;
+		ctx->addresses_mhomed[0].ip	= ctx->myaddr;
+		ctx->addresses_mhomed[1].owner	= ctx->b.address;
+		ctx->addresses_mhomed[1].ip	= ctx->myaddr2;
 	}
 
 	return ctx;
@@ -668,6 +717,84 @@ static BOOL test_wrepl_is_applied(struct test_wrepl_conflict_conn *ctx,
 			CHECK_VALUE_STRING(names[0].addresses[0].address,
 					   name->addresses.ip);
 		}
+	}
+done:
+	talloc_free(pull_names.out.names);
+	return ret;
+}
+
+static BOOL test_wrepl_mhomed_merged(struct test_wrepl_conflict_conn *ctx,
+				     const struct wrepl_wins_owner *owner1,
+				     uint32_t num_ips1, const struct wrepl_ip *ips1,
+				     const struct wrepl_wins_owner *owner2,
+				     uint32_t num_ips2, const struct wrepl_ip *ips2,
+				     const struct wrepl_wins_name *name2)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct wrepl_pull_names pull_names;
+	struct wrepl_name *names;
+	uint32_t flags;
+	uint32_t i, j;
+	uint32_t num_ips = num_ips1 + num_ips2;
+
+	for (i = 0; i < num_ips2; i++) {
+		for (j = 0; j < num_ips1; j++) {
+			if (strcmp(ips2[i].ip,ips1[j].ip) == 0) {
+				num_ips--;
+				break;
+			}
+		} 
+	}
+
+	pull_names.in.assoc_ctx	= ctx->pull_assoc;
+	pull_names.in.partner	= *owner2;
+	pull_names.in.partner.min_version = pull_names.in.partner.max_version;
+
+	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(pull_names.out.num_names, 1);
+
+	names = pull_names.out.names;
+
+	flags = WREPL_NAME_FLAGS(names[0].type,
+				 names[0].state,
+				 names[0].node,
+				 names[0].is_static);
+	CHECK_VALUE(names[0].name.type, name2->name->type);
+	CHECK_VALUE_STRING(names[0].name.name, name2->name->name);
+	CHECK_VALUE_STRING(names[0].name.scope, name2->name->scope);
+	CHECK_VALUE(flags, name2->flags | WREPL_TYPE_MHOMED);
+	CHECK_VALUE_UINT64(names[0].version_id, name2->id);
+
+	CHECK_VALUE(names[0].num_addresses, num_ips);
+
+	for (i = 0; i < names[0].num_addresses; i++) {
+		const char *addr = names[0].addresses[i].address; 
+		const char *owner = names[0].addresses[i].owner;
+		BOOL found = False;
+
+		for (j = 0; j < num_ips2; j++) {
+			if (strcmp(addr, ips2[j].ip) == 0) {
+				found = True;
+				CHECK_VALUE_STRING(owner, owner2->address);
+				break;
+			}
+		}
+
+		if (found) continue;
+
+		for (j = 0; j < num_ips1; j++) {
+			if (strcmp(addr, ips1[j].ip) == 0) {
+				found = True;
+				CHECK_VALUE_STRING(owner, owner1->address);
+				break;
+			}
+		}
+
+		if (found) continue;
+
+		CHECK_VALUE_STRING(addr, "not found in address list");
 	}
 done:
 	talloc_free(pull_names.out.names);
@@ -5518,7 +5645,9 @@ done:
 
 struct test_conflict_owned_active_vs_replica_struct {
 	const char *line; /* just better debugging */
+	const char *section; /* just better debugging */
 	struct nbt_name name;
+	BOOL skip;
 	struct {
 		uint32_t nb_flags;
 		BOOL mhomed;
@@ -5543,6 +5672,7 @@ struct test_conflict_owned_active_vs_replica_struct {
 		uint32_t num_ips;
 		const struct wrepl_ip *ips;
 		BOOL apply_expected;
+		BOOL mhomed_merge;
 	} replica;
 };
 
@@ -7455,6 +7585,306 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.apply_expected	= False
 		},
 	},
+/*
+ * some more multi homed test, including merging
+ */
+	/*
+	 * mhomed,active vs. mhomed,active with superset ip(s), unchecked
+	 */
+	{
+		.line	= __location__,
+		.section= "Test Replica vs. owned active: some more MHOMED combinations",
+		.name	= _NBT_NAME("_MA_MA_SP_U", 0x00, NULL),
+		.skip	= (ctx->addresses_all_num < 3),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_all_num,
+			.ips		= ctx->addresses_all,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with same ips, unchecked
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SM_U", 0x00, NULL),
+		.skip	= (ctx->addresses_mhomed_num != 2),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with subset ip(s), positive response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SB_P", 0x00, NULL),
+		.skip	= (ctx->addresses_mhomed_num != 2),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.mhomed_merge	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with subset ip(s), positive response, with all addresses
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SB_A", 0x00, NULL),
+		.skip	= (ctx->addresses_all_num < 3),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ctx->addresses_all_num,
+			.ips		= ctx->addresses_all,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.mhomed_merge	= True
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with subset ip(s), positive response, with replicas addresses
+ * TODO: here we got a release demand for the replica address from the server after doing
+ *       a positive response with the replicas addresses
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SB_C", 0x00, NULL),
+		.skip	= (True /*ctx->addresses_all_num < 3*/),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with subset ip(s), positive response, with other addresses
+ * TODO: here the record is not applied and the old record becomes released
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SB_O", 0x00, NULL),
+
+		.skip	= (True /*ctx->addresses_all_num < 3*/),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= False
+		},
+	},
+	/*
+	 * mhomed,active vs. mhomed,active with subset ip(s), negative response
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_MA_MA_SB_N", 0x00, NULL),
+		.skip	= (ctx->addresses_mhomed_num != 2),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= False
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+	},
+/*
+ * some more multi homed and unique test, including merging
+ */
+	/*
+	 * mhomed,active vs. unique,active with subset ip(s), positive response
+	 */
+	{
+		.line	= __location__,
+		.section= "Test Replica vs. owned active: some more UNIQUE,MHOMED combinations",
+		.name	= _NBT_NAME("_MA_UA_SB_A", 0x00, NULL),
+		.skip	= (ctx->addresses_all_num < 3),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= True,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.mhomed_merge	= True
+		},
+	},
+	/*
+	 * unique,active vs. unique,active with different ip(s), positive response, with all addresses
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UA_DI_A", 0x00, NULL),
+		.skip	= (ctx->addresses_all_num < 3),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ctx->addresses_all_num,
+			.ips		= ctx->addresses_all,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best2_num,
+			.ips		= ctx->addresses_best2,
+			.mhomed_merge	= True,
+		},
+	},
+	/*
+	 * unique,active vs. mhomed,active with different ip(s), positive response, with all addresses
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_MA_DI_A", 0x00, NULL),
+		.skip	= (ctx->addresses_all_num < 3),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ctx->addresses_all_num,
+			.ips		= ctx->addresses_all,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_MHOMED,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best2_num,
+			.ips		= ctx->addresses_best2,
+			.mhomed_merge	= True,
+		},
+	},
 	};
 
 	if (!ctx) return False;
@@ -7469,45 +7899,111 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 
 	for(i=0; ret && i < ARRAY_SIZE(records); i++) {
 		struct timeval end;
+		struct test_conflict_owned_active_vs_replica_struct record = records[i];
+		uint32_t j, count = 1;
+		const char *action;
 
-		printf("%s => %s\n", nbt_name_string(ctx, &records[i].name),
-			(records[i].replica.apply_expected?"REPLACE":"NOT REPLACE"));
+		if (records[i].wins.mhomed) {
+			count = records[i].wins.num_ips;
+		}
 
-		/* Prepare for the current test */
+		if (records[i].section) {
+			printf("%s\n", records[i].section);
+		}
+
+		if (records[i].skip) {
+			printf("%s => SKIPPED\n", nbt_name_string(ctx, &records[i].name));
+			continue;
+		}
+
+		if (records[i].replica.mhomed_merge) {
+			action = "MHOMED_MERGE";
+		} else if (records[i].replica.apply_expected) {
+			action = "REPLACE";
+		} else {
+			action = "NOT REPLACE";
+		}
+
+		printf("%s => %s\n", nbt_name_string(ctx, &records[i].name), action);
+
+		/* Prepare for multi homed registration */
+		ZERO_STRUCT(records[i].defend);
+		records[i].defend.timeout	= 10;
+		records[i].defend.positive	= True;
 		nbt_set_incoming_handler(ctx->nbtsock_srv,
 					 test_conflict_owned_active_vs_replica_handler,
 					 &records[i]);
+		if (ctx->nbtsock_srv2) {
+			nbt_set_incoming_handler(ctx->nbtsock_srv2,
+						 test_conflict_owned_active_vs_replica_handler,
+						 &records[i]);
+		}
 
 		/*
 		 * Setup Register
 		 */
-		name_register->in.name		= records[i].name;
-		name_register->in.dest_addr	= ctx->address;
-		name_register->in.address	= records[i].wins.ips[0].ip;
-		name_register->in.nb_flags	= records[i].wins.nb_flags;
-		name_register->in.register_demand= False;
-		name_register->in.broadcast	= False;
-		name_register->in.multi_homed	= records[i].wins.mhomed;
-		name_register->in.ttl		= 300000;
-		name_register->in.timeout	= 70;
-		name_register->in.retries	= 0;
+		for (j=0; j < count; j++) {
+			struct nbt_name_request *req;
 
-		status = nbt_name_register(ctx->nbtsock, ctx, name_register);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-			printf("No response from %s for name register\n", ctx->address);
-			ret = False;
+			name_register->in.name		= records[i].name;
+			name_register->in.dest_addr	= ctx->address;
+			name_register->in.address	= records[i].wins.ips[j].ip;
+			name_register->in.nb_flags	= records[i].wins.nb_flags;
+			name_register->in.register_demand= False;
+			name_register->in.broadcast	= False;
+			name_register->in.multi_homed	= records[i].wins.mhomed;
+			name_register->in.ttl		= 300000;
+			name_register->in.timeout	= 70;
+			name_register->in.retries	= 0;
+
+			req = nbt_name_register_send(ctx->nbtsock, name_register);
+
+			/* push the request on the wire */
+			event_loop_once(ctx->nbtsock->event_ctx);
+
+			/*
+			 * if we register multiple addresses,
+			 * the server will do name queries to see if the old addresses
+			 * are still alive
+			 */
+			if (j > 0) {
+				end = timeval_current_ofs(records[i].defend.timeout,0);
+				records[i].defend.ret = True;
+				while (records[i].defend.timeout > 0) {
+					event_loop_once(ctx->nbtsock_srv->event_ctx);
+					if (timeval_expired(&end)) break;
+				}
+				ret &= records[i].defend.ret;
+			}
+
+			status = nbt_name_register_recv(req, ctx, name_register);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				printf("No response from %s for name register\n", ctx->address);
+				ret = False;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("Bad response from %s for name register - %s\n",
+				       ctx->address, nt_errstr(status));
+				ret = False;
+			}
+			CHECK_VALUE(name_register->out.rcode, 0);
+			CHECK_VALUE_STRING(name_register->out.reply_from, ctx->address);
+			CHECK_VALUE(name_register->out.name.type, records[i].name.type);
+			CHECK_VALUE_STRING(name_register->out.name.name, records[i].name.name);
+			CHECK_VALUE_STRING(name_register->out.name.scope, records[i].name.scope);
+			CHECK_VALUE_STRING(name_register->out.reply_addr, records[i].wins.ips[j].ip);
 		}
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Bad response from %s for name register - %s\n",
-			       ctx->address, nt_errstr(status));
-			ret = False;
+
+		/* Prepare for the current test */
+		records[i].defend = record.defend;
+		nbt_set_incoming_handler(ctx->nbtsock_srv,
+					 test_conflict_owned_active_vs_replica_handler,
+					 &records[i]);
+		if (ctx->nbtsock_srv2) {
+			nbt_set_incoming_handler(ctx->nbtsock_srv2,
+						 test_conflict_owned_active_vs_replica_handler,
+						 &records[i]);
 		}
-		CHECK_VALUE(name_register->out.rcode, 0);
-		CHECK_VALUE_STRING(name_register->out.reply_from, ctx->address);
-		CHECK_VALUE(name_register->out.name.type, records[i].name.type);
-		CHECK_VALUE_STRING(name_register->out.name.name, records[i].name.name);
-		CHECK_VALUE_STRING(name_register->out.name.scope, records[i].name.scope);
-		CHECK_VALUE_STRING(name_register->out.reply_addr, records[i].wins.ips[0].ip);
 
 		/*
 		 * Setup Replica
@@ -7540,10 +8036,19 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		}
 		ret &= records[i].defend.ret;
 
-		ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name,
-					     records[i].replica.apply_expected);
+		if (records[i].replica.mhomed_merge) {
+			ret &= test_wrepl_mhomed_merged(ctx, &ctx->c,
+						        records[i].wins.num_ips, records[i].wins.ips,
+						        &ctx->b,
+							records[i].replica.num_ips, records[i].replica.ips,
+							wins_name);
+		} else {
+			ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name,
+						     records[i].replica.apply_expected);
+		}
 
-		if (records[i].replica.apply_expected) {
+		if (records[i].replica.apply_expected ||
+		    records[i].replica.mhomed_merge) {
 			wins_name->name		= &records[i].name;
 			wins_name->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_UNIQUE,
 								   WREPL_STATE_TOMBSTONE,
@@ -7555,25 +8060,33 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			ret &= test_wrepl_update_one(ctx, &ctx->b, wins_name);
 			ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name, True);
 		} else {
-			release->in.name	= records[i].name;
-			release->in.dest_addr	= ctx->address;
-			release->in.address	= records[i].wins.ips[0].ip;
-			release->in.nb_flags	= records[i].wins.nb_flags;
-			release->in.broadcast	= False;
-			release->in.timeout	= 30;
-			release->in.retries	= 0;
+			for (j=0; j < count; j++) {
+				struct nbt_name_socket *nbtsock = ctx->nbtsock;
 
-			status = nbt_name_release(ctx->nbtsock, ctx, release);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				printf("No response from %s for name release\n", ctx->address);
-				return False;
+				if (ctx->myaddr && strcmp(records[i].wins.ips[j].ip, ctx->myaddr2) == 0) {
+					nbtsock = ctx->nbtsock2;
+				}
+
+				release->in.name	= records[i].name;
+				release->in.dest_addr	= ctx->address;
+				release->in.address	= records[i].wins.ips[j].ip;
+				release->in.nb_flags	= records[i].wins.nb_flags;
+				release->in.broadcast	= False;
+				release->in.timeout	= 30;
+				release->in.retries	= 0;
+
+				status = nbt_name_release(nbtsock, ctx, release);
+				if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+					printf("No response from %s for name release\n", ctx->address);
+					return False;
+				}
+				if (!NT_STATUS_IS_OK(status)) {
+					printf("Bad response from %s for name query - %s\n",
+					       ctx->address, nt_errstr(status));
+					return False;
+				}
+				CHECK_VALUE(release->out.rcode, 0);
 			}
-			if (!NT_STATUS_IS_OK(status)) {
-				printf("Bad response from %s for name query - %s\n",
-				       ctx->address, nt_errstr(status));
-				return False;
-			}
-			CHECK_VALUE(release->out.rcode, 0);
 		}
 
 done:
