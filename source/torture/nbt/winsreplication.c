@@ -8326,6 +8326,8 @@ BOOL torture_nbt_winsreplication_quick(void)
 	ret &= test_assoc_ctx1(mem_ctx, address);
 	ret &= test_assoc_ctx2(mem_ctx, address);
 
+	ret &= test_wins_replication(mem_ctx, address);
+
 	talloc_free(mem_ctx);
 
 	return ret;
