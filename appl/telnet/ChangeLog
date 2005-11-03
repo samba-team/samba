@@ -1,3 +1,8 @@
+2005-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/telnet.c: Spelling in comments, from Dave Love
+	<fx@gnu.org>
+	
 2005-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* libtelnet/kerberos5.c (Data): Use right variable. From Tomas
