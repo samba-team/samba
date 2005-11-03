@@ -1392,7 +1392,7 @@ start_login(const char *host, int autologin, char *name)
 
     execv(new_login, argv.argv);
     save_errno = errno;
-    syslog(LOG_ERR, "%s: %m\n", new_login);
+    syslog(LOG_ERR, "%s: %m", new_login);
     fatalperror_errno(net, new_login, save_errno);
     /*NOTREACHED*/
 }
