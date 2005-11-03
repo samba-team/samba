@@ -433,7 +433,7 @@ static NTSTATUS wrepl_request_wait(struct wrepl_request *req)
 	return req->status;
 }
 
-static void wrepl_request_trigger(struct wrepl_request *req);
+static void wrepl_request_trigger(struct wrepl_request *req, NTSTATUS status);
 
 /*
   connect a wrepl_socket to a WINS server
@@ -450,7 +450,7 @@ struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	req->wrepl_socket = wrepl_socket;
 	req->state        = WREPL_REQUEST_RECV;
 
-	DLIST_ADD(wrepl_socket->recv_queue, req);
+	DLIST_ADD_END(wrepl_socket->recv_queue, req, struct wrepl_request *);
 
 	talloc_set_destructor(req, wrepl_request_destructor);
 
@@ -460,11 +460,21 @@ struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 
 	status = socket_connect(wrepl_socket->sock, our_ip, 0, peer_ip, 
 				WINS_REPLICATION_PORT, 0);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(wrepl_socket->fde);
+
+		wrepl_socket->fde = event_add_fd(wrepl_socket->event_ctx, wrepl_socket, 
+						 socket_get_fd(wrepl_socket->sock), 
+						 EVENT_FD_WRITE,
+						 wrepl_handler, wrepl_socket);
+		if (wrepl_socket->fde == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		req->wrepl_socket = wrepl_socket;
-		req->state        = WREPL_REQUEST_ERROR;
-		req->status       = status;
-		wrepl_request_trigger(req);
+		wrepl_request_trigger(req, status);
 		return req;
 	}
 
@@ -500,9 +510,6 @@ static void wrepl_request_trigger_handler(struct event_context *ev, struct timed
 					  struct timeval t, void *ptr)
 {
 	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
-	struct wrepl_socket *wrepl_socket = req->wrepl_socket;
-	DLIST_REMOVE(wrepl_socket->send_queue, req);
-	DLIST_REMOVE(wrepl_socket->recv_queue, req);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
@@ -511,8 +518,23 @@ static void wrepl_request_trigger_handler(struct event_context *ev, struct timed
 /*
   trigger an immediate event on a wrepl_request
 */
-static void wrepl_request_trigger(struct wrepl_request *req)
+static void wrepl_request_trigger(struct wrepl_request *req, NTSTATUS status)
 {
+	if (req->state == WREPL_REQUEST_SEND) {
+		DLIST_REMOVE(req->wrepl_socket->send_queue, req);
+	}
+	if (req->state == WREPL_REQUEST_RECV) {
+		DLIST_REMOVE(req->wrepl_socket->recv_queue, req);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		req->state	= WREPL_REQUEST_ERROR;
+	} else {
+		req->state	= WREPL_REQUEST_DONE;
+	}
+
+	req->status	= status;
+
 	/* a zero timeout means immediate */
 	event_add_timed(req->wrepl_socket->event_ctx,
 			req, timeval_zero(),
@@ -532,16 +554,18 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	req = talloc_zero(wrepl_socket, struct wrepl_request);
 	if (req == NULL) goto failed;
 
-	if (wrepl_socket->dead) {
-		req->wrepl_socket = wrepl_socket;
-		req->state        = WREPL_REQUEST_ERROR;
-		req->status       = NT_STATUS_INVALID_CONNECTION;
-		wrepl_request_trigger(req);
-		return req;
-	}
-
 	req->wrepl_socket = wrepl_socket;
 	req->state        = WREPL_REQUEST_SEND;
+
+	DLIST_ADD_END(wrepl_socket->send_queue, req, struct wrepl_request *);
+
+	talloc_set_destructor(req, wrepl_request_destructor);
+
+	if (wrepl_socket->dead) {
+		req->wrepl_socket = wrepl_socket;
+		wrepl_request_trigger(req, NT_STATUS_INVALID_CONNECTION);
+		return req;
+	}
 
 	wrap.packet = *packet;
 	req->status = ndr_push_struct_blob(&req->buffer, req, &wrap,
@@ -552,10 +576,6 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 		DEBUG(10,("Sending WINS packet of length %d\n", (int)req->buffer.length));
 		NDR_PRINT_DEBUG(wrepl_packet, &wrap.packet);
 	}
-
-	DLIST_ADD(wrepl_socket->send_queue, req);
-
-	talloc_set_destructor(req, wrepl_request_destructor);
 
 	if (wrepl_socket->request_timeout > 0) {
 		req->te = event_add_timed(wrepl_socket->event_ctx, req, 
