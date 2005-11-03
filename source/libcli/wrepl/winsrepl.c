@@ -500,6 +500,9 @@ static void wrepl_request_trigger_handler(struct event_context *ev, struct timed
 					  struct timeval t, void *ptr)
 {
 	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
+	struct wrepl_socket *wrepl_socket = req->wrepl_socket;
+	DLIST_REMOVE(wrepl_socket->send_queue, req);
+	DLIST_REMOVE(wrepl_socket->recv_queue, req);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
