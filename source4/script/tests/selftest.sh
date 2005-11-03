@@ -51,6 +51,7 @@ PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
 TLSDIR=$PRIVATEDIR/tls
+WINS_LDB=$PRIVATEDIR/wins.ldb
 CONFIGURATION="--configfile=$CONFFILE"
 export CONFIGURATION
 export CONFFILE
@@ -79,6 +80,19 @@ export PATH
 
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
+
+cat >$PRIVATEDIR/wins.ldif<<EOF
+dn: name=127.0.0.1,CN=PARTNERS
+objectClass: wreplPartner
+name: 127.0.0.1
+address: 127.0.0.1
+pullRetryInterval: 100
+pullInterval: 200
+type: 0x2
+EOF
+
+WREPL_TORTURE_OPTIONS=
+export WREPL_TORTURE_OPTIONS
 
 cat >$CONFFILE<<EOF
 [global]
@@ -140,6 +154,8 @@ echo -n "PROVISIONING..."
 ./setup/provision $CONFIGURATION --host-name=$SERVER --host-ip=127.0.0.1 \
     --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
+
+./bin/ldbadd -H $PRIVATEDIR/wins.ldb < $PRIVATEDIR/wins.ldif || exit 1
 
 echo "DONE"
 
