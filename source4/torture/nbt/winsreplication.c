@@ -5659,6 +5659,7 @@ struct test_conflict_owned_active_vs_replica_struct {
 		uint32_t timeout;
 		BOOL positive;
 		BOOL expect_release;
+		BOOL late_release;
 		BOOL ret;
 		/* when num_ips == 0, then .wins.ips are used */
 		uint32_t num_ips;
@@ -7703,13 +7704,13 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	},
 	/*
 	 * mhomed,active vs. mhomed,active with subset ip(s), positive response, with replicas addresses
- * TODO: here we got a release demand for the replica address from the server after doing
- *       a positive response with the replicas addresses
+	 * TODO: check why the server sends a name release demand for one address?
+	 *       the release demand has no effect to the database record...
 	 */
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_C", 0x00, NULL),
-		.skip	= (True /*ctx->addresses_all_num < 3*/),
+		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -7722,6 +7723,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.positive	= True,
 			.num_ips	= ctx->addresses_best_num,
 			.ips		= ctx->addresses_best,
+			.late_release	= True
 		},
 		.replica= {
 			.type		= WREPL_TYPE_MHOMED,
@@ -7735,13 +7737,12 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	},
 	/*
 	 * mhomed,active vs. mhomed,active with subset ip(s), positive response, with other addresses
- * TODO: here the record is not applied and the old record becomes released
 	 */
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_O", 0x00, NULL),
 
-		.skip	= (True /*ctx->addresses_all_num < 3*/),
+		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8035,6 +8036,22 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			if (timeval_expired(&end)) break;
 		}
 		ret &= records[i].defend.ret;
+
+		if (records[i].defend.late_release) {
+			records[i].defend = record.defend;
+			records[i].defend.expect_release = True;
+			/*
+			 * wait for the name release demand, which is handled in
+			 * test_conflict_owned_active_vs_replica_handler()
+			 */
+			end = timeval_current_ofs(records[i].defend.timeout,0);
+			records[i].defend.ret = True;
+			while (records[i].defend.timeout > 0) {
+				event_loop_once(ctx->nbtsock_srv->event_ctx);
+				if (timeval_expired(&end)) break;
+			}
+			ret &= records[i].defend.ret;
+		}
 
 		if (records[i].replica.mhomed_merge) {
 			ret &= test_wrepl_mhomed_merged(ctx, &ctx->c,
