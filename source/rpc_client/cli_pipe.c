@@ -2430,8 +2430,8 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(3,("get_schannel_session_key: rpccli_netlogon_setup_creds "
-			"failed with result %s\n",
-			nt_errstr(*perr) ));
+			"failed with result %s to server %s, domain %s, machine account %s.\n",
+			nt_errstr(*perr), cli->desthost, domain, machine_account ));
 		cli_rpc_pipe_close(netlogon_pipe);
 		return NULL;
 	}
