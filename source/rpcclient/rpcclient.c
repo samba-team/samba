@@ -575,9 +575,10 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			}
 		
 			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
-						cli->desthost,
-						lp_workgroup(),
-						global_myname(),
+						cli->desthost,   /* server name */
+						lp_workgroup(),  /* domain */
+						global_myname(), /* client name */
+						global_myname(), /* machine account name */
 						trust_password,
 						sec_channel_type,
 						&neg_flags);
