@@ -287,6 +287,8 @@ function provision(subobj, message, blank, paths)
 	setup_ldb("provision_init.ldif", paths.samdb, subobj);
 	message("Setting up sam.ldb schema\n");
 	setup_ldb("schema.ldif", paths.samdb, subobj, NULL, false);
+	message("Setting up display specifiers\n");
+	setup_ldb("display_specifiers.ldif", paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb templates\n");
 	setup_ldb("provision_templates.ldif", paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb data\n");
