@@ -28,108 +28,112 @@
 */
 static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 {
-	const char *mechs[] = {OID_NTLMSSP, NULL};
 	DATA_BLOB msg1 = data_blob(NULL, 0);
-	DATA_BLOB blob, chal1, chal2, auth;
-	uint8 challenge[8];
-	uint8 nthash[24], lmhash[24], sess_key[16];
-	uint32 neg_flags;
+	DATA_BLOB blob = data_blob(NULL, 0);
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out = data_blob(NULL, 0);
 	struct berval cred, *scred = NULL;
-	ADS_STATUS status;
 	int rc;
+	NTSTATUS nt_status;
+	int turn = 1;
 
-	if (!ads->auth.password) {
-		/* No password, don't segfault below... */
-		return ADS_ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	struct ntlmssp_state *ntlmssp_state;
+
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
+		return ADS_ERROR_NT(nt_status);
+	}
+	ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, ads->auth.user_name))) {
+		return ADS_ERROR_NT(nt_status);
+	}
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, ads->auth.realm))) {
+		return ADS_ERROR_NT(nt_status);
+	}
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, ads->auth.password))) {
+		return ADS_ERROR_NT(nt_status);
 	}
 
-	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_128 | 
-		NTLMSSP_NEGOTIATE_NTLM;
+	blob_in = data_blob(NULL, 0);
 
-	memset(sess_key, 0, 16);
+	do {
+		nt_status = ntlmssp_update(ntlmssp_state, 
+					   blob_in, &blob_out);
+		data_blob_free(&blob_in);
+		if ((NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
+		     || NT_STATUS_IS_OK(nt_status))
+		    && blob_out.length) {
+			if (turn == 1) {
+				/* and wrap it in a SPNEGO wrapper */
+				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
+			} else {
+				/* wrap it in SPNEGO */
+				msg1 = spnego_gen_auth(blob_out);
+			}
 
-	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(&blob, "CddB",
-		  "NTLMSSP",
-		  NTLMSSP_NEGOTIATE,
-		  neg_flags,
-		  sess_key, 16);
+			data_blob_free(&blob_out);
 
-	/* and wrap it in a SPNEGO wrapper */
-	msg1 = gen_negTokenTarg(mechs, blob);
-	data_blob_free(&blob);
+			cred.bv_val = (char *)msg1.data;
+			cred.bv_len = msg1.length;
+			scred = NULL;
+			rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
+			data_blob_free(&msg1);
+			if ((rc != LDAP_SASL_BIND_IN_PROGRESS) && (rc != 0)) {
+				if (scred) {
+					ber_bvfree(scred);
+				}
 
-	cred.bv_val = (char *)msg1.data;
-	cred.bv_len = msg1.length;
+				ntlmssp_end(&ntlmssp_state);
+				return ADS_ERROR(rc);
+			}
+			if (scred) {
+				blob = data_blob(scred->bv_val, scred->bv_len);
+				ber_bvfree(scred);
+			} else {
+				blob = data_blob(NULL, 0);
+			}
 
-	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
-	if (rc != LDAP_SASL_BIND_IN_PROGRESS) {
-		status = ADS_ERROR(rc);
-		goto failed;
-	}
+		} else {
 
-	blob = data_blob(scred->bv_val, scred->bv_len);
-	ber_bvfree(scred);
+			ntlmssp_end(&ntlmssp_state);
+			data_blob_free(&blob_out);
+			return ADS_ERROR_NT(nt_status);
+		}
+		
+		if ((turn == 1) && 
+		    (rc == LDAP_SASL_BIND_IN_PROGRESS)) {
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			/* the server might give us back two challenges */
+			if (!spnego_parse_challenge(blob, &blob_in, 
+						    &tmp_blob)) {
 
-	/* the server gives us back two challenges */
-	if (!spnego_parse_challenge(blob, &chal1, &chal2)) {
-		DEBUG(3,("Failed to parse challenges\n"));
-		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
-		goto failed;
-	}
+				ntlmssp_end(&ntlmssp_state);
+				data_blob_free(&blob);
+				DEBUG(3,("Failed to parse challenges\n"));
+				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+			data_blob_free(&tmp_blob);
+		} else if (rc == LDAP_SASL_BIND_IN_PROGRESS) {
+			if (!spnego_parse_auth_response(blob, nt_status, 
+							&blob_in)) {
 
-	data_blob_free(&blob);
-
-	/* encrypt the password with the challenge */
-	memcpy(challenge, chal1.data + 24, 8);
-	SMBencrypt(ads->auth.password, challenge,lmhash);
-	SMBNTencrypt(ads->auth.password, challenge,nthash);
-
-	data_blob_free(&chal1);
-	data_blob_free(&chal2);
-
-	/* this generates the actual auth packet */
-	msrpc_gen(&blob, "CdBBUUUBd", 
-		  "NTLMSSP", 
-		  NTLMSSP_AUTH, 
-		  lmhash, 24,
-		  nthash, 24,
-		  lp_workgroup(), 
-		  ads->auth.user_name, 
-		  global_myname(),
-		  sess_key, 16,
-		  neg_flags);
-
-	/* wrap it in SPNEGO */
-	auth = spnego_gen_auth(blob);
-
-	data_blob_free(&blob);
-
-	/* Remember to free the msg1 blob. The contents of this
-	   have been copied into cred and need freeing before reassignment. */
-	data_blob_free(&msg1);
-
-	/* now send the auth packet and we should be done */
-	cred.bv_val = (char *)auth.data;
-	cred.bv_len = auth.length;
-
-	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
-
-	ber_bvfree(scred);
-	data_blob_free(&auth);
+				ntlmssp_end(&ntlmssp_state);
+				data_blob_free(&blob);
+				DEBUG(3,("Failed to parse auth response\n"));
+				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+		}
+		data_blob_free(&blob);
+		data_blob_free(&blob_out);
+		turn++;
+	} while (rc == LDAP_SASL_BIND_IN_PROGRESS && !NT_STATUS_IS_OK(nt_status));
 	
+	/* we have a reference conter on ntlmssp_state, if we are signing
+	   then the state will be kept by the signing engine */
+
+	ntlmssp_end(&ntlmssp_state);
+
 	return ADS_ERROR(rc);
-
-failed:
-
-	/* Remember to free the msg1 blob. The contents of this
-	   have been copied into cred and need freeing. */
-	data_blob_free(&msg1);
-
-	if(scred)
-		ber_bvfree(scred);
-	return status;
 }
 
 /* 
