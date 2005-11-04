@@ -1352,10 +1352,11 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = rpccli_netlogon_setup_creds
-		(netlogon_pipe,
+	result = rpccli_netlogon_setup_creds(
+		 netlogon_pipe,
 		 domain->dcname, /* server name. */
 		 domain->name,   /* domain name */
+		 global_myname(), /* client name */
 		 account_name,   /* machine account */
 		 mach_pwd,       /* machine password */
 		 sec_chan_type,  /* from get_trust_pw */
