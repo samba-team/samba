@@ -204,15 +204,15 @@ static const struct {
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
 };
 
-const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *fl)
+const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
 	struct GUID uuid;
 	uint16_t if_version;
 	NTSTATUS status;
 
-	switch(fl->lhs.protocol) {
+	switch(epm_floor->lhs.protocol) {
 		case EPM_PROTOCOL_UUID:
-			status = dcerpc_floor_get_lhs_data(fl, &uuid, &if_version);
+			status = dcerpc_floor_get_lhs_data(epm_floor, &uuid, &if_version);
 			if (NT_STATUS_IS_OK(status)) {
 				/* lhs is used: UUID */
 				char *uuidstr;
@@ -226,7 +226,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *fl)
 				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, if_version);
 			} else { /* IPX */
 				return talloc_asprintf(mem_ctx, "IPX:%s", 
-						data_blob_hex_string(mem_ctx, &fl->rhs.uuid.unknown));
+						data_blob_hex_string(mem_ctx, &epm_floor->rhs.uuid.unknown));
 			}
 
 		case EPM_PROTOCOL_NCACN:
@@ -242,19 +242,19 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *fl)
 			return "DNET/NSP";
 
 		case EPM_PROTOCOL_IP:
-			return talloc_asprintf(mem_ctx, "IP:%s", fl->rhs.ip.ipaddr);
+			return talloc_asprintf(mem_ctx, "IP:%s", epm_floor->rhs.ip.ipaddr);
 
 		case EPM_PROTOCOL_PIPE:
-			return talloc_asprintf(mem_ctx, "PIPE:%s", fl->rhs.pipe.path);
+			return talloc_asprintf(mem_ctx, "PIPE:%s", epm_floor->rhs.pipe.path);
 
 		case EPM_PROTOCOL_SMB:
-			return talloc_asprintf(mem_ctx, "SMB:%s", fl->rhs.smb.unc);
+			return talloc_asprintf(mem_ctx, "SMB:%s", epm_floor->rhs.smb.unc);
 
 		case EPM_PROTOCOL_UNIX_DS:
-			return talloc_asprintf(mem_ctx, "Unix:%s", fl->rhs.unix_ds.path);
+			return talloc_asprintf(mem_ctx, "Unix:%s", epm_floor->rhs.unix_ds.path);
 
 		case EPM_PROTOCOL_NETBIOS:
-			return talloc_asprintf(mem_ctx, "NetBIOS:%s", fl->rhs.netbios.name);
+			return talloc_asprintf(mem_ctx, "NetBIOS:%s", epm_floor->rhs.netbios.name);
 
 		case EPM_PROTOCOL_NETBEUI:
 			return "NETBeui";
@@ -266,16 +266,16 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *fl)
 			return "NB_IPX";
 
 		case EPM_PROTOCOL_HTTP:
-			return talloc_asprintf(mem_ctx, "HTTP:%d", fl->rhs.http.port);
+			return talloc_asprintf(mem_ctx, "HTTP:%d", epm_floor->rhs.http.port);
 
 		case EPM_PROTOCOL_TCP:
-			return talloc_asprintf(mem_ctx, "TCP:%d", fl->rhs.tcp.port);
+			return talloc_asprintf(mem_ctx, "TCP:%d", epm_floor->rhs.tcp.port);
 
 		case EPM_PROTOCOL_UDP:
-			return talloc_asprintf(mem_ctx, "UDP:%d", fl->rhs.udp.port);
+			return talloc_asprintf(mem_ctx, "UDP:%d", epm_floor->rhs.udp.port);
 
 		default:
-			return talloc_asprintf(mem_ctx, "UNK(%02x):", fl->lhs.protocol);
+			return talloc_asprintf(mem_ctx, "UNK(%02x):", epm_floor->lhs.protocol);
 	}
 }
 
@@ -474,10 +474,10 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *floor, struct GUID *uuid, uint16_t *if_version)
+NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct GUID *uuid, uint16_t *if_version)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
-	struct ndr_pull *ndr = ndr_pull_init_blob(&floor->lhs.lhs_data, mem_ctx);
+	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
 	NTSTATUS status;
 	
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
@@ -507,23 +507,23 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, struct GUID *uu
 	return ndr_push_blob(ndr);
 }
 
-const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor)
+const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 {
-	switch (floor->lhs.protocol) {
+	switch (epm_floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
-		if (floor->rhs.tcp.port == 0) return NULL;
-		return talloc_asprintf(mem_ctx, "%d", floor->rhs.tcp.port);
+		if (epm_floor->rhs.tcp.port == 0) return NULL;
+		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.tcp.port);
 		
 	case EPM_PROTOCOL_UDP:
-		if (floor->rhs.udp.port == 0) return NULL;
-		return talloc_asprintf(mem_ctx, "%d", floor->rhs.udp.port);
+		if (epm_floor->rhs.udp.port == 0) return NULL;
+		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.udp.port);
 
 	case EPM_PROTOCOL_HTTP:
-		if (floor->rhs.http.port == 0) return NULL;
-		return talloc_asprintf(mem_ctx, "%d", floor->rhs.http.port);
+		if (epm_floor->rhs.http.port == 0) return NULL;
+		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.http.port);
 
 	case EPM_PROTOCOL_IP:
-		return talloc_strdup(mem_ctx, floor->rhs.ip.ipaddr);
+		return talloc_strdup(mem_ctx, epm_floor->rhs.ip.ipaddr);
 
 	case EPM_PROTOCOL_NCACN:
 		return NULL;
@@ -532,113 +532,113 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		return NULL;
 
 	case EPM_PROTOCOL_SMB:
-		if (strlen(floor->rhs.smb.unc) == 0) return NULL;
-		return talloc_strdup(mem_ctx, floor->rhs.smb.unc);
+		if (strlen(epm_floor->rhs.smb.unc) == 0) return NULL;
+		return talloc_strdup(mem_ctx, epm_floor->rhs.smb.unc);
 
 	case EPM_PROTOCOL_PIPE:
-		if (strlen(floor->rhs.pipe.path) == 0) return NULL;
-		return talloc_strdup(mem_ctx, floor->rhs.pipe.path);
+		if (strlen(epm_floor->rhs.pipe.path) == 0) return NULL;
+		return talloc_strdup(mem_ctx, epm_floor->rhs.pipe.path);
 
 	case EPM_PROTOCOL_NETBIOS:
-		if (strlen(floor->rhs.netbios.name) == 0) return NULL;
-		return talloc_strdup(mem_ctx, floor->rhs.netbios.name);
+		if (strlen(epm_floor->rhs.netbios.name) == 0) return NULL;
+		return talloc_strdup(mem_ctx, epm_floor->rhs.netbios.name);
 
 	case EPM_PROTOCOL_NCALRPC:
 		return NULL;
 		
 	case EPM_PROTOCOL_VINES_SPP:
-		return talloc_asprintf(mem_ctx, "%d", floor->rhs.vines_spp.port);
+		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.vines_spp.port);
 		
 	case EPM_PROTOCOL_VINES_IPC:
-		return talloc_asprintf(mem_ctx, "%d", floor->rhs.vines_ipc.port);
+		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.vines_ipc.port);
 		
 	case EPM_PROTOCOL_STREETTALK:
-		return talloc_strdup(mem_ctx, floor->rhs.streettalk.streettalk);
+		return talloc_strdup(mem_ctx, epm_floor->rhs.streettalk.streettalk);
 		
 	case EPM_PROTOCOL_UNIX_DS:
-		if (strlen(floor->rhs.unix_ds.path) == 0) return NULL;
-		return talloc_strdup(mem_ctx, floor->rhs.unix_ds.path);
+		if (strlen(epm_floor->rhs.unix_ds.path) == 0) return NULL;
+		return talloc_strdup(mem_ctx, epm_floor->rhs.unix_ds.path);
 		
 	case EPM_PROTOCOL_NULL:
 		return NULL;
 
 	default:
-		DEBUG(0,("Unsupported lhs protocol %d\n", floor->lhs.protocol));
+		DEBUG(0,("Unsupported lhs protocol %d\n", epm_floor->lhs.protocol));
 		break;
 	}
 
 	return NULL;
 }
 
-static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,  const char *data)
+static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor,  const char *data)
 {
-	switch (floor->lhs.protocol) {
+	switch (epm_floor->lhs.protocol) {
 	case EPM_PROTOCOL_TCP:
-		floor->rhs.tcp.port = atoi(data);
+		epm_floor->rhs.tcp.port = atoi(data);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_UDP:
-		floor->rhs.udp.port = atoi(data);
+		epm_floor->rhs.udp.port = atoi(data);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_HTTP:
-		floor->rhs.http.port = atoi(data);
+		epm_floor->rhs.http.port = atoi(data);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_IP:
-		floor->rhs.ip.ipaddr = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.ip.ipaddr);
+		epm_floor->rhs.ip.ipaddr = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.ip.ipaddr);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NCACN:
-		floor->rhs.ncacn.minor_version = 0;
+		epm_floor->rhs.ncacn.minor_version = 0;
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NCADG:
-		floor->rhs.ncadg.minor_version = 0;
+		epm_floor->rhs.ncadg.minor_version = 0;
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_SMB:
-		floor->rhs.smb.unc = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.smb.unc);
+		epm_floor->rhs.smb.unc = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.smb.unc);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_PIPE:
-		floor->rhs.pipe.path = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.pipe.path);
+		epm_floor->rhs.pipe.path = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.pipe.path);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NETBIOS:
-		floor->rhs.netbios.name = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.netbios.name);
+		epm_floor->rhs.netbios.name = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.netbios.name);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NCALRPC:
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_VINES_SPP:
-		floor->rhs.vines_spp.port = atoi(data);
+		epm_floor->rhs.vines_spp.port = atoi(data);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_VINES_IPC:
-		floor->rhs.vines_ipc.port = atoi(data);
+		epm_floor->rhs.vines_ipc.port = atoi(data);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_STREETTALK:
-		floor->rhs.streettalk.streettalk = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.streettalk.streettalk);
+		epm_floor->rhs.streettalk.streettalk = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.streettalk.streettalk);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_UNIX_DS:
-		floor->rhs.unix_ds.path = talloc_strdup(mem_ctx, data);
-		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.unix_ds.path);
+		epm_floor->rhs.unix_ds.path = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.unix_ds.path);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_NULL:
 		return NT_STATUS_OK;
 
 	default:
-		DEBUG(0,("Unsupported lhs protocol %d\n", floor->lhs.protocol));
+		DEBUG(0,("Unsupported lhs protocol %d\n", epm_floor->lhs.protocol));
 		break;
 	}
 
