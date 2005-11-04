@@ -131,9 +131,10 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		}
 
 		result = rpccli_netlogon_setup_creds(netlogon_pipe,
-					dc_name,
-					domain,
-					global_myname(),
+					dc_name, /* server name */
+					domain, /* domain */
+					global_myname(), /* client name */
+					global_myname(), /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);
