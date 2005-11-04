@@ -63,7 +63,7 @@
    
    with this format we have 8 chars left for the directory name
 */
-#define SOCKET_FORMAT "%u_%u"
+#define SOCKET_FORMAT "%u_%05u"
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
