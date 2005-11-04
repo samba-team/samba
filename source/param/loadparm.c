@@ -1186,7 +1186,7 @@ static struct parm_struct parm_table[] = {
 	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED}, 
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED}, 
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, FLAG_ADVANCED}, 
-	{"dfree cache time", P_STRING, P_LOCAL, &sDefault.iDfreeCacheTime, NULL, NULL, FLAG_ADVANCED}, 
+	{"dfree cache time", P_INTEGER, P_LOCAL, &sDefault.iDfreeCacheTime, NULL, NULL, FLAG_ADVANCED}, 
 	{"dfree command", P_STRING, P_LOCAL, &sDefault.szDfree, NULL, NULL, FLAG_ADVANCED}, 
 	{"get quota command", P_STRING, P_GLOBAL, &Globals.szGetQuota, NULL, NULL, FLAG_ADVANCED}, 
 	{"set quota command", P_STRING, P_GLOBAL, &Globals.szSetQuota, NULL, NULL, FLAG_ADVANCED}, 
