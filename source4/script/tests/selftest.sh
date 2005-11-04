@@ -155,7 +155,7 @@ echo -n "PROVISIONING..."
     --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
 
-./bin/ldbadd -H $PRIVATEDIR/wins.ldb < $PRIVATEDIR/wins.ldif || exit 1
+./bin/ldbadd -H $PRIVATEDIR/wins.ldb < $PRIVATEDIR/wins.ldif >/dev/null || exit 1
 
 echo "DONE"
 
