@@ -92,22 +92,30 @@ static int ejs_strstr(MprVarHandle eid, int argc, char **argv)
 /*
   usage:
      list = split(".", "a.foo.bar");
+     list = split(".", "a.foo.bar", count);
+
+  count is an optional count of how many splits to make
 
   NOTE: does not take a regular expression, unlike perl split()
 */
-static int ejs_split(MprVarHandle eid, int argc, char **argv)
+static int ejs_split(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	const char *separator;
-	char *s, *p;
+	const char *separator, *s;
+	char *p;
 	struct MprVar ret;
-	int count = 0;
+	int count = 0, maxcount=0;
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
-	if (argc != 2) {
+	if (argc < 2 ||
+	    argv[0]->type != MPR_TYPE_STRING ||
+	    argv[1]->type != MPR_TYPE_STRING) {
 		ejsSetErrorMsg(eid, "split invalid arguments");
 		return -1;
 	}
-	separator = argv[0];
-	s = argv[1];
+	separator = mprToString(argv[0]);
+	s         = mprToString(argv[1]);
+	if (argc == 3) {
+		maxcount = mprToInt(argv[2]);
+	}
 
 	ret = mprArray("list");
 
@@ -116,6 +124,9 @@ static int ejs_split(MprVarHandle eid, int argc, char **argv)
 		mprAddArray(&ret, count++, mprString(s2));
 		talloc_free(s2);
 		s = p + strlen(separator);
+		if (maxcount != 0 && count >= maxcount) {
+			break;
+		}
 	}
 	if (*s) {
 		mprAddArray(&ret, count++, mprString(s));
@@ -481,7 +492,7 @@ static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "strlower", ejs_strlower);
 	mprSetStringCFunction(obj, "strupper", ejs_strupper);
 	mprSetStringCFunction(obj, "strstr", ejs_strstr);
-	mprSetStringCFunction(obj, "split", ejs_split);
+	mprSetCFunction(obj, "split", ejs_split);
 	mprSetCFunction(obj, "join", ejs_join);
 	mprSetCFunction(obj, "sprintf", ejs_sprintf);
 	mprSetCFunction(obj, "vsprintf", ejs_vsprintf);
