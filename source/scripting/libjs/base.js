@@ -71,7 +71,7 @@ function substitute_var(str, subobj)
 	var list = split("${", str);
 	var i;
 	for (i=1;i<list.length;i++) {
-		var list2 = split("}", list[i]);
+		var list2 = split("}", list[i], 1);
 		if (list2.length < 2) {
 			return undefined;
 		}
