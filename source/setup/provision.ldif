@@ -47,6 +47,8 @@ showInAdvancedViewOnly: FALSE
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
+allowedChildClassesEffective: user
+allowedChildClassesEffective: group
 
 dn: CN=Computers,${BASEDN}
 objectClass: top
