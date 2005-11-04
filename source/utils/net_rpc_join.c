@@ -303,9 +303,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	result = rpccli_netlogon_setup_creds(pipe_hnd,
-					cli->desthost,
-					domain,
-					global_myname(),
+					cli->desthost, /* server name */
+					domain,        /* domain */
+					global_myname(), /* client name */
+					global_myname(), /* machine account name */
                                         md4_trust_password,
                                         sec_channel_type,
                                         &neg_flags);

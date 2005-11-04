@@ -2409,7 +2409,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		return NULL;
 	}
 
-	if ( IS_DC ) {
+        if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
 		fstrcpy( machine_account, lp_workgroup() );
         } else {
                 /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
@@ -2421,9 +2421,10 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
         }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
-					cli->desthost,
-					domain,
-					machine_account,
+					cli->desthost, /* server name */
+					domain,	       /* domain */
+					global_myname(), /* client name */
+					machine_account, /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);
@@ -2531,7 +2532,10 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 		return NULL;
 	}
 
-	if ( IS_DC ) {
+        /* if we are a DC and this is a trusted domain, then we need to use our
+           domain name in the net_req_auth2() request */
+
+        if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
 		fstrcpy( machine_account, lp_workgroup() );
         } else {
                 /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
@@ -2543,9 +2547,10 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
         }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
-					cli->desthost,
-					domain,
-					machine_account,
+					cli->desthost,     /* server name */
+					domain,            /* domain */
+					global_myname(),   /* client name */
+					machine_account,   /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);
