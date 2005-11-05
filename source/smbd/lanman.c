@@ -50,23 +50,25 @@ extern userdom_struct current_user_info;
 
 #define SHPWLEN 8		/* share password length */
 
-static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
-			    int mdrcnt,int mprcnt,
-			    char **rdata,char **rparam,
-			    int *rdata_len,int *rparam_len);
-static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
-			 int mdrcnt,int mprcnt,
-			 char **rdata,char **rparam,
-			 int *rdata_len,int *rparam_len);
+static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param, char *data,
+			    int mdrcnt, int mprcnt,
+			    char **rdata, char **rparam,
+			    int *rdata_len, int *rparam_len);
+static BOOL api_TooSmall(connection_struct *conn, uint16 vuid, char *param, char *data,
+			 int mdrcnt, int mprcnt,
+			 char **rdata, char **rparam,
+			 int *rdata_len, int *rparam_len);
 
 
 static int CopyExpanded(connection_struct *conn, 
-			int snum, char** dst, char* src, int* n)
+			int snum, char **dst, char *src, int *n)
 {
 	pstring buf;
 	int l;
 
-	if (!src || !dst || !n || !(*dst)) return(0);
+	if (!src || !dst || !n || !(*dst)) {
+		return 0;
+	}
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
@@ -77,30 +79,36 @@ static int CopyExpanded(connection_struct *conn,
 	return l;
 }
 
-static int CopyAndAdvance(char** dst, char* src, int* n)
+static int CopyAndAdvance(char **dst, char *src, int *n)
 {
-  int l;
-  if (!src || !dst || !n || !(*dst)) return(0);
-  l = push_ascii(*dst,src,*n, STR_TERMINATE);
-  (*dst) += l;
-  (*n) -= l;
-  return l;
+	int l;
+	if (!src || !dst || !n || !(*dst)) {
+		return 0;
+	}
+	l = push_ascii(*dst,src,*n, STR_TERMINATE);
+	(*dst) += l;
+	(*n) -= l;
+	return l;
 }
 
-static int StrlenExpanded(connection_struct *conn, int snum, char* s)
+static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 {
 	pstring buf;
-	if (!s) return(0);
+	if (!s) {
+		return 0;
+	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub_conn(conn,buf,sizeof(buf));
 	return strlen(buf) + 1;
 }
 
-static char* Expand(connection_struct *conn, int snum, char* s)
+static char *Expand(connection_struct *conn, int snum, char *s)
 {
 	static pstring buf;
-	if (!s) return(NULL);
+	if (!s) {
+		return NULL;
+	}
 	StrnCpy(buf,s,sizeof(buf)/2);
 	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub_conn(conn,buf,sizeof(buf));
@@ -108,218 +116,248 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 }
 
 /*******************************************************************
-  check a API string for validity when we only need to check the prefix
-  ******************************************************************/
+ Check a API string for validity when we only need to check the prefix.
+******************************************************************/
+
 static BOOL prefix_ok(const char *str, const char *prefix)
 {
-  return(strncmp(str,prefix,strlen(prefix)) == 0);
+	return(strncmp(str,prefix,strlen(prefix)) == 0);
 }
 
 struct pack_desc {
-  const char* format;	    /* formatstring for structure */
-  const char* subformat;  /* subformat for structure */
-  char* base;	    /* baseaddress of buffer */
-  int buflen;	   /* remaining size for fixed part; on init: length of base */
-  int subcount;	    /* count of substructures */
-  char* structbuf;  /* pointer into buffer for remaining fixed part */
-  int stringlen;    /* remaining size for variable part */		
-  char* stringbuf;  /* pointer into buffer for remaining variable part */
-  int neededlen;    /* total needed size */
-  int usedlen;	    /* total used size (usedlen <= neededlen and usedlen <= buflen) */
-  const char* curpos;	    /* current position; pointer into format or subformat */
-  int errcode;
+	const char *format;	    /* formatstring for structure */
+	const char *subformat;  /* subformat for structure */
+	char *base;	    /* baseaddress of buffer */
+	int buflen;	   /* remaining size for fixed part; on init: length of base */
+	int subcount;	    /* count of substructures */
+	char *structbuf;  /* pointer into buffer for remaining fixed part */
+	int stringlen;    /* remaining size for variable part */		
+	char *stringbuf;  /* pointer into buffer for remaining variable part */
+	int neededlen;    /* total needed size */
+	int usedlen;	    /* total used size (usedlen <= neededlen and usedlen <= buflen) */
+	const char *curpos;	    /* current position; pointer into format or subformat */
+	int errcode;
 };
 
-static int get_counter(const char** p)
+static int get_counter(const char **p)
 {
-  int i, n;
-  if (!p || !(*p)) return(1);
-  if (!isdigit((int)**p)) return 1;
-  for (n = 0;;) {
-    i = **p;
-    if (isdigit(i))
-      n = 10 * n + (i - '0');
-    else
-      return n;
-    (*p)++;
-  }
+	int i, n;
+	if (!p || !(*p)) {
+		return 1;
+	}
+	if (!isdigit((int)**p)) {
+		return 1;
+	}
+	for (n = 0;;) {
+		i = **p;
+		if (isdigit(i)) {
+			n = 10 * n + (i - '0');
+		} else {
+			return n;
+		}
+		(*p)++;
+	}
 }
 
-static int getlen(const char* p)
+static int getlen(const char *p)
 {
-  int n = 0;
-  if (!p) return(0);
-  while (*p) {
-    switch( *p++ ) {
-    case 'W':			/* word (2 byte) */
-      n += 2;
-      break;
-    case 'K':			/* status word? (2 byte) */
-      n += 2;
-      break;
-    case 'N':			/* count of substructures (word) at end */
-      n += 2;
-      break;
-    case 'D':			/* double word (4 byte) */
-    case 'z':			/* offset to zero terminated string (4 byte) */
-    case 'l':			/* offset to user data (4 byte) */
-      n += 4;
-      break;
-    case 'b':			/* offset to data (with counter) (4 byte) */
-      n += 4;
-      get_counter(&p);
-      break;
-    case 'B':			/* byte (with optional counter) */
-      n += get_counter(&p);
-      break;
-    }
-  }
-  return n;
+	int n = 0;
+	if (!p) {
+		return 0;
+	}
+
+	while (*p) {
+		switch( *p++ ) {
+		case 'W':			/* word (2 byte) */
+			n += 2;
+			break;
+		case 'K':			/* status word? (2 byte) */
+			n += 2;
+			break;
+		case 'N':			/* count of substructures (word) at end */
+			n += 2;
+			break;
+		case 'D':			/* double word (4 byte) */
+		case 'z':			/* offset to zero terminated string (4 byte) */
+		case 'l':			/* offset to user data (4 byte) */
+			n += 4;
+			break;
+		case 'b':			/* offset to data (with counter) (4 byte) */
+			n += 4;
+			get_counter(&p);
+			break;
+		case 'B':			/* byte (with optional counter) */
+			n += get_counter(&p);
+			break;
+		}
+	}
+	return n;
 }
 
-static BOOL init_package(struct pack_desc* p, int count, int subcount)
+static BOOL init_package(struct pack_desc *p, int count, int subcount)
 {
-  int n = p->buflen;
-  int i;
+	int n = p->buflen;
+	int i;
 
-  if (!p->format || !p->base) return(False);
+	if (!p->format || !p->base) {
+		return False;
+	}
 
-  i = count * getlen(p->format);
-  if (p->subformat) i += subcount * getlen(p->subformat);
-  p->structbuf = p->base;
-  p->neededlen = 0;
-  p->usedlen = 0;
-  p->subcount = 0;
-  p->curpos = p->format;
-  if (i > n) {
-    p->neededlen = i;
-    i = n = 0;
+	i = count * getlen(p->format);
+	if (p->subformat) {
+		i += subcount * getlen(p->subformat);
+	}
+	p->structbuf = p->base;
+	p->neededlen = 0;
+	p->usedlen = 0;
+	p->subcount = 0;
+	p->curpos = p->format;
+	if (i > n) {
+		p->neededlen = i;
+		i = n = 0;
 #if 0
-    /*
-     * This is the old error code we used. Aparently
-     * WinNT/2k systems return ERRbuftoosmall (2123) and
-     * OS/2 needs this. I'm leaving this here so we can revert
-     * if needed. JRA.
-     */
-    p->errcode = ERRmoredata;
+		/*
+		 * This is the old error code we used. Aparently
+		 * WinNT/2k systems return ERRbuftoosmall (2123) and
+		 * OS/2 needs this. I'm leaving this here so we can revert
+		 * if needed. JRA.
+		 */
+		p->errcode = ERRmoredata;
 #else
-	p->errcode = ERRbuftoosmall;
+		p->errcode = ERRbuftoosmall;
 #endif
-  }
-  else
-    p->errcode = NERR_Success;
-  p->buflen = i;
-  n -= i;
-  p->stringbuf = p->base + i;
-  p->stringlen = n;
-  return(p->errcode == NERR_Success);
+	} else {
+		p->errcode = NERR_Success;
+	}
+	p->buflen = i;
+	n -= i;
+	p->stringbuf = p->base + i;
+	p->stringlen = n;
+	return (p->errcode == NERR_Success);
 }
 
-static int package(struct pack_desc* p, ...)
+static int package(struct pack_desc *p, ...)
 {
-  va_list args;
-  int needed=0, stringneeded;
-  const char* str=NULL;
-  int is_string=0, stringused;
-  int32 temp;
+	va_list args;
+	int needed=0, stringneeded;
+	const char *str=NULL;
+	int is_string=0, stringused;
+	int32 temp;
 
-  va_start(args,p);
+	va_start(args,p);
 
-  if (!*p->curpos) {
-    if (!p->subcount)
-      p->curpos = p->format;
-    else {
-      p->curpos = p->subformat;
-      p->subcount--;
-    }
-  }
+	if (!*p->curpos) {
+		if (!p->subcount) {
+			p->curpos = p->format;
+		} else {
+			p->curpos = p->subformat;
+			p->subcount--;
+		}
+	}
 #if CHECK_TYPES
-  str = va_arg(args,char*);
-  SMB_ASSERT(strncmp(str,p->curpos,strlen(str)) == 0);
+	str = va_arg(args,char*);
+	SMB_ASSERT(strncmp(str,p->curpos,strlen(str)) == 0);
 #endif
-  stringneeded = -1;
+	stringneeded = -1;
 
-  if (!p->curpos) {
-    va_end(args);
-    return(0);
-  }
+	if (!p->curpos) {
+		va_end(args);
+		return 0;
+	}
 
-  switch( *p->curpos++ ) {
-  case 'W':			/* word (2 byte) */
-    needed = 2;
-    temp = va_arg(args,int);
-    if (p->buflen >= needed) SSVAL(p->structbuf,0,temp);
-    break;
-  case 'K':			/* status word? (2 byte) */
-    needed = 2;
-    temp = va_arg(args,int);
-    if (p->buflen >= needed) SSVAL(p->structbuf,0,temp);
-    break;
-  case 'N':			/* count of substructures (word) at end */
-    needed = 2;
-    p->subcount = va_arg(args,int);
-    if (p->buflen >= needed) SSVAL(p->structbuf,0,p->subcount);
-    break;
-  case 'D':			/* double word (4 byte) */
-    needed = 4;
-    temp = va_arg(args,int);
-    if (p->buflen >= needed) SIVAL(p->structbuf,0,temp);
-    break;
-  case 'B':			/* byte (with optional counter) */
-    needed = get_counter(&p->curpos);
-    {
-      char *s = va_arg(args,char*);
-      if (p->buflen >= needed) StrnCpy(p->structbuf,s?s:"",needed-1);
-    }
-    break;
-  case 'z':			/* offset to zero terminated string (4 byte) */
-    str = va_arg(args,char*);
-    stringneeded = (str ? strlen(str)+1 : 0);
-    is_string = 1;
-    break;
-  case 'l':			/* offset to user data (4 byte) */
-    str = va_arg(args,char*);
-    stringneeded = va_arg(args,int);
-    is_string = 0;
-    break;
-  case 'b':			/* offset to data (with counter) (4 byte) */
-    str = va_arg(args,char*);
-    stringneeded = get_counter(&p->curpos);
-    is_string = 0;
-    break;
-  }
-  va_end(args);
-  if (stringneeded >= 0) {
-    needed = 4;
-    if (p->buflen >= needed) {
-      stringused = stringneeded;
-      if (stringused > p->stringlen) {
-	stringused = (is_string ? p->stringlen : 0);
-	if (p->errcode == NERR_Success) p->errcode = ERRmoredata;
-      }
-      if (!stringused)
-	SIVAL(p->structbuf,0,0);
-      else {
-	SIVAL(p->structbuf,0,PTR_DIFF(p->stringbuf,p->base));
-	memcpy(p->stringbuf,str?str:"",stringused);
-	if (is_string) p->stringbuf[stringused-1] = '\0';
-	p->stringbuf += stringused;
-	p->stringlen -= stringused;
-	p->usedlen += stringused;
-      }
-    }
-    p->neededlen += stringneeded;
-  }
-  p->neededlen += needed;
-  if (p->buflen >= needed) {
-    p->structbuf += needed;
-    p->buflen -= needed;
-    p->usedlen += needed;
-  }
-  else {
-    if (p->errcode == NERR_Success) p->errcode = ERRmoredata;
-  }
-  return 1;
+	switch( *p->curpos++ ) {
+		case 'W':			/* word (2 byte) */
+			needed = 2;
+			temp = va_arg(args,int);
+			if (p->buflen >= needed) {
+				SSVAL(p->structbuf,0,temp);
+			}
+			break;
+		case 'K':			/* status word? (2 byte) */
+			needed = 2;
+			temp = va_arg(args,int);
+			if (p->buflen >= needed) {
+				SSVAL(p->structbuf,0,temp);
+			}
+			break;
+		case 'N':			/* count of substructures (word) at end */
+			needed = 2;
+			p->subcount = va_arg(args,int);
+			if (p->buflen >= needed) {
+				SSVAL(p->structbuf,0,p->subcount);
+			}
+			break;
+		case 'D':			/* double word (4 byte) */
+			needed = 4;
+			temp = va_arg(args,int);
+			if (p->buflen >= needed) {
+				SIVAL(p->structbuf,0,temp);
+			}
+			break;
+		case 'B':			/* byte (with optional counter) */
+			needed = get_counter(&p->curpos);
+			{
+				char *s = va_arg(args,char*);
+				if (p->buflen >= needed) {
+					StrnCpy(p->structbuf,s?s:"",needed-1);
+				}
+			}
+			break;
+		case 'z':			/* offset to zero terminated string (4 byte) */
+			str = va_arg(args,char*);
+			stringneeded = (str ? strlen(str)+1 : 0);
+			is_string = 1;
+			break;
+		case 'l':			/* offset to user data (4 byte) */
+			str = va_arg(args,char*);
+			stringneeded = va_arg(args,int);
+			is_string = 0;
+			break;
+		case 'b':			/* offset to data (with counter) (4 byte) */
+			str = va_arg(args,char*);
+			stringneeded = get_counter(&p->curpos);
+			is_string = 0;
+			break;
+	}
+
+	va_end(args);
+	if (stringneeded >= 0) {
+		needed = 4;
+		if (p->buflen >= needed) {
+			stringused = stringneeded;
+			if (stringused > p->stringlen) {
+				stringused = (is_string ? p->stringlen : 0);
+				if (p->errcode == NERR_Success) {
+					p->errcode = ERRmoredata;
+				}
+			}
+			if (!stringused) {
+				SIVAL(p->structbuf,0,0);
+			} else {
+				SIVAL(p->structbuf,0,PTR_DIFF(p->stringbuf,p->base));
+				memcpy(p->stringbuf,str?str:"",stringused);
+				if (is_string) {
+					p->stringbuf[stringused-1] = '\0';
+				}
+				p->stringbuf += stringused;
+				p->stringlen -= stringused;
+				p->usedlen += stringused;
+			}
+		}
+		p->neededlen += stringneeded;
+	}
+
+	p->neededlen += needed;
+	if (p->buflen >= needed) {
+		p->structbuf += needed;
+		p->buflen -= needed;
+		p->usedlen += needed;
+	} else {
+		if (p->errcode == NERR_Success) {
+			p->errcode = ERRmoredata;
+		}
+	}
+	return 1;
 }
 
 #if CHECK_TYPES
@@ -340,10 +378,10 @@ static void PACKS(struct pack_desc* desc,const char *t,const char *v)
 	PACK(desc,t,v);
 }
 
-
 /****************************************************************************
-  get a print queue
-  ****************************************************************************/
+ Get a print queue.
+****************************************************************************/
+
 static void PackDriverData(struct pack_desc* desc)
 {
 	char drivdata[4+4+32];
@@ -439,61 +477,61 @@ static int printq_status(int v)
 }
 
 static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
-			       struct pack_desc* desc,
-			       print_queue_struct* queue, int n)
+			       struct pack_desc *desc,
+			       print_queue_struct *queue, int n)
 {
-  time_t t = queue->time;
+	time_t t = queue->time;
 
-  /* the client expects localtime */
-  t -= TimeDiff(t);
+	/* the client expects localtime */
+	t -= get_time_zone(t);
 
-  PACKI(desc,"W",pjobid_to_rap(lp_const_servicename(snum),queue->job)); /* uJobId */
-  if (uLevel == 1) {
-    PACKS(desc,"B21",queue->fs_user); /* szUserName */
-    PACKS(desc,"B","");		/* pad */
-    PACKS(desc,"B16","");	/* szNotifyName */
-    PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
-    PACKS(desc,"z","");		/* pszParms */
-    PACKI(desc,"W",n+1);		/* uPosition */
-    PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
-    PACKS(desc,"z","");		/* pszStatus */
-    PACKI(desc,"D",t); /* ulSubmitted */
-    PACKI(desc,"D",queue->size); /* ulSize */
-    PACKS(desc,"z",queue->fs_file); /* pszComment */
-  }
-  if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
-    PACKI(desc,"W",queue->priority);		/* uPriority */
-    PACKS(desc,"z",queue->fs_user); /* pszUserName */
-    PACKI(desc,"W",n+1);		/* uPosition */
-    PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
-    PACKI(desc,"D",t); /* ulSubmitted */
-    PACKI(desc,"D",queue->size); /* ulSize */
-    PACKS(desc,"z","Samba");	/* pszComment */
-    PACKS(desc,"z",queue->fs_file); /* pszDocument */
-    if (uLevel == 3) {
-      PACKS(desc,"z","");	/* pszNotifyName */
-      PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
-      PACKS(desc,"z","");	/* pszParms */
-      PACKS(desc,"z","");	/* pszStatus */
-      PACKS(desc,"z",SERVICE(snum)); /* pszQueue */
-      PACKS(desc,"z","lpd");	/* pszQProcName */
-      PACKS(desc,"z","");	/* pszQProcParms */
-      PACKS(desc,"z","NULL"); /* pszDriverName */
-      PackDriverData(desc);	/* pDriverData */
-      PACKS(desc,"z","");	/* pszPrinterName */
-    } else if (uLevel == 4) {   /* OS2 */
-      PACKS(desc,"z","");       /* pszSpoolFileName  */
-       PACKS(desc,"z","");       /* pszPortName       */
-       PACKS(desc,"z","");       /* pszStatus         */
-       PACKI(desc,"D",0);        /* ulPagesSpooled    */
-       PACKI(desc,"D",0);        /* ulPagesSent       */
-       PACKI(desc,"D",0);        /* ulPagesPrinted    */
-       PACKI(desc,"D",0);        /* ulTimePrinted     */
-       PACKI(desc,"D",0);        /* ulExtendJobStatus */
-       PACKI(desc,"D",0);        /* ulStartPage       */
-       PACKI(desc,"D",0);        /* ulEndPage         */
-    }
-  }
+	PACKI(desc,"W",pjobid_to_rap(lp_const_servicename(snum),queue->job)); /* uJobId */
+	if (uLevel == 1) {
+		PACKS(desc,"B21",queue->fs_user); /* szUserName */
+		PACKS(desc,"B","");		/* pad */
+		PACKS(desc,"B16","");	/* szNotifyName */
+		PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
+		PACKS(desc,"z","");		/* pszParms */
+		PACKI(desc,"W",n+1);		/* uPosition */
+		PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
+		PACKS(desc,"z","");		/* pszStatus */
+		PACKI(desc,"D",t); /* ulSubmitted */
+		PACKI(desc,"D",queue->size); /* ulSize */
+		PACKS(desc,"z",queue->fs_file); /* pszComment */
+	}
+	if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
+		PACKI(desc,"W",queue->priority);		/* uPriority */
+		PACKS(desc,"z",queue->fs_user); /* pszUserName */
+		PACKI(desc,"W",n+1);		/* uPosition */
+		PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
+		PACKI(desc,"D",t); /* ulSubmitted */
+		PACKI(desc,"D",queue->size); /* ulSize */
+		PACKS(desc,"z","Samba");	/* pszComment */
+		PACKS(desc,"z",queue->fs_file); /* pszDocument */
+		if (uLevel == 3) {
+			PACKS(desc,"z","");	/* pszNotifyName */
+			PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
+			PACKS(desc,"z","");	/* pszParms */
+			PACKS(desc,"z","");	/* pszStatus */
+			PACKS(desc,"z",SERVICE(snum)); /* pszQueue */
+			PACKS(desc,"z","lpd");	/* pszQProcName */
+			PACKS(desc,"z","");	/* pszQProcParms */
+			PACKS(desc,"z","NULL"); /* pszDriverName */
+			PackDriverData(desc);	/* pDriverData */
+			PACKS(desc,"z","");	/* pszPrinterName */
+		} else if (uLevel == 4) {   /* OS2 */
+			PACKS(desc,"z","");       /* pszSpoolFileName  */
+			PACKS(desc,"z","");       /* pszPortName       */
+			PACKS(desc,"z","");       /* pszStatus         */
+			PACKI(desc,"D",0);        /* ulPagesSpooled    */
+			PACKI(desc,"D",0);        /* ulPagesSent       */
+			PACKI(desc,"D",0);        /* ulPagesPrinted    */
+			PACKI(desc,"D",0);        /* ulTimePrinted     */
+			PACKI(desc,"D",0);        /* ulExtendJobStatus */
+			PACKI(desc,"D",0);        /* ulStartPage       */
+			PACKI(desc,"D",0);        /* ulEndPage         */
+		}
+	}
 }
 
 /********************************************************************
@@ -2001,20 +2039,20 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
     struct tm *t;
     time_t unixdate = time(NULL);
 
-    put_dos_date3(p,0,unixdate); /* this is the time that is looked at
+    srv_put_dos_date3(p,0,unixdate); /* this is the time that is looked at
 				    by NT in a "net time" operation,
 				    it seems to ignore the one below */
 
     /* the client expects to get localtime, not GMT, in this bit 
        (I think, this needs testing) */
-    t = LocalTime(&unixdate);
+    t = localtime(&unixdate);
 
     SIVAL(p,4,0);		/* msecs ? */
     SCVAL(p,8,t->tm_hour);
     SCVAL(p,9,t->tm_min);
     SCVAL(p,10,t->tm_sec);
     SCVAL(p,11,0);		/* hundredths of seconds */
-    SSVALS(p,12,TimeDiff(unixdate)/60); /* timezone in minutes from GMT */
+    SSVALS(p,12,get_time_zone(unixdate)/60); /* timezone in minutes from GMT */
     SSVAL(p,14,10000);		/* timer interval in 0.0001 of sec */
     SCVAL(p,16,t->tm_mday);
     SCVAL(p,17,t->tm_mon + 1);
@@ -2737,23 +2775,25 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	char *p2;
 	const char *level_string;
 
-    /* get NIS home of a previously validated user - simeon */
-    /* With share level security vuid will always be zero.
-       Don't depend on vuser being non-null !!. JRA */
-    user_struct *vuser = get_valid_user_struct(vuid);
-    if(vuser != NULL)
-      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
-	       vuser->user.unix_name));
+	/* get NIS home of a previously validated user - simeon */
+	/* With share level security vuid will always be zero.
+	   Don't depend on vuser being non-null !!. JRA */
+	user_struct *vuser = get_valid_user_struct(vuid);
+	if(vuser != NULL) {
+		DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, 
+			vuser->user.unix_name));
+	}
 
-    *rparam_len = 6;
-    *rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam_len = 6;
+	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
 
-    DEBUG(4,("RNetUserGetInfo level=%d\n", uLevel));
+	DEBUG(4,("RNetUserGetInfo level=%d\n", uLevel));
   
 	/* check it's a supported variant */
-	if (strcmp(str1,"zWrLh") != 0) return False;
-	switch( uLevel )
-	{
+	if (strcmp(str1,"zWrLh") != 0) {
+		return False;
+	}
+	switch( uLevel ) {
 		case 0: level_string = "B21"; break;
 		case 1: level_string = "B21BB16DWzzWz"; break;
 		case 2: level_string = "B21BB16DWzzWzDzzzzDDDDWb21WWzWW"; break;
@@ -2762,7 +2802,9 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		default: return False;
 	}
 
-	if (strcmp(level_string,str2) != 0) return False;
+	if (strcmp(level_string,str2) != 0) {
+		return False;
+	}
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
@@ -2776,13 +2818,12 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	memset(p,0,21); 
 	fstrcpy(p+usri11_name,UserName); /* 21 bytes - user name */
 
-	if (uLevel > 0)
-	{
+	if (uLevel > 0) {
 		SCVAL(p,usri11_pad,0); /* padding - 1 byte */
 		*p2 = 0;
 	}
-	if (uLevel >= 10)
-	{
+
+	if (uLevel >= 10) {
 		SIVAL(p,usri11_comment,PTR_DIFF(p2,p)); /* comment */
 		pstrcpy(p2,"Comment");
 		p2 = skip_string(p2,1);
@@ -2797,8 +2838,8 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		p2 = skip_string(p2,1);
 	}
 
-	if (uLevel == 11) /* modelled after NTAS 3.51 reply */
-	{         
+	if (uLevel == 11) {
+		/* modelled after NTAS 3.51 reply */
 		SSVAL(p,usri11_priv,conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
@@ -2832,8 +2873,8 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 		SSVAL(p,usri11_code_page,0);		/* code page */
 	}
-	if (uLevel == 1 || uLevel == 2)
-	{
+
+	if (uLevel == 1 || uLevel == 2) {
 		memset(p+22,' ',16);	/* password */
 		SIVALS(p,38,-1);		/* password age */
 		SSVAL(p,42,
@@ -2847,8 +2888,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
 		pstrcpy(p2,vuser && vuser->logon_script ? vuser->logon_script : "");
 		p2 = skip_string(p2,1);
-		if (uLevel == 2)
-		{
+		if (uLevel == 2) {
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
    			pstrcpy(p2,((vuser != NULL) ? vuser->user.full_name : UserName));
@@ -3506,47 +3546,46 @@ static BOOL api_RNetSessionEnum(connection_struct *conn,uint16 vuid, char *param
 
 
 /****************************************************************************
- The buffer was too small
+ The buffer was too small.
  ****************************************************************************/
 
-static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
-			 int mdrcnt,int mprcnt,
-			 char **rdata,char **rparam,
-			 int *rdata_len,int *rparam_len)
+static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param, char *data,
+			 int mdrcnt, int mprcnt,
+			 char **rdata, char **rparam,
+			 int *rdata_len, int *rparam_len)
 {
-  *rparam_len = MIN(*rparam_len,mprcnt);
-  *rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam_len = MIN(*rparam_len,mprcnt);
+	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
 
-  *rdata_len = 0;
+	*rdata_len = 0;
 
-  SSVAL(*rparam,0,NERR_BufTooSmall);
+	SSVAL(*rparam,0,NERR_BufTooSmall);
 
-  DEBUG(3,("Supplied buffer too small in API command\n"));
+	DEBUG(3,("Supplied buffer too small in API command\n"));
 
-  return(True);
+	return True;
 }
 
-
 /****************************************************************************
- The request is not supported
+ The request is not supported.
  ****************************************************************************/
 
-static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
-			    int mdrcnt,int mprcnt,
-			    char **rdata,char **rparam,
-			    int *rdata_len,int *rparam_len)
+static BOOL api_Unsupported(connection_struct *conn, uint16 vuid, char *param, char *data,
+			    int mdrcnt, int mprcnt,
+			    char **rdata, char **rparam,
+			    int *rdata_len, int *rparam_len)
 {
-  *rparam_len = 4;
-  *rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	*rparam_len = 4;
+	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
 
-  *rdata_len = 0;
+	*rdata_len = 0;
 
-  SSVAL(*rparam,0,NERR_notsupported);
-  SSVAL(*rparam,2,0);		/* converter word */
+	SSVAL(*rparam,0,NERR_notsupported);
+	SSVAL(*rparam,2,0);		/* converter word */
 
-  DEBUG(3,("Unsupported API command\n"));
+	DEBUG(3,("Unsupported API command\n"));
 
-  return(True);
+	return True;
 }
 
 static const struct {

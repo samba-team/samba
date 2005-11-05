@@ -106,7 +106,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 
 	SSVAL(outbuf,smb_vwv2, p->pnum);
 	SSVAL(outbuf,smb_vwv3,fmode);
-	put_dos_date3(outbuf,smb_vwv4,mtime);
+	srv_put_dos_date3(outbuf,smb_vwv4,mtime);
 	SIVAL(outbuf,smb_vwv6,size);
 	SSVAL(outbuf,smb_vwv8,rmode);
 	SSVAL(outbuf,smb_vwv11,0x0001);

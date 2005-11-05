@@ -1,5 +1,5 @@
-/* 
- *  Unix SMB/CIFS implementation.
+ /* 
+  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Jeremy Allison					2001.
@@ -1947,7 +1947,7 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	                      t->tm_min,
 	                      t->tm_sec,
 	                      0,
-	                      TimeDiff(unixdate)/60,
+	                      get_time_zone(unixdate)/60,
 	                      10000,
 	                      t->tm_mday,
 	                      t->tm_mon + 1,

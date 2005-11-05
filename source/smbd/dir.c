@@ -94,7 +94,7 @@ void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T si
 
 	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
 	SCVAL(buf,21,mode);
-	put_dos_date(buf,22,date);
+	srv_put_dos_date(buf,22,date);
 	SSVAL(buf,26,size & 0xFFFF);
 	SSVAL(buf,28,(size >> 16)&0xFFFF);
 	/* We only uppercase if FLAGS2_LONG_PATH_COMPONENTS is zero in the input buf.
