@@ -36,6 +36,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
+#include "auth/auth.h"
 
 struct ildb_private {
 	struct ldap_connection *ldap;
@@ -459,9 +460,14 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->ops = &ildb_ops;
 
 	/* caller can optionally setup credentials using the opaque token 'credentials' */
-	creds = ldb_get_opaque(ldb, "credentials");
+	creds = talloc_get_type(ldb_get_opaque(ldb, "credentials"), struct cli_credentials);
 	if (creds == NULL) {
-		creds = cmdline_credentials;
+		struct auth_session_info *session_info = talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"), struct auth_session_info);
+		if (session_info && session_info->credentials) {
+			creds = session_info->credentials;
+		} else {
+			creds = cmdline_credentials;
+		}
 	}
 
 	if (creds != NULL && cli_credentials_authentication_requested(creds)) {
