@@ -553,6 +553,14 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
+	session_info->credentials = cli_credentials_init(session_info);
+	if (!session_info->credentials) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_conf(session_info->credentials);
+	cli_credentials_set_anonymous(session_info->credentials);
+	
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
@@ -590,6 +598,18 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
+	session_info->credentials = cli_credentials_init(session_info);
+	if (!session_info->credentials) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_conf(session_info->credentials);
+	if (!NT_STATUS_IS_OK(cli_credentials_set_machine_account(session_info->credentials))) {
+		/* perhaps no credentials, we might not be joined to a domain */
+		talloc_free(session_info->credentials);
+		session_info->credentials = NULL;
+	}
+	
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
