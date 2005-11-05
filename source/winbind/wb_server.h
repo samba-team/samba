@@ -53,6 +53,8 @@ struct wbsrv_domain {
 	const char *name;
 	const struct dom_sid *sid;
 	const char *dcname;
+	const char *dc_dnsname;
+	const char *dc_address;
 
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;

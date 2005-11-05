@@ -26,6 +26,7 @@
 #include "winbind/wb_async_helpers.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/service_task.h"
 #include "libcli/auth/credentials.h"
 
 /* Oh, there is so much to keep an eye on when authenticating a user.  Oh my! */
@@ -48,19 +49,15 @@ struct pam_auth_crap_state {
 	DATA_BLOB info3;
 };
 
-static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *domain,
-							void *p);
-static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx, void *p);
-
-/* NTLM authentication.
-
-  Fill parameters into a control block to pass to the next function.
-  No application logic, this is done by the helper function paramters
-  to wb_domain_request_send()
-
+/*
+ * NTLM authentication.
 */
 
-struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
+static void pam_auth_crap_recv_domain(struct composite_context *ctx);
+static void pam_auth_crap_recv_samlogon(struct rpc_request *req);
+
+struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
+						    struct wbsrv_service *service,
 						    uint32_t logon_parameters,
 						    const char *domain,
 						    const char *user,
@@ -69,13 +66,19 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 						    DATA_BLOB nt_resp,
 						    DATA_BLOB lm_resp)
 {
+	struct composite_context *result, *ctx;
 	struct pam_auth_crap_state *state;
-	struct wbsrv_service *service = call->wbconn->listen_socket->service;
 
-	state = talloc(NULL, struct pam_auth_crap_state);
+	result = talloc(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = service->task->event_ctx;
+
+	state = talloc(result, struct pam_auth_crap_state);
 	if (state == NULL) goto failed;
-
-	state->event_ctx = call->event_ctx;
+	state->ctx = result;
+	result->private_data = state;
 
 	state->logon_parameters = logon_parameters;
 
@@ -99,17 +102,15 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 	if ((lm_resp.data != NULL) &&
 	    (state->lm_resp.data == NULL)) goto failed;
 
-	state->ctx = wb_domain_request_send(state, service,
-					    service->primary_sid,
-					    crap_samlogon_send_req,
-					    crap_samlogon_recv_req,
-					    state);
-	if (state->ctx == NULL) goto failed;
-	state->ctx->private_data = state;
-	return state->ctx;
+	ctx = wb_sid2domain_send(state, service, service->primary_sid);
+	if (ctx == NULL) goto failed;
+
+	ctx->async.fn = pam_auth_crap_recv_domain;
+	ctx->async.private_data = state;
+	return result;
 
  failed:
-	talloc_free(state);
+	talloc_free(result);
 	return NULL;
 }
 
@@ -118,11 +119,15 @@ struct composite_context *wb_cmd_pam_auth_crap_send(struct wbsrv_call *call,
 
     Send of a SamLogon request to authenticate a user.
 */
-static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *domain,
-							void *p)
+static void pam_auth_crap_recv_domain(struct composite_context *ctx)
 {
 	struct pam_auth_crap_state *state =
-		talloc_get_type(p, struct pam_auth_crap_state);
+		talloc_get_type(ctx->async.private_data,
+				struct pam_auth_crap_state);
+	struct rpc_request *req;
+	struct wbsrv_domain *domain;
+
+	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	state->creds_state =
 		cli_credentials_get_netlogon_creds(domain->schannel_creds);
 
@@ -146,7 +151,7 @@ static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *dom
 
 	state->r.in.server_name = talloc_asprintf(
 		state, "\\\\%s", dcerpc_server_name(domain->netlogon_pipe));
-	if (state->r.in.server_name == NULL) return NULL;
+	if (composite_nomem(state->r.in.server_name, state->ctx)) return;
 
 	ZERO_STRUCT(state->auth2);
 
@@ -159,36 +164,39 @@ static struct composite_context *crap_samlogon_send_req(struct wbsrv_domain *dom
 	state->r.in.logon.network = &state->ninfo;
 	state->r.out.return_authenticator = NULL;
 
-	return composite_netr_LogonSamLogon_send(domain->netlogon_pipe,
-						 state, &state->r);
+	req = dcerpc_netr_LogonSamLogon_send(domain->netlogon_pipe, state,
+					     &state->r);
+	composite_continue_rpc(state->ctx, req, pam_auth_crap_recv_samlogon,
+			       state);
 }
 
 /* 
    NTLM Authentication 
    
-   Check the SamLogon reply, decrypt and parse out the session keys and the info3 structure
+   Check the SamLogon reply, decrypt and parse out the session keys and the
+   info3 structure.
 */
-static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
-				   void *p)
+static void pam_auth_crap_recv_samlogon(struct rpc_request *req)
 {
 	struct pam_auth_crap_state *state =
-		talloc_get_type(p, struct pam_auth_crap_state);
+		talloc_get_type(req->async.private,
+				struct pam_auth_crap_state);
 	struct netr_SamBaseInfo *base;
 	DATA_BLOB tmp_blob;
-	NTSTATUS status;
 
-	status = composite_netr_LogonSamLogon_recv(ctx);
-	if (!NT_STATUS_IS_OK(status)) return status;
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
 
 	if ((state->r.out.return_authenticator == NULL) ||
 	    (!creds_client_check(state->creds_state,
 				 &state->r.out.return_authenticator->cred))) {
 		DEBUG(0, ("Credentials check failed!\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		composite_error(state->ctx, NT_STATUS_ACCESS_DENIED);
+		return;
 	}
 
-	status = state->r.out.result;
-	if (!NT_STATUS_IS_OK(status)) return status;
+	state->ctx->status = state->r.out.result;
+	if (!composite_is_ok(state->ctx)) return;
 
 	/* Decrypt the session keys before we reform the info3, so the
 	 * person on the other end of winbindd pipe doesn't have to.
@@ -197,22 +205,23 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 			       state->r.in.validation_level,
 			       &state->r.out.validation);
 
-	status = ndr_push_struct_blob(
-		&tmp_blob, state,
-		state->r.out.validation.sam3,
+	state->ctx->status = ndr_push_struct_blob(
+		&tmp_blob, state, state->r.out.validation.sam3,
 		(ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!composite_is_ok(state->ctx)) return;
 
 	/* The Samba3 protocol is a bit broken (due to non-IDL
 	 * heritage, so for compatability we must add a non-zero 4
 	 * bytes to the info3 */
 	state->info3 = data_blob_talloc(state, NULL, tmp_blob.length+4);
-	NT_STATUS_HAVE_NO_MEMORY(state->info3.data);
+	if (composite_nomem(state->info3.data, state->ctx)) return;
 
 	SIVAL(state->info3.data, 0, 1);
 	memcpy(state->info3.data+4, tmp_blob.data, tmp_blob.length);
 
-	/* We actually only ask for level 3, and assume it above, but anyway... */
+	/* We actually only ask for level 3, and assume it above, but 
+         * anyway... */
+
 	base = NULL;
 	switch(state->r.in.validation_level) {
 	case 2:
@@ -226,7 +235,8 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 		break;
 	}
 	if (base == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
+		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
+		return;
 	}
 
 	state->user_session_key = base->key;
@@ -244,7 +254,7 @@ static NTSTATUS crap_samlogon_recv_req(struct composite_context *ctx,
 		talloc_steal(state, base->domain.string);
 	}
 
-	return NT_STATUS_OK;
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
@@ -263,7 +273,8 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 		*user_session_key = state->user_session_key;
 		*lm_key = state->lm_key;
 		*unix_username = talloc_asprintf(mem_ctx, "%s%s%s", 
-						 state->domain_name, lp_winbind_separator(),
+						 state->domain_name,
+						 lp_winbind_separator(),
 						 state->user_name);
 		if (!*unix_username) {
 			status = NT_STATUS_NO_MEMORY;
@@ -273,31 +284,32 @@ NTSTATUS wb_cmd_pam_auth_crap_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_cmd_pam_auth_crap(struct wbsrv_call *call,
+NTSTATUS wb_cmd_pam_auth_crap(TALLOC_CTX *mem_ctx,
+			      struct wbsrv_service *service,
 			      uint32_t logon_parameters,
 			      const char *domain, const char *user,
 			      const char *workstation,
 			      DATA_BLOB chal, DATA_BLOB nt_resp,
-			      DATA_BLOB lm_resp, TALLOC_CTX *mem_ctx,
+			      DATA_BLOB lm_resp,
 			      DATA_BLOB *info3,
 			      struct netr_UserSessionKey *user_session_key,
 			      struct netr_LMSessionKey *lm_key,
 			      char **unix_username)
 {
 	struct composite_context *c =
-		wb_cmd_pam_auth_crap_send(call, logon_parameters, 
+		wb_cmd_pam_auth_crap_send(mem_ctx, service, logon_parameters, 
 					  domain, user, workstation,
 					  chal, nt_resp, lm_resp);
 	return wb_cmd_pam_auth_crap_recv(c, mem_ctx, info3, user_session_key,
 					 lm_key, unix_username);
 }
 
-struct composite_context *wb_cmd_pam_auth_send(struct wbsrv_call *call,
+struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
+					       struct wbsrv_service *service,
 					       const char *domain,
 					       const char *user,
 					       const char *password)
 {
-	struct composite_context *c;
 	struct cli_credentials *credentials;
 	const char *workstation;
 	NTSTATUS status;
@@ -314,7 +326,7 @@ struct composite_context *wb_cmd_pam_auth_send(struct wbsrv_call *call,
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
 
-	credentials = cli_credentials_init(call);
+	credentials = cli_credentials_init(mem_ctx);
 	if (!credentials) {
 		return NULL;
 	}
@@ -324,34 +336,33 @@ struct composite_context *wb_cmd_pam_auth_send(struct wbsrv_call *call,
 
 	cli_credentials_set_password(credentials, password, CRED_SPECIFIED);
 
-	chal = data_blob_talloc(call, NULL, 8);
+	chal = data_blob_talloc(mem_ctx, NULL, 8);
 	if (!chal.data) {
 		return NULL;
 	}
 	generate_random_buffer(chal.data, chal.length);
-	cli_credentials_get_ntlm_username_domain(credentials, call,
+	cli_credentials_get_ntlm_username_domain(credentials, mem_ctx,
 						 &user, &domain);
 	/* for best compatability with multiple vitual netbios names
 	 * on the host, this should be generated from the
 	 * cli_credentials associated with the machine account */
 	workstation = cli_credentials_get_workstation(credentials);
 
-	names_blob = NTLMv2_generate_names_blob(call, cli_credentials_get_workstation(credentials), 
-						cli_credentials_get_domain(credentials));
+	names_blob = NTLMv2_generate_names_blob(
+		mem_ctx,
+		cli_credentials_get_workstation(credentials), 
+		cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(credentials, call, 
-						   &flags, 
-						   chal,
-						   names_blob,
-						   &lm_resp, &nt_resp,
-						   NULL, NULL);
+	status = cli_credentials_get_ntlm_response(
+		credentials, mem_ctx, &flags, chal, names_blob,
+		&lm_resp, &nt_resp, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	c = wb_cmd_pam_auth_crap_send(call, 0 /* logon parameters */, 
-				      domain, user, workstation,
-				      chal, nt_resp, lm_resp);
-	return c;
+	return wb_cmd_pam_auth_crap_send(mem_ctx, service,
+					 0 /* logon parameters */, 
+					 domain, user, workstation,
+					 chal, nt_resp, lm_resp);
 }
 
 NTSTATUS wb_cmd_pam_auth_recv(struct composite_context *c)
@@ -363,12 +374,11 @@ NTSTATUS wb_cmd_pam_auth_recv(struct composite_context *c)
 	return status;
 }
 
-NTSTATUS wb_cmd_pam_auth(struct wbsrv_call *call,
+NTSTATUS wb_cmd_pam_auth(TALLOC_CTX *mem_ctx, struct wbsrv_service *service,
 			 const char *domain, const char *user,
 			 const char *password)
 {
 	struct composite_context *c =
-		wb_cmd_pam_auth_send(call, domain, user, 
-				     password);
+		wb_cmd_pam_auth_send(mem_ctx, service, domain, user, password);
 	return wb_cmd_pam_auth_recv(c);
 }

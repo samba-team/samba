@@ -49,7 +49,8 @@ static void connect_samr_recv_pipe(struct composite_context *ctx);
 static void connect_samr_recv_conn(struct rpc_request *req);
 static void connect_samr_recv_open(struct rpc_request *req);
 
-struct composite_context *wb_connect_sam_send(struct smbcli_tree *tree,
+struct composite_context *wb_connect_sam_send(TALLOC_CTX *mem_ctx,
+					      struct smbcli_tree *tree,
 					      uint8_t auth_type,
 					      struct cli_credentials *creds,
 					      const struct dom_sid *domain_sid)
@@ -57,7 +58,7 @@ struct composite_context *wb_connect_sam_send(struct smbcli_tree *tree,
 	struct composite_context *result, *ctx;
 	struct connect_samr_state *state;
 
-	result = talloc(NULL, struct composite_context);
+	result = talloc(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
@@ -194,17 +195,18 @@ NTSTATUS wb_connect_sam_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_connect_sam(struct smbcli_tree *tree,
+NTSTATUS wb_connect_sam(TALLOC_CTX *mem_ctx,
+			struct smbcli_tree *tree,
 			uint8_t auth_type,
 			struct cli_credentials *creds,
 			const struct dom_sid *domain_sid,
-			TALLOC_CTX *mem_ctx,
 			struct dcerpc_pipe **samr_pipe,
 			struct policy_handle **connect_handle,
 			struct policy_handle **domain_handle)
 {
 	struct composite_context *c =
-		wb_connect_sam_send(tree, auth_type, creds, domain_sid);
+		wb_connect_sam_send(mem_ctx, tree, auth_type, creds,
+				    domain_sid);
 	return wb_connect_sam_recv(c, mem_ctx, samr_pipe, connect_handle,
 				   domain_handle);
 }
