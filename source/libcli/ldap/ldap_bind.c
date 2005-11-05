@@ -145,6 +145,18 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	DATA_BLOB input = data_blob(NULL, 0);
 	DATA_BLOB output = data_blob(NULL, 0);
 
+	struct ldap_message **sasl_mechs_msgs;
+	struct ldap_SearchResEntry *search;
+	int count, i;
+
+	const char **sasl_names;
+	const struct gensec_security_ops **mechs;
+	
+	static const char *supported_sasl_mech_attrs[] = {
+		"supportedSASLMechanisms", 
+		NULL 
+	};
+
 	status = gensec_client_start(conn, &conn->gensec, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
@@ -174,15 +186,56 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		goto failed;
 	}
 
-	status = gensec_start_mech_by_sasl_name(conn->gensec, "NTLM");
+	status = ildap_search(conn, "", LDAP_SEARCH_SCOPE_BASE, "", supported_sasl_mech_attrs, 
+			      False, &sasl_mechs_msgs);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set GENSEC client SPNEGO mechanism: %s\n",
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: %s\n", 
 			  nt_errstr(status)));
+		goto failed;
+	}
+	
+	count = ildap_count_entries(conn, sasl_mechs_msgs);
+	if (count != 1) {
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of replies: %d\n",
+			  count));
 		goto failed;
 	}
 
 	tmp_ctx = talloc_new(conn);
 	if (tmp_ctx == NULL) goto failed;
+
+	search = &sasl_mechs_msgs[0]->r.SearchResultEntry;
+	if (search->num_attributes != 1) {
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of attributes: %d\n",
+			  search->num_attributes));
+		goto failed;
+	}
+
+	sasl_names = talloc_array(tmp_ctx, const char *, search->attributes[0].num_values + 1);
+	if (!sasl_names) {
+		DEBUG(1, ("talloc_arry(char *, %d) failed\n",
+			  count));
+		goto failed;
+	}
+		
+	for (i=0; i<search->attributes[0].num_values; i++) {
+		sasl_names[i] = (const char *)search->attributes[0].values[i].data;
+	}
+	sasl_names[i] = NULL;
+	
+	mechs = gensec_security_by_sasl(tmp_ctx, sasl_names);
+	if (!mechs || !mechs[0]) {
+		DEBUG(1, ("None of the %d proposed SASL mechs were acceptable\n",
+			  count));
+		goto failed;
+	}
+
+	status = gensec_start_mech_by_ops(conn->gensec, mechs[0]);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC client mechanism: %s/%s %s\n",
+			  mechs[0]->name, mechs[0]->sasl_name, nt_errstr(status)));
+		goto failed;
+	}
 
 	while (1) {
 		NTSTATUS gensec_status;

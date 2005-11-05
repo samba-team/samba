@@ -98,6 +98,71 @@ const struct gensec_security_ops **gensec_security_all(int *num_backends_out)
  * The list is in the exact order of the OIDs asked for, where available.
  */
 
+const struct gensec_security_ops **gensec_security_by_sasl(TALLOC_CTX *mem_ctx, 
+							  const char **sasl_names)
+{
+	const struct gensec_security_ops **backends_out;
+	const struct gensec_security_ops **backends;
+	int i, k, sasl_idx;
+	int num_backends_out = 0;
+	int num_backends;
+
+	if (!sasl_names) {
+		return NULL;
+	}
+
+	backends = gensec_security_all(&num_backends);
+
+	backends_out = talloc_array(mem_ctx, const struct gensec_security_ops *, 1);
+	if (!backends_out) {
+		return NULL;
+	}
+	backends_out[0] = NULL;
+
+	/* Find backends in our preferred order, by walking our list,
+	 * then looking in the supplied list */
+	for (i=0; i < num_backends; i++) {
+		for (sasl_idx = 0; sasl_names[sasl_idx]; sasl_idx++) {
+			if (!backends[i]->sasl_name ||
+			    !(strcmp(backends[i]->sasl_name, 
+				     sasl_names[sasl_idx]) == 0)) {
+				continue;
+			}
+			
+			for (k=0; backends_out[k]; k++) {
+				if (backends_out[k] == backends[i]) {
+					break;
+				}
+			}
+			
+			if (k < num_backends_out) {
+				/* already in there */
+				continue;
+			}
+			
+			backends_out = talloc_realloc(mem_ctx, backends_out, 
+						      const struct gensec_security_ops *, 
+						      num_backends_out + 2);
+			if (!backends_out) {
+				return NULL;
+			}
+			
+			backends_out[num_backends_out] = backends[i];
+			num_backends_out++;
+			backends_out[num_backends_out] = NULL;
+		}
+	}
+	return backends_out;
+}
+
+/**
+ * Return a unique list of security subsystems from those specified in
+ * the OID list.  That is, where two OIDs refer to the same module,
+ * return that module only once 
+ *
+ * The list is in the exact order of the OIDs asked for, where available.
+ */
+
 const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX *mem_ctx, 
 								      const char **oid_strings,
 								      const char *skip)
@@ -121,15 +186,17 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX
 	backends_out[0].op = NULL;
 	backends_out[0].oid = NULL;
 
-	for (oid_idx = 0; oid_strings[oid_idx]; oid_idx++) {
-		if (strcmp(oid_strings[oid_idx], skip) == 0) {
+	/* Find backends in our preferred order, by walking our list,
+	 * then looking in the supplied list */
+	for (i=0; i < num_backends; i++) {
+		if (!backends[i]->oid) {
 			continue;
 		}
-
-		for (i=0; i < num_backends; i++) {
-			if (!backends[i]->oid) {
+		for (oid_idx = 0; oid_strings[oid_idx]; oid_idx++) {
+			if (strcmp(oid_strings[oid_idx], skip) == 0) {
 				continue;
 			}
+
 			for (j=0; backends[i]->oid[j]; j++) { 
 				if (!backends[i]->oid[j] ||
 				    !(strcmp(backends[i]->oid[j], 
