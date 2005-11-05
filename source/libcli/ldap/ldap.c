@@ -933,9 +933,13 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			asn1_start_tag(data, ASN1_CONTEXT(3));
 			r->mechanism = LDAP_AUTH_MECH_SASL;
 			asn1_read_OctetString_talloc(msg, data, &r->creds.SASL.mechanism);
-			asn1_read_OctetString(data, &r->creds.SASL.secblob);
-			if (r->creds.SASL.secblob.data) {
-				talloc_steal(msg, r->creds.SASL.secblob.data);
+			if (asn1_peek_tag(data, ASN1_OCTET_STRING)) { /* optional */
+				asn1_read_OctetString(data, &r->creds.SASL.secblob);
+				if (r->creds.SASL.secblob.data) {
+					talloc_steal(msg, r->creds.SASL.secblob.data);
+				}
+			} else {
+				r->creds.SASL.secblob = data_blob(NULL, 0);
 			}
 			asn1_end_tag(data);
 		}
