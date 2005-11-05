@@ -45,31 +45,23 @@ enum hdb_ldb_ent_type
 
 static const char * const krb5_attrs[] = {
 	"objectClass",
-	"cn",
 	"sAMAccountName",
 
 	"userPrincipalName",
 	"servicePrincipalName",
 
-	"userAccountControl",
-
 	"unicodePwd",
 	"lmPwdHash",
 	"ntPwdHash",
 
-	"badPwdCount",
-	"badPasswordTime",
-	"lastLogoff",
-	"lastLogon",
+	"userAccountControl",
+
 	"pwdLastSet",
 	"accountExpires",
-	"logonCount",
 
-	"objectGUID",
 	"whenCreated",
 	"whenChanged",
-	"uSNCreated",
-	"uSNChanged",
+
 	"msDS-KeyVersionNumber",
 	NULL
 };
@@ -211,8 +203,9 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
  */
 static krb5_error_code LDB_message2entry(krb5_context context, HDB *db, 
 					 TALLOC_CTX *mem_ctx, krb5_const_principal principal,
-					 enum hdb_ldb_ent_type ent_type, struct ldb_message *realm_ref_msg,
+					 enum hdb_ldb_ent_type ent_type, 
 					 struct ldb_message *msg,
+					 struct ldb_message *realm_ref_msg,
 					 hdb_entry *ent)
 {
 	const char *unicodePwd;
@@ -222,16 +215,17 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	const char *dnsdomain = ldb_msg_find_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
 
+
+	memset(ent, 0, sizeof(*ent));
+
+	krb5_warnx(context, "LDB_message2entry:\n");
+
 	if (!realm) {
 		krb5_set_error_string(context, "talloc_strdup: out of memory");
 		ret = ENOMEM;
 		goto out;
 	}
 			
-	krb5_warnx(context, "LDB_message2entry:\n");
-
-	memset(ent, 0, sizeof(*ent));
-
 	userAccountControl = ldb_msg_find_int(msg, "userAccountControl", 0);
 	
 	ent->principal = malloc(sizeof(*(ent->principal)));
@@ -644,9 +638,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	switch (ent_type) {
 	case HDB_ENT_TYPE_CLIENT:
 	{
-		int ldb_ret;
 		NTSTATUS nt_status;
-		struct ldb_dn *user_dn, *domain_dn;
 		char *principal_string;
 		ldb_ent_type = HDB_LDB_ENT_TYPE_CLIENT;
 
@@ -657,34 +649,20 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 			return ret;
 		}
 
-		nt_status = crack_user_principal_name((struct ldb_context *)db->hdb_db,
+		nt_status = sam_get_results_principal((struct ldb_context *)db->hdb_db,
 						      mem_ctx, principal_string, 
-						      &user_dn, &domain_dn);
-		free(principal_string);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
+						      &msg, &realm_ref_msg);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 			return HDB_ERR_NOENTRY;
-		}
-
-		ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
-					  mem_ctx, user_dn, &msg, krb5_attrs);
-
-		if (ldb_ret != 1) {
-			return HDB_ERR_NOENTRY;
-		}
-
-		ldb_ret = gendb_search((struct ldb_context *)db->hdb_db,
-				       mem_ctx, NULL, &realm_ref_msg, realm_ref_attrs, 
-				       "ncName=%s", ldb_dn_linearize(mem_ctx, domain_dn));
-
-		if (ldb_ret != 1) {
-			return HDB_ERR_NOENTRY;
+		} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
+			return ENOMEM;
+		} else if (!NT_STATUS_IS_OK(nt_status)) {
+			return EINVAL;
 		}
 
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
-					realm_ref_msg[0], msg[0], entry);
+					msg[0], realm_ref_msg[0], entry);
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -763,7 +741,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 
 			ret = LDB_message2entry(context, db, mem_ctx, 
 						principal, ldb_ent_type, 
-						realm_ref_msg[0], msg[0], entry);
+						msg[0], realm_ref_msg[0], entry);
 			talloc_free(mem_ctx);
 			return ret;
 			
@@ -806,7 +784,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	} else {
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
-					realm_ref_msg[0], msg[0], entry);
+					msg[0], realm_ref_msg[0], entry);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed\n");	
 		}
@@ -853,7 +831,8 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 	if (priv->index < priv->count) {
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					NULL, HDB_LDB_ENT_TYPE_ANY, 
-					priv->realm_ref_msgs[0], priv->msgs[priv->index++], entry);
+					priv->msgs[priv->index++], 
+					priv->realm_ref_msgs[0], entry);
 	} else {
 		ret = HDB_ERR_NOENTRY;
 	}
