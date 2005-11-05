@@ -10,6 +10,8 @@ INIT_OBJ_FILES = \
 		wb_samba3_protocol.o \
 		wb_samba3_cmd.o \
 		wb_init_domain.o \
+		wb_dom_info.o \
+		wb_dom_info_trusted.o \
 		wb_sid2domain.o \
 		wb_connect_lsa.o \
 		wb_connect_sam.o \

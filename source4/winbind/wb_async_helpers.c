@@ -666,6 +666,8 @@ NTSTATUS wb_lsa_lookupnames(TALLOC_CTX *mem_ctx,
 	return wb_lsa_lookupnames_recv(c, mem_ctx, sids);
 }
 
+#if 0
+
 struct cmd_checkmachacc_state {
 	struct composite_context *ctx;
 	struct wbsrv_call *call;
@@ -730,6 +732,7 @@ NTSTATUS wb_cmd_checkmachacc(struct wbsrv_call *call)
 	struct composite_context *c = wb_cmd_checkmachacc_send(call);
 	return wb_cmd_checkmachacc_recv(c);
 }
+#endif
 
 struct samr_getuserdomgroups_state {
 	struct composite_context *ctx;

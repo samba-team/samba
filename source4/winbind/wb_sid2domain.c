@@ -31,37 +31,16 @@
 #include "winbind/wb_async_helpers.h"
 #include "include/dlinklist.h"
 
-static const char *sam_name(void)
-{
-	if (lp_server_role() == ROLE_STANDALONE) {
-		return lp_netbios_name();
-	}
-	return lp_workgroup();
-}
-
-static struct wbsrv_domain *find_primary_domain(struct wbsrv_service *service)
-{
-	const char *my_domain_name = sam_name();
-	struct wbsrv_domain *domain;
-
-	for (domain = service->domains; domain!=NULL; domain = domain->next) {
-		if (strcasecmp(domain->name, my_domain_name) == 0) {
-			break;
-		}
-	}
-	return domain;
-}
-
 static struct wbsrv_domain *find_domain_from_sid(struct wbsrv_service *service,
 						 const struct dom_sid *sid)
 {
 	struct wbsrv_domain *domain;
 
 	for (domain = service->domains; domain!=NULL; domain = domain->next) {
-		if (dom_sid_equal(domain->sid, sid)) {
+		if (dom_sid_equal(domain->info->sid, sid)) {
 			break;
 		}
-		if (dom_sid_in_domain(domain->sid, sid)) {
+		if (dom_sid_in_domain(domain->info->sid, sid)) {
 			break;
 		}
 	}
@@ -71,22 +50,14 @@ static struct wbsrv_domain *find_domain_from_sid(struct wbsrv_service *service,
 struct sid2domain_state {
 	struct composite_context *ctx;
 	struct wbsrv_service *service;
-	const struct dom_sid *sid;
+	struct dom_sid *sid;
 
-	const char *domain_name;
-	const char *dc_name;
-	struct dom_sid *domain_sid;
-
-	struct wbsrv_domain *my_domain;
-	struct wbsrv_domain *result;
-
-	struct netr_DsRGetDCName dsr_getdcname;
-	struct netr_GetAnyDCName getdcname;
+	struct wbsrv_domain *domain;
 };
 
+static void sid2domain_recv_dom_info(struct composite_context *ctx);
 static void sid2domain_recv_name(struct composite_context *ctx);
-static void sid2domain_recv_dsr_dcname(struct rpc_request *req);
-static void sid2domain_recv_dcname(struct composite_context *ctx);
+static void sid2domain_recv_trusted_dom_info(struct composite_context *ctx);
 static void sid2domain_recv_init(struct composite_context *ctx);
 
 struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
@@ -111,24 +82,20 @@ struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
 	state->sid = dom_sid_dup(state, sid);
 	if (state->sid == NULL) goto failed;
 
-	state->result = find_domain_from_sid(service, sid);
-	if (state->result != NULL) {
+	state->domain = find_domain_from_sid(service, sid);
+	if (state->domain != NULL) {
 		result->status = NT_STATUS_OK;
-		if (!state->result->initialized) {
-			ctx = wb_init_domain_send(service, state->result);
-			if (ctx == NULL) goto failed;
-			ctx->async.fn = sid2domain_recv_init;
-			ctx->async.private_data = state;
-			return result;
-		}
 		composite_trigger_done(result);
 		return result;
 	}
 
-	state->my_domain = find_primary_domain(service);
-	if (state->my_domain == NULL) {
-		result->status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		composite_trigger_error(result);
+	if (dom_sid_equal(service->primary_sid, sid) ||
+	    dom_sid_in_domain(service->primary_sid, sid)) {
+		ctx = wb_get_dom_info_send(state, service, lp_workgroup(),
+					   service->primary_sid);
+		if (ctx == NULL) goto failed;
+		ctx->async.fn = sid2domain_recv_dom_info;
+		ctx->async.private_data = state;
 		return result;
 	}
 
@@ -141,6 +108,22 @@ struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
  failed:
 	talloc_free(result);
 	return NULL;
+
+}
+
+static void sid2domain_recv_dom_info(struct composite_context *ctx)
+{
+	struct sid2domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct sid2domain_state);
+	struct wb_dom_info *info;
+
+	state->ctx->status = wb_get_dom_info_recv(ctx, state, &info);
+	if (!composite_is_ok(state->ctx)) return;
+
+	ctx = wb_init_domain_send(state, state->service, info);
+
+	composite_continue(state->ctx, ctx, sid2domain_recv_init, state);
 }
 
 static void sid2domain_recv_name(struct composite_context *ctx)
@@ -148,7 +131,6 @@ static void sid2domain_recv_name(struct composite_context *ctx)
 	struct sid2domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct sid2domain_state);
-	struct rpc_request *req;
 	struct wb_sid_object *name;
 
 	state->ctx->status = wb_cmd_lookupsid_recv(ctx, state, &name);
@@ -159,92 +141,29 @@ static void sid2domain_recv_name(struct composite_context *ctx)
 		return;
 	}
 
-	state->domain_name = name->domain;
-	state->domain_sid = dom_sid_dup(state, state->sid);
-	if (composite_nomem(state->domain_sid, state->ctx)) return;
-
 	if (name->type != SID_NAME_DOMAIN) {
-		state->domain_sid->num_auths -= 1;
+		state->sid->num_auths -= 1;
 	}
 
-	state->dsr_getdcname.in.server_unc =
-		talloc_asprintf(state, "\\\\%s", state->my_domain->dcname);
-	if (composite_nomem(state->dsr_getdcname.in.server_unc,
-			    state->ctx)) return;
+	ctx = wb_trusted_dom_info_send(state, state->service, name->domain,
+				       state->sid);
 
-	state->dsr_getdcname.in.domain_name = state->domain_name;
-	state->dsr_getdcname.in.domain_guid = NULL;
-	state->dsr_getdcname.in.site_guid = NULL;
-	state->dsr_getdcname.in.flags = 0x40000000;
-
-	req = dcerpc_netr_DsRGetDCName_send(state->my_domain->netlogon_pipe,
-					    state, &state->dsr_getdcname);
-	composite_continue_rpc(state->ctx, req, sid2domain_recv_dsr_dcname,
-			       state);
+	composite_continue(state->ctx, ctx, sid2domain_recv_trusted_dom_info,
+			   state);
 }
 
-static void sid2domain_recv_dsr_dcname(struct rpc_request *req)
-{
-	struct sid2domain_state *state =
-		talloc_get_type(req->async.private,
-				struct sid2domain_state);
-	struct composite_context *ctx;
-
-	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		DEBUG(9, ("dcerpc_ndr_request_recv returned %s\n",
-			  nt_errstr(state->ctx->status)));
-		goto fallback;
-	}
-
-	state->ctx->status =
-		werror_to_ntstatus(state->dsr_getdcname.out.result);
-	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		DEBUG(9, ("dsrgetdcname returned %s\n",
-			  nt_errstr(state->ctx->status)));
-		goto fallback;
-	}
-
-	DEBUG(0, ("unc: %s, addr: %s, addr_type: %d, domain_name: %s, "
-		  "forest_name: %s\n", 
-		  state->dsr_getdcname.out.info->dc_unc, 
-		  state->dsr_getdcname.out.info->dc_address, 
-		  state->dsr_getdcname.out.info->dc_address_type, 
-		  state->dsr_getdcname.out.info->domain_name,
-		  state->dsr_getdcname.out.info->forest_name));
-
- fallback:
-
-	ctx = wb_cmd_getdcname_send(state, state->service, state->domain_name);
-	composite_continue(state->ctx, ctx, sid2domain_recv_dcname, state);
-}
-
-static void sid2domain_recv_dcname(struct composite_context *ctx)
+static void sid2domain_recv_trusted_dom_info(struct composite_context *ctx)
 {
 	struct sid2domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct sid2domain_state);
+	struct wb_dom_info *info;
 
-	state->ctx->status = wb_cmd_getdcname_recv(ctx, state,
-						   &state->dc_name);
+	state->ctx->status = wb_trusted_dom_info_recv(ctx, state, &info);
 	if (!composite_is_ok(state->ctx)) return;
 
-	state->result = talloc_zero(state, struct wbsrv_domain);
-	if (composite_nomem(state->result, state->ctx)) return;
+	ctx = wb_init_domain_send(state, state->service, info);
 
-	state->result->name = talloc_steal(state->result, state->domain_name);
-	state->result->sid = talloc_steal(state->result, state->domain_sid);
-	state->result->dcname = talloc_steal(state->result, state->dc_name);
-
-	state->result->schannel_creds = cli_credentials_init(state->result);
-	if (composite_nomem(state->result->schannel_creds, state->ctx)) return;
-	cli_credentials_set_conf(state->result->schannel_creds);
-	cli_credentials_set_machine_account(state->result->schannel_creds);
-
-	talloc_steal(state->service, state->result);
-	DLIST_ADD(state->service->domains, state->result);
-
-	ctx = wb_init_domain_send(state->service, state->result);
 	composite_continue(state->ctx, ctx, sid2domain_recv_init, state);
 }
 
@@ -253,12 +172,24 @@ static void sid2domain_recv_init(struct composite_context *ctx)
 	struct sid2domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct sid2domain_state);
+	struct wbsrv_domain *existing;
 
-	state->ctx->status = wb_init_domain_recv(ctx);
+	state->ctx->status = wb_init_domain_recv(ctx, state,
+						 &state->domain);
 	if (!composite_is_ok(state->ctx)) {
 		DEBUG(10, ("Could not init domain\n"));
 		return;
 	}
+
+	existing = find_domain_from_sid(state->service, state->sid);
+	if (existing != NULL) {
+		DEBUG(5, ("Initialized domain twice, dropping second one\n"));
+		talloc_free(state->domain);
+		state->domain = existing;
+	}
+
+	talloc_steal(state->service, state->domain);
+	DLIST_ADD(state->service->domains, state->domain);
 
 	composite_done(state->ctx);
 }
@@ -271,7 +202,7 @@ NTSTATUS wb_sid2domain_recv(struct composite_context *ctx,
 		struct sid2domain_state *state =
 			talloc_get_type(ctx->private_data,
 					struct sid2domain_state);
-		*result = state->result;
+		*result = state->domain;
 	}
 	talloc_free(ctx);
 	return status;

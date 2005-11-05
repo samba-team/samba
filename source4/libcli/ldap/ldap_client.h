@@ -21,6 +21,8 @@
 */
 
 
+#include "libcli/ldap/ldap.h"
+
 enum ldap_request_state {LDAP_REQUEST_SEND, LDAP_REQUEST_PENDING, LDAP_REQUEST_DONE};
 
 /* this is the handle that the caller gets when an async ldap message
