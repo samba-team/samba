@@ -931,7 +931,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	if (!(gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG)) {
-		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client"));
+		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
 	} else {
 		krb5_error_code ret;
 		DEBUG(10, ("gensec_gssapi: delegated credentials supplied by client\n"));
