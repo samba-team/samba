@@ -965,6 +965,7 @@ static const char *gensec_gssapi_krb5_oids[] = {
 /* As a server, this could in theory accept any GSSAPI mech */
 static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.name		= "gssapi_krb5",
+	.sasl_name      = "GSSAPI",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
 	.oid            = gensec_gssapi_krb5_oids,
 	.client_start   = gensec_gssapi_client_start,

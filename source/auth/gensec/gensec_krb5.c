@@ -667,6 +667,7 @@ static const char *gensec_krb5_oids[] = {
 
 static const struct gensec_security_ops gensec_fake_gssapi_krb5_security_ops = {
 	.name		= "fake_gssapi_krb5",
+	.sasl_name      = "GSSAPI",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
 	.oid            = gensec_krb5_oids,
 	.client_start   = gensec_fake_gssapi_krb5_client_start,
