@@ -65,8 +65,8 @@ static void smb_read_callback(struct smbcli_request *req)
 	uint16_t frag_length;
 	NTSTATUS status;
 
-	state = req->async.private;
-	smb = state->c->transport.private;
+	state = talloc_get_type(req->async.private, struct smb_read_state);
+	smb = talloc_get_type(state->c->transport.private, struct smb_private);
 	io = state->io;
 
 	status = smb_raw_read_recv(state->req, io);
