@@ -105,8 +105,6 @@ ADS_STRUCT *ads_init(const char *realm,
 	/* the caller will own the memory by default */
 	ads->is_mine = 1;
 
-	ads->auth.flags = ADS_AUTH_DISABLE_KERBEROS | ADS_AUTH_ALLOW_NTLMSSP;
-
 	return ads;
 }
 
