@@ -21,6 +21,8 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
+#include "auth/auth.h"
+
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
@@ -31,24 +33,59 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
         NTSTATUS status;
         struct dcesrv_remote_private *private;
 	const char *binding = lp_parm_string(-1, "dcerpc_remote", "binding");
+	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
+	BOOL machine_account;
 
-	if (!binding) {
-		DEBUG(0,("You must specify a ncacn binding string\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	machine_account = lp_parm_bool(-1, "dcerpc_remote", "use_machine_account", False);
 
 	private = talloc(dce_call->conn, struct dcesrv_remote_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;	
 	}
 	
-	credentials = cli_credentials_init(private);
+	private->c_pipe = NULL;
+	dce_call->context->private = private;
 
-	cli_credentials_set_username(credentials, lp_parm_string(-1, "dcerpc_remote", "username"), CRED_SPECIFIED);
-	cli_credentials_set_workstation(credentials, lp_netbios_name(), CRED_SPECIFIED);
-	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
-	cli_credentials_set_password(credentials, lp_parm_string(-1, "dcerpc_remote", "password"), CRED_SPECIFIED);
+	if (!binding) {
+		DEBUG(0,("You must specify a ncacn binding string\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = lp_parm_string(-1, "dcerpc_remote", "user");
+	pass = lp_parm_string(-1, "dcerpc_remote", "password");
+	domain = lp_parm_string(-1, "dceprc_remote", "domain");
+
+	if (user && pass) {
+		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using specified account\n"));
+		credentials = cli_credentials_init(private);
+		if (!credentials) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		cli_credentials_set_conf(credentials);
+		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
+		if (domain) {
+			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		}
+		cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
+	} else if (machine_account) {
+		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using machine account\n"));
+		credentials = cli_credentials_init(private);
+		cli_credentials_set_conf(credentials);
+		if (domain) {
+			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		}
+		status = cli_credentials_set_machine_account(credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else if (dce_call->conn->auth_state.session_info->credentials) {
+		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using delegated credentials\n"));
+		credentials = dce_call->conn->auth_state.session_info->credentials;
+	} else {
+		DEBUG(1,("dcerpc_remote: RPC Proxy: You must supply binding, user and password or have delegated credentials\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	status = dcerpc_pipe_connect(private, 
 				     &(private->c_pipe), binding, 
@@ -59,8 +96,6 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	dce_call->context->private = private;
 
 	return NT_STATUS_OK;	
 }

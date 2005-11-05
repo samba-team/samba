@@ -93,6 +93,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct fd_event *fde;
 
 	struct cli_credentials *credentials;
+	BOOL machine_account;
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
@@ -107,6 +108,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		remote_share = sharename;
 	}
 
+	machine_account = lp_parm_bool(req->tcon->service, "cifs", "use_machine_account", False);
+
 	private = talloc(req->tcon, struct cvfs_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
@@ -120,16 +123,34 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	} 
 	
-	if (user && pass && domain) {
+	if (user && pass) {
+		DEBUG(5, ("CIFS backend: Using specified password\n"));
 		credentials = cli_credentials_init(private);
+		if (!credentials) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		cli_credentials_set_conf(credentials);
 		cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
-		cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		if (domain) {
+			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		}
 		cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
-		cli_credentials_set_workstation(credentials, "vfs_cifs", CRED_SPECIFIED);
+	} else if (machine_account) {
+		DEBUG(5, ("CIFS backend: Using machine account\n"));
+		credentials = cli_credentials_init(private);
+		cli_credentials_set_conf(credentials);
+		if (domain) {
+			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		}
+		status = cli_credentials_set_machine_account(credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else if (req->session->session_info->credentials) {
+		DEBUG(5, ("CIFS backend: Using delegated credentials\n"));
 		credentials = req->session->session_info->credentials;
 	} else {
-		DEBUG(1,("CIFS backend: You must supply server, user, password and domain or have delegated credentials\n"));
+		DEBUG(1,("CIFS backend: You must supply server, user and password and or have delegated credentials\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
