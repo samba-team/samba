@@ -24,6 +24,7 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_stream.h"
+#include "smbd/service_task.h"
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
@@ -35,50 +36,74 @@ struct cmd_userdomgroups_state {
 	uint32_t *rids;
 };
 
-static struct composite_context *userdomgroups_send_req(struct wbsrv_domain *domain, void *p);
-static NTSTATUS userdomgroups_recv_req(struct composite_context *ctx, void *p);
+static void userdomgroups_recv_domain(struct composite_context *ctx);
+static void userdomgroups_recv_rids(struct composite_context *ctx);
 
-struct composite_context *wb_cmd_userdomgroups_send(struct wbsrv_service *service,
+struct composite_context *wb_cmd_userdomgroups_send(TALLOC_CTX *mem_ctx,
+						    struct wbsrv_service *service,
 						    const struct dom_sid *sid)
 {
+	struct composite_context *result, *ctx;
 	struct cmd_userdomgroups_state *state;
 
-	state = talloc(NULL, struct cmd_userdomgroups_state);
+	result = talloc(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = service->task->event_ctx;
+
+	state = talloc(result, struct cmd_userdomgroups_state);
+	if (state == NULL) goto failed;
+	state->ctx = result;
+	result->private_data = state;
+
+	state->dom_sid = dom_sid_dup(state, sid);
+	if (state->dom_sid == NULL) goto failed;
+	state->dom_sid->num_auths -= 1;
 
 	state->user_rid = sid->sub_auths[sid->num_auths-1];
-	state->ctx = wb_domain_request_send(state, service, sid,
-					    userdomgroups_send_req,
-					    userdomgroups_recv_req,
-					    state);
-	if (state->ctx == NULL) goto failed;
-	state->ctx->private_data = state;
-	return state->ctx;
+
+	ctx = wb_sid2domain_send(state, service, sid);
+	if (ctx == NULL) goto failed;
+
+	ctx->async.fn = userdomgroups_recv_domain;
+	ctx->async.private_data = state;
+	return result;
 
  failed:
-	talloc_free(state);
+	talloc_free(result);
 	return NULL;
 }
 
-static struct composite_context *userdomgroups_send_req(struct wbsrv_domain *domain,
-							void *p)
+static void userdomgroups_recv_domain(struct composite_context *ctx)
 {
 	struct cmd_userdomgroups_state *state =
-		talloc_get_type(p, struct cmd_userdomgroups_state);
+		talloc_get_type(ctx->async.private_data,
+				struct cmd_userdomgroups_state);
+	struct wbsrv_domain *domain;
 
-	state->dom_sid = talloc_reference(state, domain->sid);
-	if (state->dom_sid == NULL) return NULL;
-	return wb_samr_userdomgroups_send(domain->samr_pipe,
-					  domain->domain_handle,
-					  state->user_rid);
+	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
+	if (!composite_is_ok(state->ctx)) return;
+
+	ctx = wb_samr_userdomgroups_send(state, domain->samr_pipe,
+					 domain->domain_handle,
+					 state->user_rid);
+	composite_continue(state->ctx, ctx, userdomgroups_recv_rids, state);
+	
 }
 
-static NTSTATUS userdomgroups_recv_req(struct composite_context *ctx, void *p)
+static void userdomgroups_recv_rids(struct composite_context *ctx)
 {
 	struct cmd_userdomgroups_state *state =
-		talloc_get_type(p, struct cmd_userdomgroups_state);
+		talloc_get_type(ctx->async.private_data,
+				struct cmd_userdomgroups_state);
 
-	return wb_samr_userdomgroups_recv(ctx, state, &state->num_rids,
-					  &state->rids);
+	state->ctx->status = wb_samr_userdomgroups_recv(ctx, state,
+							&state->num_rids,
+							&state->rids);
+	if (!composite_is_ok(state->ctx)) return;
+	
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_cmd_userdomgroups_recv(struct composite_context *c,
@@ -111,16 +136,16 @@ NTSTATUS wb_cmd_userdomgroups_recv(struct composite_context *c,
 	}
 
 done:
-	talloc_free(state);
+	talloc_free(c);
 	return status;
 }
 
-NTSTATUS wb_cmd_userdomgroups(struct wbsrv_service *service,
+NTSTATUS wb_cmd_userdomgroups(TALLOC_CTX *mem_ctx,
+			      struct wbsrv_service *service,
 			      const struct dom_sid *sid,
-			      TALLOC_CTX *mem_ctx, int *num_sids,
-			      struct dom_sid ***sids)
+			      int *num_sids, struct dom_sid ***sids)
 {
 	struct composite_context *c =
-		wb_cmd_userdomgroups_send(service, sid);
+		wb_cmd_userdomgroups_send(mem_ctx, service, sid);
 	return wb_cmd_userdomgroups_recv(c, mem_ctx, num_sids, sids);
 }

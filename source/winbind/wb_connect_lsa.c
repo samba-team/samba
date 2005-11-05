@@ -45,14 +45,15 @@ struct init_lsa_state {
 static void init_lsa_recv_pipe(struct composite_context *ctx);
 static void init_lsa_recv_openpol(struct rpc_request *req);
 
-struct composite_context *wb_init_lsa_send(struct smbcli_tree *tree,
+struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
+					   struct smbcli_tree *tree,
 					   uint8_t auth_type,
 					   struct cli_credentials *creds)
 {
 	struct composite_context *result, *ctx;
 	struct init_lsa_state *state;
 
-	result = talloc(NULL, struct composite_context);
+	result = talloc(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
@@ -185,13 +186,14 @@ static void connect_lsa_recv_ntlmssp(struct composite_context *ctx);
 static void connect_lsa_recv_schannel(struct composite_context *ctx);
 static void connect_lsa_recv_anon(struct composite_context *ctx);
 
-struct composite_context *wb_connect_lsa_send(struct smbcli_tree *tree,
+struct composite_context *wb_connect_lsa_send(TALLOC_CTX *mem_ctx,
+					      struct smbcli_tree *tree,
 					      struct cli_credentials *credentials)
 {
 	struct composite_context *result, *ctx;
 	struct connect_lsa_state *state;
 
-	result = talloc(NULL, struct composite_context);
+	result = talloc(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
@@ -206,14 +208,16 @@ struct composite_context *wb_connect_lsa_send(struct smbcli_tree *tree,
 	state->credentials = credentials;
 
 	if (credentials == NULL) {
-		ctx = wb_init_lsa_send(tree, DCERPC_AUTH_TYPE_NONE, NULL);
+		ctx = wb_init_lsa_send(state, tree, DCERPC_AUTH_TYPE_NONE,
+				       NULL);
 		if (ctx == NULL) goto failed;
 		ctx->async.fn = connect_lsa_recv_anon;
 		ctx->async.private_data = state;
 		return result;
 	}
 
-	ctx = wb_init_lsa_send(tree, DCERPC_AUTH_TYPE_NTLMSSP, credentials);
+	ctx = wb_init_lsa_send(state, tree, DCERPC_AUTH_TYPE_NTLMSSP,
+			       credentials);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = connect_lsa_recv_ntlmssp;
 	ctx->async.private_data = state;
@@ -239,7 +243,7 @@ static void connect_lsa_recv_ntlmssp(struct composite_context *ctx)
 		return;
 	}
 
-	ctx = wb_init_lsa_send(state->tree, DCERPC_AUTH_TYPE_SCHANNEL,
+	ctx = wb_init_lsa_send(state, state->tree, DCERPC_AUTH_TYPE_SCHANNEL,
 			       state->credentials);
 	composite_continue(state->ctx, ctx,
 			   connect_lsa_recv_schannel, state);
@@ -260,7 +264,7 @@ static void connect_lsa_recv_schannel(struct composite_context *ctx)
 		return;
 	}
 
-	ctx = wb_init_lsa_send(state->tree, DCERPC_AUTH_TYPE_NONE,
+	ctx = wb_init_lsa_send(state, state->tree, DCERPC_AUTH_TYPE_NONE,
 			       state->credentials);
 	composite_continue(state->ctx, ctx,
 			   connect_lsa_recv_anon, state);
@@ -299,15 +303,15 @@ NTSTATUS wb_connect_lsa_recv(struct composite_context *c,
 	return status;
 }
 
-NTSTATUS wb_connect_lsa(struct smbcli_tree *tree,
+NTSTATUS wb_connect_lsa(TALLOC_CTX *mem_ctx,
+			struct smbcli_tree *tree,
 			struct cli_credentials *credentials,
-			TALLOC_CTX *mem_ctx,
 			uint8_t *auth_type,
 			struct dcerpc_pipe **lsa_pipe,
 			struct policy_handle **lsa_policy)
 {
 	struct composite_context *c;
-	c = wb_connect_lsa_send(tree, credentials);
+	c = wb_connect_lsa_send(mem_ctx, tree, credentials);
 	return wb_connect_lsa_recv(c, mem_ctx, auth_type, lsa_pipe,
 				   lsa_policy);
 }

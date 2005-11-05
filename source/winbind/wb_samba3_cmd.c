@@ -185,7 +185,7 @@ NTSTATUS wbsrv_samba3_getdcname(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_getdcname called\n"));
 
-	ctx = wb_cmd_getdcname_send(service, service->domains,
+	ctx = wb_cmd_getdcname_send(s3call, service,
 				    s3call->request.domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
@@ -234,7 +234,7 @@ NTSTATUS wbsrv_samba3_userdomgroups(struct wbsrv_samba3_call *s3call)
 	}
 
 	ctx = wb_cmd_userdomgroups_send(
-		s3call->call->wbconn->listen_socket->service, sid);
+		s3call, s3call->call->wbconn->listen_socket->service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = userdomgroups_recv_groups;
@@ -301,7 +301,7 @@ NTSTATUS wbsrv_samba3_usersids(struct wbsrv_samba3_call *s3call)
 	}
 
 	ctx = wb_cmd_usersids_send(
-		s3call->call->wbconn->listen_socket->service, sid);
+		s3call, s3call->call->wbconn->listen_socket->service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = usersids_recv_sids;
@@ -471,6 +471,8 @@ static void pam_auth_crap_recv(struct composite_context *ctx);
 NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
 	DATA_BLOB chal, nt_resp, lm_resp;
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
@@ -483,7 +485,7 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	lm_resp.length  = s3call->request.data.auth_crap.lm_resp_len;
 
 	ctx = wb_cmd_pam_auth_crap_send(
-		s3call->call, 
+		s3call, service,
 		s3call->request.data.auth_crap.logon_parameters,
 		s3call->request.data.auth_crap.domain,
 		s3call->request.data.auth_crap.user,
@@ -571,16 +573,18 @@ static void pam_auth_recv(struct composite_context *ctx);
 NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
 	char *user, *domain;
+
 	if (!samba3_parse_domuser(s3call, 
 				 s3call->request.data.auth.user,
 				 &domain, &user)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	ctx = wb_cmd_pam_auth_send(
-		s3call->call, domain, user,
-		s3call->request.data.auth.pass);
+	ctx = wb_cmd_pam_auth_send(s3call, service, domain, user,
+				   s3call->request.data.auth.pass);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = pam_auth_recv;
@@ -618,7 +622,7 @@ NTSTATUS wbsrv_samba3_list_trustdom(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_list_trustdom called\n"));
 
-	ctx = wb_cmd_list_trustdoms_send(service);
+	ctx = wb_cmd_list_trustdoms_send(s3call, service);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = list_trustdom_recv_doms;

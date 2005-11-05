@@ -141,8 +141,8 @@ struct composite_context *wb_init_domain_send(struct wbsrv_service *service,
 						    schannel_creds);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
-	ctx = wb_finddcs_send(domain->name, domain->sid, result->event_ctx,
-			      service->task->msg_ctx);
+	ctx = wb_finddcs_send(state, domain->name, domain->sid,
+			      result->event_ctx, service->task->msg_ctx);
 	if (ctx == NULL) goto failed;
 
 	ctx->async.fn = init_domain_recv_dcs;
@@ -171,6 +171,10 @@ static void init_domain_recv_dcs(struct composite_context *ctx)
 
 	state->dcaddr = state->dcs[0].address;
 
+	state->domain->dcname = talloc_reference(state->domain,
+						 state->dcs[0].name);
+	if (composite_nomem(state->domain->dcname, state->ctx)) return;
+
 	state->conn.in.dest_host = state->dcs[0].address;
 	state->conn.in.port = 0;
 	state->conn.in.called_name = state->dcs[0].name;
@@ -191,7 +195,7 @@ static void init_domain_recv_dcs(struct composite_context *ctx)
 		
 	state->conn.in.fallback_to_anonymous = True;
 
-	ctx = smb_composite_connect_send(&state->conn, state,
+	ctx = smb_composite_connect_send(&state->conn, state->domain,
 					 state->ctx->event_ctx);
 	composite_continue(state->ctx, ctx, init_domain_recv_tree, state);
 }
@@ -215,7 +219,7 @@ static void init_domain_recv_dcip(struct composite_context *ctx)
 
 	state->conn.in.fallback_to_anonymous = True;
 
-	ctx = smb_composite_connect_send(&state->conn, state,
+	ctx = smb_composite_connect_send(&state->conn, state->domain,
 					 state->ctx->event_ctx);
 	composite_continue(state->ctx, ctx, init_domain_recv_tree, state);
 }
@@ -233,7 +237,8 @@ static void init_domain_recv_tree(struct composite_context *ctx)
 	    ((lp_server_role() == ROLE_DOMAIN_MEMBER) &&
 	     (dom_sid_equal(state->domain->sid,
 			    state->service->primary_sid)))) {
-		ctx = wb_get_schannel_creds_send(state->domain->schannel_creds,
+		ctx = wb_get_schannel_creds_send(state,
+						 state->domain->schannel_creds,
 						 state->conn.out.tree,
 						 state->ctx->event_ctx);
 		composite_continue(state->ctx, ctx,
@@ -241,7 +246,7 @@ static void init_domain_recv_tree(struct composite_context *ctx)
 		return;
 	}
 
-	ctx = wb_connect_lsa_send(state->conn.out.tree, NULL);
+	ctx = wb_connect_lsa_send(state, state->conn.out.tree, NULL);
 	composite_continue(state->ctx, ctx, init_domain_recv_lsa, state);
 }
 
@@ -256,12 +261,10 @@ static void init_domain_recv_netlogoncreds(struct composite_context *ctx)
 							&state->auth2_pipe);
 	if (!composite_is_ok(state->ctx)) return;
 
-	talloc_unlink(state, state->conn.out.tree); /* The pipe owns it now */
-
 	if (!lp_winbind_sealed_pipes()) {
 		state->netlogon_pipe = talloc_reference(state,
 							state->auth2_pipe);
-		ctx = wb_connect_lsa_send(state->conn.out.tree, NULL);
+		ctx = wb_connect_lsa_send(state, state->conn.out.tree, NULL);
 		composite_continue(state->ctx, ctx, init_domain_recv_lsa,
 				   state);
 		return;
@@ -304,7 +307,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 					  NULL);
 	if (!composite_is_ok(state->ctx)) return;
 
-	ctx = wb_connect_lsa_send(state->conn.out.tree,
+	ctx = wb_connect_lsa_send(state, state->conn.out.tree,
 				  state->domain->schannel_creds);
 	composite_continue(state->ctx, ctx, init_domain_recv_lsa, state);
 }
@@ -323,11 +326,8 @@ static void init_domain_recv_lsa(struct composite_context *ctx)
 						 &state->lsa_policy);
 	if (!composite_is_ok(state->ctx)) return;
 
-	if (state->auth2_pipe == NULL) {
-		/* Give the tree to the LSA pipe. If auth2_pipe exists we have
-		 * given it to that already */
-		talloc_unlink(state, state->conn.out.tree);
-	}
+	/* Give the tree to the pipes. */
+//	talloc_unlink(state, state->conn.out.tree);
 
 	state->queryinfo.in.handle = state->lsa_policy;
 	state->queryinfo.in.level = LSA_POLICY_INFO_ACCOUNT_DOMAIN;
@@ -394,7 +394,7 @@ static void init_domain_recv_ldapconn(struct composite_context *ctx)
 	state->samr_pipe = dcerpc_pipe_init(state, state->ctx->event_ctx);
 	if (composite_nomem(state->samr_pipe, state->ctx)) return;
 
-	ctx = wb_connect_sam_send(state->conn.out.tree,
+	ctx = wb_connect_sam_send(state, state->conn.out.tree,
 				  state->domain->lsa_auth_type,
 				  state->domain->schannel_creds,
 				  state->domain->sid);
