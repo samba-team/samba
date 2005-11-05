@@ -1052,6 +1052,8 @@ int main(int argc, char **argv)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
+	TimeInit();
+
 	/* Initialise messaging system */
 
 	if (!message_init()) {

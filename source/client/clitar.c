@@ -1626,7 +1626,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 					if (sys_stat(argv[Optind], &stbuf) == 0) {
 						newer_than = stbuf.st_mtime;
 						DEBUG(1,("Getting files newer than %s",
-							asctime(LocalTime(&newer_than))));
+							asctime(localtime(&newer_than))));
 						newOptind++;
 						Optind++;
 					} else {

@@ -914,14 +914,16 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	outsize = set_message(outbuf,10,0,True);
 
 	SSVAL(outbuf,smb_vwv0,mode);
-	if(lp_dos_filetime_resolution(SNUM(conn)) )
-		put_dos_date3(outbuf,smb_vwv1,mtime & ~1);
-	else
-		put_dos_date3(outbuf,smb_vwv1,mtime);
+	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
+		srv_put_dos_date3(outbuf,smb_vwv1,mtime & ~1);
+	} else {
+		srv_put_dos_date3(outbuf,smb_vwv1,mtime);
+	}
 	SIVAL(outbuf,smb_vwv3,(uint32)size);
 
-	if (Protocol >= PROTOCOL_NT1)
+	if (Protocol >= PROTOCOL_NT1) {
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
+	}
   
 	DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, (uint32)size ) );
   
@@ -963,7 +965,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	}
 
 	mode = SVAL(inbuf,smb_vwv0);
-	mtime = make_unix_date3(inbuf+smb_vwv1);
+	mtime = srv_make_unix_date3(inbuf+smb_vwv1);
   
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(sbuf))
@@ -1393,9 +1395,9 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
 	SSVAL(outbuf,smb_vwv1,fattr);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
-		put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
+		srv_put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
 	} else {
-		put_dos_date3(outbuf,smb_vwv2,mtime);
+		srv_put_dos_date3(outbuf,smb_vwv2,mtime);
 	}
 	SIVAL(outbuf,smb_vwv4,(uint32)size);
 	SSVAL(outbuf,smb_vwv6,deny_mode);
@@ -1563,9 +1565,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	SSVAL(outbuf,smb_vwv2,fsp->fnum);
 	SSVAL(outbuf,smb_vwv3,fattr);
 	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
-		put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
+		srv_put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
 	} else {
-		put_dos_date3(outbuf,smb_vwv4,mtime);
+		srv_put_dos_date3(outbuf,smb_vwv4,mtime);
 	}
 	SIVAL(outbuf,smb_vwv6,(uint32)size);
 	SSVAL(outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
@@ -3272,7 +3274,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Take care of any time sent in the close.
 		 */
 
-		mtime = make_unix_date3(inbuf+smb_vwv1);
+		mtime = srv_make_unix_date3(inbuf+smb_vwv1);
 		fsp_set_pending_modtime(fsp, mtime);
 
 		/*
@@ -3322,7 +3324,7 @@ int reply_writeclose(connection_struct *conn,
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
-	mtime = make_unix_date3(inbuf+smb_vwv4);
+	mtime = srv_make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
 	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
@@ -3639,7 +3641,7 @@ int reply_printqueue(connection_struct *conn,
     
 
 		for (i=first;i<first+num_to_get;i++) {
-			put_dos_date2(p,0,queue[i].time);
+			srv_put_dos_date2(p,0,queue[i].time);
 			SCVAL(p,4,(queue[i].status==LPQ_PRINTING?2:3));
 			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
@@ -5444,8 +5446,8 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	 * time as UNIX can't set this.
 	 */
 
-	unix_times.actime = make_unix_date2(inbuf+smb_vwv3);
-	unix_times.modtime = make_unix_date2(inbuf+smb_vwv5);
+	unix_times.actime = srv_make_unix_date2(inbuf+smb_vwv3);
+	unix_times.modtime = srv_make_unix_date2(inbuf+smb_vwv5);
   
 	/* 
 	 * Patch from Ray Frush <frush@engr.colostate.edu>
@@ -5713,10 +5715,10 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	 * this.
 	 */
 
-	put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
-	put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
+	srv_put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+	srv_put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
 	/* Should we check pending modtime here ? JRA */
-	put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
+	srv_put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
 
 	if (mode & aDIR) {
 		SIVAL(outbuf,smb_vwv6,0);

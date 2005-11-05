@@ -1835,7 +1835,7 @@ void wins_write_database(BOOL background)
 		if( namerec->data.death_time != PERMANENT_TTL ) {
 			char *ts, *nl;
 
-			tm = LocalTime(&namerec->data.death_time);
+			tm = localtime(&namerec->data.death_time);
 			ts = asctime(tm);
 			nl = strrchr( ts, '\n' );
 			if( NULL != nl )
