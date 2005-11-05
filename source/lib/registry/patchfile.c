@@ -257,7 +257,7 @@ struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn)
 	struct reg_diff *diff;
 	int fd;
 	char *line, *p, *q;
-	struct reg_diff_key *curkey;
+	struct reg_diff_key *curkey = NULL;
 	struct reg_diff_value *curval;
 
 	fd = open(fn, O_RDONLY, 0);
