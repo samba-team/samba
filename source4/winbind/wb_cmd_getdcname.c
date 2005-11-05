@@ -28,49 +28,6 @@
 
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
-static void composite_netr_GetAnyDCName_recv_rpc(struct rpc_request *req);
-
-static struct composite_context *composite_netr_GetAnyDCName_send(struct dcerpc_pipe *p,
-								  TALLOC_CTX *mem_ctx,
-								  struct netr_GetAnyDCName *r)
-{
-	struct composite_context *result;
-	struct rpc_request *req;
-
-	result = talloc(mem_ctx, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = p->conn->event_ctx;
-
-	req = dcerpc_netr_GetAnyDCName_send(p, mem_ctx, r);
-	if (req == NULL) goto failed;
-	req->async.callback = composite_netr_GetAnyDCName_recv_rpc;
-	req->async.private = result;
-	return result;
-
- failed:
-	talloc_free(result);
-	return NULL;
-}
-
-static void composite_netr_GetAnyDCName_recv_rpc(struct rpc_request *req)
-{
-	struct composite_context *ctx =
-		talloc_get_type(req->async.private, struct composite_context);
-
-	ctx->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(ctx)) return;
-	composite_done(ctx);
-}
-
-static NTSTATUS composite_netr_GetAnyDCName_recv(struct composite_context *ctx)
-{
-	NTSTATUS status = composite_wait(ctx);
-	talloc_free(ctx);
-	return status;
-}
-
 struct cmd_getdcname_state {
 	struct composite_context *ctx;
 	const char *domain_name;
@@ -78,59 +35,77 @@ struct cmd_getdcname_state {
 	struct netr_GetAnyDCName g;
 };
 
-static struct composite_context *getdcname_send_req(struct wbsrv_domain *domain,
-						    void *p);
-static NTSTATUS getdcname_recv_req(struct composite_context *ctx, void *p);
+static void getdcname_recv_domain(struct composite_context *ctx);
+static void getdcname_recv_dcname(struct rpc_request *req);
 
-struct composite_context *wb_cmd_getdcname_send(struct wbsrv_service *service,
-						struct wbsrv_domain *domain,
+struct composite_context *wb_cmd_getdcname_send(TALLOC_CTX *mem_ctx,
+						struct wbsrv_service *service,
 						const char *domain_name)
 {
+	struct composite_context *result, *ctx;
 	struct cmd_getdcname_state *state;
 
-	state = talloc(NULL, struct cmd_getdcname_state);
+	result = talloc(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = service->task->event_ctx;
+
+	state = talloc(result, struct cmd_getdcname_state);
+	if (state == NULL) goto failed;
+	state->ctx = result;
+	result->private_data = state;
+
 	state->domain_name = talloc_strdup(state, domain_name);
-	state->ctx = wb_domain_request_send(state, service,
-					    service->primary_sid,
-					    getdcname_send_req,
-					    getdcname_recv_req,
-					    state);
-	if (state->ctx == NULL) {
-		talloc_free(state);
-		return NULL;
-	}
-	state->ctx->private_data = state;
-	return state->ctx;
+	if (state->domain_name == NULL) goto failed;
+
+	ctx = wb_sid2domain_send(state, service, service->primary_sid);
+	if (ctx == NULL) goto failed;
+
+	ctx->async.fn = getdcname_recv_domain;
+	ctx->async.private_data = state;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
 }
 
-static struct composite_context *getdcname_send_req(struct wbsrv_domain *domain, void *p)
+static void getdcname_recv_domain(struct composite_context *ctx)
 {
 	struct cmd_getdcname_state *state =
-		talloc_get_type(p, struct cmd_getdcname_state);
+		talloc_get_type(ctx->async.private_data,
+				struct cmd_getdcname_state);
+	struct wbsrv_domain *domain;
+	struct rpc_request *req;
+
+	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
+	if (!composite_is_ok(state->ctx)) return;
 
 	state->g.in.logon_server = talloc_asprintf(
 		state, "\\\\%s",
 		dcerpc_server_name(domain->netlogon_pipe));
 	state->g.in.domainname = state->domain_name;
 
-	return composite_netr_GetAnyDCName_send(domain->netlogon_pipe,
-						state, &state->g);
+	req = dcerpc_netr_GetAnyDCName_send(domain->netlogon_pipe, state,
+					    &state->g);
+	if (composite_nomem(req, state->ctx)) return;
+
+	composite_continue_rpc(state->ctx, req, getdcname_recv_dcname, state);
 }
 
-static NTSTATUS getdcname_recv_req(struct composite_context *ctx, void *p)
+static void getdcname_recv_dcname(struct rpc_request *req)
 {
 	struct cmd_getdcname_state *state =
-		talloc_get_type(p, struct cmd_getdcname_state);
-	NTSTATUS status;
+		talloc_get_type(req->async.private,
+				struct cmd_getdcname_state);
 
-	status = composite_netr_GetAnyDCName_recv(ctx);
-	NT_STATUS_NOT_OK_RETURN(status);
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = werror_to_ntstatus(state->g.out.result);
+	if (!composite_is_ok(state->ctx)) return;
 
-	if (!W_ERROR_IS_OK(state->g.out.result)) {
-		return werror_to_ntstatus(state->g.out.result);
-	}
-
-	return NT_STATUS_OK;
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_cmd_getdcname_recv(struct composite_context *c,

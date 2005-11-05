@@ -11,7 +11,6 @@ INIT_OBJ_FILES = \
 		wb_samba3_cmd.o \
 		wb_init_domain.o \
 		wb_sid2domain.o \
-		wb_domain_request.o \
 		wb_connect_lsa.o \
 		wb_connect_sam.o \
 		wb_cmd_lookupname.o \

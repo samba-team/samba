@@ -48,12 +48,13 @@ static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx);
 static void cmd_list_trustdoms_recv_lsa(struct composite_context *ctx);
 static void cmd_list_trustdoms_recv_doms(struct rpc_request *req);
 
-struct composite_context *wb_cmd_list_trustdoms_send(struct wbsrv_service *service)
+struct composite_context *wb_cmd_list_trustdoms_send(TALLOC_CTX *mem_ctx,
+						     struct wbsrv_service *service)
 {
 	struct composite_context *result, *ctx;
 	struct cmd_list_trustdom_state *state;
 
-	result = talloc_zero(NULL, struct composite_context);
+	result = talloc_zero(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->async.fn = NULL;
@@ -64,7 +65,7 @@ struct composite_context *wb_cmd_list_trustdoms_send(struct wbsrv_service *servi
 	state->ctx = result;
 	result->private_data = state;
 
-	ctx = wb_sid2domain_send(service, service->primary_sid);
+	ctx = wb_sid2domain_send(state, service, service->primary_sid);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = cmd_list_trustdoms_recv_domain;
 	ctx->async.private_data = state;
@@ -89,7 +90,7 @@ static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx)
 	tree = dcerpc_smb_tree(domain->lsa_pipe->conn);
 	if (composite_nomem(tree, state->ctx)) return;
 
-	ctx = wb_init_lsa_send(tree, domain->lsa_auth_type,
+	ctx = wb_init_lsa_send(state, tree, domain->lsa_auth_type,
 			       domain->schannel_creds);
 	composite_continue(state->ctx, ctx, cmd_list_trustdoms_recv_lsa,
 			   state);
