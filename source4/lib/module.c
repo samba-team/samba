@@ -59,7 +59,7 @@ BOOL load_modules(const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
-	BOOL ret;
+	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	
 	mem_ctx = talloc_init(NULL);
