@@ -107,7 +107,7 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 		} else if (strncmp(kbuf.dptr, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
 		{
 			struct samba3_alias alias;
-			char **member_strlist;
+			const char **member_strlist;
 			int i;
 
 			dbuf = tdb_fetch(tdb, kbuf);
