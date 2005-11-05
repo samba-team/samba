@@ -75,8 +75,10 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 	case WINBINDD_INTERFACE_VERSION:
 		return wbsrv_samba3_interface_version(s3call);
 
+#if 0
 	case WINBINDD_CHECK_MACHACC:
 		return wbsrv_samba3_check_machacc(s3call);
+#endif
 
 	case WINBINDD_PING:
 		return wbsrv_samba3_ping(s3call);

@@ -136,6 +136,7 @@ NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
+#if 0
 /* 
    Validate that we have a working pipe to the domain controller.
    Return any NT error found in the process
@@ -169,6 +170,7 @@ static void checkmachacc_recv_creds(struct composite_context *ctx)
 
 	wbsrv_samba3_async_auth_epilogue(status, s3call);
 }
+#endif
 
 /*
   Find the name of a suitable domain controller, by query on the

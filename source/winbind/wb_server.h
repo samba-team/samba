@@ -45,16 +45,20 @@ struct wbsrv_samconn {
 	NTSTATUS (*seqnum_recv)(struct composite_context *, uint64_t *);
 };
 
+struct wb_dom_info {
+	const char *name;
+	const char *dns_name;
+	const struct dom_sid *sid;
+
+	const char *dc_name;
+	const char *dc_dns_name;
+	const char *dc_address;
+};
+
 struct wbsrv_domain {
 	struct wbsrv_domain *next, *prev;
 
-	BOOL initialized;
-
-	const char *name;
-	const struct dom_sid *sid;
-	const char *dcname;
-	const char *dc_dnsname;
-	const char *dc_address;
+	struct wb_dom_info *info;
 
 	struct dcerpc_pipe *lsa_pipe;
 	struct policy_handle *lsa_policy;
@@ -66,12 +70,8 @@ struct wbsrv_domain {
 
 	struct ldap_connection *ldap_conn;
 
-	struct dcerpc_pipe *netlogon_auth2_pipe;
 	struct dcerpc_pipe *netlogon_pipe;
 	struct cli_credentials *schannel_creds;
-
-	BOOL busy;
-	struct domain_request_state *request_queue;
 };
 
 /* 
