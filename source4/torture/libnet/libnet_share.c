@@ -204,6 +204,7 @@ BOOL torture_delshare(void)
 	struct libnet_DelShare share;
 	
 	mem_ctx = talloc_init("test_listshares");
+	host = lp_parm_string(-1, "torture", "host");
 	binding = lp_parm_string(-1, "torture", "binding");
 	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
 	if (!NT_STATUS_IS_OK(status)) {
