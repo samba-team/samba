@@ -453,7 +453,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 	tm2 = *tm;
 	tm2.tm_isdst = tm3.tm_isdst;
 	t = mktime(&tm2);
-	t -= TimeDiff(t);
+	t -= get_time_zone(t);
 
 	return t;
 }

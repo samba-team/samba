@@ -878,7 +878,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,open_attr);
-	put_dos_date2(params,4, mtime);
+	srv_put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
 	SSVAL(params,12,deny_mode);
 	SSVAL(params,14,0); /* open_type - file or directory. */
@@ -1186,9 +1186,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,0,cdate);
-			put_dos_date2(p,4,adate);
-			put_dos_date2(p,8,mdate);
+			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,4,adate);
+			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
@@ -1218,9 +1218,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,0,cdate);
-			put_dos_date2(p,4,adate);
-			put_dos_date2(p,8,mdate);
+			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,4,adate);
+			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
@@ -1262,9 +1262,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,0,cdate);
-			put_dos_date2(p,4,adate);
-			put_dos_date2(p,8,mdate);
+			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,4,adate);
+			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
@@ -3016,9 +3016,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_INFO_STANDARD:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_STANDARD\n"));
 			data_size = 22;
-			put_dos_date2(pdata,l1_fdateCreation,c_time);
-			put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
-			put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+			srv_put_dos_date2(pdata,l1_fdateCreation,c_time);
+			srv_put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
+			srv_put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
 			SIVAL(pdata,l1_cbFile,(uint32)file_size);
 			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
@@ -3029,9 +3029,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
-			put_dos_date2(pdata,0,c_time);
-			put_dos_date2(pdata,4,sbuf.st_atime);
-			put_dos_date2(pdata,8,sbuf.st_mtime); /* write time */
+			srv_put_dos_date2(pdata,0,c_time);
+			srv_put_dos_date2(pdata,4,sbuf.st_atime);
+			srv_put_dos_date2(pdata,8,sbuf.st_mtime); /* write time */
 			SIVAL(pdata,12,(uint32)file_size);
 			SIVAL(pdata,16,(uint32)allocation_size);
 			SSVAL(pdata,20,mode);
@@ -3730,9 +3730,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 
 			/* access time */
-			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
+			tvs.actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
 			/* write time */
-			tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
+			tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
 			break;
 		}
 
