@@ -49,9 +49,9 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 		case 1: /* OS/2 understands this */
 			/* these dates are converted to GMT by
                            make_unix_date */
-			finfo->ctime = make_unix_date2(p+4);
-			finfo->atime = make_unix_date2(p+8);
-			finfo->mtime = make_unix_date2(p+12);
+			finfo->ctime = cli_make_unix_date2(cli, p+4);
+			finfo->atime = cli_make_unix_date2(cli, p+8);
+			finfo->mtime = cli_make_unix_date2(cli, p+12);
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
@@ -70,9 +70,9 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 		case 2: /* this is what OS/2 uses mostly */
 			/* these dates are converted to GMT by
                            make_unix_date */
-			finfo->ctime = make_unix_date2(p+4);
-			finfo->atime = make_unix_date2(p+8);
-			finfo->mtime = make_unix_date2(p+12);
+			finfo->ctime = cli_make_unix_date2(cli, p+4);
+			finfo->atime = cli_make_unix_date2(cli, p+8);
+			finfo->mtime = cli_make_unix_date2(cli, p+12);
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 30);
@@ -380,7 +380,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	finfo->mode = CVAL(p,21);
 	
 	/* this date is converted to GMT by make_unix_date */
-	finfo->ctime = make_unix_date(p+22);
+	finfo->ctime = cli_make_unix_date(cli, p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
 	finfo->size = IVAL(p,26);
 	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);

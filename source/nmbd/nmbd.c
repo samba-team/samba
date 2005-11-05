@@ -776,6 +776,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet);
 
+	TimeInit();
+
 	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
 	if ( !open_sockets( is_daemon, global_nmb_port ) ) {

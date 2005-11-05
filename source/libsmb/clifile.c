@@ -1106,15 +1106,15 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	}
 
 	if (c_time) {
-		*c_time = make_unix_date2(cli->inbuf+smb_vwv0);
+		*c_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv0);
 	}
 
 	if (a_time) {
-		*a_time = make_unix_date2(cli->inbuf+smb_vwv2);
+		*a_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv2);
 	}
 
 	if (m_time) {
-		*m_time = make_unix_date2(cli->inbuf+smb_vwv4);
+		*m_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv4);
 	}
 
 	return True;
@@ -1158,7 +1158,7 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 	}
 
 	if (t) {
-		*t = make_unix_date3(cli->inbuf+smb_vwv1);
+		*t = cli_make_unix_date3(cli, cli->inbuf+smb_vwv1);
 	}
 
 	if (attr) {
@@ -1189,9 +1189,9 @@ BOOL cli_setattrE(struct cli_state *cli, int fd,
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0, fd);
-	put_dos_date2(cli->outbuf,smb_vwv1, c_time);
-	put_dos_date2(cli->outbuf,smb_vwv3, a_time);
-	put_dos_date2(cli->outbuf,smb_vwv5, m_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv1, c_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv3, a_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv5, m_time);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -1228,7 +1228,7 @@ BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0, attr);
-	put_dos_date3(cli->outbuf,smb_vwv1, t);
+	cli_put_dos_date3(cli, cli->outbuf,smb_vwv1, t);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;

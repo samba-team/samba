@@ -150,7 +150,7 @@ static void print_share_mode(const struct share_mode_entry *e, char *fname)
 			d_printf("NONE            ");
 		}
 
-		d_printf(" %s   %s",fname, asctime(LocalTime((time_t *)&e->time.tv_sec)));
+		d_printf(" %s   %s",fname, asctime(localtime((time_t *)&e->time.tv_sec)));
 	}
 }
 
@@ -553,7 +553,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	d_printf("%-10s   %s   %-12s  %s",
 	       crec.name,procid_str_static(&crec.pid),
 	       crec.machine,
-	       asctime(LocalTime(&crec.start)));
+	       asctime(localtime(&crec.start)));
 
 	return 0;
 }
