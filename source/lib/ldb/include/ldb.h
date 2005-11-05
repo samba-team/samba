@@ -76,7 +76,7 @@ struct ldb_dn {
 	struct ldb_dn_component *components;
 };
 
-/* these flags are used in ldd_message_element.flags fields. The
+/* these flags are used in ldb_message_element.flags fields. The
    LDA_FLAGS_MOD_* flags are used in ldap_modify() calls to specify
    whether attributes are being added, deleted or modified */
 #define LDB_FLAG_MOD_MASK  0x3
