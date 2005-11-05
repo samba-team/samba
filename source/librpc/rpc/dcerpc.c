@@ -856,12 +856,15 @@ req_done:
 	req->state = RPC_REQUEST_DONE;
 	DLIST_REMOVE(c->pending, req);
 	data_blob_free(data);
-	if (req->async.callback) {
-		req->async.callback(req);
-	}
 
 	if (c->request_queue != NULL) {
+		/* We have to look at shipping further requests before calling
+		 * the async function, that one might close the pipe */
 		dcerpc_ship_next_request(c);
+	}
+
+	if (req->async.callback) {
+		req->async.callback(req);
 	}
 }
 
