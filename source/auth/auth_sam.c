@@ -148,12 +148,13 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
  Do a specific test for a SAM_ACCOUNT being vaild for this connection 
  (ie not disabled, expired and the like).
 ****************************************************************************/
-static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
-				   struct ldb_context *sam_ctx,
-				   uint32_t logon_parameters,
-				   struct ldb_message **msgs,
-				   struct ldb_message **msgs_domain_ref,
-				   const struct auth_usersupplied_info *user_info)
+NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
+			    struct ldb_context *sam_ctx,
+			    uint32_t logon_parameters,
+			    struct ldb_message **msgs,
+			    struct ldb_message **msgs_domain_ref,
+			    const char *logon_workstation,
+			    const char *name_for_logs)
 {
 	uint16_t acct_flags;
 	const char *workstation_list;
@@ -164,7 +165,7 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, msgs_domain_ref[0], "nCName", ldb_dn_new(mem_ctx));
 
 	NTTIME now;
-	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", user_info->mapped.account_name));
+	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
 	acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
 	
@@ -178,20 +179,20 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* Quit if the account was disabled. */
 	if (acct_flags & ACB_DISABLED) {
-		DEBUG(1,("authsam_account_ok: Account for user '%s' was disabled.\n", user_info->mapped.account_name));
+		DEBUG(1,("authsam_account_ok: Account for user '%s' was disabled.\n", name_for_logs));
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
-		DEBUG(1,("authsam_account_ok: Account for user %s was locked out.\n", user_info->mapped.account_name));
+		DEBUG(1,("authsam_account_ok: Account for user %s was locked out.\n", name_for_logs));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
 	/* Test account expire time */
 	unix_to_nt_time(&now, time(NULL));
 	if (now > acct_expiry) {
-		DEBUG(1,("authsam_account_ok: Account for user '%s' has expired.\n", user_info->mapped.account_name));
+		DEBUG(1,("authsam_account_ok: Account for user '%s' has expired.\n", name_for_logs));
 		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n", 
 			 nt_time_string(mem_ctx, acct_expiry)));
 		return NT_STATUS_ACCOUNT_EXPIRED;
@@ -201,14 +202,14 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		/* check for immediate expiry "must change at next logon" */
 		if (must_change_time == 0 && last_set_time != 0) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
-				 user_info->mapped.account_name));
+				 name_for_logs));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
 		/* check for expired password */
 		if ((must_change_time != 0) && (must_change_time < now)) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
-				 user_info->mapped.account_name));
+				 name_for_logs));
 			DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
 				 nt_time_string(mem_ctx, must_change_time)));
 			return NT_STATUS_PASSWORD_EXPIRED;
@@ -216,16 +217,16 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Test workstation. Workstation list is comma separated. */
-	if (workstation_list && *workstation_list) {
+	if (logon_workstation && workstation_list && *workstation_list) {
 		BOOL invalid_ws = True;
 		int i;
 		const char **workstations = str_list_make(mem_ctx, workstation_list, ",");
 		
 		for (i = 0; workstations && workstations[i]; i++) {
 			DEBUG(10,("sam_account_ok: checking for workstation match '%s' and '%s'\n",
-				  workstations[i], user_info->workstation_name));
+				  workstations[i], logon_workstation));
 
-			if (strequal(workstations[i], user_info->workstation_name)) {
+			if (strequal(workstations[i], logon_workstation)) {
 				invalid_ws = False;
 				break;
 			}
@@ -239,19 +240,19 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 	
 	if (acct_flags & ACB_DOMTRUST) {
-		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", user_info->mapped.account_name));
+		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", name_for_logs));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 	}
 	
 	if (!(logon_parameters & MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT)) {
 		if (acct_flags & ACB_SVRTRUST) {
-			DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", user_info->mapped.account_name));
+			DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", name_for_logs));
 			return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
 		}
 	}
 	if (!(logon_parameters & MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT)) {
 		if (acct_flags & ACB_WSTRUST) {
-			DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", user_info->mapped.account_name));
+			DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", name_for_logs));
 			return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 		}
 	}
@@ -413,7 +414,8 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 				       user_info->logon_parameters,
 				       msgs,
 				       msgs_domain_ref,
-				       user_info);
+				       user_info->workstation_name,
+				       user_info->mapped.account_name);
 
 	return nt_status;
 }
