@@ -144,6 +144,16 @@ hdb_free_entry(krb5_context context, hdb_entry *ent)
     free_hdb_entry(ent);
 }
 
+void
+hdb_free_entry_ex(krb5_context context, hdb_entry_ex *ent)
+{
+    if (ent->free_private) {
+	    ent->free_private(context, ent);
+    }
+
+    free_hdb_entry(&ent->entry);
+}
+
 krb5_error_code
 hdb_foreach(krb5_context context,
 	    HDB *db,

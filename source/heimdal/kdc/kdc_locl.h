@@ -71,8 +71,17 @@ krb5_error_code
 _kdc_db_fetch(krb5_context, krb5_kdc_configuration *,
 	      krb5_principal, enum hdb_ent_type, hdb_entry **);
 
+krb5_error_code
+_kdc_db_fetch_ex(krb5_context context,
+		 krb5_kdc_configuration *config,
+		 krb5_principal principal, enum hdb_ent_type ent_type, 
+		 hdb_entry_ex **h);
+
 void
 _kdc_free_ent(krb5_context context, hdb_entry *);
+
+void
+_kdc_free_ent_ex(krb5_context context, hdb_entry_ex *ent);
 
 void
 loop(krb5_context context, krb5_kdc_configuration *config);
