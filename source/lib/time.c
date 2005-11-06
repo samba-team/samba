@@ -104,7 +104,7 @@ int get_time_zone(time_t t)
 	if (!tm) {
 		return 0;
 	}
-	return tm_diff(&tm_utc,tm);
+	return tm_diff(&tm_utc,tm) + 60*extra_time_offset;
 }
 
 /*******************************************************************
