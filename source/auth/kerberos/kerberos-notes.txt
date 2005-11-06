@@ -76,6 +76,9 @@ causes pain for current client libraries.
 The canonicalisation of names matters not only for the KDC, but also
 for code that has to deal with keytabs.
 
+We also need to handle type 10 names (NT-ENTERPRISE), which are a full
+principal name in the principal field, unrelated to the realm.
+
 HOST/ Aliases
 -------------
 
