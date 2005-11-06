@@ -54,6 +54,23 @@ enum hdb_ent_type{ HDB_ENT_TYPE_CLIENT, HDB_ENT_TYPE_SERVER, HDB_ENT_TYPE_ANY };
 
 typedef struct hdb_master_key_data *hdb_master_key;
 
+typedef struct hdb_entry_ex {
+	struct hdb_entry entry;
+	void *private;
+
+	krb5_error_code (*free_private)(krb5_context, struct hdb_entry_ex *);
+	krb5_error_code (*check_client_access)(krb5_context, struct hdb_entry_ex *, HostAddresses *);
+	krb5_error_code (*authz_data_as_req)(krb5_context, struct hdb_entry_ex *, 
+					     AuthorizationData *in, 
+					     EncryptionKey *tgtkey,
+					     AuthorizationData *out);
+	krb5_error_code (*authz_data_tgs_req)(krb5_context, struct hdb_entry_ex *, 
+					      AuthorizationData *in, 
+					      EncryptionKey *tgtkey,
+					      EncryptionKey *servicekey,
+					      AuthorizationData *out);
+} hdb_entry_ex;
+
 typedef struct HDB{
     void *hdb_db;
     void *hdb_dbc;
@@ -66,6 +83,8 @@ typedef struct HDB{
     krb5_error_code (*hdb_close)(krb5_context, struct HDB*);
     krb5_error_code (*hdb_fetch)(krb5_context,struct HDB*,unsigned hdb_flags, krb5_const_principal principal,
 				 enum hdb_ent_type ent_type, hdb_entry*);
+    krb5_error_code (*hdb_fetch_ex)(krb5_context,struct HDB*,unsigned hdb_flags, krb5_const_principal principal,
+				 enum hdb_ent_type ent_type, hdb_entry_ex*);
     krb5_error_code (*hdb_store)(krb5_context,struct HDB*,unsigned,hdb_entry*);
     krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*, 
@@ -82,7 +101,7 @@ typedef struct HDB{
     krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	2
+#define HDB_INTERFACE_VERSION	3
 
 struct hdb_so_method {
     int version;
