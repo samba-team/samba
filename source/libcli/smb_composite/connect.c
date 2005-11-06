@@ -302,6 +302,15 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	state->transport = smbcli_transport_init(state->sock, state, True);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
+	if (state->io->in.called_name != NULL) {
+		/* If connecting to an IP address, we might want the real name
+		 * of the host for later kerberos. The called name is a better
+		 * approximation */
+		state->sock->hostname =
+			talloc_strdup(state->sock, io->in.called_name);
+		NT_STATUS_HAVE_NO_MEMORY(state->sock->hostname);
+	}
+
 	make_nbt_name_client(&calling, cli_credentials_get_workstation(io->in.credentials));
 
 	nbt_choose_called_name(state, &called, io->in.called_name, NBT_NAME_SERVER);
