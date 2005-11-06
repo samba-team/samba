@@ -60,16 +60,16 @@ sub Template($)
 */
 static $d->{RETURN_TYPE} $fname(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct $fname *r)
-{";
+{
+";
 
 	if ($d->{RETURN_TYPE} eq "void") {
-		$res .= "DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);\n";
+		$res .= "\tDCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);\n";
 	} else {
-		$res .= "DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);\n";
+		$res .= "\tDCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);\n";
 	}
 
-	$res .= "
-}
+	$res .= "}
 
 ";
 		}
