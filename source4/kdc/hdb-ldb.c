@@ -38,6 +38,7 @@
 #include "hdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "system/iconv.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
@@ -70,6 +71,12 @@ static const char *realm_ref_attrs[] = {
 	"nCName", 
 	"dnsRoot", 
 	NULL
+};
+
+struct hdb_ldb_private {
+	struct ldb_context *samdb;
+	struct ldb_message **msg;
+	struct ldb_message **realm_ref_msg;
 };
 
 static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, KerberosTime default_val)
@@ -611,10 +618,48 @@ static krb5_error_code LDB_rename(krb5_context context, HDB *db, const char *new
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
-				 krb5_const_principal principal,
-				 enum hdb_ent_type ent_type,
-				 hdb_entry *entry)
+static krb5_error_code hdb_ldb_free_private(krb5_context context, hdb_entry_ex *entry_ex)
+{
+	talloc_free(entry_ex->private);
+	return 0;
+}
+
+static krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *entry_ex, 
+						   HostAddresses *addresses)
+{
+	krb5_error_code ret;
+	NTSTATUS nt_status;
+	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->private);
+	struct hdb_ldb_private *private = entry_ex->private;
+	char *name, *workstation = NULL;
+	if (!tmp_ctx) {
+		return ENOMEM;
+	}
+	
+	ret = krb5_unparse_name(context, entry_ex->entry.principal, &name);
+	if (ret != 0) {
+		talloc_free(tmp_ctx);
+	}
+	nt_status = authsam_account_ok(tmp_ctx, 
+				       private->samdb, 
+				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
+				       private->msg,
+				       private->realm_ref_msg,
+				       workstation,
+				       name);
+	free(name);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return KRB5KDC_ERR_POLICY;
+	}
+	return 0;
+}
+
+
+static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flags,
+				    krb5_const_principal principal,
+				    enum hdb_ent_type ent_type,
+				    hdb_entry_ex *entry_ex)
 {
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_ref_msg = NULL;
@@ -630,10 +675,6 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		krb5_set_error_string(context, "LDB_fetch: talloc_named() failed!");
 		return ENOMEM;
 	}
-
-	/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
-	 * is in our db, then direct the caller at our primary
-	 * krgtgt */
 
 	switch (ent_type) {
 	case HDB_ENT_TYPE_CLIENT:
@@ -662,7 +703,23 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
-					msg[0], realm_ref_msg[0], entry);
+					msg[0], realm_ref_msg[0], &entry_ex->entry);
+
+		if (ret == 0) {
+			struct hdb_ldb_private *private = talloc(db, struct hdb_ldb_private);
+			if (!private) {
+				hdb_free_entry(context, &entry_ex->entry);
+				ret = ENOMEM;
+			}
+			private->msg = talloc_steal(private, msg);
+			private->realm_ref_msg = talloc_steal(private, realm_ref_msg);
+			private->samdb = (struct ldb_context *)db->hdb_db;
+			
+			entry_ex->private = private;
+			entry_ex->free_private = hdb_ldb_free_private;
+			entry_ex->check_client_access = hdb_ldb_check_client_access;
+		}
+
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -673,6 +730,10 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 			if ((LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
 					      mem_ctx, principal->name.name_string.val[1], &realm_fixed_msg) == 0)) {
 				/* us */
+				/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
+				 * is in our db, then direct the caller at our primary
+				 * krgtgt */
+
 				const char *dnsdomain = ldb_msg_find_string(realm_fixed_msg[0], "dnsRoot", NULL);
 				char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
 				if (!realm_fixed) {
@@ -741,7 +802,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 
 			ret = LDB_message2entry(context, db, mem_ctx, 
 						principal, ldb_ent_type, 
-						msg[0], realm_ref_msg[0], entry);
+						msg[0], realm_ref_msg[0], &entry_ex->entry);
 			talloc_free(mem_ctx);
 			return ret;
 			
@@ -784,13 +845,33 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	} else {
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
-					msg[0], realm_ref_msg[0], entry);
+					msg[0], realm_ref_msg[0], &entry_ex->entry);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed\n");	
 		}
 	}
 
 	talloc_free(mem_ctx);
+	return ret;
+}
+
+static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
+				 krb5_const_principal principal,
+				 enum hdb_ent_type ent_type,
+				 hdb_entry *entry)
+{
+	struct hdb_entry_ex entry_ex;
+	krb5_error_code ret;
+
+	memset(&entry_ex, '\0', sizeof(entry_ex));
+	ret = LDB_fetch_ex(context, db, flags, principal, ent_type, &entry_ex);
+	
+	if (ret == 0) {
+		if (entry_ex.free_private) {
+			entry_ex.free_private(context, &entry_ex);
+		}
+		*entry = entry_ex.entry;
+	}
 	return ret;
 }
 
@@ -967,6 +1048,7 @@ krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_open = LDB_open;
 	(*db)->hdb_close = LDB_close;
 	(*db)->hdb_fetch = LDB_fetch;
+	(*db)->hdb_fetch_ex = LDB_fetch_ex;
 	(*db)->hdb_store = LDB_store;
 	(*db)->hdb_remove = LDB_remove;
 	(*db)->hdb_firstkey = LDB_firstkey;

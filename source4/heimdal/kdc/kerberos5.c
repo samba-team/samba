@@ -767,7 +767,8 @@ _kdc_as_rep(krb5_context context,
     KDC_REQ_BODY *b = &req->req_body;
     AS_REP rep;
     KDCOptions f = b->kdc_options;
-    hdb_entry *client = NULL, *server = NULL;
+    hdb_entry_ex *client = NULL;
+    hdb_entry *server = NULL;
     krb5_enctype cetype, setype;
     EncTicketPart et;
     EncKDCRepPart ek;
@@ -813,7 +814,7 @@ _kdc_as_rep(krb5_context context,
     kdc_log(context, config, 0, "AS-REQ %s from %s for %s", 
 	    client_name, from, server_name);
 
-    ret = _kdc_db_fetch(context, config, client_princ, HDB_ENT_TYPE_CLIENT, &client);
+    ret = _kdc_db_fetch_ex(context, config, client_princ, HDB_ENT_TYPE_CLIENT, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -830,11 +831,18 @@ _kdc_as_rep(krb5_context context,
     }
 
     ret = _kdc_check_flags(context, config, 
-			   client, client_name,
+			   &client->entry, client_name,
 			   server, server_name,
 			   TRUE);
     if(ret)
 	goto out;
+
+    if (client->check_client_access) {
+	ret = client->check_client_access(context, client, 
+					  b->addresses);
+	if(ret)
+	    goto out;
+    }
 
     memset(&et, 0, sizeof(et));
     memset(&ek, 0, sizeof(ek));
@@ -875,7 +883,7 @@ _kdc_as_rep(krb5_context context,
 	    ret = _kdc_pk_check_client(context,
 				       config,
 				       client_princ, 
-				       client,
+				       &client->entry,
 				       pkp,
 				       &client_cert);
 	    if (ret) {
@@ -924,7 +932,7 @@ _kdc_as_rep(krb5_context context,
 		goto out;
 	    }
 	    
-	    ret = hdb_enctype2key(context, client, enc_data.etype, &pa_key);
+	    ret = hdb_enctype2key(context, &client->entry, enc_data.etype, &pa_key);
 	    if(ret){
 		char *estr;
 		e_text = "No key matches pa-data";
@@ -974,7 +982,7 @@ _kdc_as_rep(krb5_context context,
 			krb5_get_err_text(context, ret));
 		free(str);
 
-		if(hdb_next_enctype2key(context, client, 
+		if(hdb_next_enctype2key(context, &client->entry, 
 					enc_data.etype, &pa_key) == 0)
 		    goto try_next_key;
 		e_text = "Failed to decrypt PA-DATA";
@@ -1030,7 +1038,7 @@ _kdc_as_rep(krb5_context context,
 	    goto out;
 	}
     }else if (config->require_preauth
-	      || client->flags.require_preauth
+	      || client->entry.flags.require_preauth
 	      || server->flags.require_preauth) {
 	METHOD_DATA method_data;
 	PA_DATA *pa;
@@ -1058,10 +1066,10 @@ _kdc_as_rep(krb5_context context,
 
 	/* XXX check ret */
 	if (only_older_enctype_p(req))
-	    ret = get_pa_etype_info(context, config, &method_data, client, 
+	    ret = get_pa_etype_info(context, config, &method_data, &client->entry, 
 				    b->etype.val, b->etype.len); 
 	/* XXX check ret */
-	ret = get_pa_etype_info2(context, config, &method_data, client, 
+	ret = get_pa_etype_info2(context, config, &method_data, &client->entry, 
 				 b->etype.val, b->etype.len);
 
 	
@@ -1089,7 +1097,7 @@ _kdc_as_rep(krb5_context context,
     }
     
     ret = find_keys(context, config, 
-		    client, server, &ckey, &cetype, &skey, &setype,
+		    &client->entry, server, &ckey, &cetype, &skey, &setype,
 		    b->etype.val, b->etype.len);
     if(ret) {
 	kdc_log(context, config, 0, "Server/client has no support for etypes");
@@ -1154,19 +1162,19 @@ _kdc_as_rep(krb5_context context,
     
     rep.pvno = 5;
     rep.msg_type = krb_as_rep;
-    copy_Realm(&client->principal->realm, &rep.crealm);
+    copy_Realm(&client->entry.principal->realm, &rep.crealm);
     if (f.request_anonymous)
 	make_anonymous_principalname (&rep.cname);
     else
 	_krb5_principal2principalname(&rep.cname, 
-				      client->principal);
+				      client->entry.principal);
     rep.ticket.tkt_vno = 5;
     copy_Realm(&server->principal->realm, &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, 
 				  server->principal);
 
     et.flags.initial = 1;
-    if(client->flags.forwardable && server->flags.forwardable)
+    if(client->entry.flags.forwardable && server->flags.forwardable)
 	et.flags.forwardable = f.forwardable;
     else if (f.forwardable) {
 	ret = KRB5KDC_ERR_POLICY;
@@ -1174,7 +1182,7 @@ _kdc_as_rep(krb5_context context,
 		"Ticket may not be forwardable -- %s", client_name);
 	goto out;
     }
-    if(client->flags.proxiable && server->flags.proxiable)
+    if(client->entry.flags.proxiable && server->flags.proxiable)
 	et.flags.proxiable = f.proxiable;
     else if (f.proxiable) {
 	ret = KRB5KDC_ERR_POLICY;
@@ -1182,7 +1190,7 @@ _kdc_as_rep(krb5_context context,
 		"Ticket may not be proxiable -- %s", client_name);
 	goto out;
     }
-    if(client->flags.postdate && server->flags.postdate)
+    if(client->entry.flags.postdate && server->flags.postdate)
 	et.flags.may_postdate = f.allow_postdate;
     else if (f.allow_postdate){
 	ret = KRB5KDC_ERR_POLICY;
@@ -1220,8 +1228,8 @@ _kdc_as_rep(krb5_context context,
 
 	/* be careful not overflowing */
 
-	if(client->max_life)
-	    t = start + min(t - start, *client->max_life);
+	if(client->entry.max_life)
+	    t = start + min(t - start, *client->entry.max_life);
 	if(server->max_life)
 	    t = start + min(t - start, *server->max_life);
 #if 0
@@ -1241,8 +1249,8 @@ _kdc_as_rep(krb5_context context,
 	    t = *b->rtime;
 	    if(t == 0)
 		t = MAX_TIME;
-	    if(client->max_renew)
-		t = start + min(t - start, *client->max_renew);
+	    if(client->entry.max_renew)
+		t = start + min(t - start, *client->entry.max_renew);
 	    if(server->max_renew)
 		t = start + min(t - start, *server->max_renew);
 #if 0
@@ -1278,16 +1286,16 @@ _kdc_as_rep(krb5_context context,
      */
     ek.last_req.val = malloc(2 * sizeof(*ek.last_req.val));
     ek.last_req.len = 0;
-    if (client->pw_end
+    if (client->entry.pw_end
 	&& (config->kdc_warn_pwexpire == 0
-	    || kdc_time + config->kdc_warn_pwexpire <= *client->pw_end)) {
+	    || kdc_time + config->kdc_warn_pwexpire <= *client->entry.pw_end)) {
 	ek.last_req.val[ek.last_req.len].lr_type  = LR_PW_EXPTIME;
-	ek.last_req.val[ek.last_req.len].lr_value = *client->pw_end;
+	ek.last_req.val[ek.last_req.len].lr_value = *client->entry.pw_end;
 	++ek.last_req.len;
     }
-    if (client->valid_end) {
+    if (client->entry.valid_end) {
 	ek.last_req.val[ek.last_req.len].lr_type  = LR_ACCT_EXPTIME;
-	ek.last_req.val[ek.last_req.len].lr_value = *client->valid_end;
+	ek.last_req.val[ek.last_req.len].lr_value = *client->entry.valid_end;
 	++ek.last_req.len;
     }
     if (ek.last_req.len == 0) {
@@ -1296,15 +1304,15 @@ _kdc_as_rep(krb5_context context,
 	++ek.last_req.len;
     }
     ek.nonce = b->nonce;
-    if (client->valid_end || client->pw_end) {
+    if (client->entry.valid_end || client->entry.pw_end) {
 	ALLOC(ek.key_expiration);
-	if (client->valid_end) {
-	    if (client->pw_end)
-		*ek.key_expiration = min(*client->valid_end, *client->pw_end);
+	if (client->entry.valid_end) {
+	    if (client->entry.pw_end)
+		*ek.key_expiration = min(*client->entry.valid_end, *client->entry.pw_end);
 	    else
-		*ek.key_expiration = *client->valid_end;
+		*ek.key_expiration = *client->entry.valid_end;
 	} else
-	    *ek.key_expiration = *client->pw_end;
+	    *ek.key_expiration = *client->entry.pw_end;
     } else
 	ek.key_expiration = NULL;
     ek.flags = et.flags;
@@ -1352,7 +1360,7 @@ _kdc_as_rep(krb5_context context,
 
     ret = encode_reply(context, config, 
 		       &rep, &et, &ek, setype, server->kvno, &skey->key,
-		       client->kvno, reply_key, &e_text, reply);
+		       client->entry.kvno, reply_key, &e_text, reply);
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
  out:
@@ -1381,7 +1389,7 @@ _kdc_as_rep(krb5_context context,
 	krb5_free_principal(context, server_princ);
     free(server_name);
     if(client)
-	_kdc_free_ent(context, client);
+	_kdc_free_ent_ex(context, client);
     if(server)
 	_kdc_free_ent(context, server);
     return ret;
