@@ -162,7 +162,8 @@ krb5_get_forwarded_creds (krb5_context	    context,
 {
     krb5_error_code ret;
     krb5_creds *out_creds;
-    krb5_addresses addrs, *paddrs;
+    krb5_addresses *paddrs = NULL;
+    krb5_addresses addrs;
     KRB_CRED cred;
     KrbCredInfo *krb_cred_info;
     EncKrbCredPart enc_krb_cred_part;
@@ -171,50 +172,56 @@ krb5_get_forwarded_creds (krb5_context	    context,
     size_t buf_size;
     krb5_kdc_flags kdc_flags;
     krb5_crypto crypto;
-    struct addrinfo *ai;
     int save_errno;
     krb5_creds *ticket;
     char *realm;
+    krb5_boolean noaddr_ever;
+
+    addrs.len = 0;
+    addrs.val = NULL;
 
     if (in_creds->client && in_creds->client->realm)
 	realm = in_creds->client->realm;
     else
 	realm = in_creds->server->realm;
 
-    addrs.len = 0;
-    addrs.val = NULL;
-    paddrs = &addrs;
-
-    /*
-     * If tickets are address-less, forward address-less tickets.
-     */
-
-    ret = _krb5_get_krbtgt (context,
-			    ccache,
-			    realm,
-			    &ticket);
-    if(ret == 0) {
-	if (ticket->addresses.len == 0)
-	    paddrs = NULL;
-	krb5_free_creds (context, ticket);
+    krb5_appdefault_boolean(context, NULL, realm, "no-addresses-ever", 
+			    TRUE, &noaddr_ever);
+    if (!noaddr_ever) {
+	    struct addrinfo *ai;
+	    paddrs = &addrs;
+	    
+	    /*
+	     * If tickets are address-less, forward address-less tickets.
+	     */
+	    
+	    ret = _krb5_get_krbtgt (context,
+				    ccache,
+				    realm,
+				    &ticket);
+	    if(ret == 0) {
+		    if (ticket->addresses.len == 0)
+			    paddrs = NULL;
+		    krb5_free_creds (context, ticket);
+	    }
+	    
+	    if (paddrs != NULL) {
+		    
+		    ret = getaddrinfo (hostname, NULL, NULL, &ai);
+		    if (ret) {
+			    save_errno = errno;
+			    krb5_set_error_string(context, "resolving %s: %s",
+						  hostname, gai_strerror(ret));
+			    return krb5_eai_to_heim_errno(ret, save_errno);
+		    }
+		    
+		    ret = add_addrs (context, &addrs, ai);
+		    freeaddrinfo (ai);
+		    if (ret)
+			    return ret;
+	    }
     }
-    
-    if (paddrs != NULL) {
 
-	ret = getaddrinfo (hostname, NULL, NULL, &ai);
-	if (ret) {
-	    save_errno = errno;
-	    krb5_set_error_string(context, "resolving %s: %s",
-				  hostname, gai_strerror(ret));
-	    return krb5_eai_to_heim_errno(ret, save_errno);
-	}
-	
-	ret = add_addrs (context, &addrs, ai);
-	freeaddrinfo (ai);
-	if (ret)
-	    return ret;
-    }
-    
     kdc_flags.b = int2KDCOptions(flags);
 
     ret = krb5_get_kdc_cred (context,
