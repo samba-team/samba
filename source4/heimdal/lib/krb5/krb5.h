@@ -233,6 +233,7 @@ typedef struct krb5_preauthdata {
 
 typedef enum krb5_address_type { 
     KRB5_ADDRESS_INET     =   2,
+    KRB5_ADDRESS_NETBIOS  =  20,
     KRB5_ADDRESS_INET6    =  24,
     KRB5_ADDRESS_ADDRPORT = 256,
     KRB5_ADDRESS_IPPORT   = 257
