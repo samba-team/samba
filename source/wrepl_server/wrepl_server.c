@@ -84,14 +84,17 @@ static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 		if (partner == NULL) goto failed;
 		partner->service	= service;
 
-		partner->address	= ldb_msg_find_string(res[i], "address", NULL);
+		partner->address		= ldb_msg_find_string(res[i], "address", NULL);
 		if (!partner->address) goto failed;
-		partner->name		= ldb_msg_find_string(res[i], "name", partner->address);
-		partner->type		= ldb_msg_find_int(res[i], "type", WINSREPL_PARTNER_BOTH);
-		partner->pull.interval	= ldb_msg_find_int(res[i], "pullInterval", WINSREPL_DEFAULT_PULL_INTERVAL);
-		partner->pull.retry_interval = ldb_msg_find_int(res[i], "pullRetryInterval",
-								WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
-		partner->our_address	= ldb_msg_find_string(res[i], "ourAddress", NULL);
+		partner->name			= ldb_msg_find_string(res[i], "name", partner->address);
+		partner->type			= ldb_msg_find_uint(res[i], "type", WINSREPL_PARTNER_BOTH);
+		partner->pull.interval		= ldb_msg_find_uint(res[i], "pullInterval",
+						   WINSREPL_DEFAULT_PULL_INTERVAL);
+		partner->pull.retry_interval	= ldb_msg_find_uint(res[i], "pullRetryInterval",
+								   WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
+		partner->our_address		= ldb_msg_find_string(res[i], "ourAddress", NULL);
+		partner->push.change_count	= ldb_msg_find_uint(res[i], "pushChangeCount",
+								   WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
 
 		talloc_steal(partner, partner->address);
 		talloc_steal(partner, partner->name);

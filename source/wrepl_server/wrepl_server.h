@@ -125,6 +125,8 @@ enum winsrepl_partner_type {
 #define WINSREPL_DEFAULT_PULL_INTERVAL (30*60)
 #define WINSREPL_DEFAULT_PULL_RETRY_INTERVAL (30)
 
+#define WINSREPL_DEFAULT_PUSH_CHANGE_COUNT (0)
+
 /*
  this represents one of our configured partners
 */

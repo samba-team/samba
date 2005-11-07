@@ -236,12 +236,12 @@ NTSTATUS wreplsrv_setup_out_connections(struct wreplsrv_service *service)
 	struct wreplsrv_partner *cur;
 
 	for (cur = service->partners; cur; cur = cur->next) {
-		if (cur->type & WINSREPL_PARTNER_PULL) {
+		if ((cur->type & WINSREPL_PARTNER_PULL) && cur->pull.interval) {
 			cur->pull.te = event_add_timed(service->task->event_ctx, cur,
 						       timeval_zero(), wreplsrv_pull_handler_te, cur);
 			NT_STATUS_HAVE_NO_MEMORY(cur->pull.te);
 		}
-		if (cur->type & WINSREPL_PARTNER_PUSH) {
+		if ((cur->type & WINSREPL_PARTNER_PUSH) && cur->push.change_count) {
 			cur->push.te = event_add_timed(service->task->event_ctx, cur,
 						       timeval_zero(), wreplsrv_push_handler_te, cur);
 			NT_STATUS_HAVE_NO_MEMORY(cur->push.te);
