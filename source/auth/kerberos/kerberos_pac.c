@@ -74,7 +74,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 			      krb5_keyblock *krbtgt_keyblock,
 			      krb5_keyblock *service_keyblock,
 			      krb5_const_principal client_principal,
-			      time_t tgs_authtime)
+			      time_t tgs_authtime,
+			      krb5_error_code *k5ret)
 {
 	krb5_error_code ret;
 	NTSTATUS status;
@@ -87,19 +88,28 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_DATA *pac_data;
 	struct PAC_DATA_RAW *pac_data_raw;
 
-	DATA_BLOB *srv_sig_blob;
-	DATA_BLOB *kdc_sig_blob;
+	DATA_BLOB *srv_sig_blob = NULL;
+	DATA_BLOB *kdc_sig_blob = NULL;
 
 	DATA_BLOB modified_pac_blob;
 	NTTIME tgs_authtime_nttime;
 	krb5_principal client_principal_pac;
 	int i;
 
+	krb5_clear_error_string(context);
+
+	if (k5ret) {
+		*k5ret = KRB5_PARSE_MALFORMED;
+	}
+
 	pac_data = talloc(mem_ctx, struct PAC_DATA);
 	pac_data_raw = talloc(mem_ctx, struct PAC_DATA_RAW);
 	kdc_sig_wipe = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
 	srv_sig_wipe = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
 	if (!pac_data_raw || !pac_data || !kdc_sig_wipe || !srv_sig_wipe) {
+		if (k5ret) {
+			*k5ret = ENOMEM;
+		}
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -242,6 +252,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	if (ret) {
 		DEBUG(1, ("PAC Decode: Failed to verify the service signature: %s\n",
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		if (k5ret) {
+			*k5ret = ret;
+		}
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -252,6 +265,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		if (ret) {
 			DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",
 				  smb_get_krb5_error_message(context, ret, mem_ctx)));
+			if (k5ret) {
+				*k5ret = ret;
+			}
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -271,6 +287,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		DEBUG(2, ("Could not parse name from incoming PAC: [%s]: %s\n", 
 			  logon_name->account_name, 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		if (k5ret) {
+			*k5ret = ret;
+		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -302,19 +321,20 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 				  krb5_keyblock *krbtgt_keyblock,
 				  krb5_keyblock *service_keyblock,
 				  krb5_const_principal client_principal,
-				  time_t tgs_authtime)
+				  time_t tgs_authtime, 
+				  krb5_error_code *k5ret)
 {
 	NTSTATUS nt_status;
 	struct PAC_DATA *pac_data;
 	int i;
-
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					blob,
 					context,
 					krbtgt_keyblock,
 					service_keyblock,
 					client_principal, 
-					tgs_authtime);
+					tgs_authtime,
+					k5ret);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

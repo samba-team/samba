@@ -521,7 +521,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						    gensec_krb5_state->smb_krb5_context->krb5_context,
 						    NULL, gensec_krb5_state->keyblock,
 						    client_principal,
-						    gensec_krb5_state->ticket->ticket.authtime);
+						    gensec_krb5_state->ticket->ticket.authtime, NULL);
 		krb5_free_principal(context, client_principal);
 
 		if (NT_STATUS_IS_OK(nt_status)) {

@@ -101,8 +101,8 @@ static int
 find_type_in_ad(krb5_context context,
 		int type, 
 		krb5_data *data,
-		int *found,
-		int failp,
+		krb5_boolean *found,
+		krb5_boolean failp,
 		krb5_keyblock *sessionkey,
 		const AuthorizationData *ad,
 		int level)
@@ -129,7 +129,7 @@ find_type_in_ad(krb5_context context,
 		krb5_set_error_string(context, "malloc - out of memory");
 		goto out;
 	    }
-	    *found = 1;
+	    *found = TRUE;
 	    continue;
 	}
 	switch (ad->val[i].ad_type) {
@@ -228,6 +228,19 @@ out:
     return ret;
 }
 
+int
+_krb5_find_type_in_ad(krb5_context context,
+		      int type, 
+		      krb5_data *data,
+		      krb5_boolean *found,
+		      krb5_keyblock *sessionkey,
+		      const AuthorizationData *ad)
+{
+    krb5_data_zero(data);
+    return find_type_in_ad(context, type, data, found, TRUE, sessionkey, ad, 0);
+}
+
+
 /*
  * Extract the authorization data type of `type' from the
  * 'ticket'. Store the field in `data'. This function is to use for
@@ -242,9 +255,7 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 {
     AuthorizationData *ad;
     krb5_error_code ret;
-    int found = 0;
-
-    krb5_data_zero(data);
+    krb5_boolean found = 0;
 
     ad = ticket->ticket.authorization_data;
     if (ticket->ticket.authorization_data == NULL) {
@@ -252,8 +263,8 @@ krb5_ticket_get_authorization_data_type(krb5_context context,
 	return ENOENT; /* XXX */
     }
 
-    ret = find_type_in_ad(context, type, data, &found, 1, &ticket->ticket.key,
-			  ticket->ticket.authorization_data, 0);
+    ret = _krb5_find_type_in_ad(context, type, data, &found, &ticket->ticket.key,
+				ticket->ticket.authorization_data);
     if (ret)
 	return ret;
     if (!found) {

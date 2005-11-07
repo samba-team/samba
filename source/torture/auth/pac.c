@@ -147,7 +147,7 @@ static BOOL torture_pac_self_check(void)
 					&krbtgt_keyblock,
 					&server_keyblock,
 					client_principal, 
-					logon_time);
+					logon_time, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -170,7 +170,8 @@ static BOOL torture_pac_self_check(void)
 					    &krbtgt_keyblock,
 					    &server_keyblock,
 					    client_principal, 
-					    logon_time);
+					    logon_time, 
+					    NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -398,7 +399,7 @@ static BOOL torture_pac_saved_check(void)
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
 					&server_keyblock, 
-					client_principal, authtime);
+					client_principal, authtime, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("(saved test) PAC decoding failed: %s\n", 
 			  nt_errstr(nt_status)));
@@ -419,7 +420,7 @@ static BOOL torture_pac_saved_check(void)
 					    smb_krb5_context->krb5_context,
 					    &krbtgt_keyblock,
 					    &server_keyblock,
-					    client_principal, authtime);
+					    client_principal, authtime, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -612,7 +613,7 @@ static BOOL torture_pac_saved_check(void)
 					&krbtgt_keyblock,
 					&server_keyblock,
 					client_principal, 
-					authtime + 1);
+					authtime + 1, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("(saved test) PAC decoding DID NOT fail on broken auth time (time + 1)\n"));
 
@@ -648,7 +649,7 @@ static BOOL torture_pac_saved_check(void)
 					&krbtgt_keyblock,
 					&server_keyblock,
 					client_principal, 
-					authtime);
+					authtime, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("(saved test) PAC decoding DID NOT fail on modified principal\n"));
 
@@ -669,7 +670,7 @@ static BOOL torture_pac_saved_check(void)
 					&krbtgt_keyblock,
 					&server_keyblock,
 					client_principal, 
-					authtime);
+					authtime, NULL);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("(saved test) PAC decoding DID NOT fail on broken checksum\n"));
 

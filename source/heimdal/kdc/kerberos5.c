@@ -32,9 +32,6 @@
  */
 
 #include "kdc_locl.h"
-#ifdef _SAMBA_BUILD_
-#include "kdc/pac-glue.h"
-#endif
 
 RCSID("$Id: kerberos5.c,v 1.177 2005/06/15 11:34:53 lha Exp $");
 
@@ -1355,6 +1352,18 @@ _kdc_as_rep(krb5_context context,
 	rep.padata = NULL;
     }
 
+    /* Add the PAC, via a HDB abstraction */
+    if (client->authz_data_as_req) {
+	    ret = client->authz_data_as_req(context, client, 
+					    req->padata, 
+					    et.authtime,
+					    &skey->key,
+					    &et.key,
+					    &et.authorization_data);
+	    if (ret) 
+		    goto out;
+    }
+
     log_timestamp(context, config, "AS-REQ", et.authtime, et.starttime, 
 		  et.endtime, et.renew_till);
 
@@ -1640,7 +1649,7 @@ tgs_make_reply(krb5_context context,
 	       EncTicketPart *adtkt, 
 	       AuthorizationData *auth_data,
 	       krb5_ticket *tgs_ticket,
-	       hdb_entry *server, 
+	       hdb_entry_ex *server, 
 	       hdb_entry *client, 
 	       krb5_principal client_principal, 
 	       hdb_entry *krbtgt,
@@ -1657,6 +1666,7 @@ tgs_make_reply(krb5_context context,
     krb5_enctype etype;
     Key *skey;
     EncryptionKey *ekey;
+    AuthorizationData *new_auth_data = NULL;
     
     if(adtkt) {
 	int i;
@@ -1674,7 +1684,7 @@ tgs_make_reply(krb5_context context,
 	etype = b->etype.val[i];
     }else{
 	ret = find_keys(context, config, 
-			NULL, server, NULL, NULL, &skey, &etype, 
+			NULL, &server->entry, NULL, NULL, &skey, &etype, 
 			b->etype.val, b->etype.len);
 	if(ret) {
 	    kdc_log(context, config, 0, "Server has no support for etypes");
@@ -1728,14 +1738,14 @@ tgs_make_reply(krb5_context context,
 				   GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK),
 				 &tgt->transited, &et,
 				 *krb5_princ_realm(context, client_principal),
-				 *krb5_princ_realm(context, server->principal),
+				 *krb5_princ_realm(context, server->entry.principal),
 				 *krb5_princ_realm(context, krbtgt->principal));
     if(ret)
 	goto out;
 
-    copy_Realm(krb5_princ_realm(context, server->principal), 
+    copy_Realm(krb5_princ_realm(context, server->entry.principal), 
 	       &rep.ticket.realm);
-    _krb5_principal2principalname(&rep.ticket.sname, server->principal);
+    _krb5_principal2principalname(&rep.ticket.sname, server->entry.principal);
     copy_Realm(&tgt->crealm, &rep.crealm);
     if (f.request_anonymous)
 	make_anonymous_principalname (&tgt->cname);
@@ -1752,8 +1762,8 @@ tgs_make_reply(krb5_context context,
 	life = et.endtime - *et.starttime;
 	if(client && client->max_life)
 	    life = min(life, *client->max_life);
-	if(server->max_life)
-	    life = min(life, *server->max_life);
+	if(server->entry.max_life)
+	    life = min(life, *server->entry.max_life);
 	et.endtime = *et.starttime + life;
     }
     if(f.renewable_ok && tgt->flags.renewable && 
@@ -1767,8 +1777,8 @@ tgs_make_reply(krb5_context context,
 	renew = *et.renew_till - et.authtime;
 	if(client && client->max_renew)
 	    renew = min(renew, *client->max_renew);
-	if(server->max_renew)
-	    renew = min(renew, *server->max_renew);
+	if(server->entry.max_renew)
+	    renew = min(renew, *server->entry.max_renew);
 	*et.renew_till = et.authtime + renew;
     }
 	    
@@ -1793,61 +1803,28 @@ tgs_make_reply(krb5_context context,
     et.flags.pre_authent = tgt->flags.pre_authent;
     et.flags.hw_authent  = tgt->flags.hw_authent;
     et.flags.anonymous   = tgt->flags.anonymous;
-    et.flags.ok_as_delegate = server->flags.ok_as_delegate;
+    et.flags.ok_as_delegate = server->entry.flags.ok_as_delegate;
 	    
-#ifdef _SAMBA_BUILD_
- 
-    {
+    
+    krb5_generate_random_keyblock(context, etype, &et.key);
 
-	    unsigned char *buf;
-	    size_t buf_size;
-	    size_t len;
-
-	    krb5_data pac;
-	    AD_IF_RELEVANT *if_relevant;
-	    ALLOC(if_relevant);
-	    if_relevant->len = 1;
-	    if_relevant->val = malloc(sizeof(*if_relevant->val));
-	    if_relevant->val[0].ad_type = KRB5_AUTHDATA_WIN2K_PAC;
-	    if_relevant->val[0].ad_data.data = NULL;
-	    if_relevant->val[0].ad_data.length = 0;
-
-	    /* Get PAC from Samba */
-	    ret = samba_get_pac(context, config, 
-				client->principal,
-				tgtkey,
-				ekey,
-				tgs_ticket->ticket.authtime,
-				&pac);
+    if (server->authz_data_tgs_req) {
+	    ret = server->authz_data_tgs_req(context, server,
+					     client_principal, 
+					     tgs_ticket->ticket.authorization_data,
+					     tgs_ticket->ticket.authtime,
+					     tgtkey,
+					     ekey, 
+					     &et.key, 
+					     &new_auth_data);
 	    if (ret) {
-		    free_AuthorizationData(if_relevant);
-		    goto out;
-	    }
-
-	    /* pac.data will be freed with this */
-	    if_relevant->val[0].ad_data.data = pac.data;
-	    if_relevant->val[0].ad_data.length = pac.length;
-
-	    ASN1_MALLOC_ENCODE(AuthorizationData, buf, buf_size, if_relevant, &len, ret);
-	    free_AuthorizationData(if_relevant);
-	    
-	    auth_data = NULL;
-	    ALLOC(auth_data);
-	    auth_data->len = 1;
-	    auth_data->val = malloc(sizeof(*auth_data->val));
-	    auth_data->val[0].ad_type = KRB5_AUTHDATA_IF_RELEVANT;
-	    auth_data->val[0].ad_data.length = len;
-	    auth_data->val[0].ad_data.data = buf;
-	    if (ret) {
-		    goto out;
+		    new_auth_data = NULL;
 	    }
     }
 
-#endif
     /* XXX Check enc-authorization-data */
-    et.authorization_data = auth_data;
+    et.authorization_data = new_auth_data;
 
-    krb5_generate_random_keyblock(context, etype, &et.key);
     et.crealm = tgt->crealm;
     et.cname = tgt->cname;
 	    
@@ -1878,7 +1855,7 @@ tgs_make_reply(krb5_context context,
        etype list, even if we don't want a session key with
        DES3? */
     ret = encode_reply(context, config, 
-		       &rep, &et, &ek, etype, adtkt ? 0 : server->kvno, ekey,
+		       &rep, &et, &ek, etype, adtkt ? 0 : server->entry.kvno, ekey,
 		       0, &tgt->key, e_text, reply);
   out:
     free_TGS_REP(&rep);
@@ -2228,7 +2205,8 @@ tgs_rep2(krb5_context context,
 	PrincipalName *s;
 	Realm r;
 	char *spn = NULL, *cpn = NULL;
-	hdb_entry *server = NULL, *client = NULL;
+	hdb_entry_ex *server = NULL;
+	hdb_entry *client = NULL;
 	int nloop = 0;
 	EncTicketPart adtkt;
 	char opt_str[128];
@@ -2295,7 +2273,7 @@ tgs_rep2(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "TGS-REQ %s from %s for %s", cpn, from, spn);
     server_lookup:
-	ret = _kdc_db_fetch(context, config, sp, HDB_ENT_TYPE_SERVER, &server);
+	ret = _kdc_db_fetch_ex(context, config, sp, HDB_ENT_TYPE_SERVER, &server);
 
 	if(ret){
 	    const char *new_rlm;
@@ -2376,7 +2354,7 @@ tgs_rep2(krb5_context context,
 
 	ret = _kdc_check_flags(context, config, 
 			       client, cpn,
-			       server, spn,
+			       &server->entry, spn,
 			       FALSE);
 	if(ret)
 	    goto out;
@@ -2384,7 +2362,7 @@ tgs_rep2(krb5_context context,
 	if((b->kdc_options.validate || b->kdc_options.renew) && 
 	   !krb5_principal_compare(context, 
 				   krbtgt->principal,
-				   server->principal)){
+				   server->entry.principal)){
 	    kdc_log(context, config, 0, "Inconsistent request.");
 	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
 	    goto out;
@@ -2417,7 +2395,7 @@ tgs_rep2(krb5_context context,
 	free(cpn);
 	    
 	if(server)
-	    _kdc_free_ent(context, server);
+	    _kdc_free_ent_ex(context, server);
 	if(client)
 	    _kdc_free_ent(context, client);
     }

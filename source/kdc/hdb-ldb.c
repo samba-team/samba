@@ -73,12 +73,6 @@ static const char *realm_ref_attrs[] = {
 	NULL
 };
 
-struct hdb_ldb_private {
-	struct ldb_context *samdb;
-	struct ldb_message **msg;
-	struct ldb_message **realm_ref_msg;
-};
-
 static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, KerberosTime default_val)
 {
     const char *tmp;
@@ -177,13 +171,10 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	if (userAccountControl & UF_SMARTCARD_REQUIRED) {
 		flags.require_hwauth = 1;
 	}
-	if (flags.server && (userAccountControl & UF_TRUSTED_FOR_DELEGATION)) {
-		flags.forwardable = 1;
-		flags.proxiable = 1;
-	} else if (flags.client && (userAccountControl & UF_NOT_DELEGATED)) {
-		flags.forwardable = 0;
-		flags.proxiable = 0;
-	} else {
+	if (userAccountControl & UF_TRUSTED_FOR_DELEGATION) {
+		flags.ok_as_delegate = 1;
+	}	
+	if (!(userAccountControl & UF_NOT_DELEGATED)) {
 		flags.forwardable = 1;
 		flags.proxiable = 1;
 	}
@@ -205,6 +196,12 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
+static krb5_error_code hdb_ldb_free_private(krb5_context context, hdb_entry_ex *entry_ex)
+{
+	talloc_free(entry_ex->private);
+	return 0;
+}
+
 /*
  * Construct an hdb_entry from a directory entry.
  */
@@ -213,15 +210,17 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 					 enum hdb_ldb_ent_type ent_type, 
 					 struct ldb_message *msg,
 					 struct ldb_message *realm_ref_msg,
-					 hdb_entry *ent)
+					 hdb_entry_ex *entry_ex)
 {
 	const char *unicodePwd;
-	int userAccountControl;
+	unsigned int userAccountControl;
 	int i;
 	krb5_error_code ret = 0;
 	const char *dnsdomain = ldb_msg_find_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
 
+	struct hdb_ldb_private *private;
+	hdb_entry *ent = &entry_ex->entry;
 
 	memset(ent, 0, sizeof(*ent));
 
@@ -233,7 +232,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 			
-	userAccountControl = ldb_msg_find_int(msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_uint(msg, "userAccountControl", 0);
 	
 	ent->principal = malloc(sizeof(*(ent->principal)));
 	if (ent_type == HDB_LDB_ENT_TYPE_ANY && principal == NULL) {
@@ -279,6 +278,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	if (ent_type == HDB_LDB_ENT_TYPE_KRBTGT) {
 		ent->flags.invalid = 0;
 		ent->flags.server = 1;
+		ent->flags.forwardable = 1;
 	}
 
 	if (lp_parm_bool(-1, "kdc", "require spn for service", True)) {
@@ -399,7 +399,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		} else {
 			ret = krb5_data_alloc (&keyvalue, 16);
 			if (ret) {
-				krb5_set_error_string(context, "malloc: out of memory");
+				krb5_clear_error_string(context);
 				ret = ENOMEM;
 				goto out;
 			}
@@ -409,7 +409,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 			ent->keys.val = malloc(sizeof(ent->keys.val[0]));
 			if (ent->keys.val == NULL) {
 				krb5_data_free(&keyvalue);
-				krb5_set_error_string(context, "malloc: out of memory");
+				krb5_clear_error_string(context);
 				ret = ENOMEM;
 				goto out;
 			}
@@ -425,14 +425,14 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	ent->etypes = malloc(sizeof(*(ent->etypes)));
 	if (ent->etypes == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
+		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	}
 	ent->etypes->len = ent->keys.len;
 	ent->etypes->val = calloc(ent->etypes->len, sizeof(int));
 	if (ent->etypes->val == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
+		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	}
@@ -440,10 +440,27 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		ent->etypes->val[i] = ent->keys.val[i].key.keytype;
 	}
 
+
+	private = talloc(db, struct hdb_ldb_private);
+	if (!private) {
+		ret = ENOMEM;
+		goto out;
+	}
+
+	private->msg = talloc_steal(private, msg);
+	private->realm_ref_msg = talloc_steal(private, realm_ref_msg);
+	private->samdb = (struct ldb_context *)db->hdb_db;
+	
+	entry_ex->private = private;
+	entry_ex->free_private = hdb_ldb_free_private;
+	entry_ex->check_client_access = hdb_ldb_check_client_access;
+	entry_ex->authz_data_tgs_req = hdb_ldb_authz_data_tgs_req;
+	entry_ex->authz_data_as_req = hdb_ldb_authz_data_as_req;
+
 out:
 	if (ret != 0) {
-		/* I don't think this frees ent itself. */
-		hdb_free_entry(context, ent);
+		/* This doesn't free ent itself, that is for the eventual caller to do */
+		hdb_free_entry(context, &entry_ex->entry);
 	}
 
 	return ret;
@@ -618,44 +635,6 @@ static krb5_error_code LDB_rename(krb5_context context, HDB *db, const char *new
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code hdb_ldb_free_private(krb5_context context, hdb_entry_ex *entry_ex)
-{
-	talloc_free(entry_ex->private);
-	return 0;
-}
-
-static krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *entry_ex, 
-						   HostAddresses *addresses)
-{
-	krb5_error_code ret;
-	NTSTATUS nt_status;
-	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->private);
-	struct hdb_ldb_private *private = entry_ex->private;
-	char *name, *workstation = NULL;
-	if (!tmp_ctx) {
-		return ENOMEM;
-	}
-	
-	ret = krb5_unparse_name(context, entry_ex->entry.principal, &name);
-	if (ret != 0) {
-		talloc_free(tmp_ctx);
-	}
-	nt_status = authsam_account_ok(tmp_ctx, 
-				       private->samdb, 
-				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
-				       private->msg,
-				       private->realm_ref_msg,
-				       workstation,
-				       name);
-	free(name);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return KRB5KDC_ERR_POLICY;
-	}
-	return 0;
-}
-
-
 static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flags,
 				    krb5_const_principal principal,
 				    enum hdb_ent_type ent_type,
@@ -703,22 +682,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
-					msg[0], realm_ref_msg[0], &entry_ex->entry);
-
-		if (ret == 0) {
-			struct hdb_ldb_private *private = talloc(db, struct hdb_ldb_private);
-			if (!private) {
-				hdb_free_entry(context, &entry_ex->entry);
-				ret = ENOMEM;
-			}
-			private->msg = talloc_steal(private, msg);
-			private->realm_ref_msg = talloc_steal(private, realm_ref_msg);
-			private->samdb = (struct ldb_context *)db->hdb_db;
-			
-			entry_ex->private = private;
-			entry_ex->free_private = hdb_ldb_free_private;
-			entry_ex->check_client_access = hdb_ldb_check_client_access;
-		}
+					msg[0], realm_ref_msg[0], entry_ex);
 
 		talloc_free(mem_ctx);
 		return ret;
@@ -802,7 +766,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 
 			ret = LDB_message2entry(context, db, mem_ctx, 
 						principal, ldb_ent_type, 
-						msg[0], realm_ref_msg[0], &entry_ex->entry);
+						msg[0], realm_ref_msg[0], entry_ex);
 			talloc_free(mem_ctx);
 			return ret;
 			
@@ -845,7 +809,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 	} else {
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, ldb_ent_type, 
-					msg[0], realm_ref_msg[0], &entry_ex->entry);
+					msg[0], realm_ref_msg[0], entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed\n");	
 		}
@@ -898,6 +862,9 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 	krb5_error_code ret;
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
 	TALLOC_CTX *mem_ctx;
+	hdb_entry_ex entry_ex;
+	memset(&entry_ex, '\0', sizeof(entry_ex));
+
 	if (!priv) {
 		return HDB_ERR_NOENTRY;
 	}
@@ -913,7 +880,13 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					NULL, HDB_LDB_ENT_TYPE_ANY, 
 					priv->msgs[priv->index++], 
-					priv->realm_ref_msgs[0], entry);
+					priv->realm_ref_msgs[0], &entry_ex);
+		if (ret == 0) {
+			if (entry_ex.free_private) {
+				entry_ex.free_private(context, &entry_ex);
+			}
+			*entry = entry_ex.entry;
+		}
 	} else {
 		ret = HDB_ERR_NOENTRY;
 	}

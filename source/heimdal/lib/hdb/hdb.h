@@ -61,14 +61,19 @@ typedef struct hdb_entry_ex {
 	krb5_error_code (*free_private)(krb5_context, struct hdb_entry_ex *);
 	krb5_error_code (*check_client_access)(krb5_context, struct hdb_entry_ex *, HostAddresses *);
 	krb5_error_code (*authz_data_as_req)(krb5_context, struct hdb_entry_ex *, 
-					     AuthorizationData *in, 
+					     METHOD_DATA* pa_data_seq,
+					     time_t authtime,
 					     EncryptionKey *tgtkey,
-					     AuthorizationData *out);
+					     EncryptionKey *sessionkey,
+					     AuthorizationData **out);
 	krb5_error_code (*authz_data_tgs_req)(krb5_context, struct hdb_entry_ex *, 
+					      krb5_principal client, 
 					      AuthorizationData *in, 
+					      time_t authtime,
 					      EncryptionKey *tgtkey,
 					      EncryptionKey *servicekey,
-					      AuthorizationData *out);
+					      EncryptionKey *sessionkey,
+					      AuthorizationData **out);
 } hdb_entry_ex;
 
 typedef struct HDB{

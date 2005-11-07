@@ -891,7 +891,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		/* decode and verify the pac */
 		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, pac_blob,
 						    gensec_gssapi_state->smb_krb5_context->krb5_context,
-						    NULL, keyblock, principal, authtime);
+						    NULL, keyblock, principal, authtime, NULL);
 		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
