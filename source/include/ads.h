@@ -273,14 +273,6 @@ typedef void **ADS_MODLIST;
 #define ENCTYPE_ARCFOUR_HMAC ENCTYPE_ARCFOUR_HMAC_MD5
 #endif
 
-/* The older versions of heimdal that don't have this
-   define don't seem to use it anyway.  I'm told they
-   always use a subkey */
-#ifndef HAVE_AP_OPTS_USE_SUBKEY
-#define AP_OPTS_USE_SUBKEY 0
-#endif
-
-
 #define INSTANCE_TYPE_IS_NC_HEAD	0x00000001
 #define INSTANCE_TYPE_UNINSTANT		0x00000002
 #define INSTANCE_TYPE_WRITE		0x00000004
