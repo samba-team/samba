@@ -57,12 +57,13 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	talloc_steal(mem_ctx, sock2);
 
-	status = socket_listen(sock1, "127.0.0.1", 0, 0, 0);
+	status = socket_listen(sock1, iface_best_ip("127.0.0.1"), 0, 0, 0);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	srv_addr = socket_get_my_addr(sock1, mem_ctx);
-	if (srv_addr == NULL || strcmp(srv_addr, "127.0.0.1") != 0) {
-		printf("Expected server address of 127.0.0.1 but got %s\n", srv_addr);
+	if (srv_addr == NULL || strcmp(srv_addr, iface_best_ip("127.0.0.1")) != 0) {
+		printf("Expected server address of %s but got %s\n",
+			iface_best_ip("127.0.0.1"), srv_addr);
 		return False;
 	}
 
@@ -152,12 +153,13 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	talloc_steal(mem_ctx, sock2);
 
-	status = socket_listen(sock1, "127.0.0.1", 0, 0, 0);
+	status = socket_listen(sock1, iface_best_ip("127.0.0.1"), 0, 0, 0);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	srv_addr = socket_get_my_addr(sock1, mem_ctx);
-	if (srv_addr == NULL || strcmp(srv_addr, "127.0.0.1") != 0) {
-		printf("Expected server address of 127.0.0.1 but got %s\n", srv_addr);
+	if (srv_addr == NULL || strcmp(srv_addr, iface_best_ip("127.0.0.1")) != 0) {
+		printf("Expected server address of %s but got %s\n",
+			iface_best_ip("127.0.0.1"), srv_addr);
 		return False;
 	}
 
