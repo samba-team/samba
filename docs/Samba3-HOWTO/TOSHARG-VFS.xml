@@ -386,6 +386,14 @@ quotasettings:	gid nolimit = no
 			</varlistentry>
 
 			<varlistentry>
+			<term>recycle:touch_mtime</term>
+				<listitem><para>
+<indexterm><primary>recycle:touch</primary></indexterm>
+				Specifies whether a file's last modify date date should be touched when the file is moved to the recycle bin.
+				</para></listitem>
+			</varlistentry>
+
+			<varlistentry>
 			<term>recycle:maxsize</term>
 				<listitem><para>
 <indexterm><primary>recycle:maxsize</primary></indexterm>
