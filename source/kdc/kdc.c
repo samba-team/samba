@@ -101,6 +101,9 @@ static void kdc_send_handler(struct kdc_socket *kdc_socket)
 		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 			break;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_BUFFER_SIZE)) {
+			/* Replace with a krb err, response to big */
+		}
 		
 		DLIST_REMOVE(kdc_socket->send_queue, rep);
 		talloc_free(rep);
@@ -248,6 +251,10 @@ static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 		if (kdcconn->partial_read != 4) return;
 
 		packet_length = RIVAL(kdcconn->partial.data, 0) + 4;
+		
+		if (packet_length & (1 << 31)) {
+			/* return 'KRB_ERR_FIELD_TOOLONG' and terminate */
+		}
 
 		kdcconn->partial.data = talloc_realloc(kdcconn, kdcconn->partial.data, 
 						       uint8_t, packet_length);
