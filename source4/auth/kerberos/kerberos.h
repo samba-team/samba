@@ -137,7 +137,8 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     krb5_keyblock *krbtgt_keyblock,
 			     krb5_keyblock *service_keyblock,
 			     krb5_const_principal client_principal,
-			     time_t tgs_authtime);
+			     time_t tgs_authtime,
+			     krb5_error_code *k5ret);
  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				  struct PAC_LOGON_INFO **logon_info,
 				  DATA_BLOB blob,
@@ -145,7 +146,8 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 				  krb5_keyblock *krbtgt_keyblock,
 				  krb5_keyblock *service_keyblock,
 				  krb5_const_principal client_principal,
-				  time_t tgs_authtime);
+				  time_t tgs_authtime, 
+				  krb5_error_code *k5ret);
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,
