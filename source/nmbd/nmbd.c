@@ -632,7 +632,9 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	else
 		ClientNMB = 0;
   
-	ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0,True);
+	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
+					   3, interpret_addr(lp_socket_address()),
+					   True);
 
 	if ( ClientNMB == -1 )
 		return( False );
