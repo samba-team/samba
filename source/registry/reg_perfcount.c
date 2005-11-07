@@ -1,3 +1,25 @@
+/* 
+ *  Unix SMB/CIFS implementation.
+ *  Virtual Windows Registry Layer
+ *
+ *  Copyright (C) Marcin Krzysztof Porwit    2005,
+ *  Copyright (C) Gerald (Jerry) Carter      2005.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "includes.h"
 
 #undef DBGC_CLASS
@@ -5,21 +27,38 @@
 
 #define PERFCOUNT_MAX_LEN 256
 
+#define NAMES_DB	"names.tdb"
+#define DATA_DB		"data.tdb"
+
+/*********************************************************************
+*********************************************************************/
+
+static char* counters_directory( const char *dbname )
+{
+	static pstring fname;
+	fstring path;
+	
+	if ( !dbname )
+		return NULL;
+	
+	fstr_sprintf( path, "perfmon/%s", dbname );
+	
+	pstrcpy( fname, lock_path( path ) );
+	
+	return fname;
+}
+
+/*********************************************************************
+*********************************************************************/
+
 uint32 reg_perfcount_get_base_index(void)
 {
-	pstring fname;
+	const char *fname = counters_directory( NAMES_DB );
 	TDB_CONTEXT *names;
 	TDB_DATA kbuf, dbuf;
 	char key[] = "1";
 	uint32 retval = 0;
 	char buf[PERFCOUNT_MAX_LEN];
-	const char *counter_dir = lp_counters_dir();
-	
-
-	if ( !*counter_dir ) 
-		return 0;
-
-	pstr_sprintf( fname, "%s/names.tdb", counter_dir );
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
@@ -62,6 +101,9 @@ uint32 reg_perfcount_get_base_index(void)
 	return 0;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 uint32 reg_perfcount_get_last_counter(uint32 base_index)
 {
 	uint32 retval;
@@ -74,6 +116,9 @@ uint32 reg_perfcount_get_last_counter(uint32 base_index)
 	return retval;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 uint32 reg_perfcount_get_last_help(uint32 last_counter)
 {
 	uint32 retval;
@@ -85,6 +130,10 @@ uint32 reg_perfcount_get_last_help(uint32 last_counter)
 
 	return retval;
 }
+
+
+/*********************************************************************
+*********************************************************************/
 
 static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb, 
 					       int keyval,
@@ -145,19 +194,19 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	return buffer_size;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 {
 	char *buf1 = NULL, *buf2 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
-	pstring fname;
+	const char *fname = counters_directory( NAMES_DB );
 	int i;
 
 	if(base_index == 0)
 		return 0;
-
-	pstrcpy(fname, lp_counters_dir());
-	pstrcat(fname, "/names.tdb");
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
@@ -193,19 +242,19 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 	return buffer_size;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 {
 	char *buf1 = NULL, *buf2 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
-	pstring fname;
+	const char *fname = counters_directory( NAMES_DB );
 	int i;
 
 	if(base_index == 0)
 		return 0;
-
-	pstrcpy(fname, lp_counters_dir());
-	pstrcat(fname, "/names.tdb");
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
@@ -243,6 +292,9 @@ uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 	return buffer_size;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static void _reg_perfcount_make_key(TDB_DATA *key,
 				    char *buf,
 				    int buflen,
@@ -261,6 +313,9 @@ static void _reg_perfcount_make_key(TDB_DATA *key,
 	return;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_isparent(TDB_DATA data)
 {
 	if(data.dsize > 0)
@@ -273,6 +328,9 @@ static BOOL _reg_perfcount_isparent(TDB_DATA data)
 	return False;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_ischild(TDB_DATA data)
 {
 	if(data.dsize > 0)
@@ -284,6 +342,9 @@ static BOOL _reg_perfcount_ischild(TDB_DATA data)
 	}
 	return False;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 {
@@ -300,6 +361,9 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 	memcpy(buf, data.dptr, data.dsize);
 	return (uint32)atoi(buf);
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static BOOL _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 				      prs_struct *ps,
@@ -341,15 +405,14 @@ static BOOL _reg_perfcount_add_object(PERF_DATA_BLOCK *block,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 BOOL _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 {
 	TDB_CONTEXT *counters;
- 
-	pstring fname;
+	const char *fname = counters_directory( DATA_DB );
     
-	pstrcpy(fname, lp_counters_dir());
-	pstrcat(fname, "/data.tdb");
-
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if(counters == NULL)
@@ -365,6 +428,9 @@ BOOL _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static uint32 _reg_perfcount_get_size_field(uint32 CounterType)
 {
 	uint32 retval;
@@ -378,6 +444,9 @@ static uint32 _reg_perfcount_get_size_field(uint32 CounterType)
 
 	return retval;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static uint32 _reg_perfcount_compute_scale(long long int data)
 {
@@ -397,6 +466,9 @@ static uint32 _reg_perfcount_compute_scale(long long int data)
 
 	return (uint32)scale;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 					    prs_struct *ps,
@@ -504,6 +576,9 @@ static BOOL _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind)
 {
 	int i;
@@ -520,6 +595,9 @@ PERF_OBJECT_TYPE *_reg_perfcount_find_obj(PERF_DATA_BLOCK *block, int objind)
 
 	return obj;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 				       prs_struct *ps,
@@ -581,6 +659,9 @@ static BOOL _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 
 	return True;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 				      prs_struct *ps,
@@ -662,6 +743,9 @@ BOOL _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 BOOL _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
 				 prs_struct *ps,
 				 int instInd,
@@ -688,6 +772,9 @@ BOOL _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
     
 	return True;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 					  prs_struct *ps,
@@ -728,6 +815,9 @@ static int _reg_perfcount_assemble_global(PERF_DATA_BLOCK *block,
 	return retval;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_get_64(unsigned long long *retval,
 				  TDB_CONTEXT *tdb,
 				  int key_part1,
@@ -754,18 +844,16 @@ static BOOL _reg_perfcount_get_64(unsigned long long *retval,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 						TDB_CONTEXT *names)
 {
 	unsigned long long PerfFreq, PerfTime, PerfTime100nSec;
 	TDB_CONTEXT *counters;
-	BOOL status;
-	pstring fname;
-    
-	status = False;
-    
-	pstrcpy(fname, lp_counters_dir());
-	pstrcat(fname, "/data.tdb");
+	BOOL status = False;
+	const char *fname = counters_directory( DATA_DB );
     
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
     
@@ -803,6 +891,9 @@ static BOOL _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static void _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block, prs_struct *ps, TDB_CONTEXT *names)
 {
 	wpstring temp;
@@ -838,6 +929,9 @@ static void _reg_perfcount_init_data_block(PERF_DATA_BLOCK *block, prs_struct *p
 
 	return;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_struct *ps)
 {
@@ -923,20 +1017,20 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 
 	return block->TotalByteLength;
 }
-    
+
+/*********************************************************************
+*********************************************************************/
+
 uint32 reg_perfcount_get_perf_data_block(uint32 base_index, 
 					 prs_struct *ps, 
 					 PERF_DATA_BLOCK *block,
 					 char *object_ids)
 {
 	uint32 buffer_size = 0, last_counter;
-	pstring fname;
+	const char *fname = counters_directory( NAMES_DB );
 	TDB_CONTEXT *names;
 	int retval;
-
-	pstrcpy(fname, lp_counters_dir());
-	pstrcat(fname, "/names.tdb");
-
+	
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if(names == NULL)
@@ -965,6 +1059,9 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 
 	return buffer_size + block->HeaderLength;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static BOOL _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
 {
@@ -1017,6 +1114,9 @@ static BOOL _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BL
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_marshall_perf_counters(prs_struct *ps,
 						  PERF_OBJECT_TYPE object,
 						  int depth)
@@ -1058,6 +1158,9 @@ static BOOL _reg_perfcount_marshall_perf_counters(prs_struct *ps,
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_marshall_perf_counter_data(prs_struct *ps, 
 						      PERF_COUNTER_BLOCK counter_data, 
 						      int depth)
@@ -1077,6 +1180,9 @@ static BOOL _reg_perfcount_marshall_perf_counter_data(prs_struct *ps,
 
 	return True;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static BOOL _reg_perfcount_marshall_perf_instances(prs_struct *ps,
 						   PERF_OBJECT_TYPE object, 
@@ -1115,6 +1221,9 @@ static BOOL _reg_perfcount_marshall_perf_instances(prs_struct *ps,
 	
 	return True;
 }
+
+/*********************************************************************
+*********************************************************************/
 
 static BOOL _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK block, int depth)
 {
@@ -1183,6 +1292,9 @@ static BOOL _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK
 	return True;
 }
 
+/*********************************************************************
+*********************************************************************/
+
 static BOOL _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
 {
 	int depth = 0;
@@ -1193,6 +1305,10 @@ static BOOL _reg_perfcount_marshall_hkpd(prs_struct *ps, PERF_DATA_BLOCK block)
 	}
 	return False;
 }
+
+/*********************************************************************
+*********************************************************************/
+
 WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, char *object_ids)
 {
 	/*
