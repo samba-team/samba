@@ -279,6 +279,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		ent->flags.invalid = 0;
 		ent->flags.server = 1;
 		ent->flags.forwardable = 1;
+		ent->flags.ok_as_delegate = 1;
 	}
 
 	if (lp_parm_bool(-1, "kdc", "require spn for service", True)) {
