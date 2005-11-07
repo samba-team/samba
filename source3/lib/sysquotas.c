@@ -67,6 +67,9 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	devno = S.st_dev ;
 
 	fp = setmntent(MOUNTED,"r");
+	if (fp == NULL) {
+		return -1;
+	}
   
 	while ((mnt = getmntent(fp))) {
 		if ( sys_stat(mnt->mnt_dir,&S) == -1 )
