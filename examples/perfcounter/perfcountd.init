@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# This file should have uid root, gid sys and chmod 744
+#
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
+killproc() {            # kill the named process(es)
+        pid=`ps aux | grep $1 | egrep -v '(grep|perfcountd)' | awk '{print $2}'`
+        if [ "$pid" != "" ]; then
+		kill $pid
+	fi
+}
+
+# Start/stop processes 
+
+case "$1" in
+start)
+	/opt/samba/bin/perfcount -d -f /var/lib/samba/perfmon 2> /dev/null
+	if [ $? -ne 0 ]; then
+		echo "Failed!"
+		exit 1
+	fi
+	echo "done!"
+   	;;
+stop)
+   	killproc perfcount
+   	;;
+
+restart)
+   	killproc perfcount
+	/opt/samba/bin/perfcount -d -f /var/lib/samba/perfmon 2> /dev/null
+        if [ $? -ne 0 ]; then
+                echo "Failed!"
+                exit 1
+        fi
+
+	echo "done!"
+   	;;
+
+*)
+   	echo "Usage: /etc/init.d/samba { start | stop | restart }"
+   	;;
+esac
