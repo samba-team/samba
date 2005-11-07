@@ -99,7 +99,7 @@ static struct record preset[] = {
 
 static struct record *recorded;
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
 		      enum brl_type lock_type,
 		      br_off start, br_off size)
 {
@@ -117,8 +117,8 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 	}
 #endif
 
-	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
-	       (int)pid, (int)dev, (int)ino, 
+	printf("%s   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
+	       procid_str_static(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 
