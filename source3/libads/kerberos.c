@@ -70,6 +70,7 @@ int kerberos_kinit_password(const char *principal,
 	krb5_principal me;
 	krb5_creds my_creds;
 
+	initialize_krb5_error_table();
 	if ((code = krb5_init_context(&ctx)))
 		return code;
 
@@ -155,6 +156,7 @@ int ads_kdestroy(const char *cc_name)
 	krb5_context ctx = NULL;
 	krb5_ccache cc = NULL;
 
+	initialize_krb5_error_table();
 	if ((code = krb5_init_context (&ctx))) {
 		DEBUG(3, ("ads_kdestroy: kdb5_init_context failed: %s\n", 
 			error_message(code)));
