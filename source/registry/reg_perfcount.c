@@ -27,6 +27,7 @@
 
 #define PERFCOUNT_MAX_LEN 256
 
+#define PERFCOUNTDIR	"perfmon"
 #define NAMES_DB	"names.tdb"
 #define DATA_DB		"data.tdb"
 
@@ -41,11 +42,26 @@ static char* counters_directory( const char *dbname )
 	if ( !dbname )
 		return NULL;
 	
-	fstr_sprintf( path, "perfmon/%s", dbname );
+	fstr_sprintf( path, "%s/%s", PERFCOUNTDIR, dbname );
 	
 	pstrcpy( fname, lock_path( path ) );
 	
 	return fname;
+}
+
+/*********************************************************************
+*********************************************************************/
+
+void perfcount_init_keys( void )
+{
+	char *p = lock_path(PERFCOUNTDIR);
+
+	/* no registry keys; just create the perfmon directory */
+	
+	if ( !directory_exist( p, NULL ) )
+		mkdir( p, 0755 );
+	
+	return;
 }
 
 /*********************************************************************
