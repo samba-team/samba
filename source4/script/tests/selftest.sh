@@ -82,17 +82,14 @@ rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
 
 cat >$PRIVATEDIR/wins.ldif<<EOF
-dn: name=127.0.0.1,CN=PARTNERS
+dn: name=TORTURE_26,CN=PARTNERS
 objectClass: wreplPartner
-name: 127.0.0.1
-address: 127.0.0.1
-pullRetryInterval: 100
-pullInterval: 200
-type: 0x2
+name: TORTURE_26
+address: 127.0.0.26
+pullInterval: 0
+pushChangeCount: 0
+type: 0x3
 EOF
-
-WREPL_TORTURE_OPTIONS=
-export WREPL_TORTURE_OPTIONS
 
 cat >$CONFFILE<<EOF
 [global]
@@ -106,7 +103,7 @@ cat >$CONFFILE<<EOF
 	setup directory = $SRCDIR/setup
 	js include = $SRCDIR/scripting/libjs
 	name resolve order = bcast
-	interfaces = lo*
+	interfaces = 127.0.0.1/8
 	tls enabled = $TLS_ENABLED
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
@@ -163,12 +160,16 @@ if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
 fi
 
+SOCKET_WRAPPER_DEFAULT_IFACE=1
+export SOCKET_WRAPPER_DEFAULT_IFACE
 smbd_check_or_start
 
 # ensure any one smbtorture call doesn't run too long
-TORTURE_OPTIONS="--maximum-runtime=300 $CONFIGURATION"
+SOCKET_WRAPPER_DEFAULT_IFACE=26
+export SOCKET_WRAPPER_DEFAULT_IFACE
+TORTURE_INTERFACES='127.0.0.26/8,127.0.0.27/8,127.0.0.28/8,127.0.0.29/8,127.0.0.30/8,127.0.0.31/8'
+TORTURE_OPTIONS="--maximum-runtime=300 --option=interfaces=$TORTURE_INTERFACES $CONFIGURATION"
 export TORTURE_OPTIONS
-
 
 START=`date`
 (
