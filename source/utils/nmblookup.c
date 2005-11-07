@@ -100,7 +100,7 @@ static char *node_status_flags(TALLOC_CTX *mem_ctx, uint16_t flags)
 }
 
 /* do a single node status */
-static void do_node_status(struct nbt_name_socket *nbtsock,
+static BOOL do_node_status(struct nbt_name_socket *nbtsock,
 			   const char *addr)
 {
 	struct nbt_name_status io;
@@ -131,7 +131,10 @@ static void do_node_status(struct nbt_name_socket *nbtsock,
 		       io.out.status.statistics.unit_id[3],
 		       io.out.status.statistics.unit_id[4],
 		       io.out.status.statistics.unit_id[5]);
+		return True;
 	}
+
+	return False;
 }
 
 /* do a single node query */
@@ -171,13 +174,14 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static void process_one(const char *name)
+static BOOL process_one(const char *name)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
 	char *node_name, *p;
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status = NT_STATUS_OK;
+	BOOL ret = True;
 
 	if (!options.case_sensitive) {
 		name = strupper_talloc(tmp_ctx, name);
@@ -205,14 +209,15 @@ static void process_one(const char *name)
 		status = socket_listen(nbtsock->sock, "0.0.0.0", NBT_NAME_SERVICE_PORT, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to bind to local port 137 - %s\n", nt_errstr(status));
-			return;
+			talloc_free(tmp_ctx);
+			return False;
 		}
 	}
 
 	if (options.lookup_by_ip) {
-		do_node_status(nbtsock, name);
+		ret = do_node_status(nbtsock, name);
 		talloc_free(tmp_ctx);
-		return;
+		return ret;
 	}
 
 	if (options.broadcast_address) {
@@ -230,16 +235,19 @@ static void process_one(const char *name)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Lookup failed - %s\n", nt_errstr(status));
+		ret = False;
 	}
 
 	talloc_free(tmp_ctx);
- }
+	return ret;
+}
 
 /*
   main program
 */
 int main(int argc,char *argv[])
 {
+	BOOL ret = True;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -288,10 +296,14 @@ int main(int argc,char *argv[])
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		process_one(name);
+		ret &= process_one(name);
 	}
 
 	poptFreeContext(pc);
+
+	if (!ret) {
+		return 1;
+	}
 
 	return 0;
 }
