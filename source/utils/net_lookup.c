@@ -186,6 +186,7 @@ static int net_lookup_kdc(int argc, const char **argv)
 	krb5_data realm;
 	char **realms;
 
+	initialize_krb5_error_table();
 	rc = krb5_init_context(&ctx);
 	if (rc) {
 		DEBUG(1,("krb5_init_context failed (%s)\n", 
