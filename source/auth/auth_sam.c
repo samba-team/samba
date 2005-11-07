@@ -151,8 +151,8 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    struct ldb_context *sam_ctx,
 			    uint32_t logon_parameters,
-			    struct ldb_message **msgs,
-			    struct ldb_message **msgs_domain_ref,
+			    struct ldb_message *msg,
+			    struct ldb_message *msg_domain_ref,
 			    const char *logon_workstation,
 			    const char *name_for_logs)
 {
@@ -162,20 +162,20 @@ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	NTTIME must_change_time;
 	NTTIME last_set_time;
 
-	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, msgs_domain_ref[0], "nCName", ldb_dn_new(mem_ctx));
+	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx));
 
 	NTTIME now;
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
-	acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
+	acct_flags = samdb_result_acct_flags(msg, "userAccountControl");
 	
-	acct_expiry = samdb_result_nttime(msgs[0], "accountExpires", 0);
+	acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
 	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
-							      domain_dn, msgs[0], 
+							      domain_dn, msg, 
 							      "pwdLastSet");
-	last_set_time = samdb_result_nttime(msgs[0], "pwdLastSet", 0);
+	last_set_time = samdb_result_nttime(msg, "pwdLastSet", 0);
 
-	workstation_list = samdb_result_string(msgs[0], "userWorkstations", NULL);
+	workstation_list = samdb_result_string(msg, "userWorkstations", NULL);
 
 	/* Quit if the account was disabled. */
 	if (acct_flags & ACB_DISABLED) {
@@ -412,17 +412,17 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 
 	nt_status = authsam_account_ok(mem_ctx, sam_ctx, 
 				       user_info->logon_parameters,
-				       msgs,
-				       msgs_domain_ref,
+				       msgs[0],
+				       msgs_domain_ref[0],
 				       user_info->workstation_name,
 				       user_info->mapped.account_name);
 
 	return nt_status;
 }
 
-static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
-					 struct ldb_message **msgs,
-					 struct ldb_message **msgs_domain,
+NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
+					 struct ldb_message *msg,
+					 struct ldb_message *msg_domain_ref,
 					 DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
 					 struct auth_serversupplied_info **_server_info)
 {
@@ -443,7 +443,7 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	group_ret = gendb_search(sam_ctx,
 				 tmp_ctx, NULL, &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
-				 ldb_dn_linearize(tmp_ctx, msgs[0]->dn));
+				 ldb_dn_linearize(tmp_ctx, msg->dn));
 	if (group_ret == -1) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -466,13 +466,13 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 
 	talloc_free(tmp_ctx);
 
-	account_sid = samdb_result_dom_sid(server_info, msgs[0], "objectSid");
+	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
 	NT_STATUS_HAVE_NO_MEMORY(account_sid);
 
 	primary_group_sid = dom_sid_dup(server_info, account_sid);
 	NT_STATUS_HAVE_NO_MEMORY(primary_group_sid);
 
-	rid = samdb_result_uint(msgs[0], "primaryGroupID", ~0);
+	rid = samdb_result_uint(msg, "primaryGroupID", ~0);
 	if (rid == ~0) {
 		if (group_ret > 0) {
 			primary_group_sid = groupSIDs[0];
@@ -489,49 +489,49 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	server_info->n_domain_groups = group_ret;
 	server_info->domain_groups = groupSIDs;
 
-	server_info->account_name = talloc_steal(server_info, samdb_result_string(msgs[0], "sAMAccountName", NULL));
+	server_info->account_name = talloc_steal(server_info, samdb_result_string(msg, "sAMAccountName", NULL));
 
-	server_info->domain_name = talloc_steal(server_info, samdb_result_string(msgs_domain[0], "nETBIOSName", NULL));
+	server_info->domain_name = talloc_steal(server_info, samdb_result_string(msg_domain_ref, "nETBIOSName", NULL));
 
-	str = samdb_result_string(msgs[0], "displayName", "");
+	str = samdb_result_string(msg, "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->full_name);
 
-	str = samdb_result_string(msgs[0], "scriptPath", "");
+	str = samdb_result_string(msg, "scriptPath", "");
 	server_info->logon_script = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
 
-	str = samdb_result_string(msgs[0], "profilePath", "");
+	str = samdb_result_string(msg, "profilePath", "");
 	server_info->profile_path = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
 
-	str = samdb_result_string(msgs[0], "homeDirectory", "");
+	str = samdb_result_string(msg, "homeDirectory", "");
 	server_info->home_directory = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
 
-	str = samdb_result_string(msgs[0], "homeDrive", "");
+	str = samdb_result_string(msg, "homeDrive", "");
 	server_info->home_drive = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
 
 	server_info->logon_server = talloc_strdup(server_info, lp_netbios_name());
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
 
-	server_info->last_logon = samdb_result_nttime(msgs[0], "lastLogon", 0);
-	server_info->last_logoff = samdb_result_nttime(msgs[0], "lastLogoff", 0);
-	server_info->acct_expiry = samdb_result_nttime(msgs[0], "accountExpires", 0);
-	server_info->last_password_change = samdb_result_nttime(msgs[0], "pwdLastSet", 0);
+	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
+	server_info->last_logoff = samdb_result_nttime(msg, "lastLogoff", 0);
+	server_info->acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
+	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
 
-	ncname = samdb_result_dn(mem_ctx, msgs_domain[0], "nCName", ldb_dn_new(mem_ctx));
+	ncname = samdb_result_dn(mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx));
 
 	server_info->allow_password_change = samdb_result_allow_password_change(sam_ctx, mem_ctx, 
-							ncname, msgs[0], "pwdLastSet");
+							ncname, msg, "pwdLastSet");
 	server_info->force_password_change = samdb_result_force_password_change(sam_ctx, mem_ctx, 
-							ncname, msgs[0], "pwdLastSet");
+							ncname, msg, "pwdLastSet");
 
-	server_info->logon_count = samdb_result_uint(msgs[0], "logonCount", 0);
-	server_info->bad_password_count = samdb_result_uint(msgs[0], "badPwdCount", 0);
+	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
+	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount", 0);
 
-	server_info->acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
+	server_info->acct_flags = samdb_result_acct_flags(msg, "userAccountControl");
 
 	server_info->user_session_key = user_sess_key;
 	server_info->lm_session_key = lm_sess_key;
@@ -614,7 +614,7 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principa
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs, msgs_domain_ref,
+	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs[0], msgs_domain_ref[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -654,7 +654,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 					 &user_sess_key, &lm_sess_key);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs, domain_ref_msgs,
+	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs[0], domain_ref_msgs[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);

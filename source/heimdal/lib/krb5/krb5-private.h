@@ -399,4 +399,12 @@ _krb5_xunlock (
 	krb5_context /*context*/,
 	int /*fd*/);
 
+int
+_krb5_find_type_in_ad(krb5_context context,
+		      int type, 
+		      krb5_data *data,
+		      int *found,
+		      krb5_keyblock *sessionkey,
+		      const AuthorizationData *ad);
+
 #endif /* __krb5_private_h__ */
