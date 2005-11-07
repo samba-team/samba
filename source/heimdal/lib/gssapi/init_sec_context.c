@@ -407,20 +407,24 @@ gsskrb5_initiator_start
 		ap_options = 0;
 
 		/* 
-		 * If the realm policy approves a delegation, lets check local
-		 * policy if the credentials should be delegated, defafult to
-		 * false.
+		 * The KDC may have issued us a service ticket marked NOT
+		 * ok-as-delegate.  We may still wish to force the matter, and to
+		 * allow this we check a per-realm gssapi [appdefaults] config
+		 * option.  If ok-as-delegate in the config file is set to TRUE
+		 * (default FALSE) and our caller has so requested, we will still
+		 * attempt to forward the ticket.
+		 *
+		 * Otherwise, strip the GSS_C_DELEG_FLAG (so we don't attempt a
+		 * delegation)
 		 */
-		if (cred->flags.b.ok_as_delegate) {
-			krb5_boolean delegate = FALSE;
+		if (!cred->flags.b.ok_as_delegate) {
+			krb5_boolean delegate;
 			
-			_gss_check_compat(NULL, target_name, "ok-as-delegate",
-					  &delegate, TRUE);
 			krb5_appdefault_boolean(gssapi_krb5_context,
 						"gssapi", target_name->realm,
-						"ok-as-delegate", delegate, &delegate);
-			if (delegate)
-				req_flags |= GSS_C_DELEG_FLAG;
+						"ok-as-delegate", FALSE, &delegate);
+			if (!delegate)
+				req_flags &= ~GSS_C_DELEG_FLAG;
 		}
 
 		if (req_flags & GSS_C_DELEG_FLAG) {
