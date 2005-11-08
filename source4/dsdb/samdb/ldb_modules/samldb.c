@@ -34,19 +34,12 @@
 
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 #define SAM_ACCOUNT_NAME_BASE "$000000-000000000000"
-
-static int samldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-				enum ldb_scope scope, struct ldb_parse_tree *tree,
-				const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_search\n");
-	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
-}
 
 /*
   allocate a new id, attempting to do it atomically
@@ -56,7 +49,7 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 				   const struct ldb_dn *dn, uint32_t *id)
 {
 	const char * const attrs[2] = { "nextRid", NULL };
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	struct ldb_message msg;
 	int ret;
 	const char *str;
@@ -64,11 +57,11 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	struct ldb_message_element els[2];
 
 	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, "nextRid=*", attrs, &res);
-	if (ret != 1) {
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		if (res) talloc_free(res);
 		return -1;
 	}
-	str = ldb_msg_find_string(res[0], "nextRid", NULL);
+	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
 	if (str == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "attribute nextRid not found in %s\n", ldb_dn_linearize(res, dn));
 		talloc_free(res);
@@ -133,7 +126,7 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
 {
 	TALLOC_CTX *local_ctx;
 	struct ldb_dn *sdn;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	int ret = 0;
 
 	local_ctx = talloc_named(mem_ctx, 0, "samldb_search_domain memory conext");
@@ -144,12 +137,12 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
 		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, "objectClass=domain", NULL, &res);
 		talloc_free(res);
 
-		if (ret == 1)
+		if (ret == LDB_SUCCESS && res->count == 1)
 			break;
 
 	} while ((sdn = ldb_dn_get_parent(local_ctx, sdn)));
 
-	if (ret != 1) {
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(local_ctx);
 		return NULL;
 	}
@@ -168,7 +161,7 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 					  TALLOC_CTX *mem_ctx, const struct ldb_dn *obj_dn)
 {
 	const char * const attrs[2] = { "objectSid", NULL };
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	const struct ldb_dn *dom_dn;
 	uint32_t rid;
 	int ret;
@@ -191,13 +184,13 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 	/* find the domain sid */
 
 	ret = ldb_search(module->ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
-	if (ret != 1) {
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
 		talloc_free(res);
 		return NULL;
 	}
 
-	dom_sid = samdb_result_dom_sid(res, res[0], "objectSid");
+	dom_sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
 	if (dom_sid == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
 		talloc_free(res);
@@ -290,17 +283,18 @@ static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_m
 
 static int samldb_copy_template(struct ldb_module *module, struct ldb_message *msg, const char *filter)
 {
-	struct ldb_message **res, *t;
+	struct ldb_result *res;
+	struct ldb_message *t;
 	int ret, i, j;
 	
 
 	/* pull the template record */
 	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
-	if (ret != 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb: ERROR: template '%s' matched %d records\n", filter, ret);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb: ERROR: template '%s' matched too many records\n", filter);
 		return -1;
 	}
-	t = res[0];
+	t = res->msgs[0];
 
 	for (i = 0; i < t->num_elements; i++) {
 		struct ldb_message_element *el = &t->elements[i];
@@ -515,8 +509,9 @@ static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ld
 }
 
 /* add_record */
-static int samldb_add_record(struct ldb_module *module, const struct ldb_message *msg)
+static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_message *msg2 = NULL;
 	int ret;
 
@@ -524,7 +519,7 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 
 	
 	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* is user or computer?  add all relevant missing objects */
@@ -541,31 +536,14 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 	}
 
 	if (msg2) {
-		ret = ldb_next_add_record(module, msg2);
+		req->op.add.message = msg2;
+		ret = ldb_next_request(module, req);
+		req->op.add.message = msg;
 	} else {
-		ret = ldb_next_add_record(module, msg);
+		ret = ldb_next_request(module, req);
 	}
 
 	return ret;
-}
-
-/* modify_record: change modifyTimestamp as well */
-static int samldb_modify_record(struct ldb_module *module, const struct ldb_message *msg)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_modify_record\n");
-	return ldb_next_modify_record(module, msg);
-}
-
-static int samldb_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_delete_record\n");
-	return ldb_next_delete_record(module, dn);
-}
-
-static int samldb_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_rename_record\n");
-	return ldb_next_rename_record(module, olddn, newdn);
 }
 
 static int samldb_destructor(void *module_ctx)
@@ -575,13 +553,22 @@ static int samldb_destructor(void *module_ctx)
 	return 0;
 }
 
+static int samldb_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_ADD:
+		return samldb_add(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
 static const struct ldb_module_ops samldb_ops = {
 	.name          = "samldb",
-	.search_bytree = samldb_search_bytree,
-	.add_record    = samldb_add_record,
-	.modify_record = samldb_modify_record,
-	.delete_record = samldb_delete_record,
-	.rename_record = samldb_rename_record
+	.request       = samldb_request
 };
 
 

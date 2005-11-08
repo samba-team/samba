@@ -35,6 +35,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "dlinklist.h"
 #include <sys/types.h> 
@@ -153,7 +154,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
 		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
-		struct ldb_message **msg = NULL;
+		struct ldb_result *res = NULL;
 		struct ldb_dn *mods;
 
 		mods = ldb_dn_explode(ldb, "@MODULES");
@@ -161,27 +162,27 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			return -1;
 		}
 
-		ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &msg);
+		ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &res);
 		talloc_free(mods);
-		if (ret == 0 || (ret == 1 && msg[0]->num_elements == 0)) {
+		if (ret == LDB_SUCCESS && (res->count == 0 || res->msgs[0]->num_elements == 0)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
-			if (ret < 0) {
+			if (ret != LDB_SUCCESS) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for modules, bailing out\n", ldb_errstring(ldb));
 				return -1;
 			}
-			if (ret > 1) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", ret);
-				talloc_free(msg);
+			if (res->count > 1) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", res->count);
+				talloc_free(res);
 				return -1;
 			}
 
 			modules = ldb_modules_list_from_string(ldb, 
-							       (const char *)msg[0]->elements[0].values[0].data);
+							       (const char *)res->msgs[0]->elements[0].values[0].data);
 
 		}
 
-		talloc_free(msg);
+		talloc_free(res);
 	}
 
 	if (modules == NULL) {
@@ -228,58 +229,10 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 /*
    helper functions to call the next module in chain
 */
-int ldb_next_search_bytree(struct ldb_module *module, 
-			   const struct ldb_dn *base,
-			   enum ldb_scope scope,
-			   struct ldb_parse_tree *tree,
-			   const char * const *attrs, struct ldb_message ***res)
+int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 {
-	FIND_OP(module, search_bytree);
-	return module->ops->search_bytree(module, base, scope, tree, attrs, res);
-}
-
-int ldb_next_search(struct ldb_module *module, 
-		    const struct ldb_dn *base,
-		    enum ldb_scope scope,
-		    const char *expression,
-		    const char * const *attrs, struct ldb_message ***res)
-{
-	struct ldb_parse_tree *tree;
-	int ret;
-	FIND_OP(module, search_bytree);
-	tree = ldb_parse_tree(module, expression);
-	if (tree == NULL) {
-		ldb_set_errstring(module, talloc_strdup(module, "Unable to parse search expression"));
-		return -1;
-	}
-	ret = module->ops->search_bytree(module, base, scope, tree, attrs, res);
-	talloc_free(tree);
-	return ret;
-}
-
-
-int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
-{
-	FIND_OP(module, add_record);
-	return module->ops->add_record(module, message);
-}
-
-int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message)
-{
-	FIND_OP(module, modify_record);
-	return module->ops->modify_record(module, message);
-}
-
-int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	FIND_OP(module, delete_record);
-	return module->ops->delete_record(module, dn);
-}
-
-int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	FIND_OP(module, rename_record);
-	return module->ops->rename_record(module, olddn, newdn);
+	FIND_OP(module, request);
+	return module->ops->request(module, request);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)

@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/tools/cmdline.h"
 
@@ -71,10 +72,10 @@ static int do_search(struct ldb_context *ldb,
 		     const char * const *attrs)
 {
 	int ret, i;
-	struct ldb_message **msgs;
+	struct ldb_result *result = NULL;
 
-	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
-	if (ret == -1) {
+	ret = ldb_search(ldb, basedn, scope, expression, attrs, &result);
+	if (ret != LDB_SUCCESS) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		return -1;
 	}
@@ -83,16 +84,16 @@ static int do_search(struct ldb_context *ldb,
 
 	ldbsearch_ldb = ldb;
 	if (sort_attribs) {
-		qsort(msgs, ret, sizeof(struct ldb_message *),
+		qsort(result->msgs, ret, sizeof(struct ldb_message *),
 				(comparison_fn_t)do_compare_msg);
 	}
 
-	for (i=0;i<ret;i++) {
+	for (i = 0; i < result->count; i++) {
 		struct ldb_ldif ldif;
 		printf("# record %d\n", i+1);
 
 		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = msgs[i];
+		ldif.msg = result->msgs[i];
 
                 if (sort_attribs) {
                         /*
@@ -106,8 +107,8 @@ static int do_search(struct ldb_context *ldb,
 		ldb_ldif_write_file(ldb, stdout, &ldif);
 	}
 
-	if (ret > 0) {
-		ret = talloc_free(msgs);
+	if (result) {
+		ret = talloc_free(result);
 		if (ret == -1) {
 			fprintf(stderr, "talloc_free failed\n");
 			exit(1);

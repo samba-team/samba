@@ -663,6 +663,46 @@ char *strrchr_m(const char *s, char c)
 	return ret;
 }
 
+BOOL strhaslower(const char *string)
+{
+	while (*string) {
+		size_t c_size;
+		codepoint_t s;
+		codepoint_t t;
+
+		s = next_codepoint(string, &c_size);
+		string += c_size;
+
+		t = tolower_w(s);
+
+		if (s == t) { /* the source was alreay lower case */
+			return True; /* that means it has lower case chars */
+		}
+	}
+
+	return False;
+} 
+
+BOOL strhasupper(const char *string)
+{
+	while (*string) {
+		size_t c_size;
+		codepoint_t s;
+		codepoint_t t;
+
+		s = next_codepoint(string, &c_size);
+		string += c_size;
+
+		t = toupper_w(s);
+
+		if (s == t) { /* the source was alreay upper case */
+			return True; /* that means it has upper case chars */
+		}
+	}
+
+	return False;
+} 
+
 /**
  Convert a string to lower case, allocated with talloc
 **/

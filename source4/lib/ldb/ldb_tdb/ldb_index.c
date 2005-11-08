@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
@@ -629,10 +630,9 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 			    const struct ldb_dn *base,
 			    enum ldb_scope scope,
 			    const struct dn_list *dn_list, 
-			    const char * const attrs[], struct ldb_message ***res)
+			    const char * const attrs[], struct ldb_result *res)
 {
 	unsigned int i;
-	int count = 0;
 
 	for (i = 0; i < dn_list->count; i++) {
 		struct ldb_message *msg;
@@ -641,13 +641,13 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 
 		msg = talloc(module, struct ldb_message);
 		if (msg == NULL) {
-			return -1;
+			return LDB_ERR_OTHER;
 		}
 
 		dn = ldb_dn_explode(msg, dn_list->dn[i]);
 		if (dn == NULL) {
 			talloc_free(msg);
-			return -1;
+			return LDB_ERR_OTHER;
 		}
 
 		ret = ltdb_search_dn1(module, dn, msg);
@@ -661,20 +661,20 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 		if (ret == -1) {
 			/* an internal error */
 			talloc_free(msg);
-			return -1;
+			return LDB_ERR_OTHER;
 		}
 
 		ret = 0;
 		if (ldb_match_msg(module->ldb, msg, tree, base, scope) == 1) {
-			ret = ltdb_add_attr_results(module, msg, attrs, &count, res);
+			ret = ltdb_add_attr_results(module, msg, attrs, &(res->count), &(res->msgs));
 		}
 		talloc_free(msg);
 		if (ret != 0) {
-			return -1;
+			return LDB_ERR_OTHER;
 		}
 	}
 
-	return count;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -686,7 +686,7 @@ int ltdb_search_indexed(struct ldb_module *module,
 			const struct ldb_dn *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
-			const char * const attrs[], struct ldb_message ***res)
+			const char * const attrs[], struct ldb_result **res)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	struct dn_list *dn_list;
@@ -702,6 +702,13 @@ int ltdb_search_indexed(struct ldb_module *module,
 	if (dn_list == NULL) {
 		return -1;
 	}
+
+	*res = talloc(module, struct ldb_result);
+	if (*res == NULL) {
+		return LDB_ERR_OTHER;
+	}
+	(*res)->count = 0;
+	(*res)->msgs = NULL;
 
 	if (scope == LDB_SCOPE_BASE) {
 		/* with BASE searches only one DN can match */
@@ -725,7 +732,7 @@ int ltdb_search_indexed(struct ldb_module *module,
 		/* we've got a candidate list - now filter by the full tree
 		   and extract the needed attributes */
 		ret = ldb_index_filter(module, tree, base, scope, dn_list, 
-				       attrs, res);
+				       attrs, *res);
 	}
 
 	talloc_free(dn_list);

@@ -227,9 +227,10 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	const struct ldb_dn *account_dn;
 	const char *account_dn_str;
 	const char *remote_ldb_url;
-	struct ldb_message **msgs, *msg;
+	struct ldb_result *res;
+	struct ldb_message *msg;
 
-	int rtn;
+	int ret, rtn;
 
 	unsigned int kvno;
 	
@@ -403,9 +404,9 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 
 	/* search for the user's record */
-	rtn = ldb_search(remote_ldb, account_dn, LDB_SCOPE_BASE, 
-			     NULL, attrs, &msgs);
-	if (rtn != 1) {
+	ret = ldb_search(remote_ldb, account_dn, LDB_SCOPE_BASE, 
+			     NULL, attrs, &res);
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		r->out.error_string = talloc_asprintf(r, "ldb_search for %s failed - %s\n",
 						      account_dn_str, ldb_errstring(remote_ldb));
 		talloc_free(tmp_ctx);
@@ -413,7 +414,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 
 	/* If we have a kvno recorded in AD, we need it locally as well */
-	kvno = ldb_msg_find_uint(msgs[0], "msDS-KeyVersionNumber", 0);
+	kvno = ldb_msg_find_uint(res->msgs[0], "msDS-KeyVersionNumber", 0);
 
 	/* Prepare a new message, for the modify */
 	msg = ldb_msg_new(tmp_ctx);
@@ -422,7 +423,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	msg->dn = msgs[0]->dn;
+	msg->dn = res->msgs[0]->dn;
 
 	{
 		int i;
