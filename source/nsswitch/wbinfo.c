@@ -681,6 +681,8 @@ static BOOL wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
+	request.data.auth_crap.logon_parameters = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+
 	fstrcpy(request.data.auth_crap.user, name_user);
 
 	fstrcpy(request.data.auth_crap.domain, 

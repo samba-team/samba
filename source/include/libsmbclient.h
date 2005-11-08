@@ -339,6 +339,11 @@ typedef int (*smbc_remove_cached_srv_fn)(SMBCCTX * c, SMBCSRV *srv);
 typedef int (*smbc_purge_cached_fn)     (SMBCCTX * c);
 
 
+/* close was renamed to close_fn, because close is often a macro.
+ * Allow backward compatability where this is not the case  */
+#ifndef close
+#define close close_fn
+#endif
 
 
 /**@ingroup structure

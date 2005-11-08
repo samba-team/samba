@@ -208,15 +208,18 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 	
 	if (acct_ctrl & ACB_SVRTRUST) {
-		DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", pdb_get_username(sampass)));
-		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+		if (!(user_info->logon_parameters & MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT)) {
+			DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", pdb_get_username(sampass)));
+			return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+		}
 	}
-	
+
 	if (acct_ctrl & ACB_WSTRUST) {
-		DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", pdb_get_username(sampass)));
-		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+		if (!(user_info->logon_parameters & MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT)) {
+			DEBUG(2,("sam_account_ok: Wksta trust account %s denied by server\n", pdb_get_username(sampass)));
+			return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+		}
 	}
-	
 	return NT_STATUS_OK;
 }
 
