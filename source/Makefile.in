@@ -98,6 +98,10 @@ LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
+LIBMSRPC=bin/libmsrpc.a @LIBSMBCLIENT_SHARED@
+LIBMSRPC_MAJOR=0
+LIBMSRPC_MINOR=1
+
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=1
@@ -1523,8 +1527,9 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) .headers.stamp 
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) \
+		$(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBSMBSHAREMODES) \
+		$(EVERYTHING_PROGS) $(LIBMSRPC) .headers.stamp 
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
