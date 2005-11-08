@@ -31,6 +31,12 @@
 	default setting), then neither will <smbconfoption name="domain master"/> be enabled by default.
 	</para>
 
+	<para>
+	When <smbconfoption name="domain logons">Yes</smbconfoption> the default setting for this parameter is
+	Yes, with the result that Samba will be a PDC. If <smbconfoption name="domain master">No</smbconfoption>,
+	Samba will function as a BDC. In general, this parameter should be set to 'No' only on a BDC.
+	</para>
+
 </description>
 <value type="default">auto</value>
 </samba:parameter>
