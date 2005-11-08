@@ -219,9 +219,11 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	krb5_error_code ret = 0;
 	const char *dnsdomain = ldb_msg_find_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
+	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, realm_ref_msg, "nCName", ldb_dn_new(mem_ctx));
 
 	struct hdb_ldb_private *private;
 	hdb_entry *ent = &entry_ex->entry;
+	NTTIME acct_expiry;
 
 	memset(ent, 0, sizeof(*ent));
 
@@ -308,9 +310,37 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	ent->valid_start = NULL;
 
-	ent->valid_end = NULL;
-	ent->pw_end = NULL;
+	acct_expiry = samdb_result_nttime(msg, "accountExpires", -1LL);
+	if (acct_expiry != -1LL && acct_expiry != 0x7FFFFFFFFFFFFFFFLL) {
+		ent->valid_end = malloc(sizeof(*ent->valid_end));
+		if (ent->valid_end == NULL) {
+			ret = ENOMEM;
+			goto out;
+		}
+		*ent->valid_end = nt_time_to_unix(acct_expiry);
+	} else {
+		ent->valid_end = NULL;
+	}
 
+	if ((ent_type != HDB_LDB_ENT_TYPE_KRBTGT) && (!(userAccountControl & UF_DONT_EXPIRE_PASSWD))) {
+		NTTIME must_change_time
+			= samdb_result_force_password_change((struct ldb_context *)db->hdb_db, mem_ctx, 
+							     domain_dn, msg, 
+							     "pwdLastSet");
+		if (must_change_time != 0) {
+			ent->pw_end = malloc(sizeof(*ent->pw_end));
+			if (ent->pw_end == NULL) {
+				ret = ENOMEM;
+				goto out;
+			}
+			*ent->pw_end = nt_time_to_unix(must_change_time);
+		} else {
+			ent->pw_end = NULL;
+		}
+	} else {
+		ent->pw_end = NULL;
+	}
+			
 	ent->max_life = NULL;
 
 	ent->max_renew = NULL;
