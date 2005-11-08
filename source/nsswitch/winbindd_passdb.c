@@ -306,7 +306,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   uint32 *p_num_aliases, uint32 **rids)
 {
 	BOOL result;
-	size_t num_aliases;
+	size_t num_aliases = 0;
 
 	result = pdb_enum_alias_memberships(mem_ctx, &domain->sid,
 					    sids, num_sids, rids, &num_aliases);
