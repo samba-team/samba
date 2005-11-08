@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_ldap/ldb_ldap.h"
 
@@ -176,7 +177,7 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 */
 static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
+			      const char * const *attrs, struct ldb_result **res)
 {
 	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
@@ -211,6 +212,14 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 		break;
 	}
 
+	(*res) = talloc(lldb, struct ldb_result);
+	if (! *res) {
+		errno = ENOMEM;
+		return LDB_ERR_OTHER;
+	}
+	(*res)->count = 0;
+	(*res)->msgs = NULL;
+
 	lldb->last_rc = ldap_search_s(lldb->ldap, search_base, ldap_scope, 
 				      expression, 
 				      discard_const_p(char *, attrs), 
@@ -218,23 +227,24 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	talloc_free(search_base);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
-		return -1;
+		return lldb->last_rc;
 	}
 
 	count = ldap_count_entries(lldb->ldap, ldapres);
 	if (count == -1 || count == 0) {
 		ldap_msgfree(ldapres);
-		return count;
+		return LDB_SUCCESS;
 	}
 
-	(*res) = talloc_array(lldb, struct ldb_message *, count+1);
-	if (! *res) {
+	(*res)->msgs = talloc_array(*res, struct ldb_message *, count+1);
+	if (! (*res)->msgs) {
 		ldap_msgfree(ldapres);
+		talloc_free(*res);
 		errno = ENOMEM;
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
-	(*res)[0] = NULL;
+	(*res)->msgs[0] = NULL;
 
 	msg_count = 0;
 
@@ -251,27 +261,27 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 			break;
 		}
 
-		(*res)[msg_count] = talloc(*res, struct ldb_message);
-		if (!(*res)[msg_count]) {
+		(*res)->msgs[msg_count] = talloc((*res)->msgs, struct ldb_message);
+		if (!(*res)->msgs[msg_count]) {
 			goto failed;
 		}
-		(*res)[msg_count+1] = NULL;
+		(*res)->msgs[msg_count+1] = NULL;
 
 		dn = ldap_get_dn(lldb->ldap, msg);
 		if (!dn) {
 			goto failed;
 		}
 
-		(*res)[msg_count]->dn = ldb_dn_explode((*res)[msg_count], dn);
+		(*res)->msgs[msg_count]->dn = ldb_dn_explode((*res)->msgs[msg_count], dn);
 		ldap_memfree(dn);
-		if (!(*res)[msg_count]->dn) {
+		if (!(*res)->msgs[msg_count]->dn) {
 			goto failed;
 		}
 
 
-		(*res)[msg_count]->num_elements = 0;
-		(*res)[msg_count]->elements = NULL;
-		(*res)[msg_count]->private_data = NULL;
+		(*res)->msgs[msg_count]->num_elements = 0;
+		(*res)->msgs[msg_count]->elements = NULL;
+		(*res)->msgs[msg_count]->private_data = NULL;
 
 		/* loop over all attributes */
 		for (attr=ldap_first_attribute(lldb->ldap, msg, &berptr);
@@ -281,7 +291,7 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 			bval = ldap_get_values_len(lldb->ldap, msg, attr);
 
 			if (bval) {
-				lldb_add_msg_attr(ldb, (*res)[msg_count], attr, bval);
+				lldb_add_msg_attr(ldb, (*res)->msgs[msg_count], attr, bval);
 				ldap_value_free_len(bval);
 			}					  
 			
@@ -294,11 +304,12 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 
 	ldap_msgfree(ldapres);
 
-	return msg_count;
+	(*res)->count = msg_count;
+	return LDB_SUCCESS;
 
 failed:
 	if (*res) talloc_free(*res);
-	return -1;
+	return LDB_ERR_OTHER;
 }
 
 
@@ -470,13 +481,41 @@ static int lldb_del_trans(struct ldb_module *module)
 	return 0;
 }
 
+static int lldb_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return lldb_search_bytree(module,
+					  req->op.search.base,
+					  req->op.search.scope, 
+					  req->op.search.tree, 
+					  req->op.search.attrs, 
+					  req->op.search.res);
+
+	case LDB_REQ_ADD:
+		return lldb_add(module, req->op.add.message);
+
+	case LDB_REQ_MODIFY:
+		return lldb_modify(module, req->op.mod.message);
+
+	case LDB_REQ_DELETE:
+		return lldb_delete(module, req->op.del.dn);
+
+	case LDB_REQ_RENAME:
+		return lldb_rename(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn);
+
+	default:
+		return -1;
+
+	}
+}
+
 static const struct ldb_module_ops lldb_ops = {
 	.name              = "ldap",
-	.search_bytree     = lldb_search_bytree,
-	.add_record        = lldb_add,
-	.modify_record     = lldb_modify,
-	.delete_record     = lldb_delete,
-	.rename_record     = lldb_rename,
+	.request           = lldb_request,
 	.start_transaction = lldb_start_trans,
 	.end_transaction   = lldb_end_trans,
 	.del_transaction   = lldb_del_trans

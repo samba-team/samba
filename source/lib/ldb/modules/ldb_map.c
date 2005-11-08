@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/modules/ldb_map.h"
 
@@ -687,8 +688,10 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 /*
   rename a record
 */
-static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+static int map_rename(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_dn *olddn = req->op.rename.olddn;
+	const struct ldb_dn *newdn = req->op.rename.newdn;
 	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_dn *n_olddn, *n_newdn;
 	int ret;
@@ -699,9 +702,9 @@ static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, con
 	ret = ldb_rename(privdat->mapped_ldb, n_olddn, n_newdn);
 	if (ret != -1) {
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Mapped record renamed");
-		ldb_next_rename_record(module, olddn, newdn);
+		ldb_next_request(module, req);
 	} else {
-		ret = ldb_next_rename_record(module, olddn, newdn);
+		ret = ldb_next_request(module, req);
 	
 		if (ret != -1) {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Fallback record renamed");
@@ -718,8 +721,9 @@ static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, con
 /*
   delete a record
 */
-static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
+static int map_delete(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_dn *dn = req->op.del.dn;
 	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_dn *newdn;
 	int ret;
@@ -730,13 +734,15 @@ static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	if (ret != -1) {
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Mapped record deleted");
 	} else {
-		ret = ldb_next_delete_record(module, dn);
+		ret = ldb_next_request(module, req);
 		if (ret != -1) {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Fallback record deleted");
 		}
 	}
 
-	ldb_next_delete_record(module, newdn);
+	req->op.del.dn = newdn;
+	ret = ldb_next_request(module, req);
+	req->op.del.dn = dn;
 
 	talloc_free(newdn);
 
@@ -744,12 +750,11 @@ static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
 }
 
 /* search fallback database */
-static int map_search_fb(struct ldb_module *module, const struct ldb_dn *base,
-			 enum ldb_scope scope, struct ldb_parse_tree *tree,
-			 const char * const *attrs, struct ldb_message ***res)
+static int map_search_fb(struct ldb_module *module, struct ldb_request *req)
 {
-	int ret;
+	struct ldb_parse_tree *tree = req->op.search.tree;
 	struct ldb_parse_tree t_and, t_not, t_present, *childs[2];
+	int ret;
 	char *ismapped;
 
 	t_present.operation = LDB_OP_PRESENT;
@@ -764,8 +769,10 @@ static int map_search_fb(struct ldb_module *module, const struct ldb_dn *base,
 	t_and.operation = LDB_OP_AND;
 	t_and.u.list.num_elements = 2;
 	t_and.u.list.elements = childs;
-	
-	ret = ldb_next_search_bytree(module, base, scope, &t_and, attrs, res);
+
+	req->op.search.tree = &t_and;
+	ret = ldb_next_request(module, req);
+	req->op.search.tree = tree;
 
 	talloc_free(ismapped);
 
@@ -773,13 +780,17 @@ static int map_search_fb(struct ldb_module *module, const struct ldb_dn *base,
 }
 
 /* Search in the database against which we are mapping */
-static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
-			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
+static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_dn *base = req->op.search.base;
+	enum ldb_scope scope = req->op.search.scope;
+	struct ldb_parse_tree *tree = req->op.search.tree;
+	const char * const *attrs = req->op.search.attrs;
+	struct ldb_result **res = req->op.search.res;
+	struct ldb_request new_req;
 	struct ldb_parse_tree *new_tree;
 	struct ldb_dn *new_base;
-	struct ldb_message **newres;
+	struct ldb_result *newres;
 	const char **newattrs;
 	int mpret, ret;
 	struct ldb_map_context *privdat = map_get_privdat(module);
@@ -801,15 +812,22 @@ static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
 	newattrs = ldb_map_attrs(module, attrs); 
 	new_base = map_local_dn(module, module, base);
 
-	mpret = ldb_search_bytree(privdat->mapped_ldb, new_base, scope, new_tree, newattrs, &newres);
+	memset((char *)&(new_req), 0, sizeof(new_req));
+	new_req.operation = LDB_REQ_SEARCH;
+	new_req.op.search.base = new_base;
+	new_req.op.search.scope = scope;
+	new_req.op.search.tree = new_tree;
+	new_req.op.search.attrs = newattrs;
+	new_req.op.search.res = &newres;
+	mpret = ldb_request(privdat->mapped_ldb, req);
 
 	talloc_free(new_base);
 	talloc_free(new_tree);
 	talloc_free(newattrs);
 
-	if (mpret == -1) {
+	if (mpret != LDB_SUCCESS) {
 		ldb_set_errstring(module, talloc_strdup(module, ldb_errstring(privdat->mapped_ldb)));
-		return -1;
+		return mpret;
 	}
 
 	/*
@@ -817,23 +835,34 @@ static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
 	 - test if (full expression) is now true
 	*/
 
-	*res = talloc_array(module, struct ldb_message *, mpret);
+	*res = talloc(module, struct ldb_result);
+	(*res)->msgs = talloc_array(module, struct ldb_message *, newres->count);
+	(*res)->count = newres->count;
 
 	ret = 0;
 
 	for (i = 0; i < mpret; i++) {
+		struct ldb_request mergereq;
 		struct ldb_message *merged;
-		struct ldb_message **extrares = NULL;
+		struct ldb_result *extrares = NULL;
 		int extraret;
 
 		/* Always get special DN's from the fallback database */
-		if (ldb_dn_is_special(newres[i]->dn))
+		if (ldb_dn_is_special(newres->msgs[i]->dn))
 			continue;
 
-		merged = ldb_map_message_incoming(module, attrs, newres[i]);
+		merged = ldb_map_message_incoming(module, attrs, newres->msgs[i]);
 		
 		/* Merge with additional data from fallback database */
-		extraret = ldb_next_search(module, merged->dn, LDB_SCOPE_BASE, "", NULL, &extrares);
+		memset((char *)&(mergereq), 0, sizeof(mergereq)); /* zero off the request structure */
+		mergereq.operation = LDB_REQ_SEARCH;
+		mergereq.op.search.base = merged->dn;
+		mergereq.op.search.scope = LDB_SCOPE_BASE;
+		mergereq.op.search.tree = ldb_parse_tree(module, "");
+		mergereq.op.search.attrs = NULL;
+		mergereq.op.search.res = &extrares;
+
+		extraret = ldb_next_request(module, &mergereq);
 
 		if (extraret == -1) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error searching for extra data!\n");
@@ -848,13 +877,13 @@ static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
 		if (extraret == 1) {
 			int j;
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN: %s", ldb_dn_linearize(merged, merged->dn));
-			for (j = 0; j < extrares[0]->num_elements; j++) {
-				ldb_msg_add(merged, &(extrares[0]->elements[j]), extrares[0]->elements[j].flags);
+			for (j = 0; j < extrares->msgs[0]->num_elements; j++) {
+				ldb_msg_add(merged, &(extrares->msgs[0]->elements[j]), extrares->msgs[0]->elements[j].flags);
 			}
 		}
 		
 		if (ldb_match_msg(module->ldb, merged, tree, base, scope) != 0) {
-			(*res)[ret] = merged;
+			(*res)->msgs[ret] = merged;
 			ret++;
 		} else {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Discarded merged message because it did not match");
@@ -863,45 +892,51 @@ static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
 
 	talloc_free(newres);
 
-	return ret;
+	(*res)->count = ret;
+	return LDB_SUCCESS;
 }
 
 
 /*
   search for matching records using a ldb_parse_tree
 */
-static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-			     enum ldb_scope scope, struct ldb_parse_tree *tree,
-			     const char * const *attrs, struct ldb_message ***res)
+static int map_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_message **fbres, **mpres = NULL;
-	int i;
-	int ret_fb, ret_mp;
+	const struct ldb_dn *base = req->op.search.base;
+	struct ldb_result **res = req->op.search.res;
+	struct ldb_result *fbres, *mpres = NULL;
+	int i, ret;
 
-	ret_fb = map_search_fb(module, base, scope, tree, attrs, &fbres);
-	if (ret_fb == -1) 
-		return -1;
+	req->op.search.res = &fbres;
+	ret = map_search_fb(module, req);
+	req->op.search.res = res;
+	if (ret != LDB_SUCCESS)
+		return ret;
 
 	/* special dn's are never mapped.. */
 	if (ldb_dn_is_special(base)) {
 		*res = fbres;
-		return ret_fb;
+		return ret;
 	}
 
-	ret_mp = map_search_mp(module, base, scope, tree, attrs, &mpres);
-	if (ret_mp == -1) {
-		return -1;
+	req->op.search.res = &mpres;
+	ret = map_search_mp(module, req);
+	req->op.search.res = res;
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	/* Merge results */
-	*res = talloc_array(module, struct ldb_message *, ret_fb + ret_mp);
+	*res = talloc(module, struct ldb_result);
+	(*res)->msgs = talloc_array(*res, struct ldb_message *, fbres->count + mpres->count);
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Merging %d mapped and %d fallback messages", ret_mp, ret_fb);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Merging %d mapped and %d fallback messages", mpres->count, fbres->count);
 
-	for (i = 0; i < ret_fb; i++) (*res)[i] = fbres[i];
-	for (i = 0; i < ret_mp; i++) (*res)[ret_fb+i] = mpres[i];
+	for (i = 0; i < fbres->count; i++) (*res)->msgs[i] = fbres->msgs[i];
+	for (i = 0; i < mpres->count; i++) (*res)->msgs[fbres->count + i] = mpres->msgs[i];
 
-	return ret_fb + ret_mp;
+	(*res)->count = fbres->count + mpres->count;
+	return LDB_SUCCESS;
 }
 
 static int msg_contains_objectclass(const struct ldb_message *msg, const char *name)
@@ -921,19 +956,20 @@ static int msg_contains_objectclass(const struct ldb_message *msg, const char *n
 /*
   add a record
 */
-static int map_add(struct ldb_module *module, const struct ldb_message *msg)
+static int map_add(struct ldb_module *module, struct ldb_request *req)
 {
-	int ret;
+	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_message *fb, *mp;
 	struct ldb_message_element *ocs;
+	int ret;
 	int i;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_map_add");
 
 	if (ldb_dn_is_special(msg->dn)) {
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_map_add: Added fallback record");
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	mp = talloc_zero(module, struct ldb_message);
@@ -981,7 +1017,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 	ocs = ldb_msg_find_element(mp, "objectClass");
 	if (ocs->num_values == 1) { /* Only top */
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_map_add: Added fallback record");
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 	
 	/*
@@ -1098,7 +1134,10 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_map_add: Added mapped record");
 
 	ldb_msg_add_string(fb, "isMapped", "TRUE");
-	ret = ldb_next_add_record(module, fb);
+
+	req->op.add.message = fb;
+	ret = ldb_next_request(module, req);
+	req->op.add.message = msg;
 	if (ret == -1) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Adding fallback record failed: %s", ldb_errstring(module->ldb));
 		return -1;
@@ -1114,8 +1153,9 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 /*
   modify a record
 */
-static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
+static int map_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.mod.message;
 	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_message *fb, *mp;
 	struct ldb_message_element *elm;
@@ -1125,7 +1165,7 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_map_modify");
 
 	if (ldb_dn_is_special(msg->dn))
-		return ldb_next_modify_record(module, msg);
+		return ldb_next_request(module, req);
 
 	fb = talloc_zero(module, struct ldb_message);
 	fb->dn = talloc_reference(fb, msg->dn);
@@ -1217,11 +1257,16 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	if (fb->num_elements > 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Modifying fallback record with %d elements", fb->num_elements);
-		fb_ret = ldb_next_modify_record(module, fb);
+		req->op.mod.message = fb;
+		fb_ret = ldb_next_request(module, req);
 		if (fb_ret == -1) {
 			ldb_msg_add_string(fb, "isMapped", "TRUE");
-			fb_ret = ldb_next_add_record(module, fb);
+			req->operation = LDB_REQ_ADD;
+			req->op.add.message = fb;
+			fb_ret = ldb_next_request(module, req);
+			req->operation = LDB_REQ_MODIFY;
 		}
+		req->op.mod.message = msg;
 	} else fb_ret = 0;
 	talloc_free(fb);
 
@@ -1234,19 +1279,42 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 	return (mp_ret == -1 || fb_ret == -1)?-1:0;
 }
 
+
+static int map_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return map_search_bytree(module, req);
+
+	case LDB_REQ_ADD:
+		return map_add(module, req);
+
+	case LDB_REQ_MODIFY:
+		return map_modify(module, req);
+
+	case LDB_REQ_DELETE:
+		return map_delete(module, req);
+
+	case LDB_REQ_RENAME:
+		return map_rename(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
+
 static const struct ldb_module_ops map_ops = {
 	.name              = "map",
-	.search_bytree     = map_search_bytree,
-	.add_record        = map_add,
-	.modify_record     = map_modify,
-	.delete_record     = map_delete,
-	.rename_record     = map_rename
+	.request           = map_request
 };
 
 static char *map_find_url(struct ldb_context *ldb, const char *name)
 {
 	const char * const attrs[] = { "@MAP_URL" , NULL};
-	struct ldb_message **msg = NULL;
+	struct ldb_result *result = NULL;
 	struct ldb_dn *mods;
 	char *url;
 	int ret;
@@ -1257,16 +1325,16 @@ static char *map_find_url(struct ldb_context *ldb, const char *name)
 		return NULL;
 	}
 
-	ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &msg);
+	ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &result);
 	talloc_free(mods);
-	if (ret < 1) {
+	if (ret != LDB_SUCCESS || result->count == 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Not enough results found looking for @MAP");
 		return NULL;
 	}
 
-	url = talloc_strdup(ldb, ldb_msg_find_string(msg[0], "@MAP_URL", NULL));
+	url = talloc_strdup(ldb, ldb_msg_find_string(result->msgs[0], "@MAP_URL", NULL));
 
-	talloc_free(msg);
+	talloc_free(result);
 
 	return url;
 }

@@ -56,12 +56,7 @@ struct ldb_module {
 */
 struct ldb_module_ops {
 	const char *name;
-	int (*search_bytree)(struct ldb_module *, const struct ldb_dn *, enum ldb_scope,
-			     struct ldb_parse_tree *, const char * const [], struct ldb_message ***);
-	int (*add_record)(struct ldb_module *, const struct ldb_message *);
-	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
-	int (*delete_record)(struct ldb_module *, const struct ldb_dn *);
-	int (*rename_record)(struct ldb_module *, const struct ldb_dn *, const struct ldb_dn *);
+	int (*request)(struct ldb_module *, struct ldb_request *);
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
@@ -123,20 +118,7 @@ typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, 
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
-int ldb_next_search(struct ldb_module *module, 
-		    const struct ldb_dn *base,
-		    enum ldb_scope scope,
-		    const char *expression,
-		    const char * const *attrs, struct ldb_message ***res);
-int ldb_next_search_bytree(struct ldb_module *module, 
-			   const struct ldb_dn *base,
-			   enum ldb_scope scope,
-			   struct ldb_parse_tree *tree,
-			   const char * const *attrs, struct ldb_message ***res);
-int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message);
-int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message);
-int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn);
-int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
+int ldb_next_request(struct ldb_module *module, struct ldb_request *request);
 int ldb_next_start_trans(struct ldb_module *module);
 int ldb_next_end_trans(struct ldb_module *module);
 int ldb_next_del_trans(struct ldb_module *module);

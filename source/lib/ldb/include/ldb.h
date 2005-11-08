@@ -253,6 +253,65 @@ struct ldb_attrib_handler {
 #define LDB_SYNTAX_UTC_TIME             "1.3.6.1.4.1.1466.115.121.1.53"
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
+struct ldb_controls;
+struct ldb_credentials;
+
+enum ldb_request_type {
+	LDB_REQ_SEARCH,
+	LDB_REQ_ADD,
+	LDB_REQ_MODIFY,
+	LDB_REQ_DELETE,
+	LDB_REQ_RENAME
+};
+
+struct ldb_result {
+	unsigned int count;
+	struct ldb_message **msgs;
+};
+
+struct ldb_search {
+	const struct ldb_dn *base;
+	enum ldb_scope scope;
+	struct ldb_parse_tree *tree;
+	const char * const *attrs;
+	struct ldb_result **res;
+};
+
+struct ldb_add {
+	const struct ldb_message *message;
+};
+
+struct  ldb_modify {
+	const struct ldb_message *message;
+};
+
+struct ldb_delete {
+	const struct ldb_dn *dn;
+};
+
+struct ldb_rename {
+	const struct ldb_dn *olddn;
+	const struct ldb_dn *newdn;
+};
+
+struct ldb_request {
+
+	int operation;
+
+	union {
+		struct ldb_search search;
+		struct ldb_add    add;
+		struct ldb_modify mod;
+		struct ldb_delete del;
+		struct ldb_rename rename;
+	} op;
+
+	struct ldb_controls *controls;
+	struct ldb_credentials *creds;
+}; 
+
+int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
+
 /*
   initialise a ldb context
 */
@@ -281,7 +340,7 @@ int ldb_search(struct ldb_context *ldb,
 	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
-	       const char * const *attrs, struct ldb_message ***res);
+	       const char * const *attrs, struct ldb_result **res);
 
 /*
   like ldb_search() but takes a parse tree
@@ -290,7 +349,7 @@ int ldb_search_bytree(struct ldb_context *ldb,
 		      const struct ldb_dn *base,
 		      enum ldb_scope scope,
 		      struct ldb_parse_tree *tree,
-		      const char * const *attrs, struct ldb_message ***res);
+		      const char * const *attrs, struct ldb_result **res);
 
 /*
   add a record to the database. Will fail if a record with the given class and key

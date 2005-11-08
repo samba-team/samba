@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/tools/cmdline.h"
 
@@ -228,29 +229,26 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nreco
 	for (i=0;i<nsearches;i++) {
 		int uid = (i * 700 + 17) % (nrecords * 2);
 		char *expr;
-		struct ldb_message **res;
+		struct ldb_result *res = NULL;
 		int ret;
 
 		asprintf(&expr, "(uid=TEST%d)", uid);
 		ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 
-		if (uid < nrecords && ret != 1) {
+		if (ret != LDB_SUCCESS || (uid < nrecords && res->count != 1)) {
 			printf("Failed to find %s - %s\n", expr, ldb_errstring(ldb));
 			exit(1);
 		}
 
-		if (uid >= nrecords && ret > 0) {
+		if (uid >= nrecords && res->count > 0) {
 			printf("Found %s !? - %d\n", expr, ret);
 			exit(1);
 		}
 
-		if (ret > 0) {
-			talloc_free(res);
-		}
-
-		printf("testing uid %d/%d - %d  \r", i, uid, ret);
+		printf("testing uid %d/%d - %d  \r", i, uid, res->count);
 		fflush(stdout);
 
+		talloc_free(res);
 		free(expr);
 	}
 
@@ -295,7 +293,7 @@ be indexed
 static void start_test_index(struct ldb_context **ldb)
 {
 	struct ldb_message *msg;
-	struct ldb_message **res;
+	struct ldb_result *res = NULL;
 	struct ldb_dn *indexlist;
 	struct ldb_dn *basedn;
 	int ret;
@@ -349,8 +347,12 @@ static void start_test_index(struct ldb_context **ldb)
 	}
 
 	ret = ldb_search(*ldb, basedn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
-	if (ret != 1) {
-		printf("Should have found 1 record - found %d\n", ret);
+	if (ret != LDB_SUCCESS) { 
+		printf("Search with (uid=test) filter failed!\n");
+		exit(1);
+	}
+	if(res->count != 1) {
+		printf("Should have found 1 record - found %d\n", res->count);
 		exit(1);
 	}
 

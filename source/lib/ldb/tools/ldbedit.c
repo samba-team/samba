@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/tools/cmdline.h"
 
@@ -280,7 +281,7 @@ static void usage(void)
  int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	struct ldb_message **msgs;
+	struct ldb_result *result = NULL;
 	struct ldb_dn *basedn = NULL;
 	int ret;
 	const char *expression = "(|(objectclass=*)(distinguishedName=*))";
@@ -310,21 +311,21 @@ static void usage(void)
 		}
 	}
 
-	ret = ldb_search(ldb, basedn, options->scope, expression, attrs, &msgs);
-	if (ret == -1) {
+	ret = ldb_search(ldb, basedn, options->scope, expression, attrs, &result);
+	if (ret != LDB_SUCCESS) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		exit(1);
 	}
 
-	if (ret == 0) {
+	if (result->count == 0) {
 		printf("no matching records - cannot edit\n");
 		return 0;
 	}
 
-	do_edit(ldb, msgs, ret, options->editor);
+	do_edit(ldb, result->msgs, result->count, options->editor);
 
-	if (ret > 0) {
-		ret = talloc_free(msgs);
+	if (result) {
+		ret = talloc_free(result);
 		if (ret == -1) {
 			fprintf(stderr, "talloc_free failed\n");
 			exit(1);

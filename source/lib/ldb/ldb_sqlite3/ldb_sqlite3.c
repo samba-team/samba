@@ -810,7 +810,7 @@ done:
 /* search for matching records, by tree */
 static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_dn* basedn,
 				  enum ldb_scope scope, struct ldb_parse_tree * tree,
-				  const char * const * attrs, struct ldb_message *** res)
+				  const char * const * attrs, struct ldb_result ** res)
 {
 	TALLOC_CTX *local_ctx;
 	struct lsqlite3_private *lsqlite3 = module->private_data;
@@ -973,21 +973,25 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 	for (i = 0; i < msgs.count; i++) {
 		msgs.msgs[i] = ldb_msg_canonicalize(module->ldb, msgs.msgs[i]);
 		if (msgs.msgs[i] ==  NULL) {
-			ret = LDB_ERR_OTHER;
 			goto failed;
 		}
 	}
 
-	*res = talloc_steal(module, msgs.msgs);
-	ret = msgs.count;
+	*res = talloc(module, struct ldb_result);
+	if (! *res) {
+		goto failed;
+	}
+
+	(*res)->msgs = talloc_steal(*res, msgs.msgs);
+	(*res)->count = msgs.count;
 
 	talloc_free(local_ctx);
-	return ret;
+	return LDB_SUCCESS;
 
 /* If error, return error code; otherwise return number of results */
 failed:
         talloc_free(local_ctx);
-	return -1;
+	return LDB_ERR_OTHER;
 }
 
 
@@ -1777,17 +1781,45 @@ destructor(void *p)
 }
 
 
+static int lsqlite3_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return lsqlite3_search_bytree(module,
+					  req->op.search.base,
+					  req->op.search.scope, 
+					  req->op.search.tree, 
+					  req->op.search.attrs, 
+					  req->op.search.res);
+
+	case LDB_REQ_ADD:
+		return lsqlite3_add(module, req->op.add.message);
+
+	case LDB_REQ_MODIFY:
+		return lsqlite3_modify(module, req->op.mod.message);
+
+	case LDB_REQ_DELETE:
+		return lsqlite3_delete(module, req->op.del.dn);
+
+	case LDB_REQ_RENAME:
+		return lsqlite3_rename(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn);
+
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
+
+	}
+}
+
 
 /*
  * Table of operations for the sqlite3 backend
  */
 static const struct ldb_module_ops lsqlite3_ops = {
 	.name              = "sqlite",
-	.search_bytree     = lsqlite3_search_bytree,
-	.add_record        = lsqlite3_add,
-	.modify_record     = lsqlite3_modify,
-	.delete_record     = lsqlite3_delete,
-	.rename_record     = lsqlite3_rename,
+	.request           = lsqlite3_request,
 	.start_transaction = lsqlite3_start_trans,
 	.end_transaction   = lsqlite3_end_trans,
 	.del_transaction   = lsqlite3_del_trans
