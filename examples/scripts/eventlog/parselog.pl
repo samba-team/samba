@@ -1,6 +1,7 @@
+#!/usr/bin/perl
 ######################################################################
 ##
-##  Simple add/delete/change share command script for Samba
+##  Simple parselog script for Samba
 ##
 ##  Copyright (C) Brian Moran                2005.
 ##
