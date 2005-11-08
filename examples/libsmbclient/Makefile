@@ -17,7 +17,8 @@ TESTS=	testsmbc \
 	testbrowse \
 	teststat \
 	testchmod \
-	testutime
+	testutime \
+	testread
 
 all:	$(TESTS) smbsh
 
@@ -47,6 +48,10 @@ testchmod: testchmod.o
 
 testutime: testutime.o
 	@echo Linking testutime
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
+
+testread: testread.o
+	@echo Linking testread
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
 
 smbsh:

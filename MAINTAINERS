@@ -20,11 +20,12 @@ Samba subversion tree should be filed at https://bugzilla.samba.org/.
 Feature/Function	Developer
 ----------------	---------
 
-samba-vscan		Rainer Link <rainer@openantivirus.org>
+documentation 		John Terpstra <jht@samba.org>
+libmsrpc		Chris Nichols <skel@samba.org>
+libsmbclient		Derrell Lipman <derrell@samba.org>
 pdb_mysql		Jelmer Vernooij <jelmer@samba.org>
-General Documentation	John Terpstra <jht@samba.org>
-
-Printing		Gerald (Jerry) Carter <jerry@samba.org>
+printing		Gerald (Jerry) Carter <jerry@samba.org>
+samba-vscan		Rainer Link <rainer@openantivirus.org>
 
 
 --
