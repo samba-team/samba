@@ -39,6 +39,9 @@ extern const DOM_SID global_sid_NULL;
 
 static char space_replacement = '%';
 
+/* Do we expect SIDs as pts names? */
+static BOOL sidpts;
+
 extern int afs_syscall(int, char *, int, char *, int);
 
 struct afs_ace {
@@ -150,6 +153,18 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 
 		sid_copy(&sid, &global_sid_Builtin_Backup_Operators);
 		type = SID_NAME_ALIAS;
+
+	} else if (sidpts) {
+		/* All PTS users/groups are expressed as SIDs */
+
+		sid_copy(&sid, &global_sid_NULL);
+		type = SID_NAME_UNKNOWN;
+
+		if (string_to_sid(&sid, name)) {
+			fstring user, domain;
+			/* We have to find the type, look up the SID */
+			lookup_sid(&sid, domain, user, &type);
+		}
 
 	} else {
 
@@ -771,6 +786,11 @@ static BOOL nt_to_afs_acl(const char *filename,
 					     only_username);
 				strlower_m(name);
 			}
+
+			if (sidpts) {
+				/* Expect all users/groups in pts as SIDs */
+				sid_to_string(name, &ace->trustee);
+			}
 		}
 
 		while ((p = strchr_m(name, ' ')) != NULL)
@@ -824,6 +844,8 @@ static size_t afs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
 	size_t sd_size;
 
 	DEBUG(5, ("afs_get_nt_acl: %s\n", fsp->fsp_name));
+
+	sidpts = lp_parm_bool(SNUM(fsp->conn), "afsacl", "sidpts", False);
 
 	if (!afs_get_afs_acl(fsp->fsp_name, &acl)) {
 		return 0;
@@ -882,6 +904,8 @@ static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	fileacls = lp_parm_const_string(SNUM(handle->conn), "afsacl", "fileacls",
 					"yes");
+
+	sidpts = lp_parm_bool(SNUM(handle->conn), "afsacl", "sidpts", False);
 
 	ZERO_STRUCT(old_afs_acl);
 	ZERO_STRUCT(new_afs_acl);
