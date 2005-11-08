@@ -71,6 +71,7 @@ struct service_display_info common_unix_svcs[] = {
   { "apache",        NULL, "HTTP Server", NULL },
   { "autofs",        NULL, "Automounter", NULL },
   { "squid",         NULL, "Web Cache Proxy ", NULL },
+  { "perfcountd",    NULL, "Performance Monitoring Daemon", NULL },
   { NULL, NULL, NULL, NULL }
 };
 
