@@ -661,21 +661,33 @@ _kdc_check_flags(krb5_context context,
 	}
 	
 	if (client->valid_start && *client->valid_start > kdc_time) {
+	    char starttime_str[100];
+	    krb5_format_time(context, *client->valid_start, 
+			     starttime_str, sizeof(starttime_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Client not yet valid -- %s", client_name);
+		    "Client not yet valid until %s -- %s", 
+		    starttime_str, client_name);
 	    return KRB5KDC_ERR_CLIENT_NOTYET;
 	}
 	
 	if (client->valid_end && *client->valid_end < kdc_time) {
+	    char endtime_str[100];
+	    krb5_format_time(context, *client->valid_end, 
+			     endtime_str, sizeof(endtime_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Client expired -- %s", client_name);
+		    "Client expired at %s -- %s",
+		    endtime_str, client_name);
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
 	
 	if (client->pw_end && *client->pw_end < kdc_time
 	    && !server->flags.change_pw) {
+	    char pwend_str[100];
+	    krb5_format_time(context, *client->pw_end, 
+			     pwend_str, sizeof(pwend_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Client's key has expired -- %s", client_name);
+		    "Client's key has expired at %s -- %s", 
+		    pwend_str, client_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
@@ -702,20 +714,32 @@ _kdc_check_flags(krb5_context context,
 	}
 
 	if (server->valid_start && *server->valid_start > kdc_time) {
+	    char starttime_str[100];
+	    krb5_format_time(context, *server->valid_start, 
+			     starttime_str, sizeof(starttime_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Server not yet valid -- %s", server_name);
+		    "Server not yet valid until %s -- %s",
+		    starttime_str, server_name);
 	    return KRB5KDC_ERR_SERVICE_NOTYET;
 	}
 
 	if (server->valid_end && *server->valid_end < kdc_time) {
+	    char endtime_str[100];
+	    krb5_format_time(context, *server->valid_end, 
+			     endtime_str, sizeof(endtime_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Server expired -- %s", server_name);
+		    "Server expired at %s -- %s", 
+		    endtime_str, server_name);
 	    return KRB5KDC_ERR_SERVICE_EXP;
 	}
 
 	if (server->pw_end && *server->pw_end < kdc_time) {
+	    char pwend_str[100];
+	    krb5_format_time(context, *server->pw_end, 
+			     pwend_str, sizeof(pwend_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Server's key has expired -- %s", server_name);
+		    "Server's key has expired at -- %s", 
+		    pwend_str, server_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
