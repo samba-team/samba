@@ -218,15 +218,16 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          */
 
 	nt_status = rpccli_netlogon_sam_network_logon(netlogon_pipe,
-					mem_ctx,
-					dc_name,                   /* server name */
-					user_info->smb_name.str,   /* user name logging on. */
-					user_info->domain.str,     /* domain name */
-					user_info->wksta_name.str, /* workstation name */
-					chal,                      /* 8 byte challenge. */
-					user_info->lm_resp,        /* lanman 24 byte response */
-					user_info->nt_resp,        /* nt 24 byte response */
-					&info3);                   /* info3 out */
+						      mem_ctx,
+						      user_info->logon_parameters,/* flags such as 'allow workstation logon' */ 
+						      dc_name,                    /* server name */
+						      user_info->smb_name.str,    /* user name logging on. */
+						      user_info->domain.str,      /* domain name */
+						      user_info->wksta_name.str,  /* workstation name */
+						      chal,                       /* 8 byte challenge. */
+						      user_info->lm_resp,         /* lanman 24 byte response */
+						      user_info->nt_resp,         /* nt 24 byte response */
+						      &info3);                    /* info3 out */
 
 	/* Let go as soon as possible so we avoid any potential deadlocks
 	   with winbind lookup up users or groups. */

@@ -21,15 +21,12 @@
 */
 
 /* AUTH_STR - string */
-typedef struct normal_string
-{
+typedef struct normal_string {
 	int len;
 	char *str;
 } AUTH_STR;
 
-typedef struct auth_usersupplied_info
-{
-	
+typedef struct auth_usersupplied_info {
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
  	DATA_BLOB lm_interactive_pwd;
@@ -44,6 +41,8 @@ typedef struct auth_usersupplied_info
 	AUTH_STR           smb_name;        /* username before mapping */
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
 	
+	uint32 logon_parameters;
+
 } auth_usersupplied_info;
 
 #define SAM_FILL_NAME  0x01
@@ -52,8 +51,7 @@ typedef struct auth_usersupplied_info
 #define SAM_FILL_UNIX  0x08
 #define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
 
-typedef struct auth_serversupplied_info 
-{
+typedef struct auth_serversupplied_info {
 	BOOL guest;
 
 	uid_t uid;
@@ -144,14 +142,14 @@ struct auth_init_function_entry {
 	struct auth_init_function_entry *prev, *next;
 };
 
-typedef struct auth_ntlmssp_state
-{
+typedef struct auth_ntlmssp_state {
 	TALLOC_CTX *mem_ctx;
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 	struct ntlmssp_state *ntlmssp_state;
 } AUTH_NTLMSSP_STATE;
 
-#define AUTH_INTERFACE_VERSION 1
+/* Changed from 1 -> 2 to add the logon_parameters field. */
+#define AUTH_INTERFACE_VERSION 2
 
 #endif /* _SMBAUTH_H_ */
