@@ -164,6 +164,8 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 
 	(*user_info)->encrypted = encrypted;
 
+	(*user_info)->logon_parameters = 0;
+
 	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
 
 	return NT_STATUS_OK;
@@ -223,6 +225,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
+				     uint32 logon_parameters,
 				     const uchar *lm_network_pwd, int lm_pwd_len,
 				     const uchar *nt_network_pwd, int nt_pwd_len)
 {
@@ -238,9 +241,12 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				       nt_pwd_len ? &nt_blob : NULL,
 				       NULL, NULL, NULL,
 				       True);
-	
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		(*user_info)->logon_parameters = logon_parameters;
+	}
 	ret = NT_STATUS_IS_OK(nt_status) ? True : False;
-		
+
 	data_blob_free(&lm_blob);
 	data_blob_free(&nt_blob);
 	return ret;
@@ -255,6 +261,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
+					 uint32 logon_parameters,
 					 const uchar chal[8], 
 					 const uchar lm_interactive_pwd[16], 
 					 const uchar nt_interactive_pwd[16], 
@@ -336,6 +343,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 		                               nt_interactive_pwd ? &nt_interactive_blob : NULL,
 		                               NULL,
 		                               True);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			(*user_info)->logon_parameters = logon_parameters;
+		}
 
 		ret = NT_STATUS_IS_OK(nt_status) ? True : False;
 		data_blob_free(&local_lm_blob);

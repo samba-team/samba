@@ -323,6 +323,8 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.flags = flags;
 
+	request.data.auth_crap.logon_parameters = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+
 	if (require_membership_of_sid)
 		fstrcpy(request.data.auth_crap.require_membership_of_sid, require_membership_of_sid);
 
