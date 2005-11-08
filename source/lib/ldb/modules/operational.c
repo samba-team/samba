@@ -76,6 +76,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include <time.h>
 
@@ -174,23 +175,20 @@ failed:
 /*
   hook search operations
 */
-static int operational_search_bytree(struct ldb_module *module, 
-				     const struct ldb_dn *base,
-				     enum ldb_scope scope, struct ldb_parse_tree *tree,
-				     const char * const *attrs, 
-				     struct ldb_message ***res)
+static int operational_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
 	int i, r, a;
 	int ret;
+	const char * const *attrs = req->op.search.attrs;
 	const char **search_attrs = NULL;
 
-	(*res) = NULL;
+	*(req->op.search.res) = NULL;
 
 	/* replace any attributes in the parse tree that are
 	   searchable, but are stored using a different name in the
 	   backend */
 	for (i=0;i<ARRAY_SIZE(parse_tree_sub);i++) {
-		ldb_parse_tree_attr_replace(tree, 
+		ldb_parse_tree_attr_replace(req->op.search.tree, 
 					    parse_tree_sub[i].attr, 
 					    parse_tree_sub[i].replace);
 	}
@@ -213,18 +211,22 @@ static int operational_search_bytree(struct ldb_module *module,
 		}
 	}
 	
-
+	/* use new set of attrs if any */
+	if (search_attrs) req->op.search.attrs = search_attrs;
 	/* perform the search */
-	ret = ldb_next_search_bytree(module, base, scope, tree, 
-				     search_attrs?search_attrs:attrs, res);
-	if (ret <= 0) {
+	ret = ldb_next_request(module, req);
+	/* set back saved attrs if needed */
+	if (search_attrs) req->op.search.attrs = attrs;
+
+	/* check operation result */
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	/* for each record returned post-process to add any derived
 	   attributes that have been asked for */
-	for (r=0;r<ret;r++) {
-		if (operational_search_post_process(module, (*res)[r], attrs) != 0) {
+	for (r = 0; r < (*(req->op.search.res))->count; r++) {
+		if (operational_search_post_process(module, (*(req->op.search.res))->msgs[r], attrs) != 0) {
 			goto failed;
 		}
 	}
@@ -235,9 +237,9 @@ static int operational_search_bytree(struct ldb_module *module,
 
 failed:
 	talloc_free(search_attrs);
-	talloc_free(*res);
+	talloc_free(*(req->op.search.res));
 	ldb_oom(module->ldb);
-	return -1;
+	return LDB_ERR_OTHER;
 }
 
 /*
@@ -273,15 +275,15 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 /*
   hook add record ops
 */
-static int operational_add_record(struct ldb_module *module, 
-				  const struct ldb_message *msg)
+static int operational_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	time_t t = time(NULL);
 	struct ldb_message *msg2;
 	int ret;
 
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* we have to copy the message as the caller might have it as a const */
@@ -294,7 +296,13 @@ static int operational_add_record(struct ldb_module *module,
 		talloc_free(msg2);
 		return -1;
 	}
-	ret = ldb_next_add_record(module, msg2);
+	/* use the new structure for the call chain below this point */
+	req->op.add.message = msg2;
+	/* go on with the call chain */
+	ret = ldb_next_request(module, req);
+	/* put back saved message */
+	req->op.add.message = msg;
+	/* free temproary compy */
 	talloc_free(msg2);
 	return ret;
 }
@@ -302,15 +310,15 @@ static int operational_add_record(struct ldb_module *module,
 /*
   hook modify record ops
 */
-static int operational_modify_record(struct ldb_module *module, 
-				     const struct ldb_message *msg)
+static int operational_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.mod.message;
 	time_t t = time(NULL);
 	struct ldb_message *msg2;
 	int ret;
 
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_modify_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* we have to copy the message as the caller might have it as a const */
@@ -322,16 +330,40 @@ static int operational_modify_record(struct ldb_module *module,
 		talloc_free(msg2);
 		return -1;
 	}
-	ret = ldb_next_modify_record(module, msg2);
+	/* use the new structure for the call chain below this point */
+	req->op.mod.message = msg2;
+	/* go on with the call chain */
+	ret = ldb_next_request(module, req);
+	/* put back saved message */
+	req->op.mod.message = msg;
+	/* free temproary compy */
 	talloc_free(msg2);
 	return ret;
 }
 
+
+static int operational_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return operational_search_bytree(module, req);
+
+	case LDB_REQ_ADD:
+		return operational_add(module, req);
+
+	case LDB_REQ_MODIFY:
+		return operational_modify(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
 static const struct ldb_module_ops operational_ops = {
 	.name              = "operational",
-	.search_bytree     = operational_search_bytree,
-	.add_record        = operational_add_record,
-	.modify_record     = operational_modify_record
+	.request           = operational_request
 };
 
 

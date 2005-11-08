@@ -37,6 +37,7 @@
 #include "ads.h"
 #include "hdb.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "system/iconv.h"
 #include "librpc/gen_ndr/netlogon.h"
 
@@ -475,7 +476,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 					    struct ldb_message ***pmsg)
 {
 	krb5_error_code ret;
-	int count;
+	int lret;
 	char *filter = NULL;
 	const char * const *princ_attrs = krb5_attrs;
 
@@ -486,7 +487,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	char *realm_dn_str;
 
-	struct ldb_message **msg = NULL;
+	struct ldb_result *res = NULL;
 
 	ret = krb5_unparse_name(context, principal, &princ_str);
 
@@ -538,26 +539,26 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 		return ENOMEM;
 	}
 
-	count = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_SUBTREE, filter, 
-			   princ_attrs, &msg);
+	lret = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_SUBTREE, filter, princ_attrs, &res);
 
 	realm_dn_str = ldb_dn_linearize(mem_ctx, realm_dn);
 
-	if (count < 1) {
-		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' failed: %d", 
-			   realm_dn_str, filter, count);
-		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' failed: %d", 
-				      realm_dn_str, filter, count);
+	if (lret != LDB_SUCCESS || res->count == 0) {
+		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' failed: %s", 
+			   realm_dn_str, filter, ldb_errstring(ldb_ctx));
+		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' failed: %s", 
+				      realm_dn_str, filter, ldb_errstring(ldb_ctx));
 		return HDB_ERR_NOENTRY;
-	} else if (count > 1) {
-		talloc_free(msg);
+	} else if (res->count > 1) {
 		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
-			   realm_dn_str, filter, count);
+			   realm_dn_str, filter, res->count);
 		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
-				      realm_dn_str, filter, count);
+				      realm_dn_str, filter, res->count);
+		talloc_free(res);
 		return HDB_ERR_NOENTRY;
 	}
-	*pmsg = talloc_steal(mem_ctx, msg);
+	*pmsg = talloc_steal(mem_ctx, res->msgs);
+	talloc_free(res);
 	return 0;
 }
 
@@ -566,9 +567,9 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 					const char *realm,
 					struct ldb_message ***pmsg)
 {
- 	int count;
+ 	int ret;
 	char *cross_ref_filter;
-	struct ldb_message **cross_ref_msg;
+	struct ldb_result *cross_ref_res;
 
 	cross_ref_filter = talloc_asprintf(mem_ctx, 
 					   "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
@@ -578,27 +579,26 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 		return ENOMEM;
 	}
 
-	count = ldb_search(ldb_ctx, NULL, LDB_SCOPE_SUBTREE, cross_ref_filter, 
-			   realm_ref_attrs, &cross_ref_msg);
+	ret = ldb_search(ldb_ctx, NULL, LDB_SCOPE_SUBTREE, cross_ref_filter, realm_ref_attrs, &cross_ref_res);
 
-	if (count < 1) {
-		krb5_warnx(context, "ldb_search: filter: '%s' failed: %d", cross_ref_filter, count);
-		krb5_set_error_string(context, "ldb_search: filter: '%s' failed: %d", cross_ref_filter, count);
+	if (ret != LDB_SUCCESS || cross_ref_res->count == 0) {
+		krb5_warnx(context, "ldb_search: filter: '%s' failed: %s", cross_ref_filter, ldb_errstring(ldb_ctx));
+		krb5_set_error_string(context, "ldb_search: filter: '%s' failed: %s", cross_ref_filter, ldb_errstring(ldb_ctx));
 
-		talloc_free(cross_ref_msg);
+		talloc_free(cross_ref_res);
 		return HDB_ERR_NOENTRY;
-	} else if (count > 1) {
-		krb5_warnx(context, "ldb_search: filter: '%s' more than 1 entry: %d", cross_ref_filter, count);
-		krb5_set_error_string(context, "ldb_search: filter: '%s' more than 1 entry: %d", cross_ref_filter, count);
+	} else if (cross_ref_res->count > 1) {
+		krb5_warnx(context, "ldb_search: filter: '%s' more than 1 entry: %d", cross_ref_filter, cross_ref_res->count);
+		krb5_set_error_string(context, "ldb_search: filter: '%s' more than 1 entry: %d", cross_ref_filter, cross_ref_res->count);
 
-		talloc_free(cross_ref_msg);
+		talloc_free(cross_ref_res);
 		return HDB_ERR_NOENTRY;
 	}
 
 	if (pmsg) {
-		*pmsg = talloc_steal(mem_ctx, cross_ref_msg);
+		*pmsg = talloc_steal(mem_ctx, cross_ref_res->msgs);
 	} else {
-		talloc_free(cross_ref_msg);
+		talloc_free(cross_ref_res);
 	}
 
 	return 0;
@@ -909,10 +909,11 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
 	char *realm;
 	struct ldb_dn *realm_dn = NULL;
-	struct ldb_message **msgs = NULL;
+	struct ldb_result *res = NULL;
 	struct ldb_message **realm_ref_msgs = NULL;
 	krb5_error_code ret;
 	TALLOC_CTX *mem_ctx;
+	int lret;
 
 	if (priv) {
 		talloc_free(priv);
@@ -961,16 +962,17 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	krb5_warnx(context, "LDB_firstkey: realm ok\n");
 
-	priv->count = ldb_search(ldb_ctx, realm_dn,
+	lret = ldb_search(ldb_ctx, realm_dn,
 				 LDB_SCOPE_SUBTREE, "(objectClass=user)",
-				 krb5_attrs, &msgs);
+				 krb5_attrs, &res);
 
-	priv->msgs = talloc_steal(priv, msgs);
-
-	if (priv->count <= 0) {
+	if (lret != LDB_SUCCESS) {
 		talloc_free(priv);
 		return HDB_ERR_NOENTRY;
 	}
+
+	priv->count = res->count;
+	priv->msgs = talloc_steal(priv, res->msgs);
 
 	db->hdb_openp = priv;
 

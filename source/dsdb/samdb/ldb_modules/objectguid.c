@@ -38,14 +38,6 @@
 #include "ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
-static int objectguid_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-				    enum ldb_scope scope, struct ldb_parse_tree *tree,
-				    const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_search\n");
-	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
-}
-
 static struct ldb_message_element *objectguid_find_attribute(const struct ldb_message *msg, const char *name)
 {
 	int i;
@@ -60,8 +52,9 @@ static struct ldb_message_element *objectguid_find_attribute(const struct ldb_me
 }
 
 /* add_record: add objectGUID attribute */
-static int objectguid_add_record(struct ldb_module *module, const struct ldb_message *msg)
+static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_val v;
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
@@ -72,11 +65,11 @@ static int objectguid_add_record(struct ldb_module *module, const struct ldb_mes
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
 
 	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	if ((attribute = objectguid_find_attribute(msg, "objectGUID")) != NULL ) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	msg2 = talloc(module, struct ldb_message);
@@ -106,16 +99,31 @@ static int objectguid_add_record(struct ldb_module *module, const struct ldb_mes
 		return ret;
 	}
 
-	ret = ldb_next_add_record(module, msg2);
+	req->op.add.message = msg2;
+	ret = ldb_next_request(module, req);
+	req->op.add.message = msg;
+
 	talloc_free(msg2);
 
 	return ret;
 }
 
+static int objectguid_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_ADD:
+		return objectguid_add(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
-	.search_bytree = objectguid_search_bytree,
-	.add_record    = objectguid_add_record
+	.request       = objectguid_request
 };
 
 

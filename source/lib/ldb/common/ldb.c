@@ -172,57 +172,6 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 }
 
 /*
-  search the database given a LDAP-like search expression
-
-  return the number of records found, or -1 on error
-
-  Use talloc_free to free the ldb_message returned in 'res'
-
-*/
-int ldb_search(struct ldb_context *ldb, 
-	       const struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, struct ldb_message ***res)
-{
-	struct ldb_parse_tree *tree;
-	int ret;
-
-	tree = ldb_parse_tree(ldb, expression);
-	if (tree == NULL) {
-		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Unable to parse search expression"));
-		return -1;
-	}
-
-	ret = ldb_search_bytree(ldb, base, scope, tree, attrs, res);
-	talloc_free(tree);
-
-	return ret;
-}
-
-/*
-  search the database given a search tree
-
-  return the number of records found, or -1 on error
-
-  Use talloc_free to free the ldb_message returned in 'res'
-
-*/
-int ldb_search_bytree(struct ldb_context *ldb, 
-		      const struct ldb_dn *base,
-		      enum ldb_scope scope,
-		      struct ldb_parse_tree *tree,
-		      const char * const *attrs, struct ldb_message ***res)
-{
-	struct ldb_module *module;
-	FIRST_OP(ldb, search_bytree);
-
-	ldb_reset_err_string(ldb);
-
-	return module->ops->search_bytree(module, base, scope, tree, attrs, res);
-}
-
-/*
   check for an error return from an op 
   if an op fails, but has not setup an error string, then setup one now
 */
@@ -241,31 +190,100 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 }
 
 /*
+  start an ldb request
+  autostarts a transacion if none active and the operation is not a search
+  returns -1 on errors.
+*/
+
+int ldb_request(struct ldb_context *ldb, struct ldb_request *request)
+{
+	int status;
+
+	ldb_reset_err_string(ldb);
+
+	if ((!ldb->transaction_active) &&
+	    (request->operation == LDB_REQ_ADD ||
+	     request->operation == LDB_REQ_MODIFY ||
+	     request->operation == LDB_REQ_DELETE ||
+	     request->operation == LDB_REQ_RENAME)) {
+
+		status = ldb_transaction_start(ldb);
+		if (status != LDB_SUCCESS) return status;
+
+		status = ldb->modules->ops->request(ldb->modules, request);
+		return ldb_op_finish(ldb, status);
+	}
+
+	return ldb->modules->ops->request(ldb->modules, request);
+}
+
+/*
+  search the database given a LDAP-like search expression
+
+  return the number of records found, or -1 on error
+
+  Use talloc_free to free the ldb_message returned in 'res'
+
+*/
+int ldb_search(struct ldb_context *ldb, 
+	       const struct ldb_dn *base,
+	       enum ldb_scope scope,
+	       const char *expression,
+	       const char * const *attrs, struct ldb_result **res)
+{
+	struct ldb_request *request;
+	struct ldb_parse_tree *tree;
+	int ret;
+
+	request = talloc(ldb, struct ldb_request);
+	if (request == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Not Enough memory"));
+		return -1;
+	}
+
+	tree = ldb_parse_tree(ldb, expression);
+	if (tree == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Unable to parse search expression"));
+		return -1;
+	}
+
+	request->operation = LDB_REQ_SEARCH;
+	request->op.search.base = base;
+	request->op.search.scope = scope;
+	request->op.search.tree = tree;
+	request->op.search.attrs = attrs;
+	request->op.search.res = res;
+
+	ret = ldb_request(ldb, request);
+
+	talloc_free(tree);
+
+	return ret;
+}
+
+/*
   add a record to the database. Will fail if a record with the given class and key
   already exists
 */
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	struct ldb_module *module;
+	struct ldb_request *request;
 	int status;
-
-	FIRST_OP(ldb, add_record);
-
-	ldb_reset_err_string(ldb);
 
 	status = ldb_msg_sanity_check(message);
 	if (status != LDB_SUCCESS) return status;
 
-	if (! ldb->transaction_active) {
-		status = ldb_transaction_start(ldb);
-		if (status != LDB_SUCCESS) return status;
-
-		status = module->ops->add_record(module, message);
-		return ldb_op_finish(ldb, status);
+	request = talloc(ldb, struct ldb_request);
+	if (request == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Not Enough memory"));
+		return -1;
 	}
 
-	return module->ops->add_record(module, message);
+	request->operation = LDB_REQ_ADD;
+	request->op.add.message = message;
+
+	return ldb_request(ldb, request);
 }
 
 /*
@@ -274,25 +292,22 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	struct ldb_module *module;
+	struct ldb_request *request;
 	int status;
-
-	FIRST_OP(ldb, modify_record);
-
-	ldb_reset_err_string(ldb);
 
 	status = ldb_msg_sanity_check(message);
 	if (status != LDB_SUCCESS) return status;
 
-	if (! ldb->transaction_active) {
-		status = ldb_transaction_start(ldb);
-		if (status != LDB_SUCCESS) return status;
-
-		status = module->ops->modify_record(module, message);
-		return ldb_op_finish(ldb, status);
+	request = talloc(ldb, struct ldb_request);
+	if (request == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Not Enough memory"));
+		return -1;
 	}
 
-	return module->ops->modify_record(module, message);
+	request->operation = LDB_REQ_MODIFY;
+	request->op.mod.message = message;
+
+	return ldb_request(ldb, request);
 }
 
 
@@ -301,22 +316,18 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
-	struct ldb_module *module;
-	int status;
+	struct ldb_request *request;
 
-	FIRST_OP(ldb, delete_record);
-
-	ldb_reset_err_string(ldb);
-
-	if (! ldb->transaction_active) {
-		status = ldb_transaction_start(ldb);
-		if (status != LDB_SUCCESS) return status;
-
-		status = module->ops->delete_record(module, dn);
-		return ldb_op_finish(ldb, status);
+	request = talloc(ldb, struct ldb_request);
+	if (request == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Not Enough memory"));
+		return -1;
 	}
 
-	return module->ops->delete_record(module, dn);
+	request->operation = LDB_REQ_DELETE;
+	request->op.del.dn = dn;
+
+	return ldb_request(ldb, request);
 }
 
 /*
@@ -324,22 +335,19 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	struct ldb_module *module;
-	int status;
+	struct ldb_request *request;
 
-	FIRST_OP(ldb, rename_record);
-
-	ldb_reset_err_string(ldb);
-
-	if (! ldb->transaction_active) {
-		status = ldb_transaction_start(ldb);
-		if (status != LDB_SUCCESS) return status;
-
-		status = module->ops->rename_record(module, olddn, newdn);
-		return ldb_op_finish(ldb, status);
+	request = talloc(ldb, struct ldb_request);
+	if (request == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Not Enough memory"));
+		return -1;
 	}
 
-	return module->ops->rename_record(module, olddn, newdn);
+	request->operation = LDB_REQ_RENAME;
+	request->op.rename.olddn = olddn;
+	request->op.rename.newdn = newdn;
+
+	return ldb_request(ldb, request);
 }
 
 

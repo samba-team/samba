@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 /*
   search the sam for the specified attributes - va_list variant
@@ -30,14 +31,15 @@
 int gendb_search_v(struct ldb_context *ldb, 
 		   TALLOC_CTX *mem_ctx,
 		   const struct ldb_dn *basedn,
-		   struct ldb_message ***res,
+		   struct ldb_message ***msgs,
 		   const char * const *attrs,
 		   const char *format, 
 		   va_list ap)  _PRINTF_ATTRIBUTE(6,0)
 {
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+	struct ldb_result *res;
 	char *expr = NULL;
-	int count;
+	int ret;
 
 	if (format) {
 		vasprintf(&expr, format, ap);
@@ -48,20 +50,28 @@ int gendb_search_v(struct ldb_context *ldb,
 		scope = LDB_SCOPE_BASE;
 	}
 
-	*res = NULL;
+	res = NULL;
 
-	count = ldb_search(ldb, basedn, scope, expr, attrs, res);
+	ret = ldb_search(ldb, basedn, scope, expr, attrs, &res);
 
-	if (*res) talloc_steal(mem_ctx, *res);
+	if (ret == LDB_SUCCESS) {
+		talloc_steal(mem_ctx, res);
 
-	DEBUG(4,("gendb_search_v: %s %s -> %d  (%s)\n", 
-		 basedn?ldb_dn_linearize(mem_ctx,basedn):"NULL",
-		 expr?expr:"NULL", count,
-		 count==-1?ldb_errstring(ldb):"OK"));
+		DEBUG(4,("gendb_search_v: %s %s -> %d\n", 
+			 basedn?ldb_dn_linearize(mem_ctx,basedn):"NULL",
+			 expr?expr:"NULL", res->count));
+
+		ret = res->count;
+		*msgs = res->msgs;
+
+	} else {
+		DEBUG(4,("gendb_search_v: search failed: %s", ldb_errstring(ldb)));
+		ret = -1;
+	}
 
 	free(expr);
 
-	return count;
+	return ret;
 }
 
 /*

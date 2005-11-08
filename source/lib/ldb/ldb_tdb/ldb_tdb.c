@@ -733,13 +733,41 @@ static int ltdb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
+static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return ltdb_search_bytree(module,
+					  req->op.search.base,
+					  req->op.search.scope, 
+					  req->op.search.tree, 
+					  req->op.search.attrs, 
+					  req->op.search.res);
+
+	case LDB_REQ_ADD:
+		return ltdb_add(module, req->op.add.message);
+
+	case LDB_REQ_MODIFY:
+		return ltdb_modify(module, req->op.mod.message);
+
+	case LDB_REQ_DELETE:
+		return ltdb_delete(module, req->op.del.dn);
+
+	case LDB_REQ_RENAME:
+		return ltdb_rename(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn);
+
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
+
+	}
+}
+
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
-	.search_bytree     = ltdb_search_bytree,
-	.add_record        = ltdb_add,
-	.modify_record     = ltdb_modify,
-	.delete_record     = ltdb_delete,
-	.rename_record     = ltdb_rename,
+	.request           = ltdb_request,
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
 	.del_transaction   = ltdb_del_trans

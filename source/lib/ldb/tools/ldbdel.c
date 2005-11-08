@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/tools/cmdline.h"
 
@@ -45,13 +46,13 @@ static int ldb_delete_recursive(struct ldb_context *ldb, const struct ldb_dn *dn
 {
 	int ret, i, total=0;
 	const char *attrs[] = { NULL };
-	struct ldb_message **res;
+	struct ldb_result *res;
 	
 	ret = ldb_search(ldb, dn, LDB_SCOPE_SUBTREE, "distinguishedName=*", attrs, &res);
-	if (ret <= 0) return -1;
+	if (ret != LDB_SUCCESS) return -1;
 
-	for (i=0;i<ret;i++) {
-		if (ldb_delete(ldb, res[i]->dn) == 0) {
+	for (i = 0; i < res->count; i++) {
+		if (ldb_delete(ldb, res->msgs[i]->dn) == 0) {
 			total++;
 		}
 	}

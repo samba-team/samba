@@ -25,6 +25,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 /*
   get the connected db
@@ -58,7 +59,7 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct ldb_context *ldb;
 	int ret;
-	struct ldb_message **res;
+	struct ldb_result *res;
 
 	/* validate arguments */
 	if (argc < 1 || argc > 4) {
@@ -104,11 +105,11 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		attrs = mprToList(tmp_ctx, argv[3]);
 	}
 	ret = ldb_search(ldb, basedn, scope, expression, attrs, &res);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		ejsSetErrorMsg(eid, "ldb.search failed - %s", ldb_errstring(ldb));
 		mpr_Return(eid, mprCreateUndefinedVar());
 	} else {
-		mpr_Return(eid, mprLdbArray(ldb, res, ret, "ldb_message"));
+		mpr_Return(eid, mprLdbArray(ldb, res->msgs, res->count, "ldb_message"));
 	}
 
 	talloc_free(tmp_ctx);

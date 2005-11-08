@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
 #include "librpc/gen_ndr/winreg.h"
 
@@ -165,12 +166,19 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, const struct registry_ke
 
 	/* Do a search if necessary */
 	if (kd->subkeys == NULL) {
-		kd->subkey_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &kd->subkeys);
+		struct ldb_result *res;
+		int ret;
 
-		if(kd->subkey_count < 0) {
+		ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &res);
+
+		if (ret != LDB_SUCCESS) {
 			DEBUG(0, ("Error getting subkeys for '%s': %s\n", ldb_dn_linearize(mem_ctx, kd->dn), ldb_errstring(c)));
 			return WERR_FOOBAR;
 		}
+
+		kd->subkey_count = res->count;
+		kd->subkeys = talloc_steal(kd, res->msgs);
+		talloc_free(res);
 	} 
 
 	if (idx >= kd->subkey_count) return WERR_NO_MORE_ITEMS;
@@ -195,12 +203,18 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct registry_key
 
 	/* Do the search if necessary */
 	if (kd->values == NULL) {
-		kd->value_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&kd->values);
+		struct ldb_result *res;
+		int ret;
 
-		if(kd->value_count < 0) {
+		ret = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(value=*)", NULL, &res);
+
+		if (ret != LDB_SUCCESS) {
 			DEBUG(0, ("Error getting values for '%s': %s\n", ldb_dn_linearize(mem_ctx, kd->dn), ldb_errstring(c)));
 			return WERR_FOOBAR;
 		}
+		kd->value_count = res->count;
+		kd->values = talloc_steal(kd, res->msgs);
+		talloc_free(res);
 	}
 
 	if(idx >= kd->value_count) return WERR_NO_MORE_ITEMS;
@@ -215,29 +229,29 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct registry_key
 static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, const char *name, struct registry_key **key)
 {
 	struct ldb_context *c = talloc_get_type(h->hive->backend_data, struct ldb_context);
-	struct ldb_message **msg;
+	struct ldb_result *res;
 	struct ldb_dn *ldap_path;
 	int ret;
 	struct ldb_key_data *newkd;
 
 	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &msg);
+	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &res);
 
-	if(ret == 0) {
-		return WERR_BADFILE;
-	} else if(ret < 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error opening key '%s': %s\n", ldb_dn_linearize(ldap_path, ldap_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
+	} else if (res->count == 0) {
+		return WERR_BADFILE;
 	}
 
 	*key = talloc(mem_ctx, struct registry_key);
 	talloc_set_destructor(*key, reg_close_ldb_key);
 	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\')?strchr(name, '\\'):name);
 	(*key)->backend_data = newkd = talloc_zero(*key, struct ldb_key_data);
-	newkd->dn = ldb_dn_copy(mem_ctx, msg[0]->dn); 
+	newkd->dn = ldb_dn_copy(mem_ctx, res->msgs[0]->dn); 
 
-	talloc_free(msg);
+	talloc_free(res);
 
 	return WERR_OK;
 }

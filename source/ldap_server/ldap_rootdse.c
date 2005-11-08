@@ -22,6 +22,7 @@
 #include "ldap_server/ldap_server.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 #define ATTR_BLOB_CONST(val) data_blob_talloc(mem_ctx, val, sizeof(val)-1)
 
@@ -267,12 +268,12 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	void *local_ctx;
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	int result = LDAP_SUCCESS;
 	struct ldapsrv_reply *ent_r, *done_r;
 	struct ldb_context *ldb;
 	const char *errstr = NULL;
-	int count, j;
+	int ret, j;
 	const char **attrs = NULL;
 
 	if (r->scope != LDAP_SEARCH_SCOPE_BASE) {
@@ -295,11 +296,10 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		attrs[j] = NULL;
 	}
 
-	count = ldb_search(ldb, ldb_dn_explode(local_ctx, "cn=rootDSE"), 0, 
-			   NULL, attrs, &res);
+	ret = ldb_search(ldb, ldb_dn_explode(local_ctx, "cn=rootDSE"), 0, NULL, attrs, &res);
 	talloc_steal(local_ctx, res);
 
-	if (count == 1) {
+	if (ret == LDB_SUCCESS && res->count == 1) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
@@ -307,11 +307,11 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		ent->dn = "";
 		ent->num_attributes = 0;
 		ent->attributes = NULL;
-		if (res[0]->num_elements == 0) {
+		if (res->msgs[0]->num_elements == 0) {
 			goto queue_reply;
 		}
-		ent->num_attributes = res[0]->num_elements;
-		ent->attributes = talloc_steal(ent_r, res[0]->elements);
+		ent->num_attributes = res->msgs[0]->num_elements;
+		ent->attributes = talloc_steal(ent_r, res->msgs[0]->elements);
 
 		for (j=0; j < ent->num_attributes; j++) {
 			if (ent->attributes[j].num_values == 1 &&
@@ -330,22 +330,22 @@ queue_reply:
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
-	if (count == 1) {
-		DEBUG(10,("rootdse_Search: results: [%d]\n",count));
-		result = LDAP_SUCCESS;
-		errstr = NULL;
-	} else if (count == 0) {
-		DEBUG(10,("rootdse_Search: no results\n"));
-		result = LDAP_NO_SUCH_OBJECT;
-		errstr = ldb_errstring(ldb);
-	} else if (count > 1) {
-		DEBUG(10,("rootdse_Search: too many results[%d]\n", count));
-		result = LDAP_OTHER; 
-		errstr = "internal error";	
-	} else if (count == -1) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("rootdse_Search: error\n"));
 		result = LDAP_OTHER;
 		errstr = ldb_errstring(ldb);
+	} else if (res->count == 0) {
+		DEBUG(10,("rootdse_Search: no results\n"));
+		result = LDAP_NO_SUCH_OBJECT;
+		errstr = ldb_errstring(ldb);
+	} else if (res->count == 1) {
+		DEBUG(10,("rootdse_Search: results: [%d]\n", res->count));
+		result = LDAP_SUCCESS;
+		errstr = NULL;
+	} else if (res->count > 1) {
+		DEBUG(10,("rootdse_Search: too many results[%d]\n", res->count));
+		result = LDAP_OTHER; 
+		errstr = "internal error";	
 	}
 
 	done = &done_r->msg->r.SearchResultDone;

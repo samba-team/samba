@@ -35,6 +35,7 @@
 #include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -185,7 +186,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	struct wreplsrv_owner local_owner;
 	struct wreplsrv_owner *owner;
 	const char *filter;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	int ret;
 	struct wrepl_wins_name *names;
 	struct winsdb_record *rec;
@@ -240,28 +241,26 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 				 owner_in->min_version, owner_in->max_version);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
-	if (res != NULL) {
-		talloc_steal(call, res);
-	}
-	if (ret < 0) return  NT_STATUS_INTERNAL_DB_CORRUPTION;
-	if (ret == 0) {
+	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	talloc_steal(call, res);
+	if (res->count == 0) {
 		DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
-			ret, owner_in->address, owner_in->min_version, owner_in->max_version,
+			res->count, owner_in->address, owner_in->min_version, owner_in->max_version,
 			call->wreplconn->partner->address));
 		return NT_STATUS_OK;
 	}
 
-	names = talloc_array(call, struct wrepl_wins_name, ret);
+	names = talloc_array(call, struct wrepl_wins_name, res->count);
 	NT_STATUS_HAVE_NO_MEMORY(names);
 
-	for (i=0; i < ret; i++) {
-		status = winsdb_record(res[i], NULL, call, &rec);
+	for (i = 0; i < res->count; i++) {
+		status = winsdb_record(res->msgs[i], NULL, call, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		status = wreplsrv_record2wins_name(names, call->wreplconn->our_ip, &names[i], rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(rec);
-		talloc_free(res[i]);
+		talloc_free(res->msgs[i]);
 	}
 
 	/* sort the names before we send them */

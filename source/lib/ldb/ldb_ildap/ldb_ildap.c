@@ -148,7 +148,7 @@ static void ildb_rootdse(struct ldb_module *module);
 */
 static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
+			      const char * const *attrs, struct ldb_result **res)
 {
 	struct ildb_private *ildb = module->private_data;
 	int count, i;
@@ -176,34 +176,46 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	}
 	if (search_base == NULL) {
 		ldb_set_errstring(module, talloc_asprintf(module, "Unable to determine baseDN"));
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 	if (tree == NULL) {
 		ldb_set_errstring(module, talloc_asprintf(module, "Invalid expression parse tree"));
-		return -1;
+		return LDB_ERR_OTHER;
 	}
+
+	(*res) = talloc(ildb, struct ldb_result);
+	if (! *res) {
+		return LDB_ERR_OTHER;
+	}
+	(*res)->count = 0;
+	(*res)->msgs = NULL;
 
 	status = ildap_search_bytree(ildb->ldap, search_base, scope, tree, attrs, 
 					    0, &ldapres);
 	talloc_free(search_base);
 	if (!NT_STATUS_IS_OK(status)) {
 		ildb_map_error(ildb, status);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	count = ildap_count_entries(ildb->ldap, ldapres);
-	if (count == -1 || count == 0) {
+	if (count == -1) {
 		talloc_free(ldapres);
-		return count;
+		return LDB_ERR_OTHER;
 	}
 
-	(*res) = talloc_array(ildb, struct ldb_message *, count+1);
-	if (! *res) {
+	if (count == 0) {
 		talloc_free(ldapres);
-		return -1;
+		return LDB_SUCCESS;
 	}
 
-	(*res)[0] = NULL;
+	(*res)->msgs = talloc_array(*res, struct ldb_message *, count + 1);
+	if (! (*res)->msgs) {
+		talloc_free(ldapres);
+		return LDB_ERR_OTHER;
+	}
+
+	(*res)->msgs[0] = NULL;
 
 	/* loop over all messages */
 	for (i=0;i<count;i++) {
@@ -212,28 +224,29 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 		msg = ldapres[i];
 		search = &msg->r.SearchResultEntry;
 
-		(*res)[i] = talloc(*res, struct ldb_message);
-		if (!(*res)[i]) {
+		(*res)->msgs[i] = talloc(*res, struct ldb_message);
+		if (!(*res)->msgs[i]) {
 			goto failed;
 		}
-		(*res)[i+1] = NULL;
+		(*res)->msgs[i+1] = NULL;
 
-		(*res)[i]->dn = ldb_dn_explode((*res)[i], search->dn);
-		if ((*res)[i]->dn == NULL) {
+		(*res)->msgs[i]->dn = ldb_dn_explode((*res)->msgs[i], search->dn);
+		if ((*res)->msgs[i]->dn == NULL) {
 			goto failed;
 		}
-		(*res)[i]->num_elements = search->num_attributes;
-		(*res)[i]->elements = talloc_steal((*res)[i], search->attributes);
-		(*res)[i]->private_data = NULL;
+		(*res)->msgs[i]->num_elements = search->num_attributes;
+		(*res)->msgs[i]->elements = talloc_steal((*res)->msgs[i], search->attributes);
+		(*res)->msgs[i]->private_data = NULL;
 	}
 
 	talloc_free(ldapres);
 
-	return count;
+	(*res)->count = count;
+	return LDB_SUCCESS;
 
 failed:
 	if (*res) talloc_free(*res);
-	return -1;
+	return LDB_ERR_OTHER;
 }
 
 
@@ -384,13 +397,41 @@ static int ildb_del_trans(struct ldb_module *module)
 	return 0;
 }
 
+static int ildb_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return ildb_search_bytree(module,
+					  req->op.search.base,
+					  req->op.search.scope, 
+					  req->op.search.tree, 
+					  req->op.search.attrs, 
+					  req->op.search.res);
+
+	case LDB_REQ_ADD:
+		return ildb_add(module, req->op.add.message);
+
+	case LDB_REQ_MODIFY:
+		return ildb_modify(module, req->op.mod.message);
+
+	case LDB_REQ_DELETE:
+		return ildb_delete(module, req->op.del.dn);
+
+	case LDB_REQ_RENAME:
+		return ildb_rename(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn);
+
+	default:
+		return -1;
+
+	}
+}
+
 static const struct ldb_module_ops ildb_ops = {
 	.name              = "ldap",
-	.search_bytree     = ildb_search_bytree,
-	.add_record        = ildb_add,
-	.modify_record     = ildb_modify,
-	.delete_record     = ildb_delete,
-	.rename_record     = ildb_rename,
+	.request           = ildb_request,
 	.start_transaction = ildb_start_trans,
 	.end_transaction   = ildb_end_trans,
 	.del_transaction   = ildb_del_trans
@@ -403,16 +444,16 @@ static const struct ldb_module_ops ildb_ops = {
 static void ildb_rootdse(struct ldb_module *module)
 {
 	struct ildb_private *ildb = module->private_data;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	struct ldb_dn *empty_dn = ldb_dn_new(ildb);
 	int ret;
 	ret = ildb_search_bytree(module, empty_dn, LDB_SCOPE_BASE, 
 				 ldb_parse_tree(empty_dn, "dn=dc=rootDSE"), 
 				 NULL, &res);
-	if (ret == 1) {
-		ildb->rootDSE = talloc_steal(ildb, res[0]);
+	if (ret == LDB_SUCCESS && res->count == 1) {
+		ildb->rootDSE = talloc_steal(ildb, res->msgs[0]);
 	}
-	if (ret != -1) talloc_free(res);
+	if (ret == LDB_SUCCESS) talloc_free(res);
 	talloc_free(empty_dn);
 }
 

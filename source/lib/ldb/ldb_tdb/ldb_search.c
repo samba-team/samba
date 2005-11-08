@@ -299,7 +299,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
 */
 int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
-			  int *count, 
+			  unsigned int *count, 
 			  struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
@@ -339,8 +339,8 @@ struct ltdb_search_info {
 	enum ldb_scope scope;
 	const char * const *attrs;
 	struct ldb_message **msgs;
-	int failures;
-	int count;
+	unsigned int failures;
+	unsigned int count;
 };
 
 
@@ -406,15 +406,22 @@ static int ltdb_search_full(struct ldb_module *module,
 			    const struct ldb_dn *base,
 			    enum ldb_scope scope,
 			    struct ldb_parse_tree *tree,
-			    const char * const attrs[], struct ldb_message ***res)
+			    const char * const attrs[], struct ldb_result **res)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	int ret, count;
+	struct ldb_result *result;
+	int ret;
 	struct ltdb_search_info *sinfo;
+
+	result = talloc(ltdb, struct ldb_result);
+	if (result == NULL) {
+		return LDB_ERR_OTHER;
+	}
 
 	sinfo = talloc(ltdb, struct ltdb_search_info);
 	if (sinfo == NULL) {
-		return -1;
+		talloc_free(result);
+		return LDB_ERR_OTHER;
 	}
 
 	sinfo->tree = tree;
@@ -429,16 +436,18 @@ static int ltdb_search_full(struct ldb_module *module,
 	ret = tdb_traverse_read(ltdb->tdb, search_func, sinfo);
 
 	if (ret == -1) {
+		talloc_free(result);
 		talloc_free(sinfo);
 		return -1;
 	}
 
-	*res = talloc_steal(ltdb, sinfo->msgs);
-	count = sinfo->count;
+	result->msgs = talloc_steal(result, sinfo->msgs);
+	result->count = sinfo->count;
+	*res = result;
 
 	talloc_free(sinfo);
 
-	return count;
+	return LDB_SUCCESS;
 }
 
 
@@ -448,7 +457,7 @@ static int ltdb_search_full(struct ldb_module *module,
 */
 int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
-		       const char * const attrs[], struct ldb_message ***res)
+		       const char * const attrs[], struct ldb_result **res)
 {
 	int ret;
 

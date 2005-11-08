@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "auth/auth.h"
 #include "db_wrap.h"
 
@@ -113,12 +114,13 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldapsrv_reply *ent_r, *done_r;
 	int result = LDAP_SUCCESS;
 	struct ldb_context *samdb;
-	struct ldb_message **res = NULL;
-	int i, j, y, count = 0;
+	struct ldb_result *res = NULL;
+	int i, j, y, ret;
 	int success_limit = 1;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
+	struct ldb_request lreq;
 
 	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -160,71 +162,81 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	DEBUG(5,("ldb_search_bytree dn=%s filter=%s\n", 
+	DEBUG(5,("ldb_request dn=%s filter=%s\n", 
 		 r->basedn, ldb_filter_from_tree(call, r->tree)));
 
-	count = ldb_search_bytree(samdb, basedn, scope, r->tree, attrs, &res);
+	ZERO_STRUCT(lreq);
+	lreq.operation = LDB_REQ_SEARCH;
+	lreq.op.search.base = basedn;
+	lreq.op.search.scope = scope;
+	lreq.op.search.tree = r->tree;
+	lreq.op.search.attrs = attrs;
+	lreq.op.search.res = &res;
+
+	ret = ldb_request(samdb, &lreq);
 	talloc_steal(samdb, res);
 
-	for (i=0; i < count; i++) {
-		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
-		NT_STATUS_HAVE_NO_MEMORY(ent_r);
+	if (ret == LDB_SUCCESS) {
+		for (i = 0; i < res->count; i++) {
+			ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
+			NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
-		ent = &ent_r->msg->r.SearchResultEntry;
-		ent->dn = ldb_dn_linearize(ent_r, res[i]->dn);
-		ent->num_attributes = 0;
-		ent->attributes = NULL;
-		if (res[i]->num_elements == 0) {
-			goto queue_reply;
-		}
-		ent->num_attributes = res[i]->num_elements;
-		ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
-		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
-		for (j=0; j < ent->num_attributes; j++) {
-			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
-			ent->attributes[j].num_values = 0;
-			ent->attributes[j].values = NULL;
-			if (r->attributesonly && (res[i]->elements[j].num_values == 0)) {
-				continue;
+			ent = &ent_r->msg->r.SearchResultEntry;
+			ent->dn = ldb_dn_linearize(ent_r, res->msgs[i]->dn);
+			ent->num_attributes = 0;
+			ent->attributes = NULL;
+			if (res->msgs[i]->num_elements == 0) {
+				goto queue_reply;
 			}
-			ent->attributes[j].num_values = res[i]->elements[j].num_values;
-			ent->attributes[j].values = talloc_array(ent->attributes,
-							DATA_BLOB, ent->attributes[j].num_values);
-			NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
-			for (y=0; y < ent->attributes[j].num_values; y++) {
-				ent->attributes[j].values[y].length = res[i]->elements[j].values[y].length;
-				ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
-									res[i]->elements[j].values[y].data);
+			ent->num_attributes = res->msgs[i]->num_elements;
+			ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
+			NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
+			for (j=0; j < ent->num_attributes; j++) {
+				ent->attributes[j].name = talloc_steal(ent->attributes, res->msgs[i]->elements[j].name);
+				ent->attributes[j].num_values = 0;
+				ent->attributes[j].values = NULL;
+				if (r->attributesonly && (res->msgs[i]->elements[j].num_values == 0)) {
+					continue;
+				}
+				ent->attributes[j].num_values = res->msgs[i]->elements[j].num_values;
+				ent->attributes[j].values = talloc_array(ent->attributes,
+								DATA_BLOB, ent->attributes[j].num_values);
+				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
+				for (y=0; y < ent->attributes[j].num_values; y++) {
+					ent->attributes[j].values[y].length = res->msgs[i]->elements[j].values[y].length;
+					ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
+										res->msgs[i]->elements[j].values[y].data);
+				}
 			}
-		}
 queue_reply:
-		ldapsrv_queue_reply(call, ent_r);
+			ldapsrv_queue_reply(call, ent_r);
+		}
 	}
 
 reply:
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
-	if (result == LDAP_SUCCESS) {
-		if (count >= success_limit) {
-			DEBUG(10,("sldb_Search: results: [%d]\n",count));
+	if (ret == LDB_SUCCESS) {
+		if (res->count >= success_limit) {
+			DEBUG(10,("sldb_Search: results: [%d]\n", res->count));
 			result = LDAP_SUCCESS;
 			errstr = NULL;
-		} else if (count == 0) {
+		} else if (res->count == 0) {
 			DEBUG(10,("sldb_Search: no results\n"));
 			result = LDAP_NO_SUCH_OBJECT;
 			errstr = ldb_errstring(samdb);
-		} else if (count == -1) {
-			DEBUG(10,("sldb_Search: error\n"));
-			result = LDAP_OTHER;
-			errstr = ldb_errstring(samdb);
 		}
+	} else {
+		DEBUG(10,("sldb_Search: error\n"));
+		result = ret;
+		errstr = ldb_errstring(samdb);
 	}
 
 	done = &done_r->msg->r.SearchResultDone;
 	done->dn = NULL;
 	done->resultcode = result;
-	done->errormessage = (errstr?talloc_strdup(done_r,errstr):NULL);
+	done->errormessage = (errstr?talloc_strdup(done_r, errstr):NULL);
 	done->referral = NULL;
 
 	talloc_free(local_ctx);
@@ -476,11 +488,11 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	struct ldapsrv_reply *compare_r;
 	int result = LDAP_SUCCESS;
 	struct ldb_context *samdb;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	const char *attrs[1];
 	const char *errstr = NULL;
 	const char *filter = NULL;
-	int count;
+	int ret;
 
 	local_ctx = talloc_named(call, 0, "sldb_Compare local_memory_context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -504,24 +516,24 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(compare_r);
 
 	if (result == LDAP_SUCCESS) {
-		count = ldb_search(samdb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
+		ret = ldb_search(samdb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
 		talloc_steal(samdb, res);
-		if (count == 1) {
-			DEBUG(10,("sldb_Compare: matched\n"));
-			result = LDAP_COMPARE_TRUE;
-			errstr = NULL;
-		} else if (count == 0) {
-			DEBUG(10,("sldb_Compare: doesn't matched\n"));
-			result = LDAP_COMPARE_FALSE;
-			errstr = NULL;
-		} else if (count > 1) {
-			result = LDAP_OTHER;
-			errstr = "too many objects match";
-			DEBUG(10,("sldb_Compare: %d results: %s\n", count, errstr));
-		} else if (count == -1) {
+		if (ret != LDB_SUCCESS) {
 			result = LDAP_OTHER;
 			errstr = ldb_errstring(samdb);
 			DEBUG(10,("sldb_Compare: error: %s\n", errstr));
+		} else if (res->count == 0) {
+			DEBUG(10,("sldb_Compare: doesn't matched\n"));
+			result = LDAP_COMPARE_FALSE;
+			errstr = NULL;
+		} else if (res->count == 1) {
+			DEBUG(10,("sldb_Compare: matched\n"));
+			result = LDAP_COMPARE_TRUE;
+			errstr = NULL;
+		} else if (res->count > 1) {
+			result = LDAP_OTHER;
+			errstr = "too many objects match";
+			DEBUG(10,("sldb_Compare: %d results: %s\n", res->count, errstr));
 		}
 	}
 

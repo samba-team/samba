@@ -24,6 +24,7 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
 
 /*
@@ -146,7 +147,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 				    struct creds_CredentialState **creds)
 {
 	struct ldb_context *ldb;
-	struct ldb_message **res;
+	struct ldb_result *res;
 	int ret;
 	const struct ldb_val *val;
 	char *expr=NULL;
@@ -168,12 +169,12 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
-	if (ret != 1) {
+	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(ldb);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	val = ldb_msg_find_ldb_val(res[0], "sessionKey");
+	val = ldb_msg_find_ldb_val(res->msgs[0], "sessionKey");
 	if (val == NULL || val->length != 16) {
 		DEBUG(1,("schannel: record in schannel DB must contain a sessionKey of length 16, when searching for client: %s\n", computer_name));
 		talloc_free(ldb);
@@ -182,7 +183,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 
 	memcpy((*creds)->session_key, val->data, 16);
 
-	val = ldb_msg_find_ldb_val(res[0], "seed");
+	val = ldb_msg_find_ldb_val(res->msgs[0], "seed");
 	if (val == NULL || val->length != 8) {
 		DEBUG(1,("schannel: record in schannel DB must contain a vaid seed of length 8, when searching for client: %s\n", computer_name));
 		talloc_free(ldb);
@@ -191,17 +192,17 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 
 	memcpy((*creds)->seed.data, val->data, 8);
 
-	(*creds)->negotiate_flags = ldb_msg_find_int(res[0], "negotiateFlags", 0);
+	(*creds)->negotiate_flags = ldb_msg_find_int(res->msgs[0], "negotiateFlags", 0);
 
-	(*creds)->secure_channel_type = ldb_msg_find_int(res[0], "secureChannelType", 0);
+	(*creds)->secure_channel_type = ldb_msg_find_int(res->msgs[0], "secureChannelType", 0);
 
-	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "accountName", NULL));
+	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_string(res->msgs[0], "accountName", NULL));
 
-	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "computerName", NULL));
+	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_string(res->msgs[0], "computerName", NULL));
 
-	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_string(res[0], "flatname", NULL));
+	(*creds)->domain = talloc_reference(*creds, ldb_msg_find_string(res->msgs[0], "flatname", NULL));
 
-	(*creds)->sid = samdb_result_dom_sid(*creds, res[0], "objectSid");
+	(*creds)->sid = samdb_result_dom_sid(*creds, res->msgs[0], "objectSid");
 
 	talloc_free(ldb);
 

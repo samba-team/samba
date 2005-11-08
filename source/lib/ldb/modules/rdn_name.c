@@ -37,14 +37,6 @@
 #include "ldb/include/ldb_private.h"
 #include <time.h>
 
-static int rdn_name_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-				  enum ldb_scope scope, struct ldb_parse_tree *tree,
-				  const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_search\n");
-	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
-}
-
 static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_message *msg, const char *name)
 {
 	int i;
@@ -58,9 +50,9 @@ static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_mess
 	return NULL;
 }
 
-/* add_record: add crateTimestamp/modifyTimestamp attributes */
-static int rdn_name_add_record(struct ldb_module *module, const struct ldb_message *msg)
+static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
@@ -70,12 +62,12 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* Perhaps someone above us knows better */
 	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	msg2 = talloc(module, struct ldb_message);
@@ -128,15 +120,18 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 		}
 	}
 
-	ret = ldb_next_add_record(module, msg2);
+	req->op.add.message = msg2;
+	ret = ldb_next_request(module, req);
+	req->op.add.message = msg;
+
 	talloc_free(msg2);
 
 	return ret;
 }
 
-/* modify_record: change modifyTimestamp as well */
-static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_message *msg)
+static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.mod.message;
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
@@ -146,12 +141,12 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_modify_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* Perhaps someone above us knows better */
 	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
-		return ldb_next_modify_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	msg2 = talloc(module, struct ldb_message);
@@ -186,24 +181,35 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 
 	attribute->flags = LDB_FLAG_MOD_REPLACE;
 
-	ret = ldb_next_modify_record(module, msg2);
+	req->op.add.message = msg2;
+	ret = ldb_next_request(module, req);
+	req->op.add.message = msg;
+
 	talloc_free(msg2);
 
 	return ret;
 }
 
-static int rdn_name_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+static int rdn_name_request(struct ldb_module *module, struct ldb_request *req)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_rename_record\n");
-	return ldb_next_rename_record(module, olddn, newdn);
+	switch (req->operation) {
+
+	case LDB_REQ_ADD:
+		return rdn_name_add(module, req);
+
+	case LDB_REQ_MODIFY:
+		return rdn_name_modify(module, req);
+
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
 }
 
 static const struct ldb_module_ops rdn_name_ops = {
 	.name              = "rdn_name",
-	.search_bytree     = rdn_name_search_bytree,
-	.add_record        = rdn_name_add_record,
-	.modify_record     = rdn_name_modify_record,
-	.rename_record     = rdn_name_rename_record
+	.request           = rdn_name_request
 };
 
 

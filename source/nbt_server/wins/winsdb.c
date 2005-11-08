@@ -37,7 +37,7 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	int ret;
 	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_dn *dn;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	struct ldb_message *msg = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	uint64_t maxVersion = 0;
@@ -49,16 +49,15 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	if (!dn) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
-	if (res != NULL) {
-		talloc_steal(tmp_ctx, res);
-	}
-	if (ret < 0) goto failed;
-	if (ret > 1) goto failed;
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
 
-	if (ret == 1) {
-		maxVersion = ldb_msg_find_uint64(res[0], "maxVersion", 0);
+	if (ret != LDB_SUCCESS) goto failed;
+	if (res->count > 1) goto failed;
+
+	talloc_steal(tmp_ctx, res);
+
+	if (res->count == 1) {
+		maxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
 	}
 	maxVersion++;
 
@@ -378,7 +377,7 @@ NTSTATUS winsdb_lookup(struct ldb_context *wins_db,
 		       struct winsdb_record **_rec)
 {
 	NTSTATUS status;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	int ret;
 	struct winsdb_record *rec;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -386,18 +385,18 @@ NTSTATUS winsdb_lookup(struct ldb_context *wins_db,
 	/* find the record in the WINS database */
 	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
 			 NULL, NULL, &res);
-	if (res != NULL) {
-		talloc_steal(tmp_ctx, res);
-	}
-	if (ret == 0) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		goto failed;
-	} else if (ret != 1) {
+
+	if (ret != LDB_SUCCESS || res->count > 1) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	} else if (res->count== 0) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto failed;
 	}
 
-	status = winsdb_record(res[0], name, tmp_ctx, &rec);
+	talloc_steal(tmp_ctx, res);
+
+	status = winsdb_record(res->msgs[0], name, tmp_ctx, &rec);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* see if it has already expired */

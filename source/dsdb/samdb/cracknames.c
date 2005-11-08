@@ -28,6 +28,7 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 
@@ -48,8 +49,8 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 				   char **alias_to)
 {
 	int i;
-	int count;
-	struct ldb_message **msg;
+	int ret;
+	struct ldb_result *res;
 	struct ldb_message_element *spnmappings;
 	struct ldb_dn *service_dn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx),
 						"CN=Directory Service,CN=Windows NT"
@@ -60,19 +61,19 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		NULL
 	};
 
-	count = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
-			   directory_attrs, &msg);
-	talloc_steal(mem_ctx, msg);
+	ret = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
+			   directory_attrs, &res);
+	talloc_steal(mem_ctx, res);
 
-	if (count < 1) {
-		DEBUG(1, ("ldb_search: dn: %s not found: %d", service_dn_str, count));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("ldb_search: dn: %s not found: %s", service_dn_str, ldb_errstring(ldb_ctx)));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-	} else if (count > 1) {
-		DEBUG(1, ("ldb_search: dn: %s found %d times!", service_dn_str, count));
+	} else if (res->count > 1) {
+		DEBUG(1, ("ldb_search: dn: %s found %d times!", service_dn_str, res->count));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 	}
 	
-	spnmappings = ldb_msg_find_element(msg[0], "sPNMappings");
+	spnmappings = ldb_msg_find_element(res->msgs[0], "sPNMappings");
 	if (!spnmappings || spnmappings->num_values == 0) {
 		DEBUG(1, ("ldb_search: dn: %s no sPNMappings attribute", service_dn_str));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;

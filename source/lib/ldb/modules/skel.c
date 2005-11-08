@@ -44,7 +44,7 @@ struct private_data {
 /* search */
 static int skel_search(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
-		       const char * const *attrs, struct ldb_message ***res)
+		       const char * const *attrs, struct ldb_result **res)
 {
 	return ldb_next_search(module, base, scope, tree, attrs, res); 
 }
@@ -100,13 +100,41 @@ static int skel_destructor(void *module_ctx)
 	return 0;
 }
 
+static int skel_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return skel_search_bytree(module,
+					  req->op.search->base,
+					  req->op.search->scope, 
+					  req->op.search->tree, 
+					  req->op.search->attrs, 
+					  req->op.search->res);
+
+	case LDB_REQ_ADD:
+		return skel_add(module, req->op.add->message);
+
+	case LDB_REQ_MODIFY:
+		return skel_modify(module, req->op.mod->message);
+
+	case LDB_REQ_DELETE:
+		return skel_delete(module, req->op.del->dn);
+
+	case LDB_REQ_RENAME:
+		return skel_rename(module,
+					req->op.rename->olddn,
+					req->op.rename->newdn);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
 static const struct ldb_module_ops skel_ops = {
 	.name		   = "skel",
-	.search_bytree     = skel_search_bytree,
-	.add_record	   = skel_add_record,
-	.modify_record	   = skel_modify_record,
-	.delete_record	   = skel_delete_record,
-	.rename_record	   = skel_rename_record,
+	.request      	   = skel_request,
 	.start_transaction = skel_start_trans,
 	.end_transaction   = skel_end_trans,
 	.del_transaction   = skel_del_trans,

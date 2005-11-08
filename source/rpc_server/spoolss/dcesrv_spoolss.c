@@ -538,8 +538,6 @@ static WERROR spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, TALLOC_
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
@@ -611,8 +609,6 @@ static WERROR spoolss_AddForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
@@ -643,8 +639,6 @@ static WERROR spoolss_DeleteForm(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
@@ -675,8 +669,6 @@ static WERROR spoolss_GetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
@@ -710,8 +702,6 @@ static WERROR spoolss_SetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
@@ -742,8 +732,6 @@ static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:

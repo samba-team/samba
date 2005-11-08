@@ -57,7 +57,7 @@ int ltdb_search_indexed(struct ldb_module *module,
 			const struct ldb_dn *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
-			const char * const attrs[], struct ldb_message ***res);
+			const char * const attrs[], struct ldb_result **res);
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_reindex(struct ldb_module *module);
@@ -81,11 +81,11 @@ void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
 int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct ldb_message *msg);
 int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
-			  int *count, 
+			  unsigned int *count, 
 			  struct ldb_message ***res);
 int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
-		       const char * const attrs[], struct ldb_message ***res);
+		       const char * const attrs[], struct ldb_result **res);
 
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */

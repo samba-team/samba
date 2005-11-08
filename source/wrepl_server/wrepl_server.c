@@ -31,6 +31,7 @@
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 
 /*
   open winsdb
@@ -63,7 +64,7 @@ struct wreplsrv_partner *wreplsrv_find_partner(struct wreplsrv_service *service,
 */
 static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 {
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	int i;
@@ -71,29 +72,27 @@ static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	/* find the record in the WINS database */
 	ret = ldb_search(service->wins_db, ldb_dn_explode(tmp_ctx, "CN=PARTNERS"), LDB_SCOPE_ONELEVEL,
 			 "(objectClass=wreplPartner)", NULL, &res);
-	if (res != NULL) {
-		talloc_steal(tmp_ctx, res);
-	}
-	if (ret < 0) goto failed;
-	if (ret == 0) goto done;
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+	if (res->count == 0) goto done;
 
-	for (i=0; i < ret; i++) {
+	for (i=0; i < res->count; i++) {
 		struct wreplsrv_partner *partner;
 
 		partner = talloc_zero(service, struct wreplsrv_partner);
 		if (partner == NULL) goto failed;
-		partner->service	= service;
 
-		partner->address		= ldb_msg_find_string(res[i], "address", NULL);
+		partner->service		= service;
+		partner->address		= ldb_msg_find_string(res->msgs[i], "address", NULL);
 		if (!partner->address) goto failed;
-		partner->name			= ldb_msg_find_string(res[i], "name", partner->address);
-		partner->type			= ldb_msg_find_uint(res[i], "type", WINSREPL_PARTNER_BOTH);
-		partner->pull.interval		= ldb_msg_find_uint(res[i], "pullInterval",
+		partner->name			= ldb_msg_find_string(res->msgs[i], "name", partner->address);
+		partner->type			= ldb_msg_find_uint(res->msgs[i], "type", WINSREPL_PARTNER_BOTH);
+		partner->pull.interval		= ldb_msg_find_uint(res->msgs[i], "pullInterval",
 								    WINSREPL_DEFAULT_PULL_INTERVAL);
-		partner->pull.retry_interval	= ldb_msg_find_uint(res[i], "pullRetryInterval",
+		partner->pull.retry_interval	= ldb_msg_find_uint(res->msgs[i], "pullRetryInterval",
 								    WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
-		partner->our_address		= ldb_msg_find_string(res[i], "ourAddress", NULL);
-		partner->push.change_count	= ldb_msg_find_uint(res[i], "pushChangeCount",
+		partner->our_address		= ldb_msg_find_string(res->msgs[i], "ourAddress", NULL);
+		partner->push.change_count	= ldb_msg_find_uint(res->msgs[i], "pushChangeCount",
 								    WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
 
 		talloc_steal(partner, partner->address);
@@ -138,7 +137,7 @@ uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
 	int ret;
 	struct ldb_context *ldb = service->wins_db;
 	struct ldb_dn *dn;
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	uint64_t maxVersion = 0;
 
@@ -148,14 +147,12 @@ uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
 	/* find the record in the WINS database */
 	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
 			 NULL, NULL, &res);
-	if (res != NULL) {
-		talloc_steal(tmp_ctx, res);
-	}
-	if (ret < 0) goto failed;
-	if (ret > 1) goto failed;
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+	if (res->count > 1) goto failed;
 
-	if (ret == 1) {
-		maxVersion = ldb_msg_find_uint64(res[0], "maxVersion", 0);
+	if (res->count == 1) {
+		maxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
 	}
 
 failed:
@@ -268,7 +265,7 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 */
 static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 {
-	struct ldb_message **res = NULL;
+	struct ldb_result *res = NULL;
 	int ret;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
@@ -284,16 +281,14 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	/* find the record in the WINS database */
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE,
 			 "(objectClass=winsRecord)", attrs, &res);
-	if (res != NULL) {
-		talloc_steal(tmp_ctx, res);
-	}
 	status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-	if (ret < 0) goto failed;
-	if (ret == 0) goto done;
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+	if (res->count == 0) goto done;
 
-	for (i=0; i < ret; i++) {
-		wins_owner     = ldb_msg_find_string(res[i], "winsOwner", NULL);
-		version        = ldb_msg_find_uint64(res[i], "versionID", 0);
+	for (i=0; i < res->count; i++) {
+		wins_owner     = ldb_msg_find_string(res->msgs[i], "winsOwner", NULL);
+		version        = ldb_msg_find_uint64(res->msgs[i], "versionID", 0);
 
 		if (wins_owner) { 
 			status = wreplsrv_add_table(service,
@@ -301,7 +296,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 						    wins_owner, version);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
-		talloc_free(res[i]);
+		talloc_free(res->msgs[i]);
 
 		/* TODO: what's abut the per address owners? */
 	}
