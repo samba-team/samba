@@ -95,6 +95,9 @@
 #define SE_GROUP_LOGON_ID 		0xC0000000
 #define SE_GROUP_RESOURCE 		0x20000000
 
+/* Flags for controlling the behaviour of a particular logon */
+#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	( 0x020 )
+#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	( 0x800 )
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */

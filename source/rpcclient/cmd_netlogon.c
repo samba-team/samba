@@ -272,7 +272,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
         /* Perform the sam logon */
 
-        result = rpccli_netlogon_sam_logon(cli, mem_ctx, lp_workgroup(), username, password, logon_type);
+        result = rpccli_netlogon_sam_logon(cli, mem_ctx, 0, lp_workgroup(), username, password, logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

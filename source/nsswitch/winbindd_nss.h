@@ -202,6 +202,7 @@ struct winbindd_request {
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
+			uint32 logon_parameters;
                         fstring user;
                         fstring domain;
                         fstring lm_resp;

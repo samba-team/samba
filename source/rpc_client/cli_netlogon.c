@@ -528,11 +528,12 @@ NTSTATUS rpccli_netlogon_sam_deltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 /* Logon domain user */
 
 NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx,
-				const char *domain,
-                                const char *username,
-				const char *password,
-                                int logon_type)
+				   TALLOC_CTX *mem_ctx,
+				   uint32 logon_parameters,
+				   const char *domain,
+				   const char *username,
+				   const char *password,
+				   int logon_type)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_SAM_LOGON q;
@@ -566,7 +567,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
                 nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
                 init_id_info1(&ctr.auth.id1, domain, 
-                              0, /* param_ctrl */
+			      logon_parameters, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash,
                               (const char *)cli->dc->sess_key, lm_owf_user_pwd,
@@ -585,7 +586,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
                 SMBNTencrypt(password, chal, local_nt_response);
 
                 init_id_info2(&ctr.auth.id2, domain, 
-                              0, /* param_ctrl */
+			      logon_parameters, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash, chal,
                               local_lm_response, 24, local_nt_response, 24);
@@ -636,6 +637,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   uint32 logon_parameters,
 					   const char *server,
 					   const char *username,
 					   const char *domain,
@@ -688,7 +690,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
         ctr.switch_value = NET_LOGON_TYPE;
 
 	init_id_info2(&ctr.auth.id2, domain,
-		      0, /* param_ctrl */
+		      logon_parameters, /* param_ctrl */
 		      0xdead, 0xbeef, /* LUID? */
 		      username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
