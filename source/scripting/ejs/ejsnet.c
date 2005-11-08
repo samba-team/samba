@@ -76,13 +76,53 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	obj = mprInitObject(eid, "NetCtx", argc, argv);
-
-	mprSetStringCFunction(obj, "CreateUser", ejs_net_createuser);
 	mprSetPtrChild(obj, "ctx", ctx);
+
+	mprSetCFunction(obj, "UserMgr", ejs_net_userman);
 
 	return 0;
 done:
 	talloc_free(ctx);
+	return -1;
+}
+
+
+static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	const char *userman_domain = NULL;
+	struct MprVar *obj = NULL;
+
+	ctx = mprGetThisPtr(eid, "ctx");
+	mem_ctx = talloc_init(NULL);
+
+	if (argc == 0) {
+		userman_domain = cli_credentials_get_domain(ctx->cred);
+
+	} else if (argc == 1 && mprVarIsString(argv[0]->type)) {
+		userman_domain = talloc_strdup(ctx, mprToString(argv[0]));
+
+	} else {
+		ejsSetErrorMsg(eid, "too many arguments");
+		goto done;
+	}
+	
+	if (!userman_domain) {
+		ejsSetErrorMsg(eid, "a domain must be specified for user management");
+		goto done;
+	}
+
+	obj = mprInitObject(eid, "NetUsrCtx", argc, argv);
+	mprSetPtrChild(obj, "ctx", ctx);
+	mprSetPtrChild(obj, "domain", userman_domain);
+
+	mprSetStringCFunction(obj, "Create", ejs_net_createuser);
+
+	return 0;
+done:
+	talloc_free(mem_ctx);
 	return -1;
 }
 
@@ -92,6 +132,7 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
+	const char *userman_domain = NULL;
 	struct libnet_CreateUser req;
 
 	if (argc != 1) {
@@ -100,9 +141,20 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 	}
 
 	ctx = mprGetThisPtr(eid, "ctx");
-	mem_ctx = talloc_init(NULL);
+	if (!ctx) {
+		ejsSetErrorMsg(eid, "ctx property returns null pointer");
+		goto done;
+	}
+
+	userman_domain = mprGetThisPtr(eid, "domain");
+	if (!userman_domain) {
+		ejsSetErrorMsg(eid, "domain property returns null pointer");
+		goto done;
+	}
 	
-	req.in.domain_name = cli_credentials_get_domain(ctx->cred);
+	mem_ctx = talloc_init(NULL);
+
+    	req.in.domain_name = userman_domain;
 	req.in.user_name   = argv[0];
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);

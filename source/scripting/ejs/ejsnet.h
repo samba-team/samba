@@ -24,4 +24,5 @@
 
 
 void ejsnet_setup(void);
+static int ejs_net_userman(MprVarHandle, int, struct MprVar**);
 static int ejs_net_createuser(MprVarHandle, int, char**);
