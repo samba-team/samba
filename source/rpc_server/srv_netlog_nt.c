@@ -633,7 +633,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
+		DEBUG(0,("_net_sam_logon: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
