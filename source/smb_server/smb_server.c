@@ -620,47 +620,9 @@ static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 */
 static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
-
-	while (smb_conn->pending_send) {
-		struct smbsrv_request *req = smb_conn->pending_send;
-		DATA_BLOB blob;
-		NTSTATUS status;
-		size_t sendlen;
-
-		blob.data = req->out.buffer;
-		blob.length = req->out.size;
-
-		/* send as much of this request as we can */
-		status = socket_send(conn->socket, &blob, &sendlen, 0);
-		if (NT_STATUS_IS_ERR(status)) {
-			smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-			break;
-		}
-		if (sendlen == 0) {
-			break;
-		}
-
-		req->out.buffer += sendlen;
-		req->out.size -= sendlen;
-
-		/* is the whole request gone? */
-		if (req->out.size == 0) {
-			DLIST_REMOVE(smb_conn->pending_send, req);
-			req_destroy(req);
-		}
-	}
-
-	if (smb_conn->terminate) {
-		stream_terminate_connection(smb_conn->connection, smb_conn->terminate);
-		return;
-	}
-
-	/* if no more requests are pending to be sent then
-	   we should stop select for write */
-	if (smb_conn->pending_send == NULL) {
-		EVENT_FD_NOT_WRITEABLE(conn->event.fde);
-	}
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, 
+							     struct smbsrv_connection);
+	packet_queue_run(smb_conn->packet);
 }
 
 

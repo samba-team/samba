@@ -27,6 +27,7 @@
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
+#include "lib/stream/packet.h"
 
 
 /* we over allocate the data buffer to prevent too many realloc calls */
@@ -291,16 +292,19 @@ void req_grow_data(struct smbsrv_request *req, uint_t new_size)
 */
 void req_send_reply_nosign(struct smbsrv_request *req)
 {
+	DATA_BLOB blob;
+	NTSTATUS status;
+
 	if (req->out.size > NBT_HDR_SIZE) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	/* add the request to the list of requests that need to be
-	   sent to the client, then mark the socket event structure
-	   ready for write events */
-	DLIST_ADD_END(req->smb_conn->pending_send, req, struct smbsrv_request *);
-
-	EVENT_FD_WRITEABLE(req->smb_conn->connection->event.fde);
+	blob = data_blob_const(req->out.buffer, req->out.size);
+	status = packet_send(req->smb_conn->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+	}
+	req_destroy(req);
 }
 
 /*
