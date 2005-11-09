@@ -16,7 +16,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2003-08-30 19:08-0500\n"
+"POT-Creation-Date: 2005-08-13 17:05-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,11 +24,13 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "Character Set for Unix filesystem"
 msgstr ""
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid ""
@@ -38,16 +40,19 @@ msgid ""
 "controls how Samba interprets filenames on the file system."
 msgstr ""
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:3
 msgid "If you leave this option blank, your smb.conf will not be changed."
 msgstr ""
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:13
 msgid "Character Set for DOS clients"
 msgstr ""
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:13
 msgid ""
@@ -59,11 +64,13 @@ msgid ""
 "this option blank, your smb.conf will not be changed."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid "Modify smb.conf to use WINS settings from DHCP?"
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid ""
@@ -74,6 +81,7 @@ msgid ""
 "be read from /etc/samba/dhcp.conf."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:24
 msgid ""
@@ -81,11 +89,13 @@ msgid ""
 "feature."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid "Configure smb.conf through debconf?"
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid ""
@@ -96,6 +106,7 @@ msgid ""
 "require you to edit your smb.conf by hand to get it working again."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:37
 msgid ""
@@ -105,11 +116,13 @@ msgid ""
 "recommended if possible."
 msgstr ""
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:52
 msgid "Workgroup/Domain Name?"
 msgstr ""
 
+#. Type: string
 #. Description
 #: ../samba-common.templates:52
 msgid ""
@@ -118,11 +131,13 @@ msgid ""
 "the security=domain setting."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:60
 msgid "Use password encryption?"
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba-common.templates:60
 msgid ""
@@ -134,11 +149,13 @@ msgid ""
 "command."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba.templates:4
 msgid "Create samba password database, /var/lib/samba/passdb.tdb?"
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba.templates:4
 msgid ""
@@ -153,11 +170,13 @@ msgid ""
 "details."
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../samba.templates:17
 msgid "Samba's log files have moved."
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../samba.templates:17
 msgid ""
@@ -166,6 +185,7 @@ msgid ""
 "names of the files are log.nmbd and log.smbd, for nmbd and smbd respectively."
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../samba.templates:17
 msgid ""
@@ -173,11 +193,13 @@ msgid ""
 "for you."
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../samba.templates:28
 msgid "Running nmbd from inetd is no longer supported"
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../samba.templates:28
 msgid ""
@@ -187,16 +209,19 @@ msgid ""
 "adjust it by hand now so that nmbd will start."
 msgstr ""
 
+#. Type: select
 #. Choices
 #: ../samba.templates:36
 msgid "daemons, inetd"
 msgstr ""
 
+#. Type: select
 #. Description
 #: ../samba.templates:38
 msgid "How do you want to run Samba?"
 msgstr ""
 
+#. Type: select
 #. Description
 #: ../samba.templates:38
 msgid ""
@@ -204,11 +229,13 @@ msgid ""
 "daemon is the recommended approach."
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba.templates:45
 msgid "Move /etc/samba/smbpasswd to /var/lib/samba/passdb.tdb?"
 msgstr ""
 
+#. Type: boolean
 #. Description
 #: ../samba.templates:45
 msgid ""
@@ -219,11 +246,13 @@ msgid ""
 "here."
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../swat.templates:3
 msgid "Your smb.conf will be re-written!"
 msgstr ""
 
+#. Type: note
 #. Description
 #: ../swat.templates:3
 msgid ""

@@ -19,13 +19,14 @@ export DH_OPTIONS
 # cross-building, etc.
 DEB_HOST_GNU_TYPE	:= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE	:= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_ARCH_OS	:= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 
 export DEB_HOST_GNU_TYPE
 export DEB_BUILD_GNU_TYPE
-
+export DEB_HOST_ARCH_OS
 
 # Support the DEB_BUILD_OPTIONS variable
-CFLAGS = -gstabs -Wall
+CFLAGS = -g -Wall
 INSTALL = install
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -40,6 +41,50 @@ endif
 
 
 DESTDIR=`pwd`/debian/tmp
+
+conf_args = \
+		--cache-file=./config.cache \
+		--with-fhs \
+		--enable-shared \
+		--enable-static \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--libdir=/etc/samba \
+		--with-privatedir=/etc/samba \
+		--with-piddir=/var/run/samba \
+		--localstatedir=/var \
+		--with-netatalk \
+		--with-pam \
+		--with-syslog \
+		--with-utmp \
+		--with-readline \
+		--with-pam_smbpass \
+		--with-libsmbclient \
+		--with-winbind \
+		--with-msdfs \
+		--with-automount \
+		--with-tdbsam \
+		--with-ldap \
+		--with-python=python2.3
+
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+  conf_args += \
+		--with-smbmount \
+		--with-acl-support \
+		--with-quotas
+  mount_cifs	= yes
+  smbfs		= yes
+else
+  conf_args +=	--without-quotas
+  mount_cifs	= no
+  smbfs		= no
+endif
+
+ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+  conf_args += --build $(DEB_HOST_GNU_TYPE)
+else
+  conf_args += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
 
 patch: patch-stamp
 patch-stamp:
@@ -60,34 +105,7 @@ configure-stamp:
 		cp -f debian/config.cache source/config.cache; \
 	fi
 
-	[ -f source/Makefile ] || (cd source && CFLAGS="$(CFLAGS)" ./configure \
-		--host=$(DEB_HOST_GNU_TYPE) \
-		--build=$(DEB_BUILD_GNU_TYPE) \
-		--cache-file=./config.cache \
-		--with-fhs \
-		--enable-shared \
-		--enable-static \
-		--prefix=/usr \
-		--sysconfdir=/etc \
-		--libdir=/etc/samba \
-		--with-privatedir=/etc/samba \
-		--with-piddir=/var/run/samba \
-		--localstatedir=/var \
-		--with-netatalk \
-		--with-smbmount \
-		--with-pam \
-		--with-syslog \
-		--with-utmp \
-		--with-readline \
-		--with-pam_smbpass \
-		--with-libsmbclient \
-		--with-winbind \
-		--with-msdfs \
-		--with-automount \
-		--with-acl-support \
-		--with-tdbsam \
-		--with-ldap \
-		--with-python=python2.3)
+	[ -f source/Makefile ] || (cd source && CFLAGS="$(CFLAGS)" ./configure $(conf_args))
 
 	touch configure-stamp
 
@@ -97,6 +115,9 @@ build-stamp:
 
 	$(MAKE) -C source headers
 	$(MAKE) -C source all nsswitch/libnss_wins.so python_ext
+ifeq ($(mount_cifs),yes)
+	$(MAKE) -C source client/mount.cifs
+endif
 
 	touch build-stamp
 
@@ -112,7 +133,11 @@ clean: unpatch
 
 	# Delete stuff left after a build that is not deleted by 'make clean'
 	rm -f source/bin/wbinfo source/bin/winbindd source/bin/debug2html \
-		source/bin/libsmbclient.a source/include/stamp-h
+		source/bin/libsmbclient.a source/client/mount.cifs \
+		source/include/stamp-h
+
+	sed -e "s/@libacl@/`type-handling any linux-gnu`/g" \
+		< debian/control.in > debian/control
 
 	dh_clean
 
@@ -123,11 +148,11 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	mkdir -p $(DESTDIR)/usr/share/man $(DESTDIR)/usr/lib \
+	mkdir -p $(DESTDIR)/usr/share/man $(DESTDIR)/usr/lib/samba \
 	         $(DESTDIR)/lib/security $(DESTDIR)/sbin \
 	         $(DESTDIR)/usr/lib/cups/backend $(DESTDIR)/usr/share/samba \
 	         $(DESTDIR)/etc/pam.d $(DESTDIR)/etc/dhcp3/dhclient-enter-hooks.d \
-	         $(DESTDIR)/usr/lib/python2.3/site-packages
+	         $(DESTDIR)/usr/lib/python2.3/site-packages/samba
 
 	# Add here commands to install the package into debian/tmp.
 	$(MAKE) -C source install DESTDIR=$(DESTDIR)
@@ -135,9 +160,15 @@ install: build
 	# libsmbclient files are not installed by the standard
 	#	'make install' - do it manually.
 	$(MAKE) -C source installclientlib DESTDIR=$(DESTDIR)
-	mv $(DESTDIR)/usr/lib/libsmbclient.so $(DESTDIR)/usr/lib/libsmbclient.so.0.1
-	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so.0
-	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/libsmbclient.so
+	mv $(DESTDIR)/usr/lib/samba/libsmbclient.so $(DESTDIR)/usr/lib/samba/libsmbclient.so.0.1
+	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/samba/libsmbclient.so.0
+	ln -s libsmbclient.so.0.1 $(DESTDIR)/usr/lib/samba/libsmbclient.so
+
+	# Starting with Samba 3.0.6 libsmbclient.so is installed in
+	# /usr/lib/samba. We don't want it there since it is not in the
+	# default library path. Here we move it to /usr/lib/.
+	mv $(DESTDIR)/usr/lib/samba/libsmbclient* \
+		$(DESTDIR)/usr/lib/
 
 	# Install other stuff not installed by "make install"
 	install -m 0755 debian/mksmbpasswd.awk $(DESTDIR)/usr/sbin/mksmbpasswd
@@ -158,6 +189,7 @@ install: build
 	#	right location in the libpam-smbpass package.
 	install -m 0644 source/bin/pam_smbpass.so $(DESTDIR)/lib/security/
 
+ifeq ($(smbfs),yes)
 	# Create the symlinks that will allow us to do "mount -t smbfs ..."
 	# and "mount -t smb ...". Note that the source/script/installbin.sh
 	# tries to create the first symlink, but we have commented
@@ -167,6 +199,13 @@ install: build
 	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smb
 	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smb.8
 	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smbfs.8
+endif
+
+ifeq ($(mount_cifs),yes)
+	# Install mount.cifs and its man page
+	install -m 04755 source/client/mount.cifs $(DESTDIR)/sbin/
+	install -m 0644 docs/manpages/mount.cifs.8 $(DESTDIR)/usr/share/man/man8/
+endif
 
 	# For CUPS to support printing to samba printers, it's necessary
 	#	to make the following symlink (according to
@@ -206,7 +245,8 @@ install: build
 	# and lib.linux-i686-2.3 directories. Using only the stuff from
 	# the 2.3 directory for now. peloy.-
 	#cp source/build/lib.*/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
-	cp source/build/lib.linux-*-2.3/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/
+	cp source/build/lib.*-*-2.3/samba/*.so $(DESTDIR)/usr/lib/python2.3/site-packages/samba/
+	cp source/python/samba/* $(DESTDIR)/usr/lib/python2.3/site-packages/samba/
 
 	dh_movefiles
 
@@ -244,7 +284,11 @@ binary-indep: build install
 
 # Build architecture-dependent files here.
 # Pass -a to all debhelper commands in this target to reduce clutter.
-binary-arch: DH_OPTIONS=-a
+ifeq ($(smbfs),no)
+  DH_EXTRAS=-Nsmbfs
+endif
+
+binary-arch: DH_OPTIONS=-a $(DH_EXTRAS)
 binary-arch: build install
 	dh_testdir
 	dh_testroot
@@ -273,7 +317,9 @@ binary-arch: build install
 #	dh_undocumented
 	dh_installchangelogs -Nlibpam-smbpass
 	DH_OPTIONS= dh_installchangelogs -plibpam-smbpass source/pam_smbpass/CHANGELOG
-	dh_strip
+	dh_strip --dbg-package=samba --dbg-package=smbclient
+	cp -a debian/smbclient-dbg/* debian/samba-dbg
+	rm -rf debian/smbclient-dbg
 	dh_link
 	dh_compress
 	dh_fixperms
@@ -281,6 +327,7 @@ binary-arch: build install
 	# Why this is executable, I have NO idea...
 	chmod a-x debian/libsmbclient-dev/usr/include/libsmbclient.h
 
+ifeq ($(smbfs),yes)
 	# You may want to make some executables suid here.
 	# The smbmnt and smbumount binaries should be setuid-root. This
 	#	has security implications because these programs haven't had
@@ -288,6 +335,7 @@ binary-arch: build install
 	#	the setuid bit set. In fact, it is a security hole.
 	chmod u+s debian/smbfs/usr/bin/smbmnt
 	chmod u+s debian/smbfs/usr/bin/smbumount
+endif
 
 	# Set some reasonable default perms for the samba logdir.
 	chmod 0750 debian/samba/var/log/samba/

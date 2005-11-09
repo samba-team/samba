@@ -1,130 +1,319 @@
-samba (3.0.13-1) stable; urgency=high
+samba (3.0.20b-1) stable; urgency=low
 
-  * samba 3.0.13 release
+  * samba 3.0.20b Samba Team Release
 
- -- Simo Sorce <idra@samba.org>  Sun, 27 March 2005 21:00:00 +0200
+ -- Simo Sorce <idra@samba.org>  Sun, 23 Oct 2005 11:58:30 +0200
 
-samba (3.0.12-1) stable; urgency=low
+samba (3.0.14a-3) unstable; urgency=high
 
-  * samba 3.0.12 release
+  * Urgency set to high for a bug that makes smbclient/libsmbclient
+    /almost/ mostly unusable
+  * Fix smbclient's search continuation logic so that it works correctly
+    against 2K servers offering VFAT-hosted shares; many thanks to
+    Jeremy Allison for the timely upstream fix.  Closes: #309798.
+  * Update pt_BR debconf translation.  Thanks to Andre Luis Lopes
+    <andrelop@debian.org>. (closes: #308510)
+  * Add Russian debconf translation, thanks to Yuriy Talakan
+    <yt@amur.elektra.ru>. (closes: #310063)
 
- -- Simo Sorce <idra@samba.org>  Sun, 20 March 2005 18:38:00 +0100
+ -- Steve Langasek <vorlon@debian.org>  Thu, 26 May 2005 23:37:57 -0700
 
-samba (3.0.11-1) stable; urgency=low
+samba (3.0.14a-2) unstable; urgency=low
 
-  * samba 3.0.11 release
+  * Point the sense of the file_is_special() check right way around;
+    thanks to Matthijs Mohlmann for catching this.  Closes: #305747.
+  * debian/patches/dos7-xcopy-always-copies-files.patch:
+    Fix the MS-DOS 7 XCOPY copying files over and over bug
+    Closes: #309003
+  * Steve Langasek <vorlon@debian.org>:
+    - Add Christian Perrier to Uploaders:.  Thanks, Christian :)
 
- -- Simo Sorce <idra@samba.org>  Mon, 07 February 2005 09:22:00 +0100
+ -- Steve Langasek <vorlon@debian.org>  Sun,  8 May 2005 04:43:21 -0700
 
-samba (3.0.10-1) stable; urgency=low
+samba (3.0.14a-1) unstable; urgency=low
 
-  * samba 3.0.10 release
+  * New upstream version
+    - A more complete upstream fix for missing files in file listings,
+      should really give us working (closes: #302771); drop
+      xp-missing-files.patch, which has been superseded.
+  * Use the right path when removing mount.cifs binary in the clean
+    target.  Closes: #303318.
 
- -- Simo Sorce <idra@samba.org>  Mon, 26 December 2004 13:50:00 +0100
+ -- Steve Langasek <vorlon@debian.org>  Mon, 18 Apr 2005 03:22:29 -0700
 
-samba (3.0.9-1) stable; urgency=low
+samba (3.0.11-1) unstable; urgency=high
 
-  * samba 3.0.9 release
-  * added profiles utility to main .deb
-  * added mount.cifs .deb
+  * New upstream version
+    - Fixes duplicated entry in swat(8) manpage (closes: #292957).
+    - Fix queue handling so that processes serving print clients don't
+      spin off into infinity and clobber the system (closes: #274969).
+    - Make sure we use C-locale toupper/tolower functions for case
+      conversion, since Turkish pairing rules are incompatible
+      (closes: #286174).
+  * Fix logrotate script to exit true instead of false when nmbd.pid is
+    missing (closes: #287263).
+  * Added Portuguese debconf translation. Thanks to Miguel Figueiredo
+    <elmig@debianpt.org>. (closes: #286375)
+  * Added Italian debconf translation. Thanks to Luca Monducci
+    <luca.mo@tiscali.it>. (closes: #284125)
+  * Add support for building on the Debian BSD and Hurd ports; thanks to
+    Robert Millan for the patch. (closes: #266693)
+  * debian/patches/xp-missing-files.patch: import patch from upstream to
+    fix missing entries in directory listings when talking to WinXP
+    servers (closes: #297771).
 
- -- Simo Sorce <idra@samba.org>  Mon, 26 November 2004 12:13:00 +0100
+ -- Steve Langasek <vorlon@debian.org>  Wed, 23 Mar 2005 00:13:16 -0800
 
-samba (3.0.8-1) stable; urgency=low
+samba (3.0.10-1) unstable; urgency=high
 
-  * samba 3.0.8 release
+  * New upstream release.
+    - CAN-2004-1154: integer overflow can lead to remote code execution
+      by authenticated users; closes: #286023.
+  * High-urgency upload for sarge-targetted RC bugfix.  
+  * Sync the fhs.patch to samba 3.0.10.
+  * Install mount.cifs suid root, to make user mounts possible
+    (closes: #283819).
+  * debian/patches/cups.patch: Change the default printing system, so we
+    can compile in CUPS support without making it the default -- CUPS is
+    not a reasonable default on Debian, at least for sarge.
 
- -- Simo Sorce <idra@samba.org>  Mon, 9 November 2004 11:02:00 +0200
+ -- Steve Langasek <vorlon@debian.org>  Fri, 17 Dec 2004 11:56:01 -0800
 
-samba (3.0.7-2) stable; urgency=low
+samba (3.0.9-1) unstable; urgency=low
 
-  * fix a segmentation fault in smbcacls
-  * fix 2 annoying pdbldap related bugs
+  * New upstream release
+    - Fixes Win9x printing; closes: #283530, #282571, #283818.
+    - Fixes a problem with setting dosmodes on filesystems without ACL
+      support; closes: #283661.
+    - Drop ldapsam_compat.patch, redundant now that a fix is integrated
+      upstream
 
- -- Simo Sorce <idra@samba.org>  Mon, 11 October 2004 12:22:00 +0200
+ -- Steve Langasek <vorlon@debian.org>  Thu,  2 Dec 2004 01:11:39 -0800
 
-samba (3.0.7-1) stable; urgency=high
+samba (3.0.8-2) unstable; urgency=low
 
-  * samba 3.0.7 *Security* release
-  * See CAN-2004-0807 & CAN-2004-0808
+  * Fix the module paths for python2.3-samba so that "import foo from samba"
+    works, and include the __init__.py glue; closes: #222867).
+  * Enable quota support; closes: #246839.
+  * Fix missing symbols in libsmbclient (and libnss_wins), and add
+    -Wl,-z,defs to the libsmbclient link options to prevent future
+    instances of undefined symbols (closes: #281181).
+  * Fix for the legacy ldapsam_compat backend; thanks to Fabien
+    Chevalier for the patch (closes: #274155).
 
- -- Simo Sorce <idra@samba.org>  Mon, 13 September 2004 14:40:00 +0200
+ -- Steve Langasek <vorlon@debian.org>  Mon, 15 Nov 2004 06:54:13 -0800
 
-samba (3.0.6-1) stable; urgency=low
+samba (3.0.8-1) unstable; urgency=high
 
-  * samba 3.0.6 release
+  * New upstream package. Urgency set to "high" because of a potential
+    Denial of Service vulnerability in previous 3.0.x releases
+    (CAN-2004-0930). (Eloy)
+  * Introduce new -dbg package, so we can make better sense out of the
+    cleverly-supplied backtrace emails. (Vorlon)
+  * Applied patch from Luke Mewburn <luke@mewburn.net> to fix missing
+    lock_path() to state_path() change in the FHS patches. (Eloy)
 
- -- Simo Sorce <idra@samba.org>  Fri, 20 August 2004 10:19:00 +0200
+ -- Eloy A. Paris <peloy@debian.org>  Mon,  8 Nov 2004 13:39:34 -0500
 
-samba (3.0.5-1) stable; urgency=low
+samba (3.0.7-2) unstable; urgency=high
 
-  * samba 3.0.5 release
-  * Security Fix Release
+  * High-urgency upload for sarge-targetted RC fixes.
+  * Use autogen.sh in unpatch-source as well as in patch-source, to get
+    rid of the autom4te.cache cruft.
+  * debian/patches/make-distclean.patch: add some missing files to the
+    distclean target in source/Makefile.in (mostly-fixes: #276203).
+  * Change compile-time default of 'use sendfile' to 'no', since the
+    current Samba implementation is broken (closes: #261917, #275741,
+    #270175).
+  * Add mount.cifs into the smbfs package; thanks to Igor Belyi for
+    showing us just how simple this patch should be. ;)  Since cifs is
+    the preferred kernel driver in 2.6, bugs related to smbfs and 2.6
+    are considered closed unless someone can show that they exist with
+    the cifs driver as well (closes: #249890, #269443, #227791, #236869,
+    #260707, #261808, #270175).
+  * Fix FHS migration code so that it only affects upgrades from old
+    package versions, and doesn't cause us to mess with non-standard
+    directories that may have been re-added by the admin
+   (closes: #251858).
 
- -- Simo Sorce <idra@samba.org>  Tue, 27 July 2004 15:15:00 +0200
+ -- Steve Langasek <vorlon@debian.org>  Tue, 26 Oct 2004 01:35:23 -0700
 
-samba (3.0.4-1) stable; urgency=low
+samba (3.0.7-1) unstable; urgency=high
 
-  * samba 3.0.4 release
-  * some more fixes in packaging
-  * fixes wrong patch for fhs compatible paths
+  * New upstream release. This release fixes two possible denial of
+    service conditions; one in nmbd and one in smbd. The CVE numbers
+    for these vulnerabilities are:
 
- -- Simo Sorce <idra@samba.org>  Tue, 11 May 2004 11:55:00 +0100
+    CAN-2004-0807 for the smbd DoS
+    CAN-2004-0808 for the nmbd DoS
 
-samba (3.0.3-1) stable; urgency=low
+    Urgency is set to "high" because of these vulnerabilities; so this
+    new release propagates to testing ASAP.
 
-  * samba 3.0.3 release
-  * some more fixes in packaging
+    Thanks to the Samba Team and the Debian Security Team for the
+    heads up.
+  * Remove post-3.0.6 patches that are now in 3.0.7.
 
- -- Simo Sorce <idra@samba.org>  Wed, 05 May 2004 03:19:00 +0100
+ -- Eloy A. Paris <peloy@debian.org>  Mon, 13 Sep 2004 00:53:38 -0400
 
-samba (3.0.2a-1) stable; urgency=low
+samba (3.0.6-4) unstable; urgency=low
 
-  * samba 3.0.2a release
-  * use original source and patch agains it
+  * Update LDAP schema (closes: #269797).
+  * Applied a couple of upstream fixes that will be present in Samba 3.0.7.
 
- -- Simo Sorce <idra@samba.org>  Sun, 15 Feb 2004 18:36:00 +0100
+ -- Eloy A. Paris <peloy@debian.org>  Tue,  7 Sep 2004 15:28:42 -0400
 
-samba (3.0.2-1) stable; urgency=low
+samba (3.0.6-3) unstable; urgency=low
 
-  * samba 3.0.2 release
-  * fix piddir in fhs.patch to match the init scripts
+  * Put libsmbclient where it belongs, in /usr/lib. (closes: #267704)
 
- -- Simo Sorce <idra@samba.org>  Tue, 10 Feb 2004 16:24:00 +0100
+ -- Eloy A. Paris <peloy@debian.org>  Wed, 25 Aug 2004 01:58:37 -0400
 
-samba (3.0.1-3) stable; urgency=low
+samba (3.0.6-2) unstable; urgency=low
 
-  * Make sure we install *.dat unicode tables files
-  * Make sure we have the correct pam file for woody
-  * Fix interactive menu configuration
+  * Added Danish debconf translation. Thanks to Claus Hindsgaul
+    <claus_h@image.dk>. (closes: #232884)
 
- -- Simo Sorce <idra@samba.org>  Fri, 19 Dec 2003 13:13:00 +0100
+ -- Eloy A. Paris <peloy@debian.org>  Mon, 23 Aug 2004 17:24:19 -0400
 
-samba (3.0.1-2) stable; urgency=low
+samba (3.0.6-1) unstable; urgency=low
 
-  * Make sure we distribute also ntlm_auth
+  * New upstream version.
+  * Incorporate Turkish debconf translation; thanks to Recai Oktas
+    <roktas@omu.edu.tr>. (closes: #252031)
+  * Update pt_BR debconf translation. Thanks to Andre Luis Lopes
+    <andrelop@debian.org>. (closes: #208113)
 
- -- Simo Sorce <idra@samba.org>  Fri, 19 Dec 2003 13:13:00 +0100
+ -- Eloy A. Paris <peloy@debian.org>  Mon, 23 Aug 2004 12:34:44 -0400
 
-samba (3.0.1-1) stable; urgency=low
+samba (3.0.5-2) unstable; urgency=high
 
-  * Samba Team Release
-  * NOTE: this package works correctly only on recent 2.4.x kernels
+  * Patches from Fabien Chevalier <fabien.chevalier@supelec.fr>
+    to fix:
+    + libnss_wins crashes other programs (closes: #252591)
+    + Can't list share files/dirs, but can acces deeper files/dirs
+      (closes: #264572)
+    + Samba 3.0.5 Printserver doesn't work with WinXP SP2 (closes: #265871)
+  * Urgency "high" to make it into testing as soon as possible since
+    at least #265871 is pretty bad now that WinXP SP2 has been released.
+    Thanks for the help Fabien! Both Vorlon and I have been very busy
+    lately.
 
- -- Simo Sorce <idra@samba.org>  Fri, 19 Dec 2003 13:13:00 +0100
+ -- Eloy A. Paris <peloy@debian.org>  Wed, 18 Aug 2004 13:25:41 -0400
 
-samba (3.0.0-2) unstable; urgency=low
+samba (3.0.5-1) unstable; urgency=high
 
-  *  Samba Team Release 2
-  *  Fixes woody dependencies problem with acl and attr packages
+  * New upstream version. Urgency "high" because of potential buffer
+    overflows. The security fixes are the only difference between
+    3.0.4 and 3.0.5.
 
- -- Simo Sorce <idra@samba.org>  Thu, 28 Sep 2003 12:42:00 +0200
+ -- Eloy A. Paris <peloy@debian.org>  Thu, 22 Jul 2004 08:07:36 -0400
 
-samba (3.0.0-1) unstable; urgency=low
+samba (3.0.4-5) unstable; urgency=low
 
-  *  Samba Team Release
+  * Doh! Build-depends on libcupsys2-dev (>=1.1.20final+cvs20040330-4),
+    not an unversioned libcupsys2-dev. (closes# 250523)
 
- -- Simo Sorce <idra@samba.org>  Thu, 25 Sep 2003 00:26:00 +0200
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 25 May 2004 07:43:54 -0400
+
+samba (3.0.4-4) unstable; urgency=low
+
+  * Rebuilt with libcupsys2-gnutls10 for unstable.
+    Closes: #250424, #250483, #250491, #250515, #250523, #250592, #250736
+    Closes: #250742, #250733
+
+ -- Eloy A. Paris <peloy@debian.org>  Mon, 24 May 2004 22:32:52 -0400
+
+samba (3.0.4-3) unstable; urgency=low
+
+  * Color me stupid; I uploaded an experimental version to unstable.
+
+ -- Eloy A. Paris <peloy@debian.org>  Sat, 22 May 2004 00:40:58 -0400
+
+samba (3.0.4-1) unstable; urgency=low
+
+  Eloy:
+
+  * New upstream version.
+    Closes: #247640 (New upstream version available)
+    Closes: #238905 (Printing crash fix)
+    Closes: #247090 (panic in viewing printerqueue)
+
+  Vorlon:
+
+  * Incorporate Catalan debconf translations; thanks to
+    Aleix Badia i Bosch <abadia@ica.es> and the Debian L10n Catalan Team.
+    (closes: #236640)
+  * Incorporate Czech debconf translations; thanks to
+    Miroslav Kure <kurem@upcase.inf.upol.cz> (closes: #236274).
+  * Update libsmbclient shlibs, due to an incompatibility with older
+    versions that prevents gnome-vfs from working correctly
+    (closes: #245869).
+
+ -- Eloy A. Paris <peloy@debian.org>  Fri, 21 May 2004 11:42:19 -0400
+
+samba (3.0.2a-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 24 Feb 2004 10:30:47 -0500
+
+samba (3.0.2-2) unstable; urgency=high
+
+  * Apply patch from Urban Widmark <urban@teststation.com> to prevent
+    users from mounting remote filesystems containing suid files
+    (closes: 232327).  This represents an exploitable security hole on
+    systems running Linux 2.6 kernels.
+
+ -- Steve Langasek <vorlon@debian.org>  Thu, 12 Feb 2004 21:38:40 -0600
+
+samba (3.0.2-1) unstable; urgency=high
+
+  * New upstream release.
+    - LaMont Jones: correct false failure LFS test that resulted
+      in _GNU_SOURCE not being defined (thus resulting in strndup()
+      not being defined) (closes: #226694)
+    - Segfault fixes. (closes: #230012) (maybe more, but we need bug
+      reporters to confirm.)
+
+    Urgency "high" due to a password initialization bug that could grant
+    an attacker unauthorized access to a user account created by the
+    mksmbpasswd.sh shell script. See WHATSNEWS.txt for details and
+    workarounds for those not wishing to upgrade (which is a bad idea
+    anyway since this new release fixes lots of other bugs.)
+
+ -- Eloy A. Paris <peloy@debian.org>  Sun,  8 Feb 2004 10:06:29 -0500
+
+samba (3.0.1-2) unstable; urgency=low
+
+  * Include ntlm_auth's man page.
+  * Don't create directories outside of the source directory during
+    package build time. (closes: #227221, #227238, #225862)
+  * Don't include the "Using Samba" book in the swat package, just a
+    symlink that points to the book included in the samba-doc package.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 13 Jan 2004 13:48:13 -0500
+
+samba (3.0.1-1) unstable; urgency=low
+
+  * New upstream version (closes: #225565)
+  * Add support in the dhcp hook for netbios scope, and handle better
+    the case of multiple DHCP-using interfaces (closes: #224109).
+  * Use "tail -n 1 ..." instead of "tail -1 ..." so POSIX-compliant
+    tail works. Thanks to Paul Eggert <eggert@twinsun.com>.
+  * Include /usr/bin/ntlm_auth in the winbind package.
+  * Run configure with "--with-piddir=/var/run/samba" since the
+    default got changed to /var/run in this new upstream version.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 30 Dec 2003 16:21:31 -0500
+
+samba (3.0.0final-1) unstable; urgency=low
+
+  * It's here, it's here, it's here, Samba 3.0.0 is here!
+  * Incorporate Japanese debconf translations; thanks to Kenshi Muto
+    <kmuto@debian.org>. (closes: #209291)
+
+ -- Eloy A. Paris <peloy@debian.org>  Thu, 25 Sep 2003 13:39:28 -0400
 
 samba (3.0.0beta2+3.0.0rc4-1) unstable; urgency=low
 
@@ -146,8 +335,6 @@ samba (3.0.0beta2+3.0.0rc3-1) unstable; urgency=low
 samba (3.0.0beta2+3.0.0rc2-1) unstable; urgency=low
 
   * New upstream release.
-  * Incorporate Dutch debconf translations; thanks to Bart Cornelis
-    <cobaco@linux.be>. (closes: #207824)
   * Link against libgnutls7 instead of libgnutls5. (closes: #208151)
 
  -- Eloy A. Paris <peloy@debian.org>  Tue,  2 Sep 2003 21:37:13 -0400

@@ -1,4 +1,3 @@
-usr/bin/testprns
 usr/bin/smbstatus
 usr/bin/smbcontrol
 usr/bin/tdbbackup
@@ -9,8 +8,6 @@ usr/sbin/mksmbpasswd
 usr/lib/samba/vfs
 usr/share/man/man1/smbcontrol.1
 usr/share/man/man1/smbstatus.1
-usr/share/man/man1/testprns.1
-usr/share/man/man5/smbpasswd.5
 usr/share/man/man8/nmbd.8
 usr/share/man/man8/pdbedit.8
 usr/share/man/man8/smbd.8

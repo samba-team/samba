@@ -2,13 +2,13 @@ Source: samba
 Section: net
 Priority: optional
 Maintainer: Eloy A. Paris <peloy@debian.org>
-Uploaders: Steve Langasek <vorlon@debian.org>
-Build-Depends: debhelper (>= 4.1.13), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf, libacl1-dev (>= 2.2.11-1), libacl1 (>= 2.2.11-1), libkrb5-dev, libldap2-dev, po-debconf, python2.3-dev
-Standards-Version: 3.5.10
+Uploaders: Steve Langasek <vorlon@debian.org>, Christian Perrier <bubulle@debian.org>
+Build-Depends: debhelper (>= 4.1.13), libpam0g-dev, libreadline5-dev, libcupsys2-dev (>=1.1.20final+cvs20040330-4), autoconf, libacl1-dev (>= 2.2.11-1) [i386 ia64 alpha amd64 arm hppa m32r m68k mips mipsel powerpc ppc64 s390 s390x sh3 sh3eb sh4 sh4eb sparc], libkrb5-dev, libldap2-dev, po-debconf, python2.3-dev, binutils (>= 2.14.90.0.7), type-handling (>= 0.2.1), libpopt-dev, dpkg-dev (>= 1.13.9)
+Standards-Version: 3.6.2
 
 Package: samba
 Architecture: any
-Depends: samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 0.76-13.1), libpam-modules
+Depends: samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 0.76-13.1), libpam-modules, lsb-base (>= 3.0-6)
 Replaces: samba-common (<= 2.0.5a-2)
 Suggests: samba-doc
 Description: a LanManager-like file and printer server for Unix
@@ -37,11 +37,13 @@ Description: a LanManager-like file and printer server for Unix
  It is possible to install a subset of these packages depending on
  your particular needs. For example, to access other SMB servers you
  should only need the smbclient and samba-common packages.
+ .
+ http://www.samba.org/
 
 Package: samba-common
 Architecture: any
-Depends: debconf, libpam-modules, ${shlibs:Depends}
-Replaces: samba (<< 2.999+3.0.alpha21-4)
+Depends: libpam-modules, ${shlibs:Depends}, ${misc:Depends}
+Replaces: samba (<< 3.0.20b-1)
 Description: Samba common files used by both the server and the client
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
@@ -71,7 +73,7 @@ Description: a LanManager-like simple client for Unix
 
 Package: swat
 Architecture: any
-Depends: debconf, samba (= ${Source-Version}), ${shlibs:Depends}
+Depends: samba (= ${Source-Version}), ${shlibs:Depends}, ${misc:Depends}
 Recommends: samba-doc
 Description: Samba Web Administration Tool
  The Samba software suite is a collection of programs that
@@ -136,7 +138,7 @@ Description: pluggable authentication module for SMB password database
 
 Package: libsmbclient
 Section: libs
-Priority: extra
+Priority: optional
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: shared library that allows applications to talk to SMB servers
@@ -186,3 +188,16 @@ Description: Python bindings that allow access to various aspects of Samba
  to work well.
  .
  See /usr/share/doc/python2.3-samba/examples for a couple of examples.
+
+Package: samba-dbg
+Section: devel
+Architecture: any
+Depends: samba (= ${Source-Version})
+Description: Samba debugging symbols
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
+ .
+ This package contains debugging symbols for the programs included in
+ the samba and smbclient packages.
