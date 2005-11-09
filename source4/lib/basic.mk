@@ -15,6 +15,7 @@ include cmdline/config.mk
 include socket_wrapper/config.mk
 include appweb/config.mk
 include replace/config.mk
+include stream/config.mk
 
 ##############################
 # Start SUBSYSTEM LIBNETIF

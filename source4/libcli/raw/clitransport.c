@@ -25,9 +25,9 @@
 #include "lib/socket/socket.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
+#include "lib/stream/packet.h"
 
 
-static void smbcli_transport_process_recv(struct smbcli_transport *transport);
 static void smbcli_transport_process_send(struct smbcli_transport *transport);
 
 /*
@@ -40,7 +40,7 @@ static void smbcli_transport_event_handler(struct event_context *ev,
 	struct smbcli_transport *transport = talloc_get_type(private,
 							     struct smbcli_transport);
 	if (flags & EVENT_FD_READ) {
-		smbcli_transport_process_recv(transport);
+		packet_recv(transport->packet);
 		return;
 	}
 	if (flags & EVENT_FD_WRITE) {
@@ -58,6 +58,18 @@ static int transport_destructor(void *ptr)
 	smbcli_transport_dead(transport);
 	return 0;
 }
+
+
+/*
+  handle receive errors
+*/
+static void smbcli_transport_error(void *private, NTSTATUS status)
+{
+	struct smbcli_transport *transport = talloc_get_type(private, struct smbcli_transport);
+	smbcli_transport_dead(transport);
+}
+
+static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
 
 /*
   create a transport structure based on an established socket
@@ -82,7 +94,20 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	transport->options.request_timeout = SMB_REQUEST_TIMEOUT;
 
 	transport->negotiate.max_xmit = transport->options.max_xmit;
-	
+
+	/* setup the stream -> packet parser */
+	transport->packet = packet_init(transport);
+	if (transport->packet == NULL) {
+		talloc_free(transport);
+		return NULL;
+	}
+	packet_set_private(transport->packet, transport);
+	packet_set_socket(transport->packet, transport->socket->sock);
+	packet_set_callback(transport->packet, smbcli_transport_finish_recv);
+	packet_set_full_request(transport->packet, packet_full_request_nbt);
+	packet_set_error_handler(transport->packet, smbcli_transport_error);
+	packet_set_event_context(transport->packet, transport->socket->event.ctx);
+
 	smbcli_init_signing(transport);
 
 	ZERO_STRUCT(transport->called);
@@ -381,17 +406,17 @@ static void smbcli_transport_process_send(struct smbcli_transport *transport)
   we have a full request in our receive buffer - match it to a pending request
   and process
  */
-static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
+static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
 {
+	struct smbcli_transport *transport = talloc_get_type(private, 
+							     struct smbcli_transport);
 	uint8_t *buffer, *hdr, *vwv;
 	int len;
 	uint16_t wct=0, mid = 0, op = 0;
 	struct smbcli_request *req;
 
-	buffer = transport->recv_buffer.buffer;
-	len = transport->recv_buffer.req_size;
-
-	ZERO_STRUCT(transport->recv_buffer);
+	buffer = blob.data;
+	len = blob.length;
 
 	hdr = buffer+NBT_HDR_SIZE;
 	vwv = hdr + HDR_VWV;
@@ -399,7 +424,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 	/* see if it could be an oplock break request */
 	if (handle_oplock_break(transport, len, hdr, vwv)) {
 		talloc_free(buffer);
-		return;
+		return NT_STATUS_OK;
 	}
 
 	/* at this point we need to check for a readbraw reply, as
@@ -514,77 +539,14 @@ async:
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
-	return;
+	return NT_STATUS_OK;
 
 error:
 	if (req) {
 		DLIST_REMOVE(transport->pending_recv, req);
 		req->state = SMBCLI_REQUEST_ERROR;
 	}
-}
-
-/*
-  process some pending receives
-*/
-static void smbcli_transport_process_recv(struct smbcli_transport *transport)
-{
-	/* a incoming packet goes through 2 stages - first we read the
-	   4 byte header, which tells us how much more is coming. Then
-	   we read the rest */
-	if (transport->recv_buffer.received < NBT_HDR_SIZE) {
-		NTSTATUS status;
-		size_t nread;
-		status = smbcli_sock_read(transport->socket, 
-					  transport->recv_buffer.header + 
-					  transport->recv_buffer.received,
-					  NBT_HDR_SIZE - transport->recv_buffer.received,
-					  &nread);
-		if (NT_STATUS_IS_ERR(status)) {
-			smbcli_transport_dead(transport);
-			return;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			return;
-		}
-
-		transport->recv_buffer.received += nread;
-
-		if (transport->recv_buffer.received == NBT_HDR_SIZE) {
-			/* we've got a full header */
-			transport->recv_buffer.req_size = smb_len(transport->recv_buffer.header) + NBT_HDR_SIZE;
-			transport->recv_buffer.buffer = talloc_size(transport,
-								    NBT_HDR_SIZE+transport->recv_buffer.req_size);
-			if (transport->recv_buffer.buffer == NULL) {
-				smbcli_transport_dead(transport);
-				return;
-			}
-			memcpy(transport->recv_buffer.buffer, transport->recv_buffer.header, NBT_HDR_SIZE);
-		}
-	}
-
-	if (transport->recv_buffer.received < transport->recv_buffer.req_size) {
-		NTSTATUS status;
-		size_t nread;
-		status = smbcli_sock_read(transport->socket, 
-					  transport->recv_buffer.buffer + 
-					  transport->recv_buffer.received,
-					  transport->recv_buffer.req_size - 
-					  transport->recv_buffer.received,
-					  &nread);
-		if (NT_STATUS_IS_ERR(status)) {
-			smbcli_transport_dead(transport);
-			return;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			return;
-		}
-		transport->recv_buffer.received += nread;
-	}
-
-	if (transport->recv_buffer.received != 0 &&
-	    transport->recv_buffer.received == transport->recv_buffer.req_size) {
-		smbcli_transport_finish_recv(transport);
-	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -593,8 +555,18 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 */
 BOOL smbcli_transport_process(struct smbcli_transport *transport)
 {
+	NTSTATUS status;
+	size_t npending;
+
 	smbcli_transport_process_send(transport);
-	smbcli_transport_process_recv(transport);
+	if (transport->socket->sock == NULL) {
+		return False;
+	}
+
+	status = socket_pending(transport->socket->sock, &npending);
+	if (NT_STATUS_IS_OK(status) && npending > 0) {
+		packet_recv(transport->packet);
+	}
 	if (transport->socket->sock == NULL) {
 		return False;
 	}
