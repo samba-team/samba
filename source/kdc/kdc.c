@@ -69,9 +69,6 @@ struct kdc_tcp_connection {
 
 	struct packet_context *packet;
 
-	/* a queue of outgoing replies that have been deferred */
-	struct data_blob_list_item *send_queue;
-
 	BOOL (*process)(struct kdc_server *kdc,
 			 TALLOC_CTX *mem_ctx, 
 			 DATA_BLOB *input, 
@@ -232,7 +229,6 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, struct kdc_tcp_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
-	struct data_blob_list_item *rep;
 	const char *src_addr;
 	int src_port;
 	int ret;
@@ -261,23 +257,18 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 	}
 
 	/* and now encode the reply */
-	rep = talloc(kdcconn, struct data_blob_list_item);
-	if (!rep) {
+	blob = data_blob_talloc(kdcconn, NULL, reply.length + 4);
+	if (!blob.data) {
 		goto nomem;
 	}
 
-	rep->blob = data_blob_talloc(rep, NULL, reply.length + 4);
-	if (!rep->blob.data) {
-		goto nomem;
-	}
+	RSIVAL(blob.data, 0, reply.length);
+	memcpy(blob.data + 4, reply.data, reply.length);	
 
-	RSIVAL(rep->blob.data, 0, reply.length);
-	memcpy(rep->blob.data + 4, reply.data, reply.length);	
-
-	if (!kdcconn->send_queue) {
-		EVENT_FD_WRITEABLE(kdcconn->conn->event.fde);
+	status = packet_send(kdcconn->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
 	}
-	DLIST_ADD_END(kdcconn->send_queue, rep, struct data_blob_list_item *);
 
 	/* the call isn't needed any more */
 	talloc_free(tmp_ctx);
@@ -314,30 +305,9 @@ static void kdc_tcp_recv_error(void *private, NTSTATUS status)
 */
 static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, struct kdc_tcp_connection);
-	NTSTATUS status;
-
-	while (kdcconn->send_queue) {
-		struct data_blob_list_item *q = kdcconn->send_queue;
-		size_t sendlen;
-
-		status = socket_send(conn->socket, &q->blob, &sendlen, 0);
-		if (NT_STATUS_IS_ERR(status)) goto failed;
-		if (!NT_STATUS_IS_OK(status)) return;
-
-		q->blob.length -= sendlen;
-		q->blob.data   += sendlen;
-
-		if (q->blob.length == 0) {
-			DLIST_REMOVE(kdcconn->send_queue, q);
-			talloc_free(q);
-		}
-	}
-
-	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
-	return;
-failed:
-	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, 
+							     struct kdc_tcp_connection);
+	packet_queue_run(kdcconn->packet);
 }
 
 /**
