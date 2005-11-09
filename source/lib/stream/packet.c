@@ -44,6 +44,12 @@ struct packet_context {
 	struct fd_event *fde;
 	BOOL serialise;
 	BOOL processing;
+
+	struct send_element {
+		struct send_element *next, *prev;
+		DATA_BLOB blob;
+		size_t nsent;
+	} *send_queue;
 };
 
 /*
@@ -323,6 +329,61 @@ next_partial:
 }
 
 
+/*
+  trigger a run of the send queue
+*/
+void packet_queue_run(struct packet_context *pc)
+{
+	while (pc->send_queue) {
+		struct send_element *el = pc->send_queue;
+		NTSTATUS status;
+		size_t nwritten;
+		DATA_BLOB blob = data_blob_const(el->blob.data + el->nsent,
+						 el->blob.length - el->nsent);
+
+		if (pc->tls) {
+			status = tls_socket_send(pc->tls, &blob, &nwritten);
+		} else {
+			status = socket_send(pc->sock, &blob, &nwritten, 0);
+		}
+		if (NT_STATUS_IS_ERR(status)) {
+			packet_error(pc, NT_STATUS_NET_WRITE_FAULT);
+			return;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return;
+		}
+		el->nsent += nwritten;
+		if (el->nsent == el->blob.length) {
+			DLIST_REMOVE(pc->send_queue, el);
+			talloc_free(el);
+		}
+	}
+
+	/* we're out of requests to send, so don't wait for write
+	   events any more */
+	EVENT_FD_NOT_WRITEABLE(pc->fde);
+}
+
+/*
+  put a packet in the send queue
+*/
+NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
+{
+	struct send_element *el;
+	el = talloc(pc, struct send_element);
+	NT_STATUS_HAVE_NO_MEMORY(el);
+
+	DLIST_ADD_END(pc->send_queue, el, struct send_element *);
+	el->blob = blob;
+	el->nsent = 0;
+	talloc_steal(el, blob.data);
+
+	EVENT_FD_WRITEABLE(pc->fde);
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   a full request checker for NBT formatted packets (first 3 bytes are length)
@@ -338,3 +399,5 @@ NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *packet_s
 	}
 	return NT_STATUS_OK;
 }
+
+
