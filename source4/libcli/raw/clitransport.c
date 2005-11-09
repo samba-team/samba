@@ -571,10 +571,11 @@ void smbcli_transport_send(struct smbcli_request *req)
 	if (req->one_way_request) {
 		req->state = SMBCLI_REQUEST_DONE;
 		smbcli_request_destroy(req);
-	} else {
-		req->state = SMBCLI_REQUEST_RECV;
-		DLIST_ADD(req->transport->pending_recv, req);
+		return;
 	}
+
+	req->state = SMBCLI_REQUEST_RECV;
+	DLIST_ADD(req->transport->pending_recv, req);
 
 	/* add a timeout */
 	if (req->transport->options.request_timeout) {
