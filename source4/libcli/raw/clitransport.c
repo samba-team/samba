@@ -28,8 +28,6 @@
 #include "lib/stream/packet.h"
 
 
-static void smbcli_transport_process_send(struct smbcli_transport *transport);
-
 /*
   an event has happened on the socket
 */
@@ -44,7 +42,7 @@ static void smbcli_transport_event_handler(struct event_context *ev,
 		return;
 	}
 	if (flags & EVENT_FD_WRITE) {
-		smbcli_transport_process_send(transport);
+		packet_queue_run(transport->packet);
 	}
 }
 
@@ -122,6 +120,8 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 						    smbcli_transport_event_handler,
 						    transport);
 
+	packet_set_serialise(transport->packet, transport->socket->event.fde);
+
 	talloc_set_destructor(transport, transport_destructor);
 
 	return transport;
@@ -134,18 +134,7 @@ void smbcli_transport_dead(struct smbcli_transport *transport)
 {
 	smbcli_sock_dead(transport->socket);
 
-	/* all pending sends become errors */
-	while (transport->pending_send) {
-		struct smbcli_request *req = transport->pending_send;
-		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
-		DLIST_REMOVE(transport->pending_send, req);
-		if (req->async.fn) {
-			req->async.fn(req);
-		}
-	}
-
-	/* as do all pending receives */
+	/* kill all pending receives */
 	while (transport->pending_recv) {
 		struct smbcli_request *req = transport->pending_recv;
 		req->state = SMBCLI_REQUEST_ERROR;
@@ -157,24 +146,6 @@ void smbcli_transport_dead(struct smbcli_transport *transport)
 	}
 }
 
-
-/*
-  enable select for write on a transport
-*/
-static void smbcli_transport_write_enable(struct smbcli_transport *transport)
-{
-	struct fd_event *fde = transport->socket->event.fde;
-	EVENT_FD_WRITEABLE(fde);
-}
-
-/*
-  disable select for write on a transport
-*/
-static void smbcli_transport_write_disable(struct smbcli_transport *transport)
-{
-	struct fd_event *fde = transport->socket->event.fde;
-	EVENT_FD_NOT_WRITEABLE(fde);
-}
 
 /*
   send a session request
@@ -365,44 +336,6 @@ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 }
 
 /*
-  process some pending sends
-*/
-static void smbcli_transport_process_send(struct smbcli_transport *transport)
-{
-	while (transport->pending_send) {
-		struct smbcli_request *req = transport->pending_send;
-		NTSTATUS status;
-		size_t nwritten;
-
-		status = smbcli_sock_write(transport->socket, req->out.buffer, 
-					   req->out.size, &nwritten);
-		if (NT_STATUS_IS_ERR(status)) {
-			smbcli_transport_dead(transport);
-			return;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			return;
-		}
-		req->out.buffer += nwritten;
-		req->out.size -= nwritten;
-		if (req->out.size == 0) {
-			DLIST_REMOVE(transport->pending_send, req);
-			if (req->one_way_request) {
-				req->state = SMBCLI_REQUEST_DONE;
-				smbcli_request_destroy(req);
-			} else {
-				req->state = SMBCLI_REQUEST_RECV;
-				DLIST_ADD(transport->pending_recv, req);
-			}
-		}
-	}
-
-	/* we're out of requests to send, so don't wait for write
-	   events any more */
-	smbcli_transport_write_disable(transport);
-}
-
-/*
   we have a full request in our receive buffer - match it to a pending request
   and process
  */
@@ -558,7 +491,7 @@ BOOL smbcli_transport_process(struct smbcli_transport *transport)
 	NTSTATUS status;
 	size_t npending;
 
-	smbcli_transport_process_send(transport);
+	packet_queue_run(transport->packet);
 	if (transport->socket->sock == NULL) {
 		return False;
 	}
@@ -616,6 +549,9 @@ static int smbcli_request_destructor(void *ptr)
 */
 void smbcli_transport_send(struct smbcli_request *req)
 {
+	DATA_BLOB blob;
+	NTSTATUS status;
+
 	/* check if the transport is dead */
 	if (req->transport->socket->sock == NULL) {
 		req->state = SMBCLI_REQUEST_ERROR;
@@ -623,12 +559,22 @@ void smbcli_transport_send(struct smbcli_request *req)
 		return;
 	}
 
-	/* put it on the outgoing socket queue */
-	req->state = SMBCLI_REQUEST_SEND;
-	DLIST_ADD_END(req->transport->pending_send, req, struct smbcli_request *);
+	/* put it on the socket queue */
+	blob = data_blob_const(req->out.buffer, req->out.size);
+	status = packet_send(req->transport->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		req->state = SMBCLI_REQUEST_ERROR;
+		req->status = status;
+		return;
+	}
 
-	/* make sure we look for write events */
-	smbcli_transport_write_enable(req->transport);
+	if (req->one_way_request) {
+		req->state = SMBCLI_REQUEST_DONE;
+		smbcli_request_destroy(req);
+	} else {
+		req->state = SMBCLI_REQUEST_RECV;
+		DLIST_ADD(req->transport->pending_recv, req);
+	}
 
 	/* add a timeout */
 	if (req->transport->options.request_timeout) {
