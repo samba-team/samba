@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _TLS_H_
+#define _TLS_H_
+
 /*
   call tls_initialise() once per task to startup the tls subsystem
 */
@@ -72,3 +75,4 @@ BOOL tls_support(struct tls_params *parms);
 */
 NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending);
 
+#endif
