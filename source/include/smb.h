@@ -508,6 +508,14 @@ typedef struct
 #include "smb_acls.h"
 #include "vfs.h"
 
+struct dfree_cached_info {
+	time_t last_dfree_time;
+	SMB_BIG_UINT dfree_ret;
+	SMB_BIG_UINT bsize;
+	SMB_BIG_UINT dfree;
+	SMB_BIG_UINT dsize;
+};
+
 struct dptr_struct;
 
 typedef struct connection_struct
@@ -559,7 +567,7 @@ typedef struct connection_struct
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
 	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
-
+	struct dfree_cached_info *dfree_info;
 } connection_struct;
 
 struct current_user

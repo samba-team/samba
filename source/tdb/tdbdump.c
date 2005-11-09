@@ -34,7 +34,7 @@
 
 static void print_data(TDB_DATA d)
 {
-	unsigned char *p = d.dptr;
+	unsigned char *p = (unsigned char *)d.dptr;
 	int len = d.dsize;
 	while (len--) {
 		if (isprint(*p) && !strchr("\"\\", *p)) {

@@ -775,7 +775,8 @@ static NTSTATUS tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCO
  - unlock the new user record
 ***************************************************************************/
 static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
-					  SAM_ACCOUNT *oldname, const char *newname)
+					  SAM_ACCOUNT *old_acct, 
+					  const char *newname)
 {
 	struct tdbsam_privates *tdb_state = 
 		(struct tdbsam_privates *)my_methods->private_data;
@@ -788,7 +789,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	if (!*(lp_renameuser_script()))
 		goto done;
 
-	if (!pdb_copy_sam_account(oldname, &new_acct) ||
+	if (!pdb_copy_sam_account(old_acct, &new_acct) ||
 	    !pdb_set_username(new_acct, newname, PDB_CHANGED))
 		goto done;
 
@@ -826,7 +827,8 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	        int rename_ret;
 
 		pstring_sub(rename_script, "%unew", newname);
-		pstring_sub(rename_script, "%uold", pdb_get_username(oldname));
+		pstring_sub(rename_script, "%uold", 
+			    pdb_get_username(old_acct));
 		rename_ret = smbrun(rename_script, NULL);
 
 		DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
@@ -843,7 +845,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	interim_account = False;
 	tdb_unlock_bystring(pwd_tdb, newname);
 
-	tdb_delete_samacct_only(pwd_tdb, my_methods, oldname);
+	tdb_delete_samacct_only(pwd_tdb, my_methods, old_acct);
 
 	ret = NT_STATUS_OK;
 

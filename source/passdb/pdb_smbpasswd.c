@@ -1477,6 +1477,61 @@ static NTSTATUS smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SA
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods, 
+					      SAM_ACCOUNT *old_acct,
+					      const char *newname)
+{
+	pstring rename_script;
+	SAM_ACCOUNT *new_acct = NULL;
+	BOOL interim_account = False;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if (!*(lp_renameuser_script()))
+		goto done;
+
+	if (!pdb_copy_sam_account(old_acct, &new_acct) ||
+	    !pdb_set_username(new_acct, newname, PDB_CHANGED))
+		goto done;
+
+	ret = smbpasswd_add_sam_account(my_methods, new_acct);
+	if (!NT_STATUS_IS_OK(ret))
+		goto done;
+
+	interim_account = True;
+
+	/* rename the posix user */
+	pstrcpy(rename_script, lp_renameuser_script());
+
+	if (*rename_script) {
+	        int rename_ret;
+
+		pstring_sub(rename_script, "%unew", newname);
+		pstring_sub(rename_script, "%uold", 
+			    pdb_get_username(old_acct));
+		rename_ret = smbrun(rename_script, NULL);
+
+		DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
+
+		if (rename_ret) 
+			goto done; 
+        } else {
+		goto done;
+	}
+
+	smbpasswd_delete_sam_account(my_methods, old_acct);
+	interim_account = False;
+
+done:	
+	/* cleanup */
+	if (interim_account)
+		smbpasswd_delete_sam_account(my_methods, new_acct);
+
+	if (new_acct)
+		pdb_free_sam(&new_acct);
+	
+	return (ret);	
+}
+
 static void free_private_data(void **vp) 
 {
 	struct smbpasswd_privates **privates = (struct smbpasswd_privates**)vp;
@@ -1506,6 +1561,7 @@ static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_m
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
+	(*pdb_method)->rename_sam_account = smbpasswd_rename_sam_account;
 
 	/* Setup private data and free function */
 

@@ -104,7 +104,7 @@ static int show_share(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	d_printf("%-10.10s   %s   %-12s  %s",
 	       crec.name,procid_str_static(&crec.pid),
 	       crec.machine,
-	       asctime(LocalTime(&crec.start)));
+	       asctime(localtime(&crec.start)));
 
 	return 0;
 }
@@ -169,7 +169,7 @@ static int show_share_parseable(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		 guest ? "" : gidtoname(ids->entries[i].gid),
 		 crec.machine, 
 		 guest ? "" : ids->entries[i].hostname,
-		 asctime(LocalTime(&crec.start)));
+		 asctime(localtime(&crec.start)));
 
 	return 0;
 }

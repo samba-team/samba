@@ -117,6 +117,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 	NSS_STATUS result;
 	int i;
 	
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
@@ -146,6 +147,7 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	int i;
 	const char *s;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
@@ -173,6 +175,7 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 	struct winbindd_response response;
 	NSS_STATUS result;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
@@ -626,6 +629,8 @@ static BOOL wbinfo_auth_crap(char *username)
 	}
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
+
+	request.data.auth_crap.logon_parameters = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
 
 	fstrcpy(request.data.auth_crap.user, name_user);
 

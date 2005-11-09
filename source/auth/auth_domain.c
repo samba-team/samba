@@ -119,7 +119,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		/* We need to set up a creds chain on an unauthenticated netlogon pipe. */
 		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 		uint32 sec_chan_type = 0;
-		char machine_pwd[16];
+		unsigned char machine_pwd[16];
 
 		if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
 			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
@@ -131,9 +131,10 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		}
 
 		result = rpccli_netlogon_setup_creds(netlogon_pipe,
-					dc_name,
-					domain,
-					global_myname(),
+					dc_name, /* server name */
+					domain, /* domain */
+					global_myname(), /* client name */
+					global_myname(), /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);
@@ -217,15 +218,16 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          */
 
 	nt_status = rpccli_netlogon_sam_network_logon(netlogon_pipe,
-					mem_ctx,
-					dc_name,                   /* server name */
-					user_info->smb_name.str,   /* user name logging on. */
-					user_info->domain.str,     /* domain name */
-					user_info->wksta_name.str, /* workstation name */
-					chal,                      /* 8 byte challenge. */
-					user_info->lm_resp,        /* lanman 24 byte response */
-					user_info->nt_resp,        /* nt 24 byte response */
-					&info3);                   /* info3 out */
+						      mem_ctx,
+						      user_info->logon_parameters,/* flags such as 'allow workstation logon' */ 
+						      dc_name,                    /* server name */
+						      user_info->smb_name.str,    /* user name logging on. */
+						      user_info->domain.str,      /* domain name */
+						      user_info->wksta_name.str,  /* workstation name */
+						      chal,                       /* 8 byte challenge. */
+						      user_info->lm_resp,         /* lanman 24 byte response */
+						      user_info->nt_resp,         /* nt 24 byte response */
+						      &info3);                    /* info3 out */
 
 	/* Let go as soon as possible so we avoid any potential deadlocks
 	   with winbind lookup up users or groups. */

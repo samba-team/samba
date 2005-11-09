@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Winbind background daemon
+   Winbind child daemons
 
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Volker Lendecke 2004,2005
@@ -22,12 +22,10 @@
 */
 
 /*
-  the idea of the optional dual daemon mode is ot prevent slow domain
-  responses from clagging up the rest of the system. When in dual
-  daemon mode winbindd always responds to requests from cache if the
-  request is in cache, and if the cached answer is stale then it asks
-  the "dual daemon" to update the cache for that request
-
+ * We fork a child per domain to be able to act non-blocking in the main
+ * winbind daemon. A domain controller thousands of miles away being being
+ * slow replying with a 10.000 user list should not hold up netlogon calls
+ * that can be handled locally.
  */
 
 #include "includes.h"

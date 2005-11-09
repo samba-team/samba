@@ -131,6 +131,7 @@ BOOL init_registry( void )
 
 	svcctl_init_keys();
 	eventlog_init_keys();
+	perfcount_init_keys();
 
 	/* close and let each smbd open up as necessary */
 

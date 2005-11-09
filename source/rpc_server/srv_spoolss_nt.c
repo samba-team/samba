@@ -174,8 +174,10 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		cli_shutdown(notify_cli_pipe->cli);
+
+		cli_shutdown( notify_cli_pipe->cli );
 		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
+
 		message_deregister(MSG_PRINTER_NOTIFY2);
 
         	/* Tell the connections db we're no longer interested in
@@ -2494,98 +2496,65 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, struct rpc_pipe_client **pp_pipe,
+static BOOL spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 			struct in_addr *client_ip, const char *remote_machine)
 {
 	NTSTATUS ret;
-	ZERO_STRUCTP(the_cli);
-	
-	if(cli_initialise(the_cli) == NULL) {
-		DEBUG(0,("spoolss_connect_to_client: unable to initialize client connection.\n"));
-		return False;
-	}
-	
-	if ( is_zero_ip(*client_ip) ) {
-		if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
-			DEBUG(0,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
-			cli_shutdown(the_cli);
-		return False;
-		}
+	struct cli_state *the_cli;
+	struct in_addr rm_addr;
 
-		if (ismyip(the_cli->dest_ip)) {
-			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
-			cli_shutdown(the_cli);
+	if ( is_zero_ip(*client_ip) ) {
+		if ( !resolve_name( remote_machine, &rm_addr, 0x20) ) {
+			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return False;
 		}
-	}
-	else {
-		the_cli->dest_ip.s_addr = client_ip->s_addr;
+
+		if ( ismyip( rm_addr )) {
+			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
+			return False;
+		}
+	} else {
+		rm_addr.s_addr = client_ip->s_addr;
 		DEBUG(5,("spoolss_connect_to_client: Using address %s (no name resolution necessary)\n",
 			inet_ntoa(*client_ip) ));
 	}
 
-	if (!cli_connect(the_cli, remote_machine, &the_cli->dest_ip)) {
-		DEBUG(0,("spoolss_connect_to_client: unable to connect to SMB server on machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
-		cli_shutdown(the_cli);
-		return False;
-	}
-  
-	if (!attempt_netbios_session_request(the_cli, global_myname(), remote_machine, &the_cli->dest_ip)) {
-		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the NetBIOS session request.\n", 
-			remote_machine));
-		cli_shutdown(the_cli);
-		return False;
-	}
+	/* setup the connection */
 
-	the_cli->protocol = PROTOCOL_NT1;
-	cli_setup_signing_state(the_cli, lp_client_signing());
-  
-	if (!cli_negprot(the_cli)) {
-		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the negotiate protocol. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
-		cli_shutdown(the_cli);
-		return False;
-	}
+	ret = cli_full_connection( &the_cli, global_myname(), remote_machine, 
+		&rm_addr, 0, "IPC$", "IPC",
+		"", /* username */
+		"", /* domain */
+		"", /* password */
+		0, lp_client_signing(), NULL );
 
-	if (the_cli->protocol != PROTOCOL_NT1) {
+	if ( !NT_STATUS_IS_OK( ret ) ) {
+		DEBUG(2,("spoolss_connect_to_client: connection to [%s] failed!\n", 
+			remote_machine ));
+		return False;
+	}	
+		
+	if ( the_cli->protocol != PROTOCOL_NT1 ) {
 		DEBUG(0,("spoolss_connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
 		cli_shutdown(the_cli);
 		return False;
 	}
     
 	/*
-	 * Do an anonymous session setup.
-	 */
-    
-	if (!cli_session_setup(the_cli, "", "", 0, "", 0, "")) {
-		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the session setup. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
-		cli_shutdown(the_cli);
-		return False;
-	}
-    
-	if (!(the_cli->sec_mode & 1)) {
-		DEBUG(0,("spoolss_connect_to_client: machine %s isn't in user level security mode\n", remote_machine));
-		cli_shutdown(the_cli);
-		return False;
-	}
-    
-	if (!cli_send_tconX(the_cli, "IPC$", "IPC", "", 1)) {
-		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
-		cli_shutdown(the_cli);
-		return False;
-	}
-
-	/*
 	 * Ok - we have an anonymous connection to the IPC$ share.
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS, &ret);
-	if(!*pp_pipe) {
-		DEBUG(0,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
+	if ( !(*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS, &ret)) ) {
+		DEBUG(2,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
 			remote_machine, nt_errstr(ret)));
 		cli_shutdown(the_cli);
 		return False;
 	} 
+
+	/* make sure to save the cli_state pointer.  Keep its own talloc_ctx */
+
+	(*pp_pipe)->cli = the_cli;
 
 	return True;
 }
@@ -2605,14 +2574,11 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 	 * and connect to the IPC$ share anonymously
 	 */
 	if (smb_connections==0) {
-		struct cli_state notify_cli; /* print notify back-channel */
 		fstring unix_printer;
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
-		ZERO_STRUCT(notify_cli);
-
-		if(!spoolss_connect_to_client(&notify_cli, &notify_cli_pipe, client_ip, unix_printer))
+		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ip, unix_printer ))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
@@ -7413,12 +7379,10 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	int	snum;
 	WERROR err = WERR_OK;
 
-	if ((printer = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL)) == NULL) {
+	if ( !(printer = TALLOC_ZERO_P(NULL, NT_PRINTER_INFO_LEVEL)) ) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
 		return WERR_NOMEM;
 	}
-
-	ZERO_STRUCTP(printer);
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	if (!convert_printer_info(info, printer, 2)) {

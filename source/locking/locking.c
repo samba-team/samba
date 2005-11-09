@@ -315,9 +315,9 @@ BOOL locking_init(int read_only)
 		return True;
 
 	tdb = tdb_open_log(lock_path("locking.tdb"), 
-		       0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
-		       read_only?O_RDONLY:O_RDWR|O_CREAT,
-		       0644);
+			SMB_OPEN_DATABASE_TDB_HASH_SIZE, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
+			read_only?O_RDONLY:O_RDWR|O_CREAT,
+			0644);
 
 	if (!tdb) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
@@ -960,8 +960,9 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
 		  fsp->fsp_name ));
 
-	if (fsp->is_directory || fsp->is_stat)
+	if (fsp->is_stat) {
 		return True;
+	}
 
 	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 	if (lck == NULL) {

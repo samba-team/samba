@@ -226,19 +226,30 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 
 /* parse an ACE in the same format as print_ace() */
-static BOOL parse_ace(SEC_ACE *ace, char *str)
+static BOOL parse_ace(SEC_ACE *ace, const char *orig_str)
 {
 	char *p;
 	const char *cp;
 	fstring tok;
-	unsigned atype, aflags, amask;
+	unsigned int atype = 0;
+	unsigned int aflags = 0;
+	unsigned int amask = 0;
 	DOM_SID sid;
 	SEC_ACCESS mask;
 	const struct perm_value *v;
+	char *str = SMB_STRDUP(orig_str);
+
+	if (!str) {
+		return False;
+	}
 
 	ZERO_STRUCTP(ace);
 	p = strchr_m(str,':');
-	if (!p) return False;
+	if (!p) {
+		printf("ACE '%s': missing ':'.\n", orig_str);
+		SAFE_FREE(str);
+		return False;
+	}
 	*p = '\0';
 	p++;
 	/* Try to parse numeric form */
@@ -251,11 +262,17 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	/* Try to parse text form */
 
 	if (!StringToSid(&sid, str)) {
+		printf("ACE '%s': failed to convert '%s' to SID\n",
+			orig_str, str);
+		SAFE_FREE(str);
 		return False;
 	}
 
 	cp = p;
 	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
+		printf("ACE '%s': failed to find '/' character.\n",
+			orig_str);
+		SAFE_FREE(str);
 		return False;
 	}
 
@@ -264,6 +281,9 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_DENIED;
 	} else {
+		printf("ACE '%s': missing 'ALLOWED' or 'DENIED' entry at '%s'\n",
+			orig_str, tok);
+		SAFE_FREE(str);
 		return False;
 	}
 
@@ -271,15 +291,24 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 
 	if (!(next_token(&cp, tok, "/", sizeof(fstring)) &&
 	      sscanf(tok, "%i", &aflags))) {
+		printf("ACE '%s': bad integer flags entry at '%s'\n",
+			orig_str, tok);
+		SAFE_FREE(str);
 		return False;
 	}
 
 	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
+		printf("ACE '%s': missing / at '%s'\n",
+			orig_str, tok);
+		SAFE_FREE(str);
 		return False;
 	}
 
 	if (strncmp(tok, "0x", 2) == 0) {
 		if (sscanf(tok, "%i", &amask) != 1) {
+			printf("ACE '%s': bad hex number at '%s'\n",
+				orig_str, tok);
+			SAFE_FREE(str);
 			return False;
 		}
 		goto done;
@@ -304,17 +333,24 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 			}
 		}
 
-		if (!found) return False;
+		if (!found) {
+			printf("ACE '%s': bad permission value at '%s'\n",
+				orig_str, p);
+			SAFE_FREE(str);
+		 	return False;
+		}
 		p++;
 	}
 
 	if (*p) {
+		SAFE_FREE(str);
 		return False;
 	}
 
  done:
 	mask.mask = amask;
 	init_sec_ace(ace, &sid, atype, mask, aflags);
+	SAFE_FREE(str);
 	return True;
 }
 
@@ -378,7 +414,6 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"ACL:", 4) == 0) {
 			SEC_ACE ace;
 			if (!parse_ace(&ace, tok+4)) {
-				printf("Failed to parse ACL %s\n", tok);
 				return NULL;
 			}
 			if(!add_ace(&dacl, &ace)) {
@@ -388,7 +423,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 			continue;
 		}
 
-		printf("Failed to parse security descriptor\n");
+		printf("Failed to parse token '%s' in security descriptor,\n", tok);
 		return NULL;
 	}
 
@@ -685,11 +720,24 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	sort_acl(old->dacl);
 
 	/* Create new security descriptor and set it */
+#if 0
+	/* We used to just have "WRITE_DAC_ACCESS" without WRITE_OWNER.
+	   But if we're sending an owner, even if it's the same as the one
+	   that already exists then W2K3 insists we open with WRITE_OWNER access.
+	   I need to check that setting a SD with no owner set works against WNT
+	   and W2K. JRA.
+	*/
+
 	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->grp_sid,
 			   NULL, old->dacl, &sd_size);
 
-	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS);
+	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
+#else
+	sd = make_sec_desc(ctx,old->revision, old->type, NULL, NULL,
+			   NULL, old->dacl, &sd_size);
 
+	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS);
+#endif
 	if (fnum == -1) {
 		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
@@ -785,7 +833,8 @@ static struct cli_state *connect_one(const char *share)
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
 	
-	poptSetOtherOptionHelp(pc, "//server1/share1 filename");
+	poptSetOtherOptionHelp(pc, "//server1/share1 filename\nACLs look like: "
+		"'ACL:user:[ALLOWED|DENIED]/flags/permissions'");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {

@@ -98,6 +98,10 @@ LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
+LIBMSRPC=bin/libmsrpc.a @LIBMSRPC_SHARED@
+LIBMSRPC_MAJOR=0
+LIBMSRPC_MINOR=1
+
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=1
@@ -400,7 +404,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
 	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
-	       $(AFS_SETTOKEN_OBJ) smbd/aio.o \
+	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
@@ -1523,8 +1527,9 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) .headers.stamp 
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) \
+		$(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBSMBSHAREMODES) \
+		$(EVERYTHING_PROGS) $(LIBMSRPC) .headers.stamp 
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files

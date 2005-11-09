@@ -924,4 +924,20 @@ out:
 	return nt_status;
 }
 
+ PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data) 
+{
+	PAC_LOGON_INFO *logon_info = NULL;
+	int i;
+	
+	for (i=0; i < pac_data->num_buffers; i++) {
+
+		if (pac_data->pac_buffer[i].type != PAC_TYPE_LOGON_INFO)
+			continue;
+
+		logon_info = pac_data->pac_buffer[i].ctr->pac.logon_info;
+		break;
+	}
+	return logon_info;
+}
+
 #endif

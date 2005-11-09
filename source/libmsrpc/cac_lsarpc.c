@@ -728,7 +728,7 @@ int cac_LsaQueryTrustedDomainInfo(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, str
 int cac_LsaEnumPrivileges(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaEnumPrivileges *op) {
    struct rpc_pipe_client *pipe_hnd = NULL;
 
-   int num_privs;
+   uint32 num_privs;
    char **priv_names;
    uint32 *high_bits;
    uint32 *low_bits;

@@ -202,7 +202,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	ASN1_DATA data;
 	DATA_BLOB blob;
 	DATA_BLOB os1, os2, os3;
-	uint32 i1;
+	int i1;
 	char *p;
 
 	blob = data_blob(NULL, 8192);

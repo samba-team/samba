@@ -1106,15 +1106,15 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	}
 
 	if (c_time) {
-		*c_time = make_unix_date2(cli->inbuf+smb_vwv0);
+		*c_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv0);
 	}
 
 	if (a_time) {
-		*a_time = make_unix_date2(cli->inbuf+smb_vwv2);
+		*a_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv2);
 	}
 
 	if (m_time) {
-		*m_time = make_unix_date2(cli->inbuf+smb_vwv4);
+		*m_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv4);
 	}
 
 	return True;
@@ -1158,7 +1158,7 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 	}
 
 	if (t) {
-		*t = make_unix_date3(cli->inbuf+smb_vwv1);
+		*t = cli_make_unix_date3(cli, cli->inbuf+smb_vwv1);
 	}
 
 	if (attr) {
@@ -1189,9 +1189,9 @@ BOOL cli_setattrE(struct cli_state *cli, int fd,
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0, fd);
-	put_dos_date2(cli->outbuf,smb_vwv1, c_time);
-	put_dos_date2(cli->outbuf,smb_vwv3, a_time);
-	put_dos_date2(cli->outbuf,smb_vwv5, m_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv1, c_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv3, a_time);
+	cli_put_dos_date2(cli, cli->outbuf,smb_vwv5, m_time);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -1228,7 +1228,7 @@ BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0, attr);
-	put_dos_date3(cli->outbuf,smb_vwv1, t);
+	cli_put_dos_date3(cli, cli->outbuf,smb_vwv1, t);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -1404,19 +1404,29 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 	char *p;
 	size_t ea_namelen = strlen(ea_name);
 
-	data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-	data = SMB_MALLOC(data_len);
-	if (!data) {
-		return False;
+	if (ea_namelen == 0 && ea_len == 0) {
+		data_len = 4;
+		data = SMB_MALLOC(data_len);
+		if (!data) {
+			return False;
+		}
+		p = data;
+		SIVAL(p,0,data_len);
+	} else {
+		data_len = 4 + 4 + ea_namelen + 1 + ea_len;
+		data = SMB_MALLOC(data_len);
+		if (!data) {
+			return False;
+		}
+		p = data;
+		SIVAL(p,0,data_len);
+		p += 4;
+		SCVAL(p, 0, 0); /* EA flags. */
+		SCVAL(p, 1, ea_namelen);
+		SSVAL(p, 2, ea_len);
+		memcpy(p+4, ea_name, ea_namelen+1); /* Copy in the name. */
+		memcpy(p+4+ea_namelen+1, ea_val, ea_len);
 	}
-	p = data;
-	SIVAL(p,0,data_len);
-	p += 4;
-	SCVAL(p, 0, 0); /* EA flags. */
-	SCVAL(p, 1, ea_namelen);
-	SSVAL(p, 2, ea_len);
-	memcpy(p+4, ea_name, ea_namelen+1); /* Copy in the name. */
-	memcpy(p+4+ea_namelen+1, ea_val, ea_len);
 
 	if (!cli_send_trans(cli, SMBtrans2,
 		NULL,                        /* name */

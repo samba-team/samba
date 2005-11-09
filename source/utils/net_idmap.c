@@ -76,26 +76,29 @@ static int net_idmap_dump(int argc, const char **argv)
 
 struct hwms {
 	BOOL ok;
-	int user_hwm;
-	int group_hwm;
+	uid_t user_hwm;
+	gid_t group_hwm;
 };
 
 static int net_idmap_find_max_id(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
 				 void *handle)
 {
 	struct hwms *hwms = (struct hwms *)handle;
-	int *idptr = NULL;
+	void *idptr = NULL;
+	BOOL isgid = False;
 	int id;
 
 	if (strncmp(key.dptr, "S-", 2) != 0)
 		return 0;
 
 	if (sscanf(data.dptr, "GID %d", &id) == 1) {
-		idptr = &hwms->group_hwm;
+		idptr = (void *)&hwms->group_hwm;
+		isgid = True;
 	}
 
 	if (sscanf(data.dptr, "UID %d", &id) == 1) {
-		idptr = &hwms->user_hwm;
+		idptr = (void *)&hwms->user_hwm;
+		isgid = False;
 	}
 
 	if (idptr == NULL) {
@@ -105,8 +108,15 @@ static int net_idmap_find_max_id(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
 		return -1;
 	}
 
-	if (*idptr <= id)
-		*idptr = id+1;
+	if (isgid) {
+		if (hwms->group_hwm <= (gid_t)id) {
+			hwms->group_hwm = (gid_t)(id+1);
+		}
+	} else {
+		if (hwms->user_hwm <= (uid_t)id) {
+			hwms->user_hwm = (uid_t)(id+1);
+		}
+	}
 
 	return 0;
 }
@@ -160,8 +170,8 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 		goto done;
 	}
 
-	if ((tdb_store_int32(idmap_tdb, "USER HWM", hwms.user_hwm) != 0) ||
-	    (tdb_store_int32(idmap_tdb, "GROUP HWM", hwms.group_hwm) != 0)) {
+	if ((tdb_store_int32(idmap_tdb, "USER HWM", (int32)hwms.user_hwm) != 0) ||
+	    (tdb_store_int32(idmap_tdb, "GROUP HWM", (int32)hwms.group_hwm) != 0)) {
 		d_printf("Could not store HWMs\n");
 		goto done;
 	}

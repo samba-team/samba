@@ -153,8 +153,8 @@ typedef struct winbindd_gr {
 	fstring gr_name;
 	fstring gr_passwd;
 	gid_t gr_gid;
-	int num_gr_mem;
-	int gr_mem_ofs;   /* offset to group membership */
+	size_t num_gr_mem;
+	size_t gr_mem_ofs;   /* offset to group membership */
 	char **gr_mem;
 } WINBINDD_GR;
 
@@ -202,6 +202,7 @@ struct winbindd_request {
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
+			uint32 logon_parameters;
                         fstring user;
                         fstring domain;
                         fstring lm_resp;

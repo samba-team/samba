@@ -323,6 +323,8 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.flags = flags;
 
+	request.data.auth_crap.logon_parameters = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+
 	if (require_membership_of_sid)
 		fstrcpy(request.data.auth_crap.require_membership_of_sid, require_membership_of_sid);
 
@@ -755,7 +757,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(char *, 2);
+	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(const char *, 2);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
 	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
@@ -795,7 +797,6 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
-	TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 
 	char *user = NULL;
 	char *domain = NULL;
@@ -898,6 +899,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 #ifdef HAVE_KRB5
 		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
 
+			TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 			char *principal;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
@@ -1056,7 +1058,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	}
 
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = CONST_DISCARD(char **,my_mechs);
+	spnego.negTokenInit.mechTypes = my_mechs;
 	spnego.negTokenInit.reqFlags = 0;
 	spnego.negTokenInit.mechListMIC = null_blob;
 

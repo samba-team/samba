@@ -4,6 +4,7 @@
    Copyright (C) Jeremy Allison			1994-2003
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005
+   Copyright (C) Steve French			2005
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -774,7 +775,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return(ERROR_DOS(ERRSRV,ERRaccess));
 	}
 
-	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status, False);
+	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -803,11 +804,11 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	/* Any data in this call is an EA list. */
-	if (total_data && !lp_ea_support(SNUM(conn))) {
+	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
 	}
 
-	if (total_data) {
+	if (total_data != 4) {
 		if (total_data < 10) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -827,6 +828,8 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 			talloc_destroy(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
+	} else if (IVAL(pdata,0) != 4) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -875,7 +878,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,open_attr);
-	put_dos_date2(params,4, mtime);
+	srv_put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
 	SSVAL(params,12,deny_mode);
 	SSVAL(params,14,0); /* open_type - file or directory. */
@@ -1183,9 +1186,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,0,cdate);
-			put_dos_date2(p,4,adate);
-			put_dos_date2(p,8,mdate);
+			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,4,adate);
+			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
@@ -1215,9 +1218,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,0,cdate);
-			put_dos_date2(p,4,adate);
-			put_dos_date2(p,8,mdate);
+			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,4,adate);
+			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
@@ -1259,9 +1262,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,0,cdate);
-			put_dos_date2(p,4,adate);
-			put_dos_date2(p,8,mdate);
+			srv_put_dos_date2(p,0,cdate);
+			srv_put_dos_date2(p,4,adate);
+			srv_put_dos_date2(p,8,mdate);
 			SIVAL(p,12,(uint32)file_size);
 			SIVAL(p,16,(uint32)allocation_size);
 			SSVAL(p,20,mode);
@@ -1611,6 +1614,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	BOOL out_of_space = False;
 	int space_remaining;
 	BOOL bad_path = False;
+	BOOL mask_contains_wcard = False;
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
@@ -1651,7 +1655,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			return(ERROR_DOS(ERRDOS,ERRunknownlevel));
 	}
 
-	srvstr_get_path(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, True);
+	srvstr_get_path_wcard(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ERROR_NT(ntstatus);
 	}
@@ -1669,10 +1673,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	p = strrchr_m(directory,'/');
 	if(p == NULL) {
 		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
-		if((directory[0] == '.') && (directory[1] == '\0'))
+		if((directory[0] == '.') && (directory[1] == '\0')) {
 			pstrcpy(mask,"*");
-		else
+			mask_contains_wcard = True;
+		} else {
 			pstrcpy(mask,directory);
+		}
 		pstrcpy(directory,"./");
 	} else {
 		pstrcpy(mask,p+1);
@@ -1730,7 +1736,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, dirtype);
+	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, mask_contains_wcard, dirtype);
 	if (dptr_num < 0) {
 		talloc_destroy(ea_ctx);
 		return(UNIXERROR(ERRDOS,ERRbadfile));
@@ -1865,6 +1871,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	BOOL close_if_end = (findnext_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
 	BOOL requires_resume_key = (findnext_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
 	BOOL continue_bit = (findnext_flags & FLAG_TRANS2_FIND_CONTINUE);
+	BOOL mask_contains_wcard = False;
 	pstring resume_name;
 	pstring mask;
 	pstring directory;
@@ -1886,7 +1893,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 
 	*mask = *directory = *resume_name = 0;
 
-	srvstr_get_path(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, True);
+	srvstr_get_path_wcard(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
 		   complain (it thinks we're asking for the directory above the shared
@@ -2144,7 +2151,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
-			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
 				return(UNIXERROR(ERRHRD,ERRgeneral));
 			}
 
@@ -2245,7 +2252,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
-			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
 				return(UNIXERROR(ERRHRD,ERRgeneral));
 			}
 			block_size = lp_block_size(snum);
@@ -2277,7 +2284,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
-			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
 				return(UNIXERROR(ERRHRD,ERRgeneral));
 			}
 			block_size = lp_block_size(snum);
@@ -2402,6 +2409,38 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP))); /* We have POSIX ACLs and pathname capability. */
 			break;
+
+		case SMB_QUERY_POSIX_FS_INFO:
+		{
+			int rc;
+			vfs_statvfs_struct svfs;
+
+			if (!lp_unix_extensions())
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			
+			rc = SMB_VFS_STATVFS(conn, ".", &svfs);
+
+			if (!rc) {
+				data_len = 56;
+				SIVAL(pdata,0,svfs.OptimalTransferSize);
+				SIVAL(pdata,4,svfs.BlockSize);
+				SBIG_UINT(pdata,8,svfs.TotalBlocks);
+				SBIG_UINT(pdata,16,svfs.BlocksAvail);
+				SBIG_UINT(pdata,24,svfs.UserBlocksAvail);
+				SBIG_UINT(pdata,32,svfs.TotalFileNodes);
+				SBIG_UINT(pdata,40,svfs.FreeFileNodes);
+				SBIG_UINT(pdata,48,svfs.FsIdentifier);
+				DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_POSIX_FS_INFO succsessful\n"));
+#ifdef EOPNOTSUPP
+			} else if (rc == EOPNOTSUPP) {
+				return ERROR_DOS(ERRDOS, ERRunknownlevel);
+#endif /* EOPNOTSUPP */
+			} else {
+				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+				return ERROR_DOS(ERRSRV,ERRerror);
+			}
+			break;
+		}
 
 		case SMB_MAC_QUERY_FS_INFO:
 			/*
@@ -2819,7 +2858,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
 
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status, False);
+		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -2977,9 +3016,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_INFO_STANDARD:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_STANDARD\n"));
 			data_size = 22;
-			put_dos_date2(pdata,l1_fdateCreation,c_time);
-			put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
-			put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+			srv_put_dos_date2(pdata,l1_fdateCreation,c_time);
+			srv_put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
+			srv_put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
 			SIVAL(pdata,l1_cbFile,(uint32)file_size);
 			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
@@ -2990,9 +3029,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
-			put_dos_date2(pdata,0,c_time);
-			put_dos_date2(pdata,4,sbuf.st_atime);
-			put_dos_date2(pdata,8,sbuf.st_mtime); /* write time */
+			srv_put_dos_date2(pdata,0,c_time);
+			srv_put_dos_date2(pdata,4,sbuf.st_atime);
+			srv_put_dos_date2(pdata,8,sbuf.st_mtime); /* write time */
 			SIVAL(pdata,12,(uint32)file_size);
 			SIVAL(pdata,16,(uint32)allocation_size);
 			SSVAL(pdata,20,mode);
@@ -3624,7 +3663,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		}
 
 		info_level = SVAL(params,0);    
-		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status, False);
+		srvstr_get_path(inbuf, fname, &params[6], sizeof(fname), -1, STR_TERMINATE, &status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ERROR_NT(status);
 		}
@@ -3691,9 +3730,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 
 			/* access time */
-			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
+			tvs.actime = srv_make_unix_date2(pdata+l1_fdateLastAccess);
 			/* write time */
-			tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
+			tvs.modtime = srv_make_unix_date2(pdata+l1_fdateLastWrite);
 			break;
 		}
 
@@ -3703,6 +3742,17 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			TALLOC_CTX *ctx = NULL;
 
 			if (total_data < 10) {
+
+				/* OS/2 workplace shell seems to send SET_EA requests of "null"
+				   length. They seem to have no effect. Bug #3212. JRA */
+
+				if ((total_data == 4) && (IVAL(pdata,0) == 4)) {
+					/* We're done. We only get EA info in this call. */
+					SSVAL(params,0,0);
+					send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+					return(-1);
+				}
+
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
@@ -4171,7 +4221,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			char *newname = fname;
 
 			/* Set a hard link. */
-			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE, &status, False);
+			srvstr_get_path(inbuf, oldname, pdata, sizeof(oldname), -1, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4205,7 +4255,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			overwrite = (CVAL(pdata,0) ? True : False);
 			root_fid = IVAL(pdata,4);
 			len = IVAL(pdata,8);
-			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status, False);
+			srvstr_get_path(inbuf, newname, &pdata[12], sizeof(newname), len, 0, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -4232,7 +4282,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			} else {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 					fname, newname ));
-				status = rename_internals(conn, fname, base_name, 0, overwrite);
+				status = rename_internals(conn, fname, base_name, 0, overwrite, False);
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
@@ -4443,7 +4493,7 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE, &status, False);
+	srvstr_get_path(inbuf, directory, &params[4], sizeof(directory), -1, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
@@ -4456,11 +4506,17 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 	}
 
 	/* Any data in this call is an EA list. */
-	if (total_data && !lp_ea_support(SNUM(conn))) {
+	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
 	}
 
-	if (total_data) {
+	/*
+	 * OS/2 workplace shell seems to send SET_EA requests of "null"
+	 * length (4 bytes containing IVAL 4).
+	 * They seem to have no effect. Bug #3212. JRA.
+	 */
+
+	if (total_data != 4) {
 		if (total_data < 10) {
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -4480,6 +4536,8 @@ static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, 
 			talloc_destroy(ctx);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
+	} else if (IVAL(pdata,0) != 4) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	if (check_name(directory,conn)) {

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind ADS backend functions
@@ -220,18 +220,50 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
-			       "name", "objectSid", 
-			       "sAMAccountType", NULL};
+			       "name", "objectSid", NULL};
 	int i, count;
 	ADS_STATUS rc;
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	uint32 group_flags;
+	const char *filter;
+	BOOL enum_dom_local_groups = False;
 
 	*num_entries = 0;
 
 	DEBUG(3,("ads: enum_dom_groups\n"));
+
+	/* only grab domain local groups for our domain */
+	if ( domain->native_mode && strequal(lp_realm(), domain->alt_name)  ) {
+		enum_dom_local_groups = True;
+	}
+
+	/* Workaround ADS LDAP bug present in MS W2K3 SP0 and W2K SP4 w/o
+	 * rollup-fixes:
+	 *
+	 * According to Section 5.1(4) of RFC 2251 if a value of a type is it's
+	 * default value, it MUST be absent. In case of extensible matching the
+	 * "dnattr" boolean defaults to FALSE and so it must be only be present
+	 * when set to TRUE. 
+	 *
+	 * When it is set to FALSE and the OpenLDAP lib (correctly) encodes a
+	 * filter using bitwise matching rule then the buggy AD fails to decode
+	 * the extensible match. As a workaround set it to TRUE and thereby add
+	 * the dnAttributes "dn" field to cope with those older AD versions.
+	 * It should not harm and won't put any additional load on the AD since
+	 * none of the dn components have a bitmask-attribute.
+	 *
+	 * Thanks to Ralf Haferkamp for input and testing - Guenther */
+
+	filter = talloc_asprintf(mem_ctx, "(&(objectCategory=group)(&(groupType:dn:%s:=%d)(!(groupType:dn:%s:=%d))))", 
+				 ADS_LDAP_MATCHING_RULE_BIT_AND, GROUP_TYPE_SECURITY_ENABLED,
+				 ADS_LDAP_MATCHING_RULE_BIT_AND, 
+				 enum_dom_local_groups ? GROUP_TYPE_BUILTIN_LOCAL_GROUP : GROUP_TYPE_RESOURCE_GROUP);
+
+	if (filter == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	ads = ads_cached_connection(domain);
 
@@ -240,7 +272,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
+	rc = ads_search_retry(ads, &res, filter, attrs);
 	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -260,30 +292,17 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	i = 0;
 	
-	group_flags = ATYPE_GLOBAL_GROUP;
-
-	/* only grab domain local groups for our domain */
-	if ( domain->native_mode && strequal(lp_realm(), domain->alt_name)  )
-		group_flags |= ATYPE_LOCAL_GROUP;
-
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
 		DOM_SID sid;
 		uint32 rid;
-		uint32 account_type;
 
-		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &account_type) || !(account_type & group_flags) ) 
-			continue; 
-			
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
 			continue;
 		}
-
-		if (sid_check_is_in_builtin(&sid))
-			continue;
 
 		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", name));
@@ -456,7 +475,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
 				      const char *user_dn, 
 				      DOM_SID *primary_group,
-				      uint32 *num_groups, DOM_SID **user_sids)
+				      size_t *p_num_groups, DOM_SID **user_sids)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -467,6 +486,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
 	char *escaped_dn;
+	size_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups_alt\n"));
 
@@ -504,10 +524,10 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	count = ads_count_replies(ads, res);
 	
 	*user_sids = NULL;
-	*num_groups = 0;
+	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	add_sid_to_array(mem_ctx, primary_group, user_sids, num_groups);
+	add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups);
 
 	if (count > 0) {
 		for (msg = ads_first_entry(ads, res); msg;
@@ -520,11 +540,12 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 			}
 
 			add_sid_to_array(mem_ctx, &group_sid, user_sids,
-					 num_groups);
+					 &num_groups);
 		}
 
 	}
 
+	*p_num_groups = num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups (alt) for dn=%s\n", user_dn));
@@ -539,7 +560,7 @@ done:
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *sid, 
-				  uint32 *num_groups, DOM_SID **user_sids)
+				  uint32 *p_num_groups, DOM_SID **user_sids)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"tokenGroups", "primaryGroupID", NULL};
@@ -553,9 +574,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	uint32 primary_group_rid;
 	fstring sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	size_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
-	*num_groups = 0;
+	*p_num_groups = 0;
 
 	ads = ads_cached_connection(domain);
 	
@@ -603,15 +625,17 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
 	if (count == 0) {
-		return lookup_usergroups_alt(domain, mem_ctx, user_dn, 
+		status = lookup_usergroups_alt(domain, mem_ctx, user_dn, 
 					     &primary_group,
-					     num_groups, user_sids);
+					     &num_groups, user_sids);
+		*p_num_groups = (uint32)num_groups;
+		return status;
 	}
 
 	*user_sids = NULL;
-	*num_groups = 0;
+	num_groups = 0;
 
-	add_sid_to_array(mem_ctx, &primary_group, user_sids, num_groups);
+	add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups);
 	
 	for (i=0;i<count;i++) {
 
@@ -621,9 +645,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		}
 			       
 		add_sid_to_array_unique(mem_ctx, &sids[i],
-					user_sids, num_groups);
+					user_sids, &num_groups);
 	}
 
+	*p_num_groups = (uint32)num_groups;
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups for sid=%s\n",

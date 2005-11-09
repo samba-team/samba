@@ -59,7 +59,7 @@ static BOOL fill_grent(struct winbindd_gr *gr, const char *dom_name,
 static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			   DOM_SID *group_sid, 
 			   enum SID_NAME_USE group_name_type, 
-			   int *num_gr_mem, char **gr_mem, int *gr_mem_len)
+			   size_t *num_gr_mem, char **gr_mem, size_t *gr_mem_len)
 {
 	DOM_SID *sid_mem = NULL;
 	uint32 num_names = 0;
@@ -206,7 +206,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	enum SID_NAME_USE name_type;
 	fstring name_domain, name_group;
 	char *tmp, *gr_mem;
-	int gr_mem_len;
+	size_t gr_mem_len;
 	gid_t gid;
 	
 	/* Ensure null termination */
@@ -301,7 +301,7 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 	enum SID_NAME_USE name_type;
 	fstring dom_name;
 	fstring group_name;
-	int gr_mem_len;
+	size_t gr_mem_len;
 	char *gr_mem;
 
 	DEBUG(3, ("[%5lu]: getgrgid %lu\n", (unsigned long)state->pid, 
@@ -615,7 +615,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		fstring domain_group_name;
 		uint32 result;
 		gid_t group_gid;
-		int gr_mem_len;
+		size_t gr_mem_len;
 		char *gr_mem, *new_gr_mem_list;
 		DOM_SID group_sid;
 		struct winbindd_domain *domain;
@@ -901,16 +901,16 @@ struct getgroups_state {
 	DOM_SID user_sid;
 
 	const DOM_SID *token_sids;
-	int i, num_token_sids;
+	size_t i, num_token_sids;
 
 	gid_t *token_gids;
-	int num_token_gids;
+	size_t num_token_gids;
 };
 
 static void getgroups_usersid_recv(void *private_data, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type);
 static void getgroups_tokensids_recv(void *private_data, BOOL success,
-				     DOM_SID *token_sids, int num_token_sids);
+				     DOM_SID *token_sids, size_t num_token_sids);
 static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
 
 void winbindd_getgroups(struct winbindd_cli_state *state)
@@ -987,7 +987,7 @@ static void getgroups_usersid_recv(void *private_data, BOOL success,
 }
 
 static void getgroups_tokensids_recv(void *private_data, BOOL success,
-				     DOM_SID *token_sids, int num_token_sids)
+				     DOM_SID *token_sids, size_t num_token_sids)
 {
 	struct getgroups_state *s = private_data;
 
@@ -1051,7 +1051,7 @@ static void getgroups_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 */
 
 static void getusersids_recv(void *private_data, BOOL success, DOM_SID *sids,
-			     int num_sids);
+			     size_t num_sids);
 
 void winbindd_getusersids(struct winbindd_cli_state *state)
 {
@@ -1079,12 +1079,12 @@ void winbindd_getusersids(struct winbindd_cli_state *state)
 }
 
 static void getusersids_recv(void *private_data, BOOL success, DOM_SID *sids,
-			     int num_sids)
+			     size_t num_sids)
 {
 	struct winbindd_cli_state *state = private_data;
 	char *ret = NULL;
 	unsigned ofs, ret_size = 0;
-	int i;
+	size_t i;
 
 	if (!success) {
 		request_error(state);
@@ -1151,9 +1151,9 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 	NTSTATUS status;
 
 	char *sidstring;
-	size_t len;
+	ssize_t len;
 	DOM_SID *groups;
-	int num_groups;
+	uint32 num_groups;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';

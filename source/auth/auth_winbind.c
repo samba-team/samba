@@ -88,6 +88,8 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	request.flags = WBFLAG_PAM_INFO3_NDR;
 
+	request.data.auth_crap.logon_parameters = user_info->logon_parameters;
+
 	fstrcpy(request.data.auth_crap.user, 
 			  user_info->smb_name.str);
 	fstrcpy(request.data.auth_crap.domain, 

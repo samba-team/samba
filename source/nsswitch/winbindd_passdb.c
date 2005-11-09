@@ -28,29 +28,27 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static void
-add_member(const char *domain, const char *user,
-	   char **members, int *num_members)
+static void add_member(const char *domain, const char *user,
+	   char **pp_members, size_t *p_num_members)
 {
 	fstring name;
 
 	fill_domain_username(name, domain, user);
 	safe_strcat(name, ",", sizeof(name)-1);
-	string_append(members, name);
-	*num_members += 1;
+	string_append(pp_members, name);
+	*p_num_members += 1;
 }
 
 /**********************************************************************
  Add member users resulting from sid. Expand if it is a domain group.
 **********************************************************************/
 
-static void
-add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
+static void add_expanded_sid(const DOM_SID *sid, char **pp_members, size_t *p_num_members)
 {
 	DOM_SID dom_sid;
 	uint32 rid;
 	struct winbindd_domain *domain;
-	int i;
+	size_t i;
 
 	char *domain_name = NULL;
 	char *name = NULL;
@@ -93,7 +91,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 	DEBUG(10, ("Found name %s, type %d\n", name, type));
 
 	if (type == SID_NAME_USER) {
-		add_member(domain_name, name, members, num_members);
+		add_member(domain_name, name, pp_members, p_num_members);
 		goto done;
 	}
 
@@ -134,7 +132,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 			continue;
 		}
 
-		add_member(domain->name, names[i], members, num_members);
+		add_member(domain->name, names[i], pp_members, p_num_members);
 	}
 
  done:
@@ -144,10 +142,10 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 
 BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
 			     DOM_SID *group_sid, 
-			     int *num_gr_mem, char **gr_mem, int *gr_mem_len)
+			     size_t *num_gr_mem, char **gr_mem, size_t *gr_mem_len)
 {
 	DOM_SID *members;
-	int i, num_members;
+	size_t i, num_members;
 
 	*num_gr_mem = 0;
 	*gr_mem = NULL;
@@ -163,7 +161,7 @@ BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
 	SAFE_FREE(members);
 
 	if (*gr_mem != NULL) {
-		int len;
+		size_t len;
 
 		/* We have at least one member, strip off the last "," */
 		len = strlen(*gr_mem);
@@ -305,13 +303,15 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32 num_sids, const DOM_SID *sids,
-				   uint32 *num_aliases, uint32 **rids)
+				   uint32 *p_num_aliases, uint32 **rids)
 {
 	BOOL result;
+	size_t num_aliases = 0;
 
 	result = pdb_enum_alias_memberships(mem_ctx, &domain->sid,
-					    sids, num_sids, rids, num_aliases);
+					    sids, num_sids, rids, &num_aliases);
 
+	*p_num_aliases = num_aliases;
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 

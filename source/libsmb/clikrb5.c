@@ -542,6 +542,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 		ENCTYPE_DES_CBC_CRC, 
 		ENCTYPE_NULL};
 	
+	initialize_krb5_error_table();
 	retval = krb5_init_context(&context);
 	if (retval) {
 		DEBUG(1,("cli_krb5_get_ticket: krb5_init_context failed (%s)\n", 

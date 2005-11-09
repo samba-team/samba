@@ -25,7 +25,6 @@
   in May 1996 
   */
 
-
 int extra_time_offset = 0;
 
 #ifndef CHAR_BIT
@@ -92,42 +91,42 @@ static int tm_diff(struct tm *a, struct tm *b)
  Return the UTC offset in seconds west of UTC, or 0 if it cannot be determined.
 ******************************************************************/
 
-static int TimeZone(time_t t)
+int get_time_zone(time_t t)
 {
 	struct tm *tm = gmtime(&t);
 	struct tm tm_utc;
-	if (!tm)
+
+	if (!tm) {
 		return 0;
+	}
 	tm_utc = *tm;
 	tm = localtime(&t);
-	if (!tm)
+	if (!tm) {
 		return 0;
-	return tm_diff(&tm_utc,tm);
+	}
+	return tm_diff(&tm_utc,tm) + 60*extra_time_offset;
 }
 
-static BOOL done_serverzone_init;
-
 /*******************************************************************
- Return the smb serverzone value.
+ Accessor function for the server time zone offset.
+ set_server_zone_offset() must have been called first.
 ******************************************************************/
 
-static int get_serverzone(void)
+static int server_zone_offset;
+
+int get_server_zone_offset(void)
 {
-        static int serverzone;
+	return server_zone_offset;
+}
 
-        if (!done_serverzone_init) {
-                serverzone = TimeZone(time(NULL));
+/*******************************************************************
+ Initialize the server time zone offset. Called when a client connects.
+******************************************************************/
 
-                if ((serverzone % 60) != 0) {
-                        DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
-                }
-
-                DEBUG(4,("Serverzone is %d\n",serverzone));
-
-                done_serverzone_init = True;
-        }
-
-        return serverzone;
+int set_server_zone_offset(time_t t)
+{
+	server_zone_offset = get_time_zone(t);
+	return server_zone_offset;
 }
 
 /*******************************************************************
@@ -138,11 +137,14 @@ static struct timeval start_time_hires;
 
 void TimeInit(void)
 {
-	done_serverzone_init = False;
-	get_serverzone();
+	set_server_zone_offset(time(NULL));
+
+	DEBUG(4,("TimeInit: Serverzone is %d\n", server_zone_offset));
+
 	/* Save the start time of this process. */
-	if (start_time_hires.tv_sec == 0 && start_time_hires.tv_usec == 0)
+	if (start_time_hires.tv_sec == 0 && start_time_hires.tv_usec == 0) {
 		GetTimeOfDay(&start_time_hires);
+	}
 }
 
 /**********************************************************************
@@ -161,140 +163,21 @@ void get_process_uptime(struct timeval *ret_time)
 	if (time_now_hires.tv_usec < start_time_hires.tv_usec) {
 		ret_time->tv_sec -= 1;
 		ret_time->tv_usec = 1000000 + (time_now_hires.tv_usec - start_time_hires.tv_usec);
-	} else
-		ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
-}
-
-/*******************************************************************
- Return the same value as TimeZone, but it should be more efficient.
-
- We keep a table of DST offsets to prevent calling localtime() on each 
- call of this function. This saves a LOT of time on many unixes.
-
- Updated by Paul Eggert <eggert@twinsun.com>
-********************************************************************/
-
-static int TimeZoneFaster(time_t t)
-{
-	static struct dst_table {time_t start,end; int zone;} *tdt, *dst_table = NULL;
-	static int table_size = 0;
-	int i;
-	int zone = 0;
-
-	if (t == 0)
-		t = time(NULL);
-
-	/* Tunis has a 8 day DST region, we need to be careful ... */
-#define MAX_DST_WIDTH (365*24*60*60)
-#define MAX_DST_SKIP (7*24*60*60)
-
-	for (i=0;i<table_size;i++)
-		if (t >= dst_table[i].start && t <= dst_table[i].end)
-			break;
-
-	if (i<table_size) {
-		zone = dst_table[i].zone;
 	} else {
-		time_t low,high;
-
-		zone = TimeZone(t);
-		tdt = SMB_REALLOC_ARRAY(dst_table, struct dst_table, i+1);
-		if (!tdt) {
-			DEBUG(0,("TimeZoneFaster: out of memory!\n"));
-			SAFE_FREE(dst_table);
-			table_size = 0;
-		} else {
-			dst_table = tdt;
-			table_size++;
-
-			dst_table[i].zone = zone; 
-			dst_table[i].start = dst_table[i].end = t;
-    
-			/* no entry will cover more than 6 months */
-			low = t - MAX_DST_WIDTH/2;
-			if (t < low)
-				low = TIME_T_MIN;
-      
-			high = t + MAX_DST_WIDTH/2;
-			if (high < t)
-				high = TIME_T_MAX;
-      
-			/* widen the new entry using two bisection searches */
-			while (low+60*60 < dst_table[i].start) {
-				if (dst_table[i].start - low > MAX_DST_SKIP*2)
-					t = dst_table[i].start - MAX_DST_SKIP;
-				else
-					t = low + (dst_table[i].start-low)/2;
-				if (TimeZone(t) == zone)
-					dst_table[i].start = t;
-				else
-					low = t;
-			}
-
-			while (high-60*60 > dst_table[i].end) {
-				if (high - dst_table[i].end > MAX_DST_SKIP*2)
-					t = dst_table[i].end + MAX_DST_SKIP;
-				else
-					t = high - (high-dst_table[i].end)/2;
-				if (TimeZone(t) == zone)
-					dst_table[i].end = t;
-				else
-					high = t;
-			}
-#if 0
-      DEBUG(1,("Added DST entry from %s ",
-	       asctime(localtime(&dst_table[i].start))));
-      DEBUG(1,("to %s (%d)\n",asctime(localtime(&dst_table[i].end)),
-	       dst_table[i].zone));
-#endif
-		}
+		ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
 	}
-	return zone;
 }
 
+#if 0
 /****************************************************************************
  Return the UTC offset in seconds west of UTC, adjusted for extra time offset.
 **************************************************************************/
 
 int TimeDiff(time_t t)
 {
-	return TimeZoneFaster(t) + 60*extra_time_offset;
+	return get_time_zone(t);
 }
-
-/****************************************************************************
- Return the UTC offset in seconds west of UTC, adjusted for extra time
- offset, for a local time value.  If ut = lt + LocTimeDiff(lt), then
- lt = ut - TimeDiff(ut), but the converse does not necessarily hold near
- daylight savings transitions because some local times are ambiguous.
- LocTimeDiff(t) equals TimeDiff(t) except near daylight savings transitions.
-**************************************************************************/
-
-static int LocTimeDiff(time_t lte)
-{
-	time_t lt = lte - 60*extra_time_offset;
-	int d = TimeZoneFaster(lt);
-	time_t t = lt + d;
-
-	/* if overflow occurred, ignore all the adjustments so far */
-	if (((lte < lt) ^ (extra_time_offset < 0))  |  ((t < lt) ^ (d < 0)))
-		t = lte;
-
-	/* now t should be close enough to the true UTC to yield the right answer */
-	return TimeDiff(t);
-}
-
-/****************************************************************************
- Try to optimise the localtime call, it can be quite expensive on some machines.
-****************************************************************************/
-
-struct tm *LocalTime(time_t *t)
-{
-	time_t t2 = *t;
-
-	t2 -= TimeDiff(t2);
-
-	return(gmtime(&t2));
-}
+#endif
 
 #define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
 
@@ -304,10 +187,7 @@ struct tm *LocalTime(time_t *t)
 
  An 8 byte value of 0xffffffffffffffff will be returned as (time_t)0.
 
- It appears to be kludge-GMT (at least for file listings). This means
- its the GMT you get by taking a localtime and adding the
- serverzone. This is NOT the same as GMT in some cases. This routine
- converts this to real GMT.
+ Returns GMT.
 ****************************************************************************/
 
 time_t nt_time_to_unix(NTTIME *nt)
@@ -319,8 +199,9 @@ time_t nt_time_to_unix(NTTIME *nt)
 	time_t l_time_min = TIME_T_MIN;
 	time_t l_time_max = TIME_T_MAX;
 
-	if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff))
+	if (nt->high == 0 || (nt->high == 0xffffffff && nt->low == 0xffffffff)) {
 		return(0);
+	}
 
 	d = ((double)nt->high)*4.0*(double)(1<<30);
 	d += (nt->low&0xFFF00000);
@@ -329,18 +210,15 @@ time_t nt_time_to_unix(NTTIME *nt)
 	/* now adjust by 369 years to make the secs since 1970 */
 	d -= TIME_FIXUP_CONSTANT;
 
-	if (d <= l_time_min)
+	if (d <= l_time_min) {
 		return (l_time_min);
+	}
 
-	if (d >= l_time_max)
+	if (d >= l_time_max) {
 		return (l_time_max);
+	}
 
 	ret = (time_t)(d+0.5);
-
-	/* this takes us from kludge-GMT to real GMT */
-	ret -= get_serverzone();
-	ret += LocTimeDiff(ret);
-
 	return(ret);
 }
 
@@ -362,11 +240,13 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 	time_t l_time_min = TIME_T_MIN;
 	time_t l_time_max = TIME_T_MAX;
 
-	if (nt->high == 0)
+	if (nt->high == 0) {
 		return(0);
+	}
 
-	if (nt->high==0x80000000 && nt->low==0)
+	if (nt->high==0x80000000 && nt->low==0) {
 		return (time_t)-1;
+	}
 
 	/* reverse the time */
 	/* it's a negative value, turn it to positive */
@@ -377,8 +257,9 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 	d += (nt->low&0xFFF00000);
 	d *= 1.0e-7;
   
-	if (!(l_time_min <= d && d <= l_time_max))
+	if (!(l_time_min <= d && d <= l_time_max)) {
 		return(0);
+	}
 
 	ret = (time_t)(d+0.5);
 
@@ -403,8 +284,7 @@ time_t interpret_long_date(char *p)
 }
 
 /****************************************************************************
- Put a 8 byte filetime from a time_t
- This takes real GMT as input and converts to kludge-GMT
+ Put a 8 byte filetime from a time_t. Uses GMT.
 ****************************************************************************/
 
 void unix_to_nt_time(NTTIME *nt, time_t t)
@@ -426,9 +306,6 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 		nt->high = 0xffffffff;
 		return;
 	}		
-
-	/* this converts GMT to kludge-GMT */
-	t -= TimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d += TIME_FIXUP_CONSTANT;
@@ -485,7 +362,7 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
  pointed to by p.
 ****************************************************************************/
 
-void put_long_date(char *p,time_t t)
+void put_long_date(char *p, time_t t)
 {
 	NTTIME nt;
 	unix_to_nt_time(&nt, t);
@@ -533,14 +410,20 @@ static uint16 make_dos_time1(struct tm *t)
  This takes a GMT time and returns a packed localtime structure.
 ********************************************************************/
 
-static uint32 make_dos_date(time_t unixdate)
+static uint32 make_dos_date(time_t unixdate, int zone_offset)
 {
 	struct tm *t;
 	uint32 ret=0;
 
-	t = LocalTime(&unixdate);
-	if (!t)
+	if (unixdate == 0) {
+		return 0;
+	}
+
+	unixdate -= zone_offset;
+	t = gmtime(&unixdate);
+	if (!t) {
 		return 0xFFFFFFFF;
+	}
 
 	ret = make_dos_date1(t);
 	ret = ((ret&0xFFFF)<<16) | make_dos_time1(t);
@@ -553,9 +436,9 @@ static uint32 make_dos_date(time_t unixdate)
  This takes GMT time and puts local time in the buffer.
 ********************************************************************/
 
-void put_dos_date(char *buf,int offset,time_t unixdate)
+static void put_dos_date(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	uint32 x = make_dos_date(unixdate);
+	uint32 x = make_dos_date(unixdate, zone_offset);
 	SIVAL(buf,offset,x);
 }
 
@@ -564,9 +447,9 @@ void put_dos_date(char *buf,int offset,time_t unixdate)
  This takes GMT time and puts local time in the buffer.
 ********************************************************************/
 
-void put_dos_date2(char *buf,int offset,time_t unixdate)
+static void put_dos_date2(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	uint32 x = make_dos_date(unixdate);
+	uint32 x = make_dos_date(unixdate, zone_offset);
 	x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
 	SIVAL(buf,offset,x);
 }
@@ -577,10 +460,11 @@ void put_dos_date2(char *buf,int offset,time_t unixdate)
  localtime for this sort of date)
 ********************************************************************/
 
-void put_dos_date3(char *buf,int offset,time_t unixdate)
+static void put_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
 {
-	if (!null_mtime(unixdate))
-		unixdate -= TimeDiff(unixdate);
+	if (!null_mtime(unixdate)) {
+		unixdate -= zone_offset;
+	}
 	SIVAL(buf,offset,unixdate);
 }
 
@@ -608,7 +492,7 @@ static void interpret_dos_date(uint32 date,int *year,int *month,int *day,int *ho
  localtime).
 ********************************************************************/
 
-time_t make_unix_date(void *date_ptr)
+static time_t make_unix_date(void *date_ptr, int zone_offset)
 {
 	uint32 dos_date=0;
 	struct tm t;
@@ -616,15 +500,17 @@ time_t make_unix_date(void *date_ptr)
 
 	dos_date = IVAL(date_ptr,0);
 
-	if (dos_date == 0)
-		return(0);
+	if (dos_date == 0) {
+		return 0;
+	}
   
 	interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
 			&t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
 	t.tm_isdst = -1;
   
-	/* mktime() also does the local to GMT time conversion for us */
-	ret = mktime(&t);
+	ret = timegm(&t);
+
+	ret += zone_offset;
 
 	return(ret);
 }
@@ -633,7 +519,7 @@ time_t make_unix_date(void *date_ptr)
  Like make_unix_date() but the words are reversed.
 ********************************************************************/
 
-time_t make_unix_date2(void *date_ptr)
+static time_t make_unix_date2(void *date_ptr, int zone_offset)
 {
 	uint32 x,x2;
 
@@ -641,7 +527,7 @@ time_t make_unix_date2(void *date_ptr)
 	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
 	SIVAL(&x,0,x2);
 
-	return(make_unix_date((void *)&x));
+	return(make_unix_date((void *)&x, zone_offset));
 }
 
 /*******************************************************************
@@ -649,12 +535,81 @@ time_t make_unix_date2(void *date_ptr)
  these generally arrive as localtimes, with corresponding DST.
 ******************************************************************/
 
-time_t make_unix_date3(void *date_ptr)
+static time_t make_unix_date3(void *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
-	if (!null_mtime(t))
-		t += LocTimeDiff(t);
+	if (!null_mtime(t)) {
+		t += zone_offset;
+	}
 	return(t);
+}
+
+/***************************************************************************
+ Server versions of the above functions.
+***************************************************************************/
+
+void srv_put_dos_date(char *buf,int offset,time_t unixdate)
+{
+	put_dos_date(buf, offset, unixdate, server_zone_offset);
+}
+
+void srv_put_dos_date2(char *buf,int offset, time_t unixdate)
+{
+	put_dos_date2(buf, offset, unixdate, server_zone_offset);
+}
+
+void srv_put_dos_date3(char *buf,int offset,time_t unixdate)
+{
+	put_dos_date3(buf, offset, unixdate, server_zone_offset);
+}
+
+time_t srv_make_unix_date(void *date_ptr)
+{
+	return make_unix_date(date_ptr, server_zone_offset);
+}
+
+time_t srv_make_unix_date2(void *date_ptr)
+{
+	return make_unix_date2(date_ptr, server_zone_offset);
+}
+
+time_t srv_make_unix_date3(void *date_ptr)
+{
+	return make_unix_date3(date_ptr, server_zone_offset);
+}
+
+/***************************************************************************
+ Client versions of the above functions.
+***************************************************************************/
+
+void cli_put_dos_date(struct cli_state *cli, char *buf, int offset, time_t unixdate)
+{
+	put_dos_date(buf, offset, unixdate, cli->serverzone);
+}
+
+void cli_put_dos_date2(struct cli_state *cli, char *buf, int offset, time_t unixdate)
+{
+	put_dos_date2(buf, offset, unixdate, cli->serverzone);
+}
+
+void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unixdate)
+{
+	put_dos_date3(buf, offset, unixdate, cli->serverzone);
+}
+
+time_t cli_make_unix_date(struct cli_state *cli, void *date_ptr)
+{
+	return make_unix_date(date_ptr, cli->serverzone);
+}
+
+time_t cli_make_unix_date2(struct cli_state *cli, void *date_ptr)
+{
+	return make_unix_date2(date_ptr, cli->serverzone);
+}
+
+time_t cli_make_unix_date3(struct cli_state *cli, void *date_ptr)
+{
+	return make_unix_date3(date_ptr, cli->serverzone);
 }
 
 /***************************************************************************
@@ -664,7 +619,7 @@ time_t make_unix_date3(void *date_ptr)
 char *http_timestring(time_t t)
 {
 	static fstring buf;
-	struct tm *tm = LocalTime(&t);
+	struct tm *tm = localtime(&t);
 
 	if (!tm)
 		slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
@@ -696,7 +651,7 @@ char *timestring(BOOL hires)
 	} else {
 		t = time(NULL);
 	}
-	tm = LocalTime(&t);
+	tm = localtime(&t);
 	if (!tm) {
 		if (hires) {
 			slprintf(TimeBuf,
@@ -745,14 +700,16 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
 {
 	time_t ret, ret1;
 
-	if(S_ISDIR(st->st_mode) && fake_dirs)
+	if(S_ISDIR(st->st_mode) && fake_dirs) {
 		return (time_t)315493200L;          /* 1/1/1980 */
+	}
     
 	ret = MIN(st->st_ctime, st->st_mtime);
 	ret1 = MIN(ret, st->st_atime);
 
-	if(ret1 != (time_t)0)
+	if(ret1 != (time_t)0) {
 		return ret1;
+	}
 
 	/*
 	 * One of ctime, mtime or atime was zero (probably atime).
@@ -777,8 +734,9 @@ void init_nt_time(NTTIME *nt)
 
 BOOL nt_time_is_zero(NTTIME *nt)
 {
-	if(nt->high==0) 
+	if(nt->high==0) {
 		return True;
+	}
 	return False;
 }
 
@@ -801,9 +759,10 @@ SMB_BIG_INT usec_time_diff(const struct timeval *larget, const struct timeval *s
 	return (sec_diff * 1000000) + (SMB_BIG_INT)(larget->tv_usec - smallt->tv_usec);
 }
 
-/*
-  return a timeval struct with the given elements
-*/
+/****************************************************************************
+ Return a timeval struct with the given elements.
+****************************************************************************/
+
 struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv;
@@ -812,25 +771,28 @@ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 	return tv;
 }
 
-/*
-  return a zero timeval
-*/
+/****************************************************************************
+ Return a zero timeval.
+****************************************************************************/
+
 struct timeval timeval_zero(void)
 {
 	return timeval_set(0,0);
 }
 
-/*
-  return True if a timeval is zero
-*/
+/****************************************************************************
+ Return True if a timeval is zero.
+****************************************************************************/
+
 BOOL timeval_is_zero(const struct timeval *tv)
 {
 	return tv->tv_sec == 0 && tv->tv_usec == 0;
 }
 
-/*
-  return a timeval for the current time
-*/
+/****************************************************************************
+ Return a timeval for the current time.
+****************************************************************************/
+
 struct timeval timeval_current(void)
 {
 	struct timeval tv;
@@ -838,9 +800,10 @@ struct timeval timeval_current(void)
 	return tv;
 }
 
-/*
-  return a timeval ofs microseconds after tv
-*/
+/****************************************************************************
+ Return a timeval ofs microseconds after tv.
+****************************************************************************/
+
 struct timeval timeval_add(const struct timeval *tv,
 			   uint32_t secs, uint32_t usecs)
 {
@@ -852,44 +815,56 @@ struct timeval timeval_add(const struct timeval *tv,
 	return tv2;
 }
 
-/*
-  return the sum of two timeval structures
-*/
+/****************************************************************************
+ Return the sum of two timeval structures.
+****************************************************************************/
+
 struct timeval timeval_sum(const struct timeval *tv1,
 			   const struct timeval *tv2)
 {
 	return timeval_add(tv1, tv2->tv_sec, tv2->tv_usec);
 }
 
-/*
-  return a timeval secs/usecs into the future
-*/
+/****************************************************************************
+ Return a timeval secs/usecs into the future.
+****************************************************************************/
+
 struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv = timeval_current();
 	return timeval_add(&tv, secs, usecs);
 }
 
-/*
-  compare two timeval structures. 
-  Return -1 if tv1 < tv2
-  Return 0 if tv1 == tv2
-  Return 1 if tv1 > tv2
-*/
+/****************************************************************************
+ Compare two timeval structures. 
+ Return -1 if tv1 < tv2
+ Return 0 if tv1 == tv2
+ Return 1 if tv1 > tv2
+****************************************************************************/
+
 int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 {
-	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
-	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
-	if (tv1->tv_usec > tv2->tv_usec) return 1;
-	if (tv1->tv_usec < tv2->tv_usec) return -1;
+	if (tv1->tv_sec  > tv2->tv_sec) {
+		return 1;
+	}
+	if (tv1->tv_sec  < tv2->tv_sec) {
+		return -1;
+	}
+	if (tv1->tv_usec > tv2->tv_usec) {
+		return 1;
+	}
+	if (tv1->tv_usec < tv2->tv_usec) {
+		return -1;
+	}
 	return 0;
 }
 
-/*
-  return the difference between two timevals as a timeval
-  if tv1 comes after tv2, then return a zero timeval
-  (this is *tv2 - *tv1)
-*/
+/****************************************************************************
+ Return the difference between two timevals as a timeval.
+ If tv1 comes after tv2, then return a zero timeval
+ (this is *tv2 - *tv1).
+****************************************************************************/
+
 struct timeval timeval_until(const struct timeval *tv1,
 			     const struct timeval *tv2)
 {
@@ -907,34 +882,49 @@ struct timeval timeval_until(const struct timeval *tv1,
 	return t;
 }
 
-/*
-  return the lesser of two timevals
-*/
+/****************************************************************************
+ Return the lesser of two timevals.
+****************************************************************************/
+
 struct timeval timeval_min(const struct timeval *tv1,
 			   const struct timeval *tv2)
 {
-	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
-	if (tv1->tv_sec > tv2->tv_sec) return *tv2;
-	if (tv1->tv_usec < tv2->tv_usec) return *tv1;
-	return *tv2;
-}
-
-/*
-  return the greater of two timevals
-*/
-struct timeval timeval_max(const struct timeval *tv1,
-			   const struct timeval *tv2)
-{
-	if (tv1->tv_sec > tv2->tv_sec) return *tv1;
-	if (tv1->tv_sec < tv2->tv_sec) return *tv2;
-	if (tv1->tv_usec > tv2->tv_usec) return *tv1;
+	if (tv1->tv_sec < tv2->tv_sec) {
+		return *tv1;
+	}
+	if (tv1->tv_sec > tv2->tv_sec) {
+		return *tv2;
+	}
+	if (tv1->tv_usec < tv2->tv_usec) {
+		return *tv1;
+	}
 	return *tv2;
 }
 
 /****************************************************************************
- convert ASN.1 GeneralizedTime string to unix-time
- returns 0 on failure; Currently ignores timezone. 
+ Return the greater of two timevals.
 ****************************************************************************/
+
+struct timeval timeval_max(const struct timeval *tv1,
+			   const struct timeval *tv2)
+{
+	if (tv1->tv_sec > tv2->tv_sec) {
+		return *tv1;
+	}
+	if (tv1->tv_sec < tv2->tv_sec) {
+		return *tv2;
+	}
+	if (tv1->tv_usec > tv2->tv_usec) {
+		return *tv1;
+	}
+	return *tv2;
+}
+
+/****************************************************************************
+ Convert ASN.1 GeneralizedTime string to unix-time.
+ Returns 0 on failure; Currently ignores timezone. 
+****************************************************************************/
+
 time_t generalized_to_unix_time(const char *str)
 { 
 	struct tm tm;

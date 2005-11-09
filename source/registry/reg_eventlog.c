@@ -226,7 +226,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	already_in = False;
 	wrklist = NULL;
-	dump_data( 1, rval->data_p, rval->size );
+	dump_data( 1, (const char *)rval->data_p, rval->size );
 	if ( ( numsources =
 	       regval_convert_multi_sz( ( uint16 * ) rval->data_p, rval->size,
 					&wrklist ) ) > 0 ) {
@@ -301,7 +301,7 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 	}
 	TALLOC_FREE( subkeys );
 
-	/* at this point KEY_EVENTLOG/<eventlog>/<sourcename> key is in there. Now need to add EventLogMessageFile */
+	/* at this point KEY_EVENTLOG/<eventlog>/<sourcename> key is in there. Now need to add EventMessageFile */
 
 	/* now allocate room for the source's subkeys */
 
@@ -320,14 +320,14 @@ BOOL eventlog_add_source( const char *eventlog, const char *sourcename,
 		return False;
 	}
 	DEBUG( 5,
-	       ( "Storing EventLogMessageFile [%s] to eventlog path of [%s]\n",
+	       ( "Storing EventMessageFile [%s] to eventlog path of [%s]\n",
 		 messagefile, evtlogpath ) );
 
 	regdb_fetch_values( evtlogpath, values );
 
 	init_unistr2( &data, messagefile, UNI_STR_TERMINATE );
 
-	regval_ctr_addvalue( values, "EventLogMessageFile", REG_EXPAND_SZ,
+	regval_ctr_addvalue( values, "EventMessageFile", REG_SZ,
 			     ( char * ) data.buffer,
 			     data.uni_str_len * sizeof( uint16 ) );
 	regdb_store_values( evtlogpath, values );

@@ -1870,6 +1870,52 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ Renames a SAM_ACCOUNT
+ - The "rename user script" has full responsibility for changing everything
+***************************************************************************/
+
+static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
+					   SAM_ACCOUNT *old_acct, 
+					   const char *newname)
+{
+	const char *oldname;
+	int rc;
+	pstring rename_script;
+
+	if (!old_acct) {
+		DEBUG(0, ("ldapsam_rename_sam_account: old_acct was NULL!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!newname) {
+		DEBUG(0, ("ldapsam_rename_sam_account: newname was NULL!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+		
+	oldname = pdb_get_username(old_acct);
+
+        /* rename the posix user */
+        pstrcpy(rename_script, lp_renameuser_script());
+
+	if (!(*rename_script))
+		return NT_STATUS_ACCESS_DENIED;
+
+	DEBUG (3, ("ldapsam_rename_sam_account: Renaming user %s to %s.\n", 
+		   oldname, newname));
+
+	pstring_sub(rename_script, "%unew", newname);
+	pstring_sub(rename_script, "%uold", oldname);
+	rc = smbrun(rename_script, NULL);
+
+	DEBUG(rc ? 0 : 3,("Running the command `%s' gave %d\n", 
+			  rename_script, rc));
+
+	if (rc)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
+}
+
 /**********************************************************************
  Helper function to determine for update_sam_account whether
  we need LDAP modification.
@@ -2332,22 +2378,22 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 }
 
 static void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
-				    uint32 rid, uint32 **rids, int *num)
+				    uint32 rid, uint32 **pp_rids, size_t *p_num)
 {
-	int i;
+	size_t i;
 
-	for (i=0; i<*num; i++) {
-		if ((*rids)[i] == rid)
+	for (i=0; i<*p_num; i++) {
+		if ((*pp_rids)[i] == rid)
 			return;
 	}
 	
-	*rids = TALLOC_REALLOC_ARRAY(mem_ctx, *rids, uint32, *num+1);
+	*pp_rids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_rids, uint32, *p_num+1);
 
-	if (*rids == NULL)
+	if (*pp_rids == NULL)
 		return;
 
-	(*rids)[*num] = rid;
-	*num += 1;
+	(*pp_rids)[*p_num] = rid;
+	*p_num += 1;
 }
 
 static BOOL ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
@@ -2386,8 +2432,8 @@ static BOOL ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *group,
-					   uint32 **member_rids,
-					   int *num_members)
+					   uint32 **pp_member_rids,
+					   size_t *p_num_members)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -2404,11 +2450,11 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
 		return pdb_default_enum_group_members(methods, mem_ctx, group,
-						      member_rids,
-						      num_members);
+						      pp_member_rids,
+						      p_num_members);
 
-	*member_rids = NULL;
-	*num_members = 0;
+	*pp_member_rids = NULL;
+	*p_num_members = 0;
 
 	pstr_sprintf(filter,
 		     "(&(objectClass=sambaSamAccount)"
@@ -2439,8 +2485,8 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			continue;
 		}
 
-		add_rid_to_array_unique(mem_ctx, rid, member_rids,
-					num_members);
+		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
+					p_num_members);
 	}
 
 	if (msg != NULL)
@@ -2543,8 +2589,8 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 		sid_peek_rid(&sid, &rid);
 
-		add_rid_to_array_unique(mem_ctx, rid, member_rids,
-					num_members);
+		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
+					p_num_members);
 	}
 
 	result = NT_STATUS_OK;
@@ -2564,8 +2610,8 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       const char *username,
 					       gid_t primary_gid,
-					       DOM_SID **sids, gid_t **gids,
-					       int *num_groups)
+					       DOM_SID **pp_sids, gid_t **pp_gids,
+					       size_t *p_num_groups)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -2577,14 +2623,14 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int num_sids, num_gids;
+	size_t num_sids, num_gids;
 
 	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
 		return pdb_default_enum_group_memberships(methods, username,
-							  primary_gid, sids,
-							  gids, num_groups);
+							  primary_gid, pp_sids,
+							  pp_gids, p_num_groups);
 
-	*sids = NULL;
+	*pp_sids = NULL;
 	num_sids = 0;
 
 	escape_name = escape_ldap_string_alloc(username);
@@ -2603,18 +2649,18 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		goto done;
 
 	num_gids = 0;
-	*gids = NULL;
+	*pp_gids = NULL;
 
 	num_sids = 0;
-	*sids = NULL;
+	*pp_sids = NULL;
 
 	/* We need to add the primary group as the first gid/sid */
 
-	add_gid_to_array_unique(NULL, primary_gid, gids, &num_gids);
+	add_gid_to_array_unique(NULL, primary_gid, pp_gids, &num_gids);
 
 	/* This sid will be replaced later */
 
-	add_sid_to_array_unique(NULL, &global_sid_NULL, sids, &num_sids);
+	add_sid_to_array_unique(NULL, &global_sid_NULL, pp_sids, &num_sids);
 
 	for (entry = ldap_first_entry(conn->ldap_struct, msg);
 	     entry != NULL;
@@ -2644,19 +2690,19 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 			goto done;
 
 		if (gid == primary_gid) {
-			sid_copy(&(*sids)[0], &sid);
+			sid_copy(&(*pp_sids)[0], &sid);
 		} else {
-			add_gid_to_array_unique(NULL, gid, gids, &num_gids);
-			add_sid_to_array_unique(NULL, &sid, sids, &num_sids);
+			add_gid_to_array_unique(NULL, gid, pp_gids, &num_gids);
+			add_sid_to_array_unique(NULL, &sid, pp_sids, &num_sids);
 		}
 	}
 
-	if (sid_compare(&global_sid_NULL, &(*sids)[0]) == 0) {
+	if (sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
 		DEBUG(3, ("primary group of [%s] not found\n", username));
 		goto done;
 	}
 
-	*num_groups = num_sids;
+	*p_num_groups = num_sids;
 
 	result = NT_STATUS_OK;
 
@@ -2979,15 +3025,15 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
+					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only)
 {
 	GROUP_MAP map;
 	GROUP_MAP *mapt;
-	int entries = 0;
+	size_t entries = 0;
 
-	*num_entries = 0;
-	*rmap = NULL;
+	*p_num_entries = 0;
+	*pp_rmap = NULL;
 
 	if (!NT_STATUS_IS_OK(ldapsam_setsamgrent(methods, False))) {
 		DEBUG(0, ("ldapsam_enum_group_mapping: Unable to open passdb\n"));
@@ -3005,14 +3051,14 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 			continue;
 		}
 
-		mapt=SMB_REALLOC_ARRAY((*rmap), GROUP_MAP, entries+1);
+		mapt=SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
 			DEBUG(0,("ldapsam_enum_group_mapping: Unable to enlarge group map!\n"));
-			SAFE_FREE(*rmap);
+			SAFE_FREE(*pp_rmap);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		else
-			(*rmap) = mapt;
+			(*pp_rmap) = mapt;
 
 		mapt[entries] = map;
 
@@ -3021,7 +3067,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	}
 	ldapsam_endsamgrent(methods);
 
-	*num_entries = entries;
+	*p_num_entries = entries;
 
 	return NT_STATUS_OK;
 }
@@ -3126,8 +3172,8 @@ static NTSTATUS ldapsam_del_aliasmem(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
-				      const DOM_SID *alias, DOM_SID **members,
-				      int *num_members)
+				      const DOM_SID *alias, DOM_SID **pp_members,
+				      size_t *p_num_members)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -3137,9 +3183,10 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	char **values;
 	int i;
 	pstring filter;
+	size_t num_members;
 
-	*members = NULL;
-	*num_members = 0;
+	*pp_members = NULL;
+	*p_num_members = 0;
 
 	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%s))",
 		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
@@ -3193,9 +3240,10 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 		if (!string_to_sid(&member, values[i]))
 			continue;
 
-		add_sid_to_array(NULL, &member, members, num_members);
+		add_sid_to_array(NULL, &member, pp_members, &num_members);
 	}
 
+	*p_num_members = num_members;
 	ldap_value_free(values);
 	ldap_msgfree(result);
 
@@ -3206,9 +3254,9 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 					  TALLOC_CTX *mem_ctx,
 					  const DOM_SID *domain_sid,
 					  const DOM_SID *members,
-					  int num_members,
-					  uint32 **alias_rids,
-					  int *num_alias_rids)
+					  size_t num_members,
+					  uint32 **pp_alias_rids,
+					  size_t *p_num_alias_rids)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -3265,8 +3313,8 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		if (!sid_peek_check_rid(domain_sid, &sid, &rid))
 			continue;
 
-		add_rid_to_array_unique(mem_ctx, rid, alias_rids,
-					num_alias_rids);
+		add_rid_to_array_unique(mem_ctx, rid, pp_alias_rids,
+					p_num_alias_rids);
 	}
 
 	ldap_msgfree(result);
@@ -4201,6 +4249,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->add_sam_account = ldapsam_add_sam_account;
 	(*pdb_method)->update_sam_account = ldapsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = ldapsam_delete_sam_account;
+	(*pdb_method)->rename_sam_account = ldapsam_rename_sam_account;
 
 	(*pdb_method)->getgrsid = ldapsam_getgrsid;
 	(*pdb_method)->getgrgid = ldapsam_getgrgid;

@@ -35,7 +35,7 @@
 #define BIT_LOGSCRIPT	0x00000800
 #define BIT_PROFILE	0x00001000
 #define BIT_MACHINE	0x00002000
-#define BIT_RESERV_4	0x00004000
+#define BIT_USERDOMAIN	0x00004000
 #define BIT_USER	0x00008000
 #define BIT_LIST	0x00010000
 #define BIT_MODIFY	0x00020000
@@ -52,7 +52,7 @@
 #define BIT_LOGONHOURS	0x10000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x00401F60
+#define MASK_USER_GOOD		0x00405F60
 
 /*********************************************************
  Add all currently available users to another db
@@ -100,7 +100,7 @@ static int export_database (struct pdb_context *in, struct pdb_context
 
 static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 	GROUP_MAP *maps = NULL;
-	int i, entries = 0;
+	size_t i, entries = 0;
 
 	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
 							&maps, &entries,
@@ -324,6 +324,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
 			  const char *user_sid, const char *group_sid,
+			  const char *user_domain,
 			  const BOOL badpw, const BOOL hours,
 			  time_t pwd_can_change, time_t pwd_must_change)
 {
@@ -378,6 +379,8 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_logon_script(sam_pwent, script, PDB_CHANGED);
 	if (profile)
 		pdb_set_profile_path (sam_pwent, profile, PDB_CHANGED);
+	if (user_domain)
+		pdb_set_domain(sam_pwent, user_domain, PDB_CHANGED);
 
 	if (account_control) {
 		uint16 not_settable = ~(ACB_DISABLED|ACB_HOMDIRREQ|ACB_PWNOTREQ|
@@ -677,6 +680,7 @@ int main (int argc, char **argv)
 	static BOOL  force_initialised_password = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
+	static char *user_domain = NULL;
 	static char *account_control = NULL;
 	static char *account_policy = NULL;
 	static char *user_sid = NULL;
@@ -705,6 +709,7 @@ int main (int argc, char **argv)
 		{"drive",	'D', POPT_ARG_STRING, &home_drive, 0, "set home drive", NULL},
 		{"script",	'S', POPT_ARG_STRING, &logon_script, 0, "set logon script", NULL},
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
+		{"domain",	'I', POPT_ARG_STRING, &user_domain, 0, "set a users' domain", NULL},
 		{"user SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
 		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
@@ -766,6 +771,7 @@ int main (int argc, char **argv)
 			(home_drive ? BIT_HDIRDRIVE : 0) +
 			(logon_script ? BIT_LOGSCRIPT : 0) +
 			(profile_path ? BIT_PROFILE : 0) +
+			(user_domain ? BIT_USERDOMAIN : 0) +
 			(machine ? BIT_MACHINE : 0) +
 			(user_name ? BIT_USER : 0) +
 			(list_users ? BIT_LIST : 0) +
@@ -998,6 +1004,7 @@ int main (int argc, char **argv)
 					      logon_script,
 					      profile_path, account_control,
 					      user_sid, group_sid,
+					      user_domain,
 					      badpw_reset, hours_reset,
 					      pwd_can_change, pwd_must_change);
 error:

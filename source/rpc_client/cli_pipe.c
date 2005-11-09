@@ -250,7 +250,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	data = (unsigned char *)(prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN);
 	data_len = (size_t)(prhdr->frag_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len);
 
-	full_packet_data = prs_data_p(current_pdu);
+	full_packet_data = (unsigned char *)prs_data_p(current_pdu);
 	full_packet_data_len = prhdr->frag_len - auth_len;
 
 	/* Pull the auth header and the following data into a blob. */
@@ -265,7 +265,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	auth_blob.data = prs_data_p(current_pdu) + prs_offset(current_pdu);
+	auth_blob.data = (unsigned char *)prs_data_p(current_pdu) + prs_offset(current_pdu);
 	auth_blob.length = auth_len;
 
 	switch (cli->auth.auth_level) {
@@ -1143,7 +1143,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(uint8 pkt_type,
 
 	if(auth_len != 0) {
 		if (ss_padding_len) {
-			unsigned char pad[8];
+			char pad[8];
 			memset(pad, '\0', 8);
 			if (!prs_copy_data_in(rpc_out, pad, ss_padding_len)) {
 				DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall padding.\n"));
@@ -1272,9 +1272,9 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = ntlmssp_seal_packet(cli->auth.a_u.ntlmssp_state,
-					prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+					(unsigned char *)prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 					data_and_pad_len,
-					prs_data_p(outgoing_pdu),
+					(unsigned char *)prs_data_p(outgoing_pdu),
 					(size_t)prs_offset(outgoing_pdu),
 					&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1286,9 +1286,9 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			status = ntlmssp_sign_packet(cli->auth.a_u.ntlmssp_state,
-					prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+					(unsigned char *)prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 					data_and_pad_len,
-					prs_data_p(outgoing_pdu),
+					(unsigned char *)prs_data_p(outgoing_pdu),
 					(size_t)prs_offset(outgoing_pdu),
 					&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1306,7 +1306,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 
 	/* Finally marshall the blob. */
 	                                                                                               
-	if (!prs_copy_data_in(outgoing_pdu, auth_blob.data, NTLMSSP_SIG_SIZE)) {
+	if (!prs_copy_data_in(outgoing_pdu, (const char *)auth_blob.data, NTLMSSP_SIG_SIZE)) {
 		DEBUG(0,("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
 			(unsigned int)NTLMSSP_SIG_SIZE));
 		data_blob_free(&auth_blob);
@@ -2391,7 +2391,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
-	char machine_pwd[16];
+	unsigned char machine_pwd[16];
 	fstring machine_account;
 
 	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, perr);
@@ -2409,7 +2409,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		return NULL;
 	}
 
-	if ( IS_DC ) {
+        if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
 		fstrcpy( machine_account, lp_workgroup() );
         } else {
                 /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
@@ -2421,17 +2421,18 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
         }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
-					cli->desthost,
-					domain,
-					machine_account,
+					cli->desthost, /* server name */
+					domain,	       /* domain */
+					global_myname(), /* client name */
+					machine_account, /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);
 
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(3,("get_schannel_session_key: rpccli_netlogon_setup_creds "
-			"failed with result %s\n",
-			nt_errstr(*perr) ));
+			"failed with result %s to server %s, domain %s, machine account %s.\n",
+			nt_errstr(*perr), cli->desthost, domain, machine_account ));
 		cli_rpc_pipe_close(netlogon_pipe);
 		return NULL;
 	}
@@ -2513,7 +2514,7 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
-	char machine_pwd[16];
+	unsigned char machine_pwd[16];
 	fstring machine_account;
 
 	netlogon_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain, username, password, perr);
@@ -2531,7 +2532,10 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 		return NULL;
 	}
 
-	if ( IS_DC ) {
+        /* if we are a DC and this is a trusted domain, then we need to use our
+           domain name in the net_req_auth2() request */
+
+        if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
 		fstrcpy( machine_account, lp_workgroup() );
         } else {
                 /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
@@ -2543,9 +2547,10 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
         }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
-					cli->desthost,
-					domain,
-					machine_account,
+					cli->desthost,     /* server name */
+					domain,            /* domain */
+					global_myname(),   /* client name */
+					machine_account,   /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);

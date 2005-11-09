@@ -109,9 +109,9 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 **********************************************************/
 static int net_groupmap_list(int argc, const char **argv)
 {
-	int entries;
+	size_t entries;
 	BOOL long_list = False;
-	int i;
+	size_t i;
 	fstring ntgroup = "";
 	fstring sid_string = "";
 
@@ -597,7 +597,7 @@ static int net_groupmap_set(int argc, const char **argv)
 static int net_groupmap_cleanup(int argc, const char **argv)
 {
 	GROUP_MAP *map = NULL;
-	int i, entries;
+	size_t i, entries;
 
 	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &entries,
 				    ENUM_ALL_MAPPED)) {
@@ -670,7 +670,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 {
 	DOM_SID alias;
 	DOM_SID *members;
-	int i, num;
+	size_t i, num;
 
 	if ( (argc != 1) || 
 	     !string_to_sid(&alias, argv[0]) ) {
@@ -697,7 +697,7 @@ static BOOL print_alias_memberships(TALLOC_CTX *mem_ctx,
 				    const DOM_SID *member)
 {
 	uint32 *alias_rids;
-	int i, num_alias_rids;
+	size_t i, num_alias_rids;
 
 	alias_rids = NULL;
 	num_alias_rids = 0;

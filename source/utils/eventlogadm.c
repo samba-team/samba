@@ -61,7 +61,7 @@ int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
 
 	if ( argc < 3 ) {
 		printf( "need more arguments:\n" );
-		printf( "-o addsource EventlogName SourceName /path/to/eventlogmsg.dll\n" );
+		printf( "-o addsource EventlogName SourceName /path/to/EventMessageFile.dll\n" );
 		return -1;
 	}
 	/* must open the registry before we access it */

@@ -131,7 +131,7 @@ static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *st
 static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 static int print_hexkey(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 
-static void print_asc(unsigned char *buf,int len)
+static void print_asc(const char *buf,int len)
 {
 	int i;
 
@@ -145,7 +145,7 @@ static void print_asc(unsigned char *buf,int len)
 		printf("%c",isprint(buf[i])?buf[i]:'.');
 }
 
-static void print_data(unsigned char *buf,int len)
+static void print_data(const char *buf,int len)
 {
 	int i=0;
 	if (len<=0) return;

@@ -632,7 +632,9 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	else
 		ClientNMB = 0;
   
-	ClientDGRAM = open_socket_in(SOCK_DGRAM,DGRAM_PORT,3,0,True);
+	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
+					   3, interpret_addr(lp_socket_address()),
+					   True);
 
 	if ( ClientNMB == -1 )
 		return( False );
@@ -775,6 +777,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	message_register(MSG_SHUTDOWN, nmbd_terminate);
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet);
+
+	TimeInit();
 
 	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

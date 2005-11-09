@@ -57,6 +57,7 @@ static struct vfs_ops default_vfs = {
 		vfswrap_get_quota,
 		vfswrap_set_quota,
 		vfswrap_get_shadow_copy_data,
+		vfswrap_statvfs,
 	
 		/* Directory operations */
 	
@@ -562,7 +563,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = SMB_VFS_DISK_FREE(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	space_avail = get_dfree_info(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 	if (space_avail == (SMB_BIG_UINT)-1) {
 		return -1;
 	}

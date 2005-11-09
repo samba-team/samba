@@ -120,9 +120,8 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %lu, sock %d, rbl %d, wbl %d\n",
-				  (unsigned long)tmp->pid, tmp->sock, tmp->read_buf_len, 
-				  tmp->write_buf_len));
+			DEBUG(2, ("\t\tpid %lu, sock %d\n",
+				  (unsigned long)tmp->pid, tmp->sock));
 		}
 	}
 }
@@ -214,7 +213,7 @@ static void msg_reload_services(int msg_type, struct process_id src, void *buf, 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
 static void msg_shutdown(int msg_type, struct process_id src, void *buf, size_t len)
 {
-	terminate();
+	do_sigterm = True;
 }
 
 static struct winbindd_dispatch_table {
@@ -707,8 +706,7 @@ static BOOL remove_idle_client(void)
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->read_buf_len == 0 && state->write_buf_len == 0 &&
-		    state->response.result != WINBINDD_PENDING &&
+		if (state->response.result != WINBINDD_PENDING &&
 		    !state->getpwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
@@ -1048,6 +1046,8 @@ int main(int argc, char **argv)
 	if (interactive)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
+
+	TimeInit();
 
 	/* Initialise messaging system */
 

@@ -101,6 +101,8 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 				       NULL, NULL, NULL,
 				       True);
 
+	user_info->logon_parameters = MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

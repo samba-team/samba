@@ -254,12 +254,13 @@ static NTSTATUS rpccli_net_auth3(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				const char *server_name,
 				const char *domain,
+				const char *clnt_name,
 				const char *machine_account,
-				const char machine_pwd[16],
+				const unsigned char machine_pwd[16],
 				uint32 sec_chan_type,
 				uint32 *neg_flags_inout)
 {
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_CHAL clnt_chal_send;
 	DOM_CHAL srv_chal_recv;
 	struct dcinfo *dc;
@@ -291,7 +292,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	result = rpccli_net_req_chal(cli,
 				cli->mem_ctx,
 				dc->remote_machine,
-				machine_account,
+				clnt_name,
 				&clnt_chal_send,
 				&srv_chal_recv);
 
@@ -315,7 +316,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 			dc->remote_machine,
 			dc->mach_acct,
 			sec_chan_type,
-			machine_account,
+			clnt_name,
 			neg_flags_inout,
 			&clnt_chal_send, /* input. */
 			&srv_chal_recv); /* output */
@@ -387,14 +388,16 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 	prs_struct qbuf, rbuf;
 	NET_Q_GETDCNAME q;
 	NET_R_GETDCNAME r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result;
+	fstring mydcname_slash;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise input parameters */
 
-	init_net_q_getdcname(&q, mydcname, domainname);
+	slprintf(mydcname_slash, sizeof(fstring)-1, "\\\\%s", mydcname);
+	init_net_q_getdcname(&q, mydcname_slash, domainname);
 
 	/* Marshall data and send request */
 
@@ -404,6 +407,8 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 		net_io_q_getdcname,
 		net_io_r_getdcname,
 		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
 
 	if (NT_STATUS_IS_OK(result)) {
 		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
@@ -435,8 +440,8 @@ NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	creds_client_step(cli->dc, &clnt_creds);
 
-	prs_set_session_key(&qbuf, cli->dc->sess_key);
-	prs_set_session_key(&rbuf, cli->dc->sess_key);
+	prs_set_session_key(&qbuf, (const char *)cli->dc->sess_key);
+	prs_set_session_key(&rbuf, (const char *)cli->dc->sess_key);
 
 	init_net_q_sam_sync(&q, cli->dc->remote_machine, global_myname(),
                             &clnt_creds, &ret_creds, database_id, next_rid);
@@ -523,11 +528,12 @@ NTSTATUS rpccli_netlogon_sam_deltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 /* Logon domain user */
 
 NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx,
-				const char *domain,
-                                const char *username,
-				const char *password,
-                                int logon_type)
+				   TALLOC_CTX *mem_ctx,
+				   uint32 logon_parameters,
+				   const char *domain,
+				   const char *username,
+				   const char *password,
+				   int logon_type)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_SAM_LOGON q;
@@ -561,10 +567,10 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
                 nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
                 init_id_info1(&ctr.auth.id1, domain, 
-                              0, /* param_ctrl */
+			      logon_parameters, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash,
-                              cli->dc->sess_key, lm_owf_user_pwd,
+                              (const char *)cli->dc->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
                 break;
@@ -580,7 +586,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
                 SMBNTencrypt(password, chal, local_nt_response);
 
                 init_id_info2(&ctr.auth.id2, domain, 
-                              0, /* param_ctrl */
+			      logon_parameters, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash, chal,
                               local_lm_response, 24, local_nt_response, 24);
@@ -631,6 +637,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   uint32 logon_parameters,
 					   const char *server,
 					   const char *username,
 					   const char *domain,
@@ -683,7 +690,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
         ctr.switch_value = NET_LOGON_TYPE;
 
 	init_id_info2(&ctr.auth.id2, domain,
-		      0, /* param_ctrl */
+		      logon_parameters, /* param_ctrl */
 		      0xdead, 0xbeef, /* LUID? */
 		      username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
@@ -740,7 +747,7 @@ LSA Server Password Set.
 ****************************************************************************/
 
 NTSTATUS rpccli_net_srv_pwset(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			   const char *machine_name, uint8 hashed_mach_pwd[16])
+			   const char *machine_name, const uint8 hashed_mach_pwd[16])
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 

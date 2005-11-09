@@ -156,7 +156,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	fstring real_username;
 	BOOL map_domainuser_to_guest = False;
 	PAC_LOGON_INFO *logon_info = NULL;
-	int i;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(pac_data);
@@ -182,16 +181,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	if (pac_data) {
-
-		/* get the logon_info */
-		for (i=0; i < pac_data->num_buffers; i++) {
-		
-			if (pac_data->pac_buffer[i].type != PAC_TYPE_LOGON_INFO)
-				continue;
-
-			logon_info = pac_data->pac_buffer[i].ctr->pac.logon_info;
-			break;
-		}
+		logon_info = get_logon_info_from_pac(pac_data);
 	}
 
 	DEBUG(3,("Ticket name is [%s]\n", client));

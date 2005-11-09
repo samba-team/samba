@@ -117,11 +117,14 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 		return werror_to_ntstatus(result);
 	}
 	
-	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
-	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Unable to open [%s]\n", argv[0]);
-		return werror_to_ntstatus(result);
+	if ( strlen( subpath ) != 0 ) {
+		result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+		if ( !W_ERROR_IS_OK(result) ) {
+			d_printf("Unable to open [%s]\n", argv[0]);
+			return werror_to_ntstatus(result);
+		}
 	}
+		memcpy( &pol_key, &pol_hive, sizeof(POLICY_HND) );
 	
 	/* get the subkeys */
 	
@@ -183,7 +186,8 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 out:
 	/* cleanup */
 	
-	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
+	if ( strlen( subpath ) != 0 )
+		rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
 	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
 
 	return werror_to_ntstatus(result);
@@ -357,7 +361,7 @@ static BOOL write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	
 	for ( i=0; i<nk->num_values; i++ ) {
 		regval_ctr_addvalue( values, nk->values[i].valuename, nk->values[i].type,
-			nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
+			(const char *)nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */

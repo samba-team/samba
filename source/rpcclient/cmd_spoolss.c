@@ -1065,14 +1065,13 @@ static WERROR cmd_spoolss_enum_drivers(struct rpc_pipe_client *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
 {
-	WERROR werror;
+	WERROR werror = WERR_OK;
 	uint32          info_level = 1;
 	PRINTER_DRIVER_CTR 	ctr;
 	uint32		i, j,
 			returned;
 
-	if (argc > 2) 
-	{
+	if (argc > 2) {
 		printf("Usage: enumdrivers [level]\n");
 		return WERR_OK;
 	}
@@ -1082,8 +1081,7 @@ static WERROR cmd_spoolss_enum_drivers(struct rpc_pipe_client *cli,
 
 
 	/* loop through and print driver info level for each architecture */
-	for (i=0; archi_table[i].long_archi!=NULL; i++) 
-	{
+	for (i=0; archi_table[i].long_archi!=NULL; i++) {
 		/* check to see if we already asked for this architecture string */
 
 		if ( i>0 && strequal(archi_table[i].long_archi, archi_table[i-1].long_archi) )
@@ -1115,22 +1113,22 @@ static WERROR cmd_spoolss_enum_drivers(struct rpc_pipe_client *cli,
 			
 		case 1:
 			for (j=0; j < returned; j++) {
-				display_print_driver_1 (&(ctr.info1[j]));
+				display_print_driver_1 (&ctr.info1[j]);
 			}
 			break;
 		case 2:
 			for (j=0; j < returned; j++) {
-				display_print_driver_2 (&(ctr.info2[j]));
+				display_print_driver_2 (&ctr.info2[j]);
 			}
 			break;
 		case 3:
 			for (j=0; j < returned; j++) {
-				display_print_driver_3 (&(ctr.info3[j]));
+				display_print_driver_3 (&ctr.info3[j]);
 			}
 			break;
 		default:
 			printf("unknown info level %d\n", info_level);
-			break;
+			return WERR_UNKNOWN_LEVEL;
 		}
 	}
 	
@@ -1555,13 +1553,12 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
 {
-	WERROR result;
+	WERROR result = WERR_OK;
 	fstring			servername;
 	int			i;
 	
 	/* parse the command arguements */
-	if (argc != 2)
-	{
+	if (argc != 2) {
 		printf ("Usage: %s <driver>\n", argv[0]);
 		return WERR_OK;
         }
@@ -1570,8 +1567,7 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
 	strupper_m(servername);
 
 	/* delete the driver for all architectures */
-	for (i=0; archi_table[i].long_archi; i++)
-	{
+	for (i=0; archi_table[i].long_archi; i++) {
 		/* make the call to remove the driver */
 		result = rpccli_spoolss_deleteprinterdriver(
 			cli, mem_ctx, archi_table[i].long_archi, argv[1]);
@@ -1582,9 +1578,7 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
 					argv[1], archi_table[i].long_archi, 
 					W_ERROR_V(result));
 			}
-		} 
-		else 
-		{
+		} else {
 			printf ("Driver %s removed for arch [%s].\n", argv[1], 
 				archi_table[i].long_archi);
 		}
@@ -2059,13 +2053,13 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		}
 
 		value.size = len*2;
-		value.data_p = TALLOC_ARRAY(mem_ctx, char, value.size);
+		value.data_p = TALLOC_ARRAY(mem_ctx, unsigned char, value.size);
 		if (value.data_p == NULL) {
 			result = WERR_NOMEM;
 			goto done;
 		}
 
-		p = value.data_p;
+		p = (char *)value.data_p;
 		len = value.size;
 		for (i=4; i<argc; i++) {
 			size_t l = (strlen(argv[i])+1)*2;

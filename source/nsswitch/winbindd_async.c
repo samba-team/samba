@@ -707,9 +707,9 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 }
 
 BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
-		   int num_sids, char **result, ssize_t *len)
+		   size_t num_sids, char **result, ssize_t *len)
 {
-	int i;
+	size_t i;
 	size_t buflen = 0;
 
 	*len = 0;
@@ -727,7 +727,7 @@ BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 }
 
 BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
-		   DOM_SID **sids, int *num_sids)
+		   DOM_SID **sids, size_t *num_sids)
 {
 	char *p, *q;
 
@@ -754,10 +754,10 @@ BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 	return True;
 }
 
-BOOL print_ridlist(TALLOC_CTX *mem_ctx, uint32 *rids, int num_rids,
+BOOL print_ridlist(TALLOC_CTX *mem_ctx, uint32 *rids, size_t num_rids,
 		   char **result, ssize_t *len)
 {
-	int i;
+	size_t i;
 	size_t buflen = 0;
 
 	*len = 0;
@@ -775,7 +775,7 @@ BOOL print_ridlist(TALLOC_CTX *mem_ctx, uint32 *rids, int num_rids,
 }
 
 BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
-		   uint32 **sids, int *num_rids)
+		   uint32 **sids, size_t *num_rids)
 {
 	char *p;
 
@@ -802,10 +802,10 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			       void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ,
-		     DOM_SID *aliases, int num_aliases) = c;
+		     DOM_SID *aliases, size_t num_aliases) = c;
 	char *aliases_str;
 	DOM_SID *sids = NULL;
-	int num_sids = 0;
+	size_t num_sids = 0;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger getsidaliases\n"));
@@ -840,11 +840,11 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 
 void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *sids, int num_sids,
+				  const DOM_SID *sids, size_t num_sids,
 			 	  void (*cont)(void *private_data,
 				 	       BOOL success,
 					       const DOM_SID *aliases,
-					       int num_aliases),
+					       size_t num_aliases),
 				  void *private_data)
 {
 	struct winbindd_request request;
@@ -874,10 +874,11 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state)
 {
 	DOM_SID *sids = NULL;
-	int num_sids = 0;
+	size_t num_sids = 0;
 	char *sidstr;
-	size_t len;
-	int i, num_aliases;
+	ssize_t len;
+	size_t i;
+	uint32 num_aliases;
 	uint32 *alias_rids;
 	NTSTATUS result;
 
@@ -943,8 +944,8 @@ struct gettoken_state {
 	struct winbindd_domain *alias_domain;
 	struct winbindd_domain *builtin_domain;
 	DOM_SID *sids;
-	int num_sids;
-	void (*cont)(void *private_data, BOOL success, DOM_SID *sids, int num_sids);
+	size_t num_sids;
+	void (*cont)(void *private_data, BOOL success, DOM_SID *sids, size_t num_sids);
 	void *private_data;
 };
 
@@ -953,12 +954,12 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 				   void *c, void *private_data);
 static void gettoken_recvaliases(void *private_data, BOOL success,
 				 const DOM_SID *aliases,
-				 int num_aliases);
+				 size_t num_aliases);
 				 
 
 void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 			     void (*cont)(void *private_data, BOOL success,
-					  DOM_SID *sids, int num_sids),
+					  DOM_SID *sids, size_t num_sids),
 			     void *private_data)
 {
 	struct winbindd_domain *domain;
@@ -1046,10 +1047,10 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 
 static void gettoken_recvaliases(void *private_data, BOOL success,
 				 const DOM_SID *aliases,
-				 int num_aliases)
+				 size_t num_aliases)
 {
 	struct gettoken_state *state = private_data;
-	int i;
+	size_t i;
 
 	if (!success) {
 		DEBUG(10, ("Could not receive domain local groups\n"));
@@ -1437,4 +1438,3 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	do_async_domain(mem_ctx, domain, &request, query_user_recv,
 			cont, private_data);
 }
-

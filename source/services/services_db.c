@@ -71,6 +71,7 @@ struct service_display_info common_unix_svcs[] = {
   { "apache",        NULL, "HTTP Server", NULL },
   { "autofs",        NULL, "Automounter", NULL },
   { "squid",         NULL, "Web Cache Proxy ", NULL },
+  { "perfcountd",    NULL, "Performance Monitoring Daemon", NULL },
   { NULL, NULL, NULL, NULL }
 };
 
@@ -493,7 +494,7 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	/* stream the printer security descriptor */
 	
 	prs_init( &ps, 0, key, UNMARSHALL);
-	prs_give_memory( &ps, regval_data_p(val), regval_size(val), False );
+	prs_give_memory( &ps, (char *)regval_data_p(val), regval_size(val), False );
 	
 	if ( !sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
 		regkey_close_internal( key );

@@ -1170,7 +1170,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone = SVALS(cli->inbuf,smb_vwv10);
 		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
-		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
+		cli->servertime = cli_make_unix_date(cli,cli->inbuf+smb_vwv8);
 		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
 		cli->writebraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x2) != 0);
 		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
@@ -1178,7 +1178,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		/* the old core protocol */
 		cli->use_spnego = False;
 		cli->sec_mode = 0;
-		cli->serverzone = TimeDiff(time(NULL));
+		cli->serverzone = get_time_zone(time(NULL));
 	}
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
@@ -1388,7 +1388,7 @@ again:
 	DEBUG(3,("Connecting to host=%s\n", dest_host));
 	
 	if (!cli_connect(cli, dest_host, &ip)) {
-		DEBUG(1,("cli_full_connection: failed to connect to %s (%s)\n",
+		DEBUG(1,("cli_start_connection: failed to connect to %s (%s)\n",
 			 nmb_namestr(&called), inet_ntoa(ip)));
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;

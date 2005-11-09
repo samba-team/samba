@@ -341,7 +341,8 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 {
 	krb5_auth_context auth_context = NULL;
 	krb5_data ap_req, chpw_req, chpw_rep;
-	int ret, sock, addr_len;
+	int ret, sock;
+	socklen_t addr_len;
 	struct sockaddr remote_addr, local_addr;
 	krb5_address local_kaddr, remote_kaddr;
 
@@ -471,6 +472,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 
 	ZERO_STRUCT(creds);
 	
+	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
 		DEBUG(1,("Failed to init krb5 context (%s)\n", error_message(ret)));
@@ -603,6 +605,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     krb5_creds creds;
     char *chpw_princ = NULL, *password;
 
+    initialize_krb5_error_table();
     ret = krb5_init_context(&context);
     if (ret) {
 	DEBUG(1,("Failed to init krb5 context (%s)\n", error_message(ret)));

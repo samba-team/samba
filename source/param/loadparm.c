@@ -73,7 +73,7 @@ extern enum protocol_types Protocol;
 #endif
 
 /* some helpful bits */
-#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
 #define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
 
 int keepalive = DEFAULT_KEEPALIVE;
@@ -109,7 +109,6 @@ typedef struct
 	char *szPidDir;
 	char *szRootdir;
 	char *szDefaultService;
-	char *szDfree;
 	char *szGetQuota;
 	char *szSetQuota;
 	char *szMsgCommand;
@@ -122,7 +121,6 @@ typedef struct
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
-        char *szCountersDir;
 	char **szPassdbBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
@@ -358,6 +356,7 @@ typedef struct
 	char **szVfsObjects;
 	char *szMSDfsProxy;
 	char *szAioWriteBehind;
+	char *szDfree;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
 	int iMaxReportedPrintJobs;
@@ -376,6 +375,7 @@ typedef struct
 	int iOplockContentionLimit;
 	int iCSCPolicy;
 	int iBlock_size;
+	int iDfreeCacheTime;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
 	int  iCaseSensitive;
@@ -492,6 +492,7 @@ static service sDefault = {
 	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
 	NULL,			/* szAioWriteBehind */
+	NULL,			/* szDfree */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
 	0,			/* iMaxReportedPrintJobs */
@@ -509,7 +510,8 @@ static service sDefault = {
 	DEFAULT_PRINTING,	/* iPrinting */
 	2,			/* iOplockContentionLimit */
 	0,			/* iCSCPolicy */
-	1024,           /* iBlock_size */
+	1024,           	/* iBlock_size */
+	0,			/* iDfreeCacheTime */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
 	Auto,			/* case sensitive */
@@ -584,6 +586,9 @@ static service sDefault = {
 static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
+static TDB_CONTEXT *ServiceHash;
+static int *invalid_services = NULL;
+static int num_invalid_services = 0;
 static BOOL bInGlobalSection = True;
 static BOOL bGlobalOnly = False;
 static int server_role;
@@ -842,7 +847,6 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED}, 
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED}, 
-	{"counters dir", P_STRING, P_GLOBAL, &Globals.szCountersDir, NULL, NULL, FLAG_ADVANCED},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED}, 
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED}, 
@@ -1064,7 +1068,6 @@ static struct parm_struct parm_table[] = {
 	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"map readonly", P_ENUM, P_LOCAL, &sDefault.iMap_readonly, NULL, enum_map_readonly, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"map read only", P_ENUM, P_LOCAL, &sDefault.iMap_readonly, NULL, enum_map_readonly, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled names", P_BOOL, P_LOCAL, &sDefault.bMangledNames, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled map", P_STRING, P_LOCAL, &sDefault.szMangledMap, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED }, 
 	{"max stat cache size", P_INTEGER, P_GLOBAL, &Globals.iMaxStatCacheSize, NULL, NULL, FLAG_ADVANCED}, 
@@ -1181,7 +1184,8 @@ static struct parm_struct parm_table[] = {
 	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED}, 
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED}, 
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, FLAG_ADVANCED}, 
-	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, FLAG_ADVANCED}, 
+	{"dfree cache time", P_INTEGER, P_LOCAL, &sDefault.iDfreeCacheTime, NULL, NULL, FLAG_ADVANCED}, 
+	{"dfree command", P_STRING, P_LOCAL, &sDefault.szDfree, NULL, NULL, FLAG_ADVANCED}, 
 	{"get quota command", P_STRING, P_GLOBAL, &Globals.szGetQuota, NULL, NULL, FLAG_ADVANCED}, 
 	{"set quota command", P_STRING, P_GLOBAL, &Globals.szSetQuota, NULL, NULL, FLAG_ADVANCED}, 
 	{"remote announce", P_STRING, P_GLOBAL, &Globals.szRemoteAnnounce, NULL, NULL, FLAG_ADVANCED}, 
@@ -1705,7 +1709,6 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
-FN_GLOBAL_STRING(lp_counters_dir, &Globals.szCountersDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
@@ -1722,7 +1725,6 @@ FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
-FN_GLOBAL_STRING(lp_dfree_command, &Globals.szDfree)
 FN_GLOBAL_STRING(lp_get_quota_command, &Globals.szGetQuota)
 FN_GLOBAL_STRING(lp_set_quota_command, &Globals.szSetQuota)
 FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
@@ -1934,6 +1936,7 @@ FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
+FN_LOCAL_STRING(lp_dfree_command, szDfree)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
@@ -2008,6 +2011,7 @@ FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
+FN_LOCAL_INTEGER(lp_dfree_cache_time, iDfreeCacheTime)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
@@ -2033,6 +2037,9 @@ static BOOL service_ok(int iService);
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue);
 static BOOL do_section(const char *pszSectionName);
 static void init_copymap(service * pservice);
+static BOOL hash_a_service(const char *name, int number);
+static void free_service_byindex(int iService);
+static char * canonicalize_servicename(const char *name);
 
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
@@ -2325,6 +2332,31 @@ static void free_service(service *pservice)
 	ZERO_STRUCTP(pservice);
 }
 
+
+/***************************************************************************
+ remove a service indexed in the ServicePtrs array from the ServiceHash
+ and free the dynamically allocated parts
+***************************************************************************/
+
+static void free_service_byindex(int idx)
+{
+	if ( !LP_SNUM_OK(idx) ) 
+		return;
+
+	ServicePtrs[idx]->valid = False;
+	invalid_services[num_invalid_services++] = idx;
+
+	/* we have to cleanup the hash record */
+
+	if (ServicePtrs[idx]->szService) {
+		char *canon_name = canonicalize_servicename( ServicePtrs[idx]->szService );
+		
+		tdb_delete_bystring(ServiceHash, canon_name );
+	}
+
+	free_service(ServicePtrs[idx]);
+}
+
 /***************************************************************************
  Add a new service to the services array initialising it with the given 
  service. 
@@ -2360,32 +2392,41 @@ static int add_a_service(const service *pservice, const char *name)
 	}
 
 	/* find an invalid one */
-	for (i = 0; i < iNumServices; i++)
-		if (!ServicePtrs[i]->valid)
-			break;
+	i = iNumServices;
+	if (num_invalid_services > 0) {
+		i = invalid_services[--num_invalid_services];
+	}
 
 	/* if not, then create one */
 	if (i == iNumServices) {
 		service **tsp;
+		int *tinvalid;
 		
 		tsp = SMB_REALLOC_ARRAY(ServicePtrs, service *, num_to_alloc);
-					   
-		if (!tsp) {
+		if (tsp == NULL) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
 			return (-1);
 		}
-		else {
-			ServicePtrs = tsp;
-			ServicePtrs[iNumServices] = SMB_MALLOC_P(service);
-		}
+		ServicePtrs = tsp;
+		ServicePtrs[iNumServices] = SMB_MALLOC_P(service);
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
 			return (-1);
 		}
-
 		iNumServices++;
-	} else
-		free_service(ServicePtrs[i]);
+
+		/* enlarge invalid_services here for now... */
+		tinvalid = SMB_REALLOC_ARRAY(invalid_services, int,
+					     num_to_alloc);
+		if (tinvalid == NULL) {
+			DEBUG(0,("add_a_service: failed to enlarge "
+				 "invalid_services!\n"));
+			return (-1);
+		}
+		invalid_services = tinvalid;
+	} else {
+		free_service_byindex(i);
+	}
 
 	ServicePtrs[i]->valid = True;
 
@@ -2396,8 +2437,60 @@ static int add_a_service(const service *pservice, const char *name)
 		
 	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
 		i, ServicePtrs[i]->szService));
+
+	if (!hash_a_service(ServicePtrs[i]->szService, i)) {
+		return (-1);
+	}
 		
 	return (i);
+}
+
+/***************************************************************************
+  Convert a string to uppercase and remove whitespaces.
+***************************************************************************/
+
+static char *canonicalize_servicename(const char *src)
+{
+	static fstring canon; /* is fstring large enough? */
+
+	if ( !src ) {
+		DEBUG(0,("canonicalize_servicename: NULL source name!\n"));
+		return NULL;
+	}
+
+	fstrcpy( canon, src );
+	strupper_m( canon );
+
+	return canon;
+}
+
+/***************************************************************************
+  Add a name/index pair for the services array to the hash table.
+***************************************************************************/
+
+static BOOL hash_a_service(const char *name, int idx)
+{
+	char *canon_name;
+
+	if ( !ServiceHash ) {
+		DEBUG(10,("hash_a_service: creating tdb servicehash\n"));
+		ServiceHash = tdb_open("servicehash", 1031, TDB_INTERNAL, 
+                                        (O_RDWR|O_CREAT), 0600);
+		if ( !ServiceHash ) {
+			DEBUG(0,("hash_a_service: open tdb servicehash failed!\n"));
+			return False;
+		}
+	}
+
+	DEBUG(10,("hash_a_service: hashing index %d for service name %s\n",
+		idx, name));
+
+	if ( !(canon_name = canonicalize_servicename( name )) )
+		return False;
+
+        tdb_store_int32(ServiceHash, canon_name, idx);
+
+	return True;
 }
 
 /***************************************************************************
@@ -2632,15 +2725,23 @@ Find a service by name. Otherwise works like get_service.
 
 static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 {
-	int iService;
+	int iService = -1;
+	char *canon_name;
 
-	for (iService = iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) &&
-		    strwicmp(ServicePtrs[iService]->szService, pszServiceName) == 0) {
-			if (pserviceDest != NULL)
+	if (ServiceHash != NULL) {
+		if ( !(canon_name = canonicalize_servicename( pszServiceName )) )
+			return -1;
+
+		iService = tdb_fetch_int32(ServiceHash, canon_name );
+
+		if (LP_SNUM_OK(iService)) {
+			if (pserviceDest != NULL) {
 				copy_service(pserviceDest, ServicePtrs[iService], NULL);
-			break;
+			}
+		} else {
+			iService = -1;
 		}
+	}
 
 	return (iService);
 }
@@ -3912,8 +4013,7 @@ void lp_killunused(BOOL (*snumused) (int))
 			continue;
 
 		if (!snumused || !snumused(i)) {
-			ServicePtrs[i]->valid = False;
-			free_service(ServicePtrs[i]);
+			free_service_byindex(i);
 		}
 	}
 }
@@ -3925,8 +4025,7 @@ void lp_killunused(BOOL (*snumused) (int))
 void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn)) {
-		ServicePtrs[iServiceIn]->valid = False;
-		free_service(ServicePtrs[iServiceIn]);
+		free_service_byindex(iServiceIn);
 	}
 }
 
@@ -4342,6 +4441,7 @@ BOOL lp_preferred_master(void)
 void lp_remove_service(int snum)
 {
 	ServicePtrs[snum]->valid = False;
+	invalid_services[num_invalid_services++] = snum;
 }
 
 /*******************************************************************

@@ -294,7 +294,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
                              const char *old_password)
 {
   pstring param;
-  char data[532];
+  unsigned char data[532];
   char *p = param;
   unsigned char old_pw_hash[16];
   unsigned char new_pw_hash[16];
@@ -332,7 +332,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   
 #ifdef DEBUG_PASSWORD
   DEBUG(100,("make_oem_passwd_hash\n"));
-  dump_data(100, data, 516);
+  dump_data(100, (char *)data, 516);
 #endif
   SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
@@ -350,7 +350,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
-                    data,data_len,0                       /* data, length, max */
+                    (char *)data,data_len,0                       /* data, length, max */
                    ) == False) {
     DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
               user ));
@@ -390,7 +390,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	BOOL ret;
-	time_t (*date_fn)(void *);
+	time_t (*date_fn)(struct cli_state *, void *);
 	char *p;
 
 	p = param;
@@ -429,19 +429,19 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	}
 
 	if (cli->win95) {
-		date_fn = make_unix_date;
+		date_fn = cli_make_unix_date;
 	} else {
-		date_fn = make_unix_date2;
+		date_fn = cli_make_unix_date2;
 	}
 
 	if (c_time) {
-		*c_time = date_fn(rdata+0);
+		*c_time = date_fn(cli, rdata+0);
 	}
 	if (a_time) {
-		*a_time = date_fn(rdata+4);
+		*a_time = date_fn(cli, rdata+4);
 	}
 	if (m_time) {
-		*m_time = date_fn(rdata+8);
+		*m_time = date_fn(cli, rdata+8);
 	}
 	if (size) {
 		*size = IVAL(rdata, 12);
@@ -471,7 +471,7 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	BOOL ret;
-        void (*date_fn)(char *buf,int offset,time_t unixdate);
+        void (*date_fn)(struct cli_state *, char *buf,int offset,time_t unixdate);
 	char *p;
 
 	memset(param, 0, sizeof(param));
@@ -493,15 +493,15 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
         p = data;
 
 	if (cli->win95) {
-		date_fn = put_dos_date;
+		date_fn = cli_put_dos_date;
 	} else {
-		date_fn = put_dos_date2;
+		date_fn = cli_put_dos_date2;
 	}
 
         /* Add the create, last access, and modification times */
-        (*date_fn)(p, 0, c_time);
-        (*date_fn)(p, 4, a_time);
-        (*date_fn)(p, 8, m_time);
+        (*date_fn)(cli, p, 0, c_time);
+        (*date_fn)(cli, p, 4, a_time);
+        (*date_fn)(cli, p, 8, m_time);
         p += 12;
 
         /* Skip DataSize and AllocationSize */

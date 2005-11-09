@@ -337,7 +337,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	creds_server_init(p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
-			p->dc->mach_pw,
+			(const char *)p->dc->mach_pw,
 			&srv_chal_out);	
 
 	/* Check client credentials are valid. */
@@ -414,7 +414,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	creds_server_init(p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
-			p->dc->mach_pw,
+			(const char *)p->dc->mach_pw,
 			&srv_chal_out);	
 
 	/* Check client credentials are valid. */
@@ -695,6 +695,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		if (!make_user_info_netlogon_network(&user_info, 
 						     nt_username, nt_domain, 
 						     wksname,
+						     ctr->auth.id2.param_ctrl,
 						     ctr->auth.id2.lm_chal_resp.buffer,
 						     ctr->auth.id2.lm_chal_resp.str_str_len,
 						     ctr->auth.id2.nt_chal_resp.buffer,
@@ -719,7 +720,9 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 		if (!make_user_info_netlogon_interactive(&user_info, 
 							 nt_username, nt_domain, 
-							 nt_workstation, chal,
+							 nt_workstation, 
+							 ctr->auth.id1.param_ctrl,
+							 chal,
 							 ctr->auth.id1.lm_owf.data, 
 							 ctr->auth.id1.nt_owf.data, 
 							 p->dc->sess_key)) {

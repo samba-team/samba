@@ -128,16 +128,14 @@ enum pdb_value_state {
 #define IS_SAM_DEFAULT(x, flag)	(pdb_get_init_flags(x, flag) == PDB_DEFAULT)
 
 /* cache for bad password lockout data, to be used on replicated SAMs */
-typedef struct logon_cache_struct 
-{
+typedef struct logon_cache_struct {
 	time_t entry_timestamp;
 	uint16 acct_ctrl;
 	uint16 bad_password_count;
 	time_t bad_password_time;
 } LOGIN_CACHE;
 		
-typedef struct sam_passwd
-{
+typedef struct sam_passwd {
 	TALLOC_CTX *mem_ctx;
 	
 	void (*free_fn)(struct sam_passwd **);
@@ -225,11 +223,10 @@ typedef struct sam_group {
 
 } SAM_GROUP;
 
-struct acct_info
-{
-    fstring acct_name; /* account name */
-    fstring acct_desc; /* account name */
-    uint32 rid; /* domain-relative RID */
+struct acct_info {
+	fstring acct_name; /* account name */
+	fstring acct_desc; /* account name */
+	uint32 rid; /* domain-relative RID */
 };
 
 struct samr_displayentry {
@@ -267,9 +264,10 @@ struct pdb_search {
 /*
  * This next constant specifies the version number of the PASSDB interface
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
+ * Changed interface to fix int -> size_t problems. JRA.
  */
 
-#define PASSDB_INTERFACE_VERSION 10
+#define PASSDB_INTERFACE_VERSION 11
 
 typedef struct pdb_context 
 {
@@ -316,20 +314,20 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_enum_group_mapping)(struct pdb_context *context,
 					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
+					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   BOOL unix_only);
 
 	NTSTATUS (*pdb_enum_group_members)(struct pdb_context *context,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *group,
-					   uint32 **member_rids,
-					   int *num_members);
+					   uint32 **pp_member_rids,
+					   size_t *p_num_members);
 
 	NTSTATUS (*pdb_enum_group_memberships)(struct pdb_context *context,
 					       const char *username,
 					       gid_t primary_gid,
-					       DOM_SID **sids, gid_t **gids,
-					       int *num_groups);
+					       DOM_SID **pp_sids, gid_t **pp_gids,
+					       size_t *p_num_groups);
 
 	NTSTATUS (*pdb_find_alias)(struct pdb_context *context,
 				   const char *name, DOM_SID *sid);
@@ -358,22 +356,22 @@ typedef struct pdb_context
 
 	NTSTATUS (*pdb_enum_aliasmem)(struct pdb_context *context,
 				      const DOM_SID *alias,
-				      DOM_SID **members, int *num_members);
+				      DOM_SID **pp_members, size_t *p_num_members);
 
 	NTSTATUS (*pdb_enum_alias_memberships)(struct pdb_context *context,
 					       TALLOC_CTX *mem_ctx,
 					       const DOM_SID *domain_sid,
 					       const DOM_SID *members,
-					       int num_members,
-					       uint32 **alias_rids,
-					       int *num_alias_rids);
+					       size_t num_members,
+					       uint32 **pp_alias_rids,
+					       size_t *p_num_alias_rids);
 
 	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
 				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
-				    int num_rids,
+				    size_t num_rids,
 				    uint32 *rids,
-				    const char ***names,
+				    const char ***pp_names,
 				    uint32 **attrs);
 
 	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
@@ -445,20 +443,20 @@ typedef struct pdb_methods
 
 	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
 				       enum SID_NAME_USE sid_name_use,
-				       GROUP_MAP **rmap, int *num_entries,
+				       GROUP_MAP **pp_rmap, size_t *p_num_entries,
 				       BOOL unix_only);
 
 	NTSTATUS (*enum_group_members)(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
 				       const DOM_SID *group,
-				       uint32 **member_rids,
-				       int *num_members);
+				       uint32 **pp_member_rids,
+				       size_t *p_num_members);
 
 	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
 					   const char *username,
 					   gid_t primary_gid,
-					   DOM_SID **sids, gid_t **gids,
-					   int *num_groups);
+					   DOM_SID **pp_sids, gid_t **pp_gids,
+					   size_t *p_num_groups);
 
 	NTSTATUS (*find_alias)(struct pdb_methods *methods,
 			       const char *name, DOM_SID *sid);
@@ -483,21 +481,21 @@ typedef struct pdb_methods
 				 const DOM_SID *alias, const DOM_SID *member);
 	NTSTATUS (*enum_aliasmem)(struct pdb_methods *methods,
 				  const DOM_SID *alias, DOM_SID **members,
-				  int *num_members);
+				  size_t *p_num_members);
 	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *domain_sid,
 					   const DOM_SID *members,
-					   int num_members,
-					   uint32 **alias_rids,
-					   int *num_alias_rids);
+					   size_t num_members,
+					   uint32 **pp_alias_rids,
+					   size_t *p_num_alias_rids);
 
 	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *domain_sid,
 				int num_rids,
 				uint32 *rids,
-				const char ***names,
+				const char ***pp_names,
 				uint32 **attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,

@@ -1102,11 +1102,11 @@ AC_CHECK_FUNCS(connect)
 if test x"$ac_cv_func_connect" = x"no"; then
     case "$LIBS" in
     *-lnsl*) ;;
-    *) AC_CHECK_LIB(nsl_s, printf) ;;
+    *) AC_CHECK_LIB(nsl_s, connect) ;;
     esac
     case "$LIBS" in
     *-lnsl*) ;;
-    *) AC_CHECK_LIB(nsl, printf) ;;
+    *) AC_CHECK_LIB(nsl, connect) ;;
     esac
     case "$LIBS" in
     *-lsocket*) ;;
@@ -4305,7 +4305,7 @@ AC_ARG_WITH(acl-support,
 	*solaris*)
 		AC_MSG_RESULT(Using solaris ACLs)
 		AC_DEFINE(HAVE_SOLARIS_ACLS,1,[Whether solaris ACLs are available])
-		LIBS="$LIBS -lsec"
+		ACL_LIBS="$ACL_LIBS -lsec"
 		;;
 	*hpux*)
 		AC_MSG_RESULT(Using HPUX ACLs)

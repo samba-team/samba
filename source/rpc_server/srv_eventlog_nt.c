@@ -88,6 +88,13 @@ static BOOL elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 		return False;
 	}
 	
+	/* root free pass */
+
+	if ( geteuid() == sec_initial_uid() ) {
+		DEBUG(5,("elog_check_access: using root's token\n"));
+		token = get_root_nt_token();
+	}
+
 	/* run the check, try for the max allowed */
 	
 	ret = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
@@ -126,17 +133,17 @@ static BOOL elog_validate_logname( const char *name )
 /********************************************************************
  ********************************************************************/
 
-static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
+static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
 {
 	EVENTLOG_INFO *elog;
 	
 	/* first thing is to validate the eventlog name */
 	
 	if ( !elog_validate_logname( logname ) )
-		return WERR_OBJECT_PATH_INVALID;
+		return NT_STATUS_OBJECT_PATH_INVALID;
 	
 	if ( !(elog = TALLOC_ZERO_P( NULL, EVENTLOG_INFO )) )
-		return WERR_NOMEM;
+		return NT_STATUS_NO_MEMORY;
 		
 	elog->logname = talloc_strdup( elog, logname );
 	
@@ -162,7 +169,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 			/* do the access check */
 			if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
 				TALLOC_FREE( elog );
-				return WERR_ACCESS_DENIED;
+				return NT_STATUS_ACCESS_DENIED;
 			}
 	
 			become_root();
@@ -172,7 +179,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		
 		if ( !elog->tdb ) {
 			TALLOC_FREE( elog );
-			return WERR_ACCESS_DENIED;	/* ??? */		
+			return NT_STATUS_ACCESS_DENIED;	/* ??? */		
 		}
 	}
 	
@@ -181,7 +188,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
 		elog_close_tdb( elog->tdb );
 		TALLOC_FREE( elog );
-		return WERR_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	
 	/* create the policy handle */
@@ -189,22 +196,22 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 	if ( !create_policy_hnd
 	     ( p, hnd, free_eventlog_info, ( void * ) elog ) ) {
 		free_eventlog_info( elog );
-		return WERR_NOMEM;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
  ********************************************************************/
 
-static WERROR elog_close( pipes_struct *p, POLICY_HND *hnd )
+static NTSTATUS elog_close( pipes_struct *p, POLICY_HND *hnd )
 {
         if ( !( close_policy_hnd( p, hnd ) ) ) {
-                return WERR_BADFID;
+                return NT_STATUS_INVALID_HANDLE;
         }
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -425,7 +432,6 @@ static BOOL get_num_records_hook( EVENTLOG_INFO * info )
 
 static BOOL get_oldest_entry_hook( EVENTLOG_INFO * info )
 {
-
 	/* it's the same thing */
 	return get_num_records_hook( info );
 }
@@ -553,13 +559,13 @@ static BOOL add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 /********************************************************************
  ********************************************************************/
 
-WERROR _eventlog_open_eventlog( pipes_struct * p,
+NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 				EVENTLOG_Q_OPEN_EVENTLOG * q_u,
 				EVENTLOG_R_OPEN_EVENTLOG * r_u )
 {
 	fstring servername, logname;
 	EVENTLOG_INFO *info;
-	WERROR wresult;
+	NTSTATUS result;
 
 	fstrcpy( servername, "" );
 	if ( q_u->servername.string ) {
@@ -581,14 +587,14 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 	/* according to MSDN, if the logfile cannot be found, we should
 	  default to the "Application" log */
 	  
-	if ( !W_ERROR_IS_OK( wresult = elog_open( p, logname, &r_u->handle )) )
-		return wresult;
+	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, &r_u->handle )) )
+		return result;
 
 	if ( !(info = find_eventlog_info_by_hnd( p, &r_u->handle )) ) {
 		DEBUG(0,("_eventlog_open_eventlog: eventlog (%s) opened but unable to find handle!\n",
 			logname ));
 		elog_close( p, &r_u->handle );
-		return WERR_BADFID;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	DEBUG(10,("_eventlog_open_eventlog: Size [%d]\n", elog_size( info )));
@@ -596,14 +602,14 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 	sync_eventlog_params( info );
 	prune_eventlog( info->tdb );
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
  This call still needs some work
  ********************************************************************/
 
-WERROR _eventlog_clear_eventlog( pipes_struct * p,
+NTSTATUS _eventlog_clear_eventlog( pipes_struct * p,
 				 EVENTLOG_Q_CLEAR_EVENTLOG * q_u,
 				 EVENTLOG_R_CLEAR_EVENTLOG * r_u )
 {
@@ -611,7 +617,7 @@ WERROR _eventlog_clear_eventlog( pipes_struct * p,
 	pstring backup_file_name;
 
 	if ( !info )
-		return WERR_BADFID;
+		return NT_STATUS_INVALID_HANDLE;
 
 	pstrcpy( backup_file_name, "" );
 	if ( q_u->backupfile.string ) {
@@ -630,16 +636,16 @@ WERROR _eventlog_clear_eventlog( pipes_struct * p,
 	tdb_close( info->tdb ); 
 
 	if ( !(info->tdb = elog_init_tdb( ttdb[i].tdbfname )) )
-		return WERR_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 #endif
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
  ********************************************************************/
 
-WERROR _eventlog_close_eventlog( pipes_struct * p,
+NTSTATUS _eventlog_close_eventlog( pipes_struct * p,
 				 EVENTLOG_Q_CLOSE_EVENTLOG * q_u,
 				 EVENTLOG_R_CLOSE_EVENTLOG * r_u )
 {
@@ -649,7 +655,7 @@ WERROR _eventlog_close_eventlog( pipes_struct * p,
 /********************************************************************
  ********************************************************************/
 
-WERROR _eventlog_read_eventlog( pipes_struct * p,
+NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 				EVENTLOG_Q_READ_EVENTLOG * q_u,
 				EVENTLOG_R_READ_EVENTLOG * r_u )
 {
@@ -667,7 +673,7 @@ WERROR _eventlog_read_eventlog( pipes_struct * p,
 	bytes_left = q_u->max_read_size;
 	tdb = info->tdb;
 	if ( !tdb ) {
-		return WERR_EVENTLOG_FILE_CORRUPT;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* DEBUG(8,("Bytes left is %d\n",bytes_left)); */
@@ -683,7 +689,7 @@ WERROR _eventlog_read_eventlog( pipes_struct * p,
 			/* Now see if there is enough room to add */
 			ee_new = read_package_entry( ps, q_u, r_u,&entry );
 			if ( !ee_new )
-				return WERR_NOMEM;
+				return NT_STATUS_NO_MEMORY;
 
 			if ( r_u->num_bytes_in_resp + ee_new->record.length >
 			     q_u->max_read_size ) {
@@ -709,7 +715,7 @@ WERROR _eventlog_read_eventlog( pipes_struct * p,
 				 q_u->max_read_size ) );
 		} else {
 			DEBUG( 8, ( "get_eventlog_record returned NULL\n" ) );
-			return WERR_NOMEM;	/* wrong error - but return one anyway */
+			return NT_STATUS_NO_MEMORY;	/* wrong error - but return one anyway */
 		}
 
 
@@ -719,39 +725,39 @@ WERROR _eventlog_read_eventlog( pipes_struct * p,
 			record_number--;
 	}
 	
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
  ********************************************************************/
 
-WERROR _eventlog_get_oldest_entry( pipes_struct * p,
+NTSTATUS _eventlog_get_oldest_entry( pipes_struct * p,
 				   EVENTLOG_Q_GET_OLDEST_ENTRY * q_u,
 				   EVENTLOG_R_GET_OLDEST_ENTRY * r_u )
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
 
 	if ( !( get_oldest_entry_hook( info ) ) )
-		return WERR_BADFILE;
+		return NT_STATUS_ACCESS_DENIED;
 
 	r_u->oldest_entry = info->oldest_entry;
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
  ********************************************************************/
 
-WERROR _eventlog_get_num_records( pipes_struct * p,
+NTSTATUS _eventlog_get_num_records( pipes_struct * p,
 				  EVENTLOG_Q_GET_NUM_RECORDS * q_u,
 				  EVENTLOG_R_GET_NUM_RECORDS * r_u )
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
 
 	if ( !( get_num_records_hook( info ) ) )
-		return WERR_BADFILE;
+		return NT_STATUS_ACCESS_DENIED;
 
 	r_u->num_records = info->num_records;
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }

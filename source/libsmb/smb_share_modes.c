@@ -3,6 +3,12 @@
    Used by non-Samba products needing access to the Samba share mode db.
                                                                                                                                   
    Copyright (C) Jeremy Allison 2005.
+
+   sharemodes_procid functions (C) Copyright (C) Volker Lendecke 2005
+
+     ** NOTE! The following LGPL license applies to this module only.
+     ** This does NOT imply that all of Samba is released
+     ** under the LGPL
                                                                                                                                   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -26,6 +32,16 @@
 #ifdef malloc
 #undef malloc
 #endif
+
+static BOOL sharemodes_procid_equal(const struct process_id *p1, const struct process_id *p2)
+{
+	return (p1->pid == p2->pid);
+}
+
+static pid_t sharemodes_procid_to_pid(const struct process_id *proc)
+{
+	return proc->pid;
+}
 
 /*
  * open/close sharemode database.
@@ -122,7 +138,7 @@ struct locking_data {
 
 static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, const struct share_mode_entry *entry)
 {
-	return (procid_equal(&e_entry->pid, &entry->pid) &&
+	return (sharemodes_procid_equal(&e_entry->pid, &entry->pid) &&
 		e_entry->file_id == (uint32_t)entry->share_file_id &&
 		e_entry->open_time.tv_sec == entry->time.tv_sec &&
 		e_entry->open_time.tv_usec == entry->time.tv_usec &&
@@ -202,7 +218,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
+		if (kill(sharemodes_procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -372,7 +388,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
+		if (kill(sharemodes_procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -447,7 +463,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
+		if (kill(sharemodes_procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 

@@ -90,7 +90,7 @@ BOOL eventlog_io_r_open_eventlog(const char *desc, EVENTLOG_R_OPEN_EVENTLOG *r_u
 	if(!(smb_io_pol_hnd("log handle", &(r_u->handle), ps, depth)))
 		return False;
 
-	if(!(prs_werror("status code", ps, depth, &(r_u->status))))
+	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
 		return False;
 
 	return True;
@@ -129,7 +129,7 @@ BOOL eventlog_io_r_get_num_records(const char *desc, EVENTLOG_R_GET_NUM_RECORDS 
 	if(!(prs_uint32("num records", ps, depth, &(r_u->num_records))))
 		return False;
 
-	if(!(prs_werror("status code", ps, depth, &(r_u->status))))
+	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
 		return False;
 
 	return True;
@@ -168,7 +168,7 @@ BOOL eventlog_io_r_get_oldest_entry(const char *desc, EVENTLOG_R_GET_OLDEST_ENTR
 	if(!(prs_uint32("oldest entry", ps, depth, &(r_u->oldest_entry))))
 		return False;
 
-	if(!(prs_werror("status code", ps, depth, &(r_u->status))))
+	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
 		return False;
 
 	return True;
@@ -207,7 +207,7 @@ BOOL eventlog_io_r_close_eventlog(const char *desc, EVENTLOG_R_CLOSE_EVENTLOG *r
 	if(!(smb_io_pol_hnd("log handle", &(r_u->handle), ps, depth)))
 		return False;
 
-	if(!(prs_werror("status code", ps, depth, &(r_u->status))))
+	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
 		return False;
 
 	return True;
@@ -372,7 +372,7 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 		return False;
 	if(!(prs_uint32("real size", ps, depth, &(r_u->real_size))))
 		return False;
-	if(!(prs_werror("status code", ps, depth, &(r_u->status))))
+	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
 		return False;
 
 	return True;
@@ -424,7 +424,7 @@ BOOL eventlog_io_r_clear_eventlog(const char *desc, EVENTLOG_R_CLEAR_EVENTLOG *r
 
 	if(!prs_align(ps))
 		return False;
-	if(!(prs_werror("status code", ps, depth, &(r_u->status))))
+	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
 		return False;
 
 	return True;

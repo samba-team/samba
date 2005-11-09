@@ -1536,7 +1536,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		lck = get_share_mode_lock(NULL, dev, inode, fname);
 
 		if (lck == NULL) {
-			DEBUG(0, ("Coult not get share mode lock\n"));
+			DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
 			fd_close(conn, fsp);
 			file_free(fsp);
 			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
@@ -1801,6 +1801,8 @@ files_struct *open_directory(connection_struct *conn,
 	files_struct *fsp = NULL;
 	BOOL dir_existed = VALID_STAT(*psbuf) ? True : False;
 	BOOL create_dir = False;
+	struct share_mode_lock *lck = NULL;
+	NTSTATUS status;
 	int info = 0;
 
 	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
@@ -1883,7 +1885,7 @@ files_struct *open_directory(connection_struct *conn,
 
 		/* We know bad_path is false as it's caught earlier. */
 
-		NTSTATUS status = mkdir_internal(conn, fname, False);
+		status = mkdir_internal(conn, fname, False);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("open_directory: unable to create %s. "
@@ -1938,13 +1940,42 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->is_stat = False;
 	string_set(&fsp->fsp_name,fname);
 
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fname);
+
+	if (lck == NULL) {
+		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));
+		file_free(fsp);
+		set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
+		return NULL;
+	}
+
+	status = open_mode_check(conn, fname, lck,
+				access_mask, share_access,
+				create_options, &dir_existed);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		set_saved_ntstatus(status);
+		talloc_free(lck);
+		file_free(fsp);
+		return NULL;
+	}
+
+	set_share_mode(lck, fsp, 0, NO_OPLOCK);
+
 	if (create_options & FILE_DELETE_ON_CLOSE) {
-		NTSTATUS status = can_set_delete_on_close(fsp, True, 0);
+		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
+			set_saved_ntstatus(status);
+			talloc_free(lck);
 			file_free(fsp);
 			return NULL;
 		}
+
+		lck->delete_on_close = True;
+		lck->modified = True;
 	}
+
+	talloc_free(lck);
 
 	/* Change the owner if required. */
 	if ((info == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {

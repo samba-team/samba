@@ -557,6 +557,9 @@ BOOL net_io_r_getdcname(const char *desc, NET_R_GETDCNAME *r_t, prs_struct *ps,
 			    r_t->ptr_dcname, ps, depth))
 		return False;
 
+	if (!prs_align(ps))
+		return False;
+
 	if (!prs_ntstatus("status", ps, depth, &r_t->status))
 		return False;
 
@@ -932,7 +935,7 @@ BOOL net_io_r_auth_3(const char *desc, NET_R_AUTH_3 *r_a, prs_struct *ps, int de
 void init_q_srv_pwset(NET_Q_SRV_PWSET *q_s,
 		const char *logon_srv, const char *sess_key, const char *acct_name, 
                 uint16 sec_chan, const char *comp_name,
-		DOM_CRED *cred, uchar hashed_mach_pwd[16])
+		DOM_CRED *cred, const uchar hashed_mach_pwd[16])
 {
 	unsigned char nt_cypher[16];
 	

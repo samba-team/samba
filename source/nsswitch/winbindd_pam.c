@@ -343,15 +343,16 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		}
 
 		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
-							state->mem_ctx,
-							contact_domain->dcname, /* server name */
-							name_user,              /* user name */
-							name_domain,            /* target domain */
-							global_myname(),        /* workstation */
-							chal,
-							lm_resp,
-							nt_resp,
-							&info3);
+							   state->mem_ctx,
+							   0,
+							   contact_domain->dcname, /* server name */
+							   name_user,              /* user name */
+							   name_domain,            /* target domain */
+							   global_myname(),        /* workstation */
+							   chal,
+							   lm_resp,
+							   nt_resp,
+							   &info3);
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
@@ -624,15 +625,16 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		}
 
 		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
-							state->mem_ctx,
-							contact_domain->dcname,
-							name_user,
-							name_domain, 
-							global_myname(),
-							state->request.data.auth_crap.chal,
-							lm_resp,
-							nt_resp,
-							&info3);
+							   state->mem_ctx,
+							   state->request.data.auth_crap.logon_parameters,
+							   contact_domain->dcname,
+							   name_user,
+							   name_domain, 
+							   global_myname(),
+							   state->request.data.auth_crap.chal,
+							   lm_resp,
+							   nt_resp,
+							   &info3);
 
 		attempts += 1;
 

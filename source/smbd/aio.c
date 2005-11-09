@@ -155,7 +155,7 @@ static uint16 aio_pending_array[AIO_PENDING_SIZE];
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	if (signals_received < AIO_PENDING_SIZE - 1) {
-		aio_pending_array[signals_received] = *(uint16 *)(info->si_value.sival_ptr);
+		aio_pending_array[signals_received] = info->si_value.sival_int;
 		signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal(RT_SIGNAL_AIO);
@@ -248,7 +248,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_ptr = (void *)&aio_ex->mid;
+	a->aio_sigevent.sigev_value.sival_int = aio_ex->mid;
 
 	if (SMB_VFS_AIO_READ(fsp,a) == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. Error %s\n",
@@ -327,7 +327,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_ptr = (void *)&aio_ex->mid;
+	a->aio_sigevent.sigev_value.sival_int = aio_ex->mid;
 
 	if (SMB_VFS_AIO_WRITE(fsp,a) == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. Error %s\n",
@@ -642,9 +642,15 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 
 		/* One or more events might have completed - process them if so. */
 		for( i = 0; i < aio_completion_count; i++) {
-			uint16 mid = *(uint16 *)aiocb_list[i]->aio_sigevent.sigev_value.sival_ptr;
+			uint16 mid = aiocb_list[i]->aio_sigevent.sigev_value.sival_int;
 
 			aio_ex = find_aio_ex(mid);
+
+			if (!aio_ex) {
+				DEBUG(0, ("wait_for_aio_completion: mid %u doesn't match an aio record\n",
+					(unsigned int)mid ));
+				continue;
+			}
 
 			if (!handle_aio_completed(aio_ex, &err)) {
 				continue;

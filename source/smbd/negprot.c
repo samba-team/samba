@@ -23,6 +23,7 @@
 extern fstring remote_proto;
 extern enum protocol_types Protocol;
 extern int max_recv;
+
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;
@@ -115,9 +116,9 @@ static int reply_lanman1(char *inbuf, char *outbuf)
 	SSVAL(outbuf,smb_vwv5,raw); /* tell redirector we support
 		readbraw writebraw (possibly) */
 	SIVAL(outbuf,smb_vwv6,sys_getpid());
-	SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
+	SSVAL(outbuf,smb_vwv10, set_server_zone_offset(t)/60);
 
-	put_dos_date(outbuf,smb_vwv8,t);
+	srv_put_dos_date(outbuf,smb_vwv8,t);
 
 	return (smb_len(outbuf)+4);
 }
@@ -157,8 +158,8 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 	SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
 	SSVAL(outbuf,smb_vwv4,1);
 	SSVAL(outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
-	SSVAL(outbuf,smb_vwv10, TimeDiff(t)/60);
-	put_dos_date(outbuf,smb_vwv8,t);
+	SSVAL(outbuf,smb_vwv10, set_server_zone_offset(t)/60);
+	srv_put_dos_date(outbuf,smb_vwv8,t);
 
 	return (smb_len(outbuf)+4);
 }
@@ -172,7 +173,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	DATA_BLOB blob;
 	nstring dos_name;
 	fstring unix_name;
-	uint8 guid[17];
+	char guid[17];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
@@ -186,7 +187,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
-	safe_strcpy((char *)guid, dos_name, sizeof(guid)-1);
+	safe_strcpy(guid, dos_name, sizeof(guid)-1);
 
 #ifdef DEVELOPER
 	/* valgrind fixer... */
@@ -245,9 +246,9 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		CAP_LEVEL_II_OPLOCKS;
 
 	int secword=0;
-	time_t t = time(NULL);
 	char *p, *q;
 	BOOL negotiate_spnego = False;
+	time_t t = time(NULL);
 
 	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
@@ -321,7 +322,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	SIVAL(outbuf,smb_vwv7+1,sys_getpid()); /* session key */
 	SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
 	put_long_date(outbuf+smb_vwv11+1,t);
-	SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
+	SSVALS(outbuf,smb_vwv15+1,set_server_zone_offset(t)/60);
 	
 	p = q = smb_buf(outbuf);
 	if (!negotiate_spnego) {

@@ -104,6 +104,7 @@ make -j${NUMCPU} all modules nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
 
 # Remove some permission bits to avoid to many dependencies
+cd ..
 find examples docs -type f | xargs -r chmod -x
 
 %install
@@ -436,6 +437,7 @@ fi
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%attr(755,root,root) %{prefix}/lib/samba/auth/*.so
 %attr(755,root,root) %{prefix}/lib/samba/charset/*.so
 %attr(755,root,root) %{prefix}/lib/samba/idmap/*.so
 #%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so

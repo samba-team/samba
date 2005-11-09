@@ -483,7 +483,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	next_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 
 	n_packed =
-		tdb_pack( packed_ee, ee->record.length + MARGIN,
+		tdb_pack( (char *)packed_ee, ee->record.length + MARGIN,
 			  "ddddddwwwwddddddBBdBBBd", ee->record.length,
 			  ee->record.reserved1, next_record,
 			  ee->record.time_generated, ee->record.time_written,
@@ -512,10 +512,10 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	/* increment the record count */
 
 	kbuf.dsize = sizeof( int32 );
-	kbuf.dptr = ( uint8 * ) & next_record;
+	kbuf.dptr = (char * ) & next_record;
 
 	ebuf.dsize = n_packed;
-	ebuf.dptr = packed_ee;
+	ebuf.dptr = (char *)packed_ee;
 
 	if ( tdb_store( the_tdb, kbuf, ebuf, 0 ) ) {
 		/* DEBUG(1,("write_eventlog_tdb: Can't write record %d to eventlog\n",next_record)); */
