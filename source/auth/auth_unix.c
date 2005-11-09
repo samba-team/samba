@@ -564,30 +564,6 @@ static NTSTATUS password_check(const char *username, const char *password,
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
 
-/**
- Does a string have any lowercase chars in it?
-**/
-static BOOL strhaslower(const char *s)
-{
-	while (*s) {
-		if (islower(*s)) return True;
-		s++;
-	}
-	return False;
-}
-
-/**
- Does a string have any uppercase chars in it?
-**/
-static BOOL strhasupper(const char *s)
-{
-	while (*s) {
-		if (isupper(*s)) return True;
-		s++;
-	}
-	return False;
-}
-
 static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info)
 {
 	char *username;
