@@ -129,17 +129,15 @@ static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX
 	struct ldb_result *res = NULL;
 	int ret = 0;
 
-	local_ctx = talloc_named(mem_ctx, 0, "samldb_search_domain memory conext");
+	local_ctx = talloc_new(mem_ctx);
 	if (local_ctx == NULL) return NULL;
 
 	sdn = ldb_dn_copy(local_ctx, dn);
 	do {
 		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, "objectClass=domain", NULL, &res);
-		talloc_free(res);
-
+		talloc_steal(local_ctx, res);
 		if (ret == LDB_SUCCESS && res->count == 1)
 			break;
-
 	} while ((sdn = ldb_dn_get_parent(local_ctx, sdn)));
 
 	if (ret != LDB_SUCCESS || res->count != 1) {
@@ -450,6 +448,10 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, samldb_generate_samAccountName(msg2))) {
 		return NULL;
 	}
+
+	/*
+	  useraccountcontrol: setting value 0 gives 0x200 for users
+	*/
 
 	/* TODO: objectCategory, userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
 
