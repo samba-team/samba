@@ -20,6 +20,6 @@ ADD_OBJ_FILES = \
 		signing.o \
 		management.o
 REQUIRED_SUBSYSTEMS = \
-		NTVFS
+		NTVFS LIBPACKET
 # End SUBSYSTEM SMB
 #######################

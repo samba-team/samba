@@ -27,6 +27,7 @@
 #include "smbd/service_stream.h"
 #include "smb_server/smb_server.h"
 #include "lib/messaging/irpc.h"
+#include "lib/stream/packet.h"
 
 
 /*
@@ -68,85 +69,18 @@ static void construct_reply(struct smbsrv_request *req);
 receive a SMB request header from the wire, forming a request_context
 from the result
 ****************************************************************************/
-static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
+static NTSTATUS receive_smb_request(void *private, DATA_BLOB blob)
 {
-	NTSTATUS status;
-	ssize_t len;
+	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
 	struct smbsrv_request *req;
-	size_t nread;
 
-	/* allocate the request if needed */
-	if (smb_conn->partial_req == NULL) {
-		req = init_smb_request(smb_conn);
-		if (req == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		req->in.buffer = talloc_array(req, uint8_t, NBT_HDR_SIZE);
-		if (req->in.buffer == NULL) {
-			talloc_free(req);
-			return NT_STATUS_NO_MEMORY;
-		}
-		req->in.size = 0;
-		smb_conn->partial_req = req;
+	req = init_smb_request(smb_conn);
+	if (req == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	req = smb_conn->partial_req;
-
-	/* read in the header */
-	if (req->in.size < NBT_HDR_SIZE) {
-		status = socket_recv(smb_conn->connection->socket, 
-				     req->in.buffer + req->in.size,
-				     NBT_HDR_SIZE - req->in.size, 
-				     &nread, 0);
-		if (NT_STATUS_IS_ERR(status)) {
-			return status;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_OK;
-		}
-		if (nread == 0) {
-			return NT_STATUS_END_OF_FILE;
-		}
-		req->in.size += nread;
-
-		/* when we have a full NBT header, then allocate the packet */
-		if (req->in.size == NBT_HDR_SIZE) {
-			len = smb_len(req->in.buffer) + NBT_HDR_SIZE;
-			req->in.buffer = talloc_realloc(req, req->in.buffer, 
-							uint8_t, len);
-			if (req->in.buffer == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		} else {
-			return NT_STATUS_OK;
-		}
-	}
-
-	/* read in the main packet */
-	len = smb_len(req->in.buffer) + NBT_HDR_SIZE;
-
-	status = socket_recv(smb_conn->connection->socket, 
-			     req->in.buffer + req->in.size,
-			     len - req->in.size, 
-			     &nread, 0);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_OK;
-	}
-	if (nread == 0) {
-		return NT_STATUS_END_OF_FILE;
-	}
-
-	req->in.size += nread;
-
-	if (req->in.size != len) {
-		return NT_STATUS_OK;
-	}
-
-	/* we have a full packet */
+	req->in.buffer = talloc_steal(req, blob.data);
+	req->in.size = blob.length;
 	req->request_time = timeval_current();
 	req->chained_fnum = -1;
 	req->in.allocated = req->in.size;
@@ -170,8 +104,6 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 			req->in.data_size = req->in.size - PTR_DIFF(req->in.data,req->in.buffer);
 		}
 	}
-
-	smb_conn->partial_req = NULL;
 
 	construct_reply(req);
 
@@ -659,7 +591,7 @@ error:
 */
 void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char *reason)
 {
-	smb_conn->terminate = True;
+	smb_conn->terminate = reason;
 }
 
 /*
@@ -668,30 +600,16 @@ void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char 
 static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
-	NTSTATUS status;
 
 	DEBUG(10,("smbsrv_recv\n"));
 
-	/* our backends are designed to process one request at a time,
-	   unless they deliberately mark the request as async and
-	   process it later on a timer or other event. This enforces
-	   that ordering. */
-	if (smb_conn->processing) {
-		EVENT_FD_NOT_READABLE(conn->event.fde);
-		return;
-	}
-
-	smb_conn->processing = True;
-	status = receive_smb_request(smb_conn);
-	smb_conn->processing = False;
-	if (NT_STATUS_IS_ERR(status) || smb_conn->terminate) {
+	packet_recv(smb_conn->packet);
+	if (smb_conn->terminate) {
 		talloc_free(conn->event.fde);
 		conn->event.fde = NULL;
-		stream_terminate_connection(smb_conn->connection, nt_errstr(status));
+		stream_terminate_connection(smb_conn->connection, smb_conn->terminate);
 		return;
 	}
-
-	EVENT_FD_READABLE(conn->event.fde);
 
 	/* free up temporary memory */
 	lp_talloc_free();
@@ -734,7 +652,7 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 	}
 
 	if (smb_conn->terminate) {
-		stream_terminate_connection(smb_conn->connection, "send termination");
+		stream_terminate_connection(smb_conn->connection, smb_conn->terminate);
 		return;
 	}
 
@@ -743,6 +661,17 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 	if (smb_conn->pending_send == NULL) {
 		EVENT_FD_NOT_WRITEABLE(conn->event.fde);
 	}
+}
+
+
+/*
+  handle socket recv errors
+*/
+static void smbsrv_recv_error(void *private, NTSTATUS status)
+{
+	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	
+	smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 }
 
 /*
@@ -770,6 +699,15 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smb_conn->negotiate.called_name = NULL;
 	smb_conn->negotiate.calling_name = NULL;
 
+	smb_conn->packet = packet_init(smb_conn);
+	packet_set_private(smb_conn->packet, smb_conn);
+	packet_set_socket(smb_conn->packet, conn->socket);
+	packet_set_callback(smb_conn->packet, receive_smb_request);
+	packet_set_full_request(smb_conn->packet, packet_full_request_nbt);
+	packet_set_error_handler(smb_conn->packet, smbsrv_recv_error);
+	packet_set_event_context(smb_conn->packet, conn->event.ctx);
+	packet_set_serialise(smb_conn->packet, conn->event.fde);
+
 	smbsrv_vuid_init(smb_conn);
 
 	srv_init_signing(smb_conn);
@@ -777,7 +715,6 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smbsrv_tcon_init(smb_conn);
 
 	smb_conn->connection = conn;
-	smb_conn->processing = False;
 	smb_conn->config.security = lp_security();
 	smb_conn->config.nt_status_support = lp_nt_status_support();
 
