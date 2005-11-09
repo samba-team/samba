@@ -31,6 +31,7 @@
 #include "system/network.h"
 #include "dlinklist.h"
 #include "lib/messaging/irpc.h"
+#include "lib/stream/packet.h"
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {
@@ -66,14 +67,7 @@ struct kdc_tcp_connection {
 	/* the kdc_server the connection belongs to */
 	struct kdc_server *kdc;
 
-	/* the partial data we've receiced yet */
-	DATA_BLOB partial;
-
-	/* the amount that we used yet from the partial buffer */
-	uint32_t partial_read;
-
-	/* prevent loops when we use half async code, while processing a requuest */
-	BOOL processing;
+	struct packet_context *packet;
 
 	/* a queue of outgoing replies that have been deferred */
 	struct data_blob_list_item *send_queue;
@@ -208,96 +202,59 @@ static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, con
 	stream_terminate_connection(kdcconn->conn, reason);
 }
 
+
 /*
-  receive some data on a KDC connection
+  work out if a tcp packet is complete
 */
-static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
+NTSTATUS kdc_tcp_is_complete(void *private, DATA_BLOB blob, size_t *size)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, struct kdc_tcp_connection);
+	if (blob.length < 4) {
+		return STATUS_MORE_ENTRIES;
+	}
+	*size = 4 + RIVAL(blob.data, 0);
+	if (*size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}
+	if ((*size) & (1 << 31)) {
+		/* NOTE: we should send a 'KRB_ERR_FIELD_TOOLONG' and terminate, 
+		   but for now we just terminate */
+		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
+	}
+	return NT_STATUS_OK;
+}
+
+
+/*
+  receive a full packet on a KDC connection
+*/
+static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
+{
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, struct kdc_tcp_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
 	struct data_blob_list_item *rep;
-	size_t nread;
 	const char *src_addr;
 	int src_port;
 	int ret;
 	DATA_BLOB input, reply;
 
-	/* avoid recursion, because of half async code */
-	if (kdcconn->processing) {
-		EVENT_FD_NOT_READABLE(conn->event.fde);
-		return;
-	}
-
-	if (kdcconn->partial.length == 0) {
-		kdcconn->partial = data_blob_talloc(kdcconn, NULL, 4);
-		if (!kdcconn->partial.data) goto nomem;
-
-		kdcconn->partial_read = 0;
-	}
-
-	/* read in the packet length */
-	if (kdcconn->partial_read < 4) {
-		uint32_t packet_length;
-
-		status = socket_recv(conn->socket, 
-				     kdcconn->partial.data + kdcconn->partial_read,
-				     4 - kdcconn->partial_read,
-				     &nread, 0);
-		if (NT_STATUS_IS_ERR(status)) goto failed;
-		if (!NT_STATUS_IS_OK(status)) return;
-
-		kdcconn->partial_read += nread;
-		if (kdcconn->partial_read != 4) return;
-
-		packet_length = RIVAL(kdcconn->partial.data, 0) + 4;
-		
-		if (packet_length & (1 << 31)) {
-			/* return 'KRB_ERR_FIELD_TOOLONG' and terminate */
-		}
-
-		kdcconn->partial.data = talloc_realloc(kdcconn, kdcconn->partial.data, 
-						       uint8_t, packet_length);
-		if (!kdcconn->partial.data) goto nomem;
-
-		kdcconn->partial.length = packet_length;
-	}
-
-	/* read in the body */
-	status = socket_recv(conn->socket, 
-			     kdcconn->partial.data + kdcconn->partial_read,
-			     kdcconn->partial.length - kdcconn->partial_read,
-			     &nread, 0);
-	if (NT_STATUS_IS_ERR(status)) goto failed;
-	if (!NT_STATUS_IS_OK(status)) return;
-
-	kdcconn->partial_read += nread;
-	if (kdcconn->partial_read != kdcconn->partial.length) return;
-
-	/*
-	 * we have parsed the request, so we can reset the kdcconn->partial_read,
-	 * maybe we could also free kdcconn->partial, but for now we keep it,
-	 * and overwrite it the next time
-	 */
-	kdcconn->partial_read = 0;
+	talloc_steal(tmp_ctx, blob.data);
 
 	src_addr = socket_get_peer_addr(kdcconn->conn->socket, tmp_ctx);
 	if (!src_addr) goto nomem;
 	src_port = socket_get_peer_port(kdcconn->conn->socket);
 
 	DEBUG(2,("Received krb5 TCP packet of length %u from %s:%u\n", 
-		 kdcconn->partial.length - 4, src_addr, src_port));
+		 blob.length - 4, src_addr, src_port));
 
 	/* Call krb5 */
-	kdcconn->processing = True;
-	input = data_blob_const(kdcconn->partial.data + 4, kdcconn->partial.length - 4); 
+	input = data_blob_const(blob.data + 4, blob.length - 4); 
 
 	ret = kdcconn->process(kdcconn->kdc, 
 			       tmp_ctx,
 			       &input,
 			       &reply,
 			       src_addr, src_port);
-	kdcconn->processing = False;
 	if (!ret) {
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto failed;
@@ -322,14 +279,33 @@ static void kdc_tcp_recv(struct stream_connection *conn, uint16_t flags)
 	}
 	DLIST_ADD_END(kdcconn->send_queue, rep, struct data_blob_list_item *);
 
-	EVENT_FD_READABLE(kdcconn->conn->event.fde);
-
 	/* the call isn't needed any more */
 	talloc_free(tmp_ctx);
-	return;
+	return NT_STATUS_OK;
 nomem:
 	status = NT_STATUS_NO_MEMORY;
+
 failed:
+	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
+	return NT_STATUS_OK;
+}
+
+/*
+  receive some data on a KDC connection
+*/
+static void kdc_tcp_recv_handler(struct stream_connection *conn, uint16_t flags)
+{
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, 
+							     struct kdc_tcp_connection);
+	packet_recv(kdcconn->packet);
+}
+
+/*
+  called on a tcp recv error
+*/
+static void kdc_tcp_recv_error(void *private, NTSTATUS status)
+{
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, struct kdc_tcp_connection);
 	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
 }
 
@@ -424,12 +400,25 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 	kdcconn->kdc	 = kdc;
 	kdcconn->process = kdc_process;
 	conn->private    = kdcconn;
+
+	kdcconn->packet = packet_init(kdcconn);
+	if (kdcconn->packet == NULL) {
+		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+	packet_set_private(kdcconn->packet, kdcconn);
+	packet_set_socket(kdcconn->packet, conn->socket);
+	packet_set_callback(kdcconn->packet, kdc_tcp_recv);
+	packet_set_full_request(kdcconn->packet, kdc_tcp_is_complete);
+	packet_set_error_handler(kdcconn->packet, kdc_tcp_recv_error);
+	packet_set_event_context(kdcconn->packet, conn->event.ctx);
+	packet_set_serialise(kdcconn->packet, conn->event.fde);
 }
 
 static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.name			= "kdc_tcp",
 	.accept_connection	= kdc_tcp_accept,
-	.recv_handler		= kdc_tcp_recv,
+	.recv_handler		= kdc_tcp_recv_handler,
 	.send_handler		= kdc_tcp_send
 };
 
@@ -455,7 +444,7 @@ void kpasswdd_tcp_accept(struct stream_connection *conn)
 static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
 	.name			= "kpasswdd_tcp",
 	.accept_connection	= kpasswdd_tcp_accept,
-	.recv_handler		= kdc_tcp_recv,
+	.recv_handler		= kdc_tcp_recv_handler,
 	.send_handler		= kdc_tcp_send
 };
 
