@@ -235,6 +235,8 @@ int ldb_search(struct ldb_context *ldb,
 	struct ldb_parse_tree *tree;
 	int ret;
 
+	(*res) = NULL;
+
 	request = talloc(ldb, struct ldb_request);
 	if (request == NULL) {
 		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Not Enough memory"));
