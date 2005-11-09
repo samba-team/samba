@@ -1,21 +1,31 @@
-                   =================================
-                   Release Notes for Samba 3.0.21rc1
+                   ==================================
+                   Release Notes for Samba 3.0.21pre2
                               Nov 9, 2005
-                   =================================
+                   ==================================
 
 This is a release candidate of the 3.0.21 code base and is provided
 for testing purposes only.  While close to the final stable release,
 this snapshot is *not* intended for production servers.  
 
 
-Common bugs fixed in 3.0.21rc1 include:
+Common bugs fixed in 3.0.21pre2 include:
 
   o Portability and crash bugs.
   o Performance issues in winbindd.
 
-New features introduced in Samba 3.0.21rc1 include:
+New features introduced in Samba 3.0.21pre2 include:
 
   o Performance Counter external daemon.
+
+
+Known Issues
+============
+
+The final known issue to be resolved prior to the final 3.0.21
+release is compatibility issues with AD trusted domains and 
+"security = domain".  Work is underway to provide auto selection
+of the appropriate user and group query mechanisms at run time.
+
 
 
 
