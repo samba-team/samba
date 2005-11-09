@@ -154,13 +154,8 @@ struct smbcli_transport {
 	   know the server name */
 	struct nbt_name called;
 
-	/* a buffer for partially received SMB packets. */
-	struct {
-		uint8_t header[NBT_HDR_SIZE];
-		size_t req_size;
-		size_t received;
-		uint8_t *buffer;
-	} recv_buffer;
+	/* context of the stream -> packet parser */
+	struct packet_context *packet;
 };
 
 /* this is the context for the user */

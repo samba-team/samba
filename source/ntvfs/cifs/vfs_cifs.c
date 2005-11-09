@@ -63,21 +63,6 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	return req_send_oplock_break(private->tcon, fnum, level);
 }
 
- /*
-  a handler for read events on a connection to a backend server
-*/
-static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, 
-				uint16_t flags, void *private)
-{
-	struct cvfs_private *cvfs = talloc_get_type(private, struct cvfs_private);
-	struct smbsrv_tcon *tcon = cvfs->tcon;
-	
-	if (!smbcli_transport_process(cvfs->transport)) {
-		/* the connection to our server is dead */
-		talloc_free(tcon);
-	}
-}
-
 /*
   connect to a share - used when a tree_connect operation comes in.
 */
@@ -90,7 +75,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	const char *host, *user, *pass, *domain, *remote_share;
 	struct smb_composite_connect io;
 	struct composite_context *creq;
-	struct fd_event *fde;
 
 	struct cli_credentials *credentials;
 	BOOL machine_account;
@@ -179,17 +163,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(private->transport, oplock_handler, private);
-
-	/* take over event handling for this socket */
-	talloc_free(private->transport->socket->event.fde);
-	fde = event_add_fd(private->transport->socket->event.ctx,
-			   private,
-			   socket_get_fd(private->transport->socket->sock),
-			   EVENT_FD_READ | EVENT_FD_WRITE,
-			   cifs_socket_handler,
-			   private);
-	private->transport->socket->event.fde = fde;
-
 
 	private->map_generic = lp_parm_bool(req->tcon->service, 
 					    "cifs", "mapgeneric", False);
