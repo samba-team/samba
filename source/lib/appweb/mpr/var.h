@@ -296,7 +296,7 @@ typedef struct MprVar {
 	 *	Union of primitive types. When debugging on Linux, don't use unions 
 	 *	as the gdb debugger can't display them.
 	 */
-#if !BLD_DEBUG && !LINUX && !VXWORKS
+#if 0 && !BLD_DEBUG && !LINUX && !VXWORKS
 	union {
 #endif
 		int				boolean;				/* Use int for speed */
@@ -321,7 +321,7 @@ typedef struct MprVar {
 		} cFunctionWithStrings;
 		MprStr			string;					/* Allocated string */
 		void			*ptr;					/* Opaque pointer */
-#if !BLD_DEBUG && !LINUX && !VXWORKS
+#if 0 && !BLD_DEBUG && !LINUX && !VXWORKS
 	};
 #endif
 } MprVar;
