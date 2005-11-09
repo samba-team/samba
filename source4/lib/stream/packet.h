@@ -40,6 +40,8 @@ void packet_set_socket(struct packet_context *pc, struct socket_context *sock);
 void packet_set_event_context(struct packet_context *pc, struct event_context *ev);
 void packet_set_serialise(struct packet_context *pc, struct fd_event *fde);
 void packet_recv(struct packet_context *pc);
+NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob);
+void packet_queue_run(struct packet_context *pc);
 
 /*
   pre-canned handlers
