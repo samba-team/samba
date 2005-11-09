@@ -663,27 +663,10 @@ char *strrchr_m(const char *s, char c)
 	return ret;
 }
 
+/*
+  return True if any (multi-byte) character is lower case
+*/
 BOOL strhaslower(const char *string)
-{
-	while (*string) {
-		size_t c_size;
-		codepoint_t s;
-		codepoint_t t;
-
-		s = next_codepoint(string, &c_size);
-		string += c_size;
-
-		t = tolower_w(s);
-
-		if (s == t) { /* the source was alreay lower case */
-			return True; /* that means it has lower case chars */
-		}
-	}
-
-	return False;
-} 
-
-BOOL strhasupper(const char *string)
 {
 	while (*string) {
 		size_t c_size;
@@ -695,7 +678,30 @@ BOOL strhasupper(const char *string)
 
 		t = toupper_w(s);
 
-		if (s == t) { /* the source was alreay upper case */
+		if (s != t) {
+			return True; /* that means it has lower case chars */
+		}
+	}
+
+	return False;
+} 
+
+/*
+  return True if any (multi-byte) character is upper case
+*/
+BOOL strhasupper(const char *string)
+{
+	while (*string) {
+		size_t c_size;
+		codepoint_t s;
+		codepoint_t t;
+
+		s = next_codepoint(string, &c_size);
+		string += c_size;
+
+		t = tolower_w(s);
+
+		if (s != t) {
 			return True; /* that means it has upper case chars */
 		}
 	}
