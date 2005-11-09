@@ -252,7 +252,7 @@ struct smbsrv_connection {
 	struct stream_connection *connection;
 
 	/* this holds a partially received request */
-	struct smbsrv_request *partial_req;
+	struct packet_context *packet;
 
 	/* this holds list of replies that are waiting to be sent
 	   to the client */
@@ -266,10 +266,8 @@ struct smbsrv_connection {
 		uint8_t command;
 	} *trans_partial;
 
-	BOOL processing;
-
 	/* mark a connection for termination */
-	BOOL terminate;
+	const char *terminate;
 
 	/* configuration parameters */
 	struct {
