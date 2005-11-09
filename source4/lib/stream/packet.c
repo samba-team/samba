@@ -41,6 +41,9 @@ struct packet_context {
 	struct event_context *ev;
 	size_t packet_size;
 	void *private;
+	struct fd_event *fde;
+	BOOL serialise;
+	BOOL processing;
 };
 
 /*
@@ -115,6 +118,16 @@ void packet_set_event_context(struct packet_context *pc, struct event_context *e
 	pc->ev = ev;
 }
 
+/*
+  tell the packet layer to serialise requests, so we don't process two requests at once on
+  one connection. You must have set the event_context
+*/
+void packet_set_serialise(struct packet_context *pc, struct fd_event *fde)
+{
+	pc->serialise = True;
+	pc->fde = fde;
+}
+
 
 /*
   tell the caller we have an error
@@ -166,6 +179,10 @@ void packet_recv(struct packet_context *pc)
 	NTSTATUS status;
 	size_t nread;
 	DATA_BLOB blob;
+
+	if (pc->processing) {
+		return;
+	}
 
 	if (pc->packet_size != 0 && pc->num_read >= pc->packet_size) {
 		goto next_partial;
@@ -262,8 +279,19 @@ next_partial:
 	}
 	pc->num_read -= pc->packet_size;
 	pc->packet_size = 0;
+	
+	if (pc->serialise) {
+		EVENT_FD_NOT_READABLE(pc->fde);
+		pc->processing = True;
+	}
 
 	status = pc->callback(pc->private, blob);
+
+	if (pc->serialise) {
+		EVENT_FD_READABLE(pc->fde);
+		pc->processing = False;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		packet_error(pc, status);
 		return;
