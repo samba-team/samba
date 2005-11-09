@@ -89,7 +89,6 @@ done:
 
 static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	const char *userman_domain = NULL;
