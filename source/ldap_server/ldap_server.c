@@ -33,6 +33,7 @@
 #include "lib/socket/socket.h"
 #include "lib/tls/tls.h"
 #include "lib/messaging/irpc.h"
+#include "lib/stream/packet.h"
 
 /*
   close the socket and shutdown a server_context
@@ -49,6 +50,16 @@ static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn,
 }
 
 /*
+  handle packet errors
+*/
+static void ldapsrv_error_handler(void *private, NTSTATUS status)
+{
+	struct ldapsrv_connection *conn = talloc_get_type(private, 
+							  struct ldapsrv_connection);
+	ldapsrv_terminate_connection(conn, nt_errstr(status));
+}
+
+/*
   process a decoded ldap message
 */
 static void ldapsrv_process_message(struct ldapsrv_connection *conn,
@@ -57,7 +68,6 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 	struct ldapsrv_call *call;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct data_blob_list_item *q;
 	BOOL enable_wrap = conn->enable_wrap;
 
 	call = talloc(conn, struct ldapsrv_call);
@@ -119,16 +129,7 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		data_blob_free(&wrapped);
 	}
 
-	q = talloc(conn, struct data_blob_list_item);
-	if (q == NULL) goto failed;
-
-	q->blob = blob;
-	talloc_steal(q, blob.data);
-	
-	if (conn->send_queue == NULL) {
-		EVENT_FD_WRITEABLE(conn->connection->event.fde);
-	}
-	DLIST_ADD_END(conn->send_queue, q, struct data_blob_list_item *);
+	packet_send(conn->packet, blob);
 	talloc_free(call);
 	return;
 
@@ -138,108 +139,88 @@ failed:
 
 
 /*
-  try and decode the partial input buffer
+  decode the input buffer
 */
-static void ldapsrv_try_decode_plain(struct ldapsrv_connection *conn)
+static NTSTATUS ldapsrv_decode_plain(struct ldapsrv_connection *conn, DATA_BLOB blob)
 {
 	struct asn1_data asn1;
+	struct ldap_message *msg = talloc(conn, struct ldap_message);
 
-	if (!asn1_load(&asn1, conn->partial)) {
-		ldapsrv_terminate_connection(conn, "out of memory");
-		return;
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* try and decode - this will fail if we don't have a full packet yet */
-	while (asn1.ofs < asn1.length) {
-		struct ldap_message *msg = talloc(conn, struct ldap_message);
-		off_t saved_ofs = asn1.ofs;
-			
-		if (msg == NULL) {
-			ldapsrv_terminate_connection(conn, "out of memory");
-			return;
-		}
-
-		if (ldap_decode(&asn1, msg)) {
-			ldapsrv_process_message(conn, msg);
-		} else {
-			if (asn1.ofs < asn1.length) {
-				ldapsrv_terminate_connection(conn, "ldap_decode failed");
-				return;
-			}
-			asn1.ofs = saved_ofs;
-			talloc_free(msg);
-			break;
-		}
+	if (!asn1_load(&asn1, blob)) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* keep any remaining data in conn->partial */
-	data_blob_free(&conn->partial);
-	if (asn1.ofs != asn1.length) {
-		conn->partial = data_blob_talloc(conn, 
-						 asn1.data + asn1.ofs, 
-						 asn1.length - asn1.ofs);
+	if (!ldap_decode(&asn1, msg)) {
+		asn1_free(&asn1);
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
+
+	data_blob_free(&blob);
+	ldapsrv_process_message(conn, msg);
 	asn1_free(&asn1);
+	return NT_STATUS_OK;
 }
 
 
 /*
-  try and decode/process wrapped data
+  decode/process wrapped data
 */
-static void ldapsrv_try_decode_wrapped(struct ldapsrv_connection *conn)
+static NTSTATUS ldapsrv_decode_wrapped(struct ldapsrv_connection *conn, 
+				       DATA_BLOB blob)
 {
-	uint32_t len;
+	DATA_BLOB wrapped, unwrapped;
+	struct asn1_data asn1;
+	struct ldap_message *msg = talloc(conn, struct ldap_message);
+	NTSTATUS status;
 
-	/* keep decoding while we have a full wrapped packet */
-	while (conn->partial.length >= 4 &&
-	       (len=RIVAL(conn->partial.data, 0)) <= conn->partial.length-4) {
-		DATA_BLOB wrapped, unwrapped;
-		struct asn1_data asn1;
-		struct ldap_message *msg = talloc(conn, struct ldap_message);
-		NTSTATUS status;
-
-		if (msg == NULL) {
-			ldapsrv_terminate_connection(conn, "out of memory");
-			return;
-		}
-
-		wrapped.data   = conn->partial.data+4;
-		wrapped.length = len;
-
-		status = gensec_unwrap(conn->gensec, msg, &wrapped, &unwrapped);
-		if (!NT_STATUS_IS_OK(status)) {
-			ldapsrv_terminate_connection(conn, "gensec unwrap failed");
-			return;
-		}
-
-		if (!asn1_load(&asn1, unwrapped)) {
-			ldapsrv_terminate_connection(conn, "out of memory");
-			return;
-		}
-
-		while (ldap_decode(&asn1, msg)) {
-			ldapsrv_process_message(conn, msg);
-			msg = talloc(conn, struct ldap_message);
-		}
-
-		if (asn1.ofs < asn1.length) {
-			ldapsrv_terminate_connection(conn, "ldap_decode failed");
-			return;
-		}
-		
-		talloc_free(msg);
-		asn1_free(&asn1);
-
-		if (conn->partial.length == len + 4) {
-			data_blob_free(&conn->partial);
-		} else {
-			memmove(conn->partial.data, conn->partial.data+len+4,
-				conn->partial.length - (len+4));
-			conn->partial.length -= len + 4;
-		}
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
+
+	wrapped = data_blob_const(blob.data+4, blob.length-4);
+
+	status = gensec_unwrap(conn->gensec, msg, &wrapped, &unwrapped);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+
+	data_blob_free(&blob);
+
+	if (!asn1_load(&asn1, unwrapped)) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+
+	while (ldap_decode(&asn1, msg)) {
+		ldapsrv_process_message(conn, msg);
+		msg = talloc(conn, struct ldap_message);
+	}
+
+	if (asn1.ofs < asn1.length) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+		
+	talloc_free(msg);
+	asn1_free(&asn1);
+
+	return NT_STATUS_OK;
 }
 
+/*
+  decode/process data
+*/
+static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
+{
+	struct ldapsrv_connection *conn = talloc_get_type(private, 
+							  struct ldapsrv_connection);
+	if (conn->enable_wrap) {
+		return ldapsrv_decode_wrapped(conn, blob);
+	}
+	return ldapsrv_decode_plain(conn, blob);
+}
 
 /*
   called when a LDAP socket becomes readable
@@ -248,60 +229,9 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private, struct ldapsrv_connection);
-	NTSTATUS status;
-	size_t npending, nread;
+	
+	packet_recv(conn->packet);
 
-	if (conn->processing) {
-		EVENT_FD_NOT_READABLE(c->event.fde);
-		return;
-	}
-
-	/* work out how much data is pending */
-	status = tls_socket_pending(conn->tls, &npending);
-	if (!NT_STATUS_IS_OK(status)) {
-		ldapsrv_terminate_connection(conn, "socket_pending() failed");
-		goto done;
-	}
-	if (npending == 0) {
-		ldapsrv_terminate_connection(conn, "EOF from client");
-		goto done;
-	}
-
-	conn->partial.data = talloc_realloc_size(conn, conn->partial.data, 
-						 conn->partial.length + npending);
-	if (conn->partial.data == NULL) {
-		ldapsrv_terminate_connection(conn, "out of memory");
-		goto done;
-	}
-
-	/* receive the data */
-	status = tls_socket_recv(conn->tls, conn->partial.data + conn->partial.length,
-				 npending, &nread);
-	if (NT_STATUS_IS_ERR(status)) {
-		ldapsrv_terminate_connection(conn, "socket_recv() failed");
-		goto done;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-	if (nread == 0) {
-		ldapsrv_terminate_connection(conn, "EOF from client");
-		goto done;
-	}
-	conn->partial.length += nread;
-
-	conn->processing = True;
-	/* see if we can decode what we have */
-	if (conn->enable_wrap) {
-		ldapsrv_try_decode_wrapped(conn);
-	} else {
-		ldapsrv_try_decode_plain(conn);
-	}
-	conn->processing = False;
-
-	EVENT_FD_READABLE(c->event.fde);
-
-done:
 	if (conn->terminate) {
 		if (conn->tls) {
 			talloc_free(conn->tls);
@@ -309,6 +239,20 @@ done:
 		}
 		stream_terminate_connection(conn->connection, conn->terminate);
 	}
+}
+
+/*
+  check if a blob is a complete ldap packet
+  handle wrapper or unwrapped connections
+*/
+NTSTATUS ldapsrv_complete_packet(void *private, DATA_BLOB blob, size_t *size)
+{
+	struct ldapsrv_connection *conn = talloc_get_type(private, 
+							  struct ldapsrv_connection);
+	if (conn->enable_wrap) {
+		return packet_full_request_u32(private, blob, size);
+	}
+	return ldap_full_packet(private, blob, size);
 }
 	
 /*
@@ -318,31 +262,9 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private, struct ldapsrv_connection);
-	while (conn->send_queue) {
-		struct data_blob_list_item *q = conn->send_queue;
-		size_t nsent;
-		NTSTATUS status;
+	
+	packet_queue_run(conn->packet);
 
-		status = tls_socket_send(conn->tls, &q->blob, &nsent);
-		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-			break;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			ldapsrv_terminate_connection(conn, "socket_send error");
-			goto done;
-		}
-
-		q->blob.data += nsent;
-		q->blob.length -= nsent;
-		if (q->blob.length == 0) {
-			DLIST_REMOVE(conn->send_queue, q);
-		}
-	}
-	if (conn->send_queue == NULL) {
-		EVENT_FD_NOT_WRITEABLE(c->event.fde);
-	}
-
-done:
 	if (conn->terminate) {
 		if (conn->tls) {
 			talloc_free(conn->tls);
@@ -372,23 +294,32 @@ static void ldapsrv_accept(struct stream_connection *c)
 	}
 
 	conn->enable_wrap = False;
-	conn->partial     = data_blob(NULL, 0);
-	conn->send_queue  = NULL;
+	conn->packet      = NULL;
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
-	conn->processing  = False;
 	c->private        = conn;
 
 	port = socket_get_my_port(c->socket);
 
-	/* note that '0' is a ASN1_SEQUENCE(0), which is the first byte on
-	   any ldap connection */
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
 				    c->event.fde, NULL, port != 389);
 	if (!conn->tls) {
 		ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 		goto done;
 	}
+
+	conn->packet = packet_init(conn);
+	if (conn->packet == NULL) {
+		ldapsrv_terminate_connection(conn, "out of memory");
+		goto done;
+	}
+	packet_set_private(conn->packet, conn);
+	packet_set_tls(conn->packet, conn->tls);
+	packet_set_callback(conn->packet, ldapsrv_decode);
+	packet_set_full_request(conn->packet, ldapsrv_complete_packet);
+	packet_set_error_handler(conn->packet, ldapsrv_error_handler);
+	packet_set_event_context(conn->packet, c->event.ctx);
+	packet_set_serialise(conn->packet, c->event.fde);
 
 	/* Connections start out anonymous */
 	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, &conn->session_info))) {
