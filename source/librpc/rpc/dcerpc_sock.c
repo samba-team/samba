@@ -26,13 +26,7 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "lib/socket/socket.h"
-
-#define MIN_HDR_SIZE 16
-
-struct sock_blob {
-	struct sock_blob *next, *prev;
-	DATA_BLOB data;
-};
+#include "lib/stream/packet.h"
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {
@@ -40,13 +34,7 @@ struct sock_private {
 	struct socket_context *sock;
 	char *server_name;
 
-	struct sock_blob *pending_send;
-
-	struct {
-		size_t received;
-		DATA_BLOB data;
-		uint_t pending_count;
-	} recv;
+	struct packet_context *packet;
 };
 
 
@@ -63,16 +51,35 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 		sock->sock = NULL;
 	}
 
-	/* wipe any pending sends */
-	while (sock->pending_send) {
-		struct sock_blob *blob = sock->pending_send;
-		DLIST_REMOVE(sock->pending_send, blob);
-		talloc_free(blob);
-	}
-
 	if (!NT_STATUS_IS_OK(status)) {
 		p->transport.recv_data(p, NULL, status);
 	}
+}
+
+
+/*
+  handle socket recv errors
+*/
+static void sock_error_handler(void *private, NTSTATUS status)
+{
+	struct dcerpc_connection *p = talloc_get_type(private, 
+						      struct dcerpc_connection);
+	sock_dead(p, status);
+}
+
+/*
+  check if a blob is a complete packet
+*/
+static NTSTATUS sock_complete_packet(void *private, DATA_BLOB blob, size_t *size)
+{
+	if (blob.length < DCERPC_FRAG_LEN_OFFSET+2) {
+		return STATUS_MORE_ENTRIES;
+	}
+	*size = dcerpc_get_frag_length(&blob);
+	if (*size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -81,111 +88,19 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 static void sock_process_send(struct dcerpc_connection *p)
 {
 	struct sock_private *sock = p->transport.private;
-
-	while (sock->pending_send) {
-		struct sock_blob *blob = sock->pending_send;
-		NTSTATUS status;
-		size_t sent;
-		status = socket_send(sock->sock, &blob->data, &sent, 0);
-		if (NT_STATUS_IS_ERR(status)) {
-			sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
-			break;
-		}
-		if (sent == 0) {
-			break;
-		}
-
-		blob->data.data += sent;
-		blob->data.length -= sent;
-
-		if (blob->data.length != 0) {
-			break;
-		}
-
-		DLIST_REMOVE(sock->pending_send, blob);
-		talloc_free(blob);
-	}
-
-	if (sock->pending_send == NULL && sock->sock) {
-		EVENT_FD_NOT_WRITEABLE(sock->fde);
-	}
+	packet_queue_run(sock->packet);
 }
 
 
 /*
   process recv requests
 */
-static void sock_process_recv(struct dcerpc_connection *p)
+static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
 {
-	struct sock_private *sock = p->transport.private;
-	NTSTATUS status;
-	size_t nread;
-	DATA_BLOB data;
-
-	if (sock->recv.data.data == NULL) {
-		sock->recv.data = data_blob_talloc(sock, NULL, MIN_HDR_SIZE);
-	}
-
-	/* read in the base header to get the fragment length */
-	if (sock->recv.received < MIN_HDR_SIZE) {
-		uint32_t frag_length;
-
-		status = socket_recv(sock->sock, 
-				     sock->recv.data.data + sock->recv.received, 
-				     MIN_HDR_SIZE - sock->recv.received, 
-				     &nread, 0);
-		if (NT_STATUS_IS_ERR(status)) {
-			sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
-			return;
-		}
-		if (nread == 0) {
-			return;
-		}
-		
-		sock->recv.received += nread;
-
-		if (sock->recv.received != MIN_HDR_SIZE) {
-			return;
-		}
-		frag_length = dcerpc_get_frag_length(&sock->recv.data);
-
-		sock->recv.data.data = talloc_realloc(sock, sock->recv.data.data,
-						      uint8_t, frag_length);
-		if (sock->recv.data.data == NULL) {
-			sock_dead(p, NT_STATUS_NO_MEMORY);
-			return;
-		}
-		sock->recv.data.length = frag_length;
-	}
-
-	/* read in the rest of the packet */
-	status = socket_recv(sock->sock, 
-			     sock->recv.data.data + sock->recv.received, 
-			     sock->recv.data.length - sock->recv.received, 
-			     &nread, 0);
-	if (NT_STATUS_IS_ERR(status)) {
-		sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
-		return;
-	}
-	if (nread == 0) {
-		return;
-	}
-	sock->recv.received += nread;
-
-	if (sock->recv.received != sock->recv.data.length) {
-		return;
-	}
-
-	/* we have a full packet */
-	data = sock->recv.data;
-	sock->recv.data = data_blob(NULL, 0);
-	sock->recv.received = 0;
-	sock->recv.pending_count--;
-	if (sock->recv.pending_count == 0) {
-		EVENT_FD_NOT_READABLE(sock->fde);
-	}
-
-	p->transport.recv_data(p, &data, NT_STATUS_OK);
+	struct dcerpc_connection *p = talloc_get_type(private, 
+						      struct dcerpc_connection);
+	p->transport.recv_data(p, &blob, NT_STATUS_OK);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -194,7 +109,8 @@ static void sock_process_recv(struct dcerpc_connection *p)
 static void sock_io_handler(struct event_context *ev, struct fd_event *fde, 
 			    uint16_t flags, void *private)
 {
-	struct dcerpc_connection *p = talloc_get_type(private, struct dcerpc_connection);
+	struct dcerpc_connection *p = talloc_get_type(private, 
+						      struct dcerpc_connection);
 	struct sock_private *sock = p->transport.private;
 
 	if (flags & EVENT_FD_WRITE) {
@@ -207,53 +123,40 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 	}
 
 	if (flags & EVENT_FD_READ) {
-		sock_process_recv(p);
+		packet_recv(sock->packet);
 	}
 }
 
 /* 
-   initiate a read request 
+   initiate a read request - not needed for dcerpc sockets
 */
 static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 {
-	struct sock_private *sock = p->transport.private;
-
-	sock->recv.pending_count++;
-	if (sock->recv.pending_count == 1) {
-		EVENT_FD_READABLE(sock->fde);
-	}
 	return NT_STATUS_OK;
 }
 
 /* 
    send an initial pdu in a multi-pdu sequence
 */
-static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, BOOL trigger_read)
+static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
+				  BOOL trigger_read)
 {
 	struct sock_private *sock = p->transport.private;
-	struct sock_blob *blob;
+	DATA_BLOB blob;
+	NTSTATUS status;
 
 	if (sock->sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
-	blob = talloc(sock, struct sock_blob);
-	if (blob == NULL) {
+	blob = data_blob_talloc(sock->packet, data->data, data->length);
+	if (blob.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	blob->data = data_blob_talloc(blob, data->data, data->length);
-	if (blob->data.data == NULL) {
-		talloc_free(blob);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DLIST_ADD_END(sock->pending_send, blob, struct sock_blob *);
-
-	EVENT_FD_WRITEABLE(sock->fde);
-
-	if (trigger_read) {
-		sock_send_read(p);
+	status = packet_send(sock->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	return NT_STATUS_OK;
@@ -328,15 +231,24 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	
 	sock->sock = socket_ctx;
 	sock->server_name = strupper_talloc(sock, server);
-	sock->pending_send = NULL;
-	sock->recv.received = 0;
-	sock->recv.data = data_blob(NULL, 0);
-	sock->recv.pending_count = 0;
 
-	sock->fde = event_add_fd(c->event_ctx, sock->sock, socket_get_fd(sock->sock), 
-				 0, sock_io_handler, c);
+	sock->fde = event_add_fd(c->event_ctx, sock->sock, socket_get_fd(sock->sock),
+				 EVENT_FD_READ, sock_io_handler, c);
 
 	c->transport.private = sock;
+
+	sock->packet = packet_init(sock);
+	if (sock->packet == NULL) {
+		talloc_free(sock);
+		return NT_STATUS_NO_MEMORY;
+	}
+	packet_set_private(sock->packet, c);
+	packet_set_socket(sock->packet, sock->sock);
+	packet_set_callback(sock->packet, sock_process_recv);
+	packet_set_full_request(sock->packet, sock_complete_packet);
+	packet_set_error_handler(sock->packet, sock_error_handler);
+	packet_set_event_context(sock->packet, c->event_ctx);
+	packet_set_serialise(sock->packet, sock->fde);
 
 	/* ensure we don't get SIGPIPE */
 	BlockSignals(True,SIGPIPE);
