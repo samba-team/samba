@@ -29,6 +29,7 @@ static const char *test_lists_shell_strings[] = {
 	"foo bar \"bla \"",
 	"foo \"\" bla",
 	"bla \"\"\"\" blie",
+	NULL
 };
 
 static BOOL test_lists_shell(TALLOC_CTX *mem_ctx)
