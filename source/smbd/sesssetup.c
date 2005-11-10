@@ -954,9 +954,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		fstrcpy(sub_user, user);
-
-		/* setup the string used by %U */
-		sub_set_smb_name(user);
 	} else {
 		fstrcpy(sub_user, lp_guestaccount());
 	}
