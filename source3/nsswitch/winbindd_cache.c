@@ -100,43 +100,52 @@ void winbindd_check_cache_size(time_t t)
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
 	struct winbind_cache *ret = wcache;
+	struct winbindd_domain *our_domain = domain;
 
 	/* we have to know what type of domain we are dealing with first */
 
 	if ( !domain->initialized )
 		set_dc_type_and_flags( domain );
 
+	/* 
+	   OK.  listen up becasue I'm only going to say this once.
+	   We have the following scenarios to consider
+	   (a) trusted AD domains on a Samba DC,
+	   (b) trusted AD domains and we are joined to a non-kerberos domain
+	   (c) trusted AD domains and we are joined to a kerberos (AD) domain
+
+	   For (a) we can always contact the trusted domain using krb5 
+	   since we have the domain trust account password
+
+	   For (b) we can only use RPC since we have no way of 
+	   getting a krb5 ticket in our own domain
+
+	   For (c) we can always use krb5 since we have a kerberos trust
+
+	   --jerry
+	 */
+
 	if (!domain->backend) {
 		extern struct winbindd_methods reconnect_methods;
-		switch (lp_security()) {
 #ifdef HAVE_ADS
-		case SEC_ADS: {
-			extern struct winbindd_methods ads_methods;
-			/* always obey the lp_security parameter for our domain */
-			if (domain->primary) {
-				domain->backend = &ads_methods;
-				break;
-			}
+		extern struct winbindd_methods ads_methods;
 
-			/* only use ADS for native modes at the momment.
-			   The problem is the correct detection of mixed 
-			   mode domains from NT4 BDC's    --jerry */
-			
-			if ( domain->native_mode ) {
-				DEBUG(5,("get_cache: Setting ADS methods for domain %s\n",
-					domain->name));
-				domain->backend = &ads_methods;
-				break;
-			}
+		/* find our domain first so we can figure out if we 
+		   are joined to a kerberized domain */
 
-			/* fall through */
-		}	
-#endif
-		default:
-			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n",
-				domain->name));
+		if ( !domain->primary )
+			our_domain = find_our_domain();
+
+		if ( (our_domain->active_directory || IS_DC) && domain->active_directory ) {
+			DEBUG(5,("get_cache: Setting ADS methods for domain %s\n", domain->name));
+			domain->backend = &ads_methods;
+		} else {
+#endif	/* HAVE_ADS */
+			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n", domain->name));
 			domain->backend = &reconnect_methods;
+#ifdef HAVE_ADS
 		}
+#endif	/* HAVE_ADS */
 	}
 
 	if (ret)
