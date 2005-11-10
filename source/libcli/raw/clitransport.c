@@ -105,6 +105,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	packet_set_full_request(transport->packet, packet_full_request_nbt);
 	packet_set_error_handler(transport->packet, smbcli_transport_error);
 	packet_set_event_context(transport->packet, transport->socket->event.ctx);
+	packet_set_nofree(transport->packet);
 
 	smbcli_init_signing(transport);
 
@@ -559,16 +560,6 @@ void smbcli_transport_send(struct smbcli_request *req)
 		return;
 	}
 
-	/* put it on the socket queue
-	 * - as the buffer is a part of the smbcli_request struct
-	 *   we need to reference it here, because packet_queue_run()
-	 *   will call talloc_free() on it
-	 */
-	if (!talloc_reference(req, req->out.buffer)) {
-		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = NT_STATUS_NO_MEMORY;
-		return;
-	}
 	blob = data_blob_const(req->out.buffer, req->out.size);
 	status = packet_send(req->transport->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {

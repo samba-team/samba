@@ -40,6 +40,7 @@ void packet_set_socket(struct packet_context *pc, struct socket_context *sock);
 void packet_set_event_context(struct packet_context *pc, struct event_context *ev);
 void packet_set_serialise(struct packet_context *pc, struct fd_event *fde);
 void packet_set_initial_read(struct packet_context *pc, uint32_t initial_read);
+void packet_set_nofree(struct packet_context *pc);
 void packet_recv(struct packet_context *pc);
 void packet_recv_disable(struct packet_context *pc);
 void packet_recv_enable(struct packet_context *pc);

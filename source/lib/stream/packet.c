@@ -45,6 +45,7 @@ struct packet_context {
 	BOOL serialise;
 	BOOL processing;
 	BOOL recv_disable;
+	BOOL nofree;
 
 	struct send_element {
 		struct send_element *next, *prev;
@@ -142,6 +143,14 @@ void packet_set_serialise(struct packet_context *pc, struct fd_event *fde)
 void packet_set_initial_read(struct packet_context *pc, uint32_t initial_read)
 {
 	pc->initial_read = initial_read;
+}
+
+/*
+  tell the packet system not to steal/free blobs given to packet_send()
+*/
+void packet_set_nofree(struct packet_context *pc)
+{
+	pc->nofree = True;
 }
 
 
@@ -427,7 +436,14 @@ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 	DLIST_ADD_END(pc->send_queue, el, struct send_element *);
 	el->blob = blob;
 	el->nsent = 0;
-	talloc_steal(el, blob.data);
+
+	/* if we aren't going to free the packet then we must reference it
+	   to ensure it doesn't disappear before going out */
+	if (pc->nofree) {
+		talloc_reference(el, blob.data);
+	} else {
+		talloc_steal(el, blob.data);
+	}
 
 	EVENT_FD_WRITEABLE(pc->fde);
 
