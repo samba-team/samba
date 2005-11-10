@@ -22,8 +22,8 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-# Version: 1.1 Beta
-# Revised: 06/28/2005
+# Version: 1.0 (Stable)
+# Revised: 07/28/2005
 
 # Comments...
 # Working on logging to the system logs, Logs user activity, but not errors yet.
@@ -144,11 +144,11 @@ if ( defined($smbprof) ) {
         print "$smbprof \n";
         print "$dir2 \n";
         if ( !-e $dir2 ) {
-            print "Creating " . $user . "'s profile \n";
+            print "Creating " . $user . "'s profile with a uid of $uid\n";
             mkdir $smbprof;
             mkdir $dir2;
             chomp($user);
-            chown $uid, $gid, $smbprof;
+#           chown $uid, $gid, $smbprof;
             chown $uid, $gid, $dir2;
         } else {
             print $user . "'s profile already exists \n";
@@ -174,6 +174,13 @@ for my $key ( keys %$common ) {
     drive_map( @{ $common->{$key} } );
 }
 
+my @perform_common = $cfg->param("performcommands.common");
+if ( defined( $perform_common[0] ) ) {
+    foreach (@perform_common) {
+        print LOGON "$_ \r\n";
+    }
+}
+
 # Map shares on a per user basis.
 drive_map(@username);
 
@@ -195,30 +202,33 @@ for my $key ( keys %$compname ) {
     if ( ref $test eq 'ARRAY' ) {
         foreach (@$test) {
             if ( $_ eq $machine ) {
-                my $preformit = $cfg->param("preformcommands.$key");
-                if ( defined($preformit) ) {
-                    if ( ref $preformit ) {
-                        foreach (@$preformit) { print LOGON "$_ \r\n"; }
+                my $performit = $cfg->param("performcommands.$key");
+                if ( defined($performit) ) {
+                    if ( ref $performit ) {
+                        foreach (@$performit) { print LOGON "$_ \r\n"; }
                     } else {
-                        print LOGON "$preformit \r\n";
+                        print LOGON "$performit \r\n";
                     }
                 }
             }
         }
     }
     elsif ( $test eq $machine ) {
-        my $preformit = $cfg->param("preformcommands.$key");
-        if ( defined($preformit) ) {
-            if ( ref $preformit ) {
-                foreach (@$preformit) { print LOGON "$_ \r\n"; }
+        my $performit = $cfg->param("performcommands.$key");
+        if ( defined($performit) ) {
+            if ( ref $performit ) {
+                foreach (@$performit) { print LOGON "$_ \r\n"; }
             } else {
-                print LOGON "$preformit \r\n";
+                print LOGON "$performit \r\n";
             }
         }
     }
 }
 
 # Here is where we test the ip address against the client to see if they have "Special Mapping"
+# A huge portion of the ip matching code was made by  
+# Carsten Schaub (rcsu in the #samba chan on freenode.net)
+
 my $val;
 for my $key ( sort keys %$ipname ) {
     if ( ref $ipname->{$key} eq 'ARRAY' ) {
@@ -234,12 +244,12 @@ sub getipval {
     my ( $range, $rangename ) = @_;
     if ( parse( $ip, ipmap($range) ) ) {
         if ( $val eq 'true' ) {
-            my $preformit = $cfg->param("preformcommands.$rangename");
-            if ( defined($preformit) ) {
-                if ( ref $preformit ) {
-                    foreach (@$preformit) { print LOGON "$_ \r\n"; }
+            my $performit = $cfg->param("performcommands.$rangename");
+            if ( defined($performit) ) {
+                if ( ref $performit ) {
+                    foreach (@$performit) { print LOGON "$_ \r\n"; }
                 } else {
-                    print LOGON "$preformit \r\n";
+                    print LOGON "$performit \r\n";
                 }
             }
         } elsif ( $val eq 'false' ) {
@@ -307,7 +317,7 @@ sub drive_map {
             my $sharename = $data[$i];
             $i++;
             if ( $sharename eq '/home' ) {
-                print LOGON uc("NET USE $driveletter $sharename \/Y \r\n");
+                print LOGON uc("NET USE $driveletter \\\\$server\\$user \/Y \r\n");
             } else {
                 print LOGON
                   uc("NET USE $driveletter \\\\$server\\$sharename \/Y \r\n");
