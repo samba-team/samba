@@ -35,6 +35,7 @@ struct sock_private {
 	char *server_name;
 
 	struct packet_context *packet;
+	uint32_t pending_reads;
 };
 
 
@@ -83,22 +84,17 @@ static NTSTATUS sock_complete_packet(void *private, DATA_BLOB blob, size_t *size
 }
 
 /*
-  process send requests
-*/
-static void sock_process_send(struct dcerpc_connection *p)
-{
-	struct sock_private *sock = p->transport.private;
-	packet_queue_run(sock->packet);
-}
-
-
-/*
   process recv requests
 */
 static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
 {
 	struct dcerpc_connection *p = talloc_get_type(private, 
 						      struct dcerpc_connection);
+	struct sock_private *sock = p->transport.private;
+	sock->pending_reads--;
+	if (sock->pending_reads == 0) {
+		packet_recv_disable(sock->packet);
+	}
 	p->transport.recv_data(p, &blob, NT_STATUS_OK);
 	return NT_STATUS_OK;
 }
@@ -114,7 +110,7 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 	struct sock_private *sock = p->transport.private;
 
 	if (flags & EVENT_FD_WRITE) {
-		sock_process_send(p);
+		packet_queue_run(sock->packet);
 		return;
 	}
 
@@ -132,6 +128,11 @@ static void sock_io_handler(struct event_context *ev, struct fd_event *fde,
 */
 static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 {
+	struct sock_private *sock = p->transport.private;
+	sock->pending_reads++;
+	if (sock->pending_reads == 1) {
+		packet_recv_enable(sock->packet);
+	}
 	return NT_STATUS_OK;
 }
 
@@ -157,6 +158,10 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data,
 	status = packet_send(sock->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (trigger_read) {
+		sock_send_read(p);
 	}
 
 	return NT_STATUS_OK;
@@ -230,10 +235,11 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	c->transport.peer_name = sock_peer_name;
 	
 	sock->sock = socket_ctx;
+	sock->pending_reads = 0;
 	sock->server_name = strupper_talloc(sock, server);
 
 	sock->fde = event_add_fd(c->event_ctx, sock->sock, socket_get_fd(sock->sock),
-				 EVENT_FD_READ, sock_io_handler, c);
+				 0, sock_io_handler, c);
 
 	c->transport.private = sock;
 
@@ -249,6 +255,8 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	packet_set_error_handler(sock->packet, sock_error_handler);
 	packet_set_event_context(sock->packet, c->event_ctx);
 	packet_set_serialise(sock->packet, sock->fde);
+	packet_recv_disable(sock->packet);
+	packet_set_initial_read(sock->packet, 16);
 
 	/* ensure we don't get SIGPIPE */
 	BlockSignals(True,SIGPIPE);
