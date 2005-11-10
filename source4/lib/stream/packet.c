@@ -34,7 +34,6 @@ struct packet_context {
 	packet_full_request_fn_t full_request;
 	packet_error_handler_fn_t error_handler;
 	DATA_BLOB partial;
-	uint32_t initial_read_size;
 	uint32_t num_read;
 	uint32_t initial_read;
 	struct tls_context *tls;
@@ -183,7 +182,8 @@ static void packet_next_event(struct event_context *ev, struct timed_event *te,
 			      struct timeval t, void *private)
 {
 	struct packet_context *pc = talloc_get_type(private, struct packet_context);
-	if (pc->num_read != 0 && pc->packet_size >= pc->num_read) {
+	if (pc->num_read != 0 && pc->packet_size != 0 &&
+	    pc->packet_size <= pc->num_read) {
 		packet_recv(pc);
 	}
 }
@@ -196,7 +196,7 @@ void packet_recv(struct packet_context *pc)
 {
 	size_t npending;
 	NTSTATUS status;
-	size_t nread;
+	size_t nread = 0;
 	DATA_BLOB blob;
 
 	if (pc->processing) {
@@ -268,8 +268,16 @@ void packet_recv(struct packet_context *pc)
 
 	pc->num_read += nread;
 
-	/* see if its a full request */
 next_partial:
+	if (pc->partial.length != pc->num_read) {
+		status = data_blob_realloc(pc, &pc->partial, pc->num_read);
+		if (!NT_STATUS_IS_OK(status)) {
+			packet_error(pc, status);
+			return;
+		}
+	}
+
+	/* see if its a full request */
 	blob = pc->partial;
 	blob.length = pc->num_read;
 	status = pc->full_request(pc->private, blob, &pc->packet_size);
