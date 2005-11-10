@@ -802,7 +802,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,uint32 dirtype, pstring fn
 			*mode = dos_mode(conn,pathreal,&sbuf);
 
 			if (!dir_check_ftype(conn,*mode,dirtype)) {
-				DEBUG(5,("[%s] attribs didn't match %x\n",filename,(unsigned int)dirtype));
+				DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",filename,(unsigned int)*mode,(unsigned int)dirtype));
 				continue;
 			}
 
