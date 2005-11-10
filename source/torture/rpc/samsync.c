@@ -1174,6 +1174,23 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 						ret = False;
 					}
 					break;
+				case NETR_DELTA_DELETE_GROUP:
+				case NETR_DELTA_RENAME_GROUP:
+				case NETR_DELTA_DELETE_USER:
+				case NETR_DELTA_RENAME_USER:
+				case NETR_DELTA_GROUP_MEMBER:
+				case NETR_DELTA_DELETE_ALIAS:
+				case NETR_DELTA_RENAME_ALIAS:
+				case NETR_DELTA_ALIAS_MEMBER:
+				case NETR_DELTA_DELETE_TRUST:
+				case NETR_DELTA_DELETE_ACCOUNT:
+				case NETR_DELTA_DELETE_SECRET:
+				case NETR_DELTA_DELETE_GROUP2:
+				case NETR_DELTA_DELETE_USER2:
+				case NETR_DELTA_MODIFY_COUNT:
+					printf("Unhandled delta type %d\n", r.out.delta_enum_array->delta_enum[d].delta_type);
+					ret = False;
+					break;
 				}
 				talloc_free(delta_ctx);
 			}
