@@ -317,7 +317,11 @@ next_partial:
 			packet_error(pc, NT_STATUS_NO_MEMORY);
 			return;
 		}
-		data_blob_realloc(pc, &blob, pc->packet_size);
+		status = data_blob_realloc(pc, &blob, pc->packet_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			packet_error(pc, status);
+			return;
+		}
 	} else {
 		pc->partial = data_blob(NULL, 0);
 	}
@@ -440,7 +444,9 @@ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 	/* if we aren't going to free the packet then we must reference it
 	   to ensure it doesn't disappear before going out */
 	if (pc->nofree) {
-		talloc_reference(el, blob.data);
+		if (!talloc_reference(el, blob.data)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	} else {
 		talloc_steal(el, blob.data);
 	}
