@@ -1817,6 +1817,9 @@ static int cmd_fsinfo(const char **cmd_ptr)
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[5],
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[6] );
 		break;
+	case RAW_QFS_GENERIC:
+		d_printf("\twrong level returned\n");
+		break;
 	}
   
  done:
