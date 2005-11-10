@@ -199,28 +199,6 @@ static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, con
 	stream_terminate_connection(kdcconn->conn, reason);
 }
 
-
-/*
-  work out if a tcp packet is complete
-*/
-NTSTATUS kdc_tcp_is_complete(void *private, DATA_BLOB blob, size_t *size)
-{
-	if (blob.length < 4) {
-		return STATUS_MORE_ENTRIES;
-	}
-	*size = 4 + RIVAL(blob.data, 0);
-	if (*size > blob.length) {
-		return STATUS_MORE_ENTRIES;
-	}
-	if ((*size) & (1 << 31)) {
-		/* NOTE: we should send a 'KRB_ERR_FIELD_TOOLONG' and terminate, 
-		   but for now we just terminate */
-		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
-	}
-	return NT_STATUS_OK;
-}
-
-
 /*
   receive a full packet on a KDC connection
 */
@@ -379,7 +357,7 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 	packet_set_private(kdcconn->packet, kdcconn);
 	packet_set_socket(kdcconn->packet, conn->socket);
 	packet_set_callback(kdcconn->packet, kdc_tcp_recv);
-	packet_set_full_request(kdcconn->packet, kdc_tcp_is_complete);
+	packet_set_full_request(kdcconn->packet, packet_full_request_u32);
 	packet_set_error_handler(kdcconn->packet, kdc_tcp_recv_error);
 	packet_set_event_context(kdcconn->packet, conn->event.ctx);
 	packet_set_serialise(kdcconn->packet, conn->event.fde);
