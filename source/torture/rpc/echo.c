@@ -358,7 +358,7 @@ static BOOL test_surrounding(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	status = dcerpc_echo_TestSurrounding(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("TestSurrounding failed - %s\n", nt_errstr(status));
-		ret = False;
+		return False;
 	}
 	
 	if (r.out.data->x != 2 * r.in.data->x) {
