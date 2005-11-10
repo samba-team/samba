@@ -204,7 +204,8 @@ static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, con
 */
 static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, struct kdc_tcp_connection);
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, 
+							     struct kdc_tcp_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
 	const char *src_addr;
@@ -255,8 +256,7 @@ nomem:
 	status = NT_STATUS_NO_MEMORY;
 
 failed:
-	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*

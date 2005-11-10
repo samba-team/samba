@@ -662,6 +662,10 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smb_conn->negotiate.calling_name = NULL;
 
 	smb_conn->packet = packet_init(smb_conn);
+	if (smb_conn->packet == NULL) {
+		stream_terminate_connection(conn, "out of memory");
+		return;
+	}
 	packet_set_private(smb_conn->packet, smb_conn);
 	packet_set_socket(smb_conn->packet, conn->socket);
 	packet_set_callback(smb_conn->packet, receive_smb_request);
