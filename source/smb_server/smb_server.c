@@ -114,6 +114,7 @@ static NTSTATUS receive_smb_request(void *private, DATA_BLOB blob)
   These flags determine some of the permissions required to do an operation 
 */
 #define AS_USER (1<<0)
+#define SIGNING_NO_REPLY (1<<1)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -291,7 +292,7 @@ static const struct smb_message_struct
 /* 0xa1 */ { "SMBnttranss", reply_nttranss, AS_USER},
 /* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X, AS_USER},
 /* 0xa3 */ { NULL, NULL, 0 },
-/* 0xa4 */ { "SMBntcancel", reply_ntcancel, 0},
+/* 0xa4 */ { "SMBntcancel", reply_ntcancel, AS_USER|SIGNING_NO_REPLY},
 /* 0xa5 */ { "SMBntrename", reply_ntrename, AS_USER},
 /* 0xa6 */ { NULL, NULL, 0 },
 /* 0xa7 */ { NULL, NULL, 0 },
@@ -411,6 +412,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	int flags;
 	struct smbsrv_connection *smb_conn = req->smb_conn;
 	uint16_t session_tag;
+	NTSTATUS status;
 
 	type &= 0xff;
 
@@ -448,23 +450,64 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->server_id));
 
+	/* this must be called before we do any reply */
+	if (flags & SIGNING_NO_REPLY) {
+		req_signing_no_reply(req);
+	}
+
+	/* see if the vuid is valid */
+	if ((flags & AS_USER) && !req->session) {
+		/* amazingly, the error code depends on the command */
+		switch (type) {
+			case SMBntcreateX:
+			case SMBntcancel:
+				status = NT_STATUS_DOS(ERRSRV, ERRbaduid);
+				break;
+			default:
+				status = NT_STATUS_INVALID_HANDLE;
+				break;
+		}
+		/* 
+		 * TODO:
+		 * don't know how to handle smb signing for this case 
+		 * so just skip the reply
+		 */
+		if ((flags & SIGNING_NO_REPLY) &&
+		    (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF)) {
+			DEBUG(1,("SKIP ERROR REPLY: %s %s because of unknown smb signing case\n",
+				smb_fn_name(type), nt_errstr(status)));
+			req_destroy(req);
+			return;
+		}
+		req_reply_error(req, status);
+		return;
+	}
+
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
 		/* amazingly, the error code depends on the command */
 		switch (type) {
 			case SMBntcreateX:
-				req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRinvnid));
+			case SMBntcancel:
+				status = NT_STATUS_DOS(ERRSRV, ERRinvnid);
 				break;
 			default:
-				req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+				status = NT_STATUS_INVALID_HANDLE;
 				break;
 		}
-		return;
-	}
-
-	/* see if the vuid is valid */
-	if ((flags & AS_USER) && !req->session) {
-		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+		/* 
+		 * TODO:
+		 * don't know how to handle smb signing for this case 
+		 * so just skip the reply
+		 */
+		if ((flags & SIGNING_NO_REPLY) &&
+		    (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF)) {
+			DEBUG(1,("SKIP ERROR REPLY: %s %s because of unknown smb signing case\n",
+				smb_fn_name(type), nt_errstr(status)));
+			req_destroy(req);
+			return;
+		}
+		req_reply_error(req, status);
 		return;
 	}
 
