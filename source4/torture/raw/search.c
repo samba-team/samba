@@ -345,11 +345,11 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           access_time, all_info, all_info, access_time);
 	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           access_time, all_info, all_info, access_time);
 
-	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           create_time, all_info, all_info, create_time);
-	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           create_time, all_info, all_info, create_time);
+	CHECK_NTTIME("DIRECTORY_INFO",      directory_info,      change_time, all_info, all_info, change_time);
+	CHECK_NTTIME("FULL_DIRECTORY_INFO", full_directory_info, change_time, all_info, all_info, change_time);
+	CHECK_NTTIME("BOTH_DIRECTORY_INFO", both_directory_info, change_time, all_info, all_info, change_time);
+	CHECK_NTTIME("ID_FULL_DIRECTORY_INFO", id_full_directory_info,           change_time, all_info, all_info, change_time);
+	CHECK_NTTIME("ID_BOTH_DIRECTORY_INFO", id_both_directory_info,           change_time, all_info, all_info, change_time);
 
 	CHECK_VAL("SEARCH",              search,              size, all_info, all_info, size);
 	CHECK_VAL("STANDARD",            standard,            size, all_info, all_info, size);
