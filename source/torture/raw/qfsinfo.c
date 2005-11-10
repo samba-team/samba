@@ -83,9 +83,8 @@ static union smb_fsinfo *find(const char *name)
         ret = False; \
 }} while(0)
 
-#define STR_EQUAL(n1, v1, n2, v2) do {if (!s1->n1.out.v1 && !s2->n2.out.v2) return True; \
-       if (!s1->n1.out.v1 || !s2->n2.out.v2) return False; \
-       if (strcmp(s1->n1.out.v1, s2->n2.out.v2)) { \
+#define STR_EQUAL(n1, v1, n2, v2) do { \
+       if (strcmp_safe(s1->n1.out.v1, s2->n2.out.v2)) { \
          printf("%s/%s [%s] != %s/%s [%s] at %s(%d)\n", \
                #n1, #v1, s1->n1.out.v1, \
                #n2, #v2, s2->n2.out.v2, \
@@ -287,7 +286,7 @@ BOOL torture_raw_qfsinfo(void)
 #define STR_CHECK(sname, stype, field, flags) do { \
 	s1 = find(sname); \
 	if (s1) { \
-		if (wire_bad_flags(&s1->stype.out.field, flags, cli)) { \
+		if (s1->stype.out.field.s && wire_bad_flags(&s1->stype.out.field, flags, cli)) { \
 			printf("(%d) incorrect string termination in %s/%s\n", \
 			       __LINE__, #stype, #field); \
 			ret = False; \
@@ -295,6 +294,7 @@ BOOL torture_raw_qfsinfo(void)
 	}} while (0)
 
 	printf("check for correct termination\n");
+	
 	STR_CHECK("VOLUME",                volume,         volume_name, 0);
 	STR_CHECK("VOLUME_INFO",           volume_info,    volume_name, STR_UNICODE);
 	STR_CHECK("VOLUME_INFORMATION",    volume_info,    volume_name, STR_UNICODE);
