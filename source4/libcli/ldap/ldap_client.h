@@ -61,9 +61,6 @@ struct ldap_connection {
 	/* next message id to assign */
 	unsigned next_messageid;
 
-	/* outgoing send queue */
-	struct ldap_request *send_queue;
-
 	/* Outstanding LDAP requests that have not yet been replied to */
 	struct ldap_request *pending;
 
@@ -72,9 +69,6 @@ struct ldap_connection {
 
 	/* set if we are wrapping requests */
 	BOOL enable_wrap;
-
-	/* partially received packet */
-	DATA_BLOB partial;
 
 	/* the default timeout for messages */
 	int timeout;
@@ -86,4 +80,6 @@ struct ldap_connection {
 		struct event_context *event_ctx;
 		struct fd_event *fde;
 	} event;
+
+	struct packet_context *packet;
 };

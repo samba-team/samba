@@ -32,6 +32,7 @@
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/composite/composite.h"
+#include "lib/stream/packet.h"
 
 
 /*
@@ -82,18 +83,18 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 		}
 	}	
 
-	while (conn->send_queue) {
-		req = conn->send_queue;
-		DLIST_REMOVE(req->conn->send_queue, req);
-		req->state = LDAP_REQUEST_DONE;
-		req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-		if (req->async.fn) {
-			req->async.fn(req);
-		}
-	}
-
 	talloc_free(conn->tls);
 	conn->tls = NULL;
+}
+
+/*
+  handle packet errors
+*/
+static void ldap_error_handler(void *private, NTSTATUS status)
+{
+	struct ldap_connection *conn = talloc_get_type(private, 
+						       struct ldap_connection);
+	ldap_connection_dead(conn);
 }
 
 
@@ -149,184 +150,99 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
 	}
 }
 
+
 /*
-  try and decode/process plain data
+  check if a blob is a complete ldap packet
+  handle wrapper or unwrapped connections
 */
-static void ldap_try_decode_plain(struct ldap_connection *conn)
+NTSTATUS ldap_complete_packet(void *private, DATA_BLOB blob, size_t *size)
 {
-	struct asn1_data asn1;
-
-	if (!asn1_load(&asn1, conn->partial)) {
-		ldap_connection_dead(conn);
-		return;
+	struct ldap_connection *conn = talloc_get_type(private, 
+						       struct ldap_connection);
+	if (conn->enable_wrap) {
+		return packet_full_request_u32(private, blob, size);
 	}
-
-	/* try and decode - this will fail if we don't have a full packet yet */
-	while (asn1.ofs < asn1.length) {
-		struct ldap_message *msg = talloc(conn, struct ldap_message);
-		off_t saved_ofs = asn1.ofs;
-			
-		if (msg == NULL) {
-			ldap_connection_dead(conn);
-			return;
-		}
-
-		if (ldap_decode(&asn1, msg)) {
-			ldap_match_message(conn, msg);
-		} else {
-			asn1.ofs = saved_ofs;
-			talloc_free(msg);
-			break;
-		}
-	}
-
-	/* keep any remaining data in conn->partial */
-	data_blob_free(&conn->partial);
-	if (asn1.ofs != asn1.length) {
-		conn->partial = data_blob_talloc(conn, 
-						 asn1.data + asn1.ofs, 
-						 asn1.length - asn1.ofs);
-	}
-	asn1_free(&asn1);
+	return ldap_full_packet(private, blob, size);
 }
 
 /*
-  try and decode/process wrapped data
+  decode/process plain data
 */
-static void ldap_try_decode_wrapped(struct ldap_connection *conn)
+static NTSTATUS ldap_decode_plain(struct ldap_connection *conn, DATA_BLOB blob)
 {
-	uint32_t len;
+	struct asn1_data asn1;
+	struct ldap_message *msg = talloc(conn, struct ldap_message);
 
-	/* keep decoding while we have a full wrapped packet */
-	while (conn->partial.length >= 4 &&
-	       (len=RIVAL(conn->partial.data, 0)) <= conn->partial.length-4) {
-		DATA_BLOB wrapped, unwrapped;
-		struct asn1_data asn1;
-		struct ldap_message *msg = talloc(conn, struct ldap_message);
-		NTSTATUS status;
-
-		if (msg == NULL) {
-			ldap_connection_dead(conn);
-			return;
-		}
-
-		wrapped.data   = conn->partial.data+4;
-		wrapped.length = len;
-
-		status = gensec_unwrap(conn->gensec, msg, &wrapped, &unwrapped);
-		if (!NT_STATUS_IS_OK(status)) {
-			ldap_connection_dead(conn);
-			return;
-		}
-
-		if (!asn1_load(&asn1, unwrapped)) {
-			ldap_connection_dead(conn);
-			return;
-		}
-
-		while (ldap_decode(&asn1, msg)) {
-			ldap_match_message(conn, msg);
-			msg = talloc(conn, struct ldap_message);
-		}
-		
-		talloc_free(msg);
-		asn1_free(&asn1);
-
-		if (conn->partial.length == len + 4) {
-			data_blob_free(&conn->partial);
-		} else {
-			memmove(conn->partial.data, conn->partial.data+len+4,
-				conn->partial.length - (len+4));
-			conn->partial.length -= len + 4;
-		}
+	if (msg == NULL) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
+
+	if (!asn1_load(&asn1, blob)) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+	
+	if (!ldap_decode(&asn1, msg)) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+
+	ldap_match_message(conn, msg);
+
+	data_blob_free(&blob);
+	asn1_free(&asn1);
+	return NT_STATUS_OK;
+}
+
+/*
+  decode/process wrapped data
+*/
+static NTSTATUS ldap_decode_wrapped(struct ldap_connection *conn, DATA_BLOB blob)
+{
+	DATA_BLOB wrapped, unwrapped;
+	struct asn1_data asn1;
+	struct ldap_message *msg = talloc(conn, struct ldap_message);
+	NTSTATUS status;
+
+	if (msg == NULL) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+
+	wrapped = data_blob_const(blob.data+4, blob.length-4);
+
+	status = gensec_unwrap(conn->gensec, msg, &wrapped, &unwrapped);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+
+	data_blob_free(&blob);
+
+	if (!asn1_load(&asn1, unwrapped)) {
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+
+	while (ldap_decode(&asn1, msg)) {
+		ldap_match_message(conn, msg);
+		msg = talloc(conn, struct ldap_message);
+	}
+		
+	talloc_free(msg);
+	asn1_free(&asn1);
+
+	return NT_STATUS_OK;
 }
 
 
 /*
   handle ldap recv events
 */
-static void ldap_recv_handler(struct ldap_connection *conn)
+static NTSTATUS ldap_recv_handler(void *private, DATA_BLOB blob)
 {
-	NTSTATUS status;
-	size_t npending=0, nread;
-
-	/* work out how much data is pending */
-	status = tls_socket_pending(conn->tls, &npending);
-	if (!NT_STATUS_IS_OK(status) || npending == 0) {
-		ldap_connection_dead(conn);
-		return;
-	}
-
-	conn->partial.data = talloc_realloc_size(conn, conn->partial.data, 
-						 conn->partial.length + npending);
-	if (conn->partial.data == NULL) {
-		ldap_connection_dead(conn);
-		return;
-	}
-
-	/* receive the pending data */
-	status = tls_socket_recv(conn->tls, conn->partial.data + conn->partial.length,
-				 npending, &nread);
-	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		return;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		ldap_connection_dead(conn);
-		return;
-	}
-	conn->partial.length += nread;
-
-	/* see if we can decode what we have */
+	struct ldap_connection *conn = talloc_get_type(private, 
+						       struct ldap_connection);
 	if (conn->enable_wrap) {
-		ldap_try_decode_wrapped(conn);
-	} else {
-		ldap_try_decode_plain(conn);
+		return ldap_decode_wrapped(conn, blob);
 	}
-}
 
-
-/*
-  handle ldap send events
-*/
-static void ldap_send_handler(struct ldap_connection *conn)
-{
-	while (conn->send_queue) {
-		struct ldap_request *req = conn->send_queue;
-		size_t nsent;
-		NTSTATUS status;
-
-		status = tls_socket_send(conn->tls, &req->data, &nsent);
-		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-			break;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			ldap_connection_dead(conn);
-			return;
-		}
-
-		req->data.data += nsent;
-		req->data.length -= nsent;
-		if (req->data.length == 0) {
-			req->state = LDAP_REQUEST_PENDING;
-			DLIST_REMOVE(conn->send_queue, req);
-
-			/* some types of requests don't expect a reply */
-			if (req->type == LDAP_TAG_AbandonRequest ||
-			    req->type == LDAP_TAG_UnbindRequest) {
-				req->status = NT_STATUS_OK;
-				req->state = LDAP_REQUEST_DONE;
-				if (req->async.fn) {
-					req->async.fn(req);
-				}
-			} else {
-				DLIST_ADD(conn->pending, req);
-			}
-		}
-	}
-	if (conn->send_queue == NULL) {
-		EVENT_FD_NOT_WRITEABLE(conn->event.fde);
-	}
+	return ldap_decode_plain(conn, blob);
 }
 
 
@@ -336,13 +252,14 @@ static void ldap_send_handler(struct ldap_connection *conn)
 static void ldap_io_handler(struct event_context *ev, struct fd_event *fde, 
 			    uint16_t flags, void *private)
 {
-	struct ldap_connection *conn = talloc_get_type(private, struct ldap_connection);
+	struct ldap_connection *conn = talloc_get_type(private, 
+						       struct ldap_connection);
 	if (flags & EVENT_FD_WRITE) {
-		ldap_send_handler(conn);
+		packet_queue_run(conn->packet);
 		if (conn->tls == NULL) return;
 	}
 	if (flags & EVENT_FD_READ) {
-		ldap_recv_handler(conn);
+		packet_recv(conn->packet);
 	}
 }
 
@@ -470,6 +387,19 @@ static void ldap_connect_recv_conn(struct composite_context *ctx)
 	talloc_steal(conn, conn->tls);
 	talloc_steal(conn->tls, conn->sock);
 
+	conn->packet = packet_init(conn);
+	if (conn->packet == NULL) {
+		talloc_free(conn->sock);
+		return;
+	}
+	packet_set_private(conn->packet, conn);
+	packet_set_tls(conn->packet, conn->tls);
+	packet_set_callback(conn->packet, ldap_recv_handler);
+	packet_set_full_request(conn->packet, ldap_complete_packet);
+	packet_set_error_handler(conn->packet, ldap_error_handler);
+	packet_set_event_context(conn->packet, conn->event.event_ctx);
+	packet_set_serialise(conn->packet, conn->event.fde);
+
 	composite_done(state->ctx);
 
 	return;
@@ -492,9 +422,6 @@ NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
 static int ldap_request_destructor(void *ptr)
 {
 	struct ldap_request *req = talloc_get_type(ptr, struct ldap_request);
-	if (req->state == LDAP_REQUEST_SEND) {
-		DLIST_REMOVE(req->conn->send_queue, req);
-	}
 	if (req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(req->conn->pending, req);
 	}
@@ -509,13 +436,23 @@ static void ldap_request_timeout(struct event_context *ev, struct timed_event *t
 {
 	struct ldap_request *req = talloc_get_type(private, struct ldap_request);
 	req->status = NT_STATUS_IO_TIMEOUT;
-	if (req->state == LDAP_REQUEST_SEND) {
-		DLIST_REMOVE(req->conn->send_queue, req);
-	}
 	if (req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(req->conn->pending, req);
 	}
 	req->state = LDAP_REQUEST_DONE;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+}
+
+
+/*
+  called on completion of a one-way ldap request
+*/
+static void ldap_request_complete(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *private)
+{
+	struct ldap_request *req = talloc_get_type(private, struct ldap_request);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
@@ -528,6 +465,7 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 				       struct ldap_message *msg)
 {
 	struct ldap_request *req;
+	NTSTATUS status;
 
 	if (conn->tls == NULL) {
 		return NULL;
@@ -558,7 +496,6 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	/* possibly encrypt/sign the request */
 	if (conn->enable_wrap) {
 		DATA_BLOB wrapped;
-		NTSTATUS status;
 
 		status = gensec_wrap(conn->gensec, req, &req->data, &wrapped);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -574,11 +511,26 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 		data_blob_free(&wrapped);
 	}
 
-
-	if (conn->send_queue == NULL) {
-		EVENT_FD_WRITEABLE(conn->event.fde);
+	status = packet_send(conn->packet, req->data);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
 	}
-	DLIST_ADD_END(conn->send_queue, req, struct ldap_request *);
+
+	/* some requests don't expect a reply, so don't add those to the
+	   pending queue */
+	if (req->type == LDAP_TAG_AbandonRequest ||
+	    req->type == LDAP_TAG_UnbindRequest) {
+		req->status = NT_STATUS_OK;
+		req->state = LDAP_REQUEST_DONE;
+		/* we can't call the async callback now, as it isn't setup, so
+		   call it as next event */
+		event_add_timed(conn->event.event_ctx, req, timeval_zero(),
+				ldap_request_complete, req);
+		return req;
+	}
+
+	req->state = LDAP_REQUEST_PENDING;
+	DLIST_ADD(conn->pending, req);
 
 	/* put a timeout on the request */
 	event_add_timed(conn->event.event_ctx, req, 
