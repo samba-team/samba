@@ -479,6 +479,8 @@ error:
 	if (req) {
 		DLIST_REMOVE(transport->pending_recv, req);
 		req->state = SMBCLI_REQUEST_ERROR;
+	} else {
+		talloc_free(buffer);
 	}
 	return NT_STATUS_OK;
 }
