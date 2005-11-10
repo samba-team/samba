@@ -388,16 +388,31 @@ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 /*
   a full request checker for NBT formatted packets (first 3 bytes are length)
 */
-NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *packet_size)
+NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;
 	}
-	*packet_size = 4 + smb_len(blob.data);
-	if (*packet_size > blob.length) {
+	*size = 4 + smb_len(blob.data);
+	if (*size > blob.length) {
 		return STATUS_MORE_ENTRIES;
 	}
 	return NT_STATUS_OK;
 }
 
 
+/*
+  work out if a packet is complete for protocols that use a 32 bit network byte
+  order length
+*/
+NTSTATUS packet_full_request_u32(void *private, DATA_BLOB blob, size_t *size)
+{
+	if (blob.length < 4) {
+		return STATUS_MORE_ENTRIES;
+	}
+	*size = 4 + RIVAL(blob.data, 0);
+	if (*size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}
+	return NT_STATUS_OK;
+}
