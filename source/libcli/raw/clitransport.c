@@ -356,7 +356,7 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
 	vwv = hdr + HDR_VWV;
 
 	/* see if it could be an oplock break request */
-	if (handle_oplock_break(transport, len, hdr, vwv)) {
+	if (smbcli_handle_oplock_break(transport, len, hdr, vwv)) {
 		talloc_free(buffer);
 		return NT_STATUS_OK;
 	}
