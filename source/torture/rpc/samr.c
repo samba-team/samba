@@ -650,8 +650,8 @@ static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.level = levels[i];
 		r.in.info  = talloc(mem_ctx, union samr_AliasInfo);
 		switch (r.in.level) {
-		    case 2 : init_lsa_String(&r.in.info->name,TEST_ALIASNAME); break;
-		    case 3 : init_lsa_String(&r.in.info->description,
+		    case ALIASINFONAME: init_lsa_String(&r.in.info->name,TEST_ALIASNAME); break;
+		    case ALIASINFODESCRIPTION: init_lsa_String(&r.in.info->description,
 				"Test Description, should test I18N as well"); break;
 		}
 
