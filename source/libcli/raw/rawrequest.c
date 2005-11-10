@@ -360,7 +360,7 @@ BOOL smbcli_request_receive_more(struct smbcli_request *req)
   handle oplock break requests from the server - return True if the request was
   an oplock break
 */
-BOOL handle_oplock_break(struct smbcli_transport *transport, uint_t len, const uint8_t *hdr, const uint8_t *vwv)
+BOOL smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, const uint8_t *hdr, const uint8_t *vwv)
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
