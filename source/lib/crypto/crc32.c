@@ -88,7 +88,7 @@ const uint32_t crc32_tab[] = {
 	0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-uint32_t crc32_calc_buffer(const char *buf, size_t size)
+uint32_t crc32_calc_buffer(const uint8_t *buf, size_t size)
 {
 	const unsigned char *p;
 	uint32_t crc;
