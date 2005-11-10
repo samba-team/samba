@@ -194,39 +194,6 @@ void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 }
 
 /****************************************************************************
- Write to socket. Return amount written.
-****************************************************************************/
-NTSTATUS smbcli_sock_write(struct smbcli_socket *sock, const uint8_t *data, 
-			   size_t len, size_t *nsent)
-{
-	DATA_BLOB blob;
-
-	if (sock->sock == NULL) {
-		return NT_STATUS_CONNECTION_DISCONNECTED;
-	}
-
-	blob.data = discard_const(data);
-	blob.length = len;
-
-	return socket_send(sock->sock, &blob, nsent, 0);
-}
-
-
-/****************************************************************************
- Read from socket. return amount read
-****************************************************************************/
-NTSTATUS smbcli_sock_read(struct smbcli_socket *sock, uint8_t *data, 
-			  size_t len, size_t *nread)
-{
-	if (sock->sock == NULL) {
-		return NT_STATUS_CONNECTION_DISCONNECTED;
-	}
-
-	return socket_recv(sock->sock, data, len, nread, 0);
-}
-
-
-/****************************************************************************
 resolve a hostname and connect 
 ****************************************************************************/
 struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
