@@ -291,6 +291,7 @@ next_partial:
 
 	/* it is a full request - give it to the caller */
 	blob = pc->partial;
+	blob.length = pc->num_read;
 
 	if (pc->packet_size < pc->num_read) {
 		pc->partial = data_blob_talloc(pc, blob.data + pc->packet_size, 
