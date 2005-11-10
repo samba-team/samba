@@ -231,6 +231,9 @@ struct smbcli_request {
 	/* the sequence number of this packet - used for signing */
 	uint_t seq_num;
 
+	/* list of ntcancel request for this requests */
+	struct smbcli_request *ntcancel;
+
 	/* set if this is a one-way request, meaning we are not
 	   expecting a reply from the server. */
 	uint_t one_way_request:1;

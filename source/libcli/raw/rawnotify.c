@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "dlinklist.h"
 
 /****************************************************************************
 change notify (async send)
@@ -89,6 +90,37 @@ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+  handle ntcancel replies from the server,
+  as the MID of the real reply and the ntcancel reply is the same
+  we need to do find out to what request the reply belongs
+****************************************************************************/
+struct smbcli_request *smbcli_handle_ntcancel_reply(struct smbcli_request *req,
+						    uint_t len, const uint8_t *hdr)
+{
+	struct smbcli_request *ntcancel;
+
+	if (!req) return req;
+
+	if (!req->ntcancel) return req;
+
+	if (len >= MIN_SMB_SIZE + NBT_HDR_SIZE &&
+	    (CVAL(hdr, HDR_FLG) & FLAG_REPLY) &&
+	     CVAL(hdr,HDR_COM) == SMBntcancel) {
+		ntcancel = req->ntcancel;
+		DLIST_REMOVE(req->ntcancel, ntcancel);
+
+		/*
+		 * TODO: untill we understand how the 
+		 *       smb_signing works for this case we 
+		 *       return NULL, to just ignore the packet
+		 */
+		/*return ntcancel;*/
+		return NULL;
+	}
+
+	return req;
+}
 
 /****************************************************************************
  Send a NT Cancel request - used to hurry along a pending request. Usually
@@ -111,7 +143,18 @@ NTSTATUS smb_raw_ntcancel(struct smbcli_request *oldreq)
 	req->sign_single_increment = 1;
 	req->one_way_request = 1;
 
+	/* 
+	 * smbcli_request_send() free's oneway requests
+	 * but we want to keep it under oldreq->ntcancel
+	 */
+	if (!talloc_reference(oldreq, req)) {
+		talloc_free(req);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	smbcli_request_send(req);
+
+	DLIST_ADD_END(oldreq->ntcancel, req, struct smbcli_request *);
 
 	return NT_STATUS_OK;
 }
