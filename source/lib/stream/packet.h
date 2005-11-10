@@ -46,5 +46,7 @@ void packet_queue_run(struct packet_context *pc);
 /*
   pre-canned handlers
 */
-NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *packet_size);
+NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *size);
+NTSTATUS packet_full_request_u32(void *private, DATA_BLOB blob, size_t *size);
+
 
