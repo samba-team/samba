@@ -391,6 +391,9 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
 		if (req->mid == mid) break;
 	}
 
+	/* see if it's a ntcancel reply for the current MID */
+	req = smbcli_handle_ntcancel_reply(req, len, hdr);
+
 	if (!req) {
 		DEBUG(1,("Discarding unmatched reply with mid %d op %d\n", mid, op));
 		goto error;
