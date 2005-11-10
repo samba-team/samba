@@ -107,15 +107,37 @@ const char* get_local_machine_name(void)
 void sub_set_smb_name(const char *name)
 {
 	fstring tmp;
+	int len;
+	BOOL is_machine_account = False;
 
 	/* don't let anonymous logins override the name */
 	if (! *name)
 		return;
 
-	fstrcpy(tmp,name);
-	trim_char(tmp,' ',' ');
-	strlower_m(tmp);
-	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
+
+	fstrcpy( tmp, name );
+	trim_char( tmp, ' ', ' ' );
+	strlower_m( tmp );
+
+	len = strlen( tmp );
+
+	if ( len == 0 )
+		return;
+
+	/* long story but here goes....we have to allow usernames
+	   ending in '$' as they are valid machine account names.
+	   So check for a machine account and re-add the '$'
+	   at the end after the call to alpha_strcpy().   --jerry  */
+	   
+	if ( tmp[len-1] == '$' )
+		is_machine_account = True;
+	
+	alpha_strcpy( smb_user_name, tmp, SAFE_NETBIOS_CHARS, sizeof(smb_user_name)-1 );
+
+	if ( is_machine_account ) {
+		len = strlen( smb_user_name );
+		smb_user_name[len-1] = '$';
+	}
 }
 
 char* sub_get_smb_name( void )
