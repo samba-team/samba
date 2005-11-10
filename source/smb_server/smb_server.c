@@ -450,11 +450,14 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
-		if (type == SMBntcreateX) {
-			/* amazingly, the error code depends on the command */
-			req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRinvnid));
-		} else {
-			req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+		/* amazingly, the error code depends on the command */
+		switch (type) {
+			case SMBntcreateX:
+				req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRinvnid));
+				break;
+			default:
+				req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+				break;
 		}
 		return;
 	}
