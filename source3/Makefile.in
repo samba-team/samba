@@ -368,6 +368,8 @@ VFS_CATIA_OBJ = modules/vfs_catia.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
+SLCACHE_OBJ = libsmb/samlogon_cache.o
+
 DCUTIL_OBJ  = libsmb/namequery_dc.o libsmb/trustdom_cache.o libsmb/trusts_util.o
 
 AUTH_BUILTIN_OBJ = auth/auth_builtin.o
@@ -381,7 +383,7 @@ AUTH_SCRIPT_OBJ = auth/auth_script.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
 	   auth/auth_ntlmssp.o \
-	   $(PLAINTEXT_AUTH_OBJ) $(DCUTIL_OBJ)
+	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
 
@@ -706,7 +708,7 @@ WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(SMBLDAP_OBJ) \
+		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ)
