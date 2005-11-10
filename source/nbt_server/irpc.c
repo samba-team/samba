@@ -57,7 +57,7 @@ struct getdc_state {
 
 static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot, 
 				     struct nbt_dgram_packet *packet, 
-				     const char *src_address, int src_port)
+				     const struct nbt_peer_socket *src)
 {
 	struct getdc_state *s =
 		talloc_get_type(dgmslot->private, struct getdc_state);
