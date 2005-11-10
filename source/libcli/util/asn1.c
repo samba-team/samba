@@ -607,3 +607,30 @@ BOOL asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 	asn1_pop_tag(data);
 	return !data->has_error;
 }
+
+/*
+  check if a ASN.1 blob is a full tag
+*/
+NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
+{
+	struct asn1_data asn1;
+	int size;
+
+	ZERO_STRUCT(asn1);
+	asn1.data = blob.data;
+	asn1.length = blob.length;
+	asn1_start_tag(&asn1, tag);
+	if (asn1.has_error) {
+		talloc_free(asn1.nesting);
+		return STATUS_MORE_ENTRIES;
+	}
+	size = asn1_tag_remaining(&asn1) + asn1.ofs;
+	talloc_free(asn1.nesting);
+
+	if (size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}		
+
+	*packet_size = size;
+	return NT_STATUS_OK;
+}

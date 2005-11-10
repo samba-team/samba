@@ -1289,3 +1289,11 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 }
 
 
+/*
+  return NT_STATUS_OK if a blob has enough bytes in it to be a full
+  ldap packet. Set packet_size if true.
+*/
+NTSTATUS ldap_full_packet(void *private, DATA_BLOB blob, size_t *packet_size)
+{
+	return asn1_full_tag(blob, ASN1_SEQUENCE(0), packet_size);
+}
