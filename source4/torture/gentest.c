@@ -1733,6 +1733,19 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		info->mode_information.in.mode = gen_bits_mask(0xFFFFFFFF);
 		break;
+	case RAW_SFILEINFO_GENERIC:
+	case RAW_SFILEINFO_SEC_DESC:
+	case RAW_SFILEINFO_UNIX_BASIC:
+	case RAW_SFILEINFO_UNIX_LINK:
+	case RAW_SFILEINFO_UNIX_HLINK:
+	case RAW_SFILEINFO_1023:
+	case RAW_SFILEINFO_1025:
+	case RAW_SFILEINFO_1029:
+	case RAW_SFILEINFO_1032:
+	case RAW_SFILEINFO_1039:
+	case RAW_SFILEINFO_1040:
+		/* Untested */
+		break;
 	}
 }
 
