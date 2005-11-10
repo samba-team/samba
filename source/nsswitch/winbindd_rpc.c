@@ -351,6 +351,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	SAM_USERINFO_CTR *ctr;
 	fstring sid_string;
 	uint32 user_rid;
+	NET_USER_INFO_3 *user;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("rpc: query_user rid=%s\n",
@@ -359,6 +360,33 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 	
+	/* try netsamlogon cache first */
+			
+	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL ) 
+	{
+				
+		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
+			sid_string_static(user_sid)));
+
+		sid_compose(&user_info->user_sid, &domain->sid, user_rid);
+		sid_compose(&user_info->group_sid, &domain->sid,
+			    user->group_rid);
+				
+		user_info->acct_name = unistr2_tdup(mem_ctx,
+						    &user->uni_user_name);
+		user_info->full_name = unistr2_tdup(mem_ctx,
+						    &user->uni_full_name);
+		
+		user_info->homedir = NULL;
+		user_info->shell = NULL;
+						
+		SAFE_FREE(user);
+				
+		return NT_STATUS_OK;
+	}
+	
+	/* no cache; hit the wire */
+		
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -406,6 +434,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	unsigned int i;
 	fstring sid_string;
 	uint32 user_rid;
+	NET_USER_INFO_3 *user;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("rpc: lookup_usergroups sid=%s\n",
@@ -416,6 +445,29 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	*num_groups = 0;
 	*user_grpsids = NULL;
+
+	/* so lets see if we have a cached user_info_3 */
+	
+	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL )
+	{
+		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
+			sid_string_static(user_sid)));
+			
+		*num_groups = user->num_groups;
+				
+		(*user_grpsids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
+		for (i=0;i<(*num_groups);i++) {
+			sid_copy(&((*user_grpsids)[i]), &domain->sid);
+			sid_append_rid(&((*user_grpsids)[i]),
+				       user->gids[i].g_rid);
+		}
+				
+		SAFE_FREE(user);
+				
+		return NT_STATUS_OK;
+	}
+
+	/* no cache; hit the wire */
 	
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
 	if (!NT_STATUS_IS_OK(result))
