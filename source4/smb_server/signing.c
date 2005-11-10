@@ -130,7 +130,7 @@ static void req_signing_alloc_seq_num(struct smbsrv_request *req)
 {
 	req->seq_num = req->smb_conn->signing.next_seq_num;
 
-	if (req->smb_conn->signing.signing_state != SMB_SIGNING_OFF) {
+	if (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF) {
 		req->smb_conn->signing.next_seq_num += 2;
 	}
 }
@@ -140,7 +140,7 @@ static void req_signing_alloc_seq_num(struct smbsrv_request *req)
 */
 void req_signing_no_reply(struct smbsrv_request *req)
 {
-	if (req->smb_conn->signing.signing_state != SMB_SIGNING_OFF) {
+	if (req->smb_conn->signing.signing_state != SMB_SIGNING_ENGINE_OFF) {
 		req->smb_conn->signing.next_seq_num--;
 	}
 }
