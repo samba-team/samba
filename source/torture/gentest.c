@@ -1600,6 +1600,14 @@ static BOOL cmp_fileinfo(int instance,
 		CHECK_EQUAL(attribute_tag_information.out.attrib);
 		CHECK_EQUAL(attribute_tag_information.out.reparse_tag);
 		break;
+
+		/* Unhandled levels */
+
+	case RAW_FILEINFO_SEC_DESC:
+	case RAW_FILEINFO_EA_LIST:
+	case RAW_FILEINFO_UNIX_BASIC:
+	case RAW_FILEINFO_UNIX_LINK:
+		break;
 	}
 
 	return True;

@@ -124,6 +124,18 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		NEED_BLOB(4);
 		SIVAL(blob->data, 0, parms->mode_information.in.mode);
 		return True;
+		
+		/* Unhandled levels */
+
+	case RAW_SFILEINFO_UNIX_LINK:
+	case RAW_SFILEINFO_UNIX_HLINK:
+	case RAW_SFILEINFO_1023:
+	case RAW_SFILEINFO_1025:
+	case RAW_SFILEINFO_1029:
+	case RAW_SFILEINFO_1032:
+	case RAW_SFILEINFO_1039:
+	case RAW_SFILEINFO_1040:
+		break;
 	}
 
 	return False;
