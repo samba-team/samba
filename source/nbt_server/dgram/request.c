@@ -44,10 +44,10 @@ static const struct {
   are handled in the specific mailslot handlers
 */
 void dgram_request_handler(struct nbt_dgram_socket *dgmsock, 
-			   struct nbt_dgram_packet *packet, 
-			   const char *src_address, int src_port)
+			   struct nbt_dgram_packet *packet,
+			   const struct nbt_peer_socket *src)
 {
-	DEBUG(0,("General datagram request from %s:%d\n", src_address, src_port));
+	DEBUG(0,("General datagram request from %s:%d\n", src->addr, src->port));
 	NDR_PRINT_DEBUG(nbt_dgram_packet, packet);
 }
 
