@@ -130,8 +130,25 @@ int ads_kinit_password(ADS_STRUCT *ads)
 {
 	char *s;
 	int ret;
+	const char *account_name;
+	fstring acct_name;
 
-	if (asprintf(&s, "%s@%s", ads->auth.user_name, ads->auth.realm) == -1) {
+	if ( IS_DC ) {
+		/* this will end up getting a ticket for DOMAIN@RUSTED.REA.LM */
+		account_name = lp_workgroup();
+	} else {
+		/* always use the sAMAccountName for security = domain */
+		/* global_myname()$@REA.LM */
+		if ( lp_security() == SEC_DOMAIN ) {
+			fstr_sprintf( acct_name, "%s$", global_myname() );
+			account_name = acct_name;
+		}
+		else 
+			/* This looks like host/global_myname()@REA.LM */
+			account_name = ads->auth.user_name;
+	}
+
+	if (asprintf(&s, "%s@%s", account_name, ads->auth.realm) == -1) {
 		return KRB5_CC_NOMEM;
 	}
 
