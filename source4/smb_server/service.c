@@ -104,7 +104,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 ****************************************************************************/
 static NTSTATUS make_connection(struct smbsrv_request *req,
 				const char *service, DATA_BLOB password, 
-				const char *dev, uint16_t vuid)
+				const char *dev)
 {
 	int snum;
 	enum ntvfs_type type;
@@ -154,22 +154,17 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
 	NTSTATUS status;
-	uint16_t vuid = UID_FIELD_INVALID;
 
 	/* can only do bare tcon in share level security */
 	if (req->session == NULL && lp_security() != SEC_SHARE) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (req->session) {
-		vuid = req->session->vuid;
-	}
-
 	if (con->generic.level == RAW_TCON_TCON) {
 		DATA_BLOB password;
 		password = data_blob(con->tcon.in.password, strlen(con->tcon.in.password) + 1);
 
-		status = make_connection(req, con->tcon.in.service, password, con->tcon.in.dev, vuid);
+		status = make_connection(req, con->tcon.in.service, password, con->tcon.in.dev);
 		
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -182,7 +177,7 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 	} 
 
 	status = make_connection(req, con->tconx.in.path, con->tconx.in.password, 
-				 con->tconx.in.device, vuid);
+				 con->tconx.in.device);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
