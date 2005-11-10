@@ -31,19 +31,13 @@ struct ldapsrv_connection {
 	struct ldapsrv_partition *default_partition;
 	struct ldapsrv_partition *partitions;
 
-	/* partially received request */
-	DATA_BLOB partial;
-
 	/* are we using gensec wrapping? */
 	BOOL enable_wrap;
 
-	/* reply send queue */
-	struct data_blob_list_item *send_queue;
-
-	BOOL processing;
-
 	/* connection should be terminated if non-null */
 	const char *terminate;
+
+	struct packet_context *packet;
 };
 
 struct ldapsrv_call {
