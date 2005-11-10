@@ -2382,7 +2382,7 @@ static NTSTATUS parse_session_request(struct smbsrv_request *req)
 	NTSTATUS status;
 	
 	blob.data = req->in.buffer + 4;
-	blob.length = ascii_len_n(blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
+	blob.length = ascii_len_n((const char *)blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
 	if (blob.length == 0) return NT_STATUS_BAD_NETWORK_NAME;
 
 	req->smb_conn->negotiate.called_name  = talloc(req->smb_conn, struct nbt_name);
@@ -2397,7 +2397,7 @@ static NTSTATUS parse_session_request(struct smbsrv_request *req)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	blob.data += blob.length;
-	blob.length = ascii_len_n(blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
+	blob.length = ascii_len_n((const char *)blob.data, req->in.size - PTR_DIFF(blob.data, req->in.buffer));
 	if (blob.length == 0) return NT_STATUS_BAD_NETWORK_NAME;
 
 	status = nbt_name_from_blob(req->smb_conn, &blob,
