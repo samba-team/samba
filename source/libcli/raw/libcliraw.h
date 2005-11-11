@@ -144,9 +144,6 @@ struct smbcli_transport {
 		void *private;
 	} oplock;
 
-	/* a list of async requests that are pending for send on this connection */
-	struct smbcli_request *pending_send;
-
 	/* a list of async requests that are pending for receive on this connection */
 	struct smbcli_request *pending_recv;
 
@@ -199,7 +196,6 @@ struct smbcli_tree {
   a client request moves between the following 4 states.
 */
 enum smbcli_request_state {SMBCLI_REQUEST_INIT, /* we are creating the request */
-			SMBCLI_REQUEST_SEND, /* the request is in the outgoing socket Q */
 			SMBCLI_REQUEST_RECV, /* we are waiting for a matching reply */
 			SMBCLI_REQUEST_DONE, /* the request is finished */
 			SMBCLI_REQUEST_ERROR}; /* a packet or transport level error has occurred */

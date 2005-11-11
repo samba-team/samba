@@ -520,9 +520,6 @@ static void smbcli_timeout_handler(struct event_context *ev, struct timed_event 
 {
 	struct smbcli_request *req = talloc_get_type(private, struct smbcli_request);
 
-	if (req->state == SMBCLI_REQUEST_SEND) {
-		DLIST_REMOVE(req->transport->pending_send, req);
-	}
 	if (req->state == SMBCLI_REQUEST_RECV) {
 		DLIST_REMOVE(req->transport->pending_recv, req);
 	}
@@ -540,9 +537,6 @@ static void smbcli_timeout_handler(struct event_context *ev, struct timed_event 
 static int smbcli_request_destructor(void *ptr)
 {
 	struct smbcli_request *req = talloc_get_type(ptr, struct smbcli_request);
-	if (req->state == SMBCLI_REQUEST_SEND) {
-		DLIST_REMOVE(req->transport->pending_send, req);
-	}
 	if (req->state == SMBCLI_REQUEST_RECV) {
 		DLIST_REMOVE(req->transport->pending_recv, req);
 	}
