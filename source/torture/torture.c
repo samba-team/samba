@@ -902,7 +902,6 @@ static BOOL run_negprot_nowait(void)
 
 	for (i=0;i<1000;i++) {
 		struct smbcli_request *req;
-		time_t t1 = time(NULL);
 		req = smb_raw_negotiate_send(cli->transport, PROTOCOL_NT1);
 		smbcli_transport_process(cli->transport);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
@@ -2251,6 +2250,9 @@ static struct {
 	{"RAW-ACLS", torture_raw_acls, 0},
 	{"RAW-RAP", torture_raw_rap, 0},
 	{"RAW-COMPOSITE", torture_raw_composite, 0},
+
+	/* SMB2 tests */
+	{"SMB2-CONNECT", torture_smb2_connect, 0},
 
 	/* protocol scanners */
 	{"SCAN-TRANS2", torture_trans2_scan, 0},

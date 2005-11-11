@@ -26,7 +26,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
-# Start SUBSYSTEM TORTURE_BASIC
+# Start SUBSYSTEM TORTURE_RAW
 [SUBSYSTEM::TORTURE_RAW]
 ADD_OBJ_FILES = \
 		raw/qfsinfo.o \
@@ -56,6 +56,8 @@ REQUIRED_SUBSYSTEMS = \
 		LIBSMB LIBCLI_LSA
 # End SUBSYSTEM TORTURE_RAW
 #################################
+
+include smb2/config.mk
 
 #################################
 # Start SUBSYSTEM TORTURE_COM
@@ -224,6 +226,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \
+		TORTURE_SMB2 \
 		TORTURE_RPC \
 		TORTURE_RAP \
 		TORTURE_AUTH \
