@@ -1,0 +1,274 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   SMB2 client transport context management functions
+
+   Copyright (C) Andrew Tridgell 2005
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/smb2/smb2.h"
+#include "lib/socket/socket.h"
+#include "lib/events/events.h"
+#include "lib/stream/packet.h"
+#include "include/dlinklist.h"
+
+
+/*
+  an event has happened on the socket
+*/
+static void smb2_transport_event_handler(struct event_context *ev, 
+					 struct fd_event *fde, 
+					 uint16_t flags, void *private)
+{
+	struct smb2_transport *transport = talloc_get_type(private,
+							   struct smb2_transport);
+	if (flags & EVENT_FD_READ) {
+		packet_recv(transport->packet);
+		return;
+	}
+	if (flags & EVENT_FD_WRITE) {
+		packet_queue_run(transport->packet);
+	}
+}
+
+/*
+  destroy a transport
+ */
+static int transport_destructor(void *ptr)
+{
+	struct smb2_transport *transport = ptr;
+	smb2_transport_dead(transport);
+	return 0;
+}
+
+
+/*
+  handle receive errors
+*/
+static void smb2_transport_error(void *private, NTSTATUS status)
+{
+	struct smb2_transport *transport = talloc_get_type(private, 
+							   struct smb2_transport);
+	smb2_transport_dead(transport);
+}
+
+static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob);
+
+/*
+  create a transport structure based on an established socket
+*/
+struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
+					   TALLOC_CTX *parent_ctx)
+{
+	struct smb2_transport *transport;
+
+	transport = talloc_zero(parent_ctx, struct smb2_transport);
+	if (!transport) return NULL;
+
+	transport->socket = talloc_steal(transport, sock);
+
+	/* setup the stream -> packet parser */
+	transport->packet = packet_init(transport);
+	if (transport->packet == NULL) {
+		talloc_free(transport);
+		return NULL;
+	}
+	packet_set_private(transport->packet, transport);
+	packet_set_socket(transport->packet, transport->socket->sock);
+	packet_set_callback(transport->packet, smb2_transport_finish_recv);
+	packet_set_full_request(transport->packet, packet_full_request_nbt);
+	packet_set_error_handler(transport->packet, smb2_transport_error);
+	packet_set_event_context(transport->packet, transport->socket->event.ctx);
+	packet_set_nofree(transport->packet);
+
+	/* take over event handling from the socket layer - it only
+	   handles events up until we are connected */
+	talloc_free(transport->socket->event.fde);
+	transport->socket->event.fde = event_add_fd(transport->socket->event.ctx,
+						    transport->socket,
+						    socket_get_fd(transport->socket->sock),
+						    EVENT_FD_READ,
+						    smb2_transport_event_handler,
+						    transport);
+
+	packet_set_serialise(transport->packet, transport->socket->event.fde);
+
+	talloc_set_destructor(transport, transport_destructor);
+
+	transport->options.timeout = 30;
+
+	return transport;
+}
+
+/*
+  mark the transport as dead
+*/
+void smb2_transport_dead(struct smb2_transport *transport)
+{
+	smbcli_sock_dead(transport->socket);
+
+	/* kill all pending receives */
+	while (transport->pending_recv) {
+		struct smb2_request *req = transport->pending_recv;
+		req->state = SMB2_REQUEST_ERROR;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		DLIST_REMOVE(transport->pending_recv, req);
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
+	}
+}
+
+/*
+  we have a full request in our receive buffer - match it to a pending request
+  and process
+ */
+static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
+{
+	struct smb2_transport *transport = talloc_get_type(private, 
+							     struct smb2_transport);
+	uint8_t *buffer, *hdr;
+	int len;
+	struct smb2_request *req;
+	uint64_t seqnum;
+
+	buffer = blob.data;
+	len = blob.length;
+
+	hdr = buffer+NBT_HDR_SIZE;
+
+	if (len < SMB2_MIN_SIZE) {
+		DEBUG(1,("Discarding smb2 reply of size %d\n", len));
+		goto error;
+	}
+
+	seqnum = BVAL(hdr, SMB2_HDR_SEQNUM);
+
+	/* match the incoming request against the list of pending requests */
+	for (req=transport->pending_recv; req; req=req->next) {
+		if (req->seqnum == seqnum) break;
+	}
+
+	if (!req) {
+		DEBUG(1,("Discarding unmatched reply with seqnum 0x%llx op %d\n", 
+			 seqnum, SVAL(hdr, SMB2_HDR_OPCODE)));
+		goto error;
+	}
+
+	/* fill in the 'in' portion of the matching request */
+	req->in.buffer = buffer;
+	talloc_steal(req, buffer);
+	req->in.size = len;
+	req->in.allocated = req->in.size;
+
+	req->in.hdr       = hdr;
+	req->in.body      = hdr+SMB2_HDR_BODY;
+	req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
+	req->in.ptr       = req->in.body;
+	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
+
+	/* if this request has an async handler then call that to
+	   notify that the reply has been received. This might destroy
+	   the request so it must happen last */
+	DLIST_REMOVE(transport->pending_recv, req);
+	req->state = SMB2_REQUEST_DONE;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+	return NT_STATUS_OK;
+
+error:
+	if (req) {
+		DLIST_REMOVE(transport->pending_recv, req);
+		req->state = SMB2_REQUEST_ERROR;
+	}
+	dump_data(0, blob.data, blob.length);
+	data_blob_free(&blob);
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+/*
+  handle timeouts of individual smb requests
+*/
+static void smb2_timeout_handler(struct event_context *ev, struct timed_event *te, 
+				   struct timeval t, void *private)
+{
+	struct smb2_request *req = talloc_get_type(private, struct smb2_request);
+
+	if (req->state == SMB2_REQUEST_RECV) {
+		DLIST_REMOVE(req->transport->pending_recv, req);
+	}
+	req->status = NT_STATUS_IO_TIMEOUT;
+	req->state = SMB2_REQUEST_ERROR;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+}
+
+
+/*
+  destroy a request
+*/
+static int smb2_request_destructor(void *ptr)
+{
+	struct smb2_request *req = talloc_get_type(ptr, struct smb2_request);
+	if (req->state == SMB2_REQUEST_RECV) {
+		DLIST_REMOVE(req->transport->pending_recv, req);
+	}
+	return 0;
+}
+
+
+/*
+  put a request into the send queue
+*/
+void smb2_transport_send(struct smb2_request *req)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+
+	/* check if the transport is dead */
+	if (req->transport->socket->sock == NULL) {
+		req->state = SMB2_REQUEST_ERROR;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		return;
+	}
+
+	blob = data_blob_const(req->out.buffer, req->out.size);
+	status = packet_send(req->transport->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		req->state = SMB2_REQUEST_ERROR;
+		req->status = status;
+		return;
+	}
+
+	req->state = SMB2_REQUEST_RECV;
+	DLIST_ADD(req->transport->pending_recv, req);
+
+	/* add a timeout */
+	if (req->transport->options.timeout) {
+		event_add_timed(req->transport->socket->event.ctx, req, 
+				timeval_current_ofs(req->transport->options.timeout, 0), 
+				smb2_timeout_handler, req);
+	}
+
+	talloc_set_destructor(req, smb2_request_destructor);
+}

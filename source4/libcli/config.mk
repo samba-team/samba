@@ -122,3 +122,5 @@ OBJ_FILES = raw/rawfile.o \
 		raw/rawdate.o \
 		raw/rawlpq.o
 REQUIRED_SUBSYSTEMS = LIBPACKET
+
+include smb2/config.mk
