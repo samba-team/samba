@@ -102,10 +102,10 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 	io->out.alloc_size  = BVAL(req->in.body, 0x28);
 	io->out.size        = BVAL(req->in.body, 0x30);
 	io->out.file_attr   = IVAL(req->in.body, 0x38);
-	io->out.unknown8    = IVAL(req->in.body, 0x3C);
+	io->out.unknown3    = IVAL(req->in.body, 0x3C);
 	io->out.handle.data[0] = BVAL(req->in.body, 0x40);
 	io->out.handle.data[1] = BVAL(req->in.body, 0x48);
-	io->out.unknown10 = IVAL(req->in.body, 0x50);
+	io->out.unknown4 = IVAL(req->in.body, 0x50);
 
 	return smb2_request_destroy(req);
 }
