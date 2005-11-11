@@ -183,7 +183,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.ptr       = req->in.body;
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
-	dump_data(0, req->in.body, req->in.body_size);
+	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", req->seqnum));
+	dump_data(2, req->in.body, req->in.body_size);
 
 	/* if this request has an async handler then call that to
 	   notify that the reply has been received. This might destroy
@@ -200,7 +201,7 @@ error:
 		DLIST_REMOVE(transport->pending_recv, req);
 		req->state = SMB2_REQUEST_ERROR;
 	}
-	dump_data(0, blob.data, blob.length);
+	dump_data(2, blob.data, blob.length);
 	data_blob_free(&blob);
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -246,6 +247,9 @@ void smb2_transport_send(struct smb2_request *req)
 	NTSTATUS status;
 
 	_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+
+	DEBUG(2, ("SMB2 send seqnum=0x%llx\n", req->seqnum));
+	dump_data(2, req->out.body, req->out.body_size);
 
 	/* check if the transport is dead */
 	if (req->transport->socket->sock == NULL) {
