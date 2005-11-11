@@ -80,9 +80,8 @@ struct test_spoolss_context {
 
 #define COMPARE_UINT64(c,r,e) do {\
 	if (c.e != r.e){\
-		printf("%s: " #c "." #e "  0x%08X%08X (%llu) doesn't match " #r "." #e " 0x%08X%08X (%llu)\n",\
-			__location__, (uint32_t)(c.e >> 32), (uint32_t)(c.e & 0xFFFFFFFF), c.e,\
-			(uint32_t)(r.e >> 32), (uint32_t)(r.e & 0xFFFFFFFF), r.e);\
+		printf("%s: " #c "." #e "  0x%016llX (%llu) doesn't match " #r "." #e " 0x%016llX (%llu)\n",\
+			__location__, c.e, c.e, r.e, r.e);\
 		ret = False;\
 	}\
 } while(0)
