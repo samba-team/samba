@@ -66,11 +66,9 @@ NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
 	io->out.access_time = smbcli_pull_nttime(req->in.body, 0x10);
 	io->out.write_time  = smbcli_pull_nttime(req->in.body, 0x18);
 	io->out.change_time = smbcli_pull_nttime(req->in.body, 0x20);
-	io->out.unknown3 = IVAL(req->in.body, 0x24);
-	io->out.unknown4 = IVAL(req->in.body, 0x28);
-	io->out.unknown5 = IVAL(req->in.body, 0x2C);
-	io->out.unknown6 = IVAL(req->in.body, 0x30);
-	io->out.unknown7 = IVAL(req->in.body, 0x34);
+	io->out.alloc_size  = BVAL(req->in.body, 0x28);
+	io->out.size        = BVAL(req->in.body, 0x30);
+	io->out.file_attr   = IVAL(req->in.body, 0x38);
 
 	return smb2_request_destroy(req);
 }
