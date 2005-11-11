@@ -56,6 +56,7 @@ struct smb2_transport {
 */
 struct smb2_session {
 	struct smb2_transport *transport;
+	struct gensec_security *gensec;
 };
 
 struct smb2_request_buffer {
