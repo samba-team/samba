@@ -103,7 +103,9 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	io->out.unknown1 = IVAL(req->in.body, 0x00);
+	SMB2_CHECK_BUFFER_CODE(req, 0x09);
+
+	io->out._pad     = SVAL(req->in.body, 0x02);
 	io->out.uid      = BVAL(req->in.hdr,  SMB2_HDR_UID);
 	
 	status = smb2_pull_ofs_blob(req, req->in.body+0x04, &io->out.secblob);

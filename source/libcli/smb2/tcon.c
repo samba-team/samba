@@ -93,9 +93,11 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
+	SMB2_CHECK_BUFFER_CODE(req, 0x10);
+
 	io->out.tid      = IVAL(req->in.hdr,  SMB2_HDR_TID);
 
-	io->out.unknown1    = IVAL(req->in.body, 0x00);
+	io->out.unknown1    = SVAL(req->in.body, 0x02);
 	io->out.unknown2    = IVAL(req->in.body, 0x04);
 	io->out.unknown3    = IVAL(req->in.body, 0x08);
 	io->out.access_mask = IVAL(req->in.body, 0x0C);

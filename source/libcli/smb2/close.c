@@ -35,8 +35,9 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18);
 	if (req == NULL) return NULL;
 
-	SIVAL(req->out.body, 0x00, io->in.unknown1);
-	SIVAL(req->out.body, 0x04, io->in.unknown2);
+	SSVAL(req->out.body, 0x00, io->in.buffer_code);
+	SSVAL(req->out.body, 0x02, io->in.flags);
+	SIVAL(req->out.body, 0x04, io->in._pad);
 	SBVAL(req->out.body, 0x08, io->in.handle.data[0]);
 	SBVAL(req->out.body, 0x10, io->in.handle.data[1]);
 
@@ -60,8 +61,9 @@ NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	io->out.unknown1 = IVAL(req->in.body, 0x00);
-	io->out.unknown2 = IVAL(req->in.body, 0x04);
+	io->out.buffer_code = SVAL(req->in.body, 0x00);
+	io->out.flags       = SVAL(req->in.body, 0x02);
+	io->out._pad        = IVAL(req->in.body, 0x04);
 	io->out.create_time = smbcli_pull_nttime(req->in.body, 0x08);
 	io->out.access_time = smbcli_pull_nttime(req->in.body, 0x10);
 	io->out.write_time  = smbcli_pull_nttime(req->in.body, 0x18);
