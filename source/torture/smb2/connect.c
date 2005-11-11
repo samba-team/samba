@@ -196,42 +196,6 @@ static struct smb2_tree *torture_smb2_tree(struct smb2_session *session,
 }
 
 /*
-  send a create
-*/
-static struct smb2_handle torture_smb2_create(struct smb2_tree *tree, 
-					      const char *fname)
-{
-	struct smb2_create io;
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-
-	ZERO_STRUCT(io);
-	io.in.unknown1 = 0x09000039;
-	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
-	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	io.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
-	io.in.fname = fname;
-	status = smb2_create(tree, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("create failed - %s\n", nt_errstr(status));
-		return io.out.handle;
-	}
-
-	printf("Open gave:\n");
-	printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
-	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
-	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
-	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
-	printf("handle          = %016llx%016llx\n", 
-	       io.out.handle.data[0], 
-	       io.out.handle.data[1]);
-
-	talloc_free(tmp_ctx);
-	
-	return io.out.handle;
-}
-
-/*
   send a close
 */
 static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle handle)
@@ -260,6 +224,53 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 	return status;
 }
 
+
+/*
+  send a create
+*/
+static struct smb2_handle torture_smb2_create(struct smb2_tree *tree, 
+					      const char *fname)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+
+	ZERO_STRUCT(io);
+	io.in.unknown1 = 0x09000039; /* gets an oplock */
+	io.in.unknown1 = 0x00000039; /* no oplock */
+	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
+	io.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options = NTCREATEX_OPTIONS_WRITE_THROUGH;
+	io.in.fname = fname;
+
+	status = smb2_create(tree, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("create1 failed - %s\n", nt_errstr(status));
+		return io.out.handle;
+	}
+
+	printf("Open gave:\n");
+	printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
+	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
+	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
+	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
+	printf("alloc_size      = %lld\n", io.out.alloc_size);
+	printf("size            = %lld\n", io.out.size);
+	printf("file_attr       = 0x%x\n", io.out.file_attr);
+	printf("handle          = %016llx%016llx\n", 
+	       io.out.handle.data[0], 
+	       io.out.handle.data[1]);
+
+	talloc_free(tmp_ctx);
+	
+	return io.out.handle;
+}
+
 /* 
    basic testing of SMB2 connection calls
 */
@@ -277,8 +288,8 @@ BOOL torture_smb2_connect(void)
 	transport = torture_smb2_negprot(mem_ctx, host);
 	session   = torture_smb2_session(transport, credentials);
 	tree      = torture_smb2_tree(session, share);
-	h1        = torture_smb2_create(tree, "test1.dat");
-	h2        = torture_smb2_create(tree, "test2.dat");
+	h1        = torture_smb2_create(tree, "test.dat");
+	h2        = torture_smb2_create(tree, "test1.dat");
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
 
