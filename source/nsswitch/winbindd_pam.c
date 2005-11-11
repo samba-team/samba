@@ -530,8 +530,9 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
  done:
 	set_auth_errors(&state->response, result);
-	DEBUG(5, ("CRAP authentication for %s returned %s (PAM: %d)\n",
-		  state->request.data.auth.user, 
+	DEBUG(5, ("CRAP authentication for %s\\%s returned %s (PAM: %d)\n",
+		  state->request.data.auth_crap.domain,
+		  state->request.data.auth_crap.user, 
 		  state->response.data.auth.nt_status_string,
 		  state->response.data.auth.pam_error));
 	request_error(state);
