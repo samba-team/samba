@@ -76,6 +76,22 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport,
 	return req;
 }
 
+/*
+    initialise a smb2 request for tree operations
+*/
+struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, 
+					    uint16_t opcode, uint32_t body_size)
+{
+	struct smb2_request *req = smb2_request_init(tree->session->transport, opcode, 
+						     body_size);
+	if (req == NULL) return NULL;
+
+	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
+	SIVAL(req->out.hdr,  SMB2_HDR_TID, tree->tid);
+
+	return req;	
+}
+
 /* destroy a request structure and return final status */
 NTSTATUS smb2_request_destroy(struct smb2_request *req)
 {

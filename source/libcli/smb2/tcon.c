@@ -67,6 +67,7 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
 	SIVAL(req->out.body, 0x00, io->in.unknown1);
 	status = smb2_push_ofs_blob(req, req->out.body+0x04, path);
+	data_blob_free(&path);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
@@ -92,7 +93,7 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	io->out.tid      = BVAL(req->in.hdr,  SMB2_HDR_TID);
+	io->out.tid      = IVAL(req->in.hdr,  SMB2_HDR_TID);
 
 	io->out.unknown1 = IVAL(req->in.body, 0x00);
 	io->out.unknown2 = IVAL(req->in.body, 0x04);
@@ -103,7 +104,7 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 }
 
 /*
-  sync session setup request
+  sync tree connect request
 */
 NTSTATUS smb2_tree_connect(struct smb2_tree *tree, struct smb2_tree_connect *io)
 {

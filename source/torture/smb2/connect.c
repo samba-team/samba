@@ -188,9 +188,38 @@ static struct smb2_tree *torture_smb2_tree(struct smb2_session *session,
 		return NULL;
 	}
 	
-	printf("Tree connect gave tid = 0x%016llx\n", io.out.tid);
+	printf("Tree connect gave tid = 0x%x\n", io.out.tid);
+
+	tree->tid = io.out.tid;
 
 	return tree;
+}
+
+/*
+  send a create
+*/
+static struct smb2_handle torture_smb2_create(struct smb2_tree *tree, 
+					      const char *fname)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.in.unknown1 = 0x09000039;
+	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
+	io.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.fname = fname;
+	status = smb2_create(tree, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("create failed - %s\n", nt_errstr(status));
+		return io.out.handle;
+	}
+
+	printf("Open gave handle:\n");
+	dump_data(0, io.out.handle.data, 20);
+	
+	return io.out.handle;
 }
 
 /* 
@@ -205,12 +234,15 @@ BOOL torture_smb2_connect(void)
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
 	struct cli_credentials *credentials = cmdline_credentials;
+	struct smb2_handle h;
 
 	transport = torture_smb2_negprot(mem_ctx, host);
 	session   = torture_smb2_session(transport, credentials);
-	session   = torture_smb2_session(transport, credentials);
 	tree      = torture_smb2_tree(session, share);
-	tree      = torture_smb2_tree(session, share);
+	h         = torture_smb2_create(tree, "test2.dat");
+	h         = torture_smb2_create(tree, "test3.dat");
+	h         = torture_smb2_create(tree, "test4.dat");
+	h         = torture_smb2_create(tree, "test5.dat");
 
 	talloc_free(mem_ctx);
 
