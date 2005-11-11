@@ -109,7 +109,7 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
  username should be in UTF-8 format
 ***********************************************************************/
 
-BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USER_INFO_3 *user)
+BOOL netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
 {
 	TDB_DATA 	data;
         fstring 	keystr;
@@ -117,6 +117,7 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USE
 	BOOL 		result = False;
 	DOM_SID		user_sid;
 	time_t		t = time(NULL);
+	TALLOC_CTX 	*mem_ctx;
 	
 
 	if (!netsamlogon_cache_init()) {
@@ -142,6 +143,11 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USE
 		
 	/* Prepare data */
 	
+	if ( !(mem_ctx = TALLOC_P( NULL, int )) ) {
+		DEBUG(0,("netsamlogon_cache_store: talloc() failed!\n"));
+		return False;
+	}
+
 	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	
 	if ( !prs_uint32( "timestamp", &ps, 0, (uint32*)&t ) )
@@ -157,6 +163,8 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USE
 		
 		prs_mem_free( &ps );
 	}
+
+	TALLOC_FREE( mem_ctx );
 		
 	return result;
 }
@@ -175,7 +183,7 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user
 	uint32		t;
 	
 	if (!netsamlogon_cache_init()) {
-		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n", NETSAMLOGON_TDB));
+		DEBUG(0,("netsamlogon_cache_get: cannot open %s for write!\n", NETSAMLOGON_TDB));
 		return False;
 	}
 
