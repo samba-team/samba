@@ -333,3 +333,6 @@ struct socket_context;
 struct smbcli_socket;
 
 struct _krb5_krb_auth_data;
+
+struct smb2_request;
+struct smb2_transport;
