@@ -4,5 +4,6 @@ OBJ_FILES = \
 	request.o \
 	negprot.o \
 	session.o \
-	tcon.o
+	tcon.o \
+	create.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET
