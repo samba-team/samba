@@ -70,7 +70,7 @@ struct smb2_tree_connect {
 		uint32_t unknown1; /* 0x00020010 */
 		uint32_t unknown2; /* 0x00 */
 		uint32_t unknown3; /* 0x00 */
-		uint32_t unknown4; /* 0x1f01ff */ /* capabilities?? */
+		uint32_t access_mask;
 		uint32_t tid;
 	} out;
 };
