@@ -649,10 +649,7 @@ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
 
 void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v)
 {
-	ndr->print(ndr, "%-25s: 0x%08x%08x (%llu)", name,
-		   (uint32_t)(v >> 32),
-		   (uint32_t)(v & 0xFFFFFFFF),
-		   v);
+	ndr->print(ndr, "%-25s: 0x%016llx (%llu)", name, v, v);
 }
 
 void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_t v)
@@ -662,10 +659,7 @@ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_t v)
 
 void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)
 {
-	ndr->print(ndr, "%-25s: 0x%08x%08x (%lld)", name, 
-		   (uint32_t)(v >> 32), 
-		   (uint32_t)(v & 0xFFFFFFFF),
-		   v);
+	ndr->print(ndr, "%-25s: 0x%016llx (%lld)", name, v, v);
 }
 
 void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v)

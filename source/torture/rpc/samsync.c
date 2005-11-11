@@ -210,10 +210,8 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 
 #define TEST_UINT64_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
-              printf("%s: uint64 mismatch: " #i1 ": 0x%08x%08x (%lld) != " #i2 ": 0x%08x%08x (%lld)\n", \
-		     __location__, \
-		     (uint32_t)(i1 >> 32), (uint32_t)(i1 & 0xFFFFFFFF), i1, \
-                     (uint32_t)(i2 >> 32), (uint32_t)(i2 & 0xFFFFFFFF), i2);\
+              printf("%s: uint64 mismatch: " #i1 ": 0x%016llx (%lld) != " #i2 ": 0x%016llx (%lld)\n", \
+		     __location__, i1, i1, i2, i2);\
 	      ret = False;\
 	} \
 } while (0)
