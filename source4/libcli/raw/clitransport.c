@@ -347,7 +347,7 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
 	uint8_t *buffer, *hdr, *vwv;
 	int len;
 	uint16_t wct=0, mid = 0, op = 0;
-	struct smbcli_request *req;
+	struct smbcli_request *req = NULL;
 
 	buffer = blob.data;
 	len = blob.length;
@@ -482,6 +482,9 @@ error:
 	if (req) {
 		DLIST_REMOVE(transport->pending_recv, req);
 		req->state = SMBCLI_REQUEST_ERROR;
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
 	} else {
 		talloc_free(buffer);
 	}
