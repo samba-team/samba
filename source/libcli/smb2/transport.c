@@ -183,6 +183,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.ptr       = req->in.body;
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
+	dump_data(0, req->in.body, req->in.body_size);
+
 	/* if this request has an async handler then call that to
 	   notify that the reply has been received. This might destroy
 	   the request so it must happen last */
