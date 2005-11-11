@@ -43,7 +43,8 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x50 + path.length);
 	if (req == NULL) return NULL;
 
-	SIVAL(req->out.body, 0x00, io->in.unknown1);
+	SSVAL(req->out.body, 0x00, io->in.buffer_code);
+	SSVAL(req->out.body, 0x02, io->in.oplock_flags);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3[0]);
 	SIVAL(req->out.body, 0x0C, io->in.unknown3[1]);
@@ -84,6 +85,9 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 */
 NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 {
+	smb2_request_receive(req);
+	dump_data(0, req->in.body, req->in.body_size);
+
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
@@ -93,16 +97,18 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	io->out.unknown1 = IVAL(req->in.body, 0x00);
-	io->out.unknown2 = IVAL(req->in.body, 0x04);
-	io->out.create_time = smbcli_pull_nttime(req->in.body, 0x08);
-	io->out.access_time = smbcli_pull_nttime(req->in.body, 0x10);
-	io->out.write_time  = smbcli_pull_nttime(req->in.body, 0x18);
-	io->out.change_time = smbcli_pull_nttime(req->in.body, 0x20);
-	io->out.alloc_size  = BVAL(req->in.body, 0x28);
-	io->out.size        = BVAL(req->in.body, 0x30);
-	io->out.file_attr   = IVAL(req->in.body, 0x38);
-	io->out.unknown3    = IVAL(req->in.body, 0x3C);
+	SMB2_CHECK_BUFFER_CODE(req, 0x59);
+
+	io->out.oplock_flags   = SVAL(req->in.body, 0x02);
+	io->out.create_action  = IVAL(req->in.body, 0x04);
+	io->out.create_time    = smbcli_pull_nttime(req->in.body, 0x08);
+	io->out.access_time    = smbcli_pull_nttime(req->in.body, 0x10);
+	io->out.write_time     = smbcli_pull_nttime(req->in.body, 0x18);
+	io->out.change_time    = smbcli_pull_nttime(req->in.body, 0x20);
+	io->out.alloc_size     = BVAL(req->in.body, 0x28);
+	io->out.size           = BVAL(req->in.body, 0x30);
+	io->out.file_attr      = IVAL(req->in.body, 0x38);
+	io->out._pad           = IVAL(req->in.body, 0x3C);
 	io->out.handle.data[0] = BVAL(req->in.body, 0x40);
 	io->out.handle.data[1] = BVAL(req->in.body, 0x48);
 	io->out.unknown4 = IVAL(req->in.body, 0x50);
