@@ -168,3 +168,14 @@ struct smb2_request {
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
 
+/*
+  check that a buffer code matches the expected value
+*/
+#define SMB2_CHECK_BUFFER_CODE(req, code) do { \
+	io->out.buffer_code = SVAL(req->in.body, 0); \
+	if (io->out.buffer_code != (code)) { \
+		DEBUG(0,("Unexpected buffer code 0x%x. Expected 0x%x\n", \
+			 io->out.buffer_code, code)); \
+		return NT_STATUS_INVALID_PARAMETER; \
+	} \
+} while (0)

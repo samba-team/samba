@@ -28,7 +28,8 @@ struct smb2_negprot {
 		uint8_t  unknown3[32]; /* all zero */
 	} in;
 	struct {
-		uint32_t unknown1; /* 0x41 */
+		uint16_t buffer_code;
+		uint16_t _pad;
 		uint32_t unknown2; /* 0x06 */
 		uint8_t  sessid[16];
 		uint32_t unknown3; /* 0x0d */
@@ -54,7 +55,8 @@ struct smb2_session_setup {
 		DATA_BLOB secblob;
 	} in;
 	struct {
-		uint32_t unknown1; /* 0x09 */
+		uint16_t buffer_code;
+		uint16_t _pad;
 		/* uint16_t secblob ofs/size here */
 		DATA_BLOB secblob;
 		uint64_t uid; /* returned in header */
@@ -67,7 +69,8 @@ struct smb2_tree_connect {
 		const char *path;
 	} in;
 	struct {
-		uint32_t unknown1; /* 0x00020010 */
+		uint16_t buffer_code;
+		uint16_t unknown1; /* 0x02 */
 		uint32_t unknown2; /* 0x00 */
 		uint32_t unknown3; /* 0x00 */
 		uint32_t access_mask;
@@ -82,10 +85,17 @@ struct smb2_handle {
 	uint64_t data[2];
 };
 
+
+#define SMB2_CREATE_FLAG_REQUEST_OPLOCK           0x0100
+#define SMB2_CREATE_FLAG_REQUEST_EXCLUSIVE_OPLOCK 0x0800
+#define SMB2_CREATE_FLAG_GRANT_OPLOCK             0x0001
+#define SMB2_CREATE_FLAG_GRANT_EXCLUSIVE_OPLOCK   0x0080
+
 struct smb2_create {
 	struct {
-		uint32_t unknown1; /* 0x09000039 */
-		uint32_t unknown2; /* 2 */
+		uint16_t buffer_code; /* 0x39 */
+		uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
+		uint32_t unknown2;
 		uint32_t unknown3[4];
 		uint32_t access_mask;
 		uint32_t file_attr;
@@ -103,8 +113,9 @@ struct smb2_create {
 	} in;
 
 	struct {
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint16_t buffer_code; /* 0x59 */
+		uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
+		uint32_t create_action;
 		NTTIME   create_time;
 		NTTIME   access_time;
 		NTTIME   write_time;
@@ -112,23 +123,28 @@ struct smb2_create {
 		uint64_t alloc_size;
 		uint64_t size;
 		uint32_t file_attr;
-		uint32_t unknown3;
+		uint32_t _pad;
 		struct smb2_handle handle;
 		uint32_t unknown4;
+		uint32_t unknown5;
 	} out;
 };
 
 
+#define SMB2_CLOSE_FLAGS_FULL_INFORMATION (1<<0)
+
 struct smb2_close {
 	struct {
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint16_t buffer_code;
+		uint16_t flags; /* SMB2_CLOSE_FLAGS_* */
+		uint32_t _pad;
 		struct smb2_handle handle;
 	} in;
 
 	struct {
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint16_t buffer_code;
+		uint16_t flags;
+		uint32_t _pad;
 		NTTIME   create_time;
 		NTTIME   access_time;
 		NTTIME   write_time;

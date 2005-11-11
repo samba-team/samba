@@ -62,7 +62,9 @@ NTSTATUS smb2_negprot_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	io->out.unknown1     = IVAL(req->in.body, 0x00);
+	SMB2_CHECK_BUFFER_CODE(req, 0x41);
+
+	io->out._pad         = SVAL(req->in.body, 0x02);
 	io->out.unknown2     = IVAL(req->in.body, 0x04);
 	memcpy(io->out.sessid, req->in.body + 0x08, 16);
 	io->out.unknown3     = IVAL(req->in.body, 0x18);
