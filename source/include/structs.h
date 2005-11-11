@@ -336,5 +336,10 @@ struct _krb5_krb_auth_data;
 
 struct smb2_request;
 struct smb2_transport;
+struct smb2_session;
 struct smb2_negprot;
 struct smb2_session_setup;
+struct smb2_tree;
+struct smb2_tree_connect;
+
+
