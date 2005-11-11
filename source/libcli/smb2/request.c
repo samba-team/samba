@@ -25,7 +25,6 @@
 #include "libcli/smb2/smb2.h"
 #include "include/dlinklist.h"
 #include "lib/events/events.h"
-#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   initialise a smb2 request
@@ -154,18 +153,3 @@ DATA_BLOB smb2_pull_blob(struct smb2_request *req, uint8_t *ptr, uint_t size)
 	return data_blob_talloc(req, ptr, size);
 }
 
-/*
-  pull a guid from the reply body
-*/
-NTSTATUS smb2_pull_guid(struct smb2_request *req, uint8_t *ptr, struct GUID *guid)
-{
-	NTSTATUS status;
-	DATA_BLOB blob = smb2_pull_blob(req, ptr, 16);
-	if (blob.data == NULL) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-	status = ndr_pull_struct_blob(&blob, req, guid, 
-				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	data_blob_free(&blob);
-	return status;
-}

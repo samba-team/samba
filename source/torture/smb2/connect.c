@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
@@ -37,17 +38,16 @@
 		goto done; \
 	}} while (0)
 
-/* 
-   basic testing of SMB2 connection calls
-*/
-BOOL torture_smb2_connect(void)
+
+/*
+  send a negotiate
+ */
+static struct smb2_transport *torture_smb2_negprot(TALLOC_CTX *mem_ctx, const char *host)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smbcli_socket *socket;
 	struct smb2_transport *transport;
-	const char *host = lp_parm_string(-1, "torture", "host");
-	BOOL ret = True;
 	NTSTATUS status;
+	struct smb2_negprot io;
 
 	socket = smbcli_sock_connect_byname(host, 445, mem_ctx, NULL);
 	if (socket == NULL) {
@@ -56,19 +56,67 @@ BOOL torture_smb2_connect(void)
 	}
 
 	transport = smb2_transport_init(socket, mem_ctx);
-	if (socket == NULL) {
+	if (transport == NULL) {
 		printf("Failed to setup smb2 transport\n");
 		return False;
 	}
 
+	ZERO_STRUCT(io);
+	io.in.unknown1 = 0x010024;
+
 	/* send a negprot */
-	status = smb2_negprot(transport);
+	status = smb2_negprot(transport, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("negprot failed - %s\n", nt_errstr(status));
-		return False;
+		return NULL;
 	}
+
+	printf("Negprot reply:\n");
+	printf("current_time  = %s\n", nt_time_string(mem_ctx, io.out.current_time));
+	printf("boot_time     = %s\n", nt_time_string(mem_ctx, io.out.boot_time));
+
+	return transport;
+}
+
+#if 0
+/*
+  send a session setup
+*/
+static struct smb2_session *torture_smb2_session(struct smb2_transport *transport, 
+						 struct cli_credentials *credentials)
+{
+	struct smb2_session *session;
+	NTSTATUS status;
+
+	session = smb2_session_init(transport);
+
+	status = smb2_session_setup(session, credentials)
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("session setup failed - %s\n", nt_errstr(status));
+		return NULL;
+	}
+
+	return session;
+}
+#endif
+
+/* 
+   basic testing of SMB2 connection calls
+*/
+BOOL torture_smb2_connect(void)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct smb2_transport *transport;
+	struct smb2_session *session;
+	const char *host = lp_parm_string(-1, "torture", "host");
+	struct cli_credentials *credentials = cmdline_credentials;
+
+	transport = torture_smb2_negprot(mem_ctx, host);
+#if 0
+	session = torture_smb2_session(transport, credentials);
+#endif
 
 	talloc_free(mem_ctx);
 
-	return ret;
+	return True;
 }

@@ -29,7 +29,6 @@ struct smb2_options {
 */
 struct smb2_negotiate {
 	DATA_BLOB secblob;
-	
 };
 
 /* this is the context for the smb2 transport layer */
@@ -51,6 +50,13 @@ struct smb2_transport {
 	struct packet_context *packet;
 };
 
+
+/*
+  SMB2 session context
+*/
+struct smb2_session {
+	struct smb2_transport *transport;
+};
 
 struct smb2_request_buffer {
 	/* the raw SMB2 buffer, including the 4 byte length header */

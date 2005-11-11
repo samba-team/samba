@@ -23,19 +23,23 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 
 /*
   send a negprot request
 */
-struct smb2_request *smb2_negprot_send(struct smb2_transport *transport)
+struct smb2_request *smb2_negprot_send(struct smb2_transport *transport, 
+				       struct smb2_negprot *io)
 {
 	struct smb2_request *req;
+	
 
 	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26);
 	if (req == NULL) return NULL;
 
-	memset(req->out.body, 0, 0x26);
-	SIVAL(req->out.body, 0, 0x00010024); /* unknown */
+	SIVAL(req->out.body, 0x00, io->in.unknown1);
+	SSVAL(req->out.body, 0x04, io->in.unknown2);
+	memcpy(req->out.body+0x06, io->in.unknown3, 32);
 
 	smb2_transport_send(req);
 
@@ -45,29 +49,35 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport)
 /*
   recv a negprot reply
 */
-NTSTATUS smb2_negprot_recv(struct smb2_request *req)
+NTSTATUS smb2_negprot_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, 
+			   struct smb2_negprot *io)
 {
-	NTTIME t1, t2;
-	DATA_BLOB secblob;
-	struct GUID guid;
-	NTSTATUS status;
+	uint16_t blobsize;
 
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	t1 = smbcli_pull_nttime(req->in.body, 0x28);
-	t2 = smbcli_pull_nttime(req->in.body, 0x30);
+	if (req->in.body_size < 0x40) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
 
-	secblob = smb2_pull_blob(req, req->in.body+0x40, req->in.body_size - 0x40);
-	status  = smb2_pull_guid(req, req->in.body+0x08, &guid);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	printf("Negprot reply:\n");
-	printf("t1  =%s\n", nt_time_string(req, t1));
-	printf("t2  =%s\n", nt_time_string(req, t2));
-	printf("guid=%s\n", GUID_string(req, &guid));
+	io->out.unknown1     = IVAL(req->in.body, 0x00);
+	io->out.unknown2     = IVAL(req->in.body, 0x04);
+	memcpy(io->out.sessid, req->in.body + 0x08, 16);
+	io->out.unknown3     = IVAL(req->in.body, 0x18);
+	io->out.unknown4     = SVAL(req->in.body, 0x1C);
+	io->out.unknown5     = IVAL(req->in.body, 0x1E);
+	io->out.unknown6     = IVAL(req->in.body, 0x22);
+	io->out.unknown7     = SVAL(req->in.body, 0x26);
+	io->out.current_time = smbcli_pull_nttime(req->in.body, 0x28);
+	io->out.boot_time    = smbcli_pull_nttime(req->in.body, 0x30);
+	io->out.unknown8     = SVAL(req->in.body, 0x38);
+	blobsize             = SVAL(req->in.body, 0x3A);
+	io->out.unknown9     = IVAL(req->in.body, 0x3C);
+	io->out.secblob      = smb2_pull_blob(req, req->in.body+0x40, blobsize);
+	talloc_steal(mem_ctx, io->out.secblob.data);
 
 	return smb2_request_destroy(req);
 }
@@ -75,8 +85,9 @@ NTSTATUS smb2_negprot_recv(struct smb2_request *req)
 /*
   sync negprot request
 */
-NTSTATUS smb2_negprot(struct smb2_transport *transport)
+NTSTATUS smb2_negprot(struct smb2_transport *transport, 
+		      TALLOC_CTX *mem_ctx, struct smb2_negprot *io)
 {
-	struct smb2_request *req = smb2_negprot_send(transport);
-	return smb2_negprot_recv(req);
+	struct smb2_request *req = smb2_negprot_send(transport, io);
+	return smb2_negprot_recv(req, mem_ctx, io);
 }
