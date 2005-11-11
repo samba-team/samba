@@ -159,7 +159,7 @@ static struct smb2_session *torture_smb2_session(struct smb2_transport *transpor
 		return NULL;
 	}
 
-	printf("Session setup gave UID 0x%llx\n", session->uid);
+	printf("Session setup gave UID 0x%016llx\n", session->uid);
 
 	return session;
 }
@@ -188,7 +188,7 @@ static struct smb2_tree *torture_smb2_tree(struct smb2_session *session,
 		return NULL;
 	}
 	
-	printf("Tree connect gave tid = 0x%llx\n", io.out.tid);
+	printf("Tree connect gave tid = 0x%016llx\n", io.out.tid);
 
 	return tree;
 }
