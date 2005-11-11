@@ -164,6 +164,35 @@ static struct smb2_session *torture_smb2_session(struct smb2_transport *transpor
 	return session;
 }
 
+
+/*
+  send a tree connect
+*/
+static struct smb2_tree *torture_smb2_tree(struct smb2_session *session, 
+					   const char *share)
+{
+	struct smb2_tree *tree;
+	struct smb2_tree_connect io;
+	NTSTATUS status;
+
+	tree = smb2_tree_init(session, session, True);
+
+	io.in.unknown1 = 0x09;
+	io.in.path     = talloc_asprintf(tree, "\\\\%s\\%s",
+					 session->transport->socket->hostname,
+					 share);
+	
+	status = smb2_tree_connect(tree, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("tcon failed - %s\n", nt_errstr(status));
+		return NULL;
+	}
+	
+	printf("Tree connect gave tid = 0x%llx\n", io.out.tid);
+
+	return tree;
+}
+
 /* 
    basic testing of SMB2 connection calls
 */
@@ -171,12 +200,17 @@ BOOL torture_smb2_connect(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_transport *transport;
-	struct smb2_session *session;
+	struct smb2_session *session;	
+	struct smb2_tree *tree;
 	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
 	struct cli_credentials *credentials = cmdline_credentials;
 
 	transport = torture_smb2_negprot(mem_ctx, host);
-	session = torture_smb2_session(transport, credentials);
+	session   = torture_smb2_session(transport, credentials);
+	session   = torture_smb2_session(transport, credentials);
+	tree      = torture_smb2_tree(session, share);
+	tree      = torture_smb2_tree(session, share);
 
 	talloc_free(mem_ctx);
 

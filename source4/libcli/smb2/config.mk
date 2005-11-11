@@ -3,5 +3,6 @@ OBJ_FILES = \
 	transport.o \
 	request.o \
 	negprot.o \
-	session.o
+	session.o \
+	tcon.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET

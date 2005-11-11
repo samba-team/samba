@@ -204,3 +204,40 @@ NTSTATUS smb2_push_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB bl
 	memcpy(ptr+4, blob.data, blob.length);
 	return NT_STATUS_OK;
 }
+
+/*
+  pull a string in a ofs/length/blob format
+*/
+NTSTATUS smb2_pull_ofs_string(struct smb2_request *req, uint8_t *ptr, 
+			      const char **str)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+	ssize_t size;
+	void *vstr;
+	status = smb2_pull_ofs_blob(req, ptr, &blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+	size = convert_string_talloc(req, CH_UTF16, CH_UNIX, 
+				     blob.data, blob.length, &vstr);
+	data_blob_free(&blob);
+	(*str) = vstr;
+	if (size == -1) {
+		return NT_STATUS_ILLEGAL_CHARACTER;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  create a UTF16 string in a blob from a char*
+*/
+NTSTATUS smb2_string_blob(TALLOC_CTX *mem_ctx, const char *str, DATA_BLOB *blob)
+{
+	ssize_t size;
+	size = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, 
+				     str, strlen(str), (void **)&blob->data);
+	if (size == -1) {
+		return NT_STATUS_ILLEGAL_CHARACTER;
+	}
+	blob->length = size;
+	return NT_STATUS_OK;	
+}
