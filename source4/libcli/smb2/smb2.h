@@ -57,6 +57,7 @@ struct smb2_transport {
 struct smb2_session {
 	struct smb2_transport *transport;
 	struct gensec_security *gensec;
+	uint64_t uid;
 };
 
 struct smb2_request_buffer {
@@ -141,8 +142,7 @@ struct smb2_request {
 #define SMB2_HDR_SEQNUM  0x18
 #define SMB2_HDR_PID     0x20
 #define SMB2_HDR_TID     0x24
-#define SMB2_HDR_UID     0x28
-#define SMB2_HDR_UID2    0x2c /* whats this? */
+#define SMB2_HDR_UID     0x28 /* 64 bit */
 #define SMB2_HDR_SIG     0x30 /* guess ... */
 #define SMB2_HDR_BODY    0x40
 

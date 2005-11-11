@@ -76,6 +76,8 @@ static struct smb2_transport *torture_smb2_negprot(TALLOC_CTX *mem_ctx, const ch
 	printf("current_time  = %s\n", nt_time_string(mem_ctx, io.out.current_time));
 	printf("boot_time     = %s\n", nt_time_string(mem_ctx, io.out.boot_time));
 
+	transport->negotiate.secblob = io.out.secblob;
+
 	return transport;
 }
 
@@ -89,12 +91,12 @@ static struct smb2_session *torture_smb2_session(struct smb2_transport *transpor
 	struct smb2_session_setup io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(transport);
+	DATA_BLOB secblob;
 
 	ZERO_STRUCT(io);
 	io.in.unknown1 = 0x11;
 	io.in.unknown2 = 0xF;
 	io.in.unknown3 = 0x00;
-	io.in.unknown4 = 0x50;
 
 	session = smb2_session_init(transport, transport, True);
 
@@ -126,20 +128,38 @@ static struct smb2_session *torture_smb2_session(struct smb2_transport *transpor
 		return NULL;
 	}
 
-	status = gensec_update(session->gensec, tmp_ctx,
-			       session->transport->negotiate.secblob,
-			       &io.in.secblob);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
-	    !NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed initial gensec_update : %s\n", nt_errstr(status)));
-		return NULL;
-	}
+	secblob = session->transport->negotiate.secblob;
 
-	status = smb2_session_setup(session, tmp_ctx, &io);
+	do {
+		NTSTATUS status1;
+
+		status1 = gensec_update(session->gensec, tmp_ctx, secblob, &io.in.secblob);
+		if (!NT_STATUS_EQUAL(status1, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
+		    !NT_STATUS_IS_OK(status1)) {
+			DEBUG(1, ("Failed initial gensec_update : %s\n", 
+				  nt_errstr(status1)));
+			status = status1;
+			break;
+		}
+		
+		status = smb2_session_setup(session, tmp_ctx, &io);
+		secblob = io.out.secblob;
+
+		session->uid = io.out.uid;
+
+		if (NT_STATUS_IS_OK(status) && 
+		    NT_STATUS_EQUAL(status1, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			status = gensec_update(session->gensec, tmp_ctx, secblob, 
+					       &io.in.secblob);
+		}
+	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("session setup failed - %s\n", nt_errstr(status));
 		return NULL;
 	}
+
+	printf("Session setup gave UID 0x%llx\n", session->uid);
 
 	return session;
 }

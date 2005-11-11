@@ -50,14 +50,13 @@ struct smb2_session_setup {
 		uint32_t unknown1; /* 0x11 */
 		uint32_t unknown2; /* 0xF */
 		uint32_t unknown3; /* 0x00 */
-		uint16_t unknown4; /* 0x50 */
-		/* uint16_t secblob size here */
+		/* uint16_t secblob ofs/size here */
 		DATA_BLOB secblob;
 	} in;
 	struct {
 		uint32_t unknown1; /* 0x09 */
-		uint16_t unknown2; /* 0x48 */
-		/* uint16_t secblob size here */
+		/* uint16_t secblob ofs/size here */
 		DATA_BLOB secblob;
+		uint64_t uid; /* returned in header */
 	} out;
 };

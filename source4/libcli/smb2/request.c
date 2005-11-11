@@ -130,7 +130,7 @@ BOOL smb2_request_is_error(struct smb2_request *req)
 /*
   check if a range in the reply body is out of bounds
 */
-BOOL smb2_oob(struct smb2_request *req, const uint8_t *ptr, uint_t size)
+BOOL smb2_oob_in(struct smb2_request *req, const uint8_t *ptr, uint_t size)
 {
 	/* be careful with wraparound! */
 	if (ptr < req->in.body ||
@@ -143,13 +143,65 @@ BOOL smb2_oob(struct smb2_request *req, const uint8_t *ptr, uint_t size)
 }
 
 /*
+  check if a range in the outgoing body is out of bounds
+*/
+BOOL smb2_oob_out(struct smb2_request *req, const uint8_t *ptr, uint_t size)
+{
+	/* be careful with wraparound! */
+	if (ptr < req->out.body ||
+	    ptr >= req->out.body + req->out.body_size ||
+	    size > req->out.body_size ||
+	    ptr + size > req->out.body + req->out.body_size) {
+		return True;
+	}
+	return False;
+}
+
+/*
   pull a data blob from the body of a reply
 */
 DATA_BLOB smb2_pull_blob(struct smb2_request *req, uint8_t *ptr, uint_t size)
 {
-	if (smb2_oob(req, ptr, size)) {
+	if (smb2_oob_in(req, ptr, size)) {
 		return data_blob(NULL, 0);
 	}
 	return data_blob_talloc(req, ptr, size);
 }
 
+/*
+  pull a ofs/length/blob triple into a data blob
+  the ptr points to the start of the offset/length pair
+*/
+NTSTATUS smb2_pull_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint16_t ofs, size;
+	if (smb2_oob_in(req, ptr, 4)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	ofs  = SVAL(ptr, 0);
+	size = SVAL(ptr, 2);
+	if (smb2_oob_in(req, req->in.hdr + ofs, size)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	*blob = data_blob_talloc(req, req->in.hdr+ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a ofs/length/blob triple into a data blob
+  the ptr points to the start of the offset/length pair
+
+  NOTE: assumes blob goes immediately after the offset/length pair. Needs 
+        to be generalised
+*/
+NTSTATUS smb2_push_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB blob)
+{
+	if (smb2_oob_out(req, ptr, 4+blob.length)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	SSVAL(ptr, 0, 4 + (ptr - req->out.hdr));
+	SSVAL(ptr, 2, blob.length);
+	memcpy(ptr+4, blob.data, blob.length);
+	return NT_STATUS_OK;
+}
