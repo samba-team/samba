@@ -801,6 +801,98 @@ done:
 	return ret;
 }
 
+static BOOL test_wrepl_sgroup_merged(struct test_wrepl_conflict_conn *ctx,
+				     const struct wrepl_wins_owner *owner1,
+				     uint32_t num_ips1, const struct wrepl_ip *ips1,
+				     const struct wrepl_wins_owner *owner2,
+				     uint32_t num_ips2, const struct wrepl_ip *ips2,
+				     const struct wrepl_wins_name *name2)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct wrepl_pull_names pull_names;
+	struct wrepl_name *names;
+	struct wrepl_name *name = NULL;
+	uint32_t flags;
+	uint32_t i, j;
+	uint32_t num_ips = num_ips1 + num_ips2;
+
+	for (i = 0; i < num_ips2; i++) {
+		for (j = 0; j < num_ips1; j++) {
+			if (strcmp(ips2[i].ip,ips1[j].ip) == 0) {
+				num_ips--;
+				break;
+			}
+		} 
+	}
+
+	pull_names.in.assoc_ctx	= ctx->pull_assoc;
+	pull_names.in.partner	= *owner1;
+	pull_names.in.partner.min_version = pull_names.in.partner.max_version;
+	pull_names.in.partner.max_version = 0;
+
+	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	names = pull_names.out.names;
+	
+	for (i = 0; i < pull_names.out.num_names; i++) {
+		if (names[i].name.type != name2->name->type)	continue;
+		if (!names[i].name.name) continue;
+		if (strcmp(names[i].name.name, name2->name->name) != 0) continue;
+		if (names[i].name.scope) continue;
+
+		name = &names[i];
+	}
+
+	if (!name) {
+		printf("%s: Name '%s' not found\n", __location__, nbt_name_string(ctx, name2->name));
+		return False;
+	}
+
+	flags = WREPL_NAME_FLAGS(name->type,
+				 name->state,
+				 name->node,
+				 name->is_static);
+	CHECK_VALUE(name->name.type, name2->name->type);
+	CHECK_VALUE_STRING(name->name.name, name2->name->name);
+	CHECK_VALUE_STRING(name->name.scope, name2->name->scope);
+	CHECK_VALUE(flags, name2->flags);
+
+	CHECK_VALUE(name->num_addresses, num_ips);
+
+	for (i = 0; i < name->num_addresses; i++) {
+		const char *addr = name->addresses[i].address; 
+		const char *owner = name->addresses[i].owner;
+		BOOL found = False;
+
+		for (j = 0; j < num_ips2; j++) {
+			if (strcmp(addr, ips2[j].ip) == 0) {
+				found = True;
+				CHECK_VALUE_STRING(owner, owner2->address);
+				break;
+			}
+		}
+
+		if (found) continue;
+
+		for (j = 0; j < num_ips1; j++) {
+			if (strcmp(addr, ips1[j].ip) == 0) {
+				found = True;
+				CHECK_VALUE_STRING(owner, owner1->address);
+				break;
+			}
+		}
+
+		if (found) continue;
+
+		CHECK_VALUE_STRING(addr, "not found in address list");
+	}
+done:
+	talloc_free(pull_names.out.names);
+	return ret;
+}
+
 static BOOL test_wrepl_is_merged(struct test_wrepl_conflict_conn *ctx,
 				 const struct wrepl_wins_name *name1,
 				 const struct wrepl_wins_name *name2)
@@ -5674,6 +5766,7 @@ struct test_conflict_owned_active_vs_replica_struct {
 		const struct wrepl_ip *ips;
 		BOOL apply_expected;
 		BOOL mhomed_merge;
+		BOOL sgroup_merge;
 	} replica;
 };
 
@@ -7886,6 +7979,37 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.mhomed_merge	= True,
 		},
 	},
+/*
+ * special group vs. special group merging section
+ */
+	/*
+	 * sgroup,active vs. sgroup,active with same ip(s)
+	 */
+	{
+		.line	= __location__,
+		.section= "Test Replica vs. owned active: SGROUP vs. SGROUP tests",
+		.name	= _NBT_NAME("_SA_SA_DI_U", 0x1C, NULL),
+		.skip	= (ctx->addresses_all_num < 3),
+		.wins	= {
+			.nb_flags	= NBT_NM_GROUP,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_mhomed_num,
+			.ips		= ctx->addresses_mhomed,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 0,
+		},
+		.replica= {
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.sgroup_merge	= True
+		},
+	},
 	};
 
 	if (!ctx) return False;
@@ -7904,7 +8028,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		uint32_t j, count = 1;
 		const char *action;
 
-		if (records[i].wins.mhomed) {
+		if (records[i].wins.mhomed || records[i].name.type == 0x1C) {
 			count = records[i].wins.num_ips;
 		}
 
@@ -7919,6 +8043,8 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 
 		if (records[i].replica.mhomed_merge) {
 			action = "MHOMED_MERGE";
+		} else if (records[i].replica.sgroup_merge) {
+			action = "SGROUP_MERGE";
 		} else if (records[i].replica.apply_expected) {
 			action = "REPLACE";
 		} else {
@@ -7967,7 +8093,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			 * the server will do name queries to see if the old addresses
 			 * are still alive
 			 */
-			if (j > 0) {
+			if (records[i].wins.mhomed && j > 0) {
 				end = timeval_current_ofs(records[i].defend.timeout,0);
 				records[i].defend.ret = True;
 				while (records[i].defend.timeout > 0) {
@@ -8059,6 +8185,12 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 						        &ctx->b,
 							records[i].replica.num_ips, records[i].replica.ips,
 							wins_name);
+		} else if (records[i].replica.sgroup_merge) {
+			ret &= test_wrepl_sgroup_merged(ctx, &ctx->c,
+						        records[i].wins.num_ips, records[i].wins.ips,
+						        &ctx->b,
+							records[i].replica.num_ips, records[i].replica.ips,
+							wins_name);
 		} else {
 			ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name,
 						     records[i].replica.apply_expected);
@@ -8103,6 +8235,42 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 					return False;
 				}
 				CHECK_VALUE(release->out.rcode, 0);
+			}
+
+			if (records[i].replica.sgroup_merge) {
+				/* clean up the SGROUP record */
+				wins_name->name		= &records[i].name;
+				wins_name->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_SGROUP,
+									   WREPL_STATE_ACTIVE,
+									   WREPL_NODE_B, False);
+				wins_name->id		= ++ctx->b.max_version;
+				wins_name->addresses.addresses.num_ips = 0;
+				wins_name->addresses.addresses.ips     = NULL;
+				wins_name->unknown	= "255.255.255.255";
+				ret &= test_wrepl_update_one(ctx, &ctx->b, wins_name);
+
+				/* take ownership of the SGROUP record */
+				wins_name->name		= &records[i].name;
+				wins_name->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_SGROUP,
+									   WREPL_STATE_ACTIVE,
+									   WREPL_NODE_B, False);
+				wins_name->id		= ++ctx->b.max_version;
+				wins_name->addresses.addresses.num_ips = ARRAY_SIZE(addresses_B_1);
+				wins_name->addresses.addresses.ips     = discard_const(addresses_B_1);
+				wins_name->unknown	= "255.255.255.255";
+				ret &= test_wrepl_update_one(ctx, &ctx->b, wins_name);
+				ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name, True);
+
+				/* overwrite the SGROUP record with unique,tombstone */
+				wins_name->name		= &records[i].name;
+				wins_name->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_UNIQUE,
+									   WREPL_STATE_TOMBSTONE,
+									   WREPL_NODE_B, False);
+				wins_name->id		= ++ctx->b.max_version;
+				wins_name->addresses.ip = addresses_A_1[0].ip;
+				wins_name->unknown	= "255.255.255.255";
+				ret &= test_wrepl_update_one(ctx, &ctx->b, wins_name);
+				ret &= test_wrepl_is_applied(ctx, &ctx->b, wins_name, True);
 			}
 		}
 
