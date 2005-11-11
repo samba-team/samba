@@ -2,5 +2,6 @@
 OBJ_FILES = \
 	transport.o \
 	request.o \
-	negprot.o
+	negprot.o \
+	session.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET
