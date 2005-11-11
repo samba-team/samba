@@ -900,32 +900,17 @@ static BOOL run_negprot_nowait(void)
 
 	printf("Filling send buffer\n");
 
-	for (i=0;i<10000;i++) {
+	for (i=0;i<1000;i++) {
 		struct smbcli_request *req;
 		time_t t1 = time(NULL);
 		req = smb_raw_negotiate_send(cli->transport, PROTOCOL_NT1);
-		while (req->state == SMBCLI_REQUEST_SEND && time(NULL) < t1+5) {
-			smbcli_transport_process(cli->transport);
-		}
+		smbcli_transport_process(cli->transport);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
 			printf("Failed to fill pipe - %s\n", nt_errstr(req->status));
 			torture_close_connection(cli);
 			return correct;
 		}
-		if (req->state == SMBCLI_REQUEST_SEND) {
-			break;
-		}
 	}
-
-	if (i == 10000) {
-		printf("send buffer failed to fill\n");
-		if (!torture_close_connection(cli)) {
-			correct = False;
-		}
-		return correct;
-	}
-
-	printf("send buffer filled after %d requests\n", i);
 
 	printf("Opening secondary connection\n");
 	if (!torture_open_connection(&cli2)) {
