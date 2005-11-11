@@ -26,52 +26,19 @@
 #include "libcli/smb2/smb2_calls.h"
 
 /*
-  send a create request
+  send a close request
 */
-struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create *io)
+struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *io)
 {
 	struct smb2_request *req;
-	NTSTATUS status;
-	DATA_BLOB path;
-	uint8_t *ptr;
 
-	status = smb2_string_blob(tree, io->in.fname, &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
-
-	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x50 + path.length);
+	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18);
 	if (req == NULL) return NULL;
 
 	SIVAL(req->out.body, 0x00, io->in.unknown1);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
-	SIVAL(req->out.body, 0x08, io->in.unknown3[0]);
-	SIVAL(req->out.body, 0x0C, io->in.unknown3[1]);
-	SIVAL(req->out.body, 0x10, io->in.unknown3[2]);
-	SIVAL(req->out.body, 0x14, io->in.unknown3[3]);
-	SIVAL(req->out.body, 0x18, io->in.access_mask);
-	SIVAL(req->out.body, 0x1C, io->in.file_attr);
-	SIVAL(req->out.body, 0x20, io->in.unknown4);
-	SIVAL(req->out.body, 0x24, io->in.open_disposition);
-	SIVAL(req->out.body, 0x28, io->in.unknown5);
-
-	SSVAL(req->out.body, 0x2C, 0x40+0x38); /* offset to fname */
-	SSVAL(req->out.body, 0x2E, path.length);
-	SIVAL(req->out.body, 0x30, 0x40+0x38+path.length); /* offset to 2nd buffer? */
-
-	SIVAL(req->out.body, 0x34, io->in.unknown6);
-
-	memcpy(req->out.body+0x38, path.data, path.length);
-
-	ptr = req->out.body+0x38+path.length;
-
-	SIVAL(ptr, 0x00, io->in.unknown7);
-	SIVAL(ptr, 0x04, io->in.unknown8);
-	SIVAL(ptr, 0x08, io->in.unknown9);
-	SIVAL(ptr, 0x0C, io->in.unknown10);
-	SIVAL(ptr, 0x10, io->in.unknown11);
-
-	data_blob_free(&path);
+	SBVAL(req->out.body, 0x08, io->in.handle.data[0]);
+	SBVAL(req->out.body, 0x10, io->in.handle.data[1]);
 
 	smb2_transport_send(req);
 
@@ -80,16 +47,16 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 
 /*
-  recv a create reply
+  recv a close reply
 */
-NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
+NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
 {
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x54) {
+	if (req->in.body_size < 0x3C) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -104,20 +71,15 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 	io->out.unknown5 = IVAL(req->in.body, 0x2C);
 	io->out.unknown6 = IVAL(req->in.body, 0x30);
 	io->out.unknown7 = IVAL(req->in.body, 0x34);
-	io->out.unknown8 = IVAL(req->in.body, 0x38);
-	io->out.unknown9 = IVAL(req->in.body, 0x3C);
-	io->out.handle.data[0] = BVAL(req->in.body, 0x40);
-	io->out.handle.data[1] = BVAL(req->in.body, 0x48);
-	io->out.unknown10 = IVAL(req->in.body, 0x50);
 
 	return smb2_request_destroy(req);
 }
 
 /*
-  sync create request
+  sync close request
 */
-NTSTATUS smb2_create(struct smb2_tree *tree, struct smb2_create *io)
+NTSTATUS smb2_close(struct smb2_tree *tree, struct smb2_close *io)
 {
-	struct smb2_request *req = smb2_create_send(tree, io);
-	return smb2_create_recv(req, io);
+	struct smb2_request *req = smb2_close_send(tree, io);
+	return smb2_close_recv(req, io);
 }

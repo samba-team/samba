@@ -76,10 +76,10 @@ struct smb2_tree_connect {
 };
 
 /*
-  file handles in SMB2 are 20 bytes, like RPC handles
+  file handles in SMB2 are 16 bytes
 */
 struct smb2_handle {
-	uint8_t data[20];
+	uint64_t data[2];
 };
 
 struct smb2_create {
@@ -114,8 +114,33 @@ struct smb2_create {
 		uint32_t unknown5;
 		uint32_t unknown6;
 		uint32_t unknown7;
+		uint32_t unknown8;
+		uint32_t unknown9;
 		struct smb2_handle handle;
-		uint32_t unknown8[2];
+		uint32_t unknown10;
+	} out;
+};
+
+
+struct smb2_close {
+	struct {
+		uint32_t unknown1;
+		uint32_t unknown2;
+		struct smb2_handle handle;
+	} in;
+
+	struct {
+		uint32_t unknown1;
+		uint32_t unknown2;
+		NTTIME   create_time;
+		NTTIME   access_time;
+		NTTIME   write_time;
+		NTTIME   change_time;
+		uint32_t unknown3;
+		uint32_t unknown4;
+		uint32_t unknown5;
+		uint32_t unknown6;
+		uint32_t unknown7;
 	} out;
 };
 

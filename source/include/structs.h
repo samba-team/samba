@@ -342,5 +342,4 @@ struct smb2_session_setup;
 struct smb2_tree;
 struct smb2_tree_connect;
 struct smb2_create;
-
-
+struct smb2_close;

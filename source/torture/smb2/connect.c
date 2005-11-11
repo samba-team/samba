@@ -203,6 +203,7 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 {
 	struct smb2_create io;
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	ZERO_STRUCT(io);
 	io.in.unknown1 = 0x09000039;
@@ -216,10 +217,47 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 		return io.out.handle;
 	}
 
-	printf("Open gave handle:\n");
-	dump_data(0, io.out.handle.data, 20);
+	printf("Open gave:\n");
+	printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
+	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
+	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
+	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
+	printf("handle          = %016llx%016llx\n", 
+	       io.out.handle.data[0], 
+	       io.out.handle.data[1]);
+
+	talloc_free(tmp_ctx);
 	
 	return io.out.handle;
+}
+
+/*
+  send a close
+*/
+static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle handle)
+{
+	struct smb2_close io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+
+	ZERO_STRUCT(io);
+	io.in.unknown1 = 0x10018;
+	io.in.handle   = handle;
+	status = smb2_close(tree, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	printf("Close gave:\n");
+	printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
+	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
+	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
+	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
+
+	talloc_free(tmp_ctx);
+	
+	return status;
 }
 
 /* 
@@ -234,15 +272,15 @@ BOOL torture_smb2_connect(void)
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
 	struct cli_credentials *credentials = cmdline_credentials;
-	struct smb2_handle h;
+	struct smb2_handle h1, h2;
 
 	transport = torture_smb2_negprot(mem_ctx, host);
 	session   = torture_smb2_session(transport, credentials);
 	tree      = torture_smb2_tree(session, share);
-	h         = torture_smb2_create(tree, "test2.dat");
-	h         = torture_smb2_create(tree, "test3.dat");
-	h         = torture_smb2_create(tree, "test4.dat");
-	h         = torture_smb2_create(tree, "test5.dat");
+	h1        = torture_smb2_create(tree, "test1.dat");
+	h2        = torture_smb2_create(tree, "test2.dat");
+	torture_smb2_close(tree, h1);
+	torture_smb2_close(tree, h2);
 
 	talloc_free(mem_ctx);
 
