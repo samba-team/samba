@@ -218,7 +218,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 #define VWV(vwv) ((vwv)*2)
 
 /* 64 bit macros */
-#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,((uint64_t)(v))>>32))
 #define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
 
 #endif /* _BYTEORDER_H */

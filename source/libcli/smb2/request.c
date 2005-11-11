@@ -70,7 +70,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport,
 	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,  req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,     0);
 	SIVAL(req->out.hdr, SMB2_HDR_TID,     0);
-	SBVAL(req->out.hdr, SMB2_HDR_UID,     (uint64_t)0);
+	SBVAL(req->out.hdr, SMB2_HDR_UID,     0);
 	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
 
 	return req;
