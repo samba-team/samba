@@ -145,7 +145,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 							     struct smb2_transport);
 	uint8_t *buffer, *hdr;
 	int len;
-	struct smb2_request *req;
+	struct smb2_request *req = NULL;
 	uint64_t seqnum;
 
 	buffer = blob.data;
@@ -197,12 +197,16 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	return NT_STATUS_OK;
 
 error:
+	dump_data(2, buffer, len);
 	if (req) {
 		DLIST_REMOVE(transport->pending_recv, req);
 		req->state = SMB2_REQUEST_ERROR;
+		if (req->async.fn) {
+			req->async.fn(req);
+		}
+	} else {
+		talloc_free(buffer);
 	}
-	dump_data(2, blob.data, blob.length);
-	data_blob_free(&blob);
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -210,7 +214,7 @@ error:
   handle timeouts of individual smb requests
 */
 static void smb2_timeout_handler(struct event_context *ev, struct timed_event *te, 
-				   struct timeval t, void *private)
+				 struct timeval t, void *private)
 {
 	struct smb2_request *req = talloc_get_type(private, struct smb2_request);
 
