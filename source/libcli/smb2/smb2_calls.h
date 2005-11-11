@@ -60,3 +60,17 @@ struct smb2_session_setup {
 		uint64_t uid; /* returned in header */
 	} out;
 };
+
+struct smb2_tree_connect {
+	struct {
+		uint32_t unknown1; /* 0x09 */
+		const char *path;
+	} in;
+	struct {
+		uint32_t unknown1; /* 0x00020010 */
+		uint32_t unknown2; /* 0x00 */
+		uint32_t unknown3; /* 0x00 */
+		uint32_t unknown4; /* 0x1f01ff */ /* capabilities?? */
+		uint64_t tid;
+	} out;
+};

@@ -52,6 +52,14 @@ struct smb2_transport {
 
 
 /*
+  SMB2 tree context
+*/
+struct smb2_tree {
+	struct smb2_session *session;
+	uint64_t tid;
+};
+
+/*
   SMB2 session context
 */
 struct smb2_session {
@@ -59,6 +67,7 @@ struct smb2_session {
 	struct gensec_security *gensec;
 	uint64_t uid;
 };
+
 
 struct smb2_request_buffer {
 	/* the raw SMB2 buffer, including the 4 byte length header */
