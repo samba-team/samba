@@ -382,7 +382,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	} while ( (attempts < 2) && retry );
 
 	if (NT_STATUS_IS_OK(result)) {
-		netsamlogon_cache_store(state->mem_ctx, name_user, &info3);
+		netsamlogon_cache_store(name_user, &info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 
 		/* Check if the user is in the right group */
@@ -667,7 +667,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	} while ( (attempts < 2) && retry );
 
 	if (NT_STATUS_IS_OK(result)) {
-		netsamlogon_cache_store(state->mem_ctx, name_user, &info3);
+		netsamlogon_cache_store(name_user, &info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 
 		/* Check if the user is in the right group */
