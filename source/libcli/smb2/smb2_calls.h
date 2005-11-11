@@ -133,11 +133,9 @@ struct smb2_close {
 		NTTIME   access_time;
 		NTTIME   write_time;
 		NTTIME   change_time;
-		uint32_t unknown3;
-		uint32_t unknown4;
-		uint32_t unknown5;
-		uint32_t unknown6;
-		uint32_t unknown7;
+		uint64_t alloc_size;
+		uint64_t size;
+		uint32_t file_attr;
 	} out;
 };
 

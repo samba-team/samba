@@ -218,6 +218,9 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
 	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
 	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
+	printf("alloc_size      = %lld\n", io.out.alloc_size);
+	printf("size            = %lld\n", io.out.size);
+	printf("file_attr       = 0x%x\n", io.out.file_attr);
 
 	talloc_free(tmp_ctx);
 	
