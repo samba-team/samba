@@ -33,7 +33,6 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 {
 	struct smb2_request *req;
 	
-
 	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26);
 	if (req == NULL) return NULL;
 

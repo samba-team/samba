@@ -62,17 +62,22 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 					     struct smb2_session_setup *io)
 {
 	struct smb2_request *req;
+	NTSTATUS status;
 	
 	req = smb2_request_init(session->transport, SMB2_OP_SESSSETUP, 
 				0x10 + io->in.secblob.length);
 	if (req == NULL) return NULL;
 
+	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
 	SIVAL(req->out.body, 0x00, io->in.unknown1);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3);
-	SSVAL(req->out.body, 0x0C, io->in.unknown4);
-	SSVAL(req->out.body, 0x0E, io->in.secblob.length);
-	memcpy(req->out.body+0x10, io->in.secblob.data, io->in.secblob.length);
+	
+	status = smb2_push_ofs_blob(req, req->out.body+0x0C, io->in.secblob);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
 
 	smb2_transport_send(req);
 
@@ -86,10 +91,11 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, 
 				 struct smb2_session_setup *io)
 {
-	uint16_t blobsize;
+	NTSTATUS status;
 
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    (smb2_request_is_error(req) && 
+	     !NT_STATUS_EQUAL(req->status, NT_STATUS_MORE_PROCESSING_REQUIRED))) {
 		return smb2_request_destroy(req);
 	}
 
@@ -97,10 +103,14 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	io->out.unknown1     = IVAL(req->in.body, 0x00);
-	io->out.unknown2     = SVAL(req->in.body, 0x04);
-	blobsize             = SVAL(req->in.body, 0x06);
-	io->out.secblob      = smb2_pull_blob(req, req->in.body+0x08, blobsize);
+	io->out.unknown1 = IVAL(req->in.body, 0x00);
+	io->out.uid      = BVAL(req->in.hdr,  SMB2_HDR_UID);
+	
+	status = smb2_pull_ofs_blob(req, req->in.body+0x04, &io->out.secblob);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
+	}
 	talloc_steal(mem_ctx, io->out.secblob.data);
 
 	return smb2_request_destroy(req);
