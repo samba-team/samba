@@ -1,0 +1,6 @@
+[SUBSYSTEM::LIBCLI_SMB2]
+OBJ_FILES = \
+	transport.o \
+	request.o \
+	negprot.o
+REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET
