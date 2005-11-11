@@ -89,9 +89,9 @@ struct smb2_create {
 		uint32_t unknown3[4];
 		uint32_t access_mask;
 		uint32_t file_attr;
-		uint32_t unknown4;
+		uint32_t share_access;
 		uint32_t open_disposition;
-		uint32_t unknown5;
+		uint32_t create_options;
 		/* ofs/len of name here, 16 bits */
 		uint32_t unknown6;
 		const char *fname;
@@ -109,15 +109,12 @@ struct smb2_create {
 		NTTIME   access_time;
 		NTTIME   write_time;
 		NTTIME   change_time;
+		uint64_t alloc_size;
+		uint64_t size;
+		uint32_t file_attr;
 		uint32_t unknown3;
-		uint32_t unknown4;
-		uint32_t unknown5;
-		uint32_t unknown6;
-		uint32_t unknown7;
-		uint32_t unknown8;
-		uint32_t unknown9;
 		struct smb2_handle handle;
-		uint32_t unknown10;
+		uint32_t unknown4;
 	} out;
 };
 
