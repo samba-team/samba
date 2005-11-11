@@ -68,11 +68,39 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	}
 
 	/* the machine acct password might have change - fetch it every time */
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
+	SAFE_FREE(ads->auth.password);
 	SAFE_FREE(ads->auth.realm);
-	ads->auth.realm = SMB_STRDUP(lp_realm());
+
+	if ( IS_DC ) {
+		DOM_SID sid;
+		time_t last_set_time;
+
+		if ( !secrets_fetch_trusted_domain_password( domain->name, &ads->auth.password, &sid, &last_set_time ) ) {
+			ads_destroy( &ads );
+			return NULL;
+		}
+		ads->auth.realm = SMB_STRDUP( ads->server.realm );
+		strupper_m( ads->auth.realm );
+	}
+	else {
+		struct winbindd_domain *our_domain = domain;
+
+		ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+
+		/* always give preference to the alt_name in our 
+		   primary domain if possible */
+
+		if ( !domain->primary )
+			our_domain = find_our_domain();
+
+		if ( our_domain->alt_name[0] != '\0' ) {
+			ads->auth.realm = SMB_STRDUP( our_domain->alt_name );
+			strupper_m( ads->auth.realm );
+		}
+		else
+			ads->auth.realm = SMB_STRDUP( lp_realm() );
+	}
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {

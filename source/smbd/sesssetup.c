@@ -180,10 +180,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	if (pac_data) {
-		logon_info = get_logon_info_from_pac(pac_data);
-	}
-
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
 	p = strchr_m(client, '@');
@@ -196,6 +192,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	*p = 0;
+
+	/* save the PAC data if we have it */
+
+	if (pac_data) {
+		logon_info = get_logon_info_from_pac(pac_data);
+		netsamlogon_cache_store( client, &logon_info->info3 );
+	}
+
 	if (!strequal(p+1, lp_realm())) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
@@ -954,9 +958,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		fstrcpy(sub_user, user);
-
-		/* setup the string used by %U */
-		sub_set_smb_name(user);
 	} else {
 		fstrcpy(sub_user, lp_guestaccount());
 	}

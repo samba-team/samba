@@ -382,6 +382,9 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	} while ( (attempts < 2) && retry );
 
 	if (NT_STATUS_IS_OK(result)) {
+		netsamlogon_cache_store(name_user, &info3);
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
+
 		/* Check if the user is in the right group */
 
 		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3,
@@ -527,8 +530,9 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
  done:
 	set_auth_errors(&state->response, result);
-	DEBUG(5, ("CRAP authentication for %s returned %s (PAM: %d)\n",
-		  state->request.data.auth.user, 
+	DEBUG(5, ("CRAP authentication for %s\\%s returned %s (PAM: %d)\n",
+		  state->request.data.auth_crap.domain,
+		  state->request.data.auth_crap.user, 
 		  state->response.data.auth.nt_status_string,
 		  state->response.data.auth.pam_error));
 	request_error(state);
@@ -664,6 +668,11 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	} while ( (attempts < 2) && retry );
 
 	if (NT_STATUS_IS_OK(result)) {
+		netsamlogon_cache_store(name_user, &info3);
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
+
+		/* Check if the user is in the right group */
+
 		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3,
 							state->request.data.auth_crap.require_membership_of_sid))) {
 			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",

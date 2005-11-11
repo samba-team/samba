@@ -100,43 +100,52 @@ void winbindd_check_cache_size(time_t t)
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
 	struct winbind_cache *ret = wcache;
+	struct winbindd_domain *our_domain = domain;
 
 	/* we have to know what type of domain we are dealing with first */
 
 	if ( !domain->initialized )
 		set_dc_type_and_flags( domain );
 
+	/* 
+	   OK.  listen up becasue I'm only going to say this once.
+	   We have the following scenarios to consider
+	   (a) trusted AD domains on a Samba DC,
+	   (b) trusted AD domains and we are joined to a non-kerberos domain
+	   (c) trusted AD domains and we are joined to a kerberos (AD) domain
+
+	   For (a) we can always contact the trusted domain using krb5 
+	   since we have the domain trust account password
+
+	   For (b) we can only use RPC since we have no way of 
+	   getting a krb5 ticket in our own domain
+
+	   For (c) we can always use krb5 since we have a kerberos trust
+
+	   --jerry
+	 */
+
 	if (!domain->backend) {
 		extern struct winbindd_methods reconnect_methods;
-		switch (lp_security()) {
 #ifdef HAVE_ADS
-		case SEC_ADS: {
-			extern struct winbindd_methods ads_methods;
-			/* always obey the lp_security parameter for our domain */
-			if (domain->primary) {
-				domain->backend = &ads_methods;
-				break;
-			}
+		extern struct winbindd_methods ads_methods;
 
-			/* only use ADS for native modes at the momment.
-			   The problem is the correct detection of mixed 
-			   mode domains from NT4 BDC's    --jerry */
-			
-			if ( domain->native_mode ) {
-				DEBUG(5,("get_cache: Setting ADS methods for domain %s\n",
-					domain->name));
-				domain->backend = &ads_methods;
-				break;
-			}
+		/* find our domain first so we can figure out if we 
+		   are joined to a kerberized domain */
 
-			/* fall through */
-		}	
-#endif
-		default:
-			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n",
-				domain->name));
+		if ( !domain->primary )
+			our_domain = find_our_domain();
+
+		if ( (our_domain->active_directory || IS_DC) && domain->active_directory ) {
+			DEBUG(5,("get_cache: Setting ADS methods for domain %s\n", domain->name));
+			domain->backend = &ads_methods;
+		} else {
+#endif	/* HAVE_ADS */
+			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n", domain->name));
 			domain->backend = &reconnect_methods;
+#ifdef HAVE_ADS
 		}
+#endif	/* HAVE_ADS */
 	}
 
 	if (ret)
@@ -1064,6 +1073,18 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	centry = wcache_fetch(cache, domain, "U/%s", sid_string_static(user_sid));
 	
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		goto do_query;
+	}
+	
 	if (!centry)
 		goto do_query;
 
@@ -1118,6 +1139,18 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto do_query;
 
 	centry = wcache_fetch(cache, domain, "UG/%s", sid_to_string(sid_string, user_sid));
+	
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		goto do_query;
+	}
 	
 	if (!centry)
 		goto do_query;
@@ -1390,6 +1423,20 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		tdb_delete(the_tdb, kbuf);
 
 	return 0;
+}
+
+/* Invalidate the getpwnam and getgroups entries for a winbindd domain */
+
+void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
+				NET_USER_INFO_3 *info3)
+{
+	struct winbind_cache *cache;
+	
+	if (!domain)
+		return;
+
+	cache = get_cache(domain);
+	netsamlogon_clear_cached_user(cache->tdb, info3);
 }
 
 void wcache_invalidate_cache(void)

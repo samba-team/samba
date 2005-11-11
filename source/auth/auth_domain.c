@@ -252,6 +252,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						domain,
 						server_info,
 						&info3);
+
+		netsamlogon_cache_store( user_info->smb_name.str, &info3 );
 	}
 
 	/* Note - once the cli stream is shutdown the mem_ctx used

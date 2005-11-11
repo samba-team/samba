@@ -1,32 +1,22 @@
-                   ==================================
-                   Release Notes for Samba 3.0.21pre2
-                              Nov 9, 2005
-                   ==================================
+                   =================================
+                   Release Notes for Samba 3.0.21rc1
+                              Nov 12, 2005
+                   =================================
 
 This is a release candidate of the 3.0.21 code base and is provided
 for testing purposes only.  While close to the final stable release,
 this snapshot is *not* intended for production servers.  
 
-
-Common bugs fixed in 3.0.21pre2 include:
+Common bugs fixed in 3.0.21rc1 include:
 
   o Portability and crash bugs.
   o Performance issues in winbindd.
 
-New features introduced in Samba 3.0.21pre2 include:
+New features introduced in Samba 3.0.21rc1 include:
 
   o Performance Counter external daemon.
-
-
-Known Issues
-============
-
-The final known issue to be resolved prior to the final 3.0.21
-release is compatibility issues with AD trusted domains and 
-"security = domain".  Work is underway to provide auto selection
-of the appropriate user and group query mechanisms at run time.
-
-
+  o Winbindd auto-detection query methods when communicating with
+    a domain controller.
 
 
 ######################################################################
@@ -79,6 +69,7 @@ o   Jeremy Allison <jra@samba.org>
       on a Samba PDC.
     * Backport Samba 4 time zone handling.
     * Fix core dump if setmntent() returns NULL.
+    * Replace old crc32 code with one from the FreeBSD tree.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -108,7 +99,14 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Convert eventlog API to use NTSTATUS return codes rather 
       than WERROR.
     * Fix segv in winbindd caused by an uninitialized variable 
-      in winbindd_dual_getsidaliases()
+      in winbindd_dual_getsidaliases().
+    * Allow winbindd to select the appropriate backend methods
+      based on the DC attributes and not the security parameter.
+    * Re-add the netsamlogon_cache tdb and ensure that user entries
+      are updated from the PAC data during kerberos ticket 
+      validation.
+    * Fix lockup when running 'wbinfo -t' on a Samba PDC caused 
+      by mangling machine names in sub_set_smb_name().
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -166,6 +164,11 @@ o   Brian Moran <bmoran@centeris.com>
 o   Lars Müller <lmuelle@samba.org>
     * Only install smbsh manpage if smbwrapper has been successfully
       built.
+
+
+o   Ricky Nance <ricky.nance@gmail.com>
+    * Updates for the mklogon perl scripts.
+
 
 o   Chris Nicholls <skel@samba.org>
     * Fix libmsrpc build of on the Sun compiler by removing empty 
