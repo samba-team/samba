@@ -178,7 +178,7 @@ struct smb2_close {
 #define SMB2_GETINFO_FILE_10            0x1001
 #define SMB2_GETINFO_FILE_11            0x1101
 #define SMB2_GETINFO_FILE_ALL_INFO      0x1201
-#define SMB2_GETINFO_FILE_NAME_INFO     0x1501
+#define SMB2_GETINFO_FILE_SHORT_INFO    0x1501
 #define SMB2_GETINFO_FILE_STREAM_INFO   0x1601
 #define SMB2_GETINFO_FILE_EOF_INFO      0x1c01
 #define SMB2_GETINFO_FILE_STANDARD_INFO 0x2201
@@ -203,3 +203,102 @@ struct smb2_getinfo {
 	} out;
 };
 
+union smb2_fileinfo {
+	struct {
+		NTTIME   create_time;
+		NTTIME   access_time;
+		NTTIME   write_time;
+		NTTIME   change_time;
+		uint32_t file_attr;
+		uint32_t unknown;
+	} basic_info;
+
+	struct {
+		uint64_t alloc_size;
+		uint64_t size;
+		uint32_t nlink;
+		uint32_t unknown;
+	} size_info;
+
+	struct {
+		uint32_t unknown1;
+		uint32_t unknown2;
+	} unknown06;
+
+	struct {
+		uint32_t ea_size;
+	} ea_info;
+
+	struct {
+		uint32_t access_mask;
+	} access_info;
+
+	struct {
+		uint32_t unknown1;
+		uint32_t unknown2;
+	} unknown0e;
+
+	struct {
+		struct smb_ea_list all_eas;
+	} all_ea_info;
+
+	struct {
+		uint32_t unknown; /* 2 */
+	} unknown10;
+
+	struct {
+		uint32_t unknown;
+	} unknown11;
+
+	struct {
+		NTTIME   create_time;
+		NTTIME   access_time;
+		NTTIME   write_time;
+		NTTIME   change_time;
+		uint32_t file_attr;
+		uint32_t unknown1;
+		uint64_t alloc_size;
+		uint64_t size;
+		uint32_t nlink;
+		uint32_t unknown2;
+		uint32_t unknown3;
+		uint32_t unknown4;
+		uint32_t ea_size;
+		uint32_t access_mask;
+		uint64_t unknown5;
+		uint64_t unknown6;
+		const char *fname;
+	} all_info;
+
+	struct {
+		const char *short_name;
+	} short_info;
+
+	struct {
+		uint32_t unknown;
+		uint64_t size;
+		uint64_t alloc_size;
+		const char *stream_name;
+	} stream_info;
+
+	struct {
+		uint64_t size;
+		uint64_t unknown;
+	} eof_info;
+
+	struct {
+		NTTIME   create_time;
+		NTTIME   access_time;
+		NTTIME   write_time;
+		NTTIME   change_time;
+		uint64_t alloc_size;
+		uint64_t size;
+		uint32_t file_attr;
+		uint32_t unknown;
+	} standard_info;
+
+	struct {
+		uint32_t file_attr;
+		uint32_t unknown;
+	} attrib_info;
+};
