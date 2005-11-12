@@ -378,17 +378,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return nt_status;
 }
 
-/* find alternate names list for the domain 
- * should we look for netbios aliases?? 
-				SSS	*/
-static NTSTATUS alternate_name(struct winbindd_domain *domain)
-{
-	DEBUG(3,("pdb: alternate_name\n"));
-
-	return NT_STATUS_OK;
-}
-
-
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods passdb_methods = {
 	False,
@@ -403,5 +392,4 @@ struct winbindd_methods passdb_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	alternate_name
 };
