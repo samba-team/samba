@@ -166,7 +166,9 @@ struct smb2_request {
 #define SMB2_OP_CLOSE     0x06
 #define SMB2_OP_READ      0x08
 #define SMB2_OP_WRITE     0x09
+#define SMB2_OP_CANCEL    0x0c
 #define SMB2_OP_FIND      0x0e
+#define SMB2_OP_NOTIFY    0x0f
 #define SMB2_OP_GETINFO   0x10
 #define SMB2_OP_SETINFO   0x11
 #define SMB2_OP_BREAK     0x12

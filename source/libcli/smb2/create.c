@@ -85,9 +85,6 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 */
 NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 {
-	smb2_request_receive(req);
-	dump_data(0, req->in.body, req->in.body_size);
-
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);

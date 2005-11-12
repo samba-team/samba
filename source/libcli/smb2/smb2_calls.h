@@ -155,3 +155,50 @@ struct smb2_close {
 	} out;
 };
 
+/* fs information levels */
+#define SMB2_GETINFO_FS_01            0x0102
+#define SMB2_GETINFO_FS_03            0x0302
+#define SMB2_GETINFO_FS_04            0x0402
+#define SMB2_GETINFO_FS_ATTRIB_INFO   0x0502
+#define SMB2_GETINFO_FS_06            0x0602
+#define SMB2_GETINFO_FS_07            0x0702
+#define SMB2_GETINFO_FS_08            0x0802
+
+/* class 3 levels */
+#define SMB2_GETINFO_3_00            0x0003
+
+/* file information levels */
+#define SMB2_GETINFO_FILE_BASIC_INFO    0x0401
+#define SMB2_GETINFO_FILE_05            0x0501
+#define SMB2_GETINFO_FILE_06            0x0601
+#define SMB2_GETINFO_FILE_07            0x0701
+#define SMB2_GETINFO_FILE_ACCESS_INFO   0x0801
+#define SMB2_GETINFO_FILE_0E            0x0e01
+#define SMB2_GETINFO_FILE_10            0x1001
+#define SMB2_GETINFO_FILE_11            0x1101
+#define SMB2_GETINFO_FILE_ALL_INFO      0x1201
+#define SMB2_GETINFO_FILE_NAME_INFO     0x1501
+#define SMB2_GETINFO_FILE_STREAM_INFO   0x1601
+#define SMB2_GETINFO_FILE_1C            0x1c01
+#define SMB2_GETINFO_FILE_STANDARD_INFO 0x2201
+#define SMB2_GETINFO_FILE_ATTRIB_INFO   0x2301
+
+
+struct smb2_getinfo {
+	struct {
+		uint16_t buffer_code;
+		uint16_t level;
+		uint32_t max_response_size;
+		uint32_t unknown1;
+		uint32_t unknown2;
+		uint32_t unknown3;
+		uint32_t unknown4;
+		struct smb2_handle handle;
+	} in;
+
+	struct {
+		uint16_t buffer_code;
+		DATA_BLOB blob;
+	} out;
+};
+
