@@ -188,7 +188,7 @@ DATA_BLOB smb2_pull_blob(struct smb2_request *req, uint8_t *ptr, uint_t size)
 }
 
 /*
-  pull a ofs/length/blob triple into a data blob
+  pull a ofs/length/blob triple from a data blob
   the ptr points to the start of the offset/length pair
 */
 NTSTATUS smb2_pull_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB *blob)

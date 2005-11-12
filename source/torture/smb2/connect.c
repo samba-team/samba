@@ -46,14 +46,16 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 		return status;
 	}
 
-	printf("Close gave:\n");
-	printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
-	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
-	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
-	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
-	printf("alloc_size      = %lld\n", io.out.alloc_size);
-	printf("size            = %lld\n", io.out.size);
-	printf("file_attr       = 0x%x\n", io.out.file_attr);
+	if (DEBUGLVL(1)) {
+		printf("Close gave:\n");
+		printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
+		printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
+		printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
+		printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
+		printf("alloc_size      = %lld\n", io.out.alloc_size);
+		printf("size            = %lld\n", io.out.size);
+		printf("file_attr       = 0x%x\n", io.out.file_attr);
+	}
 
 	talloc_free(tmp_ctx);
 	
@@ -90,24 +92,27 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 		return io.out.handle;
 	}
 
-	printf("Open gave:\n");
-	printf("oplock_flags    = 0x%x\n", io.out.oplock_flags);
-	printf("create_action   = 0x%x\n", io.out.create_action);
-	printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
-	printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
-	printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
-	printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
-	printf("alloc_size      = %lld\n", io.out.alloc_size);
-	printf("size            = %lld\n", io.out.size);
-	printf("file_attr       = 0x%x\n", io.out.file_attr);
-	printf("handle          = %016llx%016llx\n", 
-	       io.out.handle.data[0], 
-	       io.out.handle.data[1]);
+	if (DEBUGLVL(1)) {
+		printf("Open gave:\n");
+		printf("oplock_flags    = 0x%x\n", io.out.oplock_flags);
+		printf("create_action   = 0x%x\n", io.out.create_action);
+		printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
+		printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
+		printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
+		printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
+		printf("alloc_size      = %lld\n", io.out.alloc_size);
+		printf("size            = %lld\n", io.out.size);
+		printf("file_attr       = 0x%x\n", io.out.file_attr);
+		printf("handle          = %016llx%016llx\n", 
+		       io.out.handle.data[0], 
+		       io.out.handle.data[1]);
+	}
 
 	talloc_free(tmp_ctx);
 	
 	return io.out.handle;
 }
+
 
 /* 
    basic testing of SMB2 connection calls
