@@ -24,20 +24,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
-
-#define BASEDIR "\\testsmb2"
-
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
-		goto done; \
-	}} while (0)
-
 
 /*
   send a close
@@ -141,8 +129,8 @@ BOOL torture_smb2_connect(void)
 		return False;
 	}
 
-	h1        = torture_smb2_create(tree, "test9.dat");
-	h2        = torture_smb2_create(tree, "test9.dat");
+	h1 = torture_smb2_create(tree, "test9.dat");
+	h2 = torture_smb2_create(tree, "test9.dat");
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
 
