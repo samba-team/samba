@@ -28,6 +28,31 @@
 #include "lib/events/events.h"
 
 
+/*
+  create a complex file using the old SMB protocol, to make it easier to 
+  find fields in SMB2 getinfo levels
+*/
+static BOOL setup_complex_file(const char *fname)
+{
+	struct smbcli_state *cli;
+	int fnum;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	fnum = create_complex_file(cli, cli, fname);
+
+	if (DEBUGLVL(1)) {
+		torture_all_info(cli->tree, fname);
+	}
+	
+	talloc_free(cli);
+	return fnum != -1;
+}
+
+
+
 /* 
    scan for valid SMB2 getinfo levels
 */
@@ -50,6 +75,10 @@ BOOL torture_smb2_getinfo_scan(void)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Connection failed - %s\n", nt_errstr(status));
 		return False;
+	}
+
+	if (!setup_complex_file(fname)) {
+		printf("Failed to setup complex file '%s'\n", fname);
 	}
 
 	ZERO_STRUCT(cr);
