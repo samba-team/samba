@@ -27,7 +27,6 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
-#include "auth/gensec/gensec.h"
 
 #define BASEDIR "\\testsmb2"
 
@@ -88,77 +87,16 @@ static struct smb2_session *torture_smb2_session(struct smb2_transport *transpor
 						 struct cli_credentials *credentials)
 {
 	struct smb2_session *session;
-	struct smb2_session_setup io;
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(transport);
-	DATA_BLOB secblob;
-
-	ZERO_STRUCT(io);
-	io.in.unknown1 = 0x11;
-	io.in.unknown2 = 0xF;
-	io.in.unknown3 = 0x00;
-
+	
 	session = smb2_session_init(transport, transport, True);
 
-	status = gensec_set_credentials(session->gensec, credentials);
+	status = smb2_session_setup_spnego(session, credentials);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client credentails: %s\n", 
-			  nt_errstr(status)));
+		printf("Session setup failed - %s\n", nt_errstr(status));
 		return NULL;
 	}
-
-	status = gensec_set_target_hostname(session->gensec, transport->socket->hostname);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
-			  nt_errstr(status)));
-		return NULL;
-	}
-
-	status = gensec_set_target_service(session->gensec, "cifs");
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
-			  nt_errstr(status)));
-		return NULL;
-	}
-
-	status = gensec_start_mech_by_oid(session->gensec, GENSEC_OID_SPNEGO);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client - %s\n",
-			  nt_errstr(status)));
-		return NULL;
-	}
-
-	secblob = session->transport->negotiate.secblob;
-
-	do {
-		NTSTATUS status1;
-
-		status1 = gensec_update(session->gensec, tmp_ctx, secblob, &io.in.secblob);
-		if (!NT_STATUS_EQUAL(status1, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
-		    !NT_STATUS_IS_OK(status1)) {
-			DEBUG(1, ("Failed initial gensec_update : %s\n", 
-				  nt_errstr(status1)));
-			status = status1;
-			break;
-		}
-		
-		status = smb2_session_setup(session, tmp_ctx, &io);
-		secblob = io.out.secblob;
-
-		session->uid = io.out.uid;
-
-		if (NT_STATUS_IS_OK(status) && 
-		    NT_STATUS_EQUAL(status1, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			status = gensec_update(session->gensec, tmp_ctx, secblob, 
-					       &io.in.secblob);
-		}
-	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("session setup failed - %s\n", nt_errstr(status));
-		return NULL;
-	}
-
+	
 	printf("Session setup gave UID 0x%016llx\n", session->uid);
 
 	return session;
@@ -292,8 +230,14 @@ BOOL torture_smb2_connect(void)
 	struct smb2_handle h1, h2;
 
 	transport = torture_smb2_negprot(mem_ctx, host);
+	if (transport == NULL) return False;
+
 	session   = torture_smb2_session(transport, credentials);
+	if (session == NULL) return False;
+
 	tree      = torture_smb2_tree(session, share);
+	if (tree == NULL) return False;
+
 	h1        = torture_smb2_create(tree, "test9.dat");
 	h2        = torture_smb2_create(tree, "test9.dat");
 	torture_smb2_close(tree, h1);

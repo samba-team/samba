@@ -114,6 +114,8 @@ struct smb2_request {
 	enum smb2_request_state state;
 	
 	struct smb2_transport *transport;
+	struct smb2_session   *session;
+	struct smb2_tree      *tree;
 
 	uint64_t seqnum;
 
