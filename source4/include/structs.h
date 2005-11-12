@@ -343,3 +343,4 @@ struct smb2_tree;
 struct smb2_tree_connect;
 struct smb2_create;
 struct smb2_close;
+struct smb2_getinfo;
