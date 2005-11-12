@@ -31,10 +31,14 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct libnet_Lookup fp;
 	struct libnet_rpc_domain_open dom_io;
 	struct libnet_rpc_useradd user_io;
+	const char *address;
 	
+	address = talloc_array(mem_ctx, const char, 8);
+
 	/* find domain pdc */
 	fp.in.hostname    = r->in.domain_name;
 	fp.in.methods     = NULL;
+	fp.out.address    = &address;
 
 	status = libnet_LookupPdc(ctx, mem_ctx, &fp);
 	if (!NT_STATUS_IS_OK(status)) return status;
