@@ -370,8 +370,8 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	state = talloc(c, struct sesssetup_state);
 	if (state == NULL) {
-		c->state = COMPOSITE_STATE_ERROR;
-		c->status = NT_STATUS_NO_MEMORY;
+		talloc_free(c);
+		return NULL;
 	}
 
 	state->io = io;

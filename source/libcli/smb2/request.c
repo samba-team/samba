@@ -39,6 +39,8 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport,
 
 	req->state     = SMB2_REQUEST_INIT;
 	req->transport = transport;
+	req->session   = NULL;
+	req->tree      = NULL;
 	req->seqnum    = transport->seqnum++;
 	req->status    = NT_STATUS_OK;
 	req->async.fn  = NULL;
@@ -88,6 +90,8 @@ struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree,
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
 	SIVAL(req->out.hdr,  SMB2_HDR_TID, tree->tid);
+	req->session = tree->session;
+	req->tree = tree;
 
 	return req;	
 }

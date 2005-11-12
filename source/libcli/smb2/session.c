@@ -24,6 +24,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "libcli/composite/composite.h"
+#include "auth/gensec/gensec.h"
 
 /*
   initialise a smb2_session structure
@@ -72,6 +74,8 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	SIVAL(req->out.body, 0x00, io->in.unknown1);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3);
+	
+	req->session = session;
 	
 	status = smb2_push_ofs_blob(req, req->out.body+0x0C, io->in.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -126,4 +130,146 @@ NTSTATUS smb2_session_setup(struct smb2_session *session,
 {
 	struct smb2_request *req = smb2_session_setup_send(session, io);
 	return smb2_session_setup_recv(req, mem_ctx, io);
+}
+
+
+struct smb2_session_state {
+	struct smb2_session_setup io;
+	struct smb2_request *req;
+	NTSTATUS gensec_status;
+};
+
+/*
+  handle continuations of the spnego session setup
+*/
+static void session_request_handler(struct smb2_request *req)
+{
+	struct composite_context *c = talloc_get_type(req->async.private, 
+						      struct composite_context);
+	struct smb2_session_state *state = talloc_get_type(c->private_data, 
+							   struct smb2_session_state);
+	struct smb2_session *session = req->session;
+
+	c->status = smb2_session_setup_recv(req, c, &state->io);
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
+	    (NT_STATUS_IS_OK(c->status) && 
+	     NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED))) {
+		c->status = gensec_update(req->session->gensec, c, 
+					  state->io.out.secblob,
+					  &state->io.in.secblob);
+		state->gensec_status = c->status;
+	}
+
+	session->uid = state->io.out.uid;
+
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		state->req = smb2_session_setup_send(session, &state->io);
+		if (state->req == NULL) {
+			composite_error(c, NT_STATUS_NO_MEMORY);
+		}
+
+		state->req->async.fn = session_request_handler;
+		state->req->async.private = c;
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(c->status)) {
+		composite_error(c, c->status);
+		return;
+	}
+
+	composite_done(c);
+}
+
+/*
+  a composite function that does a full SPNEGO session setup
+ */
+struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *session, 
+							 struct cli_credentials *credentials)
+{
+	struct composite_context *c;
+	struct smb2_session_state *state;
+
+	c = talloc_zero(session, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct smb2_session_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = session->transport->socket->event.ctx;
+
+	ZERO_STRUCT(state->io);
+	state->io.in.unknown1 = 0x11;
+	state->io.in.unknown2 = 0xF;
+	state->io.in.unknown3 = 0x00;
+
+	c->status = gensec_set_credentials(session->gensec, credentials);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	c->status = gensec_set_target_hostname(session->gensec, 
+					       session->transport->socket->hostname);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	c->status = gensec_set_target_service(session->gensec, "cifs");
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	c->status = gensec_start_mech_by_oid(session->gensec, GENSEC_OID_SPNEGO);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	c->status = gensec_update(session->gensec, c, 
+				  session->transport->negotiate.secblob,
+				  &state->io.in.secblob);
+	if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto failed;
+	}
+	state->gensec_status = c->status;
+		
+	state->req = smb2_session_setup_send(session, &state->io);
+	if (state->req == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	state->req->async.fn = session_request_handler;
+	state->req->async.private = c;
+
+	return c;
+
+failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+/*
+  receive a composite session setup reply
+*/
+NTSTATUS smb2_session_setup_spnego_recv(struct composite_context *c)
+{
+	NTSTATUS status;
+	status = composite_wait(c);
+	talloc_free(c);
+	return status;
+}
+
+/*
+  sync version of smb2_session_setup_spnego
+*/
+NTSTATUS smb2_session_setup_spnego(struct smb2_session *session, 
+				   struct cli_credentials *credentials)
+{
+	struct composite_context *c = smb2_session_setup_spnego_send(session, credentials);
+	return smb2_session_setup_spnego_recv(c);
 }
