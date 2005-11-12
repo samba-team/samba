@@ -6,5 +6,6 @@ OBJ_FILES = \
 	session.o \
 	tcon.o \
 	create.o \
-	close.o
+	close.o \
+	connect.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET

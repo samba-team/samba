@@ -40,100 +40,6 @@
 
 
 /*
-  send a negotiate
- */
-static struct smb2_transport *torture_smb2_negprot(TALLOC_CTX *mem_ctx, const char *host)
-{
-	struct smbcli_socket *socket;
-	struct smb2_transport *transport;
-	NTSTATUS status;
-	struct smb2_negprot io;
-
-	socket = smbcli_sock_connect_byname(host, 445, mem_ctx, NULL);
-	if (socket == NULL) {
-		printf("Failed to connect to %s\n", host);
-		return False;
-	}
-
-	transport = smb2_transport_init(socket, mem_ctx);
-	if (transport == NULL) {
-		printf("Failed to setup smb2 transport\n");
-		return False;
-	}
-
-	ZERO_STRUCT(io);
-	io.in.unknown1 = 0x010024;
-
-	/* send a negprot */
-	status = smb2_negprot(transport, mem_ctx, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("negprot failed - %s\n", nt_errstr(status));
-		return NULL;
-	}
-
-	printf("Negprot reply:\n");
-	printf("current_time  = %s\n", nt_time_string(mem_ctx, io.out.current_time));
-	printf("boot_time     = %s\n", nt_time_string(mem_ctx, io.out.boot_time));
-
-	transport->negotiate.secblob = io.out.secblob;
-
-	return transport;
-}
-
-/*
-  send a session setup
-*/
-static struct smb2_session *torture_smb2_session(struct smb2_transport *transport, 
-						 struct cli_credentials *credentials)
-{
-	struct smb2_session *session;
-	NTSTATUS status;
-	
-	session = smb2_session_init(transport, transport, True);
-
-	status = smb2_session_setup_spnego(session, credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Session setup failed - %s\n", nt_errstr(status));
-		return NULL;
-	}
-	
-	printf("Session setup gave UID 0x%016llx\n", session->uid);
-
-	return session;
-}
-
-
-/*
-  send a tree connect
-*/
-static struct smb2_tree *torture_smb2_tree(struct smb2_session *session, 
-					   const char *share)
-{
-	struct smb2_tree *tree;
-	struct smb2_tree_connect io;
-	NTSTATUS status;
-
-	tree = smb2_tree_init(session, session, True);
-
-	io.in.unknown1 = 0x09;
-	io.in.path     = talloc_asprintf(tree, "\\\\%s\\%s",
-					 session->transport->socket->hostname,
-					 share);
-	
-	status = smb2_tree_connect(tree, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("tcon failed - %s\n", nt_errstr(status));
-		return NULL;
-	}
-	
-	printf("Tree connect gave tid = 0x%x\n", io.out.tid);
-
-	tree->tid = io.out.tid;
-
-	return tree;
-}
-
-/*
   send a close
 */
 static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle handle)
@@ -221,22 +127,19 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 BOOL torture_smb2_connect(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct smb2_transport *transport;
-	struct smb2_session *session;	
 	struct smb2_tree *tree;
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
 	struct cli_credentials *credentials = cmdline_credentials;
 	struct smb2_handle h1, h2;
+	NTSTATUS status;
 
-	transport = torture_smb2_negprot(mem_ctx, host);
-	if (transport == NULL) return False;
-
-	session   = torture_smb2_session(transport, credentials);
-	if (session == NULL) return False;
-
-	tree      = torture_smb2_tree(session, share);
-	if (tree == NULL) return False;
+	status = smb2_connect(mem_ctx, host, share, credentials, &tree, 
+			      event_context_find(mem_ctx));
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Connection failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	h1        = torture_smb2_create(tree, "test9.dat");
 	h2        = torture_smb2_create(tree, "test9.dat");
