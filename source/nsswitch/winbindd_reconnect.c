@@ -297,19 +297,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
-static NTSTATUS alternate_name(struct winbindd_domain *domain)
-{
-	NTSTATUS result;
-
-	result = msrpc_methods.alternate_name(domain);
-
-	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
-		result = msrpc_methods.alternate_name(domain);
-
-	return result;
-}
-
-
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods reconnect_methods = {
 	False,
@@ -327,5 +314,4 @@ struct winbindd_methods reconnect_methods = {
 	query_groupmem,
 	sequence_number,
 	trusted_domains,
-	alternate_name
 };

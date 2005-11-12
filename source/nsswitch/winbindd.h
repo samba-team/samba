@@ -297,9 +297,6 @@ struct winbindd_methods {
 				    char ***names,
 				    char ***alt_names,
 				    DOM_SID **dom_sids);
-
-	/* setup the list of alternate names for the domain, if any */
-	NTSTATUS (*alternate_name)(struct winbindd_domain *domain);
 };
 
 /* Used to glue a policy handle and cli_state together */

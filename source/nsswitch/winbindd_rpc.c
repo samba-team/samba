@@ -970,13 +970,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
-/* find alternate names list for the domain - none for rpc */
-static NTSTATUS alternate_name(struct winbindd_domain *domain)
-{
-	return NT_STATUS_OK;
-}
-
-
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	False,
@@ -994,5 +987,4 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_query_groupmem,
 	sequence_number,
 	trusted_domains,
-	alternate_name
 };

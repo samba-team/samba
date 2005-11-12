@@ -1563,18 +1563,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 					       names, alt_names, dom_sids);
 }
 
-/* find the alternate names for the domain, if any */
-static NTSTATUS alternate_name(struct winbindd_domain *domain)
-{
-	get_cache(domain);
-
-	DEBUG(10,("alternate_name: [Cached] - doing backend query for info for domain %s\n",
-		domain->name ));
-
-	/* we don't cache this call */
-	return domain->backend->alternate_name(domain);
-}
-
 /* Invalidate cached user and group lists coherently */
 
 static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
@@ -1632,7 +1620,6 @@ struct winbindd_methods cache_methods = {
 	query_groupmem,
 	sequence_number,
 	trusted_domains,
-	alternate_name
 };
 
 static BOOL init_wcache(void)

@@ -933,42 +933,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
-/* find alternate names list for the domain - for ADS this is the
-   netbios name */
-static NTSTATUS alternate_name(struct winbindd_domain *domain)
-{
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-	TALLOC_CTX *ctx;
-	const char *workgroup;
-
-	DEBUG(3,("ads: alternate_name\n"));
-
-	ads = ads_cached_connection(domain);
-	
-	if (!ads) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!(ctx = talloc_init("alternate_name"))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rc = ads_workgroup_name(ads, ctx, &workgroup);
-
-	if (ADS_ERR_OK(rc)) {
-		fstrcpy(domain->name, workgroup);
-		fstrcpy(domain->alt_name, ads->config.realm);
-		strupper_m(domain->alt_name);
-		strupper_m(domain->name);
-	}
-
-	talloc_destroy(ctx);
-
-	return ads_ntstatus(rc);	
-}
-
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	True,
@@ -986,7 +950,6 @@ struct winbindd_methods ads_methods = {
 	msrpc_query_groupmem,
 	sequence_number,
 	trusted_domains,
-	alternate_name
 };
 
 #endif
