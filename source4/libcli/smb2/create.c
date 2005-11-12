@@ -70,7 +70,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	SIVAL(ptr, 0x04, io->in.unknown8);
 	SIVAL(ptr, 0x08, io->in.unknown9);
 	SIVAL(ptr, 0x0C, io->in.unknown10);
-	SIVAL(ptr, 0x10, io->in.unknown11);
+	SBVAL(ptr, 0x10, io->in.unknown11);
 
 	data_blob_free(&path);
 
