@@ -154,7 +154,7 @@ static void session_request_handler(struct smb2_request *req)
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
 	    (NT_STATUS_IS_OK(c->status) && 
 	     NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED))) {
-		c->status = gensec_update(req->session->gensec, c, 
+		c->status = gensec_update(session->gensec, c, 
 					  state->io.out.secblob,
 					  &state->io.in.secblob);
 		state->gensec_status = c->status;
