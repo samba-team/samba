@@ -33,7 +33,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct libnet_rpc_useradd user_io;
 	const char *address;
 	
-	address = talloc_array(mem_ctx, const char, 8);
+	address = talloc_array(mem_ctx, const char, 16);
 
 	/* find domain pdc */
 	fp.in.hostname    = r->in.domain_name;
