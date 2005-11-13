@@ -417,6 +417,129 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Dsr_GetDCName */
+
+WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *server_name,
+				     const char *domain_name,
+				     struct uuid *domain_guid,
+				     struct uuid *site_guid,
+				     uint32_t flags,
+				     char **dc_unc, char **dc_address,
+				     int32 *dc_address_type,
+				     struct uuid *domain_guid_out,
+				     char **domain_name_out,
+				     char **forest_name,
+				     uint32 *dc_flags,
+				     char **dc_site_name,
+				     char **client_site_name)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_DSR_GETDCNAME q;
+	NET_R_DSR_GETDCNAME r;
+	char *tmp_str;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialize input parameters */
+
+	tmp_str = talloc_asprintf(mem_ctx, "\\\\%s", server_name);
+	if (tmp_str == NULL) {
+		return WERR_NOMEM;
+	}
+
+	init_net_q_dsr_getdcname(&q, tmp_str, domain_name, domain_guid,
+				 site_guid, flags);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_DSR_GETDCNAME,
+			q, r,
+			qbuf, rbuf,
+			net_io_q_dsr_getdcname,
+			net_io_r_dsr_getdcname,
+			WERR_GENERAL_FAILURE);
+
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
+	}
+
+	if (dc_unc != NULL) {
+		char *tmp;
+		if (rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
+					       &r.uni_dc_unc) < 0) {
+			return WERR_GENERAL_FAILURE;
+		}
+		if (*tmp == '\\') tmp += 1;
+		if (*tmp == '\\') tmp += 1;
+
+		/* We have to talloc_strdup, otherwise a talloc_steal would
+		   fail */
+		*dc_unc = talloc_strdup(mem_ctx, tmp);
+		if (*dc_unc == NULL) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (dc_address != NULL) {
+		char *tmp;
+		if (rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
+					       &r.uni_dc_address) < 0) {
+			return WERR_GENERAL_FAILURE;
+		}
+		if (*tmp == '\\') tmp += 1;
+		if (*tmp == '\\') tmp += 1;
+
+		/* We have to talloc_strdup, otherwise a talloc_steal would
+		   fail */
+		*dc_address = talloc_strdup(mem_ctx, tmp);
+		if (*dc_address == NULL) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if (dc_address_type != NULL) {
+		*dc_address_type = r.dc_address_type;
+	}
+
+	if (domain_guid_out != NULL) {
+		*domain_guid_out = r.domain_guid;
+	}
+
+	if ((domain_name_out != NULL) &&
+	    (rpcstr_pull_unistr2_talloc(mem_ctx, domain_name_out,
+					&r.uni_domain_name) < 1)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if ((forest_name != NULL) &&
+	    (rpcstr_pull_unistr2_talloc(mem_ctx, forest_name,
+					&r.uni_forest_name) < 1)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (dc_flags != NULL) {
+		*dc_flags = r.dc_flags;
+	}
+
+	if ((dc_site_name != NULL) &&
+	    (rpcstr_pull_unistr2_talloc(mem_ctx, dc_site_name,
+					&r.uni_dc_site_name) < 1)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if ((client_site_name != NULL) &&
+	    (rpcstr_pull_unistr2_talloc(mem_ctx, client_site_name,
+					&r.uni_client_site_name) < 1)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	return WERR_OK;
+}
+
+
 /* Sam synchronisation */
 
 NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
