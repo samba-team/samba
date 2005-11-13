@@ -134,7 +134,8 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	for (i=1; i<num_domains; i++)
 		extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
 					     extra_data,
-					     names[i], alt_names[i],
+					     names[i],
+					     alt_names[i] ? alt_names[i] : names[i],
 					     sid_string_static(&sids[i]));
 
 	/* This is a bit excessive, but the extra data sooner or later will be
