@@ -265,6 +265,34 @@ int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
                          src->uni_str_len * 2, 0);
 }
 
+/* Helper function to return a talloc'ed string. I have implemented it with a
+ * copy because I don't really know how pull_ucs2 and friends calculate the
+ * target size. If this turns out to be a major bottleneck someone with deeper
+ * multi-byte knowledge needs to revisit this.
+ * My (VL) use is dsr_getdcname, which returns 6 strings, the alternative would
+ * have been to manually talloc_strdup them in rpc_client/cli_netlogon.c.
+ */
+
+size_t rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, char **dest,
+				  UNISTR2 *src)
+{
+	pstring tmp;
+	size_t result;
+
+	result = pull_ucs2(NULL, tmp, src->buffer, sizeof(tmp),
+			   src->uni_str_len * 2, 0);
+	if (result < 0) {
+		return result;
+	}
+
+	*dest = talloc_strdup(mem_ctx, tmp);
+	if (*dest == NULL) {
+		return -1;
+	}
+
+	return result;
+}
+
 /* Converts a string from internal samba format to unicode
  */ 
 

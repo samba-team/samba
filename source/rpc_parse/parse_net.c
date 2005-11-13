@@ -3153,3 +3153,239 @@ BOOL net_io_r_sam_deltas(const char *desc,
 
 	return True;
 }
+
+/*******************************************************************
+ Inits a NET_Q_DSR_GETDCNAME structure.
+********************************************************************/
+
+void init_net_q_dsr_getdcname(NET_Q_DSR_GETDCNAME *r_t, const char *server_unc,
+			      const char *domain_name,
+			      struct uuid *domain_guid,
+			      struct uuid *site_guid,
+			      uint32_t flags)
+{
+	DEBUG(5, ("init_net_q_dsr_getdcname\n"));
+
+	r_t->ptr_server_unc = (server_unc != NULL);
+	init_unistr2(&r_t->uni_server_unc, server_unc, UNI_STR_TERMINATE);
+
+	r_t->ptr_domain_name = (domain_name != NULL);
+	init_unistr2(&r_t->uni_domain_name, domain_name, UNI_STR_TERMINATE);
+
+	r_t->ptr_domain_guid = (domain_guid != NULL);
+	r_t->domain_guid = domain_guid;
+
+	r_t->ptr_site_guid = (site_guid != NULL);
+	r_t->site_guid = site_guid;
+
+	r_t->flags = flags;
+}
+
+/*******************************************************************
+ Reads or writes an NET_Q_DSR_GETDCNAME structure.
+********************************************************************/
+
+BOOL net_io_q_dsr_getdcname(const char *desc, NET_Q_DSR_GETDCNAME *r_t,
+			    prs_struct *ps, int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_dsr_getdcname");
+	depth++;
+
+	if (!prs_uint32("ptr_server_unc", ps, depth, &r_t->ptr_server_unc))
+		return False;
+
+	if (!smb_io_unistr2("server_unc", &r_t->uni_server_unc,
+			    r_t->ptr_server_unc, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domain_name", ps, depth, &r_t->ptr_domain_name))
+		return False;
+
+	if (!smb_io_unistr2("domain_name", &r_t->uni_domain_name,
+			    r_t->ptr_domain_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_domain_guid", ps, depth, &r_t->ptr_domain_guid))
+		return False;
+
+	if (UNMARSHALLING(ps) && (r_t->ptr_domain_guid)) {
+		r_t->domain_guid = PRS_ALLOC_MEM(ps, struct uuid, 1);
+		if (r_t->domain_guid == NULL)
+			return False;
+	}
+
+	if ((r_t->ptr_domain_guid) &&
+	    (!smb_io_uuid("domain_guid", r_t->domain_guid, ps, depth)))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_site_guid", ps, depth, &r_t->ptr_site_guid))
+		return False;
+
+	if (UNMARSHALLING(ps) && (r_t->ptr_site_guid)) {
+		r_t->site_guid = PRS_ALLOC_MEM(ps, struct uuid, 1);
+		if (r_t->site_guid == NULL)
+			return False;
+	}
+
+	if ((r_t->ptr_site_guid) &&
+	    (!smb_io_uuid("site_guid", r_t->site_guid, ps, depth)))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("flags", ps, depth, &r_t->flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits a NET_R_DSR_GETDCNAME structure.
+********************************************************************/
+void init_net_r_dsr_getdcname(NET_R_DSR_GETDCNAME *r_t, const char *dc_unc,
+			      const char *dc_address, int32 dc_address_type,
+			      struct uuid domain_guid, const char *domain_name,
+			      const char *forest_name, uint32 dc_flags,
+			      const char *dc_site_name,
+			      const char *client_site_name)
+{
+	DEBUG(5, ("init_net_q_dsr_getdcname\n"));
+
+	r_t->ptr_dc_unc = (dc_unc != NULL);
+	init_unistr2(&r_t->uni_dc_unc, dc_unc, UNI_STR_TERMINATE);
+
+	r_t->ptr_dc_address = (dc_address != NULL);
+	init_unistr2(&r_t->uni_dc_address, dc_address, UNI_STR_TERMINATE);
+
+	r_t->dc_address_type = dc_address_type;
+	r_t->domain_guid = domain_guid;
+
+	r_t->ptr_domain_name = (domain_name != NULL);
+	init_unistr2(&r_t->uni_domain_name, domain_name, UNI_STR_TERMINATE);
+
+	r_t->ptr_forest_name = (forest_name != NULL);
+	init_unistr2(&r_t->uni_forest_name, forest_name, UNI_STR_TERMINATE);
+
+	r_t->dc_flags = dc_flags;
+
+	r_t->ptr_dc_site_name = (dc_site_name != NULL);
+	init_unistr2(&r_t->uni_dc_site_name, dc_site_name, UNI_STR_TERMINATE);
+
+	r_t->ptr_client_site_name = (client_site_name != NULL);
+	init_unistr2(&r_t->uni_client_site_name, client_site_name,
+		     UNI_STR_TERMINATE);
+}
+
+/*******************************************************************
+ Reads or writes an NET_R_DSR_GETDCNAME structure.
+********************************************************************/
+
+BOOL net_io_r_dsr_getdcname(const char *desc, NET_R_DSR_GETDCNAME *r_t,
+			    prs_struct *ps, int depth)
+{
+	uint32 info_ptr = 1;
+
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_dsr_getdcname");
+	depth++;
+
+	/* The reply contains *just* an info struct, this is the ptr to it */
+	if (!prs_uint32("info_ptr", ps, depth, &info_ptr))
+		return False;
+
+	if (info_ptr == 0)
+		return False;
+
+	if (!prs_uint32("ptr_dc_unc", ps, depth, &r_t->ptr_dc_unc))
+		return False;
+
+	if (!prs_uint32("ptr_dc_address", ps, depth, &r_t->ptr_dc_address))
+		return False;
+
+	if (!prs_uint32("dc_address_type", ps, depth, &r_t->dc_address_type))
+		return False;
+
+	if (!smb_io_uuid("domain_guid", &r_t->domain_guid, ps, depth))
+		return False;
+
+	if (!prs_uint32("ptr_domain_name", ps, depth, &r_t->ptr_domain_name))
+		return False;
+
+	if (!prs_uint32("ptr_forest_name", ps, depth, &r_t->ptr_forest_name))
+		return False;
+
+	if (!prs_uint32("dc_flags", ps, depth, &r_t->dc_flags))
+		return False;
+
+	if (!prs_uint32("ptr_dc_site_name", ps, depth, &r_t->ptr_dc_site_name))
+		return False;
+
+	if (!prs_uint32("ptr_client_site_name", ps, depth,
+			&r_t->ptr_client_site_name))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("dc_unc", &r_t->uni_dc_unc,
+			    r_t->ptr_dc_unc, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("dc_address", &r_t->uni_dc_address,
+			    r_t->ptr_dc_address, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("domain_name", &r_t->uni_domain_name,
+			    r_t->ptr_domain_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("forest_name", &r_t->uni_forest_name,
+			    r_t->ptr_forest_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("dc_site_name", &r_t->uni_dc_site_name,
+			    r_t->ptr_dc_site_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("client_site_name", &r_t->uni_client_site_name,
+			    r_t->ptr_client_site_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("result", ps, depth, &r_t->result))
+		return False;
+
+	return True;
+}
