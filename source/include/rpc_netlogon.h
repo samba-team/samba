@@ -38,6 +38,7 @@
 #define NET_LOGON_CTRL2		0x0e
 #define NET_SAM_SYNC		0x10
 #define NET_TRUST_DOM_LIST	0x13
+#define NET_DSR_GETDCNAME	0x14
 #define NET_AUTH3		0x1a
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
@@ -933,5 +934,38 @@ typedef struct net_r_sam_deltas_info {
 
 	NTSTATUS status;
 } NET_R_SAM_DELTAS;
+
+/* NET_Q_DSR_GETDCNAME - Ask a DC for a trusted DC name and its address */
+typedef struct net_q_dsr_getdcname {
+	uint32 ptr_server_unc;
+	UNISTR2 uni_server_unc;
+	uint32 ptr_domain_name;
+	UNISTR2 uni_domain_name;
+	uint32 ptr_domain_guid;
+	struct uuid *domain_guid;
+	uint32 ptr_site_guid;
+	struct uuid *site_guid;
+	uint32_t flags;
+} NET_Q_DSR_GETDCNAME;
+
+/* NET_R_DSR_GETDCNAME - Ask a DC for a trusted DC name and its address */
+typedef struct net_r_dsr_getdcname {
+	uint32 ptr_dc_unc;
+	UNISTR2 uni_dc_unc;
+	uint32 ptr_dc_address;
+	UNISTR2 uni_dc_address;
+	int32 dc_address_type;
+	struct uuid domain_guid;
+	uint32 ptr_domain_name;
+	UNISTR2 uni_domain_name;
+	uint32 ptr_forest_name;
+	UNISTR2 uni_forest_name;
+	uint32 dc_flags;
+	uint32 ptr_dc_site_name;
+	UNISTR2 uni_dc_site_name;
+	uint32 ptr_client_site_name;
+	UNISTR2 uni_client_site_name;
+	WERROR result;
+} NET_R_DSR_GETDCNAME;
 
 #endif /* _RPC_NETLOGON_H */
