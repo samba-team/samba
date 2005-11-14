@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   SMB2 client close handling
+   SMB2 client read call
 
    Copyright (C) Andrew Tridgell 2005
    
@@ -26,19 +26,21 @@
 #include "libcli/smb2/smb2_calls.h"
 
 /*
-  send a close request
+  send a read request
 */
-struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *io)
+struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io)
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18);
+	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x31);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x00, io->in.buffer_code);
-	SSVAL(req->out.body, 0x02, io->in.flags);
-	SIVAL(req->out.body, 0x04, io->in._pad);
-	smb2_put_handle(req->out.body+0x08, io->in.handle);
+	SSVAL(req->out.body, 0x02, 0);
+	SIVAL(req->out.body, 0x04, io->in.length);
+	SBVAL(req->out.body, 0x08, io->in.offset);
+	smb2_put_handle(req->out.body+0x10, io->in.handle);
+	memcpy(req->out.body+0x20, io->in._pad, 17);
 
 	smb2_transport_send(req);
 
@@ -47,39 +49,47 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 
 
 /*
-  recv a close reply
+  recv a read reply
 */
-NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
+NTSTATUS smb2_read_recv(struct smb2_request *req, 
+			TALLOC_CTX *mem_ctx, struct smb2_read *io)
 {
+	uint16_t ofs;
+	uint32_t nread;
+
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x3C) {
+	if (req->in.body_size < 16) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	SMB2_CHECK_BUFFER_CODE(req, 0x3C);
+	SMB2_CHECK_BUFFER_CODE(req, 0x11);
 
-	io->out.flags       = SVAL(req->in.body, 0x02);
-	io->out._pad        = IVAL(req->in.body, 0x04);
-	io->out.create_time = smbcli_pull_nttime(req->in.body, 0x08);
-	io->out.access_time = smbcli_pull_nttime(req->in.body, 0x10);
-	io->out.write_time  = smbcli_pull_nttime(req->in.body, 0x18);
-	io->out.change_time = smbcli_pull_nttime(req->in.body, 0x20);
-	io->out.alloc_size  = BVAL(req->in.body, 0x28);
-	io->out.size        = BVAL(req->in.body, 0x30);
-	io->out.file_attr   = IVAL(req->in.body, 0x38);
+	ofs = SVAL(req->in.body, 0x02);
+
+	nread = IVAL(req->in.body, 0x04);
+	memcpy(io->out.unknown, req->in.body+0x08, 8);
+
+	if (smb2_oob_in(req, req->in.hdr+ofs, nread)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	io->out.data = data_blob_talloc(mem_ctx, req->in.hdr+ofs, nread);
+	if (io->out.data.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return smb2_request_destroy(req);
 }
 
 /*
-  sync close request
+  sync read request
 */
-NTSTATUS smb2_close(struct smb2_tree *tree, struct smb2_close *io)
+NTSTATUS smb2_read(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, struct smb2_read *io)
 {
-	struct smb2_request *req = smb2_close_send(tree, io);
-	return smb2_close_recv(req, io);
+	struct smb2_request *req = smb2_read_send(tree, io);
+	return smb2_read_recv(req, mem_ctx, io);
 }
