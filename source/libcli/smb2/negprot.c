@@ -77,8 +77,7 @@ NTSTATUS smb2_negprot_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 	io->out.unknown8     = SVAL(req->in.body, 0x38);
 	blobsize             = SVAL(req->in.body, 0x3A);
 	io->out.unknown9     = IVAL(req->in.body, 0x3C);
-	io->out.secblob      = smb2_pull_blob(req, req->in.body+0x40, blobsize);
-	talloc_steal(mem_ctx, io->out.secblob.data);
+	io->out.secblob      = smb2_pull_blob(&req->in, mem_ctx, req->in.body+0x40, blobsize);
 
 	return smb2_request_destroy(req);
 }

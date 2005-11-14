@@ -30,6 +30,7 @@
 */
 struct smb2_request *smb2_write_send(struct smb2_tree *tree, struct smb2_write *io)
 {
+	NTSTATUS status;
 	struct smb2_request *req;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_WRITE, io->in.data.length + 0x30);
@@ -41,7 +42,11 @@ struct smb2_request *smb2_write_send(struct smb2_tree *tree, struct smb2_write *
 	SBVAL(req->out.body, 0x08, io->in.offset);
 	smb2_put_handle(req->out.body+0x10, &io->in.handle);
 	memcpy(req->out.body+0x20, io->in._pad, 0x10);
-	memcpy(req->out.body+0x30, io->in.data.data, io->in.data.length);
+
+	status = smb2_push_blob(&req->out, req->out.body+0x30, io->in.data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
 
 	smb2_transport_send(req);
 
