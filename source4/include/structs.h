@@ -154,6 +154,8 @@ struct auth_context;
 struct auth_method_context;
 struct request_buffer;
 
+struct smb2_request_buffer;
+
 struct ntvfs_context;
 struct ntvfs_module_context;
 
