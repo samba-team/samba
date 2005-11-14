@@ -337,6 +337,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
+	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
 	
 	DEBUG(8,("\n"));
 
@@ -354,6 +355,9 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 	mode_t tmp;
 	mode_t unixmode;
 	int ret = -1;
+
+	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
+	dosmode &= SAMBA_ATTRIBUTES_MASK;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
 	if (!st || (st && !VALID_STAT(*st))) {
