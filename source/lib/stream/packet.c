@@ -43,7 +43,7 @@ struct packet_context {
 	void *private;
 	struct fd_event *fde;
 	BOOL serialise;
-	BOOL processing;
+	int processing;
 	BOOL recv_disable;
 	BOOL nofree;
 
@@ -209,6 +209,8 @@ void packet_recv(struct packet_context *pc)
 	DATA_BLOB blob;
 
 	if (pc->processing) {
+		EVENT_FD_NOT_READABLE(pc->fde);
+		pc->processing++;
 		return;
 	}
 
@@ -329,15 +331,16 @@ next_partial:
 	pc->packet_size = 0;
 	
 	if (pc->serialise) {
-		EVENT_FD_NOT_READABLE(pc->fde);
-		pc->processing = True;
+		pc->processing = 1;
 	}
 
 	status = pc->callback(pc->private, blob);
 
-	if (pc->serialise) {
-		EVENT_FD_READABLE(pc->fde);
-		pc->processing = False;
+	if (pc->processing) {
+		if (pc->processing > 1) {
+			EVENT_FD_READABLE(pc->fde);
+		}
+		pc->processing = 0;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
