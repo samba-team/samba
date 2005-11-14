@@ -39,7 +39,7 @@ struct smb2_request *smb2_write_send(struct smb2_tree *tree, struct smb2_write *
 	SSVAL(req->out.body, 0x02, req->out.body+0x30 - req->out.hdr);
 	SIVAL(req->out.body, 0x04, io->in.data.length);
 	SBVAL(req->out.body, 0x08, io->in.offset);
-	smb2_put_handle(req->out.body+0x10, io->in.handle);
+	smb2_put_handle(req->out.body+0x10, &io->in.handle);
 	memcpy(req->out.body+0x20, io->in._pad, 0x10);
 	memcpy(req->out.body+0x30, io->in.data.data, io->in.data.length);
 
