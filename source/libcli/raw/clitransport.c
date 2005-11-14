@@ -122,8 +122,11 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 						    transport);
 
 	packet_set_fde(transport->packet, transport->socket->event.fde);
+#if 0
+	/* winbind relies on non-serialised connections for dcerpc bind. Once that is
+	   fixed we can go back to serialised connections */
 	packet_set_serialise(transport->packet);
-
+#endif
 	talloc_set_destructor(transport, transport_destructor);
 
 	return transport;
