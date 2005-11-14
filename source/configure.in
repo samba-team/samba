@@ -1480,10 +1480,10 @@ if test "$enable_shared" = "yes"; then
 			fi
 			if test "$host_cpu" = "ia64"; then
 				SHLIBEXT="so"
-				DYNEXP="-Wl,-E,+b /usr/local/lib/hpux32:/usr/lib/hpux32"
+				DYNEXP="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 			else
 				SHLIBEXT="sl"
-				DYNEXP="-Wl,-E,+b /usr/local/lib:/usr/lib"
+				DYNEXP="-Wl,-E,+b/usr/local/lib:/usr/lib"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 			AC_DEFINE(POSIX_ACL_NEEDS_MASK,1,[Does a POSIX ACL need a mask element])
