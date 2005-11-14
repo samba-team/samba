@@ -370,3 +370,13 @@ BOOL iface_is_local(const char *dest)
 	}
 	return False;
 }
+
+/*
+  return True if a IP matches a IP/netmask pair
+*/
+BOOL iface_same_net(const char *ip1, const char *ip2, const char *netmask)
+{
+	return same_net(interpret_addr2(ip1),
+			interpret_addr2(ip2),
+			interpret_addr2(netmask));
+}
