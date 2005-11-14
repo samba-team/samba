@@ -62,8 +62,7 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 	return True;
 }
 
-
-static void construct_reply(struct smbsrv_request *req);
+static void switch_message(int type, struct smbsrv_request *req);
 
 /****************************************************************************
 receive a SMB request header from the wire, forming a request_context
@@ -73,11 +72,39 @@ static NTSTATUS receive_smb_request(void *private, DATA_BLOB blob)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
 	struct smbsrv_request *req;
+	uint8_t command;
+
+	/* see if its a special NBT packet */
+	if (CVAL(blob.data, 0) != 0) {
+		req = init_smb_request(smb_conn);
+		NT_STATUS_HAVE_NO_MEMORY(req);
+
+		ZERO_STRUCT(req->in);
+
+		req->in.buffer = talloc_steal(req, blob.data);
+		req->in.size = blob.length;
+		req->request_time = timeval_current();
+
+		reply_special(req);
+		return NT_STATUS_OK;
+	}
+
+	if ((NBT_HDR_SIZE + MIN_SMB_SIZE) > blob.length) {
+		DEBUG(2,("Invalid SMB packet: length %d\n", blob.length));
+		smbsrv_terminate_connection(smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
+
+	/* Make sure this is an SMB packet */
+	if (IVAL(blob.data, NBT_HDR_SIZE) != SMB_MAGIC) {
+		DEBUG(2,("Non-SMB packet of length %d. Terminating connection\n",
+			 blob.length));
+		smbsrv_terminate_connection(smb_conn, "Non-SMB packet");
+		return NT_STATUS_OK;
+	}
 
 	req = init_smb_request(smb_conn);
-	if (req == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	req->in.buffer = talloc_steal(req, blob.data);
 	req->in.size = blob.length;
@@ -105,8 +132,29 @@ static NTSTATUS receive_smb_request(void *private, DATA_BLOB blob)
 		}
 	}
 
-	construct_reply(req);
+	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct > req->in.size) {
+		DEBUG(2,("Invalid SMB word count %d\n", req->in.wct));
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
+ 
+	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
+		DEBUG(2,("Invalid SMB buffer length count %d\n", req->in.data_size));
+		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
 
+	req->flags	= CVAL(req->in.hdr, HDR_FLG);
+	req->flags2	= SVAL(req->in.hdr, HDR_FLG2);
+	req->smbpid	= SVAL(req->in.hdr, HDR_PID);
+
+	if (!req_signing_check_incoming(req)) {
+		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
+		return NT_STATUS_OK;
+	}
+
+	command = CVAL(req->in.hdr, HDR_COM);
+	switch_message(command, req);
 	return NT_STATUS_OK;
 }
 
@@ -513,53 +561,6 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	smb_messages[type].fn(req);
 }
-
-
-/****************************************************************************
- Construct a reply to the incoming packet.
-****************************************************************************/
-static void construct_reply(struct smbsrv_request *req)
-{
-	uint8_t type = CVAL(req->in.hdr,HDR_COM);
-
-	/* see if its a special NBT packet */
-	if (CVAL(req->in.buffer,0) != 0) {
-		reply_special(req);
-		return;
-	}
-
-	/* Make sure this is an SMB packet */	
-	if (memcmp(req->in.hdr,"\377SMB",4) != 0) {
-		DEBUG(2,("Non-SMB packet of length %d. Terminating connection\n", 
-			 req->in.size));
-		smbsrv_terminate_connection(req->smb_conn, "Non-SMB packet");
-		return;
-	}
-
-	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct > req->in.size) {
-		DEBUG(2,("Invalid SMB word count %d\n", req->in.wct));
-		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
-		return;
-	}
-
-	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
-		DEBUG(2,("Invalid SMB buffer length count %d\n", req->in.data_size));
-		smbsrv_terminate_connection(req->smb_conn, "Invalid SMB packet");
-		return;
-	}
-
-	req->flags = CVAL(req->in.hdr, HDR_FLG);
-	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
-	req->smbpid = SVAL(req->in.hdr,HDR_PID);
-
-	if (!req_signing_check_incoming(req)) {
-		req_reply_error(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-
-	switch_message(type, req);
-}
-
 
 /*
   we call this when first first part of a possibly chained request has been completed
