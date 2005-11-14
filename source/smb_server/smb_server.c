@@ -718,7 +718,8 @@ static void smbsrv_accept(struct stream_connection *conn)
 	packet_set_full_request(smb_conn->packet, packet_full_request_nbt);
 	packet_set_error_handler(smb_conn->packet, smbsrv_recv_error);
 	packet_set_event_context(smb_conn->packet, conn->event.ctx);
-	packet_set_serialise(smb_conn->packet, conn->event.fde);
+	packet_set_fde(smb_conn->packet, conn->event.fde);
+	packet_set_serialise(smb_conn->packet);
 
 	smbsrv_vuid_init(smb_conn);
 
