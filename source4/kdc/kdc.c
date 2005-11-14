@@ -360,7 +360,8 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 	packet_set_full_request(kdcconn->packet, packet_full_request_u32);
 	packet_set_error_handler(kdcconn->packet, kdc_tcp_recv_error);
 	packet_set_event_context(kdcconn->packet, conn->event.ctx);
-	packet_set_serialise(kdcconn->packet, conn->event.fde);
+	packet_set_fde(kdcconn->packet, conn->event.fde);
+	packet_set_serialise(kdcconn->packet);
 }
 
 static const struct stream_server_ops kdc_tcp_stream_ops = {
