@@ -38,7 +38,7 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 	SSVAL(req->out.body, 0x00, io->in.buffer_code);
 	SSVAL(req->out.body, 0x02, io->in.flags);
 	SIVAL(req->out.body, 0x04, io->in._pad);
-	smb2_put_handle(req->out.body+0x08, io->in.handle);
+	smb2_put_handle(req->out.body+0x08, &io->in.handle);
 
 	smb2_transport_send(req);
 
