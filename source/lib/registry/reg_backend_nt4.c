@@ -652,6 +652,8 @@ static WERROR regf_set_value (const struct registry_key *key, const char *name, 
 	return WERR_NOT_SUPPORTED;
 }
 
+#if 0 /* Unused */
+
 static WERROR regf_save_hbin(struct registry_hive *hive, struct hbin_block *hbin)
 {
 	struct regf_data *regf = hive->backend_data;
@@ -669,6 +671,8 @@ static WERROR regf_save_hbin(struct registry_hive *hive, struct hbin_block *hbin
 
 	return WERR_OK;
 }
+
+#endif
 
 static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 {
