@@ -115,11 +115,10 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 {
 	struct nbtd_server *server =
 		talloc_get_type(msg->private, struct nbtd_server);
-
+	struct nbtd_interface *iface = nbtd_find_interface(server, req->in.ip_address);
 	struct getdc_state *s;
 	struct nbt_ntlogon_packet p;
 	struct nbt_ntlogon_sam_logon *r;
-	struct nbt_dgram_socket *sock;
 	struct nbt_name src, dst;
 	struct nbt_peer_socket dest;
 	struct dgram_mailslot_handler *handler;
@@ -127,15 +126,13 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 
 	DEBUG(0, ("nbtd_getdcname called\n"));
 
-	sock = server->interfaces[0].dgmsock;
-
 	s = talloc(msg, struct getdc_state);
         NT_STATUS_HAVE_NO_MEMORY(s);
 
 	s->msg = msg;
 	s->req = req;
 	
-	handler = dgram_mailslot_temp(sock, NBT_MAILSLOT_GETDC,
+	handler = dgram_mailslot_temp(iface->dgmsock, NBT_MAILSLOT_GETDC,
 				      getdc_recv_ntlogon_reply, s);
         NT_STATUS_HAVE_NO_MEMORY(handler);
 	
@@ -157,7 +154,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 
 	dest.addr = req->in.ip_address;
 	dest.port = 138;
-	status = dgram_mailslot_ntlogon_send(sock, DGRAM_DIRECT_GROUP,
+	status = dgram_mailslot_ntlogon_send(iface->dgmsock, DGRAM_DIRECT_GROUP,
 					     &dst, &dest,
 					     &src, &p);
 	if (!NT_STATUS_IS_OK(status)) {

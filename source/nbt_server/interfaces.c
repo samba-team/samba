@@ -286,3 +286,27 @@ failed:
 	talloc_free(ret);
 	return NULL;
 }
+
+
+/*
+  find the interface to use for sending a outgoing request
+*/
+struct nbtd_interface *nbtd_find_interface(struct nbtd_server *nbtd_server,
+					   const char *address)
+{
+	struct nbtd_interface *iface;
+	/* try to find a exact match */
+	for (iface=nbtd_server->interfaces;iface;iface=iface->next) {
+		if (iface_same_net(address, iface->ip_address, iface->netmask)) {
+			return iface;
+		}
+	}
+
+	/* no exact match, if we have the broadcast interface, use that */
+	if (nbtd_server->bcast_interface) {
+		return nbtd_server->bcast_interface;
+	}
+
+	/* fallback to first interface */
+	return nbtd_server->interfaces;
+}
