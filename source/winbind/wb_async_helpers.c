@@ -311,30 +311,21 @@ static void get_schannel_creds_recv_auth(struct rpc_request *req)
 				struct get_schannel_creds_state);
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->a.out.result;
-	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	if (!composite_is_ok(state->ctx)) return;
 
 	if (!creds_client_check(state->creds_state,
 				state->a.out.credentials)) {
 		DEBUG(5, ("Server got us invalid creds\n"));
-		state->ctx->status = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+		composite_error(state->ctx, NT_STATUS_UNSUCCESSFUL);
+		return;
 	}
 
 	cli_credentials_set_netlogon_creds(state->wks_creds,
 					   state->creds_state);
 
-	state->ctx->state = COMPOSITE_STATE_DONE;
-
- done:
-	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		state->ctx->state = COMPOSITE_STATE_ERROR;
-	}
-	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
-	    (state->ctx->async.fn != NULL)) {
-		state->ctx->async.fn(state->ctx);
-	}
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_get_schannel_creds_recv(struct composite_context *c,
