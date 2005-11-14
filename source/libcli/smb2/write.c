@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   SMB2 client close handling
+   SMB2 client write call
 
    Copyright (C) Andrew Tridgell 2005
    
@@ -26,19 +26,22 @@
 #include "libcli/smb2/smb2_calls.h"
 
 /*
-  send a close request
+  send a write request
 */
-struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *io)
+struct smb2_request *smb2_write_send(struct smb2_tree *tree, struct smb2_write *io)
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_CLOSE, 0x18);
+	req = smb2_request_init_tree(tree, SMB2_OP_WRITE, io->in.data.length + 0x30);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x00, io->in.buffer_code);
-	SSVAL(req->out.body, 0x02, io->in.flags);
-	SIVAL(req->out.body, 0x04, io->in._pad);
-	smb2_put_handle(req->out.body+0x08, io->in.handle);
+	SSVAL(req->out.body, 0x02, req->out.body+0x30 - req->out.hdr);
+	SIVAL(req->out.body, 0x04, io->in.data.length);
+	SBVAL(req->out.body, 0x08, io->in.offset);
+	smb2_put_handle(req->out.body+0x10, io->in.handle);
+	memcpy(req->out.body+0x20, io->in._pad, 0x10);
+	memcpy(req->out.body+0x30, io->in.data.data, io->in.data.length);
 
 	smb2_transport_send(req);
 
@@ -47,39 +50,33 @@ struct smb2_request *smb2_close_send(struct smb2_tree *tree, struct smb2_close *
 
 
 /*
-  recv a close reply
+  recv a write reply
 */
-NTSTATUS smb2_close_recv(struct smb2_request *req, struct smb2_close *io)
+NTSTATUS smb2_write_recv(struct smb2_request *req, struct smb2_write *io)
 {
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x3C) {
+	if (req->in.body_size < 17) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	SMB2_CHECK_BUFFER_CODE(req, 0x3C);
+	SMB2_CHECK_BUFFER_CODE(req, 0x11);
 
-	io->out.flags       = SVAL(req->in.body, 0x02);
-	io->out._pad        = IVAL(req->in.body, 0x04);
-	io->out.create_time = smbcli_pull_nttime(req->in.body, 0x08);
-	io->out.access_time = smbcli_pull_nttime(req->in.body, 0x10);
-	io->out.write_time  = smbcli_pull_nttime(req->in.body, 0x18);
-	io->out.change_time = smbcli_pull_nttime(req->in.body, 0x20);
-	io->out.alloc_size  = BVAL(req->in.body, 0x28);
-	io->out.size        = BVAL(req->in.body, 0x30);
-	io->out.file_attr   = IVAL(req->in.body, 0x38);
+	io->out._pad     = SVAL(req->in.body, 0x02);
+	io->out.nwritten = IVAL(req->in.body, 0x04);
+	memcpy(io->out.unknown, req->in.body+0x08, 9);
 
 	return smb2_request_destroy(req);
 }
 
 /*
-  sync close request
+  sync write request
 */
-NTSTATUS smb2_close(struct smb2_tree *tree, struct smb2_close *io)
+NTSTATUS smb2_write(struct smb2_tree *tree, struct smb2_write *io)
 {
-	struct smb2_request *req = smb2_close_send(tree, io);
-	return smb2_close_recv(req, io);
+	struct smb2_request *req = smb2_write_send(tree, io);
+	return smb2_write_recv(req, io);
 }

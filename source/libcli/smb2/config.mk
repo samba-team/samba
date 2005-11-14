@@ -8,5 +8,7 @@ OBJ_FILES = \
 	create.o \
 	close.o \
 	connect.o \
-	getinfo.o
+	getinfo.o \
+	write.o \
+	read.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET

@@ -156,16 +156,16 @@ struct smb2_close {
 };
 
 /* fs information levels */
-#define SMB2_GETINFO_FS_01            0x0102
-#define SMB2_GETINFO_FS_03            0x0302
-#define SMB2_GETINFO_FS_04            0x0402
-#define SMB2_GETINFO_FS_ATTRIB_INFO   0x0502
-#define SMB2_GETINFO_FS_06            0x0602
-#define SMB2_GETINFO_FS_07            0x0702
-#define SMB2_GETINFO_FS_08            0x0802
+#define SMB2_GETINFO_FS_01              0x0102
+#define SMB2_GETINFO_FS_03              0x0302
+#define SMB2_GETINFO_FS_04              0x0402
+#define SMB2_GETINFO_FS_ATTRIB_INFO     0x0502
+#define SMB2_GETINFO_FS_06              0x0602
+#define SMB2_GETINFO_FS_07              0x0702
+#define SMB2_GETINFO_FS_08              0x0802
 
 /* class 3 levels */
-#define SMB2_GETINFO_3_00            0x0003
+#define SMB2_GETINFO_SECURITY           0x0003
 
 /* file information levels */
 #define SMB2_GETINFO_FILE_BASIC_INFO    0x0401
@@ -174,7 +174,7 @@ struct smb2_close {
 #define SMB2_GETINFO_FILE_EA_SIZE       0x0701
 #define SMB2_GETINFO_FILE_ACCESS_INFO   0x0801
 #define SMB2_GETINFO_FILE_0E            0x0e01
-#define SMB2_GETINFO_FILE_EA_INFO       0x0f01
+#define SMB2_GETINFO_FILE_ALL_EAS       0x0f01
 #define SMB2_GETINFO_FILE_10            0x1001
 #define SMB2_GETINFO_FILE_11            0x1101
 #define SMB2_GETINFO_FILE_ALL_INFO      0x1201
@@ -191,7 +191,7 @@ struct smb2_getinfo {
 		uint16_t level;
 		uint32_t max_response_size;
 		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t flags; /* level specific */
 		uint32_t unknown3;
 		uint32_t unknown4;
 		struct smb2_handle handle;
@@ -227,7 +227,7 @@ union smb2_fileinfo {
 
 	struct {
 		uint32_t ea_size;
-	} ea_info;
+	} ea_size;
 
 	struct {
 		uint32_t access_mask;
@@ -239,8 +239,8 @@ union smb2_fileinfo {
 	} unknown0e;
 
 	struct {
-		struct smb_ea_list all_eas;
-	} all_ea_info;
+		struct smb_ea_list eas;
+	} all_eas;
 
 	struct {
 		uint32_t unknown; /* 2 */
@@ -301,4 +301,38 @@ union smb2_fileinfo {
 		uint32_t file_attr;
 		uint32_t unknown;
 	} attrib_info;
+};
+
+
+struct smb2_write {
+	struct {
+		uint16_t buffer_code;
+		uint64_t offset;
+		struct smb2_handle handle;
+		uint8_t _pad[16];
+		DATA_BLOB data;
+	} in;
+
+	struct {
+		uint16_t buffer_code;
+		uint16_t _pad;
+		uint32_t nwritten;
+		uint8_t unknown[9];
+	} out;
+};
+
+struct smb2_read {
+	struct {
+		uint16_t buffer_code;
+		uint32_t length;
+		uint64_t offset;
+		struct smb2_handle handle;
+		uint8_t _pad[17];
+	} in;
+
+	struct {
+		uint16_t buffer_code;
+		uint8_t unknown[8];
+		DATA_BLOB data;
+	} out;
 };
