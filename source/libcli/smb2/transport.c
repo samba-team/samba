@@ -107,7 +107,8 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 						    smb2_transport_event_handler,
 						    transport);
 
-	packet_set_serialise(transport->packet, transport->socket->event.fde);
+	packet_set_fde(transport->packet, transport->socket->event.fde);
+	packet_set_serialise(transport->packet);
 
 	talloc_set_destructor(transport, transport_destructor);
 

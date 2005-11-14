@@ -127,13 +127,21 @@ void packet_set_event_context(struct packet_context *pc, struct event_context *e
 }
 
 /*
-  tell the packet layer to serialise requests, so we don't process two requests at once on
-  one connection. You must have set the event_context
+  tell the packet layer the fde for the socket
 */
-void packet_set_serialise(struct packet_context *pc, struct fd_event *fde)
+void packet_set_fde(struct packet_context *pc, struct fd_event *fde)
+{
+	pc->fde = fde;
+}
+
+/*
+  tell the packet layer to serialise requests, so we don't process two
+  requests at once on one connection. You must have set the
+  event_context and fde
+*/
+void packet_set_serialise(struct packet_context *pc)
 {
 	pc->serialise = True;
-	pc->fde = fde;
 }
 
 /*

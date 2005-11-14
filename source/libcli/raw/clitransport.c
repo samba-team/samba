@@ -121,7 +121,8 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 						    smbcli_transport_event_handler,
 						    transport);
 
-	packet_set_serialise(transport->packet, transport->socket->event.fde);
+	packet_set_fde(transport->packet, transport->socket->event.fde);
+	packet_set_serialise(transport->packet);
 
 	talloc_set_destructor(transport, transport_destructor);
 

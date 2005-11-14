@@ -319,7 +319,8 @@ static void ldapsrv_accept(struct stream_connection *c)
 	packet_set_full_request(conn->packet, ldapsrv_complete_packet);
 	packet_set_error_handler(conn->packet, ldapsrv_error_handler);
 	packet_set_event_context(conn->packet, c->event.ctx);
-	packet_set_serialise(conn->packet, c->event.fde);
+	packet_set_fde(conn->packet, c->event.fde);
+	packet_set_serialise(conn->packet);
 
 	/* Connections start out anonymous */
 	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, &conn->session_info))) {

@@ -254,7 +254,8 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	packet_set_full_request(sock->packet, sock_complete_packet);
 	packet_set_error_handler(sock->packet, sock_error_handler);
 	packet_set_event_context(sock->packet, c->event_ctx);
-	packet_set_serialise(sock->packet, sock->fde);
+	packet_set_fde(sock->packet, sock->fde);
+	packet_set_serialise(sock->packet);
 	packet_recv_disable(sock->packet);
 	packet_set_initial_read(sock->packet, 16);
 
