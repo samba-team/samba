@@ -19,8 +19,8 @@ if test ! -d $SRCDIR../docs/manpages; then
 fi
 
 # Get the configured feature set
-test -f config.log && \
-	eval $( grep "^[[:alnum:]]*=.*" config.log)
+test -f "${SRCDIR}/config.log" && \
+	eval $( grep "^[[:alnum:]]*=.*" "${SRCDIR}/config.log")
 
 for lang in $langs; do
     if [ "X$lang" = XC ]; then
