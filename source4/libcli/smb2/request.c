@@ -267,9 +267,9 @@ NTSTATUS smb2_string_blob(TALLOC_CTX *mem_ctx, const char *str, DATA_BLOB *blob)
 /*
   put a file handle into a buffer
 */
-void smb2_put_handle(uint8_t *data, struct smb2_handle h)
+void smb2_put_handle(uint8_t *data, struct smb2_handle *h)
 {
-	SBVAL(data, 0, h.data[0]);
-	SBVAL(data, 8, h.data[1]);
+	SBVAL(data, 0, h->data[0]);
+	SBVAL(data, 8, h->data[1]);
 }
 

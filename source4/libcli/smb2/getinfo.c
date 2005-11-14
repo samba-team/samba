@@ -42,7 +42,7 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 	SIVAL(req->out.body, 0x0C, io->in.flags);
 	SIVAL(req->out.body, 0x10, io->in.unknown3);
 	SIVAL(req->out.body, 0x14, io->in.unknown4);
-	smb2_put_handle(req->out.body+0x18, io->in.handle);
+	smb2_put_handle(req->out.body+0x18, &io->in.handle);
 
 	smb2_transport_send(req);
 
