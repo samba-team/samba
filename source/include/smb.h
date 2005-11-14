@@ -204,6 +204,8 @@ struct data_blob_list_item {
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
 
+#define SMB_MAGIC 0x424D53FF /* 0xFF 'S' 'M' 'B' */
+
 /* the basic packet size, assuming no words or bytes. Does not include the NBT header */
 #define MIN_SMB_SIZE 35
 
