@@ -64,6 +64,53 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 
 
 /*
+  test writing
+*/
+static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle handle)
+{
+	struct smb2_write w;
+	struct smb2_read r;
+	NTSTATUS status;
+	DATA_BLOB data;
+	
+	data = data_blob_talloc(tree, NULL, 700);
+	generate_random_buffer(data.data, data.length);
+
+	ZERO_STRUCT(w);
+	w.in.buffer_code = 0x31;
+	w.in.offset      = 0;
+	w.in.handle      = handle;
+	w.in.data        = data;
+
+	status = smb2_write(tree, &w);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("write failed - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	ZERO_STRUCT(r);
+	r.in.buffer_code = 0x31;
+	r.in.length      = data.length;
+	r.in.offset      = 0;
+	r.in.handle      = handle;
+
+	status = smb2_read(tree, tree, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("read failed - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	if (data.length != r.out.data.length ||
+	    memcmp(data.data, r.out.data.data, data.length) != 0) {
+		printf("read data mismatch\n");
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	return status;
+}
+
+
+/*
   send a create
 */
 static struct smb2_handle torture_smb2_create(struct smb2_tree *tree, 
@@ -136,6 +183,7 @@ BOOL torture_smb2_connect(void)
 
 	h1 = torture_smb2_create(tree, "test9.dat");
 	h2 = torture_smb2_create(tree, "test9.dat");
+	torture_smb2_write(tree, h1);
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
 
