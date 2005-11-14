@@ -150,28 +150,13 @@ BOOL smb2_request_is_error(struct smb2_request *req)
 /*
   check if a range in the reply body is out of bounds
 */
-BOOL smb2_oob_in(struct smb2_request *req, const uint8_t *ptr, uint_t size)
+BOOL smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, uint_t size)
 {
 	/* be careful with wraparound! */
-	if (ptr < req->in.body ||
-	    ptr >= req->in.body + req->in.body_size ||
-	    size > req->in.body_size ||
-	    ptr + size > req->in.body + req->in.body_size) {
-		return True;
-	}
-	return False;
-}
-
-/*
-  check if a range in the outgoing body is out of bounds
-*/
-BOOL smb2_oob_out(struct smb2_request *req, const uint8_t *ptr, uint_t size)
-{
-	/* be careful with wraparound! */
-	if (ptr < req->out.body ||
-	    ptr >= req->out.body + req->out.body_size ||
-	    size > req->out.body_size ||
-	    ptr + size > req->out.body + req->out.body_size) {
+	if (ptr < buf->body ||
+	    ptr >= buf->body + buf->body_size ||
+	    size > buf->body_size ||
+	    ptr + size > buf->body + buf->body_size) {
 		return True;
 	}
 	return False;
@@ -180,30 +165,42 @@ BOOL smb2_oob_out(struct smb2_request *req, const uint8_t *ptr, uint_t size)
 /*
   pull a data blob from the body of a reply
 */
-DATA_BLOB smb2_pull_blob(struct smb2_request *req, uint8_t *ptr, uint_t size)
+DATA_BLOB smb2_pull_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, uint_t size)
 {
-	if (smb2_oob_in(req, ptr, size)) {
+	if (smb2_oob(buf, ptr, size)) {
 		return data_blob(NULL, 0);
 	}
-	return data_blob_talloc(req, ptr, size);
+	return data_blob_talloc(mem_ctx, ptr, size);
+}
+
+/*
+  push a data blob from the body of a reply
+*/
+NTSTATUS smb2_push_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
+{
+	if (smb2_oob(buf, ptr, blob.length)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	memcpy(ptr, blob.data, blob.length);
+	return NT_STATUS_OK;
 }
 
 /*
   pull a ofs/length/blob triple from a data blob
   the ptr points to the start of the offset/length pair
 */
-NTSTATUS smb2_pull_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB *blob)
+NTSTATUS smb2_pull_ofs_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
 {
 	uint16_t ofs, size;
-	if (smb2_oob_in(req, ptr, 4)) {
+	if (smb2_oob(buf, ptr, 4)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 	ofs  = SVAL(ptr, 0);
 	size = SVAL(ptr, 2);
-	if (smb2_oob_in(req, req->in.hdr + ofs, size)) {
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
-	*blob = data_blob_talloc(req, req->in.hdr+ofs, size);
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);
 	return NT_STATUS_OK;
 }
@@ -215,12 +212,12 @@ NTSTATUS smb2_pull_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB *b
   NOTE: assumes blob goes immediately after the offset/length pair. Needs 
         to be generalised
 */
-NTSTATUS smb2_push_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB blob)
+NTSTATUS smb2_push_ofs_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
 {
-	if (smb2_oob_out(req, ptr, 4+blob.length)) {
+	if (smb2_oob(buf, ptr, 4+blob.length)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
-	SSVAL(ptr, 0, 4 + (ptr - req->out.hdr));
+	SSVAL(ptr, 0, 4 + (ptr - buf->hdr));
 	SSVAL(ptr, 2, blob.length);
 	memcpy(ptr+4, blob.data, blob.length);
 	return NT_STATUS_OK;
@@ -229,16 +226,16 @@ NTSTATUS smb2_push_ofs_blob(struct smb2_request *req, uint8_t *ptr, DATA_BLOB bl
 /*
   pull a string in a ofs/length/blob format
 */
-NTSTATUS smb2_pull_ofs_string(struct smb2_request *req, uint8_t *ptr, 
-			      const char **str)
+NTSTATUS smb2_pull_ofs_string(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx,
+			      uint8_t *ptr, const char **str)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
 	ssize_t size;
 	void *vstr;
-	status = smb2_pull_ofs_blob(req, ptr, &blob);
+	status = smb2_pull_ofs_blob(buf, mem_ctx, ptr, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
-	size = convert_string_talloc(req, CH_UTF16, CH_UNIX, 
+	size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
 				     blob.data, blob.length, &vstr);
 	data_blob_free(&blob);
 	(*str) = vstr;
@@ -263,7 +260,6 @@ NTSTATUS smb2_string_blob(TALLOC_CTX *mem_ctx, const char *str, DATA_BLOB *blob)
 	return NT_STATUS_OK;	
 }
 
-
 /*
   put a file handle into a buffer
 */
@@ -272,4 +268,3 @@ void smb2_put_handle(uint8_t *data, struct smb2_handle *h)
 	SBVAL(data, 0, h->data[0]);
 	SBVAL(data, 8, h->data[1]);
 }
-
