@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 #include "include/dlinklist.h"
 #include "lib/events/events.h"
 
@@ -261,3 +262,14 @@ NTSTATUS smb2_string_blob(TALLOC_CTX *mem_ctx, const char *str, DATA_BLOB *blob)
 	blob->length = size;
 	return NT_STATUS_OK;	
 }
+
+
+/*
+  put a file handle into a buffer
+*/
+void smb2_put_handle(uint8_t *data, struct smb2_handle h)
+{
+	SBVAL(data, 0, h.data[0]);
+	SBVAL(data, 8, h.data[1]);
+}
+
