@@ -23,7 +23,7 @@
     to the user. The symptom of this is files that appear to have been deleted "magically" re-appearing
     on a Windows explorer refersh. This is an extremely advanced protocol option which should not
     need to be changed. This parameter was introduced in its final form in 3.0.21, an earlier version
-    with slightly different semantics was introduced in 3.0.20. This version is not documented here.
+    with slightly different semantics was introduced in 3.0.20. That older version is not documented here.
     </para>
 </description>
 <value type="default">True</value>
