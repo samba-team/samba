@@ -77,7 +77,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	
 	req->session = session;
 	
-	status = smb2_push_ofs_blob(req, req->out.body+0x0C, io->in.secblob);
+	status = smb2_push_ofs_blob(&req->out, req->out.body+0x0C, io->in.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
@@ -112,12 +112,11 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 	io->out._pad     = SVAL(req->in.body, 0x02);
 	io->out.uid      = BVAL(req->in.hdr,  SMB2_HDR_UID);
 	
-	status = smb2_pull_ofs_blob(req, req->in.body+0x04, &io->out.secblob);
+	status = smb2_pull_ofs_blob(&req->in, mem_ctx, req->in.body+0x04, &io->out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smb2_request_destroy(req);
 		return status;
 	}
-	talloc_steal(mem_ctx, io->out.secblob.data);
 
 	return smb2_request_destroy(req);
 }

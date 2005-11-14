@@ -73,11 +73,7 @@ NTSTATUS smb2_read_recv(struct smb2_request *req,
 	nread = IVAL(req->in.body, 0x04);
 	memcpy(io->out.unknown, req->in.body+0x08, 8);
 
-	if (smb2_oob_in(req, req->in.hdr+ofs, nread)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	io->out.data = data_blob_talloc(mem_ctx, req->in.hdr+ofs, nread);
+	io->out.data = smb2_pull_blob(&req->in, mem_ctx, req->in.hdr+ofs, nread);
 	if (io->out.data.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

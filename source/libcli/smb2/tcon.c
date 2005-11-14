@@ -66,7 +66,7 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
 	SIVAL(req->out.body, 0x00, io->in.unknown1);
-	status = smb2_push_ofs_blob(req, req->out.body+0x04, path);
+	status = smb2_push_ofs_blob(&req->out, req->out.body+0x04, path);
 	data_blob_free(&path);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);

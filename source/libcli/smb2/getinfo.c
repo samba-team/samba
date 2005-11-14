@@ -69,11 +69,10 @@ NTSTATUS smb2_getinfo_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 
 	SMB2_CHECK_BUFFER_CODE(req, 0x09);
 
-	status = smb2_pull_ofs_blob(req, req->in.body+0x02, &io->out.blob);
+	status = smb2_pull_ofs_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	talloc_steal(mem_ctx, io->out.blob.data);
 
 	return smb2_request_destroy(req);
 }
