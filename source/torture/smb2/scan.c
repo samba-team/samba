@@ -28,31 +28,6 @@
 #include "lib/events/events.h"
 
 
-/*
-  create a complex file using the old SMB protocol, to make it easier to 
-  find fields in SMB2 getinfo levels
-*/
-static BOOL setup_complex_file(const char *fname)
-{
-	struct smbcli_state *cli;
-	int fnum;
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	fnum = create_complex_file(cli, cli, fname);
-
-	if (DEBUGLVL(1)) {
-		torture_all_info(cli->tree, fname);
-	}
-	
-	talloc_free(cli);
-	return fnum != -1;
-}
-
-
-
 /* 
    scan for valid SMB2 getinfo levels
 */
@@ -60,9 +35,6 @@ BOOL torture_smb2_getinfo_scan(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
-	struct cli_credentials *credentials = cmdline_credentials;
 	NTSTATUS status;
 	struct smb2_getinfo io;
 	struct smb2_create cr;
@@ -70,14 +42,11 @@ BOOL torture_smb2_getinfo_scan(void)
 	int c, i;
 	const char *fname = "scan-getinfo.dat";
 
-	status = smb2_connect(mem_ctx, host, share, credentials, &tree, 
-			      event_context_find(mem_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connection failed - %s\n", nt_errstr(status));
+	if (!torture_smb2_connection(mem_ctx, &tree)) {
 		return False;
 	}
 
-	if (!setup_complex_file(fname)) {
+	if (!torture_setup_complex_file(fname)) {
 		printf("Failed to setup complex file '%s'\n", fname);
 	}
 
@@ -108,6 +77,27 @@ BOOL torture_smb2_getinfo_scan(void)
 	io.in.max_response_size = 0xFFFF;
 	io.in.handle            = handle;
 
+	io.in.max_response_size = 128;
+	io.in.unknown1 = 0;
+	io.in.level = SMB2_GETINFO_FILE_ALL_INFO;
+	status = smb2_getinfo(tree, mem_ctx, &io);
+
+	io.in.max_response_size = 128;
+	io.in.unknown1 = 64;
+	io.in.flags = 64;
+	io.in.unknown3 = 64;
+	io.in.unknown4 = 64;
+	io.in.level = SMB2_GETINFO_FILE_ALL_INFO;
+	status = smb2_getinfo(tree, mem_ctx, &io);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("level 0x%04x is %d bytes - %s\n", 
+		       io.in.level, io.out.blob.length, nt_errstr(status));
+		dump_data(1, io.out.blob.data, io.out.blob.length);
+	}
+
+	return True;
+
 	for (c=0;c<5;c++) {
 		for (i=0;i<0x100;i++) {
 			io.in.level = (i<<8) | c;
@@ -117,11 +107,9 @@ BOOL torture_smb2_getinfo_scan(void)
 			    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 				continue;
 			}
-			if (NT_STATUS_IS_OK(status)) {
-				printf("level 0x%04x is %d bytes\n", 
-				       io.in.level, io.out.blob.length);
-				dump_data(1, io.out.blob.data, io.out.blob.length);
-			}
+			printf("level 0x%04x is %d bytes - %s\n", 
+			       io.in.level, io.out.blob.length, nt_errstr(status));
+			dump_data(1, io.out.blob.data, io.out.blob.length);
 		}
 	}
 

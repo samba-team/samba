@@ -82,11 +82,25 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	w.in.handle      = handle;
 	w.in.data        = data;
 
+	memset(w.in._pad, 0xff, 16);
+
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("write failed - %s\n", nt_errstr(status));
 		return status;
 	}
+
+	torture_smb2_all_info(tree, handle);
+
+	memset(w.in._pad, 0xff, 16);
+
+	status = smb2_write(tree, &w);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("write failed - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	torture_smb2_all_info(tree, handle);
 
 	ZERO_STRUCT(r);
 	r.in.buffer_code = 0x31;
@@ -168,16 +182,9 @@ BOOL torture_smb2_connect(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	const char *host = lp_parm_string(-1, "torture", "host");
-	const char *share = lp_parm_string(-1, "torture", "share");
-	struct cli_credentials *credentials = cmdline_credentials;
 	struct smb2_handle h1, h2;
-	NTSTATUS status;
 
-	status = smb2_connect(mem_ctx, host, share, credentials, &tree, 
-			      event_context_find(mem_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connection failed - %s\n", nt_errstr(status));
+	if (!torture_smb2_connection(mem_ctx, &tree)) {
 		return False;
 	}
 

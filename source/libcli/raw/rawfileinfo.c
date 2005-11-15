@@ -34,6 +34,51 @@
       return NT_STATUS_INFO_LENGTH_MISMATCH; \
 }
 
+/*
+  parse a stream information structure
+*/
+NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
+				  struct stream_information *io)
+{
+	uint32_t ofs = 0;
+	io->num_streams = 0;
+	io->streams = NULL;
+
+	while (blob.length - ofs >= 24) {
+		uint_t n = io->num_streams;
+		uint32_t nlen, len;
+		ssize_t size;
+		void *vstr;
+		io->streams = 
+			talloc_realloc(mem_ctx, io->streams, struct stream_struct, n+1);
+		if (!io->streams) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		nlen                      = IVAL(blob.data, ofs + 0x04);
+		io->streams[n].size       = BVAL(blob.data, ofs + 0x08);
+		io->streams[n].alloc_size = BVAL(blob.data, ofs + 0x10);
+		if (nlen > blob.length - (ofs + 24)) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		size = convert_string_talloc(io->streams, CH_UTF16, CH_UNIX,
+					     blob.data+ofs+24, nlen, &vstr);
+		if (size == -1) {
+			return NT_STATUS_ILLEGAL_CHARACTER;
+		}
+		io->streams[n].stream_name.s = vstr;
+		io->streams[n].stream_name.private_length = nlen;
+		io->num_streams++;
+		len = IVAL(blob.data, ofs);
+		if (len > blob.length - ofs) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		if (len == 0) break;
+		ofs += len;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Handle qfileinfo/qpathinfo trans2 backend.
 ****************************************************************************/
@@ -42,8 +87,6 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 				     union smb_fileinfo *parms, 
 				     DATA_BLOB *blob)
 {	
-	uint_t len, ofs;
-
 	switch (parms->generic.level) {
 	case RAW_FILEINFO_GENERIC:
 	case RAW_FILEINFO_GETATTR:
@@ -175,32 +218,7 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		ofs = 0;
-		parms->stream_info.out.num_streams = 0;
-		parms->stream_info.out.streams = NULL;
-
-		while (blob->length - ofs >= 24) {
-			uint_t n = parms->stream_info.out.num_streams;
-			parms->stream_info.out.streams = 
-				talloc_realloc(mem_ctx,
-						 parms->stream_info.out.streams,
-						 struct stream_struct,
-						 n+1);
-			if (!parms->stream_info.out.streams) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			parms->stream_info.out.streams[n].size =       BVAL(blob->data, ofs +  8);
-			parms->stream_info.out.streams[n].alloc_size = BVAL(blob->data, ofs + 16);
-			smbcli_blob_pull_string(session, mem_ctx, blob, 
-					     &parms->stream_info.out.streams[n].stream_name, 
-					     ofs+4, ofs+24, STR_UNICODE);
-			parms->stream_info.out.num_streams++;
-			len = IVAL(blob->data, ofs);
-			if (len > blob->length - ofs) return NT_STATUS_INFO_LENGTH_MISMATCH;
-			if (len == 0) break;
-			ofs += len;
-		}
-		return NT_STATUS_OK;
+		return smbcli_parse_stream_info(*blob, mem_ctx, &parms->stream_info.out);
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
 		FINFO_CHECK_SIZE(8);

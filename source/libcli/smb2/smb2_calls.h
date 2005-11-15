@@ -170,7 +170,7 @@ struct smb2_close {
 /* file information levels */
 #define SMB2_GETINFO_FILE_BASIC_INFO    0x0401
 #define SMB2_GETINFO_FILE_SIZE_INFO     0x0501
-#define SMB2_GETINFO_FILE_06            0x0601
+#define SMB2_GETINFO_FILE_ID            0x0601
 #define SMB2_GETINFO_FILE_EA_SIZE       0x0701
 #define SMB2_GETINFO_FILE_ACCESS_INFO   0x0801
 #define SMB2_GETINFO_FILE_0E            0x0e01
@@ -217,13 +217,13 @@ union smb2_fileinfo {
 		uint64_t alloc_size;
 		uint64_t size;
 		uint32_t nlink;
-		uint32_t unknown;
+		uint8_t  delete_pending;
+		uint8_t  directory;
 	} size_info;
 
 	struct {
-		uint32_t unknown1;
-		uint32_t unknown2;
-	} unknown06;
+		uint64_t file_id;
+	} file_id;
 
 	struct {
 		uint32_t ea_size;
@@ -256,13 +256,14 @@ union smb2_fileinfo {
 		NTTIME   write_time;
 		NTTIME   change_time;
 		uint32_t file_attr;
-		uint32_t unknown1;
+		/* uint32_t _pad; */
 		uint64_t alloc_size;
 		uint64_t size;
 		uint32_t nlink;
-		uint32_t unknown2;
-		uint32_t unknown3;
-		uint32_t unknown4;
+		uint8_t  delete_pending;
+		uint8_t  directory;
+		/* uint16_t _pad; */
+		uint64_t file_id;
 		uint32_t ea_size;
 		uint32_t access_mask;
 		uint64_t unknown5;
@@ -274,12 +275,7 @@ union smb2_fileinfo {
 		const char *short_name;
 	} short_info;
 
-	struct {
-		uint32_t unknown;
-		uint64_t size;
-		uint64_t alloc_size;
-		const char *stream_name;
-	} stream_info;
+	struct stream_information stream_info;
 
 	struct {
 		uint64_t size;
@@ -301,6 +297,10 @@ union smb2_fileinfo {
 		uint32_t file_attr;
 		uint32_t unknown;
 	} attrib_info;
+
+	struct {
+		struct security_descriptor *sd;
+	} security;
 };
 
 

@@ -100,20 +100,99 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 
 	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
 
-	/* setup some EAs */
-	setfile.generic.level = RAW_SFILEINFO_EA_SET;
+	if (strchr(fname, ':') == NULL) {
+		/* setup some EAs */
+		setfile.generic.level = RAW_SFILEINFO_EA_SET;
+		setfile.generic.file.fnum = fnum;
+		setfile.ea_set.in.num_eas = 2;	
+		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
+		setfile.ea_set.in.eas[0].flags = 0;
+		setfile.ea_set.in.eas[0].name.s = "EAONE";
+		setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
+		setfile.ea_set.in.eas[1].flags = 0;
+		setfile.ea_set.in.eas[1].name.s = "SECONDEA";
+		setfile.ea_set.in.eas[1].value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
+		status = smb_raw_setfileinfo(cli->tree, &setfile);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to setup EAs\n");
+		}
+	}
+
+	/* make sure all the timestamps aren't the same, and are also 
+	   in different DST zones*/
+	setfile.generic.level = RAW_SFILEINFO_SETATTRE;
 	setfile.generic.file.fnum = fnum;
-	setfile.ea_set.in.num_eas = 2;	
-	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
-	setfile.ea_set.in.eas[0].flags = 0;
-	setfile.ea_set.in.eas[0].name.s = "EAONE";
-	setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
-	setfile.ea_set.in.eas[1].flags = 0;
-	setfile.ea_set.in.eas[1].name.s = "SECONDEA";
-	setfile.ea_set.in.eas[1].value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
+
+	setfile.setattre.in.create_time = t + 9*30*24*60*60;
+	setfile.setattre.in.access_time = t + 6*30*24*60*60;
+	setfile.setattre.in.write_time  = t + 3*30*24*60*60;
+
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup EAs\n");
+		printf("Failed to setup file times - %s\n", nt_errstr(status));
+	}
+
+	/* make sure all the timestamps aren't the same */
+	fileinfo.generic.level = RAW_FILEINFO_GETATTRE;
+	fileinfo.generic.in.fnum = fnum;
+
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &fileinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to query file times - %s\n", nt_errstr(status));
+	}
+
+	if (setfile.setattre.in.create_time != fileinfo.getattre.out.create_time) {
+		printf("create_time not setup correctly\n");
+	}
+	if (setfile.setattre.in.access_time != fileinfo.getattre.out.access_time) {
+		printf("access_time not setup correctly\n");
+	}
+	if (setfile.setattre.in.write_time != fileinfo.getattre.out.write_time) {
+		printf("write_time not setup correctly\n");
+	}
+
+	return fnum;
+}
+
+
+/*
+  sometimes we need a fairly complex directory to work with, so we can test
+  all possible attributes. 
+*/
+int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *dname)
+{
+	int fnum;
+	union smb_setfileinfo setfile;
+	union smb_fileinfo fileinfo;
+	time_t t = (time(NULL) & ~1);
+	NTSTATUS status;
+
+	smbcli_deltree(cli->tree, dname);
+	fnum = smbcli_nt_create_full(cli->tree, dname, 0, 
+				     SEC_RIGHTS_DIR_ALL,
+				     FILE_ATTRIBUTE_DIRECTORY,
+				     NTCREATEX_SHARE_ACCESS_READ|
+				     NTCREATEX_SHARE_ACCESS_WRITE, 
+				     NTCREATEX_DISP_OPEN_IF,
+				     NTCREATEX_OPTIONS_DIRECTORY, 0);
+	if (fnum == -1) return -1;
+
+	if (strchr(dname, ':') == NULL) {
+		/* setup some EAs */
+		setfile.generic.level = RAW_SFILEINFO_EA_SET;
+		setfile.generic.file.fnum = fnum;
+		setfile.ea_set.in.num_eas = 2;	
+		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
+		setfile.ea_set.in.eas[0].flags = 0;
+		setfile.ea_set.in.eas[0].name.s = "EAONE";
+		setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
+		setfile.ea_set.in.eas[1].flags = 0;
+		setfile.ea_set.in.eas[1].name.s = "SECONDEA";
+		setfile.ea_set.in.eas[1].value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
+		status = smb_raw_setfileinfo(cli->tree, &setfile);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to setup EAs\n");
+		}
 	}
 
 	/* make sure all the timestamps aren't the same, and are also 
