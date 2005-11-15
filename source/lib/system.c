@@ -1387,6 +1387,10 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 	 */
 	retval = extattr_get_file(path, attrnamespace, attrname, NULL, 0);
 
+	if (retval == -1) {
+		return -1;
+	}
+
 	if(retval > size) {
 		errno = ERANGE;
 		return -1;
@@ -1422,6 +1426,10 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 
 	retval = extattr_get_link(path, attrnamespace, attrname, NULL, 0);
 
+	if (retval == -1) {
+		return -1;
+	}
+
 	if(retval > size) {
 		errno = ERANGE;
 		return -1;
@@ -1456,6 +1464,10 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
 
 	retval = extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0);
+
+	if (retval == -1) {
+		return -1;
+	}
 
 	if(retval > size) {
 		errno = ERANGE;
