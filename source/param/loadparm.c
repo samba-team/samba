@@ -145,7 +145,6 @@ typedef struct
 	char *szNetbiosName;
 	char **szNetbiosAliases;
 	char *szNetbiosScope;
-	char *szDomainOtherSIDs;
 	char *szNameResolveOrder;
 	char *szPanicAction;
 	char *szAddUserScript;
