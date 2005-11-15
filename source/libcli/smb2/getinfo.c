@@ -252,8 +252,8 @@ NTSTATUS smb2_getinfo_parse(TALLOC_CTX *mem_ctx,
 		if (blob.length != 0x08) {
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
-		io->standard_info.file_attr   = IVAL(blob.data, 0x00);
-		io->standard_info.unknown     = IVAL(blob.data, 0x04);
+		io->attrib_info.file_attr   = IVAL(blob.data, 0x00);
+		io->attrib_info.unknown     = IVAL(blob.data, 0x04);
 		break;
 
 	case SMB2_GETINFO_SECURITY: {
