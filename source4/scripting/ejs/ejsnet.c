@@ -36,6 +36,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	ctx = libnet_context_init(NULL);
 	creds = talloc(ctx, struct cli_credentials);
 	ctx->cred = creds;
+	ctx->name_res_methods = lp_name_resolve_order();
 
 	if (argc == 0) {
 		cli_credentials_set_anonymous(creds);
