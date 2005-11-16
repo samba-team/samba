@@ -87,13 +87,11 @@ struct smb2_request_buffer {
 	/* the packet body */
 	uint8_t *body;
 	uint_t body_size;
-	
-	/* ptr is used as a moving pointer into the data area
-	 * of the packet. The reason its here and not a local
-	 * variable in each function is that when a realloc of
-	 * a send packet is done we need to move this
-	 * pointer */
-	uint8_t *ptr;
+
+	/* this point to the next dynamic byte that can be used
+	 * this will be moved when some dynamic data is pushed
+	 */
+	uint8_t *dynamic;
 };
 
 
@@ -176,13 +174,20 @@ struct smb2_request {
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
 
 /*
-  check that a buffer code matches the expected value
+  check that a body has the expected size
 */
-#define SMB2_CHECK_BUFFER_CODE(req, code) do { \
-	io->out.buffer_code = SVAL(req->in.body, 0); \
-	if (io->out.buffer_code != (code)) { \
-		DEBUG(0,("Unexpected buffer code 0x%x. Expected 0x%x\n", \
-			 io->out.buffer_code, code)); \
+#define SMB2_CHECK_PACKET_RECV(req, size, dynamic) do { \
+	uint_t is_size = req->in.body_size; \
+	uint16_t field_size = SVAL(req->in.body, 0); \
+	uint16_t want_size = ((dynamic)?(size)+1:(size)); \
+	if (is_size < (size)) { \
+		DEBUG(0,("%s: buffer too small 0x%x. Expected 0x%x\n", \
+			 __location__, is_size, want_size)); \
+		return NT_STATUS_BUFFER_TOO_SMALL; \
+	}\
+	if (field_size != want_size) { \
+		DEBUG(0,("%s: unexpected fixed body size 0x%x. Expected 0x%x\n", \
+			 __location__, field_size, want_size)); \
 		return NT_STATUS_INVALID_PARAMETER; \
 	} \
 } while (0)

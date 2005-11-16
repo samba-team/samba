@@ -3,7 +3,8 @@
 
    SMB2 client request handling
 
-   Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Andrew Tridgell	2005
+   Copyright (C) Stefan Metzmacher	2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,8 +31,8 @@
 /*
   initialise a smb2 request
 */
-struct smb2_request *smb2_request_init(struct smb2_transport *transport, 
-				       uint16_t opcode, uint32_t body_size)
+struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_t opcode,
+				       uint16_t body_fixed_size, uint32_t body_dynamic_size)
 {
 	struct smb2_request *req;
 
@@ -49,18 +50,18 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport,
 
 	ZERO_STRUCT(req->in);
 	
-	req->out.allocated = SMB2_HDR_BODY+NBT_HDR_SIZE+body_size;
+	req->out.allocated = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size+body_dynamic_size;
 	req->out.buffer    = talloc_size(req, req->out.allocated);
 	if (req->out.buffer == NULL) {
 		talloc_free(req);
 		return NULL;
 	}
 
-	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE + body_size;
+	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size+(body_dynamic_size?1:0);
 	req->out.hdr       = req->out.buffer + NBT_HDR_SIZE;
 	req->out.body      = req->out.hdr + SMB2_HDR_BODY;
-	req->out.body_size = body_size;
-	req->out.ptr       = req->out.body;
+	req->out.body_size = body_fixed_size;
+	req->out.dynamic   = (body_dynamic_size ? req->out.body + body_fixed_size : NULL);
 
 	SIVAL(req->out.hdr, 0,                SMB2_MAGIC);
 	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,  SMB2_HDR_BODY);
@@ -76,17 +77,28 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport,
 	SBVAL(req->out.hdr, SMB2_HDR_UID,     0);
 	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
 
+	/* set the length of the fixed body part and +1 if there's a dynamic part also */
+	SSVAL(req->out.body, 0, body_fixed_size + (body_dynamic_size?1:0));
+
+	/* 
+	 * if we have a dynamic part, make sure the first byte
+	 * which is always be part of the packet is initialized
+	 */
+	if (body_dynamic_size) {
+		SCVAL(req->out.dynamic, 0, 0);
+	}
+
 	return req;
 }
 
 /*
     initialise a smb2 request for tree operations
 */
-struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, 
-					    uint16_t opcode, uint32_t body_size)
+struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, uint16_t opcode,
+					    uint16_t body_fixed_size, uint32_t body_dynamic_size)
 {
 	struct smb2_request *req = smb2_request_init(tree->session->transport, opcode, 
-						     body_size);
+						     body_fixed_size, body_dynamic_size);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
@@ -162,34 +174,41 @@ BOOL smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, uint_t size)
 	return False;
 }
 
-/*
-  pull a data blob from the body of a reply
-*/
-DATA_BLOB smb2_pull_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, uint_t size)
+static size_t smb2_padding_size(uint32_t offset, size_t n)
 {
-	if (smb2_oob(buf, ptr, size)) {
-		return data_blob(NULL, 0);
-	}
-	return data_blob_talloc(mem_ctx, ptr, size);
+	if ((offset & (n-1)) == 0) return 0;
+	return n - (offset & (n-1));
 }
 
-/*
-  push a data blob from the body of a reply
-*/
-NTSTATUS smb2_push_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
+static NTSTATUS smb2_grow_buffer(struct smb2_request_buffer *buf, size_t n)
 {
-	if (smb2_oob(buf, ptr, blob.length)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-	memcpy(ptr, blob.data, blob.length);
+	size_t dynamic_ofs;
+	uint8_t *buffer_ptr;
+
+	/* a packet size should be limited a bit */
+	if (n >= 0x00FFFFFF) return NT_STATUS_MARSHALL_OVERFLOW;
+
+	if (n <= buf->allocated) return NT_STATUS_OK;
+
+	dynamic_ofs = buf->dynamic - buf->buffer;
+
+	buffer_ptr = talloc_realloc_size(buf, buf->buffer, n);
+	NT_STATUS_HAVE_NO_MEMORY(buffer_ptr);
+
+	buf->buffer	= buffer_ptr;
+	buf->hdr	= buf->buffer + NBT_HDR_SIZE;
+	buf->body	= buf->hdr    + SMB2_HDR_BODY;
+	buf->dynamic	= buf->buffer + dynamic_ofs;
+	buf->allocated	= n;
+
 	return NT_STATUS_OK;
 }
 
 /*
-  pull a ofs/length/blob triple from a data blob
+  pull a uint16_t ofs/ uint16_t length/blob triple from a data blob
   the ptr points to the start of the offset/length pair
 */
-NTSTATUS smb2_pull_ofs_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+NTSTATUS smb2_pull_o16s16_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
 {
 	uint16_t ofs, size;
 	if (smb2_oob(buf, ptr, 4)) {
@@ -197,6 +216,10 @@ NTSTATUS smb2_pull_ofs_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx
 	}
 	ofs  = SVAL(ptr, 0);
 	size = SVAL(ptr, 2);
+	if (ofs == 0 || size == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
 	if (smb2_oob(buf, buf->hdr + ofs, size)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
@@ -206,35 +229,195 @@ NTSTATUS smb2_pull_ofs_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx
 }
 
 /*
-  push a ofs/length/blob triple into a data blob
+  push a uint16_t ofs/ uint16_t length/blob triple into a data blob
   the ptr points to the start of the offset/length pair
-
-  NOTE: assumes blob goes immediately after the offset/length pair. Needs 
-        to be generalised
 */
-NTSTATUS smb2_push_ofs_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
+NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
 {
-	if (smb2_oob(buf, ptr, 4+blob.length)) {
+	NTSTATUS status;
+	size_t offset;
+	size_t padding_length;
+
+	if (!buf->dynamic) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* we have only 16 bit for the size */
+	if (blob.length > 0xFFFF) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
-	SSVAL(ptr, 0, 4 + (ptr - buf->hdr));
+
+	/* check if there're enough room for ofs and size */
+	if (smb2_oob(buf, ptr, 4)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	offset = buf->dynamic - buf->hdr;
+	padding_length = smb2_padding_size(offset, 2);
+	offset += padding_length;
+
+	SSVAL(ptr, 0, offset);
 	SSVAL(ptr, 2, blob.length);
-	memcpy(ptr+4, blob.data, blob.length);
+
+	status = smb2_grow_buffer(buf, NBT_HDR_SIZE + offset + blob.length);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	memset(buf->dynamic, 0, padding_length);
+	buf->dynamic += padding_length;
+
+	memcpy(buf->dynamic, blob.data, blob.length);
+	buf->dynamic += blob.length;
+
+	buf->size = buf->dynamic - buf->buffer;
+
 	return NT_STATUS_OK;
 }
 
 /*
-  pull a string in a ofs/length/blob format
+  pull a uint16_t ofs/ uint32_t length/blob triple from a data blob
+  the ptr points to the start of the offset/length pair
 */
-NTSTATUS smb2_pull_ofs_string(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx,
-			      uint8_t *ptr, const char **str)
+NTSTATUS smb2_pull_o16s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint16_t ofs;
+	uint32_t size;
+
+	if (smb2_oob(buf, ptr, 6)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	ofs  = SVAL(ptr, 0);
+	size = IVAL(ptr, 2);
+	if (ofs == 0 || size == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a uint16_t ofs/ uint32_t length/blob triple into a data blob
+  the ptr points to the start of the offset/length pair
+*/
+NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
+{
+	NTSTATUS status;
+	size_t offset;
+	size_t padding_length;
+
+	if (!buf->dynamic) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* check if there're enough room for ofs and size */
+	if (smb2_oob(buf, ptr, 6)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	offset = buf->dynamic - buf->hdr;
+	padding_length = smb2_padding_size(offset, 2);
+	offset += padding_length;
+
+	SSVAL(ptr, 0, offset);
+	SIVAL(ptr, 2, blob.length);
+
+	status = smb2_grow_buffer(buf, NBT_HDR_SIZE + offset + blob.length);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	memset(buf->dynamic, 0, padding_length);
+	buf->dynamic += padding_length;
+
+	memcpy(buf->dynamic, blob.data, blob.length);
+	buf->dynamic += blob.length;
+
+	buf->size = buf->dynamic - buf->buffer;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a uint32_t ofs/ uint32_t length/blob triple from a data blob
+  the ptr points to the start of the offset/length pair
+*/
+NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint32_t ofs, size;
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	ofs  = IVAL(ptr, 0);
+	size = IVAL(ptr, 4);
+	if (ofs == 0 || size == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a uint32_t ofs/ uint32_t length/blob triple into a data blob
+  the ptr points to the start of the offset/length pair
+*/
+NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DATA_BLOB blob)
+{
+	NTSTATUS status;
+	size_t offset;
+	size_t padding_length;
+
+	if (!buf->dynamic) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* check if there're enough room for ofs and size */
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	offset = buf->dynamic - buf->hdr;
+	padding_length = smb2_padding_size(offset, 8);
+	offset += padding_length;
+
+	SIVAL(ptr, 0, offset);
+	SIVAL(ptr, 4, blob.length);
+
+	status = smb2_grow_buffer(buf, NBT_HDR_SIZE + offset + blob.length);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	memset(buf->dynamic, 0, padding_length);
+	buf->dynamic += padding_length;
+
+	memcpy(buf->dynamic, blob.data, blob.length);
+	buf->dynamic += blob.length;
+
+	buf->size = buf->dynamic - buf->buffer;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a string in a uint16_t ofs/ uint16_t length/blob format
+  UTF-16 without termination
+*/
+NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx,
+				 uint8_t *ptr, const char **str)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
 	ssize_t size;
 	void *vstr;
-	status = smb2_pull_ofs_blob(buf, mem_ctx, ptr, &blob);
+
+	status = smb2_pull_o16s16_blob(buf, mem_ctx, ptr, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
+
 	size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
 				     blob.data, blob.length, &vstr);
 	data_blob_free(&blob);
@@ -246,25 +429,44 @@ NTSTATUS smb2_pull_ofs_string(struct smb2_request_buffer *buf, TALLOC_CTX *mem_c
 }
 
 /*
-  create a UTF16 string in a blob from a char*
+  push a string in a uint16_t ofs/ uint16_t length/blob format
+  UTF-16 without termination
 */
-NTSTATUS smb2_string_blob(TALLOC_CTX *mem_ctx, const char *str, DATA_BLOB *blob)
+NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
+				 uint8_t *ptr, const char *str)
 {
+	DATA_BLOB blob;
+	NTSTATUS status;
 	ssize_t size;
-	size = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, 
-				     str, strlen(str), (void **)&blob->data);
+
+	size = convert_string_talloc(buf->buffer, CH_UNIX, CH_UTF16, 
+				     str, strlen(str), (void **)&blob.data);
 	if (size == -1) {
 		return NT_STATUS_ILLEGAL_CHARACTER;
 	}
-	blob->length = size;
-	return NT_STATUS_OK;	
+	blob.length = size;
+
+	status = smb2_push_o16s16_blob(buf, ptr, blob);
+	data_blob_free(&blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 /*
-  put a file handle into a buffer
+  push a file handle into a buffer
 */
-void smb2_put_handle(uint8_t *data, struct smb2_handle *h)
+void smb2_push_handle(uint8_t *data, struct smb2_handle *h)
 {
 	SBVAL(data, 0, h->data[0]);
 	SBVAL(data, 8, h->data[1]);
+}
+
+/*
+  pull a file handle from a buffer
+*/
+void smb2_pull_handle(uint8_t *ptr, struct smb2_handle *h)
+{
+	h->data[0] = BVAL(ptr, 0);
+	h->data[1] = BVAL(ptr, 8);
 }

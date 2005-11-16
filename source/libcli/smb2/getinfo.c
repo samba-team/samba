@@ -32,17 +32,19 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28);
+	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x00, io->in.buffer_code);
+	/* this seems to be a bug, they use 0x29 but only send 0x28 bytes */
+	SSVAL(req->out.body, 0x00, 0x29);
+
 	SSVAL(req->out.body, 0x02, io->in.level);
 	SIVAL(req->out.body, 0x04, io->in.max_response_size);
 	SIVAL(req->out.body, 0x08, io->in.unknown1);
 	SIVAL(req->out.body, 0x0C, io->in.flags);
 	SIVAL(req->out.body, 0x10, io->in.unknown3);
 	SIVAL(req->out.body, 0x14, io->in.unknown4);
-	smb2_put_handle(req->out.body+0x18, &io->in.handle);
+	smb2_push_handle(req->out.body+0x18, &io->in.handle);
 
 	smb2_transport_send(req);
 
@@ -63,13 +65,9 @@ NTSTATUS smb2_getinfo_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x08) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
+	SMB2_CHECK_PACKET_RECV(req, 0x08, True);
 
-	SMB2_CHECK_BUFFER_CODE(req, 0x09);
-
-	status = smb2_pull_ofs_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.blob);
+	status = smb2_pull_o16s16_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -309,7 +307,6 @@ NTSTATUS smb2_getinfo_level(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 	struct smb2_request *req;
 
 	ZERO_STRUCT(b);
-	b.in.buffer_code       = 0x29;
 	b.in.max_response_size = 0x10000;
 	b.in.handle            = handle;
 	b.in.level             = level;

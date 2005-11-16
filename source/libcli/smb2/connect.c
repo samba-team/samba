@@ -157,8 +157,8 @@ static void continue_socket(struct composite_context *creq)
 	}
 
 	ZERO_STRUCT(state->negprot);
-	state->negprot.in.unknown1 = 0x010024;
-	
+	state->negprot.in.unknown1 = 0x0001;
+
 	state->req = smb2_negprot_send(transport, &state->negprot);
 	if (state->req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);

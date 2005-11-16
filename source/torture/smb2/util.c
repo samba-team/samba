@@ -124,7 +124,6 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
-	io.in.buffer_code = 0x39;
 	io.in.oplock_flags = 0;
 	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
@@ -135,14 +134,14 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 	io.in.fname = fname;
+	io.in.blob  = data_blob(NULL, 0);
 
-	status = smb2_create(tree, &io);
+	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*handle = io.out.handle;
 
 	ZERO_STRUCT(r);
-	r.in.buffer_code = 0x31;
 	r.in.length      = 5;
 	r.in.offset      = 0;
 	r.in.handle      = *handle;
@@ -162,7 +161,6 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
-	io.in.buffer_code = 0x39;
 	io.in.oplock_flags = 0;
 	io.in.access_mask = SEC_RIGHTS_DIR_ALL;
 	io.in.file_attr   = FILE_ATTRIBUTE_DIRECTORY;
@@ -170,8 +168,9 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.in.fname = fname;
+	io.in.blob  = data_blob(NULL, 0);
 
-	status = smb2_create(tree, &io);
+	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*handle = io.out.handle;

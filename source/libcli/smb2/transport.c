@@ -181,7 +181,6 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.hdr       = hdr;
 	req->in.body      = hdr+SMB2_HDR_BODY;
 	req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
-	req->in.ptr       = req->in.body;
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
 	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", req->seqnum));

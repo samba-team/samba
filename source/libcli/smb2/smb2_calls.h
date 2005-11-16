@@ -23,12 +23,15 @@
 
 struct smb2_negprot {
 	struct {
-		uint32_t unknown1;    /* 0x00010024 */
-		uint16_t unknown2;    /* 0x00 */
-		uint8_t  unknown3[32]; /* all zero */
+		/* static body buffer 38 (0x26) bytes */
+		/* uint16_t buffer_code;  0x24 (why?) */
+		uint16_t unknown1;    /* 0x0001 */
+		uint8_t  unknown2[32]; /* all zero */
+		uint16_t unknown3; /* 0x00000 */
 	} in;
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 64 (0x40) bytes */
+		/* uint16_t buffer_code;  0x41 = 0x40 + 1 */
 		uint16_t _pad;
 		uint32_t unknown2; /* 0x06 */
 		uint8_t  sessid[16];
@@ -39,41 +42,63 @@ struct smb2_negprot {
 		uint16_t unknown7; /* 0x01 */
 		NTTIME   current_time;
 		NTTIME   boot_time;
-		uint16_t unknown8; /* 0x80 */
-		/* uint16_t secblob size here */
+		/* uint16_t secblob_ofs */
+		/* uint16_t secblob_size */
 		uint32_t unknown9; /* 0x204d4c20 */
+
+		/* dynamic body buffer */
 		DATA_BLOB secblob;
 	} out;
 };
 
 struct smb2_session_setup {
 	struct {
-		uint32_t unknown1; /* 0x11 */
+		/* static body buffer 16 (0x10) bytes */
+		/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
+		uint16_t _pad;
 		uint32_t unknown2; /* 0xF */
 		uint32_t unknown3; /* 0x00 */
-		/* uint16_t secblob ofs/size here */
+		/* uint16_t secblob_ofs */
+		/* uint16_t secblob_size */
+
+		/* dynamic body */
 		DATA_BLOB secblob;
 	} in;
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 8 (0x08) bytes */
+		/* uint16_t buffer_code; 0x09 = 0x08 +1 */
 		uint16_t _pad;
-		/* uint16_t secblob ofs/size here */
+		/* uint16_t secblob_ofs */
+		/* uint16_t secblob_size */
+
+		/* dynamic body */
 		DATA_BLOB secblob;
-		uint64_t uid; /* returned in header */
+
+		/* extracted from the SMB2 header */
+		uint64_t uid;
 	} out;
 };
 
 struct smb2_tree_connect {
 	struct {
-		uint32_t unknown1; /* 0x09 */
-		const char *path;
+		/* static body buffer 8 (0x08) bytes */
+		/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
+		uint16_t unknown1; /* 0x0000 */
+		/* uint16_t path_ofs */
+		/* uint16_t path_size */
+
+		/* dynamic body */
+		const char *path; /* as non-terminated UTF-16 on the wire */
 	} in;
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 16 (0x10) bytes */
+		/* uint16_t buffer_code;  0x10 */
 		uint16_t unknown1; /* 0x02 */
 		uint32_t unknown2; /* 0x00 */
 		uint32_t unknown3; /* 0x00 */
 		uint32_t access_mask;
+
+		/* extracted from the SMB2 header */
 		uint32_t tid;
 	} out;
 };
@@ -93,27 +118,32 @@ struct smb2_handle {
 
 struct smb2_create {
 	struct {
-		uint16_t buffer_code; /* 0x39 */
+		/* static body buffer 56 (0x38) bytes */
+		/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
 		uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
 		uint32_t unknown2;
 		uint32_t unknown3[4];
 		uint32_t access_mask;
+
 		uint32_t file_attr;
 		uint32_t share_access;
 		uint32_t open_disposition;
 		uint32_t create_options;
-		/* ofs/len of name here, 16 bits */
-		uint32_t unknown6;
+
+		/* uint16_t fname_ofs */
+		/* uint16_t fname_size */
+		/* uint32_t blob_ofs; */
+		/* uint32_t blob_size; */
+
+		/* dynamic body */
 		const char *fname;
-		uint32_t unknown7;
-		uint32_t unknown8;
-		uint32_t unknown9;
-		uint32_t unknown10;
-		uint64_t unknown11;
+
+		DATA_BLOB blob;
 	} in;
 
 	struct {
-		uint16_t buffer_code; /* 0x59 */
+		/* static body buffer 88 (0x58) bytes */
+		/* uint16_t buffer_code;  0x59 = 0x58 + 1 */
 		uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
 		uint32_t create_action;
 		NTTIME   create_time;
@@ -125,8 +155,11 @@ struct smb2_create {
 		uint32_t file_attr;
 		uint32_t _pad;
 		struct smb2_handle handle;
-		uint32_t unknown4;
-		uint32_t unknown5;
+		/* uint32_t blob_ofs; */
+		/* uint32_t blob_size; */
+
+		/* dynamic body */
+		DATA_BLOB blob;
 	} out;
 };
 
@@ -135,14 +168,16 @@ struct smb2_create {
 
 struct smb2_close {
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 24 (0x18) bytes */
+		/* uint16_t buffer_code;  0x18 */
 		uint16_t flags; /* SMB2_CLOSE_FLAGS_* */
 		uint32_t _pad;
 		struct smb2_handle handle;
 	} in;
 
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 60 (0x3C) bytes */
+		/* uint16_t buffer_code;  0x3C */
 		uint16_t flags;
 		uint32_t _pad;
 		NTTIME   create_time;
@@ -187,7 +222,8 @@ struct smb2_close {
 
 struct smb2_getinfo {
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 40 (0x28) bytes */
+		/* uint16_t buffer_code;  0x29 = 0x28 + 1 (why???) */
 		uint16_t level;
 		uint32_t max_response_size;
 		uint32_t unknown1;
@@ -198,7 +234,12 @@ struct smb2_getinfo {
 	} in;
 
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 8 (0x08) bytes */
+		/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
+		/* uint16_t blob_ofs; */
+		/* uint16_t blob_size; */
+
+		/* dynamic body */
 		DATA_BLOB blob;
 	} out;
 };
@@ -304,33 +345,50 @@ union smb2_fileinfo {
 
 struct smb2_write {
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 48 (0x30) bytes */
+		/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
+		/* uint16_t data_ofs; */
+		/* uint32_t data_size; */
 		uint64_t offset;
 		struct smb2_handle handle;
-		uint8_t _pad[16];
+		uint64_t unknown1; /* 0xFFFFFFFFFFFFFFFF */
+		uint64_t unknown2; /* 0xFFFFFFFFFFFFFFFF */
+
+		/* dynamic body */
 		DATA_BLOB data;
 	} in;
 
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 17 (0x11) bytes */
+		/* uint16_t buffer_code;  0x11 */
 		uint16_t _pad;
 		uint32_t nwritten;
-		uint8_t unknown[9];
+		uint64_t unknown1; /* 0x0000000000000000 */
+		uint8_t _bug;
 	} out;
 };
 
 struct smb2_read {
 	struct {
-		uint16_t buffer_code;
+		/* static body buffer 48 (0x30) bytes */
+		/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
+		uint16_t _pad;
 		uint32_t length;
 		uint64_t offset;
 		struct smb2_handle handle;
-		uint8_t _pad[17];
+		uint64_t unknown1; /* 0x0000000000000000 */
+		uint64_t unknown2; /* 0x0000000000000000 */
+		uint8_t _bug;
 	} in;
 
 	struct {
-		uint16_t buffer_code;
-		uint8_t unknown[8];
+		/* static body buffer 16 (0x10) bytes */
+		/* uint16_t buffer_code;  0x11 = 0x10 + 1 */
+		/* uint16_t data_ofs; */
+		/* uint32_t data_size; */
+		uint64_t unknown1; /* 0x0000000000000000 */
+
+		/* dynamic body */
 		DATA_BLOB data;
 	} out;
 };
