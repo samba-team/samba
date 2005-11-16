@@ -33,12 +33,15 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 {
 	struct smb2_request *req;
 	
-	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26);
+	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26, 0);
 	if (req == NULL) return NULL;
 
-	SIVAL(req->out.body, 0x00, io->in.unknown1);
-	SSVAL(req->out.body, 0x04, io->in.unknown2);
-	memcpy(req->out.body+0x06, io->in.unknown3, 32);
+	/* this seems to be a bug, they use 0x24 but the length is 0x26 */
+	SSVAL(req->out.body, 0x00, 0x24);
+
+	SSVAL(req->out.body, 0x02, io->in.unknown1);
+	memcpy(req->out.body+0x04, io->in.unknown2, 32);
+	SSVAL(req->out.body, 0x24, io->in.unknown3);
 
 	smb2_transport_send(req);
 
@@ -51,18 +54,14 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 NTSTATUS smb2_negprot_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, 
 			   struct smb2_negprot *io)
 {
-	uint16_t blobsize;
+	NTSTATUS status;
 
-	if (!smb2_request_receive(req) || 
+	if (!smb2_request_receive(req) ||
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x40) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	SMB2_CHECK_BUFFER_CODE(req, 0x41);
+	SMB2_CHECK_PACKET_RECV(req, 0x40, True);
 
 	io->out._pad         = SVAL(req->in.body, 0x02);
 	io->out.unknown2     = IVAL(req->in.body, 0x04);
@@ -74,10 +73,14 @@ NTSTATUS smb2_negprot_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 	io->out.unknown7     = SVAL(req->in.body, 0x26);
 	io->out.current_time = smbcli_pull_nttime(req->in.body, 0x28);
 	io->out.boot_time    = smbcli_pull_nttime(req->in.body, 0x30);
-	io->out.unknown8     = SVAL(req->in.body, 0x38);
-	blobsize             = SVAL(req->in.body, 0x3A);
+
+	status = smb2_pull_o16s16_blob(&req->in, mem_ctx, req->in.body+0x38, &io->out.secblob);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
+	}
+	
 	io->out.unknown9     = IVAL(req->in.body, 0x3C);
-	io->out.secblob      = smb2_pull_blob(&req->in, mem_ctx, req->in.body+0x40, blobsize);
 
 	return smb2_request_destroy(req);
 }

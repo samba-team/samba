@@ -51,7 +51,6 @@ BOOL torture_smb2_getinfo_scan(void)
 	}
 
 	ZERO_STRUCT(cr);
-	cr.in.buffer_code = 0x39;
 	cr.in.oplock_flags = 0;
 	cr.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	cr.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
@@ -62,8 +61,9 @@ BOOL torture_smb2_getinfo_scan(void)
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	cr.in.create_options = NTCREATEX_OPTIONS_WRITE_THROUGH;
 	cr.in.fname = fname;
+	cr.in.blob  = data_blob(NULL, 0);
 
-	status = smb2_create(tree, &cr);
+	status = smb2_create(tree, mem_ctx, &cr);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("create of '%s' failed - %s\n", fname, nt_errstr(status));
 		return False;
@@ -73,7 +73,6 @@ BOOL torture_smb2_getinfo_scan(void)
 
 
 	ZERO_STRUCT(io);
-	io.in.buffer_code       = 0x29;
 	io.in.max_response_size = 0xFFFF;
 	io.in.handle            = handle;
 
@@ -142,7 +141,7 @@ BOOL torture_smb2_scan(void)
 	tree->session->transport->options.timeout = 3;
 
 	for (opcode=0;opcode<1000;opcode++) {
-		req = smb2_request_init_tree(tree, opcode, 2);
+		req = smb2_request_init_tree(tree, opcode, 2, 0);
 		SSVAL(req->out.body, 0, 0);
 		smb2_transport_send(req);
 		if (!smb2_request_receive(req)) {

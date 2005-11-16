@@ -37,7 +37,6 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	ZERO_STRUCT(io);
-	io.in.buffer_code = 0x18;
 	io.in.flags       = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
 	io.in.handle   = handle;
 	status = smb2_close(tree, &io);
@@ -84,12 +83,9 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	}
 
 	ZERO_STRUCT(w);
-	w.in.buffer_code = 0x31;
 	w.in.offset      = 0;
 	w.in.handle      = handle;
 	w.in.data        = data;
-
-	memset(w.in._pad, 0xff, 16);
 
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -98,8 +94,6 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	}
 
 	torture_smb2_all_info(tree, handle);
-
-	memset(w.in._pad, 0xff, 16);
 
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -110,7 +104,6 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	torture_smb2_all_info(tree, handle);
 
 	ZERO_STRUCT(r);
-	r.in.buffer_code = 0x31;
 	r.in.length      = data.length;
 	r.in.offset      = 0;
 	r.in.handle      = handle;
@@ -140,9 +133,21 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 	struct smb2_create io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	DATA_BLOB blob = data_blob(NULL, 0);
+
+#if 0 /* TODO: find out what this blob mean */
+	uint8_t buf[0x18];
+
+	SIVAL(buf, 0x00, 0x00000000);
+	SIVAL(buf, 0x04, 0x00040010);
+	SIVAL(buf, 0x08, 0x00180000);
+	SIVAL(buf, 0x0C, 0x00000000);
+	SBVAL(buf, 0x10, 0x006C00466341784DLLU);
+
+	blob = data_blob_const(buf, 0x18)
+#endif
 
 	ZERO_STRUCT(io);
-	io.in.buffer_code = 0x39;
 	io.in.oplock_flags = 0;
 	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
@@ -153,8 +158,9 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = NTCREATEX_OPTIONS_WRITE_THROUGH;
 	io.in.fname = fname;
+	io.in.blob  = blob;
 
-	status = smb2_create(tree, &io);
+	status = smb2_create(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("create1 failed - %s\n", nt_errstr(status));
 		return io.out.handle;
@@ -197,6 +203,7 @@ BOOL torture_smb2_connect(void)
 
 	h1 = torture_smb2_create(tree, "test9.dat");
 	h2 = torture_smb2_create(tree, "test9.dat");
+//	h2 = torture_smb2_create(tree, "test9test9test9t9.dat");
 	torture_smb2_write(tree, h1);
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
