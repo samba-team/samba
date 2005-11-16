@@ -72,9 +72,16 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	struct smb2_read r;
 	NTSTATUS status;
 	DATA_BLOB data;
+	int i;
 	
-	data = data_blob_talloc(tree, NULL, 700);
-	generate_random_buffer(data.data, data.length);
+	if (lp_parm_bool(-1, "torture", "dangerous", False)) {
+		data = data_blob_talloc(tree, NULL, 160000);
+	} else {
+		data = data_blob_talloc(tree, NULL, 120000);
+	}
+	for (i=0;i<data.length;i++) {
+		data.data[i] = i;
+	}
 
 	ZERO_STRUCT(w);
 	w.in.buffer_code = 0x31;
