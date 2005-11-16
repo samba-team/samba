@@ -252,6 +252,12 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DA
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
+	if (blob.length == 0) {
+		SSVAL(ptr, 0, 0);
+		SSVAL(ptr, 4, 0);
+		return NT_STATUS_OK;
+	}
+
 	offset = buf->dynamic - buf->hdr;
 	padding_length = smb2_padding_size(offset, 2);
 	offset += padding_length;
@@ -318,6 +324,12 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DA
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
+	if (blob.length == 0) {
+		SSVAL(ptr, 0, 0);
+		SIVAL(ptr, 4, 0);
+		return NT_STATUS_OK;
+	}
+
 	offset = buf->dynamic - buf->hdr;
 	padding_length = smb2_padding_size(offset, 2);
 	offset += padding_length;
@@ -380,6 +392,12 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DA
 	/* check if there're enough room for ofs and size */
 	if (smb2_oob(buf, ptr, 8)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	if (blob.length == 0) {
+		SIVAL(ptr, 0, 0);
+		SIVAL(ptr, 4, 0);
+		return NT_STATUS_OK;
 	}
 
 	offset = buf->dynamic - buf->hdr;
