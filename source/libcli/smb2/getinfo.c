@@ -150,9 +150,9 @@ NTSTATUS smb2_getinfo_parse(TALLOC_CTX *mem_ctx,
 		break;
 
 	case SMB2_GETINFO_FILE_ALL_EAS:
-		return ea_pull_list(&blob, mem_ctx, 
-				    &io->all_eas.eas.num_eas,
-				    &io->all_eas.eas.eas);
+		return ea_pull_list_chained(&blob, mem_ctx, 
+					    &io->all_eas.num_eas,
+					    &io->all_eas.eas);
 
 	case SMB2_GETINFO_FILE_10:
 		if (blob.length != 0x4) {
