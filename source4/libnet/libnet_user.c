@@ -33,8 +33,6 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct libnet_rpc_useradd user_io;
 	const char *address;
 	
-	address = talloc_array(mem_ctx, const char, 16);
-
 	/* find domain pdc */
 	fp.in.hostname    = r->in.domain_name;
 	fp.in.methods     = NULL;
@@ -44,7 +42,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	if (!NT_STATUS_IS_OK(status)) return status;
 
 	/* connect rpc service of remote server */
-	cn.level                      = LIBNET_RPC_CONNECT_PDC;
+	cn.level                      = LIBNET_RPC_CONNECT_SERVER;
 	cn.in.domain_name             = talloc_strdup(mem_ctx, *fp.out.address);
 	cn.in.dcerpc_iface_name       = DCERPC_SAMR_NAME;
 	cn.in.dcerpc_iface_uuid       = DCERPC_SAMR_UUID;
