@@ -2174,7 +2174,7 @@ void reply_ulogoffX(struct smbsrv_request *req)
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 
-	if (!req->session || !req->session->finished_sesssetup) {
+	if (!req->session) {
 		req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 		return;
 	}
