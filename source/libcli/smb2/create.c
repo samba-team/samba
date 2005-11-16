@@ -32,18 +32,10 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 {
 	struct smb2_request *req;
 	NTSTATUS status;
-	DATA_BLOB path;
-	uint8_t *ptr;
 
-	status = smb2_string_blob(tree, io->in.fname, &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
-
-	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x50 + path.length);
+	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, 1);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x00, io->in.buffer_code);
 	SSVAL(req->out.body, 0x02, io->in.oplock_flags);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3[0]);
@@ -56,23 +48,17 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	SIVAL(req->out.body, 0x24, io->in.open_disposition);
 	SIVAL(req->out.body, 0x28, io->in.create_options);
 
-	SSVAL(req->out.body, 0x2C, 0x40+0x38); /* offset to fname */
-	SSVAL(req->out.body, 0x2E, path.length);
-	SIVAL(req->out.body, 0x30, 0x40+0x38+path.length); /* offset to 2nd buffer? */
+	status = smb2_push_o16s16_string(&req->out, req->out.body+0x2C, io->in.fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
 
-	SIVAL(req->out.body, 0x34, io->in.unknown6);
-
-	memcpy(req->out.body+0x38, path.data, path.length);
-
-	ptr = req->out.body+0x38+path.length;
-
-	SIVAL(ptr, 0x00, io->in.unknown7);
-	SIVAL(ptr, 0x04, io->in.unknown8);
-	SIVAL(ptr, 0x08, io->in.unknown9);
-	SIVAL(ptr, 0x0C, io->in.unknown10);
-	SBVAL(ptr, 0x10, io->in.unknown11);
-
-	data_blob_free(&path);
+	status = smb2_push_o32s32_blob(&req->out, req->out.body+0x30, io->in.blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
 
 	smb2_transport_send(req);
 
@@ -83,18 +69,16 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 /*
   recv a create reply
 */
-NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
+NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct smb2_create *io)
 {
+	NTSTATUS status;
+
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x54) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	SMB2_CHECK_BUFFER_CODE(req, 0x59);
+	SMB2_CHECK_PACKET_RECV(req, 0x58, True);
 
 	io->out.oplock_flags   = SVAL(req->in.body, 0x02);
 	io->out.create_action  = IVAL(req->in.body, 0x04);
@@ -106,9 +90,12 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 	io->out.size           = BVAL(req->in.body, 0x30);
 	io->out.file_attr      = IVAL(req->in.body, 0x38);
 	io->out._pad           = IVAL(req->in.body, 0x3C);
-	io->out.handle.data[0] = BVAL(req->in.body, 0x40);
-	io->out.handle.data[1] = BVAL(req->in.body, 0x48);
-	io->out.unknown4 = IVAL(req->in.body, 0x50);
+	smb2_pull_handle(req->in.body+0x40, &io->out.handle);
+	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x50, &io->out.blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
+	}
 
 	return smb2_request_destroy(req);
 }
@@ -116,8 +103,8 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, struct smb2_create *io)
 /*
   sync create request
 */
-NTSTATUS smb2_create(struct smb2_tree *tree, struct smb2_create *io)
+NTSTATUS smb2_create(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, struct smb2_create *io)
 {
 	struct smb2_request *req = smb2_create_send(tree, io);
-	return smb2_create_recv(req, io);
+	return smb2_create_recv(req, mem_ctx, io);
 }

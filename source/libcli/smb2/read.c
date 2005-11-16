@@ -32,15 +32,16 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x31);
+	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x31, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x00, io->in.buffer_code);
-	SSVAL(req->out.body, 0x02, 0);
+	SSVAL(req->out.body, 0x02, io->in._pad);
 	SIVAL(req->out.body, 0x04, io->in.length);
 	SBVAL(req->out.body, 0x08, io->in.offset);
-	smb2_put_handle(req->out.body+0x10, &io->in.handle);
-	memcpy(req->out.body+0x20, io->in._pad, 17);
+	smb2_push_handle(req->out.body+0x10, &io->in.handle);
+	SBVAL(req->out.body, 0x20, io->in.unknown1);
+	SBVAL(req->out.body, 0x28, io->in.unknown2);
+	SCVAL(req->out.body, 0x30, io->in._bug);
 
 	smb2_transport_send(req);
 
@@ -54,29 +55,22 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 NTSTATUS smb2_read_recv(struct smb2_request *req, 
 			TALLOC_CTX *mem_ctx, struct smb2_read *io)
 {
-	uint16_t ofs;
-	uint32_t nread;
+	NTSTATUS status;
 
 	if (!smb2_request_receive(req) || 
 	    smb2_request_is_error(req)) {
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 16) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	SMB2_CHECK_PACKET_RECV(req, 0x10, True);
+
+	status = smb2_pull_o16s32_blob(&req->in, mem_ctx, req->in.body+0x02, &io->out.data);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
 	}
 
-	SMB2_CHECK_BUFFER_CODE(req, 0x11);
-
-	ofs = SVAL(req->in.body, 0x02);
-
-	nread = IVAL(req->in.body, 0x04);
-	memcpy(io->out.unknown, req->in.body+0x08, 8);
-
-	io->out.data = smb2_pull_blob(&req->in, mem_ctx, req->in.hdr+ofs, nread);
-	if (io->out.data.data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	io->out.unknown1 = BVAL(req->in.body, 0x08);
 
 	return smb2_request_destroy(req);
 }

@@ -67,17 +67,17 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	NTSTATUS status;
 	
 	req = smb2_request_init(session->transport, SMB2_OP_SESSSETUP, 
-				0x10 + io->in.secblob.length);
+				0x10, io->in.secblob.length);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
-	SIVAL(req->out.body, 0x00, io->in.unknown1);
+	SSVAL(req->out.body, 0x02, io->in._pad);
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3);
-	
+
 	req->session = session;
-	
-	status = smb2_push_ofs_blob(&req->out, req->out.body+0x0C, io->in.secblob);
+
+	status = smb2_push_o16s16_blob(&req->out, req->out.body+0x0C, io->in.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
@@ -103,16 +103,12 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x08) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	SMB2_CHECK_BUFFER_CODE(req, 0x09);
+	SMB2_CHECK_PACKET_RECV(req, 0x08, True);
 
 	io->out._pad     = SVAL(req->in.body, 0x02);
 	io->out.uid      = BVAL(req->in.hdr,  SMB2_HDR_UID);
 	
-	status = smb2_pull_ofs_blob(&req->in, mem_ctx, req->in.body+0x04, &io->out.secblob);
+	status = smb2_pull_o16s16_blob(&req->in, mem_ctx, req->in.body+0x04, &io->out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smb2_request_destroy(req);
 		return status;
@@ -203,7 +199,7 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 	c->event_ctx = session->transport->socket->event.ctx;
 
 	ZERO_STRUCT(state->io);
-	state->io.in.unknown1 = 0x11;
+	state->io.in._pad = 0x0;
 	state->io.in.unknown2 = 0xF;
 	state->io.in.unknown3 = 0x00;
 

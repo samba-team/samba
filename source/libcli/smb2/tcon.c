@@ -53,21 +53,15 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 {
 	struct smb2_request *req;
 	NTSTATUS status;
-	DATA_BLOB path;
 
-	status = smb2_string_blob(tree, io->in.path, &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
-	
 	req = smb2_request_init(tree->session->transport, SMB2_OP_TCON, 
-				0x8 + path.length);
+				0x08, 1);
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
+
 	SIVAL(req->out.body, 0x00, io->in.unknown1);
-	status = smb2_push_ofs_blob(&req->out, req->out.body+0x04, path);
-	data_blob_free(&path);
+	status = smb2_push_o16s16_string(&req->out, req->out.body+0x04, io->in.path);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
@@ -89,11 +83,7 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 		return smb2_request_destroy(req);
 	}
 
-	if (req->in.body_size < 0x10) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	SMB2_CHECK_BUFFER_CODE(req, 0x10);
+	SMB2_CHECK_PACKET_RECV(req, 0x10, False);
 
 	io->out.tid      = IVAL(req->in.hdr,  SMB2_HDR_TID);
 
