@@ -238,12 +238,10 @@ union smb2_fileinfo {
 		uint32_t unknown2;
 	} unknown0e;
 
-	struct {
-		struct smb_ea_list eas;
-	} all_eas;
+	struct smb_ea_list all_eas;
 
 	struct {
-		uint32_t unknown; /* 2 */
+		uint32_t unknown;
 	} unknown10;
 
 	struct {
