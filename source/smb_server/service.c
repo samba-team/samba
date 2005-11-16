@@ -156,7 +156,7 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 	NTSTATUS status;
 
 	/* can only do bare tcon in share level security */
-	if (req->session == NULL && lp_security() != SEC_SHARE) {
+	if ((!req->session || !req->session->finished_sesssetup) && lp_security() != SEC_SHARE) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
