@@ -254,7 +254,7 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DA
 
 	if (blob.length == 0) {
 		SSVAL(ptr, 0, 0);
-		SSVAL(ptr, 4, 0);
+		SSVAL(ptr, 2, 0);
 		return NT_STATUS_OK;
 	}
 
@@ -326,7 +326,7 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf, uint8_t *ptr, DA
 
 	if (blob.length == 0) {
 		SSVAL(ptr, 0, 0);
-		SIVAL(ptr, 4, 0);
+		SIVAL(ptr, 2, 0);
 		return NT_STATUS_OK;
 	}
 
@@ -456,6 +456,13 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	DATA_BLOB blob;
 	NTSTATUS status;
 	ssize_t size;
+
+	if (strcmp("", str) == 0) {
+		blob = data_blob(NULL, 0);
+		status = smb2_push_o16s16_blob(buf, ptr, blob);
+		NT_STATUS_NOT_OK_RETURN(status);
+		return NT_STATUS_OK;
+	}
 
 	size = convert_string_talloc(buf->buffer, CH_UNIX, CH_UTF16, 
 				     str, strlen(str), (void **)&blob.data);
