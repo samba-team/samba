@@ -1424,6 +1424,9 @@ static void init_globals(void)
 	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
 		 DEFAULT_MINOR_VERSION);
 	string_set(&Globals.szAnnounceVersion, s);
+#ifdef DEVELOPER
+	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
+#endif
 
 	pstrcpy(user_socket_options, DEFAULT_SOCKET_OPTIONS);
 
