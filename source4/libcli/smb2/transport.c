@@ -251,7 +251,7 @@ void smb2_transport_send(struct smb2_request *req)
 	DATA_BLOB blob;
 	NTSTATUS status;
 
-	_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+	_smb_setlen2(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 
 	DEBUG(2, ("SMB2 send seqnum=0x%llx\n", req->seqnum));
 	dump_data(5, req->out.body, req->out.body_size);
