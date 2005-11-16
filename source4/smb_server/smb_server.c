@@ -504,7 +504,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	}
 
 	/* see if the vuid is valid */
-	if ((flags & AS_USER) && !req->session) {
+	if ((flags & AS_USER) && (!req->session || !req->session->finished_sesssetup)) {
 		/* amazingly, the error code depends on the command */
 		switch (type) {
 			case SMBntcreateX:
