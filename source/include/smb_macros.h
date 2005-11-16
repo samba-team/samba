@@ -47,6 +47,8 @@
 #define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
 #define _smb_setlen(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0x10000)>>16; \
         (buf)[2] = ((len)&0xFF00)>>8; (buf)[3] = (len)&0xFF;} while (0)
+#define _smb_setlen2(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0xFF0000)>>16; \
+        (buf)[2] = ((len)&0xFF00)>>8; (buf)[3] = (len)&0xFF;} while (0)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
