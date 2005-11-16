@@ -60,6 +60,34 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	d_printf("\tunknown6:       0x%llx\n", io.all_info.unknown6);
 	d_printf("\tfname:          '%s'\n", io.all_info.fname);
 
+	/* the EAs, if any */
+	status = smb2_getinfo_level(tree, tmp_ctx, handle, 
+				    SMB2_GETINFO_FILE_ALL_EAS, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		int i;
+		for (i=0;i<io.all_eas.num_eas;i++) {
+			d_printf("\tEA[%d] flags=%d len=%d '%s'\n", i,
+				 io.all_eas.eas[i].flags,
+				 (int)io.all_eas.eas[i].value.length,
+				 io.all_eas.eas[i].name.s);
+		}
+	}
+
+	/* streams, if available */
+	status = smb2_getinfo_level(tree, tmp_ctx, handle, 
+				    SMB2_GETINFO_FILE_STREAM_INFO, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		int i;
+		for (i=0;i<io.stream_info.num_streams;i++) {
+			d_printf("\tstream %d:\n", i);
+			d_printf("\t\tsize       %ld\n", 
+				 (long)io.stream_info.streams[i].size);
+			d_printf("\t\talloc size %ld\n", 
+				 (long)io.stream_info.streams[i].alloc_size);
+			d_printf("\t\tname       %s\n", io.stream_info.streams[i].stream_name.s);
+		}
+	}	
+
 	talloc_free(tmp_ctx);	
 }
 
