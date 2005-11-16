@@ -24,9 +24,10 @@
  */
 
 enum libnet_RpcConnect_level {
-	LIBNET_RPC_CONNECT_SERVER,      /* connect to a standalone rpc server */
-	LIBNET_RPC_CONNECT_PDC,          /* connect to a domain pdc */
-	LIBNET_RPC_CONNECT_BINDING      /* specified binding string */
+	LIBNET_RPC_CONNECT_SERVER,       /* connect to a standalone rpc server */
+	LIBNET_RPC_CONNECT_PDC,          /* connect to a domain pdc (resolves domain
+					    name to a pdc address before connecting) */
+	LIBNET_RPC_CONNECT_BINDING       /* specified binding string */
 };
 
 struct libnet_RpcConnect {
