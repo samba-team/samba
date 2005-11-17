@@ -184,9 +184,9 @@
 	<indexterm><primary>source code</primary></indexterm>
 	<indexterm><primary>distribution</primary></indexterm>
 	<indexterm><primary>tarball</primary></indexterm>
-	<indexterm><primary>pacakge</primary></indexterm>
+	<indexterm><primary>package</primary></indexterm>
 	There are sample configuration files in the examples subdirectory in the source code distribution tarball
-	pacakge. It is suggested you read them carefully so you can see how the options go together in practice. See
+	package. It is suggested you read them carefully so you can see how the options go together in practice. See
 	the man page for all the options.  It might be worthwhile to start out with the
 	<filename>smb.conf.default</filename> configuration file and adapt it to your needs. It contains plenty of comments.
 	</para>
