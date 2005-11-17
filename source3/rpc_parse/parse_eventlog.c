@@ -294,7 +294,7 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 
 	while(entry != NULL && record_written < record_total)
 	{
-		DEBUG(10, ("eventlog_io_r_read_eventlog: writing record [%d] out of [%d].\n", record_written, record_total));
+		DEBUG(11, ("eventlog_io_r_read_eventlog: writing record [%d] out of [%d].\n", record_written, record_total));
 
 		/* Encode the actual eventlog record record */
 
