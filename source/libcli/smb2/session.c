@@ -77,7 +77,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 
 	req->session = session;
 
-	status = smb2_push_o16s16_blob(&req->out, req->out.body+0x0C, io->in.secblob);
+	status = smb2_push_o16s16_blob(&req->out, 0x0C, io->in.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;

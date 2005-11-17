@@ -48,13 +48,13 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	SIVAL(req->out.body, 0x24, io->in.open_disposition);
 	SIVAL(req->out.body, 0x28, io->in.create_options);
 
-	status = smb2_push_o16s16_string(&req->out, req->out.body+0x2C, io->in.fname);
+	status = smb2_push_o16s16_string(&req->out, 0x2C, io->in.fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
 	}
 
-	status = smb2_push_o32s32_blob(&req->out, req->out.body+0x30, io->in.blob);
+	status = smb2_push_o32s32_blob(&req->out, 0x30, io->in.blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
