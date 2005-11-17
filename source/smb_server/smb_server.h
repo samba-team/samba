@@ -80,6 +80,12 @@ struct smbsrv_tcon {
 	/* the reported device type */
 	char *dev_type;
 
+	/* some stuff to support share level security */
+	struct {
+		/* in share level security we need to fake up a session */
+		struct smbsrv_session *session;
+	} sec_share;
+
 	struct timeval connect_time;
 };
 

@@ -459,7 +459,6 @@ static void switch_message(int type, struct smbsrv_request *req)
 {
 	int flags;
 	struct smbsrv_connection *smb_conn = req->smb_conn;
-	uint16_t session_tag;
 	NTSTATUS status;
 
 	type &= 0xff;
@@ -476,24 +475,19 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	req->tcon = smbsrv_tcon_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
 
-	if (req->session == NULL) {
+	if (!req->session) {
 		/* setup the user context for this request if it
 		   hasn't already been initialised (to cope with SMB
 		   chaining) */
 
 		/* In share mode security we must ignore the vuid. */
 		if (smb_conn->config.security == SEC_SHARE) {
-			session_tag = UID_FIELD_INVALID;
-		} else {
-			session_tag = SVAL(req->in.hdr,HDR_UID);
+			if (req->tcon) {
+				req->session = req->tcon->sec_share.session;
+			}
+ 		} else {
+			req->session = smbsrv_session_find(req->smb_conn, SVAL(req->in.hdr,HDR_UID));
 		}
-
-		req->session = smbsrv_session_find(req->smb_conn, session_tag);
-		if (req->session) {
-			req->session->vuid = session_tag;
-		}
-	} else {
-		session_tag = req->session->vuid;
 	}
 
 	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), req->smb_conn->connection->server_id));
