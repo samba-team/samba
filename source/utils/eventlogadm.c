@@ -79,7 +79,7 @@ int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 {
 	FILE *f1;
 	char *argfname;
-	TDB_CONTEXT *elog_tdb;
+	ELOG_TDB *etdb;
 
 	/* fixed constants are bad bad bad  */
 	pstring linein;
@@ -100,7 +100,7 @@ int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 
 	argfname = argv[0];
 
-	if ( !( elog_tdb = elog_open_tdb( argfname ) ) ) {
+	if ( !( etdb = elog_open_tdb( argfname, False ) ) ) {
 		printf( "can't open the eventlog TDB (%s)\n", argfname );
 		return -1;
 	}
@@ -130,7 +130,7 @@ int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 
 				/* printf("Writing to the event log\n"); */
 
-				rcnum = write_eventlog_tdb( elog_tdb, &ee );
+				rcnum = write_eventlog_tdb( ELOG_TDB_CTX(etdb), &ee );
 				if ( !rcnum ) {
 					printf( "Can't write to the event log\n" );
 				} else {
@@ -146,7 +146,7 @@ int DoWriteCommand( int argc, char **argv, BOOL debugflag, char *exename )
 		}
 	}
 
-	tdb_close( elog_tdb );
+	elog_close_tdb( etdb , False );
 
 	return 0;
 }
