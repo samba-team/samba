@@ -680,9 +680,10 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 	uint32 num_records_read = 0;
 	prs_struct *ps;
 	int bytes_left, record_number;
+	uint32 elog_read_type, elog_read_dir;
+
 	info->flags = q_u->flags;
 	ps = &p->out_data.rdata;
-	uint32 elog_read_type, elog_read_dir;
 
 	bytes_left = q_u->max_read_size;
 
