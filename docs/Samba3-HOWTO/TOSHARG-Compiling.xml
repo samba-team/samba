@@ -428,8 +428,8 @@ gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
 	<para>
 	Next, edit your <filename>/etc/inetd.conf</filename> and add two lines like this:
 <programlisting>
-netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
-netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+netbios-ssn stream tcp nowait root /usr/local/samba/sbin/smbd smbd 
+netbios-ns dgram udp wait root /usr/local/samba/sbin/nmbd nmbd 
 </programlisting>
 	</para>
 
@@ -492,9 +492,9 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 
 <para><programlisting>
 #!/bin/sh
-/usr/local/samba/bin/smbd -D 
-/usr/local/samba/bin/winbindd -B
-/usr/local/samba/bin/nmbd -D 
+/usr/local/samba/sbin/smbd -D 
+/usr/local/samba/sbin/winbindd -B
+/usr/local/samba/sbin/nmbd -D 
 </programlisting></para>
 
 	<para>
