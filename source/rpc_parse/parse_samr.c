@@ -6734,7 +6734,7 @@ inits a SAMR_Q_CONNECT4 structure.
 void init_samr_q_connect4(SAMR_Q_CONNECT4 * q_u,
 			  char *srv_name, uint32 access_mask)
 {
-	DEBUG(5, ("init_samr_q_connect\n"));
+	DEBUG(5, ("init_samr_q_connect4\n"));
 
 	/* make PDC server name \\server */
 	q_u->ptr_srv_name = (srv_name != NULL && *srv_name) ? 1 : 0;
@@ -6792,6 +6792,116 @@ BOOL samr_io_r_connect4(const char *desc, SAMR_R_CONNECT4 * r_u,
 	depth++;
 
 	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a SAMR_Q_CONNECT5 structure.
+********************************************************************/
+
+void init_samr_q_connect5(SAMR_Q_CONNECT5 * q_u,
+			  char *srv_name, uint32 access_mask)
+{
+	DEBUG(5, ("init_samr_q_connect5\n"));
+
+	/* make PDC server name \\server */
+	q_u->ptr_srv_name = (srv_name != NULL && *srv_name) ? 1 : 0;
+	init_unistr2(&q_u->uni_srv_name, srv_name, UNI_STR_TERMINATE);
+
+	/* example values: 0x0000 0002 */
+	q_u->access_mask = access_mask;
+
+	q_u->level = 1;
+	q_u->info1_unk1 = 3;
+	q_u->info1_unk2 = 0;
+}
+
+/*******************************************************************
+inits a SAMR_R_CONNECT5 structure.
+********************************************************************/
+
+void init_samr_r_connect5(SAMR_R_CONNECT5 * r_u, POLICY_HND *pol, NTSTATUS status)
+{
+	DEBUG(5, ("init_samr_q_connect5\n"));
+
+	r_u->level = 1;
+	r_u->info1_unk1 = 3;
+	r_u->info1_unk2 = 0;
+
+	r_u->connect_pol = *pol;
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_connect5(const char *desc, SAMR_Q_CONNECT5 * q_u,
+			prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_connect5");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_u->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+		return False;
+
+	if(!prs_uint32("level", ps, depth, &q_u->level))
+		return False;
+	if(!prs_uint32("level", ps, depth, &q_u->level))
+		return False;
+	
+	if(!prs_uint32("info1_unk1", ps, depth, &q_u->info1_unk1))
+		return False;
+	if(!prs_uint32("info1_unk2", ps, depth, &q_u->info1_unk2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_connect5(const char *desc, SAMR_R_CONNECT5 * r_u,
+			prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_connect5");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("level", ps, depth, &r_u->level))
+		return False;
+	if(!prs_uint32("level", ps, depth, &r_u->level))
+		return False;
+	if(!prs_uint32("info1_unk1", ps, depth, &r_u->info1_unk1))
+		return False;
+	if(!prs_uint32("info1_unk2", ps, depth, &r_u->info1_unk2))
 		return False;
 
 	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))

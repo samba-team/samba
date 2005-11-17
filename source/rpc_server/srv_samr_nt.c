@@ -2293,6 +2293,60 @@ NTSTATUS _samr_connect4(pipes_struct *p, SAMR_Q_CONNECT4 *q_u, SAMR_R_CONNECT4 *
 	return r_u->status;
 }
 
+/*******************************************************************
+ samr_connect5
+ ********************************************************************/
+
+NTSTATUS _samr_connect5(pipes_struct *p, SAMR_Q_CONNECT5 *q_u, SAMR_R_CONNECT5 *r_u)
+{
+	struct samr_info *info = NULL;
+	SEC_DESC *psd = NULL;
+	uint32    acc_granted;
+	uint32    des_access = q_u->access_mask;
+	NTSTATUS  nt_status;
+	POLICY_HND pol;
+	size_t    sd_size;
+
+
+	DEBUG(5,("_samr_connect5: %d\n", __LINE__));
+
+	ZERO_STRUCTP(r_u);
+
+	/* Access check */
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to samr_connect5\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		return r_u->status;
+	}
+
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
+	se_map_generic(&des_access, &sam_generic_mapping);
+	
+	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
+		NULL, 0, des_access, &acc_granted, "_samr_connect5");
+	
+	if ( !NT_STATUS_IS_OK(nt_status) ) 
+		return nt_status;
+
+	/* associate the user's SID and access granted with the new handle. */
+	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	info->acc_granted = acc_granted;
+	info->status = q_u->access_mask;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	DEBUG(5,("_samr_connect: %d\n", __LINE__));
+
+	init_samr_r_connect5(r_u, &pol, NT_STATUS_OK);
+
+	return r_u->status;
+}
+
 /**********************************************************************
  api_samr_lookup_domain
  **********************************************************************/
