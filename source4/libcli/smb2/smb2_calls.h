@@ -191,13 +191,13 @@ struct smb2_close {
 };
 
 /* fs information levels */
-#define SMB2_GETINFO_FS_01              0x0102
-#define SMB2_GETINFO_FS_03              0x0302
-#define SMB2_GETINFO_FS_04              0x0402
-#define SMB2_GETINFO_FS_ATTRIB_INFO     0x0502
-#define SMB2_GETINFO_FS_06              0x0602
-#define SMB2_GETINFO_FS_07              0x0702
-#define SMB2_GETINFO_FS_08              0x0802
+#define SMB2_GETINFO_FS_VOLUME_INFO     0x0102
+#define SMB2_GETINFO_FS_SIZE_INFO       0x0302
+#define SMB2_GETINFO_FS_DEVICE_INFO     0x0402
+#define SMB2_GETINFO_FS_ATTRIBUTE_INFO  0x0502
+#define SMB2_GETINFO_FS_QUOTA_INFO      0x0602
+#define SMB2_GETINFO_FS_FULL_SIZE_INFO  0x0702
+#define SMB2_GETINFO_FS_OBJECTID_INFO   0x0802
 
 /* class 3 levels */
 #define SMB2_GETINFO_SECURITY           0x0003
@@ -295,7 +295,7 @@ union smb2_fileinfo {
 		NTTIME   write_time;
 		NTTIME   change_time;
 		uint32_t file_attr;
-		/* uint32_t _pad; */
+		uint32_t unknown1;
 		uint64_t alloc_size;
 		uint64_t size;
 		uint32_t nlink;
