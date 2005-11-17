@@ -28,6 +28,10 @@
 #include "lib/events/events.h"
 
 
+#define FNAME "scan-getinfo.dat"
+#define DNAME "scan-getinfo.dir"
+
+
 /* 
    scan for valid SMB2 getinfo levels
 */
@@ -37,78 +41,53 @@ BOOL torture_smb2_getinfo_scan(void)
 	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_getinfo io;
-	struct smb2_create cr;
-	struct smb2_handle handle;
+	struct smb2_handle fhandle, dhandle;
 	int c, i;
-	const char *fname = "scan-getinfo.dat";
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
 		return False;
 	}
 
-	if (!torture_setup_complex_file(fname)) {
-		printf("Failed to setup complex file '%s'\n", fname);
+	if (!torture_setup_complex_file(FNAME)) {
+		printf("Failed to setup complex file '%s'\n", FNAME);
 	}
+	torture_setup_complex_file(FNAME ":2ndstream");
 
-	ZERO_STRUCT(cr);
-	cr.in.oplock_flags = 0;
-	cr.in.access_mask = SEC_RIGHTS_FILE_ALL;
-	cr.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	cr.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
-	cr.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_DELETE|
-		NTCREATEX_SHARE_ACCESS_READ|
-		NTCREATEX_SHARE_ACCESS_WRITE;
-	cr.in.create_options = NTCREATEX_OPTIONS_WRITE_THROUGH;
-	cr.in.fname = fname;
-	cr.in.blob  = data_blob(NULL, 0);
-
-	status = smb2_create(tree, mem_ctx, &cr);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("create of '%s' failed - %s\n", fname, nt_errstr(status));
-		return False;
+	if (!torture_setup_complex_dir(DNAME)) {
+		printf("Failed to setup complex dir  '%s'\n", DNAME);
 	}
+	torture_setup_complex_file(DNAME ":2ndstream");
 
-	handle = cr.out.handle;
+	torture_smb2_testfile(tree, FNAME, &fhandle);
+	torture_smb2_testdir(tree, DNAME, &dhandle);
 
 
 	ZERO_STRUCT(io);
 	io.in.max_response_size = 0xFFFF;
-	io.in.handle            = handle;
 
-	io.in.max_response_size = 128;
-	io.in.unknown1 = 0;
-	io.in.level = SMB2_GETINFO_FILE_ALL_INFO;
-	status = smb2_getinfo(tree, mem_ctx, &io);
-
-	io.in.max_response_size = 128;
-	io.in.unknown1 = 64;
-	io.in.flags = 64;
-	io.in.unknown3 = 64;
-	io.in.unknown4 = 64;
-	io.in.level = SMB2_GETINFO_FILE_ALL_INFO;
-	status = smb2_getinfo(tree, mem_ctx, &io);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("level 0x%04x is %d bytes - %s\n", 
-		       io.in.level, io.out.blob.length, nt_errstr(status));
-		dump_data(1, io.out.blob.data, io.out.blob.length);
-	}
-
-	return True;
-
-	for (c=0;c<5;c++) {
+	for (c=1;c<5;c++) {
 		for (i=0;i<0x100;i++) {
 			io.in.level = (i<<8) | c;
+
+			io.in.handle = fhandle;
 			status = smb2_getinfo(tree, mem_ctx, &io);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) ||
-			    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) ||
-			    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-				continue;
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				printf("file level 0x%04x is %d bytes - %s\n", 
+				       io.in.level, io.out.blob.length, nt_errstr(status));
+				dump_data(1, io.out.blob.data, io.out.blob.length);
 			}
-			printf("level 0x%04x is %d bytes - %s\n", 
-			       io.in.level, io.out.blob.length, nt_errstr(status));
-			dump_data(1, io.out.blob.data, io.out.blob.length);
+
+			io.in.handle = dhandle;
+			status = smb2_getinfo(tree, mem_ctx, &io);
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				printf("dir  level 0x%04x is %d bytes - %s\n", 
+				       io.in.level, io.out.blob.length, nt_errstr(status));
+				dump_data(1, io.out.blob.data, io.out.blob.length);
+			}
 		}
 	}
 
