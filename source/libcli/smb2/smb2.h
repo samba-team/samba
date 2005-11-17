@@ -138,7 +138,7 @@ struct smb2_request {
 };
 
 
-#define SMB2_MIN_SIZE 0x40
+#define SMB2_MIN_SIZE 0x42
 
 /* offsets into header elements */
 #define SMB2_HDR_LENGTH  0x04

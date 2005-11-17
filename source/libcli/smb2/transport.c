@@ -148,6 +148,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	int len;
 	struct smb2_request *req = NULL;
 	uint64_t seqnum;
+	uint16_t buffer_code;
+	uint32_t dynamic_size;
 
 	buffer = blob.data;
 	len = blob.length;
@@ -182,6 +184,18 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.body      = hdr+SMB2_HDR_BODY;
 	req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
+
+	buffer_code = SVAL(req->in.body, 0);
+	req->in.dynamic = NULL;
+	dynamic_size = req->in.body_size - (buffer_code & ~1);
+	if (dynamic_size != 0 && (buffer_code & 1)) {
+		req->in.dynamic = req->in.body + (buffer_code & ~1);
+		if (smb2_oob(&req->in, req->in.dynamic, dynamic_size)) {
+			DEBUG(1,("SMB2 request invalid dynamic size 0x%x\n", 
+				 dynamic_size));
+			goto error;
+		}
+	}
 
 	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", req->seqnum));
 	dump_data(5, req->in.body, req->in.body_size);
