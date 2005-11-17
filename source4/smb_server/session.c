@@ -106,9 +106,7 @@ struct smbsrv_session *smbsrv_register_session(struct smbsrv_connection *smb_con
 	int i;
 
 	/* Ensure no vuid gets registered in share level security. */
-	/* TODO: replace lp_security with a flag in smbsrv_connection */
-	if (lp_security() == SEC_SHARE)
-		return UID_FIELD_INVALID;
+	if (smb_conn->config.security == SEC_SHARE) return NULL;
 
 	sess = talloc(smb_conn, struct smbsrv_session);
 	if (sess == NULL) {
@@ -120,7 +118,7 @@ struct smbsrv_session *smbsrv_register_session(struct smbsrv_connection *smb_con
 
 	i = idr_get_new_random(smb_conn->sessions.idtree_vuid, sess, UINT16_MAX);
 	if (i == -1) {
-		DEBUG(1,("ERROR! Out of connection structures\n"));	       
+		DEBUG(1,("ERROR! Out of connection structures\n"));
 		talloc_free(sess);
 		return NULL;
 	}
