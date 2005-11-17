@@ -151,6 +151,86 @@ struct smbcli_request *smb_raw_fsinfo_send(struct smbcli_tree *tree,
 	return smb_raw_qfsinfo_send(tree, mem_ctx, info_level);
 }
 
+/*
+  parse the fsinfo 'passthru' level replies
+*/
+NTSTATUS smb_raw_fsinfo_passthru_parse(DATA_BLOB blob, TALLOC_CTX *mem_ctx, 
+				       enum smb_fsinfo_level level,
+				       union smb_fsinfo *fsinfo)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	int i;
+
+	/* parse the results */
+	switch (level) {
+	case RAW_QFS_VOLUME_INFORMATION:
+		QFS_CHECK_MIN_SIZE(18);
+		fsinfo->volume_info.out.create_time   = smbcli_pull_nttime(blob.data, 0);
+		fsinfo->volume_info.out.serial_number = IVAL(blob.data, 8);
+		smbcli_blob_pull_string(NULL, mem_ctx, &blob, 
+					&fsinfo->volume_info.out.volume_name,
+					12, 18, STR_UNICODE);
+		break;		
+
+	case RAW_QFS_SIZE_INFORMATION:
+		QFS_CHECK_SIZE(24);
+		fsinfo->size_info.out.total_alloc_units = BVAL(blob.data,  0);
+		fsinfo->size_info.out.avail_alloc_units = BVAL(blob.data,  8);
+		fsinfo->size_info.out.sectors_per_unit =  IVAL(blob.data, 16);
+		fsinfo->size_info.out.bytes_per_sector =  IVAL(blob.data, 20); 
+		break;		
+
+	case RAW_QFS_DEVICE_INFORMATION:
+		QFS_CHECK_SIZE(8);
+		fsinfo->device_info.out.device_type     = IVAL(blob.data,  0);
+		fsinfo->device_info.out.characteristics = IVAL(blob.data,  4);
+		break;		
+
+	case RAW_QFS_ATTRIBUTE_INFORMATION:
+		QFS_CHECK_MIN_SIZE(12);
+		fsinfo->attribute_info.out.fs_attr   =                 IVAL(blob.data, 0);
+		fsinfo->attribute_info.out.max_file_component_length = IVAL(blob.data, 4);
+		smbcli_blob_pull_string(NULL, mem_ctx, &blob, 
+					&fsinfo->attribute_info.out.fs_type,
+					8, 12, STR_UNICODE);
+		break;		
+
+	case RAW_QFS_QUOTA_INFORMATION:
+		QFS_CHECK_SIZE(48);
+		fsinfo->quota_information.out.unknown[0] =  BVAL(blob.data,  0);
+		fsinfo->quota_information.out.unknown[1] =  BVAL(blob.data,  8);
+		fsinfo->quota_information.out.unknown[2] =  BVAL(blob.data, 16);
+		fsinfo->quota_information.out.quota_soft =  BVAL(blob.data, 24);
+		fsinfo->quota_information.out.quota_hard =  BVAL(blob.data, 32);
+		fsinfo->quota_information.out.quota_flags = BVAL(blob.data, 40);
+		break;		
+
+	case RAW_QFS_FULL_SIZE_INFORMATION:
+		QFS_CHECK_SIZE(32);
+		fsinfo->full_size_information.out.total_alloc_units =        BVAL(blob.data,  0);
+		fsinfo->full_size_information.out.call_avail_alloc_units =   BVAL(blob.data,  8);
+		fsinfo->full_size_information.out.actual_avail_alloc_units = BVAL(blob.data, 16);
+		fsinfo->full_size_information.out.sectors_per_unit =         IVAL(blob.data, 24);
+		fsinfo->full_size_information.out.bytes_per_sector =         IVAL(blob.data, 28);
+		break;		
+
+	case RAW_QFS_OBJECTID_INFORMATION:
+		QFS_CHECK_SIZE(64);
+		status = ndr_pull_struct_blob(&blob, mem_ctx, &fsinfo->objectid_information.out.guid,
+					      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+		for (i=0;i<6;i++) {
+			fsinfo->objectid_information.out.unknown[i] = BVAL(blob.data, 16 + i*8);
+		}
+		break;
+		
+	default:
+		status = NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+failed:
+	return status;
+}
+
 
 /****************************************************************************
  Query FSInfo raw interface (async recv)
@@ -161,7 +241,6 @@ NTSTATUS smb_raw_fsinfo_recv(struct smbcli_request *req,
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	int i;
 	struct smbcli_session *session = req?req->session:NULL;
 
 	if (fsinfo->generic.level == RAW_QFS_DSKATTR) {
@@ -199,39 +278,23 @@ NTSTATUS smb_raw_fsinfo_recv(struct smbcli_request *req,
 
 	case RAW_QFS_VOLUME_INFO:
 	case RAW_QFS_VOLUME_INFORMATION:
-		QFS_CHECK_MIN_SIZE(18);
-		fsinfo->volume_info.out.create_time   = smbcli_pull_nttime(blob.data, 0);
-		fsinfo->volume_info.out.serial_number = IVAL(blob.data, 8);
-		smbcli_blob_pull_string(session, mem_ctx, &blob, 
-				     &fsinfo->volume_info.out.volume_name,
-				     12, 18, STR_UNICODE);
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_VOLUME_INFORMATION, fsinfo);
 
 	case RAW_QFS_SIZE_INFO:
 	case RAW_QFS_SIZE_INFORMATION:
-		QFS_CHECK_SIZE(24);
-		fsinfo->size_info.out.total_alloc_units = BVAL(blob.data,  0);
-		fsinfo->size_info.out.avail_alloc_units = BVAL(blob.data,  8);
-		fsinfo->size_info.out.sectors_per_unit =  IVAL(blob.data, 16);
-		fsinfo->size_info.out.bytes_per_sector =  IVAL(blob.data, 20); 
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_SIZE_INFORMATION, fsinfo);
 
 	case RAW_QFS_DEVICE_INFO:
 	case RAW_QFS_DEVICE_INFORMATION:
-		QFS_CHECK_SIZE(8);
-		fsinfo->device_info.out.device_type     = IVAL(blob.data,  0);
-		fsinfo->device_info.out.characteristics = IVAL(blob.data,  4);
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_DEVICE_INFORMATION, fsinfo);
 
 	case RAW_QFS_ATTRIBUTE_INFO:
 	case RAW_QFS_ATTRIBUTE_INFORMATION:
-		QFS_CHECK_MIN_SIZE(12);
-		fsinfo->attribute_info.out.fs_attr   =                 IVAL(blob.data, 0);
-		fsinfo->attribute_info.out.max_file_component_length = IVAL(blob.data, 4);
-		smbcli_blob_pull_string(session, mem_ctx, &blob, 
-				     &fsinfo->attribute_info.out.fs_type,
-				     8, 12, STR_UNICODE);
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_ATTRIBUTE_INFORMATION, fsinfo);
 
 	case RAW_QFS_UNIX_INFO:
 		QFS_CHECK_SIZE(12);
@@ -241,32 +304,16 @@ NTSTATUS smb_raw_fsinfo_recv(struct smbcli_request *req,
 		break;
 
 	case RAW_QFS_QUOTA_INFORMATION:
-		QFS_CHECK_SIZE(48);
-		fsinfo->quota_information.out.unknown[0] =  BVAL(blob.data,  0);
-		fsinfo->quota_information.out.unknown[1] =  BVAL(blob.data,  8);
-		fsinfo->quota_information.out.unknown[2] =  BVAL(blob.data, 16);
-		fsinfo->quota_information.out.quota_soft =  BVAL(blob.data, 24);
-		fsinfo->quota_information.out.quota_hard =  BVAL(blob.data, 32);
-		fsinfo->quota_information.out.quota_flags = BVAL(blob.data, 40);
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_QUOTA_INFORMATION, fsinfo);
 
 	case RAW_QFS_FULL_SIZE_INFORMATION:
-		QFS_CHECK_SIZE(32);
-		fsinfo->full_size_information.out.total_alloc_units =        BVAL(blob.data,  0);
-		fsinfo->full_size_information.out.call_avail_alloc_units =   BVAL(blob.data,  8);
-		fsinfo->full_size_information.out.actual_avail_alloc_units = BVAL(blob.data, 16);
-		fsinfo->full_size_information.out.sectors_per_unit =         IVAL(blob.data, 24);
-		fsinfo->full_size_information.out.bytes_per_sector =         IVAL(blob.data, 28);
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_FULL_SIZE_INFORMATION, fsinfo);
 
 	case RAW_QFS_OBJECTID_INFORMATION:
-		QFS_CHECK_SIZE(64);
-		status = ndr_pull_struct_blob(&blob, mem_ctx, &fsinfo->objectid_information.out.guid,
-					      (ndr_pull_flags_fn_t)ndr_pull_GUID);
-		for (i=0;i<6;i++) {
-			fsinfo->objectid_information.out.unknown[i] = BVAL(blob.data, 16 + i*8);
-		}
-		break;		
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
+						     RAW_QFS_OBJECTID_INFORMATION, fsinfo);
 	}
 
 failed:
