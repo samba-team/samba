@@ -737,8 +737,8 @@ NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
   of bytes consumed in the blob is returned
 */
 static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
-				 DATA_BLOB *blob, const char **dest, 
-				 const uint8_t *src, int byte_len, uint_t flags)
+				    const DATA_BLOB *blob, const char **dest, 
+				    const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
@@ -793,8 +793,8 @@ static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
   of bytes consumed in the blob is returned
 */
 static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
-				  DATA_BLOB *blob, const char **dest, 
-				  const uint8_t *src, int byte_len, uint_t flags)
+				     const DATA_BLOB *blob, const char **dest, 
+				     const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -841,11 +841,11 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
   of bytes consumed in the blob is returned
 */
 size_t smbcli_blob_pull_string(struct smbcli_session *session,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *blob, 
-			    WIRE_STRING *dest, 
-			    uint16_t len_offset, uint16_t str_offset, 
-			    uint_t flags)
+			       TALLOC_CTX *mem_ctx,
+			       const DATA_BLOB *blob, 
+			       WIRE_STRING *dest, 
+			       uint16_t len_offset, uint16_t str_offset, 
+			       uint_t flags)
 {
 	int extra;
 	dest->s = NULL;
