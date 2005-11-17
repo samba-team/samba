@@ -34,65 +34,68 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-	union smb2_fileinfo io;
+	union smb_fileinfo io;
 
-	status = smb2_getinfo_level(tree, tmp_ctx, handle, SMB2_GETINFO_FILE_ALL_INFO, &io);
+	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	io.generic.in.handle = handle;
+
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("getinfo failed - %s\n", nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return;
 	}
 
-	d_printf("\tcreate_time:    %s\n", nt_time_string(tmp_ctx, io.all_info.create_time));
-	d_printf("\taccess_time:    %s\n", nt_time_string(tmp_ctx, io.all_info.access_time));
-	d_printf("\twrite_time:     %s\n", nt_time_string(tmp_ctx, io.all_info.write_time));
-	d_printf("\tchange_time:    %s\n", nt_time_string(tmp_ctx, io.all_info.change_time));
-	d_printf("\tattrib:         0x%x\n", io.all_info.file_attr);
-	d_printf("\tunknown1:       0x%x\n", io.all_info.unknown1);
-	d_printf("\talloc_size:     %llu\n", (uint64_t)io.all_info.alloc_size);
-	d_printf("\tsize:           %llu\n", (uint64_t)io.all_info.size);
-	d_printf("\tnlink:          %u\n", io.all_info.nlink);
-	d_printf("\tdelete_pending: %u\n", io.all_info.delete_pending);
-	d_printf("\tdirectory:      %u\n", io.all_info.directory);
-	d_printf("\tfile_id:        %llu\n", io.all_info.file_id);
-	d_printf("\tea_size:        %u\n", io.all_info.ea_size);
-	d_printf("\taccess_mask:    0x%08x\n", io.all_info.access_mask);
-	d_printf("\tunknown5:       0x%llx\n", io.all_info.unknown5);
-	d_printf("\tunknown6:       0x%llx\n", io.all_info.unknown6);
-	d_printf("\tfname:          '%s'\n", io.all_info.fname);
+	d_printf("\tcreate_time:    %s\n", nt_time_string(tmp_ctx, io.all_info2.out.create_time));
+	d_printf("\taccess_time:    %s\n", nt_time_string(tmp_ctx, io.all_info2.out.access_time));
+	d_printf("\twrite_time:     %s\n", nt_time_string(tmp_ctx, io.all_info2.out.write_time));
+	d_printf("\tchange_time:    %s\n", nt_time_string(tmp_ctx, io.all_info2.out.change_time));
+	d_printf("\tattrib:         0x%x\n", io.all_info2.out.attrib);
+	d_printf("\tunknown1:       0x%x\n", io.all_info2.out.unknown1);
+	d_printf("\talloc_size:     %llu\n", (uint64_t)io.all_info2.out.alloc_size);
+	d_printf("\tsize:           %llu\n", (uint64_t)io.all_info2.out.size);
+	d_printf("\tnlink:          %u\n", io.all_info2.out.nlink);
+	d_printf("\tdelete_pending: %u\n", io.all_info2.out.delete_pending);
+	d_printf("\tdirectory:      %u\n", io.all_info2.out.directory);
+	d_printf("\tfile_id:        %llu\n", io.all_info2.out.file_id);
+	d_printf("\tea_size:        %u\n", io.all_info2.out.ea_size);
+	d_printf("\taccess_mask:    0x%08x\n", io.all_info2.out.access_mask);
+	d_printf("\tunknown2:       0x%llx\n", io.all_info2.out.unknown2);
+	d_printf("\tunknown3:       0x%llx\n", io.all_info2.out.unknown3);
+	d_printf("\tfname:          '%s'\n", io.all_info2.out.fname.s);
 
 	/* short name, if any */
-	status = smb2_getinfo_level(tree, tmp_ctx, handle, 
-				    SMB2_GETINFO_FILE_SHORT_INFO, &io);
+	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	if (NT_STATUS_IS_OK(status)) {
-		d_printf("\tshort name:     '%s'\n", io.short_info.short_name);
+		d_printf("\tshort name:     '%s'\n", io.alt_name_info.out.fname.s);
 	}
 
 	/* the EAs, if any */
-	status = smb2_getinfo_level(tree, tmp_ctx, handle, 
-				    SMB2_GETINFO_FILE_ALL_EAS, &io);
+	io.generic.level = RAW_FILEINFO_SMB2_ALL_EAS;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	if (NT_STATUS_IS_OK(status)) {
 		int i;
-		for (i=0;i<io.all_eas.num_eas;i++) {
+		for (i=0;i<io.all_eas.out.num_eas;i++) {
 			d_printf("\tEA[%d] flags=%d len=%d '%s'\n", i,
-				 io.all_eas.eas[i].flags,
-				 (int)io.all_eas.eas[i].value.length,
-				 io.all_eas.eas[i].name.s);
+				 io.all_eas.out.eas[i].flags,
+				 (int)io.all_eas.out.eas[i].value.length,
+				 io.all_eas.out.eas[i].name.s);
 		}
 	}
 
 	/* streams, if available */
-	status = smb2_getinfo_level(tree, tmp_ctx, handle, 
-				    SMB2_GETINFO_FILE_STREAM_INFO, &io);
+	io.generic.level = RAW_FILEINFO_STREAM_INFORMATION;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
 	if (NT_STATUS_IS_OK(status)) {
 		int i;
-		for (i=0;i<io.stream_info.num_streams;i++) {
+		for (i=0;i<io.stream_info.out.num_streams;i++) {
 			d_printf("\tstream %d:\n", i);
 			d_printf("\t\tsize       %ld\n", 
-				 (long)io.stream_info.streams[i].size);
+				 (long)io.stream_info.out.streams[i].size);
 			d_printf("\t\talloc size %ld\n", 
-				 (long)io.stream_info.streams[i].alloc_size);
-			d_printf("\t\tname       %s\n", io.stream_info.streams[i].stream_name.s);
+				 (long)io.stream_info.out.streams[i].alloc_size);
+			d_printf("\t\tname       %s\n", io.stream_info.out.streams[i].stream_name.s);
 		}
 	}	
 
@@ -173,7 +176,7 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	io.in.access_mask = SEC_RIGHTS_DIR_ALL;
 	io.in.file_attr   = FILE_ATTRIBUTE_DIRECTORY;
 	io.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
-	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.in.fname = fname;
 	io.in.blob  = data_blob(NULL, 0);

@@ -103,14 +103,6 @@ struct smb2_tree_connect {
 	} out;
 };
 
-/*
-  file handles in SMB2 are 16 bytes
-*/
-struct smb2_handle {
-	uint64_t data[2];
-};
-
-
 #define SMB2_CREATE_FLAG_REQUEST_OPLOCK           0x0100
 #define SMB2_CREATE_FLAG_REQUEST_EXCLUSIVE_OPLOCK 0x0800
 #define SMB2_CREATE_FLAG_GRANT_OPLOCK             0x0001
@@ -190,35 +182,14 @@ struct smb2_close {
 	} out;
 };
 
-/* fs information levels */
-#define SMB2_GETINFO_FS_VOLUME_INFO     0x0102
-#define SMB2_GETINFO_FS_SIZE_INFO       0x0302
-#define SMB2_GETINFO_FS_DEVICE_INFO     0x0402
-#define SMB2_GETINFO_FS_ATTRIBUTE_INFO  0x0502
-#define SMB2_GETINFO_FS_QUOTA_INFO      0x0602
-#define SMB2_GETINFO_FS_FULL_SIZE_INFO  0x0702
-#define SMB2_GETINFO_FS_OBJECTID_INFO   0x0802
+/* getinfo classes */
+#define SMB2_GETINFO_FILE               0x01
+#define SMB2_GETINFO_FS                 0x02
+#define SMB2_GETINFO_SECURITY           0x03
 
-/* class 3 levels */
-#define SMB2_GETINFO_SECURITY           0x0003
-
-/* file information levels */
-#define SMB2_GETINFO_FILE_BASIC_INFO    0x0401
-#define SMB2_GETINFO_FILE_SIZE_INFO     0x0501
-#define SMB2_GETINFO_FILE_ID            0x0601
-#define SMB2_GETINFO_FILE_EA_SIZE       0x0701
-#define SMB2_GETINFO_FILE_ACCESS_INFO   0x0801
-#define SMB2_GETINFO_FILE_0E            0x0e01
-#define SMB2_GETINFO_FILE_ALL_EAS       0x0f01
-#define SMB2_GETINFO_FILE_10            0x1001
-#define SMB2_GETINFO_FILE_11            0x1101
-#define SMB2_GETINFO_FILE_ALL_INFO      0x1201
-#define SMB2_GETINFO_FILE_SHORT_INFO    0x1501
-#define SMB2_GETINFO_FILE_STREAM_INFO   0x1601
-#define SMB2_GETINFO_FILE_EOF_INFO      0x1c01
-#define SMB2_GETINFO_FILE_STANDARD_INFO 0x2201
-#define SMB2_GETINFO_FILE_ATTRIB_INFO   0x2301
-
+/* NOTE! the getinfo fs and file levels exactly match up with the
+   'passthru' SMB levels, which are levels >= 1000. The SMB2 client
+   lib uses the names from the libcli/raw/ library */
 
 struct smb2_getinfo {
 	struct {
@@ -227,8 +198,8 @@ struct smb2_getinfo {
 		uint16_t level;
 		uint32_t max_response_size;
 		uint32_t unknown1;
+		uint32_t unknown2;
 		uint32_t flags; /* level specific */
-		uint32_t unknown3;
 		uint32_t unknown4;
 		struct smb2_handle handle;
 	} in;
@@ -243,105 +214,6 @@ struct smb2_getinfo {
 		DATA_BLOB blob;
 	} out;
 };
-
-union smb2_fileinfo {
-	struct {
-		NTTIME   create_time;
-		NTTIME   access_time;
-		NTTIME   write_time;
-		NTTIME   change_time;
-		uint32_t file_attr;
-		uint32_t unknown;
-	} basic_info;
-
-	struct {
-		uint64_t alloc_size;
-		uint64_t size;
-		uint32_t nlink;
-		uint8_t  delete_pending;
-		uint8_t  directory;
-	} size_info;
-
-	struct {
-		uint64_t file_id;
-	} file_id;
-
-	struct {
-		uint32_t ea_size;
-	} ea_size;
-
-	struct {
-		uint32_t access_mask;
-	} access_info;
-
-	struct {
-		uint32_t unknown1;
-		uint32_t unknown2;
-	} unknown0e;
-
-	struct smb_ea_list all_eas;
-
-	struct {
-		uint32_t unknown;
-	} unknown10;
-
-	struct {
-		uint32_t unknown;
-	} unknown11;
-
-	struct {
-		NTTIME   create_time;
-		NTTIME   access_time;
-		NTTIME   write_time;
-		NTTIME   change_time;
-		uint32_t file_attr;
-		uint32_t unknown1;
-		uint64_t alloc_size;
-		uint64_t size;
-		uint32_t nlink;
-		uint8_t  delete_pending;
-		uint8_t  directory;
-		/* uint16_t _pad; */
-		uint64_t file_id;
-		uint32_t ea_size;
-		uint32_t access_mask;
-		uint64_t unknown5;
-		uint64_t unknown6;
-		const char *fname;
-	} all_info;
-
-	struct {
-		const char *short_name;
-	} short_info;
-
-	struct stream_information stream_info;
-
-	struct {
-		uint64_t size;
-		uint64_t unknown;
-	} eof_info;
-
-	struct {
-		NTTIME   create_time;
-		NTTIME   access_time;
-		NTTIME   write_time;
-		NTTIME   change_time;
-		uint64_t alloc_size;
-		uint64_t size;
-		uint32_t file_attr;
-		uint32_t unknown;
-	} standard_info;
-
-	struct {
-		uint32_t file_attr;
-		uint32_t unknown;
-	} attrib_info;
-
-	struct {
-		struct security_descriptor *sd;
-	} security;
-};
-
 
 struct smb2_write {
 	struct {

@@ -176,12 +176,6 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		parms->position_information.out.position = BVAL(blob->data, 0);
 		return NT_STATUS_OK;
 
-	case RAW_FILEINFO_FULL_EA_INFORMATION:
-		FINFO_CHECK_MIN_SIZE(4);
-		return ea_pull_list_chained(blob, mem_ctx, 
-					    &parms->all_eas.out.num_eas,
-					    &parms->all_eas.out.eas);
-
 	case RAW_FILEINFO_MODE_INFORMATION:
 		FINFO_CHECK_SIZE(4);
 		parms->mode_information.out.mode = IVAL(blob->data, 0);
@@ -219,6 +213,51 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		parms->attribute_tag_information.out.attrib =      IVAL(blob->data, 0);
 		parms->attribute_tag_information.out.reparse_tag = IVAL(blob->data, 4);
 		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+		FINFO_CHECK_MIN_SIZE(4);
+		return ea_pull_list_chained(blob, mem_ctx, 
+					    &parms->all_eas.out.num_eas,
+					    &parms->all_eas.out.eas);
+
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		FINFO_CHECK_MIN_SIZE(0x64);
+		parms->all_info2.out.create_time    = smbcli_pull_nttime(blob->data, 0x00);
+		parms->all_info2.out.access_time    = smbcli_pull_nttime(blob->data, 0x08);
+		parms->all_info2.out.write_time     = smbcli_pull_nttime(blob->data, 0x10);
+		parms->all_info2.out.change_time    = smbcli_pull_nttime(blob->data, 0x18);
+		parms->all_info2.out.attrib         = IVAL(blob->data, 0x20);
+		parms->all_info2.out.unknown1       = IVAL(blob->data, 0x24);
+		parms->all_info2.out.alloc_size     = BVAL(blob->data, 0x28);
+		parms->all_info2.out.size           = BVAL(blob->data, 0x30);
+		parms->all_info2.out.nlink          = IVAL(blob->data, 0x38);
+		parms->all_info2.out.delete_pending = CVAL(blob->data, 0x3C);
+		parms->all_info2.out.directory      = CVAL(blob->data, 0x3D);
+		parms->all_info2.out.file_id        = BVAL(blob->data, 0x40);
+		parms->all_info2.out.ea_size        = IVAL(blob->data, 0x48);
+		parms->all_info2.out.access_mask    = IVAL(blob->data, 0x4C);
+		parms->all_info2.out.unknown2       = BVAL(blob->data, 0x50);
+		parms->all_info2.out.unknown3       = BVAL(blob->data, 0x58);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					&parms->all_info2.out.fname, 0x60, 0x64, STR_UNICODE);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_SEC_DESC: {
+		struct ndr_pull *ndr;
+		NTSTATUS status;
+		ndr = ndr_pull_init_blob(blob, mem_ctx);
+		if (!ndr) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		parms->query_secdesc.out.sd = talloc(mem_ctx, struct security_descriptor);
+		if (parms->query_secdesc.out.sd == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, 
+						      parms->query_secdesc.out.sd);
+		talloc_free(ndr);
+		return status;
+	}
 
 	default:
 		break;
@@ -335,10 +374,6 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
 						       RAW_FILEINFO_POSITION_INFORMATION, parms);
 
-	case RAW_FILEINFO_FULL_EA_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
-						       RAW_FILEINFO_FULL_EA_INFORMATION, parms);
-
 	case RAW_FILEINFO_MODE_INFORMATION:
 		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
 						       RAW_FILEINFO_MODE_INFORMATION, parms);
@@ -381,6 +416,15 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
 		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
 						       RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION, parms);
+
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_SMB2_ALL_INFORMATION, parms);
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_SMB2_ALL_EAS, parms);
+
 	}
 
 	return NT_STATUS_INVALID_LEVEL;

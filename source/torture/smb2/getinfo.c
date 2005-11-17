@@ -23,62 +23,62 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "librpc/gen_ndr/security.h"
 
 static struct {
 	const char *name;
 	uint16_t level;
 	NTSTATUS fstatus;
 	NTSTATUS dstatus;
-	union smb2_fileinfo finfo;
-	union smb2_fileinfo dinfo;
-} levels[] = {
+	union smb_fileinfo finfo;
+	union smb_fileinfo dinfo;
+} file_levels[] = {
 #define LEVEL(x) #x, x
-	{ LEVEL(SMB2_GETINFO_FS_VOLUME_INFO) },
-	{ LEVEL(SMB2_GETINFO_FS_SIZE_INFO) },
-	{ LEVEL(SMB2_GETINFO_FS_DEVICE_INFO) },
-	{ LEVEL(SMB2_GETINFO_FS_ATTRIBUTE_INFO) },
-	{ LEVEL(SMB2_GETINFO_FS_QUOTA_INFO) },
-	{ LEVEL(SMB2_GETINFO_FS_FULL_SIZE_INFO) },
-	{ LEVEL(SMB2_GETINFO_FS_OBJECTID_INFO) },
-	{ LEVEL(SMB2_GETINFO_SECURITY) },
-	{ LEVEL(SMB2_GETINFO_FILE_BASIC_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_SIZE_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_ID) },
-	{ LEVEL(SMB2_GETINFO_FILE_EA_SIZE) },
-	{ LEVEL(SMB2_GETINFO_FILE_ACCESS_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_0E) },
-	{ LEVEL(SMB2_GETINFO_FILE_ALL_EAS) },
-	{ LEVEL(SMB2_GETINFO_FILE_10) },
-	{ LEVEL(SMB2_GETINFO_FILE_11) },
-	{ LEVEL(SMB2_GETINFO_FILE_ALL_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_SHORT_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_STREAM_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_EOF_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_STANDARD_INFO) },
-	{ LEVEL(SMB2_GETINFO_FILE_ATTRIB_INFO) }
+ { LEVEL(RAW_FILEINFO_BASIC_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_STANDARD_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_INTERNAL_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_EA_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_ACCESS_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_POSITION_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_MODE_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_ALIGNMENT_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_ALL_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_ALT_NAME_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_STREAM_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_COMPRESSION_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_NETWORK_OPEN_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_SMB2_ALL_EAS) },
+ { LEVEL(RAW_FILEINFO_SMB2_ALL_INFORMATION) },
+ { LEVEL(RAW_FILEINFO_SEC_DESC) }
+};
+
+static struct {
+	const char *name;
+	uint16_t level;
+	NTSTATUS status;
+	union smb_fsinfo info;
+} fs_levels[] = {
+ { LEVEL(RAW_QFS_VOLUME_INFORMATION) },
+ { LEVEL(RAW_QFS_SIZE_INFORMATION) },
+ { LEVEL(RAW_QFS_DEVICE_INFORMATION) },
+ { LEVEL(RAW_QFS_ATTRIBUTE_INFORMATION) },
+ { LEVEL(RAW_QFS_QUOTA_INFORMATION) },
+ { LEVEL(RAW_QFS_FULL_SIZE_INFORMATION) },
+ { LEVEL(RAW_QFS_OBJECTID_INFORMATION) }
 };
 
 #define FNAME "testsmb2_file.dat"
 #define DNAME "testsmb2_dir"
 
-/* basic testing of all SMB2 getinfo levels
+/*
+  test fileinfo levels
 */
-BOOL torture_smb2_getinfo(void)
+static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_handle hfile, hdir;
-	struct smb2_tree *tree;
 	NTSTATUS status;
 	int i;
-
-	if (!torture_smb2_connection(mem_ctx, &tree)) {
-		goto failed;
-	}
-
-	torture_setup_complex_file(FNAME);
-	torture_setup_complex_file(FNAME ":streamtwo");
-	torture_setup_complex_dir(DNAME);
-	torture_setup_complex_file(DNAME ":streamtwo");
 
 	status = torture_smb2_testfile(tree, FNAME, &hfile);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -95,22 +95,81 @@ BOOL torture_smb2_getinfo(void)
 	torture_smb2_all_info(tree, hfile);
 	torture_smb2_all_info(tree, hdir);
 
-	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		levels[i].fstatus = smb2_getinfo_level(tree, mem_ctx, hfile, 
-						       levels[i].level, &levels[i].finfo);
-		if (!NT_STATUS_IS_OK(levels[i].fstatus)) {
-			printf("%s failed on file - %s\n", levels[i].name, nt_errstr(levels[i].fstatus));
+	for (i=0;i<ARRAY_SIZE(file_levels);i++) {
+		if (file_levels[i].level == RAW_FILEINFO_SEC_DESC) {
+			file_levels[i].finfo.query_secdesc.secinfo_flags = 0x7;
+			file_levels[i].dinfo.query_secdesc.secinfo_flags = 0x7;
 		}
-		levels[i].dstatus = smb2_getinfo_level(tree, mem_ctx, hdir, 
-						       levels[i].level, &levels[i].dinfo);
-		if (!NT_STATUS_IS_OK(levels[i].dstatus)) {
-			printf("%s failed on dir - %s\n", levels[i].name, nt_errstr(levels[i].dstatus));
+		file_levels[i].finfo.generic.level = file_levels[i].level;
+		file_levels[i].finfo.generic.in.handle = hfile;
+		file_levels[i].fstatus = smb2_getinfo_file(tree, tree, &file_levels[i].finfo);
+		if (!NT_STATUS_IS_OK(file_levels[i].fstatus)) {
+			printf("%s failed on file - %s\n", file_levels[i].name, nt_errstr(file_levels[i].fstatus));
+		}
+		file_levels[i].dinfo.generic.level = file_levels[i].level;
+		file_levels[i].dinfo.generic.in.handle = hdir;
+		file_levels[i].dstatus = smb2_getinfo_file(tree, tree, &file_levels[i].dinfo);
+		if (!NT_STATUS_IS_OK(file_levels[i].dstatus)) {
+			printf("%s failed on dir - %s\n", file_levels[i].name, nt_errstr(file_levels[i].dstatus));
 		}
 	}
 
 	return True;
 
 failed:
-	talloc_free(mem_ctx);
 	return False;
+}
+
+
+/*
+  test fsinfo levels
+*/
+static BOOL torture_smb2_fsinfo(struct smb2_tree *tree)
+{
+	int i;
+	NTSTATUS status;
+	struct smb2_handle handle;
+
+	status = torture_smb2_testdir(tree, DNAME, &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
+		return False;
+	}
+
+	for (i=0;i<ARRAY_SIZE(fs_levels);i++) {
+		fs_levels[i].info.generic.level = fs_levels[i].level;
+		fs_levels[i].info.generic.handle = handle;
+		fs_levels[i].status = smb2_getinfo_fs(tree, tree, &fs_levels[i].info);
+		if (!NT_STATUS_IS_OK(fs_levels[i].status)) {
+			printf("%s failed - %s\n", fs_levels[i].name, nt_errstr(fs_levels[i].status));
+		}
+	}
+
+	return True;
+}
+
+
+/* basic testing of all SMB2 getinfo levels
+*/
+BOOL torture_smb2_getinfo(void)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct smb2_tree *tree;
+	BOOL ret = True;
+
+	if (!torture_smb2_connection(mem_ctx, &tree)) {
+		return False;
+	}
+
+	torture_setup_complex_file(FNAME);
+	torture_setup_complex_file(FNAME ":streamtwo");
+	torture_setup_complex_dir(DNAME);
+	torture_setup_complex_file(DNAME ":streamtwo");
+
+	ret &= torture_smb2_fileinfo(tree);
+	ret &= torture_smb2_fsinfo(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
 }

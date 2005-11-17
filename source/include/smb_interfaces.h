@@ -315,7 +315,6 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_ACCESS_INFORMATION         = SMB_QFILEINFO_ACCESS_INFORMATION,
 		     RAW_FILEINFO_NAME_INFORMATION           = SMB_QFILEINFO_NAME_INFORMATION,
 		     RAW_FILEINFO_POSITION_INFORMATION       = SMB_QFILEINFO_POSITION_INFORMATION,
-		     RAW_FILEINFO_FULL_EA_INFORMATION        = SMB_QFILEINFO_FULL_EA_INFORMATION,
 		     RAW_FILEINFO_MODE_INFORMATION           = SMB_QFILEINFO_MODE_INFORMATION,
 		     RAW_FILEINFO_ALIGNMENT_INFORMATION      = SMB_QFILEINFO_ALIGNMENT_INFORMATION,
 		     RAW_FILEINFO_ALL_INFORMATION            = SMB_QFILEINFO_ALL_INFORMATION,
@@ -323,7 +322,17 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_STREAM_INFORMATION         = SMB_QFILEINFO_STREAM_INFORMATION,
 		     RAW_FILEINFO_COMPRESSION_INFORMATION    = SMB_QFILEINFO_COMPRESSION_INFORMATION,
 		     RAW_FILEINFO_NETWORK_OPEN_INFORMATION   = SMB_QFILEINFO_NETWORK_OPEN_INFORMATION,
-		     RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION  = SMB_QFILEINFO_ATTRIBUTE_TAG_INFORMATION
+		     RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION  = SMB_QFILEINFO_ATTRIBUTE_TAG_INFORMATION,
+		     /* SMB2 specific levels */
+		     RAW_FILEINFO_SMB2_ALL_EAS               = 0x0f01,
+		     RAW_FILEINFO_SMB2_ALL_INFORMATION       = 0x1201
+};
+
+/*
+  file handles in SMB2 are 16 bytes
+*/
+struct smb2_handle {
+	uint64_t data[2];
 };
 
 
@@ -335,11 +344,14 @@ union smb_fileinfo {
 		enum smb_fileinfo_level level;
 
 		/* each level can be called on either a pathname or a
-		 * filename, in either case the return format is
-		 * identical */
+		   filename, in either case the return format is
+		   identical 
+		   On SMB2 a 16 byte handle is used 
+		*/
 		union smb_fileinfo_in {
 			const char *fname;
 			uint16_t fnum;
+			struct smb2_handle handle;
 		} in;
 		
 		struct {
@@ -445,7 +457,7 @@ union smb_fileinfo {
 		} out;
 	} ea_list;
 
-	/* trans2 RAW_FILEINFO_ALL_EAS interface */
+	/* trans2 RAW_FILEINFO_ALL_EAS and RAW_FILEINFO_FULL_EA_INFORMATION interfaces */
 	struct {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
@@ -529,6 +541,33 @@ union smb_fileinfo {
 			WIRE_STRING fname;
 		} out;
 	} all_info;	
+
+	/* RAW_FILEINFO_SMB2_ALL_INFORMATION interface */
+	struct {
+		enum smb_fileinfo_level level;
+		union smb_fileinfo_in in;
+
+		struct {
+			NTTIME   create_time;
+			NTTIME   access_time;
+			NTTIME   write_time;
+			NTTIME   change_time;
+			uint32_t attrib;
+			uint32_t unknown1;
+			uint64_t alloc_size;
+			uint64_t size;
+			uint32_t nlink;
+			uint8_t  delete_pending;
+			uint8_t  directory;
+			/* uint16_t _pad; */
+			uint64_t file_id;
+			uint32_t ea_size;
+			uint32_t access_mask;
+			uint64_t unknown2;
+			uint64_t unknown3;
+			WIRE_STRING fname;
+		} out;
+	} all_info2;	
 
 	/* RAW_FILEINFO_ALT_NAME_INFO and RAW_FILEINFO_ALT_NAME_INFORMATION interfaces */
 	struct {
@@ -917,6 +956,7 @@ union smb_fsinfo {
 	/* generic interface */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			uint32_t block_size;
@@ -976,6 +1016,7 @@ union smb_fsinfo {
 	/* TRANS2 RAW_QFS_VOLUME_INFO and RAW_QFS_VOLUME_INFORMATION interfaces */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			NTTIME create_time;
@@ -987,6 +1028,7 @@ union smb_fsinfo {
 	/* trans2 RAW_QFS_SIZE_INFO and RAW_QFS_SIZE_INFORMATION interfaces */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			uint64_t total_alloc_units;
@@ -999,6 +1041,7 @@ union smb_fsinfo {
 	/* TRANS2 RAW_QFS_DEVICE_INFO and RAW_QFS_DEVICE_INFORMATION interfaces */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			uint32_t device_type;
@@ -1010,6 +1053,7 @@ union smb_fsinfo {
 	/* TRANS2 RAW_QFS_ATTRIBUTE_INFO and RAW_QFS_ATTRIBUTE_INFORMATION interfaces */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			uint32_t fs_attr;
@@ -1033,6 +1077,7 @@ union smb_fsinfo {
 	/* trans2 RAW_QFS_QUOTA_INFORMATION interface */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			uint64_t unknown[3];
@@ -1045,6 +1090,7 @@ union smb_fsinfo {
 	/* trans2 RAW_QFS_FULL_SIZE_INFORMATION interface */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			uint64_t total_alloc_units;
@@ -1058,6 +1104,7 @@ union smb_fsinfo {
 	/* trans2 RAW_QFS_OBJECTID_INFORMATION interface */
 	struct {
 		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
 
 		struct {
 			struct GUID  guid;

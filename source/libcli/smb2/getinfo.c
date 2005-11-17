@@ -41,8 +41,8 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 	SSVAL(req->out.body, 0x02, io->in.level);
 	SIVAL(req->out.body, 0x04, io->in.max_response_size);
 	SIVAL(req->out.body, 0x08, io->in.unknown1);
-	SIVAL(req->out.body, 0x0C, io->in.flags);
-	SIVAL(req->out.body, 0x10, io->in.unknown3);
+	SIVAL(req->out.body, 0x0C, io->in.unknown2);
+	SIVAL(req->out.body, 0x10, io->in.flags);
 	SIVAL(req->out.body, 0x14, io->in.unknown4);
 	smb2_push_handle(req->out.body+0x18, &io->in.handle);
 
@@ -87,203 +87,10 @@ NTSTATUS smb2_getinfo(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 
 
 /*
-  parse a returned getinfo data blob
-*/
-NTSTATUS smb2_getinfo_parse(TALLOC_CTX *mem_ctx, 
-			    uint16_t level,
-			    DATA_BLOB blob,
-			    union smb2_fileinfo *io)
-{
-	switch (level) {
-	case SMB2_GETINFO_FILE_BASIC_INFO:
-		if (blob.length != 0x28) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->basic_info.create_time = smbcli_pull_nttime(blob.data, 0x00);
-		io->basic_info.access_time = smbcli_pull_nttime(blob.data, 0x08);
-		io->basic_info.write_time  = smbcli_pull_nttime(blob.data, 0x10);
-		io->basic_info.change_time = smbcli_pull_nttime(blob.data, 0x18);
-		io->basic_info.file_attr   = IVAL(blob.data, 0x20);
-		io->basic_info.unknown     = IVAL(blob.data, 0x24);
-		break;
-
-	case SMB2_GETINFO_FILE_SIZE_INFO:
-		if (blob.length != 0x18) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->size_info.alloc_size     = BVAL(blob.data, 0x00);
-		io->size_info.size           = BVAL(blob.data, 0x08);
-		io->size_info.nlink          = IVAL(blob.data, 0x10);
-		io->size_info.delete_pending = CVAL(blob.data, 0x14);
-		io->size_info.directory      = CVAL(blob.data, 0x15);
-		break;
-
-	case SMB2_GETINFO_FILE_ID:
-		if (blob.length != 0x8) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->file_id.file_id = BVAL(blob.data, 0x00);
-		break;
-
-	case SMB2_GETINFO_FILE_EA_SIZE:
-		if (blob.length != 0x4) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->ea_size.ea_size = IVAL(blob.data, 0x00);
-		break;
-
-	case SMB2_GETINFO_FILE_ACCESS_INFO:
-		if (blob.length != 0x4) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->access_info.access_mask = IVAL(blob.data, 0x00);
-		break;
-
-	case SMB2_GETINFO_FILE_0E:
-		if (blob.length != 0x8) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->unknown0e.unknown1     = IVAL(blob.data, 0x00);
-		io->unknown0e.unknown2     = IVAL(blob.data, 0x04);
-		break;
-
-	case SMB2_GETINFO_FILE_ALL_EAS:
-		return ea_pull_list_chained(&blob, mem_ctx, 
-					    &io->all_eas.num_eas,
-					    &io->all_eas.eas);
-
-	case SMB2_GETINFO_FILE_10:
-		if (blob.length != 0x4) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->unknown10.unknown     = IVAL(blob.data, 0x00);
-		break;
-
-	case SMB2_GETINFO_FILE_11:
-		if (blob.length != 0x4) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->unknown11.unknown     = IVAL(blob.data, 0x00);
-		break;
-
-	case SMB2_GETINFO_FILE_ALL_INFO: {
-		uint32_t nlen;
-		ssize_t size;
-		void *vstr;
-		if (blob.length < 0x64) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->all_info.create_time    = smbcli_pull_nttime(blob.data, 0x00);
-		io->all_info.access_time    = smbcli_pull_nttime(blob.data, 0x08);
-		io->all_info.write_time     = smbcli_pull_nttime(blob.data, 0x10);
-		io->all_info.change_time    = smbcli_pull_nttime(blob.data, 0x18);
-		io->all_info.file_attr      = IVAL(blob.data, 0x20);
-		io->all_info.unknown1       = IVAL(blob.data, 0x24);
-		io->all_info.alloc_size     = BVAL(blob.data, 0x28);
-		io->all_info.size           = BVAL(blob.data, 0x30);
-		io->all_info.nlink          = IVAL(blob.data, 0x38);
-		io->all_info.delete_pending = CVAL(blob.data, 0x3C);
-		io->all_info.directory      = CVAL(blob.data, 0x3D);
-		io->all_info.file_id        = BVAL(blob.data, 0x40);
-		io->all_info.ea_size        = IVAL(blob.data, 0x48);
-		io->all_info.access_mask    = IVAL(blob.data, 0x4C);
-		io->all_info.unknown5       = BVAL(blob.data, 0x50);
-		io->all_info.unknown6       = BVAL(blob.data, 0x58);
-		nlen                        = IVAL(blob.data, 0x60);
-		if (nlen > blob.length - 0x64) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-					     blob.data+0x64, nlen, &vstr);
-		if (size == -1) {
-			return NT_STATUS_ILLEGAL_CHARACTER;
-		}
-		io->all_info.fname = vstr;
-		break;
-	}
-
-	case SMB2_GETINFO_FILE_SHORT_INFO: {
-		uint32_t nlen;
-		ssize_t size;
-		void *vstr;
-		if (blob.length < 0x04) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		nlen                     = IVAL(blob.data, 0x00);
-		if (nlen > blob.length - 0x04) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-					     blob.data+0x04, nlen, &vstr);
-		if (size == -1) {
-			return NT_STATUS_ILLEGAL_CHARACTER;
-		}
-		io->short_info.short_name = vstr;
-		break;
-	}
-
-	case SMB2_GETINFO_FILE_STREAM_INFO:
-		return smbcli_parse_stream_info(blob, mem_ctx, &io->stream_info);
-
-	case SMB2_GETINFO_FILE_EOF_INFO:
-		if (blob.length != 0x10) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->eof_info.size     = BVAL(blob.data, 0x00);
-		io->eof_info.unknown  = BVAL(blob.data, 0x08);
-		break;
-
-	case SMB2_GETINFO_FILE_STANDARD_INFO:
-		if (blob.length != 0x38) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->standard_info.create_time = smbcli_pull_nttime(blob.data, 0x00);
-		io->standard_info.access_time = smbcli_pull_nttime(blob.data, 0x08);
-		io->standard_info.write_time  = smbcli_pull_nttime(blob.data, 0x10);
-		io->standard_info.change_time = smbcli_pull_nttime(blob.data, 0x18);
-		io->standard_info.alloc_size  = BVAL(blob.data, 0x20);
-		io->standard_info.size        = BVAL(blob.data, 0x28);
-		io->standard_info.file_attr   = IVAL(blob.data, 0x30);
-		io->standard_info.unknown     = IVAL(blob.data, 0x34);
-		break;
-
-	case SMB2_GETINFO_FILE_ATTRIB_INFO:
-		if (blob.length != 0x08) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		io->attrib_info.file_attr   = IVAL(blob.data, 0x00);
-		io->attrib_info.unknown     = IVAL(blob.data, 0x04);
-		break;
-
-	case SMB2_GETINFO_SECURITY: {
-		struct ndr_pull *ndr;
-		NTSTATUS status;
-		ndr = ndr_pull_init_blob(&blob, mem_ctx);
-		if (!ndr) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		io->security.sd = talloc(mem_ctx, struct security_descriptor);
-		if (io->security.sd == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->security.sd);
-		talloc_free(ndr);
-		return status;
-	}
-		
-	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
-	return NT_STATUS_OK;
-}
-
-
-/*
   recv a getinfo reply and parse the level info
 */
-NTSTATUS smb2_getinfo_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
-				 uint16_t level, union smb2_fileinfo *io)
+NTSTATUS smb2_getinfo_file_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
+				union smb_fileinfo *io)
 {
 	struct smb2_getinfo b;
 	NTSTATUS status;
@@ -291,7 +98,7 @@ NTSTATUS smb2_getinfo_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 	status = smb2_getinfo_recv(req, mem_ctx, &b);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = smb2_getinfo_parse(mem_ctx, level, b.out.blob, io);
+	status = smb_raw_fileinfo_passthru_parse(&b.out.blob, mem_ctx, io->generic.level, io);
 	data_blob_free(&b.out.blob);
 
 	return status;
@@ -300,19 +107,83 @@ NTSTATUS smb2_getinfo_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 /*
   level specific getinfo call
 */
-NTSTATUS smb2_getinfo_level(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
-			    struct smb2_handle handle,
-			    uint16_t level, union smb2_fileinfo *io)
+NTSTATUS smb2_getinfo_file(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, 
+			   union smb_fileinfo *io)
 {
 	struct smb2_getinfo b;
 	struct smb2_request *req;
+	uint16_t smb2_level;
+
+	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
+		smb2_level = SMB2_GETINFO_SECURITY;
+	} else if ((io->generic.level & 0xFF) == SMB2_GETINFO_FILE) {
+		smb2_level = io->generic.level;
+	} else if (io->generic.level > 1000) {
+		smb2_level = ((io->generic.level-1000)<<8) | SMB2_GETINFO_FILE;
+	} else {
+		/* SMB2 only does the passthru levels */
+		return NT_STATUS_INVALID_LEVEL;
+	}
 
 	ZERO_STRUCT(b);
 	b.in.max_response_size = 0x10000;
-	b.in.handle            = handle;
-	b.in.level             = level;
+	b.in.handle            = io->generic.in.handle;
+	b.in.level             = smb2_level;
+
+	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
+		b.in.flags = io->query_secdesc.secinfo_flags;
+	}
 
 	req = smb2_getinfo_send(tree, &b);
 	
-	return smb2_getinfo_level_recv(req, mem_ctx, level, io);
+	return smb2_getinfo_file_recv(req, mem_ctx, io);
 }
+
+
+/*
+  recv a getinfo reply and parse the level info
+*/
+NTSTATUS smb2_getinfo_fs_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
+				union smb_fsinfo *io)
+{
+	struct smb2_getinfo b;
+	NTSTATUS status;
+
+	status = smb2_getinfo_recv(req, mem_ctx, &b);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = smb_raw_fsinfo_passthru_parse(b.out.blob, mem_ctx, io->generic.level, io);
+	data_blob_free(&b.out.blob);
+
+	return status;
+}
+
+/*
+  level specific getinfo call
+*/
+NTSTATUS smb2_getinfo_fs(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, 
+			   union smb_fsinfo *io)
+{
+	struct smb2_getinfo b;
+	struct smb2_request *req;
+	uint16_t smb2_level;
+	
+	if ((io->generic.level & 0xFF) == SMB2_GETINFO_FS) {
+		smb2_level = io->generic.level;
+	} else if (io->generic.level > 1000) {
+		smb2_level = ((io->generic.level-1000)<<8) | SMB2_GETINFO_FS;
+	} else {
+		/* SMB2 only does the passthru levels */
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	ZERO_STRUCT(b);
+	b.in.max_response_size = 0x10000;
+	b.in.handle            = io->generic.handle;
+	b.in.level             = smb2_level;
+
+	req = smb2_getinfo_send(tree, &b);
+	
+	return smb2_getinfo_fs_recv(req, mem_ctx, io);
+}
+
