@@ -79,6 +79,155 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+  parse the fsinfo 'passthru' level replies
+*/
+NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+					 enum smb_fileinfo_level level,
+					 union smb_fileinfo *parms)
+{	
+	switch (level) {
+	case RAW_FILEINFO_BASIC_INFORMATION:
+		/* some servers return 40 bytes and some 36. w2k3 return 40, so thats
+		   what we should do, but we need to accept 36 */
+		if (blob->length != 36) {
+			FINFO_CHECK_SIZE(40);
+		}
+		parms->basic_info.out.create_time = smbcli_pull_nttime(blob->data, 0);
+		parms->basic_info.out.access_time = smbcli_pull_nttime(blob->data, 8);
+		parms->basic_info.out.write_time =  smbcli_pull_nttime(blob->data, 16);
+		parms->basic_info.out.change_time = smbcli_pull_nttime(blob->data, 24);
+		parms->basic_info.out.attrib = 	               IVAL(blob->data, 32);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STANDARD_INFORMATION:
+		FINFO_CHECK_SIZE(24);
+		parms->standard_info.out.alloc_size =     BVAL(blob->data, 0);
+		parms->standard_info.out.size =           BVAL(blob->data, 8);
+		parms->standard_info.out.nlink =          IVAL(blob->data, 16);
+		parms->standard_info.out.delete_pending = CVAL(blob->data, 20);
+		parms->standard_info.out.directory =      CVAL(blob->data, 21);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_EA_INFORMATION:
+		FINFO_CHECK_SIZE(4);
+		parms->ea_info.out.ea_size = IVAL(blob->data, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NAME_INFORMATION:
+		FINFO_CHECK_MIN_SIZE(4);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob, 
+					&parms->name_info.out.fname, 0, 4, STR_UNICODE);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALL_INFORMATION:
+		FINFO_CHECK_MIN_SIZE(72);
+		parms->all_info.out.create_time =           smbcli_pull_nttime(blob->data, 0);
+		parms->all_info.out.access_time =           smbcli_pull_nttime(blob->data, 8);
+		parms->all_info.out.write_time =            smbcli_pull_nttime(blob->data, 16);
+		parms->all_info.out.change_time =           smbcli_pull_nttime(blob->data, 24);
+		parms->all_info.out.attrib =                IVAL(blob->data, 32);
+		parms->all_info.out.alloc_size =            BVAL(blob->data, 40);
+		parms->all_info.out.size =                  BVAL(blob->data, 48);
+		parms->all_info.out.nlink =                 IVAL(blob->data, 56);
+		parms->all_info.out.delete_pending =        CVAL(blob->data, 60);
+		parms->all_info.out.directory =             CVAL(blob->data, 61);
+#if 1
+		parms->all_info.out.ea_size =               IVAL(blob->data, 64);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					&parms->all_info.out.fname, 68, 72, STR_UNICODE);
+#else
+		/* this is what the CIFS spec says - and its totally
+		   wrong, but its useful having it here so we can
+		   quickly adapt to broken servers when running
+		   tests */
+		parms->all_info.out.ea_size =               IVAL(blob->data, 72);
+		/* access flags 4 bytes at 76
+		   current_position 8 bytes at 80
+		   mode 4 bytes at 88
+		   alignment 4 bytes at 92
+		*/
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					&parms->all_info.out.fname, 96, 100, STR_UNICODE);
+#endif
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+		FINFO_CHECK_MIN_SIZE(4);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob, 
+					&parms->alt_name_info.out.fname, 0, 4, STR_UNICODE);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_STREAM_INFORMATION:
+		return smbcli_parse_stream_info(*blob, mem_ctx, &parms->stream_info.out);
+
+	case RAW_FILEINFO_INTERNAL_INFORMATION:
+		FINFO_CHECK_SIZE(8);
+		parms->internal_information.out.file_id = BVAL(blob->data, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		FINFO_CHECK_SIZE(4);
+		parms->access_information.out.access_flags = IVAL(blob->data, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_POSITION_INFORMATION:
+		FINFO_CHECK_SIZE(8);
+		parms->position_information.out.position = BVAL(blob->data, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_FULL_EA_INFORMATION:
+		FINFO_CHECK_MIN_SIZE(4);
+		return ea_pull_list_chained(blob, mem_ctx, 
+					    &parms->all_eas.out.num_eas,
+					    &parms->all_eas.out.eas);
+
+	case RAW_FILEINFO_MODE_INFORMATION:
+		FINFO_CHECK_SIZE(4);
+		parms->mode_information.out.mode = IVAL(blob->data, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
+		FINFO_CHECK_SIZE(4);
+		parms->alignment_information.out.alignment_requirement 
+			= IVAL(blob->data, 0);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_COMPRESSION_INFORMATION:
+		FINFO_CHECK_SIZE(16);
+		parms->compression_info.out.compressed_size = BVAL(blob->data,  0);
+		parms->compression_info.out.format          = SVAL(blob->data,  8);
+		parms->compression_info.out.unit_shift      = CVAL(blob->data, 10);
+		parms->compression_info.out.chunk_shift     = CVAL(blob->data, 11);
+		parms->compression_info.out.cluster_shift   = CVAL(blob->data, 12);
+		/* 3 bytes of padding */
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:		
+		FINFO_CHECK_SIZE(56);
+		parms->network_open_information.out.create_time = smbcli_pull_nttime(blob->data,  0);
+		parms->network_open_information.out.access_time = smbcli_pull_nttime(blob->data,  8);
+		parms->network_open_information.out.write_time =  smbcli_pull_nttime(blob->data, 16);
+		parms->network_open_information.out.change_time = smbcli_pull_nttime(blob->data, 24);
+		parms->network_open_information.out.alloc_size =             BVAL(blob->data, 32);
+		parms->network_open_information.out.size = 	             BVAL(blob->data, 40);
+		parms->network_open_information.out.attrib = 	             IVAL(blob->data, 48);
+		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
+		FINFO_CHECK_SIZE(8);
+		parms->attribute_tag_information.out.attrib =      IVAL(blob->data, 0);
+		parms->attribute_tag_information.out.reparse_tag = IVAL(blob->data, 4);
+		return NT_STATUS_OK;
+
+	default:
+		break;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+
 /****************************************************************************
  Handle qfileinfo/qpathinfo trans2 backend.
 ****************************************************************************/
@@ -141,121 +290,67 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 
 	case RAW_FILEINFO_BASIC_INFO:
 	case RAW_FILEINFO_BASIC_INFORMATION:
-		/* some servers return 40 bytes and some 36. w2k3 return 40, so thats
-		   what we should do, but we need to accept 36 */
-		if (blob->length != 36) {
-			FINFO_CHECK_SIZE(40);
-		}
-		parms->basic_info.out.create_time = smbcli_pull_nttime(blob->data, 0);
-		parms->basic_info.out.access_time = smbcli_pull_nttime(blob->data, 8);
-		parms->basic_info.out.write_time =  smbcli_pull_nttime(blob->data, 16);
-		parms->basic_info.out.change_time = smbcli_pull_nttime(blob->data, 24);
-		parms->basic_info.out.attrib = 	               IVAL(blob->data, 32);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_BASIC_INFORMATION, parms);
 
 	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
-		FINFO_CHECK_SIZE(24);
-		parms->standard_info.out.alloc_size =     BVAL(blob->data, 0);
-		parms->standard_info.out.size =           BVAL(blob->data, 8);
-		parms->standard_info.out.nlink =          IVAL(blob->data, 16);
-		parms->standard_info.out.delete_pending = CVAL(blob->data, 20);
-		parms->standard_info.out.directory =      CVAL(blob->data, 21);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_STANDARD_INFORMATION, parms);
 
 	case RAW_FILEINFO_EA_INFO:
 	case RAW_FILEINFO_EA_INFORMATION:
-		FINFO_CHECK_SIZE(4);
-		parms->ea_info.out.ea_size = IVAL(blob->data, 0);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_EA_INFORMATION, parms);
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
-		FINFO_CHECK_MIN_SIZE(4);
-		smbcli_blob_pull_string(session, mem_ctx, blob, 
-				     &parms->name_info.out.fname, 0, 4, STR_UNICODE);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_NAME_INFORMATION, parms);
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
-		FINFO_CHECK_MIN_SIZE(72);
-		parms->all_info.out.create_time =           smbcli_pull_nttime(blob->data, 0);
-		parms->all_info.out.access_time =           smbcli_pull_nttime(blob->data, 8);
-		parms->all_info.out.write_time =            smbcli_pull_nttime(blob->data, 16);
-		parms->all_info.out.change_time =           smbcli_pull_nttime(blob->data, 24);
-		parms->all_info.out.attrib =                IVAL(blob->data, 32);
-		parms->all_info.out.alloc_size =            BVAL(blob->data, 40);
-		parms->all_info.out.size =                  BVAL(blob->data, 48);
-		parms->all_info.out.nlink =                 IVAL(blob->data, 56);
-		parms->all_info.out.delete_pending =        CVAL(blob->data, 60);
-		parms->all_info.out.directory =             CVAL(blob->data, 61);
-#if 1
-		parms->all_info.out.ea_size =               IVAL(blob->data, 64);
-		smbcli_blob_pull_string(session, mem_ctx, blob,
-				     &parms->all_info.out.fname, 68, 72, STR_UNICODE);
-#else
-		/* this is what the CIFS spec says - and its totally
-		   wrong, but its useful having it here so we can
-		   quickly adapt to broken servers when running
-		   tests */
-		parms->all_info.out.ea_size =               IVAL(blob->data, 72);
-		/* access flags 4 bytes at 76
-		   current_position 8 bytes at 80
-		   mode 4 bytes at 88
-		   alignment 4 bytes at 92
-		*/
-		smbcli_blob_pull_string(session, mem_ctx, blob,
-					&parms->all_info.out.fname, 96, 100, STR_UNICODE);
-#endif
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_ALL_INFORMATION, parms);
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		FINFO_CHECK_MIN_SIZE(4);
-		smbcli_blob_pull_string(session, mem_ctx, blob, 
-				     &parms->alt_name_info.out.fname, 0, 4, STR_UNICODE);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_ALT_NAME_INFORMATION, parms);
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		return smbcli_parse_stream_info(*blob, mem_ctx, &parms->stream_info.out);
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_STREAM_INFORMATION, parms);
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
-		FINFO_CHECK_SIZE(8);
-		parms->internal_information.out.file_id = BVAL(blob->data, 0);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_INTERNAL_INFORMATION, parms);
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
-		FINFO_CHECK_SIZE(4);
-		parms->access_information.out.access_flags = IVAL(blob->data, 0);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_ACCESS_INFORMATION, parms);
 
 	case RAW_FILEINFO_POSITION_INFORMATION:
-		FINFO_CHECK_SIZE(8);
-		parms->position_information.out.position = BVAL(blob->data, 0);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_POSITION_INFORMATION, parms);
+
+	case RAW_FILEINFO_FULL_EA_INFORMATION:
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_FULL_EA_INFORMATION, parms);
 
 	case RAW_FILEINFO_MODE_INFORMATION:
-		FINFO_CHECK_SIZE(4);
-		parms->mode_information.out.mode = IVAL(blob->data, 0);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_MODE_INFORMATION, parms);
 
 	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
-		FINFO_CHECK_SIZE(4);
-		parms->alignment_information.out.alignment_requirement 
-			= IVAL(blob->data, 0);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_ALIGNMENT_INFORMATION, parms);
 
 	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
-		FINFO_CHECK_SIZE(16);
-		parms->compression_info.out.compressed_size = BVAL(blob->data,  0);
-		parms->compression_info.out.format          = SVAL(blob->data,  8);
-		parms->compression_info.out.unit_shift      = CVAL(blob->data, 10);
-		parms->compression_info.out.chunk_shift     = CVAL(blob->data, 11);
-		parms->compression_info.out.cluster_shift   = CVAL(blob->data, 12);
-		/* 3 bytes of padding */
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_COMPRESSION_INFORMATION, parms);
 
 	case RAW_FILEINFO_UNIX_BASIC:
 		FINFO_CHECK_SIZE(100);
@@ -280,25 +375,17 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		return NT_STATUS_OK;
 		
 	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:		
-		FINFO_CHECK_SIZE(56);
-		parms->network_open_information.out.create_time = smbcli_pull_nttime(blob->data,  0);
-		parms->network_open_information.out.access_time = smbcli_pull_nttime(blob->data,  8);
-		parms->network_open_information.out.write_time =  smbcli_pull_nttime(blob->data, 16);
-		parms->network_open_information.out.change_time = smbcli_pull_nttime(blob->data, 24);
-		parms->network_open_information.out.alloc_size =             BVAL(blob->data, 32);
-		parms->network_open_information.out.size = 	             BVAL(blob->data, 40);
-		parms->network_open_information.out.attrib = 	             IVAL(blob->data, 48);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_NETWORK_OPEN_INFORMATION, parms);
 
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
-		FINFO_CHECK_SIZE(8);
-		parms->attribute_tag_information.out.attrib =      IVAL(blob->data, 0);
-		parms->attribute_tag_information.out.reparse_tag = IVAL(blob->data, 4);
-		return NT_STATUS_OK;
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+						       RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION, parms);
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
 }
+
 
 /****************************************************************************
  Very raw query file info - returns param/data blobs - (async send)
