@@ -10,6 +10,7 @@ ADD_OBJ_FILES = \
 		negprot.o \
 		nttrans.o \
 		session.o \
+		receive.o \
 		reply.o \
 		request.o \
 		search.o \
