@@ -126,7 +126,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname, BOOL c
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
-uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
+static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	int result = 0;
 	enum mapreadonly_options ro_opts = (enum mapreadonly_options)lp_map_readonly(SNUM(conn));
