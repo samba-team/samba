@@ -24,14 +24,7 @@
 
 /* maintain a list of open eventlog tdbs with reference counts */
 
-struct elog_open_tdb {
-	struct elog_open_tdb *prev, *next;
-	char *name;
-	TDB_CONTEXT *tdb;
-	int ref_count;
-};
-
-static struct elog_open_tdb *open_elog_list;
+static ELOG_TDB *open_elog_list;
 
 /********************************************************************
  Init an Eventlog TDB, and return it. If null, something bad 
@@ -317,14 +310,14 @@ BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 /*******************************************************************
 *******************************************************************/
 
-TDB_CONTEXT *elog_open_tdb( char *logname )
+ELOG_TDB *elog_open_tdb( char *logname, BOOL force_clear )
 {
-	TDB_CONTEXT *tdb;
+	TDB_CONTEXT *tdb = NULL;
 	uint32 vers_id;
-	struct elog_open_tdb *ptr;
+	ELOG_TDB *ptr;
 	char *tdbfilename;
 	pstring tdbpath;
-	struct elog_open_tdb *tdb_node;
+	ELOG_TDB *tdb_node = NULL;
 	char *eventlogdir;
 
 	/* first see if we have an open context */
@@ -332,7 +325,19 @@ TDB_CONTEXT *elog_open_tdb( char *logname )
 	for ( ptr=open_elog_list; ptr; ptr=ptr->next ) {
 		if ( strequal( ptr->name, logname ) ) {
 			ptr->ref_count++;
-			return ptr->tdb;		
+
+			/* trick to alow clearing of the eventlog tdb.
+			   The force_clear flag should imply that someone
+			   has done a force close.  So make sure the tdb 
+			   is NULL.  If this is a normal open, then just 
+			   return the existing reference */
+
+			if ( force_clear ) {
+				SMB_ASSERT( ptr->tdb == NULL );
+				break;
+			}
+			else
+				return ptr;
 		}
 	}
 	
@@ -348,27 +353,41 @@ TDB_CONTEXT *elog_open_tdb( char *logname )
 	pstrcpy( tdbpath, tdbfilename );
 	SAFE_FREE( tdbfilename );
 
-	DEBUG(7,("elog_open_tdb: Opening %s...\n", tdbpath ));
+	DEBUG(7,("elog_open_tdb: Opening %s...(force_clear == %s)\n", 
+		tdbpath, force_clear?"True":"False" ));
+		
+	/* the tdb wasn't already open or this is a forced clear open */
 
-	tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );	
-	if ( tdb ) {
-		vers_id = tdb_fetch_int32( tdb, EVT_VERSION );
+	if ( !force_clear ) {
 
-		if ( vers_id != EVENTLOG_DATABASE_VERSION_V1 ) {
-			DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
-				vers_id, tdbpath));
-			tdb_close( tdb );
-			tdb = elog_init_tdb( tdbpath );
+		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );	
+		if ( tdb ) {
+			vers_id = tdb_fetch_int32( tdb, EVT_VERSION );
+
+			if ( vers_id != EVENTLOG_DATABASE_VERSION_V1 ) {
+				DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
+					vers_id, tdbpath));
+				tdb_close( tdb );
+				tdb = elog_init_tdb( tdbpath );
+			}
 		}
 	}
-	else {
+	
+	if ( !tdb )
 		tdb = elog_init_tdb( tdbpath );
-	}
 	
 	/* if we got a valid context, then add it to the list */
 	
 	if ( tdb ) {
-		if ( !(tdb_node = TALLOC_ZERO_P( NULL, struct elog_open_tdb )) ) {
+		/* on a forced clear, just reset the tdb context if we already
+		   have an open entry in the list */
+
+		if ( ptr ) {
+			ptr->tdb = tdb;
+			return ptr;
+		}
+
+		if ( !(tdb_node = TALLOC_ZERO_P( NULL, ELOG_TDB)) ) {
 			DEBUG(0,("elog_open_tdb: talloc() failure!\n"));
 			tdb_close( tdb );
 			return NULL;
@@ -381,42 +400,34 @@ TDB_CONTEXT *elog_open_tdb( char *logname )
 		DLIST_ADD( open_elog_list, tdb_node );
 	}
 
-	return tdb;
+	return tdb_node;
 }
 
 /*******************************************************************
  Wrapper to handle reference counts to the tdb
 *******************************************************************/
 
-int elog_close_tdb( TDB_CONTEXT *tdb )
+int elog_close_tdb( ELOG_TDB *etdb, BOOL force_close )
 {
-	struct elog_open_tdb *ptr;
+	TDB_CONTEXT *tdb;
 
-	if ( !tdb )
+	if ( !etdb )
 		return 0;
 		
-	/* See if we can just decrement the ref_count.
-	   Just compare pointer values (not names ) */
+	etdb->ref_count--;
 	
-	for ( ptr=open_elog_list; ptr; ptr=ptr->next ) {
-		if ( tdb == ptr->tdb ) {
-			ptr->ref_count--;
-			break;
-		}
+	SMB_ASSERT( etdb->ref_count >= 0 );
+
+	if ( etdb->ref_count == 0 ) {
+		tdb = etdb->tdb;
+		DLIST_REMOVE( open_elog_list, etdb );
+		TALLOC_FREE( etdb );
+		return tdb_close( tdb );
 	}
 	
-	/* if we have a NULL pointer; it means we are trying to 
-	   close a tdb not in the list of open eventlogs */
-	   
-	SMB_ASSERT( ptr != NULL );
-	if ( !ptr )
-		return tdb_close( tdb );
-	
-	SMB_ASSERT( ptr->ref_count >= 0 );
-
-	if ( ptr->ref_count == 0 ) {
-		DLIST_REMOVE( open_elog_list, ptr );
-		TALLOC_FREE( ptr );
+	if ( force_close ) {
+		tdb = etdb->tdb;
+		etdb->tdb = NULL;
 		return tdb_close( tdb );
 	}
 
