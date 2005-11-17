@@ -50,14 +50,16 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 
 	ZERO_STRUCT(req->in);
 	
-	req->out.allocated = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size+body_dynamic_size;
+	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE+
+		body_fixed_size+body_dynamic_size;
+
+	req->out.allocated = req->out.size;
 	req->out.buffer    = talloc_size(req, req->out.allocated);
 	if (req->out.buffer == NULL) {
 		talloc_free(req);
 		return NULL;
 	}
 
-	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size+(body_dynamic_size?1:0);
 	req->out.hdr       = req->out.buffer + NBT_HDR_SIZE;
 	req->out.body      = req->out.hdr + SMB2_HDR_BODY;
 	req->out.body_size = body_fixed_size;
