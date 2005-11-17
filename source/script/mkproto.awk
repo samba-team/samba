@@ -136,7 +136,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^NODE_STATUS_STRUCT|SMB_STRUCT_DIR/ ) {
+  if( $0 ~ /^NODE_STATUS_STRUCT|SMB_STRUCT_DIR|ELOG_TDB/ ) {
     gotstart = 1;
   }
 

@@ -27,7 +27,7 @@
 
 typedef struct {
 	char *logname;
-	TDB_CONTEXT *tdb;
+	ELOG_TDB *etdb;
 	uint32 current_record;
 	uint32 num_records;
 	uint32 oldest_entry;
@@ -42,8 +42,8 @@ static void free_eventlog_info( void *ptr )
 {
 	EVENTLOG_INFO *elog = (EVENTLOG_INFO *)ptr;
 	
-	if ( elog->tdb )
-		elog_close_tdb( elog->tdb );
+	if ( elog->etdb )
+		elog_close_tdb( elog->etdb, False );
 	
 	TALLOC_FREE( elog );
 }
@@ -139,17 +139,17 @@ static BOOL get_num_records_hook( EVENTLOG_INFO * info )
 	int next_record;
 	int oldest_record;
 
-	if ( !info->tdb ) {
+	if ( !info->etdb ) {
 		DEBUG( 10, ( "No open tdb for %s\n", info->logname ) );
 		return False;
 	}
 
 	/* lock the tdb since we have to get 2 records */
 
-	tdb_lock_bystring( info->tdb, EVT_NEXT_RECORD, 1 );
-	next_record = tdb_fetch_int32( info->tdb, EVT_NEXT_RECORD);
-	oldest_record = tdb_fetch_int32( info->tdb, EVT_OLDEST_ENTRY);
-	tdb_unlock_bystring( info->tdb, EVT_NEXT_RECORD);
+	tdb_lock_bystring( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD, 1 );
+	next_record = tdb_fetch_int32( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD);
+	oldest_record = tdb_fetch_int32( ELOG_TDB_CTX(info->etdb), EVT_OLDEST_ENTRY);
+	tdb_unlock_bystring( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD);
 
 	DEBUG( 8,
 	       ( "Oldest Record %d; Next Record %d\n", oldest_record,
@@ -193,10 +193,10 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	   in a single process */
 
 	become_root();
-	elog->tdb = elog_open_tdb( elog->logname );
+	elog->etdb = elog_open_tdb( elog->logname, False );
 	unbecome_root();
 
-	if ( !elog->tdb ) {
+	if ( !elog->etdb ) {
 		/* according to MSDN, if the logfile cannot be found, we should
 		  default to the "Application" log */
 	
@@ -213,11 +213,11 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 			}
 	
 			become_root();
-			elog->tdb = elog_open_tdb( elog->logname );
+			elog->etdb = elog_open_tdb( elog->logname, False );
 			unbecome_root();
 		}	
 		
-		if ( !elog->tdb ) {
+		if ( !elog->etdb ) {
 			TALLOC_FREE( elog );
 			return NT_STATUS_ACCESS_DENIED;	/* ??? */		
 		}
@@ -226,7 +226,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	/* now do the access check.  Close the tdb if we fail here */
 
 	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
-		elog_close_tdb( elog->tdb );
+		elog_close_tdb( elog->etdb, False );
 		TALLOC_FREE( elog );
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -268,12 +268,12 @@ static NTSTATUS elog_close( pipes_struct *p, POLICY_HND *hnd )
 
 static int elog_size( EVENTLOG_INFO *info )
 {
-	if ( !info || !info->tdb ) {
+	if ( !info || !info->etdb ) {
 		DEBUG(0,("elog_size: Invalid info* structure!\n"));
 		return 0;
 	}
 
-	return elog_tdb_size( info->tdb, NULL, NULL );
+	return elog_tdb_size( ELOG_TDB_CTX(info->etdb), NULL, NULL );
 }
 
 /********************************************************************
@@ -397,7 +397,7 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	DEBUG( 4, ( "sync_eventlog_params with %s\n", elogname ) );
 
-	if ( !info->tdb ) {
+	if ( !info->etdb ) {
 		DEBUG( 4, ( "No open tdb! (%s)\n", info->logname ) );
 		return False;
 	}
@@ -440,8 +440,8 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	regkey_close_internal( keyinfo );
 
-	tdb_store_int32( info->tdb, EVT_MAXSIZE, uiMaxSize );
-	tdb_store_int32( info->tdb, EVT_RETENTION, uiRetention );
+	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_MAXSIZE, uiMaxSize );
+	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_RETENTION, uiRetention );
 
 	return True;
 }
@@ -610,7 +610,7 @@ NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 	DEBUG(10,("_eventlog_open_eventlog: Size [%d]\n", elog_size( info )));
 
 	sync_eventlog_params( info );
-	prune_eventlog( info->tdb );
+	prune_eventlog( ELOG_TDB_CTX(info->etdb) );
 
 	return NT_STATUS_OK;
 }
@@ -634,20 +634,26 @@ NTSTATUS _eventlog_clear_eventlog( pipes_struct * p,
 		rpcstr_pull( backup_file_name, q_u->backupfile.string->buffer,
 			     sizeof( backup_file_name ),
 			     q_u->backupfile.string->uni_str_len * 2, 0 );
+
+		DEBUG(8,( "_eventlog_clear_eventlog: Using [%s] as the backup "
+			"file name for log [%s].",
+			 backup_file_name, info->logname ) );
 	}
 
-	DEBUG( 8,
-	       ( "_eventlog_clear_eventlog: Using [%s] as the backup file name for log [%s].",
-		 backup_file_name, info->logname ) );
+	/* check for WRITE access to the file */
 
-#if 0 
-	/* close the current one, reinit */
-
-	tdb_close( info->tdb ); 
-
-	if ( !(info->tdb = elog_init_tdb( ttdb[i].tdbfname )) )
+	if ( !(info->access_granted&SA_RIGHT_FILE_WRITE_DATA) )
 		return NT_STATUS_ACCESS_DENIED;
-#endif
+
+	/* Force a close and reopen */
+
+	elog_close_tdb( info->etdb, True ); 
+	become_root();
+	info->etdb = elog_open_tdb( info->logname, True );
+	unbecome_root();
+
+	if ( !info->etdb )
+		return NT_STATUS_ACCESS_DENIED;
 
 	return NT_STATUS_OK;
 }
@@ -680,7 +686,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 	bytes_left = q_u->max_read_size;
 
-	if ( !info->tdb ) 
+	if ( !info->etdb ) 
 		return NT_STATUS_ACCESS_DENIED;
 		
 	/* check for valid flags.  Can't use the sequential and seek flags together */
@@ -706,7 +712,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* assume that when the record fetch fails, that we are done */
 
-		if ( !get_eventlog_record ( ps, info->tdb, record_number, &entry ) ) 
+		if ( !get_eventlog_record ( ps, ELOG_TDB_CTX(info->etdb), record_number, &entry ) ) 
 			break;
 
 		DEBUG( 8, ( "Retrieved record %d\n", record_number ) );

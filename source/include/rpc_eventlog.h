@@ -57,6 +57,16 @@
 #define ELOG_SYS	"System"
 #define ELOG_SEC	"Security"
 
+typedef struct elog_tdb {
+	struct elog_tdb *prev, *next;
+	char *name;
+	TDB_CONTEXT *tdb;
+	int ref_count;
+} ELOG_TDB;
+
+#define ELOG_TDB_CTX(x) ((x)->tdb)
+
+
 #define  EVENTLOG_DATABASE_VERSION_V1    1
 
 /***********************************/
