@@ -48,6 +48,7 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	d_printf("\twrite_time:     %s\n", nt_time_string(tmp_ctx, io.all_info.write_time));
 	d_printf("\tchange_time:    %s\n", nt_time_string(tmp_ctx, io.all_info.change_time));
 	d_printf("\tattrib:         0x%x\n", io.all_info.file_attr);
+	d_printf("\tunknown1:       0x%x\n", io.all_info.unknown1);
 	d_printf("\talloc_size:     %llu\n", (uint64_t)io.all_info.alloc_size);
 	d_printf("\tsize:           %llu\n", (uint64_t)io.all_info.size);
 	d_printf("\tnlink:          %u\n", io.all_info.nlink);
@@ -59,6 +60,13 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	d_printf("\tunknown5:       0x%llx\n", io.all_info.unknown5);
 	d_printf("\tunknown6:       0x%llx\n", io.all_info.unknown6);
 	d_printf("\tfname:          '%s'\n", io.all_info.fname);
+
+	/* short name, if any */
+	status = smb2_getinfo_level(tree, tmp_ctx, handle, 
+				    SMB2_GETINFO_FILE_SHORT_INFO, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("\tshort name:     '%s'\n", io.short_info.short_name);
+	}
 
 	/* the EAs, if any */
 	status = smb2_getinfo_level(tree, tmp_ctx, handle, 

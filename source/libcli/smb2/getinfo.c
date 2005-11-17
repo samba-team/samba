@@ -178,6 +178,7 @@ NTSTATUS smb2_getinfo_parse(TALLOC_CTX *mem_ctx,
 		io->all_info.write_time     = smbcli_pull_nttime(blob.data, 0x10);
 		io->all_info.change_time    = smbcli_pull_nttime(blob.data, 0x18);
 		io->all_info.file_attr      = IVAL(blob.data, 0x20);
+		io->all_info.unknown1       = IVAL(blob.data, 0x24);
 		io->all_info.alloc_size     = BVAL(blob.data, 0x28);
 		io->all_info.size           = BVAL(blob.data, 0x30);
 		io->all_info.nlink          = IVAL(blob.data, 0x38);
