@@ -6,7 +6,7 @@
 INIT_OBJ_FILES = \
 		smb_server.o
 ADD_OBJ_FILES = \
-		conn.o \
+		tcon.o \
 		negprot.o \
 		nttrans.o \
 		session.o \
