@@ -30,6 +30,7 @@
 #define CC_MAX_FILE_PATH_LEN     (sizeof(TICKET_CC_DIR)-1)+ CC_MAX_FILE_LEN+2   
 #define OVERWRITE                1   
 #define KRB5CCNAME               "KRB5CCNAME"
+#define MAX_RETRY_CONNECT        3
 
 
 /*
@@ -71,6 +72,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
   char null_str[1];
+  int tries = 0;
 
   null_str[0] = '\0';
 
@@ -229,17 +231,23 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     {
       if (getenv("CLASS") == NULL)
       {
-        fprintf(stderr, "ERROR: Unable to connect to CIFS host, will retry in 60 seconds...");
+        fprintf(stderr, "ERROR: Unable to connect to CIFS host, will retry in 60 seconds...\n");
         sleep (60); /* should just waiting and retrying fix authentication  ??? */
+        tries++;
       }
       else
       {
-        fprintf(stderr, "ERROR: Unable to connect to CIFS host, trying next printer...");
+        fprintf(stderr, "ERROR: Unable to connect to CIFS host, trying next printer...\n");
         return (1);
       }
     }
   }
-  while (cli == NULL);
+  while ((cli == NULL) && (tries < MAX_RETRY_CONNECT));
+
+  if (cli == NULL) {
+        fprintf(stderr, "ERROR: Unable to connect to CIFS host after (tried %d times)\n", tries);
+        return (1);
+  }
 
  /*
   * Now that we are connected to the server, ignore SIGTERM so that we
