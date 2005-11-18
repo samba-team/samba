@@ -766,6 +766,7 @@ union smb_setfileinfo {
 		union setfileinfo_file {
 			const char *fname;
 			uint16_t fnum;
+			struct smb2_handle handle; /* only for SMB2 */
 		} file;
 	} generic;
 
