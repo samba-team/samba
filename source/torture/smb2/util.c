@@ -103,7 +103,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 
 	smb2_util_unlink(tree, fname);
 	ZERO_STRUCT(io);
-	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
 	io.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
 	io.in.share_access = 
@@ -118,18 +118,6 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 		io.in.file_attr   = FILE_ATTRIBUTE_DIRECTORY;
 		io.in.open_disposition = NTCREATEX_DISP_CREATE;
 	}
-
-	io.in.sd = security_descriptor_create(tmp_ctx,
-					      NULL, NULL,
-					      SID_NT_AUTHENTICATED_USERS,
-					      SEC_ACE_TYPE_ACCESS_ALLOWED,
-					      SEC_RIGHTS_FILE_ALL | SEC_STD_ALL,
-					      0,
-					      SID_WORLD,
-					      SEC_ACE_TYPE_ACCESS_ALLOWED,
-					      SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
-					      0,
-					      NULL);
 
 	if (strchr(fname, ':') == NULL) {
 		/* setup some EAs */
