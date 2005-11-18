@@ -66,7 +66,7 @@
 	******************************************************/
 	typedef [v1_enum] enum {
 		SMBSRV_INFO_SESSIONS,
-		SMBSRV_INFO_TREES
+		SMBSRV_INFO_TCONS
 	} smbsrv_info_level;
 
 	typedef struct {
@@ -87,16 +87,16 @@
 		astring share_name;
 		astring client_ip;
 		NTTIME  connect_time;
-	} smbsrv_tree_info;
+	} smbsrv_tcon_info;
 
 	typedef struct {
-		uint32 num_trees;
-		[size_is(num_trees)] smbsrv_tree_info *trees;
-	} smbsrv_trees;
+		uint32 num_tcons;
+		[size_is(num_tcons)] smbsrv_tcon_info *tcons;
+	} smbsrv_tcons;
 
 	typedef union {
 		[case(SMBSRV_INFO_SESSIONS)] smbsrv_sessions sessions;
-		[case(SMBSRV_INFO_TREES)]    smbsrv_trees    trees;
+		[case(SMBSRV_INFO_TCONS)]    smbsrv_tcons    tcons;
 	} smbsrv_info;
 
 	void smbsrv_information(
