@@ -75,24 +75,15 @@ static void continue_session(struct composite_context *creq)
 	}
 
 	state->tree = smb2_tree_init(state->session, state, True);
-	if (state->tree == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(state->tree, c)) return;
 
 	state->tcon.in.unknown1 = 0x09;
 	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s", 
 						  state->host, state->share);
-	if (state->tcon.in.path == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(state->tcon.in.path, c)) return;
 	
 	req = smb2_tree_connect_send(state->tree, &state->tcon);
-	if (req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(req, c)) return;
 
 	req->async.fn = continue_tcon;
 	req->async.private = c;	
@@ -117,19 +108,11 @@ static void continue_negprot(struct smb2_request *req)
 	}
 
 	state->session = smb2_session_init(transport, state, True);
-	if (state->session == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(state->session, c)) return;
 
 	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
-	if (creq == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
 
-	creq->async.fn = continue_session;
-	creq->async.private_data = c;
+	composite_continue(c, creq, continue_session, c);
 }
 
 /*
@@ -152,19 +135,13 @@ static void continue_socket(struct composite_context *creq)
 	}
 
 	transport = smb2_transport_init(sock, state);
-	if (transport == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(transport, c)) return;
 
 	ZERO_STRUCT(state->negprot);
 	state->negprot.in.unknown1 = 0x0001;
 
 	req = smb2_negprot_send(transport, &state->negprot);
-	if (req == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
+	if (composite_nomem(req, c)) return;
 
 	req->async.fn = continue_negprot;
 	req->async.private = c;
@@ -189,13 +166,8 @@ static void continue_resolve(struct composite_context *creq)
 	}
 
 	creq = smbcli_sock_connect_send(state, addr, 445, state->host, c->event_ctx);
-	if (creq == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
-		return;
-	}
 
-	creq->async.private_data = c;
-	creq->async.fn = continue_socket;
+	composite_continue(c, creq, continue_socket, c);
 }
 
 /*
@@ -238,10 +210,8 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	name.name = host;
 
 	creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
-	if (creq == NULL) goto failed;
 
-	creq->async.private_data = c;
-	creq->async.fn = continue_resolve;
+	composite_continue(c, creq, continue_resolve, c);
 
 	return c;
 
