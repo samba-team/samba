@@ -134,6 +134,8 @@ BOOL torture_smb2_setinfo(void)
 		goto done; \
 	}} while (0)
 
+
+	torture_smb2_all_info(tree, handle);
 	
 	printf("test basic_information level\n");
 	basetime += 86400;

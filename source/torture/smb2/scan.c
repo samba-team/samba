@@ -97,6 +97,50 @@ BOOL torture_smb2_getinfo_scan(void)
 }
 
 /* 
+   scan for valid SMB2 setinfo levels
+*/
+BOOL torture_smb2_setinfo_scan(void)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct smb2_tree *tree;
+	NTSTATUS status;
+	struct smb2_setinfo io;
+	struct smb2_handle handle;
+	int c, i;
+
+	if (!torture_smb2_connection(mem_ctx, &tree)) {
+		return False;
+	}
+
+	if (!torture_setup_complex_file(FNAME)) {
+		printf("Failed to setup complex file '%s'\n", FNAME);
+	}
+	torture_setup_complex_file(FNAME ":2ndstream");
+
+	torture_smb2_testfile(tree, FNAME, &handle);
+
+	ZERO_STRUCT(io);
+	io.in.blob = data_blob_talloc(mem_ctx, NULL, 1024);
+
+	for (c=1;c<5;c++) {
+		for (i=0;i<0x100;i++) {
+			io.in.level = (i<<8) | c;
+			io.in.handle = handle;
+			status = smb2_setinfo(tree, &io);
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				printf("file level 0x%04x - %s\n", 
+				       io.in.level, nt_errstr(status));
+			}
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	return True;
+}
+
+/* 
    scan for valid SMB2 opcodes
 */
 BOOL torture_smb2_scan(void)

@@ -25,6 +25,37 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
+#define CREATE_TAG_EA 0x41747845 /* "ExtA" */
+#define CREATE_TAG_SD 0x6341784D /* "MxAc" */
+
+/*
+  add a blob to a smb2_create attribute blob
+*/
+static NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
+				     uint32_t tag,
+				     DATA_BLOB add, BOOL last)
+{
+	NTSTATUS status;
+	uint32_t ofs = blob->length;
+	status = data_blob_realloc(mem_ctx, blob, blob->length + 0x18 + add.length);
+	NT_STATUS_NOT_OK_RETURN(status);
+	
+	if (last) {
+		SIVAL(blob->data, ofs+0x00, 0);
+	} else {
+		SIVAL(blob->data, ofs+0x00, 0x18 + add.length);
+	}
+	SSVAL(blob->data, ofs+0x04, 0x10); /* offset of tag */
+	SIVAL(blob->data, ofs+0x06, 0x04); /* tag length */
+	SSVAL(blob->data, ofs+0x0A, 0x18); /* offset of data */
+	SIVAL(blob->data, ofs+0x0C, add.length);
+	SIVAL(blob->data, ofs+0x10, tag);
+	SIVAL(blob->data, ofs+0x14, 0); /* pad? */
+	memcpy(blob->data+ofs+0x18, add.data, add.length);
+
+	return NT_STATUS_OK;
+}
+
 /*
   send a create request
 */
@@ -32,6 +63,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 {
 	struct smb2_request *req;
 	NTSTATUS status;
+	DATA_BLOB blob = data_blob(NULL, 0);
 
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, 1);
 	if (req == NULL) return NULL;
@@ -54,7 +86,36 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		return NULL;
 	}
 
-	status = smb2_push_o32s32_blob(&req->out, 0x30, io->in.blob);
+	if (io->in.eas.num_eas != 0) {
+		DATA_BLOB b = data_blob_talloc(req, NULL, 
+					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas));
+		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas);
+		status = smb2_create_blob_add(req, &blob, CREATE_TAG_EA, b, False);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+		data_blob_free(&b);
+	}
+
+	if (io->in.sd != NULL) {
+		DATA_BLOB b;
+		status = ndr_push_struct_blob(&b, req, io->in.sd,
+					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+		status = smb2_create_blob_add(req, &blob, CREATE_TAG_SD, b, True);
+	} else {
+		status = smb2_create_blob_add(req, &blob, CREATE_TAG_SD, data_blob(NULL, 0), True);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
+	status = smb2_push_o32s32_blob(&req->out, 0x30, blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
@@ -74,7 +135,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 	NTSTATUS status;
 
 	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	    !smb2_request_is_ok(req)) {
 		return smb2_request_destroy(req);
 	}
 

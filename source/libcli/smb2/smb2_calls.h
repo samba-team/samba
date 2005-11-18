@@ -130,7 +130,10 @@ struct smb2_create {
 		/* dynamic body */
 		const char *fname;
 
-		DATA_BLOB blob;
+		/* optional list of extended attributes and security
+		   descriptor */
+		struct smb_ea_list eas;
+		struct security_descriptor *sd;
 	} in;
 
 	struct {

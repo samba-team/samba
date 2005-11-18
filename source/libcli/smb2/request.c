@@ -160,6 +160,12 @@ BOOL smb2_request_is_error(struct smb2_request *req)
 	return NT_STATUS_IS_ERR(req->status);
 }
 
+/* Return true if the last packet was OK */
+BOOL smb2_request_is_ok(struct smb2_request *req)
+{
+	return NT_STATUS_IS_OK(req->status);
+}
+
 /*
   check if a range in the reply body is out of bounds
 */

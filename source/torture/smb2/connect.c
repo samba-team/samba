@@ -133,19 +133,6 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 	struct smb2_create io;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-	DATA_BLOB blob = data_blob(NULL, 0);
-
-#if 0 /* TODO: find out what this blob mean */
-	uint8_t buf[0x18];
-
-	SIVAL(buf, 0x00, 0x00000000);
-	SIVAL(buf, 0x04, 0x00040010);
-	SIVAL(buf, 0x08, 0x00180000);
-	SIVAL(buf, 0x0C, 0x00000000);
-	SBVAL(buf, 0x10, 0x006C00466341784DLLU);
-
-	blob = data_blob_const(buf, 0x18)
-#endif
 
 	ZERO_STRUCT(io);
 	io.in.oplock_flags = 0;
@@ -158,7 +145,6 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = NTCREATEX_OPTIONS_WRITE_THROUGH;
 	io.in.fname = fname;
-	io.in.blob  = blob;
 
 	status = smb2_create(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
