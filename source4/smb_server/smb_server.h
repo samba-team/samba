@@ -222,12 +222,12 @@ struct smbsrv_connection {
 
 	/* the context associated with open tree connects on a smb socket */
 	struct {
-		/* list of open tree connects */
-		struct smbsrv_tcon *tcons;
-
 		/* an id tree used to allocate tids */
 		struct idr_context *idtree_tid;
-	} tree;
+
+		/* list of open tree connects */
+		struct smbsrv_tcon *list;
+	} tcons;
 
 	/* context associated with currently valid session setups */
 	struct {

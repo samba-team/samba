@@ -39,7 +39,7 @@ function smbsrv_sessions()
 /*
   return a list of current tree connects
 */
-function smbsrv_trees()
+function smbsrv_tcons()
 {
 	var irpc = irpc_init();
 	status = irpc.connect("smb_server");
@@ -48,7 +48,7 @@ function smbsrv_trees()
 	}
 
 	var io = irpcObj();
-	io.input.level = irpc.SMBSRV_INFO_TREES;
+	io.input.level = irpc.SMBSRV_INFO_TCONS;
 	status = irpc.smbsrv_information(io);
 	if (status.is_ok != true) {
 		return undefined;
@@ -57,10 +57,10 @@ function smbsrv_trees()
 	/* gather the results into a single array */
 	var i, count=0, ret = new Object();
 	for (i=0;i<io.results.length;i++) {
-		var trees = io.results[i].info.trees.trees;
+		var tcons = io.results[i].info.tcons.tcons;
 		var j;
-		for (j=0;j<trees.length;j++) {
-			ret[count] = trees[j];
+		for (j=0;j<tcons.length;j++) {
+			ret[count] = tcons[j];
 			count++;
 		}
 	}

@@ -62,30 +62,30 @@ static NTSTATUS smbsrv_session_information(struct irpc_message *msg,
 /*
   return a list of tree connects
 */
-static NTSTATUS smbsrv_tree_information(struct irpc_message *msg, 
-					   struct smbsrv_information *r)
+static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg, 
+					struct smbsrv_information *r)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(msg->private, struct smbsrv_connection);
 	int i=0, count=0;
 	struct smbsrv_tcon *tcon;
 
 	/* count the number of tcons */
-	for (tcon=smb_conn->tree.tcons; tcon; tcon=tcon->next) {
+	for (tcon=smb_conn->tcons.list; tcon; tcon=tcon->next) {
 		count++;
 	}
 
-	r->out.info.trees.num_trees = count;
-	r->out.info.trees.trees = talloc_array(r, struct smbsrv_tree_info, count);
-	NT_STATUS_HAVE_NO_MEMORY(r->out.info.trees.trees);
+	r->out.info.tcons.num_tcons = count;
+	r->out.info.tcons.tcons = talloc_array(r, struct smbsrv_tcon_info, count);
+	NT_STATUS_HAVE_NO_MEMORY(r->out.info.tcons.tcons);
 
-	for (tcon=smb_conn->tree.tcons; tcon; tcon=tcon->next) {
-		struct smbsrv_tree_info *info = &r->out.info.trees.trees[i];
+	for (tcon=smb_conn->tcons.list; tcon; tcon=tcon->next) {
+		struct smbsrv_tcon_info *info = &r->out.info.tcons.tcons[i];
 		info->tid          = tcon->tid;
 		info->share_name   = lp_servicename(tcon->service);
 		info->connect_time = timeval_to_nttime(&tcon->connect_time);
 		info->client_ip    = socket_get_peer_addr(smb_conn->connection->socket, r);
 		i++;
-	}	
+	}
 
 	return NT_STATUS_OK;
 }
@@ -99,8 +99,8 @@ static NTSTATUS smbsrv_information(struct irpc_message *msg,
 	switch (r->in.level) {
 	case SMBSRV_INFO_SESSIONS:
 		return smbsrv_session_information(msg, r);
-	case SMBSRV_INFO_TREES:
-		return smbsrv_tree_information(msg, r);
+	case SMBSRV_INFO_TCONS:
+		return smbsrv_tcon_information(msg, r);
 	}
 
 	return NT_STATUS_OK;
