@@ -10,8 +10,11 @@ ADD_OBJ_FILES = \
 		session.o \
 		management.o
 REQUIRED_SUBSYSTEMS = \
-		LIBPACKET SMB_PROTOCOL
+		LIBPACKET \
+		SMB_PROTOCOL \
+		SMB2_PROTOCOL
 # End SUBSYSTEM SMB
 #######################
 
 include smb/config.mk
+include smb2/config.mk
