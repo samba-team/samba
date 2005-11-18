@@ -21,12 +21,9 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "system/time.h"
-#include "dlinklist.h"
 #include "smbd/service_stream.h"
 #include "smb_server/smb_server.h"
-#include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 
 
