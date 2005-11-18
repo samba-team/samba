@@ -60,7 +60,6 @@ NTSTATUS smb2_util_unlink(struct smb2_tree *tree, const char *fname)
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 	io.in.fname = fname;
-	io.in.blob  = data_blob(NULL, 0);
 
 	status = smb2_create(tree, tree, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -93,6 +92,7 @@ NTSTATUS smb2_util_write(struct smb2_tree *tree,
 */
 NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, struct smb2_handle *handle)
 {
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	char buf[7] = "abc";
 	struct smb2_create io;
 	union smb_setfileinfo setfile;
@@ -110,35 +110,39 @@ NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, str
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = 0;
 	io.in.fname = fname;
-	io.in.blob  = data_blob(NULL, 0);
 
-	status = smb2_create(tree, tree, &io);
+	io.in.sd = security_descriptor_create(tmp_ctx,
+					      NULL, NULL,
+					      SID_NT_AUTHENTICATED_USERS,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      SEC_RIGHTS_FILE_ALL | SEC_STD_ALL,
+					      0,
+					      SID_WORLD,
+					      SEC_ACE_TYPE_ACCESS_ALLOWED,
+					      SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
+					      0,
+					      NULL);
+
+	if (strchr(fname, ':') == NULL) {
+		/* setup some EAs */
+		io.in.eas.num_eas = 2;
+		io.in.eas.eas = talloc_array(tmp_ctx, struct ea_struct, 2);
+		io.in.eas.eas[0].flags = 0;
+		io.in.eas.eas[0].name.s = "EAONE";
+		io.in.eas.eas[0].value = data_blob_talloc(tmp_ctx, "VALUE1", 6);
+		io.in.eas.eas[1].flags = 0;
+		io.in.eas.eas[1].name.s = "SECONDEA";
+		io.in.eas.eas[1].value = data_blob_talloc(tmp_ctx, "ValueTwo", 8);
+	}
+
+	status = smb2_create(tree, tmp_ctx, &io);
+	talloc_free(tmp_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*handle = io.out.handle;
 
 	status = smb2_util_write(tree, *handle, buf, 0, sizeof(buf));
 	NT_STATUS_NOT_OK_RETURN(status);
-
-#if 0
-	if (strchr(fname, ':') == NULL) {
-		/* setup some EAs */
-		setfile.generic.level = RAW_SFILEINFO_EA_SET;
-		setfile.generic.file.fnum = fnum;
-		setfile.ea_set.in.num_eas = 2;	
-		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
-		setfile.ea_set.in.eas[0].flags = 0;
-		setfile.ea_set.in.eas[0].name.s = "EAONE";
-		setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
-		setfile.ea_set.in.eas[1].flags = 0;
-		setfile.ea_set.in.eas[1].name.s = "SECONDEA";
-		setfile.ea_set.in.eas[1].value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
-		status = smb_raw_setfileinfo(cli->tree, &setfile);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to setup EAs\n");
-		}
-	}
-#endif
 
 	/* make sure all the timestamps aren't the same, and are also 
 	   in different DST zones*/
@@ -294,9 +298,8 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	io.in.create_options = 0;
 	io.in.fname = fname;
-	io.in.blob  = data_blob(NULL, 0);
 
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -330,7 +333,6 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.in.fname = fname;
-	io.in.blob  = data_blob(NULL, 0);
 
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
