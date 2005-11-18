@@ -88,9 +88,10 @@ NTSTATUS smb2_util_write(struct smb2_tree *tree,
 }
 
 /*
-  create a complex file using the SMB2 protocol
+  create a complex file/dir using the SMB2 protocol
 */
-NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, struct smb2_handle *handle)
+static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname, 
+					 struct smb2_handle *handle, BOOL dir)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	char buf[7] = "abc";
@@ -100,6 +101,7 @@ NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, str
 	time_t t = (time(NULL) & ~1);
 	NTSTATUS status;
 
+	smb2_util_unlink(tree, fname);
 	ZERO_STRUCT(io);
 	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
@@ -110,6 +112,12 @@ NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, str
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.create_options = 0;
 	io.in.fname = fname;
+	if (dir) {
+		io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+		io.in.share_access &= ~NTCREATEX_SHARE_ACCESS_DELETE;
+		io.in.file_attr   = FILE_ATTRIBUTE_DIRECTORY;
+		io.in.open_disposition = NTCREATEX_DISP_CREATE;
+	}
 
 	io.in.sd = security_descriptor_create(tmp_ctx,
 					      NULL, NULL,
@@ -141,8 +149,10 @@ NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, str
 
 	*handle = io.out.handle;
 
-	status = smb2_util_write(tree, *handle, buf, 0, sizeof(buf));
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!dir) {
+		status = smb2_util_write(tree, *handle, buf, 0, sizeof(buf));
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
 
 	/* make sure all the timestamps aren't the same, and are also 
 	   in different DST zones*/
@@ -183,6 +193,24 @@ NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, str
 }
 
 /*
+  create a complex file using the SMB2 protocol
+*/
+NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, 
+					 struct smb2_handle *handle)
+{
+	return smb2_create_complex(tree, fname, handle, False);
+}
+
+/*
+  create a complex dir using the SMB2 protocol
+*/
+NTSTATUS smb2_create_complex_dir(struct smb2_tree *tree, const char *fname, 
+				 struct smb2_handle *handle)
+{
+	return smb2_create_complex(tree, fname, handle, True);
+}
+
+/*
   show lots of information about a file
 */
 void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
@@ -201,6 +229,7 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 		return;
 	}
 
+	d_printf("all_info for '%s'\n", io.all_info2.out.fname.s);
 	d_printf("\tcreate_time:    %s\n", nt_time_string(tmp_ctx, io.all_info2.out.create_time));
 	d_printf("\taccess_time:    %s\n", nt_time_string(tmp_ctx, io.all_info2.out.access_time));
 	d_printf("\twrite_time:     %s\n", nt_time_string(tmp_ctx, io.all_info2.out.write_time));
@@ -217,7 +246,6 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	d_printf("\taccess_mask:    0x%08x\n", io.all_info2.out.access_mask);
 	d_printf("\tunknown2:       0x%llx\n", io.all_info2.out.unknown2);
 	d_printf("\tunknown3:       0x%llx\n", io.all_info2.out.unknown3);
-	d_printf("\tfname:          '%s'\n", io.all_info2.out.fname.s);
 
 	/* short name, if any */
 	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
@@ -347,44 +375,24 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
   create a complex file using the old SMB protocol, to make it easier to 
   find fields in SMB2 getinfo levels
 */
-BOOL torture_setup_complex_file(const char *fname)
+NTSTATUS torture_setup_complex_file(struct smb2_tree *tree, const char *fname)
 {
-	struct smbcli_state *cli;
-	int fnum;
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	fnum = create_complex_file(cli, cli, fname);
-
-	if (DEBUGLVL(1)) {
-		torture_all_info(cli->tree, fname);
-	}
-	
-	talloc_free(cli);
-	return fnum != -1;
+	struct smb2_handle handle;
+	NTSTATUS status = smb2_create_complex_file(tree, fname, &handle);
+	NT_STATUS_NOT_OK_RETURN(status);
+	return smb2_util_close(tree, handle);
 }
+
 
 /*
-  create a complex directory using the old SMB protocol, to make it easier to 
+  create a complex dir using the old SMB protocol, to make it easier to 
   find fields in SMB2 getinfo levels
 */
-BOOL torture_setup_complex_dir(const char *dname)
+NTSTATUS torture_setup_complex_dir(struct smb2_tree *tree, const char *fname)
 {
-	struct smbcli_state *cli;
-	int fnum;
-
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
-
-	fnum = create_complex_dir(cli, cli, dname);
-
-	if (DEBUGLVL(1)) {
-		torture_all_info(cli->tree, dname);
-	}
-	
-	talloc_free(cli);
-	return fnum != -1;
+	struct smb2_handle handle;
+	NTSTATUS status = smb2_create_complex_dir(tree, fname, &handle);
+	NT_STATUS_NOT_OK_RETURN(status);
+	return smb2_util_close(tree, handle);
 }
+
