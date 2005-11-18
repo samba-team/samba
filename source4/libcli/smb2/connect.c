@@ -27,8 +27,6 @@
 #include "libcli/composite/composite.h"
 
 struct smb2_connect_state {
-	struct smb2_request *req;
-	struct composite_context *creq;
 	struct cli_credentials *credentials;
 	const char *host;
 	const char *share;
@@ -68,6 +66,7 @@ static void continue_session(struct composite_context *creq)
 						      struct composite_context);
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
+	struct smb2_request *req;
 
 	c->status = smb2_session_setup_spnego_recv(creq);
 	if (!NT_STATUS_IS_OK(c->status)) {
@@ -89,14 +88,14 @@ static void continue_session(struct composite_context *creq)
 		return;
 	}
 	
-	state->req = smb2_tree_connect_send(state->tree, &state->tcon);
-	if (state->req == NULL) {
+	req = smb2_tree_connect_send(state->tree, &state->tcon);
+	if (req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
-	state->req->async.fn = continue_tcon;
-	state->req->async.private = c;	
+	req->async.fn = continue_tcon;
+	req->async.private = c;	
 }
 
 /*
@@ -109,6 +108,7 @@ static void continue_negprot(struct smb2_request *req)
 	struct smb2_connect_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_connect_state);
 	struct smb2_transport *transport = req->transport;
+	struct composite_context *creq;
 
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
 	if (!NT_STATUS_IS_OK(c->status)) {
@@ -122,14 +122,14 @@ static void continue_negprot(struct smb2_request *req)
 		return;
 	}
 
-	state->creq = smb2_session_setup_spnego_send(state->session, state->credentials);
-	if (state->creq == NULL) {
+	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
+	if (creq == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
-	state->creq->async.fn = continue_session;
-	state->creq->async.private_data = c;
+	creq->async.fn = continue_session;
+	creq->async.private_data = c;
 }
 
 /*
@@ -143,6 +143,7 @@ static void continue_socket(struct composite_context *creq)
 							   struct smb2_connect_state);
 	struct smbcli_socket *sock;
 	struct smb2_transport *transport;
+	struct smb2_request *req;
 
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (!NT_STATUS_IS_OK(c->status)) {
@@ -159,14 +160,14 @@ static void continue_socket(struct composite_context *creq)
 	ZERO_STRUCT(state->negprot);
 	state->negprot.in.unknown1 = 0x0001;
 
-	state->req = smb2_negprot_send(transport, &state->negprot);
-	if (state->req == NULL) {
+	req = smb2_negprot_send(transport, &state->negprot);
+	if (req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
-	state->req->async.fn = continue_negprot;
-	state->req->async.private = c;
+	req->async.fn = continue_negprot;
+	req->async.private = c;
 }
 
 
@@ -187,14 +188,14 @@ static void continue_resolve(struct composite_context *creq)
 		return;
 	}
 
-	state->creq = smbcli_sock_connect_send(state, addr, 445, state->host, c->event_ctx);
-	if (state->creq == NULL) {
+	creq = smbcli_sock_connect_send(state, addr, 445, state->host, c->event_ctx);
+	if (creq == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
-	state->creq->async.private_data = c;
-	state->creq->async.fn = continue_socket;
+	creq->async.private_data = c;
+	creq->async.fn = continue_socket;
 }
 
 /*
@@ -210,6 +211,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *c;
 	struct smb2_connect_state *state;
 	struct nbt_name name;
+	struct composite_context *creq;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
@@ -235,11 +237,11 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(name);
 	name.name = host;
 
-	state->creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
-	if (state->creq == NULL) goto failed;
+	creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
+	if (creq == NULL) goto failed;
 
-	state->creq->async.private_data = c;
-	state->creq->async.fn = continue_resolve;
+	creq->async.private_data = c;
+	creq->async.fn = continue_resolve;
 
 	return c;
 
