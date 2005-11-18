@@ -648,7 +648,7 @@ NTSTATUS smbsrv_init_smb_connection(struct smbsrv_connection *smb_conn)
 	status = smbsrv_init_sessions(smb_conn);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = smbsrv_init_tcons(smb_conn);
+	status = smbsrv_init_tcons(smb_conn, UINT16_MAX);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	srv_init_signing(smb_conn);
