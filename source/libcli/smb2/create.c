@@ -25,8 +25,8 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
-#define CREATE_TAG_EA 0x41747845 /* "ExtA" */
-#define CREATE_TAG_SD 0x6341784D /* "MxAc" */
+#define CREATE_TAG_EXTA 0x41747845 /* "ExtA" */
+#define CREATE_TAG_MXAC 0x6341784D /* "MxAc" */
 
 /*
   add a blob to a smb2_create attribute blob
@@ -37,13 +37,14 @@ static NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 {
 	NTSTATUS status;
 	uint32_t ofs = blob->length;
-	status = data_blob_realloc(mem_ctx, blob, blob->length + 0x18 + add.length);
+	uint8_t pad = smb2_padding_size(add.length, 8);
+	status = data_blob_realloc(mem_ctx, blob, blob->length + 0x18 + add.length + pad);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	if (last) {
 		SIVAL(blob->data, ofs+0x00, 0);
 	} else {
-		SIVAL(blob->data, ofs+0x00, 0x18 + add.length);
+		SIVAL(blob->data, ofs+0x00, 0x18 + add.length + pad);
 	}
 	SSVAL(blob->data, ofs+0x04, 0x10); /* offset of tag */
 	SIVAL(blob->data, ofs+0x06, 0x04); /* tag length */
@@ -52,6 +53,7 @@ static NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	SIVAL(blob->data, ofs+0x10, tag);
 	SIVAL(blob->data, ofs+0x14, 0); /* pad? */
 	memcpy(blob->data+ofs+0x18, add.data, add.length);
+	memset(blob->data+ofs+0x18+add.length, 0, pad);
 
 	return NT_STATUS_OK;
 }
@@ -90,7 +92,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
 					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas));
 		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas);
-		status = smb2_create_blob_add(req, &blob, CREATE_TAG_EA, b, False);
+		status = smb2_create_blob_add(req, &blob, CREATE_TAG_EXTA, b, False);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
 			return NULL;
@@ -98,18 +100,9 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		data_blob_free(&b);
 	}
 
-	if (io->in.sd != NULL) {
-		DATA_BLOB b;
-		status = ndr_push_struct_blob(&b, req, io->in.sd,
-					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(req);
-			return NULL;
-		}
-		status = smb2_create_blob_add(req, &blob, CREATE_TAG_SD, b, True);
-	} else {
-		status = smb2_create_blob_add(req, &blob, CREATE_TAG_SD, data_blob(NULL, 0), True);
-	}
+	/* an empty MxAc tag seems to be used to ask the server to
+	   return the maximum access mask allowed on the file */
+	status = smb2_create_blob_add(req, &blob, CREATE_TAG_MXAC, data_blob(NULL, 0), True);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
