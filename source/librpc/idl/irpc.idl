@@ -83,7 +83,7 @@
 	} smbsrv_sessions;
 
 	typedef struct {
-		uint16 tid;
+		uint32 tid;
 		astring share_name;
 		astring client_ip;
 		NTTIME  connect_time;

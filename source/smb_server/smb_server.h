@@ -3,7 +3,7 @@
    
    Copyright (C) Andrew Tridgell              2003
    Copyright (C) James J Myers 		      2003 <myersjj@samba.org>
-   Copyright (C) Stefan Metzmacher            2004
+   Copyright (C) Stefan Metzmacher            2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -65,7 +65,12 @@ struct smbsrv_tcon {
 	/* the server context that this was created on */
 	struct smbsrv_connection *smb_conn;
 
-	uint16_t tid; /* an index passed over the wire (the TID) */
+	/* 
+	 * an index passed over the wire:
+	 * - 16 bit for smb
+	 * - 32 bit for smb2
+	 */
+	uint32_t tid; /* an index passed over the wire (the TID) */
 
 	int service;
 	BOOL read_only;
@@ -86,7 +91,10 @@ struct smbsrv_tcon {
 		struct smbsrv_session *session;
 	} sec_share;
 
-	struct timeval connect_time;
+	/* some statictics for the management tools */
+	struct {
+		struct timeval connect_time;
+	} statistics;
 };
 
 /* a set of flags to control handling of request structures */
@@ -224,6 +232,9 @@ struct smbsrv_connection {
 	struct {
 		/* an id tree used to allocate tids */
 		struct idr_context *idtree_tid;
+
+		/* this is the limit of vuid values for this connection */
+		uint32_t idtree_limit;
 
 		/* list of open tree connects */
 		struct smbsrv_tcon *list;
