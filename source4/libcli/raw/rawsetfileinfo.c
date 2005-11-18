@@ -22,13 +22,14 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 
-/****************************************************************************
- Handle setfileinfo/setpathinfo trans2 backend.
-****************************************************************************/
-static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
-				    TALLOC_CTX *mem_ctx,
-				    union smb_setfileinfo *parms, 
-				    DATA_BLOB *blob)
+
+/*
+  Handle setfileinfo/setpathinfo passthu constructions
+*/
+BOOL smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
+				  enum smb_setfileinfo_level level,
+				  union smb_setfileinfo *parms, 
+				  DATA_BLOB *blob)
 {	
 	uint_t len;
 
@@ -37,6 +38,77 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 	  if (blob->data == NULL) return False; \
         } while (0)
 
+	switch (level) {
+	case RAW_SFILEINFO_BASIC_INFORMATION:
+		NEED_BLOB(40);
+		smbcli_push_nttime(blob->data,  0, parms->basic_info.in.create_time);
+		smbcli_push_nttime(blob->data,  8, parms->basic_info.in.access_time);
+		smbcli_push_nttime(blob->data, 16, parms->basic_info.in.write_time);
+		smbcli_push_nttime(blob->data, 24, parms->basic_info.in.change_time);
+		SIVAL(blob->data,           32, parms->basic_info.in.attrib);
+		SIVAL(blob->data,           36, 0); /* padding */
+		return True;
+
+	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
+		NEED_BLOB(4);
+		SIVAL(blob->data, 0, parms->disposition_info.in.delete_on_close);
+		return True;
+
+	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		NEED_BLOB(8);
+		SBVAL(blob->data, 0, parms->allocation_info.in.alloc_size);
+		return True;
+
+	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		NEED_BLOB(8);
+		SBVAL(blob->data, 0, parms->end_of_file_info.in.size);
+		return True;
+
+	case RAW_SFILEINFO_RENAME_INFORMATION:
+		NEED_BLOB(12);
+		SIVAL(blob->data, 0, parms->rename_information.in.overwrite);
+		SIVAL(blob->data, 4, parms->rename_information.in.root_fid);
+		len = smbcli_blob_append_string(NULL, mem_ctx, blob,
+						parms->rename_information.in.new_name, 
+						STR_UNICODE|STR_TERMINATE);
+		SIVAL(blob->data, 8, len - 2);
+		return True;
+
+	case RAW_SFILEINFO_POSITION_INFORMATION:
+		NEED_BLOB(8);
+		SBVAL(blob->data, 0, parms->position_information.in.position);
+		return True;
+
+	case RAW_SFILEINFO_MODE_INFORMATION:
+		NEED_BLOB(4);
+		SIVAL(blob->data, 0, parms->mode_information.in.mode);
+		return True;
+		
+		/* Unhandled levels */
+	case RAW_SFILEINFO_1023:
+	case RAW_SFILEINFO_1025:
+	case RAW_SFILEINFO_1029:
+	case RAW_SFILEINFO_1032:
+	case RAW_SFILEINFO_1039:
+	case RAW_SFILEINFO_1040:
+		break;
+
+	default:
+		DEBUG(0,("Unhandled setfileinfo passthru level %d\n", level));
+		return False;
+	}
+
+	return False;
+}
+
+/*
+  Handle setfileinfo/setpathinfo trans2 backend.
+*/
+static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
+				    TALLOC_CTX *mem_ctx,
+				    union smb_setfileinfo *parms, 
+				    DATA_BLOB *blob)
+{	
 	switch (parms->generic.level) {
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SETATTR:
@@ -62,14 +134,8 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
-		NEED_BLOB(40);
-		smbcli_push_nttime(blob->data,  0, parms->basic_info.in.create_time);
-		smbcli_push_nttime(blob->data,  8, parms->basic_info.in.access_time);
-		smbcli_push_nttime(blob->data, 16, parms->basic_info.in.write_time);
-		smbcli_push_nttime(blob->data, 24, parms->basic_info.in.change_time);
-		SIVAL(blob->data,           32, parms->basic_info.in.attrib);
-		SIVAL(blob->data,           36, 0); /* padding */
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_BASIC_INFORMATION, 
+						    parms, blob);
 
 	case RAW_SFILEINFO_UNIX_BASIC:
 		NEED_BLOB(92);
@@ -89,52 +155,45 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
-		NEED_BLOB(4);
-		SIVAL(blob->data, 0, parms->disposition_info.in.delete_on_close);
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_DISPOSITION_INFORMATION,
+						    parms, blob);
 
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
-		NEED_BLOB(8);
-		SBVAL(blob->data, 0, parms->allocation_info.in.alloc_size);
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_ALLOCATION_INFORMATION,
+						    parms, blob);
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
-		NEED_BLOB(8);
-		SBVAL(blob->data, 0, parms->end_of_file_info.in.size);
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_END_OF_FILE_INFORMATION,
+						    parms, blob);
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
-		NEED_BLOB(12);
-		SIVAL(blob->data, 0, parms->rename_information.in.overwrite);
-		SIVAL(blob->data, 4, parms->rename_information.in.root_fid);
-		len = smbcli_blob_append_string(tree->session, mem_ctx, blob,
-					     parms->rename_information.in.new_name, 
-					     STR_UNICODE|STR_TERMINATE);
-		SIVAL(blob->data, 8, len - 2);
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_RENAME_INFORMATION,
+						    parms, blob);
 
 	case RAW_SFILEINFO_POSITION_INFORMATION:
-		NEED_BLOB(8);
-		SBVAL(blob->data, 0, parms->position_information.in.position);
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_POSITION_INFORMATION,
+						    parms, blob);
 
 	case RAW_SFILEINFO_MODE_INFORMATION:
-		NEED_BLOB(4);
-		SIVAL(blob->data, 0, parms->mode_information.in.mode);
-		return True;
+		return smb_raw_setfileinfo_passthru(mem_ctx, RAW_SFILEINFO_MODE_INFORMATION,
+						    parms, blob);
 		
-		/* Unhandled levels */
-
-	case RAW_SFILEINFO_UNIX_LINK:
-	case RAW_SFILEINFO_UNIX_HLINK:
+		/* Unhandled passthru levels */
 	case RAW_SFILEINFO_1023:
 	case RAW_SFILEINFO_1025:
 	case RAW_SFILEINFO_1029:
 	case RAW_SFILEINFO_1032:
 	case RAW_SFILEINFO_1039:
 	case RAW_SFILEINFO_1040:
+		return smb_raw_setfileinfo_passthru(mem_ctx, parms->generic.level,
+						    parms, blob);
+
+		/* Unhandled levels */
+
+	case RAW_SFILEINFO_UNIX_LINK:
+	case RAW_SFILEINFO_UNIX_HLINK:
 		break;
 	}
 

@@ -10,5 +10,6 @@ OBJ_FILES = \
 	connect.o \
 	getinfo.o \
 	write.o \
-	read.o
+	read.o \
+	setinfo.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET
