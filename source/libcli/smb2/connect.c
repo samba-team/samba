@@ -47,10 +47,7 @@ static void continue_tcon(struct smb2_request *req)
 							   struct smb2_connect_state);
 
 	c->status = smb2_tree_connect_recv(req, &state->tcon);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 	
 	state->tree->tid = state->tcon.out.tid;
 
@@ -69,10 +66,7 @@ static void continue_session(struct composite_context *creq)
 	struct smb2_request *req;
 
 	c->status = smb2_session_setup_spnego_recv(creq);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	state->tree = smb2_tree_init(state->session, state, True);
 	if (composite_nomem(state->tree, c)) return;
@@ -102,10 +96,7 @@ static void continue_negprot(struct smb2_request *req)
 	struct composite_context *creq;
 
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	state->session = smb2_session_init(transport, state, True);
 	if (composite_nomem(state->session, c)) return;
@@ -129,10 +120,7 @@ static void continue_socket(struct composite_context *creq)
 	struct smb2_request *req;
 
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	transport = smb2_transport_init(sock, state);
 	if (composite_nomem(transport, c)) return;
@@ -160,10 +148,7 @@ static void continue_resolve(struct composite_context *creq)
 	const char *addr;
 	
 	c->status = resolve_name_recv(creq, state, &addr);
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
-	}
+	if (!composite_is_ok(c)) return;
 
 	creq = smbcli_sock_connect_send(state, addr, 445, state->host, c->event_ctx);
 
