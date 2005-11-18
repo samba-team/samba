@@ -38,7 +38,7 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 
 	/* events */
 	if (ev == NULL) {
-		ev = event_context_init(ctx);
+		ev = event_context_find(ctx);
 		if (ev == NULL) {
 			talloc_free(ctx);
 			return NULL;
