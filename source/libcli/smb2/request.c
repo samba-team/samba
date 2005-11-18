@@ -390,6 +390,57 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 	return NT_STATUS_OK;
 }
 
+
+/*
+  push a uint32_t length/ uint32_t ofs/blob triple into a data blob
+  the ofs points to the start of the length/offset pair, and is relative
+  to the body start
+*/
+NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf, 
+			       uint32_t ofs, DATA_BLOB blob)
+{
+	NTSTATUS status;
+	size_t offset;
+	size_t padding_length;
+	uint8_t *ptr = buf->body+ofs;
+
+	if (buf->dynamic == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* check if there're enough room for ofs and size */
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	if (blob.length == 0) {
+		SIVAL(ptr, 0, 0);
+		SIVAL(ptr, 4, 0);
+		return NT_STATUS_OK;
+	}
+
+	offset = buf->dynamic - buf->hdr;
+	padding_length = smb2_padding_size(offset, 8);
+	offset += padding_length;
+
+	SIVAL(ptr, 0, blob.length);
+	SIVAL(ptr, 4, offset);
+
+	status = smb2_grow_buffer(buf, padding_length + blob.length);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	memset(buf->dynamic, 0, padding_length);
+	buf->dynamic += padding_length;
+
+	memcpy(buf->dynamic, blob.data, blob.length);
+	buf->dynamic += blob.length;
+
+	buf->size += blob.length + padding_length;
+	buf->body_size += blob.length + padding_length;
+
+	return NT_STATUS_OK;
+}
+
 /*
   pull a uint16_t ofs/ uint32_t length/blob triple from a data blob
   the ptr points to the start of the offset/length pair

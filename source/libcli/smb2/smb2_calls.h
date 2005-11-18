@@ -215,6 +215,15 @@ struct smb2_getinfo {
 	} out;
 };
 
+struct smb2_setinfo {
+	struct {
+		uint16_t level;
+		uint32_t flags;
+		struct smb2_handle handle;
+		DATA_BLOB blob;
+	} in;
+};
+
 struct smb2_write {
 	struct {
 		/* static body buffer 48 (0x30) bytes */
