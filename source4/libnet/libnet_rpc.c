@@ -77,11 +77,10 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 	NTSTATUS status;
 	struct libnet_RpcConnect r2;
 	struct libnet_Lookup f;
-	const char *address = talloc_array(ctx, const char, 16);
 
 	f.in.hostname  = r->in.domain_name;
 	f.in.methods   = NULL;
-	f.out.address  = &address;
+	f.out.address  = NULL;
 
 	status = libnet_LookupPdc(ctx, mem_ctx, &f);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -91,7 +90,7 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 	}
 
 	r2.level		    = LIBNET_RPC_CONNECT_SERVER;
-	r2.in.domain_name	    = talloc_strdup(mem_ctx, *f.out.address);
+	r2.in.domain_name	    = talloc_strdup(mem_ctx, f.out.address[0]);
 	r2.in.dcerpc_iface_name     = r->in.dcerpc_iface_name;
 	r2.in.dcerpc_iface_uuid	    = r->in.dcerpc_iface_uuid;
 	r2.in.dcerpc_iface_version  = r->in.dcerpc_iface_version;

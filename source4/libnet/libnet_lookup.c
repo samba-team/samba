@@ -34,7 +34,6 @@
 struct lookup_state {
 	struct composite_context *resolve_ctx;
 	struct nbt_name hostname;
-	const char **address;
 };
 
 
@@ -50,7 +49,6 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct lookup_state *s;
 	const char** methods;
-	const char* address = talloc_array(ctx, const char, 16);
 
 	if (!io) return NULL;
 
@@ -62,14 +60,13 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 	if (s == NULL) goto failed;
 	
 	/* prepare event context */
-	c->event_ctx = event_context_init(c);
+	c->event_ctx = event_context_find(c);
 	if (c->event_ctx == NULL) goto failed;
 
 	/* parameters */
 	s->hostname.name   = talloc_strdup(s, io->in.hostname);
 	s->hostname.type   = io->in.type;
 	s->hostname.scope  = NULL;
-	s->address         = &address;
 
 	/* name resolution methods */
 	if (io->in.methods) {
@@ -106,12 +103,14 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct lookup_state *s;
+	const char *address;
 
 	s = talloc_get_type(c->private_data, struct lookup_state);
 
-	status = resolve_name_recv(s->resolve_ctx, mem_ctx, s->address);
+	status = resolve_name_recv(s->resolve_ctx, mem_ctx, &address);
 	if (NT_STATUS_IS_OK(status)) {
-		io->out.address = s->address;
+		io->out.address = str_list_make(mem_ctx, address, NULL);
+		NT_STATUS_HAVE_NO_MEMORY(io->out.address);
 	}
 
 	return status;
