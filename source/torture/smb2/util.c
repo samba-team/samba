@@ -26,6 +26,157 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
+#include "system/time.h"
+
+
+/*
+  close a handle with SMB2
+*/
+NTSTATUS smb2_util_close(struct smb2_tree *tree, struct smb2_handle h)
+{
+	struct smb2_close c;
+
+	ZERO_STRUCT(c);
+	c.in.handle = h;
+
+	return smb2_close(tree, &c);
+}
+
+/*
+  unlink a file with SMB2
+*/
+NTSTATUS smb2_util_unlink(struct smb2_tree *tree, const char *fname)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
+	io.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	io.in.fname = fname;
+	io.in.blob  = data_blob(NULL, 0);
+
+	status = smb2_create(tree, tree, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		return NT_STATUS_OK;
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return smb2_util_close(tree, io.out.handle);
+}
+
+/*
+  write to a file on SMB2
+*/
+NTSTATUS smb2_util_write(struct smb2_tree *tree,
+			 struct smb2_handle handle, 
+			 const void *buf, off_t offset, size_t size)
+{
+	struct smb2_write w;
+
+	ZERO_STRUCT(w);
+	w.in.offset      = offset;
+	w.in.handle      = handle;
+	w.in.data        = data_blob_const(buf, size);
+
+	return smb2_write(tree, &w);
+}
+
+/*
+  create a complex file using the SMB2 protocol
+*/
+NTSTATUS smb2_create_complex_file(struct smb2_tree *tree, const char *fname, struct smb2_handle *handle)
+{
+	char buf[7] = "abc";
+	struct smb2_create io;
+	union smb_setfileinfo setfile;
+	union smb_fileinfo fileinfo;
+	time_t t = (time(NULL) & ~1);
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
+	io.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options = 0;
+	io.in.fname = fname;
+	io.in.blob  = data_blob(NULL, 0);
+
+	status = smb2_create(tree, tree, &io);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*handle = io.out.handle;
+
+	status = smb2_util_write(tree, *handle, buf, 0, sizeof(buf));
+	NT_STATUS_NOT_OK_RETURN(status);
+
+#if 0
+	if (strchr(fname, ':') == NULL) {
+		/* setup some EAs */
+		setfile.generic.level = RAW_SFILEINFO_EA_SET;
+		setfile.generic.file.fnum = fnum;
+		setfile.ea_set.in.num_eas = 2;	
+		setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
+		setfile.ea_set.in.eas[0].flags = 0;
+		setfile.ea_set.in.eas[0].name.s = "EAONE";
+		setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
+		setfile.ea_set.in.eas[1].flags = 0;
+		setfile.ea_set.in.eas[1].name.s = "SECONDEA";
+		setfile.ea_set.in.eas[1].value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
+		status = smb_raw_setfileinfo(cli->tree, &setfile);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Failed to setup EAs\n");
+		}
+	}
+#endif
+
+	/* make sure all the timestamps aren't the same, and are also 
+	   in different DST zones*/
+	setfile.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
+	setfile.generic.file.handle = *handle;
+
+	setfile.basic_info.in.create_time = t +  9*30*24*60*60;
+	setfile.basic_info.in.access_time = t +  6*30*24*60*60;
+	setfile.basic_info.in.write_time  = t +  3*30*24*60*60;
+	setfile.basic_info.in.change_time = t +  1*30*24*60*60;
+	setfile.basic_info.in.attrib      = FILE_ATTRIBUTE_NORMAL;
+
+	status = smb2_setinfo_file(tree, &setfile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to setup file times - %s\n", nt_errstr(status));
+	}
+
+	/* make sure all the timestamps aren't the same */
+	fileinfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	fileinfo.generic.in.handle = *handle;
+
+	status = smb2_getinfo_file(tree, tree, &fileinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to query file times - %s\n", nt_errstr(status));
+	}
+
+	if (setfile.basic_info.in.create_time != fileinfo.basic_info.out.create_time) {
+		printf("create_time not setup correctly\n");
+	}
+	if (setfile.basic_info.in.access_time != fileinfo.basic_info.out.access_time) {
+		printf("access_time not setup correctly\n");
+	}
+	if (setfile.basic_info.in.write_time != fileinfo.basic_info.out.write_time) {
+		printf("write_time not setup correctly\n");
+	}
+	
+	return NT_STATUS_OK;
+}
 
 /*
   show lots of information about a file
