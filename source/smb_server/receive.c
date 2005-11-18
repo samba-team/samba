@@ -625,3 +625,33 @@ error:
 	SSVAL(req->out.vwv, VWV(1), 0);
 	req_reply_dos_error(req, ERRSRV, ERRerror);
 }
+
+/*
+ * init the SMB protocol related stuff
+ */
+NTSTATUS smbsrv_init_smb_connection(struct smbsrv_connection *smb_conn)
+{
+	NTSTATUS status;
+
+	/* now initialise a few default values associated with this smb socket */
+	smb_conn->negotiate.max_send = 0xFFFF;
+
+	/* this is the size that w2k uses, and it appears to be important for
+	   good performance */
+	smb_conn->negotiate.max_recv = lp_max_xmit();
+
+	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
+
+	smb_conn->config.security = lp_security();
+	smb_conn->config.nt_status_support = lp_nt_status_support();
+
+	status = smbsrv_init_sessions(smb_conn);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = smbsrv_init_tcons(smb_conn);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	srv_init_signing(smb_conn);
+
+	return NT_STATUS_OK;
+}

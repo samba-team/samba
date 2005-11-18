@@ -29,9 +29,11 @@
 /****************************************************************************
 init the tcon structures
 ****************************************************************************/
-void smbsrv_tcon_init(struct smbsrv_connection *smb_conn)
+NTSTATUS smbsrv_init_tcons(struct smbsrv_connection *smb_conn)
 {
 	smb_conn->tree.idtree_tid = idr_init(smb_conn);
+	NT_STATUS_HAVE_NO_MEMORY(smb_conn->tree.idtree_tid);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
