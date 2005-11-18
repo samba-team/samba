@@ -181,7 +181,7 @@ BOOL smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, uint_t size)
 	return False;
 }
 
-static size_t smb2_padding_size(uint32_t offset, size_t n)
+size_t smb2_padding_size(uint32_t offset, size_t n)
 {
 	if ((offset & (n-1)) == 0) return 0;
 	return n - (offset & (n-1));
