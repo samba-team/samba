@@ -524,7 +524,7 @@ static int skel_aio_fsync(struct vfs_handle_struct *handle, struct files_struct 
 
 static int skel_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts)
 {
-	return vfswrap_aioi_suspend(NULL, fsp, aiocb, n, ts);
+	return vfswrap_aio_suspend(NULL, fsp, aiocb, n, ts);
 }
 
 /* VFS operations structure */
