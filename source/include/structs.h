@@ -146,14 +146,19 @@ struct reg_diff_file;
 struct rap_NetShareEnum;
 struct rap_NetServerEnum2;
 
-struct smbsrv_request;
-struct smbsrv_tcon;
-struct smb_signing_context;
-struct smbsrv_connection;
 struct auth_context;
 struct auth_method_context;
+
+struct smb_signing_context;
+
+struct smbsrv_session;
+struct smbsrv_tcon;
+struct smbsrv_connection;
+
+struct smbsrv_request;
 struct request_buffer;
 
+struct smb2srv_request;
 struct smb2_request_buffer;
 
 struct ntvfs_context;
