@@ -87,6 +87,44 @@ NTSTATUS smb2_getinfo(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 
 
 /*
+  map a generic info level to a SMB2 info level
+*/
+uint16_t smb2_getinfo_map_level(uint16_t level, uint8_t class)
+{
+	if ((level & 0xFF) == class) {
+		return level;
+	} else if (level > 1000) {
+		return ((level-1000)<<8) | class;
+	}
+	DEBUG(0,("Unable to map SMB2 info level 0x%04x of class %d\n", level, class));
+	return 0;	
+}
+
+/*
+  level specific getinfo call - async send
+*/
+struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fileinfo *io)
+{
+	struct smb2_getinfo b;
+	uint16_t smb2_level = smb2_getinfo_map_level(io->generic.level, SMB2_GETINFO_FILE);
+	
+	if (smb2_level == 0) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(b);
+	b.in.max_response_size = 0x10000;
+	b.in.handle            = io->generic.in.handle;
+	b.in.level             = smb2_level;
+
+	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
+		b.in.flags = io->query_secdesc.secinfo_flags;
+	}
+
+	return smb2_getinfo_send(tree, &b);
+}
+
+/*
   recv a getinfo reply and parse the level info
 */
 NTSTATUS smb2_getinfo_file_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
@@ -110,35 +148,30 @@ NTSTATUS smb2_getinfo_file_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 NTSTATUS smb2_getinfo_file(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, 
 			   union smb_fileinfo *io)
 {
-	struct smb2_getinfo b;
-	struct smb2_request *req;
-	uint16_t smb2_level;
-
-	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
-		smb2_level = SMB2_GETINFO_SECURITY;
-	} else if ((io->generic.level & 0xFF) == SMB2_GETINFO_FILE) {
-		smb2_level = io->generic.level;
-	} else if (io->generic.level > 1000) {
-		smb2_level = ((io->generic.level-1000)<<8) | SMB2_GETINFO_FILE;
-	} else {
-		/* SMB2 only does the passthru levels */
-		return NT_STATUS_INVALID_LEVEL;
-	}
-
-	ZERO_STRUCT(b);
-	b.in.max_response_size = 0x10000;
-	b.in.handle            = io->generic.in.handle;
-	b.in.level             = smb2_level;
-
-	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
-		b.in.flags = io->query_secdesc.secinfo_flags;
-	}
-
-	req = smb2_getinfo_send(tree, &b);
-	
+	struct smb2_request *req = smb2_getinfo_file_send(tree, io);
 	return smb2_getinfo_file_recv(req, mem_ctx, io);
 }
 
+
+/*
+  level specific getinfo call - async send
+*/
+struct smb2_request *smb2_getinfo_fs_send(struct smb2_tree *tree, union smb_fsinfo *io)
+{
+	struct smb2_getinfo b;
+	uint16_t smb2_level = smb2_getinfo_map_level(io->generic.level, SMB2_GETINFO_FS);
+	
+	if (smb2_level == 0) {
+		return NULL;
+	}
+	
+	ZERO_STRUCT(b);
+	b.in.max_response_size = 0x10000;
+	b.in.handle            = io->generic.handle;
+	b.in.level             = smb2_level;
+
+	return smb2_getinfo_send(tree, &b);
+}
 
 /*
   recv a getinfo reply and parse the level info
@@ -164,26 +197,7 @@ NTSTATUS smb2_getinfo_fs_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 NTSTATUS smb2_getinfo_fs(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, 
 			   union smb_fsinfo *io)
 {
-	struct smb2_getinfo b;
-	struct smb2_request *req;
-	uint16_t smb2_level;
-	
-	if ((io->generic.level & 0xFF) == SMB2_GETINFO_FS) {
-		smb2_level = io->generic.level;
-	} else if (io->generic.level > 1000) {
-		smb2_level = ((io->generic.level-1000)<<8) | SMB2_GETINFO_FS;
-	} else {
-		/* SMB2 only does the passthru levels */
-		return NT_STATUS_INVALID_LEVEL;
-	}
-
-	ZERO_STRUCT(b);
-	b.in.max_response_size = 0x10000;
-	b.in.handle            = io->generic.handle;
-	b.in.level             = smb2_level;
-
-	req = smb2_getinfo_send(tree, &b);
-	
+	struct smb2_request *req = smb2_getinfo_fs_send(tree, io);
 	return smb2_getinfo_fs_recv(req, mem_ctx, io);
 }
 
