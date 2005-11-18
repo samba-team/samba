@@ -82,7 +82,7 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 		struct smbsrv_tcon_info *info = &r->out.info.tcons.tcons[i];
 		info->tid          = tcon->tid;
 		info->share_name   = lp_servicename(tcon->service);
-		info->connect_time = timeval_to_nttime(&tcon->connect_time);
+		info->connect_time = timeval_to_nttime(&tcon->statistics.connect_time);
 		info->client_ip    = socket_get_peer_addr(smb_conn->connection->socket, r);
 		i++;
 	}
