@@ -38,21 +38,24 @@ struct smbsrv_session {
 
 	struct smbsrv_connection *smb_conn;
 
-	/* the vuid is used to specify the security context for this
-	   request. Note that this may not be the same vuid as we
-	   received on the wire (for example, for share mode or guest
-	   access) */
-	uint16_t vuid;
+	/* 
+	 * an index passed over the wire:
+	 * - 16 bit for smb
+	 * - 64 bit for smb2
+	 */
+	uint64_t vuid;
 
 	struct gensec_security *gensec_ctx;
 
 	struct auth_session_info *session_info;
 
-	/* Distinguish between a VUID allocated for the multi-pass
-	 * extended secrity session setup and one that is finished */
-	BOOL finished_sesssetup;
-
-	struct timeval connect_time;
+	/* some statictics for the management tools */
+	struct {
+		/* the time when the session setup started */
+		struct timeval connect_time;
+		/* the time when the session setup was finished */
+		struct timeval auth_time;
+	} statistics;
 };
 
 /* we need a forward declaration of the ntvfs_ops strucutre to prevent
@@ -242,12 +245,13 @@ struct smbsrv_connection {
 
 	/* context associated with currently valid session setups */
 	struct {
-		int num_validated_vuids;
-
 		/* an id tree used to allocate vuids */
 		/* this holds info on session vuids that are already
 		 * validated for this VC */
 		struct idr_context *idtree_vuid;
+
+		/* this is the limit of vuid values for this connection */
+		uint64_t idtree_limit;
 
 		/* also kept as a link list so it can be enumerated by
 		   the management code */
