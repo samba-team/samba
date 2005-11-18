@@ -156,15 +156,22 @@ BOOL torture_smb2_getinfo(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	BOOL ret = True;
+	NTSTATUS status;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
 		return False;
 	}
 
-	torture_setup_complex_file(FNAME);
-	torture_setup_complex_file(FNAME ":streamtwo");
-	torture_setup_complex_dir(DNAME);
-	torture_setup_complex_file(DNAME ":streamtwo");
+	status = torture_setup_complex_file(tree, FNAME);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+	torture_setup_complex_file(tree, FNAME ":streamtwo");
+	status = torture_setup_complex_dir(tree, DNAME);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+	torture_setup_complex_file(tree, DNAME ":streamtwo");
 
 	ret &= torture_smb2_fileinfo(tree);
 	ret &= torture_smb2_fsinfo(tree);

@@ -48,15 +48,19 @@ BOOL torture_smb2_getinfo_scan(void)
 		return False;
 	}
 
-	if (!torture_setup_complex_file(FNAME)) {
+	status = torture_setup_complex_file(tree, FNAME);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex file '%s'\n", FNAME);
+		return False;
 	}
-	torture_setup_complex_file(FNAME ":2ndstream");
+	torture_setup_complex_file(tree, FNAME ":2ndstream");
 
-	if (!torture_setup_complex_dir(DNAME)) {
+	status = torture_setup_complex_dir(tree, DNAME);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex dir  '%s'\n", DNAME);
+		return False;
 	}
-	torture_setup_complex_file(DNAME ":2ndstream");
+	torture_setup_complex_file(tree, DNAME ":2ndstream");
 
 	torture_smb2_testfile(tree, FNAME, &fhandle);
 	torture_smb2_testdir(tree, DNAME, &dhandle);
@@ -112,10 +116,12 @@ BOOL torture_smb2_setinfo_scan(void)
 		return False;
 	}
 
-	if (!torture_setup_complex_file(FNAME)) {
+	status = torture_setup_complex_file(tree, FNAME);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex file '%s'\n", FNAME);
+		return False;
 	}
-	torture_setup_complex_file(FNAME ":2ndstream");
+	torture_setup_complex_file(tree, FNAME ":2ndstream");
 
 	torture_smb2_testfile(tree, FNAME, &handle);
 
