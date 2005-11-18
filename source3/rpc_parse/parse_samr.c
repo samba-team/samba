@@ -7253,10 +7253,10 @@ BOOL samr_io_r_chgpasswd_user(const char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_unknown_2e(SAMR_Q_UNKNOWN_2E *q_u,
+void init_samr_q_query_domain_info2(SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value)
 {
-	DEBUG(5, ("init_samr_q_unknown_2e\n"));
+	DEBUG(5, ("init_samr_q_query_domain_info2\n"));
 
 	q_u->domain_pol = *domain_pol;
 	q_u->switch_value = switch_value;
@@ -7266,13 +7266,13 @@ void init_samr_q_unknown_2e(SAMR_Q_UNKNOWN_2E *q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_unknown_2e(const char *desc, SAMR_Q_UNKNOWN_2E *q_u,
+BOOL samr_io_q_query_domain_info2(const char *desc, SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
 			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_2e");
+	prs_debug(ps, depth, desc, "samr_io_q_query_domain_info2");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7291,11 +7291,11 @@ BOOL samr_io_q_unknown_2e(const char *desc, SAMR_Q_UNKNOWN_2E *q_u,
 inits a SAMR_R_QUERY_DOMAIN_INFO structure.
 ********************************************************************/
 
-void init_samr_r_samr_unknown_2e(SAMR_R_UNKNOWN_2E * r_u,
+void init_samr_r_samr_query_domain_info2(SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
 				uint16 switch_value, SAM_UNK_CTR * ctr,
 				NTSTATUS status)
 {
-	DEBUG(5, ("init_samr_r_samr_unknown_2e\n"));
+	DEBUG(5, ("init_samr_r_samr_query_domain_info2\n"));
 
 	r_u->ptr_0 = 0;
 	r_u->switch_value = 0;
@@ -7312,13 +7312,13 @@ void init_samr_r_samr_unknown_2e(SAMR_R_UNKNOWN_2E * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_samr_unknown_2e(const char *desc, SAMR_R_UNKNOWN_2E * r_u,
+BOOL samr_io_r_samr_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
 			      prs_struct *ps, int depth)
 {
         if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_samr_unknown_2e");
+	prs_debug(ps, depth, desc, "samr_io_r_samr_query_domain_info2");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7363,7 +7363,7 @@ BOOL samr_io_r_samr_unknown_2e(const char *desc, SAMR_R_UNKNOWN_2E * r_u,
 				return False;
 			break;
 		default:
-			DEBUG(0, ("samr_io_r_samr_unknown_2e: unknown switch level 0x%x\n",
+			DEBUG(0, ("samr_io_r_samr_query_domain_info2: unknown switch level 0x%x\n",
 				r_u->switch_value));
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 			return False;
