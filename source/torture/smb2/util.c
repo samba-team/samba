@@ -282,6 +282,16 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 		}
 	}	
 
+	/* the security descriptor */
+	io.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	io.query_secdesc.secinfo_flags = 
+		SECINFO_OWNER|SECINFO_GROUP|
+		SECINFO_DACL;
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		NDR_PRINT_DEBUG(security_descriptor, io.query_secdesc.out.sd);
+	}
+
 	talloc_free(tmp_ctx);	
 }
 
