@@ -5,7 +5,8 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2005
    Copyright (C) Jim McDonough                        2002
    Copyright (C) Luke Howard                          2003
-
+   Copyright (C) Stefan Metzmacher                    2005
+   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -95,14 +96,18 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		return auth_nt_status_squash(status);
 	}
 
-	smb_sess = smbsrv_register_session(req->smb_conn, session_info, NULL);
+	/* allocate a new session */
+	smb_sess = smbsrv_session_new(req->smb_conn, NULL);
 	if (!smb_sess) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Ensure this is marked as a 'real' vuid, not one
 	 * simply valid for the session setup leg */
-	smb_sess->finished_sesssetup = True;
+	status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return auth_nt_status_squash(status);
+	}
 
 	/* To correctly process any AndX packet (like a tree connect)
 	 * we need to fill in the session on the request here */
@@ -158,7 +163,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	if (req->smb_conn->negotiate.calling_name) {
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
-	
+
 	if (!remote_machine) {
 		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, req);
 	}
@@ -191,14 +196,18 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return auth_nt_status_squash(status);
 	}
 
-	smb_sess = smbsrv_register_session(req->smb_conn, session_info, NULL);
+	/* allocate a new session */
+	smb_sess = smbsrv_session_new(req->smb_conn, NULL);
 	if (!smb_sess) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Ensure this is marked as a 'real' vuid, not one
 	 * simply valid for the session setup leg */
-	smb_sess->finished_sesssetup = True;
+	status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return auth_nt_status_squash(status);
+	}
 
 	/* To correctly process any AndX packet (like a tree connect)
 	 * we need to fill in the session on the request here */
@@ -260,7 +269,6 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 	smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
 	if (smb_sess) {
 		gensec_ctx = smb_sess->gensec_ctx;
-		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
 		status = gensec_server_start(req, &gensec_ctx,
 					     req->smb_conn->connection->event.ctx);
@@ -281,9 +289,13 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return status;
 		}
 
-		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
+		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
+		if (!smb_sess) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
+	status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	if (NT_STATUS_IS_OK(status)) {
 		DATA_BLOB session_key;
 		
@@ -314,22 +326,14 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		return status;
 	}
 		
-	if (!smb_sess) {
-		smb_sess = smbsrv_register_session(req->smb_conn, 
-						   session_info, gensec_ctx);
-		if (!smb_sess) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		req->session = smb_sess;
-		talloc_steal(smb_sess, gensec_ctx);
-	} else {
-		smb_sess->session_info = talloc_reference(smb_sess, session_info);
-	}
-
 	if (NT_STATUS_IS_OK(status)) {
 		/* Ensure this is marked as a 'real' vuid, not one
 		 * simply valid for the session setup leg */
-		smb_sess->finished_sesssetup = True;
+		status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return auth_nt_status_squash(status);
+		}
+		req->session = smb_sess;
 	}
 	sess->spnego.out.vuid = smb_sess->vuid;
 

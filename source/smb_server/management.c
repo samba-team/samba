@@ -51,8 +51,9 @@ static NTSTATUS smbsrv_session_information(struct irpc_message *msg,
 		info->vuid         = sess->vuid;
 		info->account_name = sess->session_info->server_info->account_name;
 		info->domain_name  = sess->session_info->server_info->domain_name;
-		info->connect_time = timeval_to_nttime(&sess->connect_time);
 		info->client_ip    = socket_get_peer_addr(smb_conn->connection->socket, r);
+		info->connect_time = timeval_to_nttime(&sess->statistics.connect_time);
+		info->auth_time    = timeval_to_nttime(&sess->statistics.auth_time);
 		i++;
 	}	
 

@@ -70,11 +70,12 @@
 	} smbsrv_info_level;
 
 	typedef struct {
-		uint16 vuid;
+		hyper vuid;
 		astring account_name;
 		astring domain_name;
 		astring client_ip;
 		NTTIME  connect_time;
+		NTTIME  auth_time;
 	} smbsrv_session_info;
 
 	typedef struct {
