@@ -25,13 +25,14 @@
 
 
 /****************************************************************************
-init the tcon structures
+init the session structures
 ****************************************************************************/
-void smbsrv_vuid_init(struct smbsrv_connection *smb_conn)
+NTSTATUS smbsrv_init_sessions(struct smbsrv_connection *smb_conn)
 {
 	smb_conn->sessions.idtree_vuid = idr_init(smb_conn);
+	NT_STATUS_HAVE_NO_MEMORY(smb_conn->sessions.idtree_vuid);
+	return NT_STATUS_OK;
 }
-
 
 /****************************************************************************
 Find the session structure assoicated with a VUID (not one from an in-progress session setup)

@@ -28,6 +28,41 @@
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 
+static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
+{
+	NTSTATUS status;
+	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	uint32_t protocol_version;
+
+	/* see if its a special NBT packet */
+	if (CVAL(blob.data,0) != 0) {
+		status = smbsrv_init_smb_connection(smb_conn);
+		NT_STATUS_NOT_OK_RETURN(status);
+		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
+		return smbsrv_recv_smb_request(smb_conn, blob);
+	}
+
+	if (blob.length < (NBT_HDR_SIZE + MIN_SMB_SIZE)) {
+		DEBUG(2,("Invalid SMB packet length count %d\n", blob.length));
+		smbsrv_terminate_connection(smb_conn, "Invalid SMB packet");
+		return NT_STATUS_OK;
+	}
+
+	protocol_version = IVAL(blob.data, NBT_HDR_SIZE);
+
+	switch (protocol_version) {
+	case SMB_MAGIC:
+		status = smbsrv_init_smb_connection(smb_conn);
+		NT_STATUS_NOT_OK_RETURN(status);
+		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
+		return smbsrv_recv_smb_request(smb_conn, blob);
+	}
+
+	DEBUG(2,("Invalid SMB packet: protocl prefix: 0x%08X\n", protocol_version));
+	smbsrv_terminate_connection(smb_conn, "NON-SMB packet");
+	return NT_STATUS_OK;
+}
+
 /*
   close the socket and shutdown a server_context
 */
@@ -91,18 +126,6 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smb_conn = talloc_zero(conn, struct smbsrv_connection);
 	if (!smb_conn) return;
 
-	/* now initialise a few default values associated with this smb socket */
-	smb_conn->negotiate.max_send = 0xFFFF;
-
-	/* this is the size that w2k uses, and it appears to be important for
-	   good performance */
-	smb_conn->negotiate.max_recv = lp_max_xmit();
-
-	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
-
-	smb_conn->negotiate.called_name = NULL;
-	smb_conn->negotiate.calling_name = NULL;
-
 	smb_conn->packet = packet_init(smb_conn);
 	if (smb_conn->packet == NULL) {
 		stream_terminate_connection(conn, "out of memory");
@@ -110,30 +133,20 @@ static void smbsrv_accept(struct stream_connection *conn)
 	}
 	packet_set_private(smb_conn->packet, smb_conn);
 	packet_set_socket(smb_conn->packet, conn->socket);
-	packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
+	packet_set_callback(smb_conn->packet, smbsrv_recv_generic_request);
 	packet_set_full_request(smb_conn->packet, packet_full_request_nbt);
 	packet_set_error_handler(smb_conn->packet, smbsrv_recv_error);
 	packet_set_event_context(smb_conn->packet, conn->event.ctx);
 	packet_set_fde(smb_conn->packet, conn->event.fde);
 	packet_set_serialise(smb_conn->packet);
 
-	smbsrv_vuid_init(smb_conn);
-
-	srv_init_signing(smb_conn);
-
-	smbsrv_tcon_init(smb_conn);
-
 	smb_conn->connection = conn;
-	smb_conn->config.security = lp_security();
-	smb_conn->config.nt_status_support = lp_nt_status_support();
-
 	conn->private = smb_conn;
 
 	irpc_add_name(conn->msg_ctx, "smb_server");
 
 	smbsrv_management_init(smb_conn);
 }
-
 
 static const struct stream_server_ops smb_stream_ops = {
 	.name			= "smb",
