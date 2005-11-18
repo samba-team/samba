@@ -8361,7 +8361,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			for (j=0; j < count; j++) {
 				struct nbt_name_socket *nbtsock = ctx->nbtsock;
 
-				if (ctx->myaddr && strcmp(records[i].wins.ips[j].ip, ctx->myaddr2) == 0) {
+				if (ctx->myaddr2 && strcmp(records[i].wins.ips[j].ip, ctx->myaddr2) == 0) {
 					nbtsock = ctx->nbtsock2;
 				}
 
