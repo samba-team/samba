@@ -1200,7 +1200,7 @@ void reply_exit(struct smbsrv_request *req)
 	struct smbsrv_tcon *tcon;
 	REQ_CHECK_WCT(req, 0);
 
-	for (tcon=req->smb_conn->tree.tcons;tcon;tcon=tcon->next) {
+	for (tcon=req->smb_conn->tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
 		status = ntvfs_exit(req);
 		req->tcon = NULL;
@@ -2181,7 +2181,7 @@ void reply_ulogoffX(struct smbsrv_request *req)
 
 	/* in user level security we are supposed to close any files
 	   open by this user on all open tree connects */
-	for (tcon=req->smb_conn->tree.tcons;tcon;tcon=tcon->next) {
+	for (tcon=req->smb_conn->tcons.list;tcon;tcon=tcon->next) {
 		req->tcon = tcon;
 		status = ntvfs_logoff(req);
 		req->tcon = NULL;

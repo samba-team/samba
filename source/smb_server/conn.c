@@ -31,8 +31,8 @@ init the tcon structures
 ****************************************************************************/
 NTSTATUS smbsrv_init_tcons(struct smbsrv_connection *smb_conn)
 {
-	smb_conn->tree.idtree_tid = idr_init(smb_conn);
-	NT_STATUS_HAVE_NO_MEMORY(smb_conn->tree.idtree_tid);
+	smb_conn->tcons.idtree_tid = idr_init(smb_conn);
+	NT_STATUS_HAVE_NO_MEMORY(smb_conn->tcons.idtree_tid);
 	return NT_STATUS_OK;
 }
 
@@ -41,7 +41,7 @@ find a tcon given a cnum
 ****************************************************************************/
 struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_connection *smb_conn, uint_t tid)
 {
-	return idr_find(smb_conn->tree.idtree_tid, tid);
+	return idr_find(smb_conn->tcons.idtree_tid, tid);
 }
 
 /*
@@ -59,8 +59,8 @@ static int smbsrv_tcon_destructor(void *ptr)
 	/* tell the ntvfs backend that we are disconnecting */
 	ntvfs_disconnect(tcon);
 
-	idr_remove(tcon->smb_conn->tree.idtree_tid, tcon->tid);
-	DLIST_REMOVE(tcon->smb_conn->tree.tcons, tcon);
+	idr_remove(tcon->smb_conn->tcons.idtree_tid, tcon->tid);
+	DLIST_REMOVE(tcon->smb_conn->tcons.list, tcon);
 	return 0;
 }
 
@@ -75,7 +75,7 @@ struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
 	tcon = talloc_zero(smb_conn, struct smbsrv_tcon);
 	if (!tcon) return NULL;
 
-	i = idr_get_new_random(smb_conn->tree.idtree_tid, tcon, UINT16_MAX);
+	i = idr_get_new_random(smb_conn->tcons.idtree_tid, tcon, UINT16_MAX);
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));	       
 		return NULL;
@@ -87,7 +87,7 @@ struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
 
 	talloc_set_destructor(tcon, smbsrv_tcon_destructor);
 
-	DLIST_ADD(smb_conn->tree.tcons, tcon);
+	DLIST_ADD(smb_conn->tcons.list, tcon);
 
 	return tcon;
 }
