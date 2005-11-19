@@ -37,7 +37,7 @@ BOOL torture_smb2_setinfo(void)
 	struct smb2_handle handle;
 	char *fname;
 	char *fname_new;
-	union smb_fileinfo finfo1, finfo2;
+	union smb_fileinfo finfo2;
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status, status2;
 	const char *call_name;
@@ -77,13 +77,7 @@ BOOL torture_smb2_setinfo(void)
 			nt_errstr(status), nt_errstr(rightstatus)); \
 		ret = False; \
 	} \
-	finfo1.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION; \
-	finfo1.generic.in.handle = handle; \
-	status2 = smb2_getinfo_file(tree, mem_ctx, &finfo1); \
-	if (!NT_STATUS_IS_OK(status2)) { \
-		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
-		ret = False; \
-	}} while (0)
+	} while (0)
 
 #define CHECK1(call) \
 	do { if (NT_STATUS_IS_OK(status)) { \
@@ -101,7 +95,7 @@ BOOL torture_smb2_setinfo(void)
 		printf("(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
-		dump_all_info(mem_ctx, &finfo1); \
+		torture_smb2_all_info(tree, handle); \
 	}} while (0)
 
 #define CHECK_TIME(call, stype, field, value) do { \
@@ -113,7 +107,7 @@ BOOL torture_smb2_setinfo(void)
 			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
 		printf("\t%s", timestring(mem_ctx, value)); \
 		printf("\t%s\n", nt_time_string(mem_ctx, finfo2.stype.out.field)); \
-		dump_all_info(mem_ctx, &finfo1); \
+		torture_smb2_all_info(tree, handle); \
 	}} while (0)
 
 #define CHECK_STR(call, stype, field, value) do { \
@@ -123,7 +117,7 @@ BOOL torture_smb2_setinfo(void)
 		        call_name, #stype, #field, \
 		        value, \
 			finfo2.stype.out.field); \
-		dump_all_info(mem_ctx, &finfo1); \
+		torture_smb2_all_info(tree, handle); \
 	}} while (0)
 
 #define CHECK_STATUS(status, correct) do { \
@@ -164,6 +158,21 @@ BOOL torture_smb2_setinfo(void)
 	CHECK_TIME(SMB2_ALL_INFORMATION, all_info2, change_time, basetime + 400);
 	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, attrib,     FILE_ATTRIBUTE_NORMAL);
 
+	printf("change the attribute\n");
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_OK);
+	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, attrib, FILE_ATTRIBUTE_HIDDEN);
+
+	printf("zero attrib means don't change\n");
+	sfinfo.basic_info.in.attrib = 0;
+	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_OK);
+	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, attrib, FILE_ATTRIBUTE_HIDDEN);
+
+	printf("restore attribute\n");
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
+	CHECK_CALL(BASIC_INFORMATION, NT_STATUS_OK);
+	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, attrib, FILE_ATTRIBUTE_NORMAL);
+
 	printf("test disposition_information level\n");
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	CHECK_CALL(DISPOSITION_INFORMATION, NT_STATUS_OK);
@@ -199,11 +208,13 @@ BOOL torture_smb2_setinfo(void)
 	sfinfo.position_information.in.position = 123456;
 	CHECK_CALL(POSITION_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(POSITION_INFORMATION, position_information, position, 123456);
+	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, position, 123456);
 
 	printf("test mode_information level\n");
 	sfinfo.mode_information.in.mode = 2;
 	CHECK_CALL(MODE_INFORMATION, NT_STATUS_OK);
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 2);
+	CHECK_VALUE(SMB2_ALL_INFORMATION, all_info2, mode, 2);
 
 	sfinfo.mode_information.in.mode = 1;
 	CHECK_CALL(MODE_INFORMATION, NT_STATUS_INVALID_PARAMETER);

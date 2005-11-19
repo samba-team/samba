@@ -461,6 +461,7 @@ union smb_fileinfo {
 	struct {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
+		uint8_t ea_flags; /* SMB2 only - SMB2_GETINFO_EA_FLAG_* */
 
 		struct smb_ea_list out;
 	} all_eas;
@@ -563,8 +564,8 @@ union smb_fileinfo {
 			uint64_t file_id;
 			uint32_t ea_size;
 			uint32_t access_mask;
-			uint64_t unknown2;
-			uint64_t unknown3;
+			uint64_t position;
+			uint64_t mode;
 			WIRE_STRING fname;
 		} out;
 	} all_info2;	

@@ -43,7 +43,7 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 	SIVAL(req->out.body, 0x08, io->in.unknown1);
 	SIVAL(req->out.body, 0x0C, io->in.unknown2);
 	SIVAL(req->out.body, 0x10, io->in.flags);
-	SIVAL(req->out.body, 0x14, io->in.unknown4);
+	SIVAL(req->out.body, 0x14, io->in.flags2);
 	smb2_push_handle(req->out.body+0x18, &io->in.handle);
 
 	smb2_transport_send(req);
@@ -123,6 +123,9 @@ struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fi
 
 	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
 		b.in.flags = io->query_secdesc.secinfo_flags;
+	}
+	if (io->generic.level == RAW_FILEINFO_SMB2_ALL_EAS) {
+		b.in.flags2 = io->all_eas.ea_flags;
 	}
 
 	return smb2_getinfo_send(tree, &b);

@@ -188,6 +188,10 @@ struct smb2_close {
 #define SMB2_GETINFO_FS                 0x02
 #define SMB2_GETINFO_SECURITY           0x03
 
+/* flags for RAW_FILEINFO_SMB2_ALL_EAS */
+#define SMB2_GETINFO_EA_FLAG_RESTART    0x01
+#define SMB2_GETINFO_EA_FLAG_SINGLE     0x02
+
 /* NOTE! the getinfo fs and file levels exactly match up with the
    'passthru' SMB levels, which are levels >= 1000. The SMB2 client
    lib uses the names from the libcli/raw/ library */
@@ -201,7 +205,7 @@ struct smb2_getinfo {
 		uint32_t unknown1;
 		uint32_t unknown2;
 		uint32_t flags; /* level specific */
-		uint32_t unknown4;
+		uint32_t flags2; /* used by all_eas level */
 		struct smb2_handle handle;
 	} in;
 

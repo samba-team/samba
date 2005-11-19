@@ -92,6 +92,7 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 		goto failed;
 	}
 
+	printf("Testing file info levels\n");
 	torture_smb2_all_info(tree, hfile);
 	torture_smb2_all_info(tree, hdir);
 
@@ -99,6 +100,12 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 		if (file_levels[i].level == RAW_FILEINFO_SEC_DESC) {
 			file_levels[i].finfo.query_secdesc.secinfo_flags = 0x7;
 			file_levels[i].dinfo.query_secdesc.secinfo_flags = 0x7;
+		}
+		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
+			file_levels[i].finfo.all_eas.ea_flags = 
+				SMB2_GETINFO_EA_FLAG_RESTART;
+			file_levels[i].dinfo.all_eas.ea_flags = 
+				SMB2_GETINFO_EA_FLAG_RESTART;
 		}
 		file_levels[i].finfo.generic.level = file_levels[i].level;
 		file_levels[i].finfo.generic.in.handle = hfile;
@@ -130,7 +137,8 @@ static BOOL torture_smb2_fsinfo(struct smb2_tree *tree)
 	NTSTATUS status;
 	struct smb2_handle handle;
 
-	status = torture_smb2_testdir(tree, DNAME, &handle);
+	printf("Testing fsinfo levels\n");
+	status = smb2_util_roothandle(tree, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
 		return False;

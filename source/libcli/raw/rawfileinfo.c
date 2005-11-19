@@ -95,9 +95,9 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		}
 		parms->basic_info.out.create_time = smbcli_pull_nttime(blob->data, 0);
 		parms->basic_info.out.access_time = smbcli_pull_nttime(blob->data, 8);
-		parms->basic_info.out.write_time =  smbcli_pull_nttime(blob->data, 16);
+		parms->basic_info.out.write_time  = smbcli_pull_nttime(blob->data, 16);
 		parms->basic_info.out.change_time = smbcli_pull_nttime(blob->data, 24);
-		parms->basic_info.out.attrib = 	               IVAL(blob->data, 32);
+		parms->basic_info.out.attrib      = IVAL(blob->data, 32);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STANDARD_INFORMATION:
@@ -236,8 +236,8 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		parms->all_info2.out.file_id        = BVAL(blob->data, 0x40);
 		parms->all_info2.out.ea_size        = IVAL(blob->data, 0x48);
 		parms->all_info2.out.access_mask    = IVAL(blob->data, 0x4C);
-		parms->all_info2.out.unknown2       = BVAL(blob->data, 0x50);
-		parms->all_info2.out.unknown3       = BVAL(blob->data, 0x58);
+		parms->all_info2.out.position       = BVAL(blob->data, 0x50);
+		parms->all_info2.out.mode           = BVAL(blob->data, 0x58);
 		smbcli_blob_pull_string(NULL, mem_ctx, blob,
 					&parms->all_info2.out.fname, 0x60, 0x64, STR_UNICODE);
 		return NT_STATUS_OK;
