@@ -53,6 +53,12 @@
  *    got rid of fcvt code (twas buggy and made testing harder)
  *    added C99 semantics
  *
+ * Darren Tucker (dtucker@zip.com.au)
+ *    Fix bug allowing read overruns of the source string with "%.*s"
+ *    Usually harmless unless the read runs outside the process' allocation
+ *    (eg if your malloc does guard pages) in which case it will segfault.
+ *    From OpenSSH.  Also added test for same.
+ *
  **************************************************************/
 
 #ifndef NO_CONFIG_H /* for some tests */
@@ -436,7 +442,7 @@ static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
 		value = "<NULL>";
 	}
 
-	for (strln = 0; value[strln]; ++strln); /* strlen */
+	for (strln = 0; strln < max && value[strln]; ++strln); /* strlen */
 	padlen = min - strln;
 	if (padlen < 0) 
 		padlen = 0;
@@ -851,6 +857,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 {
 	char buf1[1024];
 	char buf2[1024];
+	char *buf3;
 	char *fp_fmt[] = {
 		"%1.1f",
 		"%-1.5f",
@@ -956,6 +963,20 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 				fail++;
 			}
 			num++;
+		}
+	}
+
+#define BUFSZ 2048
+
+	if ((buf3 = malloc(BUFSZ)) == NULL) {
+		fail++;
+	} else {
+		num++;
+		memset(buf3, 'a', BUFSZ);
+		snprintf(buf1, sizeof(buf1), "%.*s", 1, buf3);
+		if (strcmp(buf1, "a") != 0) {
+			printf("length limit buf1 '%s' expected 'a'\n", buf1);
+			fail++;
 		}
 	}
 
