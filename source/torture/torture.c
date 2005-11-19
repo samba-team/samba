@@ -2256,6 +2256,7 @@ static struct {
 	{"SMB2-SCAN", torture_smb2_scan, 0},
 	{"SMB2-SCANGETINFO", torture_smb2_getinfo_scan, 0},
 	{"SMB2-SCANSETINFO", torture_smb2_setinfo_scan, 0},
+	{"SMB2-SCANFIND", torture_smb2_find_scan, 0},
 	{"SMB2-GETINFO", torture_smb2_getinfo, 0},
 	{"SMB2-SETINFO", torture_smb2_setinfo, 0},
 

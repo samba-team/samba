@@ -102,10 +102,10 @@ static BOOL torture_smb2_fileinfo(struct smb2_tree *tree)
 			file_levels[i].dinfo.query_secdesc.secinfo_flags = 0x7;
 		}
 		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
-			file_levels[i].finfo.all_eas.ea_flags = 
-				SMB2_GETINFO_EA_FLAG_RESTART;
-			file_levels[i].dinfo.all_eas.ea_flags = 
-				SMB2_GETINFO_EA_FLAG_RESTART;
+			file_levels[i].finfo.all_eas.continue_flags = 
+				SMB2_CONTINUE_FLAG_RESTART;
+			file_levels[i].dinfo.all_eas.continue_flags = 
+				SMB2_CONTINUE_FLAG_RESTART;
 		}
 		file_levels[i].finfo.generic.level = file_levels[i].level;
 		file_levels[i].finfo.generic.in.handle = hfile;

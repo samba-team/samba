@@ -461,7 +461,7 @@ union smb_fileinfo {
 	struct {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
-		uint8_t ea_flags; /* SMB2 only - SMB2_GETINFO_EA_FLAG_* */
+		uint8_t continue_flags; /* SMB2 only - SMB2_CONTINUE_FLAG_* */
 
 		struct smb_ea_list out;
 	} all_eas;
