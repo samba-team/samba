@@ -47,17 +47,14 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(2,("Invalid uuid string in "
 			 "dcerpc_bind_auth_none_send\n"));
-		goto failed;
+		composite_trigger_error(c);
+		return c;
 	}
 
 	/* c was only allocated as a container for a possible error */
 	talloc_free(c);
 
 	return dcerpc_bind_send(p, mem_ctx, &syntax, &transfer_syntax);
-
- failed:
-	composite_trigger_error(c);
-	return c;
 }
 
 NTSTATUS dcerpc_bind_auth_none_recv(struct composite_context *ctx)
