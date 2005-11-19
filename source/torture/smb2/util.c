@@ -232,8 +232,8 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	d_printf("\tfile_id:        %llu\n", io.all_info2.out.file_id);
 	d_printf("\tea_size:        %u\n", io.all_info2.out.ea_size);
 	d_printf("\taccess_mask:    0x%08x\n", io.all_info2.out.access_mask);
-	d_printf("\tunknown2:       0x%llx\n", io.all_info2.out.unknown2);
-	d_printf("\tunknown3:       0x%llx\n", io.all_info2.out.unknown3);
+	d_printf("\tposition:       0x%llx\n", io.all_info2.out.position);
+	d_printf("\tmode:           0x%llx\n", io.all_info2.out.mode);
 
 	/* short name, if any */
 	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
@@ -270,14 +270,16 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 		}
 	}	
 
-	/* the security descriptor */
-	io.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-	io.query_secdesc.secinfo_flags = 
-		SECINFO_OWNER|SECINFO_GROUP|
-		SECINFO_DACL;
-	status = smb2_getinfo_file(tree, tmp_ctx, &io);
-	if (NT_STATUS_IS_OK(status)) {
-		NDR_PRINT_DEBUG(security_descriptor, io.query_secdesc.out.sd);
+	if (DEBUGLVL(1)) {
+		/* the security descriptor */
+		io.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+		io.query_secdesc.secinfo_flags = 
+			SECINFO_OWNER|SECINFO_GROUP|
+			SECINFO_DACL;
+		status = smb2_getinfo_file(tree, tmp_ctx, &io);
+		if (NT_STATUS_IS_OK(status)) {
+			NDR_PRINT_DEBUG(security_descriptor, io.query_secdesc.out.sd);
+		}
 	}
 
 	talloc_free(tmp_ctx);	
@@ -394,3 +396,28 @@ NTSTATUS torture_setup_complex_dir(struct smb2_tree *tree, const char *fname)
 	return smb2_util_close(tree, handle);
 }
 
+
+/*
+  return a handle to the root of the share
+*/
+NTSTATUS smb2_util_roothandle(struct smb2_tree *tree, struct smb2_handle *handle)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.in.oplock_flags = 0;
+	io.in.access_mask = SEC_STD_SYNCHRONIZE | SEC_DIR_READ_ATTRIBUTE | SEC_DIR_LIST;
+	io.in.file_attr   = 0;
+	io.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
+	io.in.create_options = NTCREATEX_OPTIONS_ASYNC_ALERT;
+	io.in.fname = "";
+
+	status = smb2_create(tree, tree, &io);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*handle = io.out.handle;
+
+	return NT_STATUS_OK;
+}
