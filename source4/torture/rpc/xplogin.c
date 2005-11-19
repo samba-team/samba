@@ -3,7 +3,7 @@
 
    Test code to simulate an XP logon.
 
-   Copyright (C) Volker Lendecke 2004
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,1038 +27,543 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
+#include "lib/events/events.h"
 
-#if 0
-
-static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
-			      const char *dest_host, uint16_t port,
-			      const char *my_name)
-{
-	struct smbcli_socket *sock;
-	struct smbcli_transport *transport;
-	NTSTATUS status;
-
-	sock = smbcli_sock_init(NULL, NULL);
-	if (sock == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	if (!smbcli_sock_connect_byname(sock, dest_host, port)) {
-		talloc_free(sock);
-		DEBUG(2,("Failed to establish socket connection - %s\n",
-			 strerror(errno)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	transport = smbcli_transport_init(sock, NULL, True);
-	if (transport == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	{
-		struct nbt_name calling;
-		struct nbt_name called;
-
-		/* send a NBT session request, if applicable */
-		make_nbt_name_client(&calling, my_name);
-
-		nbt_choose_called_name(transport, &called, dest_host, NBT_NAME_SERVER);
-
-		if (!smbcli_transport_connect(transport, &calling, &called)) {
-			talloc_free(transport);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	/* negotiate protocol options with the server */
-	status = smb_raw_negotiate(transport, lp_maxprotocol());
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(transport);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	*dst_transport = transport;
-
-	return NT_STATUS_OK;
-}
-
-static int destroy_session(void *ptr)
-{
-	struct smbcli_session *session = ptr;
-	smb_raw_ulogoff(session);
-	return 0;
-}
-
-static int destroy_tree_and_session(void *ptr)
-{
-	struct smbcli_tree *tree = ptr;
-	smb_tree_disconnect(tree);
-	talloc_free(tree->session);
-	return 0;
-}
-
-static NTSTATUS anon_ipc(struct smbcli_transport *transport,
-			 struct smbcli_tree **dst_tree)
-{
-	struct smbcli_tree *tree;
-	struct smbcli_session *session;
-	struct smb_composite_sesssetup setup;
-	union smb_tcon tcon;
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-
-	session = smbcli_session_init(transport, NULL, True);
-	if (session == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	mem_ctx = talloc_init("session_init");
-	if (mem_ctx == NULL) {
-		talloc_free(session);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* prepare a session setup to establish a security context */
-	setup.in.sesskey = transport->negotiate.sesskey;
-	setup.in.capabilities = transport->negotiate.capabilities;
-	setup.in.capabilities &= ~CAP_EXTENDED_SECURITY;
-
-	setup.in.credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_set_anonymous(setup.in.credentials);
-
-	status = smb_composite_sesssetup(session, &setup);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(session);
-		talloc_free(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	session->vuid = setup.out.vuid;
-
-	talloc_set_destructor(session, destroy_session);
-
-	tree = smbcli_tree_init(session, NULL, True);
-	if (tree == NULL) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
-	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\IPC$",
-					    transport->called.name);
-	tcon.tconx.in.device = "IPC";
-
-	status = smb_raw_tcon(tree, mem_ctx, &tcon);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tree);
-		talloc_free(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	tree->tid = tcon.tconx.out.tid;
-
-	if (tcon.tconx.out.dev_type != NULL)
-		tree->device = talloc_strdup(tree, tcon.tconx.out.dev_type);
-
-	if (tcon.tconx.out.fs_type != NULL)
-		tree->fs_type = talloc_strdup(tree, tcon.tconx.out.fs_type);
-
-	talloc_set_destructor(tree, destroy_tree_and_session);
-
-	talloc_free(mem_ctx);
-
-	*dst_tree = tree;
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS connect_to_pipe(struct dcerpc_pipe **pp,
-				TALLOC_CTX *mem_ctx,
-				struct smbcli_transport *transport,
-				const char *pipe_name,
-				const char *pipe_uuid,
-				uint32_t pipe_version)
-{
-	const char *binding = lp_parm_string(-1, "torture", "binding");
-	struct dcerpc_binding *b;
-	NTSTATUS status;
+struct get_schannel_creds_state {
+	struct composite_context *ctx;
+	struct cli_credentials *wks_creds;
 	struct dcerpc_pipe *p;
-	TALLOC_CTX *tmp_ctx;
-	struct smbcli_tree *tree;
-	
-	if (!NT_STATUS_IS_OK(status = anon_ipc(transport, &tree)))
-		return status;
-
-	if (binding == NULL)
-		return NT_STATUS_INVALID_PARAMETER;
-
-	p = dcerpc_pipe_init(mem_ctx);
-	if (p == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tmp_ctx = talloc_new(p);
-
-	status = dcerpc_parse_binding(tmp_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
-		talloc_free(p);
-		return status;
-	}
-
-	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
-
-	/* Look up identifier using the epmapper */
-	if (!b->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, b, pipe_uuid, pipe_version,
-						NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
-				 pipe_uuid, nt_errstr(status)));
-			talloc_free(p);
-			return status;
-		}
-		DEBUG(1,("Mapped to DCERPC/NP pipe %s\n", b->endpoint));
-	}
-
-	pipe_name = b->endpoint;
-
-
-	status = dcerpc_pipe_open_smb(p->conn, tree, pipe_name);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p);
-		return status;
-	}
-
-	talloc_free(tmp_ctx);
-	(*pp) = p;
-	
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS test_enumtrusts(struct smbcli_transport *transport)
-{
-	struct policy_handle handle;
-	struct lsa_EnumTrustDom r2;
-	uint32_t resume_handle = 0;
-	struct lsa_ObjectAttribute attr;
-	struct lsa_OpenPolicy2 r1;
-	struct lsa_DomainList domains;
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-        struct dcerpc_pipe *p;
-
-	mem_ctx = talloc_init("test_enumtrusts");
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_LSARPC_NAME,
-				 DCERPC_LSARPC_UUID, 
-				 DCERPC_LSARPC_VERSION);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	status = dcerpc_bind_auth_none(p, DCERPC_LSARPC_UUID,
-				       DCERPC_LSARPC_VERSION);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	printf("\ntesting OpenPolicy2\n");
-
-	attr.len = 0;
-	attr.root_dir = NULL;
-	attr.object_name = NULL;
-	attr.attributes = 0;
-	attr.sec_desc = NULL;
-	attr.sec_qos = NULL;
-
-	r1.in.system_name = talloc_asprintf(mem_ctx,
-					    "\\\\%s", dcerpc_server_name(p));
-	r1.in.attr = &attr;
-	r1.in.access_mask = 1;
-	r1.out.handle = &handle;
-
-	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
-		return status;
-	}
-
-	printf("\nTesting EnumTrustDom\n");
-
-	r2.in.handle = &handle;
-	r2.in.resume_handle = &resume_handle;
-	r2.in.max_size = 1000;
-	r2.out.domains = &domains;
-	r2.out.resume_handle = &resume_handle;
-
-	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r2);
-
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))
-		return status;
-
-	talloc_free(p);
-
-	talloc_free(mem_ctx);
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS test_lookupnames(struct smbcli_transport *transport,
-				 const char *name)
-{
-	struct policy_handle handle;
-	struct lsa_ObjectAttribute attr;
-	struct lsa_OpenPolicy2 r1;
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-        struct dcerpc_pipe *p;
-
-	mem_ctx = talloc_init("test_lookupnames");
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_LSARPC_NAME,
-				 DCERPC_LSARPC_UUID, 
-				 DCERPC_LSARPC_VERSION);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
-
-	status = dcerpc_bind_auth_none(p, DCERPC_LSARPC_UUID,
-				       DCERPC_LSARPC_VERSION);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	attr.len = 0;
-	attr.root_dir = NULL;
-	attr.object_name = NULL;
-	attr.attributes = 0;
-	attr.sec_desc = NULL;
-	attr.sec_qos = NULL;
-
-	r1.in.system_name = talloc_asprintf(mem_ctx,
-					    "\\\\%s", dcerpc_server_name(p));
-	r1.in.attr = &attr;
-	r1.in.access_mask = 0x801;
-	r1.out.handle = &handle;
-
-	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
-		return status;
-	}
-
-	{
-		struct lsa_LookupNames l;
-		struct lsa_TransSidArray sids;
-		struct lsa_String lsaname;
-		uint32_t count = 0;
-
-		sids.count = 0;
-		sids.sids = NULL;
-
-		lsaname.string = name;
-
-		l.in.handle = &handle;
-		l.in.num_names = 1;
-		l.in.names = &lsaname;
-		l.in.sids = &sids;
-		l.in.level = 2;
-		l.in.count = &count;
-		l.out.count = &count;
-		l.out.sids = &sids;
-
-		status = dcerpc_lsa_LookupNames(p, mem_ctx, &l);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-			printf("LookupNames failed - %s\n", nt_errstr(status));
-			talloc_free(p);
-			talloc_free(mem_ctx);
-			return NT_STATUS_OK;
-		}
-	}
-
-	{
-		struct lsa_Close c;
-		struct policy_handle handle2;
-
-		c.in.handle = &handle;
-		c.out.handle = &handle2;
-
-		status = dcerpc_lsa_Close(p, mem_ctx, &c);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Close failed - %s\n", nt_errstr(status));
-			return status;
-		}
-	}
-
-	talloc_free(p);
-
-	talloc_free(mem_ctx);
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS setup_netlogon_creds(struct smbcli_transport *transport,
-				     struct dcerpc_pipe **p,
-				     const char *machine_name,
-				     const char *domain,
-				     const char *machine_pwd,
-				     struct creds_CredentialState *creds)
-{
-        NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
 	struct netr_ServerReqChallenge r;
+
+	struct creds_CredentialState *creds_state;
+	struct netr_Credential netr_cred;
+	uint32_t negotiate_flags;
 	struct netr_ServerAuthenticate2 a;
-	struct netr_Credential credentials1, credentials2, credentials3;
-	const char *plain_pass;
-	struct samr_Password mach_password;
-	uint32_t negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+};
 
-	
-	mem_ctx = talloc_init("torture_rpc_login");
+static void get_schannel_creds_recv_auth(struct rpc_request *req);
+static void get_schannel_creds_recv_chal(struct rpc_request *req);
+static void get_schannel_creds_recv_pipe(struct composite_context *ctx);
 
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
+static struct composite_context *get_schannel_creds_send(TALLOC_CTX *mem_ctx,
+							 struct cli_credentials *wks_creds,
+							 struct smbcli_tree *tree,
+							 struct event_context *ev)
+{
+	struct composite_context *result, *ctx;
+	struct get_schannel_creds_state *state;
 
-	status = connect_to_pipe(p, mem_ctx, transport, DCERPC_NETLOGON_NAME,
-				 DCERPC_NETLOGON_UUID,
-				 DCERPC_NETLOGON_VERSION);
+	result = talloc(mem_ctx, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = ev;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
+	state = talloc(result, struct get_schannel_creds_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+	state->ctx = result;
 
-	status = dcerpc_bind_auth_none(*p, DCERPC_NETLOGON_UUID,
-				       DCERPC_NETLOGON_VERSION);
+	state->wks_creds = wks_creds;
 
-	if (!NT_STATUS_IS_OK(status))
-		return status;
+	state->p = dcerpc_pipe_init(state, ev);
+	if (state->p == NULL) goto failed;
 
-	printf("Testing ServerReqChallenge\n");
+	ctx = dcerpc_pipe_open_smb_send(state->p->conn, tree, "\\netlogon");
+	if (ctx == NULL) goto failed;
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s",
-					   dcerpc_server_name(*p));
-	r.in.computer_name = machine_name;
-	r.in.credentials = &credentials1;
-	r.out.credentials = &credentials2;
+	ctx->async.fn = get_schannel_creds_recv_pipe;
+	ctx->async.private_data = state;
+	return result;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
-
-	status = dcerpc_netr_ServerReqChallenge(*p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerReqChallenge - %s\n", nt_errstr(status));
-		return status;
-	}
-
-	plain_pass = machine_pwd;
-	if (!plain_pass) {
-		printf("Unable to fetch machine password!\n");
-		return status;
-	}
-
-	E_md4hash(plain_pass, mach_password.hash);
-
-	a.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s",
-					   dcerpc_server_name(*p));
-	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", machine_name);
-	a.in.secure_channel_type = SEC_CHAN_WKSTA;
-	a.in.computer_name = machine_name;
-	a.in.negotiate_flags = &negotiate_flags;
-	a.out.negotiate_flags = &negotiate_flags;
-	a.in.credentials = &credentials3;
-	a.out.credentials = &credentials3;
-
-	creds_client_init(creds, &credentials1, &credentials2,
-			  &mach_password, &credentials3, 
-			  negotiate_flags);
-
-	printf("Testing ServerAuthenticate2\n");
-
-	status = dcerpc_netr_ServerAuthenticate2(*p, mem_ctx, &a);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerAuthenticate2 - %s\n", nt_errstr(status));
-		return status;
-	}
-
-	if (!creds_client_check(creds, &credentials3)) {
-		printf("Credential chaining failed\n");
-		return status;
-	}
-
-	printf("negotiate_flags=0x%08x\n", negotiate_flags);
-
-	talloc_free(mem_ctx);
-	return NT_STATUS_OK;
+ failed:
+	talloc_free(result);
+	return NULL;
 }
 
-static NTSTATUS test_getgroups(struct smbcli_transport *transport,
-			       const char *name)
+static void get_schannel_creds_recv_pipe(struct composite_context *ctx)
 {
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-        struct dcerpc_pipe *p;
+	struct get_schannel_creds_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_schannel_creds_state);
+	struct rpc_request *req;
 
-	struct samr_Connect4 r4;
-	struct policy_handle connect_handle, domain_handle, user_handle;
+	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
+	if (!composite_is_ok(state->ctx)) return;
 
-	mem_ctx = talloc_init("test_lookupnames");
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
+	state->ctx->status = dcerpc_bind_auth_none(state->p,
+						   DCERPC_NETLOGON_UUID,
+						   DCERPC_NETLOGON_VERSION);
+	if (!composite_is_ok(state->ctx)) return;
 
-	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_SAMR_NAME,
-				 DCERPC_SAMR_UUID, 
-				 DCERPC_SAMR_VERSION);
+	state->r.in.computer_name =
+		cli_credentials_get_workstation(state->wks_creds);
+	state->r.in.server_name =
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->p));
+	if (composite_nomem(state->r.in.server_name, state->ctx)) return;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
+	state->r.in.credentials = talloc(state, struct netr_Credential);
+	if (composite_nomem(state->r.in.credentials, state->ctx)) return;
 
-	status = dcerpc_bind_auth_none(p, DCERPC_SAMR_UUID,
-				       DCERPC_SAMR_VERSION);
+	state->r.out.credentials = talloc(state, struct netr_Credential);
+	if (composite_nomem(state->r.out.credentials, state->ctx)) return;
 
-	if (!NT_STATUS_IS_OK(status))
-		return status;
+	generate_random_buffer(state->r.in.credentials->data,
+			       sizeof(state->r.in.credentials->data));
 
-	r4.in.system_name = talloc_asprintf(mem_ctx, "\\\\%s",
-					    dcerpc_server_name(p));
-	r4.in.unknown = 0;
-	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r4.out.connect_handle = &connect_handle;
-
-	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	{
-		struct samr_EnumDomains e;
-		uint32_t resume_handle = 0;
-		int i;
-
-		e.in.connect_handle = &connect_handle;
-		e.in.resume_handle = &resume_handle;
-		e.in.buf_size = (uint32_t)-1;
-		e.out.resume_handle = &resume_handle;
-		status = dcerpc_samr_EnumDomains(p, mem_ctx, &e);
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		for (i=0; i<e.out.sam->count; i++) {
-
-			struct samr_LookupDomain l;
-			struct samr_OpenDomain o;
-
-			if (strcmp(e.out.sam->entries[i].name.string,
-				   "Builtin") == 0)
-				continue;
-
-			l.in.connect_handle = &connect_handle;
-			l.in.domain_name = &e.out.sam->entries[i].name;
-
-			status = dcerpc_samr_LookupDomain(p, mem_ctx, &l);
-
-			if (!NT_STATUS_IS_OK(status))
-				return status;
-
-			o.in.connect_handle = &connect_handle;
-			o.in.access_mask = 0x200;
-			o.in.sid = l.out.sid;
-			o.out.domain_handle = &domain_handle;
-
-			status = dcerpc_samr_OpenDomain(p, mem_ctx, &o);
-
-			if (!NT_STATUS_IS_OK(status))
-				return status;
-
-			break;
-		}
-	}
-
-	{
-		struct samr_LookupNames l;
-		struct lsa_String samr_name;
-		struct samr_OpenUser o;
-
-		samr_name.string = name;
-
-		l.in.domain_handle = &domain_handle;
-		l.in.num_names = 1;
-		l.in.names = &samr_name;
-
-		status = dcerpc_samr_LookupNames(p, mem_ctx, &l);
-
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		o.in.domain_handle = &domain_handle;
-		o.in.rid = l.out.rids.ids[0];
-		o.in.access_mask = 0x100;
-		o.out.user_handle = &user_handle;
-
-		status = dcerpc_samr_OpenUser(p, mem_ctx, &o);
-		
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-	}
-
-	{
-		struct samr_GetGroupsForUser g;
-		struct samr_LookupRids l;
-		int i;
-
-		g.in.user_handle = &user_handle;
-
-		status = dcerpc_samr_GetGroupsForUser(p, mem_ctx, &g);
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		l.in.domain_handle = &domain_handle;
-		l.in.num_rids = g.out.rids->count;
-		l.in.rids = talloc_array(mem_ctx, uint32_t, g.out.rids->count);
-
-		for (i=0; i<g.out.rids->count; i++)
-			l.in.rids[i] = g.out.rids->rids[i].rid;
-
-		status = dcerpc_samr_LookupRids(p, mem_ctx, &l);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(mem_ctx);
-			return status;
-		}
-	}
-
-	{
-		struct samr_Close c;
-
-		c.in.handle = &user_handle;
-		c.out.handle = &user_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-
-		c.in.handle = &domain_handle;
-		c.out.handle = &domain_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-
-		c.in.handle = &connect_handle;
-		c.out.handle = &connect_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-	}
-
-	talloc_free(p);
-	talloc_free(mem_ctx);
-
-	return NT_STATUS_OK;
+	req = dcerpc_netr_ServerReqChallenge_send(state->p, state, &state->r);
+	composite_continue_rpc(state->ctx, req,
+			       get_schannel_creds_recv_chal, state);
 }
 
-static NTSTATUS test_getallsids(struct smbcli_transport *transport,
-				const char *name, BOOL includeDomain)
+static void get_schannel_creds_recv_chal(struct rpc_request *req)
 {
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-        struct dcerpc_pipe *p;
+	struct get_schannel_creds_state *state =
+		talloc_get_type(req->async.private,
+				struct get_schannel_creds_state);
+	const struct samr_Password *mach_pwd;
 
-	struct samr_Connect4 r4;
-	struct policy_handle connect_handle, user_handle;
-	struct policy_handle builtin_handle, domain_handle;
-	struct dom_sid *domain_sid = NULL;
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->r.out.result;
+	if (!composite_is_ok(state->ctx)) return;
 
-	struct dom_sid *user_sid;
-	struct dom_sid *primary_group_sid;
-	struct samr_GetGroupsForUser g;
+	state->creds_state = talloc(state, struct creds_CredentialState);
+	if (composite_nomem(state->creds_state, state->ctx)) return;
 
+	mach_pwd = cli_credentials_get_nt_hash(state->wks_creds, state);
+	if (composite_nomem(mach_pwd, state->ctx)) return;
 
-	mem_ctx = talloc_init("test_getallsids");
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
+	state->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
-	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_SAMR_NAME,
-				 DCERPC_SAMR_UUID, 
-				 DCERPC_SAMR_VERSION);
+	creds_client_init(state->creds_state, state->r.in.credentials,
+			  state->r.out.credentials, mach_pwd,
+			  &state->netr_cred, state->negotiate_flags);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
-	}
+	state->a.in.server_name =
+		talloc_reference(state, state->r.in.server_name);
+	state->a.in.account_name =
+		cli_credentials_get_username(state->wks_creds);
+	state->a.in.secure_channel_type =
+		cli_credentials_get_secure_channel_type(state->wks_creds);
+	state->a.in.computer_name =
+		cli_credentials_get_workstation(state->wks_creds);
+	state->a.in.negotiate_flags = &state->negotiate_flags;
+	state->a.out.negotiate_flags = &state->negotiate_flags;
+	state->a.in.credentials = &state->netr_cred;
+	state->a.out.credentials = &state->netr_cred;
 
-	status = dcerpc_bind_auth_none(p, DCERPC_SAMR_UUID,
-				       DCERPC_SAMR_VERSION);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	r4.in.system_name = talloc_asprintf(mem_ctx, "\\\\%s",
-					    dcerpc_server_name(p));
-	r4.in.unknown = 0;
-	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r4.out.connect_handle = &connect_handle;
-
-	status = dcerpc_samr_Connect4(p, mem_ctx, &r4);
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	{
-		struct samr_EnumDomains e;
-		struct samr_OpenDomain o;
-		uint32_t resume_handle = 0;
-		int i;
-
-		e.in.connect_handle = &connect_handle;
-		e.in.resume_handle = &resume_handle;
-		e.in.buf_size = (uint32_t)-1;
-		e.out.resume_handle = &resume_handle;
-		status = dcerpc_samr_EnumDomains(p, mem_ctx, &e);
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		for (i=0; i<e.out.sam->count; i++) {
-
-			struct samr_LookupDomain l;
-
-			if (strcmp(e.out.sam->entries[i].name.string,
-				   "Builtin") == 0)
-				continue;
-
-			l.in.connect_handle = &connect_handle;
-			l.in.domain_name = &e.out.sam->entries[i].name;
-
-			status = dcerpc_samr_LookupDomain(p, mem_ctx, &l);
-
-			if (!NT_STATUS_IS_OK(status))
-				return status;
-
-			o.in.connect_handle = &connect_handle;
-			o.in.access_mask = 0x280;
-			domain_sid = l.out.sid;
-			o.in.sid = l.out.sid;
-			o.out.domain_handle = &domain_handle;
-
-			status = dcerpc_samr_OpenDomain(p, mem_ctx, &o);
-
-			if (!NT_STATUS_IS_OK(status))
-				return status;
-			break;
-		}
-		o.in.connect_handle = &connect_handle;
-		o.in.access_mask = 0x280;
-		o.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
-		o.out.domain_handle = &builtin_handle;
-
-		status = dcerpc_samr_OpenDomain(p, mem_ctx, &o);
-
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-	}
-
-	{
-		struct samr_LookupNames l;
-		struct lsa_String samr_name;
-		struct samr_OpenUser o;
-
-		samr_name.string = name;
-
-		l.in.domain_handle = &domain_handle;
-		l.in.num_names = 1;
-		l.in.names = &samr_name;
-
-		status = dcerpc_samr_LookupNames(p, mem_ctx, &l);
-
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		o.in.domain_handle = &domain_handle;
-		o.in.rid = l.out.rids.ids[0];
-		o.in.access_mask = 0x100;
-		o.out.user_handle = &user_handle;
-
-		status = dcerpc_samr_OpenUser(p, mem_ctx, &o);
-		
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-	}
-
-	{
-		struct samr_QueryUserInfo q;
-
-		q.in.user_handle = &user_handle;
-		q.in.level = 21;
-
-		status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
-
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		user_sid = dom_sid_add_rid(mem_ctx, domain_sid,
-					   q.out.info->info21.rid);
-		primary_group_sid = dom_sid_add_rid(mem_ctx, domain_sid,
-						    q.out.info->info21.primary_gid);
-	}
-
-	g.in.user_handle = &user_handle;
-
-	status = dcerpc_samr_GetGroupsForUser(p, mem_ctx, &g);
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	{
-		struct lsa_SidArray sids;
-		struct samr_Ids rids;
-		struct samr_GetAliasMembership ga;
-		int i;
-
-		ga.in.domain_handle = &builtin_handle;
-
-		sids.num_sids = g.out.rids->count+2;
-		sids.sids = talloc_array(mem_ctx, struct lsa_SidPtr,
-					   g.out.rids->count+2);
-		sids.sids[0].sid = user_sid;
-		sids.sids[1].sid = primary_group_sid;
-		for (i=0; i<g.out.rids->count; i++) {
-			sids.sids[i+2].sid = dom_sid_add_rid(mem_ctx,
-							     domain_sid,
-							     g.out.rids->rids[i].rid);
-		}
-		ga.in.sids = &sids;
-		ga.out.rids = &rids;
-
-		status = dcerpc_samr_GetAliasMembership(p, mem_ctx, &ga);
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-
-		if (includeDomain) {
-			ga.in.domain_handle = &domain_handle;
-			status = dcerpc_samr_GetAliasMembership(p, mem_ctx,
-								&ga);
-			if (!NT_STATUS_IS_OK(status))
-				return status;
-		}
-	}
-
-	{
-		struct samr_Close c;
-
-		c.in.handle = &user_handle;
-		c.out.handle = &user_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-
-		c.in.handle = &domain_handle;
-		c.out.handle = &domain_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-
-		c.in.handle = &builtin_handle;
-		c.out.handle = &builtin_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-
-		c.in.handle = &connect_handle;
-		c.out.handle = &connect_handle;
-		dcerpc_samr_Close(p, mem_ctx, &c);
-	}
-
-	talloc_free(p);
-	talloc_free(mem_ctx);
-
-	return NT_STATUS_OK;
+	req = dcerpc_netr_ServerAuthenticate2_send(state->p, state, &state->a);
+	composite_continue_rpc(state->ctx, req,
+			       get_schannel_creds_recv_auth, state);
 }
 
-static NTSTATUS test_remoteTOD(struct smbcli_transport *transport)
+static void get_schannel_creds_recv_auth(struct rpc_request *req)
 {
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-        struct dcerpc_pipe *p;
-	struct srvsvc_NetRemoteTOD r;
+	struct get_schannel_creds_state *state =
+		talloc_get_type(req->async.private,
+				struct get_schannel_creds_state);
 
-	mem_ctx = talloc_init("test_lookupnames");
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(state->ctx)) return;
+	state->ctx->status = state->a.out.result;
+	if (!composite_is_ok(state->ctx)) return;
 
-	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_SRVSVC_NAME,
-				 DCERPC_SRVSVC_UUID,
-				 DCERPC_SRVSVC_VERSION);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return status;
+	if (!creds_client_check(state->creds_state,
+				state->a.out.credentials)) {
+		DEBUG(5, ("Server got us invalid creds\n"));
+		composite_error(state->ctx, NT_STATUS_UNSUCCESSFUL);
+		return;
 	}
 
-	status = dcerpc_bind_auth_none(p, DCERPC_SRVSVC_UUID,
-				       DCERPC_SRVSVC_VERSION);
+	cli_credentials_set_netlogon_creds(state->wks_creds,
+					   state->creds_state);
 
-	if (!NT_STATUS_IS_OK(status))
-		return status;
+	composite_done(state->ctx);
+}
 
-	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-
-	ZERO_STRUCT(r.out);
-	status = dcerpc_srvsvc_NetRemoteTOD(p, mem_ctx, &r);
-	talloc_free(mem_ctx);
-	talloc_free(p);
+static NTSTATUS get_schannel_creds_recv(struct composite_context *c,
+					TALLOC_CTX *mem_ctx,
+					struct dcerpc_pipe **netlogon_pipe)
+{
+	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct get_schannel_creds_state *state =
+			talloc_get_type(c->private_data,
+					struct get_schannel_creds_state);
+		*netlogon_pipe = talloc_steal(mem_ctx, state->p);
+	}
+	talloc_free(c);
 	return status;
 }
 
-static BOOL xp_login(const char *dcname, const char *wksname,
-		     const char *domain, const char *wkspwd,
-		     const char *user1name, const char *user1pw,
-		     const char *user2name, const char *user2pw)
+struct lsa_enumtrust_state {
+	struct dcerpc_pipe *lsa_pipe;
+
+	struct lsa_ObjectAttribute attr;
+	struct policy_handle handle;
+	struct lsa_OpenPolicy2 o;
+	struct lsa_Close c;
+	uint32_t resume_handle;
+	struct lsa_DomainList domains;
+	struct lsa_EnumTrustDom e;
+};
+
+static void lsa_enumtrust_recvclose(struct rpc_request *req)
 {
-        NTSTATUS status;
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+static void lsa_enumtrust_recvtrust(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct lsa_enumtrust_state *state =
+		talloc_get_type(c->private_data, struct lsa_enumtrust_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->e.out.result;
+
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_NO_MORE_ENTRIES)) {
+		state->c.in.handle = &state->handle;
+		state->c.out.handle = &state->handle;
+		req = dcerpc_lsa_Close_send(state->lsa_pipe, state, &state->c);
+		composite_continue_rpc(c, req, lsa_enumtrust_recvclose, c);
+		return;
+	}
+
+	state->e.in.handle = &state->handle;
+	state->e.in.resume_handle = &state->resume_handle;
+	state->e.in.max_size = 1000;
+	state->e.out.resume_handle = &state->resume_handle;
+	ZERO_STRUCT(state->domains);
+	state->e.out.domains = &state->domains;
+
+	req = dcerpc_lsa_EnumTrustDom_send(state->lsa_pipe, state, &state->e);
+	composite_continue_rpc(c, req, lsa_enumtrust_recvtrust, c);
+}
+
+static void lsa_enumtrust_recvpol(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct lsa_enumtrust_state *state =
+		talloc_get_type(c->private_data, struct lsa_enumtrust_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->o.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->e.in.handle = &state->handle;
+	state->resume_handle = 0;
+	state->e.in.resume_handle = &state->resume_handle;
+	state->e.in.max_size = 1000;
+	state->e.out.resume_handle = &state->resume_handle;
+	ZERO_STRUCT(state->domains);
+	state->e.out.domains = &state->domains;
+
+	req = dcerpc_lsa_EnumTrustDom_send(state->lsa_pipe, state, &state->e);
+	composite_continue_rpc(c, req, lsa_enumtrust_recvtrust, c);
+}
+
+static void lsa_enumtrust_recvsmb(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct lsa_enumtrust_state *state =
+		talloc_get_type(c->private_data, struct lsa_enumtrust_state);
+	struct rpc_request *req;
+
+	c->status = dcerpc_pipe_open_smb_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	c->status = dcerpc_bind_auth_none(state->lsa_pipe,
+					  DCERPC_LSARPC_UUID,
+					  DCERPC_LSARPC_VERSION);
+	if (!composite_is_ok(c)) return;
+
+	ZERO_STRUCT(state->attr);
+	state->o.in.attr = &state->attr;
+	state->o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->o.in.system_name = talloc_asprintf(
+		state, "\\\\%s", dcerpc_server_name(state->lsa_pipe));
+	if (composite_nomem(state->o.in.system_name, c)) return;
+	state->o.out.handle = &state->handle;
+
+	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state, &state->o);
+	composite_continue_rpc(c, req, lsa_enumtrust_recvpol, c);
+}
+
+static struct composite_context *lsa_enumtrust_send(TALLOC_CTX *mem_ctx,
+						    struct smbcli_tree *tree)
+{
+	struct composite_context *c, *creq;
+	struct lsa_enumtrust_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct lsa_enumtrust_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = tree->session->transport->socket->event.ctx;
+
+	state->lsa_pipe = dcerpc_pipe_init(state, c->event_ctx);
+	if (state->lsa_pipe == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq = dcerpc_pipe_open_smb_send(state->lsa_pipe->conn, tree,
+					 "\\lsarpc");
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	composite_continue(c, creq, lsa_enumtrust_recvsmb, c);
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+static NTSTATUS lsa_enumtrust_recv(struct composite_context *creq)
+{
+	NTSTATUS result = composite_wait(creq);
+	talloc_free(creq);
+	return result;
+}
+
+struct xp_login_state {
+	struct composite_context *ctx;
+	const char *dc_name;
+	const char *dc_ip;
+	const char *wks_domain;
+	const char *wks_name;
+	const char *wks_pwd;
+	const char *user_domain;
+	const char *user_name;
+	const char *user_pwd;
+
+	struct smb_composite_connect conn;
+	struct cli_credentials *wks_creds;
+	struct dcerpc_pipe *netlogon_pipe;
+	struct dcerpc_pipe *lsa_pipe;
+};
+
+static void xp_login_recv_conn(struct composite_context *ctx);
+static void xp_login_recv_auth2(struct composite_context *ctx);
+static void xp_login_recv_trusts(struct composite_context *creq);
+
+static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *event_ctx,
+					       const char *dc_name,
+					       const char *dc_ip,
+					       const char *wks_domain,
+					       const char *wks_name,
+					       const char *wks_pwd,
+					       const char *user_domain,
+					       const char *user_name,
+					       const char *user_pwd)
+{
+	struct composite_context *c, *creq;
+	struct xp_login_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct xp_login_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = event_ctx;
+
+	state->dc_name = dc_name;
+	state->dc_ip = dc_ip;
+	state->wks_domain = wks_domain;
+	state->wks_name = wks_name;
+	state->wks_pwd = wks_pwd;
+	state->user_domain = user_domain;
+	state->user_name = user_name;
+	state->user_pwd = user_pwd;
+
+	state->wks_creds = cli_credentials_init(state);
+	if (state->wks_creds == NULL) goto failed;
+
+	cli_credentials_set_conf(state->wks_creds);
+	cli_credentials_set_domain(state->wks_creds, wks_domain,
+				   CRED_SPECIFIED);
+	cli_credentials_set_username(state->wks_creds,
+				     talloc_asprintf(state, "%s$", wks_name),
+				     CRED_SPECIFIED);
+	cli_credentials_set_password(state->wks_creds, wks_pwd,
+				     CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(state->wks_creds,
+						SEC_CHAN_WKSTA);
+
+	state->conn.in.dest_host = dc_name;
+	state->conn.in.port = 0;
+	state->conn.in.called_name = dc_name;
+	state->conn.in.service = "IPC$";
+	state->conn.in.service_type = "IPC";
+	state->conn.in.credentials = cli_credentials_init(state);
+	if (state->conn.in.credentials == NULL) goto failed;
+	cli_credentials_set_conf(state->conn.in.credentials);
+	cli_credentials_set_anonymous(state->conn.in.credentials);
+	state->conn.in.fallback_to_anonymous = False;
+	state->conn.in.workgroup = wks_domain;
+
+	creq = smb_composite_connect_send(&state->conn, state, event_ctx);
+	composite_continue(c, creq, xp_login_recv_conn, c);
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+static void xp_login_recv_conn(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+
+	c->status = smb_composite_connect_recv(creq, state);
+	if (!composite_is_ok(c)) return;
+
+	creq = get_schannel_creds_send(state, state->wks_creds,
+				       state->conn.out.tree, c->event_ctx);
+	composite_continue(c, creq, xp_login_recv_auth2, c);
+}
+
+static void xp_login_recv_auth2(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+
+	c->status = get_schannel_creds_recv(creq, state,
+					    &state->netlogon_pipe);
+	if (!composite_is_ok(c)) return;
+
+	creq = lsa_enumtrust_send(state,
+				  dcerpc_smb_tree(state->netlogon_pipe->conn));
+	composite_continue(c, creq, xp_login_recv_trusts, c);
+}
+
+static void xp_login_recv_trusts(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+
+	c->status = lsa_enumtrust_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+static NTSTATUS xp_login_recv(struct composite_context *ctx)
+{
+	NTSTATUS status = composite_wait(ctx);
+	talloc_free(ctx);
+	return status;
+}
+
+static void xp_login_done(struct composite_context *ctx)
+{
+	int *count = (int *)(ctx->async.private_data);
+	*count += 1;
+}
+
+BOOL torture_rpc_login(void)
+{
 	TALLOC_CTX *mem_ctx;
-	char *user1dom;
-
-	struct smbcli_transport *transport;
-
-        struct dcerpc_pipe *netlogon_pipe;
-	struct creds_CredentialState *netlogon_creds;
-
-	struct dcerpc_pipe *netlogon_schannel_pipe;
-
-	talloc_enable_leak_report();
+	struct event_context *event_ctx;
+	BOOL result = False;
+	extern int torture_numops;
+	int i, num_events;
+	int num_finished = 0;
+	struct composite_context **ctx;
 
 	mem_ctx = talloc_init("rpc_login");
-
-	if (mem_ctx == NULL)
-		return False;
-
-	netlogon_creds = talloc(mem_ctx, struct creds_CredentialState);
-	if (!netlogon_creds) {
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_init failed\n"));
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(after_negprot(&transport, dcname, 139,
-					   wksname)))
-		return False;
-
-	if (!NT_STATUS_IS_OK(setup_netlogon_creds(transport, &netlogon_pipe,
-						  wksname, domain, wkspwd,
-						  netlogon_creds)))
-		return False;
-
-	if (!NT_STATUS_IS_OK(test_enumtrusts(transport)))
-		return False;
-
-	user1dom = talloc_asprintf(mem_ctx, "%s\\%s", domain, user1name);
-
-	if (!NT_STATUS_IS_OK(test_lookupnames(transport, user1dom)))
-		return False;
-
-	status = connect_to_pipe(&netlogon_schannel_pipe,
-				 mem_ctx, transport, DCERPC_NETLOGON_NAME,
-				 DCERPC_NETLOGON_UUID,
-				 DCERPC_NETLOGON_VERSION);
-
-	if (!NT_STATUS_IS_OK(status))
-		return False;
-
-	netlogon_schannel_pipe->conn->flags |= DCERPC_SEAL;
-
-	status = dcerpc_bind_auth_password(netlogon_schannel_pipe,
-					   DCERPC_NETLOGON_UUID,
-					   DCERPC_NETLOGON_VERSION,
-					   creds, NULL);
-
-	if (!NT_STATUS_IS_OK(status))
-                return False;
-
-	if (!test_InteractiveLogon(netlogon_schannel_pipe, mem_ctx, 
-				   netlogon_creds, wksname, domain,
-				   user1name, user1pw)) {
-		return False;
+	event_ctx = event_context_init(mem_ctx);
+	if (event_ctx == NULL) {
+		DEBUG(0, ("event_context_init failed\n"));
+		goto done;
 	}
-		
-	talloc_free(netlogon_pipe);
 
-	if (!test_InteractiveLogon(netlogon_schannel_pipe, mem_ctx, 
-				   netlogon_creds, wksname, domain,
-				   user1name, user1pw)) {
-		return False;
+	ctx = talloc_array(mem_ctx, struct composite_context *,
+			   torture_numops);
+	if (ctx == NULL) {
+		DEBUG(0, ("talloc_array failed\n"));
+		goto done;
 	}
-		
-	status = test_getgroups(transport, user2name);
-	
-	if (!NT_STATUS_IS_OK(status))
-                return False;
 
-	status = test_remoteTOD(transport);
-	
-	if (!NT_STATUS_IS_OK(status))
-                return False;
+	for (i=0; i<torture_numops; i++) {
+		ctx[i] = xp_login_send(mem_ctx, event_ctx,
+				       lp_parm_string(-1, "torture", "host"),
+				       lp_parm_string(-1, "torture", "host"),
+				       lp_workgroup(),
+				       lp_netbios_name(), "password",
+				       lp_workgroup(), NULL, NULL);
+		if (ctx[i] == NULL) {
+			DEBUG(0, ("xp_login_send failed\n"));
+			goto done;
+		}
+		ctx[i]->async.fn = xp_login_done;
+		ctx[i]->async.private_data = &num_finished;
+	}
 
-	status = test_remoteTOD(transport);
-	
-	if (!NT_STATUS_IS_OK(status))
-                return False;
+	num_events = 0;
+	while (num_finished < torture_numops) {
+		event_loop_once(event_ctx);
+		num_events += 1;
+	}
 
-	status = test_getallsids(transport, user2name, False);
-	
-	if (!NT_STATUS_IS_OK(status))
-                return False;
+	DEBUG(0, ("num_events = %d\n", num_events));
 
-	status = test_getgroups(transport, user2name);
-	
-	if (!NT_STATUS_IS_OK(status))
-                return False;
+	for (i=0; i<torture_numops; i++) {
+		DEBUG(0, ("login %3d returned %s\n", i,
+			  nt_errstr(xp_login_recv(ctx[i]))));
+	}
 
-	status = test_getallsids(transport, user2name, True);
-	
-	if (!NT_STATUS_IS_OK(status))
-                return False;
-
-	talloc_free(netlogon_schannel_pipe);
-
-	talloc_free(transport);
-
+	result = True;
+ done:
 	talloc_free(mem_ctx);
-
-	return True;
+	return result;
 }
-
-struct user_pw {
-	const char *username;
-	const char *password;
-};
-
-static const struct user_pw users[] = {
-	{ "username1", "password1" },
-	{ "username2", "password2" }
-};
-
-static const struct user_pw machines[] = {
-	{ "machine1", "mpw1" },
-	{ "machine2", "mpw2" }
-};
-
-BOOL torture_rpc_login(void)
-{
-	const char *pdcname = "pdcname";
-	const char *domainname = "domain";
-
-	int useridx1 = rand() % ARRAY_SIZE(users);
-	int useridx2 = rand() % ARRAY_SIZE(users);
-	int machidx = rand() % ARRAY_SIZE(machines);
-	printf("machine: %s user1: %s user2: %s\n",
-	       machines[machidx].username,
-	       users[useridx1].username,
-	       users[useridx2].username);
-
-	return xp_login(pdcname, machines[machidx].username,
-			domainname, machines[machidx].password,
-			users[useridx1].username,
-			users[useridx1].password,
-			users[useridx2].username,
-			users[useridx2].password);
-	return False;
-}
-#else 
-
-BOOL torture_rpc_login(void)
-{
-	return False;
-}
-#endif
