@@ -146,6 +146,54 @@ BOOL torture_smb2_setinfo_scan(void)
 	return True;
 }
 
+
+/* 
+   scan for valid SMB2 scan levels
+*/
+BOOL torture_smb2_find_scan(void)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct smb2_tree *tree;
+	NTSTATUS status;
+	struct smb2_find io;
+	struct smb2_handle handle;
+	int i;
+
+	if (!torture_smb2_connection(mem_ctx, &tree)) {
+		return False;
+	}
+
+	status = smb2_util_roothandle(tree, &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to open roothandle - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.pattern = "*";
+	io.in.continue_flags = SMB2_CONTINUE_FLAG_RESTART;
+	io.in.max_response_size = 0x10000;
+	io.in.handle = handle;
+
+	for (i=1;i<0x100;i++) {
+		io.in.level = i;
+
+		io.in.handle = handle;
+		status = smb2_find(tree, mem_ctx, &io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			printf("find level 0x%04x is %d bytes - %s\n", 
+			       io.in.level, io.out.blob.length, nt_errstr(status));
+			dump_data(1, io.out.blob.data, io.out.blob.length);
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	return True;
+}
+
 /* 
    scan for valid SMB2 opcodes
 */

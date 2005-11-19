@@ -189,8 +189,8 @@ struct smb2_close {
 #define SMB2_GETINFO_SECURITY           0x03
 
 /* flags for RAW_FILEINFO_SMB2_ALL_EAS */
-#define SMB2_GETINFO_EA_FLAG_RESTART    0x01
-#define SMB2_GETINFO_EA_FLAG_SINGLE     0x02
+#define SMB2_CONTINUE_FLAG_RESTART    0x01
+#define SMB2_CONTINUE_FLAG_SINGLE     0x02
 
 /* NOTE! the getinfo fs and file levels exactly match up with the
    'passthru' SMB levels, which are levels >= 1000. The SMB2 client
@@ -276,5 +276,20 @@ struct smb2_read {
 
 		/* dynamic body */
 		DATA_BLOB data;
+	} out;
+};
+
+struct smb2_find {
+	struct {
+		uint8_t level;
+		uint8_t continue_flags; /* SMB2_CONTINUE_FLAG_* */
+		uint32_t unknown; /* perhaps a continue token? */
+		struct smb2_handle handle;
+		uint32_t max_response_size;
+		const char *pattern;
+	} in;
+
+	struct {
+		DATA_BLOB blob;
 	} out;
 };
