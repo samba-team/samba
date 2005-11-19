@@ -42,6 +42,7 @@ struct get_schannel_creds_state {
 	struct netr_ServerAuthenticate2 a;
 };
 
+static void get_schannel_creds_recv_bind(struct composite_context *ctx);
 static void get_schannel_creds_recv_auth(struct rpc_request *req);
 static void get_schannel_creds_recv_chal(struct rpc_request *req);
 static void get_schannel_creds_recv_pipe(struct composite_context *ctx);
@@ -87,14 +88,25 @@ static void get_schannel_creds_recv_pipe(struct composite_context *ctx)
 	struct get_schannel_creds_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct get_schannel_creds_state);
-	struct rpc_request *req;
 
 	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!composite_is_ok(state->ctx)) return;
 
-	state->ctx->status = dcerpc_bind_auth_none(state->p,
-						   DCERPC_NETLOGON_UUID,
-						   DCERPC_NETLOGON_VERSION);
+	ctx = dcerpc_bind_auth_none_send(state, state->p, 
+					 DCERPC_NETLOGON_UUID,
+					 DCERPC_NETLOGON_VERSION);
+	composite_continue(state->ctx, ctx, get_schannel_creds_recv_bind,
+			   state);
+}
+
+static void get_schannel_creds_recv_bind(struct composite_context *ctx)
+{
+	struct get_schannel_creds_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_schannel_creds_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_bind_auth_none_recv(ctx);
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->r.in.computer_name =
@@ -279,7 +291,7 @@ static void lsa_enumtrust_recvpol(struct rpc_request *req)
 	composite_continue_rpc(c, req, lsa_enumtrust_recvtrust, c);
 }
 
-static void lsa_enumtrust_recvsmb(struct composite_context *creq)
+static void lsa_enumtrust_recvbind(struct composite_context *creq)
 {
 	struct composite_context *c =
 		talloc_get_type(creq->async.private_data,
@@ -288,12 +300,7 @@ static void lsa_enumtrust_recvsmb(struct composite_context *creq)
 		talloc_get_type(c->private_data, struct lsa_enumtrust_state);
 	struct rpc_request *req;
 
-	c->status = dcerpc_pipe_open_smb_recv(creq);
-	if (!composite_is_ok(c)) return;
-
-	c->status = dcerpc_bind_auth_none(state->lsa_pipe,
-					  DCERPC_LSARPC_UUID,
-					  DCERPC_LSARPC_VERSION);
+	c->status = dcerpc_bind_auth_none_recv(creq);
 	if (!composite_is_ok(c)) return;
 
 	ZERO_STRUCT(state->attr);
@@ -306,6 +313,23 @@ static void lsa_enumtrust_recvsmb(struct composite_context *creq)
 
 	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state, &state->o);
 	composite_continue_rpc(c, req, lsa_enumtrust_recvpol, c);
+}
+
+static void lsa_enumtrust_recvsmb(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct lsa_enumtrust_state *state =
+		talloc_get_type(c->private_data, struct lsa_enumtrust_state);
+
+	c->status = dcerpc_pipe_open_smb_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	creq = dcerpc_bind_auth_none_send(state, state->lsa_pipe,
+					  DCERPC_LSARPC_UUID,
+					  DCERPC_LSARPC_VERSION);
+	composite_continue(c, creq, lsa_enumtrust_recvbind, c);
 }
 
 static struct composite_context *lsa_enumtrust_send(TALLOC_CTX *mem_ctx,

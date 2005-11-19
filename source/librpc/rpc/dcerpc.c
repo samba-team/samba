@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "libcli/composite/composite.h"
 
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 
@@ -612,6 +613,168 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+struct dcerpc_bind_state {
+	struct dcerpc_pipe *pipe;
+	struct ncacn_packet pkt;
+	DATA_BLOB blob;
+};
+
+/*
+  Receive a bind reply from the transport
+*/
+
+static void bind_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
+			      NTSTATUS status)
+{
+	struct composite_context *c;
+	struct dcerpc_bind_state *state;
+
+	if (conn->full_request_private == NULL) {
+		/* it timed out earlier */
+		return;
+	}
+	c = talloc_get_type(conn->full_request_private,
+			    struct composite_context);
+	state = talloc_get_type(c->private_data, struct dcerpc_bind_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(c, status);
+		return;
+	}
+
+	c->status = ncacn_pull(conn, blob, state, &state->pkt);
+	if (!composite_is_ok(c)) return;
+
+	if (state->pkt.ptype == DCERPC_PKT_BIND_NAK) {
+		DEBUG(2,("dcerpc: bind_nak reason %d\n",
+			 state->pkt.u.bind_nak.reject_reason));
+		composite_error(c, dcerpc_map_reason(state->pkt.u.bind_nak.
+						     reject_reason));
+		return;
+	}
+
+	if ((state->pkt.ptype != DCERPC_PKT_BIND_ACK) ||
+	    (state->pkt.u.bind_ack.num_results == 0) ||
+	    (state->pkt.u.bind_ack.ctx_list[0].result != 0)) {
+		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	conn->srv_max_xmit_frag = state->pkt.u.bind_ack.max_xmit_frag;
+	conn->srv_max_recv_frag = state->pkt.u.bind_ack.max_recv_frag;
+
+	/* the bind_ack might contain a reply set of credentials */
+	if (conn->security_state.auth_info &&
+	    state->pkt.u.bind_ack.auth_info.length) {
+		c->status = ndr_pull_struct_blob(
+			&state->pkt.u.bind_ack.auth_info, state,
+			conn->security_state.auth_info,
+			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+		if (!composite_is_ok(c)) return;
+	}
+
+	composite_done(c);
+}
+
+/*
+  handle timeouts of full dcerpc requests
+*/
+static void bind_timeout_handler(struct event_context *ev,
+				 struct timed_event *te, 
+				 struct timeval t, void *private)
+{
+	struct composite_context *ctx =
+		talloc_get_type(private, struct composite_context);
+	struct dcerpc_bind_state *state =
+		talloc_get_type(ctx->private_data, struct dcerpc_bind_state);
+
+	SMB_ASSERT(state->pipe->conn->full_request_private != NULL);
+	state->pipe->conn->full_request_private = NULL;
+	composite_error(ctx, NT_STATUS_IO_TIMEOUT);
+}
+
+struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
+					   TALLOC_CTX *mem_ctx,
+					   const struct dcerpc_syntax_id *syntax,
+					   const struct dcerpc_syntax_id *transfer_syntax)
+{
+	struct composite_context *c;
+	struct dcerpc_bind_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct dcerpc_bind_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = p->conn->event_ctx;
+
+	state->pipe = p;
+
+	p->syntax = *syntax;
+	p->transfer_syntax = *transfer_syntax;
+
+	init_ncacn_hdr(p->conn, &state->pkt);
+
+	state->pkt.ptype = DCERPC_PKT_BIND;
+	state->pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	state->pkt.call_id = p->conn->call_id;
+	state->pkt.auth_length = 0;
+
+	state->pkt.u.bind.max_xmit_frag = 5840;
+	state->pkt.u.bind.max_recv_frag = 5840;
+	state->pkt.u.bind.assoc_group_id = 0;
+	state->pkt.u.bind.num_contexts = 1;
+	state->pkt.u.bind.ctx_list =
+		talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
+	if (state->pkt.u.bind.ctx_list == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+	state->pkt.u.bind.ctx_list[0].context_id = p->context_id;
+	state->pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
+	state->pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
+	state->pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	state->pkt.u.bind.auth_info = data_blob(NULL, 0);
+
+	/* construct the NDR form of the packet */
+	c->status = ncacn_push_auth(&state->blob, mem_ctx, &state->pkt,
+				    p->conn->security_state.auth_info);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	p->conn->transport.recv_data = bind_request_recv;
+	p->conn->full_request_private = c;
+
+	c->status = p->conn->transport.send_request(p->conn, &state->blob,
+						    True);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	event_add_timed(c->event_ctx, c,
+			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
+			bind_timeout_handler, c);
+
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+NTSTATUS dcerpc_bind_recv(struct composite_context *ctx)
+{
+	NTSTATUS result = composite_wait(ctx);
+	talloc_free(ctx);
+	return result;
+}
 
 /* 
    perform a bind using the given syntax 
@@ -624,75 +787,9 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		     const struct dcerpc_syntax_id *syntax,
 		     const struct dcerpc_syntax_id *transfer_syntax)
 {
-	struct ncacn_packet pkt;
-	NTSTATUS status;
-	DATA_BLOB blob;
-
-	p->syntax = *syntax;
-	p->transfer_syntax = *transfer_syntax;
-
-	init_ncacn_hdr(p->conn, &pkt);
-
-	pkt.ptype = DCERPC_PKT_BIND;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = p->conn->call_id;
-	pkt.auth_length = 0;
-
-	pkt.u.bind.max_xmit_frag = 5840;
-	pkt.u.bind.max_recv_frag = 5840;
-	pkt.u.bind.assoc_group_id = 0;
-	pkt.u.bind.num_contexts = 1;
-	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
-	if (!pkt.u.bind.ctx_list) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	pkt.u.bind.ctx_list[0].context_id = p->context_id;
-	pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
-	pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
-	pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
-	pkt.u.bind.auth_info = data_blob(NULL, 0);
-
-	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* send it on its way */
-	status = full_request(p->conn, mem_ctx, &blob, &blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* unmarshall the NDR */
-	status = ncacn_pull(p->conn, &blob, mem_ctx, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (pkt.ptype == DCERPC_PKT_BIND_NAK) {
-		DEBUG(2,("dcerpc: bind_nak reason %d\n", pkt.u.bind_nak.reject_reason));
-		return dcerpc_map_reason(pkt.u.bind_nak.reject_reason);
-	}
-
-	if ((pkt.ptype != DCERPC_PKT_BIND_ACK) ||
-	    pkt.u.bind_ack.num_results == 0 ||
-	    pkt.u.bind_ack.ctx_list[0].result != 0) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	p->conn->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
-	p->conn->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
-
-	/* the bind_ack might contain a reply set of credentials */
-	if (p->conn->security_state.auth_info && pkt.u.bind_ack.auth_info.length) {
-		status = ndr_pull_struct_blob(&pkt.u.bind_ack.auth_info,
-					      mem_ctx,
-					      p->conn->security_state.auth_info,
-					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	}
-
-	return status;	
+	struct composite_context *creq;
+	creq = dcerpc_bind_send(p, mem_ctx, syntax, transfer_syntax);
+	return dcerpc_bind_recv(creq);
 }
 
 /* 
@@ -730,6 +827,26 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 }
 
 
+NTSTATUS dcerpc_init_syntaxes(const char *uuid,
+			      struct dcerpc_syntax_id *syntax,
+			      struct dcerpc_syntax_id *transfer_syntax,
+			      uint_t version)
+{
+	NTSTATUS status;
+
+	status = GUID_from_string(uuid, &syntax->uuid);
+	if (!NT_STATUS_IS_OK(status)) return status;
+
+	syntax->if_version = version;
+
+	status = GUID_from_string(NDR_GUID, &transfer_syntax->uuid);
+	if (!NT_STATUS_IS_OK(status)) return status;
+
+	transfer_syntax->if_version = NDR_GUID_VERSION;
+
+	return NT_STATUS_OK;
+}
+
 /* perform a dcerpc bind, using the uuid as the key */
 NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx,
@@ -739,21 +856,16 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 	struct dcerpc_syntax_id transfer_syntax;
 	NTSTATUS status;
 
-	status = GUID_from_string(uuid, &syntax.uuid);
+	status = dcerpc_init_syntaxes(uuid, &syntax, &transfer_syntax,
+				      version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Invalid uuid string in dcerpc_bind_byuuid\n"));
 		return status;
 	}
-	syntax.if_version = version;
-
-	status = GUID_from_string(NDR_GUID, &transfer_syntax.uuid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	transfer_syntax.if_version = NDR_GUID_VERSION;
 
 	return dcerpc_bind(p, mem_ctx, &syntax, &transfer_syntax);
 }
+
 
 /*
   process a fragment received from the transport layer during a
