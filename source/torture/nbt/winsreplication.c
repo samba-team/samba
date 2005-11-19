@@ -3,7 +3,8 @@
 
    WINS replication testing
 
-   Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Andrew Tridgell	2005
+   Copyright (C) Stefan Metzmacher	2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -483,7 +484,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		ctx->nbtsock_srv = NULL;
 	}
 
-	if (ctx->myaddr2) {
+	if (ctx->myaddr2 && ctx->nbtsock_srv) {
 		ctx->nbtsock2 = nbt_name_socket_init(ctx, NULL);
 		if (!ctx->nbtsock2) return NULL;
 
@@ -1007,6 +1008,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	struct {
 		const char *line; /* just better debugging */
 		struct nbt_name name;
+		const char *comment;
 		BOOL extra; /* not the worst case, this is an extra test */
 		BOOL cleanup;
 		struct {
@@ -3747,6 +3749,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "but owner changed",
 		.extra	= True,
 		.r1	= {
 			.owner		= &ctx->a,
@@ -3873,14 +3876,17 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 				ips = "different";
 			}
 
-			printf("%s,%s%s vs. %s,%s%s with %s ip(s) => %s\n",
+			printf("%s,%s%s vs. %s,%s%s with %s ip(s)%s%s => %s\n",
 				wrepl_name_type_string(records[i].r1.type),
 				wrepl_name_state_string(records[i].r1.state),
 				(records[i].r1.is_static?",static":""),
 				wrepl_name_type_string(records[i].r2.type),
 				wrepl_name_state_string(records[i].r2.state),
 				(records[i].r2.is_static?",static":""),
-				ips, expected);
+				ips,
+				(records[i].comment?" ":""),
+				(records[i].comment?records[i].comment:""),
+				expected);
 		}
 
 		/*
