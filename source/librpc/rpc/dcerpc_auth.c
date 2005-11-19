@@ -76,8 +76,8 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 /*
   perform a multi-part authenticated bind
 */
-NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
-			   const char *uuid, uint_t version)
+static NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
+				 const char *uuid, uint_t version)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(p);
