@@ -36,12 +36,15 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	ctx = libnet_context_init(NULL);
 	creds = talloc(ctx, struct cli_credentials);
 	ctx->cred = creds;
-	ctx->name_res_methods = lp_name_resolve_order();
+
+	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order());
 
 	if (argc == 0) {
 		cli_credentials_set_anonymous(creds);
 
 	} else if (argc == 2 || argc == 4 ) {
+	  
+		cli_credentials_set_workstation(creds, lp_netbios_name(), CRED_SPECIFIED);
 
 		if (!mprVarIsString(argv[0]->type)) {
 			ejsSetErrorMsg(eid, "argument 1 must be a string");
