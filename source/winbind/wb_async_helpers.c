@@ -175,7 +175,6 @@ NTSTATUS wb_finddcs(TALLOC_CTX *mem_ctx,
 }
 
 struct get_schannel_creds_state {
-	struct composite_context *ctx;
 	struct cli_credentials *wks_creds;
 	struct dcerpc_pipe *p;
 	struct netr_ServerReqChallenge r;
@@ -186,6 +185,7 @@ struct get_schannel_creds_state {
 	struct netr_ServerAuthenticate2 a;
 };
 
+static void get_schannel_creds_recv_anonbind(struct composite_context *creq);
 static void get_schannel_creds_recv_auth(struct rpc_request *req);
 static void get_schannel_creds_recv_chal(struct rpc_request *req);
 static void get_schannel_creds_recv_pipe(struct composite_context *ctx);
@@ -195,90 +195,117 @@ struct composite_context *wb_get_schannel_creds_send(TALLOC_CTX *mem_ctx,
 						     struct smbcli_tree *tree,
 						     struct event_context *ev)
 {
-	struct composite_context *result, *ctx;
+	struct composite_context *c, *creq;
 	struct get_schannel_creds_state *state;
 
-	result = talloc(mem_ctx, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = ev;
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
 
-	state = talloc(result, struct get_schannel_creds_state);
-	if (state == NULL) goto failed;
-	result->private_data = state;
-	state->ctx = result;
+	state = talloc(c, struct get_schannel_creds_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = ev;
 
 	state->wks_creds = wks_creds;
 
 	state->p = dcerpc_pipe_init(state, ev);
-	if (state->p == NULL) goto failed;
+	if (state->p == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
-	ctx = dcerpc_pipe_open_smb_send(state->p->conn, tree, "\\netlogon");
-	if (ctx == NULL) goto failed;
+	creq = dcerpc_pipe_open_smb_send(state->p->conn, tree, "\\netlogon");
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
-	ctx->async.fn = get_schannel_creds_recv_pipe;
-	ctx->async.private_data = state;
-	return result;
+	creq->async.fn = get_schannel_creds_recv_pipe;
+	creq->async.private_data = c;
+
+	return c;
 
  failed:
-	talloc_free(result);
-	return NULL;
+	composite_trigger_error(c);
+	return c;
 }
 
-static void get_schannel_creds_recv_pipe(struct composite_context *ctx)
+static void get_schannel_creds_recv_pipe(struct composite_context *creq)
 {
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
 	struct get_schannel_creds_state *state =
-		talloc_get_type(ctx->async.private_data,
+		talloc_get_type(c->private_data,
+				struct get_schannel_creds_state);
+
+	c->status = dcerpc_pipe_open_smb_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	creq = dcerpc_bind_auth_none_send(state, state->p,
+					  DCERPC_NETLOGON_UUID,
+					  DCERPC_NETLOGON_VERSION);
+	composite_continue(c, creq, get_schannel_creds_recv_anonbind, c);
+}
+
+static void get_schannel_creds_recv_anonbind(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct get_schannel_creds_state *state =
+		talloc_get_type(c->private_data,
 				struct get_schannel_creds_state);
 	struct rpc_request *req;
 
-	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
-	if (!composite_is_ok(state->ctx)) return;
-
-	state->ctx->status = dcerpc_bind_auth_none(state->p,
-						   DCERPC_NETLOGON_UUID,
-						   DCERPC_NETLOGON_VERSION);
-	if (!composite_is_ok(state->ctx)) return;
+	c->status = dcerpc_bind_auth_none_recv(creq);
+	if (!composite_is_ok(c)) return;
 
 	state->r.in.computer_name =
 		cli_credentials_get_workstation(state->wks_creds);
 	state->r.in.server_name =
 		talloc_asprintf(state, "\\\\%s",
 				dcerpc_server_name(state->p));
-	if (composite_nomem(state->r.in.server_name, state->ctx)) return;
+	if (composite_nomem(state->r.in.server_name, c)) return;
 
 	state->r.in.credentials = talloc(state, struct netr_Credential);
-	if (composite_nomem(state->r.in.credentials, state->ctx)) return;
+	if (composite_nomem(state->r.in.credentials, c)) return;
 
 	state->r.out.credentials = talloc(state, struct netr_Credential);
-	if (composite_nomem(state->r.out.credentials, state->ctx)) return;
+	if (composite_nomem(state->r.out.credentials, c)) return;
 
 	generate_random_buffer(state->r.in.credentials->data,
 			       sizeof(state->r.in.credentials->data));
 
 	req = dcerpc_netr_ServerReqChallenge_send(state->p, state, &state->r);
-	composite_continue_rpc(state->ctx, req,
-			       get_schannel_creds_recv_chal, state);
+	composite_continue_rpc(c, req, get_schannel_creds_recv_chal, c);
 }
 
 static void get_schannel_creds_recv_chal(struct rpc_request *req)
 {
-	struct get_schannel_creds_state *state =
+	struct composite_context *c =
 		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct get_schannel_creds_state *state =
+		talloc_get_type(c->private_data,
 				struct get_schannel_creds_state);
 	const struct samr_Password *mach_pwd;
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(state->ctx)) return;
-	state->ctx->status = state->r.out.result;
-	if (!composite_is_ok(state->ctx)) return;
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->r.out.result;
+	if (!composite_is_ok(c)) return;
 
 	state->creds_state = talloc(state, struct creds_CredentialState);
-	if (composite_nomem(state->creds_state, state->ctx)) return;
+	if (composite_nomem(state->creds_state, c)) return;
 
 	mach_pwd = cli_credentials_get_nt_hash(state->wks_creds, state);
-	if (composite_nomem(mach_pwd, state->ctx)) return;
+	if (composite_nomem(mach_pwd, c)) return;
 
 	state->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
@@ -300,32 +327,34 @@ static void get_schannel_creds_recv_chal(struct rpc_request *req)
 	state->a.out.credentials = &state->netr_cred;
 
 	req = dcerpc_netr_ServerAuthenticate2_send(state->p, state, &state->a);
-	composite_continue_rpc(state->ctx, req,
-			       get_schannel_creds_recv_auth, state);
+	composite_continue_rpc(c, req, get_schannel_creds_recv_auth, c);
 }
 
 static void get_schannel_creds_recv_auth(struct rpc_request *req)
 {
-	struct get_schannel_creds_state *state =
+	struct composite_context *c =
 		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct get_schannel_creds_state *state =
+		talloc_get_type(c->private_data,
 				struct get_schannel_creds_state);
 
-	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!composite_is_ok(state->ctx)) return;
-	state->ctx->status = state->a.out.result;
-	if (!composite_is_ok(state->ctx)) return;
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->a.out.result;
+	if (!composite_is_ok(c)) return;
 
 	if (!creds_client_check(state->creds_state,
 				state->a.out.credentials)) {
 		DEBUG(5, ("Server got us invalid creds\n"));
-		composite_error(state->ctx, NT_STATUS_UNSUCCESSFUL);
+		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
 
 	cli_credentials_set_netlogon_creds(state->wks_creds,
 					   state->creds_state);
 
-	composite_done(state->ctx);
+	composite_done(c);
 }
 
 NTSTATUS wb_get_schannel_creds_recv(struct composite_context *c,

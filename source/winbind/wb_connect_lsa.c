@@ -43,6 +43,8 @@ struct init_lsa_state {
 };
 
 static void init_lsa_recv_pipe(struct composite_context *ctx);
+static void init_lsa_recv_anon_bind(struct composite_context *ctx);
+static void init_lsa_recv_auth_bind(struct composite_context *ctx);
 static void init_lsa_recv_openpol(struct rpc_request *req);
 
 struct composite_context *wb_init_lsa_send(TALLOC_CTX *mem_ctx,
@@ -86,17 +88,17 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 	struct init_lsa_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_lsa_state);
-	struct rpc_request *req;
 
 	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!composite_is_ok(state->ctx)) return;
 
 	switch (state->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
-		state->ctx->status =
-			dcerpc_bind_auth_none(state->lsa_pipe,
-					      DCERPC_LSARPC_UUID,
-					      DCERPC_LSARPC_VERSION);
+		ctx = dcerpc_bind_auth_none_send(state, state->lsa_pipe,
+						 DCERPC_LSARPC_UUID,
+						 DCERPC_LSARPC_VERSION);
+		composite_continue(state->ctx, ctx, init_lsa_recv_anon_bind,
+				   state);
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
@@ -105,17 +107,54 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 			return;
 		}
 		state->lsa_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
-		state->ctx->status =
-			dcerpc_bind_auth(state->lsa_pipe,
-					 DCERPC_LSARPC_UUID,
-					 DCERPC_LSARPC_VERSION,
-					 state->creds, state->auth_type,
-					 NULL);
+		ctx = dcerpc_bind_auth_send(state, state->lsa_pipe,
+					    DCERPC_LSARPC_UUID,
+					    DCERPC_LSARPC_VERSION,
+					    state->creds, state->auth_type,
+					    NULL);
+		composite_continue(state->ctx, ctx, init_lsa_recv_auth_bind,
+				   state);
 		break;
 	default:
-		state->ctx->status = NT_STATUS_INTERNAL_ERROR;
-		
+		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
 	}
+}
+
+static void init_lsa_recv_anon_bind(struct composite_context *ctx)
+{
+	struct init_lsa_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_lsa_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_bind_auth_none_recv(ctx);
+	if (!composite_is_ok(state->ctx)) return;
+			
+	state->handle = talloc(state, struct policy_handle);
+	if (composite_nomem(state->handle, state->ctx)) return;
+
+	state->openpolicy.in.system_name =
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->lsa_pipe));
+	ZERO_STRUCT(state->objectattr);
+	state->openpolicy.in.attr = &state->objectattr;
+	state->openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->openpolicy.out.handle = state->handle;
+
+	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state,
+					  &state->openpolicy);
+	composite_continue_rpc(state->ctx, req, init_lsa_recv_openpol, state);
+}
+
+static void init_lsa_recv_auth_bind(struct composite_context *ctx)
+{
+	struct init_lsa_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_lsa_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_bind_auth_recv(ctx);
+	if (!composite_is_ok(state->ctx)) return;
 			
 	state->handle = talloc(state, struct policy_handle);
 	if (composite_nomem(state->handle, state->ctx)) return;

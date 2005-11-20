@@ -149,12 +149,12 @@ static void bind_auth_recv_bindreply(struct composite_context *creq)
 	bind_auth_next_step(c);
 }
 
-static struct composite_context *dcerpc_bind_auth_send(struct dcerpc_pipe *p,
-						       TALLOC_CTX *mem_ctx,
-						       const char *uuid, uint_t version,
-						       struct cli_credentials *credentials,
-						       uint8_t auth_type,
-						       const char *service)
+struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
+						struct dcerpc_pipe *p,
+						const char *uuid, uint_t version,
+						struct cli_credentials *credentials,
+						uint8_t auth_type,
+						const char *service)
 {
 	struct composite_context *c, *creq;
 	struct bind_auth_state *state;
@@ -273,7 +273,7 @@ static struct composite_context *dcerpc_bind_auth_send(struct dcerpc_pipe *p,
 	return c;
 }
 
-static NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
+NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 {
 	NTSTATUS result = composite_wait(creq);
 	talloc_free(creq);
