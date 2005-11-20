@@ -517,91 +517,6 @@ static void init_ncacn_hdr(struct dcerpc_connection *c, struct ncacn_packet *pkt
 }
 
 /*
-  hold the state of pending full requests
-*/
-struct full_request_state {
-	struct dcerpc_connection *c;
-	DATA_BLOB *reply_blob;
-	NTSTATUS status;
-};
-
-/*
-  receive a reply to a full request
- */
-static void full_request_recv(struct dcerpc_connection *c, DATA_BLOB *blob, 
-			      NTSTATUS status)
-{
-	struct full_request_state *state = talloc_get_type(c->full_request_private,
-							   struct full_request_state);
-	if (state == NULL) {
-		/* it timed out earlier */
-		return;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		state->status = status;
-		return;
-	}
-	state->reply_blob[0] = data_blob_talloc(state, blob->data, blob->length);
-	state->reply_blob = NULL;
-}
-
-/*
-  handle timeouts of full dcerpc requests
-*/
-static void dcerpc_full_timeout_handler(struct event_context *ev, struct timed_event *te, 
-					struct timeval t, void *private)
-{
-	struct full_request_state *state = talloc_get_type(private, 
-							   struct full_request_state);
-	state->status = NT_STATUS_IO_TIMEOUT;
-	state->c->full_request_private = NULL;
-}
-
-/*
-  perform a single pdu synchronous request - used for the bind code
-  this cannot be mixed with normal async requests
-*/
-static NTSTATUS full_request(struct dcerpc_connection *c, 
-			     TALLOC_CTX *mem_ctx,
-			     DATA_BLOB *request_blob,
-			     DATA_BLOB *reply_blob)
-{
-	struct full_request_state *state = talloc(mem_ctx, struct full_request_state);
-	NTSTATUS status;
-
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state->reply_blob = reply_blob;
-	state->status = NT_STATUS_OK;
-	state->c = c;
-
-	c->transport.recv_data = full_request_recv;
-	c->full_request_private = state;
-
-	status = c->transport.send_request(c, request_blob, True);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	event_add_timed(c->event_ctx, state, 
-			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0), 
-			dcerpc_full_timeout_handler, state);
-
-	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
-		if (event_loop_once(c->event_ctx) != 0) {
-			return NT_STATUS_CONNECTION_DISCONNECTED;
-		}
-	}
-
-	c->full_request_private = NULL;
-
-	return state->status;
-}
-
-/*
   map a bind nak reason to a NTSTATUS
 */
 static NTSTATUS dcerpc_map_reason(uint16_t reason)
@@ -613,7 +528,7 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-struct dcerpc_bind_state {
+struct dcerpc_request_state {
 	struct dcerpc_pipe *pipe;
 	struct ncacn_packet pkt;
 	DATA_BLOB blob;
@@ -627,7 +542,7 @@ static void bind_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
 			      NTSTATUS status)
 {
 	struct composite_context *c;
-	struct dcerpc_bind_state *state;
+	struct dcerpc_request_state *state;
 
 	if (conn->full_request_private == NULL) {
 		/* it timed out earlier */
@@ -635,7 +550,7 @@ static void bind_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
 	}
 	c = talloc_get_type(conn->full_request_private,
 			    struct composite_context);
-	state = talloc_get_type(c->private_data, struct dcerpc_bind_state);
+	state = talloc_get_type(c->private_data, struct dcerpc_request_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		composite_error(c, status);
@@ -677,7 +592,7 @@ static void bind_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
 }
 
 /*
-  handle timeouts of full dcerpc requests
+  handle timeouts of dcerpc bind and alter context requests
 */
 static void bind_timeout_handler(struct event_context *ev,
 				 struct timed_event *te, 
@@ -685,8 +600,9 @@ static void bind_timeout_handler(struct event_context *ev,
 {
 	struct composite_context *ctx =
 		talloc_get_type(private, struct composite_context);
-	struct dcerpc_bind_state *state =
-		talloc_get_type(ctx->private_data, struct dcerpc_bind_state);
+	struct dcerpc_request_state *state =
+		talloc_get_type(ctx->private_data,
+				struct dcerpc_request_state);
 
 	SMB_ASSERT(state->pipe->conn->full_request_private != NULL);
 	state->pipe->conn->full_request_private = NULL;
@@ -699,12 +615,12 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 					   const struct dcerpc_syntax_id *transfer_syntax)
 {
 	struct composite_context *c;
-	struct dcerpc_bind_state *state;
+	struct dcerpc_request_state *state;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
-	state = talloc(c, struct dcerpc_bind_state);
+	state = talloc(c, struct dcerpc_request_state);
 	if (state == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -1569,6 +1485,147 @@ uint32_t dcerpc_auth_level(struct dcerpc_connection *c)
 	return auth_level;
 }
 
+/*
+  Receive an alter reply from the transport
+*/
+static void alter_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
+			       NTSTATUS status)
+{
+	struct composite_context *c;
+	struct dcerpc_request_state *state;
+
+	if (conn->full_request_private == NULL) {
+		/* it timed out earlier */
+		return;
+	}
+
+	c = talloc_get_type(conn->full_request_private,
+			    struct composite_context);
+	state = talloc_get_type(c->private_data, struct dcerpc_request_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(c, status);
+		return;
+	}
+
+	/* unmarshall the NDR */
+	c->status = ncacn_pull(state->pipe->conn, blob, state, &state->pkt);
+	if (!composite_is_ok(c)) return;
+
+	if (state->pkt.ptype == DCERPC_PKT_ALTER_RESP &&
+	    state->pkt.u.alter_resp.num_results == 1 &&
+	    state->pkt.u.alter_resp.ctx_list[0].result != 0) {
+		DEBUG(2,("dcerpc: alter_resp failed - reason %d\n", 
+			 state->pkt.u.alter_resp.ctx_list[0].reason));
+		composite_error(c, dcerpc_map_reason(state->pkt.u.alter_resp.ctx_list[0].reason));
+		return;
+	}
+
+	if (state->pkt.ptype != DCERPC_PKT_ALTER_RESP ||
+	    state->pkt.u.alter_resp.num_results == 0 ||
+	    state->pkt.u.alter_resp.ctx_list[0].result != 0) {
+		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	/* the alter_resp might contain a reply set of credentials */
+	if (state->pipe->conn->security_state.auth_info &&
+	    state->pkt.u.alter_resp.auth_info.length) {
+		c->status = ndr_pull_struct_blob(
+			&state->pkt.u.alter_resp.auth_info, state,
+			state->pipe->conn->security_state.auth_info,
+			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+		if (!composite_is_ok(c)) return;
+	}
+
+	composite_done(c);
+}
+
+/* 
+   send a dcerpc alter_context request
+*/
+struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p, 
+						    TALLOC_CTX *mem_ctx,
+						    const struct dcerpc_syntax_id *syntax,
+						    const struct dcerpc_syntax_id *transfer_syntax)
+{
+	struct composite_context *c;
+	struct dcerpc_request_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct dcerpc_request_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = p->conn->event_ctx;
+
+	state->pipe = p;
+
+	p->syntax = *syntax;
+	p->transfer_syntax = *transfer_syntax;
+
+	init_ncacn_hdr(p->conn, &state->pkt);
+
+	state->pkt.ptype = DCERPC_PKT_ALTER;
+	state->pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	state->pkt.call_id = p->conn->call_id;
+	state->pkt.auth_length = 0;
+
+	state->pkt.u.alter.max_xmit_frag = 5840;
+	state->pkt.u.alter.max_recv_frag = 5840;
+	state->pkt.u.alter.assoc_group_id = 0;
+	state->pkt.u.alter.num_contexts = 1;
+	state->pkt.u.alter.ctx_list = talloc_array(mem_ctx,
+						   struct dcerpc_ctx_list, 1);
+	if (state->pkt.u.alter.ctx_list == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+	state->pkt.u.alter.ctx_list[0].context_id = p->context_id;
+	state->pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
+	state->pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
+	state->pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	state->pkt.u.alter.auth_info = data_blob(NULL, 0);
+
+	/* construct the NDR form of the packet */
+	c->status = ncacn_push_auth(&state->blob, mem_ctx, &state->pkt,
+				    p->conn->security_state.auth_info);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	p->conn->transport.recv_data = alter_request_recv;
+	p->conn->full_request_private = c;
+
+	c->status = p->conn->transport.send_request(p->conn, &state->blob,
+						    True);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		goto failed;
+	}
+
+	event_add_timed(c->event_ctx, c,
+			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
+			bind_timeout_handler, c);
+
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+NTSTATUS dcerpc_alter_context_recv(struct composite_context *ctx)
+{
+	NTSTATUS result = composite_wait(ctx);
+	talloc_free(ctx);
+	return result;
+}
 
 /* 
    send a dcerpc alter_context request
@@ -1578,73 +1635,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 			      const struct dcerpc_syntax_id *syntax,
 			      const struct dcerpc_syntax_id *transfer_syntax)
 {
-	struct ncacn_packet pkt;
-	NTSTATUS status;
-	DATA_BLOB blob;
-
-	p->syntax = *syntax;
-	p->transfer_syntax = *transfer_syntax;
-
-	init_ncacn_hdr(p->conn, &pkt);
-
-	pkt.ptype = DCERPC_PKT_ALTER;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = p->conn->call_id;
-	pkt.auth_length = 0;
-
-	pkt.u.alter.max_xmit_frag = 5840;
-	pkt.u.alter.max_recv_frag = 5840;
-	pkt.u.alter.assoc_group_id = 0;
-	pkt.u.alter.num_contexts = 1;
-	pkt.u.alter.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
-	if (!pkt.u.alter.ctx_list) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	pkt.u.alter.ctx_list[0].context_id = p->context_id;
-	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
-	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
-	pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
-	pkt.u.alter.auth_info = data_blob(NULL, 0);
-
-	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* send it on its way */
-	status = full_request(p->conn, mem_ctx, &blob, &blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* unmarshall the NDR */
-	status = ncacn_pull(p->conn, &blob, mem_ctx, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (pkt.ptype == DCERPC_PKT_ALTER_RESP &&
-	    pkt.u.alter_resp.num_results == 1 &&
-	    pkt.u.alter_resp.ctx_list[0].result != 0) {
-		DEBUG(2,("dcerpc: alter_resp failed - reason %d\n", 
-			 pkt.u.alter_resp.ctx_list[0].reason));
-		return dcerpc_map_reason(pkt.u.alter_resp.ctx_list[0].reason);
-	}
-
-	if (pkt.ptype != DCERPC_PKT_ALTER_RESP ||
-	    pkt.u.alter_resp.num_results == 0 ||
-	    pkt.u.alter_resp.ctx_list[0].result != 0) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* the alter_resp might contain a reply set of credentials */
-	if (p->conn->security_state.auth_info && pkt.u.alter_resp.auth_info.length) {
-		status = ndr_pull_struct_blob(&pkt.u.alter_resp.auth_info,
-					      mem_ctx,
-					      p->conn->security_state.auth_info,
-					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	}
-
-	return status;	
+	struct composite_context *creq;
+	creq = dcerpc_alter_context_send(p, mem_ctx, syntax, transfer_syntax);
+	return dcerpc_alter_context_recv(creq);
 }
