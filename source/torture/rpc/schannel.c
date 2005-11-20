@@ -214,11 +214,11 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_bind_auth_password(p_netlogon, 
-					   DCERPC_NETLOGON_UUID,
-					   DCERPC_NETLOGON_VERSION, 
-					   credentials, DCERPC_AUTH_TYPE_SCHANNEL,
-					   NULL);
+	status = dcerpc_bind_auth(p_netlogon, 
+				  DCERPC_NETLOGON_UUID,
+				  DCERPC_NETLOGON_VERSION, 
+				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+				  NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
@@ -249,11 +249,11 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_bind_auth_password(p_lsa, 
-					   DCERPC_LSARPC_UUID,
-					   DCERPC_LSARPC_VERSION, 
-					   credentials, DCERPC_AUTH_TYPE_SCHANNEL,
-					   NULL);
+	status = dcerpc_bind_auth(p_lsa, 
+				  DCERPC_LSARPC_UUID,
+				  DCERPC_LSARPC_VERSION, 
+				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+				  NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;

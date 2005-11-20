@@ -106,12 +106,11 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 		}
 		state->lsa_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 		state->ctx->status =
-			dcerpc_bind_auth_password(state->lsa_pipe,
-						  DCERPC_LSARPC_UUID,
-						  DCERPC_LSARPC_VERSION,
-						  state->creds,
-						  state->auth_type,
-						  NULL);
+			dcerpc_bind_auth(state->lsa_pipe,
+					 DCERPC_LSARPC_UUID,
+					 DCERPC_LSARPC_VERSION,
+					 state->creds, state->auth_type,
+					 NULL);
 		break;
 	default:
 		state->ctx->status = NT_STATUS_INTERNAL_ERROR;

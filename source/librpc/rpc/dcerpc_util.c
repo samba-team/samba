@@ -985,9 +985,9 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		}
 
-		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
-						   credentials, auth_type,
-						   binding->authservice);
+		status = dcerpc_bind_auth(p, pipe_uuid, pipe_version, 
+					  credentials, auth_type,
+					  binding->authservice);
 	} else {
 		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
 	}

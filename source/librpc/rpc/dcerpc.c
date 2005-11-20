@@ -743,10 +743,9 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 }
 
 
-NTSTATUS dcerpc_init_syntaxes(const char *uuid,
+NTSTATUS dcerpc_init_syntaxes(const char *uuid, uint_t version,
 			      struct dcerpc_syntax_id *syntax,
-			      struct dcerpc_syntax_id *transfer_syntax,
-			      uint_t version)
+			      struct dcerpc_syntax_id *transfer_syntax)
 {
 	NTSTATUS status;
 
@@ -772,8 +771,8 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 	struct dcerpc_syntax_id transfer_syntax;
 	NTSTATUS status;
 
-	status = dcerpc_init_syntaxes(uuid, &syntax, &transfer_syntax,
-				      version);
+	status = dcerpc_init_syntaxes(uuid, version,
+				      &syntax, &transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Invalid uuid string in dcerpc_bind_byuuid\n"));
 		return status;

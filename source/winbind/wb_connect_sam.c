@@ -113,12 +113,11 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 		}
 		state->samr_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 		state->ctx->status =
-			dcerpc_bind_auth_password(state->samr_pipe,
-						  DCERPC_SAMR_UUID,
-						  DCERPC_SAMR_VERSION,
-						  state->creds,
-						  state->auth_type,
-						  NULL);
+			dcerpc_bind_auth(state->samr_pipe,
+					 DCERPC_SAMR_UUID,
+					 DCERPC_SAMR_VERSION,
+					 state->creds, state->auth_type,
+					 NULL);
 		break;
 	default:
 		state->ctx->status = NT_STATUS_INTERNAL_ERROR;

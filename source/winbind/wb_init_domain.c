@@ -215,12 +215,12 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	state->domain->netlogon_pipe->conn->flags |=
 		(DCERPC_SIGN | DCERPC_SEAL);
 	state->ctx->status =
-		dcerpc_bind_auth_password(state->domain->netlogon_pipe,
-					  DCERPC_NETLOGON_UUID,
-					  DCERPC_NETLOGON_VERSION, 
-					  state->domain->schannel_creds,
-					  DCERPC_AUTH_TYPE_SCHANNEL,
-					  NULL);
+		dcerpc_bind_auth(state->domain->netlogon_pipe,
+				 DCERPC_NETLOGON_UUID,
+				 DCERPC_NETLOGON_VERSION, 
+				 state->domain->schannel_creds,
+				 DCERPC_AUTH_TYPE_SCHANNEL,
+				 NULL);
 	if (!composite_is_ok(state->ctx)) return;
 
 	ctx = wb_connect_lsa_send(state, state->conn.out.tree,
