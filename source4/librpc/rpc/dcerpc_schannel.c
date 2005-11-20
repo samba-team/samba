@@ -158,8 +158,8 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 		return status;
 	}
 
-	return dcerpc_bind_auth_password(p, uuid, version, 
-					 credentials, DCERPC_AUTH_TYPE_SCHANNEL,
-					 NULL);
+	return dcerpc_bind_auth(p, uuid, version, 
+				credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+				NULL);
 }
 
