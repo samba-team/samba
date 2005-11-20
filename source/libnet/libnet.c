@@ -26,7 +26,6 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 {
 	/* default name resolution methods */
 	const char *nr_methods[] = { "lmhosts", "wins", "host", "bcast", NULL };
-	int nr_count = 0, nr_i;
 
 	struct libnet_context *ctx;
 
@@ -46,15 +45,7 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 	}
 	ctx->event_ctx = ev;
 
-	/* count name resolution methods */
-	while (nr_methods[nr_count]) nr_count++;
-
-	/* assign name resolution methods */
-	ctx->name_res_methods = talloc_array(ctx, char*, nr_count+1);
-	for (nr_i = 0; nr_i < nr_count; nr_i++) {
-		ctx->name_res_methods[nr_i] = talloc_strdup(ctx, nr_methods[nr_i]);
-	}
-	ctx->name_res_methods[nr_i] = NULL;
+	ctx->name_res_methods = str_list_copy(ctx, nr_methods);
 	
 	return ctx;
 }
