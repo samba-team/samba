@@ -36,17 +36,22 @@ static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem
 {
 	NTSTATUS status;
 	const char *binding = NULL;
+
+	/* prepare binding string */
 	switch (r->level) {
+	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
 		binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", r->in.domain_name);
 		break;
+
 	case LIBNET_RPC_CONNECT_BINDING:
 		binding = r->in.binding;
 		break;
 	}
 
+	/* connect to remote dcerpc pipe */
 	status = dcerpc_pipe_connect(mem_ctx, &r->out.dcerpc_pipe,
-				     binding, r->in.dcerpc_iface_uuid,r->in.dcerpc_iface_version,
+				     binding, r->in.dcerpc_iface_uuid, r->in.dcerpc_iface_version,
 				     ctx->cred, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -82,6 +87,7 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 	f.in.methods   = NULL;
 	f.out.address  = NULL;
 
+	/* find the domain pdc first */
 	status = libnet_LookupPdc(ctx, mem_ctx, &f);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx, "libnet_LookupPdc failed: %s",
@@ -89,6 +95,7 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 		return status;
 	}
 
+	/* ok, pdc has been found so do attempt to rpc connect */
 	r2.level		    = LIBNET_RPC_CONNECT_SERVER;
 	r2.in.domain_name	    = talloc_strdup(mem_ctx, f.out.address[0]);
 	r2.in.dcerpc_iface_name     = r->in.dcerpc_iface_name;
@@ -120,8 +127,10 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	switch (r->level) {
 		case LIBNET_RPC_CONNECT_SERVER:
 			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
+
 		case LIBNET_RPC_CONNECT_BINDING:
 			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
+
 		case LIBNET_RPC_CONNECT_PDC:
 			return libnet_RpcConnectPdc(ctx, mem_ctx, r);
 	}
