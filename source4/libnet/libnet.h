@@ -33,7 +33,7 @@ struct libnet_context {
 	struct policy_handle user_handle;
 
 	/* name resolution methods */
-	char **name_res_methods;
+	const char **name_res_methods;
 
 	struct event_context *event_ctx;
 };
