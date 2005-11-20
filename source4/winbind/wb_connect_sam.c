@@ -46,6 +46,8 @@ struct connect_samr_state {
 };
 
 static void connect_samr_recv_pipe(struct composite_context *ctx);
+static void connect_samr_recv_anon_bind(struct composite_context *ctx);
+static void connect_samr_recv_auth_bind(struct composite_context *ctx);
 static void connect_samr_recv_conn(struct rpc_request *req);
 static void connect_samr_recv_open(struct rpc_request *req);
 
@@ -93,17 +95,17 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 	struct connect_samr_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct connect_samr_state);
-	struct rpc_request *req;
 
 	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!composite_is_ok(state->ctx)) return;
 
 	switch (state->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
-		state->ctx->status =
-			dcerpc_bind_auth_none(state->samr_pipe,
-					      DCERPC_SAMR_UUID,
-					      DCERPC_SAMR_VERSION);
+		ctx = dcerpc_bind_auth_none_send(state, state->samr_pipe,
+						 DCERPC_SAMR_UUID,
+						 DCERPC_SAMR_VERSION);
+		composite_continue(state->ctx, ctx,
+				   connect_samr_recv_anon_bind, state);
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
@@ -112,17 +114,51 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 			return;
 		}
 		state->samr_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
-		state->ctx->status =
-			dcerpc_bind_auth(state->samr_pipe,
-					 DCERPC_SAMR_UUID,
-					 DCERPC_SAMR_VERSION,
-					 state->creds, state->auth_type,
-					 NULL);
+		ctx = dcerpc_bind_auth_send(state, state->samr_pipe,
+					    DCERPC_SAMR_UUID,
+					    DCERPC_SAMR_VERSION,
+					    state->creds, state->auth_type,
+					    NULL);
+		composite_continue(state->ctx, ctx,
+				   connect_samr_recv_auth_bind, state);
 		break;
 	default:
-		state->ctx->status = NT_STATUS_INTERNAL_ERROR;
-		
+		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
 	}
+}
+
+static void connect_samr_recv_anon_bind(struct composite_context *ctx)
+{
+	struct connect_samr_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct connect_samr_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_bind_auth_none_recv(ctx);
+	if (!composite_is_ok(state->ctx)) return;
+			
+	state->connect_handle = talloc(state, struct policy_handle);
+	if (composite_nomem(state->connect_handle, state->ctx)) return;
+
+	state->c.in.system_name =
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->samr_pipe));
+	state->c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->c.out.connect_handle = state->connect_handle;
+
+	req = dcerpc_samr_Connect2_send(state->samr_pipe, state, &state->c);
+	composite_continue_rpc(state->ctx, req, connect_samr_recv_conn, state);
+}
+
+static void connect_samr_recv_auth_bind(struct composite_context *ctx)
+{
+	struct connect_samr_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct connect_samr_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_bind_auth_recv(ctx);
+	if (!composite_is_ok(state->ctx)) return;
 			
 	state->connect_handle = talloc(state, struct policy_handle);
 	if (composite_nomem(state->connect_handle, state->ctx)) return;
