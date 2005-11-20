@@ -147,9 +147,9 @@ static void socket_connect_recv_addr(struct composite_context *ctx)
 {
 	struct connect_state *state =
 		talloc_get_type(ctx->async.private_data, struct connect_state);
+	const char *addr;
 
-	state->ctx->status = resolve_name_recv(ctx, state,
-					       &state->server_address);
+	state->ctx->status = resolve_name_recv(ctx, state, &addr);
 	if (!composite_is_ok(state->ctx)) return;
 
 	ctx = talloc_zero(state, struct composite_context);
