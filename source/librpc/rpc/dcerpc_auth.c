@@ -42,8 +42,8 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
-	c->status = dcerpc_init_syntaxes(uuid, &syntax, &transfer_syntax,
-					 version);
+	c->status = dcerpc_init_syntaxes(uuid, version,
+					 &syntax, &transfer_syntax);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(2,("Invalid uuid string in "
 			 "dcerpc_bind_auth_none_send\n"));
@@ -70,173 +70,227 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 	return dcerpc_bind_auth_none_recv(ctx);
 }
 
-/*
-  perform a multi-part authenticated bind
-*/
-static NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth_level,
-				 const char *uuid, uint_t version)
-{
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(p);
+struct bind_auth_state {
+	struct dcerpc_pipe *pipe;
 	DATA_BLOB credentials;
-	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	BOOL more_processing;
+};
 
-	int num_passes = 0;
+static void bind_auth_recv_alter(struct composite_context *creq);
 
-	if (!p->conn->security_state.generic_state) {
-		status = gensec_client_start(p, &p->conn->security_state.generic_state,
-					     p->conn->event_ctx);
-		if (!NT_STATUS_IS_OK(status)) goto done;
+static void bind_auth_next_step(struct composite_context *c)
+{
+	struct bind_auth_state *state =
+		talloc_get_type(c->private_data, struct bind_auth_state);
+	struct dcerpc_security *sec = &state->pipe->conn->security_state;
+	struct composite_context *creq;
+	BOOL more_processing = False;
 
-		status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
-						       auth_type, auth_level);
-		if (!NT_STATUS_IS_OK(status)) goto done;
+	c->status = gensec_update(sec->generic_state, state,
+				  sec->auth_info->credentials,
+				  &state->credentials);
+
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		more_processing = True;
+		c->status = NT_STATUS_OK;
 	}
 
-	p->conn->security_state.auth_info = talloc(p, struct dcerpc_auth);
-	if (!p->conn->security_state.auth_info) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
+	if (!composite_is_ok(c)) return;
+
+	if (state->credentials.length == 0) {
+		composite_done(c);
+		return;
 	}
 
-	p->conn->security_state.auth_info->auth_type = auth_type;
-	p->conn->security_state.auth_info->auth_level = auth_level;
-	p->conn->security_state.auth_info->auth_pad_length = 0;
-	p->conn->security_state.auth_info->auth_reserved = 0;
-	p->conn->security_state.auth_info->auth_context_id = random();
-	p->conn->security_state.auth_info->credentials = null_data_blob;
+	sec->auth_info->credentials = state->credentials;
 
-	while (1) {
-		num_passes++;
-		status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
-				       p->conn->security_state.auth_info->credentials,
-				       &credentials);
-
-		/* The status value here, from GENSEC is vital to the security
-		 * of the system.  Even if the other end accepts, if GENSEC
-		 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
-		 * feeding it blobs, or else the remote host/attacker might
-		 * avoid mutal authentication requirements.
-		 *
-		 * Likewise, you must not feed GENSEC too much (after the OK),
-		 * it doesn't like that either
-		 */
-
-		if (!NT_STATUS_IS_OK(status) 
-		    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(1, ("Failed DCERPC client gensec_update with mechanism %s: %s\n",
-				  gensec_get_name_by_authtype(auth_type), nt_errstr(status)));
-
-			break;
-		}
-
-		if (!credentials.length) {
-			break;
-		}
-
-		p->conn->security_state.auth_info->credentials = credentials;
-		
-		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			if (num_passes == 1) {
-				status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
-			} else {
-				/* We are demanding a reply, so use a request that will get us one */
-				status = dcerpc_alter_context(p, tmp_ctx, &p->syntax, &p->transfer_syntax);
-			}
-			if (!NT_STATUS_IS_OK(status)) {
-				break;
-			}
-		} else if (NT_STATUS_IS_OK(status)) {
-			/* NO reply expected, so just send it */
-			if (num_passes == 1) {
-				status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
-			} else {
-				status = dcerpc_auth3(p->conn, tmp_ctx);
-			}
-			break;
-		} else {
-			break;
-		}
-	};
-
-done:
-	talloc_free(tmp_ctx);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p->conn->security_state.generic_state);
-		ZERO_STRUCT(p->conn->security_state);
-	} else {
-		/* Authenticated connections use the generic session key */
-		p->conn->security_state.session_key = dcerpc_generic_session_key;
+	if (!more_processing) {
+		/* NO reply expected, so just send it */
+		c->status = dcerpc_auth3(state->pipe->conn, state);
+		if (!composite_is_ok(c)) return;
+		composite_done(c);
+		return;
 	}
 
-	return status;
+	creq = dcerpc_alter_context_send(state->pipe, state,
+					 &state->pipe->syntax,
+					 &state->pipe->transfer_syntax);
+	composite_continue(c, creq, bind_auth_recv_alter, c);
+}
+
+static void bind_auth_recv_alter(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+
+	c->status = dcerpc_alter_context_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	bind_auth_next_step(c);
+}
+
+static void bind_auth_recv_bindreply(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct bind_auth_state *state =
+		talloc_get_type(c->private_data, struct bind_auth_state);
+
+	c->status = dcerpc_bind_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	if (!state->more_processing) {
+		composite_done(c);
+		return;
+	}
+
+	bind_auth_next_step(c);
+}
+
+static struct composite_context *dcerpc_bind_auth_send(struct dcerpc_pipe *p,
+						       TALLOC_CTX *mem_ctx,
+						       const char *uuid, uint_t version,
+						       struct cli_credentials *credentials,
+						       uint8_t auth_type,
+						       const char *service)
+{
+	struct composite_context *c, *creq;
+	struct bind_auth_state *state;
+	struct dcerpc_security *sec;
+
+	struct dcerpc_syntax_id syntax, transfer_syntax;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct bind_auth_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = p->conn->event_ctx;
+
+	state->pipe = p;
+
+	c->status = dcerpc_init_syntaxes(uuid, version,
+					 &syntax,
+					 &transfer_syntax);
+	if (!NT_STATUS_IS_OK(c->status)) goto failed;
+
+	sec = &p->conn->security_state;
+
+	c->status = gensec_client_start(p, &sec->generic_state,
+					p->conn->event_ctx);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(1, ("Failed to start GENSEC client mode: %s\n",
+			  nt_errstr(c->status)));
+		goto failed;
+	}
+
+	c->status = gensec_set_credentials(sec->generic_state, credentials);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(1, ("Failed to set GENSEC client credentails: %s\n",
+			  nt_errstr(c->status)));
+		goto failed;
+	}
+
+	c->status = gensec_set_target_hostname(
+		sec->generic_state, p->conn->transport.peer_name(p->conn));
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(1, ("Failed to set GENSEC target hostname: %s\n", 
+			  nt_errstr(c->status)));
+		goto failed;
+	}
+
+	if (service != NULL) {
+		c->status = gensec_set_target_service(sec->generic_state,
+						      service);
+		if (!NT_STATUS_IS_OK(c->status)) {
+			DEBUG(1, ("Failed to set GENSEC target service: %s\n",
+				  nt_errstr(c->status)));
+			goto failed;
+		}
+	}
+
+	c->status = gensec_start_mech_by_authtype(sec->generic_state,
+						  auth_type,
+						  dcerpc_auth_level(p->conn));
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(1, ("Failed to start GENSEC client mechanism %s: %s\n",
+			  gensec_get_name_by_authtype(auth_type),
+			  nt_errstr(c->status)));
+		goto failed;
+	}
+
+	sec->auth_info = talloc(p, struct dcerpc_auth);
+	if (sec->auth_info == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	sec->auth_info->auth_type = auth_type;
+	sec->auth_info->auth_level = dcerpc_auth_level(p->conn);
+	sec->auth_info->auth_pad_length = 0;
+	sec->auth_info->auth_reserved = 0;
+	sec->auth_info->auth_context_id = random();
+	sec->auth_info->credentials = data_blob(NULL, 0);
+
+	c->status = gensec_update(sec->generic_state, state,
+				  sec->auth_info->credentials,
+				  &state->credentials);
+	if (!NT_STATUS_IS_OK(c->status) &&
+	    !NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		goto failed;
+	}
+
+	state->more_processing =
+		NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED);
+
+	if (state->credentials.length == 0) {
+		composite_trigger_done(c);
+		return c;
+	}
+
+	sec->auth_info->credentials = state->credentials;
+
+	creq = dcerpc_bind_send(p, state, &syntax, &transfer_syntax);
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq->async.fn = bind_auth_recv_bindreply;
+	creq->async.private_data = c;
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+static NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
+{
+	NTSTATUS result = composite_wait(creq);
+	talloc_free(creq);
+	return result;
 }
 
 /*
   setup GENSEC on a DCE-RPC pipe
 */
-NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
-				   const char *uuid, uint_t version,
-				   struct cli_credentials *credentials,
-				   uint8_t auth_type,
-				   const char *service)
+NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
+			  const char *uuid, uint_t version,
+			  struct cli_credentials *credentials,
+			  uint8_t auth_type,
+			  const char *service)
 {
-	NTSTATUS status;
-
-	if (!(p->conn->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
-		p->conn->flags |= DCERPC_CONNECT;
-	}
-
-	status = gensec_client_start(p, &p->conn->security_state.generic_state,
-				     p->conn->event_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
-		return status;
-	}
-
-	status = gensec_set_credentials(p->conn->security_state.generic_state, 
-					credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client credentails: %s\n", 
-			  nt_errstr(status)));
-		return status;
-	}
-
-	status = gensec_set_target_hostname(p->conn->security_state.generic_state, 
-					    p->conn->transport.peer_name(p->conn));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
-			  nt_errstr(status)));
-		return status;
-	}
-
-	if (service) {
-		status = gensec_set_target_service(p->conn->security_state.generic_state, service);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
-				  nt_errstr(status)));
-			return status;
-		}
-	}
-
-	status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
-					       auth_type,
-					       dcerpc_auth_level(p->conn));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client mechanism %s: %s\n",
-			  gensec_get_name_by_authtype(auth_type), nt_errstr(status)));
-		return status;
-	}
-	
-	status = dcerpc_bind_auth(p, auth_type,
-				  dcerpc_auth_level(p->conn),
-				  uuid, version);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("Failed to bind to pipe with %s: %s\n", 
-			  gensec_get_name_by_authtype(auth_type), nt_errstr(status)));
-		return status;
-	}
-
-	return status;
+	struct composite_context *creq;
+	creq = dcerpc_bind_auth_send(p, p, uuid, version, credentials,
+				     auth_type, service);
+	return dcerpc_bind_auth_recv(creq);
 }
