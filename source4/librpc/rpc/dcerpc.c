@@ -582,7 +582,7 @@ static void bind_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
 	if (conn->security_state.auth_info &&
 	    state->pkt.u.bind_ack.auth_info.length) {
 		c->status = ndr_pull_struct_blob(
-			&state->pkt.u.bind_ack.auth_info, state,
+			&state->pkt.u.bind_ack.auth_info, conn,
 			conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!composite_is_ok(c)) return;
@@ -659,7 +659,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	state->pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&state->blob, mem_ctx, &state->pkt,
+	c->status = ncacn_push_auth(&state->blob, state, &state->pkt,
 				    p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto failed;
