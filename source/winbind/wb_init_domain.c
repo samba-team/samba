@@ -77,6 +77,7 @@ struct init_domain_state {
 static void init_domain_recv_tree(struct composite_context *ctx);
 static void init_domain_recv_netlogoncreds(struct composite_context *ctx);
 static void init_domain_recv_netlogonpipe(struct composite_context *ctx);
+static void init_domain_recv_schannel(struct composite_context *ctx);
 static void init_domain_recv_lsa(struct composite_context *ctx);
 static void init_domain_recv_queryinfo(struct rpc_request *req);
 static void init_domain_recv_ldapconn(struct composite_context *ctx);
@@ -214,13 +215,22 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 
 	state->domain->netlogon_pipe->conn->flags |=
 		(DCERPC_SIGN | DCERPC_SEAL);
-	state->ctx->status =
-		dcerpc_bind_auth(state->domain->netlogon_pipe,
-				 DCERPC_NETLOGON_UUID,
-				 DCERPC_NETLOGON_VERSION, 
-				 state->domain->schannel_creds,
-				 DCERPC_AUTH_TYPE_SCHANNEL,
-				 NULL);
+	ctx = dcerpc_bind_auth_send(state, state->domain->netlogon_pipe,
+				    DCERPC_NETLOGON_UUID,
+				    DCERPC_NETLOGON_VERSION, 
+				    state->domain->schannel_creds,
+				    DCERPC_AUTH_TYPE_SCHANNEL,
+				    NULL);
+	composite_continue(state->ctx, ctx, init_domain_recv_schannel, state);
+}
+
+static void init_domain_recv_schannel(struct composite_context *ctx)
+{
+	struct init_domain_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct init_domain_state);
+
+	state->ctx->status = dcerpc_bind_auth_recv(ctx);
 	if (!composite_is_ok(state->ctx)) return;
 
 	ctx = wb_connect_lsa_send(state, state->conn.out.tree,
