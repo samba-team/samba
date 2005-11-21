@@ -246,41 +246,16 @@ static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
 }
 
 /* 
-   parse a possibly signed blob into a dcerpc request packet structure
+   parse the authentication information on a dcerpc response packet
 */
-static NTSTATUS ncacn_pull_request_sign(struct dcerpc_connection *c, 
-					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-					 struct ncacn_packet *pkt)
+static NTSTATUS ncacn_pull_request_auth(struct dcerpc_connection *c, TALLOC_CTX *mem_ctx, 
+					DATA_BLOB *raw_packet,
+					struct ncacn_packet *pkt)
 {
 	struct ndr_pull *ndr;
 	NTSTATUS status;
 	struct dcerpc_auth auth;
 	DATA_BLOB auth_blob;
-
-	/* non-signed packets are simpler */
-	if (!c->security_state.auth_info || 
-	    !c->security_state.generic_state) {
-		return ncacn_pull(c, blob, mem_ctx, pkt);
-	}
-
-	ndr = ndr_pull_init_flags(c, blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (! (CVAL(blob->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	/* pull the basic packet */
-	status = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (pkt->ptype != DCERPC_PKT_RESPONSE) {
-		return status;
-	}
 
 	if (pkt->auth_length == 0 &&
 	    c->security_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
@@ -305,7 +280,7 @@ static NTSTATUS ncacn_pull_request_sign(struct dcerpc_connection *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
@@ -320,13 +295,13 @@ static NTSTATUS ncacn_pull_request_sign(struct dcerpc_connection *c,
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(c->security_state.generic_state, 
 					      mem_ctx, 
-					      blob->data + DCERPC_REQUEST_LENGTH,
+					      raw_packet->data + DCERPC_REQUEST_LENGTH,
 					      pkt->u.response.stub_and_verifier.length, 
-					      blob->data,
-					      blob->length - auth.credentials.length,
+					      raw_packet->data,
+					      raw_packet->length - auth.credentials.length,
 					      &auth.credentials);
 		memcpy(pkt->u.response.stub_and_verifier.data,
-		       blob->data + DCERPC_REQUEST_LENGTH,
+		       raw_packet->data + DCERPC_REQUEST_LENGTH,
 		       pkt->u.response.stub_and_verifier.length);
 		break;
 		
@@ -335,8 +310,8 @@ static NTSTATUS ncacn_pull_request_sign(struct dcerpc_connection *c,
 					     mem_ctx, 
 					     pkt->u.response.stub_and_verifier.data, 
 					     pkt->u.response.stub_and_verifier.length, 
-					     blob->data,
-					     blob->length - auth.credentials.length,
+					     raw_packet->data,
+					     raw_packet->length - auth.credentials.length,
 					     &auth.credentials);
 		break;
 
@@ -528,61 +503,128 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-struct dcerpc_request_state {
-	struct dcerpc_pipe *pipe;
+/*
+  mark the dcerpc connection dead. All outstanding requests get an error
+*/
+static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status)
+{
+	/* all pending requests get the error */
+	while (conn->pending) {
+		struct rpc_request *req = conn->pending;
+		req->state = RPC_REQUEST_DONE;
+		req->status = status;
+		DLIST_REMOVE(conn->pending, req);
+		if (req->async.callback) {
+			req->async.callback(req);
+		}
+	}	
+
+	if (conn->bind_private) {
+		/* a bind was in flight - fail it */
+		struct composite_context *c = talloc_get_type(conn->bind_private, struct composite_context);
+		composite_error(c, status);		
+	}
+
+	if (conn->alter_private) {
+		/* a alter context was in flight - fail it */
+		struct composite_context *c = talloc_get_type(conn->alter_private, struct composite_context);
+		composite_error(c, status);		
+	}
+}
+
+/*
+  forward declarations of the recv_data handlers for the 3 types of packets we need
+  to handle
+*/
+static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt);
+static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt);
+static void dcerpc_request_recv_data(struct dcerpc_connection *c, 
+				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt);
+
+/*
+  receive a dcerpc reply from the transport. Here we work out what
+  type of reply it is (normal request, bind or alter context) and
+  dispatch to the appropriate handler
+*/
+static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NTSTATUS status)
+{
 	struct ncacn_packet pkt;
-	DATA_BLOB blob;
-};
+
+	/* the transport may be telling us of a severe error, such as
+	   a dropped socket */
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(blob);
+		dcerpc_connection_dead(conn, status);
+	}
+
+	/* parse the basic packet to work out what type of response this is */
+	status = ncacn_pull(conn, blob, blob->data, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(blob);
+		dcerpc_connection_dead(conn, status);
+	}
+
+	switch (pkt.ptype) {
+	case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_BIND_NAK:
+		dcerpc_bind_recv_data(conn, &pkt);
+		break;
+
+	case DCERPC_PKT_ALTER_RESP:
+		dcerpc_alter_recv_data(conn, &pkt);
+		break;
+
+	default:
+		/* assume its an ordinary request */
+		dcerpc_request_recv_data(conn, blob, &pkt);
+		break;
+	}
+
+	data_blob_free(blob);
+}
+
 
 /*
   Receive a bind reply from the transport
 */
-
-static void bind_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
-			      NTSTATUS status)
+static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt)
 {
 	struct composite_context *c;
-	struct dcerpc_request_state *state;
+	struct dcerpc_pipe *pipe;
 
-	if (conn->full_request_private == NULL) {
+	if (conn->bind_private == NULL) {
 		/* it timed out earlier */
 		return;
 	}
-	c = talloc_get_type(conn->full_request_private,
-			    struct composite_context);
-	state = talloc_get_type(c->private_data, struct dcerpc_request_state);
+	c = talloc_get_type(conn->bind_private, struct composite_context);
+	pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		composite_error(c, status);
-		return;
-	}
+	/* mark the connection as not waiting for a bind reply */
+	conn->bind_private = NULL;
 
-	c->status = ncacn_pull(conn, blob, state, &state->pkt);
-	if (!composite_is_ok(c)) return;
-
-	if (state->pkt.ptype == DCERPC_PKT_BIND_NAK) {
+	if (pkt->ptype == DCERPC_PKT_BIND_NAK) {
 		DEBUG(2,("dcerpc: bind_nak reason %d\n",
-			 state->pkt.u.bind_nak.reject_reason));
-		composite_error(c, dcerpc_map_reason(state->pkt.u.bind_nak.
+			 pkt->u.bind_nak.reject_reason));
+		composite_error(c, dcerpc_map_reason(pkt->u.bind_nak.
 						     reject_reason));
 		return;
 	}
 
-	if ((state->pkt.ptype != DCERPC_PKT_BIND_ACK) ||
-	    (state->pkt.u.bind_ack.num_results == 0) ||
-	    (state->pkt.u.bind_ack.ctx_list[0].result != 0)) {
+	if ((pkt->ptype != DCERPC_PKT_BIND_ACK) ||
+	    (pkt->u.bind_ack.num_results == 0) ||
+	    (pkt->u.bind_ack.ctx_list[0].result != 0)) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
 
-	conn->srv_max_xmit_frag = state->pkt.u.bind_ack.max_xmit_frag;
-	conn->srv_max_recv_frag = state->pkt.u.bind_ack.max_recv_frag;
+	conn->srv_max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
+	conn->srv_max_recv_frag = pkt->u.bind_ack.max_recv_frag;
 
 	/* the bind_ack might contain a reply set of credentials */
 	if (conn->security_state.auth_info &&
-	    state->pkt.u.bind_ack.auth_info.length) {
+	    pkt->u.bind_ack.auth_info.length) {
 		c->status = ndr_pull_struct_blob(
-			&state->pkt.u.bind_ack.auth_info, conn,
+			&pkt->u.bind_ack.auth_info, conn,
 			conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!composite_is_ok(c)) return;
@@ -600,75 +642,69 @@ static void bind_timeout_handler(struct event_context *ev,
 {
 	struct composite_context *ctx =
 		talloc_get_type(private, struct composite_context);
-	struct dcerpc_request_state *state =
-		talloc_get_type(ctx->private_data,
-				struct dcerpc_request_state);
+	struct dcerpc_pipe *pipe = talloc_get_type(ctx->private_data, struct dcerpc_pipe);
 
-	SMB_ASSERT(state->pipe->conn->full_request_private != NULL);
-	state->pipe->conn->full_request_private = NULL;
+	SMB_ASSERT(pipe->conn->bind_private != NULL);
+	pipe->conn->bind_private = NULL;
 	composite_error(ctx, NT_STATUS_IO_TIMEOUT);
 }
 
+/*
+  send a async dcerpc bind request
+*/
 struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 					   TALLOC_CTX *mem_ctx,
 					   const struct dcerpc_syntax_id *syntax,
 					   const struct dcerpc_syntax_id *transfer_syntax)
 {
 	struct composite_context *c;
-	struct dcerpc_request_state *state;
+	struct ncacn_packet pkt;
+	DATA_BLOB blob;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
-	state = talloc(c, struct dcerpc_request_state);
-	if (state == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = state;
+	c->private_data = p;
 	c->event_ctx = p->conn->event_ctx;
-
-	state->pipe = p;
 
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
-	init_ncacn_hdr(p->conn, &state->pkt);
+	init_ncacn_hdr(p->conn, &pkt);
 
-	state->pkt.ptype = DCERPC_PKT_BIND;
-	state->pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	state->pkt.call_id = p->conn->call_id;
-	state->pkt.auth_length = 0;
+	pkt.ptype = DCERPC_PKT_BIND;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.call_id = p->conn->call_id;
+	pkt.auth_length = 0;
 
-	state->pkt.u.bind.max_xmit_frag = 5840;
-	state->pkt.u.bind.max_recv_frag = 5840;
-	state->pkt.u.bind.assoc_group_id = 0;
-	state->pkt.u.bind.num_contexts = 1;
-	state->pkt.u.bind.ctx_list =
+	pkt.u.bind.max_xmit_frag = 5840;
+	pkt.u.bind.max_recv_frag = 5840;
+	pkt.u.bind.assoc_group_id = 0;
+	pkt.u.bind.num_contexts = 1;
+	pkt.u.bind.ctx_list =
 		talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
-	if (state->pkt.u.bind.ctx_list == NULL) {
+	if (pkt.u.bind.ctx_list == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
-	state->pkt.u.bind.ctx_list[0].context_id = p->context_id;
-	state->pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
-	state->pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
-	state->pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
-	state->pkt.u.bind.auth_info = data_blob(NULL, 0);
+	pkt.u.bind.ctx_list[0].context_id = p->context_id;
+	pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
+	pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
+	pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&state->blob, state, &state->pkt,
+	c->status = ncacn_push_auth(&blob, c, &pkt,
 				    p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto failed;
 	}
 
-	p->conn->transport.recv_data = bind_request_recv;
-	p->conn->full_request_private = c;
+	p->conn->transport.recv_data = dcerpc_recv_data;
+	p->conn->bind_private = c;
 
-	c->status = p->conn->transport.send_request(p->conn, &state->blob,
+	c->status = p->conn->transport.send_request(p->conn, &blob,
 						    True);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto failed;
@@ -685,6 +721,9 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	return c;
 }
 
+/*
+  recv side of async dcerpc bind request
+*/
 NTSTATUS dcerpc_bind_recv(struct composite_context *ctx)
 {
 	NTSTATUS result = composite_wait(ctx);
@@ -743,6 +782,9 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 }
 
 
+/*
+  return the rpc syntax and transfer syntax given the pipe uuid and version
+*/
 NTSTATUS dcerpc_init_syntaxes(const char *uuid, uint_t version,
 			      struct dcerpc_syntax_id *syntax,
 			      struct dcerpc_syntax_id *transfer_syntax)
@@ -789,67 +831,58 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
   This function frees the data 
 */
 static void dcerpc_request_recv_data(struct dcerpc_connection *c, 
-				     DATA_BLOB *data,
-				     NTSTATUS status)
+				     DATA_BLOB *raw_packet, struct ncacn_packet *pkt)
 {
-	struct ncacn_packet pkt;
 	struct rpc_request *req;
 	uint_t length;
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(data);
+	NTSTATUS status = NT_STATUS_OK;
 
-		/* all pending requests get the error */
-		while (c->pending) {
-			req = c->pending;
-			req->state = RPC_REQUEST_DONE;
-			req->status = status;
-			DLIST_REMOVE(c->pending, req);
-			if (req->async.callback) {
-				req->async.callback(req);
-			}
-		}
-		return;
+	/*
+	  if this is an authenticated connection then parse and check
+	  the auth info. We have to do this before finding the
+	  matching packet, as the request structure might have been
+	  removed due to a timeout, but if it has been we still need
+	  to run the auth routines so that we don't get the sign/seal
+	  info out of step with the server
+	*/
+	if (c->security_state.auth_info && c->security_state.generic_state &&
+	    pkt->ptype == DCERPC_PKT_RESPONSE) {
+		status = ncacn_pull_request_auth(c, raw_packet->data, raw_packet, pkt);
 	}
 
-	pkt.call_id = 0;
-
-	status = ncacn_pull_request_sign(c, data, data->data, &pkt);
-
-	/* find the matching request. Notice we match before we check
-	   the status.  this is ok as a pending call_id can never be
-	   zero */
+	/* find the matching request */
 	for (req=c->pending;req;req=req->next) {
-		if (pkt.call_id == req->call_id) break;
+		if (pkt->call_id == req->call_id) break;
 	}
 
 	if (req == NULL) {
-		DEBUG(2,("dcerpc_request: unmatched call_id %u in response packet\n", pkt.call_id));
-		data_blob_free(data);
+		DEBUG(2,("dcerpc_request: unmatched call_id %u in response packet\n", pkt->call_id));
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		req->status = status;
-		goto req_done;
-	}
-
-	if (pkt.ptype == DCERPC_PKT_FAULT) {
-		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt.u.fault.status)));
-		req->fault_code = pkt.u.fault.status;
+	if (pkt->ptype == DCERPC_PKT_FAULT) {
+		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt->u.fault.status)));
+		req->fault_code = pkt->u.fault.status;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		goto req_done;
 	}
 
-	if (pkt.ptype != DCERPC_PKT_RESPONSE) {
+	if (pkt->ptype != DCERPC_PKT_RESPONSE) {
 		DEBUG(2,("Unexpected packet type %d in dcerpc response\n",
-			 (int)pkt.ptype)); 
+			 (int)pkt->ptype)); 
 		req->fault_code = DCERPC_FAULT_OTHER;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		goto req_done;
 	}
 
-	length = pkt.u.response.stub_and_verifier.length;
+	/* now check the status from the auth routines, and if it failed then fail
+	   this request accordingly */
+	if (!NT_STATUS_IS_OK(status)) {
+		req->status = status;
+		goto req_done;
+	}
+
+	length = pkt->u.response.stub_and_verifier.length;
 
 	if (length > 0) {
 		req->payload.data = talloc_realloc(req, 
@@ -861,17 +894,16 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 			goto req_done;
 		}
 		memcpy(req->payload.data+req->payload.length, 
-		       pkt.u.response.stub_and_verifier.data, length);
+		       pkt->u.response.stub_and_verifier.data, length);
 		req->payload.length += length;
 	}
 
-	if (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+	if (!(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		c->transport.send_read(c);
-		data_blob_free(data);
 		return;
 	}
 
-	if (!(pkt.drep[0] & DCERPC_DREP_LE)) {
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
 		req->flags |= DCERPC_PULL_BIGENDIAN;
 	} else {
 		req->flags &= ~DCERPC_PULL_BIGENDIAN;
@@ -882,7 +914,6 @@ req_done:
 	/* we've got the full payload */
 	req->state = RPC_REQUEST_DONE;
 	DLIST_REMOVE(c->pending, req);
-	data_blob_free(data);
 
 	if (c->request_queue != NULL) {
 		/* We have to look at shipping further requests before calling
@@ -937,7 +968,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 {
 	struct rpc_request *req;
 
-	p->conn->transport.recv_data = dcerpc_request_recv_data;
+	p->conn->transport.recv_data = dcerpc_recv_data;
 
 	req = talloc(p, struct rpc_request);
 	if (req == NULL) {
@@ -1487,52 +1518,44 @@ uint32_t dcerpc_auth_level(struct dcerpc_connection *c)
 /*
   Receive an alter reply from the transport
 */
-static void alter_request_recv(struct dcerpc_connection *conn, DATA_BLOB *blob,
-			       NTSTATUS status)
+static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_packet *pkt)
 {
 	struct composite_context *c;
-	struct dcerpc_request_state *state;
+	struct dcerpc_pipe *pipe;
 
-	if (conn->full_request_private == NULL) {
+	if (conn->alter_private == NULL) {
 		/* it timed out earlier */
 		return;
 	}
 
-	c = talloc_get_type(conn->full_request_private,
-			    struct composite_context);
-	state = talloc_get_type(c->private_data, struct dcerpc_request_state);
+	c = talloc_get_type(conn->alter_private, struct composite_context);
+	pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		composite_error(c, status);
-		return;
-	}
+	/* mark the connection as not waiting for a alter context reply */
+	conn->alter_private = NULL;
 
-	/* unmarshall the NDR */
-	c->status = ncacn_pull(state->pipe->conn, blob, state, &state->pkt);
-	if (!composite_is_ok(c)) return;
-
-	if (state->pkt.ptype == DCERPC_PKT_ALTER_RESP &&
-	    state->pkt.u.alter_resp.num_results == 1 &&
-	    state->pkt.u.alter_resp.ctx_list[0].result != 0) {
+	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
+	    pkt->u.alter_resp.num_results == 1 &&
+	    pkt->u.alter_resp.ctx_list[0].result != 0) {
 		DEBUG(2,("dcerpc: alter_resp failed - reason %d\n", 
-			 state->pkt.u.alter_resp.ctx_list[0].reason));
-		composite_error(c, dcerpc_map_reason(state->pkt.u.alter_resp.ctx_list[0].reason));
+			 pkt->u.alter_resp.ctx_list[0].reason));
+		composite_error(c, dcerpc_map_reason(pkt->u.alter_resp.ctx_list[0].reason));
 		return;
 	}
 
-	if (state->pkt.ptype != DCERPC_PKT_ALTER_RESP ||
-	    state->pkt.u.alter_resp.num_results == 0 ||
-	    state->pkt.u.alter_resp.ctx_list[0].result != 0) {
+	if (pkt->ptype != DCERPC_PKT_ALTER_RESP ||
+	    pkt->u.alter_resp.num_results == 0 ||
+	    pkt->u.alter_resp.ctx_list[0].result != 0) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
 
 	/* the alter_resp might contain a reply set of credentials */
-	if (state->pipe->conn->security_state.auth_info &&
-	    state->pkt.u.alter_resp.auth_info.length) {
+	if (pipe->conn->security_state.auth_info &&
+	    pkt->u.alter_resp.auth_info.length) {
 		c->status = ndr_pull_struct_blob(
-			&state->pkt.u.alter_resp.auth_info, state,
-			state->pipe->conn->security_state.auth_info,
+			&pkt->u.alter_resp.auth_info, c,
+			pipe->conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!composite_is_ok(c)) return;
 	}
@@ -1549,61 +1572,53 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 						    const struct dcerpc_syntax_id *transfer_syntax)
 {
 	struct composite_context *c;
-	struct dcerpc_request_state *state;
+	struct ncacn_packet pkt;
+	DATA_BLOB blob;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
-	state = talloc(c, struct dcerpc_request_state);
-	if (state == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data = state;
+	c->private_data = p;
 	c->event_ctx = p->conn->event_ctx;
-
-	state->pipe = p;
 
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
-	init_ncacn_hdr(p->conn, &state->pkt);
+	init_ncacn_hdr(p->conn, &pkt);
 
-	state->pkt.ptype = DCERPC_PKT_ALTER;
-	state->pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	state->pkt.call_id = p->conn->call_id;
-	state->pkt.auth_length = 0;
+	pkt.ptype = DCERPC_PKT_ALTER;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.call_id = p->conn->call_id;
+	pkt.auth_length = 0;
 
-	state->pkt.u.alter.max_xmit_frag = 5840;
-	state->pkt.u.alter.max_recv_frag = 5840;
-	state->pkt.u.alter.assoc_group_id = 0;
-	state->pkt.u.alter.num_contexts = 1;
-	state->pkt.u.alter.ctx_list = talloc_array(mem_ctx,
+	pkt.u.alter.max_xmit_frag = 5840;
+	pkt.u.alter.max_recv_frag = 5840;
+	pkt.u.alter.assoc_group_id = 0;
+	pkt.u.alter.num_contexts = 1;
+	pkt.u.alter.ctx_list = talloc_array(mem_ctx,
 						   struct dcerpc_ctx_list, 1);
-	if (state->pkt.u.alter.ctx_list == NULL) {
+	if (pkt.u.alter.ctx_list == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
-	state->pkt.u.alter.ctx_list[0].context_id = p->context_id;
-	state->pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
-	state->pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
-	state->pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
-	state->pkt.u.alter.auth_info = data_blob(NULL, 0);
+	pkt.u.alter.ctx_list[0].context_id = p->context_id;
+	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
+	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
+	pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	pkt.u.alter.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&state->blob, mem_ctx, &state->pkt,
+	c->status = ncacn_push_auth(&blob, mem_ctx, &pkt,
 				    p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto failed;
 	}
 
-	p->conn->transport.recv_data = alter_request_recv;
-	p->conn->full_request_private = c;
+	p->conn->transport.recv_data = dcerpc_recv_data;
+	p->conn->alter_private = c;
 
-	c->status = p->conn->transport.send_request(p->conn, &state->blob,
-						    True);
+	c->status = p->conn->transport.send_request(p->conn, &blob, True);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto failed;
 	}
