@@ -36,19 +36,23 @@
 #include "libcli/wrepl/winsrepl.h"
 
 enum _R_ACTION {
-	R_DO_ADD	= 1,
-	R_DO_REPLACE	= 2,
-	R_NOT_REPLACE	= 3,
-	R_DO_MERGE	= 4
+	R_DO_ADD		= 1,
+	R_DO_REPLACE		= 2,
+	R_NOT_REPLACE		= 3,
+	R_DO_MHOMED_MERGE	= 4,
+	R_DO_RELEASE_DEMAND	= 5,
+	R_DO_SGROUP_MERGE	= 6
 };
 
 static const char *_R_ACTION_enum_string(enum _R_ACTION action)
 {
 	switch (action) {
-	case R_DO_ADD:		return "ADD";
-	case R_DO_REPLACE:	return "REPLACE";
-	case R_NOT_REPLACE:	return "NOT_REPLACE";
-	case R_DO_MERGE:	return "MERGE";
+	case R_DO_ADD:			return "ADD";
+	case R_DO_REPLACE:		return "REPLACE";
+	case R_NOT_REPLACE:		return "NOT_REPLACE";
+	case R_DO_MHOMED_MERGE:		return "MHOMED_MERGE";
+	case R_DO_RELEASE_DEMAND:	return "RELEASE_DEMAND";
+	case R_DO_SGROUP_MERGE:		return "SGROUP_MERGE";
 	}
 
 	return "enum _R_ACTION unknown";
@@ -96,7 +100,7 @@ UNIQUE,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 UNIQUE,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
 UNIQUE,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 */
-static enum _R_ACTION replace_replica_replica_unique_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_unique_replica_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
@@ -138,7 +142,7 @@ GROUP,RELEASED vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
 GROUP,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
 GROUP,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 */
-static enum _R_ACTION replace_replica_replica_group_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_group_replica_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
 	if (!R_IS_ACTIVE(r1) && R_IS_GROUP(r2)) {
 		/* REPLACE */
@@ -167,23 +171,30 @@ SGROUP,RELEASED vs. GROUP,ACTIVE with different ip(s) => REPLACE
 SGROUP,RELEASED vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
 SGROUP,TOMBSTONE vs. GROUP,ACTIVE with different ip(s) => REPLACE
 SGROUP,TOMBSTONE vs. GROUP,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,RELEASED vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+SGROUP,RELEASED vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. SGROUP,ACTIVE with different ip(s) => REPLACE
+SGROUP,TOMBSTONE vs. SGROUP,TOMBSTONE with different ip(s) => REPLACE
 SGROUP,ACTIVE vs. MHOMED,ACTIVE with same ip(s) => NOT REPLACE
 SGROUP,ACTIVE vs. MHOMED,TOMBSTONE with same ip(s) => NOT REPLACE
 SGROUP,RELEASED vs. MHOMED,ACTIVE with different ip(s) => REPLACE
 SGROUP,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 SGROUP,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
 SGROUP,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
-*/
-static enum _R_ACTION replace_replica_replica_sgroup_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
-{
-	if (R_IS_SGROUP(r2)) {
-		/* not handled here: MERGE */
-		return R_DO_MERGE;
-	}
 
+SGROUP,ACTIVE vs. SGROUP,* is not handled here!
+
+*/
+static enum _R_ACTION replace_sgroup_replica_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
+{
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
+	}
+
+	if (R_IS_SGROUP(r2)) {
+		/* not handled here: MERGE */
+		return R_DO_SGROUP_MERGE;
 	}
 
 	/* NOT REPLACE */
@@ -216,7 +227,7 @@ MHOMED,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 MHOMED,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
 MHOMED,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 */
-static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_mhomed_replica_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
@@ -233,6 +244,28 @@ static enum _R_ACTION replace_replica_replica_mhomed_vs_X(struct winsdb_record *
 }
 
 /*
+active:
+_UA_UA_SI_U<00> => REPLACE
+_UA_UA_DI_P<00> => NOT REPLACE
+_UA_UA_DI_N<00> => REPLACE
+_UA_UT_SI_U<00> => NOT REPLACE
+_UA_UT_DI_U<00> => NOT REPLACE
+_UA_GA_SI_R<00> => REPLACE
+_UA_GA_DI_R<00> => REPLACE
+_UA_GT_SI_U<00> => NOT REPLACE
+_UA_GT_DI_U<00> => NOT REPLACE
+_UA_SA_SI_R<00> => REPLACE
+_UA_SA_DI_R<00> => REPLACE
+_UA_ST_SI_U<00> => NOT REPLACE
+_UA_ST_DI_U<00> => NOT REPLACE
+_UA_MA_SI_U<00> => REPLACE
+_UA_MA_DI_P<00> => NOT REPLACE
+_UA_MA_DI_N<00> => REPLACE
+_UA_MT_SI_U<00> => NOT REPLACE
+_UA_MT_DI_U<00> => NOT REPLACE
+Test Replica vs. owned active: some more UNIQUE,MHOMED combinations
+_UA_UA_DI_A<00> => MHOMED_MERGE
+_UA_MA_DI_A<00> => MHOMED_MERGE
 
 released:
 _UR_UA_SI<00> => REPLACE
@@ -252,18 +285,42 @@ _UR_MA_DI<00> => REPLACE
 _UR_MT_SI<00> => REPLACE
 _UR_MT_DI<00> => REPLACE
 */
-static enum _R_ACTION replace_owned_released_replica_unique_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_unique_owned_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
 	}
 
+	if (!R_IS_ACTIVE(r2)) {
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
+	}
+
+	/* TODO: handle MHOMED merging and release damands */
+
 	/* NOT REPLACE */
 	return R_NOT_REPLACE;
 }
 
 /*
+active:
+_GA_UA_SI_U<00> => NOT REPLACE
+_GA_UA_DI_U<00> => NOT REPLACE
+_GA_UT_SI_U<00> => NOT REPLACE
+_GA_UT_DI_U<00> => NOT REPLACE
+_GA_GA_SI_U<00> => REPLACE
+_GA_GA_DI_U<00> => REPLACE
+_GA_GT_SI_U<00> => NOT REPLACE
+_GA_GT_DI_U<00> => NOT REPLACE
+_GA_SA_SI_U<00> => NOT REPLACE
+_GA_SA_DI_U<00> => NOT REPLACE
+_GA_ST_SI_U<00> => NOT REPLACE
+_GA_ST_DI_U<00> => NOT REPLACE
+_GA_MA_SI_U<00> => NOT REPLACE
+_GA_MA_DI_U<00> => NOT REPLACE
+_GA_MT_SI_U<00> => NOT REPLACE
+_GA_MT_DI_U<00> => NOT REPLACE
 
 released:
 _GR_UA_SI<00> => NOT REPLACE
@@ -283,16 +340,13 @@ _GR_MA_DI<00> => NOT REPLACE
 _GR_MT_SI<00> => NOT REPLACE
 _GR_MT_DI<00> => NOT REPLACE
 */
-static enum _R_ACTION replace_owned_released_replica_group_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_group_owned_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
-	if (!R_IS_ACTIVE(r1)) {
-		if (R_IS_GROUP(r2)) {
+	if (R_IS_GROUP(r1) && R_IS_GROUP(r2)) {
+		if (!R_IS_ACTIVE(r1) || R_IS_ACTIVE(r2)) {
 			/* REPLACE */
 			return R_DO_REPLACE;
 		}
-
-		/* NOT REPLACE */
-		return R_NOT_REPLACE;
 	}
 
 	/* NOT REPLACE */
@@ -300,6 +354,21 @@ static enum _R_ACTION replace_owned_released_replica_group_vs_X(struct winsdb_re
 }
 
 /*
+active (not sgroup vs. sgroup yet!):
+_SA_UA_SI_U<1c> => NOT REPLACE
+_SA_UA_DI_U<1c> => NOT REPLACE
+_SA_UT_SI_U<1c> => NOT REPLACE
+_SA_UT_DI_U<1c> => NOT REPLACE
+_SA_GA_SI_U<1c> => NOT REPLACE
+_SA_GA_DI_U<1c> => NOT REPLACE
+_SA_GT_SI_U<1c> => NOT REPLACE
+_SA_GT_DI_U<1c> => NOT REPLACE
+_SA_MA_SI_U<1c> => NOT REPLACE
+_SA_MA_DI_U<1c> => NOT REPLACE
+_SA_MT_SI_U<1c> => NOT REPLACE
+_SA_MT_DI_U<1c> => NOT REPLACE
+
+SGROUP,ACTIVE vs. SGROUP,* is not handled here!
 
 released:
 _SR_UA_SI<1c> => REPLACE
@@ -319,11 +388,16 @@ _SR_MA_DI<1c> => REPLACE
 _SR_MT_SI<1c> => REPLACE
 _SR_MT_DI<1c> => REPLACE
 */
-static enum _R_ACTION replace_owned_released_replica_sgroup_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_sgroup_owned_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
+	}
+
+	if (R_IS_SGROUP(r2)) {
+		/* not handled here: MERGE */
+		return R_DO_SGROUP_MERGE;
 	}
 
 	/* NOT REPLACE */
@@ -331,6 +405,38 @@ static enum _R_ACTION replace_owned_released_replica_sgroup_vs_X(struct winsdb_r
 }
 
 /*
+active:
+_MA_UA_SI_U<00> => REPLACE
+_MA_UA_DI_P<00> => NOT REPLACE
+_MA_UA_DI_O<00> => NOT REPLACE
+_MA_UA_DI_N<00> => REPLACE
+_MA_UT_SI_U<00> => NOT REPLACE
+_MA_UT_DI_U<00> => NOT REPLACE
+_MA_GA_SI_R<00> => REPLACE
+_MA_GA_DI_R<00> => REPLACE
+_MA_GT_SI_U<00> => NOT REPLACE
+_MA_GT_DI_U<00> => NOT REPLACE
+_MA_SA_SI_R<00> => REPLACE
+_MA_SA_DI_R<00> => REPLACE
+_MA_ST_SI_U<00> => NOT REPLACE
+_MA_ST_DI_U<00> => NOT REPLACE
+_MA_MA_SI_U<00> => REPLACE
+_MA_MA_SP_U<00> => REPLACE
+_MA_MA_DI_P<00> => NOT REPLACE
+_MA_MA_DI_O<00> => NOT REPLACE
+_MA_MA_DI_N<00> => REPLACE
+_MA_MT_SI_U<00> => NOT REPLACE
+_MA_MT_DI_U<00> => NOT REPLACE
+Test Replica vs. owned active: some more MHOMED combinations
+_MA_MA_SP_U<00> => REPLACE
+_MA_MA_SM_U<00> => REPLACE
+_MA_MA_SB_P<00> => MHOMED_MERGE
+_MA_MA_SB_A<00> => MHOMED_MERGE
+_MA_MA_SB_C<00> => NOT REPLACE
+_MA_MA_SB_O<00> => NOT REPLACE
+_MA_MA_SB_N<00> => REPLACE
+Test Replica vs. owned active: some more UNIQUE,MHOMED combinations
+_MA_UA_SB_A<00> => MHOMED_MERGE
 
 released:
 _MR_UA_SI<00> => REPLACE
@@ -350,14 +456,19 @@ _MR_MA_DI<00> => REPLACE
 _MR_MT_SI<00> => REPLACE
 _MR_MT_DI<00> => REPLACE
 */
-static enum _R_ACTION replace_owned_released_replica_mhomed_vs_X(struct winsdb_record *r1, struct wrepl_name *r2)
+static enum _R_ACTION replace_mhomed_owned_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
 	if (!R_IS_ACTIVE(r1)) {
 		/* REPLACE */
 		return R_DO_REPLACE;
 	}
 
-	/* TODO: */
+	if (!R_IS_ACTIVE(r2)) {
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
+	}
+
+	/* TODO: handle MHOMED merging and release demands */
 
 	/* NOT REPLACE */
 	return R_NOT_REPLACE;
@@ -400,31 +511,31 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	} else if (rec && replica_vs_replica) {
 		switch (rec->type) {
 		case WREPL_TYPE_UNIQUE:
-			action = replace_replica_replica_unique_vs_X(rec, name);
+			action = replace_unique_replica_vs_X_replica(rec, name);
 			break;
 		case WREPL_TYPE_GROUP:
-			action = replace_replica_replica_group_vs_X(rec, name);
+			action = replace_group_replica_vs_X_replica(rec, name);
 			break;
 		case WREPL_TYPE_SGROUP:
-			action = replace_replica_replica_sgroup_vs_X(rec, name);
+			action = replace_sgroup_replica_vs_X_replica(rec, name);
 			break;
 		case WREPL_TYPE_MHOMED:
-			action = replace_replica_replica_mhomed_vs_X(rec, name);
+			action = replace_mhomed_replica_vs_X_replica(rec, name);
 			break;
 		}
 	} else if (rec && local_vs_replica) {
 		switch (rec->type) {
 		case WREPL_TYPE_UNIQUE:
-			action = replace_owned_released_replica_unique_vs_X(rec, name);
+			action = replace_unique_owned_vs_X_replica(rec, name);
 			break;
 		case WREPL_TYPE_GROUP:
-			action = replace_owned_released_replica_group_vs_X(rec, name);
+			action = replace_group_owned_vs_X_replica(rec, name);
 			break;
 		case WREPL_TYPE_SGROUP:
-			action = replace_owned_released_replica_sgroup_vs_X(rec, name);
+			action = replace_sgroup_owned_vs_X_replica(rec, name);
 			break;
 		case WREPL_TYPE_MHOMED:
-			action = replace_owned_released_replica_mhomed_vs_X(rec, name);
+			action = replace_mhomed_owned_vs_X_replica(rec, name);
 			break;
 		}
 	}
