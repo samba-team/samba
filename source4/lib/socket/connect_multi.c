@@ -155,6 +155,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 	creq = socket_connect_send(state->sock, NULL, 0, 
 				   multi->server_address, state->port, 0, result->event_ctx);
 	if (composite_nomem(creq, result)) return;
+	talloc_steal(state, creq);
 
 	composite_continue(result, creq, continue_one, state);
 
