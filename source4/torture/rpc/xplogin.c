@@ -379,8 +379,112 @@ static NTSTATUS lsa_enumtrust_recv(struct composite_context *creq)
 	return result;
 }
 
+struct get_netlogon_schannel_state {
+	struct cli_credentials *creds;
+	struct dcerpc_pipe *pipe;
+};
+
+/*
+  Receive the schannel'ed bind
+*/
+
+static void get_netlogon_schannel_bind(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+
+	c->status = dcerpc_bind_auth_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+/*
+  Receive the pipe
+*/
+
+static void get_netlogon_schannel_pipe(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct get_netlogon_schannel_state *state =
+		talloc_get_type(c->private_data,
+				struct get_netlogon_schannel_state);
+
+	c->status = dcerpc_pipe_open_smb_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	state->pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
+	creq = dcerpc_bind_auth_send(state, state->pipe,
+				     DCERPC_NETLOGON_UUID,
+				     DCERPC_NETLOGON_VERSION, 
+				     state->creds,
+				     DCERPC_AUTH_TYPE_SCHANNEL,
+				     NULL);
+	composite_continue(c, creq, get_netlogon_schannel_bind, c);
+	
+}
+
+static struct composite_context *get_netlogon_schannel_send(TALLOC_CTX *mem_ctx,
+							    struct smbcli_tree *tree,
+							    struct cli_credentials *creds)
+{
+	struct composite_context *c, *creq;
+	struct get_netlogon_schannel_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct get_netlogon_schannel_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = tree->session->transport->socket->event.ctx;
+
+	state->pipe = dcerpc_pipe_init(state, c->event_ctx);
+	if (state->pipe == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	state->creds = creds;
+
+	creq = dcerpc_pipe_open_smb_send(state->pipe->conn, tree,
+					 "\\netlogon");
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+	creq->async.fn = get_netlogon_schannel_pipe;
+	creq->async.private_data = c;
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+static NTSTATUS get_netlogon_schannel_recv(struct composite_context *c,
+					   TALLOC_CTX *mem_ctx,
+					   struct dcerpc_pipe **pipe)
+{
+	NTSTATUS result = composite_wait(c);
+	if (NT_STATUS_IS_OK(result)) {
+		struct get_netlogon_schannel_state *state =
+			talloc_get_type(c->private_data,
+					struct get_netlogon_schannel_state);
+		*pipe = talloc_steal(mem_ctx, state->pipe);
+	}
+	return result;
+}
+
 struct xp_login_state {
-	struct composite_context *ctx;
 	const char *dc_name;
 	const char *dc_ip;
 	const char *wks_domain;
@@ -393,12 +497,20 @@ struct xp_login_state {
 	struct smb_composite_connect conn;
 	struct cli_credentials *wks_creds;
 	struct dcerpc_pipe *netlogon_pipe;
+	struct dcerpc_pipe *netlogon_schannel_pipe;
 	struct dcerpc_pipe *lsa_pipe;
+
+        struct creds_CredentialState *creds_state;
+        struct netr_Authenticator auth, auth2;
+        struct netr_NetworkInfo ninfo;
+        struct netr_LogonSamLogon r;
 };
 
 static void xp_login_recv_conn(struct composite_context *ctx);
 static void xp_login_recv_auth2(struct composite_context *ctx);
 static void xp_login_recv_trusts(struct composite_context *creq);
+static void xp_login_recv_schannel(struct composite_context *creq);
+static void xp_login_recv_samlogon(struct rpc_request *req);
 
 static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 					       struct event_context *event_ctx,
@@ -509,8 +621,135 @@ static void xp_login_recv_trusts(struct composite_context *creq)
 	struct composite_context *c =
 		talloc_get_type(creq->async.private_data,
 				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
 
 	c->status = lsa_enumtrust_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	creq = get_netlogon_schannel_send(
+		state, dcerpc_smb_tree(state->netlogon_pipe->conn),
+		state->wks_creds);
+
+	composite_continue(c, creq, xp_login_recv_schannel, c);
+}
+
+static void xp_login_recv_schannel(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+	struct rpc_request *req;
+
+	struct cli_credentials *credentials;
+	const char *workstation;
+	DATA_BLOB chal, nt_resp, lm_resp, names_blob;
+	int flags = CLI_CRED_NTLM_AUTH;
+
+	c->status = get_netlogon_schannel_recv(creq, state,
+					       &state->netlogon_schannel_pipe);
+	if (!composite_is_ok(c)) return;
+
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth()) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+
+	credentials = cli_credentials_init(state);
+	if (composite_nomem(credentials, c)) return;
+
+	cli_credentials_set_conf(credentials);
+	cli_credentials_set_workstation(credentials, state->wks_name, CRED_SPECIFIED);
+	cli_credentials_set_domain(credentials, state->user_domain, CRED_SPECIFIED);
+	cli_credentials_set_username(credentials, state->user_name, CRED_SPECIFIED);
+
+	cli_credentials_set_password(credentials, state->user_pwd, CRED_SPECIFIED);
+
+	chal = data_blob_talloc(state, NULL, 8);
+	if (composite_nomem(chal.data, c)) return;
+
+	generate_random_buffer(chal.data, chal.length);
+	cli_credentials_get_ntlm_username_domain(credentials, state,
+						 &state->user_name,
+						 &state->user_domain);
+	/* for best compatability with multiple vitual netbios names
+	 * on the host, this should be generated from the
+	 * cli_credentials associated with the machine account */
+	workstation = cli_credentials_get_workstation(credentials);
+
+	names_blob = NTLMv2_generate_names_blob(
+		state,
+		cli_credentials_get_workstation(credentials), 
+		cli_credentials_get_domain(credentials));
+
+	c->status = cli_credentials_get_ntlm_response(
+		credentials, state, &flags, chal, names_blob,
+		&lm_resp, &nt_resp, NULL, NULL);
+	if (!composite_is_ok(c)) return;
+
+	state->creds_state =
+		cli_credentials_get_netlogon_creds(state->wks_creds);
+	creds_client_authenticator(state->creds_state, &state->auth);
+
+	state->ninfo.identity_info.account_name.string = state->user_name;
+	state->ninfo.identity_info.domain_name.string =  state->user_domain;
+	state->ninfo.identity_info.parameter_control = 0;
+	state->ninfo.identity_info.logon_id_low = 0;
+	state->ninfo.identity_info.logon_id_high = 0;
+	state->ninfo.identity_info.workstation.string = state->wks_name;
+	state->ninfo.nt.length = nt_resp.length;
+	state->ninfo.nt.data = nt_resp.data;
+	state->ninfo.lm.length = lm_resp.length;
+	state->ninfo.lm.data = lm_resp.data;
+
+	memcpy(state->ninfo.challenge, chal.data,
+	       sizeof(state->ninfo.challenge));
+
+	state->r.in.server_name = talloc_asprintf(
+		state, "\\\\%s", dcerpc_server_name(state->netlogon_pipe));
+	if (composite_nomem(state->r.in.server_name, c)) return;
+
+	ZERO_STRUCT(state->auth2);
+
+	state->r.in.workstation =
+		cli_credentials_get_workstation(state->wks_creds);
+	state->r.in.credential = &state->auth;
+	state->r.in.return_authenticator = &state->auth2;
+	state->r.in.logon_level = 2;
+	state->r.in.validation_level = 3;
+	state->r.in.logon.network = &state->ninfo;
+	state->r.out.return_authenticator = NULL;
+
+	req = dcerpc_netr_LogonSamLogon_send(state->netlogon_schannel_pipe,
+					     state, &state->r);
+	composite_continue_rpc(c, req, xp_login_recv_samlogon, c);
+}
+
+static void xp_login_recv_samlogon(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+
+	if ((state->r.out.return_authenticator == NULL) ||
+	    (!creds_client_check(state->creds_state,
+				 &state->r.out.return_authenticator->cred))) {
+		DEBUG(0, ("Credentials check failed!\n"));
+		composite_error(c, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	c->status = state->r.out.result;
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
@@ -563,8 +802,8 @@ BOOL torture_rpc_login(void)
 				       lp_parm_string(-1, "torture", "host"),
 				       lp_parm_string(-1, "torture", "host"),
 				       lp_workgroup(),
-				       lp_netbios_name(), "password",
-				       lp_workgroup(), NULL, NULL);
+				       lp_netbios_name(), "5,eEp_D2",
+				       lp_workgroup(), "vl", "asdf");
 		if (ctx[i] == NULL) {
 			DEBUG(0, ("xp_login_send failed\n"));
 			goto done;
