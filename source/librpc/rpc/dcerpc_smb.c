@@ -90,10 +90,11 @@ static void smb_read_callback(struct smbcli_request *req)
 
 	if (frag_length <= state->received) {
 		DATA_BLOB data = state->data;
+		struct dcerpc_connection *c = state->c;
 		data.length = state->received;
 		talloc_steal(state->c, data.data);
 		talloc_free(state);
-		state->c->transport.recv_data(state->c, &data, NT_STATUS_OK);
+		c->transport.recv_data(c, &data, NT_STATUS_OK);
 		return;
 	}
 
