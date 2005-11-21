@@ -1373,6 +1373,8 @@ static NTSTATUS memberships_recv(struct composite_context *creq)
 }
 
 struct xp_login_state {
+	struct timeval timeout;
+
 	const char *dc_name;
 	const char *dc_ip;
 	const char *wks_domain;
@@ -1404,6 +1406,8 @@ struct xp_login_state {
 };
 
 static void xp_login_recv_conn(struct composite_context *ctx);
+static void xp_login_start(struct event_context *ev, struct timed_event *te,
+			   struct timeval tv, void *p);
 static void xp_login_recv_auth2(struct composite_context *ctx);
 static void xp_login_recv_trusts(struct composite_context *creq);
 static void xp_login_recv_schannel(struct composite_context *creq);
@@ -1413,6 +1417,7 @@ static void xp_login_recv_domadmins(struct composite_context *creq);
 static void xp_login_recv_memberships(struct composite_context *creq);
 
 static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
+					       struct timeval timeout,
 					       struct event_context *event_ctx,
 					       const char *dc_name,
 					       const char *dc_ip,
@@ -1423,7 +1428,7 @@ static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 					       const char *user_name,
 					       const char *user_pwd)
 {
-	struct composite_context *c, *creq;
+	struct composite_context *c;
 	struct xp_login_state *state;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
@@ -1439,6 +1444,7 @@ static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 	c->private_data = state;
 	c->event_ctx = event_ctx;
 
+	state->timeout = timeout;
 	state->dc_name = dc_name;
 	state->dc_ip = dc_ip;
 	state->wks_domain = wks_domain;
@@ -1474,13 +1480,28 @@ static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 	state->conn.in.fallback_to_anonymous = False;
 	state->conn.in.workgroup = wks_domain;
 
-	creq = smb_composite_connect_send(&state->conn, state, event_ctx);
-	composite_continue(c, creq, xp_login_recv_conn, c);
+	event_add_timed(c->event_ctx, state,
+			timeval_current_ofs(state->timeout.tv_sec,
+					    state->timeout.tv_usec),
+			xp_login_start, c);
 	return c;
 
  failed:
 	composite_trigger_error(c);
 	return c;
+}
+
+static void xp_login_start(struct event_context *ev, struct timed_event *te,
+			   struct timeval tv, void *p)
+{
+	struct composite_context *c =
+		talloc_get_type(p, struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+	struct composite_context *creq;
+
+	creq = smb_composite_connect_send(&state->conn, state, c->event_ctx);
+	composite_continue(c, creq, xp_login_recv_conn, c);
 }
 
 static void xp_login_recv_conn(struct composite_context *creq)
@@ -1768,12 +1789,15 @@ BOOL torture_rpc_login(void)
 	}
 
 	for (i=0; i<torture_numops; i++) {
-		ctx[i] = xp_login_send(mem_ctx, event_ctx,
-				       lp_parm_string(-1, "torture", "host"),
-				       lp_parm_string(-1, "torture", "host"),
-				       lp_workgroup(),
-				       lp_netbios_name(), "5,eEp_D2",
-				       lp_workgroup(), "vl", "asdf");
+		ctx[i] = xp_login_send(
+			mem_ctx, timeval_set(0, i*lp_parm_int(-1, "torture",
+							      "timeout", 0)),
+			event_ctx,
+			lp_parm_string(-1, "torture", "host"),
+			lp_parm_string(-1, "torture", "host"),
+			lp_workgroup(),
+			lp_netbios_name(), "5,eEp_D2",
+			lp_workgroup(), "vl", "asdf");
 		if (ctx[i] == NULL) {
 			DEBUG(0, ("xp_login_send failed\n"));
 			goto done;
