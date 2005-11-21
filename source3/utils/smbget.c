@@ -28,6 +28,10 @@
 
 int columns = 0;
 
+static int _resume, _recursive, debuglevel;
+static char *outputfile;
+
+
 time_t total_start_time = 0;
 off_t total_bytes = 0;
 
@@ -507,16 +511,13 @@ int readrcfile(const char *name, const struct poptOption long_options[])
 
 int main(int argc, const char **argv)
 {
-	int resume = 0, recursive = 0;
 	int c = 0;
-	int debuglevel = 0;
 	const char *file = NULL;
 	char *rcfile = NULL;
-	char *outputfile = NULL;
 	struct poptOption long_options[] = {
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
-		{"resume", 'r', POPT_ARG_NONE, &resume, 0, "Automatically resume aborted files" },
-		{"recursive", 'R',  POPT_ARG_NONE, &recursive, 0, "Recursively download files" },
+		{"resume", 'r', POPT_ARG_NONE, &_resume, 0, "Automatically resume aborted files" },
+		{"recursive", 'R',  POPT_ARG_NONE, &_recursive, 0, "Recursively download files" },
 		{"username", 'u', POPT_ARG_STRING, &username, 'u', "Username to use" },
 		{"password", 'p', POPT_ARG_STRING, &password, 'p', "Password to use" },
 		{"workgroup", 'w', POPT_ARG_STRING, &workgroup, 'w', "Workgroup to use (optional)" },
@@ -537,7 +538,8 @@ int main(int argc, const char **argv)
 
 	/* only read rcfile if it exists */
 	asprintf(&rcfile, "%s/.smbgetrc", getenv("HOME"));
-	if(access(rcfile, F_OK) == 0) readrcfile(rcfile, long_options);
+	if(access(rcfile, F_OK) == 0) 
+		readrcfile(rcfile, long_options);
 	free(rcfile);
 
 #ifdef SIGWINCH
@@ -559,7 +561,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if((send_stdout || outputfile) && recursive) {
+	if((send_stdout || outputfile) && _recursive) {
 		fprintf(stderr, "The -o or -O and -R options can not be used together.\n");
 		return 1;
 	}
@@ -578,9 +580,11 @@ int main(int argc, const char **argv)
 
 	total_start_time = time(NULL);
 
-	while((file = poptGetArg(pc))) {
-		if(!recursive) return smb_download_file(file, "", recursive, resume, outputfile);
-		else return smb_download_dir(file, "", resume);
+	while ( (file = poptGetArg(pc)) ) {
+		if (!_recursive) 
+			return smb_download_file(file, "", _recursive, _resume, outputfile);
+		else 
+			return smb_download_dir(file, "", _resume);
 	}
 
 	clean_exit();
