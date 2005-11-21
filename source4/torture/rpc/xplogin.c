@@ -29,6 +29,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "lib/events/events.h"
+#include "winbind/wb_async_helpers.h"
 
 struct get_schannel_creds_state {
 	struct composite_context *ctx;
@@ -211,6 +212,10 @@ static NTSTATUS get_schannel_creds_recv(struct composite_context *c,
 	return status;
 }
 
+/*
+  List trustdoms
+*/
+
 struct lsa_enumtrust_state {
 	struct dcerpc_pipe *lsa_pipe;
 
@@ -379,6 +384,10 @@ static NTSTATUS lsa_enumtrust_recv(struct composite_context *creq)
 	return result;
 }
 
+/*
+  Get us an schannel-bound netlogon pipe
+*/
+
 struct get_netlogon_schannel_state {
 	struct cli_credentials *creds;
 	struct dcerpc_pipe *pipe;
@@ -484,6 +493,554 @@ static NTSTATUS get_netlogon_schannel_recv(struct composite_context *c,
 	return result;
 }
 
+/*
+  lsa_lookupsids, given just an smb tree
+*/
+
+struct lookupsids_state {
+	struct dcerpc_pipe *lsa_pipe;
+	int num_sids;
+	const struct dom_sid **sids;
+	struct wb_sid_object **names;
+
+	struct policy_handle handle;
+	struct lsa_ObjectAttribute a;
+	struct lsa_OpenPolicy2 o;
+	struct lsa_Close c;
+};
+
+static void lookupsids_recv_close(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct lookupsids_state *state =
+		talloc_get_type(c->private_data,
+				struct lookupsids_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->c.out.result;
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+static void lookupsids_recv_names(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct lookupsids_state *state =
+		talloc_get_type(c->private_data,
+				struct lookupsids_state);
+	struct rpc_request *req;
+
+	c->status = wb_lsa_lookupsids_recv(creq, state, &state->names);
+	if (!composite_is_ok(c)) return;
+
+	state->c.in.handle = &state->handle;
+	state->c.out.handle = &state->handle;
+
+	req = dcerpc_lsa_Close_send(state->lsa_pipe, state, &state->c);
+	composite_continue_rpc(c, req, lookupsids_recv_close, c);
+}
+	
+static void lookupsids_recv_pol(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct lookupsids_state *state =
+		talloc_get_type(c->private_data,
+				struct lookupsids_state);
+	struct composite_context *creq;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->o.out.result;
+	if (!composite_is_ok(c)) return;
+
+	creq = wb_lsa_lookupsids_send(state, state->lsa_pipe, &state->handle,
+				      state->num_sids, state->sids);
+	composite_continue(c, creq, lookupsids_recv_names, c);
+}
+
+static void lookupsids_recv_bind(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct lookupsids_state *state =
+		talloc_get_type(c->private_data,
+				struct lookupsids_state);
+	struct rpc_request *req;
+
+	c->status = dcerpc_bind_auth_none_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	ZERO_STRUCT(state->a);
+	ZERO_STRUCT(state->handle);
+
+	state->o.in.attr = &state->a;
+	state->o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->o.out.handle = &state->handle;
+	state->o.in.system_name = 
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->lsa_pipe));
+	if (composite_nomem(state->o.in.system_name, c)) return;
+
+	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state,
+					  &state->o);
+	composite_continue_rpc(c, req, lookupsids_recv_pol, c);
+}
+
+static void lookupsids_recv_pipe(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct lookupsids_state *state =
+		talloc_get_type(c->private_data,
+				struct lookupsids_state);
+
+	c->status = dcerpc_pipe_open_smb_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	creq = dcerpc_bind_auth_none_send(state, state->lsa_pipe,
+					  DCERPC_LSARPC_UUID,
+					  DCERPC_LSARPC_VERSION);
+	composite_continue(c, creq, lookupsids_recv_bind, c);
+}
+
+static struct composite_context *lookupsids_send(TALLOC_CTX *mem_ctx,
+						 struct smbcli_tree *tree,
+						 int num_sids,
+						 const struct dom_sid **sids)
+{
+	struct composite_context *c, *creq;
+	struct lookupsids_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct lookupsids_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = tree->session->transport->socket->event.ctx;
+
+	state->num_sids = num_sids;
+	state->sids = talloc_reference(state, sids);
+
+	state->lsa_pipe = dcerpc_pipe_init(state, c->event_ctx);
+	if (state->lsa_pipe == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq = dcerpc_pipe_open_smb_send(state->lsa_pipe->conn, tree,
+					 "\\lsarpc");
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq->async.fn = lookupsids_recv_pipe;
+	creq->async.private_data = c;
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+static NTSTATUS lookupsids_recv(struct composite_context *creq,
+				TALLOC_CTX *mem_ctx,
+				int *num_names,
+				struct wb_sid_object ***names)
+{
+	NTSTATUS result = composite_wait(creq);
+	if (NT_STATUS_IS_OK(result)) {
+		struct lookupsids_state *state =
+			talloc_get_type(creq->private_data,
+					struct lookupsids_state);
+		*num_names = state->num_sids;
+		*names = talloc_steal(mem_ctx, state->names);
+	}
+	talloc_free(creq);
+	return result;
+}
+
+/*
+  Get us the names & types of the members of the domain admins group.
+  Yes, I've got a workstation setup that does it. Twice. -- VL
+*/
+
+struct domadmins_state {
+	struct dcerpc_pipe *samr_pipe;
+
+	struct policy_handle connect_handle;
+	struct policy_handle domain_handle;
+	struct policy_handle group_handle;
+	struct samr_Connect2 conn;
+
+	uint32_t resume_handle;
+	struct samr_EnumDomains e;
+	struct samr_LookupDomain l;
+	struct samr_OpenDomain o;
+	struct samr_Close c;
+	struct samr_OpenGroup og;
+	struct samr_QueryGroupMember m;
+
+	int num_names;
+	struct wb_sid_object **names;
+};
+
+static void domadmins_recv_domclose(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->c.out.result;
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+static void domadmins_recv_groupclose(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->c.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->c.in.handle = &state->domain_handle;
+	req = dcerpc_samr_Close_send(state->samr_pipe, state,
+				     &state->c);
+	composite_continue_rpc(c, req, domadmins_recv_domclose, c);
+}
+
+static void domadmins_recv_names(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+	struct rpc_request *req;
+
+	c->status = lookupsids_recv(creq, state, &state->num_names,
+				    &state->names);
+	if (!composite_is_ok(c)) return;
+
+	state->c.in.handle = &state->group_handle;
+	req = dcerpc_samr_Close_send(state->samr_pipe, state,
+				     &state->c);
+	composite_continue_rpc(c, req, domadmins_recv_groupclose, c);
+}
+
+static void domadmins_recv_members(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+	struct composite_context *creq;
+	const struct dom_sid **sids;
+	int i;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->m.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->num_names = state->m.out.rids->count;
+	sids = talloc_array(state, const struct dom_sid *, state->num_names);
+	if (composite_nomem(sids, c)) return;
+
+	for (i=0; i<state->num_names; i++) {
+		sids[i] = dom_sid_add_rid(sids, state->l.out.sid,
+					  state->m.out.rids->rids[i]);
+		if (composite_nomem(sids[i], c)) return;
+	}
+
+	creq = lookupsids_send(state, dcerpc_smb_tree(state->samr_pipe->conn),
+			       state->num_names, sids);
+	composite_continue(c, creq, domadmins_recv_names, c);
+}
+
+static void domadmins_recv_group(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->og.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->m.in.group_handle = &state->group_handle;
+
+	req = dcerpc_samr_QueryGroupMember_send(state->samr_pipe, state,
+						&state->m);
+	composite_continue_rpc(c, req, domadmins_recv_members, c);
+}
+
+static void domadmins_recv_connclose(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->c.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->og.in.domain_handle = &state->domain_handle;
+	state->og.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->og.in.rid = 512;
+	state->og.out.group_handle = &state->group_handle;
+
+	req = dcerpc_samr_OpenGroup_send(state->samr_pipe, state,
+					 &state->og);
+	composite_continue_rpc(c, req, domadmins_recv_group, c);
+}
+
+static void domadmins_recv_domopen(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->o.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->c.in.handle = &state->connect_handle;
+	state->c.out.handle = &state->connect_handle;
+
+	req = dcerpc_samr_Close_send(state->samr_pipe, state,
+				     &state->c);
+	composite_continue_rpc(c, req, domadmins_recv_connclose, c);
+}
+
+static void domadmins_recv_domsid(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->l.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->o.in.connect_handle = &state->connect_handle;
+	state->o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->o.in.sid = state->l.out.sid;
+	state->o.out.domain_handle = &state->domain_handle;
+
+	req = dcerpc_samr_OpenDomain_send(state->samr_pipe, state,
+					  &state->o);
+	composite_continue_rpc(c, req, domadmins_recv_domopen, c);
+}
+
+static void domadmins_recv_domains(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+	int entry = 0;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->e.out.result;
+	if (!composite_is_ok(c)) return;
+
+	if ((state->e.out.num_entries != 2) ||
+	    (state->e.out.sam->count != 2)) {
+		composite_error(c, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if (strcasecmp(state->e.out.sam->entries[0].name.string,
+		       "Builtin") == 0) {
+		entry = 1;
+	}
+
+	state->l.in.connect_handle = &state->connect_handle;
+	state->l.in.domain_name = &state->e.out.sam->entries[entry].name;
+
+	req = dcerpc_samr_LookupDomain_send(state->samr_pipe, state,
+					    &state->l);
+
+	composite_continue_rpc(c, req, domadmins_recv_domsid, c);
+}
+
+static void domadmins_recv_conn(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->conn.out.result;
+	if (!composite_is_ok(c)) return;
+
+	state->resume_handle = 0;
+	state->e.in.connect_handle = &state->connect_handle;
+	state->e.in.resume_handle = &state->resume_handle;
+	state->e.in.buf_size = 8192;
+	state->e.out.resume_handle = &state->resume_handle;
+
+	req = dcerpc_samr_EnumDomains_send(state->samr_pipe, state,
+					   &state->e);
+	composite_continue_rpc(c, req, domadmins_recv_domains, c);
+}
+
+static void domadmins_recv_bind(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+	struct rpc_request *req;
+
+	c->status = dcerpc_bind_auth_none_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	state->conn.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->conn.in.system_name = talloc_asprintf(
+		state, "\\\\%s", dcerpc_server_name(state->samr_pipe));
+	if (composite_nomem(state->conn.in.system_name, c)) return;
+	state->conn.out.connect_handle = &state->connect_handle;
+
+	req = dcerpc_samr_Connect2_send(state->samr_pipe, state,
+					&state->conn);
+
+	composite_continue_rpc(c, req, domadmins_recv_conn, c);
+}
+
+static void domadmins_recv_pipe(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct domadmins_state *state =
+		talloc_get_type(c->private_data,
+				struct domadmins_state);
+
+	c->status = dcerpc_pipe_open_smb_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	creq = dcerpc_bind_auth_none_send(state, state->samr_pipe,
+					  DCERPC_SAMR_UUID,
+					  DCERPC_SAMR_VERSION);
+	composite_continue(c, creq, domadmins_recv_bind, c);
+}
+
+static struct composite_context *domadmins_send(TALLOC_CTX *mem_ctx,
+						struct smbcli_tree *tree)
+{
+	struct composite_context *c, *creq;
+	struct domadmins_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct domadmins_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = tree->session->transport->socket->event.ctx;
+
+	state->samr_pipe = dcerpc_pipe_init(state, c->event_ctx);
+	if (state->samr_pipe == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq = dcerpc_pipe_open_smb_send(state->samr_pipe->conn, tree,
+					 "\\samr");
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq->async.fn = domadmins_recv_pipe;
+	creq->async.private_data = c;
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+static NTSTATUS domadmins_recv(struct composite_context *creq,
+			       TALLOC_CTX *mem_ctx,
+			       int *num_names, struct wb_sid_object ***names)
+{
+	NTSTATUS result = composite_wait(creq);
+	if (NT_STATUS_IS_OK(result)) {
+		struct domadmins_state *state =
+			talloc_get_type(creq->private_data,
+					struct domadmins_state);
+		*num_names = state->num_names;
+		*names = talloc_steal(mem_ctx, state->names);
+	}
+	talloc_free(creq);
+	return result;
+}
+
 struct xp_login_state {
 	const char *dc_name;
 	const char *dc_ip;
@@ -493,6 +1050,15 @@ struct xp_login_state {
 	const char *user_domain;
 	const char *user_name;
 	const char *user_pwd;
+
+	int num_sids;
+	const struct dom_sid **sids;
+
+	int num_names;
+	struct wb_sid_object **names;
+
+	int num_domadmins;
+	struct wb_sid_object **domadmins;
 
 	struct smb_composite_connect conn;
 	struct cli_credentials *wks_creds;
@@ -511,6 +1077,8 @@ static void xp_login_recv_auth2(struct composite_context *ctx);
 static void xp_login_recv_trusts(struct composite_context *creq);
 static void xp_login_recv_schannel(struct composite_context *creq);
 static void xp_login_recv_samlogon(struct rpc_request *req);
+static void xp_login_recv_names(struct composite_context *creq);
+static void xp_login_recv_domadmins(struct composite_context *creq);
 
 static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 					       struct event_context *event_ctx,
@@ -737,6 +1305,9 @@ static void xp_login_recv_samlogon(struct rpc_request *req)
 				struct composite_context);
 	struct xp_login_state *state =
 		talloc_get_type(c->private_data, struct xp_login_state);
+	struct composite_context *creq;
+	struct netr_SamInfo3 *sam3;
+	int i;
 
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
@@ -750,6 +1321,57 @@ static void xp_login_recv_samlogon(struct rpc_request *req)
 	}
 
 	c->status = state->r.out.result;
+	if (!composite_is_ok(c)) return;
+
+	sam3 = state->r.out.validation.sam3;
+
+	state->num_sids = sam3->base.groups.count + 1;
+	state->sids = talloc_array(state, const struct dom_sid *, state->num_sids);
+	if (composite_nomem(state->sids, c)) return;
+
+	state->sids[0] = dom_sid_add_rid(state->sids, sam3->base.domain_sid,
+					 sam3->base.rid);
+	if (composite_nomem(state->sids[0], c)) return;
+
+	for (i=0; i<sam3->base.groups.count; i++) {
+		state->sids[i+1] = dom_sid_add_rid(state->sids,
+						   sam3->base.domain_sid,
+						   sam3->base.groups.rids[i].rid);
+		if (composite_nomem(state->sids[i+1], c)) return;
+	}
+
+	creq = lookupsids_send(state, dcerpc_smb_tree(state->netlogon_pipe->conn),
+			       state->num_sids, state->sids);
+	composite_continue(c, creq, xp_login_recv_names, c);
+}
+
+static void xp_login_recv_names(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+
+	c->status = lookupsids_recv(creq, state, &state->num_names,
+				    &state->names);
+	if (!composite_is_ok(c)) return;
+
+	creq = domadmins_send(state,
+			      dcerpc_smb_tree(state->netlogon_pipe->conn));
+	composite_continue(c, creq, xp_login_recv_domadmins, c);
+}
+	
+static void xp_login_recv_domadmins(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+
+	c->status = domadmins_recv(creq, state, &state->num_domadmins,
+				   &state->domadmins);
 	if (!composite_is_ok(c)) return;
 
 	composite_done(c);
