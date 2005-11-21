@@ -324,7 +324,7 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
+	DEBUG(5, ("wbsrv_samba3_pam_auth called\n"));
 
 	credentials = cli_credentials_init(mem_ctx);
 	if (!credentials) {
