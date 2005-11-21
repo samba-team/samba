@@ -30,54 +30,55 @@
 
 
 struct connect_state {
-	struct composite_context *ctx;
 	struct socket_context *sock;
 	const char *my_address;
 	int my_port;
 	const char *server_address;
 	int server_port;
 	uint32_t flags;
-	struct fd_event *fde;
 };
 
 static void socket_connect_handler(struct event_context *ev,
 				   struct fd_event *fde, 
 				   uint16_t flags, void *private);
-static void socket_connect_recv_addr(struct composite_context *ctx);
-static void socket_connect_recv_conn(struct composite_context *ctx);
+static void continue_resolve_name(struct composite_context *ctx);
+static void continue_socket_connect(struct composite_context *creq);
 
 /*
   call the real socket_connect() call, and setup event handler
 */
-static void socket_send_connect(struct connect_state *state)
+static void socket_send_connect(struct composite_context *result)
 {
-	struct composite_context *ctx;
+	struct composite_context *creq;
+	struct fd_event *fde;
+	struct connect_state *state = talloc_get_type(result->private_data, 
+						      struct connect_state);
 
-	ctx = talloc_zero(state, struct composite_context);
-	if (composite_nomem(ctx, state->ctx)) return;
-	ctx->state = COMPOSITE_STATE_IN_PROGRESS;
-	ctx->event_ctx = state->ctx->event_ctx;
-	ctx->async.fn = socket_connect_recv_conn;
-	ctx->async.private_data = state;
+	creq = talloc_zero(state, struct composite_context);
+	if (composite_nomem(creq, result)) return;
+	creq->state = COMPOSITE_STATE_IN_PROGRESS;
+	creq->event_ctx = result->event_ctx;
+	creq->async.fn = continue_socket_connect;
+	creq->async.private_data = result;
 
-	state->ctx->status = socket_connect(state->sock,
-					    state->my_address,
-					    state->my_port, 
-					    state->server_address,
-					    state->server_port,
-					    state->flags);
-	if (NT_STATUS_IS_ERR(state->ctx->status) && 
-	    !NT_STATUS_EQUAL(state->ctx->status,
+	result->status = socket_connect(state->sock,
+					state->my_address,
+					state->my_port, 
+					state->server_address,
+					state->server_port,
+					state->flags);
+	if (NT_STATUS_IS_ERR(result->status) && 
+	    !NT_STATUS_EQUAL(result->status,
 			     NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		composite_error(state->ctx, state->ctx->status);
+		composite_error(result, result->status);
 		return;
 	}
 
-	state->fde = event_add_fd(ctx->event_ctx, state,
-				  socket_get_fd(state->sock),
-				  EVENT_FD_WRITE, 
-				  socket_connect_handler, ctx);
-	composite_nomem(state->fde, state->ctx);
+	fde = event_add_fd(result->event_ctx, result,
+			   socket_get_fd(state->sock),
+			   EVENT_FD_WRITE, 
+			   socket_connect_handler, result);
+	composite_nomem(fde, result);
 }
 
 
@@ -92,18 +93,16 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      uint32_t flags,
 					      struct event_context *event_ctx)
 {
-	struct composite_context *result, *ctx;
+	struct composite_context *result;
 	struct connect_state *state;
 
 	result = talloc_zero(sock, struct composite_context);
 	if (result == NULL) return NULL;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
 	result->event_ctx = event_ctx;
 
 	state = talloc_zero(result, struct connect_state);
 	if (composite_nomem(state, result)) goto failed;
-	state->ctx = result;
 	result->private_data = state;
 
 	state->sock = talloc_reference(state, sock);
@@ -125,16 +124,16 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 
 	if (strcmp(sock->backend_name, "ipv4") == 0) {
 		struct nbt_name name;
+		struct composite_context *creq;
 		make_nbt_name_client(&name, server_address);
-		ctx = resolve_name_send(&name, result->event_ctx,
-					lp_name_resolve_order());
-		if (ctx == NULL) goto failed;
-		ctx->async.fn = socket_connect_recv_addr;
-		ctx->async.private_data = state;
+		creq = resolve_name_send(&name, result->event_ctx,
+					 lp_name_resolve_order());
+		if (composite_nomem(creq, result)) goto failed;
+		composite_continue(result, creq, continue_resolve_name, result);
 		return result;
 	}
 
-	socket_send_connect(state);
+	socket_send_connect(result);
 
 	return result;
 
@@ -150,56 +149,55 @@ static void socket_connect_handler(struct event_context *ev,
 				   struct fd_event *fde, 
 				   uint16_t flags, void *private)
 {
-	struct composite_context *ctx =
+	struct composite_context *result =
 		talloc_get_type(private, struct composite_context);
-	struct connect_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct connect_state);
+	struct connect_state *state = talloc_get_type(result->private_data,
+						      struct connect_state);
 
-	ctx->status = socket_connect_complete(state->sock, state->flags);
-	if (!composite_is_ok(ctx)) return;
+	result->status = socket_connect_complete(state->sock, state->flags);
+	if (!composite_is_ok(result)) return;
 
-	composite_done(ctx);
+	composite_done(result);
 }
 
 /*
   recv name resolution reply then send the connect
 */
-static void socket_connect_recv_addr(struct composite_context *ctx)
+static void continue_resolve_name(struct composite_context *creq)
 {
-	struct connect_state *state =
-		talloc_get_type(ctx->async.private_data, struct connect_state);
+	struct composite_context *result = talloc_get_type(creq->async.private_data, 
+							   struct composite_context);
+	struct connect_state *state = talloc_get_type(result->private_data, struct connect_state);
 	const char *addr;
 
-	state->ctx->status = resolve_name_recv(ctx, state, &addr);
-	if (!composite_is_ok(state->ctx)) return;
+	result->status = resolve_name_recv(creq, state, &addr);
+	if (!composite_is_ok(result)) return;
 
 	state->server_address = addr;
 
-	socket_send_connect(state);
+	socket_send_connect(result);
 }
 
 /*
   called when a connect has finished. Complete the top level composite context
 */
-static void socket_connect_recv_conn(struct composite_context *ctx)
+static void continue_socket_connect(struct composite_context *creq)
 {
-	struct connect_state *state =
-		talloc_get_type(ctx->async.private_data, struct connect_state);
-
-	state->ctx->status = ctx->status;
-	if (!composite_is_ok(state->ctx)) return;
-	composite_done(state->ctx);
+	struct composite_context *result = talloc_get_type(creq->async.private_data, 
+							   struct composite_context);
+	result->status = creq->status;
+	if (!composite_is_ok(result)) return;
+	composite_done(result);
 }
 
 
 /*
   wait for a socket_connect_send() to finish
 */
-NTSTATUS socket_connect_recv(struct composite_context *ctx)
+NTSTATUS socket_connect_recv(struct composite_context *result)
 {
-	NTSTATUS status = composite_wait(ctx);
-	talloc_free(ctx);
+	NTSTATUS status = composite_wait(result);
+	talloc_free(result);
 	return status;
 }
 
