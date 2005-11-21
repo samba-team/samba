@@ -276,6 +276,16 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 {
 	NTSTATUS result = composite_wait(creq);
+	struct bind_auth_state *state = talloc_get_type(creq->private_data, struct bind_auth_state);
+
+	if (NT_STATUS_IS_OK(result)) {
+		/*
+		  after a successful authenticated bind the session
+		  key reverts to the generic session key
+		*/
+		state->pipe->conn->security_state.session_key = dcerpc_generic_session_key;
+	}
+	
 	talloc_free(creq);
 	return result;
 }
