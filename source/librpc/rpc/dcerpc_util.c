@@ -975,6 +975,18 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		 */
 
 		uint8_t auth_type;
+		
+		if ((p->conn->flags & (DCERPC_SIGN|DCERPC_SEAL)) == 0) {
+			/*
+			  we are doing an authenticated connection,
+			  but not using sign or seal. We must force
+			  the CONNECT dcerpc auth type as a NONE auth
+			  type doesn't allow authentication
+			  information to be passed.
+			*/
+			p->conn->flags |= DCERPC_CONNECT;
+		}
+
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 		} else if (binding->flags & DCERPC_AUTH_KRB5) {
