@@ -328,8 +328,10 @@ struct test_wrepl_conflict_conn {
 #define TEST_ADDRESS_A_PREFIX "127.0.65"
 #define TEST_OWNER_B_ADDRESS "127.66.66.1"
 #define TEST_ADDRESS_B_PREFIX "127.0.66"
+#define TEST_OWNER_X_ADDRESS "127.88.88.1"
+#define TEST_ADDRESS_X_PREFIX "127.0.88"
 
-	struct wrepl_wins_owner a, b, c;
+	struct wrepl_wins_owner a, b, c, x;
 
 	const char *myaddr;
 	const char *myaddr2;
@@ -374,6 +376,71 @@ static const struct wrepl_ip addresses_A_3_4[] = {
 	.ip	= TEST_ADDRESS_A_PREFIX".4"
 	}
 };
+static const struct wrepl_ip addresses_A_3_4_X_3_4[] = {
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".4"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".4"
+	}
+};
+static const struct wrepl_ip addresses_A_3_4_OWNER_B[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".4"
+	}
+};
+static const struct wrepl_ip addresses_A_3_4_X_3_4_OWNER_B[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".4"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".4"
+	}
+};
+
+static const struct wrepl_ip addresses_A_3_4_X_1_2[] = {
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_A_ADDRESS,
+	.ip	= TEST_ADDRESS_A_PREFIX".4"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".1"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".2"
+	}
+};
 
 static const struct wrepl_ip addresses_B_1[] = {
 	{
@@ -395,6 +462,42 @@ static const struct wrepl_ip addresses_B_3_4[] = {
 	{
 	.owner	= TEST_OWNER_B_ADDRESS,
 	.ip	= TEST_ADDRESS_B_PREFIX".4"
+	}
+};
+static const struct wrepl_ip addresses_B_3_4_X_3_4[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".4"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".4"
+	}
+};
+static const struct wrepl_ip addresses_B_3_4_X_1_2[] = {
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".3"
+	},
+	{
+	.owner	= TEST_OWNER_B_ADDRESS,
+	.ip	= TEST_ADDRESS_B_PREFIX".4"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".1"
+	},
+	{
+	.owner	= TEST_OWNER_X_ADDRESS,
+	.ip	= TEST_ADDRESS_X_PREFIX".2"
 	}
 };
 
@@ -433,6 +536,11 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 	ctx->b.min_version	= 0;
 	ctx->b.type		= 1;
 
+	ctx->x.address		= TEST_OWNER_X_ADDRESS;
+	ctx->x.max_version	= 0;
+	ctx->x.min_version	= 0;
+	ctx->x.type		= 1;
+
 	ctx->c.address		= address;
 	ctx->c.max_version	= 0;
 	ctx->c.min_version	= 0;
@@ -450,6 +558,10 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		if (strcmp(TEST_OWNER_B_ADDRESS,pull_table.out.partners[i].address)==0) {
 			ctx->b.max_version	= pull_table.out.partners[i].max_version;
 			ctx->b.min_version	= pull_table.out.partners[i].min_version;
+		}
+		if (strcmp(TEST_OWNER_X_ADDRESS,pull_table.out.partners[i].address)==0) {
+			ctx->x.max_version	= pull_table.out.partners[i].max_version;
+			ctx->x.min_version	= pull_table.out.partners[i].min_version;
 		}
 		if (strcmp(address,pull_table.out.partners[i].address)==0) {
 			ctx->c.max_version	= pull_table.out.partners[i].max_version;
@@ -729,6 +841,7 @@ done:
 }
 
 static BOOL test_wrepl_sgroup_merged(struct test_wrepl_conflict_conn *ctx,
+				     struct wrepl_wins_owner *merge_owner,
 				     struct wrepl_wins_owner *owner1,
 				     uint32_t num_ips1, const struct wrepl_ip *ips1,
 				     struct wrepl_wins_owner *owner2,
@@ -744,17 +857,26 @@ static BOOL test_wrepl_sgroup_merged(struct test_wrepl_conflict_conn *ctx,
 	uint32_t i, j;
 	uint32_t num_ips = num_ips1 + num_ips2;
 
-	for (i = 0; i < num_ips2; i++) {
-		for (j = 0; j < num_ips1; j++) {
-			if (strcmp(ips2[i].ip,ips1[j].ip) == 0) {
+	if (!merge_owner) {
+		merge_owner = &ctx->c;
+	}
+
+	for (i = 0; i < num_ips1; i++) {
+		if (owner1 != &ctx->c && strcmp(ips1[i].owner,owner2->address) == 0) {
+			num_ips--;
+			continue;
+		}
+		for (j = 0; j < num_ips2; j++) {
+			if (strcmp(ips1[i].ip,ips2[j].ip) == 0) {
 				num_ips--;
 				break;
 			}
-		} 
+		}
 	}
 
+
 	pull_names.in.assoc_ctx	= ctx->pull_assoc;
-	pull_names.in.partner	= ctx->c;
+	pull_names.in.partner	= *merge_owner;
 	pull_names.in.partner.min_version = pull_names.in.partner.max_version;
 	pull_names.in.partner.max_version = 0;
 
@@ -773,7 +895,7 @@ static BOOL test_wrepl_sgroup_merged(struct test_wrepl_conflict_conn *ctx,
 	}
 
 	if (pull_names.out.num_names > 0) {
-		ctx->c.max_version	= names[pull_names.out.num_names-1].version_id;
+		merge_owner->max_version	= names[pull_names.out.num_names-1].version_id;
 	}
 
 	if (!name) {
@@ -800,7 +922,7 @@ static BOOL test_wrepl_sgroup_merged(struct test_wrepl_conflict_conn *ctx,
 		for (j = 0; j < num_ips2; j++) {
 			if (strcmp(addr, ips2[j].ip) == 0) {
 				found = True;
-				CHECK_VALUE_STRING(owner, owner2->address);
+				CHECK_VALUE_STRING(owner, ips2[j].owner);
 				break;
 			}
 		}
@@ -810,7 +932,11 @@ static BOOL test_wrepl_sgroup_merged(struct test_wrepl_conflict_conn *ctx,
 		for (j = 0; j < num_ips1; j++) {
 			if (strcmp(addr, ips1[j].ip) == 0) {
 				found = True;
-				CHECK_VALUE_STRING(owner, owner1->address);
+				if (owner1 == &ctx->c) {
+					CHECK_VALUE_STRING(owner, owner1->address);
+				} else {
+					CHECK_VALUE_STRING(owner, ips1[j].owner);
+				}
 				break;
 			}
 		}
@@ -1021,9 +1147,11 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			const struct wrepl_ip *ips;
 			BOOL apply_expected;
 			BOOL sgroup_merge;
+			struct wrepl_wins_owner *merge_owner;
 			BOOL sgroup_cleanup;
-		} r1, r2;
+		} r1, r2, result;
 	} records[] = {
+#if 1
 	/* 
 	 * NOTE: the first record and the last applied one
 	 *       needs to be from the same owner,
@@ -3710,6 +3838,32 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.apply_expected	= True
 		}
 	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_1),
+			.ips		= addresses_B_1,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True,
+		}
+	},
+#endif
 /*
  * special group vs special group section,
  */
@@ -3720,18 +3874,9 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:A_3_4 vs. B:B_3_4 => C:A_3_4_B_3_4",
 		.extra	= True,
 		.r1	= {
-			.owner		= &ctx->b,
-			.type		= WREPL_TYPE_SGROUP,
-			.state		= WREPL_STATE_ACTIVE,
-			.node		= WREPL_NODE_B,
-			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
-			.ips		= addresses_B_3_4,
-			.apply_expected	= True,
-		},
-		.r2	= {
 			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_SGROUP,
 			.state		= WREPL_STATE_ACTIVE,
@@ -3739,26 +3884,6 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.is_static	= False,
 			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
 			.ips		= addresses_A_3_4,
-			.sgroup_merge	= True
-		}
-	},
-	/* 
-	 * sgroup,active vs. sgroup,active different addresses, but owner changed
-	 * => should be merged
-	 */
-	{
-		.line	= __location__,
-		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
-		.comment= "but owner changed",
-		.extra	= True,
-		.r1	= {
-			.owner		= &ctx->a,
-			.type		= WREPL_TYPE_SGROUP,
-			.state		= WREPL_STATE_ACTIVE,
-			.node		= WREPL_NODE_B,
-			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
-			.ips		= addresses_B_3_4,
 			.apply_expected	= True,
 		},
 		.r2	= {
@@ -3767,10 +3892,10 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
-			.ips		= addresses_A_3_4,
-			.apply_expected	= True,
-			.sgroup_cleanup	= True
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.sgroup_merge	= True,
+			.sgroup_cleanup = True,
 		}
 	},
 	/* 
@@ -3780,18 +3905,40 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:A_3_4 vs. B:A_3_4",
 		.extra	= True,
 		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True
+		},
+		.r2	= {
 			.owner		= &ctx->b,
 			.type		= WREPL_TYPE_SGROUP,
 			.state		= WREPL_STATE_ACTIVE,
 			.node		= WREPL_NODE_B,
 			.is_static	= False,
-			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
-			.ips		= addresses_B_3_4,
-			.apply_expected	= True
-		},
-		.r2	= {
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= False,
+			.sgroup_cleanup	= True
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active different addresses, but owner changed
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4 vs. B:A_3_4",
+		.extra	= True,
+		.r1	= {
 			.owner		= &ctx->a,
 			.type		= WREPL_TYPE_SGROUP,
 			.state		= WREPL_STATE_ACTIVE,
@@ -3799,8 +3946,361 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.is_static	= False,
 			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
 			.ips		= addresses_B_3_4,
-			.apply_expected	= False,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True,
 			.sgroup_cleanup	= True
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active different addresses, but owner changed
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:A_3_4 vs. B:A_3_4_OWNER_B",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4_OWNER_B),
+			.ips		= addresses_A_3_4_OWNER_B,
+			.apply_expected	= True,
+			.sgroup_cleanup	= True
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active different addresses, but owner changed
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:A_3_4_OWNER_B vs. B:A_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4_OWNER_B),
+			.ips		= addresses_A_3_4_OWNER_B,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True,
+			.sgroup_cleanup	= True
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active different addresses, special case...
+	 * => should be merged
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:A_3_4 => B:X_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.sgroup_merge	= True,
+			.merge_owner	= &ctx->b,
+			.sgroup_cleanup	= False
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4_X_3_4_OWNER_B),
+			.ips		= addresses_A_3_4_X_3_4_OWNER_B,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active subset addresses, special case...
+	 * => should NOT be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:A_3_4_X_3_4 vs. B:A_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4_X_3_4),
+			.ips		= addresses_A_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected = False,
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		},
+		.r2	= {
+			.owner		= &ctx->x,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active different addresses, special case...
+	 * => should be merged
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:A_3_4_X_3_4 vs. B:A_3_4_OWNER_B => B:A_3_4_OWNER_B_X_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4_X_3_4),
+			.ips		= addresses_A_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4_OWNER_B),
+			.ips		= addresses_A_3_4_OWNER_B,
+			.sgroup_merge	= True,
+			.merge_owner	= &ctx->b,
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		},
+		.r2	= {
+			.owner		= &ctx->x,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active partly different addresses, special case...
+	 * => should be merged
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:B_3_4_X_1_2 => C:B_3_4_X_1_2_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_1_2),
+			.ips		= addresses_B_3_4_X_1_2,
+			.sgroup_merge	= True,
+			.sgroup_cleanup	= False
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		},
+		.r2	= {
+			.owner		= &ctx->x,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active different addresses, special case...
+	 * => should be merged
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:NULL => B:X_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.sgroup_merge	= True,
+			.merge_owner	= &ctx->b,
+			.sgroup_cleanup	= True
+		}
+	},
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.cleanup= True,
+		.r1	= {
+			.owner		= &ctx->x,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= False,
+		},
+		.r2	= {
+			.owner		= &ctx->x,
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_1),
+			.ips		= addresses_A_1,
+			.apply_expected	= True,
 		}
 	},
 	/* 
@@ -3869,23 +4369,21 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			}
 
 			if (!records[i].r1.ips && !records[i].r2.ips) {
-				ips = "no";
+				ips = "with no ip(s)";
 			} else if (records[i].r1.ips==records[i].r2.ips) {
-				ips = "same";
+				ips = "with same ip(s)";
 			} else {
-				ips = "different";
+				ips = "with different ip(s)";
 			}
 
-			printf("%s,%s%s vs. %s,%s%s with %s ip(s)%s%s => %s\n",
+			printf("%s,%s%s vs. %s,%s%s %s => %s\n",
 				wrepl_name_type_string(records[i].r1.type),
 				wrepl_name_state_string(records[i].r1.state),
 				(records[i].r1.is_static?",static":""),
 				wrepl_name_type_string(records[i].r2.type),
 				wrepl_name_state_string(records[i].r2.state),
 				(records[i].r2.is_static?",static":""),
-				ips,
-				(records[i].comment?" ":""),
-				(records[i].comment?records[i].comment:""),
+				(records[i].comment?records[i].comment:ips),
 				expected);
 		}
 
@@ -3934,7 +4432,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			ret &= test_wrepl_is_applied(ctx, records[i].r1.owner,
 						     wins_name_r1, False);
 		} else if (records[i].r2.sgroup_merge) {
-			ret &= test_wrepl_sgroup_merged(ctx,
+			ret &= test_wrepl_sgroup_merged(ctx, records[i].r2.merge_owner,
 							records[i].r1.owner,
 							records[i].r1.num_ips, records[i].r1.ips,
 							records[i].r2.owner,
@@ -3954,7 +4452,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 						     wins_name_r2, records[i].r2.apply_expected);
 		}
 
-		if (records[i].r2.sgroup_cleanup || records[i].r2.sgroup_merge) {
+		if (records[i].r2.sgroup_cleanup) {
 			/* clean up the SGROUP record */
 			wins_name_r1->name	= &records[i].name;
 			wins_name_r1->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_SGROUP,
@@ -3968,7 +4466,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 
 			/* here we test how names from an owner are deleted */
 			if (records[i].r2.sgroup_merge && records[i].r2.num_ips) {
-				ret &= test_wrepl_sgroup_merged(ctx,
+				ret &= test_wrepl_sgroup_merged(ctx, NULL,
 								records[i].r2.owner,
 								records[i].r2.num_ips, records[i].r2.ips,
 								records[i].r1.owner,
@@ -8340,7 +8838,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 							records[i].replica.num_ips, records[i].replica.ips,
 							wins_name);
 		} else if (records[i].replica.sgroup_merge) {
-			ret &= test_wrepl_sgroup_merged(ctx,
+			ret &= test_wrepl_sgroup_merged(ctx, NULL,
 							&ctx->c,
 						        records[i].wins.num_ips, records[i].wins.ips,
 							&ctx->b,
