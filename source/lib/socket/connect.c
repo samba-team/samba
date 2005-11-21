@@ -37,7 +37,7 @@ struct connect_state {
 	const char *server_address;
 	int server_port;
 	uint32_t flags;
-	struct fd_event *connect_ev;
+	struct fd_event *fde;
 };
 
 static void socket_connect_handler(struct event_context *ev,
@@ -46,111 +46,12 @@ static void socket_connect_handler(struct event_context *ev,
 static void socket_connect_recv_addr(struct composite_context *ctx);
 static void socket_connect_recv_conn(struct composite_context *ctx);
 
-struct composite_context *socket_connect_send(struct socket_context *sock,
-					      const char *my_address,
-					      int my_port,
-					      const char *server_address,
-					      int server_port,
-					      uint32_t flags,
-					      struct event_context *event_ctx)
-{
-	struct composite_context *result, *ctx;
-	struct connect_state *state;
-
-	result = talloc_zero(NULL, struct composite_context);
-	if (result == NULL) goto failed;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->async.fn = NULL;
-	result->event_ctx = event_ctx;
-
-	state = talloc(result, struct connect_state);
-	if (state == NULL) goto failed;
-	state->ctx = result;
-	result->private_data = state;
-
-	state->sock = talloc_reference(state, sock);
-	if (state->sock == NULL) goto failed;
-	state->my_address = talloc_strdup(state, my_address);
-	if (state->sock == NULL) goto failed;
-	state->my_port = my_port;
-	state->server_address = talloc_strdup(state, server_address);
-	if (state->sock == NULL) goto failed;
-	state->server_port = server_port;
-	state->flags = flags;
-
-	set_blocking(socket_get_fd(sock), False);
-
-	if (strcmp(sock->backend_name, "ipv4") == 0) {
-		struct nbt_name name;
-		make_nbt_name_client(&name, server_address);
-		ctx = resolve_name_send(&name, result->event_ctx,
-					lp_name_resolve_order());
-		if (ctx == NULL) goto failed;
-		ctx->async.fn = socket_connect_recv_addr;
-		ctx->async.private_data = state;
-		return result;
-	}
-
-	ctx = talloc_zero(state, struct composite_context);
-	if (ctx == NULL) goto failed;
-	ctx->state = COMPOSITE_STATE_IN_PROGRESS;
-	ctx->event_ctx = event_ctx;
-	ctx->async.fn = socket_connect_recv_conn;
-	ctx->async.private_data = state;
-
-	state->ctx->status = socket_connect(sock, my_address, my_port, 
-					    server_address, server_port,
-					    flags);
-	if (NT_STATUS_IS_ERR(state->ctx->status) && 
-	    !NT_STATUS_EQUAL(state->ctx->status,
-			     NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		composite_trigger_error(state->ctx);
-		return result;
-	}
-
-	state->connect_ev = event_add_fd(state->ctx->event_ctx, state,
-					 socket_get_fd(sock), EVENT_FD_WRITE, 
-					 socket_connect_handler, ctx);
-	if (state->connect_ev == NULL) {
-		state->ctx->status = NT_STATUS_NO_MEMORY;
-		composite_trigger_error(state->ctx);
-		return result;
-	}
-
-	return result;
-
- failed:
-	talloc_free(result);
-	return NULL;
-}
-
 /*
-  handle write events on connect completion
+  call the real socket_connect() call, and setup event handler
 */
-static void socket_connect_handler(struct event_context *ev,
-				   struct fd_event *fde, 
-				   uint16_t flags, void *private)
+static void socket_send_connect(struct connect_state *state)
 {
-	struct composite_context *ctx =
-		talloc_get_type(private, struct composite_context);
-	struct connect_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct connect_state);
-
-	ctx->status = socket_connect_complete(state->sock, state->flags);
-	if (!composite_is_ok(ctx)) return;
-
-	composite_done(ctx);
-}
-
-static void socket_connect_recv_addr(struct composite_context *ctx)
-{
-	struct connect_state *state =
-		talloc_get_type(ctx->async.private_data, struct connect_state);
-	const char *addr;
-
-	state->ctx->status = resolve_name_recv(ctx, state, &addr);
-	if (!composite_is_ok(state->ctx)) return;
+	struct composite_context *ctx;
 
 	ctx = talloc_zero(state, struct composite_context);
 	if (composite_nomem(ctx, state->ctx)) return;
@@ -172,15 +73,115 @@ static void socket_connect_recv_addr(struct composite_context *ctx)
 		return;
 	}
 
-	state->connect_ev = event_add_fd(ctx->event_ctx, state,
-					 socket_get_fd(state->sock),
-					 EVENT_FD_WRITE, 
-					 socket_connect_handler, ctx);
-	if (composite_nomem(state->connect_ev, state->ctx)) return;
-
-	return;
+	state->fde = event_add_fd(ctx->event_ctx, state,
+				  socket_get_fd(state->sock),
+				  EVENT_FD_WRITE, 
+				  socket_connect_handler, ctx);
+	composite_nomem(state->fde, state->ctx);
 }
 
+
+/*
+  send a socket connect, potentially doing some name resolution first
+*/
+struct composite_context *socket_connect_send(struct socket_context *sock,
+					      const char *my_address,
+					      int my_port,
+					      const char *server_address,
+					      int server_port,
+					      uint32_t flags,
+					      struct event_context *event_ctx)
+{
+	struct composite_context *result, *ctx;
+	struct connect_state *state;
+
+	result = talloc_zero(sock, struct composite_context);
+	if (result == NULL) return NULL;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->async.fn = NULL;
+	result->event_ctx = event_ctx;
+
+	state = talloc_zero(result, struct connect_state);
+	if (composite_nomem(state, result)) goto failed;
+	state->ctx = result;
+	result->private_data = state;
+
+	state->sock = talloc_reference(state, sock);
+	if (composite_nomem(state->sock, result)) goto failed;
+
+	if (my_address) {
+		state->my_address = talloc_strdup(state, my_address);
+		if (composite_nomem(state->my_address, result)) goto failed;
+	}
+	state->my_port = my_port;
+
+	state->server_address = talloc_strdup(state, server_address);
+	if (composite_nomem(state->server_address, result)) goto failed;
+
+	state->server_port = server_port;
+	state->flags = flags;
+
+	set_blocking(socket_get_fd(sock), False);
+
+	if (strcmp(sock->backend_name, "ipv4") == 0) {
+		struct nbt_name name;
+		make_nbt_name_client(&name, server_address);
+		ctx = resolve_name_send(&name, result->event_ctx,
+					lp_name_resolve_order());
+		if (ctx == NULL) goto failed;
+		ctx->async.fn = socket_connect_recv_addr;
+		ctx->async.private_data = state;
+		return result;
+	}
+
+	socket_send_connect(state);
+
+	return result;
+
+failed:
+	composite_trigger_error(result);
+	return result;
+}
+
+/*
+  handle write events on connect completion
+*/
+static void socket_connect_handler(struct event_context *ev,
+				   struct fd_event *fde, 
+				   uint16_t flags, void *private)
+{
+	struct composite_context *ctx =
+		talloc_get_type(private, struct composite_context);
+	struct connect_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct connect_state);
+
+	ctx->status = socket_connect_complete(state->sock, state->flags);
+	if (!composite_is_ok(ctx)) return;
+
+	composite_done(ctx);
+}
+
+/*
+  recv name resolution reply then send the connect
+*/
+static void socket_connect_recv_addr(struct composite_context *ctx)
+{
+	struct connect_state *state =
+		talloc_get_type(ctx->async.private_data, struct connect_state);
+	const char *addr;
+
+	state->ctx->status = resolve_name_recv(ctx, state, &addr);
+	if (!composite_is_ok(state->ctx)) return;
+
+	state->server_address = addr;
+
+	socket_send_connect(state);
+}
+
+/*
+  called when a connect has finished. Complete the top level composite context
+*/
 static void socket_connect_recv_conn(struct composite_context *ctx)
 {
 	struct connect_state *state =
@@ -188,14 +189,13 @@ static void socket_connect_recv_conn(struct composite_context *ctx)
 
 	state->ctx->status = ctx->status;
 	if (!composite_is_ok(state->ctx)) return;
-
-	/* We have to free the event context here because the continuation
-	 * function might add an event for this socket directly. */
-	talloc_free(state->connect_ev);
-
 	composite_done(state->ctx);
 }
 
+
+/*
+  wait for a socket_connect_send() to finish
+*/
 NTSTATUS socket_connect_recv(struct composite_context *ctx)
 {
 	NTSTATUS status = composite_wait(ctx);
@@ -203,6 +203,10 @@ NTSTATUS socket_connect_recv(struct composite_context *ctx)
 	return status;
 }
 
+
+/*
+  like socket_connect() but takes an event context, doing a semi-async connect
+*/
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   const char *my_address, int my_port,
 			   const char *server_address, int server_port,
