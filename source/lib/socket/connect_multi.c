@@ -26,31 +26,43 @@
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
+#include "librpc/gen_ndr/nbt.h"
 
+#define MULTI_PORT_DELAY 2000 /* microseconds */
 
+/*
+  overall state
+*/
 struct connect_multi_state {
-	struct composite_context *ctx;
 	const char *server_address;
 	int num_ports;
 	uint16_t *ports;
 
-	struct socket_context *result;
+	struct socket_context *sock;
 	uint16_t result_port;
 
-	int num_connects_sent, num_connects_in_fly;
-	struct fd_event **write_events;
-	struct socket_context **sockets;
-	struct timed_event *next_timeout;
+	int num_connects_sent, num_connects_recv;
 };
 
-static void connect_multi_connect_handler(struct event_context *ev,
-					  struct fd_event *fde, 
-					  uint16_t flags, void *p);
-static NTSTATUS connect_multi_next_socket(struct connect_multi_state *state);
-static void connect_multi_fire_next(struct event_context *ev,
+/*
+  state of an individual socket_connect_send() call
+*/
+struct connect_one_state {
+	struct composite_context *result;
+	struct socket_context *sock;
+	uint16_t port;
+};
+
+static void continue_resolve_name(struct composite_context *creq);
+static void connect_multi_timer(struct event_context *ev,
 				    struct timed_event *te,
 				    struct timeval tv, void *p);
+static void connect_multi_next_socket(struct composite_context *result);
+static void continue_one(struct composite_context *creq);
 
+/*
+  setup an async socket_connect, with multiple ports
+*/
 struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
 						    const char *server_address,
 						    int num_server_ports,
@@ -58,194 +70,187 @@ struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
 						    struct event_context *event_ctx)
 {
 	struct composite_context *result;
-	struct connect_multi_state *state;
+	struct connect_multi_state *multi;
 	int i;
 
 	result = talloc_zero(mem_ctx, struct composite_context);
-	if (result == NULL) goto failed;
+	if (result == NULL) return NULL;
 	result->state = COMPOSITE_STATE_IN_PROGRESS;
 	result->event_ctx = event_ctx;
 
-	state = talloc(result, struct connect_multi_state);
-	if (state == NULL) goto failed;
-	state->ctx = result;
-	result->private_data = state;
+	multi = talloc_zero(result, struct connect_multi_state);
+	if (composite_nomem(multi, result)) goto failed;
+	result->private_data = multi;
 
-	state->server_address = talloc_strdup(state, server_address);
-	if (state->server_address == NULL) goto failed;
+	multi->server_address = talloc_strdup(multi, server_address);
+	if (composite_nomem(multi->server_address, result)) goto failed;
 
-	state->num_ports = num_server_ports;
-	state->ports = talloc_array(state, uint16_t, state->num_ports);
-	if (state->ports == NULL) goto failed;
+	multi->num_ports = num_server_ports;
+	multi->ports = talloc_array(multi, uint16_t, multi->num_ports);
+	if (composite_nomem(multi->ports, result)) goto failed;
 
-	for (i=0; i<state->num_ports; i++) {
-		state->ports[i] = server_ports[i];
+	for (i=0; i<multi->num_ports; i++) {
+		multi->ports[i] = server_ports[i];
 	}
 
-	state->sockets =
-		talloc_array(state, struct socket_context *, state->num_ports);
-	if (state->sockets == NULL) goto failed;
+	if (!is_ipaddress(server_address)) {
+		/*  
+		    we don't want to do the name resolution separately
+		    for each port, so start it now, then only start on
+		    the real sockets once we have an IP
+		 */
+		struct nbt_name name;
+		struct composite_context *creq;
+		make_nbt_name_client(&name, server_address);
+		creq = resolve_name_send(&name, result->event_ctx,
+					 lp_name_resolve_order());
+		if (composite_nomem(creq, result)) goto failed;
+		composite_continue(result, creq, continue_resolve_name, result);
+		return result;
+	}
 
-	state->write_events =
-		talloc_array(state, struct fd_event *, state->num_ports);
-	if (state->write_events == NULL) goto failed;
-
-	state->num_connects_sent = 0;
-	state->num_connects_in_fly = 0;
-
-	result->status = connect_multi_next_socket(state);
+	/* now we've setup the state we can process the first socket */
+	connect_multi_next_socket(result);
 
 	if (!NT_STATUS_IS_OK(result->status)) {
-		composite_trigger_error(result);
-		return result;
+		goto failed;
 	}
 
 	return result;
 
  failed:
-	talloc_free(result);
-	return NULL;
+	composite_trigger_error(result);
+	return result;
 }
 
-static NTSTATUS connect_multi_next_socket(struct connect_multi_state *state)
+/*
+  start connecting to the next socket/port in the list
+*/
+static void connect_multi_next_socket(struct composite_context *result)
 {
+	struct connect_multi_state *multi = talloc_get_type(result->private_data, 
+							    struct connect_multi_state);
+	struct connect_one_state *state;
+	struct composite_context *creq;
+	int next = multi->num_connects_sent;
+
+	if (next == multi->num_ports) {
+		/* don't do anything, just wait for the existing ones to finish */
+		return;
+	}
+
+	multi->num_connects_sent += 1;
+
+	state = talloc(multi, struct connect_one_state);
+	if (composite_nomem(state, result)) return;
+
+	state->result = result;
+	state->port = multi->ports[next];
+
+	result->status = socket_create("ipv4", SOCKET_TYPE_STREAM, &state->sock, 0);
+	if (!composite_is_ok(result)) return;
+
+	talloc_steal(state, state->sock);
+
+	creq = socket_connect_send(state->sock, NULL, 0, 
+				   multi->server_address, state->port, 0, result->event_ctx);
+	if (composite_nomem(creq, result)) return;
+
+	composite_continue(result, creq, continue_one, state);
+
+	/* if there are more ports to go then setup a timer to fire when we have waited
+	   for a couple of milli-seconds, when that goes off we try the next port regardless
+	   of whether this port has completed */
+	if (multi->num_ports > multi->num_connects_sent) {
+		/* note that this timer is a child of the single
+		   connect attempt state, so it will go away when this
+		   request completes */
+		event_add_timed(result->event_ctx, state,
+				timeval_current_ofs(0, MULTI_PORT_DELAY),
+				connect_multi_timer, result);
+	}
+}
+
+/*
+  a timer has gone off telling us that we should try the next port
+*/
+static void connect_multi_timer(struct event_context *ev,
+				struct timed_event *te,
+				struct timeval tv, void *p)
+{
+	struct composite_context *result = talloc_get_type(p, struct composite_context);
+	connect_multi_next_socket(result);
+}
+
+
+/*
+  recv name resolution reply then send the next connect
+*/
+static void continue_resolve_name(struct composite_context *creq)
+{
+	struct composite_context *result = talloc_get_type(creq->async.private_data, 
+							   struct composite_context);
+	struct connect_multi_state *multi = talloc_get_type(result->private_data, 
+							    struct connect_multi_state);
+	const char *addr;
+
+	result->status = resolve_name_recv(creq, multi, &addr);
+	if (!composite_is_ok(result)) return;
+
+	multi->server_address = addr;
+
+	connect_multi_next_socket(result);
+}
+
+/*
+  one of our socket_connect_send() calls hash finished. If it got a
+  connection or there are none left then we are done
+*/
+static void continue_one(struct composite_context *creq)
+{
+	struct connect_one_state *state = talloc_get_type(creq->async.private_data, 
+							  struct connect_one_state);
+	struct composite_context *result = state->result;
+	struct connect_multi_state *multi = talloc_get_type(result->private_data, 
+							    struct connect_multi_state);
 	NTSTATUS status;
-	int res, next = state->num_connects_sent;
+	multi->num_connects_recv++;
 
-	status = socket_create("ipv4", SOCKET_TYPE_STREAM,
-			       &state->sockets[next], 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	status = socket_connect_recv(creq);
+
+	if (NT_STATUS_IS_OK(status)) {
+		multi->sock = talloc_steal(multi, state->sock);
+		multi->result_port = state->port;
 	}
 
-	res = set_blocking(socket_get_fd(state->sockets[next]), False);
-	if (res != 0) {
-		return map_nt_error_from_unix(errno);
+	talloc_free(state);
+
+	if (NT_STATUS_IS_OK(status) || 
+	    multi->num_connects_recv == multi->num_ports) {
+		result->status = status;
+		composite_done(result);
+		return;
 	}
 
-	talloc_steal(state->sockets, state->sockets[next]);
-
-	status = socket_connect(state->sockets[next], NULL, 0,
-				state->server_address, state->ports[next], 0);
-
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		return status;
-	}
-	
-	state->write_events[next] =
-		event_add_fd(state->ctx->event_ctx, state->write_events,
-			     socket_get_fd(state->sockets[next]),
-			     EVENT_FD_WRITE,
-			     connect_multi_connect_handler, state);
-
-	if (state->write_events[next] == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state->num_connects_sent += 1;
-	state->num_connects_in_fly += 1;
-
-	if (state->num_ports > state->num_connects_sent) {
-		state->next_timeout =
-			event_add_timed(state->ctx->event_ctx, state,
-					timeval_current_ofs(0, 2000),
-					connect_multi_fire_next, state);
-		if (state->next_timeout == NULL) {
-			talloc_free(state->sockets[next]);
-			state->sockets[next] = NULL;
-			talloc_free(state->write_events[next]);
-			state->write_events[next] = NULL;
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	return NT_STATUS_OK;
+	/* try the next port */
+	connect_multi_next_socket(result);
 }
 
-static void connect_multi_fire_next(struct event_context *ev,
-				    struct timed_event *te,
-				    struct timeval tv, void *p)
-{
-	struct connect_multi_state *state =
-		talloc_get_type(p, struct connect_multi_state);
-
-	state->ctx->status = connect_multi_next_socket(state);
-	if (!composite_is_ok(state->ctx)) return;
-}
-
-static void connect_multi_connect_handler(struct event_context *ev,
-					  struct fd_event *fde, 
-					  uint16_t flags, void *p)
-{
-	struct connect_multi_state *state =
-		talloc_get_type(p, struct connect_multi_state);
-	int i;
-
-	for (i=0; i<state->num_connects_sent; i++) {
-		if (fde == state->write_events[i]) {
-			break;
-		}
-	}
-
-	if (i == state->num_connects_sent) {
-		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
-
-	state->num_connects_in_fly -= 1;
-
-	state->ctx->status = socket_connect_complete(state->sockets[i], 0);
-	if (NT_STATUS_IS_OK(state->ctx->status)) {
-		state->result = talloc_steal(state, state->sockets[i]);
-		state->result_port = state->ports[i];
-		talloc_free(state->sockets);
-		state->sockets = NULL;
-		talloc_free(state->write_events);
-		state->write_events = NULL;
-		composite_done(state->ctx);
-		return;
-	}
-
-	talloc_free(state->sockets[i]);
-	state->sockets[i] = NULL;
-
-	if ((state->num_connects_in_fly == 0) &&
-	    (state->num_connects_sent == state->num_ports)) {
-		composite_error(state->ctx, state->ctx->status);
-		return;
-	}
-
-	if (state->num_connects_in_fly != 0) {
-		/* Waiting for something to happen on the net or the next
-		 * timeout to trigger */
-		return;
-	}
-
-	SMB_ASSERT(state->num_connects_sent < state->num_ports);
-	SMB_ASSERT(state->next_timeout != NULL);
-
-	/* There are ports left but nothing on the net, so trigger the next
-	 * one immediately. */
-	talloc_free(state->next_timeout);
-	state->next_timeout =
-		event_add_timed(state->ctx->event_ctx, state, timeval_zero(),
-				connect_multi_fire_next, state);
-	if (composite_nomem(state->next_timeout, state->ctx)) return;
-}
-
+/*
+  async recv routine for socket_connect_multi()
+ */
 NTSTATUS socket_connect_multi_recv(struct composite_context *ctx,
 				   TALLOC_CTX *mem_ctx,
-				   struct socket_context **result,
+				   struct socket_context **sock,
 				   uint16_t *port)
 {
 	NTSTATUS status = composite_wait(ctx);
 	if (NT_STATUS_IS_OK(status)) {
-		struct connect_multi_state *state =
+		struct connect_multi_state *multi =
 			talloc_get_type(ctx->private_data,
 					struct connect_multi_state);
-		*result = talloc_steal(mem_ctx, state->result);
-		*port = state->result_port;
+		*sock = talloc_steal(mem_ctx, multi->sock);
+		*port = multi->result_port;
 	}
 	talloc_free(ctx);
 	return status;
