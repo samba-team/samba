@@ -73,7 +73,8 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 struct bind_auth_state {
 	struct dcerpc_pipe *pipe;
 	DATA_BLOB credentials;
-	BOOL more_processing;
+	BOOL more_processing;	/* Is there anything more to do after the
+				 * first bind itself received? */
 };
 
 static void bind_auth_recv_alter(struct composite_context *creq);
@@ -85,6 +86,16 @@ static void bind_auth_next_step(struct composite_context *c)
 	struct dcerpc_security *sec = &state->pipe->conn->security_state;
 	struct composite_context *creq;
 	BOOL more_processing = False;
+
+	/* The status value here, from GENSEC is vital to the security
+	 * of the system.  Even if the other end accepts, if GENSEC
+	 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
+	 * feeding it blobs, or else the remote host/attacker might
+	 * avoid mutal authentication requirements.
+	 *
+	 * Likewise, you must not feed GENSEC too much (after the OK),
+	 * it doesn't like that either
+	 */
 
 	c->status = gensec_update(sec->generic_state, state,
 				  sec->auth_info->credentials,
@@ -111,6 +122,8 @@ static void bind_auth_next_step(struct composite_context *c)
 		composite_done(c);
 		return;
 	}
+
+	/* We are demanding a reply, so use a request that will get us one */
 
 	creq = dcerpc_alter_context_send(state->pipe, state,
 					 &state->pipe->syntax,
@@ -142,6 +155,8 @@ static void bind_auth_recv_bindreply(struct composite_context *creq)
 	if (!composite_is_ok(c)) return;
 
 	if (!state->more_processing) {
+		/* The first gensec_update has not requested a second run, so
+		 * we're done here. */
 		composite_done(c);
 		return;
 	}
@@ -240,6 +255,16 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	sec->auth_info->auth_context_id = random();
 	sec->auth_info->credentials = data_blob(NULL, 0);
 
+	/* The status value here, from GENSEC is vital to the security
+	 * of the system.  Even if the other end accepts, if GENSEC
+	 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
+	 * feeding it blobs, or else the remote host/attacker might
+	 * avoid mutal authentication requirements.
+	 *
+	 * Likewise, you must not feed GENSEC too much (after the OK),
+	 * it doesn't like that either
+	 */
+
 	c->status = gensec_update(sec->generic_state, state,
 				  sec->auth_info->credentials,
 				  &state->credentials);
@@ -258,6 +283,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	sec->auth_info->credentials = state->credentials;
 
+	/* The first request always is a dcerpc_bind. The subsequent ones
+	 * depend on gensec results */
 	creq = dcerpc_bind_send(p, state, &syntax, &transfer_syntax);
 	if (creq == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
