@@ -1151,7 +1151,6 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			BOOL sgroup_cleanup;
 		} r1, r2, result;
 	} records[] = {
-#if 1
 	/* 
 	 * NOTE: the first record and the last applied one
 	 *       needs to be from the same owner,
@@ -3863,7 +3862,6 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.apply_expected	= True,
 		}
 	},
-#endif
 /*
  * special group vs special group section,
  */
