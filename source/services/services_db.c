@@ -35,43 +35,51 @@ struct service_display_info {
 };
 
 struct service_display_info builtin_svcs[] = {  
-  { "Spooler",	      "smbd", "Print Spooler",
-  	"Internal service for spooling files to print devices" },
-  { "NETLOGON",	      "smbd", "Net Logon",
-  	"File service providing access to policy and profile data" },
-  { "RemoteRegistry", "smbd", "Remote Registry Service",
-  	"Internal service providing remote access to the Samba registry" },
-  { "WINS",           "nmbd", "Windows Internet Name Service (WINS)",
-  	"Internal service providing a NetBIOS point-to-point name server" },
+  { "Spooler",	      "smbd", 	"Print Spooler", "Internal service for spooling files to print devices" },
+  { "NETLOGON",	      "smbd", 	"Net Logon", "File service providing access to policy and profile data" },
+  { "RemoteRegistry", "smbd", 	"Remote Registry Service", "Internal service providing remote access to "
+				"the Samba registry" },
+  { "WINS",           "nmbd", 	"Windows Internet Name Service (WINS)", "Internal service providing a "
+				"NetBIOS point-to-point name server" },
   { NULL, NULL, NULL, NULL }
 };
 
 struct service_display_info common_unix_svcs[] = {  
-  { "cups",          NULL, "Common Unix Printing System", NULL },
-  { "postfix",       NULL, "Internet Mail Service", NULL },
-  { "sendmail",      NULL, "Internet Mail Service", NULL },
-  { "portmap",       NULL, "TCP Port to RPC PortMapper", NULL },
-  { "xinetd",        NULL, "Internet Meta-Daemon", NULL },
-  { "inet",          NULL, "Internet Meta-Daemon", NULL },
-  { "xntpd",         NULL, "Network Time Service", NULL },
-  { "ntpd",          NULL, "Network Time Service", NULL },
-  { "lpd",           NULL, "BSD Print Spooler", NULL },
-  { "nfsserver",     NULL, "Network File Service", NULL },
-  { "cron",          NULL, "Scheduling Service", NULL },
-  { "at",            NULL, "Scheduling Service", NULL },
-  { "nscd",          NULL, "Name Service Cache Daemon", NULL },
-  { "slapd",         NULL, "LDAP Directory Service", NULL },
-  { "ldap",          NULL, "LDAP DIrectory Service", NULL },
-  { "ypbind",        NULL, "NIS Directory Service", NULL },
-  { "courier-imap",  NULL, "IMAP4 Mail Service", NULL },
-  { "courier-pop3",  NULL, "POP3 Mail Service", NULL },
-  { "named",         NULL, "Domain Name Service", NULL },
-  { "bind",          NULL, "Domain Name Service", NULL },
-  { "httpd",         NULL, "HTTP Server", NULL },
-  { "apache",        NULL, "HTTP Server", NULL },
-  { "autofs",        NULL, "Automounter", NULL },
-  { "squid",         NULL, "Web Cache Proxy ", NULL },
+  { "cups",          NULL, "Common Unix Printing System","Provides unified printing support for all operating systems" },
+  { "postfix",       NULL, "Internet Mail Service", 	"Provides support for sending and receiving electonic mail" },
+  { "sendmail",      NULL, "Internet Mail Service", 	"Provides support for sending and receiving electonic mail" },
+  { "portmap",       NULL, "TCP Port to RPC PortMapper",NULL },
+  { "xinetd",        NULL, "Internet Meta-Daemon", 	NULL },
+  { "inet",          NULL, "Internet Meta-Daemon", 	NULL },
+  { "xntpd",         NULL, "Network Time Service", 	NULL },
+  { "ntpd",          NULL, "Network Time Service", 	NULL },
+  { "lpd",           NULL, "BSD Print Spooler", 	NULL },
+  { "nfsserver",     NULL, "Network File Service", 	NULL },
+  { "cron",          NULL, "Scheduling Service", 	NULL },
+  { "at",            NULL, "Scheduling Service", 	NULL },
+  { "nscd",          NULL, "Name Service Cache Daemon",	NULL },
+  { "slapd",         NULL, "LDAP Directory Service", 	NULL },
+  { "ldap",          NULL, "LDAP DIrectory Service", 	NULL },
+  { "ypbind",        NULL, "NIS Directory Service", 	NULL },
+  { "courier-imap",  NULL, "IMAP4 Mail Service", 	NULL },
+  { "courier-pop3",  NULL, "POP3 Mail Service", 	NULL },
+  { "named",         NULL, "Domain Name Service", 	NULL },
+  { "bind",          NULL, "Domain Name Service", 	NULL },
+  { "httpd",         NULL, "HTTP Server", 		NULL },
+  { "apache",        NULL, "HTTP Server", 		"Provides s highly scalable and flexible web server "
+							"capable of implementing various protocols incluing "
+							"but not limited to HTTP" },
+  { "autofs",        NULL, "Automounter", 		NULL },
+  { "squid",         NULL, "Web Cache Proxy ",		NULL },
   { "perfcountd",    NULL, "Performance Monitoring Daemon", NULL },
+  { "pgsql",	     NULL, "PgSQL Database Server", 	"Provides service for SQL database from Postgresql.org" },
+  { "arpwatch",	     NULL, "ARP Tables watcher", 	"Provides service for monitoring ARP tables for changes" },
+  { "dhcpd",	     NULL, "DHCP Server", 		"Provides service for dynamic host configuration and IP assignment" },
+  { "nwserv",	     NULL, "NetWare Server Emulator", 	"Provides service for emulating Novell NetWare 3.12 server" },
+  { "proftpd",	     NULL, "Professional FTP Server", 	"Provides high configurable service for FTP connection and "
+							"file transferring" },
+  { "ssh2",	     NULL, "SSH Secure Shell", 		"Provides service for secure connection for remote administration" },
+  { "sshd",	     NULL, "SSH Secure Shell", 		"Provides service for secure connection for remote administration" },
   { NULL, NULL, NULL, NULL }
 };
 
