@@ -28,7 +28,7 @@ failed=0
 for transport in $transports; do
  for bindoptions in connect spnego spnego,sign spnego,seal validate padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
-        "--option=socket:testnonblock=True --option=torture:echo_TestSleep=no"; do
+        "--option=socket:testnonblock=True --option=torture:quick=yes"; do
    name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
    testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
   done
@@ -38,15 +38,15 @@ done
 for transport in $transports; do
  for bindoptions in sign seal; do
   for ntlmoptions in \
-        "--option=ntlmssp_client:ntlm2=yes --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=no  --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
-        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
-        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=yes  --option=torture:echo_TestSleep=no" \
-        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
+        "--option=ntlmssp_client:ntlm2=yes --option=torture:quick=yes" \
+        "--option=ntlmssp_client:ntlm2=no  --option=torture:quick=yes" \
+        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no --option=torture:quick=yes" \
+        "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no --option=torture:quick=yes" \
+        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no --option=torture:quick=yes" \
+        "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
+        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
+        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=yes  --option=torture:quick=yes" \
+        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
     ; do
    name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
    testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
