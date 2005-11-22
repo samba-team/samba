@@ -1460,6 +1460,8 @@ static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 	cli_credentials_set_conf(state->wks_creds);
 	cli_credentials_set_domain(state->wks_creds, wks_domain,
 				   CRED_SPECIFIED);
+	cli_credentials_set_workstation(state->wks_creds, wks_name,
+					CRED_SPECIFIED);
 	cli_credentials_set_username(state->wks_creds,
 				     talloc_asprintf(state, "%s$", wks_name),
 				     CRED_SPECIFIED);
@@ -1477,6 +1479,8 @@ static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 	if (state->conn.in.credentials == NULL) goto failed;
 	cli_credentials_set_conf(state->conn.in.credentials);
 	cli_credentials_set_anonymous(state->conn.in.credentials);
+	cli_credentials_set_workstation(state->conn.in.credentials, wks_name,
+					CRED_SPECIFIED);
 	state->conn.in.fallback_to_anonymous = False;
 	state->conn.in.workgroup = wks_domain;
 
@@ -1759,6 +1763,100 @@ static void xp_login_done(struct composite_context *ctx)
 	*count += 1;
 }
 
+struct pwdentry {
+	const char *domain;
+	const char *name;
+	const char *pass;
+};
+
+static BOOL read_pwd_file(TALLOC_CTX *mem_ctx,
+			  const char *fname, int *numlines,
+			  struct pwdentry ***result)
+{
+	char **lines;
+	int i;
+
+	lines = file_lines_load(fname, numlines, mem_ctx);
+	if (lines == NULL) {
+		DEBUG(0, ("Could not load file %s: %s\n",
+			  fname, strerror(errno)));
+		return False;
+	}
+
+	if (*numlines == 0) {
+		DEBUG(0, ("no entries in file %s\n", fname));
+		return False;
+	}
+
+	*result = talloc_array(mem_ctx, struct pwdentry *, *numlines);
+	if (*result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	for (i=0; i<(*numlines); i++) {
+		char *p, *q;
+		(*result)[i] = talloc_zero(*result, struct pwdentry);
+		if ((*result)[i] == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			return False;
+		}
+
+		p = lines[i];
+		q = strchr(p, '\\');
+		if (q != NULL) {
+			*q = '\0';
+			(*result)[i]->domain = lines[i];
+			p = q+1;
+		} else {
+			(*result)[i]->domain = lp_workgroup();
+		}
+
+		q = strchr(p, '%');
+		if (q == NULL) {
+			DEBUG(0, ("Invalid entry: %s\n", q));
+			return False;
+		}
+
+		*q = '\0';
+		(*result)[i]->name = p;
+		(*result)[i]->pass = q+1;
+	}
+
+	return True;
+}
+
+#if 0
+/* Stolen from testjoin.c for easy mass-joining */p
+static BOOL joinme(int i)
+{
+	TALLOC_CTX *mem_ctx;
+	struct test_join *join_ctx;
+	struct cli_credentials *machine_credentials;
+	const char *machine_password;
+	const char *name;
+
+	mem_ctx = talloc_init("torture_rpc_netlogon");
+
+	name = talloc_asprintf(mem_ctx, "wks%3d", i);
+
+	join_ctx = torture_join_domain(name, ACB_WSTRUST, 
+				       &machine_credentials);
+	if (!join_ctx) {
+		talloc_free(mem_ctx);
+		printf("Failed to join as BDC\n");
+		return False;
+	}
+
+	machine_password = cli_credentials_get_password(machine_credentials);
+
+	printf("%s%%%s\n", name, machine_password);
+
+	talloc_free(mem_ctx);
+	return True;
+}
+#endif
+
 BOOL torture_rpc_login(void)
 {
 	TALLOC_CTX *mem_ctx;
@@ -1768,10 +1866,39 @@ BOOL torture_rpc_login(void)
 	int i, num_events;
 	int num_finished = 0;
 	struct composite_context **ctx;
+	struct pwdentry **wks_list;
+	struct pwdentry **user_list;
+	int num_wks = 0;
+	int num_user = 0;
 
+#if 0
+	for (i=0; i<torture_numops; i++) {
+		if (!joinme(i)) {
+			DEBUG(0, ("join %d failed\n", i));
+			return False;
+		}
+	}
+
+	return False;
+#endif
+	
 	mem_ctx = talloc_init("rpc_login");
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_init failed\n"));
+		return False;
+	}
+
+	if (!read_pwd_file(mem_ctx, "wks.pwd", &num_wks, &wks_list)) {
+		return False;
+	}
+
+	if (torture_numops > num_wks) {
+		DEBUG(0, ("more workstations (%d) than ops (%d) needed\n",
+			  num_wks, torture_numops));
+		return False;
+	}
+
+	if (!read_pwd_file(mem_ctx, "user.pwd", &num_user, &user_list)) {
 		return False;
 	}
 
@@ -1789,6 +1916,9 @@ BOOL torture_rpc_login(void)
 	}
 
 	for (i=0; i<torture_numops; i++) {
+		int wks_idx = random() % num_wks;
+		int user_idx = random() % num_user;
+		DEBUG(3, ("random indices: wks %d, user %d\n", wks_idx, user_idx));
 		ctx[i] = xp_login_send(
 			mem_ctx, timeval_set(0, i*lp_parm_int(-1, "torture",
 							      "timeout", 0)),
@@ -1796,14 +1926,23 @@ BOOL torture_rpc_login(void)
 			lp_parm_string(-1, "torture", "host"),
 			lp_parm_string(-1, "torture", "host"),
 			lp_workgroup(),
-			lp_netbios_name(), "5,eEp_D2",
-			lp_workgroup(), "vl", "asdf");
+			wks_list[wks_idx]->name,
+			wks_list[wks_idx]->pass,
+			user_list[user_idx]->domain,
+			user_list[user_idx]->name,
+			user_list[user_idx]->pass);
 		if (ctx[i] == NULL) {
 			DEBUG(0, ("xp_login_send failed\n"));
 			goto done;
 		}
 		ctx[i]->async.fn = xp_login_done;
 		ctx[i]->async.private_data = &num_finished;
+
+		/* Avoid duplicate usage of workstation accounts. They would
+		 * conflict if multiple reqchal/auth2/schannel-binds cross
+		 * each other */
+		wks_list[wks_idx] = wks_list[num_wks-1];
+		num_wks -= 1;
 	}
 
 	num_events = 0;
