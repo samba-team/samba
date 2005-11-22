@@ -3389,3 +3389,75 @@ BOOL net_io_r_dsr_getdcname(const char *desc, NET_R_DSR_GETDCNAME *r_t,
 
 	return True;
 }
+
+/*******************************************************************
+ Inits a NET_Q_DSR_GETSITENAME structure.
+********************************************************************/
+
+void init_net_q_dsr_getsitename(NET_Q_DSR_GETSITENAME *r_t, const char *computer_name)
+{
+	DEBUG(5, ("init_net_q_dsr_getsitename\n"));
+
+	r_t->ptr_computer_name = (computer_name != NULL);
+	init_unistr2(&r_t->uni_computer_name, computer_name, UNI_STR_TERMINATE);
+}
+
+/*******************************************************************
+ Reads or writes an NET_Q_DSR_GETSITENAME structure.
+********************************************************************/
+
+BOOL net_io_q_dsr_getsitename(const char *desc, NET_Q_DSR_GETSITENAME *r_t,
+			      prs_struct *ps, int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_dsr_getsitename");
+	depth++;
+
+	if (!prs_uint32("ptr_computer_name", ps, depth, &r_t->ptr_computer_name))
+		return False;
+
+	if (!smb_io_unistr2("computer_name", &r_t->uni_computer_name,
+			    r_t->ptr_computer_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an NET_R_DSR_GETSITENAME structure.
+********************************************************************/
+
+BOOL net_io_r_dsr_getsitename(const char *desc, NET_R_DSR_GETSITENAME *r_t,
+			      prs_struct *ps, int depth)
+{
+	if (r_t == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_dsr_getsitename");
+	depth++;
+
+	if (!prs_uint32("ptr_site_name", ps, depth, &r_t->ptr_site_name))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_unistr2("site_name", &r_t->uni_site_name,
+			    r_t->ptr_site_name, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_werror("result", ps, depth, &r_t->result))
+		return False;
+
+	return True;
+}
+
+
