@@ -479,29 +479,30 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	DEBUGADD(5, ("searching for [%s]\n", aprinter ));
 
 	/* Search all sharenames first as this is easier than pulling 
-	   the printer_info_2 off of disk */
+	   the printer_info_2 off of disk. Don't use find_service() since
+	   that calls out to map_username() */
 	
-	snum = find_service(aprinter);
-	
-	if ( lp_snum_ok(snum) && lp_print_ok(snum) ) {
-		found = True;
-		fstrcpy( sname, aprinter );
-	}
-
 	/* do another loop to look for printernames */
 	
 	for (snum=0; !found && snum<n_services; snum++) {
 
-		/* no point in checking if this is not a printer or 
-		   we aren't allowing printername != sharename */
+		/* no point going on if this is not a printer */
 
-		if ( !(lp_snum_ok(snum) 
-			&& lp_print_ok(snum) 
-			&& !lp_force_printername(snum)) ) 
-		{
+		if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
 			continue;
+
+		fstrcpy(sname, lp_servicename(snum));
+		if ( strequal( aprinter, sname ) ) {
+			found = True;
+			break;
 		}
+
+		/* no point looking up the printer object if
+		   we aren't allowing printername != sharename */
 		
+		if ( lp_force_printername(snum) )
+			continue;
+
 		fstrcpy(sname, lp_servicename(snum));
 
 		printer = NULL;
@@ -524,6 +525,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		
 		if ( strequal(printername, aprinter) ) {
 			found = True;
+			break;
 		}
 		
 		DEBUGADD(10, ("printername: %s\n", printername));
