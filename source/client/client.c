@@ -291,7 +291,7 @@ static int do_cd(char *newdir)
 	/* Use a trans2_qpathinfo to test directories for modern servers.
 	   Except Win9x doesn't support the qpathinfo_basic() call..... */ 
 	
-	if ( targetcli->protocol >= PROTOCOL_LANMAN2 && !targetcli->win95 ) {
+	if ( targetcli->protocol >  PROTOCOL_LANMAN2 && !targetcli->win95 ) {
 		if ( !cli_qpathinfo_basic( targetcli, targetpath, &sbuf, &attributes ) ) {
 			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
 			pstrcpy(cur_dir,saved_dir);
