@@ -7,7 +7,8 @@ ADD_OBJ_FILES = \
 		scan.o \
 		util.o \
 		getinfo.o \
-		setinfo.o
+		setinfo.o \
+		find.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_SMB2
 # End SUBSYSTEM TORTURE_SMB2
