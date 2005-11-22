@@ -279,6 +279,16 @@ struct smb2_read {
 	} out;
 };
 
+/*
+  SMB2 uses different level numbers for the same old SMB search levels
+*/
+#define SMB2_FIND_DIRECTORY_INFO         0x01
+#define SMB2_FIND_FULL_DIRECTORY_INFO    0x02
+#define SMB2_FIND_BOTH_DIRECTORY_INFO    0x03
+#define SMB2_FIND_NAME_INFO              0x0C
+#define SMB2_FIND_ID_BOTH_DIRECTORY_INFO 0x25
+#define SMB2_FIND_ID_FULL_DIRECTORY_INFO 0x26
+
 struct smb2_find {
 	struct {
 		uint8_t level;
