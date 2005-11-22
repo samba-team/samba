@@ -1264,7 +1264,7 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 
 NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 					   POLICY_HND *pol, 
-					   uint16 info_class, DOM_SID *dom_sid, 
+					   uint16 info_class,  
 					   LSA_TRUSTED_DOMAIN_INFO **info)
 {
 	prs_struct qbuf, rbuf;
