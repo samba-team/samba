@@ -2141,7 +2141,7 @@ void init_samr_group_info1(GROUP_INFO1 * gr1,
 {
 	DEBUG(5, ("init_samr_group_info1\n"));
 
-	gr1->unknown_1 = 0x3;
+	gr1->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not |SE_GROUP_ENABLED ? */
 	gr1->num_members = num_members;
 
 	init_unistr2(&gr1->uni_acct_name, acct_name, UNI_FLAGS_NONE);
@@ -2174,7 +2174,7 @@ BOOL samr_io_group_info1(const char *desc, GROUP_INFO1 * gr1,
 	if(!smb_io_unihdr("hdr_acct_name", &gr1->hdr_acct_name, ps, depth))
 		return False;
 
-	if(!prs_uint32("unknown_1", ps, depth, &gr1->unknown_1))
+	if(!prs_uint32("group_attr", ps, depth, &gr1->group_attr))
 		return False;
 	if(!prs_uint32("num_members", ps, depth, &gr1->num_members))
 		return False;
@@ -2238,7 +2238,7 @@ void init_samr_group_info3(GROUP_INFO3 *gr3)
 {
 	DEBUG(5, ("init_samr_group_info3\n"));
 
-	gr3->unknown_1 = 0x3;
+	gr3->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not |SE_GROUP_ENABLED ? */
 }
 
 /*******************************************************************
@@ -2256,7 +2256,7 @@ BOOL samr_io_group_info3(const char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown_1", ps, depth, &gr3->unknown_1))
+	if(!prs_uint32("group_attr", ps, depth, &gr3->group_attr))
 		return False;
 
 	return True;
