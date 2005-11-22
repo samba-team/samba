@@ -40,10 +40,39 @@ BOOL sysv_cache_reload(void)
 	char **lines;
 	int i;
 
+#if defined(HPUX)
+	DEBUG(5, ("reloading hpux printcap cache\n"));
+#else
 	DEBUG(5, ("reloading sysv printcap cache\n"));
+#endif
 
 	if ((lines = file_lines_pload("/usr/bin/lpstat -v", NULL)) == NULL)
+	{
+#if defined(HPUX)
+      
+       	       /*
+		* if "lpstat -v" is NULL then we check if schedular is running if it is
+		* that means no printers are added on the HP-UX system, if schedular is not
+		* running we display reload error.
+		*/
+
+		char **scheduler;
+                scheduler = file_lines_pload("/usr/bin/lpstat -r", NULL);
+                if(!strcmp(*scheduler,"scheduler is running")){
+                        DEBUG(3,("No Printers found!!!\n"));
+			file_lines_free(scheduler);
+                        return True;
+                }
+                else{
+                        DEBUG(3,("Scheduler is not running!!!\n"));
+			file_lines_free(scheduler);
+			return False;
+		}
+#else
+		DEBUG(3,("No Printers found!!!\n"));
 		return False;
+#endif
+	}
 
 	for (i = 0; lines[i]; i++) {
 		char *name, *tmp;
