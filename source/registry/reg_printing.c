@@ -227,7 +227,16 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	reg_split_path( printers_key, &printername, &printerdatakey );
 
-	if ( find_service(printername) == -1
+	/* validate the printer name */
+
+	for (snum=0; snum<n_services; snum++) {
+		if ( !lp_snum_ok(snum) || !lp_print_ok(snum) )
+			continue;
+		if (strequal( lp_servicename(snum), printername ) )
+			break;
+	}
+
+	if ( snum>=n_services
 		|| !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) ) 
 	{
 		return -1;
