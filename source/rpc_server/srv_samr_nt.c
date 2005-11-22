@@ -1980,7 +1980,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 			continue;
 
 		gids = TALLOC_REALLOC_ARRAY(p->mem_ctx, gids, DOM_GID, num_gids+1);
-		gids[num_gids].attr=7;
+		gids[num_gids].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
 		gids[num_gids].g_rid = rid;
 		num_gids += 1;
 	}
