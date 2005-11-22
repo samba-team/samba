@@ -40,7 +40,7 @@
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
 
-#define DISP_INFO_CACHE_TIMEOUT 30
+#define DISP_INFO_CACHE_TIMEOUT 10
 
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
@@ -303,9 +303,9 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
  Function to free the per SID data.
  ********************************************************************/
 
-static void free_samr_cache(DISP_INFO *disp_info)
+static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
 {
-	DEBUG(10,("free_samr_cache: deleting cache\n"));
+	DEBUG(10,("free_samr_cache: deleting cache for SID %s\n", sid_str));
 
 	if (disp_info->users) {
 		DEBUG(10,("free_samr_cache: deleting users cache\n"));
@@ -352,7 +352,9 @@ static void free_samr_info(void *ptr)
 	   a timeout. */
 
 	if (info->disp_info && info->disp_info->di_cache_timeout_event == (smb_event_id_t)0) {
-		free_samr_cache(info->disp_info);
+		fstring sid_str;
+		sid_to_string(sid_str, &info->disp_info->sid);
+		free_samr_cache(info->disp_info, sid_str);
 	}
 
 	talloc_destroy(info->mem_ctx);
@@ -366,16 +368,19 @@ static void disp_info_cache_idle_timeout_handler(void **private_data,
 					time_t *ev_interval,
 					time_t ev_now)
 {
+	fstring sid_str;
 	DISP_INFO *disp_info = (DISP_INFO *)(*private_data);
 
-	free_samr_cache(disp_info);
+	sid_to_string(sid_str, &disp_info->sid);
+
+	free_samr_cache(disp_info, sid_str);
 
 	/* Remove the event. */
 	smb_unregister_idle_event(disp_info->di_cache_timeout_event);
 	disp_info->di_cache_timeout_event = (smb_event_id_t)0;
 
-	DEBUG(10,("disp_info_cache_idle_timeout_handler: caching timed out at %u\n",
-		(unsigned int)ev_now));
+	DEBUG(10,("disp_info_cache_idle_timeout_handler: caching timed out for SID %s at %u\n",
+		sid_str, (unsigned int)ev_now));
 }
 
 /*******************************************************************
@@ -384,6 +389,10 @@ static void disp_info_cache_idle_timeout_handler(void **private_data,
 
 static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromnow)
 {
+	fstring sid_str;
+
+	sid_to_string(sid_str, &disp_info->sid);
+
 	/* Remove any pending timeout and update. */
 
 	if (disp_info->di_cache_timeout_event) {
@@ -391,8 +400,8 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
 		disp_info->di_cache_timeout_event = (smb_event_id_t)0;
 	}
 
-	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for %u seconds\n",
-		(unsigned int)secs_fromnow ));
+	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for SID %s for %u seconds\n",
+		sid_str, (unsigned int)secs_fromnow ));
 
 	disp_info->di_cache_timeout_event =
 		smb_register_idle_event(disp_info_cache_idle_timeout_handler,
@@ -401,27 +410,23 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
 }
 
 /*******************************************************************
- Remove the cache removal idle event handler.
- ********************************************************************/
-
-static void clear_disp_info_cache_timeout(DISP_INFO *disp_info)
-{
-	if (disp_info->di_cache_timeout_event) {
-		smb_unregister_idle_event(disp_info->di_cache_timeout_event);
-		disp_info->di_cache_timeout_event = (smb_event_id_t)0;
-		DEBUG(10,("clear_disp_info_cache_timeout: clearing idle event.\n"));
-	}
-}
-
-/*******************************************************************
  Force flush any cache. We do this on any samr_set_xxx call.
+ We must also remove the timeout handler.
  ********************************************************************/
 
 static void force_flush_samr_cache(DISP_INFO *disp_info)
 {
 	if (disp_info) {
-		clear_disp_info_cache_timeout(disp_info);
-		free_samr_cache(disp_info);
+		fstring sid_str;
+
+		sid_to_string(sid_str, &disp_info->sid);
+		if (disp_info->di_cache_timeout_event) {
+			smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+			disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+			DEBUG(10,("force_flush_samr_cache: clearing idle event for SID %s\n",
+				sid_str));
+		}
+		free_samr_cache(disp_info, sid_str);
 	}
 }
 
@@ -792,12 +797,13 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 		return r_u->status;
 
 	if (max_entries <= num_account) {
-		/* Ensure we cache this enumeration. */
-		set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 		r_u->status = STATUS_MORE_ENTRIES;
 	} else {
-		clear_disp_info_cache_timeout(info->disp_info);
+		r_u->status = NT_STATUS_OK;
 	}
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
 	DEBUG(5, ("_samr_enum_dom_users: %d\n", __LINE__));
 
@@ -1158,13 +1164,13 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	total_data_size=num_account*struct_size;
 
 	if (num_account) {
-		/* Ensure we cache this enumeration. */
-		set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 		r_u->status = STATUS_MORE_ENTRIES;
 	} else {
-		clear_disp_info_cache_timeout(info->disp_info);
 		r_u->status = NT_STATUS_OK;
 	}
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
 	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
