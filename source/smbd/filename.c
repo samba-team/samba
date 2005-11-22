@@ -150,9 +150,6 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstrcpy(saved_last_component, name);
 	}
 
-	if (!conn->case_preserve || (mangle_is_8_3(name, False, SNUM(conn)) && !conn->short_case_preserve))
-		strnorm(name, lp_defaultcase(SNUM(conn)));
-
 	start = name;
 	pstrcpy(orig_path, name);
 
@@ -301,16 +298,17 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 					return(False);
 				}
 
-				/* 
+				/*
 				 * Just the last part of the name doesn't exist.
-				 * We may need to strupper() or strlower() it in case
-				 * this conversion is being used for file creation 
-				 * purposes. If the filename is of mixed case then 
-				 * don't normalise it.
+				 * We need to strupper() or strlower() it as
+				 * this conversion may be used for file creation 
+				 * purposes. Fix inspired by Thomas Neumann <t.neumann@iku-ag.de>.
 				 */
-
-				if (!conn->case_preserve && (!strhasupper(start) || !strhaslower(start)))		
+				if (!conn->case_preserve ||
+						(mangle_is_8_3(start, False, SNUM(conn)) &&
+						 !conn->short_case_preserve)) {
 					strnorm(start, lp_defaultcase(SNUM(conn)));
+				}
 
 				/*
 				 * check on the mangled stack to see if we can recover the 
