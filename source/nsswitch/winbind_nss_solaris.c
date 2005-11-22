@@ -340,6 +340,7 @@ _nss_winbind_group_constr (const char* db_name,
 /*****************************************************************
  hosts and ipnodes backend
  *****************************************************************/
+#if defined(SUNOS5)	/* not compatible with HP-UX */
 
 /* this parser is shared between get*byname and get*byaddr, as key type
    in request is stored in different locations, I had to provide the
@@ -627,4 +628,5 @@ _nss_winbind_hosts_constr(dummy1, dummy2, dummy3)
 		sizeof (host_ops) / sizeof (host_ops[0])));
 }
 
-#endif /* SUN_NSS */
+#endif	/* defined(SUNOS5) */
+#endif 	/* defined(HAVE_NSS_COMMON_H) || defined(HPUX) */
