@@ -458,10 +458,19 @@
 
 #if HAVE_LBER_H
 #include <lber.h>
+#ifndef LBER_USE_DER
+#define LBER_USE_DER 0x01
+#endif
 #endif
 
 #if HAVE_LDAP_H
 #include <ldap.h>
+#ifndef LDAP_CONST
+#define LDAP_CONST const
+#endif
+#ifndef LDAP_OPT_SUCCESS
+#define LDAP_OPT_SUCCESS 0
+#endif
 #else
 #undef HAVE_LDAP
 #endif
