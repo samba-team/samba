@@ -404,9 +404,18 @@ static void display_group_info1(GROUP_INFO1 *info1)
 	printf("\tGroup Name:\t%s\n", temp);
 	unistr2_to_ascii(temp, &info1->uni_acct_desc, sizeof(temp)-1);
 	printf("\tDescription:\t%s\n", temp);
-	printf("\tunk1:%d\n", info1->unknown_1);
+	printf("\tGroup Attribute:%d\n", info1->group_attr);
 	printf("\tNum Members:%d\n", info1->num_members);
 }
+
+/****************************************************************************
+ display group info
+ ****************************************************************************/
+static void display_group_info3(GROUP_INFO3 *info3)
+{
+	printf("\tGroup Attribute:%d\n", info3->group_attr);
+}
+
 
 /****************************************************************************
  display group info
@@ -427,6 +436,10 @@ static void display_group_info_ctr(GROUP_INFO_CTR *ctr)
 	switch (ctr->switch_value1) {
 	    case 1: {
 		    display_group_info1(&ctr->group.info1);
+		    break;
+	    }
+	    case 3: {
+		    display_group_info3(&ctr->group.info3);
 		    break;
 	    }
 	    case 4: {
