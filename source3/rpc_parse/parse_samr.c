@@ -7038,15 +7038,11 @@ BOOL samr_io_r_get_dom_pwinfo(const char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	/*
-	 * see the Samba4 IDL for what these actually are.
-	*/
-
-	if(!prs_uint16("unk_0", ps, depth, &r_u->unk_0))
+	if(!prs_uint16("min_pwd_length", ps, depth, &r_u->min_pwd_length))
 		return False;
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("unk_1", ps, depth, &r_u->unk_1))
+	if(!prs_uint32("password_properties", ps, depth, &r_u->password_properties))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
