@@ -1370,8 +1370,6 @@ int sys_dup2(int oldfd, int newfd)
  support for IRIX and (Net|Free)BSD also. Expand as other systems have them.
 ****************************************************************************/
 
-/* Possible error codes are: ENOATTR, ERANGE, ENOTSUP. From stat(2): 
-   EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_GETXATTR)
@@ -1651,8 +1649,6 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 
 #endif
 
-/* Possible error codes are: ERANGE, ENOTSUP. From stat(2): 
-   EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
@@ -1701,8 +1697,6 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 #endif
 }
 
-/* Possible error codes are: ENOATTR, ENOTSUP. From stat(2): 
-   EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 int sys_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
@@ -1780,8 +1774,6 @@ int sys_fremovexattr (int filedes, const char *name)
 #define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
-/* Possible error codes are: EEXIST, ENOATTR, ENOSPC, EDQUOT, ENOTSUP. From 
-   stat(2): EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
