@@ -1754,7 +1754,7 @@ BOOL torture_rpc_samlogon(void)
 				ret = False;
 			}
 		
-			if (usercreds[ci].network_login) {
+			if (usercreds[0].network_login) {
 				if (!test_SamLogon(p, mem_ctx, creds,
 						   usercreds[0].comment,
 						   usercreds[0].domain,
