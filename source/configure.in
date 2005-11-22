@@ -2796,8 +2796,6 @@ if test x"$with_ldap_support" != x"no"; then
   # now see if we can find the ldap libs in standard paths
   AC_CHECK_LIB_EXT(ldap, LDAP_LIBS, ldap_init)
 
-  AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
-  
   ########################################################
   # If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
   # Check found in pam_ldap 145.
@@ -2816,9 +2814,7 @@ if test x"$with_ldap_support" != x"no"; then
   
   AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $smb_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
 
-  AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)	
-  
-  if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
+  if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     CPPFLAGS="$CPPFLAGS -DLDAP_DEPRECATED"
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
@@ -2867,6 +2863,36 @@ if test x"$with_ldap_support" != x"yes"; then
     elif test x"$with_ads_support" != x"no"; then
 	AC_MSG_WARN(Active Directory Support requires LDAP support)
     fi
+    with_ads_support=no
+fi
+
+AC_CHECK_FUNC_EXT(ldap_initialize,$LDAP_LIBS)
+
+if test x"$ac_cv_func_ext_ldap_initialize" != x"yes"; then
+    if test x"$with_ads_support" = x"yes"; then
+        AC_MSG_ERROR(Active Directory Support requires ldap_initialize)
+    fi
+    AC_MSG_WARN(Active Directory Support requires ldap_initialize)
+    with_ads_support=no
+fi
+
+AC_CHECK_FUNC_EXT(ldap_domain2hostlist,$LDAP_LIBS)
+
+if test x"$ac_cv_func_ext_ldap_domain2hostlist" != x"yes"; then
+    if test x"$with_ads_support" = x"yes"; then
+        AC_MSG_ERROR(Active Directory Support requires ldap_domain2hostlist)
+    fi
+    AC_MSG_WARN(Active Directory Support requires ldap_domain2hostlist)
+    with_ads_support=no
+fi
+
+AC_CHECK_FUNC_EXT(ldap_add_result_entry,$LDAP_LIBS)
+
+if test x"$ac_cv_func_ext_ldap_add_result_entry" != x"yes"; then
+    if test x"$with_ads_support" = x"yes"; then
+        AC_MSG_ERROR(Active Directory Support requires ldap_add_result_entry)
+    fi
+    AC_MSG_WARN(Active Directory Support requires ldap_add_result_entry)
     with_ads_support=no
 fi
 
