@@ -3415,7 +3415,7 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_get_account_policy_from_ldap: Could not set account policy "
+		DEBUG(0, ("ldapsam_get_account_policy_from_ldap: Could not get account policy "
 			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
