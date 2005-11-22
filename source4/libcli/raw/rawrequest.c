@@ -849,6 +849,13 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 {
 	int extra;
 	dest->s = NULL;
+
+	/* this is here to cope with SMB2 calls using the SMB
+	   parsers. SMB2 will pass smbcli_session==NULL, which forces
+	   unicode on (as used by SMB2) */
+	if (session == NULL && !(flags & STR_ASCII)) {
+		flags |= STR_UNICODE;
+	}
 	
 	if (flags & STR_LEN8BIT) {
 		if (len_offset > blob->length-1) {

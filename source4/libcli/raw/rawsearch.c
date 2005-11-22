@@ -311,6 +311,155 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 
 
 /*
+  parse the wire search formats that are in common between SMB and
+  SMB2
+*/
+NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx, 
+			       enum smb_search_level level,
+			       const DATA_BLOB *blob,
+			       union smb_search_data *data,
+			       uint_t *next_ofs,
+			       uint_t str_flags)
+{
+	uint_t len, blen;
+
+	if (blob->length < 4) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	*next_ofs = IVAL(blob->data, 0);
+	if (*next_ofs != 0) {
+		blen = *next_ofs;
+	} else {
+		blen = blob->length;
+	}
+
+	switch (level) {
+	case RAW_SEARCH_DIRECTORY_INFO:
+		if (blen < 65) return NT_STATUS_INFO_LENGTH_MISMATCH;
+		data->directory_info.file_index  = IVAL(blob->data,             4);
+		data->directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
+		data->directory_info.size        = BVAL(blob->data,            40);
+		data->directory_info.alloc_size  = BVAL(blob->data,            48);
+		data->directory_info.attrib      = IVAL(blob->data,            56);
+		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					      &data->directory_info.name,
+					      60, 64, str_flags);
+		if (*next_ofs != 0 && *next_ofs < 64+len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+		if (blen < 69) return NT_STATUS_INFO_LENGTH_MISMATCH;
+		data->full_directory_info.file_index  = IVAL(blob->data,                4);
+		data->full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->full_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->full_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->full_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
+		data->full_directory_info.size        = BVAL(blob->data,               40);
+		data->full_directory_info.alloc_size  = BVAL(blob->data,               48);
+		data->full_directory_info.attrib      = IVAL(blob->data,               56);
+		data->full_directory_info.ea_size     = IVAL(blob->data,               64);
+		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					      &data->full_directory_info.name,
+					      60, 68, str_flags);
+		if (*next_ofs != 0 && *next_ofs < 68+len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_NAME_INFO:
+		if (blen < 13) return NT_STATUS_INFO_LENGTH_MISMATCH;
+		data->name_info.file_index  = IVAL(blob->data, 4);
+		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					      &data->name_info.name,
+					      8, 12, str_flags);
+		if (*next_ofs != 0 && *next_ofs < 12+len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		return NT_STATUS_OK;
+
+
+	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+		if (blen < 95) return NT_STATUS_INFO_LENGTH_MISMATCH;
+		data->both_directory_info.file_index  = IVAL(blob->data,                4);
+		data->both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->both_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->both_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->both_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
+		data->both_directory_info.size        = BVAL(blob->data,               40);
+		data->both_directory_info.alloc_size  = BVAL(blob->data,               48);
+		data->both_directory_info.attrib      = IVAL(blob->data,               56);
+		data->both_directory_info.ea_size     = IVAL(blob->data,               64);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					&data->both_directory_info.short_name,
+					68, 70, STR_LEN8BIT | STR_UNICODE);
+		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					      &data->both_directory_info.name,
+					      60, 94, str_flags);
+		if (*next_ofs != 0 && *next_ofs < 94+len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		return NT_STATUS_OK;
+
+
+	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+		if (blen < 81) return NT_STATUS_INFO_LENGTH_MISMATCH;
+		data->id_full_directory_info.file_index  = IVAL(blob->data,             4);
+		data->id_full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->id_full_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->id_full_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->id_full_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
+		data->id_full_directory_info.size        = BVAL(blob->data,            40);
+		data->id_full_directory_info.alloc_size  = BVAL(blob->data,            48);
+		data->id_full_directory_info.attrib      = IVAL(blob->data,            56);
+		data->id_full_directory_info.ea_size     = IVAL(blob->data,            64);
+		data->id_full_directory_info.file_id     = BVAL(blob->data,            72);
+		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					      &data->id_full_directory_info.name,
+					      60, 80, str_flags);
+		if (*next_ofs != 0 && *next_ofs < 80+len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		return NT_STATUS_OK;
+
+	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
+		if (blen < 105) return NT_STATUS_INFO_LENGTH_MISMATCH;
+		data->id_both_directory_info.file_index  = IVAL(blob->data,             4);
+		data->id_both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
+		data->id_both_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
+		data->id_both_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
+		data->id_both_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
+		data->id_both_directory_info.size        = BVAL(blob->data,            40);
+		data->id_both_directory_info.alloc_size  = BVAL(blob->data,            48);
+		data->id_both_directory_info.attrib      = SVAL(blob->data,            56);
+		data->id_both_directory_info.ea_size     = IVAL(blob->data,            64);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
+				     &data->id_both_directory_info.short_name,
+				     68, 70, STR_LEN8BIT | STR_UNICODE);
+		data->id_both_directory_info.file_id     = BVAL(blob->data,            96);
+		len = smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					      &data->id_both_directory_info.name,
+					      60, 104, str_flags);
+		if (*next_ofs != 0 && *next_ofs < 104+len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		return NT_STATUS_OK;
+	
+	default:
+		break;
+	}
+
+	/* invalid level */
+	return NT_STATUS_INVALID_INFO_CLASS;
+}
+
+
+/*
   parse a trans2 search response. 
   Return the number of bytes consumed
   return 0 for success with end of list
@@ -419,127 +568,6 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 					      STR_LEN8BIT | STR_NOALIGN);
 		return len + ea_size + 23 + 1;
 
-	case RAW_SEARCH_DIRECTORY_INFO:
-		if (blob->length < 65) return -1;
-		ofs                                     = IVAL(blob->data,             0);
-		data->directory_info.file_index  = IVAL(blob->data,             4);
-		data->directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
-		data->directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
-		data->directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
-		data->directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
-		data->directory_info.size        = BVAL(blob->data,            40);
-		data->directory_info.alloc_size  = BVAL(blob->data,            48);
-		data->directory_info.attrib      = IVAL(blob->data,            56);
-		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->directory_info.name,
-					   60, 64, 0);
-		if (ofs != 0 && ofs < 64+len) {
-			return -1;
-		}
-		return ofs;
-
-	case RAW_SEARCH_FULL_DIRECTORY_INFO:
-		if (blob->length < 69) return -1;
-		ofs                                   = IVAL(blob->data,             0);
-		data->full_directory_info.file_index  = IVAL(blob->data,             4);
-		data->full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
-		data->full_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
-		data->full_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
-		data->full_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
-		data->full_directory_info.size        = BVAL(blob->data,            40);
-		data->full_directory_info.alloc_size  = BVAL(blob->data,            48);
-		data->full_directory_info.attrib      = IVAL(blob->data,            56);
-		data->full_directory_info.ea_size     = IVAL(blob->data,            64);
-		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->full_directory_info.name,
-					   60, 68, 0);
-		if (ofs != 0 && ofs < 68+len) {
-			return -1;
-		}
-		return ofs;
-
-	case RAW_SEARCH_NAME_INFO:
-		if (blob->length < 13) return -1;
-		ofs                         = IVAL(blob->data,             0);
-		data->name_info.file_index  = IVAL(blob->data,             4);
-		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->name_info.name,
-					   8, 12, 0);
-		if (ofs != 0 && ofs < 12+len) {
-			return -1;
-		}
-		return ofs;
-
-
-	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-		if (blob->length < 95) return -1;
-		ofs                                          = IVAL(blob->data,             0);
-		data->both_directory_info.file_index  = IVAL(blob->data,             4);
-		data->both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
-		data->both_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
-		data->both_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
-		data->both_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
-		data->both_directory_info.size        = BVAL(blob->data,            40);
-		data->both_directory_info.alloc_size  = BVAL(blob->data,            48);
-		data->both_directory_info.attrib      = IVAL(blob->data,            56);
-		data->both_directory_info.ea_size     = IVAL(blob->data,            64);
-		smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-				     &data->both_directory_info.short_name,
-				     68, 70, STR_LEN8BIT | STR_UNICODE);
-		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->both_directory_info.name,
-					   60, 94, 0);
-		if (ofs != 0 && ofs < 94+len) {
-			return -1;
-		}
-		return ofs;
-
-
-	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
-		if (blob->length < 81) return -1;
-		ofs                                      = IVAL(blob->data,             0);
-		data->id_full_directory_info.file_index  = IVAL(blob->data,             4);
-		data->id_full_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
-		data->id_full_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
-		data->id_full_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
-		data->id_full_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
-		data->id_full_directory_info.size        = BVAL(blob->data,            40);
-		data->id_full_directory_info.alloc_size  = BVAL(blob->data,            48);
-		data->id_full_directory_info.attrib      = IVAL(blob->data,            56);
-		data->id_full_directory_info.ea_size     = IVAL(blob->data,            64);
-		data->id_full_directory_info.file_id     = BVAL(blob->data,            72);
-		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->id_full_directory_info.name,
-					   60, 80, 0);
-		if (ofs != 0 && ofs < 80+len) {
-			return -1;
-		}
-		return ofs;
-
-	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
-		if (blob->length < 105) return -1;
-		ofs                                      = IVAL(blob->data,             0);
-		data->id_both_directory_info.file_index  = IVAL(blob->data,             4);
-		data->id_both_directory_info.create_time = smbcli_pull_nttime(blob->data,  8);
-		data->id_both_directory_info.access_time = smbcli_pull_nttime(blob->data, 16);
-		data->id_both_directory_info.write_time  = smbcli_pull_nttime(blob->data, 24);
-		data->id_both_directory_info.change_time = smbcli_pull_nttime(blob->data, 32);
-		data->id_both_directory_info.size        = BVAL(blob->data,            40);
-		data->id_both_directory_info.alloc_size  = BVAL(blob->data,            48);
-		data->id_both_directory_info.attrib      = SVAL(blob->data,            56);
-		data->id_both_directory_info.ea_size     = IVAL(blob->data,            64);
-		smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-				     &data->id_both_directory_info.short_name,
-				     68, 70, STR_LEN8BIT | STR_UNICODE);
-		data->id_both_directory_info.file_id     = BVAL(blob->data,            96);
-		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
-					   &data->id_both_directory_info.name,
-					   60, 104, 0);
-		if (ofs != 0 && ofs < 104+len) {
-			return -1;
-		}
-		return ofs;
-	
 	case RAW_SEARCH_UNIX_INFO:
 		if (blob->length < 109) return -1;
 		ofs                                  = IVAL(blob->data,             0);
@@ -565,7 +593,25 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		}
 		return ofs;
 
+	case RAW_SEARCH_DIRECTORY_INFO:
+	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_NAME_INFO:
+	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO: {
+		uint_t str_flags = STR_UNICODE;
+		if (!(tree->session->transport->negotiate.capabilities & CAP_UNICODE)) {
+			str_flags = STR_ASCII;
+		}
+		
+		status = smb_raw_search_common(mem_ctx, level, blob, data, &ofs, str_flags);
+		if (!NT_STATUS_IS_OK(status)) {
+			return -1;
+		}
+		return ofs;
 	}
+	}
+
 	/* invalid level */
 	return -1;
 }
