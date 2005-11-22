@@ -85,7 +85,7 @@ static void print_ldap_srvlist(char *srvlist)
 
 static int net_lookup_ldap(int argc, const char **argv)
 {
-#ifdef HAVE_LDAP
+#ifdef HAVE_ADS
 	char *srvlist;
 	const char *domain;
 	int rc;
@@ -127,7 +127,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 	}
 	return -1;
 #endif
-	DEBUG(1,("No LDAP support\n"));
+	DEBUG(1,("No ADS support\n"));
 	return -1;
 }
 
