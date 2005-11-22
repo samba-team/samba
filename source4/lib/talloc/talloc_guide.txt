@@ -7,8 +7,9 @@ September 2004
 The most current version of this document is available at
    http://samba.org/ftp/unpacked/samba4/source/lib/talloc/talloc_guide.txt
 
-If you are used to talloc from Samba3 then please read this carefully,
-as talloc has changed a lot.
+If you are used to the "old" talloc from Samba3 before 3.0.20 then please read
+this carefully, as talloc has changed a lot. With 3.0.20 (or 3.0.14?) the
+Samba4 talloc has been ported back to Samba3, so this guide applies to both.
 
 The new talloc is a hierarchical, reference counted memory pool system
 with destructors. Quite a mounthful really, but not too bad once you
