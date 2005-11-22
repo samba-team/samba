@@ -1650,18 +1650,37 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli,
 					int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint16 unk_0, unk_1;
+	uint16 min_pwd_length;
+	uint32 password_properties;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_samr_get_dom_pwinfo(cli, mem_ctx, &unk_0, &unk_1) ;
+	result = rpccli_samr_get_dom_pwinfo(cli, mem_ctx, &min_pwd_length, &password_properties) ;
 	
 	if (NT_STATUS_IS_OK(result)) {
-		printf("unk_0 = 0x%08x\n", unk_0);
-		printf("unk_1 = 0x%08x\n", unk_1);
+		printf("min_pwd_length: %d\n", min_pwd_length);
+		printf("password_properties: 0x%08x\n", password_properties);
+		
+		if (password_properties & DOMAIN_PASSWORD_COMPLEX)
+			printf("\tDOMAIN_PASSWORD_COMPLEX\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE)
+			printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
+			printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
+			
+		if (password_properties & DOMAIN_LOCKOUT_ADMINS)
+			printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
+			printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
+			
+		if (password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
+			printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
 	}
 
 	return result;

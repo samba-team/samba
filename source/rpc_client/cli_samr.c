@@ -1723,7 +1723,7 @@ NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 /* Get domain password info */
 
 NTSTATUS rpccli_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 uint16 *unk_0, uint16 *unk_1)
+				 uint16 *min_pwd_length, uint32 *password_properties)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_GET_DOM_PWINFO q;
@@ -1751,10 +1751,10 @@ NTSTATUS rpccli_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	result = r.status;
 
 	if (NT_STATUS_IS_OK(result)) {
-		if (unk_0)
-			*unk_0 = r.unk_0;
-		if (unk_1)
-			*unk_1 = r.unk_1;
+		if (min_pwd_length)
+			*min_pwd_length = r.min_pwd_length;
+		if (password_properties)
+			*password_properties = r.password_properties;
 	}
 
 	return result;
