@@ -3009,6 +3009,44 @@ static BOOL lsa_io_trustdom_query_4(const char *desc, TRUSTED_DOMAIN_INFO_PASSWO
 /*******************************************************************
 ********************************************************************/
 
+static BOOL lsa_io_trustdom_query_6(const char *desc, TRUSTED_DOMAIN_INFO_EX *info_ex, 
+				    prs_struct *ps, int depth)
+{
+	uint32 dom_sid_ptr;
+	
+	if (!smb_io_unihdr("domain_name_hdr", &info_ex->domain_name.hdr, ps, depth))
+		return False;
+		
+	if (!smb_io_unihdr("netbios_name_hdr", &info_ex->netbios_name.hdr, ps, depth))
+		return False;
+
+	if (!prs_uint32("dom_sid_ptr", ps, depth, &dom_sid_ptr))
+		return False;
+
+	if (!prs_uint32("trust_direction", ps, depth, &info_ex->trust_direction))
+		return False;
+
+	if (!prs_uint32("trust_type", ps, depth, &info_ex->trust_type))
+		return False;
+
+	if (!prs_uint32("trust_attributes", ps, depth, &info_ex->trust_attributes))
+		return False;
+		
+	if (!smb_io_unistr2("domain_name_unistring", &info_ex->domain_name.unistring, info_ex->domain_name.hdr.buffer, ps, depth))
+		return False;
+		
+	if (!smb_io_unistr2("netbios_name_unistring", &info_ex->netbios_name.unistring, info_ex->netbios_name.hdr.buffer, ps, depth))
+		return False;
+
+	if (!smb_io_dom_sid2("sid", &info_ex->sid, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
 static BOOL lsa_io_trustdom_query(const char *desc, prs_struct *ps, int depth, LSA_TRUSTED_DOMAIN_INFO *info)
 {
 	prs_debug(ps, depth, desc, "lsa_io_trustdom_query");
@@ -3031,6 +3069,10 @@ static BOOL lsa_io_trustdom_query(const char *desc, prs_struct *ps, int depth, L
 		break;
 	case 4:
 		if(!lsa_io_trustdom_query_4("password", &info->password, ps, depth))
+			return False;
+		break;
+	case 6:
+		if(!lsa_io_trustdom_query_6("info_ex", &info->info_ex, ps, depth))
 			return False;
 		break;
 	default:
