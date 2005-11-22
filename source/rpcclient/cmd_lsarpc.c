@@ -934,7 +934,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 		goto done;
 
 	result = rpccli_lsa_query_trusted_domain_info(cli, mem_ctx, &trustdom_pol, 
-						   info_class, &dom_sid, &info);
+						   info_class, &info);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
