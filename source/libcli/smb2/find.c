@@ -82,9 +82,98 @@ NTSTATUS smb2_find_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
   sync find request
 */
 NTSTATUS smb2_find(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
-		      struct smb2_find *io)
+		   struct smb2_find *io)
 {
 	struct smb2_request *req = smb2_find_send(tree, io);
 	return smb2_find_recv(req, mem_ctx, io);
 }
 
+
+/*
+  a varient of smb2_find_recv that parses the resulting blob into
+  smb_search_data structures
+*/
+NTSTATUS smb2_find_level_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
+			      uint8_t level, uint_t *count,
+			      union smb_search_data **io)
+{
+	struct smb2_find f;
+	NTSTATUS status;
+	DATA_BLOB b;
+	enum smb_search_level smb_level;
+	uint_t next_ofs=0;
+
+	switch (level) {
+	case SMB2_FIND_DIRECTORY_INFO:
+		smb_level = RAW_SEARCH_DIRECTORY_INFO;
+		break;
+	case SMB2_FIND_FULL_DIRECTORY_INFO:
+		smb_level = RAW_SEARCH_FULL_DIRECTORY_INFO;
+		break;
+	case SMB2_FIND_BOTH_DIRECTORY_INFO:
+		smb_level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+		break;
+	case SMB2_FIND_NAME_INFO:
+		smb_level = RAW_SEARCH_NAME_INFO;
+		break;
+	case SMB2_FIND_ID_FULL_DIRECTORY_INFO:
+		smb_level = RAW_SEARCH_ID_FULL_DIRECTORY_INFO;
+		break;
+	case SMB2_FIND_ID_BOTH_DIRECTORY_INFO:
+		smb_level = RAW_SEARCH_ID_BOTH_DIRECTORY_INFO;
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	status = smb2_find_recv(req, mem_ctx, &f);
+	NT_STATUS_NOT_OK_RETURN(status);
+	
+	b = f.out.blob;
+	*io = NULL;
+	*count = 0;
+
+	do {
+		union smb_search_data *io2;
+
+		io2 = talloc_realloc(mem_ctx, *io, union smb_search_data, (*count)+1);
+		if (io2 == NULL) {
+			data_blob_free(&f.out.blob);
+			talloc_free(*io);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*io = io2;
+
+		status = smb_raw_search_common(*io, smb_level, &b, (*io) + (*count), 
+					       &next_ofs, STR_UNICODE);
+
+		if (NT_STATUS_IS_OK(status) &&
+		    next_ofs >= b.length) {
+			data_blob_free(&f.out.blob);
+			talloc_free(*io);
+			return NT_STATUS_INFO_LENGTH_MISMATCH;			
+		}
+
+		(*count)++;
+
+		b = data_blob_const(b.data+next_ofs, b.length - next_ofs);
+	} while (NT_STATUS_IS_OK(status) && next_ofs != 0);
+
+	data_blob_free(&f.out.blob);
+	
+	return NT_STATUS_OK;
+}
+
+/*
+  a varient of smb2_find that parses the resulting blob into
+  smb_search_data structures
+*/
+NTSTATUS smb2_find_level(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			 struct smb2_find *f, 
+			 uint_t *count, union smb_search_data **io)
+{
+	struct smb2_request *req;
+
+	req = smb2_find_send(tree, f);
+	return smb2_find_level_recv(req, mem_ctx, f->in.level, count, io);
+}
