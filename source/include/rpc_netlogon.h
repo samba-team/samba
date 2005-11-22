@@ -40,6 +40,7 @@
 #define NET_TRUST_DOM_LIST	0x13
 #define NET_DSR_GETDCNAME	0x14
 #define NET_AUTH3		0x1a
+#define NET_DSR_GETSITENAME	0x1c
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2
@@ -967,5 +968,19 @@ typedef struct net_r_dsr_getdcname {
 	UNISTR2 uni_client_site_name;
 	WERROR result;
 } NET_R_DSR_GETDCNAME;
+
+/* NET_Q_DSR_GESITENAME */
+typedef struct net_q_dsr_getsitename {
+	uint32 ptr_computer_name;
+	UNISTR2 uni_computer_name;
+} NET_Q_DSR_GETSITENAME;
+
+/* NET_R_DSR_GETSITENAME */
+typedef struct net_r_dsr_getsitename {
+	uint32 ptr_site_name;
+	UNISTR2 uni_site_name;
+	WERROR result;
+} NET_R_DSR_GETSITENAME;
+
 
 #endif /* _RPC_NETLOGON_H */
