@@ -846,12 +846,17 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 			/* Turn on ssl if required */
 			if(strequal(protocol, "ldaps")) {
+#ifdef LDAP_OPT_X_TLS
 				int tls = LDAP_OPT_X_TLS_HARD;
 				if (ldap_set_option (ld, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS) {
 					DEBUG(1, ("pdb_nds_update_login_attempts: Failed to setup a TLS session\n"));
 				} else {
 					DEBUG(4, ("pdb_nds_update_login_attempts: Activated TLS on session\n"));
 				}
+#else
+				DEBUG(0,("pdb_nds_update_login_attempts: Secure connection not supported by LDAP client libraries!\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+#endif
 			}
 		}
 
