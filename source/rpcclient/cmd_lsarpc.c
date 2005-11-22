@@ -771,7 +771,7 @@ static void display_trust_dom_info_1(TRUSTED_DOMAIN_INFO_NAME *n)
 
 static void display_trust_dom_info_3(TRUSTED_DOMAIN_INFO_POSIX_OFFSET *p)
 {
-	printf("Posix Offset:\t%d\n", p->posix_offset);
+	printf("Posix Offset:\t%08x (%d)\n", p->posix_offset, p->posix_offset);
 }
 
 static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char *password)
@@ -800,6 +800,17 @@ static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char
 	data_blob_free(&data_old);
 }
 
+static void display_trust_dom_info_6(TRUSTED_DOMAIN_INFO_EX *i)
+{
+	printf("Domain Name:\t\t%s\n", unistr2_static(&i->domain_name.unistring));
+	printf("NetBIOS Name:\t\t%s\n", unistr2_static(&i->netbios_name.unistring));
+	printf("SID:\t\t\t%s\n", sid_string_static(&i->sid.sid));
+	printf("Trust Direction:\t0x%08x\n", i->trust_direction);
+	printf("Trust Type:\t\t0x%08x\n", i->trust_type);
+	printf("Trust Attributes:\t0x%08x\n", i->trust_attributes);
+}
+
+
 static void display_trust_dom_info(LSA_TRUSTED_DOMAIN_INFO *info, uint32 info_class, const char *pass)
 {
 	switch (info_class) {
@@ -811,6 +822,9 @@ static void display_trust_dom_info(LSA_TRUSTED_DOMAIN_INFO *info, uint32 info_cl
 		break;
 	case 4:
 		display_trust_dom_info_4(&info->password, pass);
+		break;
+	case 6:
+		display_trust_dom_info_6(&info->info_ex);
 		break;
 	default:
 		printf("unsupported info-class: %d\n", info_class);
