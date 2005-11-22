@@ -1370,6 +1370,8 @@ int sys_dup2(int oldfd, int newfd)
  support for IRIX and (Net|Free)BSD also. Expand as other systems have them.
 ****************************************************************************/
 
+/* Possible error codes are: ENOATTR, ERANGE, ENOTSUP. From stat(2): 
+   EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_GETXATTR)
@@ -1385,18 +1387,17 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 	 * the returned value to the size of the buffer, so we have to check
 	 * that the buffer is large enough to fit the returned value.
 	 */
-	retval = extattr_get_file(path, attrnamespace, attrname, NULL, 0);
-
-	if (retval == -1) {
-		return -1;
+	if((retval=extattr_get_file(path, attrnamespace, attrname, NULL, 0)) >= 0) {
+		if(retval > size) {
+			errno = ERANGE;
+			return -1;
+		}
+		if((retval=extattr_get_file(path, attrnamespace, attrname, value, size)) >= 0)
+			return retval;
 	}
 
-	if(retval > size) {
-		errno = ERANGE;
-		return -1;
-	}
-
-	return extattr_get_file(path, attrnamespace, attrname, value, size);
+	DEBUG(10,("sys_getxattr: extattr_get_file() failed with: %s\n", strerror(errno)));
+	return -1;
 #elif defined(HAVE_ATTR_GET)
 	int retval, flags = 0;
 	int valuelength = (int)size;
@@ -1424,18 +1425,17 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
 
-	retval = extattr_get_link(path, attrnamespace, attrname, NULL, 0);
-
-	if (retval == -1) {
-		return -1;
+	if((retval=extattr_get_link(path, attrnamespace, attrname, NULL, 0)) >= 0) {
+		if(retval > size) {
+			errno = ERANGE;
+			return -1;
+		}
+		if((retval=extattr_get_link(path, attrnamespace, attrname, value, size)) >= 0)
+			return retval;
 	}
-
-	if(retval > size) {
-		errno = ERANGE;
-		return -1;
-	}
-
-	return extattr_get_link(path, attrnamespace, attrname, value, size);
+	
+	DEBUG(10,("sys_lgetxattr: extattr_get_link() failed with: %s\n", strerror(errno)));
+	return -1;
 #elif defined(HAVE_ATTR_GET)
 	int retval, flags = ATTR_DONTFOLLOW;
 	int valuelength = (int)size;
@@ -1463,18 +1463,17 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
 
-	retval = extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0);
-
-	if (retval == -1) {
-		return -1;
+	if((retval=extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0)) >= 0) {
+		if(retval > size) {
+			errno = ERANGE;
+			return -1;
+		}
+		if((retval=extattr_get_fd(filedes, attrnamespace, attrname, value, size)) >= 0)
+			return retval;
 	}
-
-	if(retval > size) {
-		errno = ERANGE;
-		return -1;
-	}
-
-	return extattr_get_fd(filedes, attrnamespace, attrname, value, size);
+	
+	DEBUG(10,("sys_fgetxattr: extattr_get_fd() failed with: %s\n", strerror(errno)));
+	return -1;
 #elif defined(HAVE_ATTR_GETF)
 	int retval, flags = 0;
 	int valuelength = (int)size;
@@ -1566,7 +1565,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 			errno = ERANGE;
 			return -1;
 		}
-		/* Shift the results back, so we can prepend prefixes */
+		/* Shift results back, so we can prepend prefixes */
 		buf = memmove(list + len, list, list_size);
 
 		for(i = 0; i < list_size; i += len + 1) {
@@ -1652,6 +1651,8 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 
 #endif
 
+/* Possible error codes are: ERANGE, ENOTSUP. From stat(2): 
+   EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 ssize_t sys_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
@@ -1700,6 +1701,8 @@ ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 #endif
 }
 
+/* Possible error codes are: ENOATTR, ENOTSUP. From stat(2): 
+   EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 int sys_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
@@ -1777,6 +1780,8 @@ int sys_fremovexattr (int filedes, const char *name)
 #define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
+/* Possible error codes are: EEXIST, ENOATTR, ENOSPC, EDQUOT, ENOTSUP. From 
+   stat(2): EBADF, ENOENT, ENOTDIR, ELOOP, EFAULT, EACCES, ENOMEM, ENAMETOOLONG. */
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
@@ -1796,6 +1801,7 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 				errno = ENOATTR;
 				return -1;
 			}
+			/* Ignore other errors */
 		}
 		else {
 			/* CREATE attribute, that already exists */
@@ -1841,6 +1847,7 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 				errno = ENOATTR;
 				return -1;
 			}
+			/* Ignore other errors */
 		}
 		else {
 			/* CREATE attribute, that already exists */
@@ -1887,6 +1894,7 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 				errno = ENOATTR;
 				return -1;
 			}
+			/* Ignore other errors */
 		}
 		else {
 			/* CREATE attribute, that already exists */
