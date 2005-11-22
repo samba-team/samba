@@ -29,7 +29,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 
 int torture_nprocs=4;
-int torture_numops=100;
+int torture_numops=10;
 int torture_entries=1000;
 int torture_failures=1;
 int torture_seed=0;
