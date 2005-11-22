@@ -102,7 +102,7 @@ NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	for (i=PRIMARY_GROUP_SID_INDEX; i < nt_token->num_sids; i++) {
 		if (sid_compare_domain(domain_sid, &nt_token->user_sids[i])==0) {
 			sid_peek_rid(&nt_token->user_sids[i], &(gids[*numgroups].g_rid));
-			gids[*numgroups].attr=7;
+			gids[*numgroups].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
 			(*numgroups)++;
 		}
 	}
