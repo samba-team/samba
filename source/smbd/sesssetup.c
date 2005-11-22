@@ -168,6 +168,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
+		talloc_destroy(mem_ctx);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -177,6 +178,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
+		talloc_destroy(mem_ctx);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -188,6 +190,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		data_blob_free(&ap_rep);
 		data_blob_free(&session_key);
 		SAFE_FREE(client);
+		talloc_destroy(mem_ctx);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -206,6 +209,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			SAFE_FREE(client);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 	}
@@ -283,6 +287,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 	}
@@ -302,6 +307,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			passwd_free(&pw);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
 
@@ -314,6 +320,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			passwd_free(&pw);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
 
