@@ -539,6 +539,47 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+/* Dsr_GetSiteName */
+
+WERROR rpccli_netlogon_dsr_getsitename(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *computer_name,
+				       char **site_name)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_DSR_GETSITENAME q;
+	NET_R_DSR_GETSITENAME r;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialize input parameters */
+
+	init_net_q_dsr_getsitename(&q, computer_name);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_DSR_GETSITENAME,
+			q, r,
+			qbuf, rbuf,
+			net_io_q_dsr_getsitename,
+			net_io_r_dsr_getsitename,
+			WERR_GENERAL_FAILURE);
+
+	if (!W_ERROR_IS_OK(r.result)) {
+		return r.result;
+	}
+
+	if ((site_name != NULL) &&
+	    (rpcstr_pull_unistr2_talloc(mem_ctx, site_name,
+					&r.uni_site_name) < 1)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	return WERR_OK;
+}
+
+
 
 /* Sam synchronisation */
 
