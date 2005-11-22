@@ -1750,14 +1750,18 @@ typedef struct q_samr_get_dom_pwinfo
 
 } SAMR_Q_GET_DOM_PWINFO;
 
+#define DOMAIN_PASSWORD_COMPLEX		0x00000001
+#define DOMAIN_PASSWORD_NO_ANON_CHANGE	0x00000002
+#define DOMAIN_PASSWORD_NO_CLEAR_CHANGE	0x00000004
+#define DOMAIN_LOCKOUT_ADMINS		0x00000008
+#define DOMAIN_PASSWORD_STORE_CLEARTEXT	0x00000010
+#define DOMAIN_REFUSE_PASSWORD_CHANGE	0x00000020
+
 /* SAMR_R_GET_DOM_PWINFO */
 typedef struct r_samr_get_dom_pwinfo
 {
-	/*
-	 * See Samba4 IDL
-	 */
-	uint16 unk_0;
-	uint32 unk_1;
+	uint16 min_pwd_length;
+	uint32 password_properties;
 	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;
