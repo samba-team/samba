@@ -565,15 +565,19 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 	}
 
 	switch (pkt.ptype) {
-	case DCERPC_PKT_BIND_ACK:
 	case DCERPC_PKT_BIND_NAK:
-		dcerpc_bind_recv_data(conn, &pkt);
-		data_blob_free(blob);
+	case DCERPC_PKT_BIND_ACK:
+		if (conn->bind_private) {
+			talloc_steal(conn->bind_private, blob->data);
+			dcerpc_bind_recv_data(conn, &pkt);
+		}
 		break;
 
 	case DCERPC_PKT_ALTER_RESP:
-		dcerpc_alter_recv_data(conn, &pkt);
-		data_blob_free(blob);
+		if (conn->alter_private) {
+			talloc_steal(conn->alter_private, blob->data);
+			dcerpc_alter_recv_data(conn, &pkt);
+		}
 		break;
 
 	default:
@@ -592,10 +596,6 @@ static void dcerpc_bind_recv_data(struct dcerpc_connection *conn, struct ncacn_p
 	struct composite_context *c;
 	struct dcerpc_pipe *pipe;
 
-	if (conn->bind_private == NULL) {
-		/* it timed out earlier */
-		return;
-	}
 	c = talloc_get_type(conn->bind_private, struct composite_context);
 	pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
 
@@ -1525,11 +1525,6 @@ static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_
 {
 	struct composite_context *c;
 	struct dcerpc_pipe *pipe;
-
-	if (conn->alter_private == NULL) {
-		/* it timed out earlier */
-		return;
-	}
 
 	c = talloc_get_type(conn->alter_private, struct composite_context);
 	pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
