@@ -8382,7 +8382,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	 */
 	{
 		.line	= __location__,
-		.name	= _NBT_NAME("_MA_MA_SB_C", 0x00, NULL),
+		.name	= _NBT_NAME("_MA_MA_SB_PRA", 0x00, NULL),
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8476,7 +8476,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.section= "Test Replica vs. owned active: some more UNIQUE,MHOMED combinations",
-		.name	= _NBT_NAME("_MA_UA_SB_A", 0x00, NULL),
+		.name	= _NBT_NAME("_MA_UA_SB_P", 0x00, NULL),
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
@@ -9249,6 +9249,7 @@ BOOL torture_nbt_winsreplication_quick(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
 	BOOL ret = True;
+	struct test_wrepl_conflict_conn *ctx;
 
 	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
 
@@ -9265,6 +9266,10 @@ BOOL torture_nbt_winsreplication_quick(void)
 	ret &= test_assoc_ctx2(mem_ctx, address);
 
 	ret &= test_wins_replication(mem_ctx, address);
+
+	ctx = test_create_conflict_ctx(mem_ctx, address);
+
+	ret &= test_conflict_same_owner(ctx);
 
 	talloc_free(mem_ctx);
 
