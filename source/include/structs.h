@@ -338,6 +338,7 @@ struct param;
 
 struct socket_context;
 struct smbcli_socket;
+struct smbcli_request;
 
 struct _krb5_krb_auth_data;
 
