@@ -568,10 +568,12 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 	case DCERPC_PKT_BIND_ACK:
 	case DCERPC_PKT_BIND_NAK:
 		dcerpc_bind_recv_data(conn, &pkt);
+		data_blob_free(blob);
 		break;
 
 	case DCERPC_PKT_ALTER_RESP:
 		dcerpc_alter_recv_data(conn, &pkt);
+		data_blob_free(blob);
 		break;
 
 	default:
@@ -579,8 +581,6 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 		dcerpc_request_recv_data(conn, blob, &pkt);
 		break;
 	}
-
-	data_blob_free(blob);
 }
 
 
@@ -857,8 +857,11 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 
 	if (req == NULL) {
 		DEBUG(2,("dcerpc_request: unmatched call_id %u in response packet\n", pkt->call_id));
+		data_blob_free(raw_packet);
 		return;
 	}
+
+	talloc_steal(req, raw_packet->data);
 
 	if (pkt->ptype == DCERPC_PKT_FAULT) {
 		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt->u.fault.status)));
