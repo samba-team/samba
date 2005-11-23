@@ -47,6 +47,9 @@ struct packet_context {
 	BOOL recv_disable;
 	BOOL nofree;
 
+	BOOL busy;
+	BOOL destructor_called;
+
 	struct send_element {
 		struct send_element *next, *prev;
 		DATA_BLOB blob;
@@ -55,11 +58,34 @@ struct packet_context {
 };
 
 /*
+  a destructor used when we are processing packets to prevent freeing of this
+  context while it is being used
+*/
+static int packet_destructor(void *p)
+{
+	struct packet_context *pc = talloc_get_type(p, struct packet_context);
+
+	if (pc->busy) {
+		pc->destructor_called = True;
+		/* now we refuse the talloc_free() request. The free will
+		   happen again in the packet_recv() code */
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
   initialise a packet receiver
 */
 struct packet_context *packet_init(TALLOC_CTX *mem_ctx)
 {
-	return talloc_zero(mem_ctx, struct packet_context);
+	struct packet_context *pc = talloc_zero(mem_ctx, struct packet_context);
+	if (pc != NULL) {
+		talloc_set_destructor(pc, packet_destructor);
+	}
+	return pc;
 }
 
 
@@ -205,6 +231,7 @@ static void packet_next_event(struct event_context *ev, struct timed_event *te,
 	}
 }
 
+
 /*
   call this when the socket becomes readable to kick off the whole
   stream parsing process
@@ -342,7 +369,16 @@ next_partial:
 		pc->processing = 1;
 	}
 
+	pc->busy = True;
+
 	status = pc->callback(pc->private, blob);
+
+	pc->busy = False;
+
+	if (pc->destructor_called) {
+		talloc_free(pc);
+		return;
+	}
 
 	if (pc->processing) {
 		if (pc->processing > 1) {
