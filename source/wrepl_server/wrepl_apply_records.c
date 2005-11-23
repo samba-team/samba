@@ -588,7 +588,7 @@ static NTSTATUS r_do_add(struct wreplsrv_partner *partner,
 		return NT_STATUS_FOOBAR;
 	}
 
-	DEBUG(0,("added record %s\n",
+	DEBUG(4,("added record %s\n",
 		nbt_name_string(mem_ctx, &replica->name)));
 
 	return NT_STATUS_OK;
@@ -631,7 +631,7 @@ static NTSTATUS r_do_replace(struct wreplsrv_partner *partner,
 		return NT_STATUS_FOOBAR;
 	}
 
-	DEBUG(0,("replaced record %s\n",
+	DEBUG(4,("replaced record %s\n",
 		nbt_name_string(mem_ctx, &replica->name)));
 
 	return NT_STATUS_OK;
@@ -643,7 +643,7 @@ static NTSTATUS r_not_replace(struct wreplsrv_partner *partner,
 			      struct wrepl_wins_owner *owner,
 			      struct wrepl_name *replica)
 {
-	DEBUG(0,("TODO: not replace record %s\n",
+	DEBUG(4,("not replace record %s\n",
 		 nbt_name_string(mem_ctx, &replica->name)));
 	return NT_STATUS_OK;
 }
@@ -709,16 +709,11 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	BOOL replica_vs_replica = False;
 	BOOL local_vs_replica = False;
 
-	DEBUG(0,("apply record %s: from: %s %llu\n",
-		 nbt_name_string(mem_ctx, &replica->name), owner->address, replica->version_id));
-
 	status = winsdb_lookup(partner->service->wins_db,
 			       &replica->name, mem_ctx, &rec);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		return r_do_add(partner, mem_ctx, owner, replica);
 	}
-	DEBUG(0,("apply record %s: s1: %s\n",
-		 nbt_name_string(mem_ctx, &replica->name), nt_errstr(status)));
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
@@ -728,9 +723,6 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	} else {
 		replica_vs_replica = True;
 	}
-
-	DEBUG(0,("apply record %s: s2: lvr:%d so:%d rvr:%d\n",
-		 nbt_name_string(mem_ctx, &replica->name), local_vs_replica, same_owner, replica_vs_replica));
 
 	if (rec->is_static && !same_owner) {
 		/* TODO: this is just assumed and needs to be tested more */
@@ -769,7 +761,7 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 		}
 	}
 
-	DEBUG(0,("apply record %s: %s\n",
+	DEBUG(4,("apply record %s: %s\n",
 		 nbt_name_string(mem_ctx, &replica->name), _R_ACTION_enum_string(action)));
 
 	switch (action) {
@@ -794,8 +786,7 @@ NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsr
 	NTSTATUS status;
 	uint32_t i;
 
-	/* TODO: ! */
-	DEBUG(0,("TODO: apply records count[%u]:owner[%s]:min[%llu]:max[%llu]:partner[%s]\n",
+	DEBUG(4,("apply records count[%u]:owner[%s]:min[%llu]:max[%llu]:partner[%s]\n",
 		names_io->out.num_names, names_io->in.owner.address,
 		names_io->in.owner.min_version, names_io->in.owner.max_version,
 		partner->address));
