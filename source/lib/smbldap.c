@@ -777,9 +777,18 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 {
 	struct smbldap_state *ldap_state = arg;
 	int rc;
-	DEBUG(5,("rebindproc_connect_with_state: Rebinding as \"%s\"\n", 
-		 ldap_state->bind_dn));
-	
+	int version;
+
+	DEBUG(5,("rebindproc_connect_with_state: Rebinding to %s as \"%s\"\n", 
+		 url, ldap_state->bind_dn));
+
+	/* call START_TLS again (ldaps:// is handled by the OpenLDAP library
+	 * itself) before rebinding to another LDAP server to avoid to expose
+	 * our credentials. At least *try* to secure the connection - Guenther */
+
+	smb_ldap_upgrade_conn(ldap_struct, &version);
+	smb_ldap_start_tls(ldap_struct, version);
+
 	/** @TODO Should we be doing something to check what servers we rebind to?
 	    Could we get a referral to a machine that we don't want to give our
 	    username and password to? */
