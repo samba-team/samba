@@ -88,7 +88,7 @@ static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 	}
 
 	lasttime = (time_t)smb_last_time.tv_sec;
-	utctime = localtime(&lasttime);
+	utctime = gmtime(&lasttime);
 
 	/* find the corresponding byte and bit */
 	bitpos = (utctime->tm_wday * 24 + utctime->tm_hour) % 168;
@@ -96,7 +96,8 @@ static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 
 	if (! (hours[bitpos/8] & bitmask)) {
 		DEBUG(1,("logon_hours_ok: Account for user %s not allowed to logon at this time (%s).\n",
-			pdb_get_username(sampass), asctime(utctime) ));
+			pdb_get_username(sampass), 
+			asctime(localtime(&lasttime)) ));
 		return False;
 	}
 
