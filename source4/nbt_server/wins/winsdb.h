@@ -23,6 +23,9 @@
 #define WINSDB_OWNER_LOCAL	"0.0.0.0"
 #define WINSDB_GROUP_ADDRESS	"255.255.255.255"
 
+#define WINSDB_FLAG_ALLOC_VERSION	(1<<0)
+#define WINSDB_FLAG_TAKE_OWNERSHIP	(1<<1)
+
 struct winsdb_addr {
 	const char *address;
 	const char *wins_owner;
