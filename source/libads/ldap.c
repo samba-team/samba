@@ -292,6 +292,11 @@ got_connection:
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
+	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
 	if (!ads->auth.user_name) {
 		/* have to use the userPrincipalName value here and 
 		   not servicePrincipalName; found by Guenther Deschner @ Sernet */
