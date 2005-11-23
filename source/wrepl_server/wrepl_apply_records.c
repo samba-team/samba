@@ -34,23 +34,24 @@
 #include "ldb/include/ldb.h"
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
+#include "system/time.h"
 
 enum _R_ACTION {
-	R_DO_ADD		= 1,
-	R_DO_REPLACE		= 2,
-	R_NOT_REPLACE		= 3,
-	R_DO_MHOMED_MERGE	= 4,
-	R_DO_RELEASE_DEMAND	= 5,
-	R_DO_SGROUP_MERGE	= 6
+	R_INVALID,
+	R_DO_REPLACE,
+	R_NOT_REPLACE,
+	R_DO_CHALLENGE,
+	R_DO_RELEASE_DEMAND,
+	R_DO_SGROUP_MERGE
 };
 
 static const char *_R_ACTION_enum_string(enum _R_ACTION action)
 {
 	switch (action) {
-	case R_DO_ADD:			return "ADD";
+	case R_INVALID:			return "INVALID";
 	case R_DO_REPLACE:		return "REPLACE";
 	case R_NOT_REPLACE:		return "NOT_REPLACE";
-	case R_DO_MHOMED_MERGE:		return "MHOMED_MERGE";
+	case R_DO_CHALLENGE:		return "CHALLEGNE";
 	case R_DO_RELEASE_DEMAND:	return "RELEASE_DEMAND";
 	case R_DO_SGROUP_MERGE:		return "SGROUP_MERGE";
 	}
@@ -72,6 +73,30 @@ static enum _R_ACTION replace_same_owner(struct winsdb_record *r1, struct wrepl_
 {
 	/* REPLACE */
 	return R_DO_REPLACE;
+}
+
+static BOOL r_is_subset_address_list(struct winsdb_record *r1, struct wrepl_name *r2)
+{
+	uint32_t i,j;
+	size_t len = winsdb_addr_list_length(r1->addresses);
+
+	for (i=0; i < len; i++) {
+		BOOL found = False;
+		for (j=0; j < r2->num_addresses; j++) {
+			if (strcmp(r1->addresses[i]->address, r2->addresses[j].address) != 0) {
+				continue;
+			}
+
+			if (strcmp(r1->addresses[i]->wins_owner, r2->addresses[j].owner) != 0) {
+				return False;
+			}
+			found = True;
+			break;
+		}
+		if (!found) return False;
+	}
+
+	return True;
 }
 
 /*
@@ -247,6 +272,7 @@ static enum _R_ACTION replace_mhomed_replica_vs_X_replica(struct winsdb_record *
 active:
 _UA_UA_SI_U<00> => REPLACE
 _UA_UA_DI_P<00> => NOT REPLACE
+_UA_UA_DI_O<00> => NOT REPLACE
 _UA_UA_DI_N<00> => REPLACE
 _UA_UT_SI_U<00> => NOT REPLACE
 _UA_UT_DI_U<00> => NOT REPLACE
@@ -259,7 +285,9 @@ _UA_SA_DI_R<00> => REPLACE
 _UA_ST_SI_U<00> => NOT REPLACE
 _UA_ST_DI_U<00> => NOT REPLACE
 _UA_MA_SI_U<00> => REPLACE
+_UA_MA_SP_U<00> => REPLACE
 _UA_MA_DI_P<00> => NOT REPLACE
+_UA_MA_DI_O<00> => NOT REPLACE
 _UA_MA_DI_N<00> => REPLACE
 _UA_MT_SI_U<00> => NOT REPLACE
 _UA_MT_DI_U<00> => NOT REPLACE
@@ -297,10 +325,33 @@ static enum _R_ACTION replace_unique_owned_vs_X_replica(struct winsdb_record *r1
 		return R_NOT_REPLACE;
 	}
 
-	/* TODO: handle MHOMED merging and release damands */
+	if (R_IS_GROUP(r2) || R_IS_SGROUP(r2)) {
+		/* REPLACE and send a release demand to the old name owner */
+		return R_DO_RELEASE_DEMAND;
+	}
 
-	/* NOT REPLACE */
-	return R_NOT_REPLACE;
+	/* 
+	 * here we only have unique,active,owned vs.
+	 * is unique,active,replica or mhomed,active,replica
+	 */
+
+	if (r_is_subset_address_list(r1, r2)) {
+		/* 
+		 * if r1 has a subset(or same) of the addresses of r2
+		 * <=>
+		 * if r2 has a superset(or same) of the addresses of r1
+		 *
+		 * then replace the record
+		 */
+		return R_DO_REPLACE;
+	}
+
+	/*
+	 * in any other case, we need to do
+	 * a name request to the old name holder
+	 * to see if it's still there...
+	 */
+	return R_DO_CHALLENGE;
 }
 
 /*
@@ -432,11 +483,11 @@ _MA_MA_SP_U<00> => REPLACE
 _MA_MA_SM_U<00> => REPLACE
 _MA_MA_SB_P<00> => MHOMED_MERGE
 _MA_MA_SB_A<00> => MHOMED_MERGE
-_MA_MA_SB_C<00> => NOT REPLACE
+_MA_MA_SB_PRA<00> => NOT REPLACE
 _MA_MA_SB_O<00> => NOT REPLACE
 _MA_MA_SB_N<00> => REPLACE
 Test Replica vs. owned active: some more UNIQUE,MHOMED combinations
-_MA_UA_SB_A<00> => MHOMED_MERGE
+_MA_UA_SB_P<00> => MHOMED_MERGE
 
 released:
 _MR_UA_SI<00> => REPLACE
@@ -468,88 +519,278 @@ static enum _R_ACTION replace_mhomed_owned_vs_X_replica(struct winsdb_record *r1
 		return R_NOT_REPLACE;
 	}
 
-	/* TODO: handle MHOMED merging and release demands */
+	if (R_IS_GROUP(r2) || R_IS_SGROUP(r2)) {
+		/* REPLACE and send a release demand to the old name owner */
+		return R_DO_RELEASE_DEMAND;
+	}
 
-	/* NOT REPLACE */
-	return R_NOT_REPLACE;
+	/* 
+	 * here we only have mhomed,active,owned vs.
+	 * is unique,active,replica or mhomed,active,replica
+	 */
+
+	if (r_is_subset_address_list(r1, r2)) {
+		/* 
+		 * if r1 has a subset(or same) of the addresses of r2
+		 * <=>
+		 * if r2 has a superset(or same) of the addresses of r1
+		 *
+		 * then replace the record
+		 */
+		return R_DO_REPLACE;
+	}
+
+	/*
+	 * in any other case, we need to do
+	 * a name request to the old name holder
+	 * to see if it's still there...
+	 */
+	return R_DO_CHALLENGE;
 }
 
-
-static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
-					  TALLOC_CTX *mem_ctx,
-					  struct wrepl_wins_owner *owner,
-					  struct wrepl_name *name)
+static NTSTATUS r_do_add(struct wreplsrv_partner *partner,
+			 TALLOC_CTX *mem_ctx,
+			 struct wrepl_wins_owner *owner,
+			 struct wrepl_name *replica)
 {
-	NTSTATUS status;
-	struct winsdb_record *rec = NULL;
-	enum _R_ACTION action = R_NOT_REPLACE;
-	BOOL same_owner = False;
-	BOOL replica_vs_replica = False;
-	BOOL local_vs_replica = False;
+	struct winsdb_record *rec;
+	uint32_t i;
+	uint8_t ret;
 
-	status = winsdb_lookup(partner->service->wins_db,
-			       &name->name, mem_ctx, &rec);
-	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
-		rec = NULL;
-		action = R_DO_ADD;
-		status = NT_STATUS_OK;
-	}
-	NT_STATUS_NOT_OK_RETURN(status);
+	rec = talloc(mem_ctx, struct winsdb_record);
+	NT_STATUS_HAVE_NO_MEMORY(rec);
 
-	if (rec) {
-		if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
-			local_vs_replica = True;
-		} else if (strcmp(rec->wins_owner, owner->address)==0) {
-			same_owner = True;
-		} else {
-			replica_vs_replica = True;
-		}
-	}
+	rec->name	= &replica->name;
+	rec->type	= replica->type;
+	rec->state	= replica->state;
+	rec->node	= replica->node;
+	rec->is_static	= replica->is_static;
+	rec->expire_time= time(NULL) + partner->service->config.verify_interval;
+	rec->version	= replica->version_id;
+	rec->wins_owner	= replica->owner;
+	rec->addresses	= winsdb_addr_list_make(rec);
+	NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
+	rec->registered_by = NULL;
 
-	if (rec && same_owner) {
-		action = replace_same_owner(rec, name);
-	} else if (rec && replica_vs_replica) {
-		switch (rec->type) {
-		case WREPL_TYPE_UNIQUE:
-			action = replace_unique_replica_vs_X_replica(rec, name);
-			break;
-		case WREPL_TYPE_GROUP:
-			action = replace_group_replica_vs_X_replica(rec, name);
-			break;
-		case WREPL_TYPE_SGROUP:
-			action = replace_sgroup_replica_vs_X_replica(rec, name);
-			break;
-		case WREPL_TYPE_MHOMED:
-			action = replace_mhomed_replica_vs_X_replica(rec, name);
-			break;
-		}
-	} else if (rec && local_vs_replica) {
-		switch (rec->type) {
-		case WREPL_TYPE_UNIQUE:
-			action = replace_unique_owned_vs_X_replica(rec, name);
-			break;
-		case WREPL_TYPE_GROUP:
-			action = replace_group_owned_vs_X_replica(rec, name);
-			break;
-		case WREPL_TYPE_SGROUP:
-			action = replace_sgroup_owned_vs_X_replica(rec, name);
-			break;
-		case WREPL_TYPE_MHOMED:
-			action = replace_mhomed_owned_vs_X_replica(rec, name);
-			break;
-		}
+	for (i=0; i < replica->num_addresses; i++) {
+		/* TODO: find out if rec->expire_time is correct here */
+		rec->addresses = winsdb_addr_list_add(rec->addresses,
+						      replica->addresses[i].address,
+						      replica->addresses[i].owner,
+						      rec->expire_time);
+		NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
 	}
 
-	/* TODO: !!! */
-	DEBUG(0,("TODO: apply record %s: %s\n",
-		 nbt_name_string(mem_ctx, &name->name), _R_ACTION_enum_string(action)));
+	ret = winsdb_add(partner->service->wins_db, rec, 0);
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(0,("Failed to add record %s: %u\n",
+			nbt_name_string(mem_ctx, &replica->name), ret));
+		return NT_STATUS_FOOBAR;
+	}
+
+	DEBUG(0,("added record %s\n",
+		nbt_name_string(mem_ctx, &replica->name)));
 
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS r_do_replace(struct wreplsrv_partner *partner,
+			     TALLOC_CTX *mem_ctx,
+			     struct winsdb_record *rec,
+			     struct wrepl_wins_owner *owner,
+			     struct wrepl_name *replica)
+{
+	uint32_t i;
+	uint8_t ret;
+
+	rec->name	= &replica->name;
+	rec->type	= replica->type;
+	rec->state	= replica->state;
+	rec->node	= replica->node;
+	rec->is_static	= replica->is_static;
+	rec->expire_time= time(NULL) + partner->service->config.verify_interval;
+	rec->version	= replica->version_id;
+	rec->wins_owner	= replica->owner;
+	rec->addresses	= winsdb_addr_list_make(rec);
+	NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
+	rec->registered_by = NULL;
+
+	for (i=0; i < replica->num_addresses; i++) {
+		/* TODO: find out if rec->expire_time is correct here */
+		rec->addresses = winsdb_addr_list_add(rec->addresses,
+						      replica->addresses[i].address,
+						      replica->addresses[i].owner,
+						      rec->expire_time);
+		NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
+	}
+
+	ret = winsdb_modify(partner->service->wins_db, rec, 0);
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(0,("Failed to replace record %s: %u\n",
+			nbt_name_string(mem_ctx, &replica->name), ret));
+		return NT_STATUS_FOOBAR;
+	}
+
+	DEBUG(0,("replaced record %s\n",
+		nbt_name_string(mem_ctx, &replica->name)));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS r_not_replace(struct wreplsrv_partner *partner,
+			      TALLOC_CTX *mem_ctx,
+			      struct winsdb_record *rec,
+			      struct wrepl_wins_owner *owner,
+			      struct wrepl_name *replica)
+{
+	DEBUG(0,("TODO: not replace record %s\n",
+		 nbt_name_string(mem_ctx, &replica->name)));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
+			       TALLOC_CTX *mem_ctx,
+			       struct winsdb_record *rec,
+			       struct wrepl_wins_owner *owner,
+			       struct wrepl_name *replica)
+{
+	/* TODO: !!! */
+	DEBUG(0,("TODO: challenge record %s\n",
+		 nbt_name_string(mem_ctx, &replica->name)));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
+				    TALLOC_CTX *mem_ctx,
+				    struct winsdb_record *rec,
+				    struct wrepl_wins_owner *owner,
+				    struct wrepl_name *replica)
+{
+	NTSTATUS status;
+	struct winsdb_addr **addresses;
+
+	/*
+	 * we need to get a reference to the old addresses,
+	 * as we need to send a release demand to them after replacing the record
+	 * and r_do_replace() will modify rec->addresses
+	 */
+	addresses = rec->addresses;
+
+	status = r_do_replace(partner, mem_ctx, rec, owner, replica);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* TODO: !!! */
+	DEBUG(0,("TODO: send release demand for %s\n",
+		 nbt_name_string(mem_ctx, &replica->name)));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
+				  TALLOC_CTX *mem_ctx,
+				  struct winsdb_record *rec,
+				  struct wrepl_wins_owner *owner,
+				  struct wrepl_name *replica)
+{
+	/* TODO: !!! */
+	DEBUG(0,("TODO: sgroup merge record %s\n",
+		 nbt_name_string(mem_ctx, &replica->name)));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
+					  TALLOC_CTX *mem_ctx,
+					  struct wrepl_wins_owner *owner,
+					  struct wrepl_name *replica)
+{
+	NTSTATUS status;
+	struct winsdb_record *rec = NULL;
+	enum _R_ACTION action = R_INVALID;
+	BOOL same_owner = False;
+	BOOL replica_vs_replica = False;
+	BOOL local_vs_replica = False;
+
+	DEBUG(0,("apply record %s: from: %s %llu\n",
+		 nbt_name_string(mem_ctx, &replica->name), owner->address, replica->version_id));
+
+	status = winsdb_lookup(partner->service->wins_db,
+			       &replica->name, mem_ctx, &rec);
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		return r_do_add(partner, mem_ctx, owner, replica);
+	}
+	DEBUG(0,("apply record %s: s1: %s\n",
+		 nbt_name_string(mem_ctx, &replica->name), nt_errstr(status)));
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
+		local_vs_replica = True;
+	} else if (strcmp(rec->wins_owner, owner->address)==0) {
+		same_owner = True;
+	} else {
+		replica_vs_replica = True;
+	}
+
+	DEBUG(0,("apply record %s: s2: lvr:%d so:%d rvr:%d\n",
+		 nbt_name_string(mem_ctx, &replica->name), local_vs_replica, same_owner, replica_vs_replica));
+
+	if (rec->is_static && !same_owner) {
+		/* TODO: this is just assumed and needs to be tested more */
+		action = R_NOT_REPLACE;
+	} else if (same_owner) {
+		action = replace_same_owner(rec, replica);
+	} else if (replica_vs_replica) {
+		switch (rec->type) {
+		case WREPL_TYPE_UNIQUE:
+			action = replace_unique_replica_vs_X_replica(rec, replica);
+			break;
+		case WREPL_TYPE_GROUP:
+			action = replace_group_replica_vs_X_replica(rec, replica);
+			break;
+		case WREPL_TYPE_SGROUP:
+			action = replace_sgroup_replica_vs_X_replica(rec, replica);
+			break;
+		case WREPL_TYPE_MHOMED:
+			action = replace_mhomed_replica_vs_X_replica(rec, replica);
+			break;
+		}
+	} else if (local_vs_replica) {
+		switch (rec->type) {
+		case WREPL_TYPE_UNIQUE:
+			action = replace_unique_owned_vs_X_replica(rec, replica);
+			break;
+		case WREPL_TYPE_GROUP:
+			action = replace_group_owned_vs_X_replica(rec, replica);
+			break;
+		case WREPL_TYPE_SGROUP:
+			action = replace_sgroup_owned_vs_X_replica(rec, replica);
+			break;
+		case WREPL_TYPE_MHOMED:
+			action = replace_mhomed_owned_vs_X_replica(rec, replica);
+			break;
+		}
+	}
+
+	DEBUG(0,("apply record %s: %s\n",
+		 nbt_name_string(mem_ctx, &replica->name), _R_ACTION_enum_string(action)));
+
+	switch (action) {
+	case R_INVALID: break;
+	case R_DO_REPLACE:
+		return r_do_replace(partner, mem_ctx, rec, owner, replica);
+	case R_NOT_REPLACE:
+		return r_not_replace(partner, mem_ctx, rec, owner, replica);
+	case R_DO_CHALLENGE:
+		return r_do_challenge(partner, mem_ctx, rec, owner, replica);
+	case R_DO_RELEASE_DEMAND:
+		return r_do_release_demand(partner, mem_ctx, rec, owner, replica);
+	case R_DO_SGROUP_MERGE:	
+		return r_do_sgroup_merge(partner, mem_ctx, rec, owner, replica);
+	}
+
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
 NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsrv_pull_names_io *names_io)
 {
-	TALLOC_CTX *tmp_mem = talloc_new(partner);
 	NTSTATUS status;
 	uint32_t i;
 
@@ -560,9 +801,13 @@ NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsr
 		partner->address));
 
 	for (i=0; i < names_io->out.num_names; i++) {
+		TALLOC_CTX *tmp_mem = talloc_new(partner);
+		NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
+
 		status = wreplsrv_apply_one_record(partner, tmp_mem,
 						   &names_io->in.owner,
 						   &names_io->out.names[i]);
+		talloc_free(tmp_mem);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
