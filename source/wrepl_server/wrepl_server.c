@@ -43,6 +43,18 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
+	/* the default renew interval is 6 days */
+	service->config.renew_interval	  = lp_parm_int(-1,"wreplsrv","renew_interval", 6*24*60*60);
+
+	/* the default tombstone (extinction) interval is 6 days */
+	service->config.tombstone_interval= lp_parm_int(-1,"wreplsrv","tombstone_interval", 6*24*60*60);
+
+	/* the default tombstone (extinction) timeout is 1 day */
+	service->config.tombstone_timeout = lp_parm_int(-1,"wreplsrv","tombstone_timeout", 1*24*60*60);
+
+	/* the default verify interval is 24 days */
+	service->config.verify_interval   = lp_parm_int(-1,"wreplsrv","verify_interval", 24*24*60*60);
+
 	return NT_STATUS_OK;
 }
 

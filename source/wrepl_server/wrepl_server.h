@@ -223,6 +223,34 @@ struct wreplsrv_service {
 	/* the winsdb handle */
 	struct ldb_context *wins_db;
 
+	/* some configuration */
+	struct {
+		/* 
+		 * the interval (in secs) till an active record will be marked as RELEASED 
+		 */
+		uint32_t renew_interval;
+
+		/* 
+		 * the interval (in secs) a record remains in RELEASED state,
+		 * before it will be marked as TOMBSTONE
+		 * (also known as extinction interval)
+		 */
+		uint32_t tombstone_interval;
+
+		/* 
+		 * the interval (in secs) a record remains in TOMBSTONE state,
+		 * before it will be removed from the database.
+		 * (also known as extinction timeout)
+		 */
+		uint32_t tombstone_timeout;
+
+		/* 
+		 * the interval (in secs) till a replica record will be verified
+		 * with the owning wins server
+		 */
+		uint32_t verify_interval;
+	} config;
+
 	/* all incoming connections */
 	struct wreplsrv_in_connection *in_connections;
 
