@@ -83,7 +83,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.is_static		= False;
 	rec.expire_time		= time(NULL) + ttl;
 	rec.version		= 0; /* will allocated later */
-	rec.wins_owner		= WINSDB_OWNER_LOCAL;
+	rec.wins_owner		= NULL; /* will be set later */
 	rec.registered_by	= src->addr;
 	rec.addresses		= winsdb_addr_list_make(packet);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
@@ -97,7 +97,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
 		 nbt_name_string(packet, name), rec.addresses[0]->address));
 	
-	return winsdb_add(winssrv, &rec);
+	return winsdb_add(winssrv->wins_db, &rec, WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP);
 }
 
 
@@ -124,7 +124,7 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	DEBUG(5,("WINS: refreshed registration of %s at %s\n",
 		 nbt_name_string(packet, rec->name), address));
 	
-	return winsdb_modify(winssrv, rec);
+	return winsdb_modify(winssrv->wins_db, rec, 0);
 }
 
 /*
@@ -164,7 +164,8 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		rcode = NBT_RCODE_SVR;
 		goto done;
 	} else if (rec->state != WREPL_STATE_ACTIVE) {
-		winsdb_delete(winssrv, rec);
+/* TODO: this is not always correct!!!*/
+		winsdb_delete(winssrv->wins_db, rec);
 		rcode = wins_register_new(nbtsock, packet, src);
 		goto done;
 	}
@@ -291,7 +292,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 		if (rec->addresses[0] == NULL) {
 			rec->state = WREPL_STATE_RELEASED;
 		}
-		winsdb_modify(winssrv, rec);
+		winsdb_modify(winssrv->wins_db, rec, 0);
 	}
 
 done:
