@@ -264,13 +264,13 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	}
 
 	/* sort the names before we send them */
-	qsort(names, ret, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
+	qsort(names, res->count, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
 
 	DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
-		ret, owner_in->address, owner_in->min_version, owner_in->max_version,
+		res->count, owner_in->address, owner_in->min_version, owner_in->max_version,
 		call->wreplconn->partner->address));
 
-	reply_out->num_names	= ret;
+	reply_out->num_names	= res->count;
 	reply_out->names	= names;
 
 	return NT_STATUS_OK;
