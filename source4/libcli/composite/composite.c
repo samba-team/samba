@@ -147,3 +147,12 @@ void composite_continue_irpc(struct composite_context *ctx,
 	new_req->async.private = private_data;
 }
 
+void composite_continue_smb(struct composite_context *ctx,
+			    struct smbcli_request *new_req,
+			    void (*continuation)(struct smbcli_request *),
+			    void *private_data)
+{
+	if (composite_nomem(new_req, ctx)) return;
+	new_req->async.fn = continuation;
+	new_req->async.private = private_data;
+}
