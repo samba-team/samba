@@ -1431,6 +1431,140 @@ static NTSTATUS memberships_recv(struct composite_context *creq)
 	return result;
 }
 
+/*
+  Download ntconfig.pol.
+*/
+
+struct ntconfig_state {
+	struct smbcli_session *session;
+	struct cli_credentials *user_creds;
+	struct smb_composite_sesssetup s;
+	struct smbcli_tree *tree;
+	union smb_tcon t;
+	struct smb_composite_loadfile l;
+};
+
+static void ntconfig_recv_file(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct ntconfig_state *state =
+		talloc_get_type(c->private_data,
+				struct ntconfig_state);
+
+	c->status = smb_composite_loadfile_recv(creq, state);
+	if (!composite_is_ok(c)) return;
+
+	composite_done(c);
+}
+
+static void ntconfig_recv_tcon(struct smbcli_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct ntconfig_state *state =
+		talloc_get_type(c->private_data,
+				struct ntconfig_state);
+	struct composite_context *creq;
+
+	c->status = smb_raw_tcon_recv(req, state, &state->t);
+	if (!composite_is_ok(c)) return;
+
+	state->tree->tid = state->t.tconx.out.tid;
+	state->l.in.fname = "ntconfig.pol";
+
+	creq = smb_composite_loadfile_send(state->tree, &state->l);
+	composite_continue(c, creq, ntconfig_recv_file, c);
+}
+
+static void ntconfig_recv_sesssetup(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct ntconfig_state *state =
+		talloc_get_type(c->private_data,
+				struct ntconfig_state);
+	struct smbcli_request *req;
+
+	c->status = smb_composite_sesssetup_recv(creq);
+	if (!composite_is_ok(c)) return;
+
+	state->session->vuid = state->s.out.vuid;
+	
+	state->tree = smbcli_tree_init(state->session, state, True);
+	if (composite_nomem(state->tree, c)) return;
+
+	state->t.generic.level = RAW_TCON_TCONX;
+	state->t.tconx.in.flags = 0;
+	state->t.tconx.in.password = data_blob(NULL, 0);
+	state->t.tconx.in.path = talloc_asprintf(
+		state, "\\\\%s\\%s",
+		state->session->transport->socket->hostname,
+		"NETLOGON");
+	if (composite_nomem(state->t.tconx.in.path, c)) return;
+	state->t.tconx.in.device = "?????";
+
+	req = smb_raw_tcon_send(state->tree, &state->t);
+	composite_continue_smb(c, req, ntconfig_recv_tcon, c);
+}
+
+static struct composite_context *ntconfig_send(TALLOC_CTX *mem_ctx,
+					       struct smbcli_transport *transport,
+					       struct cli_credentials *user_creds)
+{
+	struct composite_context *c, *creq;
+	struct ntconfig_state *state;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct ntconfig_state);
+	if (state == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
+	c->event_ctx = transport->socket->event.ctx;
+
+	state->user_creds = talloc_reference(state, user_creds);
+	state->session = smbcli_session_init(transport, state, False);
+
+	state->s.in.sesskey = transport->negotiate.sesskey;
+	state->s.in.capabilities = transport->negotiate.capabilities;
+	state->s.in.credentials = state->user_creds;
+	state->s.in.workgroup = cli_credentials_get_domain(state->user_creds);
+
+	creq = smb_composite_sesssetup_send(state->session, &state->s);
+	if (creq == NULL) {
+		c->status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	creq->async.fn = ntconfig_recv_sesssetup;
+	creq->async.private_data = c;
+	return c;
+
+ failed:
+	composite_trigger_error(c);
+	return c;
+}
+
+/*
+  Right now we throw it away...
+*/
+
+static NTSTATUS ntconfig_recv(struct composite_context *creq)
+{
+	NTSTATUS result = composite_wait(creq);
+	talloc_free(creq);
+	return result;
+}
+
 struct xp_login_state {
 	struct timeval timeout;
 
@@ -1442,6 +1576,8 @@ struct xp_login_state {
 	const char *user_domain;
 	const char *user_name;
 	const char *user_pwd;
+
+	struct cli_credentials *user_creds;
 
 	int num_sids;
 	const struct dom_sid **sids;
@@ -1475,6 +1611,7 @@ static void xp_login_recv_schannel(struct composite_context *creq);
 static void xp_login_recv_samlogon(struct rpc_request *req);
 static void xp_login_recv_names(struct composite_context *creq);
 static void xp_login_recv_domadmins(struct composite_context *creq);
+static void xp_login_recv_ntconfig(struct composite_context *creq);
 static void xp_login_recv_memberships(struct composite_context *creq);
 
 static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
@@ -1629,7 +1766,6 @@ static void xp_login_recv_schannel(struct composite_context *creq)
 		talloc_get_type(c->private_data, struct xp_login_state);
 	struct rpc_request *req;
 
-	struct cli_credentials *credentials;
 	const char *workstation;
 	DATA_BLOB chal, nt_resp, lm_resp, names_blob;
 	int flags = CLI_CRED_NTLM_AUTH;
@@ -1646,35 +1782,35 @@ static void xp_login_recv_schannel(struct composite_context *creq)
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	credentials = cli_credentials_init(state);
-	if (composite_nomem(credentials, c)) return;
+	state->user_creds = cli_credentials_init(state);
+	if (composite_nomem(state->user_creds, c)) return;
 
-	cli_credentials_set_conf(credentials);
-	cli_credentials_set_workstation(credentials, state->wks_name, CRED_SPECIFIED);
-	cli_credentials_set_domain(credentials, state->user_domain, CRED_SPECIFIED);
-	cli_credentials_set_username(credentials, state->user_name, CRED_SPECIFIED);
+	cli_credentials_set_conf(state->user_creds);
+	cli_credentials_set_workstation(state->user_creds, state->wks_name, CRED_SPECIFIED);
+	cli_credentials_set_domain(state->user_creds, state->user_domain, CRED_SPECIFIED);
+	cli_credentials_set_username(state->user_creds, state->user_name, CRED_SPECIFIED);
 
-	cli_credentials_set_password(credentials, state->user_pwd, CRED_SPECIFIED);
+	cli_credentials_set_password(state->user_creds, state->user_pwd, CRED_SPECIFIED);
 
 	chal = data_blob_talloc(state, NULL, 8);
 	if (composite_nomem(chal.data, c)) return;
 
 	generate_random_buffer(chal.data, chal.length);
-	cli_credentials_get_ntlm_username_domain(credentials, state,
+	cli_credentials_get_ntlm_username_domain(state->user_creds, state,
 						 &state->user_name,
 						 &state->user_domain);
 	/* for best compatability with multiple vitual netbios names
 	 * on the host, this should be generated from the
 	 * cli_credentials associated with the machine account */
-	workstation = cli_credentials_get_workstation(credentials);
+	workstation = cli_credentials_get_workstation(state->user_creds);
 
 	names_blob = NTLMv2_generate_names_blob(
 		state,
-		cli_credentials_get_workstation(credentials), 
-		cli_credentials_get_domain(credentials));
+		cli_credentials_get_workstation(state->user_creds), 
+		cli_credentials_get_domain(state->user_creds));
 
 	c->status = cli_credentials_get_ntlm_response(
-		credentials, state, &flags, chal, names_blob,
+		state->user_creds, state, &flags, chal, names_blob,
 		&lm_resp, &nt_resp, NULL, NULL);
 	if (!composite_is_ok(c)) return;
 
@@ -1787,10 +1923,32 @@ static void xp_login_recv_domadmins(struct composite_context *creq)
 				struct composite_context);
 	struct xp_login_state *state =
 		talloc_get_type(c->private_data, struct xp_login_state);
+	struct smbcli_tree *tree;
 
 	c->status = domadmins_recv(creq, state, &state->num_domadmins,
 				   &state->domadmins);
 	if (!composite_is_ok(c)) return;
+
+	tree = dcerpc_smb_tree(state->netlogon_pipe->conn);
+	creq = ntconfig_send(state, tree->session->transport,
+			     state->user_creds);
+	composite_continue(c, creq, xp_login_recv_ntconfig, c);
+}
+
+static void xp_login_recv_ntconfig(struct composite_context *creq)
+{
+	struct composite_context *c =
+		talloc_get_type(creq->async.private_data,
+				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
+
+	c->status = ntconfig_recv(creq);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(3, ("downloading ntconfig.pol failed: %s\n",
+			  nt_errstr(c->status)));
+		/* Continue, we don't care */
+	}
 
 	state->num_memberships_done = 0;
 
