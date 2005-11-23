@@ -577,7 +577,7 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycl
 		state->names_io.in.partner		= state->io->in.partner;
 		state->names_io.in.wreplconn		= state->io->in.wreplconn;
 		state->names_io.in.owner		= current_owner->owner;
-		state->names_io.in.owner.min_version	= old_max_version;
+		state->names_io.in.owner.min_version	= old_max_version + 1;
 		state->creq = wreplsrv_pull_names_send(state, &state->names_io);
 		NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
