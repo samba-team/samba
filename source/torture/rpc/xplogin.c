@@ -1147,6 +1147,10 @@ struct memberships_state {
 	struct samr_Close c;
 	struct samr_GetGroupsForUser g;
 
+	struct lsa_SidArray sids;
+	struct samr_GetAliasMembership ga;
+	struct samr_Ids samr_ids;
+
 	uint32_t *rids;
 	struct samr_LookupRids r;
 };
@@ -1214,6 +1218,51 @@ static void memberships_recv_names(struct rpc_request *req)
 	composite_continue_rpc(c, req, memberships_recv_closeuser, c);
 }
 
+static void memberships_recv_aliases(struct rpc_request *req)
+{
+	struct composite_context *c =
+		talloc_get_type(req->async.private,
+				struct composite_context);
+	struct memberships_state *state =
+		talloc_get_type(c->private_data,
+				struct memberships_state);
+	int i, rid_index, num_rids;
+
+	c->status = dcerpc_ndr_request_recv(req);
+	if (!composite_is_ok(c)) return;
+	c->status = state->ga.out.result;
+	if (!composite_is_ok(c)) return;
+
+	num_rids = state->g.out.rids->count +
+		state->ga.out.rids->count + 1;
+
+	state->rids = talloc_array(state, uint32_t, num_rids);
+	if (composite_nomem(state->rids, c)) return;
+
+	rid_index = 0;
+
+	/* User */
+	state->rids[rid_index++] = state->l.out.rids.ids[0];
+
+	/* Groups */
+	for (i=0; i<state->g.out.rids->count; i++) {
+		state->rids[rid_index++] = state->g.out.rids->rids[i].rid;
+	}
+
+	/* Aliases (aka domain local groups) */
+	for (i=0; i<state->ga.out.rids->count; i++) {
+		state->rids[rid_index++] = state->ga.out.rids->ids[i];
+	}
+
+	state->r.in.domain_handle = &state->domain_handle;
+	state->r.in.num_rids = num_rids;
+	state->r.in.rids = state->rids;
+
+	req = dcerpc_samr_LookupRids_send(state->samr_pipe, state,
+					  &state->r);
+	composite_continue_rpc(c, req, memberships_recv_names, c);
+}
+
 static void memberships_recv_mem(struct rpc_request *req)
 {
 	struct composite_context *c =
@@ -1222,28 +1271,38 @@ static void memberships_recv_mem(struct rpc_request *req)
 	struct memberships_state *state =
 		talloc_get_type(c->private_data,
 				struct memberships_state);
-	int i, num_rids;
+	int i;
 
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 	c->status = state->g.out.result;
 	if (!composite_is_ok(c)) return;
 
-	num_rids = state->g.out.rids->count;
-	state->rids = talloc_array(state, uint32_t, num_rids);
-	if (composite_nomem(state->rids, c)) return;
+	state->sids.num_sids = state->g.out.rids->count+1;
+	state->sids.sids = talloc_array(state, struct lsa_SidPtr,
+					state->sids.num_sids);
 
-	for (i=0; i<num_rids; i++) {
-		state->rids[i] = state->g.out.rids->rids[i].rid;
+	if (composite_nomem(state->sids.sids, c)) return;
+
+	state->sids.sids[0].sid = dom_sid_add_rid(state->sids.sids,
+						  state->domain_sid,
+						  state->l.out.rids.ids[0]);
+	if (composite_nomem(state->sids.sids[0].sid, c)) return;
+
+	for (i=0; i<state->g.out.rids->count; i++) {
+		state->sids.sids[i+1].sid = dom_sid_add_rid(
+			state->sids.sids, state->domain_sid,
+			state->g.out.rids->rids[i].rid);
+		if (composite_nomem(state->sids.sids[i+1].sid, c)) return;
 	}
 
-	state->r.in.domain_handle = &state->domain_handle;
-	state->r.in.num_rids = state->g.out.rids->count;
-	state->r.in.rids = state->rids;
+	state->ga.in.sids = &state->sids;
+	state->ga.in.domain_handle = &state->domain_handle;
+	state->ga.out.rids = &state->samr_ids;
 
-	req = dcerpc_samr_LookupRids_send(state->samr_pipe, state,
-					  &state->r);
-	composite_continue_rpc(c, req, memberships_recv_names, c);
+	req = dcerpc_samr_GetAliasMembership_send(state->samr_pipe, state,
+						  &state->ga);
+	composite_continue_rpc(c, req, memberships_recv_aliases, c);
 }
 
 static void memberships_recv_user(struct rpc_request *req)
@@ -1392,6 +1451,8 @@ struct xp_login_state {
 
 	int num_domadmins;
 	struct wb_sid_object **domadmins;
+
+	int num_memberships_done;
 
 	struct smb_composite_connect conn;
 	struct cli_credentials *wks_creds;
@@ -1731,6 +1792,8 @@ static void xp_login_recv_domadmins(struct composite_context *creq)
 				   &state->domadmins);
 	if (!composite_is_ok(c)) return;
 
+	state->num_memberships_done = 0;
+
 	creq = memberships_send(state,
 				dcerpc_smb_tree(state->netlogon_pipe->conn),
 				state->user_name);
@@ -1742,11 +1805,23 @@ static void xp_login_recv_memberships(struct composite_context *creq)
 	struct composite_context *c =
 		talloc_get_type(creq->async.private_data,
 				struct composite_context);
+	struct xp_login_state *state =
+		talloc_get_type(c->private_data, struct xp_login_state);
 
 	c->status = memberships_recv(creq);
-				
 	if (!composite_is_ok(c)) return;
 
+	state->num_memberships_done += 1;
+
+	if (state->num_memberships_done < 3) {
+		/* Yes, this is ususally done more than once. It might be due
+		   to ntconfig.pol and local security policy settings. */
+		creq = memberships_send(
+			state, dcerpc_smb_tree(state->netlogon_pipe->conn),
+			state->user_name);
+		composite_continue(c, creq, xp_login_recv_memberships, c);
+		return;
+	}
 	composite_done(c);
 }
 
