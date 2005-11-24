@@ -155,7 +155,7 @@ main(int argc, char **argv)
 {
     krb5_context context;
     krb5_error_code ret;
-    int i, iterations;
+    int i, enciter, s2kiter;
     int optidx = 0;
     krb5_salt salt;
 
@@ -191,21 +191,22 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    iterations = 1000;
+    enciter = 1000;
+    s2kiter = 100;
 
     for (i = 0; i < sizeof(enctypes)/sizeof(enctypes[0]); i++) {
 
-	time_encryption(context, 16, enctypes[i], iterations);
-	time_encryption(context, 32, enctypes[i], iterations);
-	time_encryption(context, 512, enctypes[i], iterations);
-	time_encryption(context, 1024, enctypes[i], iterations);
-	time_encryption(context, 2048, enctypes[i], iterations);
-	time_encryption(context, 4096, enctypes[i], iterations);
-	time_encryption(context, 8192, enctypes[i], iterations);
-	time_encryption(context, 16384, enctypes[i], iterations);
-	time_encryption(context, 32768, enctypes[i], iterations);
+	time_encryption(context, 16, enctypes[i], enciter);
+	time_encryption(context, 32, enctypes[i], enciter);
+	time_encryption(context, 512, enctypes[i], enciter);
+	time_encryption(context, 1024, enctypes[i], enciter);
+	time_encryption(context, 2048, enctypes[i], enciter);
+	time_encryption(context, 4096, enctypes[i], enciter);
+	time_encryption(context, 8192, enctypes[i], enciter);
+	time_encryption(context, 16384, enctypes[i], enciter);
+	time_encryption(context, 32768, enctypes[i], enciter);
 
-	time_s2k(context, enctypes[i], "mYsecreitPassword", salt, iterations);
+	time_s2k(context, enctypes[i], "mYsecreitPassword", salt, s2kiter);
     }
 
     krb5_free_context(context);
