@@ -81,6 +81,11 @@ static void wins_wack_allow(struct wack_state *state)
 					      rec->expire_time);
 	if (rec->addresses == NULL) goto failed;
 
+	/* if we have more than one address, this becomes implicit a MHOMED record */
+	if (winsdb_addr_list_length(rec->addresses) > 1) {
+		rec->type = WREPL_TYPE_MHOMED;
+	}
+
 	winsdb_modify(state->winssrv->wins_db, rec, WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP);
 
 	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
