@@ -4753,6 +4753,11 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		}
 
 		if (records[i].r2.sgroup_cleanup) {
+			if (!ret) {
+				printf("failed before sgroup_cleanup record[%u]: %s\n", i, records[i].line);
+				return ret;
+			}
+
 			/* clean up the SGROUP record */
 			wins_name_r1->name	= &records[i].name;
 			wins_name_r1->flags	= WREPL_NAME_FLAGS(WREPL_TYPE_SGROUP,
@@ -4808,6 +4813,11 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			wins_name_r2->unknown	= "255.255.255.255";
 			ret &= test_wrepl_update_one(ctx, records[i].r2.owner, wins_name_r2);
 			ret &= test_wrepl_is_applied(ctx, records[i].r2.owner, wins_name_r2, True);
+
+			if (!ret) {
+				printf("failed in sgroup_cleanup record[%u]: %s\n", i, records[i].line);
+				return ret;
+			}
 		}
 
 		/* the first one is a cleanup run */
