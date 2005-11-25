@@ -40,13 +40,14 @@ struct smb2_request *smb2_find_send(struct smb2_tree *tree, struct smb2_find *io
 	SCVAL(req->out.body, 0x03, io->in.continue_flags);
 	SIVAL(req->out.body, 0x04, io->in.unknown);
 	smb2_push_handle(req->out.body+0x08, &io->in.handle);
-	SIVAL(req->out.body, 0x1C, io->in.max_response_size);
 
 	status = smb2_push_o16s16_string(&req->out, 0x18, io->in.pattern);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
 	}
+
+	SIVAL(req->out.body, 0x1C, io->in.max_response_size);
 
 	smb2_transport_send(req);
 

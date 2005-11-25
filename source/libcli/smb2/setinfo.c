@@ -30,13 +30,20 @@
 */
 struct smb2_request *smb2_setinfo_send(struct smb2_tree *tree, struct smb2_setinfo *io)
 {
+	NTSTATUS status;
 	struct smb2_request *req;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_SETINFO, 0x20, io->in.blob.length);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in.level);
-	smb2_push_s32o32_blob(&req->out, 0x04, io->in.blob);
+
+	status = smb2_push_s32o32_blob(&req->out, 0x04, io->in.blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
+
 	SIVAL(req->out.body, 0x0C, io->in.flags);
 	smb2_push_handle(req->out.body+0x10, &io->in.handle);
 

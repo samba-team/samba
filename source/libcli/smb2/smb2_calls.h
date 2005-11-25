@@ -291,15 +291,27 @@ struct smb2_read {
 
 struct smb2_find {
 	struct {
+		/* static body buffer 32 (0x20) bytes */
+		/* uint16_t buffer_code;  0x21 = 0x20 + 1 */
 		uint8_t level;
 		uint8_t continue_flags; /* SMB2_CONTINUE_FLAG_* */
 		uint32_t unknown; /* perhaps a continue token? */
 		struct smb2_handle handle;
+		/* uint16_t pattern_ofs; */
+		/* uint32_t pattern_size; */
 		uint32_t max_response_size;
+
+		/* dynamic body */
 		const char *pattern;
 	} in;
 
 	struct {
+		/* static body buffer 8 (0x08) bytes */
+		/* uint16_t buffer_code;  0x08 */
+		/* uint16_t blob_ofs; */
+		/* uint32_t blob_size; */
+
+		/* dynamic body */
 		DATA_BLOB blob;
 	} out;
 };
@@ -308,20 +320,38 @@ struct smb2_find {
 
 struct smb2_trans {
 	struct {
+		/* static body buffer 56 (0x38) bytes */
+		/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
+		uint16_t _pad;
 		uint32_t pipe_flags;
 		struct smb2_handle handle;
+		/* uint32_t out_ofs; */
+		/* uint32_t out_size; */
 		uint32_t unknown2;
+		/* uint32_t in_ofs; */
+		/* uint32_t in_size; */
 		uint32_t max_response_size;
 		uint64_t flags;
-		DATA_BLOB in;
+
+		/* dynamic body */
 		DATA_BLOB out;
+		DATA_BLOB in;
 	} in;
 
 	struct {
-		uint32_t unknown1;
+		/* static body buffer 48 (0x30) bytes */
+		/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
+		uint16_t _pad;
+		uint32_t pipe_flags;
 		struct smb2_handle handle;
+		/* uint32_t in_ofs; */
+		/* uint32_t in_size; */
+		/* uint32_t out_ofs; */
+		/* uint32_t out_size; */
 		uint32_t unknown2;
 		uint32_t unknown3;
+
+		/* dynamic body */
 		DATA_BLOB in;
 		DATA_BLOB out;
 	} out;
