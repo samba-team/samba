@@ -550,11 +550,16 @@ static void dcerpc_recv_data(struct dcerpc_connection *conn, DATA_BLOB *blob, NT
 {
 	struct ncacn_packet pkt;
 
+	if (NT_STATUS_IS_OK(status) && blob->length == 0) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
 	/* the transport may be telling us of a severe error, such as
 	   a dropped socket */
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(blob);
 		dcerpc_connection_dead(conn, status);
+		return;
 	}
 
 	/* parse the basic packet to work out what type of response this is */

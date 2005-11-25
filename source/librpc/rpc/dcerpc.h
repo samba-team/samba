@@ -142,6 +142,8 @@ struct dcerpc_pipe {
 /* enable krb5 auth */
 #define DCERPC_AUTH_KRB5               (1<<16)
 
+#define DCERPC_SMB2                    (1<<17)
+
 /*
   this is used to find pointers to calls
 */
