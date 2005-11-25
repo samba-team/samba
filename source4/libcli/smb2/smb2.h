@@ -66,6 +66,7 @@ struct smb2_session {
 	struct smb2_transport *transport;
 	struct gensec_security *gensec;
 	uint64_t uid;
+	DATA_BLOB session_key;
 };
 
 
@@ -164,6 +165,7 @@ struct smb2_request {
 #define SMB2_OP_CLOSE     0x06
 #define SMB2_OP_READ      0x08
 #define SMB2_OP_WRITE     0x09
+#define SMB2_OP_TRANS     0x0b
 #define SMB2_OP_CANCEL    0x0c
 #define SMB2_OP_FIND      0x0e
 #define SMB2_OP_NOTIFY    0x0f

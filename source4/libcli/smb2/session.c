@@ -149,10 +149,17 @@ static void session_request_handler(struct smb2_request *req)
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
 	    (NT_STATUS_IS_OK(c->status) && 
 	     NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED))) {
+		NTSTATUS session_key_err;
+		DATA_BLOB session_key;
 		c->status = gensec_update(session->gensec, c, 
 					  state->io.out.secblob,
 					  &state->io.in.secblob);
 		state->gensec_status = c->status;
+
+		session_key_err = gensec_session_key(session->gensec, &session_key);
+		if (NT_STATUS_IS_OK(session_key_err)) {
+			session->session_key = session_key;
+		}
 	}
 
 	session->uid = state->io.out.uid;

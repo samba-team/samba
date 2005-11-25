@@ -1,0 +1,108 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   SMB2 client trans call
+
+   Copyright (C) Andrew Tridgell 2005
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
+
+/*
+  send a trans request
+*/
+struct smb2_request *smb2_trans_send(struct smb2_tree *tree, struct smb2_trans *io)
+{
+	NTSTATUS status;
+	struct smb2_request *req;
+
+	req = smb2_request_init_tree(tree, SMB2_OP_TRANS, 0x38, 
+				     io->in.in.length+io->in.out.length);
+	if (req == NULL) return NULL;
+
+	SSVAL(req->out.body, 0x02, 0); /* pad */
+	SIVAL(req->out.body, 0x04, io->in.unknown1);
+	smb2_push_handle(req->out.body+0x08, &io->in.handle);
+	SIVAL(req->out.body, 0x20, io->in.unknown2);
+	SIVAL(req->out.body, 0x2C, io->in.max_response_size);
+	SBVAL(req->out.body, 0x30, io->in.flags);
+
+	status = smb2_push_o32s32_blob(&req->out, 0x18, io->in.out);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
+
+	status = smb2_push_o32s32_blob(&req->out, 0x24, io->in.in);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
+
+	smb2_transport_send(req);
+
+	return req;
+}
+
+
+/*
+  recv a trans reply
+*/
+NTSTATUS smb2_trans_recv(struct smb2_request *req, 
+			 TALLOC_CTX *mem_ctx, struct smb2_trans *io)
+{
+	NTSTATUS status;
+
+	if (!smb2_request_receive(req) || 
+	    smb2_request_is_error(req)) {
+		return smb2_request_destroy(req);
+	}
+
+	SMB2_CHECK_PACKET_RECV(req, 0x30, True);
+
+	io->out.unknown1 = IVAL(req->in.body, 0x04);
+	smb2_pull_handle(req->in.body+0x08, &io->out.handle);
+	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x18, &io->out.in);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
+	}
+
+	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x20, &io->out.out);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_request_destroy(req);
+		return status;
+	}
+
+
+	io->out.unknown2 = IVAL(req->in.body, 0x28);
+	io->out.unknown3 = IVAL(req->in.body, 0x2C);
+
+	return smb2_request_destroy(req);
+}
+
+/*
+  sync trans request
+*/
+NTSTATUS smb2_trans(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, struct smb2_trans *io)
+{
+	struct smb2_request *req = smb2_trans_send(tree, io);
+	return smb2_trans_recv(req, mem_ctx, io);
+}
