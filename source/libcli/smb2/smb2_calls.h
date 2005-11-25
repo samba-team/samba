@@ -304,9 +304,11 @@ struct smb2_find {
 	} out;
 };
 
+#define SMB2_TRANS_PIPE_FLAGS 0x0011c017 /* what are these? */
+
 struct smb2_trans {
 	struct {
-		uint32_t unknown1;
+		uint32_t pipe_flags;
 		struct smb2_handle handle;
 		uint32_t unknown2;
 		uint32_t max_response_size;

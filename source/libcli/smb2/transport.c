@@ -185,6 +185,13 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
 	req->status       = NT_STATUS(IVAL(hdr, SMB2_HDR_STATUS));
 
+	if (NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
+		/* the server has helpfully told us that this request is still being
+		   processed. how useful :) */
+		talloc_free(buffer);
+		return NT_STATUS_OK;
+	}
+
 	buffer_code = SVAL(req->in.body, 0);
 	req->in.dynamic = NULL;
 	dynamic_size = req->in.body_size - (buffer_code & ~1);
