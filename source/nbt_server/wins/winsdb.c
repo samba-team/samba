@@ -513,8 +513,15 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 				   struct winsdb_record *rec, TALLOC_CTX *mem_ctx)
 {
 	int i, ret=0;
+	size_t addr_count;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
+
+	/* make sure we don't put in corrupted records */
+	addr_count = winsdb_addr_list_length(rec->addresses);
+	if (rec->state == WREPL_STATE_ACTIVE && addr_count == 0) {
+		rec->state = WREPL_STATE_RELEASED;
+	}
 
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
@@ -534,9 +541,11 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 				  ldb_timestring(msg, rec->expire_time));
 	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", rec->version);
 	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
+	ret |= ldb_msg_add_empty(msg, "address", 0);
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_winsdb_addr(msg, "address", rec->addresses[i]);
 	}
+	ret |= ldb_msg_add_empty(msg, "registeredBy", 0);
 	if (rec->registered_by) {
 		ret |= ldb_msg_add_string(msg, "registeredBy", rec->registered_by);
 		if (ret != 0) goto failed;
