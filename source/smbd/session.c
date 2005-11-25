@@ -198,7 +198,8 @@ void session_yield(user_struct *vuser)
 	tdb_delete(tdb, key);
 }
 
-static BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *), void *state)
+BOOL session_traverse(int (*fn)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *),
+		      void *state)
 {
 	if (!session_init()) {
 		DEBUG(3, ("No tdb opened\n"));
