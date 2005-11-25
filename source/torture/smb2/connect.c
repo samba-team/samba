@@ -182,6 +182,7 @@ BOOL torture_smb2_connect(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
 	struct smb2_handle h1, h2;
+	NTSTATUS status;
 
 	if (!torture_smb2_connection(mem_ctx, &tree)) {
 		return False;
@@ -193,6 +194,18 @@ BOOL torture_smb2_connect(void)
 	torture_smb2_write(tree, h1);
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
+
+	status = smb2_logoff(tree);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Logoff failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	status = smb2_logoff(tree);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+		printf("Logoff should have disabled session - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	talloc_free(mem_ctx);
 
