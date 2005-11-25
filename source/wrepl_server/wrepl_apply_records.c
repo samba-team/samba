@@ -75,7 +75,7 @@ static enum _R_ACTION replace_same_owner(struct winsdb_record *r1, struct wrepl_
 	return R_DO_REPLACE;
 }
 
-static BOOL r_is_subset_address_list(struct winsdb_record *r1, struct wrepl_name *r2)
+static BOOL r_1_is_subset_of_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, BOOL check_owners)
 {
 	uint32_t i,j;
 	size_t len = winsdb_addr_list_length(r1->addresses);
@@ -87,7 +87,7 @@ static BOOL r_is_subset_address_list(struct winsdb_record *r1, struct wrepl_name
 				continue;
 			}
 
-			if (strcmp(r1->addresses[i]->wins_owner, r2->addresses[j].owner) != 0) {
+			if (check_owners && strcmp(r1->addresses[i]->wins_owner, r2->addresses[j].owner) != 0) {
 				return False;
 			}
 			found = True;
@@ -97,6 +97,55 @@ static BOOL r_is_subset_address_list(struct winsdb_record *r1, struct wrepl_name
 	}
 
 	return True;
+}
+
+static BOOL r_1_is_superset_of_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, BOOL check_owners)
+{
+	uint32_t i,j;
+	size_t len = winsdb_addr_list_length(r1->addresses);
+
+	for (i=0; i < r2->num_addresses; i++) {
+		BOOL found = False;
+		for (j=0; j < len; j++) {
+			if (strcmp(r2->addresses[i].address, r1->addresses[j]->address) != 0) {
+				continue;
+			}
+
+			if (check_owners && strcmp(r2->addresses[i].owner, r1->addresses[j]->wins_owner) != 0) {
+				return False;
+			}
+			found = True;
+			break;
+		}
+		if (!found) return False;
+	}
+
+	return True;
+}
+
+static BOOL r_1_is_same_as_2_address_list(struct winsdb_record *r1, struct wrepl_name *r2, BOOL check_owners)
+{
+	size_t len = winsdb_addr_list_length(r1->addresses);
+
+	if (len != r2->num_addresses) {
+		return False;
+	}
+
+	return r_1_is_superset_of_2_address_list(r1, r2, check_owners);
+}
+
+static BOOL r_contains_addrs_from_owner(struct winsdb_record *r1, const char *owner)
+{
+	uint32_t i;
+	size_t len = winsdb_addr_list_length(r1->addresses);
+
+	for (i=0; i < len; i++) {
+		if (strcmp(r1->addresses[i]->wins_owner, owner) == 0) {
+			return True;
+		}
+	}
+
+	return False;
 }
 
 /*
@@ -207,8 +256,19 @@ SGROUP,RELEASED vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 SGROUP,TOMBSTONE vs. MHOMED,ACTIVE with different ip(s) => REPLACE
 SGROUP,TOMBSTONE vs. MHOMED,TOMBSTONE with different ip(s) => REPLACE
 
-SGROUP,ACTIVE vs. SGROUP,* is not handled here!
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:A_3_4 => NOT REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:NULL => NOT REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_X_3_4 vs. B:A_3_4 => NOT REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4 vs. B:A_3_4 => REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:A_3_4_OWNER_B => REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_OWNER_B vs. B:A_3_4 => REPLACE
 
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:B_3_4 => C:A_3_4_B_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:A_3_4 => B:A_3_4_X_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:X_3_4 vs. B:A_3_4 => C:A_3_4_X_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_X_3_4 vs. B:A_3_4_OWNER_B => B:A_3_4_OWNER_B_X_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:B_3_4_X_1_2 => C:B_3_4_X_1_2_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:NULL => B:X_3_4 => SGROUP_MERGE
 */
 static enum _R_ACTION replace_sgroup_replica_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
@@ -217,13 +277,33 @@ static enum _R_ACTION replace_sgroup_replica_vs_X_replica(struct winsdb_record *
 		return R_DO_REPLACE;
 	}
 
-	if (R_IS_SGROUP(r2)) {
-		/* not handled here: MERGE */
-		return R_DO_SGROUP_MERGE;
+	if (!R_IS_SGROUP(r2) || !R_IS_ACTIVE(r2)) {
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
 	}
 
-	/* NOT REPLACE */
-	return R_NOT_REPLACE;
+	if (r2->num_addresses == 0) {
+		if (r_contains_addrs_from_owner(r1, r2->owner)) {
+			/* not handled here: MERGE */
+			return R_DO_SGROUP_MERGE;
+		}
+
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
+	}
+
+	if (r_1_is_superset_of_2_address_list(r1, r2, True)) {
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
+	}
+
+	if (r_1_is_same_as_2_address_list(r1, r2, False)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
+	}
+
+	/* not handled here: MERGE */
+	return R_DO_SGROUP_MERGE;
 }
 
 /*
@@ -335,7 +415,7 @@ static enum _R_ACTION replace_unique_owned_vs_X_replica(struct winsdb_record *r1
 	 * is unique,active,replica or mhomed,active,replica
 	 */
 
-	if (r_is_subset_address_list(r1, r2)) {
+	if (r_1_is_subset_of_2_address_list(r1, r2, False)) {
 		/* 
 		 * if r1 has a subset(or same) of the addresses of r2
 		 * <=>
@@ -529,7 +609,7 @@ static enum _R_ACTION replace_mhomed_owned_vs_X_replica(struct winsdb_record *r1
 	 * is unique,active,replica or mhomed,active,replica
 	 */
 
-	if (r_is_subset_address_list(r1, r2)) {
+	if (r_1_is_subset_of_2_address_list(r1, r2, False)) {
 		/* 
 		 * if r1 has a subset(or same) of the addresses of r2
 		 * <=>
@@ -685,15 +765,143 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 	return NT_STATUS_OK;
 }
 
+/*
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:A_3_4 => NOT REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:NULL => NOT REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_X_3_4 vs. B:A_3_4 => NOT REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4 vs. B:A_3_4 => REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:A_3_4_OWNER_B => REPLACE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_OWNER_B vs. B:A_3_4 => REPLACE
+
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4 vs. B:B_3_4 => C:A_3_4_B_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:A_3_4 => B:A_3_4_X_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:X_3_4 vs. B:A_3_4 => C:A_3_4_X_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_X_3_4 vs. B:A_3_4_OWNER_B => B:A_3_4_OWNER_B_X_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:B_3_4_X_1_2 => C:B_3_4_X_1_2_3_4 => SGROUP_MERGE
+SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:NULL => B:X_3_4 => SGROUP_MERGE
+
+Test Replica vs. owned active: SGROUP vs. SGROUP tests
+_SA_SA_DI_U<1c> => SGROUP_MERGE
+_SA_SA_SI_U<1c> => SGROUP_MERGE
+_SA_SA_SP_U<1c> => SGROUP_MERGE
+_SA_SA_SB_U<1c> => SGROUP_MERGE
+*/
 static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 				  TALLOC_CTX *mem_ctx,
 				  struct winsdb_record *rec,
 				  struct wrepl_wins_owner *owner,
 				  struct wrepl_name *replica)
 {
-	/* TODO: !!! */
-	DEBUG(0,("TODO: sgroup merge record %s\n",
-		 nbt_name_string(mem_ctx, &replica->name)));
+	struct winsdb_record *merge;
+	uint32_t modify_flags = 0;
+	uint32_t i,j;
+	uint8_t ret;
+	size_t len;
+	BOOL changed_old_addrs = False;
+	BOOL become_owner = True;
+
+	merge = talloc(mem_ctx, struct winsdb_record);
+	NT_STATUS_HAVE_NO_MEMORY(merge);
+
+	merge->name		= &replica->name;
+	merge->type		= replica->type;
+	merge->state		= replica->state;
+	merge->node		= replica->node;
+	merge->is_static	= replica->is_static;
+	merge->expire_time	= time(NULL) + partner->service->config.verify_interval;
+	merge->version		= replica->version_id;
+	merge->wins_owner	= replica->owner;
+	merge->addresses	= winsdb_addr_list_make(merge);
+	NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
+	merge->registered_by = NULL;
+
+	len = winsdb_addr_list_length(rec->addresses);
+
+	for (i=0; i < len; i++) {
+		BOOL found = False;
+
+		for (j=0; j < replica->num_addresses; j++) {
+			if (strcmp(rec->addresses[i]->address, replica->addresses[j].address) != 0) {
+				continue;
+			}
+
+			found = True;
+
+			if (strcmp(rec->addresses[i]->wins_owner, replica->addresses[j].owner) != 0) {
+				changed_old_addrs = True;
+				break;
+			}
+			break;
+		}
+
+		/* if it's also in the replica, it'll added later */
+		if (found) continue;
+
+		/* 
+		 * if the address isn't in the replica and is owned by replicas owner,
+		 * it won't be added to the merged record
+		 */
+		if (strcmp(rec->addresses[i]->wins_owner, owner->address) == 0) {
+			changed_old_addrs = True;
+			continue;
+		}
+
+		/*
+		 * add the address to the merge result, with the old owner and expire_time
+		 * TODO: check if that's correct for the expire_time
+		 */
+		merge->addresses = winsdb_addr_list_add(merge->addresses,
+							rec->addresses[i]->address,
+							rec->addresses[i]->wins_owner,
+							rec->addresses[i]->expire_time);
+		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
+	}
+
+	for (i=0; i < replica->num_addresses; i++) {
+		/* TODO: find out if rec->expire_time is correct here */
+		merge->addresses = winsdb_addr_list_add(merge->addresses,
+							replica->addresses[i].address,
+							replica->addresses[i].owner,
+							merge->expire_time);
+		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
+	}
+
+	/* we the old addresses change changed we don't become the owner */
+	if (changed_old_addrs) {
+		become_owner = False;
+	}
+
+	/* if we're the owner of the old record, we'll be the owner of the new one too */
+	if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
+		become_owner = True;
+	}
+
+	/*
+	 * if the result has no addresses we take the ownership
+	 */
+	len = winsdb_addr_list_length(merge->addresses);
+	if (len == 0) {
+		become_owner = True;
+	}
+
+	/* 
+	 * if addresses of the old record will be changed the replica owner
+	 * will be owner of the merge result, otherwise we take the ownership
+	 */
+	if (become_owner) {
+		modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+	}
+
+	ret = winsdb_modify(partner->service->wins_db, merge, modify_flags);
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(0,("Failed to modify sgroup merge record %s: %u\n",
+			nbt_name_string(mem_ctx, &replica->name), ret));
+		return NT_STATUS_FOOBAR;
+	}
+
+	DEBUG(4,("sgroup merge record %s\n",
+		nbt_name_string(mem_ctx, &replica->name)));
+
 	return NT_STATUS_OK;
 }
 
