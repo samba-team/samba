@@ -55,12 +55,13 @@ static void wins_wack_deny(struct wack_state *state)
 static void wins_wack_allow(struct wack_state *state)
 {
 	NTSTATUS status;
-	uint32_t ttl;
-	time_t now = time(NULL);
+	uint32_t ttl = wins_server_ttl(state->winssrv, state->request_packet->additional[0].ttl);
 	struct winsdb_record *rec = state->rec, *rec2;
 
 	status = winsdb_lookup(state->winssrv->wins_db, rec->name, state, &rec2);
-	if (!NT_STATUS_IS_OK(status) || rec2->version != rec->version) {
+	if (!NT_STATUS_IS_OK(status)
+	    || rec2->version != rec->version
+	    || strcmp(rec2->wins_owner, rec->wins_owner) != 0) {
 		DEBUG(1,("WINS: record %s changed during WACK - failing registration\n",
 			 nbt_name_string(state, rec->name)));
 		wins_wack_deny(state);
@@ -70,17 +71,15 @@ static void wins_wack_allow(struct wack_state *state)
 	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
 				     &state->src, NBT_RCODE_OK);
 
-	ttl = wins_server_ttl(state->winssrv, state->request_packet->additional[0].ttl);
-	if (now + ttl > rec->expire_time) {
-		rec->expire_time = now + ttl;
-	}
+	rec->expire_time = time(NULL) + ttl;
+	rec->registered_by = state->src.addr;
+
+	/* TODO: is it correct to only add this address? */
 	rec->addresses = winsdb_addr_list_add(rec->addresses,
 					      state->reg_address,
 					      WINSDB_OWNER_LOCAL,
 					      rec->expire_time);
 	if (rec->addresses == NULL) goto failed;
-
-	rec->registered_by = state->src.addr;
 
 	winsdb_modify(state->winssrv->wins_db, rec, WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP);
 
@@ -211,5 +210,5 @@ void wins_register_wack(struct nbt_name_socket *nbtsock,
 
 failed:
 	talloc_free(state);
-	nbtd_name_registration_reply(nbtsock, packet, src, NBT_RCODE_SVR);	
+	nbtd_name_registration_reply(nbtsock, packet, src, NBT_RCODE_SVR);
 }

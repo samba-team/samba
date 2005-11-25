@@ -56,7 +56,8 @@ static enum wrepl_name_type wrepl_type(uint16_t nb_flags, struct nbt_name *name,
 */
 static uint8_t wins_register_new(struct nbt_name_socket *nbtsock, 
 				 struct nbt_name_packet *packet, 
-				 const struct nbt_peer_socket *src)
+				 const struct nbt_peer_socket *src,
+				 enum wrepl_name_type type)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -66,14 +67,11 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	struct winsdb_record rec;
-	enum wrepl_name_type type;
 	enum wrepl_name_node node;
-	BOOL mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
 
 #define WREPL_NODE_NBT_FLAGS(nb_flags) \
 	((nb_flags & NBT_NM_OWNER_TYPE)>>13)
 
-	type	= wrepl_type(nb_flags, name, mhomed);
 	node	= WREPL_NODE_NBT_FLAGS(nb_flags);
 
 	rec.name		= name;
@@ -107,6 +105,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock, 
 			       struct nbt_name_packet *packet, 
 			       struct winsdb_record *rec,
+			       struct winsdb_addr *winsdb_addr,
 			       const struct nbt_peer_socket *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
@@ -114,17 +113,53 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	uint32_t ttl = wins_server_ttl(winssrv, packet->additional[0].ttl);
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-	time_t now = time(NULL);
+	uint32_t modify_flags = 0;
 
-	if (now + ttl > rec->expire_time) {
-		rec->expire_time   = now + ttl;
-	}
+	rec->expire_time   = time(NULL) + ttl;
 	rec->registered_by = src->addr;
+
+	if (winsdb_addr) {
+		winsdb_addr->wins_owner  = WINSDB_OWNER_LOCAL;
+		winsdb_addr->expire_time = rec->expire_time;
+	}
+
+	if (strcmp(WINSDB_OWNER_LOCAL, rec->wins_owner) != 0) {
+		modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+	}
 
 	DEBUG(5,("WINS: refreshed registration of %s at %s\n",
 		 nbt_name_string(packet, rec->name), address));
 	
-	return winsdb_modify(winssrv->wins_db, rec, 0);
+	return winsdb_modify(winssrv->wins_db, rec, modify_flags);
+}
+
+/*
+  do a sgroup merge
+*/
+static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock, 
+				 struct nbt_name_packet *packet, 
+			         struct winsdb_record *rec,
+			         const char *address,
+			         const struct nbt_peer_socket *src)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	uint32_t ttl = wins_server_ttl(winssrv, packet->additional[0].ttl);
+
+	rec->expire_time   = time(NULL) + ttl;
+	rec->registered_by = src->addr;
+
+	rec->addresses     = winsdb_addr_list_add(rec->addresses,
+						  address,
+						  WINSDB_OWNER_LOCAL,
+						  rec->expire_time);
+	if (rec->addresses == NULL) return NBT_RCODE_SVR;
+
+	DEBUG(5,("WINS: sgroup merge of %s at %s\n",
+		 nbt_name_string(packet, rec->name), address));
+	
+	return winsdb_modify(winssrv->wins_db, rec, WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP);
 }
 
 /*
@@ -143,10 +178,14 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	uint8_t rcode = NBT_RCODE_OK;
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
+	BOOL mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
+	enum wrepl_name_type new_type = wrepl_type(nb_flags, name, mhomed);
+	struct winsdb_addr *winsdb_addr = NULL;
 
 	/* as a special case, the local master browser name is always accepted
 	   for registration, but never stored */
 	if (name->type == NBT_NAME_MASTER) {
+		rcode = NBT_RCODE_OK;
 		goto done;
 	}
 
@@ -158,66 +197,106 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
-		rcode = wins_register_new(nbtsock, packet, src);
+		rcode = wins_register_new(nbtsock, packet, src, new_type);
 		goto done;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		rcode = NBT_RCODE_SVR;
 		goto done;
-	} else if (rec->state != WREPL_STATE_ACTIVE) {
-/* TODO: this is not always correct!!!*/
+	}
+
+	if (rec->type == WREPL_TYPE_GROUP) {
+		if (new_type != WREPL_TYPE_GROUP) {
+			DEBUG(2,("WINS: Attempt to register name %s as non normal group(%u)"
+				 " while a normal group is already there\n",
+				 nbt_name_string(packet, name), new_type));
+			rcode = NBT_RCODE_ACT;
+			goto done;
+		}
+
+		if (rec->state == WREPL_STATE_ACTIVE) {
+			/* TODO: is this correct? */
+			rcode = wins_update_ttl(nbtsock, packet, rec, NULL, src);
+			goto done;
+		}
+
+		/* TODO: is this correct? */
 		winsdb_delete(winssrv->wins_db, rec);
-		rcode = wins_register_new(nbtsock, packet, src);
+		rcode = wins_register_new(nbtsock, packet, src, new_type);
 		goto done;
 	}
 
-	/* its an active name - first see if the registration is of the right type */
-	if ((rec->type == WREPL_TYPE_GROUP) && !(nb_flags & NBT_NM_GROUP)) {
-		DEBUG(2,("WINS: Attempt to register unique name %s when group name is active\n",
-			 nbt_name_string(packet, name)));
-		rcode = NBT_RCODE_ACT;
+	if (rec->state != WREPL_STATE_ACTIVE) {
+		winsdb_delete(winssrv->wins_db, rec);
+		rcode = wins_register_new(nbtsock, packet, src, new_type);
 		goto done;
 	}
 
-	/* if its an active unique name, and the registration is for a group, then
-	   see if the unique name owner still wants the name */
-	if (!(rec->type == WREPL_TYPE_GROUP) && (nb_flags & NBT_NM_GROUP)) {
+	switch (rec->type) {
+	case WREPL_TYPE_UNIQUE:
+	case WREPL_TYPE_MHOMED:
+		/* 
+		 * if its an active unique name, and the registration is for a group, then
+		 * see if the unique name owner still wants the name
+		 * TODO: is this correct?
+		 */
+		if (new_type == WREPL_TYPE_GROUP || new_type == WREPL_TYPE_GROUP) {
+			wins_register_wack(nbtsock, packet, rec, src);
+			return;
+		}
+
+		/* 
+		 * if the registration is for an address that is currently active, then 
+		 * just update the expiry time of the record and the address
+		 * TODO: is this correct?
+		 */
+		winsdb_addr = winsdb_addr_list_check(rec->addresses, address);
+		if (winsdb_addr) {
+			rcode = wins_update_ttl(nbtsock, packet, rec, winsdb_addr, src);
+			goto done;
+		}
+
+		/*
+		 * we have to do a WACK to see if the current owner is willing
+		 * to give up its claim
+		 */
 		wins_register_wack(nbtsock, packet, rec, src);
 		return;
-	}
 
-	/* if the registration is for a group, then just update the expiry time 
-	   and we are done */
-	if (nb_flags & NBT_NM_GROUP) {
-		wins_update_ttl(nbtsock, packet, rec, src);
+	case WREPL_TYPE_GROUP:
+		/* this should not be reached as normal groups are handled above */
+		DEBUG(0,("BUG at %s\n",__location__));
+		rcode = NBT_RCODE_ACT;
+		goto done;
+
+	case WREPL_TYPE_SGROUP:
+		/* if the new record isn't also a special group, refuse the registration */ 
+		if (new_type != WREPL_TYPE_SGROUP) {
+			DEBUG(2,("WINS: Attempt to register name %s as non special group(%u)"
+				 " while a special group is already there\n",
+				 nbt_name_string(packet, name), new_type));
+			rcode = NBT_RCODE_ACT;
+			goto done;
+		}
+
+		/* 
+		 * if the registration is for an address that is currently active, then 
+		 * just update the expiry time
+		 * just update the expiry time of the record and the address
+		 * TODO: is this correct?
+		 */
+		winsdb_addr = winsdb_addr_list_check(rec->addresses, address);
+		if (winsdb_addr) {
+			rcode = wins_update_ttl(nbtsock, packet, rec, winsdb_addr, src);
+			goto done;
+		}
+
+		rcode = wins_sgroup_merge(nbtsock, packet, rec, address, src);
 		goto done;
 	}
-
-	/*
-	 * TODO: this complete functions needs a lot of work,
-	 *       to handle special group and multiomed registrations
-	 */
-	if (name->type == NBT_NAME_LOGON) {
-		wins_update_ttl(nbtsock, packet, rec, src);
-		goto done;
-	}
-
-	/* if the registration is for an address that is currently active, then 
-	   just update the expiry time */
-	if (winsdb_addr_list_check(rec->addresses, address)) {
-		wins_update_ttl(nbtsock, packet, rec, src);
-		goto done;
-	}
-
-	/* we have to do a WACK to see if the current owner is willing
-	   to give up its claim */	
-	wins_register_wack(nbtsock, packet, rec, src);
-	return;
 
 done:
 	nbtd_name_registration_reply(nbtsock, packet, src, rcode);
 }
-
-
 
 /*
   query a name
