@@ -217,6 +217,14 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	}
 
 	/*
+	 * the client sends a max_version of 0, interpret it as
+	 * (uint64_t)-1
+	 */
+	if (owner_in->max_version == 0) {
+		owner_in->max_version = (uint64_t)-1;
+	}
+
+	/*
 	 * if the partner ask for nothing, or give invalid ranges,
 	 * return an empty list.
 	 */
