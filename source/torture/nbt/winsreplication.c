@@ -9463,6 +9463,7 @@ BOOL torture_nbt_winsreplication_quick(void)
 	ctx = test_create_conflict_ctx(mem_ctx, address);
 
 	ret &= test_conflict_same_owner(ctx);
+	ret &= test_conflict_owned_released_vs_replica(ctx);
 
 	talloc_free(mem_ctx);
 
