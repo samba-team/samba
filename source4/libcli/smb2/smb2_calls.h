@@ -356,3 +356,10 @@ struct smb2_trans {
 		DATA_BLOB out;
 	} out;
 };
+
+struct smb2_flush {
+	struct {
+		uint32_t unknown;
+		struct smb2_handle handle;
+	} in;
+};
