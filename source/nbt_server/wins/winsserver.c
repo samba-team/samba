@@ -236,11 +236,15 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	uint16_t nb_flags = 0; /* TODO: ... */
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
-	if (!NT_STATUS_IS_OK(status) || rec->state != WREPL_STATE_ACTIVE) {
-		nbtd_negative_name_query_reply(nbtsock, packet, src);
-		return;
+	if (!NT_STATUS_IS_OK(status)) {
+		goto notfound;
 	}
 
+	/*
+	 * for group's we always reply with
+	 * 255.255.255.255 as address, even if
+	 * the record is released or tombstoned
+	 */
 	if (rec->type == WREPL_TYPE_GROUP) {
 		addresses = talloc_array(packet, const char *, 2);
 		if (addresses == NULL) {
@@ -249,16 +253,24 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 		}
 		addresses[0] = WINSDB_GROUP_ADDRESS;
 		addresses[1] = NULL;
-	} else {
-		addresses = winsdb_addr_string_list(packet, rec->addresses);
-		if (addresses == NULL) {
-			nbtd_negative_name_query_reply(nbtsock, packet, src);
-			return;	
-		}
+		goto found;
 	}
 
+	if (rec->state != WREPL_STATE_ACTIVE) {
+		goto notfound;
+	}
+
+	addresses = winsdb_addr_string_list(packet, rec->addresses);
+	if (!addresses) {
+		goto notfound;
+	}
+found:
 	nbtd_name_query_reply(nbtsock, packet, src, name, 
 			      0, nb_flags, addresses);
+	return;
+
+notfound:
+	nbtd_negative_name_query_reply(nbtsock, packet, src);
 }
 
 /*
@@ -274,27 +286,65 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
 	struct winsdb_record *rec;
+	uint32_t modify_flags = 0;
+	uint8_t ret;
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
-	if (!NT_STATUS_IS_OK(status) || 
-	    rec->state != WREPL_STATE_ACTIVE || 
-	    rec->type == WREPL_TYPE_GROUP) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	/* we only allow releases from an owner - other releases are
-	   silently ignored */
-	if (winsdb_addr_list_check(rec->addresses, src->addr)) {
-		const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-
-		DEBUG(4,("WINS: released name %s at %s\n", nbt_name_string(rec, rec->name), address));
-		winsdb_addr_list_remove(rec->addresses, address);
-		if (rec->addresses[0] == NULL) {
-			rec->state = WREPL_STATE_RELEASED;
-		}
-		winsdb_modify(winssrv->wins_db, rec, 0);
+	if (rec->state != WREPL_STATE_ACTIVE) {
+		goto done;
 	}
 
+	/* 
+	 * TODO: do we need to check if
+	 *       src->addr matches packet->additional[0].rdata.netbios.addresses[0].ipaddr
+	 *       here?
+	 */
+
+	/* 
+	 * we only allow releases from an owner - other releases are
+	 * silently ignored
+	 */
+	if (!winsdb_addr_list_check(rec->addresses, src->addr)) {
+		goto done;
+	}
+
+	DEBUG(4,("WINS: released name %s from %s\n", nbt_name_string(rec, rec->name), src->addr));
+
+	switch (rec->type) {
+	case WREPL_TYPE_UNIQUE:
+		rec->state = WREPL_STATE_RELEASED;
+		break;
+
+	case WREPL_TYPE_GROUP:
+		rec->state = WREPL_STATE_RELEASED;
+		break;
+
+	case WREPL_TYPE_SGROUP:
+		winsdb_addr_list_remove(rec->addresses, src->addr);
+		/* TODO: do we need to take the ownership here? */
+		if (winsdb_addr_list_length(rec->addresses) == 0) {
+			rec->state = WREPL_STATE_RELEASED;
+		}
+		break;
+
+	case WREPL_TYPE_MHOMED:
+		winsdb_addr_list_remove(rec->addresses, src->addr);
+		/* TODO: do we need to take the ownership here? */
+		if (winsdb_addr_list_length(rec->addresses) == 0) {
+			rec->state = WREPL_STATE_RELEASED;
+		}
+		break;
+	}
+
+	ret = winsdb_modify(winssrv->wins_db, rec, modify_flags);
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(1,("WINS: FAILED: released name %s at %s: error:%u\n",
+			nbt_name_string(rec, rec->name), src->addr, ret));
+	}
 done:
 	/* we match w2k3 by always giving a positive reply to name releases. */
 	nbtd_name_release_reply(nbtsock, packet, src, NBT_RCODE_OK);
