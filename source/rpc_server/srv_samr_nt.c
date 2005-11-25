@@ -307,6 +307,11 @@ static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
 {
 	DEBUG(10,("free_samr_cache: deleting cache for SID %s\n", sid_str));
 
+	/* We need to become root here because the paged search might have to
+	 * tell the LDAP server we're not interested in the rest anymore. */
+
+	become_root();
+
 	if (disp_info->users) {
 		DEBUG(10,("free_samr_cache: deleting users cache\n"));
 		pdb_search_destroy(disp_info->users);
@@ -338,6 +343,8 @@ static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
 		disp_info->enum_users = NULL;
 	}
 	disp_info->enum_acb_mask = 0;
+
+	unbecome_root();
 }
 
 /*******************************************************************
