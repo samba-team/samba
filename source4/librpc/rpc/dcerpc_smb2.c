@@ -104,6 +104,9 @@ static void smb2_read_callback(struct smb2_request *req)
 	ZERO_STRUCT(io);
 	io.in.length = MIN(state->c->srv_max_xmit_frag, 
 			   frag_length - state->data.length);
+	if (io.in.length < 16) {
+		io.in.length = 16;
+	}
 	io.in.handle = smb->handle;
 	
 	req = smb2_read_send(smb->tree, &io);
@@ -228,9 +231,9 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 	state->c = c;
 	
 	ZERO_STRUCT(io);
-	io.in.unknown1 = 0x0011c017;
+	io.in.pipe_flags = SMB2_TRANS_PIPE_FLAGS;
 	io.in.handle = smb->handle;
-	io.in.max_response_size = 0x10000;
+	io.in.max_response_size = 0x1000;
 	io.in.flags = 1;
 	io.in.out = *blob;
 
@@ -383,7 +386,9 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_connection *c
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.in.open_disposition = NTCREATEX_DISP_OPEN;
-	io.in.create_options   = 0x400040;
+	io.in.create_options   = 
+		NTCREATEX_OPTIONS_NON_DIRECTORY_FILE | 
+		NTCREATEX_OPTIONS_UNKNOWN_400000;
 	io.in.impersonation    = NTCREATEX_IMPERSONATION_IMPERSONATION;
 
 	if ((strncasecmp(pipe_name, "/pipe/", 6) == 0) || 
