@@ -91,11 +91,20 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	struct smb2_find f;
 	BOOL ret = True;
 	union smb_fileinfo io;
+	const char *alt_name;
 
 	status = smb2_create_complex_file(tree, FNAME, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;
+	io.generic.in.handle = handle;
+	status = smb2_getinfo_file(tree, tree, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+	alt_name = talloc_strdup(tree, io.alt_name_info.out.fname.s);	
 
 	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
 	io.generic.in.handle = handle;
@@ -151,6 +160,7 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	CHECK_VALUE(FULL_DIRECTORY_INFO, full_directory_info, size);
 	CHECK_VALUE(FULL_DIRECTORY_INFO, full_directory_info, alloc_size);
 	CHECK_VALUE(FULL_DIRECTORY_INFO, full_directory_info, attrib);
+	CHECK_VALUE(FULL_DIRECTORY_INFO, full_directory_info, ea_size);
 	CHECK_CONST_STRING(FULL_DIRECTORY_INFO, full_directory_info, name, FNAME);
 
 	CHECK_VALUE(BOTH_DIRECTORY_INFO, both_directory_info, create_time);
@@ -160,6 +170,8 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	CHECK_VALUE(BOTH_DIRECTORY_INFO, both_directory_info, size);
 	CHECK_VALUE(BOTH_DIRECTORY_INFO, both_directory_info, alloc_size);
 	CHECK_VALUE(BOTH_DIRECTORY_INFO, both_directory_info, attrib);
+	CHECK_VALUE(BOTH_DIRECTORY_INFO, both_directory_info, ea_size);
+	CHECK_CONST_STRING(BOTH_DIRECTORY_INFO, both_directory_info, short_name, alt_name);
 	CHECK_CONST_STRING(BOTH_DIRECTORY_INFO, both_directory_info, name, FNAME);
 
 	CHECK_VALUE(ID_FULL_DIRECTORY_INFO, id_full_directory_info, create_time);
@@ -169,6 +181,8 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	CHECK_VALUE(ID_FULL_DIRECTORY_INFO, id_full_directory_info, size);
 	CHECK_VALUE(ID_FULL_DIRECTORY_INFO, id_full_directory_info, alloc_size);
 	CHECK_VALUE(ID_FULL_DIRECTORY_INFO, id_full_directory_info, attrib);
+	CHECK_VALUE(ID_FULL_DIRECTORY_INFO, id_full_directory_info, ea_size);
+	CHECK_VALUE(ID_FULL_DIRECTORY_INFO, id_full_directory_info, file_id);
 	CHECK_CONST_STRING(ID_FULL_DIRECTORY_INFO, id_full_directory_info, name, FNAME);
 
 	CHECK_VALUE(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, create_time);
@@ -178,6 +192,8 @@ static BOOL torture_smb2_find_levels(struct smb2_tree *tree)
 	CHECK_VALUE(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, size);
 	CHECK_VALUE(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, alloc_size);
 	CHECK_VALUE(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, attrib);
+	CHECK_VALUE(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, ea_size);
+	CHECK_VALUE(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, file_id);
 	CHECK_CONST_STRING(ID_BOTH_DIRECTORY_INFO, id_both_directory_info, name, FNAME);
 
 
