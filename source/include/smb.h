@@ -160,6 +160,7 @@ enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED,
 #define NTCREATEX_OPTIONS_RANDOM_ACCESS            0x0800
 #define NTCREATEX_OPTIONS_DELETE_ON_CLOSE          0x1000
 #define NTCREATEX_OPTIONS_OPEN_BY_FILE_ID          0x2000
+#define NTCREATEX_OPTIONS_UNKNOWN_400000           0x400000
 
 /* create options these bits are for private use by backends, they are
    not valid on the wire */
@@ -400,7 +401,7 @@ typedef uint64_t NTTIME;
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000L
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000L
 #define FILE_FLAG_DELETE_ON_CLOSE  0x04000000L
-#define FILE_FLAG_BACKUP_SEMANTICS 0x02000000L
+#define FILE_FLAG_BACKUP_SEMANTICS 0x02000000L /* only if backup/restore privilege? */
 #define FILE_FLAG_POSIX_SEMANTICS  0x01000000L
 
 /* Responses when opening a file. */
