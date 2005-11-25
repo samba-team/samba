@@ -200,7 +200,6 @@ BOOL torture_smb2_connect(void)
 
 	h1 = torture_smb2_create(tree, "test9.dat");
 	h2 = torture_smb2_create(tree, "test9.dat");
-//	h2 = torture_smb2_create(tree, "test9test9test9t9.dat");
 	torture_smb2_write(tree, h1);
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
@@ -226,6 +225,12 @@ BOOL torture_smb2_connect(void)
 	status = smb2_logoff(tree);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("Logoff should have disabled session - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	status = smb2_keepalive(tree);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("keepalive failed? - %s\n", nt_errstr(status));
 		return False;
 	}
 
