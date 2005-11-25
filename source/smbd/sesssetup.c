@@ -744,6 +744,29 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
  a new session setup with VC==0 is ignored.
 ****************************************************************************/
 
+static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+				void *p)
+{
+	struct sessionid *sessionid = (struct sessionid *)dbuf.dptr;
+	const char *ip = (const char *)p;
+
+	if (!process_exists(pid_to_procid(sessionid->pid))) {
+		return 0;
+	}
+
+	if (sessionid->pid == sys_getpid()) {
+		return 0;
+	}
+
+	if (strcmp(ip, sessionid->ip_addr) != 0) {
+		return 0;
+	}
+
+	message_send_pid(pid_to_procid(sessionid->pid), MSG_SHUTDOWN,
+			 NULL, 0, True);
+	return 0;
+}
+
 static void setup_new_vc_session(void)
 {
 	DEBUG(2,("setup_new_vc_session: New VC == 0, if NT4.x compatible we would close all old resources.\n"));
@@ -751,6 +774,9 @@ static void setup_new_vc_session(void)
 	conn_close_all();
 	invalidate_all_vuids();
 #endif
+	if (lp_reset_on_zero_vc()) {
+		session_traverse(shutdown_other_smbds, client_addr());
+	}
 }
 
 /****************************************************************************
