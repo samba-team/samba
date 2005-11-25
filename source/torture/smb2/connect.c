@@ -195,7 +195,19 @@ BOOL torture_smb2_connect(void)
 	torture_smb2_close(tree, h1);
 	torture_smb2_close(tree, h2);
 
-	status = smb2_logoff(tree);
+	status = smb2_tdis(tree);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("tdis failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	status = smb2_tdis(tree);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
+		printf("tdis should have disabled session - %s\n", nt_errstr(status));
+		return False;
+	}
+
+ 	status = smb2_logoff(tree);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Logoff failed - %s\n", nt_errstr(status));
 		return False;
