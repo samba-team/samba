@@ -113,7 +113,7 @@ struct smb2_create {
 		/* static body buffer 56 (0x38) bytes */
 		/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
 		uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
-		uint32_t unknown2;
+		uint32_t impersonation;
 		uint32_t unknown3[4];
 		uint32_t access_mask;
 
@@ -301,5 +301,26 @@ struct smb2_find {
 
 	struct {
 		DATA_BLOB blob;
+	} out;
+};
+
+struct smb2_trans {
+	struct {
+		uint32_t unknown1;
+		struct smb2_handle handle;
+		uint32_t unknown2;
+		uint32_t max_response_size;
+		uint64_t flags;
+		DATA_BLOB in;
+		DATA_BLOB out;
+	} in;
+
+	struct {
+		uint32_t unknown1;
+		struct smb2_handle handle;
+		uint32_t unknown2;
+		uint32_t unknown3;
+		DATA_BLOB in;
+		DATA_BLOB out;
 	} out;
 };
