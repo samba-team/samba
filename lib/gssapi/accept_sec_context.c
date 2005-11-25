@@ -167,9 +167,11 @@ gsskrb5_accept_delegated_token
     }
 
     if (delegated_cred_handle) {
-	ret = gss_krb5_import_ccache(minor_status,
-				     ccache,
-				     delegated_cred_handle);
+	ret = gss_krb5_import_cred(minor_status,
+				   ccache,
+				   NULL,
+				   NULL,
+				   delegated_cred_handle);
 	if (ret != GSS_S_COMPLETE)
 	    goto out;
 
