@@ -13,5 +13,6 @@ OBJ_FILES = \
 	read.o \
 	setinfo.o \
 	find.o \
-	trans.o
+	trans.o \
+	logoff.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET

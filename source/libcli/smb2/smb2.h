@@ -159,6 +159,7 @@ struct smb2_request {
 /* SMB2 opcodes */
 #define SMB2_OP_NEGPROT   0x00
 #define SMB2_OP_SESSSETUP 0x01
+#define SMB2_OP_LOGOFF    0x02
 #define SMB2_OP_TCON      0x03
 #define SMB2_OP_TDIS      0x04
 #define SMB2_OP_CREATE    0x05
