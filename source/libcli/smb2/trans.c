@@ -38,7 +38,7 @@ struct smb2_request *smb2_trans_send(struct smb2_tree *tree, struct smb2_trans *
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0); /* pad */
-	SIVAL(req->out.body, 0x04, io->in.unknown1);
+	SIVAL(req->out.body, 0x04, io->in.pipe_flags);
 	smb2_push_handle(req->out.body+0x08, &io->in.handle);
 	SIVAL(req->out.body, 0x20, io->in.unknown2);
 	SIVAL(req->out.body, 0x2C, io->in.max_response_size);
