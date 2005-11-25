@@ -63,9 +63,11 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 
 
 OM_uint32
-gss_krb5_import_ccache(OM_uint32 *minor_status,
-		       krb5_ccache in,
-		       gss_cred_id_t *cred)
+gss_krb5_import_cred(OM_uint32 *minor_status,
+		     krb5_ccache id,
+		     krb5_principal keytab_principal,
+		     krb5_keytab keytab,
+		     gss_cred_id_t *cred)
 {
     krb5_error_code kret;
     gss_cred_id_t handle;
@@ -83,41 +85,49 @@ gss_krb5_import_ccache(OM_uint32 *minor_status,
     }
     HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
 
-    handle->usage = GSS_C_INITIATE;
+    handle->usage = 0;
 
-    kret = krb5_cc_get_principal(gssapi_krb5_context, in, &handle->principal);
-    if (kret) {
-	free(handle);
-	gssapi_krb5_set_error_string ();
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
-
-    ret = _gssapi_krb5_ccache_lifetime(minor_status,
-				       in,
-				       handle->principal,
-				       &handle->lifetime);
-    if (ret != GSS_S_COMPLETE) {
-	krb5_free_principal(gssapi_krb5_context, handle->principal);
-	free(handle);
-	return ret;
-    }
-
-    ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
-    if (ret == GSS_S_COMPLETE)
-    	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-				     &handle->mechanisms);
-    if (ret != GSS_S_COMPLETE) {
-	krb5_free_principal(gssapi_krb5_context, handle->principal);
-	free(handle);
-	*minor_status = kret;
-	return GSS_S_FAILURE;
-    }
-
-    {
+    if (id) {
 	char *str;
 
-	kret = krb5_cc_get_full_name(gssapi_krb5_context, in, &str);
+	handle->usage |= GSS_C_INITIATE;
+
+	kret = krb5_cc_get_principal(gssapi_krb5_context, id,
+				     &handle->principal);
+	if (kret) {
+	    free(handle);
+	    gssapi_krb5_set_error_string ();
+	    *minor_status = kret;
+	    return GSS_S_FAILURE;
+	}
+	
+	if (keytab_principal) {
+	    krb5_boolean match;
+
+	    match = krb5_principal_compare(gssapi_krb5_context,
+					   handle->principal,
+					   keytab_principal);
+	    if (match == FALSE) {
+		krb5_free_principal(gssapi_krb5_context, handle->principal);
+		free(handle);
+		gssapi_krb5_clear_status ();
+		*minor_status = EINVAL;
+		return GSS_S_FAILURE;
+	    }
+	}
+
+	ret = _gssapi_krb5_ccache_lifetime(minor_status,
+					   id,
+					   handle->principal,
+					   &handle->lifetime);
+	if (ret != GSS_S_COMPLETE) {
+	    krb5_free_principal(gssapi_krb5_context, handle->principal);
+	    free(handle);
+	    return ret;
+	}
+
+
+	kret = krb5_cc_get_full_name(gssapi_krb5_context, id, &str);
 	if (kret)
 	    goto out;
 
@@ -125,6 +135,42 @@ gss_krb5_import_ccache(OM_uint32 *minor_status,
 	free(str);
 	if (kret)
 	    goto out;
+    }
+
+
+    if (keytab) {
+	char *str;
+
+	handle->usage |= GSS_C_ACCEPT;
+
+	if (keytab_principal && handle->principal == NULL) {
+	    kret = krb5_copy_principal(gssapi_krb5_context, 
+				       keytab_principal, 
+				       &handle->principal);
+	    if (kret)
+		goto out;
+	}
+
+	kret = krb5_keytab_get_full_name(gssapi_krb5_context, keytab, &str);
+	if (kret)
+	    goto out;
+
+	kret = krb5_kt_resolve(gssapi_krb5_context, str, &handle->keytab);
+	free(str);
+	if (kret)
+	    goto out;
+    }
+
+
+    if (id || keytab) {
+	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
+	if (ret == GSS_S_COMPLETE)
+	    ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+					 &handle->mechanisms);
+	if (ret != GSS_S_COMPLETE) {
+	    kret = minor_status;
+	    goto out;
+	}
     }
 
     *minor_status = 0;
