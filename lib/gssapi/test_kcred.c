@@ -77,9 +77,9 @@ copy_import(void)
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_krb5_copy_ccache");
 
-    maj_stat = gss_krb5_import_ccache(&min_stat, id, &cred2);
+    maj_stat = gss_krb5_import_cred(&min_stat, id, NULL, NULL, &cred2);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_krb5_import_ccache");
+	errx(1, "gss_krb5_import_cred");
 
     maj_stat = gss_inquire_cred(&min_stat, cred2, &name2, &lifetime2,
 				&usage2, &mechs2);
