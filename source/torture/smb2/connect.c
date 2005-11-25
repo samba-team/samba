@@ -69,6 +69,7 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 {
 	struct smb2_write w;
 	struct smb2_read r;
+	struct smb2_flush f;
 	NTSTATUS status;
 	DATA_BLOB data;
 	int i;
@@ -102,6 +103,15 @@ static NTSTATUS torture_smb2_write(struct smb2_tree *tree, struct smb2_handle ha
 	}
 
 	torture_smb2_all_info(tree, handle);
+
+	ZERO_STRUCT(f);
+	f.in.handle      = handle;
+
+	status = smb2_flush(tree, &f);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("flush failed - %s\n", nt_errstr(status));
+		return status;
+	}
 
 	ZERO_STRUCT(r);
 	r.in.length      = data.length;
