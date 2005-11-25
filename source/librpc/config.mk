@@ -25,21 +25,7 @@ REQUIRED_SUBSYSTEMS = LIBCOMPRESSION
 # End SUBSYSTEM NDR_COMPRESSION
 ################################################
 
-################################################
-# Start SUBSYSTEM RPC_RAW
-[SUBSYSTEM::RPC_RAW]
-INIT_OBJ_FILES = \
-		rpc/dcerpc.o
-ADD_OBJ_FILES = \
-		rpc/dcerpc_auth.o \
-		rpc/dcerpc_schannel.o \
-		rpc/dcerpc_util.o \
-		rpc/dcerpc_error.o \
-		rpc/dcerpc_smb.o \
-		rpc/dcerpc_sock.o
-REQUIRED_SUBSYSTEMS = SOCKET
-# End SUBSYSTEM RPC_RAW
-################################################
+include rpc/config.mk
 
 [SUBSYSTEM::NDR_AUDIOSRV]
 INIT_FUNCTION = dcerpc_audiosrv_init
