@@ -164,6 +164,7 @@ struct smb2_request {
 #define SMB2_OP_TDIS      0x04
 #define SMB2_OP_CREATE    0x05
 #define SMB2_OP_CLOSE     0x06
+#define SMB2_OP_FLUSH     0x07
 #define SMB2_OP_READ      0x08
 #define SMB2_OP_WRITE     0x09
 #define SMB2_OP_TRANS     0x0b

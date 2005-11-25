@@ -15,5 +15,6 @@ OBJ_FILES = \
 	find.o \
 	trans.o \
 	logoff.o \
-	tdis.o
+	tdis.o \
+	flush.o
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBPACKET
