@@ -1,3 +1,7 @@
+2005-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/keytab.c (krb5_kt_get_full_name): new function
+	
 2005-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_crypto.c: Split encryption and s2k iterations to
