@@ -617,14 +617,14 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 
 		<step><para>
 		Install the files shown in <link linkend="sbehap-ldifpata"/> and <link linkend="sbehap-ldifpatb"/> into the directory
-		<filename>/etc/openldap/SambaInit/Init-ldif.pat.</filename> These two files are
+		<filename>/etc/openldap/SambaInit/.</filename> These two files are
                 parts A and B, respectively, of the <filename>init-ldif.pat</filename> file.
 		</para></step>
 
 		<step><para>
 		Change to the <filename>/etc/openldap/SambaInit</filename> directory. Execute the following:
 <screen>
-&rootprompt; ./SMBLDAP-ldif-preconfig.sh
+&rootprompt; sh SMBLDAP-ldif-preconfig.sh
 
 How do you wish to refer to your organization?
 Suggestions:
