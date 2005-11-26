@@ -562,6 +562,11 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
+	if (!sid_check_is_domain(&q_u->dom_sid.sid) &&
+	    !sid_check_is_builtin(&q_u->dom_sid.sid)) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
 	/* associate the domain SID with the (unique) handle. */
 	if ((info = get_samr_info_by_sid(&q_u->dom_sid.sid))==NULL)
 		return NT_STATUS_NO_MEMORY;
