@@ -681,12 +681,11 @@ static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
 }
 
 static NTSTATUS context_lookup_rids(struct pdb_context *context,
-				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
 				    size_t num_rids,
 				    uint32 *rids,
-				    const char ***pp_names,
-				    uint32 **pp_attrs)
+				    const char **pp_names,
+				    uint32 *pp_attrs)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -696,7 +695,7 @@ static NTSTATUS context_lookup_rids(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->lookup_rids(context->pdb_methods,
-						 mem_ctx, domain_sid, num_rids,
+						 domain_sid, num_rids,
 						 rids, pp_names, pp_attrs);
 }
 
@@ -1398,12 +1397,11 @@ BOOL pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 							  p_num_alias_rids));
 }
 
-NTSTATUS pdb_lookup_rids(TALLOC_CTX *mem_ctx,
-			 const DOM_SID *domain_sid,
+NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 			 int num_rids,
 			 uint32 *rids,
-			 const char ***names,
-			 uint32 **attrs)
+			 const char **names,
+			 uint32 *attrs)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1411,7 +1409,7 @@ NTSTATUS pdb_lookup_rids(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return pdb_context->pdb_lookup_rids(pdb_context, mem_ctx, domain_sid,
+	return pdb_context->pdb_lookup_rids(pdb_context, domain_sid,
 					    num_rids, rids, names, attrs);
 }
 
@@ -1643,23 +1641,16 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
-				 TALLOC_CTX *mem_ctx,
 				 const DOM_SID *domain_sid,
 				 int num_rids,
 				 uint32 *rids,
-				 const char ***names,
-				 uint32 **attrs)
+				 const char **names,
+				 uint32 *attrs)
 {
 	int i;
 	NTSTATUS result;
 	BOOL have_mapped = False;
 	BOOL have_unmapped = False;
-
-	(*names) = TALLOC_ZERO_ARRAY(mem_ctx, const char *, num_rids);
-	(*attrs) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_rids);
-
-	if ((num_rids != 0) && (((*names) == NULL) || ((*attrs) == NULL)))
-		return NT_STATUS_NO_MEMORY;
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		/* TODO: Sooner or later we need to look up BUILTIN rids as
@@ -1673,18 +1664,17 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 		DOM_SID sid;
    		enum SID_NAME_USE type;
 
-		(*attrs)[i] = SID_NAME_UNKNOWN;
+		attrs[i] = SID_NAME_UNKNOWN;
 
 		sid_copy(&sid, domain_sid);
 		sid_append_rid(&sid, rids[i]);
 
 		if (lookup_sid(&sid, domname, tmpname, &type)) {
-			(*attrs)[i] = (uint32)type;
-			(*names)[i] = talloc_strdup(mem_ctx, tmpname);
-			if ((*names)[i] == NULL)
+			attrs[i] = (uint32)type;
+			names[i] = talloc_strdup(names, tmpname);
+			if (names[i] == NULL)
 				return NT_STATUS_NO_MEMORY;
-			DEBUG(5,("lookup_rids: %s:%d\n", (*names)[i],
-				 (*attrs)[i]));
+			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
 			have_mapped = True;
 		} else {
 			have_unmapped = True;
