@@ -1523,8 +1523,8 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	become_root();  /* lookup_sid can require root privs */
-	r_u->status = pdb_lookup_rids(p->mem_ctx, &pol_sid, num_rids, q_u->rid,
-				      &names, &attrs);
+	r_u->status = pdb_lookup_rids(&pol_sid, num_rids, q_u->rid,
+				      names, attrs);
 	unbecome_root();
 
  done:

@@ -367,12 +367,11 @@ typedef struct pdb_context
 					       size_t *p_num_alias_rids);
 
 	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
-				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
 				    size_t num_rids,
 				    uint32 *rids,
-				    const char ***pp_names,
-				    uint32 **attrs);
+				    const char **pp_names,
+				    uint32 *attrs);
 
 	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
 					   int policy_index, uint32 *value);
@@ -491,12 +490,11 @@ typedef struct pdb_methods
 					   size_t *p_num_alias_rids);
 
 	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
-				TALLOC_CTX *mem_ctx,
 				const DOM_SID *domain_sid,
 				int num_rids,
 				uint32 *rids,
-				const char ***pp_names,
-				uint32 **attrs);
+				const char **pp_names,
+				uint32 *attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
 				       int policy_index, uint32 *value);
