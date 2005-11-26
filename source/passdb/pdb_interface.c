@@ -1652,24 +1652,38 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	BOOL have_mapped = False;
 	BOOL have_unmapped = False;
 
-	if (!sid_equal(domain_sid, get_global_sam_sid())) {
-		/* TODO: Sooner or later we need to look up BUILTIN rids as
-		 * well. -- vl */
+	if (sid_check_is_builtin(domain_sid)) {
+
+		for (i=0; i<num_rids; i++) {
+			fstring name;
+
+			if (lookup_builtin_rid(rids[i], name)) {
+				attrs[i] = SID_NAME_ALIAS;
+				names[i] = talloc_strdup(names, name);
+				if (names[i] == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				DEBUG(5,("lookup_rids: %s:%d\n",
+					 names[i], attrs[i]));
+				have_mapped = True;
+			} else {
+				have_unmapped = True;
+				attrs[i] = SID_NAME_UNKNOWN;
+			}
+		}
 		goto done;
+	}
+
+	/* Should not happen, but better check once too many */
+	if (!sid_check_is_domain(domain_sid)) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	for (i = 0; i < num_rids; i++) {
 		fstring tmpname;
-		fstring domname;
-		DOM_SID sid;
    		enum SID_NAME_USE type;
 
-		attrs[i] = SID_NAME_UNKNOWN;
-
-		sid_copy(&sid, domain_sid);
-		sid_append_rid(&sid, rids[i]);
-
-		if (lookup_sid(&sid, domname, tmpname, &type)) {
+		if (lookup_global_sam_rid(rids[i], tmpname, &type)) {
 			attrs[i] = (uint32)type;
 			names[i] = talloc_strdup(names, tmpname);
 			if (names[i] == NULL)
@@ -1678,6 +1692,7 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 			have_mapped = True;
 		} else {
 			have_unmapped = True;
+			attrs[i] = SID_NAME_UNKNOWN;
 		}
 	}
 

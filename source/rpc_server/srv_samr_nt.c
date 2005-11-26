@@ -1516,18 +1516,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL)))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!sid_equal(&pol_sid, get_global_sam_sid())) {
-		/* TODO: Sooner or later we need to look up BUILTIN rids as
-		 * well. -- vl */
-		goto done;
-	}
-
 	become_root();  /* lookup_sid can require root privs */
 	r_u->status = pdb_lookup_rids(&pol_sid, num_rids, q_u->rid,
 				      names, attrs);
 	unbecome_root();
-
- done:
 
 	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, names,
 				  &hdr_name, &uni_name))
