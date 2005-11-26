@@ -164,6 +164,24 @@ BOOL lookup_special_sid(const DOM_SID *sid, const char **domain,
 	return False;
 }
 
+/*******************************************************************
+ Look up a rid in the BUILTIN domain
+ ********************************************************************/
+BOOL lookup_builtin_rid(uint32 rid, fstring name)
+{
+	const known_sid_users *aliases = builtin_groups;
+	int i;
+
+	for (i=0; aliases[i].known_user_name != NULL; i++) {
+		if (rid == aliases[i].rid) {
+			fstrcpy(name, aliases[i].known_user_name);
+			return True;
+		}
+	}
+
+	return False;
+}
+
 /*****************************************************************
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
 *****************************************************************/  
