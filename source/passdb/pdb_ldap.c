@@ -604,6 +604,8 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	LOGIN_CACHE	*cache_entry = NULL;
 	uint32 		pwHistLen;
 	pstring		tmpstring;
+	BOOL expand_explicit = lp_parm_bool(-1, "passdb", "expand_explicit",
+					    False);
 
 	/*
 	 * do a little initialization
@@ -776,7 +778,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, homedir );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 
@@ -788,7 +793,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, logon_script );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 
@@ -800,7 +808,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, profile_path );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	}
 
