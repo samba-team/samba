@@ -1457,8 +1457,8 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	char **names;
 	int i;
 
-	if (argc < 2) {
-		printf("Usage: %s rid1 [rid2 [rid3] [...]]\n", argv[0]);
+	if (argc < 3) {
+		printf("Usage: %s domain|builtin rid1 [rid2 [rid3] [...]]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -1470,20 +1470,27 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &domain_sid, &domain_pol);
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Look up rids */
 
-	num_rids = argc - 1;
+	num_rids = argc - 2;
 	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
 
-	for (i = 0; i < argc - 1; i++)
-                sscanf(argv[i + 1], "%i", &rids[i]);
+	for (i = 0; i < argc - 2; i++)
+                sscanf(argv[i + 2], "%i", &rids[i]);
 
 	result = rpccli_samr_lookup_rids(cli, mem_ctx, &domain_pol, num_rids, rids,
 				      &num_names, &names, &name_types);
