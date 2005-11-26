@@ -91,7 +91,7 @@ static struct sid_name_map_info special_domains[] = {
  Turns a domain SID into a name, returned in the nt_domain argument.
 ***************************************************************************/
 
-BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
+BOOL map_domain_sid_to_name(const DOM_SID *sid, fstring nt_domain)
 {
 	fstring sid_str;
 	int i = 0;
@@ -99,11 +99,6 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
 	sid_to_string(sid_str, sid);
 
 	DEBUG(5,("map_domain_sid_to_name: %s\n", sid_str));
-
-	if (sid_check_is_domain(sid)) {
-		fstrcpy(nt_domain, get_global_sam_name());
-		return True;
-	}
 
 	while (special_domains[i].sid != NULL) {
 		DEBUG(5,("map_domain_sid_to_name: compare: %s\n",
