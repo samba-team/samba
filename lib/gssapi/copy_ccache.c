@@ -151,7 +151,7 @@ gss_krb5_import_cred(OM_uint32 *minor_status,
 		goto out;
 	}
 
-	kret = krb5_keytab_get_full_name(gssapi_krb5_context, keytab, &str);
+	kret = krb5_kt_get_full_name(gssapi_krb5_context, keytab, &str);
 	if (kret)
 	    goto out;
 
