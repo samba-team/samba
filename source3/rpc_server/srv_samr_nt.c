@@ -68,8 +68,6 @@ struct samr_info {
 	DOM_SID sid;
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
-	uint16 acb_mask;
-	BOOL only_machines;
 	DISP_INFO *disp_info;
 	TALLOC_CTX *mem_ctx;
 };
