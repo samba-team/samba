@@ -42,10 +42,6 @@
 
 #define DISP_INFO_CACHE_TIMEOUT 10
 
-extern rid_name domain_group_rids[];
-extern rid_name domain_alias_rids[];
-extern rid_name builtin_alias_rids[];
-
 typedef struct disp_info {
 	struct disp_info *next, *prev;
 	TALLOC_CTX *mem_ctx;
