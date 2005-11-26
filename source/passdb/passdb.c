@@ -732,10 +732,11 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
 }
 
 /*******************************************************************
- Convert a rid into a name. Used in the lookup SID rpc.
+ Look up a rid in the SAM we're responsible for (i.e. passdb)
  ********************************************************************/
 
-BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
+BOOL lookup_global_sam_rid(uint32 rid, fstring name,
+			   enum SID_NAME_USE *psid_name_use)
 {
 	SAM_ACCOUNT *sam_account = NULL;
 	GROUP_MAP map;
@@ -744,7 +745,8 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 	*psid_name_use = SID_NAME_UNKNOWN;
 	
-	DEBUG(5,("local_lookup_rid: looking up RID %u.\n", (unsigned int)rid));
+	DEBUG(5,("lookup_global_sam_rid: looking up RID %u.\n",
+		 (unsigned int)rid));
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, rid);
@@ -757,7 +759,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 	/* BEING ROOT BLLOCK */
 	become_root();
 	if (pdb_getsampwsid(sam_account, &sid)) {
-		unbecome_root();			/* -----> EXIT BECOME_ROOT() */
+		unbecome_root();		/* -----> EXIT BECOME_ROOT() */
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
@@ -773,9 +775,13 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 	
 	if ( ret ) {
 		if (map.gid!=(gid_t)-1) {
-			DEBUG(5,("local_lookup_rid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
+			DEBUG(5,("lookup_global_sam_rid: mapped group %s to "
+				 "gid %u\n", map.nt_name,
+				 (unsigned int)map.gid));
 		} else {
-			DEBUG(5,("local_lookup_rid: mapped group %s to no unix gid.  Returning name.\n", map.nt_name));
+			DEBUG(5,("lookup_global_sam_rid: mapped group %s to "
+				 "no unix gid.  Returning name.\n",
+				 map.nt_name));
 		}
 
 		fstrcpy(name, map.nt_name);
@@ -798,16 +804,16 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
        		uid = algorithmic_pdb_user_rid_to_uid(rid);
 		pw = sys_getpwuid( uid );
 		
-		DEBUG(5,("local_lookup_rid: looking up uid %u %s\n", (unsigned int)uid,
-			 pw ? "succeeded" : "failed" ));
+		DEBUG(5,("lookup_global_sam_rid: looking up uid %u %s\n",
+			 (unsigned int)uid, pw ? "succeeded" : "failed" ));
 			 
 		if ( !pw )
-			fstr_sprintf(name, "unix_user.%u", (unsigned int)uid);	
+			fstr_sprintf(name, "unix_user.%u", (unsigned int)uid);
 		else 
 			fstrcpy( name, pw->pw_name );
 			
-		DEBUG(5,("local_lookup_rid: found user %s for rid %u\n", name,
-			 (unsigned int)rid ));
+		DEBUG(5,("lookup_global_sam_rid: found user %s for rid %u\n",
+			 name, (unsigned int)rid ));
 			 
 		*psid_name_use = SID_NAME_USER;
 		
@@ -821,16 +827,16 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		gid = pdb_group_rid_to_gid(rid);
 		gr = getgrgid(gid);
 			
-		DEBUG(5,("local_lookup_rid: looking up gid %u %s\n", (unsigned int)gid,
-			 gr ? "succeeded" : "failed" ));
+		DEBUG(5,("lookup_global_sam_rid: looking up gid %u %s\n",
+			 (unsigned int)gid, gr ? "succeeded" : "failed" ));
 			
 		if( !gr )
 			fstr_sprintf(name, "unix_group.%u", (unsigned int)gid);
 		else
 			fstrcpy( name, gr->gr_name);
 			
-		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name,
-			 (unsigned int)rid ));
+		DEBUG(5,("lookup_global_sam_rid: found group %s for rid %u\n",
+			 name, (unsigned int)rid ));
 		
 		/* assume algorithmic groups are domain global groups */
 		

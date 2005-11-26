@@ -66,7 +66,8 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
  Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
-BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
+BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
+		enum SID_NAME_USE *name_type)
 {
 	if (!name_type)
 		return False;
@@ -83,6 +84,15 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 		return True;
 	}
 
+	if (sid_check_is_in_our_domain(sid)) {
+		uint32 rid;
+		SMB_ASSERT(sid_peek_rid(sid, &rid));
+
+		/* For our own domain passdb is responsible */
+		fstrcpy(dom_name, get_global_sam_name());
+		return lookup_global_sam_rid(rid, name, name_type);
+	}
+
 	if (sid_check_is_builtin(sid)) {
 
 		/* Got through map_domain_sid_to_name here so that the mapping
@@ -97,13 +107,21 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 		return True;
 	}
 
-	if (sid_check_is_in_our_domain(sid)) {
+	if (sid_check_is_in_builtin(sid)) {
 		uint32 rid;
+
 		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
-		/* For our own domain passdb is responsible */
-		fstrcpy(dom_name, get_global_sam_name());
-		return local_lookup_rid(rid, name, name_type);
+		/* Got through map_domain_sid_to_name here so that the mapping
+		 * of S-1-5-32 to the name "BUILTIN" in as few places as
+		 * possible. We might add i18n... */
+		SMB_ASSERT(map_domain_sid_to_name(&global_sid_Builtin,
+						  dom_name));
+
+		/* There's only aliases in S-1-5-32 */
+		*name_type = SID_NAME_ALIAS;
+
+		return lookup_builtin_rid(rid, name);
 	}
 
 	if (winbind_lookup_sid(sid, dom_name, name, name_type)) {
