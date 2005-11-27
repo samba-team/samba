@@ -324,6 +324,8 @@ krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData
 	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->private);
 	struct hdb_ldb_private *private = talloc_get_type(entry_ex->private, struct hdb_ldb_private);
 	char *name, *workstation = NULL;
+	int i;
+
 	if (!tmp_ctx) {
 		return ENOMEM;
 	}
@@ -331,7 +333,26 @@ krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData
 	ret = krb5_unparse_name(context, entry_ex->entry.principal, &name);
 	if (ret != 0) {
 		talloc_free(tmp_ctx);
+		return ret;
 	}
+	
+	for (i=0; i < addresses->len; i++) {
+		if (addresses->val->addr_type == KRB5_ADDRESS_NETBIOS) {
+			workstation = talloc_strndup(tmp_ctx, addresses->val->address.data, MIN(addresses->val->address.length, 15));
+			if (workstation) {
+				break;
+			}
+		}
+	}
+
+	/* Strip space padding */
+	if (workstation) {
+		i = MIN(strlen(workstation), 15);
+		for (; i > 0 && workstation[i - 1] == ' '; i--) {
+			workstation[i - 1] = '\0';
+		}
+	}
+
 	nt_status = authsam_account_ok(tmp_ctx, 
 				       private->samdb, 
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,

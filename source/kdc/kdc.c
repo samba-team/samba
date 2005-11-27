@@ -388,6 +388,19 @@ void kpasswdd_tcp_accept(struct stream_connection *conn)
 	kdcconn->kdc	 = kdc;
 	kdcconn->process = kpasswdd_process;
 	conn->private    = kdcconn;
+	kdcconn->packet = packet_init(kdcconn);
+	if (kdcconn->packet == NULL) {
+		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+		return;
+	}
+	packet_set_private(kdcconn->packet, kdcconn);
+	packet_set_socket(kdcconn->packet, conn->socket);
+	packet_set_callback(kdcconn->packet, kdc_tcp_recv);
+	packet_set_full_request(kdcconn->packet, packet_full_request_u32);
+	packet_set_error_handler(kdcconn->packet, kdc_tcp_recv_error);
+	packet_set_event_context(kdcconn->packet, conn->event.ctx);
+	packet_set_fde(kdcconn->packet, conn->event.fde);
+	packet_set_serialise(kdcconn->packet);
 }
 
 static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
@@ -555,9 +568,6 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 	krb5_kdc_default_config(kdc->config);
-
-	/* NAT and the like make this pointless, and painful */
-	kdc->config->check_ticket_addresses = FALSE;
 
 	initialize_krb5_error_table();
 
