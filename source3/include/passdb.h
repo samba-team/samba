@@ -265,9 +265,12 @@ struct pdb_search {
  * This next constant specifies the version number of the PASSDB interface
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  * Changed interface to fix int -> size_t problems. JRA.
+ * There's no point in allocating arrays in
+ * samr_lookup_rids twice. It was done in the srv_samr_nt.c code as well as in
+ * the pdb module. Remove the latter, this might happen more often. VL.
  */
 
-#define PASSDB_INTERFACE_VERSION 11
+#define PASSDB_INTERFACE_VERSION 12
 
 typedef struct pdb_context 
 {

@@ -5,11 +5,12 @@
  *  Copyright (C) Luke Kenneth Casson Leighton      1996-1997,
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
- *  Copyright (C) Jeremy Allison                    2001-2002,
+ *  Copyright (C) Jeremy Allison                    2001-2005,
  *  Copyright (C) Jean François Micouleau           1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
  *  Copyright (C) Simo Sorce                        2003.
+ *  Copyright (C) Volker Lendecke		    2005.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,14 +47,15 @@ typedef struct disp_info {
 	struct disp_info *next, *prev;
 	TALLOC_CTX *mem_ctx;
 	DOM_SID sid; /* identify which domain this is. */
+	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
 	struct pdb_search *machines; /* querydispinfo 2 */
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
 	struct pdb_search *aliases; /* enumaliases */
-	struct pdb_search *builtins; /* enumaliases */
 
 	uint16 enum_acb_mask;
 	struct pdb_search *enum_users; /* enumusers with a mask */
+
 
 	smb_event_id_t di_cache_timeout_event; /* cache idle timeout handler. */
 } DISP_INFO;
@@ -66,6 +68,7 @@ static DISP_INFO *disp_info_list;
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
 	DOM_SID sid;
+	BOOL builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
 	DISP_INFO *disp_info;
@@ -265,8 +268,12 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid, const char *sid_str)
 		return NULL;
 
 	dpi->mem_ctx = mem_ctx;
+
 	if (psid) {
 		sid_copy( &dpi->sid, psid);
+		dpi->builtin_domain = sid_check_is_builtin(psid);
+	} else {
+		dpi->builtin_domain = False;
 	}
 
 	DLIST_ADD(disp_info_list, dpi);
@@ -298,8 +305,10 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 	DEBUG(10,("get_samr_info_by_sid: created new info for sid %s\n", sid_str));
 	if (psid) {
 		sid_copy( &info->sid, psid);
+		info->builtin_domain = sid_check_is_builtin(psid);
 	} else {
 		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
+		info->builtin_domain = False;
 	}
 	info->mem_ctx = mem_ctx;
 
@@ -345,11 +354,6 @@ static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
 		DEBUG(10,("free_samr_cache: deleting aliases cache\n"));
 		pdb_search_destroy(disp_info->aliases);
 		disp_info->aliases = NULL;
-	}
-	if (disp_info->builtins) {
-		DEBUG(10,("free_samr_cache: deleting builtins cache\n"));
-		pdb_search_destroy(disp_info->builtins);
-		disp_info->builtins = NULL;
 	}
 	if (disp_info->enum_users) {
 		DEBUG(10,("free_samr_cache: deleting enum_users cache\n"));
@@ -470,6 +474,12 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 static uint32 count_sam_users(struct disp_info *info, uint16 acct_flags)
 {
 	struct samr_displayentry *entry;
+
+	if (info->builtin_domain) {
+		/* No users in builtin. */
+		return 0;
+	}
+
 	if (info->users == NULL) {
 		info->users = pdb_search_users(acct_flags);
 		if (info->users == NULL) {
@@ -488,6 +498,12 @@ static uint32 count_sam_users(struct disp_info *info, uint16 acct_flags)
 static uint32 count_sam_groups(struct disp_info *info)
 {
 	struct samr_displayentry *entry;
+
+	if (info->builtin_domain) {
+		/* No groups in builtin. */
+		return 0;
+	}
+
 	if (info->groups == NULL) {
 		info->groups = pdb_search_groups();
 		if (info->groups == NULL) {
@@ -501,6 +517,25 @@ static uint32 count_sam_groups(struct disp_info *info)
 	set_disp_info_cache_timeout(info, DISP_INFO_CACHE_TIMEOUT);
 
 	return info->groups->num_entries;
+}
+
+static uint32 count_sam_aliases(struct disp_info *info)
+{
+	struct samr_displayentry *entry;
+
+	if (info->aliases == NULL) {
+		info->aliases = pdb_search_aliases(&info->sid);
+		if (info->aliases == NULL) {
+			return 0;
+		}
+	}
+	/* Fetch the last possible entry, thus trigger an enumeration */
+	pdb_search_entries(info->aliases, 0xffffffff, 1, &entry);
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info, DISP_INFO_CACHE_TIMEOUT);
+
+	return info->aliases->num_entries;
 }
 
 /*******************************************************************
@@ -943,7 +978,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 {
 	struct samr_info *info;
 	struct samr_displayentry *aliases;
-	struct pdb_search **search = NULL;
 	uint32 num_aliases = 0;
 
 	/* find the policy handle.  open a policy on it. */
@@ -959,25 +993,17 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n",
 		 sid_string_static(&info->sid)));
 
-	if (sid_check_is_domain(&info->sid))
-		search = &info->disp_info->aliases;
-	if (sid_check_is_builtin(&info->sid))
-		search = &info->disp_info->builtins;
-
-	if (search == NULL) 
-		return NT_STATUS_INVALID_HANDLE;
-
 	become_root();
 
-	if (*search == NULL) {
-		*search = pdb_search_aliases(&info->sid);
-		if (*search == NULL) {
+	if (info->disp_info->aliases == NULL) {
+		info->disp_info->aliases = pdb_search_aliases(&info->sid);
+		if (info->disp_info->aliases == NULL) {
 			unbecome_root();
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	num_aliases = pdb_search_entries(*search, q_u->start_idx,
+	num_aliases = pdb_search_entries(info->disp_info->aliases, q_u->start_idx,
 					 MAX_SAM_ENTRIES, &aliases);
 	unbecome_root();
 	
@@ -2096,9 +2122,9 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 			/* AS ROOT !!! */
 
-			num_users=count_sam_users(info->disp_info,
-						  ACB_NORMAL);
-			num_groups=count_sam_groups(info->disp_info);
+			num_users = count_sam_users(info->disp_info, ACB_NORMAL);
+			num_groups = count_sam_groups(info->disp_info);
+			num_aliases = count_sam_aliases(info->disp_info);
 
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
@@ -4692,9 +4718,9 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 			break;
 		case 0x02:
 			become_root();		
-			num_users = count_sam_users(info->disp_info,
-						    ACB_NORMAL);
+			num_users = count_sam_users(info->disp_info, ACB_NORMAL);
 			num_groups = count_sam_groups(info->disp_info);
+			num_aliases = count_sam_aliases(info->disp_info);
 			unbecome_root();
 
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
