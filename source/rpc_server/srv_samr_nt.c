@@ -814,6 +814,13 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
  	
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
+	if (info->builtin_domain) {
+		/* No users in builtin. */
+		init_samr_r_enum_dom_users(r_u, q_u->start_idx, 0);
+		DEBUG(5,("_samr_enum_dom_users: No users in BUILTIN\n"));
+		return r_u->status;
+	}
+
 	become_root();
 
 	/* AS ROOT !!!! */
@@ -939,6 +946,13 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 		return r_u->status;
 
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
+
+	if (info->builtin_domain) {
+		/* No groups in builtin. */
+		init_samr_r_enum_dom_groups(r_u, q_u->start_idx, 0);
+		DEBUG(5,("_samr_enum_dom_users: No groups in BUILTIN\n"));
+		return r_u->status;
+	}
 
 	/* the domain group array is being allocated in the function below */
 
