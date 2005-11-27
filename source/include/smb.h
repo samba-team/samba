@@ -266,6 +266,10 @@ enum SID_NAME_USE
 	SID_NAME_COMPUTER     /* sid for a computer */
 };
 
+#define LOOKUP_NAME_ISOLATED 1	/* Look up unqualified names */
+#define LOOKUP_NAME_REMOTE   2  /* Ask others */
+#define LOOKUP_NAME_ALL (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
+
 /**
  * @brief Security Identifier
  *

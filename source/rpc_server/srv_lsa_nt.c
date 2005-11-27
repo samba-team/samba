@@ -137,7 +137,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 
 static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 			   int num_entries, UNISTR2 *name,
-			   uint32 *mapped_count, BOOL do_guesswork)
+			   uint32 *mapped_count, int flags)
 {
 	int i;
 	int total = 0;
@@ -162,7 +162,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		DEBUG(5, ("init_lsa_rid2s: looking up name %s\n", full_name));
 
-		status = lookup_name(full_name, do_guesswork,
+		status = lookup_name(full_name, flags,
 				     dom_name, user, &sid, &name_type);
 
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
@@ -684,7 +684,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	DOM_R_REF *ref;
 	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
-	BOOL do_guesswork;
+	int flags = 0;
 
 	if (num_entries >  MAX_LOOKUP_SIDS) {
 		num_entries = MAX_LOOKUP_SIDS;
@@ -692,7 +692,9 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	}
 		
 	/* Probably the lookup_level is some sort of bitmask. */
-	do_guesswork = (q_u->lookup_level == 1);
+	if (q_u->lookup_level == 1) {
+		flags = LOOKUP_NAME_ALL;
+	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
@@ -712,8 +714,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
-	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count,
-		       do_guesswork);
+	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, flags);
 done:
 
 	if (NT_STATUS_IS_OK(r_u->status)) {

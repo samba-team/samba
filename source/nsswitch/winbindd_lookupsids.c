@@ -86,10 +86,14 @@ void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID **sids,
 	for (i=0; i<num_sids; i++) {
 		state->ctrs[i].sid = sids[i];
 		state->ctrs[i].finished =
-			lookup_special_sid(sids[i],
-					   &state->ctrs[i].domain,
-					   &state->ctrs[i].name,
-					   &state->ctrs[i].type) ||
+			lookup_wellknown_sid(sids[i],
+					     &state->ctrs[i].domain,
+					     &state->ctrs[i].name);
+		if (state->ctrs[i].finished) {
+			state->ctrs[i].type = SID_NAME_WKN_GRP;
+			state->num_finished += 1;
+		}
+		state->ctrs[i].finished =
 			lookup_cached_sid(mem_ctx, sids[i],
 					  &state->ctrs[i].domain,
 					  &state->ctrs[i].name,

@@ -155,7 +155,8 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 			*p = '\\';
 		}
 
-		if (!lookup_name(name, True, domain, uname, &sid, &type)) {
+		if (!lookup_name(name, LOOKUP_NAME_FULL,
+				 domain, uname, &sid, &type)) {
 			DEBUG(10, ("Could not find AFS user %s\n", name));
 
 			sid_copy(&sid, &global_sid_NULL);

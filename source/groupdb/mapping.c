@@ -1170,7 +1170,8 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 
 	GROUP_MAP map;
 
-	if (lookup_name(name, True, domain, tmp_name, &sid, &type))
+	if (lookup_name(name, LOOKUP_NAME_ISOLATED,
+			domain, tmp_name, &sid, &type))
 		return NT_STATUS_ALIAS_EXISTS;
 
 	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))

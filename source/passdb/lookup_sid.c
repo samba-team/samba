@@ -29,7 +29,7 @@
  to do guesswork.
 *****************************************************************/  
 
-BOOL lookup_name(const char *full_name, BOOL do_guesswork,
+BOOL lookup_name(const char *full_name, int flags,
 		 fstring domain, fstring name,
 		 DOM_SID *psd, enum SID_NAME_USE *type)
 {
@@ -90,13 +90,76 @@ BOOL lookup_name(const char *full_name, BOOL do_guesswork,
 		return True;
 	}
 
-	if (!do_guesswork) {
-		/* This might be due to a lsa_lookupnames level 3 call */
+	if (!(flags & LOOKUP_NAME_ISOLATED)) {
 		return False;
 	}
 
 	/* Now the guesswork begins, we haven't been given an explicit
-	 * domain */
+	 * domain. Try the sequence as documented on
+	 * http://msdn.microsoft.com/library/en-us/secmgmt/security/lsalookupnames.asp
+	 * November 27, 2005 */
+
+	/* 1. well-known names */
+
+	{
+		DOM_SID wkn_sid;
+		fstring authority_name;
+		if (lookup_wellknown_name(tmp_name, &wkn_sid,
+					  authority_name)) {
+			fstrcpy(domain, authority_name);
+			fstrcpy(name, tmp_name);
+			sid_copy(psd, &wkn_sid);
+			*type = SID_NAME_WKN_GRP;
+			return True;
+		}
+	}
+
+	/* 2. Builtin domain as such */
+
+	if (strequal(tmp_name, builtin_domain_name())) {
+		fstrcpy(domain, builtin_domain_name());
+		fstrcpy(name, "");
+		sid_copy(psd, &global_sid_Builtin);
+		*type = SID_NAME_DOMAIN;
+		return True;
+	}
+
+	/* 3. Account domain, on member servers this is the local sam, DCs don't
+	 *    do this */
+
+	if (!IS_DC && (strequal(tmp_name, global_myname()))) {
+		if (!secrets_fetch_domain_sid(tmp_name, psd)) {
+			DEBUG(3, ("Could not fetch my SID\n"));
+			return False;
+		}
+		fstrcpy(domain, global_myname());
+		fstrcpy(name, "");
+		*type = SID_NAME_DOMAIN;
+		return True;
+	}
+
+	/* 4. Primary domain */
+
+	if (strequal(tmp_name, get_global_sam_name())) {
+		fstrcpy(domain, get_global_sam_name());
+		fstrcpy(name, "");
+		sid_copy(psd, get_global_sam_sid());
+		*type = SID_NAME_DOMAIN;
+		return True;
+	}
+
+	/* 5. Trusted domains as such, to me it looks as if members don't do
+              this, tested an XP workstation in a NT domain -- vl */
+
+	if (IS_DC && (secrets_fetch_trusted_domain_password(tmp_name, NULL,
+							    psd, NULL))) {
+		fstrcpy(domain, tmp_name);
+		fstrcpy(name, "");
+		*type = SID_NAME_DOMAIN;
+		return True;
+	}
+
+	/* 6. Builtin aliases */	
 
 	if (lookup_builtin_name(tmp_name, &rid)) {
 		fstrcpy(domain, builtin_domain_name());
@@ -107,6 +170,11 @@ BOOL lookup_name(const char *full_name, BOOL do_guesswork,
 		return True;
 	}
 
+	/* 7. Local systems' SAM (DCs don't have a local SAM) */
+	/* 8. Primary SAM (On members, this is the domain) */
+
+	/* Both cases are done by looking at our passdb */
+
 	if (lookup_global_sam_name(tmp_name, &rid, &tmp_type)) {
 		fstrcpy(domain, get_global_sam_name());
 		fstrcpy(name, tmp_name);
@@ -116,26 +184,28 @@ BOOL lookup_name(const char *full_name, BOOL do_guesswork,
 		return True;
 	}
 
-	if (map_name_to_wellknown_sid(psd, type, tmp_name)) {
-		DOM_SID tmp_sid;
-		uint32 tmp_rid;
+	/* Now our local possibilities are exhausted. */
 
-		/* We have to figure out the domain name, it might be
-		 * something like "NT Authority" */
+	if (!(flags & LOOKUP_NAME_REMOTE)) {
+		return False;
+	}
 
-		sid_copy(&tmp_sid, psd);
-		sid_split_rid(&tmp_sid, &tmp_rid);
+	/* If we are not a DC, we have to ask in our primary domain. Let
+	 * winbind do that. */
 
-		SMB_ASSERT(map_domain_sid_to_name(&tmp_sid, domain));
+	if (!IS_DC &&
+	    (winbind_lookup_name(lp_workgroup(), tmp_name, psd, type))) {
+		fstrcpy(domain, lp_workgroup());
 		fstrcpy(name, tmp_name);
-
 		return True;
 	}
 
-	/* If we're a PDC we have to ask all trusted DC's. Winbind does not do
+	/* 9. Trusted domains */
+
+	/* If we're a DC we have to ask all trusted DC's. Winbind does not do
 	 * that (yet), but give it a chance. */
 
-	if (winbind_lookup_name("", tmp_name, psd, type)) {
+	if (IS_DC && winbind_lookup_name("", tmp_name, psd, type)) {
 		DOM_SID tmp_sid;
 		uint32 tmp_rid;
 		fstring dummy_name; /* Will be ignored */
@@ -165,6 +235,8 @@ BOOL lookup_name(const char *full_name, BOOL do_guesswork,
 		fstrcpy(name, tmp_name);
 		return True;
 	}
+
+	/* 10. Don't translate */
 
 	return False;
 }
@@ -203,10 +275,7 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 
 	if (sid_check_is_builtin(sid)) {
 
-		/* Got through map_domain_sid_to_name here so that the mapping
-		 * of S-1-5-32 to the name "BUILTIN" in as few places as
-		 * possible. We might add i18n... */
-		SMB_ASSERT(map_domain_sid_to_name(sid, dom_name));
+		fstrcpy(dom_name, builtin_domain_name());
 
 		/* Yes, W2k3 returns "BUILTIN" both as domain and name here */
 		fstrcpy(name, dom_name); 
@@ -220,11 +289,7 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 
 		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
-		/* Got through map_domain_sid_to_name here so that the mapping
-		 * of S-1-5-32 to the name "BUILTIN" in as few places as
-		 * possible. We might add i18n... */
-		SMB_ASSERT(map_domain_sid_to_name(&global_sid_Builtin,
-						  dom_name));
+		fstrcpy(dom_name, builtin_domain_name());
 
 		/* There's only aliases in S-1-5-32 */
 		*name_type = SID_NAME_ALIAS;
@@ -242,10 +307,11 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 	{
 		const char *dom, *obj_name;
 		
-		if (lookup_special_sid(sid, &dom, &obj_name, name_type)) {
+		if (lookup_wellknown_sid(sid, &dom, &obj_name)) {
 			DEBUG(10, ("found %s\\%s\n", dom, obj_name));
 			fstrcpy(dom_name, dom);
 			fstrcpy(name, obj_name);
+			*name_type = SID_NAME_WKN_GRP;
 			return True;
 		}
 	}
