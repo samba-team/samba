@@ -173,6 +173,19 @@ Heimdal is built such that it should be able to serve multiple realms
 at the same time.  This isn't relevant for Samba's use, but it shows
 up in a lot of generalisations throughout the code.
 
+Other odd things:
+ - Support for multiple passwords on a client account:  we seem to
+   call hdb_next_enctype2key() in the pre-authentication routines to
+   allow multiple passwords per account in krb5.  (I think this was
+   intened to allow multiple salts)
+
+ - When sending the enc-type negotiation, we call get_pa_etype_info if
+   there are only 'old' enc types present, but always call
+   get_pa_etype_info2.  It would seem more logical to have an
+   either/or, or only send both to clients that show signs of knowing
+   about the old enc types.
+ - Perhaps this is to cope with clients that expect the older info in
+   the first position?  (Comments needed)
 
 State Machine safety
 --------------------
@@ -223,6 +236,9 @@ of the operation.  This will still hit issues of static storage (one
 gss_krb5_context per process, and multiple GSSAPI encrypted sessions
 at a time) but these may not matter in practice.
 
+In the short-term, we deal with blocking by taking over the network
+send() and recv() functions, therefore making them 'semi-async'.  This
+doens't apply to DNS yet.
 
 GSSAPI and Kerberos extensions
 ------------------------------
@@ -314,7 +330,7 @@ We use krb5_ticket_get_authorization_data_type(), and expect it to
 return the correct authz data, even if wrapped in an AD-IFRELEVENT container.
 
 
-KDC Extensions
+KDC/hdb Extensions
 --------------
 
 We have modified Heimdal's 'hdb' interface to specify the 'type' of
@@ -330,6 +346,23 @@ an in/out value on the entry itself.
 
 Inside hdb-ldb, we add krbtgt as a special class of principal, because
 of particular special-case backend requirements.
+
+Callbacks:
+ In addition, I have added a new interface hdb_fetch_ex(), which
+ returns a structure including callbacks, which provide the hook for
+ the PAC, as well as a callback into the main access control routines.
+
+ A new callback should be added to increment the bad password counter
+ on failure.
+
+ Another possability for a callback is to obtain the keys.  This would
+ allow the plaintext password to only be hashed into the encryption
+ types we need.  This idea from the eDirectory/MIT DAL work.
+
+ This probably should be combined with storing the hashed passwords in
+ the supplementalCredentials attribute. If combined with a kvno
+ parameter, this could also allow changing of the krbtgt password
+ (valuable for security).
 
 libkdc
 ------
@@ -352,8 +385,9 @@ lib.  This allows the KDC code to be as portable as the rest of samba
 (this cuts both ways), but far more importantly it ensures a
 consistancy in the handling of requests, binding to sockets etc.
 
-To handle TCP, we will use of our socket layer in much the same way as
-we deal with TCP for CIFS.  Tridge has promised this generalisation.
+To handle TCP, we use of our socket layer in much the same way as
+we deal with TCP for CIFS.  Tridge created a generic packet handling
+layer for this.
 
 For the client, we likewise must take over the socket functions, so
 that our single thread smbd will not lock up talking to itself.  (We
@@ -381,12 +415,30 @@ interesting ways.  As such, we have a patch for Heimdal that avoids
 DNS lookups on names without a . in them.  This should avoid some
 delay and root server load.
 
+PAC Correctness
+---------------
+
+We now put the PAC into the TGT, not just the service ticket.  
+
+Forwarded tickets
+-----------------
+
+We extract forwarded tickets from the GSSAPI layer, and put
+them into the credentials.  We can then use them for proxy work.
+
 
 Kerberos TODO
 =============
 
 (Feel free to contribute to any of these tasks, or ask
 abartlet@samba.org about them).
+
+Lockout Control
+--------------
+
+We need to get (either if PADL publishes their patch, or write our
+own) access control hooks in the Heimdal KDC.  We need to lockout
+accounts, and perform other controls.
 
 Gssmonger
 ---------
@@ -395,24 +447,6 @@ Microsoft has released a testsuite called gssmonger, which tests
 interop.  We should compile it against lorikeet-heimdal, MIT and see
 if we can build a 'Samba4' server for it.
 
-PAC Correctness
----------------
-
-We need to put the PAC into the TGT, not just the service ticket.  
-
-Forwarded tickets
------------------
-
-We need to extract forwarded tickets from the GSSAPI layer, and put
-them into the credentials.  We can then use them for proxy work.
-
-Access Control
---------------
-
-We need to get (either if PADL publishes their patch, or write our
-own) access control hooks in the Heimdal KDC.  We need to lockout
-accounts, and perform other controls.
-
 Kpasswd server
 --------------
 
@@ -420,3 +454,13 @@ I have a partial kpasswd server which needs finishing, and a we need a
 client testsuite written, either via the krb5 API or directly against
 GENSEC and the ASN.1 routines.
 
+Currently it only works for Heimdal, not MIT clients.  This may be due
+to call ordering constraints.
+
+
+Correct TCP support
+-------------------
+
+Our current TCP support does not send back 'too large' error messages
+if the high bit is set.  This is needed for a proposed extension
+mechanism, but is likewise unsupported in both current Heimdal and MIT.
