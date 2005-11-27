@@ -1,0 +1,6 @@
+This directory contains a copy of portions of a project known as
+'lorikeet-heimdal', a branch of the Heimdal Kerberos distribution.
+
+The purpose of these files is to provide kerberos support to Samba4 in
+a predicatable manner, without reliance on the system kerberos
+libraries.
