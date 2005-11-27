@@ -2229,6 +2229,43 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	return r_u->status;
 }
 
+/* W2k3 seems to use the same check for all 3 objects that can be created via
+ * SAMR, if you try to create for example "Dialup" as an alias it says
+ * "NT_STATUS_USER_EXISTS". This is racy, but we can't really lock the user
+ * database. */
+
+static NTSTATUS can_create(const char *new_name)
+{
+	fstring domain, name;
+	enum SID_NAME_USE type;
+	DOM_SID tmp_sid;
+	BOOL result;
+
+	become_root();
+	/* Lookup in our local databases (only LOOKUP_NAME_ISOLATED set)
+	 * whether the name already exists */
+	result = lookup_name(new_name, LOOKUP_NAME_ISOLATED,
+			     domain, name, &tmp_sid, &type);
+	unbecome_root();
+
+	if (!result) {
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(5, ("trying to create %s, exists as %s\n",
+		  new_name, sid_type_lookup(type)));
+
+	if (type == SID_NAME_DOM_GRP) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+	if (type == SID_NAME_ALIAS) {
+		return NT_STATUS_ALIAS_EXISTS;
+	}
+
+	/* Yes, the default is NT_STATUS_USER_EXISTS */
+	return NT_STATUS_USER_EXISTS;
+}
+
 /*******************************************************************
  _samr_create_user
  Create an account, can be either a normal user or a machine.
@@ -2276,18 +2313,10 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
 
-	pdb_init_sam(&sam_pass);
-
-	become_root();
-	ret = pdb_getsampwnam(sam_pass, account);
-	unbecome_root();
-	if (ret == True) {
-		/* this account exists: say so */
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_USER_EXISTS;
+	nt_status = can_create(account);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
-
-	pdb_free_sam(&sam_pass);
 
 	/*********************************************************************
 	 * HEADS UP!  If we have to create a new user account, we have to get 
@@ -2809,9 +2838,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 {
 	fstring new_name;
-	SAM_ACCOUNT *check_acct = NULL;
 	NTSTATUS rc;
-	BOOL check_rc;
 
 	if (id7 == NULL) {
 		DEBUG(5, ("set_user_info_7: NULL id7\n"));
@@ -2834,13 +2861,9 @@ static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 	   simply that the rename fails with a slightly different status
 	   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
 
-	pdb_init_sam(&check_acct);
-	check_rc = pdb_getsampwnam(check_acct, new_name);
-	pdb_free_sam(&check_acct);
-
-	if (check_rc == True) {
-		/* this account exists: say so */
-		return NT_STATUS_USER_EXISTS;
+	rc = can_create(new_name);
+	if (!NT_STATUS_IS_OK(rc)) {
+		return rc;
 	}
 
 	rc = pdb_rename_sam_account(pwd, new_name);
@@ -4191,9 +4214,10 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
-	/* check if group already exist */
-	if ((grp=getgrnam(name)) != NULL)
-		return NT_STATUS_GROUP_EXISTS;
+	r_u->status = can_create(name);
+	if (!NT_STATUS_IS_OK(r_u->status)) {
+		return r_u->status;
+	}
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
@@ -4280,6 +4304,11 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
+
+	r_u->status = can_create(name);
+	if (!NT_STATUS_IS_OK(r_u->status)) {
+		return r_u->status;
+	}
 
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
