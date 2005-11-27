@@ -1166,10 +1166,11 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	enum SID_NAME_USE type;
 	uint32 new_rid;
 	gid_t gid;
+	fstring domain, tmp_name;
 
 	GROUP_MAP map;
 
-	if (lookup_name(get_global_sam_name(), name, &sid, &type))
+	if (lookup_name(name, True, domain, tmp_name, &sid, &type))
 		return NT_STATUS_ALIAS_EXISTS;
 
 	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))

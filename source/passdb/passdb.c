@@ -850,16 +850,12 @@ BOOL lookup_global_sam_rid(uint32 rid, fstring name,
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
+BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE *type)
 {
-	DOM_SID local_sid;
-	DOM_SID sid;
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
 	struct group *grp;
 	GROUP_MAP map;
-
-	*psid_name_use = SID_NAME_UNKNOWN;
 
 	/*
 	 * user may be quoted a const string, and map_username and
@@ -867,17 +863,6 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	 */
 
 	fstrcpy(user, c_user);
-
-	sid_copy(&local_sid, get_global_sam_sid());
-
-	if (map_name_to_wellknown_sid(&sid, psid_name_use, user)){
-		fstring sid_str;
-		sid_copy( psid, &sid);
-		sid_to_string(sid_str, &sid);
-		DEBUG(10,("lookup_name: name %s = SID %s, type = %u\n", user, sid_str,
-			(unsigned int)*psid_name_use ));
-		return True;
-	}
 
 	(void)map_username(user);
 
@@ -889,10 +874,20 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	
 	become_root();
 	if (pdb_getsampwnam(sam_account, user)) {
+		const DOM_SID *user_sid;
+
 		unbecome_root();
-		sid_copy(psid, pdb_get_user_sid(sam_account));
-		*psid_name_use = SID_NAME_USER;
-		
+
+		user_sid = pdb_get_user_sid(sam_account);
+
+		if (!sid_check_is_in_our_domain(user_sid)) {
+			DEBUG(0, ("User %s with invalid SID %s in passdb\n",
+				  user, sid_string_static(user_sid)));
+			return False;
+		}
+
+		sid_peek_rid(user_sid, rid);
+		*type = SID_NAME_USER;
 		pdb_free_sam(&sam_account);
 		return True;
 	}
@@ -905,41 +900,61 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 
 	/* check if it's a mapped group */
 	if (pdb_getgrnam(&map, user)) {
+
+		unbecome_root();
+
+		/* BUILTIN groups are looked up elsewhere */
+		if (!sid_check_is_in_our_domain(&map.sid)) {
+			DEBUG(10, ("Found group %s (%s) not in our domain -- "
+				   "ignoring.", user,
+				   sid_string_static(&map.sid)));
+			return False;
+		}
+		
 		/* yes it's a mapped group */
-		sid_copy(&local_sid, &map.sid);
-		*psid_name_use = map.sid_name_use;
-	} else {
-		/* it's not a mapped group */
-		grp = getgrnam(user);
-		if(!grp) {
-			unbecome_root();		/* ---> exit form block */	
-			return False;
-		}
+		sid_peek_rid(&map.sid, rid);
+		*type = map.sid_name_use;
+		return True;
+	}
+
+	/* Do we need the stuff down from here? I don't think so, but this
+	 * needs better testing -- VL */
+
+#if 1
+	{	
+		unbecome_root();
+		return False;
+	}
+#endif
+
+	/* it's not a mapped group */
+	grp = getgrnam(user);
+	if(!grp) {
+		unbecome_root();		/* ---> exit form block */	
+		return False;
+	}
 		
-		/* 
-		 *check if it's mapped, if it is reply it doesn't exist
-		 *
-		 * that's to prevent this case:
-		 *
-		 * unix group ug is mapped to nt group ng
-		 * someone does a lookup on ug
-		 * we must not reply as it doesn't "exist" anymore
-		 * for NT. For NT only ng exists.
-		 * JFM, 30/11/2001
-		 */
+	/* 
+	 *check if it's mapped, if it is reply it doesn't exist
+	 *
+	 * that's to prevent this case:
+	 *
+	 * unix group ug is mapped to nt group ng
+	 * someone does a lookup on ug
+	 * we must not reply as it doesn't "exist" anymore
+	 * for NT. For NT only ng exists.
+	 * JFM, 30/11/2001
+	 */
 		
-		if (pdb_getgrgid(&map, grp->gr_gid)){
-			unbecome_root();		/* ---> exit form block */
-			return False;
-		}
-		
-		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-		*psid_name_use = SID_NAME_ALIAS;
+	if (pdb_getgrgid(&map, grp->gr_gid)) {
+		unbecome_root();		/* ---> exit form block */
+		return False;
 	}
 	unbecome_root();
 	/* END ROOT BLOCK */
 
-	sid_copy( psid, &local_sid);
+	*rid = pdb_gid_to_group_rid(grp->gr_gid);
+	*type = SID_NAME_ALIAS;
 
 	return True;
 }

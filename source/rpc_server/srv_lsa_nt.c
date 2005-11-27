@@ -136,8 +136,8 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
  ***************************************************************************/
 
 static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
-				int num_entries, UNISTR2 *name,
-				uint32 *mapped_count, BOOL endian)
+			   int num_entries, UNISTR2 *name,
+			   uint32 *mapped_count, BOOL do_guesswork)
 {
 	int i;
 	int total = 0;
@@ -159,24 +159,11 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		/* Split name into domain and user component */
 
 		unistr2_to_ascii(full_name, &name[i], sizeof(full_name));
-		split_domain_name(full_name, dom_name, user);
-
-		/* Lookup name */
 
 		DEBUG(5, ("init_lsa_rid2s: looking up name %s\n", full_name));
 
-		status = lookup_name(dom_name, user, &sid, &name_type);
-
-		if((name_type == SID_NAME_UNKNOWN) && (lp_server_role() == ROLE_DOMAIN_MEMBER)  && (strncmp(dom_name, full_name, strlen(dom_name)) != 0)) {
-			DEBUG(5, ("init_lsa_rid2s: domain name not provided and local account not found, using member domain\n"));
-			fstrcpy(dom_name, lp_workgroup());
-			status = lookup_name(dom_name, user, &sid, &name_type);
-		}
-
-		if (name_type == SID_NAME_WKN_GRP) {
-			/* BUILTIN aliases are still aliases :-) */
-			name_type = SID_NAME_ALIAS;
-		}
+		status = lookup_name(full_name, do_guesswork,
+				     dom_name, user, &sid, &name_type);
 
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
@@ -697,12 +684,16 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	DOM_R_REF *ref;
 	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
+	BOOL do_guesswork;
 
 	if (num_entries >  MAX_LOOKUP_SIDS) {
 		num_entries = MAX_LOOKUP_SIDS;
 		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
 	}
 		
+	/* Probably the lookup_level is some sort of bitmask. */
+	do_guesswork = (q_u->lookup_level == 1);
+
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
 
@@ -720,10 +711,11 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	if (!ref || !rids)
 		return NT_STATUS_NO_MEMORY;
 
+	/* set up the LSA Lookup RIDs response */
+	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count,
+		       do_guesswork);
 done:
 
-	/* set up the LSA Lookup RIDs response */
-	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);
 	if (NT_STATUS_IS_OK(r_u->status)) {
 		if (mapped_count == 0)
 			r_u->status = NT_STATUS_NONE_MAPPED;

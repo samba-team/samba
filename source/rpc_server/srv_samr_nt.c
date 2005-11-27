@@ -1366,9 +1366,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
-	uint32 local_rid;
 	enum SID_NAME_USE type[MAX_SAM_ENTRIES];
-	enum SID_NAME_USE local_type;
 	int i;
 	int num_rids = q_u->num_names2;
 	DOM_SID pol_sid;
@@ -1400,42 +1398,30 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	
 	for (i = 0; i < num_rids; i++) {
 		fstring name;
-            	DOM_SID sid;
             	int ret;
 
 	        r_u->status = NT_STATUS_NONE_MAPPED;
+	        type[i] = SID_NAME_UNKNOWN;
 
 	        rid [i] = 0xffffffff;
-	        type[i] = SID_NAME_UNKNOWN;
 
 		ret = rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
 
- 		/*
-		 * we are only looking for a name
-		 * the SID we get back can be outside
-		 * the scope of the pol_sid
-		 * 
-		 * in clear: it prevents to reply to domain\group: yes
-		 * when only builtin\group exists.
-		 *
-		 * a cleaner code is to add the sid of the domain we're looking in
-		 * to the local_lookup_name function.
-		 */
-		 
-            	if ((ret > 0) && local_lookup_name(name, &sid, &local_type)) {
-                	sid_split_rid(&sid, &local_rid);
-				
-			if (sid_equal(&sid, &pol_sid)) {
-				rid[i]=local_rid;
+		if (ret <= 0) {
+			continue;
+		}
 
-				/* Windows does not return WKN_GRP here, even
-				 * on lookups in builtin */
-				type[i] = (local_type == SID_NAME_WKN_GRP) ?
-					SID_NAME_ALIAS : local_type;
-
-                		r_u->status = NT_STATUS_OK;
+		if (sid_check_is_builtin(&pol_sid)) {
+			if (lookup_builtin_name(name, &rid[i])) {
+				type[i] = SID_NAME_ALIAS;
 			}
-            	}
+		} else {
+			lookup_global_sam_name(name, &rid[i], &type[i]);
+		}
+
+		if (type[i] != SID_NAME_UNKNOWN) {
+			r_u->status = NT_STATUS_OK;
+		}
 	}
 
 	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);

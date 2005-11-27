@@ -118,6 +118,11 @@ BOOL map_domain_sid_to_name(const DOM_SID *sid, fstring nt_domain)
 	return False;
 }
 
+const char *builtin_domain_name(void)
+{
+	return "BUILTIN";
+}
+
 /**************************************************************************
  Looks up a known username from one of the known domains.
 ***************************************************************************/
@@ -181,6 +186,26 @@ BOOL lookup_builtin_rid(uint32 rid, fstring name)
 
 	return False;
 }
+
+/*******************************************************************
+ Look up a name in the BUILTIN domain
+ ********************************************************************/
+BOOL lookup_builtin_name(const char *name, uint32 *rid)
+{
+	const known_sid_users *aliases = builtin_groups;
+	int i;
+
+	for (i=0; aliases[i].known_user_name != NULL; i++) {
+		if (strequal(name, aliases[i].known_user_name)) {
+			*rid = aliases[i].rid;
+			return True;
+		}
+	}
+
+	return False;
+}
+
+
 
 /*****************************************************************
  Check if the SID is our domain SID (S-1-5-21-x-y-z).

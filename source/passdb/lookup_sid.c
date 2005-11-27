@@ -22,41 +22,149 @@
 #include "includes.h"
 
 /*****************************************************************
- *THE CANONICAL* convert name to SID function.
- Tries local lookup first - for local domains - then uses winbind.
+ Dissect a user-provided name into domain, name, sid and type.
+
+ If an explicit domain name was given in the form domain\user, it
+ has to try that. If no explicit domain name was given, we have
+ to do guesswork.
 *****************************************************************/  
 
-BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
+BOOL lookup_name(const char *full_name, BOOL do_guesswork,
+		 fstring domain, fstring name,
+		 DOM_SID *psd, enum SID_NAME_USE *type)
 {
-	fstring sid;
-	BOOL local_lookup = False;
-	
-	*name_type = SID_NAME_UNKNOWN;
+	fstring tmp;
+	char *p;
+	const char *tmp_domain, *tmp_name;
+	uint32 rid;
+	enum SID_NAME_USE tmp_type;
 
-	/* If we are looking up a domain user, make sure it is
-	   for the local machine only */
-	
-	if (strequal(domain, get_global_sam_name())) {
-		if (local_lookup_name(name, psid, name_type)) {
-			DEBUG(10,
-			      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",
-			       domain, name, sid_to_string(sid,psid),
-			       sid_type_lookup(*name_type), (unsigned int)*name_type));
-			return True;
-		}
-	} else {
-		/* Remote */
-		if (winbind_lookup_name(domain, name, psid, name_type)) {
-			
-			DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
-				  domain, name, sid_to_string(sid, psid), 
-				  (unsigned int)*name_type));
-			return True;
-		}
+	fstrcpy(tmp, full_name);
+	tmp_domain = "";
+	tmp_name = tmp;
+
+	p = strchr_m(tmp, '\\');
+	if (p != NULL) {
+		*p = '\0';
+		tmp_domain = tmp;
+		tmp_name = p+1;
 	}
-	
-	DEBUG(10, ("lookup_name: %s lookup for [%s]\\[%s] failed\n", 
-		   local_lookup ? "local" : "winbind", domain, name));
+
+	if (strequal(tmp_domain, get_global_sam_name())) {
+
+		/* It's our own domain, lookup the name in passdb */
+		if (lookup_global_sam_name(tmp_name, &rid, &tmp_type)) {
+			fstrcpy(domain, get_global_sam_name());
+			fstrcpy(name, tmp_name);
+			sid_copy(psd, get_global_sam_sid());
+			sid_append_rid(psd, rid);
+			*type = tmp_type;
+			return True;
+		}
+		return False;
+	}
+
+	if (strequal(tmp_domain, builtin_domain_name())) {
+
+		/* Explicit request for a name in BUILTIN */
+		if (lookup_builtin_name(tmp_name, &rid)) {
+			fstrcpy(domain, builtin_domain_name());
+			fstrcpy(name, tmp_name);
+			sid_copy(psd, &global_sid_Builtin);
+			sid_append_rid(psd, rid);
+			*type = SID_NAME_ALIAS;
+			return True;
+		}
+		return False;
+	}
+
+	if (tmp_domain[0] != '\0') {
+		/* An explicit domain name was given, here our last resort is
+		 * winbind. */
+		if (!winbind_lookup_name(tmp_domain, tmp_name, psd, type)) {
+			return False;
+		}
+
+		fstrcpy(domain, tmp_domain);
+		fstrcpy(name, tmp_name);
+		return True;
+	}
+
+	if (!do_guesswork) {
+		/* This might be due to a lsa_lookupnames level 3 call */
+		return False;
+	}
+
+	/* Now the guesswork begins, we haven't been given an explicit
+	 * domain */
+
+	if (lookup_builtin_name(tmp_name, &rid)) {
+		fstrcpy(domain, builtin_domain_name());
+		fstrcpy(name, tmp_name);
+		sid_copy(psd, &global_sid_Builtin);
+		sid_append_rid(psd, rid);
+		*type = SID_NAME_ALIAS;
+		return True;
+	}
+
+	if (lookup_global_sam_name(tmp_name, &rid, &tmp_type)) {
+		fstrcpy(domain, get_global_sam_name());
+		fstrcpy(name, tmp_name);
+		sid_copy(psd, get_global_sam_sid());
+		sid_append_rid(psd, rid);
+		*type = tmp_type;
+		return True;
+	}
+
+	if (map_name_to_wellknown_sid(psd, type, tmp_name)) {
+		DOM_SID tmp_sid;
+		uint32 tmp_rid;
+
+		/* We have to figure out the domain name, it might be
+		 * something like "NT Authority" */
+
+		sid_copy(&tmp_sid, psd);
+		sid_split_rid(&tmp_sid, &tmp_rid);
+
+		SMB_ASSERT(map_domain_sid_to_name(&tmp_sid, domain));
+		fstrcpy(name, tmp_name);
+
+		return True;
+	}
+
+	/* If we're a PDC we have to ask all trusted DC's. Winbind does not do
+	 * that (yet), but give it a chance. */
+
+	if (winbind_lookup_name("", tmp_name, psd, type)) {
+		DOM_SID tmp_sid;
+		uint32 tmp_rid;
+		fstring dummy_name; /* Will be ignored */
+		enum SID_NAME_USE domain_type;
+		
+		if (*type == SID_NAME_DOMAIN) {
+			fstrcpy(domain, tmp_name);
+			fstrcpy(name, "");
+			return True;
+		}
+
+		/* Here we have to cope with a little deficiency in the
+		 * winbind API: We have to ask it again for the name of the
+		 * domain it figured out itself. Maybe fix that later... */
+
+		sid_copy(&tmp_sid, psd);
+		sid_split_rid(&tmp_sid, &tmp_rid);
+
+		if (!winbind_lookup_sid(&tmp_sid, domain, dummy_name,
+					&domain_type) ||
+		    (domain_type != SID_NAME_DOMAIN)) {
+			DEBUG(2, ("winbind could not find the domain's name it "
+				  "just looked up for us\n"));
+			return False;
+		}
+
+		fstrcpy(name, tmp_name);
+		return True;
+	}
 
 	return False;
 }
