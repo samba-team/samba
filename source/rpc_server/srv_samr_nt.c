@@ -2758,7 +2758,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	/* append the alias' RID to it */
 	
 	if (!sid_append_rid(&sid, alias_rid))
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_ALIAS;
 		
 	/*check if access can be granted as requested by client. */
 	
@@ -2775,12 +2775,22 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	/*
-	 * we should check if the rid really exist !!!
-	 * JFM.
-	 */
+	{
+		/* Check we actually have the requested alias */
+		fstring domain, name;
+		enum SID_NAME_USE type;
+		BOOL result;
 
-	/* associate the user's SID with the new handle. */
+		become_root();
+		result = lookup_sid(&sid, domain, name, &type);
+		unbecome_root();
+
+		if (!result || (type != SID_NAME_ALIAS)) {
+			return NT_STATUS_NO_SUCH_ALIAS;
+		}
+	}
+
+	/* associate the alias SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 		
