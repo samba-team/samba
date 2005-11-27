@@ -26,7 +26,7 @@
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
 
-const char *user_attrs[] = {
+static const char *user_attrs[] = {
 	/* requried for the krb5 kdc*/
 	"objectClass",
 	"sAMAccountName",
@@ -64,7 +64,7 @@ const char *user_attrs[] = {
 	NULL,
 };
 
-const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName", "dnsRoot", NULL};
+static const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName", "dnsRoot", NULL};
 
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
@@ -585,7 +585,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	return NT_STATUS_OK;
 }
 				   
-
+/* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available */
 NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principal,
 				       struct auth_serversupplied_info **server_info)
 {
