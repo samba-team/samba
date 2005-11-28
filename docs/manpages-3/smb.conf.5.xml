@@ -520,36 +520,31 @@ alias|alias|alias|alias...
 		<varlistentry>
 		<term>default case = upper/lower</term>
 		<listitem><para>
-		controls what the default case is for new filenames (ie. files that don't currently exist
-		in the filesystem). Default <emphasis>lower</emphasis>.
-		IMPORTANT NOTE ! This option will be used to modify the case of <emphasis>all</emphasis>
-		incoming client filenames, not just new filenames if the options
-		"case sensitive = yes", "case preserve = no", "short preserve case = no" are set.
-		This change is needed as part of the optimisations
-		for directories containing large numbers of files.
+		controls what the default case is for new filenames (ie. files that don't currently exist in the filesystem).
+		Default <emphasis>lower</emphasis>.  IMPORTANT NOTE: This option will be used to modify the case of
+		<emphasis>all</emphasis> incoming client filenames, not just new filenames if the options case <smbconfoption
+		name="case sensitive">yes</smbconfoption>, <smbconfoption name="case preserve">No</smbconfoption>,
+		<smbconfoption name="short preserve case">No</smbconfoption> are set.  This change is needed as part of the
+		optimisations for directories containing large numbers of files.
 		</para></listitem>
 		</varlistentry> 
 	
 		<varlistentry>
 		<term>preserve case = yes/no</term>
 		<listitem><para>
-		controls whether new files (ie. files that don't currently exist
-		in the filesystem) are created with the case that the client passes,
-		or if they are forced to be the 
-		<literal>default</literal> case. Default <emphasis>yes</emphasis>.
+		controls whether new files (ie. files that don't currently exist in the filesystem) are created with the case
+		that the client passes, or if they are forced to be the <literal>default</literal> case. Default
+		<emphasis>yes</emphasis>.
 		</para></listitem>
 		</varlistentry> 
 
 		<varlistentry>
 		<term>short preserve case = yes/no</term>
 		<listitem><para>
-		controls if new files (ie. files that don't currently exist
-		in the filesystem) which conform to 8.3 syntax, that is all in
-		upper case and of suitable length, are created upper case, or if
-		they are forced to be the <literal>default</literal> case. This
-		option can be used with <literal>preserve case = yes</literal> to
-		permit long filenames to retain their case, while short
-		names are lowercased. Default <emphasis>yes</emphasis>.
+		controls if new files (ie. files that don't currently exist in the filesystem) which conform to 8.3 syntax,
+		that is all in upper case and of suitable length, are created upper case, or if they are forced to be the
+		<literal>default</literal> case. This option can be used with <literal>preserve case = yes</literal> to permit
+		long filenames to retain their case, while short names are lowercased. Default <emphasis>yes</emphasis>.
 		</para></listitem>
 		</varlistentry> 
 	</variablelist>
