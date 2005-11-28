@@ -2160,21 +2160,29 @@ hosts:  files wins
 	<para><indexterm>
 	    <primary>Identity management</primary>
 	  </indexterm>
-	There are really only three solutions that provide integrated authentication and
+	There are really four solutions that provide integrated authentication and
 	user identity management facilities:
 	</para>
 
 	<itemizedlist>
                 <listitem><para>
-		Samba winbind (free)
+		Samba winbind (free). Samba-3.0.20 introduced a complete replacement for Winbind that now
+		provides a greater level of scalability in large ADS environments.
                 </para></listitem>
 
                 <listitem><para>
-		<ulink url="http://www.padl.com">PADL</ulink> PAM and LDAP tools (free)
+		<ulink url="http://www.padl.com">PADL</ulink> PAM and LDAP tools (free).
                 </para></listitem>
 
                 <listitem><para>
-		<ulink url="http://www.vintela.com">Vintela</ulink> Authentication Services (commercial)
+		<ulink url="http://www.vintela.com">Vintela</ulink> Authentication Services (commercial).
+                </para></listitem>
+
+                <listitem><para>
+		<ulink url="http://www.centrify.com">Centrify</ulink> DirectControl (commercial). 
+		Centrify's commercial product allows UNIX and Linux systems to use Active Directory
+		security, directory and policy services.  Enhancements include a centralized ID mapping that 
+		allows Samba, DirectControl and Active Directory to seamlessly work together.
                 </para></listitem>
         </itemizedlist>
 
