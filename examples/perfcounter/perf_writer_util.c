@@ -77,7 +77,7 @@ void usage(char *progname)
     fprintf(stderr, "Usage: %s [-d] [-f <file_path>].\n", progname);
     fprintf(stderr, "\t-d: run as a daemon.\n");
     fprintf(stderr, "\t-f <file_path>: path where the TDB files reside.\n");
-    fprintf(stderr, "\t\tDEFAULT is /tmp/counters\n");
+    fprintf(stderr, "\t\tDEFAULT is /var/lib/samba/perfmon\n");
     exit(1);
 }
 
@@ -116,13 +116,13 @@ void setup_file_paths(RuntimeSettings *rt)
     if(strlen(rt->dbDir) == 0)
     {
 	/* No file path was passed in, use default */
-	sprintf(rt->dbDir, "/tmp/counters");
+	sprintf(rt->dbDir, "/var/lib/samba/perfmon");
     }
 
     sprintf(rt->nameFile, "%s/names.tdb", rt->dbDir);
     sprintf(rt->counterFile, "%s/data.tdb", rt->dbDir);
 
-    mkdir(rt->dbDir, O_RDWR);
+    mkdir(rt->dbDir, 0755);
     rt->cnames = tdb_open(rt->nameFile, 0, TDB_CLEAR_IF_FIRST, O_RDWR | O_CREAT, 0644);
     rt->cdata = tdb_open(rt->counterFile, 0, TDB_CLEAR_IF_FIRST, O_RDWR | O_CREAT, 0644);
 
