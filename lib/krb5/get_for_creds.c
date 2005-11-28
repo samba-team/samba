@@ -378,16 +378,14 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	cred.enc_part.cipher.data = buf;
 	cred.enc_part.cipher.length = buf_size;
     } else {
-	krb5_keyblock *key;
-
-	if (auth_context->local_subkey)
-	    key = auth_context->local_subkey;
-	else if (auth_context->remote_subkey)
-	    key = auth_context->remote_subkey;
-	else
-	    key = auth_context->keyblock;
+	/* 
+	 * Here older versions then 0.7.2 of Heimdal used the local or
+	 * remote subkey. That is wrong, the session key should be
+	 * used. Heimdal 0.7.2 and newer have code to try both in the
+	 * receiving end.
+	 */
 	
-	ret = krb5_crypto_init(context, key, 0, &crypto);
+	ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
 	if (ret) {
 	    free(buf);
 	    free_KRB_CRED(&cred);
