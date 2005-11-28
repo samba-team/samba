@@ -1077,6 +1077,14 @@ _kdc_as_rep(krb5_context context,
 	pa->padata_value.data	= NULL;
 #endif
 
+	/* 
+	 * RFC4120 requires: 
+	 * - If the client only knows about old enctypes, then send
+	 *   both info replies (we send 'info' first in the list).
+	 * - If the client is 'modern', because it knows about 'new'
+	 *   enctype types, then only send the 'info2' reply.
+	*/
+
 	/* XXX check ret */
 	if (only_older_enctype_p(req))
 	    ret = get_pa_etype_info(context, config, &method_data, client, 
