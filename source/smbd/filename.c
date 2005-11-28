@@ -150,6 +150,19 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstrcpy(saved_last_component, name);
 	}
 
+	/*
+	 * Large directory fix normalization. If we're case sensitive, and
+	 * the case preserving parameters are set to "no", normalize the case of
+	 * the incoming filename from the client WHETHER IT EXISTS OR NOT !
+	 * This is in conflict with the current (3.0.20) man page, but is
+	 * what people expect from the "large directory howto". I'll update
+	 * the man page. Thanks to jht@samba.org for finding this. JRA.
+	 */
+
+	if (conn->case_sensitive && !conn->case_preserve && !conn->short_case_preserve) {
+		strnorm(name, lp_defaultcase(SNUM(conn)));
+	}
+	
 	start = name;
 	pstrcpy(orig_path, name);
 
