@@ -54,6 +54,8 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 		return NULL;
 	}
 
+	gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
+
 	return session;
 }
 
