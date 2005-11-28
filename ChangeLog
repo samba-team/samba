@@ -1,4 +1,9 @@
-2005-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c (_kdc_as_rep): add comment when we send
+	ETYPE-INFO and ETYPE-INFO2, from Andrew Bartlett
+	
+2005-11-25  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/keytab.c (krb5_kt_get_full_name): new function
 	
