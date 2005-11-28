@@ -179,14 +179,6 @@ Other odd things:
    allow multiple passwords per account in krb5.  (I think this was
    intened to allow multiple salts)
 
- - When sending the enc-type negotiation, we call get_pa_etype_info if
-   there are only 'old' enc types present, but always call
-   get_pa_etype_info2.  It would seem more logical to have an
-   either/or, or only send both to clients that show signs of knowing
-   about the old enc types.
- - Perhaps this is to cope with clients that expect the older info in
-   the first position?  (Comments needed)
-
 State Machine safety
 --------------------
 
