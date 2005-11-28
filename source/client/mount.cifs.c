@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <grp.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/mount.h>
@@ -39,7 +40,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "8"
+#define MOUNT_CIFS_VERSION_MINOR "10"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -83,11 +84,16 @@ static void mount_cifs_usage(void)
 	printf(" to a local directory.\n\nOptions:\n");
 	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
 	printf("\nLess commonly used options:");
-	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,\n\tdirectio,mapchars,nomapchars");
-	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions\n\t(e.g. most Samba versions):");
-	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>");
+	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,");
+	printf("\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,");
+	printf("\n\tdirectio,mapchars,nomapchars,nolock,servernetbiosname=<SRV_RFC1001NAME>");
+	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions");
+	printf("\n\t(e.g. unneeded for mounts to most Samba versions):");
+	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>,sfu");
 	printf("\n\nRarely used options:");
-	printf("\n\tport=<tcpport>,rsize=<size>,wsize=<size>,unc=<unc_name>,ip=<ip_address>,\n\tdev,nodev,nouser_xattr,netbiosname,hard,soft,intr,nointr,noacl");
+	printf("\n\tport=<tcpport>,rsize=<size>,wsize=<size>,unc=<unc_name>,ip=<ip_address>,");
+	printf("\n\tdev,nodev,nouser_xattr,netbiosname=<OUR_RFC1001NAME>,hard,soft,intr,");
+	printf("\n\tnointr,ignorecase,noposixpaths,noacl");
 	printf("\n\nOptions are described in more detail in the manual page");
 	printf("\n\tman 8 mount.cifs\n");
 	printf("\nTo display the version number of the mount helper:");
@@ -127,8 +133,10 @@ static int open_cred_file(char * file_name)
 	if(fs == NULL)
 		return errno;
 	line_buf = malloc(4096);
-	if(line_buf == NULL)
+	if(line_buf == NULL) {
+		fclose(fs);
 		return -ENOMEM;
+	}
 
 	while(fgets(line_buf,4096,fs)) {
 		/* parse line from credential file */
@@ -282,21 +290,23 @@ static int get_password_from_file(int file_descript, char * filename)
 	return rc;
 }
 
-static int parse_options(char * options, int * filesys_flags)
+static int parse_options(char ** optionsp, int * filesys_flags)
 {
 	char * data;
 	char * percent_char = NULL;
 	char * value = NULL;
 	char * next_keyword = NULL;
+	char * out = NULL;
+	int out_len = 0;
+	int word_len;
 	int rc = 0;
 
-	if (!options)
+	if (!optionsp || !*optionsp)
 		return 1;
-	else
-		data = options;
+	data = *optionsp;
 
 	if(verboseflag)
-		printf("parsing options: %s\n", options);
+		printf("parsing options: %s\n", data);
 
 	/* BB fixme check for separator override BB */
 
@@ -314,7 +324,7 @@ static int parse_options(char * options, int * filesys_flags)
 	
 		/* temporarily null terminate end of keyword=value pair */
 		if(next_keyword)
-			*next_keyword = 0;
+			*next_keyword++ = 0;
 
 		/* temporarily null terminate keyword to make keyword and value distinct */
 		if ((value = strchr(data, '=')) != NULL) {
@@ -324,7 +334,7 @@ static int parse_options(char * options, int * filesys_flags)
 
 		if (strncmp(data, "users",5) == 0) {
 			if(!value || !*value) {
-				strncpy(data,",,,,,",5);
+				goto nocopy;
 			}
 		} else if (strncmp(data, "user_xattr",10) == 0) {
 		   /* do nothing - need to skip so not parsed as user name */
@@ -336,10 +346,7 @@ static int parse_options(char * options, int * filesys_flags)
 						printf("\nskipping empty user mount parameter\n");
 					/* remove the parm since it would otherwise be confusing
 					to the kernel code which would think it was a real username */
-						data[0] = ',';
-						data[1] = ',';
-						data[2] = ',';
-						data[3] = ',';
+					goto nocopy;
 				} else {
 					printf("username specified with no parameter\n");
 					return 1;	/* needs_arg; */
@@ -458,10 +465,34 @@ static int parse_options(char * options, int * filesys_flags)
 		} else if (strncmp(data, "uid", 3) == 0) {
 			if (value && *value) {
 				got_uid = 1;
+				if (!isdigit(*value)) {
+					struct passwd *pw;
+					static char temp[32];
+
+					if (!(pw = getpwnam(value))) {
+						printf("bad user name \"%s\"\n", value);
+						exit(1);
+					}
+					sprintf(temp, "%u", pw->pw_uid);
+					value = temp;
+					endpwent();
+				}
 			}
 		} else if (strncmp(data, "gid", 3) == 0) {
 			if (value && *value) {
 				got_gid = 1;
+				if (!isdigit(*value)) {
+					struct group *gr;
+					static char temp[32];
+
+					if (!(gr = getgrnam(value))) {
+						printf("bad group name \"%s\"\n", value);
+						exit(1);
+					}
+					sprintf(temp, "%u", gr->gr_gid);
+					value = temp;
+					endpwent();
+				}
 			}
        /* fmask and dmask synonyms for people used to smbfs syntax */
 		} else if (strcmp(data, "file_mode") == 0 || strcmp(data, "fmask")==0) {
@@ -504,6 +535,9 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags &= ~MS_NOSUID;
 		} else if (strncmp(data, "nodev", 5) == 0) {
 			*filesys_flags |= MS_NODEV;
+		} else if ((strncmp(data, "nobrl", 5) == 0) || 
+			   (strncmp(data, "nolock", 6) == 0)) {
+			*filesys_flags &= ~MS_MANDLOCK;
 		} else if (strncmp(data, "dev", 3) == 0) {
 			*filesys_flags &= ~MS_NODEV;
 		} else if (strncmp(data, "noexec", 6) == 0) {
@@ -513,11 +547,7 @@ static int parse_options(char * options, int * filesys_flags)
 		} else if (strncmp(data, "guest", 5) == 0) {
 			got_password=1;
                         /* remove the parm since it would otherwise be logged by kern */
- 			data[0] = ',';
-                        data[1] = ',';
-                        data[2] = ',';
- 			data[3] = ',';
-			data[4] = ',';
+			goto nocopy;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
@@ -545,21 +575,29 @@ static int parse_options(char * options, int * filesys_flags)
 		} */ /* nothing to do on those four mount options above.
 			Just pass to kernel and ignore them here */
 
-			/* move to next option */
-		data = next_keyword+1;
+		/* Copy (possibly modified) option to out */
+		word_len = strlen(data);
+		if (value)
+			word_len += 1 + strlen(value);
 
-		/* put overwritten equals sign back */
-		if(value) {
-			value--;
-			*value = '=';
+		out = realloc(out, out_len + word_len + 2);
+		if (out == NULL) {
+			perror("malloc");
+			exit(1);
 		}
-	
-		/* put previous overwritten comma back */
-		if(next_keyword)
-			*next_keyword = ','; /* BB handle sep= */
+
+		if (out_len)
+			out[out_len++] = ',';
+		if (value)
+			sprintf(out + out_len, "%s=%s", data, value);
 		else
-			data = NULL;
+			sprintf(out + out_len, "%s", data);
+		out_len = strlen(out);
+
+nocopy:
+		data = next_keyword;
 	}
+	*optionsp = out;
 	return 0;
 }
 
@@ -570,12 +608,14 @@ static void check_for_comma(char ** ppasswrd)
 	char *pass;
 	int i,j;
 	int number_of_commas = 0;
-	int len = strlen(*ppasswrd);
+	int len;
 
 	if(ppasswrd == NULL)
 		return;
 	else 
 		(pass = *ppasswrd);
+
+	len = strlen(pass);
 
 	for(i=0;i<len;i++)  {
 		if(pass[i] == ',')
@@ -692,7 +732,6 @@ static char * parse_server(char ** punc_name)
 	char * ipaddress_string = NULL;
 	struct hostent * host_entry = NULL;
 	struct in_addr server_ipaddr;
-	int rc;
 
 	if(length > 1023) {
 		printf("mount error: UNC name too long");
@@ -715,6 +754,13 @@ static char * parse_server(char ** punc_name)
 			if(share) {
 				free_share_name = 1;
 				*punc_name = malloc(length+3);
+				if(*punc_name == NULL) {
+					/* put the original string back  if 
+					   no memory left */
+					*punc_name = unc_name;
+					return NULL;
+				}
+					
 				*share = '/';
 				strncpy((*punc_name)+2,unc_name,length);
 				unc_name = *punc_name;
@@ -744,8 +790,7 @@ continue_unc_parsing:
 					return NULL;
 				}
 				if(host_entry == NULL) {
-					printf("mount error: could not find target server. TCP name %s not found ", unc_name);
-					printf(" rc = %d\n",rc);
+					printf("mount error: could not find target server. TCP name %s not found\n", unc_name);
 					return NULL;
 				} else {
 					/* BB should we pass an alternate version of the share name as Unicode */
@@ -905,10 +950,44 @@ int main(int argc, char ** argv)
 			wsize = atoi(optarg);
 			break;
 		case '1':
-			uid = atoi(optarg);
+			if (isdigit(*optarg)) {
+				char *ep;
+
+				uid = strtoul(optarg, &ep, 10);
+				if (*ep) {
+					printf("bad uid value \"%s\"\n", optarg);
+					exit(1);
+				}
+			} else {
+				struct passwd *pw;
+
+				if (!(pw = getpwnam(optarg))) {
+					printf("bad user name \"%s\"\n", optarg);
+					exit(1);
+				}
+				uid = pw->pw_uid;
+				endpwent();
+			}
 			break;
 		case '2':
-			gid = atoi(optarg);
+			if (isdigit(*optarg)) {
+				char *ep;
+
+				gid = strtoul(optarg, &ep, 10);
+				if (*ep) {
+					printf("bad gid value \"%s\"\n", optarg);
+					exit(1);
+				}
+			} else {
+				struct group *gr;
+
+				if (!(gr = getgrnam(optarg))) {
+					printf("bad user name \"%s\"\n", optarg);
+					exit(1);
+				}
+				gid = gr->gr_gid;
+				endpwent();
+			}
 			break;
 		case 'u':
 			got_user = 1;
@@ -954,7 +1033,7 @@ int main(int argc, char ** argv)
 		get_password_from_file(0, getenv("PASSWD_FILE"));
 	}
 
-        if (orgoptions && parse_options(orgoptions, &flags))
+        if (orgoptions && parse_options(&orgoptions, &flags))
                 return -1;
 	ipaddr = parse_server(&share_name);
 	if((ipaddr == NULL) && (got_ip == 0)) {
@@ -1018,6 +1097,9 @@ mount_retry:
 		optlen = 0;
 	if(share_name)
 		optlen += strlen(share_name) + 4;
+	else {
+		printf("No server share name specified\n");
+	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
 	if(ipaddr)
@@ -1126,8 +1208,6 @@ mount_retry:
 					strcat(mountent.mnt_opts,"rw");
 				if(flags & MS_MANDLOCK)
 					strcat(mountent.mnt_opts,",mand");
-				else
-					strcat(mountent.mnt_opts,",nomand");
 				if(flags & MS_NOEXEC)
 					strcat(mountent.mnt_opts,",noexec");
 				if(flags & MS_NOSUID)
