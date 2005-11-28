@@ -874,13 +874,11 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 	
 	become_root();
 	if (pdb_getsampwnam(sam_account, user)) {
-		uint16 acct;
 		const DOM_SID *user_sid;
 
 		unbecome_root();
 
 		user_sid = pdb_get_user_sid(sam_account);
-		acct = pdb_get_acct_ctrl(sam_account);
 
 		if (!sid_check_is_in_our_domain(user_sid)) {
 			DEBUG(0, ("User %s with invalid SID %s in passdb\n",
@@ -889,13 +887,7 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 		}
 
 		sid_peek_rid(user_sid, rid);
-
-		if (acct & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SRVTRUST)) {
-			/* We need to filter out these in lsa_lookupnames. */
-			*type = SID_NAME_COMPUTER;
-		} else {
-			*type = SID_NAME_USER;
-		}
+		*type = SID_NAME_USER;
 		pdb_free_sam(&sam_account);
 		return True;
 	}
