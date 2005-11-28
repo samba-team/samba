@@ -318,7 +318,7 @@ krb5_error_code
 hdb_db_create(krb5_context context, HDB **db, 
 	      const char *filename)
 {
-    *db = malloc(sizeof(**db));
+    *db = calloc(1, sizeof(**db));
     if (*db == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
