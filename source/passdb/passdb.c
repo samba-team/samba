@@ -874,11 +874,13 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 	
 	become_root();
 	if (pdb_getsampwnam(sam_account, user)) {
+		uint16 acct;
 		const DOM_SID *user_sid;
 
 		unbecome_root();
 
 		user_sid = pdb_get_user_sid(sam_account);
+		acct = pdb_get_acct_ctrl(sam_account);
 
 		if (!sid_check_is_in_our_domain(user_sid)) {
 			DEBUG(0, ("User %s with invalid SID %s in passdb\n",
@@ -887,7 +889,13 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 		}
 
 		sid_peek_rid(user_sid, rid);
-		*type = SID_NAME_USER;
+
+		if (acct & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SRVTRUST)) {
+			/* We need to filter out these in lsa_lookupnames. */
+			*type = SID_NAME_COMPUTER;
+		} else {
+			*type = SID_NAME_USER;
+		}
 		pdb_free_sam(&sam_account);
 		return True;
 	}
@@ -1766,8 +1774,6 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32 pwHistLen = 0;
 	BOOL ret = True;
 	fstring tmpstring;
-	BOOL expand_explicit = lp_parm_bool(-1, "passdb", "expand_explicit",
-					    False);
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
@@ -1832,10 +1838,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	if (homedir) {
 		fstrcpy( tmpstring, homedir );
-		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
-					    sizeof(tmpstring) );
-		}
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 	else {
@@ -1851,10 +1854,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	if (logon_script) {
 		fstrcpy( tmpstring, logon_script );
-		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
-					    sizeof(tmpstring) );
-		}
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 	else {
@@ -1865,10 +1865,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	
 	if (profile_path) {	
 		fstrcpy( tmpstring, profile_path );
-		if (expand_explicit) {
-			standard_sub_basic( username, tmpstring,
-					    sizeof(tmpstring) );
-		}
+		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	} 
 	else {
