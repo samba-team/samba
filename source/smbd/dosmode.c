@@ -190,7 +190,8 @@ static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 		return False;
 	}
 
-	*pattr = 0;
+	/* Don't reset pattr to zero as we may already have filename-based attributes we
+	   need to preserve. */
 
 	sizeret = SMB_VFS_GETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, sizeof(attrstr));
 	if (sizeret == -1) {
