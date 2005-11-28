@@ -168,7 +168,7 @@ gss_krb5_import_cred(OM_uint32 *minor_status,
 	    ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
 					 &handle->mechanisms);
 	if (ret != GSS_S_COMPLETE) {
-	    kret = minor_status;
+	    kret = *minor_status;
 	    goto out;
 	}
     }
