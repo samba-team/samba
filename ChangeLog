@@ -1,5 +1,8 @@
 2005-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): use session
+	key for delegated credentials
+
 	* kdc/kerberos5.c (_kdc_as_rep): add comment when we send
 	ETYPE-INFO and ETYPE-INFO2, from Andrew Bartlett
 	
