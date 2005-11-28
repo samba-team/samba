@@ -520,14 +520,22 @@ alias|alias|alias|alias...
 		<varlistentry>
 		<term>default case = upper/lower</term>
 		<listitem><para>
-		controls what the default case is for new filenames. Default <emphasis>lower</emphasis>.
+		controls what the default case is for new filenames (ie. files that don't currently exist
+		in the filesystem). Default <emphasis>lower</emphasis>.
+		IMPORTANT NOTE ! This option will be used to modify the case of <emphasis>all</emphasis>
+		incoming client filenames, not just new filenames if the options
+		"case sensitive = yes", "case preserve = no", "short preserve case = no" are set.
+		This change is needed as part of the optimisations
+		for directories containing large numbers of files.
 		</para></listitem>
 		</varlistentry> 
 	
 		<varlistentry>
 		<term>preserve case = yes/no</term>
 		<listitem><para>
-		controls whether new files are created with the case that the client passes, or if they are forced to be the 
+		controls whether new files (ie. files that don't currently exist
+		in the filesystem) are created with the case that the client passes,
+		or if they are forced to be the 
 		<literal>default</literal> case. Default <emphasis>yes</emphasis>.
 		</para></listitem>
 		</varlistentry> 
@@ -535,16 +543,23 @@ alias|alias|alias|alias...
 		<varlistentry>
 		<term>short preserve case = yes/no</term>
 		<listitem><para>
-		controls if new files which conform to 8.3 syntax, that is all in upper case and of suitable length,
-		are created upper case, or if they are forced to be the <literal>default</literal> case. This option can be
-		used with <literal>preserve case = yes</literal> to permit long filenames to retain their case, while short
+		controls if new files (ie. files that don't currently exist
+		in the filesystem) which conform to 8.3 syntax, that is all in
+		upper case and of suitable length, are created upper case, or if
+		they are forced to be the <literal>default</literal> case. This
+		option can be used with <literal>preserve case = yes</literal> to
+		permit long filenames to retain their case, while short
 		names are lowercased. Default <emphasis>yes</emphasis>.
 		</para></listitem>
 		</varlistentry> 
 	</variablelist>
 	
 	<para>
-	By default, Samba 3.0 has the same semantics as a Windows NT server, in that it is case insensitive but case preserving.
+	By default, Samba 3.0 has the same semantics as a Windows NT server, in that it is case insensitive
+	but case preserving. As a special case for directories with large numbers of files, if the case
+	options are set as follows, "case sensitive = yes", "case preserve = no", "short preserve case = no"
+	then the "default case" option will be applied and will modify all filenames sent from the client
+	when accessing this share.
 	</para>
 	
 </refsect1>
