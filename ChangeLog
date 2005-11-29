@@ -1,3 +1,31 @@
+2005-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.c: Only match db databases on filename starting with
+	'/'.
+
+	* lib/krb5/rd_req.c (krb5_verify_ap_re2): check timestamp in
+	authenticator
+
+	* lib/krb5/rd_req.c (check_transited): explain the TR-type 0
+	better and why it matters.
+
+	* lib/krb5/test_cc.c: test krb5_cc_get_prefix_ops
+
+	* lib/krb5/cache.c (krb5_cc_get_prefix_ops): change the behavior
+	to return NULL when its not found, and fcc when the name starts
+	with a '/'. Almost matches behavior in other parts of the code,
+	but can't really do that since the name passed in to this function
+	may only contain the prefix itself without the colon.
+
+	* lib/krb5/cache.c (krb5_cc_get_prefix_ops): if there are not
+	colon (:) in the name, its a file credential cache
+
+	* lib/hdb/db3.c (hdb_db_create): use calloc to callocate memory
+
+	* lib/hdb/ndbm.c (hdb_ndbm_create): use calloc to allocate memory
+
+	* lib/hdb/db.c (hdb_db_create): use calloc to allocate memory
+
 2005-11-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): use session
