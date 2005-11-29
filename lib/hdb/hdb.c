@@ -333,7 +333,7 @@ find_method (const char *filename, const char **rest)
 	    return h;
 	}
     }
-#if defined(HAVE_DB1) || defined(HAVE_DB3) || define(HAVE_NDBM)
+#if defined(HAVE_DB1) || defined(HAVE_DB3) || defined(HAVE_NDBM)
     if (filename[0] == '/') {
 	*rest = filename;
 	return &dbmetod;
