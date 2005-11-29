@@ -424,6 +424,19 @@ test_copy(krb5_context context, const char *fromtype, const char *totype)
     krb5_cc_destroy(context, toid);
 }
 
+static void
+test_prefix_ops(krb5_context context, const char *name, const krb5_cc_ops *ops)
+{
+    const krb5_cc_ops *o;
+
+    o = krb5_cc_get_prefix_ops(context, name);
+    if (o == NULL)
+	krb5_errx(context, 1, "found no match for prefix '%s'", name);
+    if (strcmp(o->prefix, ops->prefix) != 0)
+	krb5_errx(context, 1, "ops for prefix '%s' is not "
+		  "the expected %s != %s", name, o->prefix, ops->prefix);
+}
+
 
 static struct getargs args[] = {
     {"debug",	'd',	arg_flag,	&debug_flag,
@@ -499,6 +512,12 @@ main(int argc, char **argv)
     test_copy(context, "MEMORY", "MEMORY");
     test_copy(context, "FILE", "MEMORY");
     test_copy(context, "MEMORY", "FILE");
+
+    test_prefix_ops(context, "FILE:/tmp/foo", &krb5_fcc_ops);
+    test_prefix_ops(context, "FILE", &krb5_fcc_ops);
+    test_prefix_ops(context, "MEMORY", &krb5_mcc_ops);
+    test_prefix_ops(context, "MEMORY:foo", &krb5_mcc_ops);
+    test_prefix_ops(context, "/tmp/kaka", &krb5_fcc_ops);
 
     krb5_free_context(context);
 
