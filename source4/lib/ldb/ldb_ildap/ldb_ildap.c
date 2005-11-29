@@ -407,7 +407,7 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 					  req->op.search.scope, 
 					  req->op.search.tree, 
 					  req->op.search.attrs, 
-					  req->op.search.res);
+					  &req->op.search.res);
 
 	case LDB_REQ_ADD:
 		return ildb_add(module, req->op.add.message);

@@ -786,7 +786,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	enum ldb_scope scope = req->op.search.scope;
 	struct ldb_parse_tree *tree = req->op.search.tree;
 	const char * const *attrs = req->op.search.attrs;
-	struct ldb_result **res = req->op.search.res;
+	struct ldb_result *res;
 	struct ldb_request new_req;
 	struct ldb_parse_tree *new_tree;
 	struct ldb_dn *new_base;
@@ -818,8 +818,10 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	new_req.op.search.scope = scope;
 	new_req.op.search.tree = new_tree;
 	new_req.op.search.attrs = newattrs;
-	new_req.op.search.res = &newres;
+
 	mpret = ldb_request(privdat->mapped_ldb, req);
+
+	newres = new_req.op.search.res;
 
 	talloc_free(new_base);
 	talloc_free(new_tree);
@@ -835,9 +837,10 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	 - test if (full expression) is now true
 	*/
 
-	*res = talloc(module, struct ldb_result);
-	(*res)->msgs = talloc_array(module, struct ldb_message *, newres->count);
-	(*res)->count = newres->count;
+	res = talloc(module, struct ldb_result);
+	req->op.search.res = res;
+	res->msgs = talloc_array(module, struct ldb_message *, newres->count);
+	res->count = newres->count;
 
 	ret = 0;
 
@@ -860,9 +863,10 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 		mergereq.op.search.scope = LDB_SCOPE_BASE;
 		mergereq.op.search.tree = ldb_parse_tree(module, "");
 		mergereq.op.search.attrs = NULL;
-		mergereq.op.search.res = &extrares;
 
 		extraret = ldb_next_request(module, &mergereq);
+
+		extrares = mergereq.op.search.res;
 
 		if (extraret == -1) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error searching for extra data!\n");
@@ -883,7 +887,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 		}
 		
 		if (ldb_match_msg(module->ldb, merged, tree, base, scope) != 0) {
-			(*res)->msgs[ret] = merged;
+			res->msgs[ret] = merged;
 			ret++;
 		} else {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Discarded merged message because it did not match");
@@ -892,7 +896,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 
 	talloc_free(newres);
 
-	(*res)->count = ret;
+	res->count = ret;
 	return LDB_SUCCESS;
 }
 
@@ -903,39 +907,41 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 static int map_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_dn *base = req->op.search.base;
-	struct ldb_result **res = req->op.search.res;
-	struct ldb_result *fbres, *mpres = NULL;
+	struct ldb_result *fbres, *mpres, *res;
 	int i, ret;
 
-	req->op.search.res = &fbres;
 	ret = map_search_fb(module, req);
-	req->op.search.res = res;
 	if (ret != LDB_SUCCESS)
 		return ret;
 
 	/* special dn's are never mapped.. */
 	if (ldb_dn_is_special(base)) {
-		*res = fbres;
 		return ret;
 	}
 
-	req->op.search.res = &mpres;
+	fbres = req->op.search.res;
+
 	ret = map_search_mp(module, req);
-	req->op.search.res = res;
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
+	mpres = req->op.search.res;
+
 	/* Merge results */
-	*res = talloc(module, struct ldb_result);
-	(*res)->msgs = talloc_array(*res, struct ldb_message *, fbres->count + mpres->count);
+	res = talloc(module, struct ldb_result);
+	res->msgs = talloc_array(res, struct ldb_message *, fbres->count + mpres->count);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Merging %d mapped and %d fallback messages", mpres->count, fbres->count);
 
-	for (i = 0; i < fbres->count; i++) (*res)->msgs[i] = fbres->msgs[i];
-	for (i = 0; i < mpres->count; i++) (*res)->msgs[fbres->count + i] = mpres->msgs[i];
+	for (i = 0; i < fbres->count; i++) {
+		res->msgs[i] = talloc_steal(res->msgs, fbres->msgs[i]);
+	}
+	for (i = 0; i < mpres->count; i++) {
+		res->msgs[fbres->count + i] = talloc_steal(res->msgs, mpres->msgs[i]);
+	}
 
-	(*res)->count = fbres->count + mpres->count;
+	res->count = fbres->count + mpres->count;
 	return LDB_SUCCESS;
 }
 
