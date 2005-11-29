@@ -136,7 +136,11 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     int num_realms;
     krb5_error_code ret;
 	    
-    /* Windows w2k and w2k3 uses this */
+    /* 
+     * Windows 2000 and 2003 uses this inside their TGT so its normaly
+     * not seen by others, however, samba4 joined with a Windows AD as
+     * a Domain Controller gets exposed to this.
+     */
     if(enc->transited.tr_type == 0 && enc->transited.contents.length == 0)
 	return 0;
 
