@@ -274,7 +274,7 @@ struct ldb_search {
 	enum ldb_scope scope;
 	struct ldb_parse_tree *tree;
 	const char * const *attrs;
-	struct ldb_result **res;
+	struct ldb_result *res;
 };
 
 struct ldb_add {

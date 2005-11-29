@@ -46,11 +46,11 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 
 	/* this is gross, and will be removed when I change ldb_result not
 	   to be so pointer crazy :-) */
-	if (s->res[0][0].msgs == NULL) {
+	if (s->res->msgs == NULL) {
 		return LDB_SUCCESS;
 	}
 
-	msg = s->res[0][0].msgs[0];
+	msg = s->res->msgs[0];
 
 	msg->dn = ldb_dn_explode(msg, "");
 
@@ -74,8 +74,7 @@ failed:
 */
 static int rootdse_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_request r = *req;
-	struct ldb_search *s = &r.op.search;
+	struct ldb_search *s = &req->op.search;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 
@@ -97,7 +96,7 @@ static int rootdse_search_bytree(struct ldb_module *module, struct ldb_request *
 	}
 
 	/* grab the static contents of the record */
-	ret = ldb_next_request(module, &r);
+	ret = ldb_next_request(module, req);
 
 	req->op.search.res = s->res;
 

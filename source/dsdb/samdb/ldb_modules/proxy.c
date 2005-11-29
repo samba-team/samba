@@ -295,14 +295,14 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 		return -1;
 	}
 
-	for (i = 0; i < (*newreq.op.search.res)->count; i++) {
+	for (i = 0; i < newreq.op.search.res->count; i++) {
 		struct ldb_ldif ldif;
 		printf("# record %d\n", i+1);
 		
-		proxy_convert_record(module, (*newreq.op.search.res)->msgs[i]);
+		proxy_convert_record(module, newreq.op.search.res->msgs[i]);
 
 		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = (*newreq.op.search.res)->msgs[i];
+		ldif.msg = newreq.op.search.res->msgs[i];
 	}
 
 	return ret;

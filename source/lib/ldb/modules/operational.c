@@ -182,7 +182,7 @@ static int operational_search_bytree(struct ldb_module *module, struct ldb_reque
 	const char * const *attrs = req->op.search.attrs;
 	const char **search_attrs = NULL;
 
-	*(req->op.search.res) = NULL;
+	req->op.search.res = NULL;
 
 	/* replace any attributes in the parse tree that are
 	   searchable, but are stored using a different name in the
@@ -225,8 +225,8 @@ static int operational_search_bytree(struct ldb_module *module, struct ldb_reque
 
 	/* for each record returned post-process to add any derived
 	   attributes that have been asked for */
-	for (r = 0; r < (*(req->op.search.res))->count; r++) {
-		if (operational_search_post_process(module, (*(req->op.search.res))->msgs[r], attrs) != 0) {
+	for (r = 0; r < req->op.search.res->count; r++) {
+		if (operational_search_post_process(module, req->op.search.res->msgs[r], attrs) != 0) {
 			goto failed;
 		}
 	}
@@ -237,7 +237,7 @@ static int operational_search_bytree(struct ldb_module *module, struct ldb_reque
 
 failed:
 	talloc_free(search_attrs);
-	talloc_free(*(req->op.search.res));
+	talloc_free(req->op.search.res);
 	ldb_oom(module->ldb);
 	return LDB_ERR_OTHER;
 }
