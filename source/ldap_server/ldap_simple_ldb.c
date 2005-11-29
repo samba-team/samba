@@ -171,10 +171,10 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	lreq.op.search.scope = scope;
 	lreq.op.search.tree = r->tree;
 	lreq.op.search.attrs = attrs;
-	lreq.op.search.res = &res;
 
 	ret = ldb_request(samdb, &lreq);
-	talloc_steal(samdb, res);
+
+	res = talloc_steal(samdb, lreq.op.search.res);
 
 	if (ret == LDB_SUCCESS) {
 		for (i = 0; i < res->count; i++) {
