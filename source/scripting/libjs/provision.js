@@ -238,7 +238,6 @@ function provision_default_paths(subobj)
 	paths.hkpd = "hkpd.ldb";
 	paths.hkpt = "hkpt.ldb";
 	paths.samdb = "sam.ldb";
-	paths.rootdse = "rootdse.ldb";
 	paths.secrets = "secrets.ldb";
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
@@ -297,8 +296,6 @@ function provision(subobj, message, blank, paths)
 		message("Setting up sam.ldb users and groups\n");
 		setup_ldb("provision_users.ldif", paths.samdb, subobj, data, false);
 	}
-	message("Setting up rootdse.ldb\n");
-	setup_ldb("rootdse.ldif", paths.rootdse, subobj);
 	message("Setting up secrets.ldb\n");
 	setup_ldb("secrets.ldif", paths.secrets, subobj);
 	message("Setting up DNS zone file\n");
