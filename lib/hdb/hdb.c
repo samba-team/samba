@@ -54,15 +54,15 @@ static struct hdb_method methods[] = {
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
     {"ldap:",	hdb_ldap_create},
 #endif
-#if HAVE_DB1 || HAVE_DB3
-    {"",	hdb_db_create},
-#elif defined(HAVE_NDBM)
-    {"",	hdb_ndbm_create},
-#elif defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
-    {"",	hdb_ldap_create},
-#endif
     {NULL,	NULL}
 };
+
+#if HAVE_DB1 || HAVE_DB3
+static struct hdb_method dbmetod = {"",	hdb_db_create };
+#elif defined(HAVE_NDBM)
+static struct hdb_method dbmetod = {"",	hdb_ndbm_create };
+#endif
+
 
 krb5_error_code
 hdb_next_enctype2key(krb5_context context,
@@ -327,11 +327,19 @@ find_method (const char *filename, const char **rest)
 {
     const struct hdb_method *h;
 
-    for (h = methods; h->prefix != NULL; ++h)
+    for (h = methods; h->prefix != NULL; ++h) {
 	if (strncmp (filename, h->prefix, strlen(h->prefix)) == 0) {
 	    *rest = filename + strlen(h->prefix);
 	    return h;
 	}
+    }
+#if defined(HAVE_DB1) || defined(HAVE_DB3) || define(HAVE_NDBM)
+    if (filename[0] == '/') {
+	*rest = filename;
+	return &dbmetod;
+    }
+#endif
+
     return NULL;
 }
 
@@ -357,8 +365,6 @@ hdb_list_builtin(krb5_context context, char **list)
     buf[0] = '\0';
 
     for (h = methods; h->prefix != NULL; ++h) {
-	if (h->prefix[0] == '\0')
-	    continue;
 	if (h != methods)
 	    strlcat(buf, ", ", len);
 	strlcat(buf, h->prefix, len);
