@@ -33,18 +33,23 @@
 void msg_pool_usage(int msg_type, struct process_id src_pid,
 		    void *UNUSED(buf), size_t UNUSED(len))
 {
-	off_t reply;
-	fstring reply_str;
+	char *reply = NULL;
 
 	SMB_ASSERT(msg_type == MSG_REQ_POOL_USAGE);
 	
 	DEBUG(2,("Got POOL_USAGE\n"));
 
-	reply = talloc_total_size(NULL);
-	fstr_sprintf(reply_str, "%ld", (long)reply);
+	reply = talloc_describe_all();
+	if (!reply) {
+		return;
+	}
 	
+	become_root();
 	message_send_pid(src_pid, MSG_POOL_USAGE,
-			 reply_str, strlen(reply_str)+1, True);
+			 reply, strlen(reply)+1, True);
+	unbecome_root();
+
+	SAFE_FREE(reply);
 }
 
 /**
