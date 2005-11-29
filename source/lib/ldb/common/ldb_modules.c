@@ -135,6 +135,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		{ "samldb", samldb_module_init },
 		{ "samba3sam", ldb_samba3sam_module_init },
 		{ "proxy", proxy_module_init },
+		{ "rootdse", rootdse_module_init },
 #endif
 		{ NULL, NULL }
 	};
