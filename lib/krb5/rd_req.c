@@ -421,6 +421,19 @@ krb5_verify_ap_req2(krb5_context context,
 	goto out;
     }
 
+    /* check timestamp in authenticator */
+    {
+	krb5_timestamp now;
+
+	krb5_timeofday (context, &now);
+
+	if (abs(ac->authenticator->ctime - now) > context->max_skew) {
+	    ret = KRB5KRB_AP_ERR_SKEW;
+	    krb5_clear_error_string (context);
+	    goto out;
+	}
+    }
+
     if (ac->authenticator->seq_number)
 	krb5_auth_con_setremoteseqnumber(context, ac,
 					 *ac->authenticator->seq_number);
