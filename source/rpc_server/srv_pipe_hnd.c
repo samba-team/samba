@@ -716,6 +716,32 @@ static void process_complete_pdu(pipes_struct *p)
 			(unsigned int)p->hdr.pkt_type ));
 
 	switch (p->hdr.pkt_type) {
+		case RPC_REQUEST:
+			reply = process_request_pdu(p, &rpc_in);
+			break;
+
+		case RPC_PING: /* CL request - ignore... */
+			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
+				(unsigned int)p->hdr.pkt_type, p->name));
+			break;
+
+		case RPC_RESPONSE: /* No responses here. */
+			DEBUG(0,("process_complete_pdu: Error. RPC_RESPONSE received from client on pipe %s.\n",
+				p->name ));
+			break;
+
+		case RPC_FAULT:
+		case RPC_WORKING: /* CL request - reply to a ping when a call in process. */
+		case RPC_NOCALL: /* CL - server reply to a ping call. */
+		case RPC_REJECT:
+		case RPC_ACK:
+		case RPC_CL_CANCEL:
+		case RPC_FACK:
+		case RPC_CANCEL_ACK:
+			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
+				(unsigned int)p->hdr.pkt_type, p->name));
+			break;
+
 		case RPC_BIND:
 			/*
 			 * We assume that a pipe bind is only in one pdu.
@@ -724,6 +750,14 @@ static void process_complete_pdu(pipes_struct *p)
 				reply = api_pipe_bind_req(p, &rpc_in);
 			}
 			break;
+
+		case RPC_BINDACK:
+		case RPC_BINDNACK:
+			DEBUG(0,("process_complete_pdu: Error. RPC_BINDACK/RPC_BINDNACK packet type %u received on pipe %s.\n",
+				(unsigned int)p->hdr.pkt_type, p->name));
+			break;
+
+
 		case RPC_ALTCONT:
 			/*
 			 * We assume that a pipe bind is only in one pdu.
@@ -732,6 +766,12 @@ static void process_complete_pdu(pipes_struct *p)
 				reply = api_pipe_alter_context(p, &rpc_in);
 			}
 			break;
+
+		case RPC_ALTCONTRESP:
+			DEBUG(0,("process_complete_pdu: Error. RPC_ALTCONTRESP on pipe %s: Should only be server -> client.\n",
+				p->name));
+			break;
+
 		case RPC_AUTH3:
 			/*
 			 * The third packet in an NTLMSSP auth exchange.
@@ -740,9 +780,38 @@ static void process_complete_pdu(pipes_struct *p)
 				reply = api_pipe_bind_auth3(p, &rpc_in);
 			}
 			break;
-		case RPC_REQUEST:
-			reply = process_request_pdu(p, &rpc_in);
+
+		case RPC_SHUTDOWN:
+			DEBUG(0,("process_complete_pdu: Error. RPC_SHUTDOWN on pipe %s: Should only be server -> client.\n",
+				p->name));
 			break;
+
+		case RPC_CO_CANCEL:
+			/* For now just free all client data and continue processing. */
+			DEBUG(3,("process_complete_pdu: RPC_ORPHANED. Abandoning rpc call.\n"));
+			/* As we never do asynchronous RPC serving, we can never cancel a
+			   call (as far as I know). If we ever did we'd have to send a cancel_ack
+			   reply. For now, just free all client data and continue processing. */
+			reply = True;
+			break;
+#if 0
+			/* Enable this if we're doing async rpc. */
+			/* We must check the call-id matches the outstanding callid. */
+			if(pipe_init_outgoing_data(p)) {
+				/* Send a cancel_ack PDU reply. */
+				/* We should probably check the auth-verifier here. */
+				reply = setup_cancel_ack_reply(p, &rpc_in);
+			}
+			break;
+#endif
+
+		case RPC_ORPHANED:
+			/* We should probably check the auth-verifier here.
+			   For now just free all client data and continue processing. */
+			DEBUG(3,("process_complete_pdu: RPC_ORPHANED. Abandoning rpc call.\n"));
+			reply = True;
+			break;
+
 		default:
 			DEBUG(0,("process_complete_pdu: Unknown rpc type = %u received.\n", (unsigned int)p->hdr.pkt_type ));
 			break;
@@ -815,7 +884,13 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 	 */
 
 	if(p->in_data.pdu_needed_len == 0) {
-		return unmarshall_rpc_header(p);
+		ssize_t rret = unmarshall_rpc_header(p);
+		if (rret == -1 || p->in_data.pdu_needed_len > 0) {
+			return rret;
+		}
+		/* If rret == 0 and pdu_needed_len == 0 here we have a PDU that consists
+		   of an RPC_HEADER only. This is a RPC_SHUTDOWN, RPC_CO_CANCEL or RPC_ORPHANED
+		   pdu type. Deal with this in process_complete_pdu(). */
 	}
 
 	/*
