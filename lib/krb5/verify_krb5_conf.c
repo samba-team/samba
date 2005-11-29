@@ -368,6 +368,7 @@ struct entry libdefaults_entries[] = {
     { "capath", krb5_config_list, all_strings },
     { "clockskew", krb5_config_string, check_time },
     { "date_format", krb5_config_string, NULL },
+    { "default_cc_name", krb5_config_string, NULL },
     { "default_etypes", krb5_config_string, NULL },
     { "default_etypes_des", krb5_config_string, NULL },
     { "default_keytab_modify_name", krb5_config_string, NULL },
