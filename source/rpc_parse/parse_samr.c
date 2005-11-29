@@ -778,11 +778,11 @@ inits a structure.
 ********************************************************************/
 
 void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
-		    uint32 flag, NTTIME nt_expire, NTTIME nt_min_age)
+		    uint32 password_properties, NTTIME nt_expire, NTTIME nt_min_age)
 {
 	u_1->min_length_password = min_pass_len;
 	u_1->password_history = pass_hist;
-	u_1->flag = flag;
+	u_1->password_properties = password_properties;
 	
 	/* password never expire */
 	u_1->expire.high = nt_expire.high;
@@ -811,7 +811,7 @@ static BOOL sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
 		return False;
 	if(!prs_uint16("password_history", ps, depth, &u_1->password_history))
 		return False;
-	if(!prs_uint32("flag", ps, depth, &u_1->flag))
+	if(!prs_uint32("password_properties", ps, depth, &u_1->password_properties))
 		return False;
 	if(!smb_io_time("expire", &u_1->expire, ps, depth))
 		return False;

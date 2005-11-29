@@ -165,14 +165,32 @@ static const char* server_role_str(uint32 server_role)
 static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
 {
 	
-	printf("Minimum password length:                     %d\n", info1->min_length_password);
-	printf("Password uniqueness (remember x passwords):  %d\n", info1->password_history);
-	printf("flag:                                        ");
-	if(info1->flag&&2==2) printf("users must open a session to change password ");
-	printf("\n");
+	printf("Minimum password length:\t\t\t%d\n", info1->min_length_password);
+	printf("Password uniqueness (remember x passwords):\t%d\n", info1->password_history);
+	printf("Password Properties:\t\t\t\t0x%08x\n", info1->password_properties);
 
-	printf("password expire in:                          %s\n", display_time(info1->expire));
-	printf("Min password age (allow changing in x days): %s\n", display_time(info1->min_passwordage));
+	if (info1->password_properties & DOMAIN_PASSWORD_COMPLEX)
+		printf("\tDOMAIN_PASSWORD_COMPLEX\n");
+			
+	if (info1->password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE) {
+		printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
+		printf("users must open a session to change password ");
+	}
+			
+	if (info1->password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
+		printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
+			
+	if (info1->password_properties & DOMAIN_LOCKOUT_ADMINS)
+		printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+			
+	if (info1->password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
+		printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
+			
+	if (info1->password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
+		printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
+
+	printf("password expire in:\t\t\t\t%s\n", display_time(info1->expire));
+	printf("Min password age (allow changing in x days):\t%s\n", display_time(info1->min_passwordage));
 }
 
 static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
