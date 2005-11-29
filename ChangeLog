@@ -1,4 +1,11 @@
+2005-11-29  Dave Love  <fx@gnu.org>
+
+	* kcm/connect.c (kcm_loop): Use HAVE_DOOR_CREATE, not HAVE_DOORS.
+	
 2005-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/verify_krb5_conf.c (libdefaults_entries): add
+	default_cc_name
 
 	* lib/hdb/hdb.c: Only match db databases on filename starting with
 	'/'.
