@@ -143,6 +143,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 #define SAMR_CONNECT4          0x3E
+#define SAMR_CHGPASSWD3        0x3F
 #define SAMR_CONNECT5          0x40
 
 typedef struct logon_hours_info
@@ -1809,6 +1810,48 @@ typedef struct r_samr_chgpasswd_user_info
 	NTSTATUS status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
 } SAMR_R_CHGPASSWD_USER;
+
+/* SAMR_Q_CHGPASSWD3 */
+typedef struct q_samr_chgpasswd3
+{
+	uint32 ptr_0;
+
+	UNIHDR hdr_dest_host; /* server name unicode header */
+	UNISTR2 uni_dest_host; /* server name unicode string */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNISTR2 uni_user_name;    /* username unicode string */
+
+	SAMR_ENC_PASSWD nt_newpass;
+	SAMR_ENC_HASH nt_oldhash;
+
+	uint32 lm_change; /* 0x0000 0001 */
+
+	SAMR_ENC_PASSWD lm_newpass;
+	SAMR_ENC_HASH lm_oldhash;
+
+	SAMR_ENC_PASSWD password3;
+
+} SAMR_Q_CHGPASSWD3;
+
+/* SAMR_CHANGE_REJECT */
+typedef struct samr_change_reject
+{
+	uint32 reject_reason;
+	uint32 unknown1;
+	uint32 unknown2;
+
+} SAMR_CHANGE_REJECT;
+
+/* SAMR_R_CHGPASSWD3 */
+typedef struct r_samr_chgpasswd3
+{
+	SAM_UNK_INFO_1 info;
+	SAMR_CHANGE_REJECT reject;
+	NTSTATUS status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
+
+} SAMR_R_CHGPASSWD3;
+
 
 
 /* SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN */
