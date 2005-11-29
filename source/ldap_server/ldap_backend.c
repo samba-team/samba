@@ -51,11 +51,6 @@ void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
 
 struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn, uint8_t scope)
 {
-	if (scope == LDAP_SEARCH_SCOPE_BASE
-	    && strcasecmp("", dn) == 0) {
-		return conn->rootDSE;
-	}
-
 	return conn->default_partition;
 }
 
