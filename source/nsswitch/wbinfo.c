@@ -30,7 +30,7 @@
 
 extern int winbindd_fd;
 
-static char winbind_separator(void)
+static char winbind_separator_int(BOOL strict)
 {
 	struct winbindd_response response;
 	static BOOL got_sep;
@@ -46,6 +46,9 @@ static char winbind_separator(void)
 	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("could not obtain winbind separator!\n");
+		if (strict) {
+			return -1;
+		}
 		/* HACK: (this module should not call lp_ funtions) */
 		return *lp_winbind_separator();
 	}
@@ -55,11 +58,19 @@ static char winbind_separator(void)
 
 	if (!sep) {
 		d_printf("winbind separator was NULL!\n");
+		if (strict) {
+			return -1;
+		}
 		/* HACK: (this module should not call lp_ funtions) */
 		sep = *lp_winbind_separator();
 	}
 	
 	return sep;
+}
+
+static char winbind_separator(void)
+{
+	return winbind_separator_int(False);
 }
 
 static const char *get_winbind_domain(void)
@@ -1009,7 +1020,8 @@ enum {
 	OPT_USERDOMGROUPS,
 	OPT_ALIASMEM,
 	OPT_GROUPMEM,
-	OPT_USERSIDS
+	OPT_USERSIDS,
+	OPT_SEPARATOR
 };
 
 int main(int argc, char **argv)
@@ -1061,6 +1073,7 @@ int main(int argc, char **argv)
 #ifdef WITH_FAKE_KASERVER
  		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
 #endif
+		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -1268,6 +1281,10 @@ int main(int argc, char **argv)
 		case OPT_GETDCNAME:
 			wbinfo_getdcname(string_arg);
 			break;
+		case OPT_SEPARATOR:
+			d_printf("%c\n", winbind_separator_int(True));
+			break;
+
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 			break;
