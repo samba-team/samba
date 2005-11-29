@@ -45,8 +45,28 @@ user: computer
 template: userTemplate
 template: groupTemplate
 
+# the rootDSE module looks in this record for its base data
+dn: cn=ROOTDSE
+subschemaSubentry: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
+dsServiceName: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,${BASEDN}
+namingContexts: ${BASEDN}
+namingContexts: CN=Configuration,${BASEDN}
+namingContexts: CN=Schema,CN=Configuration,${BASEDN}
+defaultNamingContext: ${BASEDN}
+rootDomainNamingContext: ${BASEDN}
+configurationNamingContext: CN=Configuration,${BASEDN}
+schemaNamingContext: CN=Schema,CN=Configuration,${BASEDN}
+supportedLDAPVersion: 3
+supportedSASLMechanisms: GSS-SPNEGO
+dnsHostName: ${DNSNAME}
+ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
+serverName: CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,${BASEDN}
+domainFunctionality: 0
+forestFunctionality: 0
+domainControllerFunctionality: 2
+
 #Add modules to the list to activate them by default
 #beware often order is important
 dn: @MODULES
-@LIST: samldb,operational,objectguid,rdn_name
+@LIST: rootdse,samldb,operational,objectguid,rdn_name
 
