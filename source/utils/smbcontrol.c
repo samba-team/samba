@@ -508,12 +508,12 @@ static BOOL do_poolusage(const struct process_id pid,
 		return False;
 	}
 
+	message_register(MSG_POOL_USAGE, print_string_cb);
+
 	/* Send a message and register our interest in a reply */
 
 	if (!send_message(pid, MSG_REQ_POOL_USAGE, NULL, 0, False))
 		return False;
-
-	message_register(MSG_POOL_USAGE, print_string_cb);
 
 	wait_replies(procid_to_pid(&pid) == 0);
 
