@@ -27,7 +27,6 @@ struct ldapsrv_connection {
 	struct auth_session_info *session_info;
 	struct ldapsrv_service *service;
 	struct tls_context *tls;
-	struct ldapsrv_partition *rootDSE;
 	struct ldapsrv_partition *default_partition;
 	struct ldapsrv_partition *partitions;
 

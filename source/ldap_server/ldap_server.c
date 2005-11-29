@@ -280,7 +280,6 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 */
 static void ldapsrv_accept(struct stream_connection *c)
 {
-	struct ldapsrv_partition *rootDSE_part;
 	struct ldapsrv_partition *part;
 	struct ldapsrv_service *ldapsrv_service = 
 		talloc_get_type(c->private, struct ldapsrv_service);
@@ -327,21 +326,6 @@ static void ldapsrv_accept(struct stream_connection *c)
 		ldapsrv_terminate_connection(conn, "failed to setup anonymous session info");
 		goto done;
 	}
-
-	rootDSE_part = talloc(conn, struct ldapsrv_partition);
-	if (rootDSE_part == NULL) {
-		ldapsrv_terminate_connection(conn, "talloc failed");
-	}
-
-	rootDSE_part->base_dn = ""; /* RootDSE */
-	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
-	if (!NT_STATUS_IS_OK(rootDSE_part->ops->Init(rootDSE_part, conn))) {
-		ldapsrv_terminate_connection(conn, "rootDSE Init failed");
-		goto done;
-	}
-
-	conn->rootDSE = rootDSE_part;
-	DLIST_ADD_END(conn->partitions, rootDSE_part, struct ldapsrv_partition *);
 
 	part = talloc(conn, struct ldapsrv_partition);
 	if (part == NULL) {
