@@ -691,9 +691,8 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
 /*
  * Get the cc ops that is registered in `context' to handle the
  * `prefix'. `prefix' can be a complete credential cache name or a
- * prefix, the function will only use part up to the first colon (:).
- * If there are no colon, a file credential cache will be returned for
- * compatibility reasons. Returns NULL if ops not found.
+ * prefix, the function will only use part up to the first colon (:)
+ * if there is one.  Returns NULL if ops not found.
  */
 
 const krb5_cc_ops *
@@ -702,17 +701,17 @@ krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
     char *p, *p1;
     int i;
     
+    if (prefix[0] == '/')
+	return &krb5_fcc_ops;
+
     p = strdup(prefix);
     if (p == NULL) {
 	krb5_set_error_string(context, "malloc - out of memory");
 	return NULL;
     }
     p1 = strchr(p, ':');
-    if (p1 == NULL) {
-	free(p1);
-	return &krb5_fcc_ops;
-    }
-    *p1 = '\0';
+    if (p1)
+	*p1 = '\0';
 
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	if(strcmp(context->cc_ops[i].prefix, p) == 0) {
