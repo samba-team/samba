@@ -615,7 +615,7 @@ kcm_loop(void)
     ndescr = init_sockets(&d);
     if (ndescr <= 0) {
 	krb5_warnx(kcm_context, "No sockets!");
-#ifndef HAVE_DOORS
+#ifndef HAVE_DOOR_CREATE
 	exit(1);
 #endif
     }
