@@ -892,6 +892,55 @@ BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 	return True;
 }
 
+#if 0
+/*******************************************************************
+ Marshall a cancel_ack pdu.
+ We should probably check the auth-verifier here.
+*******************************************************************/
+
+BOOL setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
+{
+	prs_struct outgoing_pdu;
+	RPC_HDR ack_reply_hdr;
+
+	/* Free any memory in the current return data buffer. */
+	prs_mem_free(&p->out_data.rdata);
+
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	prs_init( &outgoing_pdu, 0, p->mem_ctx, MARSHALL);
+	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+
+	/*
+	 * Initialize a cancel_ack header.
+	 */
+
+	init_rpc_hdr(&ack_reply_hdr, RPC_CANCEL_ACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+			p->hdr.call_id, RPC_HEADER_LEN, 0);
+
+	/*
+	 * Marshall the header into the outgoing PDU.
+	 */
+
+	if(!smb_io_rpc_hdr("", &ack_reply_hdr, &outgoing_pdu, 0)) {
+		DEBUG(0,("setup_cancel_ack_reply: marshalling of RPC_HDR failed.\n"));
+		prs_mem_free(&outgoing_pdu);
+		return False;
+	}
+
+	p->out_data.data_sent_length = 0;
+	p->out_data.current_pdu_len = prs_offset(&outgoing_pdu);
+	p->out_data.current_pdu_sent = 0;
+
+	prs_mem_free(&outgoing_pdu);
+	return True;
+}
+#endif
+
 /*******************************************************************
  Ensure a bind request has the correct abstract & transfer interface.
  Used to reject unknown binds from Win2k.

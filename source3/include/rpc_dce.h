@@ -26,15 +26,27 @@
 /* DCE/RPC packet types */
 
 enum RPC_PKT_TYPE {
-	RPC_REQUEST = 0x00,
-	RPC_RESPONSE = 0x02,
-	RPC_FAULT    = 0x03,
-	RPC_BIND     = 0x0B,
-	RPC_BINDACK  = 0x0C,
-	RPC_BINDNACK = 0x0D,
-	RPC_ALTCONT  = 0x0E,
-	RPC_ALTCONTRESP = 0x0F,
-	RPC_AUTH3 = 0x10 /* not the real name!  this is undocumented! */
+	RPC_REQUEST  = 0x00, 	/* Ordinary request. */
+	RPC_PING     = 0x01,	/* Connectionless is server alive ? */
+	RPC_RESPONSE = 0x02,	/* Ordinary reply. */
+	RPC_FAULT    = 0x03,	/* Fault in processing of call. */
+	RPC_WORKING  = 0x04,	/* Connectionless reply to a ping when server busy. */
+	RPC_NOCALL   = 0x05,	/* Connectionless reply to a ping when server has lost part of clients call. */
+	RPC_REJECT   = 0x06,	/* Refuse a request with a code. */
+	RPC_ACK      = 0x07,	/* Connectionless client to server code. */
+	RPC_CL_CANCEL= 0x08,	/* Connectionless cancel. */
+	RPC_FACK     = 0x09,	/* Connectionless fragment ack. Both client and server send. */
+	RPC_CANCEL_ACK = 0x0A,	/* Server ACK to client cancel request. */
+	RPC_BIND     = 0x0B,	/* Bind to interface. */
+	RPC_BINDACK  = 0x0C,	/* Server ack of bind. */
+	RPC_BINDNACK = 0x0D,	/* Server nack of bind. */
+	RPC_ALTCONT  = 0x0E,	/* Alter auth. */
+	RPC_ALTCONTRESP = 0x0F,	/* Reply to alter auth. */
+	RPC_AUTH3    = 0x10, 	/* not the real name!  this is undocumented! */
+	RPC_SHUTDOWN = 0x11,	/* Server to client request to shutdown. */
+	RPC_CO_CANCEL= 0x12,	/* Connection-oriented cancel request. */
+	RPC_ORPHANED = 0x13	/* Client telling server it's aborting a partially sent request or telling
+				   server to stop sending replies. */
 };
 
 /* DCE/RPC flags */
