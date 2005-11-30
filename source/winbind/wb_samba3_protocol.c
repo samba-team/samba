@@ -40,9 +40,9 @@ NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 	struct wbsrv_samba3_call *s3_call;
 
 	if (blob.length != sizeof(s3_call->request)) {
-		DEBUG(0,("wbsrv_samba3_pull_request: invalid blob length %u should be %u\n"
+		DEBUG(0,("wbsrv_samba3_pull_request: invalid blob length %lu should be %lu\n"
 			 " make sure you use the correct winbind client tools!\n",
-			 blob.length, sizeof(s3_call->request)));
+			 (long)blob.length, (long)sizeof(s3_call->request)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
