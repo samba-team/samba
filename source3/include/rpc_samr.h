@@ -594,7 +594,7 @@ typedef struct sam_unknown_info_1_inf
 {
 	uint16 min_length_password;
 	uint16 password_history;
-	uint32 flag;
+	uint32 password_properties;
 	NTTIME expire;
 	NTTIME min_passwordage;
 
