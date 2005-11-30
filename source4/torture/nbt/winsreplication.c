@@ -47,7 +47,7 @@
 #define CHECK_VALUE_UINT64(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%llu - should be %llu\n", \
-		       __location__, #v, v, correct); \
+		       __location__, #v, (long long)v, (long long)correct); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -230,7 +230,7 @@ static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
 
 	printf("%s\n", nbt_name_string(mem_ctx, &name->name));
 	printf("\tTYPE:%u STATE:%u NODE:%u STATIC:%u VERSION_ID: %llu\n",
-		name->type, name->state, name->node, name->is_static, name->version_id);
+		name->type, name->state, name->node, name->is_static, (long long)name->version_id);
 	printf("\tRAW_FLAGS: 0x%08X OWNER: %-15s\n",
 		name->raw_flags, name->owner);
 	for (i=0;i<name->num_addresses;i++) {
@@ -296,8 +296,8 @@ static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 		struct wrepl_wins_owner *partner = &pull_table.out.partners[i];
 		printf("%s   max_version=%6llu   min_version=%6llu type=%d\n",
 		       partner->address, 
-		       partner->max_version, 
-		       partner->min_version, 
+		       (long long)partner->max_version, 
+		       (long long)partner->min_version, 
 		       partner->type);
 
 		pull_names.in.assoc_ctx = associate.out.assoc_ctx;

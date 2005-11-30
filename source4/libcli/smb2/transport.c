@@ -170,7 +170,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 
 	if (!req) {
 		DEBUG(1,("Discarding unmatched reply with seqnum 0x%llx op %d\n", 
-			 seqnum, SVAL(hdr, SMB2_HDR_OPCODE)));
+			 (long long)seqnum, SVAL(hdr, SMB2_HDR_OPCODE)));
 		goto error;
 	}
 
@@ -204,7 +204,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 		}
 	}
 
-	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", req->seqnum));
+	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", (long long)req->seqnum));
 	dump_data(5, req->in.body, req->in.body_size);
 
 	/* if this request has an async handler then call that to
@@ -273,7 +273,7 @@ void smb2_transport_send(struct smb2_request *req)
 
 	_smb_setlen2(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 
-	DEBUG(2, ("SMB2 send seqnum=0x%llx\n", req->seqnum));
+	DEBUG(2, ("SMB2 send seqnum=0x%llx\n", (long long)req->seqnum));
 	dump_data(5, req->out.body, req->out.body_size);
 
 	/* check if the transport is dead */

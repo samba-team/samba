@@ -1471,7 +1471,7 @@ BOOL torture_denytest1(void)
 			tdif = usec_time_diff(&tv, &tv_start);
 			tdif /= 1000;
 			printf("%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
-			       tdif,
+			       (long long)tdif,
 			       fname,
 			       denystr(denytable1[i].deny1),
 			       openstr(denytable1[i].mode1),
@@ -1568,7 +1568,7 @@ BOOL torture_denytest2(void)
 			tdif = usec_time_diff(&tv, &tv_start);
 			tdif /= 1000;
 			printf("%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
-				tdif,
+			       (long long)tdif,
 			       fname,
 			       denystr(denytable2[i].deny1),
 			       openstr(denytable2[i].mode1),

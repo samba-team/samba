@@ -51,8 +51,8 @@ static NTSTATUS torture_smb2_close(struct smb2_tree *tree, struct smb2_handle ha
 		printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
 		printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
 		printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
-		printf("alloc_size      = %lld\n", io.out.alloc_size);
-		printf("size            = %lld\n", io.out.size);
+		printf("alloc_size      = %lld\n", (long long)io.out.alloc_size);
+		printf("size            = %lld\n", (long long)io.out.size);
 		printf("file_attr       = 0x%x\n", io.out.file_attr);
 	}
 
@@ -170,12 +170,12 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 		printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));
 		printf("write_time      = %s\n", nt_time_string(tmp_ctx, io.out.write_time));
 		printf("change_time     = %s\n", nt_time_string(tmp_ctx, io.out.change_time));
-		printf("alloc_size      = %lld\n", io.out.alloc_size);
-		printf("size            = %lld\n", io.out.size);
+		printf("alloc_size      = %lld\n", (long long)io.out.alloc_size);
+		printf("size            = %lld\n", (long long)io.out.size);
 		printf("file_attr       = 0x%x\n", io.out.file_attr);
 		printf("handle          = %016llx%016llx\n", 
-		       io.out.handle.data[0], 
-		       io.out.handle.data[1]);
+		       (long long)io.out.handle.data[0], 
+		       (long long)io.out.handle.data[1]);
 	}
 
 	talloc_free(tmp_ctx);
