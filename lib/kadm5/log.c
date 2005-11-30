@@ -97,9 +97,14 @@ kadm5_log_init (kadm5_server_context *context)
     if (log_context->log_fd != -1)
 	return 0;
     fd = open (log_context->log_file, O_RDWR | O_CREAT, 0600);
-    if (fd < 0)
+    if (fd < 0) {
+	krb5_set_error_string(context->context, "kadm5_log_init: open %s",
+			      log_context->log_file);
 	return errno;
+    }
     if (flock (fd, LOCK_EX) < 0) {
+	krb5_set_error_string(context->context, "kadm5_log_init: flock %s",
+			      log_context->log_file);
 	close (fd);
 	return errno;
     }
