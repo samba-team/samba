@@ -44,8 +44,8 @@ kstash="../../kdc/kstash"
 hprop="../../kdc/hprop"
 hpropd="../../kdc/hpropd"
 
-propdb="${hprop} --database=current-db -n"
-propddb="${hpropd} --database=current-db -n"
+propdb="${hprop} --database=./current-db -n"
+propddb="${hpropd} --database=./current-db -n"
 
 
 KRB5_CONFIG="${objdir}/krb5.conf"
