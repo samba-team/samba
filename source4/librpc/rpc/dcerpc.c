@@ -1557,7 +1557,7 @@ static void dcerpc_alter_recv_data(struct dcerpc_connection *conn, struct ncacn_
 	if (pipe->conn->security_state.auth_info &&
 	    pkt->u.alter_resp.auth_info.length) {
 		c->status = ndr_pull_struct_blob(
-			&pkt->u.alter_resp.auth_info, c,
+			&pkt->u.alter_resp.auth_info, pipe,
 			pipe->conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!composite_is_ok(c)) return;
