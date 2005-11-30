@@ -53,6 +53,7 @@ static struct hdb_method methods[] = {
 #endif
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
     {"ldap:",	hdb_ldap_create},
+    {"ldapi:",	hdb_ldapi_create},
 #endif
     {NULL,	NULL}
 };
@@ -334,7 +335,10 @@ find_method (const char *filename, const char **rest)
 	}
     }
 #if defined(HAVE_DB1) || defined(HAVE_DB3) || defined(HAVE_NDBM)
-    if (filename[0] == '/') {
+    if (strncmp(filename, "/", 1) == 0
+	|| strncmp(filename, "./", 2) == 0
+	|| strncmp(filename, "../", 3) == 0)
+    {
 	*rest = filename;
 	return &dbmetod;
     }
