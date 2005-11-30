@@ -192,7 +192,7 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 	}
 
 	if (blob.length < (NBT_HDR_SIZE + SMB2_MIN_SIZE)) {
-		DEBUG(2,("Invalid SMB2 packet length count %d\n", blob.length));
+		DEBUG(2,("Invalid SMB2 packet length count %ld\n", (long)blob.length));
 		smbsrv_terminate_connection(smb_conn, "Invalid SMB2 packet");
 		return NT_STATUS_OK;
 	}

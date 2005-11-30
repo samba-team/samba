@@ -87,15 +87,15 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 	}
 
 	if ((NBT_HDR_SIZE + MIN_SMB_SIZE) > blob.length) {
-		DEBUG(2,("Invalid SMB packet: length %d\n", blob.length));
+		DEBUG(2,("Invalid SMB packet: length %ld\n", (long)blob.length));
 		smbsrv_terminate_connection(smb_conn, "Invalid SMB packet");
 		return NT_STATUS_OK;
 	}
 
 	/* Make sure this is an SMB packet */
 	if (IVAL(blob.data, NBT_HDR_SIZE) != SMB_MAGIC) {
-		DEBUG(2,("Non-SMB packet of length %d. Terminating connection\n",
-			 blob.length));
+		DEBUG(2,("Non-SMB packet of length %ld. Terminating connection\n",
+			 (long)blob.length));
 		smbsrv_terminate_connection(smb_conn, "Non-SMB packet");
 		return NT_STATUS_OK;
 	}
