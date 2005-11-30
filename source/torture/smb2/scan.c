@@ -78,8 +78,8 @@ BOOL torture_smb2_getinfo_scan(void)
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-				printf("file level 0x%04x is %d bytes - %s\n", 
-				       io.in.level, io.out.blob.length, nt_errstr(status));
+				printf("file level 0x%04x is %ld bytes - %s\n", 
+				       io.in.level, (long)io.out.blob.length, nt_errstr(status));
 				dump_data(1, io.out.blob.data, io.out.blob.length);
 			}
 
@@ -88,8 +88,8 @@ BOOL torture_smb2_getinfo_scan(void)
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 			    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-				printf("dir  level 0x%04x is %d bytes - %s\n", 
-				       io.in.level, io.out.blob.length, nt_errstr(status));
+				printf("dir  level 0x%04x is %ld bytes - %s\n", 
+				       io.in.level, (long)io.out.blob.length, nt_errstr(status));
 				dump_data(1, io.out.blob.data, io.out.blob.length);
 			}
 		}
@@ -183,8 +183,8 @@ BOOL torture_smb2_find_scan(void)
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-			printf("find level 0x%04x is %d bytes - %s\n", 
-			       io.in.level, io.out.blob.length, nt_errstr(status));
+			printf("find level 0x%04x is %ld bytes - %s\n", 
+			       io.in.level, (long)io.out.blob.length, nt_errstr(status));
 			dump_data(1, io.out.blob.data, io.out.blob.length);
 		}
 	}

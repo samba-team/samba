@@ -224,16 +224,16 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	d_printf("\tchange_time:    %s\n", nt_time_string(tmp_ctx, io.all_info2.out.change_time));
 	d_printf("\tattrib:         0x%x\n", io.all_info2.out.attrib);
 	d_printf("\tunknown1:       0x%x\n", io.all_info2.out.unknown1);
-	d_printf("\talloc_size:     %llu\n", (uint64_t)io.all_info2.out.alloc_size);
-	d_printf("\tsize:           %llu\n", (uint64_t)io.all_info2.out.size);
+	d_printf("\talloc_size:     %llu\n", (long long)io.all_info2.out.alloc_size);
+	d_printf("\tsize:           %llu\n", (long long)io.all_info2.out.size);
 	d_printf("\tnlink:          %u\n", io.all_info2.out.nlink);
 	d_printf("\tdelete_pending: %u\n", io.all_info2.out.delete_pending);
 	d_printf("\tdirectory:      %u\n", io.all_info2.out.directory);
-	d_printf("\tfile_id:        %llu\n", io.all_info2.out.file_id);
+	d_printf("\tfile_id:        %llu\n", (long long)io.all_info2.out.file_id);
 	d_printf("\tea_size:        %u\n", io.all_info2.out.ea_size);
 	d_printf("\taccess_mask:    0x%08x\n", io.all_info2.out.access_mask);
-	d_printf("\tposition:       0x%llx\n", io.all_info2.out.position);
-	d_printf("\tmode:           0x%llx\n", io.all_info2.out.mode);
+	d_printf("\tposition:       0x%llx\n", (long long)io.all_info2.out.position);
+	d_printf("\tmode:           0x%llx\n", (long long)io.all_info2.out.mode);
 
 	/* short name, if any */
 	io.generic.level = RAW_FILEINFO_ALT_NAME_INFORMATION;

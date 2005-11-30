@@ -71,7 +71,7 @@ static uint64_t winsdb_allocate_version(struct ldb_context *wins_db)
 	if (ret != 0) goto failed;
 	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
 	if (ret != 0) goto failed;
-	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", maxVersion);
+	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", (long long)maxVersion);
 	if (ret != 0) goto failed;
 
 	ret = ldb_modify(wins_db, msg);
@@ -539,7 +539,7 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	ret |= ldb_msg_add_fmt(msg, "isStatic", "%u", rec->is_static);
 	ret |= ldb_msg_add_string(msg, "expireTime", 
 				  ldb_timestring(msg, rec->expire_time));
-	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", rec->version);
+	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", (long long)rec->version);
 	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
 	ret |= ldb_msg_add_empty(msg, "address", 0);
 	for (i=0;rec->addresses[i];i++) {

@@ -578,8 +578,8 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 
 	/* Caller must pad to right boundary */
 	if (output_token.length != (length + sig_length)) {
-		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap length [%d] does not match caller length [%d] plus sig size [%d] = [%d]\n", 
-			  output_token.length, length, sig_length, length + sig_length));
+		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap length [%ld] does not match caller length [%ld] plus sig size [%ld] = [%ld]\n", 
+			  (long)output_token.length, (long)length, (long)sig_length, (long)(length + sig_length)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -685,8 +685,8 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 
 	/* Caller must pad to right boundary */
 	if (output_token.length != (length + sig_length)) {
-		DEBUG(1, ("gensec_gssapi_sign_packet: GSS Wrap length [%d] does not match caller length [%d] plus sig size [%d] = [%d]\n", 
-			  output_token.length, length, sig_length, length + sig_length));
+		DEBUG(1, ("gensec_gssapi_sign_packet: GSS Wrap length [%ld] does not match caller length [%ld] plus sig size [%ld] = [%ld]\n", 
+			  (long)output_token.length, (long)length, (long)sig_length, (long)(length + sig_length)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
