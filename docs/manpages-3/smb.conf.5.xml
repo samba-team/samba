@@ -522,8 +522,8 @@ alias|alias|alias|alias...
 		<listitem><para>
 		controls what the default case is for new filenames (ie. files that don't currently exist in the filesystem).
 		Default <emphasis>lower</emphasis>.  IMPORTANT NOTE: This option will be used to modify the case of
-		<emphasis>all</emphasis> incoming client filenames, not just new filenames if the options case <smbconfoption
-		name="case sensitive">yes</smbconfoption>, <smbconfoption name="case preserve">No</smbconfoption>,
+		<emphasis>all</emphasis> incoming client filenames, not just new filenames if the options <smbconfoption
+		name="case sensitive">yes</smbconfoption>, <smbconfoption name="preserve case">No</smbconfoption>,
 		<smbconfoption name="short preserve case">No</smbconfoption> are set.  This change is needed as part of the
 		optimisations for directories containing large numbers of files.
 		</para></listitem>
