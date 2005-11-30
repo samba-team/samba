@@ -166,7 +166,8 @@ enum ndr_err_code {
 	NDR_ERR_BUFSIZE,
 	NDR_ERR_ALLOC,
 	NDR_ERR_RANGE,
-	NDR_ERR_TOKEN
+	NDR_ERR_TOKEN,
+	NDR_ERR_IPV4ADDRESS
 };
 
 enum ndr_compression_alg {

@@ -570,7 +570,11 @@ NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **
 NTSTATUS ndr_push_ipv4address(struct ndr_push *ndr, int ndr_flags, const char *address)
 {
 	uint32_t addr;
-	if (!is_ipaddress(address)) return NT_STATUS_INVALID_PARAMETER_MIX;
+	if (!is_ipaddress(address)) {
+		return ndr_push_error(ndr, NDR_ERR_IPV4ADDRESS,
+				      "Invalid IPv4 address: '%s'", 
+				      address);
+	}
 	addr = inet_addr(address);
 	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, htonl(addr)));
 	return NT_STATUS_OK;
