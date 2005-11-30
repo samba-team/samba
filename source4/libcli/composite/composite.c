@@ -26,6 +26,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "lib/messaging/irpc.h"
+#include "libcli/nbt/libnbt.h"
 
 /*
   block until a composite function has completed, then return the status
@@ -150,6 +151,16 @@ void composite_continue_irpc(struct composite_context *ctx,
 void composite_continue_smb(struct composite_context *ctx,
 			    struct smbcli_request *new_req,
 			    void (*continuation)(struct smbcli_request *),
+			    void *private_data)
+{
+	if (composite_nomem(new_req, ctx)) return;
+	new_req->async.fn = continuation;
+	new_req->async.private = private_data;
+}
+
+void composite_continue_nbt(struct composite_context *ctx,
+			    struct nbt_name_request *new_req,
+			    void (*continuation)(struct nbt_name_request *),
 			    void *private_data)
 {
 	if (composite_nomem(new_req, ctx)) return;
