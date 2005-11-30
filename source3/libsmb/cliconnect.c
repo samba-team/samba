@@ -163,6 +163,7 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	char *p;
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 
+	memset(cli->outbuf, '\0', smb_size);
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
