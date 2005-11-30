@@ -604,12 +604,16 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	cli_credentials_set_conf(session_info->credentials);
+#if 0
+	/* disabled for the moment. abartlet has plans to change this
+	   to set a flag saying 'get machine account credentials from
+	   here' rather than this system. */
 	if (!NT_STATUS_IS_OK(cli_credentials_set_machine_account(session_info->credentials))) {
 		/* perhaps no credentials, we might not be joined to a domain */
 		talloc_free(session_info->credentials);
 		session_info->credentials = NULL;
 	}
-	
+#endif
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
