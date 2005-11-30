@@ -47,7 +47,7 @@ static struct {
 	if (io.all_info2.out.field != d->stype.field) { \
 		printf("(%s) %s/%s should be 0x%llx - 0x%llx\n", __location__, \
 		       #call_name, #field, \
-		       (uint64_t)io.all_info2.out.field, (uint64_t)d->stype.field); \
+		       (long long)io.all_info2.out.field, (long long)d->stype.field); \
 		ret = False; \
 	}} while (0)
 
