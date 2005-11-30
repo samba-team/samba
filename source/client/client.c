@@ -3088,7 +3088,12 @@ static void readline_callback(void)
 		goto again;
 	}
       
-	cli_chkpath(cli, "\\");
+	/* Ping the server to keep the connection alive using SMBecho. */
+	{
+		unsigned char garbage[16];
+		memset(garbage, 0xf0, sizeof(garbage));
+		cli_echo(cli, garbage, sizeof(garbage));
+	}
 }
 
 /****************************************************************************
