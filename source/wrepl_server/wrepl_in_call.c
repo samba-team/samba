@@ -246,14 +246,17 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 				 "(versionID>=%llu)(versionID<=%llu))",
 				 owner->owner.address,
 				 WREPL_STATE_ACTIVE, WREPL_STATE_TOMBSTONE,
-				 owner_in->min_version, owner_in->max_version);
+				 (long long)owner_in->min_version, 
+				 (long long)owner_in->max_version);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	talloc_steal(call, res);
 	if (res->count == 0) {
 		DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
-			res->count, owner_in->address, owner_in->min_version, owner_in->max_version,
+			res->count, owner_in->address, 
+			(long long)owner_in->min_version, 
+			(long long)owner_in->max_version,
 			call->wreplconn->partner->address));
 		return NT_STATUS_OK;
 	}
@@ -275,7 +278,9 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	qsort(names, res->count, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
 
 	DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
-		res->count, owner_in->address, owner_in->min_version, owner_in->max_version,
+		res->count, owner_in->address, 
+		(long long)owner_in->min_version, 
+		(long long)owner_in->max_version,
 		call->wreplconn->partner->address));
 
 	reply_out->num_names	= res->count;

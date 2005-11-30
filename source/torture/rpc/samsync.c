@@ -211,7 +211,9 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 #define TEST_UINT64_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
               printf("%s: uint64 mismatch: " #i1 ": 0x%016llx (%lld) != " #i2 ": 0x%016llx (%lld)\n", \
-		     __location__, i1, i1, i2, i2);\
+		     __location__, \
+		     (long long)i1, (long long)i1, \
+		     (long long)i2, (long long)i2);\
 	      ret = False;\
 	} \
 } while (0)
@@ -318,7 +320,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 	printf("\tsequence_nums[%d/%s]=%llu\n",
 	       database_id, domain->domain_name.string,
-	       samsync_state->seq_num[database_id]);
+	       (long long)samsync_state->seq_num[database_id]);
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		q[levels[i]].in.domain_handle = samsync_state->domain_handle[database_id];
@@ -384,7 +386,7 @@ static BOOL samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 	printf("\tsequence_nums[%d/PRIVS]=%llu\n",
 	       database_id, 
-	       samsync_state->seq_num[database_id]);
+	       (long long)samsync_state->seq_num[database_id]);
 	return True;
 }
 

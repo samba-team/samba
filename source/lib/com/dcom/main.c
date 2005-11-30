@@ -319,7 +319,7 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 		return status;
 	}
 
-	DEBUG(2, ("Successfully connected to OXID %llx\n", oxid));
+	DEBUG(2, ("Successfully connected to OXID %llx\n", (long long)oxid));
 	
 	*pp = p;
 	talloc_free(tmp_ctx);

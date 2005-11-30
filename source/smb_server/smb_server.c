@@ -44,7 +44,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 	}
 
 	if (blob.length < (NBT_HDR_SIZE + MIN_SMB_SIZE)) {
-		DEBUG(2,("Invalid SMB packet length count %d\n", blob.length));
+		DEBUG(2,("Invalid SMB packet length count %ld\n", (long)blob.length));
 		smbsrv_terminate_connection(smb_conn, "Invalid SMB packet");
 		return NT_STATUS_OK;
 	}

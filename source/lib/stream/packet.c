@@ -337,8 +337,8 @@ next_partial:
 
 	if (pc->packet_size > pc->num_read) {
 		/* the caller made an error */
-		DEBUG(0,("Invalid packet_size %u greater than num_read %u\n",
-			 pc->packet_size, pc->num_read));
+		DEBUG(0,("Invalid packet_size %lu greater than num_read %lu\n",
+			 (long)pc->packet_size, (long)pc->num_read));
 		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}

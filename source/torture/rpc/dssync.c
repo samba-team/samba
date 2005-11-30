@@ -476,14 +476,14 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 
 			if (r.in.level == 5) {
 				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
-					r.in.req.req5.highwatermark.tmp_highest_usn,
-					r.in.req.req5.highwatermark.highest_usn));
+					(long long)r.in.req.req5.highwatermark.tmp_highest_usn,
+					(long long)r.in.req.req5.highwatermark.highest_usn));
 			}
 
 			if (r.in.level == 8) {
 				DEBUG(0,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
-					r.in.req.req8.highwatermark.tmp_highest_usn,
-					r.in.req.req8.highwatermark.highest_usn));
+					(long long)r.in.req.req8.highwatermark.tmp_highest_usn,
+					(long long)r.in.req.req8.highwatermark.highest_usn));
 			}
 
 			status = dcerpc_drsuapi_DsGetNCChanges(ctx->new_dc.drsuapi.pipe, ctx, &r);
@@ -509,8 +509,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 
 			if (out_level == 1) {
 				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
-					ctr1->new_highwatermark.tmp_highest_usn,
-					ctr1->new_highwatermark.highest_usn));
+					(long long)ctr1->new_highwatermark.tmp_highest_usn,
+					(long long)ctr1->new_highwatermark.highest_usn));
 
 				test_analyse_objects(ctx, ctr1->first_object);
 
@@ -532,8 +532,8 @@ static BOOL test_FetchData(struct DsSyncTest *ctx)
 
 			if (out_level == 6) {
 				DEBUG(0,("end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",y,
-					ctr6->new_highwatermark.tmp_highest_usn,
-					ctr6->new_highwatermark.highest_usn));
+					(long long)ctr6->new_highwatermark.tmp_highest_usn,
+					(long long)ctr6->new_highwatermark.highest_usn));
 
 				test_analyse_objects(ctx, ctr6->first_object);
 

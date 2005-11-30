@@ -996,7 +996,8 @@ NTSTATUS wreplsrv_apply_records(struct wreplsrv_partner *partner, struct wreplsr
 
 	DEBUG(4,("apply records count[%u]:owner[%s]:min[%llu]:max[%llu]:partner[%s]\n",
 		names_io->out.num_names, names_io->in.owner.address,
-		names_io->in.owner.min_version, names_io->in.owner.max_version,
+		(long long)names_io->in.owner.min_version, 
+		(long long)names_io->in.owner.max_version,
 		partner->address));
 
 	for (i=0; i < names_io->out.num_names; i++) {

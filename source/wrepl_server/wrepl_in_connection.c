@@ -155,7 +155,7 @@ static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Failed to parse incoming WINS-Replication packet - %s\n",
 			 nt_errstr(status)));
-		DEBUG(10,("packet length %u\n", wreplconn->partial.length));
+		DEBUG(10,("packet length %lu\n", (long)wreplconn->partial.length));
 		NDR_PRINT_DEBUG(wrepl_packet, &call->req_packet);
 		goto failed;
 	}
@@ -168,7 +168,7 @@ static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 	wreplconn->partial_read = 0;
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received WINS-Replication packet of length %u\n", wreplconn->partial.length));
+		DEBUG(10,("Received WINS-Replication packet of length %lu\n", (long)wreplconn->partial.length));
 		NDR_PRINT_DEBUG(wrepl_packet, &call->req_packet);
 	}
 
