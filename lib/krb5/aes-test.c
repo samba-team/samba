@@ -701,12 +701,7 @@ krb_enc_test(krb5_context context)
 
     for (i = 0; i < sizeof(krbencs)/sizeof(krbencs[0]); i++) {
 
-	ret = krb5_enctype_to_keytype(context, 
-				      krbencs[i].enctype,
-				      (krb5_keytype *)&kb.keytype);
-	if (ret)
-	    return ret;
-
+	kb.keytype = krbencs[i].enctype;
 	kb.keyvalue.length = krbencs[i].keylen;
 	kb.keyvalue.data = krbencs[i].key;
 
