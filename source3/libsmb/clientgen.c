@@ -481,6 +481,7 @@ BOOL cli_set_case_sensitive(struct cli_state *cli, BOOL case_sensitive)
 /****************************************************************************
 Send a keepalive packet to the server
 ****************************************************************************/
+
 BOOL cli_send_keepalive(struct cli_state *cli)
 {
         if (cli->fd == -1) {
@@ -494,4 +495,37 @@ BOOL cli_send_keepalive(struct cli_state *cli)
                 return False;
         }
         return True;
+}
+
+/****************************************************************************
+ Send/receive a SMBecho command: ping the server
+****************************************************************************/
+
+BOOL cli_echo(struct cli_state *cli, unsigned char *data, size_t length)
+{
+	char *p;
+
+	SMB_ASSERT(length < 1024);
+
+	memset(cli->outbuf,'\0',smb_size);
+	set_message(cli->outbuf,1,length,True);
+	SCVAL(cli->outbuf,smb_com,SMBecho);
+	SSVAL(cli->outbuf,smb_tid,65535);
+	SSVAL(cli->outbuf,smb_vwv0,1);
+	cli_setup_packet(cli);
+	p = smb_buf(cli->outbuf);
+	memcpy(p, data, length);
+	p += length;
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return False;
+	}
+
+	if (cli_is_error(cli)) {
+		return False;
+	}
+	return True;
 }
