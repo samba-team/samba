@@ -351,8 +351,8 @@ static void test_analyse_objects(struct DsSyncTest *ctx,
 				DEBUG(0,("DN: %s\n", dn));
 				dn_printed = True;
 			}
-			DEBUGADD(0,("ATTR: %s data_blob.length=%u\n",
-				    name, data->length));
+			DEBUGADD(0,("ATTR: %s data_blob.length=%lu\n",
+				    name, (long)data->length));
 			dump_data(0,data->data, data->length);
 		}
 	}

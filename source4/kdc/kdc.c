@@ -143,8 +143,8 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	talloc_steal(tmp_ctx, src_addr);
 	blob.length = nread;
 	
-	DEBUG(2,("Received krb5 UDP packet of length %u from %s:%u\n", 
-		 blob.length, src_addr, (uint16_t)src_port));
+	DEBUG(2,("Received krb5 UDP packet of length %lu from %s:%u\n", 
+		 (long)blob.length, src_addr, (uint16_t)src_port));
 	
 	/* Call krb5 */
 	ret = kdc_socket->process(kdc_socket->kdc, 
@@ -219,8 +219,8 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 	if (!src_addr) goto nomem;
 	src_port = socket_get_peer_port(kdcconn->conn->socket);
 
-	DEBUG(2,("Received krb5 TCP packet of length %u from %s:%u\n", 
-		 blob.length - 4, src_addr, src_port));
+	DEBUG(2,("Received krb5 TCP packet of length %lu from %s:%u\n", 
+		 (long)blob.length - 4, src_addr, src_port));
 
 	/* Call krb5 */
 	input = data_blob_const(blob.data + 4, blob.length - 4); 

@@ -1292,7 +1292,7 @@ static BOOL test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 
 
 		printf("Testing DatabaseDeltas of id %d at %llu\n", 
-		       r.in.database_id, r.in.sequence_num);
+		       r.in.database_id, (long long)r.in.sequence_num);
 
 		do {
 			loop_ctx = talloc_named(mem_ctx, 0, "test_DatabaseDeltas loop context");
