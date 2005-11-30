@@ -74,11 +74,21 @@ set_field(krb5_context context, const krb5_config_binding *binding,
     if(p)
 	*variable = strdup(p);
     else {
+	const char *p1;
 	p = strrchr(dbname, '.');
-	if(p == NULL)
-	    asprintf(variable, "%s.%s", dbname, ext);
+	p1 = strrchr(dbname, '/');
+	if (p1) {
+	    p1++;
+	    if (p1 > p)
+		p = p1 + strlen(p1);
+	}
+	if(p1 == NULL)
+	    asprintf(variable, "%s/%s.%s", HDB_DB_DIR, dbname, ext);
 	else
-	    asprintf(variable, "%.*s.%s", (int)(p - dbname), dbname, ext);
+	    asprintf(variable, "%.*s/%.*s.%s",
+		     (int)(p1 - dbname), dbname, 
+		     (int)(p - p1), p1,
+		     ext);
     }
 }
 
