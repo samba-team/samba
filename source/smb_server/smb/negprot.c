@@ -368,24 +368,33 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 
 		nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
 		
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Failed to start SPNEGO: %s\n", nt_errstr(nt_status)));
-			smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO\n");
-			return;
-		}
+		if (NT_STATUS_IS_OK(nt_status)) {
+			/* Get and push the proposed OID list into the packets */
+			nt_status = gensec_update(gensec_security, req, null_data_blob, &blob);
 
-		nt_status = gensec_update(gensec_security, req, null_data_blob, &blob);
-
-		if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(0, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));
-			smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO - no first token\n");
-			return;
+			if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				DEBUG(0, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));
+				smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO - no first token\n");
+				return;
+			}
+		} else {
+			DEBUG(5, ("Failed to start SPNEGO, falling back to NTLMSSP only: %s\n", nt_errstr(nt_status)));
+			nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
+			
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(0, ("Failed to start SPNEGO as well as NTLMSSP fallback: %s\n", nt_errstr(nt_status)));
+				smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO and NTLMSSP\n");
+				return;
+			}
+			/* NTLMSSP is a client-first exchange */
+			blob = data_blob(NULL, 0);
 		}
 
 		req->smb_conn->negotiate.spnego_negotiated = True;
 	
 		req_grow_data(req, blob.length + 16);
-		/* a NOT very random guid */
+		/* a NOT very random guid, perhaps we should get it
+		 * from the credentials (kitchen sink...) */
 		memset(req->out.ptr, '\0', 16);
 		req->out.ptr += 16;
 
