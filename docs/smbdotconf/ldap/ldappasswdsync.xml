@@ -1,8 +1,10 @@
 <samba:parameter name="ldap passwd sync"
-                 context="G"
-                 advanced="1" developer="1"
-				 type="enum"
-                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+			context="G"
+			advanced="1"
+			developer="1"
+			type="enum"
+			xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+
 <description>
 	<para>
 	This option is used to define whether or not Samba should sync the LDAP password with the NT
@@ -10,7 +12,9 @@
 	change via SAMBA.  
 	</para>
 
-	<para>The <smbconfoption name="ldap passwd sync"/> can be set to one of three values: </para>
+	<para>
+	The <smbconfoption name="ldap passwd sync"/> can be set to one of three values: 
+	</para>
 	
 	<itemizedlist>
 		<listitem>
@@ -29,5 +33,6 @@
 		</listitem>
 	</itemizedlist>		
 </description>
+
 <value type="default">no</value>
 </samba:parameter>
