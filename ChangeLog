@@ -1,3 +1,23 @@
+2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_keytab.3: Memory keytab are now named and
+	refcounted.
+
+	* lib/krb5/test_keytab.c: Test that memory keytab are refcounted.
+
+	* lib/krb5/keytab_memory.c: Index by name and start reference
+	counting on entries.
+	
+2005-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h (krb5_address_type): add
+	KRB5_ADDRESS_NETBIOS (20)
+
+	* lib/hdb/hdb.c (find_method): accept relative paths as old db
+	format too.
+
+	* lib/krb5/aes-test.c: Remove usage of krb5_enctype_to_keytype.
+	
 2005-11-29  Dave Love  <fx@gnu.org>
 
 	* kcm/connect.c (kcm_loop): Use HAVE_DOOR_CREATE, not HAVE_DOORS.
