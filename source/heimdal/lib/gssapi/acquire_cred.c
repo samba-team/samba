@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: acquire_cred.c,v 1.25 2005/11/02 08:56:25 lha Exp $");
+RCSID("$Id: acquire_cred.c,v 1.27 2005/12/01 16:26:02 lha Exp $");
 
 OM_uint32
 _gssapi_krb5_ccache_lifetime(OM_uint32 *minor_status,
@@ -245,6 +245,17 @@ static OM_uint32 acquire_acceptor_cred
     kret = get_keytab(context, &handle->keytab);
     if (kret)
 	goto end;
+    
+    /* check that the requested principal exists in the keytab */
+    if (handle->principal) {
+	krb5_keytab_entry entry;
+
+	kret = krb5_kt_get_entry(gssapi_krb5_context, handle->keytab, 
+				 handle->principal, 0, 0, &entry);
+	if (kret)
+	    goto end;
+	krb5_kt_free_entry(gssapi_krb5_context, &entry);
+    }
     ret = GSS_S_COMPLETE;
  
 end:

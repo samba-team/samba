@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c,v 1.58 2005/08/27 05:48:57 lha Exp $");
+RCSID("$Id: rd_req.c,v 1.61 2005/11/29 18:22:51 lha Exp $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -136,7 +136,11 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     int num_realms;
     krb5_error_code ret;
 	    
-    /* Windows w2k and w2k3 uses this */
+    /* 
+     * Windows 2000 and 2003 uses this inside their TGT so its normaly
+     * not seen by others, however, samba4 joined with a Windows AD as
+     * a Domain Controller gets exposed to this.
+     */
     if(enc->transited.tr_type == 0 && enc->transited.contents.length == 0)
 	return 0;
 
@@ -415,6 +419,19 @@ krb5_verify_ap_req2(krb5_context context,
 	ret = KRB5KRB_AP_ERR_BADADDR;
 	krb5_clear_error_string (context);
 	goto out;
+    }
+
+    /* check timestamp in authenticator */
+    {
+	krb5_timestamp now;
+
+	krb5_timeofday (context, &now);
+
+	if (abs(ac->authenticator->ctime - now) > context->max_skew) {
+	    ret = KRB5KRB_AP_ERR_SKEW;
+	    krb5_clear_error_string (context);
+	    goto out;
+	}
     }
 
     if (ac->authenticator->seq_number)

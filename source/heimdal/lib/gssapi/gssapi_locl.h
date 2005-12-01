@@ -81,7 +81,6 @@ typedef struct gss_cred_id_t_desc_struct {
   gss_name_t principal;
   int cred_flags;
 #define GSS_CF_DESTROY_CRED_ON_RELEASE	1
-  krb5_boolean made_keytab;
   struct krb5_keytab_data *keytab;
   OM_uint32 lifetime;
   gss_cred_usage_t usage;
