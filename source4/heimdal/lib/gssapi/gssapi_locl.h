@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi_locl.h,v 1.42 2005/10/26 11:23:48 lha Exp $ */
+/* $Id: gssapi_locl.h,v 1.43 2005/11/02 08:51:17 lha Exp $ */
 
 #ifndef GSSAPI_LOCL_H
 #define GSSAPI_LOCL_H

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab.c,v 1.62 2005/07/06 01:14:42 lha Exp $");
+RCSID("$Id: keytab.c,v 1.63 2005/11/25 21:46:40 lha Exp $");
 
 /*
  * Register a new keytab in `ops'
@@ -237,6 +237,40 @@ krb5_kt_get_name(krb5_context context,
 		 size_t namesize)
 {
     return (*keytab->get_name)(context, keytab, name, namesize);
+}
+
+/*
+ * Retrieve the full name of the keytab `keytab' and store the name in
+ * `str'. `str' needs to be freed by the caller using free(3).
+ * Returns 0 or an error. On error, *str is set to NULL.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_kt_get_full_name(krb5_context context, 
+		      krb5_keytab keytab,
+		      char **str)
+{
+    char type[KRB5_KT_PREFIX_MAX_LEN];
+    char name[MAXPATHLEN];
+    krb5_error_code ret;
+	      
+    *str = NULL;
+
+    ret = krb5_kt_get_type(context, keytab, type, sizeof(type));
+    if (ret)
+	return ret;
+
+    ret = krb5_kt_get_name(context, keytab, name, sizeof(name));
+    if (ret)
+	return ret;
+
+    if (asprintf(str, "%s:%s", type, name) == -1) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	*str = NULL;
+	return ENOMEM;
+    }
+
+    return 0;
 }
 
 /*

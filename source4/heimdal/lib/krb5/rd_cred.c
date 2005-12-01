@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c,v 1.25 2005/09/23 03:37:57 lha Exp $");
+RCSID("$Id: rd_cred.c,v 1.26 2005/11/02 08:36:42 lha Exp $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,

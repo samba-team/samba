@@ -46,7 +46,8 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->domain_obtained = CRED_UNINITIALISED;
 	cred->realm_obtained = CRED_UNINITIALISED;
 	cred->ccache_obtained = CRED_UNINITIALISED;
-	cred->gss_creds_obtained = CRED_UNINITIALISED;
+	cred->client_gss_creds_obtained = CRED_UNINITIALISED;
+	cred->server_gss_creds_obtained = CRED_UNINITIALISED;
 	cred->keytab_obtained = CRED_UNINITIALISED;
 	cred->principal_obtained = CRED_UNINITIALISED;
 
@@ -148,6 +149,9 @@ BOOL cli_credentials_set_principal(struct cli_credentials *cred,
 	return False;
 }
 
+/* Set a callback to get the principal.  This could be a popup dialog,
+ * a terminal prompt or similar.  */
+
 BOOL cli_credentials_set_principal_callback(struct cli_credentials *cred,
 				  const char *(*principal_cb) (struct cli_credentials *))
 {
@@ -159,6 +163,10 @@ BOOL cli_credentials_set_principal_callback(struct cli_credentials *cred,
 
 	return False;
 }
+
+/* Some of our tools are 'anonymous by default'.  This is a single
+ * function to determine if authentication has been explicitly
+ * requested */
 
 BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
@@ -189,6 +197,9 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 
 	return cred->password;
 }
+
+/* Set a password on the credentials context, including an indication
+ * of 'how' the password was obtained */
 
 BOOL cli_credentials_set_password(struct cli_credentials *cred, 
 				  const char *val, 
@@ -240,7 +251,11 @@ BOOL cli_credentials_set_old_password(struct cli_credentials *cred,
 }
 
 /**
- * Obtain the password for this credentials context.
+ * Obtain the password, in the form MD4(unicode(password)) for this credentials context.
+ *
+ * Sometimes we only have this much of the password, while the rest of
+ * the time this call avoids calling E_md4hash themselves.
+ *
  * @param cred credentials context
  * @retval If set, the cleartext password, otherwise NULL
  */
@@ -566,7 +581,13 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 
 BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
-	const char *username = cli_credentials_get_username(cred);
+	const char *username;
+	
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
+	username = cli_credentials_get_username(cred);
 	
 	/* Yes, it is deliberate that we die if we have a NULL pointer
 	 * here - anonymous is "", not NULL, which is 'never specified,

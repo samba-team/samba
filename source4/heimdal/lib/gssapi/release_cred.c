@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: release_cred.c,v 1.10 2003/10/07 00:51:46 lha Exp $");
+RCSID("$Id: release_cred.c,v 1.11 2005/11/02 08:57:35 lha Exp $");
 
 OM_uint32 gss_release_cred
            (OM_uint32 * minor_status,
