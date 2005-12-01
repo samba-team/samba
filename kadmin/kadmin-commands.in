@@ -109,6 +109,7 @@ command = {
 }
 command = {
 	name = "add"
+	name = "ank"
 	name = "add_new_key"
 	function = "add_new_key"
 	option = {
