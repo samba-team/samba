@@ -76,10 +76,6 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		goto failed;
 	}
 
-	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
-		goto failed;
-	}
-
 #endif
 
 	ret = talloc_zero(ldb, struct ldb_cmdline);
@@ -169,6 +165,12 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		if (options.nosync) {
 			flags |= LDB_FLG_NOSYNC;
 		}
+
+#ifdef _SAMBA_BUILD_
+		if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
+			goto failed;
+		}
+#endif
 		if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
 			fprintf(stderr, "Failed to connect to %s - %s\n", 
 				ret->url, ldb_errstring(ldb));
