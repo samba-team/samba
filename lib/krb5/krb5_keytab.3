@@ -230,10 +230,11 @@ The residual part is a filename.
 The keytab is stored in a memory segment. This allows sensitive and/or
 temporary data not to be stored on disk. The type's name is
 .Li MEMORY .
-There are no residual part, the only pointer back to the keytab is the
-.Fa id
-returned by
-.Fn krb5_kt_resolve .
+Each
+.Li MEMORY
+keytab is referenced counted by and open by the residual name, so two
+handles can point to the same memory area.
+When the last user closes the entry, it disappears.
 .El
 .Pp
 .Nm krb5_keytab_entry
