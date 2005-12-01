@@ -1,5 +1,7 @@
 2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: spelling, From Måns Nilsson
+
 	* lib/krb5/krb5_keytab.3: Memory keytab are now named and
 	refcounted.
 
