@@ -368,7 +368,6 @@ main(int argc, char **argv)
 #endif
 	}
 	mini_inetd (port);
-	setlinebuf(stdout);
     } else if (argc > 0) {
 	usage();
 	/* NOT REACHED */
