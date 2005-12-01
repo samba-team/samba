@@ -93,9 +93,8 @@ uSNCreated: 1
 uSNChanged: 1
 objectGUID: ${HOSTGUID}
 userAccountControl: 532480
-lastLogon: 127273269057298624
 localPolicyFlags: 0
-pwdLastSet: 127258826171655328
+pwdLastSet: ${NTTIME}
 primaryGroupID: 516
 objectSid: ${DOMAINSID}-1000
 accountExpires: 9223372036854775807
