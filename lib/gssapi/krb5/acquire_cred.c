@@ -239,21 +239,23 @@ static OM_uint32 acquire_acceptor_cred
 {
     OM_uint32 ret;
     krb5_error_code kret;
-    krb5_keytab_entry entry;
 
     kret = 0;
     ret = GSS_S_FAILURE;
     kret = get_keytab(&handle->keytab);
     if (kret)
 	goto end;
-
+    
     /* check that the requested principal exists in the keytab */
-    kret = krb5_kt_get_entry(gssapi_krb5_context, handle->keytab, 
-			     handle->principal, 0, 0, &entry);
-    if (kret)
-	goto end;
-    krb5_kt_free_entry(gssapi_krb5_context, &entry);
+    if (handle->principal) {
+	krb5_keytab_entry entry;
 
+	kret = krb5_kt_get_entry(gssapi_krb5_context, handle->keytab, 
+				 handle->principal, 0, 0, &entry);
+	if (kret)
+	    goto end;
+	krb5_kt_free_entry(gssapi_krb5_context, &entry);
+    }
     ret = GSS_S_COMPLETE;
  
 end:
