@@ -42,10 +42,10 @@ There is a sample @file{krb5.conf} supplied with the distribution.
 The configuration file is a hierarchical structure consisting of
 sections, each containing a list of bindings (either variable
 assignments or subsections). A section starts with
-@samp{[@samp{section-name}]}.  A binding consists of a left hand side, an equal
+@samp{[@samp{section-name}]}.  A binding consists of a left hand side, an equal sign
 (@samp{=}) and a right hand side (the left hand side tag must be
-separated from the equal with some whitespace). Subsections has a
-@samp{@{} as the first non-whitespace character after the equal. All
+separated from the equal sign with some whitespace). Subsections have a
+@samp{@{} as the first non-whitespace character after the equal sign. All
 other bindings are treated as variable assignments. The value of a
 variable extends to the end of the line.
 
@@ -190,14 +190,14 @@ kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 
 All modifications of principals are done with with kadmin.
 
-A principal have several attributes and lifetimes associated with it.
+A principal has several attributes and lifetimes associated with it.
 
 Principals are added, renamed, modified, and deleted with the kadmin
 commands @samp{add}, @samp{rename}, @samp{modify}, @samp{delete}.
-Both interactive editing and command switches can be used (use --help
+Both interactive editing and command line flags can be used (use --help
 to list the available options).
 
-There are different kind of types for the fields in the database,
+There are different kinds of types for the fields in the database; 
 attributes, absolute time times and relative times.
 
 @subsection Attributes
@@ -222,7 +222,7 @@ kadmin> get me
 
 @subsection Absolute times
 
-The format for absolute times are any of the following
+The format for absolute times are any of the following:
 
 @smallexample
 never
@@ -234,7 +234,7 @@ YYYY-mm-dd HH:MM:SS
 
 @subsection Relative times
 
-The format for relative times are any of the following combined
+The format for relative times are any of the following combined:
 
 @smallexample
 N year
@@ -274,8 +274,10 @@ Version  Type             Principal
 @section Serving Kerberos 4/524/kaserver
 
 Heimdal can be configured to support 524, Kerberos 4 or kaserver. All
-these services turned off by default. Kerberos 4 support also
-depends on if Kerberos 4 support being compiled in with Heimdal.
+these services are turned off by default. Kerberos 4 is always
+supported by the KDC, but the Kerberos 4 client support also depends
+on Kerberos 4 support having been included at compile-time, using
+@kbd{--with-krb4=dir}.
 
 @subsection 524
 
@@ -292,9 +294,10 @@ tokens with AFS in @xref{Things in search for a better place}.
 
 @subsection Kerberos 4
 
-Kerberos 4 is the predecessor to to Kerberos 5. It only supports single
-DES@. You should only enable Kerberos 4 support if you have a need for
-for compatibility with an installed base of Kerberos 4 clients/servers.
+Kerberos 4 is the predecessor to to Kerberos 5. It only supports
+single DES@. You should only enable Kerberos 4 support if you have
+needs for compatibility with an installed base of Kerberos 4
+clients/servers.
 
 Kerberos 4 can be turned on by adding this to the configuration file
 
@@ -305,11 +308,11 @@ Kerberos 4 can be turned on by adding this to the configuration file
 
 @subsection kaserver
 
-Kaserver is a Kerberos 4 that is used in AFS@.  The protocol have some extra
-features over plain Kerberos 4, but like Kerberos 4, only use single
-DES@.
+Kaserver is a Kerberos 4 that is used in AFS@.  The protocol has some
+extra features over plain Kerberos 4, but like Kerberos 4, only uses
+single DES@.
 
-You should only enable Kaserver support if you have a need for for
+You should only enable Kaserver support if you have needs for
 compatibility with an installed base of AFS machines.
 
 Kaserver can be turned on by adding this to the configuration file
@@ -334,27 +337,27 @@ kerberos-adm stream     tcp     nowait  root /usr/heimdal/libexec/kadmind kadmin
 You might need to add @samp{kerberos-adm} to your @file{/etc/services}
 as @samp{749/tcp}.
 
-Access to the administration server is controlled by an ACL file, (default
-@file{/var/heimdal/kadmind.acl}.) The lines in the access file, have the
-following syntax:
+Access to the administration server is controlled by an ACL file,
+(default @file{/var/heimdal/kadmind.acl}.) The file has the following
+syntax:
 @smallexample
 principal       [priv1,priv2,...]       [glob-pattern]
 @end smallexample
 
 The matching is from top to bottom for matching principals (and if given,
 glob-pattern).  When there is a match, the access rights of that line are
-used.
+applied.
 
 The privileges you can assign to a principal are: @samp{add},
 @samp{change-password} (or @samp{cpw} for short), @samp{delete},
 @samp{get}, @samp{list}, and @samp{modify}, or the special privilege
-@samp{all}. All of these roughly corresponds to the different commands
+@samp{all}. All of these roughly correspond to the different commands
 in @command{kadmin}.
 
-If a @var{glob-pattern} is given on a line, it restricts the access rights for
-the principal to only apply for the subjects that match the pattern.
-The patterns are of the same type as those used in shell globbing, see
-@url{none,,fnmatch(3)}.
+If a @var{glob-pattern} is given on a line, it restricts the access
+rights for the principal to only apply for subjects that match the
+pattern.  The patterns are of the same type as those used in shell
+globbing, see @url{none,,fnmatch(3)}.
 
 In the example below @samp{lha/admin} can change every principal in the
 database. @samp{jimmy/admin} can only modify principals that belong to
@@ -383,13 +386,13 @@ You might need to add @samp{kpasswd} to your @file{/etc/services} as
 
 It is important that users have good passwords, both to make it harder
 to guess them and to avoid off-line attacks (although
-pre-authentication provides
-some defense against off-line attacks).  To ensure that the users choose
-good passwords, you can enable password quality controls in
-@command{kpasswdd} and @command{kadmind}.  The controls themselves are
-done in a shared library or an external program that is used by
-@command{kpasswdd}.  To configure in these controls, add
-lines similar to the following to your @file{/etc/krb5.conf}:
+pre-authentication provides some defense against off-line attacks).
+To ensure that the users choose good passwords, you can enable
+password quality controls in @command{kpasswdd} and @command{kadmind}.
+The controls themselves are done in a shared library or an external
+program that is used by @command{kpasswdd}.  To configure in these
+controls, add lines similar to the following to your
+@file{/etc/krb5.conf}:
 
 @example
 [password_quality]
@@ -410,7 +413,7 @@ The builtin polices are
 
 Executes the program specified by @samp{[password_quality]external_program}. 
 
-A number of key/value pairs is passed as input to the program, one per
+A number of key/value pairs are passed as input to the program, one per
 line, ending with the string @samp{end}.  The key/value lines are of
 the form
 @example
@@ -422,7 +425,7 @@ where @var{password} is the password to check for the previous
 
 If the external application approves the password, it should return
 @samp{APPROVED} on standard out and exit with exit code 0.  If it
-doesn't approve the password, a one line error message explaining the
+doesn't approve the password, an one line error message explaining the
 problem should be returned on standard error and the application
 should exit with exit code 0.  In case of a fatal error, the
 application should, if possible, print an error message on standard
@@ -438,35 +441,35 @@ to be at least this length.
 
 The character-class password quality check reads the configuration
 file stanza @samp{[password_quality]min_classes}. The policy requires
-the password to have characters from at least that many characters
+the password to have characters from at least that many character
 classes. Default value if not given is 3.
 
-The four diffrent characters classes are, uppercase, lowercase,
+The four different characters classes are, uppercase, lowercase,
 number, special characters.
 
 @end itemize
 
-If you want to write you own shared object that checks password
+If you want to write your own shared object to check password
 policies, see the manual page @manpage{kadm5_pwcheck,3}.
 
 Code for a password quality checking function that uses the cracklib
-library can be found in @file{lib/kadm5/sample_password_check.c} in the
-source code distribution.  It requires the cracklib library built with
-the patch available at
+library can be found in @file{lib/kadm5/sample_password_check.c} in
+the source code distribution.  It requires that the cracklib library
+be built with the patch available at
 @url{ftp://ftp.pdc.kth.se/pub/krb/src/cracklib.patch}.
 
 A sample policy external program is included in
 @file{lib/kadm5/check-cracklib.pl}.
 
-If no password quality checking function is configured, it is only
-verified that it is at least six characters long.
+If no password quality checking function is configured, the only check
+performed is that the password is at least six characters long.
 
-To check the password policy settings, the command
+To check the password policy settings, use the command
 @command{password-quality} in @command{kadmin} program. The password
-verification is only performed locally, even on the client. 
-It may be convenient to set the environment variable
-@samp{KRB5_CONFIG} to point to a test version of @file{krb5.conf}
-while you're testing the @samp{[password_quality]} stanza that way.
+verification is only performed locally, on the client.  It may be
+convenient to set the environment variable @samp{KRB5_CONFIG} to point
+to a test version of @file{krb5.conf} while you're testing the
+@samp{[password_quality]} stanza that way.
 
 @node Testing clients and servers, Slave Servers, Password changing, Setting up a realm
 @section Testing clients and servers
@@ -482,7 +485,7 @@ master server fails. It is possible to have any number of such slave
 servers but more than three usually doesn't buy much more redundancy.
 
 All Kerberos servers for a realm must have the same database so that
-they present the same service to all the users.  The
+they present the same service to the users.  The
 @pindex hprop
 @command{hprop} program, running on the master, will propagate the database
 to the slaves, running
@@ -606,7 +609,7 @@ there is no salt. This is to be compatible with NTLM keys in Windows
 NT 4.
 
 @code{[kadmin]default_keys} in @file{krb5.conf} controls
-what salting to use,
+what salting to use.
 
 The syntax of @code{[kadmin]default_keys} is
 @samp{[etype:]salt-type[:salt-string]}. @samp{etype} is the encryption
@@ -728,10 +731,10 @@ The syntax for @code{[capaths]} section:
 @end example
 
 The realm @code{STACKEN.KTH.SE} allows clients from @code{SU.SE} and
-@code{DSV.SU.SE} to cross it. Since @code{STACKEN.KTH.SE} only have
-direct cross realm with @code{KTH.SE}, and @code{DSV.SU.SE} only have direct cross
-realm with @code{SU.SE} they need to use both @code{SU.SE} and
-@code{KTH.SE} as transit realms.
+@code{DSV.SU.SE} to cross it. Since @code{STACKEN.KTH.SE} only has
+direct cross realm setup with @code{KTH.SE}, and @code{DSV.SU.SE} only
+has direct cross realm setup with @code{SU.SE} they need to use both
+@code{SU.SE} and @code{KTH.SE} as transit realms.
 
 @example
 @cartouche
@@ -749,7 +752,7 @@ realm with @code{SU.SE} they need to use both @code{SU.SE} and
 The order of the @code{PERMITTED-CROSS-REALMS} is not important when
 doing transit cross realm verification.
 
-However the order is important when the @code{[capaths]} section is used
+However, the order is important when the @code{[capaths]} section is used
 to figure out the intermediate realm to go to when doing multi-realm
 transit. When figuring out the next realm, the first realm of the list
 of @code{PERMITTED-CROSS-REALMS} is chosen. This is done in both the
@@ -773,17 +776,17 @@ will try to find a @code{SRV} resource record (RR) for the realm. If no
 SRV RRs are found, it will fall back to looking for an @code{A} RR for
 a machine named kerberos.REALM, and then kerberos-1.REALM, etc
 
-Adding this information to DNS makes the client have less
-configuration (in the common case, no configuration) and allows the
+Adding this information to DNS minimises the client configuration (in
+the common case, resulting in no configuration needed) and allows the
 system administrator to change the number of KDCs and on what machines
 they are running without caring about clients.
 
-The down side of using DNS that the client might be fooled to use the
+The downside of using DNS is that the client might be fooled to use the
 wrong server if someone fakes DNS replies/data, but storing the IP
 addresses of the KDC on all the clients makes it very hard to change
 the infrastructure.
 
-An example of the configuration for the realm @code{EXAMPLE.COM},
+An example of the configuration for the realm @code{EXAMPLE.COM}:
 
 @example
 
@@ -884,7 +887,7 @@ krb5Principal aux object with krb5PrincipalName set so that the
 Another option is to create an admins group and add the dn to that
 group.
 
-Since Heimdal talkes to the LDAP server over a UNIX domain socket, and
+Since Heimdal talks to the LDAP server over a UNIX domain socket, and
 uses external sasl authentication, its not possible to require
 security layer quality (ssf in cyrus-sasl lingo). So that requirement
 has to be turned off in OpenLDAP @command{slapd} configuration file
@@ -978,30 +981,31 @@ index	krb5PrincipalName	eq
 @c @node Using Samba LDAP password database, Providing Kerberos credentials to servers and programs, Using LDAP to store the database, Setting up a realm
 @c @section Using Samba LDAP password database
 
-Samba domain and the Kerberos realm can have diffrent names since
-arcfour's string to key function principal/realm independent.  So now
-will be your first and only chance name your Kerberos without needing
-to deal with old configuration files.
+The Samba domain and the Kerberos realm can have diffrent names since
+arcfour's string to key functions principal/realm independent.  So now
+will be your first and only chance name your Kerberos realm without
+needing to deal with old configuration files.
 
-First you should set up Samba and get that working with LDAP backend.
+First, you should set up Samba and get that working with LDAP backend.
 
-Now you can proceed as in @xref{Using LDAP to store the database},
+Now you can proceed as in @xref{Using LDAP to store the database}.
 Heimdal will pick up the Samba LDAP entries if they are in the same
 search space as the Kerberos entries.
 
 @node Providing Kerberos credentials to servers and programs, , Using LDAP to store the database, Setting up a realm
 @section Providing Kerberos credentials to servers and programs
 
-Some service require Kerberos credentials when they start to make
-connections to other services or use them when they have started.
+Some services require Kerberos credentials when they start to make
+connections to other services or need to use them when they have started.
 
-The easiest way to get ticket for the a service is to store the key in
-a keytab. Both ktutil get and kadmin ext can be used to get a
+The easiest way to get tickets for a service is to store the key in a
+keytab. Both ktutil get and kadmin ext can be used to get a
 keytab. ktutil get is better in that way it changes the key/password
-for the user. This the problem with the ktutil. It ktutil is used for
-the same service principal on several hosts, they keytab will only
-useful on the last host. In that case, run the command on host and
-copy the keytab around to all other hosts that needs it.
+for the user. This is also the problem with ktutil. If ktutil is used
+for the same service principal on several hosts, they keytab will only
+be useful on the last host. In that case, run the extract command on
+one host and then securely copy the keytab around to all other hosts
+that need it.
 
 @example
 host# ktutil -k /etc/krb5-service.keytab \
@@ -1010,7 +1014,7 @@ lha/admin@@EXAMPLE.ORG's Password:
 @end example
 
 To get a Kerberos credential file for the service, use kinit in the
---keytab mode, this will not ask for a password but rather that the
+--keytab mode. This will not ask for a password but instead fetch the
 key from the keytab.
 
 @example
