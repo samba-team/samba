@@ -27,6 +27,8 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/smb_composite/smb_composite.h"
 
 /*
   find the pipe name for a local IDL interface
@@ -1023,28 +1025,43 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb(TALLOC_CTX *tmp_ctx,
 						 struct cli_credentials *credentials)
 {
 	NTSTATUS status;
+	struct smb_composite_connect conn;
 	struct smbcli_state *cli;
 	const char *pipe_name = NULL;
+
+	conn.in.dest_host              = binding->host;
+	conn.in.port                   = 0;
+	conn.in.called_name            = strupper_talloc(tmp_ctx, binding->host);
+	conn.in.service                = "IPC$";
+	conn.in.service_type           = NULL;
+	conn.in.fallback_to_anonymous  = False;
+	conn.in.workgroup              = lp_workgroup();
 
 	if (binding->flags & DCERPC_SCHANNEL) {
 		struct cli_credentials *anon_creds
 			= cli_credentials_init(tmp_ctx);
 		cli_credentials_set_anonymous(anon_creds);
 		cli_credentials_guess(anon_creds);
-		status = smbcli_full_connection(p->conn, &cli, 
-						binding->host, 
-						"IPC$", NULL, 
-						anon_creds, p->conn->event_ctx);
+
+		conn.in.credentials = anon_creds;
+		status = smb_composite_connect(&conn, p->conn, p->conn->event_ctx);
+
 	} else {
-		status = smbcli_full_connection(p->conn, &cli, 
-						binding->host, 
-						"IPC$", NULL,
-						credentials, p->conn->event_ctx);
+
+		conn.in.credentials = credentials;
+		status = smb_composite_connect(&conn, p->conn, p->conn->event_ctx);
+
 	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
 		return status;
 	}
+
+	cli = smbcli_state_init(p->conn);
+	cli->tree      = conn.out.tree;
+	cli->session   = conn.out.tree->session;
+	cli->transport = conn.out.tree->session->transport;
 
 	pipe_name = binding->endpoint;
 
