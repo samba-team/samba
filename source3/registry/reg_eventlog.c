@@ -33,6 +33,7 @@ BOOL eventlog_init_keys( void )
 	/* Find all of the eventlogs, add keys for each of them */
 	const char **elogs = lp_eventlog_list(  );
 	pstring evtlogpath;
+	pstring evtfilepath;
 	REGSUBKEY_CTR *subkeys;
 	REGVAL_CTR *values;
 	uint32 uiDisplayNameId;
@@ -98,10 +99,12 @@ BOOL eventlog_init_keys( void )
 			regval_ctr_addvalue( values, "MaxSize", REG_DWORD,
 					     ( char * ) &uiMaxSize,
 					     sizeof( uint32 ) );
+
 			regval_ctr_addvalue( values, "Retention", REG_DWORD,
 					     ( char * ) &uiRetention,
 					     sizeof( uint32 ) );
 			init_unistr2( &data, *elogs, UNI_STR_TERMINATE );
+
 			regval_ctr_addvalue( values, "PrimaryModule", REG_SZ,
 					     ( char * ) data.buffer,
 					     data.uni_str_len *
@@ -112,6 +115,11 @@ BOOL eventlog_init_keys( void )
 					     ( char * ) data.buffer,
 					     data.uni_str_len *
 					     sizeof( uint16 ) );
+
+			pstr_sprintf( evtfilepath, "%%SystemRoot%%\\system32\\config\\%s.tdb", *elogs );
+			init_unistr2( &data, evtfilepath, UNI_STR_TERMINATE );
+			regval_ctr_addvalue( values, "File", REG_EXPAND_SZ, ( char * ) data.buffer,
+					     data.uni_str_len * sizeof( uint16 ) );
 			regdb_store_values( evtlogpath, values );
 
 		}
