@@ -126,10 +126,6 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 					   struct cli_credentials *credentials, 
 					   struct smb_krb5_context *smb_krb5_context,
 					   krb5_principal *princ);
-int create_memory_keytab(TALLOC_CTX *parent_ctx,
-			  struct cli_credentials *machine_account,
-			  struct smb_krb5_context *smb_krb5_context,
-			 struct keytab_container **keytab_container); 
 NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     struct PAC_DATA **pac_data_out,
 			     DATA_BLOB blob,
