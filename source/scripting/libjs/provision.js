@@ -302,6 +302,9 @@ function provision(subobj, message, blank, paths)
 	setup_file("provision.zone", 
 		   paths.dns, 
 		   subobj);
+	message("Setting up keytabs\n");
+	var keytab_ok = credentials_update_all_keytabs();
+	assert(keytab_ok);
 }
 
 /*

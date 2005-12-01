@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c,v 1.73 2005/10/19 17:30:40 lha Exp $");
+RCSID("$Id: cache.c,v 1.74 2005/11/01 09:36:41 lha Exp $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -220,6 +220,41 @@ krb5_cc_get_type(krb5_context context,
 		 krb5_ccache id)
 {
     return id->ops->prefix;
+}
+
+/*
+ * Return the complete resolvable name the ccache `id' in `str´.
+ * `str` should be freed with free(3).
+ * Returns 0 or an error (and then *str is set to NULL).
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_full_name(krb5_context context,
+		      krb5_ccache id,
+		      char **str)
+{
+    const char *type, *name;
+
+    *str = NULL;
+
+    type = krb5_cc_get_type(context, id);
+    if (type == NULL) {
+	krb5_set_error_string(context, "cache have no name of type");
+	return KRB5_CC_UNKNOWN_TYPE;
+    }
+
+    name = krb5_cc_get_name(context, id);
+    if (name == NULL) {
+	krb5_set_error_string(context, "cache of type %s have no name", type);
+	return KRB5_CC_BADNAME;
+    }
+    
+    if (asprintf(str, "%s:%s", type, name) == -1) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	*str = NULL;
+	return ENOMEM;
+    }
+    return 0;
 }
 
 /*

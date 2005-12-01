@@ -1094,6 +1094,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	uint32_t acct_type = 0;
 	const char *account_name;
 	const char *netbios_name;
+	char *filter;
 	
 	r->out.error_string = NULL;
 
@@ -1207,6 +1208,13 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 
 	if (r2->out.realm) {
 		rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "realm", r2->out.realm);
+		if (rtn == -1) {
+			r->out.error_string = NULL;
+			talloc_free(tmp_mem);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		rtn = samdb_msg_add_string(ldb, tmp_mem, msg, "objectClass", "primaryDomain");
 		if (rtn == -1) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);
@@ -1339,6 +1347,33 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 						      ldb_dn_linearize(ldb, msg->dn));
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (r2->out.realm) {
+		struct cli_credentials *creds;
+		/* Make a credentials structure from it */
+		creds = cli_credentials_init(mem_ctx);
+		if (!creds) {
+			r->out.error_string = NULL;
+			talloc_free(tmp_mem);
+			return NT_STATUS_NO_MEMORY;
+		}
+		cli_credentials_set_conf(creds);
+		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_linearize(mem_ctx, msg->dn));
+		status = cli_credentials_set_secrets(creds, NULL, filter);
+		if (!NT_STATUS_IS_OK(status)) {
+			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to read secrets for keytab update for %s\n", 
+							      filter);
+			talloc_free(tmp_mem);
+			return status;
+		} 
+		ret = cli_credentials_update_keytab(creds);
+		if (ret != 0) {
+			r->out.error_string = talloc_asprintf(mem_ctx, "Failed to update keytab for %s\n", 
+							      filter);
+			talloc_free(tmp_mem);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	/* move all out parameter to the callers TALLOC_CTX */

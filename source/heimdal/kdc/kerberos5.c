@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: kerberos5.c,v 1.177 2005/06/15 11:34:53 lha Exp $");
+RCSID("$Id: kerberos5.c,v 1.198 2005/11/28 20:33:57 lha Exp $");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
@@ -666,8 +666,7 @@ _kdc_check_flags(krb5_context context,
 			     starttime_str, sizeof(starttime_str), TRUE); 
 	    kdc_log(context, config, 0,
 		    "Client not yet valid until %s -- %s", 
-		    starttime_str, 
-		    client_name);
+		    starttime_str, client_name);
 	    return KRB5KDC_ERR_CLIENT_NOTYET;
 	}
 	
@@ -676,7 +675,8 @@ _kdc_check_flags(krb5_context context,
 	    krb5_format_time(context, *client->valid_end, 
 			     endtime_str, sizeof(endtime_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Client expired at %s -- %s", endtime_str, client_name);
+		    "Client expired at %s -- %s",
+		    endtime_str, client_name);
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
 	
@@ -686,7 +686,8 @@ _kdc_check_flags(krb5_context context,
 	    krb5_format_time(context, *client->pw_end, 
 			     pwend_str, sizeof(pwend_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Client's key has expired at %s -- %s", pwend_str, client_name);
+		    "Client's key has expired at %s -- %s", 
+		    pwend_str, client_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
@@ -717,7 +718,8 @@ _kdc_check_flags(krb5_context context,
 	    krb5_format_time(context, *server->valid_start, 
 			     starttime_str, sizeof(starttime_str), TRUE); 
 	    kdc_log(context, config, 0,
-		    "Server not yet valid until %s -- %s", server_name);
+		    "Server not yet valid until %s -- %s",
+		    starttime_str, server_name);
 	    return KRB5KDC_ERR_SERVICE_NOTYET;
 	}
 
@@ -1099,11 +1101,12 @@ _kdc_as_rep(krb5_context context,
 	pa->padata_value.data	= NULL;
 #endif
 
-	/* RFC4120 requires:
-            - If the client only knows about old enctypes, then send both info replies
-              (we send 'info' first in the list).
-            - If the client is 'modern', because it knows about 'new' enc types, then 
-              only send the 'info2' reply.
+	/* 
+	 * RFC4120 requires: 
+	 * - If the client only knows about old enctypes, then send
+	 *   both info replies (we send 'info' first in the list).
+	 * - If the client is 'modern', because it knows about 'new'
+	 *   enctype types, then only send the 'info2' reply.
 	*/
 	/* XXX check ret */
 	if (only_older_enctype_p(req))

@@ -41,12 +41,9 @@ struct gensec_gssapi_state {
 	DATA_BLOB pac;
 
 	struct smb_krb5_context *smb_krb5_context;
-	krb5_ccache ccache;
-	const char *ccache_name;
-	struct keytab_container *keytab;
 	struct gssapi_creds_container *client_cred;
+	struct gssapi_creds_container *server_cred;
 
-	gss_cred_id_t cred;
 	gss_cred_id_t delegated_cred_handle;
 };
 
@@ -81,10 +78,6 @@ static int gensec_gssapi_destory(void *ptr)
 	struct gensec_gssapi_state *gensec_gssapi_state = ptr;
 	OM_uint32 maj_stat, min_stat;
 	
-	if (gensec_gssapi_state->cred != GSS_C_NO_CREDENTIAL) {
-		maj_stat = gss_release_cred(&min_stat, 
-					    &gensec_gssapi_state->cred);
-	}
 	if (gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
 		maj_stat = gss_release_cred(&min_stat, 
 					    &gensec_gssapi_state->delegated_cred_handle);
@@ -137,7 +130,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->session_key = data_blob(NULL, 0);
 	gensec_gssapi_state->pac = data_blob(NULL, 0);
 
-	gensec_gssapi_state->cred = GSS_C_NO_CREDENTIAL;
 	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 
 	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destory); 
@@ -167,11 +159,10 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS nt_status;
-	OM_uint32 maj_stat, min_stat;
 	int ret;
-	const char *principal;
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *machine_account;
+	struct gssapi_creds_container *gcc;
 
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -186,53 +177,15 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		DEBUG(3, ("No machine account credentials specified\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	} else {
-		ret = cli_credentials_get_keytab(machine_account, &gensec_gssapi_state->keytab);
+		ret = cli_credentials_get_server_gss_creds(machine_account, &gcc);
 		if (ret) {
-			DEBUG(3, ("Could not create memory keytab!\n"));
+			DEBUG(1, ("Aquiring acceptor credentials failed: %s\n", 
+				  error_message(ret)));
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 	}
 
-	principal = cli_credentials_get_principal(machine_account, 
-						  machine_account);
-
-	/* This might have been explicity set to NULL, ie use what the client calls us */
-	if (principal) {
-		gss_buffer_desc name_token;
-
-		name_token.value  = discard_const_p(uint8_t, principal);
-		name_token.length = strlen(principal);
-		
-		maj_stat = gss_import_name (&min_stat,
-					    &name_token,
-					    GSS_C_NT_USER_NAME,
-					    &gensec_gssapi_state->server_name);
-
-		if (maj_stat) {
-			DEBUG(2, ("GSS Import name of %s failed: %s\n",
-				  (char *)name_token.value,
-				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	} else {
-		gensec_gssapi_state->server_name = GSS_C_NO_NAME;
-	}
-
-	maj_stat = gsskrb5_acquire_cred(&min_stat, 
-					gensec_gssapi_state->keytab->keytab, 
-					gensec_gssapi_state->server_name,
-					GSS_C_INDEFINITE,
-					GSS_C_NULL_OID_SET,
-					GSS_C_ACCEPT,
-					&gensec_gssapi_state->cred,
-					NULL, 
-					NULL);
-	if (maj_stat) {
-		DEBUG(1, ("Aquiring acceptor credentails failed: %s\n", 
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
+	gensec_gssapi_state->server_cred = gcc;
 	return NT_STATUS_OK;
 
 }
@@ -382,7 +335,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	{
 		maj_stat = gss_accept_sec_context(&min_stat, 
 						  &gensec_gssapi_state->gssapi_context, 
-						  gensec_gssapi_state->cred,
+						  gensec_gssapi_state->server_cred->creds,
 						  &input_token, 
 						  gensec_gssapi_state->input_chan_bindings,
 						  &gensec_gssapi_state->client_name, 

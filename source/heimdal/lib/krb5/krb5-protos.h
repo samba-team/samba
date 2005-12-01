@@ -607,6 +607,12 @@ krb5_cc_gen_new (
 	const krb5_cc_ops */*ops*/,
 	krb5_ccache */*id*/);
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_full_name (
+	krb5_context /*context*/,
+	krb5_ccache /*id*/,
+	char **/*str*/);
+
 const char* KRB5_LIB_FUNCTION
 krb5_cc_get_name (
 	krb5_context /*context*/,
@@ -2184,6 +2190,12 @@ krb5_kt_get_entry (
 	krb5_kvno /*kvno*/,
 	krb5_enctype /*enctype*/,
 	krb5_keytab_entry */*entry*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_kt_get_full_name (
+	krb5_context /*context*/,
+	krb5_keytab /*keytab*/,
+	char **/*str*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_get_name (

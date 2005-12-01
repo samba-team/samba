@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_for_creds.c,v 1.45 2005/06/15 02:44:36 lha Exp $");
+RCSID("$Id: get_for_creds.c,v 1.46 2005/11/28 20:43:02 lha Exp $");
 
 static krb5_error_code
 add_addrs(krb5_context context,
@@ -385,17 +385,13 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	cred.enc_part.cipher.data = buf;
 	cred.enc_part.cipher.length = buf_size;
     } else {
-	    /* 
-	     * RFC4120 claims we should use the session key, but Heimdal
-	     * before 0.8 used the remote subkey if it was send in the
-	     * auth_context.  
-	     *
-	     * Lorikeet-Heimdal is interested in windows compatiblity
-	     * more than Heimdal compatability, so we must choose the
-	     * session key, and break forwarding credentials to older
-	     * Heimdal servers. 
-	     */
-
+	/* 
+	 * Here older versions then 0.7.2 of Heimdal used the local or
+	 * remote subkey. That is wrong, the session key should be
+	 * used. Heimdal 0.7.2 and newer have code to try both in the
+	 * receiving end.
+	 */
+	
 	ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
 	if (ret) {
 	    free(buf);

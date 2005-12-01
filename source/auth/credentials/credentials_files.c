@@ -164,9 +164,9 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
-					    const char *base,
-					    const char *filter)
+NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+				     const char *base,
+				     const char *filter)
 {
 	TALLOC_CTX *mem_ctx;
 	
@@ -183,6 +183,8 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		"ntPwdHash",
 		"msDS-KeyVersionNumber",
 		"saltPrincipal",
+		"privateKeytab",
+		"krb5Keytab",
 		NULL
 	};
 	
@@ -193,6 +195,7 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	const char *realm;
 	enum netr_SchannelType sct;
 	const char *salt_principal;
+	const char *keytab;
 	
 	/* ok, we are going to get it now, don't recurse back here */
 	cred->machine_account_pending = False;
@@ -201,6 +204,7 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	cred->machine_account = True;
 
 	mem_ctx = talloc_named(cred, 0, "cli_credentials fetch machine password");
+
 	/* Local secrets are stored in secrets.ldb */
 	ldb = secrets_db_connect(mem_ctx);
 	if (!ldb) {
@@ -279,7 +283,22 @@ static NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	}
 
 	cli_credentials_set_kvno(cred, ldb_msg_find_int(msgs[0], "msDS-KeyVersionNumber", 0));
-	
+
+	/* If there was an external keytab specified by reference in
+	 * the LDB, then use this.  Otherwise we will make one up
+	 * (chewing CPU time) from the password */
+	keytab = ldb_msg_find_string(msgs[0], "krb5Keytab", NULL);
+	if (keytab) {
+		cli_credentials_set_keytab(cred, keytab, CRED_SPECIFIED);
+	} else {
+		keytab = ldb_msg_find_string(msgs[0], "privateKeytab", NULL);
+		if (keytab) {
+			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, keytab));
+			if (keytab) {
+				cli_credentials_set_keytab(cred, keytab, CRED_SPECIFIED);
+			}
+		}
+	}
 	talloc_free(mem_ctx);
 	
 	return NT_STATUS_OK;
@@ -343,5 +362,70 @@ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred)
 {
 	cred->machine_account_pending = True;
+}
+
+
+NTSTATUS cli_credentials_update_all_keytabs(TALLOC_CTX *parent_ctx)
+{
+	TALLOC_CTX *mem_ctx;
+	int ldb_ret;
+	struct ldb_context *ldb;
+	struct ldb_message **msgs;
+	const char *attrs[] = { NULL };
+	struct cli_credentials *creds;
+	const char *filter;
+	NTSTATUS status;
+	int i, ret;
+
+	mem_ctx = talloc_new(parent_ctx);
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Local secrets are stored in secrets.ldb */
+	ldb = secrets_db_connect(mem_ctx);
+	if (!ldb) {
+		DEBUG(1, ("Could not open secrets.ldb\n"));
+		talloc_free(mem_ctx);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* search for the secret record */
+	ldb_ret = gendb_search(ldb,
+			       mem_ctx, NULL,
+			       &msgs, attrs,
+			       "objectClass=kerberosSecret");
+	if (ldb_ret == -1) {
+		DEBUG(1, ("Error looking for kerberos type secrets to push into a keytab"));
+		talloc_free(mem_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	for (i=0; i < ldb_ret; i++) {
+		/* Make a credentials structure from it */
+		creds = cli_credentials_init(mem_ctx);
+		if (!creds) {
+			DEBUG(1, ("cli_credentials_init failed!"));
+			talloc_free(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		cli_credentials_set_conf(creds);
+		filter = talloc_asprintf(mem_ctx, "dn=%s", ldb_dn_linearize(mem_ctx, msgs[i]->dn));
+		status = cli_credentials_set_secrets(creds, NULL, filter);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to read secrets for keytab update for %s\n", 
+				  filter));
+			talloc_free(mem_ctx);
+			return status;
+		} 
+		ret = cli_credentials_update_keytab(creds);
+		if (ret != 0) {
+			DEBUG(1, ("Failed to update keytab for %s\n", 
+				  filter));
+			talloc_free(mem_ctx);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+	return NT_STATUS_OK;
 }
 

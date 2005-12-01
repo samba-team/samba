@@ -77,6 +77,15 @@ _krb5_extract_ticket (
 	krb5_decrypt_proc /*decrypt_proc*/,
 	krb5_const_pointer /*decryptarg*/);
 
+int
+_krb5_find_type_in_ad (
+	krb5_context /*context*/,
+	int /*type*/,
+	krb5_data */*data*/,
+	krb5_boolean */*found*/,
+	krb5_keyblock */*sessionkey*/,
+	const AuthorizationData */*ad*/);
+
 void
 _krb5_free_krbhst_info (krb5_krbhst_info */*hi*/);
 
@@ -398,13 +407,5 @@ int
 _krb5_xunlock (
 	krb5_context /*context*/,
 	int /*fd*/);
-
-int
-_krb5_find_type_in_ad(krb5_context context,
-		      int type, 
-		      krb5_data *data,
-		      int *found,
-		      krb5_keyblock *sessionkey,
-		      const AuthorizationData *ad);
 
 #endif /* __krb5_private_h__ */

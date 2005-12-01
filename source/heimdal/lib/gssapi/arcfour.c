@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: arcfour.c,v 1.17 2005/05/06 07:13:32 lha Exp $");
+RCSID("$Id: arcfour.c,v 1.18 2005/11/01 06:55:55 lha Exp $");
 
 /*
  * Implements draft-brezak-win2k-krb-rc4-hmac-04.txt
@@ -105,7 +105,7 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
 static krb5_error_code
 arcfour_mic_cksum(krb5_keyblock *key, unsigned usage,
 		  u_char *sgn_cksum, size_t sgn_cksum_sz,
-		  const char *v1, size_t l1,
+		  const u_char *v1, size_t l1,
 		  const void *v2, size_t l2,
 		  const void *v3, size_t l3)
 {
@@ -256,7 +256,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     p = token_buffer->value;
     omret = gssapi_krb5_verify_header (&p,
 				       token_buffer->length,
-				       type,
+				       (u_char *)type,
 				       GSS_KRB5_MECHANISM);
     if (omret)
 	return omret;

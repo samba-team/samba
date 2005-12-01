@@ -339,6 +339,8 @@ hdb_ndbm_create(krb5_context context, HDB **db,
 	return ENOMEM;
     }
 
+    memset(*db, '\0', sizeof(**db));
+
     (*db)->hdb_db = NULL;
     (*db)->hdb_name = strdup(filename);
     if ((*db)->hdb_name == NULL) {

@@ -120,7 +120,9 @@ hdb_free_entry (
 	hdb_entry */*ent*/);
 
 void
-hdb_free_entry_ex(krb5_context context, hdb_entry_ex *ent);
+hdb_free_entry_ex (
+	krb5_context /*context*/,
+	hdb_entry_ex */*ent*/);
 
 void
 hdb_free_key (Key */*key*/);
