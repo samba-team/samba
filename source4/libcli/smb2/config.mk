@@ -13,7 +13,7 @@ OBJ_FILES = \
 	read.o \
 	setinfo.o \
 	find.o \
-	trans.o \
+	ioctl.o \
 	logoff.o \
 	tdis.o \
 	flush.o \

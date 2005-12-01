@@ -316,14 +316,12 @@ struct smb2_find {
 	} out;
 };
 
-#define SMB2_TRANS_PIPE_FLAGS 0x0011c017 /* what are these? */
-
-struct smb2_trans {
+struct smb2_ioctl {
 	struct {
 		/* static body buffer 56 (0x38) bytes */
 		/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
 		uint16_t _pad;
-		uint32_t pipe_flags;
+		uint32_t function;
 		struct smb2_handle handle;
 		/* uint32_t out_ofs; */
 		/* uint32_t out_size; */
@@ -342,7 +340,7 @@ struct smb2_trans {
 		/* static body buffer 48 (0x30) bytes */
 		/* uint16_t buffer_code;  0x31 = 0x30 + 1 */
 		uint16_t _pad;
-		uint32_t pipe_flags;
+		uint32_t function;
 		struct smb2_handle handle;
 		/* uint32_t in_ofs; */
 		/* uint32_t in_size; */

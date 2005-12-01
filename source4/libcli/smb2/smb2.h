@@ -167,7 +167,8 @@ struct smb2_request {
 #define SMB2_OP_FLUSH     0x07
 #define SMB2_OP_READ      0x08
 #define SMB2_OP_WRITE     0x09
-#define SMB2_OP_TRANS     0x0b
+#define SMB2_OP_LOCK      0x0a
+#define SMB2_OP_IOCTL     0x0b
 #define SMB2_OP_CANCEL    0x0c
 #define SMB2_OP_KEEPALIVE 0x0d
 #define SMB2_OP_FIND      0x0e

@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   SMB2 client trans call
+   SMB2 client ioctl call
 
    Copyright (C) Andrew Tridgell 2005
    
@@ -26,19 +26,19 @@
 #include "libcli/smb2/smb2_calls.h"
 
 /*
-  send a trans request
+  send a ioctl request
 */
-struct smb2_request *smb2_trans_send(struct smb2_tree *tree, struct smb2_trans *io)
+struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *io)
 {
 	NTSTATUS status;
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_TRANS, 0x38, 
+	req = smb2_request_init_tree(tree, SMB2_OP_IOCTL, 0x38, 
 				     io->in.in.length+io->in.out.length);
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, io->in._pad);
-	SIVAL(req->out.body, 0x04, io->in.pipe_flags);
+	SIVAL(req->out.body, 0x04, io->in.function);
 	smb2_push_handle(req->out.body+0x08, &io->in.handle);
 
 	status = smb2_push_o32s32_blob(&req->out, 0x18, io->in.out);
@@ -65,10 +65,10 @@ struct smb2_request *smb2_trans_send(struct smb2_tree *tree, struct smb2_trans *
 
 
 /*
-  recv a trans reply
+  recv a ioctl reply
 */
-NTSTATUS smb2_trans_recv(struct smb2_request *req, 
-			 TALLOC_CTX *mem_ctx, struct smb2_trans *io)
+NTSTATUS smb2_ioctl_recv(struct smb2_request *req, 
+			 TALLOC_CTX *mem_ctx, struct smb2_ioctl *io)
 {
 	NTSTATUS status;
 
@@ -80,7 +80,7 @@ NTSTATUS smb2_trans_recv(struct smb2_request *req,
 	SMB2_CHECK_PACKET_RECV(req, 0x30, True);
 
 	io->out._pad       = SVAL(req->in.body, 0x02);
-	io->out.pipe_flags = IVAL(req->in.body, 0x04);
+	io->out.function   = IVAL(req->in.body, 0x04);
 	smb2_pull_handle(req->in.body+0x08, &io->out.handle);
 
 	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x18, &io->out.in);
@@ -102,10 +102,10 @@ NTSTATUS smb2_trans_recv(struct smb2_request *req,
 }
 
 /*
-  sync trans request
+  sync ioctl request
 */
-NTSTATUS smb2_trans(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, struct smb2_trans *io)
+NTSTATUS smb2_ioctl(struct smb2_tree *tree, TALLOC_CTX *mem_ctx, struct smb2_ioctl *io)
 {
-	struct smb2_request *req = smb2_trans_send(tree, io);
-	return smb2_trans_recv(req, mem_ctx, io);
+	struct smb2_request *req = smb2_ioctl_send(tree, io);
+	return smb2_ioctl_recv(req, mem_ctx, io);
 }
