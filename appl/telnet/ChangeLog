@@ -1,7 +1,7 @@
 2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/telnetd.c: Initialize the slc mapping table before its
-	used.  Based on bugraport from Russell Sanford
+	used.  Based on bug report from Russell Sanford
 	<rrs@clyde.dcccd.edu>
 	
 2005-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
