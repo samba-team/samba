@@ -1,5 +1,11 @@
-2005-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* telnetd/telnetd.c: Initialize the slc mapping table before its
+	used.  Based on bugraport from Russell Sanford
+	<rrs@clyde.dcccd.edu>
+	
+2005-11-03  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* telnet/telnet.c: Spelling in comments, from Dave Love
 	<fx@gnu.org>
 	
