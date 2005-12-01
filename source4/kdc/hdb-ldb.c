@@ -310,16 +310,17 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	ent->valid_start = NULL;
 
-	acct_expiry = samdb_result_nttime(msg, "accountExpires", -1LL);
-	if (acct_expiry != -1LL && acct_expiry != 0x7FFFFFFFFFFFFFFFLL) {
+	acct_expiry = samdb_result_nttime(msg, "accountExpires", (NTTIME)-1);
+	if ((acct_expiry == (NTTIME)-1) ||
+	    (acct_expiry == 0x7FFFFFFFFFFFFFFFULL)) {
+		ent->valid_end = NULL;
+	} else {
 		ent->valid_end = malloc(sizeof(*ent->valid_end));
 		if (ent->valid_end == NULL) {
 			ret = ENOMEM;
 			goto out;
 		}
 		*ent->valid_end = nt_time_to_unix(acct_expiry);
-	} else {
-		ent->valid_end = NULL;
 	}
 
 	if ((ent_type != HDB_LDB_ENT_TYPE_KRBTGT) && (!(userAccountControl & UF_DONT_EXPIRE_PASSWD))) {
