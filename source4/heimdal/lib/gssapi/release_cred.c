@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska HÃ¶gskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,7 +52,7 @@ OM_uint32 gss_release_cred
 
     if ((*cred_handle)->principal != NULL)
         krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
-    if ((*cred_handle)->made_keytab)
+    if ((*cred_handle)->keytab != NULL)
 	krb5_kt_close(gssapi_krb5_context, (*cred_handle)->keytab);
     if ((*cred_handle)->ccache != NULL) {
 	const krb5_cc_ops *ops;

@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.239 2005/10/12 12:39:28 lha Exp $ */
+/* $Id: krb5.h,v 1.240 2005/11/30 15:20:32 lha Exp $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
