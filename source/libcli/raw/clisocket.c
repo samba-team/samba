@@ -179,10 +179,10 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 void smbcli_sock_dead(struct smbcli_socket *sock)
 {
-	if (sock->sock != NULL) {
-		talloc_free(sock->sock);
-		sock->sock = NULL;
-	}
+	talloc_free(sock->event.fde);
+	sock->event.fde = NULL;
+	talloc_free(sock->sock);
+	sock->sock = NULL;
 }
 
 /****************************************************************************
