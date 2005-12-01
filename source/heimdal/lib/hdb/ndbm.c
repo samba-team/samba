@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: ndbm.c,v 1.35 2005/06/23 13:37:57 lha Exp $");
+RCSID("$Id: ndbm.c,v 1.36 2005/11/28 23:31:36 lha Exp $");
 
 #if HAVE_NDBM
 
@@ -333,7 +333,7 @@ krb5_error_code
 hdb_ndbm_create(krb5_context context, HDB **db, 
 		const char *filename)
 {
-    *db = malloc(sizeof(**db));
+    *db = calloc(1, sizeof(**db));
     if (*db == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
