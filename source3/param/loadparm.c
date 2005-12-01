@@ -168,6 +168,7 @@ typedef struct
 	char *szIdmapUID;
 	char *szIdmapGID;
 	BOOL bEnableRidAlgorithm;
+	BOOL bPassdbExpandExplicit;
 	int AlgorithmicRidBase;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
@@ -1240,6 +1241,7 @@ static struct parm_struct parm_table[] = {
 	{N_("Winbind options"), P_SEP, P_SEPARATOR}, 
 
 	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_DEPRECATED}, 
+	{"passdb expand explicit", P_BOOL, P_GLOBAL, &Globals.bPassdbExpandExplicit, NULL, NULL, FLAG_ADVANCED},
 	{"idmap backend", P_LIST, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED}, 
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED}, 
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
@@ -1603,6 +1605,7 @@ static void init_globals(void)
 	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 
 	Globals.bEnableRidAlgorithm = True;
+	Globals.bPassdbExpandExplicit = True;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
@@ -1792,6 +1795,7 @@ FN_GLOBAL_BOOL(lp_winbind_nested_groups, &Globals.bWinbindNestedGroups)
 
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_BOOL(lp_enable_rid_algorithm, &Globals.bEnableRidAlgorithm)
+FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 
 #ifdef WITH_LDAP_SAMCONFIG
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
