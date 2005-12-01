@@ -1,3 +1,42 @@
+2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* acquire_cred.c (acquire_acceptor_cred): check that the acceptor
+	exists in the keytab before returning ok.
+	
+2005-11-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* copy_ccache.c (gss_krb5_import_cred): fix buglet, from Andrew
+	Bartlett.
+	
+2005-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_kcred.c: Rename gss_krb5_import_ccache to
+	gss_krb5_import_cred.
+	
+	* copy_ccache.c: Rename gss_krb5_import_ccache to
+	gss_krb5_import_cred and let it grow code to handle keytabs too.
+	
+2005-11-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c: Change sematics of ok-as-delegate to match
+	windows if
+	[gssapi]realm/ok-as-delegate=true is set, otherwise keep old
+	sematics.
+	
+	* release_cred.c (gss_release_cred): use
+	GSS_CF_DESTROY_CRED_ON_RELEASE to decide if the cache should be
+	krb5_cc_destroy-ed
+	
+	* acquire_cred.c (acquire_initiator_cred):
+	GSS_CF_DESTROY_CRED_ON_RELEASE on created credentials.
+
+	* accept_sec_context.c (gsskrb5_accept_delegated_token): rewrite
+	to use gss_krb5_import_ccache
+	
+2005-11-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* arcfour.c: Remove signedness warnings.
+	
 2005-10-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: Document that gss_krb5_import_ccache is copy
