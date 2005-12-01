@@ -115,7 +115,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	   handles events up until we are connected */
 	talloc_free(transport->socket->event.fde);
 	transport->socket->event.fde = event_add_fd(transport->socket->event.ctx,
-						    transport->socket,
+						    transport->socket->sock,
 						    socket_get_fd(transport->socket->sock),
 						    EVENT_FD_READ,
 						    smbcli_transport_event_handler,
