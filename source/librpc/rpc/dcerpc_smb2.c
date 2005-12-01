@@ -26,6 +26,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "ioctl.h"
 
 /* transport private information used by SMB2 pipe transport */
 struct smb2_private {
@@ -191,9 +192,9 @@ static void smb2_trans_callback(struct smb2_request *req)
 							struct smb2_trans_state);
 	struct dcerpc_connection *c = state->c;
 	NTSTATUS status;
-	struct smb2_trans io;
+	struct smb2_ioctl io;
 
-	status = smb2_trans_recv(req, state, &io);
+	status = smb2_ioctl_recv(req, state, &io);
 	if (NT_STATUS_IS_ERR(status)) {
 		pipe_dead(c, status);
 		return;
@@ -213,13 +214,13 @@ static void smb2_trans_callback(struct smb2_request *req)
 }
 
 /*
-  send a SMBtrans style request
+  send a SMBtrans style request, using a named pipe read_write fsctl
 */
 static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *blob)
 {
         struct smb2_private *smb = talloc_get_type(c->transport.private,
 						   struct smb2_private);
-        struct smb2_trans io;
+        struct smb2_ioctl io;
 	struct smb2_trans_state *state;
 	struct smb2_request *req;
 
@@ -231,13 +232,13 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 	state->c = c;
 	
 	ZERO_STRUCT(io);
-	io.in.pipe_flags = SMB2_TRANS_PIPE_FLAGS;
+	io.in.function = FSCTL_NAMED_PIPE_READ_WRITE;
 	io.in.handle = smb->handle;
 	io.in.max_response_size = 0x1000;
 	io.in.flags = 1;
 	io.in.out = *blob;
 
-        req = smb2_trans_send(smb->tree, &io);
+        req = smb2_ioctl_send(smb->tree, &io);
 	if (req == NULL) {
 		talloc_free(state);
 		return NT_STATUS_NO_MEMORY;

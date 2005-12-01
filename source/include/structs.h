@@ -356,6 +356,6 @@ struct smb2_setinfo;
 struct smb2_read;
 struct smb2_write;
 struct smb2_find;
-struct smb2_trans;
+struct smb2_ioctl;
 struct smb2_flush;
 struct smb2_handle;
