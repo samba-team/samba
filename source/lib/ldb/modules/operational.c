@@ -201,7 +201,7 @@ static int operational_search_bytree(struct ldb_module *module, struct ldb_reque
 			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) == 0 &&
 			    search_sub[i].replace) {
 				if (!search_attrs) {
-					search_attrs = ldb_attr_list_copy(module, attrs);
+					search_attrs = ldb_attr_list_copy(req, attrs);
 					if (search_attrs == NULL) {
 						goto failed;
 					}
