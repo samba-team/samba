@@ -73,6 +73,11 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
+	if (lp_passdb_expand_explicit()) {
+		fprintf(stderr, "WARNING: passdb expand explicit = yes is "
+			"deprecated\n");
+	}
+
 	/*
 	 * Password server sanity checks.
 	 */
