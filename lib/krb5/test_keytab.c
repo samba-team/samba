@@ -60,6 +60,85 @@ test_empty_keytab(krb5_context context, const char *keytab)
 	krb5_err(context, 1, ret, "krb5_kt_close");
 }
 
+/*
+ * Test that memory keytab are refcounted.
+ */
+
+static void
+test_memory_keytab(krb5_context context, const char *keytab)
+{
+    krb5_error_code ret;
+    krb5_keytab id, id2;
+    krb5_keytab_entry entry, entry2;
+
+    ret = krb5_kt_resolve(context, keytab, &id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_resolve");
+
+    memset(&entry, 0, sizeof(entry));
+    ret = krb5_parse_name(context, "lha@SU.SE", &entry.principal);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+    entry.vno = 1;
+    ret = krb5_generate_random_keyblock(context,
+					ETYPE_AES256_CTS_HMAC_SHA1_96,
+					&entry.keyblock);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_generate_random_keyblock");
+
+    krb5_kt_add_entry(context, id, &entry);
+
+    ret = krb5_kt_resolve(context, keytab, &id2);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_resolve");
+
+    ret = krb5_kt_get_entry(context, id,
+			    entry.principal,
+			    0,
+			    ETYPE_AES256_CTS_HMAC_SHA1_96,
+			    &entry2);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_get_entry");
+    krb5_kt_free_entry(context, &entry2);
+
+    ret = krb5_kt_close(context, id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_close");
+
+    ret = krb5_kt_get_entry(context, id2,
+			    entry.principal,
+			    0,
+			    ETYPE_AES256_CTS_HMAC_SHA1_96,
+			    &entry2);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_get_entry");
+    krb5_kt_free_entry(context, &entry2);
+
+    ret = krb5_kt_close(context, id2);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_close");
+
+
+
+    ret = krb5_kt_resolve(context, keytab, &id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_resolve");
+
+    ret = krb5_kt_get_entry(context, id,
+			    entry.principal,
+			    0,
+			    ETYPE_AES256_CTS_HMAC_SHA1_96,
+			    &entry2);
+    if (ret == 0)
+	krb5_errx(context, 1, "krb5_kt_get_entry when if should fail");
+
+    ret = krb5_kt_close(context, id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_close");
+
+    krb5_kt_free_entry(context, &entry);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -75,6 +154,8 @@ main(int argc, char **argv)
     test_empty_keytab(context, "MEMORY:foo");
     test_empty_keytab(context, "FILE:foo");
     test_empty_keytab(context, "KRB4:foo");
+
+    test_memory_keytab(context, "MEMORY:foo");
 
     krb5_free_context(context);
 
