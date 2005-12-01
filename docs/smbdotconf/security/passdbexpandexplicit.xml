@@ -1,4 +1,4 @@
-<samba:parameter name="passdb:expand_explicit"
+<samba:parameter name="passdb expand explicit"
                  context="G"
                  advanced="1" developer="0"
 				 type="boolean"
@@ -12,9 +12,10 @@
     group.
     </para>
     <para>
-    If you rely on this behaviour, you have to set it explicitly to 'yes'
+    This parameter is set to "yes" by default, but this is about to change in
+    the future.
     </para>
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
