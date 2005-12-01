@@ -1751,6 +1751,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	uint32 pwHistLen = 0;
 	BOOL ret = True;
 	fstring tmpstring;
+	BOOL expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
@@ -1815,7 +1816,10 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	if (homedir) {
 		fstrcpy( tmpstring, homedir );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 	else {
@@ -1831,7 +1835,10 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	if (logon_script) {
 		fstrcpy( tmpstring, logon_script );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 	else {
@@ -1842,7 +1849,10 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	
 	if (profile_path) {	
 		fstrcpy( tmpstring, profile_path );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	} 
 	else {
