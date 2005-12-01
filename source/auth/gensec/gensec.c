@@ -871,14 +871,14 @@ NTSTATUS gensec_register(const void *_ops)
 
 	generic_security_ops = realloc_p(generic_security_ops, 
 					 const struct gensec_security_ops *, 
-					 gensec_num_backends+1);
+					 gensec_num_backends+2);
 	if (!generic_security_ops) {
 		smb_panic("out of memory in gensec_register");
 	}
 
 	generic_security_ops[gensec_num_backends] = ops;
-
 	gensec_num_backends++;
+	generic_security_ops[gensec_num_backends] = NULL;
 
 	DEBUG(3,("GENSEC backend '%s' registered\n", 
 		 ops->name));
