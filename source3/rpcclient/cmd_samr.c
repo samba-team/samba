@@ -351,7 +351,7 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 	
-	sscanf(argv[1], "%i", &user_rid);
+	user_rid = strtoul(argv[1], NULL, 10);
 	
 	if (argc > 2)
 		sscanf(argv[2], "%i", &info_level);
@@ -379,6 +379,27 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
 				    access_mask,
 				    user_rid, &user_pol);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER) &&
+	    (user_rid == 0)) {
+
+		/* Probably this was a user name, try lookupnames */
+		uint32 num_rids;
+		uint32 *rids, *types;
+		
+		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+						  1000, 1, &argv[1],
+						  &num_rids, &rids,
+						  &types);
+
+		if (NT_STATUS_IS_OK(result)) {
+			result = rpccli_samr_open_user(cli, mem_ctx,
+						       &domain_pol,
+						       access_mask,
+						       rids[0], &user_pol);
+		}
+	}
+
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
