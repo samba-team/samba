@@ -35,15 +35,21 @@
 	decimal IP address or a hostname which will be looked up via 
 	the OS's normal hostname resolution mechanisms.</para>
 
+	<para>
+	By default Samba enables all active interfaces that are broadcast capable
+	except the loopback adaptor (IP address 127.0.0.1).
+	</para>
+	
+	<para>
+	The example below configures three network interfaces corresponding 
+	to the eth0 device and IP addresses 192.168.2.10 and 192.168.3.10. 
+	The netmasks of the latter two interfaces would be set to 255.255.255.0.
+	</para>
+
 </description>
 <related>bind interfaces only</related>
 
-<value type="example">
-	<comment>This would configure three network interfaces corresponding 
-	to the eth0 device and IP addresses 192.168.2.10 and 192.168.3.10. 
-	The netmasks of the latter two interfaces would be set to 255.255.255.0.</comment>
-	eth0 192.168.2.10/24 192.168.3.10/255.255.255.0
-</value>
+<value type="example">eth0 192.168.2.10/24 192.168.3.10/255.255.255.0</value>
 
-<value type="default"><comment>all active interfaces except 127.0.0.1 that are broadcast capable</comment></value>
+<value type="default"/>
 </samba:parameter>
