@@ -775,18 +775,6 @@ OM_uint32 gss_unseal
  * kerberos mechanism specific functions
  */
 
-OM_uint32 gsskrb5_acquire_cred
-           (OM_uint32 * minor_status,
-	    struct krb5_keytab_data *keytab,
-            const gss_name_t desired_name,
-            OM_uint32 time_req,
-            const gss_OID_set desired_mechs,
-            gss_cred_usage_t cred_usage,
-            gss_cred_id_t * output_cred_handle,
-            gss_OID_set * actual_mechs,
-            OM_uint32 * time_rec
-		   );
-
 OM_uint32
 gss_krb5_ccache_name(OM_uint32 * /*minor_status*/, 
 		     const char * /*name */,
@@ -805,10 +793,11 @@ OM_uint32 gss_krb5_copy_service_keyblock
 	 gss_ctx_id_t context_handle,
 	 struct EncryptionKey **out);
 
-OM_uint32
-gss_krb5_import_ccache(OM_uint32 */*minor*/,
-		       struct krb5_ccache_data * /*in*/,
-		       gss_cred_id_t */*out*/);
+OM_uint32 gss_krb5_import_cred(OM_uint32 *minor_status,
+			       struct krb5_ccache_data * /* id */,
+			       struct Principal * /* keytab_principal */,
+			       struct krb5_keytab_data * /* keytab */,
+			       gss_cred_id_t */* cred */);
 
 OM_uint32 gss_krb5_get_tkt_flags
 	(OM_uint32 */*minor*/,

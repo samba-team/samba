@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: db.c,v 1.32 2005/06/23 13:34:17 lha Exp $");
+RCSID("$Id: db.c,v 1.33 2005/11/28 23:30:51 lha Exp $");
 
 #if HAVE_DB1
 
@@ -270,7 +270,7 @@ krb5_error_code
 hdb_db_create(krb5_context context, HDB **db, 
 	      const char *filename)
 {
-    *db = malloc(sizeof(**db));
+    *db = calloc(1, sizeof(**db));
     if (*db == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
