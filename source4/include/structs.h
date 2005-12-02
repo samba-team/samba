@@ -263,6 +263,7 @@ struct nbt_dgram_socket;
 struct dgram_mailslot_handler;
 
 struct messaging_context;
+struct irpc_message;
 struct stream_connection;
 struct task_server;
 struct model_ops;
@@ -271,6 +272,8 @@ struct stream_server_ops;
 struct nbtd_server;
 struct nbtd_interface;
 struct wins_server;
+struct nbtd_proxy_wins_challenge;
+struct nbtd_proxy_wins_release_demand;
 
 struct nbt_dc_name;
 struct wb_sid_object;
