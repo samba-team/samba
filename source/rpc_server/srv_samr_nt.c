@@ -40,11 +40,12 @@
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
 
-extern rid_name domain_group_rids[];
-extern rid_name domain_alias_rids[];
-extern rid_name builtin_alias_rids[];
+#define DISP_INFO_CACHE_TIMEOUT 10
 
 typedef struct disp_info {
+	struct disp_info *next, *prev;
+	TALLOC_CTX *mem_ctx;
+	DOM_SID sid; /* identify which domain this is. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
 	struct pdb_search *machines; /* querydispinfo 2 */
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
@@ -53,7 +54,14 @@ typedef struct disp_info {
 
 	uint16 enum_acb_mask;
 	struct pdb_search *enum_users; /* enumusers with a mask */
+
+	smb_event_id_t di_cache_timeout_event; /* cache idle timeout handler. */
 } DISP_INFO;
+
+/* We keep a static list of these by SID as modern clients close down
+   all resources between each request in a complete enumeration. */
+
+static DISP_INFO *disp_info_list;
 
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
@@ -62,8 +70,7 @@ struct samr_info {
 	uint32 acc_granted;
 	uint16 acb_mask;
 	BOOL only_machines;
-	DISP_INFO disp_info;
-
+	DISP_INFO *disp_info;
 	TALLOC_CTX *mem_ctx;
 };
 
@@ -215,6 +222,39 @@ static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_requir
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+/*******************************************************************
+ Fetch or create a dispinfo struct.
+********************************************************************/
+
+static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid, const char *sid_str)
+{
+	TALLOC_CTX *mem_ctx;
+	DISP_INFO *dpi;
+
+	for (dpi = disp_info_list; dpi; dpi = dpi->next) {
+		if (sid_equal(psid, &dpi->sid)) {
+			return dpi;
+		}
+	}
+
+	/* This struct is never free'd - I'm using talloc so we
+	   can get a list out of smbd using smbcontrol. There will
+	   be one of these per SID we're authorative for. JRA. */
+
+	mem_ctx = talloc_init("DISP_INFO for domain sid %s", sid_str);
+
+	if ((dpi = TALLOC_ZERO_P(mem_ctx, DISP_INFO)) == NULL)
+		return NULL;
+
+	dpi->mem_ctx = mem_ctx;
+	if (psid) {
+		sid_copy( &dpi->sid, psid);
+	}
+
+	DLIST_ADD(disp_info_list, dpi);
+
+	return dpi;
+}
 
 /*******************************************************************
  Create a samr_info struct.
@@ -244,39 +284,153 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
 	}
 	info->mem_ctx = mem_ctx;
+
+	info->disp_info = get_samr_dispinfo_by_sid(psid, sid_str);
+
+	if (!info->disp_info) {
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
+
 	return info;
 }
 
 /*******************************************************************
- Function to free the per handle data.
+ Function to free the per SID data.
  ********************************************************************/
+
+static void free_samr_cache(DISP_INFO *disp_info, const char *sid_str)
+{
+	DEBUG(10,("free_samr_cache: deleting cache for SID %s\n", sid_str));
+
+	/* We need to become root here because the paged search might have to
+	 * tell the LDAP server we're not interested in the rest anymore. */
+
+	become_root();
+
+	if (disp_info->users) {
+		DEBUG(10,("free_samr_cache: deleting users cache\n"));
+		pdb_search_destroy(disp_info->users);
+		disp_info->users = NULL;
+	}
+	if (disp_info->machines) {
+		DEBUG(10,("free_samr_cache: deleting machines cache\n"));
+		pdb_search_destroy(disp_info->machines);
+		disp_info->machines = NULL;
+	}
+	if (disp_info->groups) {
+		DEBUG(10,("free_samr_cache: deleting groups cache\n"));
+		pdb_search_destroy(disp_info->groups);
+		disp_info->groups = NULL;
+	}
+	if (disp_info->aliases) {
+		DEBUG(10,("free_samr_cache: deleting aliases cache\n"));
+		pdb_search_destroy(disp_info->aliases);
+		disp_info->aliases = NULL;
+	}
+	if (disp_info->builtins) {
+		DEBUG(10,("free_samr_cache: deleting builtins cache\n"));
+		pdb_search_destroy(disp_info->builtins);
+		disp_info->builtins = NULL;
+	}
+	if (disp_info->enum_users) {
+		DEBUG(10,("free_samr_cache: deleting enum_users cache\n"));
+		pdb_search_destroy(disp_info->enum_users);
+		disp_info->enum_users = NULL;
+	}
+	disp_info->enum_acb_mask = 0;
+
+	unbecome_root();
+}
 
 /*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
-
-static void free_samr_db(struct samr_info *info)
-{
-	pdb_search_destroy(info->disp_info.users);
-	info->disp_info.users = NULL;
-	pdb_search_destroy(info->disp_info.machines);
-	info->disp_info.machines = NULL;
-	pdb_search_destroy(info->disp_info.groups);
-	info->disp_info.groups = NULL;
-	pdb_search_destroy(info->disp_info.aliases);
-	info->disp_info.aliases = NULL;
-	pdb_search_destroy(info->disp_info.builtins);
-	info->disp_info.builtins = NULL;
-	pdb_search_destroy(info->disp_info.enum_users);
-	info->disp_info.enum_users = NULL;
-}
 
 static void free_samr_info(void *ptr)
 {
 	struct samr_info *info=(struct samr_info *) ptr;
 
-	free_samr_db(info);
+	/* Only free the dispinfo cache if no one bothered to set up
+	   a timeout. */
+
+	if (info->disp_info && info->disp_info->di_cache_timeout_event == (smb_event_id_t)0) {
+		fstring sid_str;
+		sid_to_string(sid_str, &info->disp_info->sid);
+		free_samr_cache(info->disp_info, sid_str);
+	}
+
 	talloc_destroy(info->mem_ctx);
+}
+
+/*******************************************************************
+ Idle event handler. Throw away the disp info cache.
+ ********************************************************************/
+
+static void disp_info_cache_idle_timeout_handler(void **private_data,
+					time_t *ev_interval,
+					time_t ev_now)
+{
+	fstring sid_str;
+	DISP_INFO *disp_info = (DISP_INFO *)(*private_data);
+
+	sid_to_string(sid_str, &disp_info->sid);
+
+	free_samr_cache(disp_info, sid_str);
+
+	/* Remove the event. */
+	smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+	disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+
+	DEBUG(10,("disp_info_cache_idle_timeout_handler: caching timed out for SID %s at %u\n",
+		sid_str, (unsigned int)ev_now));
+}
+
+/*******************************************************************
+ Setup cache removal idle event handler.
+ ********************************************************************/
+
+static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromnow)
+{
+	fstring sid_str;
+
+	sid_to_string(sid_str, &disp_info->sid);
+
+	/* Remove any pending timeout and update. */
+
+	if (disp_info->di_cache_timeout_event) {
+		smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+		disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+	}
+
+	DEBUG(10,("set_disp_info_cache_timeout: caching enumeration for SID %s for %u seconds\n",
+		sid_str, (unsigned int)secs_fromnow ));
+
+	disp_info->di_cache_timeout_event =
+		smb_register_idle_event(disp_info_cache_idle_timeout_handler,
+					disp_info,
+					secs_fromnow);
+}
+
+/*******************************************************************
+ Force flush any cache. We do this on any samr_set_xxx call.
+ We must also remove the timeout handler.
+ ********************************************************************/
+
+static void force_flush_samr_cache(DISP_INFO *disp_info)
+{
+	if (disp_info) {
+		fstring sid_str;
+
+		sid_to_string(sid_str, &disp_info->sid);
+		if (disp_info->di_cache_timeout_event) {
+			smb_unregister_idle_event(disp_info->di_cache_timeout_event);
+			disp_info->di_cache_timeout_event = (smb_event_id_t)0;
+			DEBUG(10,("force_flush_samr_cache: clearing idle event for SID %s\n",
+				sid_str));
+		}
+		free_samr_cache(disp_info, sid_str);
+	}
 }
 
 /*******************************************************************
@@ -298,24 +452,36 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 static uint32 count_sam_users(struct disp_info *info, uint16 acct_flags)
 {
 	struct samr_displayentry *entry;
-	if (info->users == NULL)
+	if (info->users == NULL) {
 		info->users = pdb_search_users(acct_flags);
-	if (info->users == NULL)
-		return 0;
+		if (info->users == NULL) {
+			return 0;
+		}
+	}
 	/* Fetch the last possible entry, thus trigger an enumeration */
 	pdb_search_entries(info->users, 0xffffffff, 1, &entry);
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info, DISP_INFO_CACHE_TIMEOUT);
+
 	return info->users->num_entries;
 }
 
 static uint32 count_sam_groups(struct disp_info *info)
 {
 	struct samr_displayentry *entry;
-	if (info->groups == NULL)
+	if (info->groups == NULL) {
 		info->groups = pdb_search_groups();
-	if (info->groups == NULL)
-		return 0;
+		if (info->groups == NULL) {
+			return 0;
+		}
+	}
 	/* Fetch the last possible entry, thus trigger an enumeration */
 	pdb_search_entries(info->groups, 0xffffffff, 1, &entry);
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info, DISP_INFO_CACHE_TIMEOUT);
+
 	return info->groups->num_entries;
 }
 
@@ -431,12 +597,12 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-
 /*******************************************************************
 ********************************************************************/
 
 static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol, 
-                                     DOM_SID *sid, uint32 *acc_granted)
+					DOM_SID *sid, uint32 *acc_granted,
+					DISP_INFO **ppdisp_info)
 {
 	struct samr_info *info = NULL;
 
@@ -449,6 +615,10 @@ static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
 
 	*sid = info->sid;
 	*acc_granted = info->acc_granted;
+	if (ppdisp_info) {
+		*ppdisp_info = info->disp_info;
+	}
+
 	return True;
 }
 
@@ -467,42 +637,35 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 	r_u->status = NT_STATUS_OK;
 
 	/* Get the SID. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &pol_sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &pol_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
-
-
 
 	DEBUG(10,("_samr_query_sec_obj: querying security on SID: %s\n", sid_to_string(str_sid, &pol_sid)));
 
 	/* Check what typ of SID is beeing queried (e.g Domain SID, User SID, Group SID) */
 
 	/* To query the security of the SAM it self an invalid SID with S-0-0 is passed to this function */
-	if (pol_sid.sid_rev_num == 0)
-	{
+	if (pol_sid.sid_rev_num == 0) {
 		DEBUG(5,("_samr_query_sec_obj: querying security on SAM\n"));
 		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
-	}
-	else if (sid_equal(&pol_sid,get_global_sam_sid()))  /* check if it is our domain SID */
-
-	{
+	} else if (sid_equal(&pol_sid,get_global_sam_sid())) { 
+		/* check if it is our domain SID */
 		DEBUG(5,("_samr_query_sec_obj: querying security on Domain with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
 		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
-	}
-	else if (sid_equal(&pol_sid,&global_sid_Builtin)) /* check if it is the Builtin  Domain */
-	{
+	} else if (sid_equal(&pol_sid,&global_sid_Builtin)) {
+		/* check if it is the Builtin  Domain */
 		/* TODO: Builtin probably needs a different SD with restricted write access*/
 		DEBUG(5,("_samr_query_sec_obj: querying security on Builtin Domain with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
 		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
-	}
-	else if (sid_check_is_in_our_domain(&pol_sid) ||
-	    	 sid_check_is_in_builtin(&pol_sid))
-	{
+	} else if (sid_check_is_in_our_domain(&pol_sid) ||
+	    	 sid_check_is_in_builtin(&pol_sid)) {
 		/* TODO: different SDs have to be generated for aliases groups and users.
 		         Currently all three get a default user SD  */
 		DEBUG(10,("_samr_query_sec_obj: querying security on Object with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
 		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
+	} else {
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
-	else return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	if ((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -594,21 +757,32 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	if ((info->disp_info.enum_users != NULL) &&
-	    (info->disp_info.enum_acb_mask != q_u->acb_mask)) {
-		pdb_search_destroy(info->disp_info.enum_users);
-		info->disp_info.enum_users = NULL;
+
+	/* AS ROOT !!!! */
+
+	if ((info->disp_info->enum_users != NULL) &&
+	    (info->disp_info->enum_acb_mask != q_u->acb_mask)) {
+		pdb_search_destroy(info->disp_info->enum_users);
+		info->disp_info->enum_users = NULL;
 	}
 
-	if (info->disp_info.enum_users == NULL) {
-		info->disp_info.enum_users = pdb_search_users(q_u->acb_mask);
-		info->disp_info.enum_acb_mask = q_u->acb_mask;
+	if (info->disp_info->enum_users == NULL) {
+		info->disp_info->enum_users = pdb_search_users(q_u->acb_mask);
+		info->disp_info->enum_acb_mask = q_u->acb_mask;
 	}
-	if (info->disp_info.enum_users == NULL)
+
+	if (info->disp_info->enum_users == NULL) {
+		/* END AS ROOT !!!! */
+		unbecome_root();
 		return NT_STATUS_ACCESS_DENIED;
-	num_account = pdb_search_entries(info->disp_info.enum_users,
+	}
+
+	num_account = pdb_search_entries(info->disp_info->enum_users,
 					 enum_context, max_entries,
 					 &entries);
+
+	/* END AS ROOT !!!! */
+
 	unbecome_root();
 
 	if (num_account == 0) {
@@ -625,8 +799,14 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	if (!NT_STATUS_IS_OK(r_u->status))
 		return r_u->status;
 
-	if (max_entries <= num_account)
+	if (max_entries <= num_account) {
 		r_u->status = STATUS_MORE_ENTRIES;
+	} else {
+		r_u->status = NT_STATUS_OK;
+	}
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
 	DEBUG(5, ("_samr_enum_dom_users: %d\n", __LINE__));
 
@@ -705,18 +885,23 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	/* the domain group array is being allocated in the function below */
 
 	become_root();
-	if (info->disp_info.groups == NULL)
-		info->disp_info.groups = pdb_search_groups();
-	unbecome_root();
 
-	if (info->disp_info.groups == NULL)
-		return NT_STATUS_ACCESS_DENIED;
+	if (info->disp_info->groups == NULL) {
+		info->disp_info->groups = pdb_search_groups();
 
-	become_root();
-	num_groups = pdb_search_entries(info->disp_info.groups, q_u->start_idx,
+		if (info->disp_info->groups == NULL) {
+			unbecome_root();
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	num_groups = pdb_search_entries(info->disp_info->groups, q_u->start_idx,
 					MAX_SAM_ENTRIES, &groups);
 	unbecome_root();
 	
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
+
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
 				  num_groups, groups);
 
@@ -752,26 +937,30 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 		 sid_string_static(&info->sid)));
 
 	if (sid_check_is_domain(&info->sid))
-		search = &info->disp_info.aliases;
+		search = &info->disp_info->aliases;
 	if (sid_check_is_builtin(&info->sid))
-		search = &info->disp_info.builtins;
+		search = &info->disp_info->builtins;
 
 	if (search == NULL) 
 		return NT_STATUS_INVALID_HANDLE;
 
 	become_root();
-	if (*search == NULL)
+
+	if (*search == NULL) {
 		*search = pdb_search_aliases(&info->sid);
-	unbecome_root();
+		if (*search == NULL) {
+			unbecome_root();
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 
-	if (*search == NULL) 
-		return NT_STATUS_ACCESS_DENIED;
-
-	become_root();
 	num_aliases = pdb_search_entries(*search, q_u->start_idx,
 					 MAX_SAM_ENTRIES, &aliases);
 	unbecome_root();
 	
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
+
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
 				  num_aliases, aliases);
 
@@ -872,38 +1061,68 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 
 	become_root();
 
+	/* THe following done as ROOT. Don't return without unbecome_root(). */
+
 	switch (q_u->switch_level) {
 	case 0x1:
 	case 0x4:
-		if (info->disp_info.users == NULL)
-			info->disp_info.users = pdb_search_users(ACB_NORMAL);
-		if (info->disp_info.users == NULL)
-			return NT_STATUS_ACCESS_DENIED;
-		num_account = pdb_search_entries(info->disp_info.users,
+		if (info->disp_info->users == NULL) {
+			info->disp_info->users = pdb_search_users(ACB_NORMAL);
+			if (info->disp_info->users == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("samr_reply_query_dispinfo: starting user enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		} else {
+			DEBUG(10,("samr_reply_query_dispinfo: using cached user enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		}
+
+		num_account = pdb_search_entries(info->disp_info->users,
 						 enum_context, max_entries,
 						 &entries);
 		break;
 	case 0x2:
-		if (info->disp_info.machines == NULL)
-			info->disp_info.machines =
+		if (info->disp_info->machines == NULL) {
+			info->disp_info->machines =
 				pdb_search_users(ACB_WSTRUST|ACB_SVRTRUST);
-		if (info->disp_info.machines == NULL)
-			return NT_STATUS_ACCESS_DENIED;
-		num_account = pdb_search_entries(info->disp_info.machines,
+			if (info->disp_info->machines == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("samr_reply_query_dispinfo: starting machine enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		} else {
+			DEBUG(10,("samr_reply_query_dispinfo: using cached machine enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		}
+
+		num_account = pdb_search_entries(info->disp_info->machines,
 						 enum_context, max_entries,
 						 &entries);
 		break;
 	case 0x3:
 	case 0x5:
-		if (info->disp_info.groups == NULL)
-			info->disp_info.groups = pdb_search_groups();
-		if (info->disp_info.groups == NULL)
-			return NT_STATUS_ACCESS_DENIED;
-		num_account = pdb_search_entries(info->disp_info.groups,
+		if (info->disp_info->groups == NULL) {
+			info->disp_info->groups = pdb_search_groups();
+			if (info->disp_info->groups == NULL) {
+				unbecome_root();
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			DEBUG(10,("samr_reply_query_dispinfo: starting group enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		} else {
+			DEBUG(10,("samr_reply_query_dispinfo: using cached group enumeration at index %u\n",
+				(unsigned  int)enum_context ));
+		}
+
+		num_account = pdb_search_entries(info->disp_info->groups,
 						 enum_context, max_entries,
 						 &entries);
 		break;
 	default:
+		unbecome_root();
 		smb_panic("info class changed");
 		break;
 	}
@@ -947,10 +1166,14 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	/* calculate the total size */
 	total_data_size=num_account*struct_size;
 
-	if (num_account)
+	if (num_account) {
 		r_u->status = STATUS_MORE_ENTRIES;
-	else
+	} else {
 		r_u->status = NT_STATUS_OK;
+	}
+
+	/* Ensure we cache this enumeration. */
+	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
 	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
@@ -978,7 +1201,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_LOOKUP_INFO, "_samr_query_aliasinfo"))) {
 		return r_u->status;
@@ -1096,7 +1319,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	ZERO_ARRAY(rid);
 	ZERO_ARRAY(type);
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted)) {
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL)) {
 		init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
 		return r_u->status;
 	}
@@ -1255,7 +1478,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (num_rids > 1000) {
@@ -1317,7 +1540,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 
 	/* find the domain policy handle and get domain SID / access bits in the domain policy. */
 	
-	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted) )
+	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 	
 	nt_status = access_check_samr_function( acc_granted, 
@@ -1712,7 +1935,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_USER_GET_GROUPS, "_samr_query_usergroups"))) {
@@ -1766,7 +1989,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 			continue;
 
 		gids = TALLOC_REALLOC_ARRAY(p->mem_ctx, gids, DOM_GID, num_gids+1);
-		gids[num_gids].attr=7;
+		gids[num_gids].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
 		gids[num_gids].g_rid = rid;
 		num_gids += 1;
 	}
@@ -1858,9 +2081,9 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 			/* AS ROOT !!! */
 
-			num_users=count_sam_users(&info->disp_info,
+			num_users=count_sam_users(info->disp_info,
 						  ACB_NORMAL);
-			num_groups=count_sam_groups(&info->disp_info);
+			num_groups=count_sam_groups(info->disp_info);
 
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
@@ -1993,9 +2216,10 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	BOOL can_add_account = False;
 	SE_PRIV se_rights;
+	DISP_INFO *disp_info = NULL;
 
 	/* Get the domain SID stored in the domain policy */
-	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!NT_STATUS_IS_OK(nt_status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_USER, "_samr_create_user"))) {
@@ -2140,6 +2364,9 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+
+	/* After a "set" ensure we have no cached display info. */
+	force_flush_samr_cache(info->disp_info);
 
 	r_u->user_rid=pdb_get_user_rid(sam_pass);
 
@@ -2424,7 +2651,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 
 	/* find the domain policy and get the SID / access bits stored in the domain policy */
 	
-	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted) )
+	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 	
 	status = access_check_samr_function(acc_granted, 
@@ -2819,13 +3046,14 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	BOOL ret;
 	BOOL has_enough_rights = False;
 	uint32 acb_info;
+	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* observed when joining an XP client to a Samba domain */
@@ -2941,6 +3169,10 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 		
 	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		force_flush_samr_cache(disp_info);
+	}
+
 	return r_u->status;
 }
 
@@ -2960,13 +3192,14 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	BOOL ret;
 	BOOL has_enough_rights = False;
 	uint32 acb_info;
+	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
 
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* observed when joining XP client to Samba domain */
@@ -3046,6 +3279,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 		unbecome_root();
 		
 	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
+
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		force_flush_samr_cache(disp_info);
+	}
 
 	return r_u->status;
 }
@@ -3130,7 +3367,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	uint32 acc_granted;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = 
@@ -3242,7 +3479,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	NTSTATUS result;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
 		
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_GET_MEMBERS, "_samr_query_groupmem"))) {
@@ -3291,10 +3528,10 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
-
+	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_ADD_MEMBER, "_samr_add_aliasmem"))) {
@@ -3318,6 +3555,10 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 		
 	/******** END SeAddUsers BLOCK *********/
 	
+	if (ret) {
+		force_flush_samr_cache(disp_info);
+	}
+
 	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
@@ -3332,9 +3573,10 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
+	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_REMOVE_MEMBER, "_samr_del_aliasmem"))) {
@@ -3359,6 +3601,10 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 		
 	/******** END SeAddUsers BLOCK *********/
 	
+	if (ret) {
+		force_flush_samr_cache(disp_info);
+	}
+
 	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
@@ -3382,9 +3628,10 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
+	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_ADD_MEMBER, "_samr_add_groupmem"))) {
@@ -3470,6 +3717,9 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	}
 
 	passwd_free(&pwd);
+
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 }
 
@@ -3488,6 +3738,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
+	DISP_INFO *disp_info = NULL;
 
 	/*
 	 * delete the group member named q_u->rid
@@ -3496,7 +3747,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	 */
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_REMOVE_MEMBER, "_samr_del_groupmem"))) {
@@ -3555,6 +3806,9 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	}
 	
 	pdb_free_sam(&sam_pass);
+
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 
 }
@@ -3590,11 +3844,12 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	uint32 acc_granted;
 	BOOL can_add_accounts;
 	BOOL ret;
+	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &user_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &user_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 		
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_user"))) {
@@ -3651,6 +3906,8 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	if (!close_policy_hnd(p, &q_u->user_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 }
 
@@ -3671,11 +3928,12 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
+	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 		
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_group"))) {
@@ -3734,6 +3992,8 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if (!close_policy_hnd(p, &q_u->group_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 }
 
@@ -3748,11 +4008,12 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
+	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_alias"))) {
@@ -3788,6 +4049,8 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	if (!close_policy_hnd(p, &q_u->alias_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 }
 
@@ -3808,9 +4071,10 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	NTSTATUS result;
+	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_GROUP, "_samr_create_dom_group"))) {
@@ -3879,6 +4143,8 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 }
 
@@ -3897,9 +4163,10 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	NTSTATUS result;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
+	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 		
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_ALIAS, "_samr_create_alias"))) {
@@ -3951,6 +4218,8 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
+	force_flush_samr_cache(disp_info);
+
 	return NT_STATUS_OK;
 }
 
@@ -3972,7 +4241,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	uint32 acc_granted;
 	BOOL ret;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_LOOKUP_INFO, "_samr_query_groupinfo"))) {
@@ -4029,8 +4298,9 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	uint32 acc_granted;
 	BOOL ret;
 	BOOL can_mod_accounts;
+	DISP_INFO *disp_info = NULL;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_SET_INFO, "_samr_set_groupinfo"))) {
@@ -4067,6 +4337,10 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 
 	/******** End SeAddUsers BLOCK *********/
 
+	if (ret) {
+		force_flush_samr_cache(disp_info);
+	}
+
 	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
@@ -4084,8 +4358,9 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	uint32 acc_granted;
 	BOOL ret;
 	BOOL can_mod_accounts;
+	DISP_INFO *disp_info = NULL;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid, &acc_granted))
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_SET_INFO, "_samr_set_aliasinfo"))) {
@@ -4119,6 +4394,10 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
                 unbecome_root();
 
         /******** End SeAddUsers BLOCK *********/
+
+	if (ret) {
+		force_flush_samr_cache(disp_info);
+	}
 
 	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
@@ -4163,7 +4442,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	BOOL ret;
 	SE_PRIV se_rights;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid, &acc_granted)) 
+	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	status = access_check_samr_function(acc_granted, 
@@ -4226,7 +4505,8 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 	DOM_SID			delete_sid, domain_sid;
 	uint32 			acc_granted;
 	NTSTATUS		result;
-	
+	DISP_INFO *disp_info = NULL;
+
 	sid_copy( &delete_sid, &q_u->sid.sid );
 	
 	DEBUG(5,("_samr_remove_sid_foreign_domain: removing SID [%s]\n",
@@ -4235,7 +4515,7 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 	/* Find the policy handle. Open a policy on it. */
 	
 	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &domain_sid,
-				     &acc_granted)) 
+				     &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	result = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, 
@@ -4270,6 +4550,7 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 		return NT_STATUS_OK;
 	}
 
+	force_flush_samr_cache(disp_info);
 
 	result = NT_STATUS_OK;
 
@@ -4277,10 +4558,12 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 }
 
 /*******************************************************************
- _samr_unknown_2e
+ _samr_query_domain_info2
  ********************************************************************/
 
-NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOWN_2E *r_u)
+NTSTATUS _samr_query_domain_info2(pipes_struct *p,
+		SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
+		SAMR_R_QUERY_DOMAIN_INFO2 *r_u)
 {
 	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
@@ -4309,7 +4592,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	r_u->status = NT_STATUS_OK;
 
-	DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
@@ -4340,12 +4623,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			break;
 		case 0x02:
 			become_root();		
-			num_users = count_sam_users(&info->disp_info,
+			num_users = count_sam_users(info->disp_info,
 						    ACB_NORMAL);
-			num_groups = count_sam_groups(&info->disp_info);
+			num_groups = count_sam_groups(info->disp_info);
 			unbecome_root();
-
-			free_samr_db(info);
 
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
@@ -4410,9 +4691,9 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	init_samr_r_samr_unknown_2e(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+	init_samr_r_samr_query_domain_info2(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
 
-	DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
+	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
 
 	return r_u->status;
 }

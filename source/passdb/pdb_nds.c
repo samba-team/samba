@@ -762,11 +762,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		const char **attr_list;
 		size_t pwd_len;
 		char clear_text_pw[512];
-		const char *p = NULL;
 		LDAP *ld = NULL;
-		int ldap_port = 0;
-		char protocol[12];
-		char ldap_server[256];
 		const char *username = pdb_get_username(sam_acct);
 		BOOL got_clear_text_pw = False;
 
@@ -809,53 +805,13 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			DEBUG(5,("pdb_nds_update_login_attempts: using random password %s\n", clear_text_pw));
 		}
 
-		/* Parse the location string */
-		p = ldap_state->location; 
-
-		/* skip leading "URL:" (if any) */
-		if ( strnequal( p, "URL:", 4 ) ) {
-			p += 4;
-		}
-
-		sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, ldap_server, &ldap_port);
-
-		if (ldap_port == 0) {
-			if (strequal(protocol, "ldap")) {
-				ldap_port = LDAP_PORT;
-			} else if (strequal(protocol, "ldaps")) {
-				ldap_port = LDAPS_PORT;
-			} else {
-				DEBUG(0, ("unrecognised protocol (%s)!\n", protocol));
-			}
-		}
-
-		ld = ldap_init(ldap_server, ldap_port);
-
-		if(ld != NULL) {
-			int version;
-
-			/* LDAP version 3 required for ldap_sasl */
-			if (ldap_get_option(ld, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS) {
-				if (version != LDAP_VERSION3) {
-					version = LDAP_VERSION3;
-					if (ldap_set_option (ld, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS) {
-						DEBUG(4, ("pdb_nds_update_login_attempts: Set protocol version to LDAP_VERSION3\n"));
-					}
-				}
-			}
-
-			/* Turn on ssl if required */
-			if(strequal(protocol, "ldaps")) {
-				int tls = LDAP_OPT_X_TLS_HARD;
-				if (ldap_set_option (ld, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS) {
-					DEBUG(1, ("pdb_nds_update_login_attempts: Failed to setup a TLS session\n"));
-				} else {
-					DEBUG(4, ("pdb_nds_update_login_attempts: Activated TLS on session\n"));
-				}
-			}
-		}
-
 		if((success != True) || (got_clear_text_pw == True)) {
+			
+			rc = smb_ldap_setup_full_conn(ld, ldap_state->location);
+			if (rc) {
+				return NT_STATUS_INVALID_CONNECTION;
+			}
+
 			/* Attempt simple bind with real or bogus password */
 			rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
 			if (rc == LDAP_SUCCESS) {

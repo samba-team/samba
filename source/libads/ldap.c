@@ -292,6 +292,11 @@ got_connection:
 
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
+	status = ADS_ERROR(smb_ldap_start_tls(ads->ld, version));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
 	if (!ads->auth.user_name) {
 		/* have to use the userPrincipalName value here and 
 		   not servicePrincipalName; found by Guenther Deschner @ Sernet */
@@ -577,8 +582,10 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 	status = ads_do_paged_search(ads, bind_path, scope, expr, attrs, res,
 				     &count, &cookie);
 
-	if (!ADS_ERR_OK(status)) return status;
+	if (!ADS_ERR_OK(status)) 
+		return status;
 
+#ifdef HAVE_LDAP_ADD_RESULT_ENTRY
 	while (cookie) {
 		void *res2 = NULL;
 		ADS_STATUS status2;
@@ -598,6 +605,10 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 		/* note that we do not free res2, as the memory is now
                    part of the main returned list */
 	}
+#else
+	DEBUG(0, ("no ldap_add_result_entry() support in LDAP libs!\n"));
+	status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+#endif
 
 	return status;
 }

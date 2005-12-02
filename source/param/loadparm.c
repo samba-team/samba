@@ -145,7 +145,6 @@ typedef struct
 	char *szNetbiosName;
 	char **szNetbiosAliases;
 	char *szNetbiosScope;
-	char *szDomainOtherSIDs;
 	char *szNameResolveOrder;
 	char *szPanicAction;
 	char *szAddUserScript;
@@ -302,6 +301,7 @@ typedef struct
 	int name_cache_timeout;
 	int client_signing;
 	int server_signing;
+	BOOL bResetOnZeroVC;
 	param_opt_struct *param_opt;
 }
 global;
@@ -952,6 +952,7 @@ static struct parm_struct parm_table[] = {
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
+	{"reset on zero vc", P_BOOL, P_GLOBAL, &Globals.bResetOnZeroVC, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility,  NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"defer sharing violations", P_BOOL, P_GLOBAL, &Globals.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL},
@@ -1425,6 +1426,9 @@ static void init_globals(void)
 	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
 		 DEFAULT_MINOR_VERSION);
 	string_set(&Globals.szAnnounceVersion, s);
+#ifdef DEVELOPER
+	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
+#endif
 
 	pstrcpy(user_socket_options, DEFAULT_SOCKET_OPTIONS);
 
@@ -1520,6 +1524,7 @@ static void init_globals(void)
 	Globals.bUseMmap = True;
 #endif
 	Globals.bUnixExtensions = True;
+	Globals.bResetOnZeroVC = False;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
@@ -1807,6 +1812,7 @@ FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
+FN_GLOBAL_BOOL(lp_reset_on_zero_vc, &Globals.bResetOnZeroVC)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
 FN_GLOBAL_BOOL(lp_dns_proxy, &Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)

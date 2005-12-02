@@ -126,7 +126,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
 #define SAMR_REMOVE_SID_FOREIGN_DOMAIN        0x2d
-#define SAMR_UNKNOWN_2E        0x2e /* looks like an alias for SAMR_QUERY_DOMAIN_INFO */
+#define SAMR_QUERY_DOMAIN_INFO2  0x2e /* looks like an alias for SAMR_QUERY_DOMAIN_INFO */
 #define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
@@ -1064,7 +1064,7 @@ typedef struct samr_group_info1
 {
 	UNIHDR hdr_acct_name;
 
-	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
+	uint32 group_attr; /* 0x0000 0003 - group attribute */
 	uint32 num_members; /* 0x0000 0001 - number of group members? */
 
 	UNIHDR hdr_acct_desc;
@@ -1084,7 +1084,7 @@ typedef struct samr_group_info2
 
 typedef struct samr_group_info3
 {
-	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
+	uint32 group_attr; /* 0x0000 0003 - group attribute */
 
 } GROUP_INFO3;
 
@@ -1813,23 +1813,23 @@ typedef struct sid_info_3
 
 } DOM_SID3;
 
-/* SAMR_Q_UNKNOWN_2E */
-typedef struct q_samr_unknown_2e_info
+/* SAMR_Q_QUERY_DOMAIN_INFO2 */
+typedef struct q_samr_query_domain_info2
 {
 	POLICY_HND domain_pol;   /* policy handle */
 	uint16 switch_value;
 
-} SAMR_Q_UNKNOWN_2E;
+} SAMR_Q_QUERY_DOMAIN_INFO2;
 
-/* SAMR_R_UNKNOWN_2E */
-typedef struct r_samr_unknown_2e_info
+/* SAMR_R_QUERY_DOMAIN_INFO2 */
+typedef struct r_samr_query_domain_info2
 {
 	uint32 ptr_0;
 	uint16 switch_value;
 	SAM_UNK_CTR *ctr;
 	NTSTATUS status;         /* return status */
 
-} SAMR_R_UNKNOWN_2E;
+} SAMR_R_QUERY_DOMAIN_INFO2;
 
 /* SAMR_Q_SET_DOMAIN_INFO */
 typedef struct q_samr_set_domain_info

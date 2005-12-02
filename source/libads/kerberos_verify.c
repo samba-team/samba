@@ -400,9 +400,9 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
 #endif
 
-	/* continue when no PAC is retrieved 
-	   (like accounts that have the UF_NO_AUTH_DATA_REQUIRED flag set, 
-	   or Kerberos tickets encryped using a DES key) - Guenther */
+	/* continue when no PAC is retrieved or we couldn't decode the PAC 
+	   (like accounts that have the UF_NO_AUTH_DATA_REQUIRED flag set, or
+	   Kerberos tickets encrypted using a DES key) - Guenther */
 
 	got_auth_data = get_auth_data_from_tkt(mem_ctx, &auth_data, tkt);
 	if (!got_auth_data) {

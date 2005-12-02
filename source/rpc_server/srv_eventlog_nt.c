@@ -27,7 +27,8 @@
 
 typedef struct {
 	char *logname;
-	TDB_CONTEXT *tdb;
+	ELOG_TDB *etdb;
+	uint32 current_record;
 	uint32 num_records;
 	uint32 oldest_entry;
 	uint32 flags;
@@ -41,8 +42,8 @@ static void free_eventlog_info( void *ptr )
 {
 	EVENTLOG_INFO *elog = (EVENTLOG_INFO *)ptr;
 	
-	if ( elog->tdb )
-		elog_close_tdb( elog->tdb );
+	if ( elog->etdb )
+		elog_close_tdb( elog->etdb, False );
 	
 	TALLOC_FREE( elog );
 }
@@ -131,6 +132,45 @@ static BOOL elog_validate_logname( const char *name )
 }
 
 /********************************************************************
+********************************************************************/
+
+static BOOL get_num_records_hook( EVENTLOG_INFO * info )
+{
+	int next_record;
+	int oldest_record;
+
+	if ( !info->etdb ) {
+		DEBUG( 10, ( "No open tdb for %s\n", info->logname ) );
+		return False;
+	}
+
+	/* lock the tdb since we have to get 2 records */
+
+	tdb_lock_bystring( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD, 1 );
+	next_record = tdb_fetch_int32( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD);
+	oldest_record = tdb_fetch_int32( ELOG_TDB_CTX(info->etdb), EVT_OLDEST_ENTRY);
+	tdb_unlock_bystring( ELOG_TDB_CTX(info->etdb), EVT_NEXT_RECORD);
+
+	DEBUG( 8,
+	       ( "Oldest Record %d; Next Record %d\n", oldest_record,
+		 next_record ) );
+
+	info->num_records = ( next_record - oldest_record );
+	info->oldest_entry = oldest_record;
+
+	return True;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+static BOOL get_oldest_entry_hook( EVENTLOG_INFO * info )
+{
+	/* it's the same thing */
+	return get_num_records_hook( info );
+}
+
+/********************************************************************
  ********************************************************************/
 
 static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
@@ -153,10 +193,10 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	   in a single process */
 
 	become_root();
-	elog->tdb = elog_open_tdb( elog->logname );
+	elog->etdb = elog_open_tdb( elog->logname, False );
 	unbecome_root();
 
-	if ( !elog->tdb ) {
+	if ( !elog->etdb ) {
 		/* according to MSDN, if the logfile cannot be found, we should
 		  default to the "Application" log */
 	
@@ -173,11 +213,11 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 			}
 	
 			become_root();
-			elog->tdb = elog_open_tdb( elog->logname );
+			elog->etdb = elog_open_tdb( elog->logname, False );
 			unbecome_root();
 		}	
 		
-		if ( !elog->tdb ) {
+		if ( !elog->etdb ) {
 			TALLOC_FREE( elog );
 			return NT_STATUS_ACCESS_DENIED;	/* ??? */		
 		}
@@ -186,7 +226,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	/* now do the access check.  Close the tdb if we fail here */
 
 	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
-		elog_close_tdb( elog->tdb );
+		elog_close_tdb( elog->etdb, False );
 		TALLOC_FREE( elog );
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -198,6 +238,15 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 		free_eventlog_info( elog );
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/* set the initial current_record pointer */
+
+	if ( !get_oldest_entry_hook( elog ) ) {
+		DEBUG(3,("elog_open: Successfully opened eventlog but can't "
+			"get any information on internal records!\n"));
+	}	
+
+	elog->current_record = elog->oldest_entry;
 
 	return NT_STATUS_OK;
 }
@@ -219,12 +268,12 @@ static NTSTATUS elog_close( pipes_struct *p, POLICY_HND *hnd )
 
 static int elog_size( EVENTLOG_INFO *info )
 {
-	if ( !info || !info->tdb ) {
+	if ( !info || !info->etdb ) {
 		DEBUG(0,("elog_size: Invalid info* structure!\n"));
 		return 0;
 	}
 
-	return elog_tdb_size( info->tdb, NULL, NULL );
+	return elog_tdb_size( ELOG_TDB_CTX(info->etdb), NULL, NULL );
 }
 
 /********************************************************************
@@ -348,7 +397,7 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	DEBUG( 4, ( "sync_eventlog_params with %s\n", elogname ) );
 
-	if ( !info->tdb ) {
+	if ( !info->etdb ) {
 		DEBUG( 4, ( "No open tdb! (%s)\n", info->logname ) );
 		return False;
 	}
@@ -391,49 +440,10 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	regkey_close_internal( keyinfo );
 
-	tdb_store_int32( info->tdb, EVT_MAXSIZE, uiMaxSize );
-	tdb_store_int32( info->tdb, EVT_RETENTION, uiRetention );
+	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_MAXSIZE, uiMaxSize );
+	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_RETENTION, uiRetention );
 
 	return True;
-}
-
-/********************************************************************
-********************************************************************/
-
-static BOOL get_num_records_hook( EVENTLOG_INFO * info )
-{
-	int next_record;
-	int oldest_record;
-
-	if ( !info->tdb ) {
-		DEBUG( 10, ( "No open tdb for %s\n", info->logname ) );
-		return False;
-	}
-
-	/* lock the tdb since we have to get 2 records */
-
-	tdb_lock_bystring( info->tdb, EVT_NEXT_RECORD, 1 );
-	next_record = tdb_fetch_int32( info->tdb, EVT_NEXT_RECORD);
-	oldest_record = tdb_fetch_int32( info->tdb, EVT_OLDEST_ENTRY);
-	tdb_unlock_bystring( info->tdb, EVT_NEXT_RECORD);
-
-	DEBUG( 8,
-	       ( "Oldest Record %d; Next Record %d\n", oldest_record,
-		 next_record ) );
-
-	info->num_records = ( next_record - oldest_record );
-	info->oldest_entry = oldest_record;
-
-	return True;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static BOOL get_oldest_entry_hook( EVENTLOG_INFO * info )
-{
-	/* it's the same thing */
-	return get_num_records_hook( info );
 }
 
 /********************************************************************
@@ -600,7 +610,7 @@ NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 	DEBUG(10,("_eventlog_open_eventlog: Size [%d]\n", elog_size( info )));
 
 	sync_eventlog_params( info );
-	prune_eventlog( info->tdb );
+	prune_eventlog( ELOG_TDB_CTX(info->etdb) );
 
 	return NT_STATUS_OK;
 }
@@ -624,20 +634,26 @@ NTSTATUS _eventlog_clear_eventlog( pipes_struct * p,
 		rpcstr_pull( backup_file_name, q_u->backupfile.string->buffer,
 			     sizeof( backup_file_name ),
 			     q_u->backupfile.string->uni_str_len * 2, 0 );
+
+		DEBUG(8,( "_eventlog_clear_eventlog: Using [%s] as the backup "
+			"file name for log [%s].",
+			 backup_file_name, info->logname ) );
 	}
 
-	DEBUG( 8,
-	       ( "_eventlog_clear_eventlog: Using [%s] as the backup file name for log [%s].",
-		 backup_file_name, info->logname ) );
+	/* check for WRITE access to the file */
 
-#if 0 
-	/* close the current one, reinit */
-
-	tdb_close( info->tdb ); 
-
-	if ( !(info->tdb = elog_init_tdb( ttdb[i].tdbfname )) )
+	if ( !(info->access_granted&SA_RIGHT_FILE_WRITE_DATA) )
 		return NT_STATUS_ACCESS_DENIED;
-#endif
+
+	/* Force a close and reopen */
+
+	elog_close_tdb( info->etdb, True ); 
+	become_root();
+	info->etdb = elog_open_tdb( info->logname, True );
+	unbecome_root();
+
+	if ( !info->etdb )
+		return NT_STATUS_ACCESS_DENIED;
 
 	return NT_STATUS_OK;
 }
@@ -661,71 +677,86 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
 	Eventlog_entry entry, *ee_new;
-
 	uint32 num_records_read = 0;
 	prs_struct *ps;
 	int bytes_left, record_number;
-	TDB_CONTEXT *tdb;
+	uint32 elog_read_type, elog_read_dir;
 
 	info->flags = q_u->flags;
 	ps = &p->out_data.rdata;
 
 	bytes_left = q_u->max_read_size;
-	tdb = info->tdb;
-	if ( !tdb ) {
+
+	if ( !info->etdb ) 
 		return NT_STATUS_ACCESS_DENIED;
+		
+	/* check for valid flags.  Can't use the sequential and seek flags together */
+
+	elog_read_type = q_u->flags & (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ);
+	elog_read_dir = q_u->flags & (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ);
+
+	if ( elog_read_type == (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ) 
+		||  elog_read_dir == (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ) )
+	{
+		DEBUG(3,("_eventlog_read_eventlog: Invalid flags [0x%x] for ReadEventLog\n", q_u->flags));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* DEBUG(8,("Bytes left is %d\n",bytes_left)); */
+	/* a sequential read should ignore the offset */
 
-	record_number = q_u->offset;
+	if ( elog_read_type & EVENTLOG_SEQUENTIAL_READ )
+		record_number = info->current_record;
+	else 
+		record_number = q_u->offset;
 
 	while ( bytes_left > 0 ) {
-		if ( get_eventlog_record
-		     ( ps, tdb, record_number, &entry ) ) {
-			DEBUG( 8,
-			       ( "Retrieved record %d\n", record_number ) );
+
+		/* assume that when the record fetch fails, that we are done */
+
+		if ( !get_eventlog_record ( ps, ELOG_TDB_CTX(info->etdb), record_number, &entry ) ) 
+			break;
+
+		DEBUG( 8, ( "Retrieved record %d\n", record_number ) );
 			       
-			/* Now see if there is enough room to add */
-			ee_new = read_package_entry( ps, q_u, r_u,&entry );
-			if ( !ee_new )
-				return NT_STATUS_NO_MEMORY;
+		/* Now see if there is enough room to add */
 
-			if ( r_u->num_bytes_in_resp + ee_new->record.length >
-			     q_u->max_read_size ) {
-				r_u->bytes_in_next_record =
-					ee_new->record.length;
-					
-				/* response would be too big to fit in client-size buffer */
+		if ( !(ee_new = read_package_entry( ps, q_u, r_u,&entry )) )
+			return NT_STATUS_NO_MEMORY;
+
+		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {
+			r_u->bytes_in_next_record = ee_new->record.length;
+
+			/* response would be too big to fit in client-size buffer */
 				
-				bytes_left = 0;
-				break;
-			}
-			
-			add_record_to_resp( r_u, ee_new );
-			bytes_left -= ee_new->record.length;
-			ZERO_STRUCT( entry );
-			num_records_read =
-				r_u->num_records - num_records_read;
-				
-			DEBUG( 10,
-			       ( "_eventlog_read_eventlog: read [%d] records for a total of [%d] records using [%d] bytes out of a max of [%d].\n",
-				 num_records_read, r_u->num_records,
-				 r_u->num_bytes_in_resp,
-				 q_u->max_read_size ) );
-		} else {
-			DEBUG( 8, ( "get_eventlog_record returned NULL\n" ) );
-			return NT_STATUS_NO_MEMORY;	/* wrong error - but return one anyway */
+			bytes_left = 0;
+			break;
 		}
-
+			
+		add_record_to_resp( r_u, ee_new );
+		bytes_left -= ee_new->record.length;
+		ZERO_STRUCT( entry );
+		num_records_read = r_u->num_records - num_records_read;
+				
+		DEBUG( 10, ( "_eventlog_read_eventlog: read [%d] records for a total "
+			"of [%d] records using [%d] bytes out of a max of [%d].\n",
+			 num_records_read, r_u->num_records,
+			 r_u->num_bytes_in_resp,
+			 q_u->max_read_size ) );
 
 		if ( info->flags & EVENTLOG_FORWARDS_READ )
 			record_number++;
 		else
 			record_number--;
+		
+		/* update the eventlog record pointer */
+		
+		info->current_record = record_number;
 	}
-	
-	return NT_STATUS_OK;
+
+	/* crazy by WinXP uses NT_STATUS_BUFFER_TOO_SMALL to 
+	   say when there are no more records */
+
+	return (num_records_read ? NT_STATUS_OK : NT_STATUS_BUFFER_TOO_SMALL);
 }
 
 /********************************************************************

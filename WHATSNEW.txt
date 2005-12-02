@@ -1,19 +1,31 @@
-                   =================================
-                   Release Notes for Samba 3.0.21rc1
-                              Nov 12, 2005
-                   =================================
+                   ==============================
+                   Release Notes for Samba 3.0.21
+                              Dec 3, 2005
+                   ==============================
 
-This is a release candidate of the 3.0.21 code base and is provided
-for testing purposes only.  While close to the final stable release,
-this snapshot is *not* intended for production servers.  
+This is the latest stable release of Samba. This is the version
+that production Samba servers should be running for all current
+bug-fixes.  Please read the following important changes in this
+release.
 
 Common bugs fixed in 3.0.21rc1 include:
 
+  o Missing groups in a user's token when logging in via kerberos
+  o Incompatibilities with newer MS Windows hotfixes and 
+    embedded OS platforms
   o Portability and crash bugs.
   o Performance issues in winbindd.
 
 New features introduced in Samba 3.0.21rc1 include:
 
+  o Complete NTLMv2 support by consolidating authentication
+    mechanism used at the CIFS and RPC layers.
+  o The capability to manage Unix services using the Win32 
+    Service Control API.
+  o The capability to view external Unix log files via the
+    Microsoft Event Viewer.
+  o New libmsrpc share library for application developers.
+  o Rewrite of CIFS oplock implementation.
   o Performance Counter external daemon.
   o Winbindd auto-detection query methods when communicating with
     a domain controller.
@@ -30,15 +42,122 @@ smb.conf changes
     --------------                      ------
     dfree cache time			New
     dfree command			Per share
+    eventlog list			New
+    iprint server			New
+    map read only			New
+    rename user script			New
+    reset on zero vc			New
+    svcctl list 			Renamed from 'enable svcctl'
 
 
-Changes since 3.0.21pre1
+Changes since 3.0.21rc1
 ------------------------
 
 commits
 -------
+o   Jeremy Allison <jra@samba.org>
+    * Remove #define of close -> close_fn maxcor in libsmbclient.
+    * Return early if -1 returned from *BSD EA call (reported by 
+      Timur).
+    * Name space cleanup by marking local functions static.
+    * Move samr enumeration cache from per handle basis to a shared 
+      cache.
+    * BUG 3274: Fix invalid smbclient qpath_basic() queries against 
+      OS/2 servers (based on patch from Guenter Kukkukk).
+    * Ensure default applies to new files (reported by Thomas 
+      Neumann).
+
+
+o   Rashid N. Achilov <shelton@granch.ru>
+    * Add better service description names to the svcctl code.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 3262: Improve FreeBSD DOS attribute error reporting.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Add smbget to the list of tools built by default.
+    * Fix clearing of eventlog tdb files.
+    * Fix sequential reads in eventlog support.
+    * BUG 2718: Don't use qpathinfo_basic() call when remote server 
+      is Win9x.
+    * Fix build issues with the Sun compiler.
+    * BUG 3156: Don't use find_service() when explicitly looking 
+      for a printer.
+    * Fix nss_winbind_solaris.c build breakage on HP=UX.
+
+
+o   Alex Deiter <tiamat@komi.mts.ru>
+    * BUG 3196: Patch to compile against the Sun LDAP client libs.
+      (not for AD support; just ldap support).
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Avoid an inifinite loop when retying to connect in smbspool.
+    * Memory leak fixes in the kerberos PAC parsing code.
+    * Improve NT_STATUS error messages returned from pam_winbind.
+    * Rename unknown samr group fields in samr structures with 
+      the correct name.
+    * Cleanup redundant StartTLS code.
+    * Allow StartTLS support when connecting to Windows 2003 by
+      setting 'ldap ssl = start_tls'.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Removed unused alternative_name cocde from winbindd.
+    * Protect against NULL alternative_name strings in winbindd.
+    * Define a default panic action with -DEVELOPER is defined.
+    * Add the capability ot reset smbd connections on a zero VC id.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 3187: Fix time zone offset in logon hours restrictions.
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * Only install smbsh manpage if smbwrapper has been successfully
+      built.
+
+
+o   Tim Potter <tpot@samba.org>
+    * BUG 3260: Fix DYNEXP flags on HPUX.
+
+
+o   Aruna Prabakar <aruna.prabakar@hp.com.
+    * Add checks to verify that the spooler is running on HP-UX when
+      reloading the printer name cache.
+
+
+o   Darren Tucker <dtucker@zip.com.au>
+    o Crash fix for snprintf() code.
+
+
+o   Rainer Weikusat <rainer.weikusat@sncag.com>
+    * Fix function name typo in skeleton VFS code.
+
+
+
+Changes since 3.0.20b
+---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 1828: Fixed SPNEGO issues with PocketPC clients.
+    * Added 'map readonly' parameter.
+    * BUG 3166: Fix crash in libsmbclient if the $HOME environment is
+      not defined.
+    * Maintain schannel client session keys in volatile 
+      $(privatedir)/schannel_store.tdb.
+    * BUG 2769: Ensure we mangle filenames ending in a space
+    * Catch corner case of renaming a symlinked directory into 
+      itself
+    * Ensure that smb.conf requests for hidden files are honored, 
+      even when DOS attributes are stored in EA's
+    * Add new auth method "auth_script" for calling an external 
+      program
+    * BUG 2152: Fix for mangled filenames when the client does 
+      support long filenames
+    * Rewritten implementation of client and server DCE/RPC infrastructure 
     * BUG 3192: Adds a "dfree cache time" parameter.
     * Fix acl evaluation bug found by Marc Cousin.  Only evaluate 
       the S_IWGRP mask in the absence of a POSIX ACL.
@@ -83,6 +202,23 @@ o   Alexander Bokovoy <ab@samba.org>
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Eventlog and ServiceControl support.
+    * BUG 1051: store the directory path so we can send the full 
+      name in the unlink call from smbclient.
+    * Use reference count strategy for keeping the registry tdb 
+      open.
+    * Convert internal registry objects to new hierarchical talloc
+    * Allow the root user a free pass for access checks in the
+      registry and service control checks.
+    * Sanity checks in the privilege code to prevent empty SID 
+      entries
+    * Add basic infrastructure for 'make test' when the socket 
+      wrapper library is configured at compile time
+    * Convert profiles utility to use the current regfio interface 
+      for reading and writing user profiles
+    * Remove netsamlogon_cache interface
+    * Ensure that print jobs are removed even when the cancel 
+      command is received before the print cache has been updated
     * Fix linking problem on Solaris when including ACL support.
     * Give root a free pass to open the eventlog tdb files.
     * Fix segfault in addprinter due to mixing talloc() and 
@@ -110,6 +246,18 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 
 
 o   Guenther Deschner <gd@samba.org>
+    * Fixed compile problems and warnings with newer OpenLDAP 
+      and OpenSSL libs
+    * Fix bug when enumerating trusted domains via 'wbinfo -m'
+    * Parse the MS Kerberos PAC to obtain the user group 
+      membership during logon.
+    * Add support for SeRestorePrivilege to allow a process to 
+      change the ownership of a file to any arbitrary account
+    * Fix password history storage when using Novell eDirectory for 
+      ldapsam storage
+    * Backport Kerberos PAC parsing from Samba 4 branch in order to
+      correctly create the NT User Token when logging into a Samba 
+      member server
     * Add small helper function to return a PAC_LOGON_INFO.
     * Use LDAP bitwise matching rule when searching for groups 
       in ADS.
@@ -119,7 +267,18 @@ o   Paul Green <paulg@samba.org>
     * Update to the latest config.guess and config.sub files.
 
 
+o   Deryck Hodge <deryck@samba.org>
+    * Allow control of syslog facility and level in audit vfs modules.
+
+
+o   S Murthy Kambhampaty <smk_va@yahoo.com>
+    * Patches for Fedora RPM specfile and init script
+
+
 o   Volker Lendecke <vl@samba.org>
+    * New oplock implementation.
+    * Add assert() call if winbindd cannot locate the domain SID in 
+      secrets.tdb on startup
     * Fix an annoying timeout in winbindd when nmbd is not running.
     * Speed up loading smb.conf for large numbers of share 
       definitions by adding an internal hashing of names to snums. 
@@ -141,6 +300,10 @@ o   Derrell Lipman <derrell@samba.org>
     * Cleanup libmsrpc version numbers.
 
 
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Removed compiler various warnings.
+
+
 o   Alex Masterov <alex@infobit.ru>
     * BUG 3218: Fix XATTR calls on *BSD systems.
 
@@ -149,21 +312,22 @@ o   Jim McDonough <jmcd@us.ibm.com>
     * Speed up string_to_sid by removing next_token calls and 
       unneeded strncmp() calls.
     * Implement user rename for smbpasswd and LDAP backends.
+    * BUG 2961 (partial): Add rename support for user accounts to tdbsam
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * Fix setting of quotas on linux kernel with the struct 
+      if_dqblk interface
+    * Enable sysquota interfact on Linux by default
     * Use lp_socket_address() when binding to port 138/udp in nmbd.
 
 
 o   Brian Moran <bmoran@centeris.com>
+    * Eventlog and ServiceControl support.
+    * Added eventlogadm tool for writing Eventlog records.
     * Fix typo when creating Eventlog source DLL registry paths.
     * Add simple script to tail syslog and write records to 
       eventlog tdb.
-
-
-o   Lars Müller <lmuelle@samba.org>
-    * Only install smbsh manpage if smbwrapper has been successfully
-      built.
 
 
 o   Ricky Nance <ricky.nance@gmail.com>
@@ -171,159 +335,9 @@ o   Ricky Nance <ricky.nance@gmail.com>
 
 
 o   Chris Nicholls <skel@samba.org>
+    * New libmsrpc library (Google SoC Project).
     * Fix libmsrpc build of on the Sun compiler by removing empty 
       structure declarations.
-
-
-o   Marcin Porwit <mporwit@centeris.com>
-    * Added basic Performance Counter daemon which can feed data
-      for the Windows perfmon.exe tool.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Update Debian packaging.
-
-
-
-Release Notes for older release follow:
-
-      --------------------------------------------------
-
-                   ==================================
-                   Release Notes for Samba 3.0.21pre1
-                              Oct 18, 2005
-                   ==================================
-
-
-Common bugs fixed in 3.0.21pre1 include:
-
-  o Missing groups in a user's token when logging in via kerberos
-  o Incompatibilities with newer MS Windows hotfixes and 
-    embedded OS platforms
-
-New features introduced in Samba 3.0.21pre1 include:
-
-  o Complete NTLMv2 support by consolidating authentication
-    mechanism used at the CIFS and RPC layers.
-  o The capability to manage Unix services using the Win32 
-    Service Control API.
-  o The capability to view external Unix log files via the
-    Microsoft Event Viewer.
-  o New libmsrpc share library for application developers.
-  o Rewrite of CIFS oplock implementation.
-
-
-######################################################################
-Changes
-#######
-
-smb.conf changes
-----------------
-
-    Parameter Name                      Action
-    --------------                      ------
-    eventlog list			New
-    iprint server			New
-    map read only			New
-    rename user script			New
-    svcctl list 			Renamed from 'enable svcctl'
-
-
-Changes since 3.0.20[a-b]
--------------------------
-
-commits
--------
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 1828: Fixed SPNEGO issues with PocketPC clients.
-    * Added 'map readonly' parameter.
-    * BUG 3166: Fix crash in libsmbclient if the $HOME environment is
-      not defined.
-    * Maintain schannel client session keys in volatile 
-      $(privatedir)/schannel_store.tdb.
-    * BUG 2769: Ensure we mangle filenames ending in a space
-    * Catch corner case of renaming a symlinked directory into 
-      itself
-    * Ensure that smb.conf requests for hidden files are honored, 
-      even when DOS attributes are stored in EA's
-    * Add new auth method "auth_script" for calling an external 
-      program
-    * BUG 2152: Fix for mangled filenames when the client does 
-      support long filenames
-    * Rewritten implementation of client and server DCE/RPC infrastructure 
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Eventlog and ServiceControl support.
-    * BUG 1051: store the directory path so we can send the full 
-      name in the unlink call from smbclient.
-    * Use reference count strategy for keeping the registry tdb 
-      open.
-    * Convert internal registry objects to new hierarchical talloc
-    * Allow the root user a free pass for access checks in the
-      registry and service control checks.
-    * Sanity checks in the privilege code to prevent empty SID 
-      entries
-    * Add basic infrastructure for 'make test' when the socket 
-      wrapper library is configured at compile time
-    * Convert profiles utility to use the current regfio interface 
-      for reading and writing user profiles
-    * Remove netsamlogon_cache interface
-    * Ensure that print jobs are removed even when the cancel 
-      command is received before the print cache has been updated
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Fixed compile problems and warnings with newer OpenLDAP 
-      and OpenSSL libs
-    * Fix bug when enumerating trusted domains via 'wbinfo -m'
-    * Parse the MS Kerberos PAC to obtain the user group 
-      membership during logon.
-    * Add support for SeRestorePrivilege to allow a process to 
-      change the ownership of a file to any arbitrary account
-    * Fix password history storage when using Novell eDirectory for 
-      ldapsam storage
-    * Backport Kerberos PAC parsing from Samba 4 branch in order to
-      correctly create the NT User Token when logging into a Samba 
-      member server
-
-
-o   Deryck Hodge <deryck@samba.org>
-    * Allow control of syslog facility and level in audit vfs modules.
-
-
-o   S Murthy Kambhampaty <smk_va@yahoo.com>
-    * Patches for Fedora RPM specfile and init script
-
-
-o   Volker Lendecke <vl@samba.org>
-    * New oplock implementation.
-    * Add assert() call if winbindd cannot locate the domain SID in 
-      secrets.tdb on startup
-
-
-o   Jason Mader <jason@ncac.gwu.edu>
-    * Removed compiler various warnings.
-
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * BUG 2961 (partial): Add rename support for user accounts to tdbsam
-
-
-o   Stefan Metzmacher <metze@samba.org>    
-    * Fix setting of quotas on linux kernel with the struct 
-      if_dqblk interface
-    * Enable sysquota interfact on Linux by default
-
-
-o   Brian Moran <bmoran@centeris.com>
-    * Eventlog and ServiceControl support.
-    * Added eventlogadm tool for writing Eventlog records.
-
-
-o   Chris Nicholls <skel@samba.org>
-    * New libmsrpc library (Google SoC Project).
 
 
 o   James Peach <jpeach@sgi.com>
@@ -332,6 +346,8 @@ o   James Peach <jpeach@sgi.com>
 
 o   Marcin Porwit <mporwit@centeris.com>
     * Eventlog and ServiceControl support.
+    * Added basic Performance Counter daemon which can feed data
+      for the Windows perfmon.exe tool.
 
 
 o   Joel Smith <joel.j.smith@novell.com>
@@ -341,6 +357,12 @@ o   Joel Smith <joel.j.smith@novell.com>
 o   Toomas Soome <Toomas.Soome@mls.ee>
     * Implement host lookups in nss_winbind.so.1 on Solaris
 
+
+o   Simo Sorce <idra@samba.org>
+    * Update Debian packaging.
+
+
+Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================

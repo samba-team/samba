@@ -523,24 +523,56 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 	t->smbldap_state = smbldap_state;
 }
 
-/*******************************************************************
- open a connection to the ldap server.
-******************************************************************/
-static int smbldap_open_connection (struct smbldap_state *ldap_state)
+/********************************************************************
+ start TLS on an existing LDAP connection
+*******************************************************************/
 
-{
-	int rc = LDAP_SUCCESS;
-	int version;
-	BOOL ldap_v3 = False;
-	LDAP **ldap_struct = &ldap_state->ldap_struct;
-
-#ifdef HAVE_LDAP_INITIALIZE
-	DEBUG(10, ("smbldap_open_connection: %s\n", ldap_state->uri));
+int smb_ldap_start_tls(LDAP *ldap_struct, int version)
+{ 
+	int rc;
 	
-	if ((rc = ldap_initialize(ldap_struct, ldap_state->uri)) != LDAP_SUCCESS) {
-		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
+	if (lp_ldap_ssl() != LDAP_SSL_START_TLS) {
+		return LDAP_SUCCESS;
+	}
+	
+#ifdef LDAP_OPT_X_TLS
+	if (version != LDAP_VERSION3) {
+		DEBUG(0, ("Need LDAPv3 for Start TLS\n"));
+		return LDAP_OPERATIONS_ERROR;
+	}
+
+	if ((rc = ldap_start_tls_s (ldap_struct, NULL, NULL)) != LDAP_SUCCESS)	{
+		DEBUG(0,("Failed to issue the StartTLS instruction: %s\n",
+			 ldap_err2string(rc)));
 		return rc;
 	}
+
+	DEBUG (3, ("StartTLS issued: using a TLS connection\n"));
+	return LDAP_SUCCESS;
+#else
+	DEBUG(0,("StartTLS not supported by LDAP client libraries!\n"));
+	return LDAP_OPERATIONS_ERROR;
+#endif
+}
+
+/********************************************************************
+ setup a connection to the LDAP server based on a uri
+*******************************************************************/
+
+int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
+{
+	int rc;
+
+	DEBUG(10, ("smb_ldap_setup_connection: %s\n", uri));
+	
+#ifdef HAVE_LDAP_INITIALIZE
+	
+	rc = ldap_initialize(ldap_struct, uri);
+	if (rc) {
+		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
+	}
+
+	return rc;
 #else 
 
 	/* Parse the string manually */
@@ -549,15 +581,15 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 		int port = 0;
 		fstring protocol;
 		fstring host;
-		const char *p = ldap_state->uri; 
 		SMB_ASSERT(sizeof(protocol)>10 && sizeof(host)>254);
-		
+
+
 		/* skip leading "URL:" (if any) */
-		if ( strnequal( p, "URL:", 4 ) ) {
-			p += 4;
+		if ( strnequal( uri, "URL:", 4 ) ) {
+			uri += 4;
 		}
 		
-		sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, host, &port);
+		sscanf(uri, "%10[^:]://%254[^:/]:%d", protocol, host, &port);
 		
 		if (port == 0) {
 			if (strequal(protocol, "ldap")) {
@@ -586,10 +618,88 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 #else
 			DEBUG(0,("smbldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
 			return LDAP_OPERATIONS_ERROR;
-#endif
+#endif /* LDAP_OPT_X_TLS */
 		}
+
 	}
-#endif
+#endif /* HAVE_LDAP_INITIALIZE */
+	return LDAP_SUCCESS;
+}
+
+/********************************************************************
+ try to upgrade to Version 3 LDAP if not already, in either case return current
+ version 
+ *******************************************************************/
+
+int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version) 
+{
+	int version;
+	int rc;
+	
+	/* assume the worst */
+	*new_version = LDAP_VERSION2;
+
+	rc = ldap_get_option(ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
+	if (rc) {
+		return rc;
+	}
+
+	if (version == LDAP_VERSION3) {
+		*new_version = LDAP_VERSION3;
+		return LDAP_SUCCESS;
+	}
+
+	/* try upgrade */
+	version = LDAP_VERSION3;
+	rc = ldap_set_option (ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
+	if (rc) {
+		return rc;
+	}
+		
+	*new_version = LDAP_VERSION3;
+	return LDAP_SUCCESS;
+}
+
+/*******************************************************************
+ open a connection to the ldap server (just until the bind)
+ ******************************************************************/
+
+int smb_ldap_setup_full_conn(LDAP *ldap_struct, const char *uri)
+{
+	int rc, version;
+
+	rc = smb_ldap_setup_conn(&ldap_struct, uri);
+	if (rc) {
+		return rc;
+	}
+
+	rc = smb_ldap_upgrade_conn(ldap_struct, &version);
+	if (rc) {
+		return rc;
+	}
+
+	rc = smb_ldap_start_tls(ldap_struct, version);
+	if (rc) {
+		return rc;
+	}
+
+	return LDAP_SUCCESS;
+}
+
+/*******************************************************************
+ open a connection to the ldap server.
+******************************************************************/
+static int smbldap_open_connection (struct smbldap_state *ldap_state)
+
+{
+	int rc = LDAP_SUCCESS;
+	int version;
+	LDAP **ldap_struct = &ldap_state->ldap_struct;
+
+	rc = smb_ldap_setup_conn(ldap_struct, ldap_state->uri);
+	if (rc) {
+		return rc;
+	}
 
 	/* Store the LDAP pointer in a lookup list */
 
@@ -597,44 +707,21 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 
 	/* Upgrade to LDAPv3 if possible */
 
-	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
-	{
-		if (version != LDAP_VERSION3)
-		{
-			version = LDAP_VERSION3;
-			if (ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS) {
-				ldap_v3 = True;
-			}
-		} else {
-			ldap_v3 = True;
-		}
+	rc = smb_ldap_upgrade_conn(*ldap_struct, &version);
+	if (rc) {
+		return rc;
 	}
 
-	if (lp_ldap_ssl() == LDAP_SSL_START_TLS) {
-#ifdef LDAP_OPT_X_TLS
-		if (ldap_v3) {
-			if ((rc = ldap_start_tls_s (*ldap_struct, NULL, NULL)) != LDAP_SUCCESS)
-			{
-				DEBUG(0,("Failed to issue the StartTLS instruction: %s\n",
-					 ldap_err2string(rc)));
-				return rc;
-			}
-			DEBUG (3, ("StartTLS issued: using a TLS connection\n"));
-		} else {
-			
-			DEBUG(0, ("Need LDAPv3 for Start TLS\n"));
-			return LDAP_OPERATIONS_ERROR;
-		}
-#else
-		DEBUG(0,("smbldap_open_connection: StartTLS not supported by LDAP client libraries!\n"));
-		return LDAP_OPERATIONS_ERROR;
-#endif
-	}
+	/* Start TLS if required */
 
+	rc = smb_ldap_start_tls(*ldap_struct, version);
+	if (rc) {
+		return rc;
+	}
+	
 	DEBUG(2, ("smbldap_open_connection: connection opened\n"));
 	return rc;
 }
-
 
 /*******************************************************************
  a rebind function for authenticated referrals
@@ -690,9 +777,18 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 {
 	struct smbldap_state *ldap_state = arg;
 	int rc;
-	DEBUG(5,("rebindproc_connect_with_state: Rebinding as \"%s\"\n", 
-		 ldap_state->bind_dn));
-	
+	int version;
+
+	DEBUG(5,("rebindproc_connect_with_state: Rebinding to %s as \"%s\"\n", 
+		 url, ldap_state->bind_dn));
+
+	/* call START_TLS again (ldaps:// is handled by the OpenLDAP library
+	 * itself) before rebinding to another LDAP server to avoid to expose
+	 * our credentials. At least *try* to secure the connection - Guenther */
+
+	smb_ldap_upgrade_conn(ldap_struct, &version);
+	smb_ldap_start_tls(ldap_struct, version);
+
 	/** @TODO Should we be doing something to check what servers we rebind to?
 	    Could we get a referral to a machine that we don't want to give our
 	    username and password to? */

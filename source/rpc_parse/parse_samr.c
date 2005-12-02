@@ -2141,7 +2141,7 @@ void init_samr_group_info1(GROUP_INFO1 * gr1,
 {
 	DEBUG(5, ("init_samr_group_info1\n"));
 
-	gr1->unknown_1 = 0x3;
+	gr1->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
 	gr1->num_members = num_members;
 
 	init_unistr2(&gr1->uni_acct_name, acct_name, UNI_FLAGS_NONE);
@@ -2174,7 +2174,7 @@ BOOL samr_io_group_info1(const char *desc, GROUP_INFO1 * gr1,
 	if(!smb_io_unihdr("hdr_acct_name", &gr1->hdr_acct_name, ps, depth))
 		return False;
 
-	if(!prs_uint32("unknown_1", ps, depth, &gr1->unknown_1))
+	if(!prs_uint32("group_attr", ps, depth, &gr1->group_attr))
 		return False;
 	if(!prs_uint32("num_members", ps, depth, &gr1->num_members))
 		return False;
@@ -2238,7 +2238,7 @@ void init_samr_group_info3(GROUP_INFO3 *gr3)
 {
 	DEBUG(5, ("init_samr_group_info3\n"));
 
-	gr3->unknown_1 = 0x3;
+	gr3->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
 }
 
 /*******************************************************************
@@ -2256,7 +2256,7 @@ BOOL samr_io_group_info3(const char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown_1", ps, depth, &gr3->unknown_1))
+	if(!prs_uint32("group_attr", ps, depth, &gr3->group_attr))
 		return False;
 
 	return True;
@@ -7143,10 +7143,10 @@ BOOL samr_io_r_chgpasswd_user(const char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_unknown_2e(SAMR_Q_UNKNOWN_2E *q_u,
+void init_samr_q_query_domain_info2(SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value)
 {
-	DEBUG(5, ("init_samr_q_unknown_2e\n"));
+	DEBUG(5, ("init_samr_q_query_domain_info2\n"));
 
 	q_u->domain_pol = *domain_pol;
 	q_u->switch_value = switch_value;
@@ -7156,13 +7156,13 @@ void init_samr_q_unknown_2e(SAMR_Q_UNKNOWN_2E *q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_unknown_2e(const char *desc, SAMR_Q_UNKNOWN_2E *q_u,
+BOOL samr_io_q_query_domain_info2(const char *desc, SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
 			      prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_2e");
+	prs_debug(ps, depth, desc, "samr_io_q_query_domain_info2");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7181,11 +7181,11 @@ BOOL samr_io_q_unknown_2e(const char *desc, SAMR_Q_UNKNOWN_2E *q_u,
 inits a SAMR_R_QUERY_DOMAIN_INFO structure.
 ********************************************************************/
 
-void init_samr_r_samr_unknown_2e(SAMR_R_UNKNOWN_2E * r_u,
+void init_samr_r_samr_query_domain_info2(SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
 				uint16 switch_value, SAM_UNK_CTR * ctr,
 				NTSTATUS status)
 {
-	DEBUG(5, ("init_samr_r_samr_unknown_2e\n"));
+	DEBUG(5, ("init_samr_r_samr_query_domain_info2\n"));
 
 	r_u->ptr_0 = 0;
 	r_u->switch_value = 0;
@@ -7202,13 +7202,13 @@ void init_samr_r_samr_unknown_2e(SAMR_R_UNKNOWN_2E * r_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_samr_unknown_2e(const char *desc, SAMR_R_UNKNOWN_2E * r_u,
+BOOL samr_io_r_samr_query_domain_info2(const char *desc, SAMR_R_QUERY_DOMAIN_INFO2 * r_u,
 			      prs_struct *ps, int depth)
 {
         if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_samr_unknown_2e");
+	prs_debug(ps, depth, desc, "samr_io_r_samr_query_domain_info2");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7253,7 +7253,7 @@ BOOL samr_io_r_samr_unknown_2e(const char *desc, SAMR_R_UNKNOWN_2E * r_u,
 				return False;
 			break;
 		default:
-			DEBUG(0, ("samr_io_r_samr_unknown_2e: unknown switch level 0x%x\n",
+			DEBUG(0, ("samr_io_r_samr_query_domain_info2: unknown switch level 0x%x\n",
 				r_u->switch_value));
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 			return False;

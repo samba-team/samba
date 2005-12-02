@@ -168,6 +168,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
+		talloc_destroy(mem_ctx);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -177,6 +178,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
+		talloc_destroy(mem_ctx);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -188,6 +190,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		data_blob_free(&ap_rep);
 		data_blob_free(&session_key);
 		SAFE_FREE(client);
+		talloc_destroy(mem_ctx);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -206,6 +209,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			SAFE_FREE(client);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 	}
@@ -283,6 +287,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 	}
@@ -302,6 +307,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			passwd_free(&pw);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
 
@@ -314,6 +320,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			passwd_free(&pw);
+			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
 
@@ -737,6 +744,29 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
  a new session setup with VC==0 is ignored.
 ****************************************************************************/
 
+static int shutdown_other_smbds(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+				void *p)
+{
+	struct sessionid *sessionid = (struct sessionid *)dbuf.dptr;
+	const char *ip = (const char *)p;
+
+	if (!process_exists(pid_to_procid(sessionid->pid))) {
+		return 0;
+	}
+
+	if (sessionid->pid == sys_getpid()) {
+		return 0;
+	}
+
+	if (strcmp(ip, sessionid->ip_addr) != 0) {
+		return 0;
+	}
+
+	message_send_pid(pid_to_procid(sessionid->pid), MSG_SHUTDOWN,
+			 NULL, 0, True);
+	return 0;
+}
+
 static void setup_new_vc_session(void)
 {
 	DEBUG(2,("setup_new_vc_session: New VC == 0, if NT4.x compatible we would close all old resources.\n"));
@@ -744,6 +774,9 @@ static void setup_new_vc_session(void)
 	conn_close_all();
 	invalidate_all_vuids();
 #endif
+	if (lp_reset_on_zero_vc()) {
+		session_traverse(shutdown_other_smbds, client_addr());
+	}
 }
 
 /****************************************************************************

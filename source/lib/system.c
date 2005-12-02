@@ -1385,14 +1385,17 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 	 * the returned value to the size of the buffer, so we have to check
 	 * that the buffer is large enough to fit the returned value.
 	 */
-	retval = extattr_get_file(path, attrnamespace, attrname, NULL, 0);
-
-	if(retval > size) {
-		errno = ERANGE;
-		return -1;
+	if((retval=extattr_get_file(path, attrnamespace, attrname, NULL, 0)) >= 0) {
+		if(retval > size) {
+			errno = ERANGE;
+			return -1;
+		}
+		if((retval=extattr_get_file(path, attrnamespace, attrname, value, size)) >= 0)
+			return retval;
 	}
 
-	return extattr_get_file(path, attrnamespace, attrname, value, size);
+	DEBUG(10,("sys_getxattr: extattr_get_file() failed with: %s\n", strerror(errno)));
+	return -1;
 #elif defined(HAVE_ATTR_GET)
 	int retval, flags = 0;
 	int valuelength = (int)size;
@@ -1420,14 +1423,17 @@ ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t s
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
 
-	retval = extattr_get_link(path, attrnamespace, attrname, NULL, 0);
-
-	if(retval > size) {
-		errno = ERANGE;
-		return -1;
+	if((retval=extattr_get_link(path, attrnamespace, attrname, NULL, 0)) >= 0) {
+		if(retval > size) {
+			errno = ERANGE;
+			return -1;
+		}
+		if((retval=extattr_get_link(path, attrnamespace, attrname, value, size)) >= 0)
+			return retval;
 	}
-
-	return extattr_get_link(path, attrnamespace, attrname, value, size);
+	
+	DEBUG(10,("sys_lgetxattr: extattr_get_link() failed with: %s\n", strerror(errno)));
+	return -1;
 #elif defined(HAVE_ATTR_GET)
 	int retval, flags = ATTR_DONTFOLLOW;
 	int valuelength = (int)size;
@@ -1455,14 +1461,17 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
 	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
 
-	retval = extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0);
-
-	if(retval > size) {
-		errno = ERANGE;
-		return -1;
+	if((retval=extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0)) >= 0) {
+		if(retval > size) {
+			errno = ERANGE;
+			return -1;
+		}
+		if((retval=extattr_get_fd(filedes, attrnamespace, attrname, value, size)) >= 0)
+			return retval;
 	}
-
-	return extattr_get_fd(filedes, attrnamespace, attrname, value, size);
+	
+	DEBUG(10,("sys_fgetxattr: extattr_get_fd() failed with: %s\n", strerror(errno)));
+	return -1;
 #elif defined(HAVE_ATTR_GETF)
 	int retval, flags = 0;
 	int valuelength = (int)size;
@@ -1554,7 +1563,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 			errno = ERANGE;
 			return -1;
 		}
-		/* Shift the results back, so we can prepend prefixes */
+		/* Shift results back, so we can prepend prefixes */
 		buf = memmove(list + len, list, list_size);
 
 		for(i = 0; i < list_size; i += len + 1) {
@@ -1784,6 +1793,7 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 				errno = ENOATTR;
 				return -1;
 			}
+			/* Ignore other errors */
 		}
 		else {
 			/* CREATE attribute, that already exists */
@@ -1829,6 +1839,7 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 				errno = ENOATTR;
 				return -1;
 			}
+			/* Ignore other errors */
 		}
 		else {
 			/* CREATE attribute, that already exists */
@@ -1875,6 +1886,7 @@ int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size
 				errno = ENOATTR;
 				return -1;
 			}
+			/* Ignore other errors */
 		}
 		else {
 			/* CREATE attribute, that already exists */
