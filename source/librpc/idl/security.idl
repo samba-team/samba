@@ -74,6 +74,17 @@ interface security
 	const int SEC_REG_NOTIFY           = 0x00000010;
 	const int SEC_REG_CREATE_LINK      = 0x00000020;
 
+	/* ldap specific access bits */
+	const int SEC_ADS_CREATE_CHILD     = 0x00000001;
+	const int SEC_ADS_DELETE_CHILD     = 0x00000002;
+	const int SEC_ADS_LIST             = 0x00000004;
+	const int SEC_ADS_SELF_WRITE       = 0x00000008;
+	const int SEC_ADS_READ_PROP        = 0x00000010;
+	const int SEC_ADS_WRITE_PROP       = 0x00000020;
+	const int SEC_ADS_DELETE_TREE      = 0x00000040;
+	const int SEC_ADS_LIST_OBJECT      = 0x00000080;
+	const int SEC_ADS_CONTROL_ACCESS   = 0x00000100;
+
 	/* generic->specific mappings for files */
 	const int SEC_RIGHTS_FILE_READ    = SEC_STD_READ_CONTROL | 
 	                                    SEC_STD_SYNCHRONIZE | 
