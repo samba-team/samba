@@ -215,6 +215,7 @@ install -m644 %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
 ##
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/log2pcap.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbsh.1*
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/vfstest.1*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -347,6 +348,7 @@ fi
 %{_bindir}/net
 %{_bindir}/smbtree
 %{_mandir}/man1/smbget.1*
+%{_mandir}/man1/smbgetrc.5*
 %{_mandir}/man1/findsmb.1*
 %{_mandir}/man1/nmblookup.1*
 %{_mandir}/man1/rpcclient.1*
@@ -375,15 +377,12 @@ fi
 %{_libdir}/samba/auth/script.so
 %{_bindir}/testparm
 %{_bindir}/smbpasswd
-# %{_bindir}/make_printerdef
 %{_bindir}/wbinfo
-# %{_bindir}/editreg
 %{_bindir}/ntlm_auth
 %{_bindir}/pdbedit
 %{_bindir}/eventlogadm
 %{_bindir}/profiles
 %{_bindir}/smbcquotas
-#%{_bindir}/vfstest
 %{_sbindir}/winbindd
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
@@ -402,7 +401,6 @@ fi
 %{_mandir}/man8/smbpasswd.8*
 %{_mandir}/man1/wbinfo.1*
 %{_mandir}/man8/winbindd.8*
-%{_mandir}/man1/vfstest.1*
 
 %changelog
 * Fri Jan 16 2004 Gerald (Jerry) Carter <jerry@samba,org>
