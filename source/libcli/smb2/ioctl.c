@@ -37,7 +37,7 @@ struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *
 				     io->in.in.length+io->in.out.length);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x02, io->in._pad);
+	SSVAL(req->out.body, 0x02, 0); /* pad */
 	SIVAL(req->out.body, 0x04, io->in.function);
 	smb2_push_handle(req->out.body+0x08, &io->in.handle);
 

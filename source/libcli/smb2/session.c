@@ -73,7 +73,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 	if (req == NULL) return NULL;
 
 	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
-	SSVAL(req->out.body, 0x02, io->in._pad);
+	SSVAL(req->out.body, 0x02, 0); /* pad */
 	SIVAL(req->out.body, 0x04, io->in.unknown2);
 	SIVAL(req->out.body, 0x08, io->in.unknown3);
 
