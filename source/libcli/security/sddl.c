@@ -281,8 +281,9 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 
 	/* now the ACEs */
 	while (*sddl == '(') {
+		char *astr;
 		len = strcspn(sddl+1, ")");
-		char *astr = talloc_strndup(acl, sddl+1, len);
+		astr = talloc_strndup(acl, sddl+1, len);
 		if (astr == NULL || sddl[len+1] != ')') {
 			talloc_free(acl);
 			return NULL;
