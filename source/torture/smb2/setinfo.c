@@ -44,6 +44,8 @@ BOOL torture_smb2_setinfo(void)
 	time_t basetime = (time(NULL) - 86400) & ~1;
 	int n = time(NULL) % 100;
 	
+	ZERO_STRUCT(handle);
+	
 	fname = talloc_asprintf(mem_ctx, BASEDIR "fnum_test_%d.txt", n);
 	fname_new = talloc_asprintf(mem_ctx, BASEDIR "fnum_test_new_%d.txt", n);
 
