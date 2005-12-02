@@ -35,7 +35,9 @@ static BOOL test_sddl(TALLOC_CTX *mem_ctx, const char *sddl)
 		printf("Failed to decode '%s'\n", sddl);
 		return False;
 	}
-	NDR_PRINT_DEBUG(security_descriptor, sd);
+	if (DEBUGLVL(2)) {
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+	}
 	talloc_free(sd);
 	return True;
 }
