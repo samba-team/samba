@@ -248,7 +248,6 @@ static int ejs_irpc_call(int eid, struct MprVar *io,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-		talloc_free(reqs[i]);
 
 		/* add to the results array */
 		output = mprGetProperty(io, "output", NULL);

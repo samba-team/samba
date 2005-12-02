@@ -730,13 +730,18 @@ failed:
 */
 NTSTATUS irpc_call_recv(struct irpc_request *irpc)
 {
+	NTSTATUS status;
+
 	NT_STATUS_HAVE_NO_MEMORY(irpc);
+
 	while (!irpc->done) {
 		if (event_loop_once(irpc->msg_ctx->event.ev) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
-		}		
+		}
 	}
-	return irpc->status;
+	status = irpc->status;
+	talloc_free(irpc);
+	return status;
 }
 
 /*
@@ -750,9 +755,7 @@ NTSTATUS irpc_call(struct messaging_context *msg_ctx,
 {
 	struct irpc_request *irpc = irpc_call_send(msg_ctx, server_id, 
 						   table, callnum, r, mem_ctx);
-	NTSTATUS status = irpc_call_recv(irpc);
-	talloc_free(irpc);
-	return status;
+	return irpc_call_recv(irpc);
 }
 
 /*

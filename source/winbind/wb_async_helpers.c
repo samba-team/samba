@@ -141,7 +141,6 @@ static void finddcs_getdc(struct irpc_request *ireq)
 		talloc_get_type(ireq->async.private, struct finddcs_state);
 
 	state->ctx->status = irpc_call_recv(ireq);
-	talloc_free(ireq);
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->dcs[0].name = talloc_steal(state->dcs, state->r.out.dcname);
