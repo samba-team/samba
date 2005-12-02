@@ -778,11 +778,11 @@ inits a structure.
 ********************************************************************/
 
 void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
-		    uint32 flag, NTTIME nt_expire, NTTIME nt_min_age)
+		    uint32 password_properties, NTTIME nt_expire, NTTIME nt_min_age)
 {
 	u_1->min_length_password = min_pass_len;
 	u_1->password_history = pass_hist;
-	u_1->flag = flag;
+	u_1->password_properties = password_properties;
 	
 	/* password never expire */
 	u_1->expire.high = nt_expire.high;
@@ -811,7 +811,7 @@ static BOOL sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
 		return False;
 	if(!prs_uint16("password_history", ps, depth, &u_1->password_history))
 		return False;
-	if(!prs_uint32("flag", ps, depth, &u_1->flag))
+	if(!prs_uint32("password_properties", ps, depth, &u_1->password_properties))
 		return False;
 	if(!smb_io_time("expire", &u_1->expire, ps, depth))
 		return False;
@@ -6734,7 +6734,7 @@ inits a SAMR_Q_CONNECT4 structure.
 void init_samr_q_connect4(SAMR_Q_CONNECT4 * q_u,
 			  char *srv_name, uint32 access_mask)
 {
-	DEBUG(5, ("init_samr_q_connect\n"));
+	DEBUG(5, ("init_samr_q_connect4\n"));
 
 	/* make PDC server name \\server */
 	q_u->ptr_srv_name = (srv_name != NULL && *srv_name) ? 1 : 0;
@@ -6792,6 +6792,116 @@ BOOL samr_io_r_connect4(const char *desc, SAMR_R_CONNECT4 * r_u,
 	depth++;
 
 	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a SAMR_Q_CONNECT5 structure.
+********************************************************************/
+
+void init_samr_q_connect5(SAMR_Q_CONNECT5 * q_u,
+			  char *srv_name, uint32 access_mask)
+{
+	DEBUG(5, ("init_samr_q_connect5\n"));
+
+	/* make PDC server name \\server */
+	q_u->ptr_srv_name = (srv_name != NULL && *srv_name) ? 1 : 0;
+	init_unistr2(&q_u->uni_srv_name, srv_name, UNI_STR_TERMINATE);
+
+	/* example values: 0x0000 0002 */
+	q_u->access_mask = access_mask;
+
+	q_u->level = 1;
+	q_u->info1_unk1 = 3;
+	q_u->info1_unk2 = 0;
+}
+
+/*******************************************************************
+inits a SAMR_R_CONNECT5 structure.
+********************************************************************/
+
+void init_samr_r_connect5(SAMR_R_CONNECT5 * r_u, POLICY_HND *pol, NTSTATUS status)
+{
+	DEBUG(5, ("init_samr_q_connect5\n"));
+
+	r_u->level = 1;
+	r_u->info1_unk1 = 3;
+	r_u->info1_unk2 = 0;
+
+	r_u->connect_pol = *pol;
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_connect5(const char *desc, SAMR_Q_CONNECT5 * q_u,
+			prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_connect5");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_u->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+		return False;
+
+	if(!prs_uint32("level", ps, depth, &q_u->level))
+		return False;
+	if(!prs_uint32("level", ps, depth, &q_u->level))
+		return False;
+	
+	if(!prs_uint32("info1_unk1", ps, depth, &q_u->info1_unk1))
+		return False;
+	if(!prs_uint32("info1_unk2", ps, depth, &q_u->info1_unk2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_connect5(const char *desc, SAMR_R_CONNECT5 * r_u,
+			prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_connect5");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("level", ps, depth, &r_u->level))
+		return False;
+	if(!prs_uint32("level", ps, depth, &r_u->level))
+		return False;
+	if(!prs_uint32("info1_unk1", ps, depth, &r_u->info1_unk1))
+		return False;
+	if(!prs_uint32("info1_unk2", ps, depth, &r_u->info1_unk2))
 		return False;
 
 	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
@@ -6928,15 +7038,11 @@ BOOL samr_io_r_get_dom_pwinfo(const char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	/*
-	 * see the Samba4 IDL for what these actually are.
-	*/
-
-	if(!prs_uint16("unk_0", ps, depth, &r_u->unk_0))
+	if(!prs_uint16("min_pwd_length", ps, depth, &r_u->min_pwd_length))
 		return False;
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("unk_1", ps, depth, &r_u->unk_1))
+	if(!prs_uint32("password_properties", ps, depth, &r_u->password_properties))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
@@ -7031,7 +7137,7 @@ BOOL samr_io_enc_hash(const char *desc, SAMR_ENC_HASH * hsh,
 }
 
 /*******************************************************************
-inits a SAMR_R_GET_DOM_PWINFO structure.
+inits a SAMR_Q_CHGPASSWD_USER structure.
 ********************************************************************/
 
 void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
@@ -7132,6 +7238,172 @@ BOOL samr_io_r_chgpasswd_user(const char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 
 	if(!prs_align(ps))
 		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a SAMR_Q_CHGPASSWD3 structure.
+********************************************************************/
+
+void init_samr_q_chgpasswd3(SAMR_Q_CHGPASSWD3 * q_u,
+			    const char *dest_host, const char *user_name,
+			    const uchar nt_newpass[516],
+			    const uchar nt_oldhash[16],
+			    const uchar lm_newpass[516],
+			    const uchar lm_oldhash[16])
+{
+	DEBUG(5, ("init_samr_q_chgpasswd3\n"));
+
+	q_u->ptr_0 = 1;
+	init_unistr2(&q_u->uni_dest_host, dest_host, UNI_FLAGS_NONE);
+	init_uni_hdr(&q_u->hdr_dest_host, &q_u->uni_dest_host);
+
+	init_unistr2(&q_u->uni_user_name, user_name, UNI_FLAGS_NONE);
+	init_uni_hdr(&q_u->hdr_user_name, &q_u->uni_user_name);
+
+	init_enc_passwd(&q_u->nt_newpass, (const char *)nt_newpass);
+	init_enc_hash(&q_u->nt_oldhash, nt_oldhash);
+
+	q_u->lm_change = 0x01;
+
+	init_enc_passwd(&q_u->lm_newpass, (const char *)lm_newpass);
+	init_enc_hash(&q_u->lm_oldhash, lm_oldhash);
+
+	init_enc_passwd(&q_u->password3, NULL);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_chgpasswd3(const char *desc, SAMR_Q_CHGPASSWD3 * q_u,
+			  prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_chgpasswd3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_0", ps, depth, &q_u->ptr_0))
+		return False;
+
+	if(!smb_io_unihdr("", &q_u->hdr_dest_host, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &q_u->uni_dest_host, q_u->hdr_dest_host.buffer, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unihdr("", &q_u->hdr_user_name, ps, depth))
+		return False;
+	if(!smb_io_unistr2("", &q_u->uni_user_name, q_u->hdr_user_name.buffer,ps, depth))
+		return False;
+
+	if(!samr_io_enc_passwd("nt_newpass", &q_u->nt_newpass, ps, depth))
+		return False;
+	if(!samr_io_enc_hash("nt_oldhash", &q_u->nt_oldhash, ps, depth))
+		return False;
+
+	if(!prs_uint32("lm_change", ps, depth, &q_u->lm_change))
+		return False;
+
+	if(!samr_io_enc_passwd("lm_newpass", &q_u->lm_newpass, ps, depth))
+		return False;
+	if(!samr_io_enc_hash("lm_oldhash", &q_u->lm_oldhash, ps, depth))
+		return False;
+
+	if(!samr_io_enc_passwd("password3", &q_u->password3, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+inits a SAMR_R_CHGPASSWD3 structure.
+********************************************************************/
+
+void init_samr_r_chgpasswd3(SAMR_R_CHGPASSWD3 * r_u, NTSTATUS status)
+{
+	DEBUG(5, ("init_r_chgpasswd3\n"));
+
+	r_u->status = status;
+}
+
+/*******************************************************************
+ Reads or writes an SAMR_CHANGE_REJECT structure.
+********************************************************************/
+
+BOOL samr_io_change_reject(const char *desc, SAMR_CHANGE_REJECT *reject, prs_struct *ps, int depth)
+{
+	if (reject == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_change_reject");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(UNMARSHALLING(ps))
+		ZERO_STRUCTP(reject);
+	
+	if (!prs_uint32("reject_reason", ps, depth, &reject->reject_reason))
+		return False;
+		
+	if (!prs_uint32("unknown1", ps, depth, &reject->unknown1))
+		return False;
+
+	if (!prs_uint32("unknown2", ps, depth, &reject->unknown2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_chgpasswd3(const char *desc, SAMR_R_CHGPASSWD3 * r_u,
+			  prs_struct *ps, int depth)
+{
+	uint32 ptr_info, ptr_reject;
+	
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_chgpasswd3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_info", ps, depth, &ptr_info))
+		return False;
+
+	if (ptr_info) {
+
+		/* SAM_UNK_INFO_1 */
+		if(!sam_io_unk_info1("info", &r_u->info, ps, depth))
+			return False;
+	}
+
+	if(!prs_uint32("ptr_reject", ps, depth, &ptr_reject))
+		return False;
+			     
+	if (ptr_reject) {
+
+		/* SAMR_CHANGE_REJECT */
+		if(!samr_io_change_reject("reject", &r_u->reject, ps, depth))
+			return False;
+	}
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;

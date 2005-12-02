@@ -3084,11 +3084,20 @@ static void readline_callback(void)
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		receive_smb(cli->fd,cli->inbuf,0);
+		if (!receive_smb(cli->fd,cli->inbuf,0)) {
+			DEBUG(0, ("Read from server failed, maybe it closed the "
+				"connection\n"));
+			return;
+		}
 		goto again;
 	}
       
-	cli_chkpath(cli, "\\");
+	/* Ping the server to keep the connection alive using SMBecho. */
+	{
+		unsigned char garbage[16];
+		memset(garbage, 0xf0, sizeof(garbage));
+		cli_echo(cli, garbage, sizeof(garbage));
+	}
 }
 
 /****************************************************************************

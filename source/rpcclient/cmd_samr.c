@@ -165,14 +165,32 @@ static const char* server_role_str(uint32 server_role)
 static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
 {
 	
-	printf("Minimum password length:                     %d\n", info1->min_length_password);
-	printf("Password uniqueness (remember x passwords):  %d\n", info1->password_history);
-	printf("flag:                                        ");
-	if(info1->flag&&2==2) printf("users must open a session to change password ");
-	printf("\n");
+	printf("Minimum password length:\t\t\t%d\n", info1->min_length_password);
+	printf("Password uniqueness (remember x passwords):\t%d\n", info1->password_history);
+	printf("Password Properties:\t\t\t\t0x%08x\n", info1->password_properties);
 
-	printf("password expire in:                          %s\n", display_time(info1->expire));
-	printf("Min password age (allow changing in x days): %s\n", display_time(info1->min_passwordage));
+	if (info1->password_properties & DOMAIN_PASSWORD_COMPLEX)
+		printf("\tDOMAIN_PASSWORD_COMPLEX\n");
+			
+	if (info1->password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE) {
+		printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
+		printf("users must open a session to change password ");
+	}
+			
+	if (info1->password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
+		printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
+			
+	if (info1->password_properties & DOMAIN_LOCKOUT_ADMINS)
+		printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+			
+	if (info1->password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
+		printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
+			
+	if (info1->password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
+		printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
+
+	printf("password expire in:\t\t\t\t%s\n", display_time(info1->expire));
+	printf("Min password age (allow changing in x days):\t%s\n", display_time(info1->min_passwordage));
 }
 
 static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
@@ -333,7 +351,7 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 	
-	sscanf(argv[1], "%i", &user_rid);
+	user_rid = strtoul(argv[1], NULL, 10);
 	
 	if (argc > 2)
 		sscanf(argv[2], "%i", &info_level);
@@ -361,6 +379,27 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
 				    access_mask,
 				    user_rid, &user_pol);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER) &&
+	    (user_rid == 0)) {
+
+		/* Probably this was a user name, try lookupnames */
+		uint32 num_rids;
+		uint32 *rids, *types;
+		
+		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+						  1000, 1, &argv[1],
+						  &num_rids, &rids,
+						  &types);
+
+		if (NT_STATUS_IS_OK(result)) {
+			result = rpccli_samr_open_user(cli, mem_ctx,
+						       &domain_pol,
+						       access_mask,
+						       rids[0], &user_pol);
+		}
+	}
+
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1457,8 +1496,8 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	char **names;
 	int i;
 
-	if (argc < 2) {
-		printf("Usage: %s rid1 [rid2 [rid3] [...]]\n", argv[0]);
+	if (argc < 3) {
+		printf("Usage: %s domain|builtin rid1 [rid2 [rid3] [...]]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -1470,20 +1509,27 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &domain_sid, &domain_pol);
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Look up rids */
 
-	num_rids = argc - 1;
+	num_rids = argc - 2;
 	rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
 
-	for (i = 0; i < argc - 1; i++)
-                sscanf(argv[i + 1], "%i", &rids[i]);
+	for (i = 0; i < argc - 2; i++)
+                sscanf(argv[i + 2], "%i", &rids[i]);
 
 	result = rpccli_samr_lookup_rids(cli, mem_ctx, &domain_pol, num_rids, rids,
 				      &num_names, &names, &name_types);
@@ -1663,18 +1709,37 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli,
 					int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint16 unk_0, unk_1;
+	uint16 min_pwd_length;
+	uint32 password_properties;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_samr_get_dom_pwinfo(cli, mem_ctx, &unk_0, &unk_1) ;
+	result = rpccli_samr_get_dom_pwinfo(cli, mem_ctx, &min_pwd_length, &password_properties) ;
 	
 	if (NT_STATUS_IS_OK(result)) {
-		printf("unk_0 = 0x%08x\n", unk_0);
-		printf("unk_1 = 0x%08x\n", unk_1);
+		printf("min_pwd_length: %d\n", min_pwd_length);
+		printf("password_properties: 0x%08x\n", password_properties);
+		
+		if (password_properties & DOMAIN_PASSWORD_COMPLEX)
+			printf("\tDOMAIN_PASSWORD_COMPLEX\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE)
+			printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
+			printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
+			
+		if (password_properties & DOMAIN_LOCKOUT_ADMINS)
+			printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
+			printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
+			
+		if (password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
+			printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
 	}
 
 	return result;

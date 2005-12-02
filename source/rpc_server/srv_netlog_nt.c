@@ -584,6 +584,35 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 }
 
 
+/*******************************************************************
+ gets a domain user's groups from their already-calculated NT_USER_TOKEN
+ ********************************************************************/
+static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid, 
+				       const NT_USER_TOKEN *nt_token,
+				       int *numgroups, DOM_GID **pgids) 
+{
+	DOM_GID *gids;
+	int i;
+
+	gids = TALLOC_ARRAY(mem_ctx, DOM_GID, nt_token->num_sids);
+
+	if (!gids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*numgroups=0;
+
+	for (i=PRIMARY_GROUP_SID_INDEX; i < nt_token->num_sids; i++) {
+		if (sid_compare_domain(domain_sid, &nt_token->user_sids[i])==0) {
+			sid_peek_rid(&nt_token->user_sids[i], &(gids[*numgroups].g_rid));
+			gids[*numgroups].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
+			(*numgroups)++;
+		}
+	}
+	*pgids = gids; 
+	return NT_STATUS_OK;
+}
+
 /*************************************************************************
  _net_sam_logon
  *************************************************************************/

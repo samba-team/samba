@@ -1924,6 +1924,9 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	TIME_OF_DAY_INFO *tod;
 	struct tm *t;
 	time_t unixdate = time(NULL);
+	/* We do this call first as if we do it *after* the gmtime call
+	   it overwrites the pointed-to values. JRA */
+	uint32 zone = get_time_zone(unixdate)/60;
 
 	tod = TALLOC_P(p->mem_ctx, TIME_OF_DAY_INFO);
 	if (!tod)
@@ -1947,7 +1950,7 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	                      t->tm_min,
 	                      t->tm_sec,
 	                      0,
-	                      get_time_zone(unixdate)/60,
+	                      zone,
 	                      10000,
 	                      t->tm_mday,
 	                      t->tm_mon + 1,

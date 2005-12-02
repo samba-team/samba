@@ -143,6 +143,8 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 #define SAMR_CONNECT4          0x3E
+#define SAMR_CHGPASSWD3        0x3F
+#define SAMR_CONNECT5          0x40
 
 typedef struct logon_hours_info
 {
@@ -592,7 +594,7 @@ typedef struct sam_unknown_info_1_inf
 {
 	uint16 min_length_password;
 	uint16 password_history;
-	uint32 flag;
+	uint32 password_properties;
 	NTTIME expire;
 	NTTIME min_passwordage;
 
@@ -1697,7 +1699,7 @@ typedef struct q_samr_connect_info
 /* SAMR_R_CONNECT - probably an open */
 typedef struct r_samr_connect_info
 {
-    POLICY_HND connect_pol;       /* policy handle */
+	POLICY_HND connect_pol;       /* policy handle */
 	NTSTATUS status;         /* return status */
 
 } SAMR_R_CONNECT;
@@ -1715,6 +1717,31 @@ typedef struct q_samr_connect4_info
 /* SAMR_R_CONNECT4 - same format as connect */
 typedef struct r_samr_connect_info SAMR_R_CONNECT4;       
 
+/* SAMR_Q_CONNECT5 */
+typedef struct q_samr_connect5_info
+{
+	uint32 ptr_srv_name; /* pointer to server name */
+	UNISTR2 uni_srv_name;
+	uint32 access_mask;
+	uint32 level;
+	/* These following are acutally a level dependent
+	   value. Fudge it for now. JRA */
+	uint32 info1_unk1;
+	uint32 info1_unk2;
+} SAMR_Q_CONNECT5;
+
+/* SAMR_R_CONNECT5 */
+typedef struct r_samr_connect_info5
+{
+	uint32 level;
+	uint32 info1_unk1;
+	uint32 info1_unk2;
+	POLICY_HND connect_pol;       /* policy handle */
+	NTSTATUS status;         /* return status */
+
+} SAMR_R_CONNECT5;
+
+
 /* SAMR_Q_GET_DOM_PWINFO */
 typedef struct q_samr_get_dom_pwinfo
 {
@@ -1724,14 +1751,18 @@ typedef struct q_samr_get_dom_pwinfo
 
 } SAMR_Q_GET_DOM_PWINFO;
 
+#define DOMAIN_PASSWORD_COMPLEX		0x00000001
+#define DOMAIN_PASSWORD_NO_ANON_CHANGE	0x00000002
+#define DOMAIN_PASSWORD_NO_CLEAR_CHANGE	0x00000004
+#define DOMAIN_LOCKOUT_ADMINS		0x00000008
+#define DOMAIN_PASSWORD_STORE_CLEARTEXT	0x00000010
+#define DOMAIN_REFUSE_PASSWORD_CHANGE	0x00000020
+
 /* SAMR_R_GET_DOM_PWINFO */
 typedef struct r_samr_get_dom_pwinfo
 {
-	/*
-	 * See Samba4 IDL
-	 */
-	uint16 unk_0;
-	uint32 unk_1;
+	uint16 min_pwd_length;
+	uint32 password_properties;
 	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;
@@ -1779,6 +1810,48 @@ typedef struct r_samr_chgpasswd_user_info
 	NTSTATUS status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
 } SAMR_R_CHGPASSWD_USER;
+
+/* SAMR_Q_CHGPASSWD3 */
+typedef struct q_samr_chgpasswd3
+{
+	uint32 ptr_0;
+
+	UNIHDR hdr_dest_host; /* server name unicode header */
+	UNISTR2 uni_dest_host; /* server name unicode string */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNISTR2 uni_user_name;    /* username unicode string */
+
+	SAMR_ENC_PASSWD nt_newpass;
+	SAMR_ENC_HASH nt_oldhash;
+
+	uint32 lm_change; /* 0x0000 0001 */
+
+	SAMR_ENC_PASSWD lm_newpass;
+	SAMR_ENC_HASH lm_oldhash;
+
+	SAMR_ENC_PASSWD password3;
+
+} SAMR_Q_CHGPASSWD3;
+
+/* SAMR_CHANGE_REJECT */
+typedef struct samr_change_reject
+{
+	uint32 reject_reason;
+	uint32 unknown1;
+	uint32 unknown2;
+
+} SAMR_CHANGE_REJECT;
+
+/* SAMR_R_CHGPASSWD3 */
+typedef struct r_samr_chgpasswd3
+{
+	SAM_UNK_INFO_1 info;
+	SAMR_CHANGE_REJECT reject;
+	NTSTATUS status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
+
+} SAMR_R_CHGPASSWD3;
+
 
 
 /* SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN */

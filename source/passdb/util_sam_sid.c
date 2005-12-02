@@ -91,7 +91,7 @@ static struct sid_name_map_info special_domains[] = {
  Turns a domain SID into a name, returned in the nt_domain argument.
 ***************************************************************************/
 
-BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
+BOOL map_domain_sid_to_name(const DOM_SID *sid, fstring nt_domain)
 {
 	fstring sid_str;
 	int i = 0;
@@ -99,11 +99,6 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
 	sid_to_string(sid_str, sid);
 
 	DEBUG(5,("map_domain_sid_to_name: %s\n", sid_str));
-
-	if (sid_check_is_domain(sid)) {
-		fstrcpy(nt_domain, get_global_sam_name());
-		return True;
-	}
 
 	while (special_domains[i].sid != NULL) {
 		DEBUG(5,("map_domain_sid_to_name: compare: %s\n",
@@ -165,6 +160,24 @@ BOOL lookup_special_sid(const DOM_SID *sid, const char **domain,
 
 	DEBUG(10, ("RID of special SID %s not found\n",
 		   sid_string_static(sid)));
+
+	return False;
+}
+
+/*******************************************************************
+ Look up a rid in the BUILTIN domain
+ ********************************************************************/
+BOOL lookup_builtin_rid(uint32 rid, fstring name)
+{
+	const known_sid_users *aliases = builtin_groups;
+	int i;
+
+	for (i=0; aliases[i].known_user_name != NULL; i++) {
+		if (rid == aliases[i].rid) {
+			fstrcpy(name, aliases[i].known_user_name);
+			return True;
+		}
+	}
 
 	return False;
 }

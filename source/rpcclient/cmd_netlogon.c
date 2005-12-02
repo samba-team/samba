@@ -70,6 +70,60 @@ static NTSTATUS cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx, int argc,
+					 const char **argv)
+{
+	WERROR result;
+	char *dcname, *dcaddress;
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
+		return WERR_OK;
+	}
+
+	result = rpccli_netlogon_dsr_getdcname(
+		cli, mem_ctx, cli->cli->desthost, argv[1], NULL, NULL,
+		0x40000000, &dcname, &dcaddress, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL);
+
+	if (W_ERROR_IS_OK(result)) {
+		printf("Domain %s's DC is called %s at IP %s\n",
+		       argv[1], dcname, dcaddress);
+		return WERR_OK;
+	}
+
+	printf("rpccli_netlogon_dsr_getdcname returned %s\n",
+	       nt_errstr(werror_to_ntstatus(result)));
+
+	return result;
+}
+
+static WERROR cmd_netlogon_dsr_getsitename(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx, int argc,
+					   const char **argv)
+{
+	WERROR result;
+	char *sitename;
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: %s computername\n", argv[0]);
+		return WERR_OK;
+	}
+
+	result = rpccli_netlogon_dsr_getsitename(cli, mem_ctx, argv[1], &sitename);
+
+	if (!W_ERROR_IS_OK(result)) {
+		printf("rpccli_netlogon_dsr_gesitename returned %s\n",
+		       nt_errstr(werror_to_ntstatus(result)));
+		return result;
+	}
+
+	printf("Computer %s is on Site: %s\n", argv[1], sitename);
+
+	return WERR_OK;
+}
+
 static NTSTATUS cmd_netlogon_logon_ctrl(struct rpc_pipe_client *cli, 
                                         TALLOC_CTX *mem_ctx, int argc, 
                                         const char **argv)
@@ -317,6 +371,8 @@ struct cmd_set netlogon_commands[] = {
 
 	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, NULL, "Logon Control 2",     "" },
 	{ "getdcname", RPC_RTYPE_NTSTATUS, cmd_netlogon_getdcname, NULL, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "dsr_getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
+	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, PI_NETLOGON, NULL, "Get sitename",     "" },
 	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, NULL, "Logon Control",       "" },
 	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, NULL, "Sam Synchronisation", "" },
 	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, NULL, "Query Sam Deltas",    "" },

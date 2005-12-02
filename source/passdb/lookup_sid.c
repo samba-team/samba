@@ -66,7 +66,8 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
  Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
-BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
+BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
+		enum SID_NAME_USE *name_type)
 {
 	if (!name_type)
 		return False;
@@ -76,25 +77,51 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
 
-	if (sid->num_auths == 4 && sid_equal(get_global_sam_sid(), sid)) {
-		DOM_SID tmp_sid;
-		sid_copy(&tmp_sid, sid);
-		return map_domain_sid_to_name(&tmp_sid, dom_name) && 
-			local_lookup_sid(sid, name, name_type);
+	if (sid_check_is_domain(sid)) {
+		fstrcpy(dom_name, get_global_sam_name());
+		fstrcpy(name, "");
+		*name_type = SID_NAME_DOMAIN;
+		return True;
 	}
 
-	if (sid->num_auths == 5) {
-		DOM_SID tmp_sid;
+	if (sid_check_is_in_our_domain(sid)) {
+		uint32 rid;
+		SMB_ASSERT(sid_peek_rid(sid, &rid));
+
+		/* For our own domain passdb is responsible */
+		fstrcpy(dom_name, get_global_sam_name());
+		return lookup_global_sam_rid(rid, name, name_type);
+	}
+
+	if (sid_check_is_builtin(sid)) {
+
+		/* Got through map_domain_sid_to_name here so that the mapping
+		 * of S-1-5-32 to the name "BUILTIN" in as few places as
+		 * possible. We might add i18n... */
+		SMB_ASSERT(map_domain_sid_to_name(sid, dom_name));
+
+		/* Yes, W2k3 returns "BUILTIN" both as domain and name here */
+		fstrcpy(name, dom_name); 
+
+		*name_type = SID_NAME_DOMAIN;
+		return True;
+	}
+
+	if (sid_check_is_in_builtin(sid)) {
 		uint32 rid;
 
-		sid_copy(&tmp_sid, sid);
-		sid_split_rid(&tmp_sid, &rid);
+		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
-		if (sid_equal(get_global_sam_sid(), &tmp_sid)) {
+		/* Got through map_domain_sid_to_name here so that the mapping
+		 * of S-1-5-32 to the name "BUILTIN" in as few places as
+		 * possible. We might add i18n... */
+		SMB_ASSERT(map_domain_sid_to_name(&global_sid_Builtin,
+						  dom_name));
 
-			return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-				local_lookup_sid(sid, name, name_type);
-		}
+		/* There's only aliases in S-1-5-32 */
+		*name_type = SID_NAME_ALIAS;
+
+		return lookup_builtin_rid(rid, name);
 	}
 
 	if (winbind_lookup_sid(sid, dom_name, name, name_type)) {

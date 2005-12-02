@@ -1205,6 +1205,95 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* change password 3 */
+
+NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx, 
+				const char *username, 
+				const char *newpassword, 
+				const char *oldpassword,
+				SAM_UNK_INFO_1 **info,
+				SAMR_CHANGE_REJECT **reject)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CHGPASSWD3 q;
+	SAMR_R_CHGPASSWD3 r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uchar new_nt_password[516];
+	uchar new_lm_password[516];
+	uchar old_nt_hash[16];
+	uchar old_lanman_hash[16];
+	uchar old_nt_hash_enc[16];
+	uchar old_lanman_hash_enc[16];
+
+	uchar new_nt_hash[16];
+	uchar new_lanman_hash[16];
+
+	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
+
+	DEBUG(10,("rpccli_samr_chgpasswd3\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	*info = NULL;
+	*reject = NULL;
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	E_md4hash(oldpassword, old_nt_hash);
+	E_md4hash(newpassword, new_nt_hash);
+
+	if (lp_client_lanman_auth() 
+	    && E_deshash(newpassword, new_lanman_hash) 
+	    && E_deshash(oldpassword, old_lanman_hash)) {
+		/* E_deshash returns false for 'long' passwords (> 14
+		   DOS chars).  This allows us to match Win2k, which
+		   does not store a LM hash for these passwords (which
+		   would reduce the effective password length to 14) */
+
+		encode_pw_buffer(new_lm_password, newpassword, STR_UNICODE);
+
+		SamOEMhash( new_lm_password, old_nt_hash, 516);
+		E_old_pw_hash( new_nt_hash, old_lanman_hash, old_lanman_hash_enc);
+	} else {
+		ZERO_STRUCT(new_lm_password);
+		ZERO_STRUCT(old_lanman_hash_enc);
+	}
+
+	encode_pw_buffer(new_nt_password, newpassword, STR_UNICODE);
+	
+	SamOEMhash( new_nt_password, old_nt_hash, 516);
+	E_old_pw_hash( new_nt_hash, old_nt_hash, old_nt_hash_enc);
+
+	/* Marshall data and send request */
+
+	init_samr_q_chgpasswd3(&q, srv_name_slash, username, 
+			       new_nt_password, 
+			       old_nt_hash_enc, 
+			       new_lm_password,
+			       old_lanman_hash_enc);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD3,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_chgpasswd3,
+		samr_io_r_chgpasswd3,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		*info = &r.info;
+		*reject = &r.reject;
+		goto done;
+	}
+
+ done:
+
+	return result;
+}
+
 /* This function returns the bizzare set of (max_entries, max_size) required
    for the QueryDisplayInfo RPC to actually work against a domain controller
    with large (10k and higher) numbers of users.  These values were 
@@ -1723,7 +1812,7 @@ NTSTATUS rpccli_samr_query_sec_obj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 /* Get domain password info */
 
 NTSTATUS rpccli_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 uint16 *unk_0, uint16 *unk_1)
+				 uint16 *min_pwd_length, uint32 *password_properties)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_GET_DOM_PWINFO q;
@@ -1751,10 +1840,10 @@ NTSTATUS rpccli_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	result = r.status;
 
 	if (NT_STATUS_IS_OK(result)) {
-		if (unk_0)
-			*unk_0 = r.unk_0;
-		if (unk_1)
-			*unk_1 = r.unk_1;
+		if (min_pwd_length)
+			*min_pwd_length = r.min_pwd_length;
+		if (password_properties)
+			*password_properties = r.password_properties;
 	}
 
 	return result;

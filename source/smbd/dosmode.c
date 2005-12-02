@@ -190,7 +190,8 @@ static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 		return False;
 	}
 
-	*pattr = 0;
+	/* Don't reset pattr to zero as we may already have filename-based attributes we
+	   need to preserve. */
 
 	sizeret = SMB_VFS_GETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, sizeof(attrstr));
 	if (sizeret == -1) {
@@ -337,6 +338,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
+	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
 	
 	DEBUG(8,("\n"));
 
@@ -354,6 +356,9 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 	mode_t tmp;
 	mode_t unixmode;
 	int ret = -1;
+
+	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
+	dosmode &= SAMBA_ATTRIBUTES_MASK;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
 	if (!st || (st && !VALID_STAT(*st))) {

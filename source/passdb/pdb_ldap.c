@@ -604,6 +604,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	LOGIN_CACHE	*cache_entry = NULL;
 	uint32 		pwHistLen;
 	pstring		tmpstring;
+	BOOL expand_explicit = lp_passdb_expand_explicit();
 
 	/*
 	 * do a little initialization
@@ -776,7 +777,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, homedir );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_homedir(sampass, tmpstring, PDB_SET);
 	}
 
@@ -788,7 +792,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, logon_script );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
 	}
 
@@ -800,7 +807,10 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, profile_path );
-		standard_sub_basic( username, tmpstring, sizeof(tmpstring) );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
 		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
 	}
 
@@ -3503,12 +3513,11 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 }
 
 static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
-				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
 				    int num_rids,
 				    uint32 *rids,
-				    const char ***names,
-				    uint32 **attrs)
+				    const char **names,
+				    uint32 *attrs)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -3521,7 +3530,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
-		return pdb_default_lookup_rids(methods, mem_ctx, domain_sid,
+		return pdb_default_lookup_rids(methods, domain_sid,
 					       num_rids, rids, names, attrs);
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
@@ -3530,14 +3539,8 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		goto done;
 	}
 
-	(*names) = TALLOC_ZERO_ARRAY(mem_ctx, const char *, num_rids);
-	(*attrs) = TALLOC_ARRAY(mem_ctx, uint32, num_rids);
-
-	if ((num_rids != 0) && (((*names) == NULL) || ((*attrs) == NULL)))
-		return NT_STATUS_NO_MEMORY;
-
 	for (i=0; i<num_rids; i++)
-		(*attrs)[i] = SID_NAME_UNKNOWN;
+		attrs[i] = SID_NAME_UNKNOWN;
 
 	allsids = SMB_STRDUP("");
 	if (allsids == NULL) return NT_STATUS_NO_MEMORY;
@@ -3607,9 +3610,9 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 			continue;
 		}
 
-		(*attrs)[rid_index] = SID_NAME_USER;
-		(*names)[rid_index] = talloc_strdup(mem_ctx, str);
-		if ((*names)[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
+		attrs[rid_index] = SID_NAME_USER;
+		names[rid_index] = talloc_strdup(names, str);
+		if (names[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
 
 		num_mapped += 1;
 	}
@@ -3672,9 +3675,9 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 			continue;
 		}
 
-		(*attrs)[rid_index] = SID_NAME_DOM_GRP;
-		(*names)[rid_index] = talloc_strdup(mem_ctx, str);
-		if ((*names)[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
+		attrs[rid_index] = SID_NAME_DOM_GRP;
+		names[rid_index] = talloc_strdup(names, str);
+		if (names[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
 		num_mapped += 1;
 	}
 
