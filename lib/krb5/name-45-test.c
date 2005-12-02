@@ -215,12 +215,15 @@ main(int argc, char **argv)
 			    t->v4_name, t->v4_inst, t->v4_realm, s);
 		free(s);
 		val = 1;
+		krb5_free_context(context);
 		continue;
 	    }
 	}
 
-	if (ret)
+	if (ret) {
+	    krb5_free_context(context);
 	    continue;
+	}
 
 	if (strcmp (t->v5_realm, princ->realm) != 0) {
 	    printf ("wrong realm (\"%s\" should be \"%s\")"
@@ -274,15 +277,18 @@ main(int argc, char **argv)
 			    "krb5_524_conv_principal %s "
 			    "passed unexpected", printable_princ);
 		val = 1;
+		krb5_free_context(context);
 		continue;
 	    }
 	}
 	if (ret) {
 	    krb5_free_principal (context, princ);
+	    krb5_free_context(context);
 	    continue;
 	}
 
 	krb5_free_principal (context, princ);
+	krb5_free_context(context);
     }
     return val;
 }

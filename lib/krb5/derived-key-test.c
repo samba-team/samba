@@ -115,6 +115,9 @@ main(int argc, char **argv)
 	    printf ("\n");
 	    val = 1;
 	}
+	krb5_free_keyblock(context, dkey);
     }
+    krb5_free_context(context);
+
     return val;
 }

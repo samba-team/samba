@@ -189,5 +189,6 @@ main(int argc, char **argv)
 	}
 	krb5_free_principal (context, princ);
     }
+    krb5_free_context(context);
     return val;
 }
