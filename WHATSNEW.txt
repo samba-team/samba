@@ -1,12 +1,13 @@
-                   ==============================
-                   Release Notes for Samba 3.0.21
-                              Dec 3, 2005
-                   ==============================
+                   =================================
+                   Release Notes for Samba 3.0.21rc2
+                               Dec 2, 2005
+                   =================================
 
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all current
-bug-fixes.  Please read the following important changes in this
-release.
+This is a release candidate of the 3.0.21 code base and is provided
+for testing purposes only.  While this snapshot is *not* intended 
+for production servers, we do believe that this will become the 3.0.21 
+final release.  Your testing and feedback is greatly appreciated.
+
 
 Common bugs fixed in 3.0.21 include:
 
