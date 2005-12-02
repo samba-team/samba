@@ -108,7 +108,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	}
 	
 	for (i=0;i<io->out.num_addrs;i++) {
-		io->out.reply_addrs[i] = talloc_steal(mem_ctx, 
+		io->out.reply_addrs[i] = talloc_steal(io->out.reply_addrs, 
 						      packet->answers[0].rdata.netbios.addresses[i].ipaddr);
 	}
 	io->out.reply_addrs[i] = NULL;
