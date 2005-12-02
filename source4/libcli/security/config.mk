@@ -22,6 +22,7 @@ ADD_OBJ_FILES = security_token.o \
 		dom_sid.o \
 		access_check.o \
 		privilege.o \
+		sddl.o \
 		../../librpc/ndr/ndr_sec.o
 REQUIRED_SUBSYSTEMS = LIB_SECURITY_NDR
 # End SUBSYSTEM LIB_SECURITY
