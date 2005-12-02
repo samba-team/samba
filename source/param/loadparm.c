@@ -189,6 +189,7 @@ typedef struct {
 	char *szManglingMethod;
 	char **szServicesList;
 	char *szUsersharePath;
+	char *szUsershareTemplateShare;
 	int mangle_prefix;
 	int max_log_size;
 	char *szLogLevel;
@@ -1220,6 +1221,7 @@ static struct parm_struct parm_table[] = {
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare path", P_STRING, P_GLOBAL, &Globals.szUsersharePath, NULL, NULL, FLAG_ADVANCED},
+	{"usershare template share", P_STRING, P_GLOBAL, &Globals.szUsershareTemplateShare, NULL, NULL, FLAG_ADVANCED},
 	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE }, 
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1638,6 +1640,7 @@ static void init_globals(void)
 
 	/* User defined shares. */
 	string_set(&Globals.szUsersharePath, "");
+	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.iUsershareMaxShares = 0;
 }
 
@@ -1825,7 +1828,6 @@ FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 
-FN_GLOBAL_STRING(lp_usershare_path, &Globals.szUsersharePath)
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
@@ -4240,7 +4242,7 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 	    with permissions to share directory etc.
 ***************************************************************************/
 
-static int process_usershare_file(const char *dir_name, const char *file_name)
+static int process_usershare_file(const char *dir_name, const char *file_name, int snum_template)
 {
 	SMB_STRUCT_STAT sbuf;
 	pstring fname;
@@ -4353,9 +4355,14 @@ static int process_usershare_file(const char *dir_name, const char *file_name)
 
 	SAFE_FREE(lines);
 
-	/* Everything ok - add the service. */
+	/* Everything ok - add the service possibly using a template. */
 	if (snum <= 0) {
-		if ((snum = add_a_service(&sDefault, service_name)) < 0) {
+		const service *sp = &sDefault;
+		if (snum_template != -1) {
+			sp = ServicePtrs[snum_template];
+		}
+
+		if ((snum = add_a_service(sp, service_name)) < 0) {
 			DEBUG(0, ("process_usershare_file: Failed to add "
 				"new service %s\n", service_name));
 			talloc_destroy(ctx);
@@ -4367,8 +4374,15 @@ static int process_usershare_file(const char *dir_name, const char *file_name)
 
 	talloc_destroy(ctx);
 
+	/* If from a template it may be marked invalid. */
+	ServicePtrs[snum]->valid = True;
+
 	/* Set the service as a valid usershare. */
 	ServicePtrs[snum]->usershare = USERSHARE_VALID;
+
+	/* And note when it was loaded. */
+	ServicePtrs[snum]->usershare_last_mod = sbuf.st_mtime;
+
 	return 0;
 }
 
@@ -4385,6 +4399,7 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 	unsigned int num_dir_entries, num_bad_dir_entries;
 	unsigned int allowed_bad_entries = ((2*max_user_shares)/10);
 	int iService;
+	int snum_template = -1;
 
 	add_to_file_list(usersharepath, usersharepath);
 
@@ -4409,6 +4424,26 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 		return;
 	}
 
+	/* Ensure the template share exists if it's set. */
+	if (Globals.szUsershareTemplateShare[0]) {
+		/* We can't use lp_servicenumber here as we are recommending that
+		   template shares have -valid=False set. */
+		for (snum_template = iNumServices - 1; snum_template >= 0; snum_template--) {
+			if (ServicePtrs[snum_template]->szService &&
+					strequal(ServicePtrs[snum_template]->szService,
+						Globals.szUsershareTemplateShare)) {
+				break;
+			}
+		}
+
+		if (snum_template == -1) {
+			DEBUG(0,("process_usershare_directory: usershare template share %s "
+				"does not exist.\n",
+				Globals.szUsershareTemplateShare ));
+			return;
+		}
+	}
+
 	/* Mark all existing usershares as pending delete. */
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && ServicePtrs[iService]->usershare) {
@@ -4426,7 +4461,7 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 	for (num_dir_entries = 0, num_bad_dir_entries = 0;
 			(de = sys_readdir(dp));
 			num_dir_entries++ ) {
-		int ret = process_usershare_file(usersharepath, de->d_name);
+		int ret = process_usershare_file(usersharepath, de->d_name, snum_template);
 		if (ret == 0) {
 			num_usershares++;
 			if (num_usershares >= max_user_shares) {
