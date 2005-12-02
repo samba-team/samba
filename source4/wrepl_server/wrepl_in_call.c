@@ -265,7 +265,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(names);
 
 	for (i = 0; i < res->count; i++) {
-		status = winsdb_record(res->msgs[i], NULL, call, &rec);
+		status = winsdb_record(res->msgs[i], call, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		status = wreplsrv_record2wins_name(names, call->wreplconn->our_ip, &names[i], rec);
