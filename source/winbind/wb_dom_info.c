@@ -132,7 +132,6 @@ static void get_dom_info_recv_dcname(struct irpc_request *ireq)
 
 
 	state->ctx->status = irpc_call_recv(ireq);
-	talloc_free(ireq);
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->info->dc_name = talloc_steal(state->info, state->r.out.dcname);
