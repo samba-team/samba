@@ -95,9 +95,6 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 
 	pvfs->sid_cache.creator_owner = dom_sid_parse_talloc(pvfs, SID_CREATOR_OWNER);
 	pvfs->sid_cache.creator_group = dom_sid_parse_talloc(pvfs, SID_CREATOR_GROUP);
-#ifdef HAVE_BLKID
-	pvfs->blkid_cache = NULL;
-#endif
 
 	/* check if the system really supports xattrs */
 	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
