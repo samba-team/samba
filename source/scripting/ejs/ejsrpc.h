@@ -67,9 +67,9 @@ NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs,
 NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r);
 NTSTATUS ejs_pull_dlong(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint64_t *r);
+			struct MprVar *v, const char *name, int64_t *r);
 NTSTATUS ejs_push_dlong(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, const uint64_t *r);
+			struct MprVar *v, const char *name, const int64_t *r);
 NTSTATUS ejs_pull_udlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r);
 NTSTATUS ejs_push_udlong(struct ejs_rpc *ejs, 
