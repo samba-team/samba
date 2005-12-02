@@ -26,21 +26,12 @@
 #include "system/filesys.h"
 #include "smb_server/smb_server.h"
 
-/* We use libblkid out of e2fsprogs to identify UUID of a volume */
-#ifdef HAVE_LIBBLKID
-#include <blkid/blkid.h>
-
-typedef struct {
-	blkid_cache cache;
-	const char *devname;
-} blkid_cache_wrap_t;
-#endif
-
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
 struct pvfs_state {
 	struct smbsrv_tcon *tcon;
 	const char *base_directory;
+	struct GUID *base_fs_uuid;
 
 	const char *share_name;
 	uint_t flags;
@@ -83,10 +74,6 @@ struct pvfs_state {
 		const struct dom_sid *creator_owner;
 		const struct dom_sid *creator_group;		
 	} sid_cache;
-
-#ifdef HAVE_LIBBLKID
-	blkid_cache_wrap_t *blkid_cache;
-#endif
 };
 
 /* this is the basic information needed about a file from the filesystem */
