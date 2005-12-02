@@ -29,3 +29,12 @@ void decrement_smbd_process_count( void )
 	return;
 }
 
+int find_service(fstring service)
+{
+	return -1;
+}
+
+BOOL delete_share_security(int snum)
+{
+	return False;
+}

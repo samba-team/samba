@@ -76,6 +76,9 @@ extern enum protocol_types Protocol;
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
 #define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
 
+#define USERSHARE_VALID 1
+#define USERSHARE_PENDING_DELETE 2
+
 int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
 
@@ -94,8 +97,7 @@ struct _param_opt_struct {
 /* 
  * This structure describes global (ie., server-wide) parameters.
  */
-typedef struct
-{
+typedef struct {
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -186,6 +188,7 @@ typedef struct
 	char *szGuestaccount;
 	char *szManglingMethod;
 	char **szServicesList;
+	char *szUsersharePath;
 	int mangle_prefix;
 	int max_log_size;
 	char *szLogLevel;
@@ -302,20 +305,22 @@ typedef struct
 	int name_cache_timeout;
 	int client_signing;
 	int server_signing;
+	int iUsershareMaxShares;
+
 	BOOL bResetOnZeroVC;
 	param_opt_struct *param_opt;
-}
-global;
+} global;
 
 static global Globals;
 
 /* 
  * This structure describes a single service. 
  */
-typedef struct
-{
+typedef struct {
 	BOOL valid;
 	BOOL autoloaded;
+	int usershare;
+	time_t usershare_last_mod;
 	char *szService;
 	char *szPath;
 	char *szUsername;
@@ -444,14 +449,15 @@ typedef struct
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
-}
-service;
+} service;
 
 
 /* This is a default service used to prime a services structure */
 static service sDefault = {
 	True,			/* valid */
 	False,			/* not autoloaded */
+	0,			/* not a usershare */
+	(time_t)0,		/* No last mod time */
 	NULL,			/* szService */
 	NULL,			/* szPath */
 	NULL,			/* szUsername */
@@ -1212,6 +1218,8 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
+	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
+	{"usershare path", P_STRING, P_GLOBAL, &Globals.szUsersharePath, NULL, NULL, FLAG_ADVANCED},
 	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE }, 
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1627,6 +1635,10 @@ static void init_globals(void)
 	Globals.bASUSupport       = True;
 	
 	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
+
+	/* User defined shares. */
+	string_set(&Globals.szUsersharePath, "");
+	Globals.iUsershareMaxShares = 0;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1813,6 +1825,7 @@ FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 
+FN_GLOBAL_STRING(lp_usershare_path, &Globals.szUsersharePath)
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
@@ -1902,6 +1915,8 @@ FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
+FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
+
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
@@ -4018,9 +4033,11 @@ void lp_killunused(BOOL (*snumused) (int))
 		if (!VALID(i))
 			continue;
 
-		/* don't kill autoloaded services */
-		if ( ServicePtrs[i]->autoloaded )
+		/* don't kill autoloaded or usershare services */
+		if ( ServicePtrs[i]->autoloaded ||
+				ServicePtrs[i]->usershare == USERSHARE_VALID) {
 			continue;
+		}
 
 		if (!snumused || !snumused(i)) {
 			free_service_byindex(i);
@@ -4162,6 +4179,7 @@ static void set_server_role(void)
 /***********************************************************
  If we should send plaintext/LANMAN passwords in the clinet
 ************************************************************/
+
 static void set_allowed_client_auth(void)
 {
 	if (Globals.bClientNTLMv2Auth) {
@@ -4169,6 +4187,286 @@ static void set_allowed_client_auth(void)
 	}
 	if (!Globals.bClientLanManAuth) {
 		Globals.bClientPlaintextAuth = False;
+	}
+}
+
+/***************************************************************************
+ Check allowed stat state of a usershare file.
+ Ensure we print out who is dicking with us so the admin can
+ get their sorry ass fired.
+***************************************************************************/
+
+static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
+{
+	if (!S_ISREG(psbuf->st_mode)) {
+		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
+			"not a regular file\n",
+			fname, (unsigned int)psbuf->st_uid ));
+		return False;
+	}
+
+	/* Should be 10k or less. */
+	if (psbuf->st_size > 10240) {
+		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
+			"too large (%u) to be a user share file.\n",
+			fname, (unsigned int)psbuf->st_uid,
+			(unsigned int)psbuf->st_size ));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ Parse the contents of a usershare file.
+***************************************************************************/
+
+static BOOL parse_usershare_file(TALLOC_CTX *ctx, 
+			SMB_STRUCT_STAT *psbuf,
+			char **lines,
+			int numlines,
+			pstring sharepath,
+			SEC_DESC **ppsd)
+{
+	return False;
+}
+
+/***************************************************************************
+ Deal with a usershare file.
+ Returns:
+	0 - ok.
+	-1 - Bad name, invalid contents.
+	1 - service name already existed and not a usershare, problem
+	    with permissions to share directory etc.
+***************************************************************************/
+
+static int process_usershare_file(const char *dir_name, const char *file_name)
+{
+	SMB_STRUCT_STAT sbuf;
+	pstring fname;
+	pstring sharepath;
+	fstring service_name;
+	char **lines = NULL;
+	int numlines = 0;
+	int fd = -1;
+	int snum = -1;
+	TALLOC_CTX *ctx = NULL;
+	SEC_DESC *psd = NULL;
+
+	/* No names containing substitute chars. */
+	if (strchr_m(file_name, '%')) {
+		return -1;
+	}
+
+	fstrcpy(service_name, file_name);
+
+	/* Check if this name already exists and isn't a usershare. */
+	/* We use find_service here to catch home directories. */
+
+	snum = find_service(service_name);
+	if (snum > 0) {
+		if (!ServicePtrs[snum]->usershare) {
+			DEBUG(0,("process_usershare_file: service %s already exists.\n",
+				service_name ));
+			return 1;
+		}
+		/* Ensure nothing got substituted... */
+		if (!strequal(service_name, file_name)) {
+			return 1;
+		}
+	}
+
+	pstrcpy(fname, dir_name);
+	pstrcat(fname, "/");
+	pstrcat(fname, file_name);
+
+	/* Minimize the race condition by doing a stat before we
+	   open and fstat. */
+
+	if (sys_stat(fname, &sbuf) != 0) {
+		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
+			fname, strerror(errno) ));
+		return -1;
+	}
+
+	if (snum != -1 && ServicePtrs[snum]->usershare_last_mod == sbuf.st_mtime) {
+		/* Nothing changed - Mark valid and return. */
+		DEBUG(10,("process_usershare_file: service %s not changed.\n",
+			service_name ));
+		ServicePtrs[snum]->usershare = USERSHARE_VALID;
+		return 0;
+	}
+
+	/* This must be a regular file, not a symlink, directory or
+	   other strange filetype. */
+	if (!check_usershare_stat(fname, &sbuf)) {
+		return -1;
+	}
+
+	/* Try and open the file read only - no symlinks allowed. */
+#ifdef O_NOFOLLOW
+	fd = sys_open(fname, O_RDONLY|O_NOFOLLOW, 0);
+#else
+	fd = sys_open(fname, O_RDONLY, 0);
+#endif
+
+	if (fd == -1) {
+		DEBUG(0,("process_usershare_file: unable to open %s. %s\n",
+			fname, strerror(errno) ));
+		return -1;
+	}
+
+	/* Now fstat to be *SURE* it's a regular file. */
+	if (sys_fstat(fd, &sbuf) != 0) {
+		close(fd);
+		DEBUG(0,("process_usershare_file: fstat of %s failed. %s\n",
+			fname, strerror(errno) ));
+		return -1;
+	}
+
+	/* This must be a regular file, not a symlink, directory or
+	   other strange filetype. */
+	if (!check_usershare_stat(fname, &sbuf)) {
+		return -1;
+	}
+
+	lines = fd_lines_load(fd, &numlines);
+
+	close(fd);
+	if (lines == NULL) {
+		DEBUG(0,("process_usershare_file: loading file %s owned by %u failed.\n",
+			fname, (unsigned int)sbuf.st_uid ));
+	}
+
+	/* Should we allow printers to be shared... ? */
+	ctx = talloc_init("usershare_sd_xctx");
+	if (!ctx) {
+		SAFE_FREE(lines);
+		return 1;
+	}
+
+	if (!parse_usershare_file(ctx, &sbuf, lines, numlines, sharepath, &psd)) {
+		talloc_destroy(ctx);
+		SAFE_FREE(lines);
+		return -1;
+	}
+
+	SAFE_FREE(lines);
+
+	/* Everything ok - add the service. */
+	if (snum <= 0) {
+		if ((snum = add_a_service(&sDefault, service_name)) < 0) {
+			DEBUG(0, ("process_usershare_file: Failed to add "
+				"new service %s\n", service_name));
+			talloc_destroy(ctx);
+			return 1;
+		}
+	}
+
+	/* Write the ACL of the new/modified share. */
+
+	talloc_destroy(ctx);
+
+	/* Set the service as a valid usershare. */
+	ServicePtrs[snum]->usershare = USERSHARE_VALID;
+	return 0;
+}
+
+/***************************************************************************
+ Load user defined shares from the user share directory.
+***************************************************************************/
+
+static void process_usershare_directory(const char *usersharepath, int max_user_shares)
+{
+	SMB_STRUCT_DIR *dp;
+	SMB_STRUCT_STAT sbuf;
+	SMB_STRUCT_DIRENT *de;
+	int num_usershares;
+	unsigned int num_dir_entries, num_bad_dir_entries;
+	unsigned int allowed_bad_entries = ((2*max_user_shares)/10);
+	int iService;
+
+	add_to_file_list(usersharepath, usersharepath);
+
+	if (sys_stat(usersharepath, &sbuf) != 0) {
+		DEBUG(0,("process_usershare_directory: stat of %s failed. %s\n",
+			usersharepath, strerror(errno) ));
+		return;
+	}
+
+	/*
+	 * This directory must be owned by root, and have the 't' bit set.
+	 */
+
+#ifdef S_ISVTX
+	if (sbuf.st_uid != 0 || !(sbuf.st_mode & S_ISVTX)) {
+#else
+	if (sbuf.st_uid != 0) {
+#endif
+		DEBUG(0,("process_usershare_directory: directory %s is not owned by root "
+			"or does not have the sticky bit 't' set.\n",
+			usersharepath ));
+		return;
+	}
+
+	/* Mark all existing usershares as pending delete. */
+	for (iService = iNumServices - 1; iService >= 0; iService--) {
+		if (VALID(iService) && ServicePtrs[iService]->usershare) {
+			ServicePtrs[iService]->usershare = USERSHARE_PENDING_DELETE;
+		}
+	}
+
+	dp = sys_opendir(usersharepath);
+	if (!dp) {
+		DEBUG(0,("process_usershare_directory: failed to open directory %s. %s\n",
+			usersharepath, strerror(errno) ));
+		return;
+	}
+
+	for (num_dir_entries = 0, num_bad_dir_entries = 0;
+			(de = sys_readdir(dp));
+			num_dir_entries++ ) {
+		int ret = process_usershare_file(usersharepath, de->d_name);
+		if (ret == 0) {
+			num_usershares++;
+			if (num_usershares >= max_user_shares) {
+				DEBUG(0,("process_usershare_directory: max user shares reached "
+					"on file %s in directory %s\n",
+					de->d_name, usersharepath ));
+				break;
+			}
+		} else if (ret == -1) {
+			num_bad_dir_entries++;
+		}
+
+		/* Allow 20% bad entries. */
+		if (num_bad_dir_entries > allowed_bad_entries) {
+			DEBUG(0,("process_usershare_directory: too many bad entries (%u) "
+				"in directory %s\n",
+				allowed_bad_entries, usersharepath));
+			break;
+		}
+
+		/* Allow 20% bad entries. */
+		if (num_dir_entries > max_user_shares + allowed_bad_entries) {
+			DEBUG(0,("process_usershare_directory: too many total entries (%u) "
+			"in directory %s\n",
+			num_dir_entries, usersharepath));
+			break;
+		}
+	}
+
+	sys_closedir(dp);
+
+	/* Sweep through and delete any non-refreshed usershares. */
+	for (iService = iNumServices - 1; iService >= 0; iService--) {
+		if (VALID(iService) && (ServicePtrs[iService]->usershare == USERSHARE_PENDING_DELETE)) {
+			/* Remove from the share ACL db. */
+			DEBUG(10,("process_usershare_directory: Removing deleted usershare %s\n",
+				lp_servicename(iService) ));
+			delete_share_security(iService);
+			free_service_byindex(iService);
+		}
 	}
 }
 
@@ -4251,6 +4549,10 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	init_iconv();
+
+	if (!in_client && Globals.iUsershareMaxShares > 0 && Globals.szUsersharePath[0]) {
+		process_usershare_directory(Globals.szUsersharePath, Globals.iUsershareMaxShares);
+	}
 
 	return (bRetval);
 }

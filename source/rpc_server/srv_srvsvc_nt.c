@@ -270,7 +270,7 @@ out:
  Delete a security descriptor.
 ********************************************************************/
 
-static BOOL delete_share_security(int snum)
+BOOL delete_share_security(int snum)
 {
 	TDB_DATA kbuf;
 	fstring key;
