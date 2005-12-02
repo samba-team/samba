@@ -47,18 +47,18 @@ function show_sessions()
 /*
   show open tree connects
 */
-function show_trees()
+function show_tcons()
 {
-	var trees = smbsrv_trees();
+	var tcons = smbsrv_tcons();
 	var sys = sys_init();
-	if (trees == undefined) {
+	if (tcons == undefined) {
 		println("No tree connects");
 		return;
 	}
 	printf("Share                                 Client      Connected at\n");
 	printf("-------------------------------------------------------------------------------\n");
-	for (i=0;i<trees.length;i++) {
-		var info = trees[i];
+	for (i=0;i<tcons.length;i++) {
+		var info = tcons[i];
 		printf("%-30s %16s   %s\n", 
 		       info.share_name, info.client_ip, sys.httptime(info.connect_time));
 	}
@@ -90,7 +90,7 @@ if (options['nbt'] != undefined) {
 	show_nbt();
 } else {
 	show_sessions();
-	show_trees();
+	show_tcons();
 }
 
 return 0;
