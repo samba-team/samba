@@ -35,7 +35,7 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 	req = smb2_request_init_tree(tree, SMB2_OP_READ, 0x31, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x02, io->in._pad);
+	SSVAL(req->out.body, 0x02, 0); /* pad */
 	SIVAL(req->out.body, 0x04, io->in.length);
 	SBVAL(req->out.body, 0x08, io->in.offset);
 	smb2_push_handle(req->out.body+0x10, &io->in.handle);
