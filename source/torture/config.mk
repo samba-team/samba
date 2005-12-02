@@ -141,27 +141,7 @@ REQUIRED_SUBSYSTEMS = \
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
-#################################
-# Start SUBSYSTEM TORTURE_LOCAL
-[SUBSYSTEM::TORTURE_LOCAL]
-ADD_OBJ_FILES = \
-		local/iconv.o \
-		../lib/talloc/testsuite.o \
-		local/messaging.o \
-		local/binding_string.o \
-		local/idtree.o \
-		local/socket.o \
-		local/irpc.o \
-		local/registry.o \
-		local/resolve.o \
-		local/util_strlist.o \
-		local/util_file.o
-REQUIRED_SUBSYSTEMS = \
-		LIBSMB \
-		MESSAGING \
-		REGISTRY
-# End SUBSYSTEM TORTURE_LOCAL
-#################################
+include local/config.mk
 
 #################################
 # Start SUBSYSTEM TORTURE_NBENCH

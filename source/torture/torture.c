@@ -2323,6 +2323,7 @@ static struct {
 	{"LOCAL-PAC", torture_pac, 0},
 	{"LOCAL-REGISTRY", torture_registry, 0},
 	{"LOCAL-RESOLVE", torture_local_resolve, 0},
+	{"LOCAL-SDDL", torture_local_sddl, 0},
 
 	/* COM (Component Object Model) testers */
 	{"COM-SIMPLE", torture_com_simple, 0 },
