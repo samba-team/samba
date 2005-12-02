@@ -5,15 +5,12 @@
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-    This parameter controls whether Samba substitutes %-macros in the passdb
-    fields if they are explicitly set. We used to expand macros here, but this
-    turned out to be a bug because the Windows client can expand a variable
-    %G_osver% in which %G would have been substituted by the user's primary
-    group.
+	This parameter controls whether Samba substitutes %-macros in the passdb fields if they are explicitly set. We
+	used to expand macros here, but this turned out to be a bug because the Windows client can expand a variable
+	%G_osver% in which %G would have been substituted by the user's primary group.
     </para>
     <para>
-    This parameter is set to "yes" by default, but this is about to change in
-    the future.
+    This parameter is set to "yes" by default, but this is about to change in the future.
     </para>
 </description>
 
