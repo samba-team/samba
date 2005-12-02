@@ -213,12 +213,8 @@ install -m644 %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
 ##
 ## Clean out man pages for tools not installed here
 ##
-rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/editreg.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/log2pcap.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbsh.1*
-rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbget.1*
-rm -f $RPM_BUILD_ROOT%{_mandir}/man5/smbgetrc.5*
-rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/testprns.1*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -343,12 +339,15 @@ fi
 %{_mandir}/man8/umount.cifs.8.*
 %{_mandir}/man8/smbspool.8*
 %{_bindir}/nmblookup
+%{_bindir}/smbget
 %{_bindir}/smbclient
 %{_bindir}/smbprint
 %{_bindir}/smbspool
 %{_bindir}/smbtar
 %{_bindir}/net
 %{_bindir}/smbtree
+%{_mandir}/man1/smbget.1*
+%{_mandir}/man1/smbgetrc.5*
 %{_mandir}/man1/findsmb.1*
 %{_mandir}/man1/nmblookup.1*
 %{_mandir}/man1/rpcclient.1*
