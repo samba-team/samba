@@ -1802,6 +1802,62 @@ net ads printer search &lt;printer_name&gt; -Uadministrator%secret
 
 	</sect1>
 
+	<sect1>
+	<title>Managing IDMAP UID/SID Mappings</title>
+
+	<para>
+	The IDMAP UID to SID, and SID to UID, mappings that are created by <command>winbindd</command> can be
+	backed up to a text file. The text file can be manually edited, although it is highly recommended that
+	you attempt this only if you know precisely what you are doing.
+	</para>
+
+	<para>
+	An IDMAP text dump file can be restored (or reloaded). There are two situations that may necessitate
+	this action: a) The existing IDMAP file is corrupt, b) It is necessary to install an editted version
+	of the mapping information.
+	</para>
+
+	<para>
+	Winbind must be shut down to dump the IDMAP file. Before restoring a dump file, shut down
+	<command>winbindd</command> and delete the old <filename>winbindd_idmap.tdb</filename> file.
+	</para>
+
+	<sect2>
+	<title>Creating an IDMAP Database Dump File</title>
+
+	<para>
+	The IDMAP database can be dumped to a text file as shown here:
+<screen>
+net idmap dump &lt;full_path_and_tdb_filename&gt; &gt; dumpfile.txt
+</screen>
+	Where the Samba run-time tdb files are stored in the <filename>/var/lib/samba</filename> directory
+	the the following commands to create the dump file will suffice:
+<screen>
+net idmap dump /var/lib/samba/winbindd_idmap.tdb &gt; idmap_dump.txt
+</scrreen>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Restoring the IDMAP Database Dump File</title>
+
+	<para>
+	The IDMAP dump file can be restored using the following command:
+<screen>
+net idmap restore &lt;full_path_and_tdb_filename&gt; &lt; dumpfile.txt
+</screen>
+	Where the Samba run-time tdb files are stored in the <filename>/var/lib/samba</filename> directory
+    the the following commands can be used to restore the data to the tdb file.
+<screen>
+net idmap restore /var/lib/samba/winbindd_idmap.tdb &lt; idmap_dump.txt
+</screen>
+	</para>
+
+	</sect2>
+
+	</sect1>
+
 	<sect1 id="netmisc1">
 	<title>Other Miscellaneous Operations</title>
 
