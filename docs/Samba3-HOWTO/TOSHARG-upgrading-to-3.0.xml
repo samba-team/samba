@@ -183,33 +183,33 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 </para>
 
 <itemizedlist>
-	<listitem><para>admin log </para></listitem>
-	<listitem><para>alternate permissions </para></listitem>
-	<listitem><para>character set </para></listitem>
-	<listitem><para>client codepage </para></listitem>
-	<listitem><para>code page directory </para></listitem>
-	<listitem><para>coding system </para></listitem>
-	<listitem><para>domain admin group </para></listitem>
-	<listitem><para>domain guest group </para></listitem>
+	<listitem><para>admin log</para></listitem>
+	<listitem><para>alternate permissions</para></listitem>
+	<listitem><para>character set</para></listitem>
+	<listitem><para>client codepage</para></listitem>
+	<listitem><para>code page directory</para></listitem>
+	<listitem><para>coding system</para></listitem>
+	<listitem><para>domain admin group</para></listitem>
+	<listitem><para>domain guest group</para></listitem>
 	<listitem><para>enable svcctl</para></listitem>
-	<listitem><para>force unknown acl user </para></listitem>
+	<listitem><para>force unknown acl user</para></listitem>
 	<listitem><para>ldap filter</para></listitem>
-	<listitem><para>min password length (deprecated)</para></listitem>
-	<listitem><para>nt smb support </para></listitem>
-	<listitem><para>post script </para></listitem>
+	<listitem><para>min password length</para></listitem>
+	<listitem><para>nt smb support</para></listitem>
+	<listitem><para>post script</para></listitem>
 	<listitem><para>printer admin</para></listitem>
-	<listitem><para>printer driver </para></listitem>
-	<listitem><para>printer driver file </para></listitem>
-	<listitem><para>printer driver location </para></listitem>
+	<listitem><para>printer driver</para></listitem>
+	<listitem><para>printer driver file</para></listitem>
+	<listitem><para>printer driver location</para></listitem>
 	<listitem><para>read size</para></listitem>
 	<listitem><para>source environment</para></listitem>
 	<listitem><para>status </para></listitem>
 	<listitem><para>strip dot </para></listitem>
-	<listitem><para>total print jobs </para></listitem>
+	<listitem><para>total print jobs</para></listitem>
 	<listitem><para>unicode</para></listitem>
-	<listitem><para>use rhosts </para></listitem>
-	<listitem><para>valid chars </para></listitem>
-	<listitem><para>vfs options </para></listitem>
+	<listitem><para>use rhosts</para></listitem>
+	<listitem><para>valid chars</para></listitem>
+	<listitem><para>vfs options</para></listitem>
 	<listitem><para>winbind enable local accounts</para></listitem>
 </itemizedlist>
 
@@ -335,7 +335,6 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>idmap gid</para></listitem>
 	<listitem><para>idmap uid</para></listitem>
 	<listitem><para>username map script</para></listitem>
-	<listitem><para>winbind enable local accounts</para></listitem>
 	<listitem><para>winbind nested groups</para></listitem>
 	<listitem><para>winbind nss info</para></listitem>
 	<listitem><para>winbind trusted domains only</para></listitem>
@@ -383,8 +382,8 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>security (new ads value) </para></listitem>
 	<listitem><para>strict locking (enabled by default) </para></listitem>
 	<listitem><para>winbind cache time (increased to 5 minutes) </para></listitem>
-	<listitem><para>winbind uid (deprecated in favor of idmap uid) </para></listitem>
-	<listitem><para>winbind gid (deprecated in favor of idmap gid) </para></listitem>
+	<listitem><para>winbind uid (deprecated in favor of idmap uid)</para></listitem>
+	<listitem><para>winbind gid (deprecated in favor of idmap gid)</para></listitem>
 	<listitem><para>winbindd nss info</para></listitem>
 	<listitem><para>write cache (deprecated)</para></listitem>
 </itemizedlist>
