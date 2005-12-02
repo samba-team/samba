@@ -6,7 +6,7 @@
 [ uuid("e770c620-0b06-4b5e-8d87-a26e20f28340"),
   version(1.0),
   pointer_default(unique),
-  depends(security)
+  depends(security,nbt)
 ] interface irpc
 {
 	typedef bitmap {
@@ -59,6 +59,22 @@
 		[in] uint32 account_control,
 		[in] dom_sid *domain_sid,
 		[out,unique] astring *dcname
+		);
+
+	typedef [noejs] struct {
+		ipv4address addr;
+	} nbtd_proxy_wins_addr;
+
+	[noejs] void nbtd_proxy_wins_challenge(
+		[in] nbt_name name,
+		[in,out] uint32 num_addrs,
+		[in,out] nbtd_proxy_wins_addr addrs[num_addrs]
+		);
+
+	[noejs] void nbtd_proxy_wins_release_demand(
+		[in] nbt_name name,
+		[in] uint32 num_addrs,
+		[in] nbtd_proxy_wins_addr addrs[num_addrs]
 		);
 
 	/******************************************************
