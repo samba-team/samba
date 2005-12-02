@@ -709,6 +709,7 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 		<title>IdMap LDAP Support</title>
 
 		<para>
+<indexterm><primary>idmap backend</primary></indexterm>
 		Samba-3 supports an LDAP backend for the idmap subsystem. The
 		following options inform Samba that the idmap table should be
 		stored on the directory server <emphasis>onterose</emphasis> in the ou=idmap,dc=quenya,dc=org partition.
