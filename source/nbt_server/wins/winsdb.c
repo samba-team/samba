@@ -395,7 +395,7 @@ NTSTATUS winsdb_lookup(struct ldb_context *wins_db,
 
 	talloc_steal(tmp_ctx, res);
 
-	status = winsdb_record(res->msgs[0], name, tmp_ctx, &rec);
+	status = winsdb_record(res->msgs[0], tmp_ctx, &rec);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* see if it has already expired */
@@ -416,11 +416,12 @@ failed:
 	return status;
 }
 
-NTSTATUS winsdb_record(struct ldb_message *msg, struct nbt_name *name, TALLOC_CTX *mem_ctx, struct winsdb_record **_rec)
+NTSTATUS winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct winsdb_record **_rec)
 {
 	NTSTATUS status;
 	struct winsdb_record *rec;
 	struct ldb_message_element *el;
+	struct nbt_name *name;
 	uint32_t i, num_values;
 
 	rec = talloc(mem_ctx, struct winsdb_record);
@@ -429,10 +430,8 @@ NTSTATUS winsdb_record(struct ldb_message *msg, struct nbt_name *name, TALLOC_CT
 		goto failed;
 	}
 
-	if (!name) {
-		status = winsdb_nbt_name(rec, msg->dn, &name);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
-	}
+	status = winsdb_nbt_name(rec, msg->dn, &name);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	if (strlen(name->name) > 15) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
