@@ -35,6 +35,7 @@ struct flag_map {
 static BOOL sddl_map_flags(const struct flag_map *map, const char *str, 
 			   uint32_t *flags, size_t *len)
 {
+	const char *str0 = str;
 	if (len) *len = 0;
 	*flags = 0;
 	while (str[0] && isupper(str[0])) {
@@ -49,7 +50,7 @@ static BOOL sddl_map_flags(const struct flag_map *map, const char *str,
 			}
 		}
 		if (map[i].name == NULL) {
-			DEBUG(2, ("Unknown flag - %s\n", str));
+			DEBUG(1, ("Unknown flag - %s in %s\n", str, str0));
 			return False;
 		}
 	}
@@ -62,15 +63,36 @@ static BOOL sddl_map_flags(const struct flag_map *map, const char *str,
 static const struct {
 	const char *code;
 	const char *sid;
+	uint32_t rid;
 } sid_codes[] = {
 	{ "AO", SID_BUILTIN_ACCOUNT_OPERATORS },
+	{ "BA", SID_BUILTIN_ADMINISTRATORS },
+	{ "RU", SID_BUILTIN_PREW2K },
+	{ "PO", SID_BUILTIN_PRINT_OPERATORS },
+	{ "RS", SID_BUILTIN_RAS_SERVERS },
+
+	{ "AU", SID_NT_AUTHENTICATED_USERS },
+	{ "SY", SID_NT_SYSTEM },
+	{ "PS", SID_NT_SELF },
+	{ "WD", SID_WORLD },
+	{ "ED", SID_NT_ENTERPRISE_DCS },
+
+	{ "CO", SID_CREATOR_OWNER },
+	{ "CG", SID_CREATOR_GROUP },
+
+	{ "DA", NULL, DOMAIN_RID_ADMINS },
+	{ "EA", NULL, DOMAIN_RID_ENTERPRISE_ADMINS },
+	{ "DD", NULL, DOMAIN_RID_DCS },
+	{ "DU", NULL, DOMAIN_RID_USERS },
+	{ "CA", NULL, DOMAIN_RID_CERT_ADMINS },
 };
 
 /*
   decode a SID
   It can either be a special 2 letter code, or in S-* format
 */
-static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp)
+static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
+				       struct dom_sid *domain_sid)
 {
 	const char *sddl = (*sddlp);
 	int i;
@@ -84,26 +106,31 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp)
 
 	/* now check for one of the special codes */
 	for (i=0;i<ARRAY_SIZE(sid_codes);i++) {
-		if (strncmp(sid_codes[i].code, sddl, 2)) break;
+		if (strncmp(sid_codes[i].code, sddl, 2) == 0) break;
 	}
 	if (i == ARRAY_SIZE(sid_codes)) {
-		DEBUG(2,("Unknown sddl sid code '%2.2s'\n", sddl));
+		DEBUG(1,("Unknown sddl sid code '%2.2s'\n", sddl));
 		return NULL;
 	}
 
 	(*sddlp) += 2;
+
+	if (sid_codes[i].sid == NULL) {
+		return dom_sid_add_rid(mem_ctx, domain_sid, sid_codes[i].rid);
+	}
+
 	return dom_sid_parse_talloc(mem_ctx, sid_codes[i].sid);
 }
 
 static const struct flag_map ace_types[] = {
-	{ "A",  SEC_ACE_TYPE_ACCESS_ALLOWED },
-	{ "D",  SEC_ACE_TYPE_ACCESS_DENIED },
 	{ "AU", SEC_ACE_TYPE_SYSTEM_AUDIT },
 	{ "AL", SEC_ACE_TYPE_SYSTEM_ALARM },
 	{ "OA", SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT },
 	{ "OD", SEC_ACE_TYPE_ACCESS_DENIED_OBJECT },
 	{ "OU", SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT },
 	{ "OL", SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT },
+	{ "A",  SEC_ACE_TYPE_ACCESS_ALLOWED },
+	{ "D",  SEC_ACE_TYPE_ACCESS_DENIED },
 	{ NULL, 0 }
 };
 
@@ -132,6 +159,10 @@ static const struct flag_map ace_access_mask[] = {
 	{ "SD", SEC_STD_DELETE },
 	{ "DT", SEC_ADS_DELETE_TREE },
 	{ "SW", SEC_ADS_SELF_WRITE },
+	{ "GA", SEC_GENERIC_ALL },
+	{ "GR", SEC_GENERIC_READ },
+	{ "GW", SEC_GENERIC_WRITE },
+	{ "GX", SEC_GENERIC_EXECUTE },
 	{ NULL, 0 }
 };
 
@@ -140,14 +171,16 @@ static const struct flag_map ace_access_mask[] = {
   return True on success, False on failure
   note that this routine modifies the string
 */
-static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str)
+static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str,
+			    struct dom_sid *domain_sid)
 {
-	ZERO_STRUCTP(ace);
 	const char *tok[6];
 	const char *s;
 	int i;
 	uint32_t v;
 	struct dom_sid *sid;
+
+	ZERO_STRUCTP(ace);
 
 	/* parse out the 6 tokens */
 	tok[0] = str;
@@ -183,19 +216,25 @@ static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 
 	/* object */
 	if (tok[3][0] != 0) {
-		/* TODO: add object parsing ... */
-		return False;
+		NTSTATUS status = GUID_from_string(tok[3], 
+						   &ace->object.object.type.type);
+		if (!NT_STATUS_IS_OK(status)) {
+			return False;
+		}
 	}
 
 	/* inherit object */
 	if (tok[4][0] != 0) {
-		/* TODO: add object parsing ... */
-		return False;
+		NTSTATUS status = GUID_from_string(tok[4], 
+						   &ace->object.object.inherited_type.inherited_type);
+		if (!NT_STATUS_IS_OK(status)) {
+			return False;
+		}
 	}
 
 	/* trustee */
 	s = tok[5];
-	sid = sddl_decode_sid(mem_ctx, &s);
+	sid = sddl_decode_sid(mem_ctx, &s, domain_sid);
 	if (sid == NULL) {
 		return False;
 	}
@@ -217,7 +256,8 @@ static const struct flag_map acl_flags[] = {
   decode an ACL
 */
 static struct security_acl *sddl_decode_acl(struct security_descriptor *sd, 
-					    const char **sddlp, uint32_t *flags)
+					    const char **sddlp, uint32_t *flags,
+					    struct dom_sid *domain_sid)
 {
 	const char *sddl = *sddlp;
 	struct security_acl *acl;
@@ -226,6 +266,11 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 	acl = talloc_zero(sd, struct security_acl);
 	if (acl == NULL) return NULL;
 	acl->revision = SECURITY_ACL_REVISION_NT4;
+
+	if (isupper(sddl[0]) && sddl[1] == ':') {
+		/* its an empty ACL */
+		return acl;
+	}
 
 	/* work out the ACL flags */
 	if (!sddl_map_flags(acl_flags, sddl, flags, &len)) {
@@ -248,7 +293,8 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 			talloc_free(acl);
 			return NULL;
 		}
-		if (!sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces], astr)) {
+		if (!sddl_decode_ace(acl->aces, &acl->aces[acl->num_aces], 
+				     astr, domain_sid)) {
 			talloc_free(acl);
 			return NULL;
 		}
@@ -264,7 +310,8 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 /*
   decode a security descriptor in SDDL format
 */
-struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl)
+struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
+					struct dom_sid *domain_sid)
 {
 	struct security_descriptor *sd;
 	sd = talloc_zero(mem_ctx, struct security_descriptor);
@@ -281,13 +328,13 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl)
 		switch (c) {
 		case 'D':
 			if (sd->dacl != NULL) goto failed;
-			sd->dacl = sddl_decode_acl(sd, &sddl, &flags);
+			sd->dacl = sddl_decode_acl(sd, &sddl, &flags, domain_sid);
 			if (sd->dacl == NULL) goto failed;
 			sd->type |= flags | SEC_DESC_DACL_PRESENT;
 			break;
 		case 'S':
 			if (sd->sacl != NULL) goto failed;
-			sd->sacl = sddl_decode_acl(sd, &sddl, &flags);
+			sd->sacl = sddl_decode_acl(sd, &sddl, &flags, domain_sid);
 			if (sd->sacl == NULL) goto failed;
 			/* this relies on the SEC_DESC_SACL_* flags being
 			   1 bit shifted from the SEC_DESC_DACL_* flags */
@@ -295,12 +342,12 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl)
 			break;
 		case 'O':
 			if (sd->owner_sid != NULL) goto failed;
-			sd->owner_sid = sddl_decode_sid(sd, &sddl);
+			sd->owner_sid = sddl_decode_sid(sd, &sddl, domain_sid);
 			if (sd->owner_sid == NULL) goto failed;
 			break;
 		case 'G':
 			if (sd->group_sid != NULL) goto failed;
-			sd->group_sid = sddl_decode_sid(sd, &sddl);
+			sd->group_sid = sddl_decode_sid(sd, &sddl, domain_sid);
 			if (sd->group_sid == NULL) goto failed;
 			break;
 		}
