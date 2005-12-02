@@ -61,7 +61,7 @@ static int help_usage(int argc, const char **argv)
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
 "  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n"\
-"  CHANGESCRETPW\n");
+"  CHANGESCRETPW IDMAP\n");
 	return -1;
 }
 
@@ -224,6 +224,7 @@ static int net_usage(int argc, const char **argv)
 		 "  net user\t\tto manage users\n"\
 		 "  net group\t\tto manage groups\n"\
 		 "  net groupmap\t\tto manage group mappings\n"\
+		 "  net idmap\t\tto manage the idmap id mappings\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "  net cache\t\tto operate on cache tdb file\n"\
 		 "  net getlocalsid [NAME]\tto get the SID for local name\n"\
@@ -273,7 +274,7 @@ int net_help(int argc, const char **argv)
 #ifdef WITH_FAKE_KASERVER
 		{"AFS", net_help_afs},
 #endif
-
+		{"IDMAP", net_help_idmap},
 		{"HELP", help_usage},
 		{NULL, NULL}};
 
