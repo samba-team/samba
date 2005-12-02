@@ -26,19 +26,62 @@
 
 /* We use libblkid out of e2fsprogs to identify UUID of a volume */
 #ifdef HAVE_LIBBLKID
-static int blkid_cache_destructor(void * cache_wrap) {
-	blkid_cache_wrap_t * cache = (blkid_cache_wrap_t *)cache_wrap;
-	blkid_put_cache(cache->cache);
-	if(cache->devname) free((void *)cache->devname);
-	return 0;
-}
+#include <blkid/blkid.h>
 #endif
+
+static NTSTATUS pvfs_blkid_fs_uuid(struct pvfs_state *pvfs, struct stat *st, struct GUID *uuid)
+{
+#ifdef HAVE_LIBBLKID
+	NTSTATUS status;
+	char *uuid_value = NULL;
+	char *devname = NULL;
+
+	devname = blkid_devno_to_devname(st->st_dev);
+	if (!devname) {
+		return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+	}
+
+	uuid_value = blkid_get_tag_value(NULL, "UUID", devname);
+	free(devname);
+	if (!uuid_value) {
+		return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+	}
+
+	status = GUID_from_string(uuid_value, uuid);
+	free(uuid_value);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+	}
+	return NT_STATUS_OK;
+#else
+	ZERO_STRUCTP(uuid);
+	return NT_STATUS_OK;
+#endif
+}
+
+static NTSTATUS pvfs_cache_base_fs_uuid(struct pvfs_state *pvfs, struct stat *st)
+{
+	NTSTATUS status;
+	struct GUID uuid;
+
+	if (pvfs->base_fs_uuid) return NT_STATUS_OK;
+
+	status = pvfs_blkid_fs_uuid(pvfs, st, &uuid);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	pvfs->base_fs_uuid = talloc(pvfs, struct GUID);
+	NT_STATUS_HAVE_NO_MEMORY(pvfs->base_fs_uuid);
+	*pvfs->base_fs_uuid = uuid;
+
+	return NT_STATUS_OK;
+}
 /*
   return filesystem space info
 */
 NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		     struct smbsrv_request *req, union smb_fsinfo *fs)
 {
+	NTSTATUS status;
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	uint64_t blocks_free, blocks_total;
 	uint_t bpunit;
@@ -145,38 +188,15 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 
 	case RAW_QFS_OBJECTID_INFORMATION:
-	{
-#ifdef HAVE_LIBBLKID
-		NTSTATUS status;
-		const char *uuid_value;
-#endif
-		ZERO_STRUCT(fs->objectid_information.out);
-#ifdef HAVE_LIBBLKID
-		if (!pvfs->blkid_cache) {
-			pvfs->blkid_cache = talloc(ntvfs, blkid_cache_wrap_t);
-			
-			if (!pvfs->blkid_cache) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			
-			pvfs->blkid_cache->cache = NULL;
-			pvfs->blkid_cache->devname = blkid_devno_to_devname(st.st_dev);
-			
-			talloc_set_destructor(pvfs->blkid_cache, blkid_cache_destructor);
-			
-			if (blkid_get_cache(&pvfs->blkid_cache->cache,NULL) < 0 ) {
-				return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
-			}
-		}
-		
-		if ((uuid_value = blkid_get_tag_value(pvfs->blkid_cache->cache, 
-						      "UUID", pvfs->blkid_cache->devname))) {
-			GUID_from_string(uuid_value, &fs->objectid_information.out.guid);
-			free((void*)uuid_value);
-		}
-#endif
+		ZERO_STRUCT(fs->objectid_information.out.guid);
+		ZERO_STRUCT(fs->objectid_information.out.unknown);
+
+		status = pvfs_cache_base_fs_uuid(pvfs, &st);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		fs->objectid_information.out.guid = *pvfs->base_fs_uuid;
 		return NT_STATUS_OK;
-	}
+
 	default:
 		break;
 	}
