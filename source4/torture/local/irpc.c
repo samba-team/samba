@@ -154,7 +154,6 @@ static void irpc_callback(struct irpc_request *irpc)
 		       r->in.in_data, *r->out.out_data, r->in.in_data+1);
 	}
 	(*pong_count)++;
-	talloc_free(irpc);
 }
 
 /*
