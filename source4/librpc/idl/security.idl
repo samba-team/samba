@@ -159,6 +159,19 @@ interface security
 	const string SID_BUILTIN_PRINT_OPERATORS   = "S-1-5-32-550";
 	const string SID_BUILTIN_BACKUP_OPERATORS  = "S-1-5-32-551";
 	const string SID_BUILTIN_REPLICATOR        = "S-1-5-32-552";
+	const string SID_BUILTIN_RAS_SERVERS       = "S-1-5-32-553";
+	const string SID_BUILTIN_PREW2K            = "S-1-5-32-554";
+
+	/* well-known domain RIDs */
+	const int DOMAIN_RID_LOGON                 = 9;
+	const int DOMAIN_RID_ADMINISTRATOR         = 500;
+	const int DOMAIN_RID_GUEST                 = 501;
+	const int DOMAIN_RID_ADMINS                = 512;
+	const int DOMAIN_RID_USERS                 = 513;
+	const int DOMAIN_RID_DCS                   = 516;
+	const int DOMAIN_RID_CERT_ADMINS           = 517;
+	const int DOMAIN_RID_SCHEMA_ADMINS         = 518;
+	const int DOMAIN_RID_ENTERPRISE_ADMINS     = 519;
 
 
 	/*
