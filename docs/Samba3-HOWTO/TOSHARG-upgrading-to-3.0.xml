@@ -169,16 +169,18 @@ Plus lots of other improvements!
 <title>Configuration Parameter Changes</title>
 
 <para>
-This section contains a brief listing of changes to &smb.conf; options
-in the 3.0.20 release. Please refer to the smb.conf(5) man page for
-complete descriptions of new or modified parameters.
+This section contains a brief listing of changes to &smb.conf; options since the Samba-2.2.x series up to an
+including Samba-3.0.21. Please refer to the smb.conf(5) man page for complete descriptions of new or modified
+parameters.
 </para>
 
 <sect2>
 <title>Removed Parameters</title>
 
 <indexterm><primary>deleted parameters</primary></indexterm>
-<para>In alphabetical order, these are the parameters eliminated during the Samba 3.0.0 series prior to release of Samba 3.0.20.</para>
+<para>
+In alphabetical order, these are the parameters eliminated from Samba-2.2.x through 3.0.21.
+</para>
 
 <itemizedlist>
 	<listitem><para>admin log </para></listitem>
@@ -189,11 +191,13 @@ complete descriptions of new or modified parameters.
 	<listitem><para>coding system </para></listitem>
 	<listitem><para>domain admin group </para></listitem>
 	<listitem><para>domain guest group </para></listitem>
+	<listitem><para>enable svcctl</para></listitem>
 	<listitem><para>force unknown acl user </para></listitem>
 	<listitem><para>ldap filter</para></listitem>
 	<listitem><para>min password length (deprecated)</para></listitem>
 	<listitem><para>nt smb support </para></listitem>
 	<listitem><para>post script </para></listitem>
+	<listitem><para>printer admin</para></listitem>
 	<listitem><para>printer driver </para></listitem>
 	<listitem><para>printer driver file </para></listitem>
 	<listitem><para>printer driver location </para></listitem>
@@ -235,7 +239,9 @@ complete descriptions of new or modified parameters.
 	<listitem><para>delete group script</para></listitem>
 	<listitem><para>delete user from group script</para></listitem>
 	<listitem><para>passdb backend</para></listitem>
+	<listitem><para>rename user script</para></listitem>
 	<listitem><para>set primary group script</para></listitem>
+	<listitem><para>username map script</para></listitem>
 </itemizedlist>
 
 <para>Authentication</para>
@@ -243,6 +249,7 @@ complete descriptions of new or modified parameters.
 <itemizedlist>
 	<listitem><para>auth methods</para></listitem>
 	<listitem><para>ldap password sync</para></listitem>
+	<listitem><para>passdb expand explicit</para></listitem>
 	<listitem><para>realm</para></listitem>
 </itemizedlist>
 
@@ -266,6 +273,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>server schannel</para></listitem>
 	<listitem><para>server signing</para></listitem>
 	<listitem><para>smb ports</para></listitem>
+	<listitem><para>svcctl list</para></listitem>
 	<listitem><para>use spnego</para></listitem>
 </itemizedlist>
 
@@ -278,6 +286,8 @@ complete descriptions of new or modified parameters.
 	<listitem><para>acl map full control</para></listitem>
 	<listitem><para>aio read size</para></listitem>
 	<listitem><para>aio write size</para></listitem>
+	<listitem><para>dfree cache time</para></listitem>
+	<listitem><para>dfree command</para></listitem>
 	<listitem><para>ea support</para></listitem>
 	<listitem><para>enable asu support</para></listitem>
 	<listitem><para>force unknown acl user</para></listitem>
@@ -304,6 +314,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>cups options</para></listitem>
 	<listitem><para>cups server</para></listitem>
 	<listitem><para>force printername</para></listitem>
+	<listitem><para>iprint server</para></listitem>
 	<listitem><para>max reported print jobs</para></listitem>
 	<listitem><para>printcap cache time</para></listitem>
 </itemizedlist> 
@@ -324,7 +335,9 @@ complete descriptions of new or modified parameters.
 	<listitem><para>idmap gid</para></listitem>
 	<listitem><para>idmap uid</para></listitem>
 	<listitem><para>username map script</para></listitem>
+	<listitem><para>winbind enable local accounts</para></listitem>
 	<listitem><para>winbind nested groups</para></listitem>
+	<listitem><para>winbind nss info</para></listitem>
 	<listitem><para>winbind trusted domains only</para></listitem>
 	<listitem><para>template primary group</para></listitem>
 	<listitem><para>enable rid algorithm</para></listitem>
@@ -346,7 +359,9 @@ complete descriptions of new or modified parameters.
 <para>General Configuration</para>
 
 <itemizedlist>
+	<listitem><para>eventlog list</para></listitem>
 	<listitem><para>preload modules</para></listitem>
+	<listitem><para>reset on zero vc</para></listitem>
 	<listitem><para>privatedir</para></listitem>
 </itemizedlist>
 
@@ -359,12 +374,11 @@ complete descriptions of new or modified parameters.
 	<listitem><para>dos filetimes (enabled by default)</para></listitem>
 	<listitem><para>encrypt passwords (enabled by default) </para></listitem>
 	<listitem><para>mangling method (set to hash2 by default) </para></listitem>
-	<listitem><para>map to guest (new parameter added)</para></listitem>
+	<listitem><para>map to guest</para></listitem>
 	<listitem><para>only user (deprecated)</para></listitem>
 	<listitem><para>passwd chat </para></listitem>
 	<listitem><para>passwd program </para></listitem>
 	<listitem><para>password server </para></listitem>
-	<listitem><para>printer admin (deprecated)</para></listitem>
 	<listitem><para>restrict anonymous (integer value) </para></listitem>
 	<listitem><para>security (new ads value) </para></listitem>
 	<listitem><para>strict locking (enabled by default) </para></listitem>
