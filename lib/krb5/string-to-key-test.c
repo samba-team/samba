@@ -133,6 +133,8 @@ main(int argc, char **argv)
 	    printf ("\n");
 	    val = 1;
 	}
+	krb5_free_keyblock_contents(context, &key);
     }
+    krb5_free_context(context);
     return val;
 }

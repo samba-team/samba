@@ -106,10 +106,13 @@ main(int argc, char **argv)
     sp = krb5_storage_emem();
     krb5_make_principal(context, &principal, "TEST", "foobar", NULL);
     krb5_store_principal(sp, principal);
+    krb5_free_principal(context, principal);
     nerr += compare("Principal", sp, "\x0\x0\x0\x1"
 		    "\x0\x0\x0\x1"
 		    "\x0\x0\x0\x4TEST"
 		    "\x0\x0\x0\x6""foobar", 26);
     
+    krb5_free_context(context);
+
     return nerr ? 1 : 0;
 }
