@@ -704,6 +704,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 		nt_status = sam_get_results_principal((struct ldb_context *)db->hdb_db,
 						      mem_ctx, principal_string, 
 						      &msg, &realm_ref_msg);
+		free(principal_string);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 			return HDB_ERR_NOENTRY;
 		} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
@@ -785,6 +786,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 						  mem_ctx, user_dn, &msg, krb5_attrs);
 			
 			if (ldb_ret != 1) {
+				talloc_free(mem_ctx);
 				return HDB_ERR_NOENTRY;
 			}
 			
@@ -793,6 +795,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 					       "ncName=%s", ldb_dn_linearize(mem_ctx, domain_dn));
 			
 			if (ldb_ret != 1) {
+				talloc_free(mem_ctx);
 				return HDB_ERR_NOENTRY;
 			}
 
