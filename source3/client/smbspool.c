@@ -461,6 +461,7 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
 {
   struct cli_state  *cli;    /* New connection */
   pstring    myname;    /* Client name */
+  struct passwd *pwd;
 
  /*
   * Get the names and addresses of the client and server...
@@ -488,12 +489,24 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
 
   if (cli ) { return cli; }
 
+  /* give a chance for a passwordless NTLMSSP session setup */
+
+  pwd = getpwuid(geteuid());
+  if (pwd == NULL) {
+     return NULL;
+  }
+
+  cli = smb_complete_connection(myname, server, port, pwd->pw_name, "", 
+                                workgroup, share, 0);
+
+  if (cli) { return cli; }
+
   /*
    * last try. Use anonymous authentication
    */
+
   cli = smb_complete_connection(myname, server, port, "", "", 
                                 workgroup, share, 0);
-
   /*
    * Return the new connection...
    */
