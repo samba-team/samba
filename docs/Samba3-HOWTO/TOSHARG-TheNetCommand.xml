@@ -1834,7 +1834,7 @@ net idmap dump &lt;full_path_and_tdb_filename&gt; &gt; dumpfile.txt
 	the the following commands to create the dump file will suffice:
 <screen>
 net idmap dump /var/lib/samba/winbindd_idmap.tdb &gt; idmap_dump.txt
-</scrreen>
+</screen>
 	</para>
 
 	</sect2>
