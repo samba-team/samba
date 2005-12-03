@@ -396,7 +396,7 @@ static struct cli_state *connect_one(const char *share)
 	pstring username_str = {0};
 	pstring path = {0};
 	pstring set_str = {0};
-	enum SMB_QUOTA_TYPE qtype;
+	enum SMB_QUOTA_TYPE qtype = SMB_INVALID_QUOTA_TYPE;
 	int cmd = 0;
 	static BOOL test_args = False;
 	struct cli_state *cli;

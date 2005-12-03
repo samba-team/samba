@@ -1097,6 +1097,8 @@ static void do_tarput(void)
 	char *longfilename = NULL, linkflag;
 	int skip = False;
 
+	ZERO_STRUCT(finfo);
+
 	GetTimeOfDay(&tp_start);
 	DEBUG(5, ("RJS do_tarput called ...\n"));
 
