@@ -56,7 +56,7 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
 {
 	EVENTLOG_INFO *info;
 
-	if ( !find_policy_by_hnd( p, handle, ( void ** ) &info ) ) {
+	if ( !find_policy_by_hnd( p, handle, (void **)(void *)&info ) ) {
 		DEBUG( 2,
 		       ( "find_eventlog_info_by_hnd: eventlog not found.\n" ) );
 		return NULL;

@@ -4501,7 +4501,7 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_DIRENT *de;
-	int num_usershares;
+	int num_usershares = 0;
 	unsigned int num_dir_entries, num_bad_dir_entries;
 	unsigned int allowed_bad_entries = ((2*max_user_shares)/10);
 	int iService;
