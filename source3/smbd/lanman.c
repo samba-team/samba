@@ -1837,9 +1837,6 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	gid_t *gids;
 	size_t num_groups;
 	size_t i;
-	fstring grp_domain;
-	fstring grp_name;
-	enum SID_NAME_USE grp_type;
 	struct passwd *passwd;
 	NTSTATUS result;
 
@@ -1896,9 +1893,12 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 		goto out;
 
 	for (i=0; i<num_groups; i++) {
+
+		char *grp_name;
 	
-		if ( lookup_sid(&sids[i], grp_domain, grp_name, &grp_type) ) {
-			pstrcpy(p, grp_name); 
+		if ( lookup_sid(sampw->mem_ctx, &sids[i], NULL, &grp_name,
+				NULL) ) {
+			pstrcpy(p, grp_name);
 			p += 21; 
 			count++;
 		}

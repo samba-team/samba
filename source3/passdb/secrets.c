@@ -359,7 +359,7 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	if (pass_last_set_time) *pass_last_set_time = pass.mod_time;
 
 	/* domain sid */
-	sid_copy(sid, &pass.domain_sid);
+	if (sid != NULL) sid_copy(sid, &pass.domain_sid);
 		
 	return True;
 }
