@@ -699,6 +699,25 @@ static NTSTATUS context_lookup_rids(struct pdb_context *context,
 						 rids, pp_names, pp_attrs);
 }
 
+static NTSTATUS context_lookup_names(struct pdb_context *context,
+				     const DOM_SID *domain_sid,
+				     size_t num_names,
+				     const char **pp_names,
+				     uint32 *rids,
+				     uint32 *pp_attrs)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->lookup_names(context->pdb_methods,
+						  domain_sid, num_names,
+						  pp_names, rids, pp_attrs);
+}
+
 static NTSTATUS context_get_account_policy(struct pdb_context *context,
 					   int policy_index, uint32 *value)
 {
@@ -906,6 +925,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
 	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
 	(*context)->pdb_lookup_rids = context_lookup_rids;
+	(*context)->pdb_lookup_names = context_lookup_names;
 
 	(*context)->pdb_get_account_policy = context_get_account_policy;
 	(*context)->pdb_set_account_policy = context_set_account_policy;
@@ -1413,6 +1433,22 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 					    num_rids, rids, names, attrs);
 }
 
+NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
+			  int num_names,
+			  const char **names,
+			  uint32 *rids,
+			  uint32 *attrs)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return pdb_context->pdb_lookup_names(pdb_context, domain_sid,
+					     num_names, names, rids, attrs);
+}
+
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1655,14 +1691,11 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	if (sid_check_is_builtin(domain_sid)) {
 
 		for (i=0; i<num_rids; i++) {
-			fstring name;
+			char *name;
 
-			if (lookup_builtin_rid(rids[i], name)) {
+			if (lookup_builtin_rid(names, rids[i], &name)) {
 				attrs[i] = SID_NAME_ALIAS;
-				names[i] = talloc_strdup(names, name);
-				if (names[i] == NULL) {
-					return NT_STATUS_NO_MEMORY;
-				}
+				names[i] = name;
 				DEBUG(5,("lookup_rids: %s:%d\n",
 					 names[i], attrs[i]));
 				have_mapped = True;
@@ -1680,14 +1713,69 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	}
 
 	for (i = 0; i < num_rids; i++) {
-		fstring tmpname;
-   		enum SID_NAME_USE type;
+		char *name;
 
-		if (lookup_global_sam_rid(rids[i], tmpname, &type)) {
-			attrs[i] = (uint32)type;
-			names[i] = talloc_strdup(names, tmpname);
-			if (names[i] == NULL)
-				return NT_STATUS_NO_MEMORY;
+		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
+			names[i] = name;
+			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
+			have_mapped = True;
+		} else {
+			have_unmapped = True;
+			attrs[i] = SID_NAME_UNKNOWN;
+		}
+	}
+
+ done:
+
+	result = NT_STATUS_NONE_MAPPED;
+
+	if (have_mapped)
+		result = have_unmapped ? STATUS_SOME_UNMAPPED : NT_STATUS_OK;
+
+	return result;
+}
+
+NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
+				  const DOM_SID *domain_sid,
+				  int num_names,
+				  const char **names,
+				  uint32 *rids,
+				  uint32 *attrs)
+{
+	int i;
+	NTSTATUS result;
+	BOOL have_mapped = False;
+	BOOL have_unmapped = False;
+
+	if (sid_check_is_builtin(domain_sid)) {
+
+		for (i=0; i<num_names; i++) {
+			uint32 rid;
+
+			if (lookup_builtin_name(names[i], &rid)) {
+				attrs[i] = SID_NAME_ALIAS;
+				rids[i] = rid;
+				DEBUG(5,("lookup_rids: %s:%d\n",
+					 names[i], attrs[i]));
+				have_mapped = True;
+			} else {
+				have_unmapped = True;
+				attrs[i] = SID_NAME_UNKNOWN;
+			}
+		}
+		goto done;
+	}
+
+	/* Should not happen, but better check once too many */
+	if (!sid_check_is_domain(domain_sid)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	for (i = 0; i < num_names; i++) {
+		char *name;
+
+		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
+			names[i] = name;
 			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
 			have_mapped = True;
 		} else {

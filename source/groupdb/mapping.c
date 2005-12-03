@@ -1166,11 +1166,22 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	enum SID_NAME_USE type;
 	uint32 new_rid;
 	gid_t gid;
-
+	BOOL exists;
 	GROUP_MAP map;
 
-	if (lookup_name(get_global_sam_name(), name, &sid, &type))
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	exists = lookup_name(mem_ctx, name, LOOKUP_NAME_ISOLATED,
+			     NULL, NULL, &sid, &type);
+	talloc_free(mem_ctx);
+
+	if (exists) {
 		return NT_STATUS_ALIAS_EXISTS;
+	}
 
 	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))
 		return NT_STATUS_ACCESS_DENIED;
