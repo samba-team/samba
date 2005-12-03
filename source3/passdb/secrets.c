@@ -138,7 +138,7 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 {
 	DOM_SID *dyn_sid;
 	fstring key;
-	size_t size;
+	size_t size = 0;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
 	strupper_m(key);
@@ -147,8 +147,7 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	if (dyn_sid == NULL)
 		return False;
 
-	if (size != sizeof(DOM_SID))
-	{ 
+	if (size != sizeof(DOM_SID)) { 
 		SAFE_FREE(dyn_sid);
 		return False;
 	}
@@ -171,7 +170,7 @@ BOOL secrets_fetch_domain_guid(const char *domain, struct uuid *guid)
 {
 	struct uuid *dyn_guid;
 	fstring key;
-	size_t size;
+	size_t size = 0;
 	struct uuid new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
@@ -187,8 +186,7 @@ BOOL secrets_fetch_domain_guid(const char *domain, struct uuid *guid)
 			return False;
 	}
 
-	if (size != sizeof(struct uuid))
-	{ 
+	if (size != sizeof(struct uuid)) { 
 		DEBUG(1,("UUID size %d is wrong!\n", (int)size));
 		SAFE_FREE(dyn_guid);
 		return False;
@@ -276,7 +274,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 {
 	struct machine_acct_pass *pass;
 	char *plaintext;
-	size_t size;
+	size_t size = 0;
 
 	plaintext = secrets_fetch_machine_password(domain, pass_last_set_time, 
 						   channel);
@@ -326,7 +324,7 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            DOM_SID *sid, time_t *pass_last_set_time)
 {
 	struct trusted_dom_pass pass;
-	size_t size;
+	size_t size = 0;
 	
 	/* unpacking structures */
 	char* pass_buf;
@@ -599,7 +597,7 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
-	size_t size;
+	size_t size = 0;
 	
 	*dn = smb_xstrdup(lp_ldap_admin_dn());
 	
@@ -682,7 +680,7 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 	char *pattern;
 	unsigned int start_idx;
 	uint32 idx = 0;
-	size_t size, packed_size = 0;
+	size_t size = 0, packed_size = 0;
 	fstring dom_name;
 	char *packed_pass;
 	struct trusted_dom_pass *pass = TALLOC_ZERO_P(ctx, struct trusted_dom_pass);
@@ -877,7 +875,7 @@ BOOL secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 {
 	fstring key;
 	struct afs_keyfile *keyfile;
-	size_t size;
+	size_t size = 0;
 	uint32 i;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_AFS_KEYFILE, cell);

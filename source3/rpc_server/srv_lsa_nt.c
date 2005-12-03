@@ -501,7 +501,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	uint32 num_domains;
 	NTSTATUS nt_status;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -539,7 +539,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 
 	r_u->status = NT_STATUS_OK;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->info_class) {
@@ -657,7 +657,7 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM);
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle)) {
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
 		goto done;
 	}
@@ -706,7 +706,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle)) {
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
 		goto done;
 	}
@@ -817,7 +817,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", 
 		enum_context, num_privs));
 	
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights
@@ -864,7 +864,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	fstring name_asc;
 	const char *description;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -912,7 +912,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	LSA_SID_ENUM *sids=&r_u->sids;
 	NTSTATUS ret;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
@@ -988,7 +988,7 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	struct lsa_info *info;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1036,7 +1036,7 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 	struct lsa_info *info;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1079,7 +1079,7 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 	PRIVILEGE_SET privileges;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) ) 
@@ -1114,7 +1114,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 
 	/* find the connection policy handle. */
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!lookup_sid(&info->sid, dom_name, name, &type))
@@ -1145,7 +1145,7 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is a Domain Admin since 
@@ -1175,7 +1175,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	struct current_user user;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
 	/* check to see if the pipe_user is root or a Domain Admin since 
@@ -1216,7 +1216,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	struct current_user user;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is root or a Domain Admin since 
@@ -1259,7 +1259,7 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1316,7 +1316,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 	ZERO_STRUCT(guid);
 	r_u->status = NT_STATUS_OK;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->info_class) {
@@ -1378,7 +1378,7 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
 	/* check to see if the pipe_user is a Domain Admin since 
@@ -1436,7 +1436,7 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
 	/* check to see if the pipe_user is a Domain Admin since 
@@ -1498,7 +1498,7 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 
 	/* find the connection policy handle. */
 	
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
@@ -1539,7 +1539,7 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 	
 	/* find the connection policy handle. */
 	
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
 	unistr2_to_ascii(name, &q_u->privname.unistring, sizeof(name));

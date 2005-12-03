@@ -78,7 +78,7 @@ static void update_name_in_namelist( struct subnet_record *subrec,
 {
 	struct name_record *oldrec = NULL;
 
-	ubi_trInsert( subrec->namelist, namerec, &(namerec->name), &oldrec );
+	ubi_trInsert( subrec->namelist, namerec, &namerec->name, &oldrec );
 	if( oldrec ) {
 		SAFE_FREE( oldrec->data.ip );
 		SAFE_FREE( oldrec );

@@ -54,7 +54,7 @@ void clobber_region(const char *fn, unsigned int line, char *dest, size_t len)
 	 * (This is not redundant with the clobbering above.  The
 	 * marking might not actually take effect if we're not running
 	 * under valgrind.) */
-	VALGRIND_MAKE_WRITABLE(dest, len);
+//	VALGRIND_MAKE_WRITABLE(dest, len);
 #endif /* VALGRIND */
 #endif /* DEVELOPER */
 }

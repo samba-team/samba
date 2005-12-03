@@ -56,7 +56,7 @@ ADS_STATUS ads_sid_to_dn(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, (void **)&msg, ldap_exp, attr);
+	rc = ads_search_retry(ads, (void **)(void *)&msg, ldap_exp, attr);
 
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("ads_sid_to_dn ads_search: %s\n", ads_errstr(rc)));
