@@ -2238,18 +2238,16 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
  * "NT_STATUS_USER_EXISTS". This is racy, but we can't really lock the user
  * database. */
 
-static NTSTATUS can_create(const char *new_name)
+static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 {
-	fstring domain, name;
 	enum SID_NAME_USE type;
-	DOM_SID tmp_sid;
 	BOOL result;
 
 	become_root();
 	/* Lookup in our local databases (only LOOKUP_NAME_ISOLATED set)
 	 * whether the name already exists */
-	result = lookup_name(new_name, LOOKUP_NAME_ISOLATED,
-			     domain, name, &tmp_sid, &type);
+	result = lookup_name(mem_ctx, new_name, LOOKUP_NAME_ISOLATED,
+			     NULL, NULL, NULL, &type);
 	unbecome_root();
 
 	if (!result) {
@@ -2317,7 +2315,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
 
-	nt_status = can_create(account);
+	nt_status = can_create(p->mem_ctx, account);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -2810,12 +2808,11 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 
 	{
 		/* Check we actually have the requested alias */
-		fstring domain, name;
 		enum SID_NAME_USE type;
 		BOOL result;
 
 		become_root();
-		result = lookup_sid(&sid, domain, name, &type);
+		result = lookup_sid(NULL, &sid, NULL, NULL, &type);
 		unbecome_root();
 
 		if (!result || (type != SID_NAME_ALIAS)) {
@@ -2839,7 +2836,8 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 /*******************************************************************
  set_user_info_7
  ********************************************************************/
-static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
+static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
+				const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 {
 	fstring new_name;
 	NTSTATUS rc;
@@ -2865,7 +2863,7 @@ static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 	   simply that the rename fails with a slightly different status
 	   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
 
-	rc = can_create(new_name);
+	rc = can_create(mem_ctx, new_name);
 	if (!NT_STATUS_IS_OK(rc)) {
 		return rc;
 	}
@@ -3384,7 +3382,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	
 	switch (switch_value) {
 		case 7:
-			r_u->status = set_user_info_7(ctr->info.id7, pwd);
+			r_u->status = set_user_info_7(p->mem_ctx,
+						      ctr->info.id7, pwd);
 			break;
 		case 16:
 			if (!set_user_info_16(ctr->info.id16, pwd))
@@ -4218,7 +4217,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
-	r_u->status = can_create(name);
+	r_u->status = can_create(p->mem_ctx, name);
 	if (!NT_STATUS_IS_OK(r_u->status)) {
 		return r_u->status;
 	}
@@ -4309,7 +4308,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	r_u->status = can_create(name);
+	r_u->status = can_create(p->mem_ctx, name);
 	if (!NT_STATUS_IS_OK(r_u->status)) {
 		return r_u->status;
 	}

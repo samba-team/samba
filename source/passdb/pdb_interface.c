@@ -1691,14 +1691,11 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	if (sid_check_is_builtin(domain_sid)) {
 
 		for (i=0; i<num_rids; i++) {
-			fstring name;
+			char *name;
 
-			if (lookup_builtin_rid(rids[i], name)) {
+			if (lookup_builtin_rid(names, rids[i], &name)) {
 				attrs[i] = SID_NAME_ALIAS;
-				names[i] = talloc_strdup(names, name);
-				if (names[i] == NULL) {
-					return NT_STATUS_NO_MEMORY;
-				}
+				names[i] = name;
 				DEBUG(5,("lookup_rids: %s:%d\n",
 					 names[i], attrs[i]));
 				have_mapped = True;
@@ -1716,14 +1713,10 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	}
 
 	for (i = 0; i < num_rids; i++) {
-		fstring tmpname;
-   		enum SID_NAME_USE type;
+		char *name;
 
-		if (lookup_global_sam_rid(rids[i], tmpname, &type)) {
-			attrs[i] = (uint32)type;
-			names[i] = talloc_strdup(names, tmpname);
-			if (names[i] == NULL)
-				return NT_STATUS_NO_MEMORY;
+		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
+			names[i] = name;
 			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
 			have_mapped = True;
 		} else {
@@ -1779,14 +1772,10 @@ NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		fstring tmpname;
-   		enum SID_NAME_USE type;
+		char *name;
 
-		if (lookup_global_sam_rid(rids[i], tmpname, &type)) {
-			attrs[i] = (uint32)type;
-			names[i] = talloc_strdup(names, tmpname);
-			if (names[i] == NULL)
-				return NT_STATUS_NO_MEMORY;
+		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
+			names[i] = name;
 			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
 			have_mapped = True;
 		} else {

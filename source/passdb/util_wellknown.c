@@ -74,8 +74,8 @@ static struct sid_name_map_info special_domains[] = {
  Looks up a known username from one of the known domains.
 ***************************************************************************/
 
-BOOL lookup_wellknown_sid(const DOM_SID *sid, const char **domain,
-			  const char **name)
+BOOL lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			  char **domain, char **name)
 {
 	int i;
 	DOM_SID dom_sid;
@@ -90,7 +90,8 @@ BOOL lookup_wellknown_sid(const DOM_SID *sid, const char **domain,
 
 	for (i=0; special_domains[i].sid != NULL; i++) {
 		if (sid_equal(&dom_sid, special_domains[i].sid)) {
-			*domain = special_domains[i].name;
+			*domain = talloc_strdup(mem_ctx,
+						special_domains[i].name);
 			users = special_domains[i].known_users;
 			break;
 		}
@@ -104,7 +105,7 @@ BOOL lookup_wellknown_sid(const DOM_SID *sid, const char **domain,
 
 	for (i=0; users[i].name != NULL; i++) {
 		if (rid == users[i].rid) {
-			*name = users[i].name;
+			*name = talloc_strdup(mem_ctx, users[i].name);
 			return True;
 		}
 	}
@@ -119,14 +120,16 @@ BOOL lookup_wellknown_sid(const DOM_SID *sid, const char **domain,
  Try and map a name to one of the well known SIDs.
 ***************************************************************************/
 
-BOOL lookup_wellknown_name(const char *name, DOM_SID *sid, fstring authority_name)
+BOOL lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
+			   DOM_SID *sid, char **domain)
 {
 	int i, j;
 
 	DEBUG(10,("map_name_to_wellknown_sid: looking up %s\n", name));
 
 	for (i=0; special_domains[i].sid != NULL; i++) {
-		const struct rid_name_map *users = special_domains[i].known_users;
+		const struct rid_name_map *users =
+			special_domains[i].known_users;
 
 		if (users == NULL)
 			continue;
@@ -135,8 +138,8 @@ BOOL lookup_wellknown_name(const char *name, DOM_SID *sid, fstring authority_nam
 			if ( strequal(users[j].name, name) ) {
 				sid_copy(sid, special_domains[i].sid);
 				sid_append_rid(sid, users[j].rid);
-				fstrcpy(authority_name,
-					special_domains[i].name);
+				*domain = talloc_strdup(
+					mem_ctx, special_domains[i].name);
 				return True;
 			}
 		}

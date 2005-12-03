@@ -1550,7 +1550,7 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
  Check for a SID in an NT_USER_TOKEN
 ****************************************************************************/
 
-BOOL nt_token_check_sid ( DOM_SID *sid, NT_USER_TOKEN *token )
+static BOOL nt_token_check_sid ( DOM_SID *sid, NT_USER_TOKEN *token )
 {
 	int i;
 	
@@ -1613,9 +1613,8 @@ BOOL is_trusted_domain(const char* dom_name)
 		become_root();
 		DEBUG (5,("is_trusted_domain: Checking for domain trust with [%s]\n",
 			dom_name ));
-		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
+		ret = secrets_fetch_trusted_domain_password(dom_name, NULL, NULL, NULL);
 		unbecome_root();
-		SAFE_FREE(pass);
 		if (ret)
 			return True;
 	}

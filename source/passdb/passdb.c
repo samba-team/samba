@@ -735,7 +735,7 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Look up a rid in the SAM we're responsible for (i.e. passdb)
  ********************************************************************/
 
-BOOL lookup_global_sam_rid(uint32 rid, fstring name,
+BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid, char **name,
 			   enum SID_NAME_USE *psid_name_use)
 {
 	SAM_ACCOUNT *sam_account = NULL;
@@ -760,7 +760,7 @@ BOOL lookup_global_sam_rid(uint32 rid, fstring name,
 	become_root();
 	if (pdb_getsampwsid(sam_account, &sid)) {
 		unbecome_root();		/* -----> EXIT BECOME_ROOT() */
-		fstrcpy(name, pdb_get_username(sam_account));
+		*name = talloc_strdup(mem_ctx, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
 		pdb_free_sam(&sam_account);
@@ -784,14 +784,14 @@ BOOL lookup_global_sam_rid(uint32 rid, fstring name,
 				 map.nt_name));
 		}
 
-		fstrcpy(name, map.nt_name);
+		*name = talloc_strdup(mem_ctx, map.nt_name);
 		*psid_name_use = map.sid_name_use;
 		return True;
 	}
 
 	if (rid == DOMAIN_USER_RID_ADMIN) {
 		*psid_name_use = SID_NAME_USER;
-		fstrcpy(name, "Administrator");
+		*name = talloc_strdup(mem_ctx, "Administrator");
 		return True;
 	}
 
@@ -807,13 +807,15 @@ BOOL lookup_global_sam_rid(uint32 rid, fstring name,
 		DEBUG(5,("lookup_global_sam_rid: looking up uid %u %s\n",
 			 (unsigned int)uid, pw ? "succeeded" : "failed" ));
 			 
-		if ( !pw )
-			fstr_sprintf(name, "unix_user.%u", (unsigned int)uid);
-		else 
-			fstrcpy( name, pw->pw_name );
+		if ( !pw ) {
+			*name  = talloc_asprintf(mem_ctx, "unix_user.%u",
+						 (unsigned int)uid);
+		} else {
+			*name = talloc_strdup(mem_ctx, pw->pw_name );
+		}
 			
 		DEBUG(5,("lookup_global_sam_rid: found user %s for rid %u\n",
-			 name, (unsigned int)rid ));
+			 *name, (unsigned int)rid ));
 			 
 		*psid_name_use = SID_NAME_USER;
 		
@@ -830,13 +832,15 @@ BOOL lookup_global_sam_rid(uint32 rid, fstring name,
 		DEBUG(5,("lookup_global_sam_rid: looking up gid %u %s\n",
 			 (unsigned int)gid, gr ? "succeeded" : "failed" ));
 			
-		if( !gr )
-			fstr_sprintf(name, "unix_group.%u", (unsigned int)gid);
-		else
-			fstrcpy( name, gr->gr_name);
+		if( !gr ) {
+			*name = talloc_asprintf(mem_ctx, "unix_group.%u",
+					       (unsigned int)gid);
+		} else {
+			*name = talloc_strdup(mem_ctx, gr->gr_name);
+		}
 			
 		DEBUG(5,("lookup_global_sam_rid: found group %s for rid %u\n",
-			 name, (unsigned int)rid ));
+			 *name, (unsigned int)rid ));
 		
 		/* assume algorithmic groups are domain global groups */
 		
@@ -887,7 +891,15 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 		}
 
 		sid_peek_rid(user_sid, rid);
-		*type = SID_NAME_USER;
+
+		if (pdb_get_acct_ctrl(sam_account) &
+		    (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST)) {
+			/* We have to filter them out in lsa_lookupnames,
+			 * indicate that this is not a real user.  */
+			*type = SID_NAME_COMPUTER;
+		} else {
+			*type = SID_NAME_USER;
+		}
 		pdb_free_sam(&sam_account);
 		return True;
 	}
