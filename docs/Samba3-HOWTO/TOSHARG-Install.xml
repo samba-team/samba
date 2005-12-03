@@ -119,6 +119,193 @@
 
 </sect2>
 
+<sect2 id="tdbdocs">
+	<title>TDB Database File Information</title>
+
+	<para>
+	This section contains brief descriptions of the databases that are used by Samba-3.
+	</para>
+
+	<para>
+<indexterm><primary>tdb file locations</primary></indexterm>
+	The directory in which Samba stores the tdb files is determined by compile-time directives. Samba-3 stores
+	tdb files in two locations. The best way to determine these locations is to execute the following
+	command:
+<screen>
+&rootprompt; smbd -b | grep PRIVATE_DIR
+   PRIVATE_DIR: /etc/samba/private
+</screen>
+	This means that the confidential tdb files are stored in the <filename>/etc/samba/private</filename>
+	directory. Samba-3 also uses a number of tdb files that contain more mundane data. The location of
+	these files can be found by executing:
+<screen>
+&rootprompt; smbd -b | grep LOCKDIR
+   LOCKDIR: /var/lib/samba
+</screen>
+	Therefore the remaining control files will, in the example shown, be stored in the
+	<filename>/var/lib/samba</filename> directory.
+	</para>
+
+	<para>
+<indexterm><primary>tdb file descriptions</primary></indexterm>
+	The persistent tdb files are described in <link linkend="tdbpermfiledesc">the Persistent TDB File
+	Descriptions table</link>. All persistent tdb files should be regularly backed up. Use the
+	<command>tdbbackup</command> utility to backup the tdb files. All persistent tdb files must be
+	preserved during machine migrations, updates and upgrades.
+	</para>
+
+	<para>
+	The temporary tdb files do not need to be backed up, nor do they need to be preseved across machine
+	migrations, updates or upgrades. The temporary tdb files are described in <link linkend="tdbtempfiledesc">
+	the Temporary TDB File Descriptions</link>.
+	</para>
+
+        <table frame='all' id="tdbpermfiledesc"><title>Persistent TDB File Descriptions</title>
+        <tgroup cols='2'>
+			<colspec align="left"/>
+			<colspec align="justify" colwidth="1*"/>
+			<colspec align="left"/>
+                <thead>
+                <row>
+                        <entry align="left">Name</entry>
+                        <entry align="justify">Description</entry>
+                </row>
+                </thead>
+                <tbody>
+		<row>
+			<entry>account_policy</entry>
+			<entry><para>User policy settings.</para></entry>
+		</row>
+		<row>
+			<entry>group_mapping</entry>
+			<entry><para>Mapping table from Windows groups/SID to UNIX groups.</para></entry>
+		</row>
+		<row>
+			<entry>ntdrivers</entry>
+			<entry><para>Stores per-printer driver information.</para></entry>
+		</row>
+		<row>
+			<entry>ntforms</entry>
+			<entry><para>Stores per-printer forms information.</para></entry>
+		</row>
+		<row>
+			<entry>ntprinters</entry>
+			<entry><para>Stores the per-printer devmode configuration settings.</para></entry>
+		</row>
+		<row>
+			<entry>passdb</entry>
+			<entry><para>
+				Exists only when the tdbsam passwd backend is used. This file stores the
+				SambaSAMAccount information. Note: This file requires that user POSIX account information is
+				availble from either the /etc/passwd file, or from an alternative system source.
+			</para></entry>
+		</row>
+		<row>
+			<entry>registry</entry>
+			<entry><para>
+				Read-only Samba registry skeleton that provides support for exporting various database tables
+				via the winreg RPCs.
+			</para></entry>
+		</row>
+		<row>
+			<entry>secrets</entry>
+			<entry><para>
+				This file stores the Workgroup/Domain/Machine SID, the LDAP directory update password, and
+				a further collection of critical environmental data that is necessary for Samba to operate
+				correctly. This file contains very sensitive information that must be protected. It is stored
+				in the PRIVARE_DIR directory.
+			</para></entry>
+		</row>
+		<row>
+			<entry>share_info</entry>
+			<entry><para>Stores per-share ACL information.</para></entry>
+		</row>
+		<row>
+			<entry>winbindd_idmap</entry>
+			<entry><para>New ID map table from SIDS to UNIX UIDs/GIDs.</para></entry>
+		</row>
+		</tbody>
+	</tgroup>
+	</table>
+
+        <table frame='all' id="tdbtempfiledesc"><title>Temporary TDB File Descriptions</title>
+        <tgroup cols='3'>
+			<colspec align="left"/>
+			<colspec align="justify" colwidth="1*"/>
+			<colspec align="left"/>
+                <thead>
+                <row>
+                        <entry align="left">Name</entry>
+                        <entry align="justify">Description</entry>
+                        <entry align="center">Backup</entry>
+                </row>
+                </thead>
+                <tbody>
+		<row>
+			<entry>brlock</entry>
+			<entry><para>Byte-range locking information.</para></entry>
+			<entry>No</entry>
+		</row>
+		<row>
+			<entry>connections</entry>
+			<entry><para>A temporary cache for current connection information.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>gencache</entry>
+			<entry><para>Generic caching database for dead WINS servers and trusted domain data.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>login_cache</entry>
+			<entry><para>A temporary cache for login information.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>messages</entry>
+			<entry><para>Temporary storage of messages being processed by smbd.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>netsamlogon_cache</entry>
+			<entry><para>Packets received for which no process is listening.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>printing/*.tdb</entry>
+			<entry><para>Cached output from lpq command created on a per-print-service basis.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>schannel_store</entry>
+			<entry><para>
+				A confidential file, stored in the PRIVATE_DIR, containing crytographic connection
+				information so that clients that have temporarily disconnected can reconnect without
+				needing to renegotiate the connection setup process.
+			</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>sessionid</entry>
+			<entry><para>Temporary cache for miscellaneous session information.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>unexpected</entry>
+			<entry><para>Stores packets received for which no process is actively listening.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>winbindd_cache</entry>
+			<entry><para>Cache of Identity information received from an NT4 domain or from ADS.</para></entry>
+			<entry>yes</entry>
+		</row>
+		</tbody>
+	</tgroup>
+	</table>
+
+</sect2>
+
 <sect2>
 	<title>Starting Samba</title>
 

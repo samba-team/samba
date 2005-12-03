@@ -395,23 +395,38 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 <sect1>
 <title>New Functionality</title>
 
+	<para>
+<indexterm><primary>major changes</primary></indexterm>
+	The major changes in behavior since that Samba-2.2.x series are documented in this section.
+	Please refer to the <filename>WHATSNEW.txt</filename> file that ships with every release of
+	Samba to obtain detailed information regarding the changes that have been made during the
+	life of the current Samba release.
+	</para>
+
 	<sect2>
-	<title>Databases</title>
+	<title>TDB Data Files</title>
 
+<indexterm><primary>tdb data files</primary></indexterm>
 	<para>
-	This section contains brief descriptions of any new databases
-	introduced in Samba-3. Please remember to back up your existing
-	${lock directory}/*tdb before upgrading to Samba-3. Samba will
-	upgrade databases as they are opened (if necessary), but downgrading
-	from 3.0 to 2.2 is an unsupported path.
+	Refer to <link linkend="install">Installation, Chapter 1</link>, <link linkend="tdbdocs">Chapter 1</link>
+	for information pertaining to the Samba-3 data files, their location and the information that must be
+	preserved across server migrations, updates and upgrades.
 	</para>
 
 	<para>
-	The new tdb files are described in <link linkend="tdbfiledesc">the next table</link>.
+<indexterm><primary>tdb file backup</primary></indexterm>
+	Please remember to back up your existing ${lock directory}/*tdb before upgrading to Samba-3. If necessary, Samba will 
+	upgrade databases as they are opened. Downgrading from Samba-3 to 2.2, or reversion to an earlier version
+	of Samba-3 from a later release, is an unsupported path.
+	</para>
+
+	<para>
+<indexterm><primary>tdb file descriptions</primary></indexterm>
+	The old Samba-2.2.x tdb files are described in <link linkend="oldtdbfiledesc">the next table</link>.
 	</para>
 
 
-        <table frame='all' id="tdbfiledesc"><title>TDB File Descriptions</title>
+        <table frame='all' id="oldtdbfiledesc"><title>Samba-2.2.x TDB File Descriptions</title>
         <tgroup cols='3'>
 			<colspec align="left"/>
 			<colspec align="justify" colwidth="1*"/>
@@ -430,42 +445,77 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 			<entry>yes</entry>
 		</row>
 		<row>
-			<entry>gencache</entry>
-			<entry>Generic caching db</entry>
+			<entry>brlock</entry>
+			<entry>Byte-range file locking information.</entry>
 			<entry>no</entry>
 		</row>
 		<row>
-			<entry>group_mapping</entry>
-			<entry><para>Mapping table from Windows groups/SID to UNIX groups</para></entry>
+			<entry>connections</entry>
+			<entry><para>Client connection information</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>locking</entry>
+			<entry>Temporary file locking data.</entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>messages</entry>
+			<entry><para>Temporary storage of messages being processed by smbd.</para></entry>
+			<entry>no</entry>
+		</row>
+       <row>
+            <entry>ntdrivers</entry>
+            <entry><para>Stores per-printer driver information.</para></entry>
 			<entry>yes</entry>
-		</row>
-		<row>
-			<entry>idmap</entry>
-			<entry><para>New ID map table from SIDS to UNIX UIDs/GIDs</para></entry>
+        </row>
+        <row>
+            <entry>ntforms</entry>
+            <entry><para>Stores per-printer forms information.</para></entry>
 			<entry>yes</entry>
-		</row>
-		<row>
-			<entry>namecache</entry>
-			<entry>Name resolution cache entries</entry>
-			<entry>no</entry>
-		</row>
-		<row>
-			<entry>netlogon_unigrp</entry>
-			<entry><para>Cache of universal group membership obtained when operating
-				as a member of a Windows domain</para></entry>
-			<entry>no</entry>
-		</row>
+        </row>
+        <row>
+            <entry>ntprinters</entry>
+            <entry><para>Stores the per-printer devmode configuration settings.</para></entry>
+			<entry>yes</entry>
+        </row>
 		<row>
 			<entry>printing/*.tdb</entry>
-			<entry><para>Cached output from lpq command created on a per-print-service basis</para></entry>
+			<entry><para>Cached output from lpq command created on a per-print-service basis.</para></entry>
 			<entry>no</entry>
 		</row>
 		<row>
 
 			<entry>registry</entry>
 			<entry><para>Read-only Samba registry skeleton that provides support for
-				exporting various database tables via the winreg RPCs</para></entry>
+				exporting various database tables via the winreg RPCs.</para></entry>
 			<entry>no</entry>
+		</row>
+		<row>
+			<entry>sessionid</entry>
+			<entry><para>Temporary cache for miscellaneous session information.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>share_info</entry>
+			<entry>Share ACL settings.</entry>
+			<entry>yes</entry>
+		</row>
+		<row>
+
+			<entry>unexpected</entry>
+			<entry><para>Packets received for which no process was listening.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>winbindd_cache</entry>
+			<entry><para>Cache of identity information received from an NT4 or an ADS domain.</para></entry>
+			<entry>yes</entry>
+		</row>
+		<row>
+			<entry>winbindd_idmap</entry>
+			<entry><para>New ID map table from SIDS to UNIX UIDs/GIDs.</para></entry>
+			<entry>yes</entry>
 		</row>
 		</tbody>
 	</tgroup>
