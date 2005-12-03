@@ -332,49 +332,6 @@ typedef struct _nt_user_token {
 	SE_PRIV privileges;
 } NT_USER_TOKEN;
 
-/*** query a local group, get a list of these: shows who is in that group ***/
-
-/* local group member info */
-typedef struct local_grp_member_info
-{
-	DOM_SID sid    ; /* matches with name */
-	uint8   sid_use; /* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
-	fstring name   ; /* matches with sid: must be of the form "DOMAIN\account" */
-
-} LOCAL_GRP_MEMBER;
-
-/* enumerate these to get list of local groups */
-
-/* local group info */
-typedef struct local_grp_info
-{
-	fstring name;
-	fstring comment;
-
-} LOCAL_GRP;
-
-/*** enumerate these to get list of domain groups ***/
-
-/* domain group member info */
-typedef struct domain_grp_info
-{
-	fstring name;
-	fstring comment;
-	uint32  rid; /* group rid */
-	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
-
-} DOMAIN_GRP;
-
-/*** query a domain group, get a list of these: shows who is in that group ***/
-
-/* domain group info */
-typedef struct domain_grp_member_info
-{
-	fstring name;
-	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
-
-} DOMAIN_GRP_MEMBER;
-
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
 {
