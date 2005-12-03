@@ -174,7 +174,7 @@
                 <tbody>
 		<row>
 			<entry>account_policy</entry>
-			<entry><para>User policy settings.</para></entry>
+			<entry><para>Samba/NT account policy settings, includes password expiration settings.</para></entry>
 		</row>
 		<row>
 			<entry>group_mapping</entry>
@@ -182,11 +182,11 @@
 		</row>
 		<row>
 			<entry>ntdrivers</entry>
-			<entry><para>Stores per-printer driver information.</para></entry>
+			<entry><para>Stores per-printer installed driver information.</para></entry>
 		</row>
 		<row>
 			<entry>ntforms</entry>
-			<entry><para>Stores per-printer forms information.</para></entry>
+			<entry><para>Stores per-printer installed forms information.</para></entry>
 		</row>
 		<row>
 			<entry>ntprinters</entry>
@@ -203,8 +203,8 @@
 		<row>
 			<entry>registry</entry>
 			<entry><para>
-				Read-only Samba registry skeleton that provides support for exporting various database tables
-				via the winreg RPCs.
+				Read-only Samba database of a Windows registry skeleton that provides support for exporting 
+				various database tables via the winreg RPCs.
 			</para></entry>
 		</row>
 		<row>
@@ -222,7 +222,7 @@
 		</row>
 		<row>
 			<entry>winbindd_idmap</entry>
-			<entry><para>New ID map table from SIDS to UNIX UIDs/GIDs.</para></entry>
+			<entry><para>Winbindd's local IDMAP database.</para></entry>
 		</row>
 		</tbody>
 	</tgroup>
@@ -248,7 +248,12 @@
 		</row>
 		<row>
 			<entry>connections</entry>
-			<entry><para>A temporary cache for current connection information.</para></entry>
+			<entry><para>A temporary cache for current connection information used to enforce max connections.</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>eventlog/*tdb</entry>
+			<entry><para>Records of eventlog entries. In most circumstances this is just a cache of system logs.</para></entry>
 			<entry>no</entry>
 		</row>
 		<row>
@@ -258,7 +263,7 @@
 		</row>
 		<row>
 			<entry>login_cache</entry>
-			<entry><para>A temporary cache for login information.</para></entry>
+			<entry><para>A temporary cache for login information, in particular bad password attempts.</para></entry>
 			<entry>no</entry>
 		</row>
 		<row>
@@ -268,7 +273,12 @@
 		</row>
 		<row>
 			<entry>netsamlogon_cache</entry>
-			<entry><para>Packets received for which no process is listening.</para></entry>
+			<entry><para>Caches user net_info_3 structure data from net_samlogon requests (as a domain member).</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>perfmon/*.tdb</entry>
+			<entry><para>Performance counter information.</para></entry>
 			<entry>no</entry>
 		</row>
 		<row>
@@ -287,7 +297,7 @@
 		</row>
 		<row>
 			<entry>sessionid</entry>
-			<entry><para>Temporary cache for miscellaneous session information.</para></entry>
+			<entry><para>Temporary cache for miscellaneous session information and for utmp handling.</para></entry>
 			<entry>no</entry>
 		</row>
 		<row>
@@ -297,7 +307,8 @@
 		</row>
 		<row>
 			<entry>winbindd_cache</entry>
-			<entry><para>Cache of Identity information received from an NT4 domain or from ADS.</para></entry>
+			<entry><para>Cache of Identity information received from an NT4 domain or from ADS. Includes user
+				lists, etc.</para></entry>
 			<entry>yes</entry>
 		</row>
 		</tbody>
