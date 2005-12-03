@@ -2366,7 +2366,7 @@ Windows. The CUPS driver is derived from the Microsoft one.
 <para>
 In an attempt to work around problems, site administrators have resorted to restricting the
 allowed drivers installed on their WTS to one generic PCL and one PostScript driver. This, however, restricts
-the the number of printer options available for clients to use. Often they can't get out more than simplex
+the number of printer options available for clients to use. Often they can't get out more than simplex
 prints from one standard paper tray, while their devices could do much better if driven by a different driver!
 </para>
 </sect2>
