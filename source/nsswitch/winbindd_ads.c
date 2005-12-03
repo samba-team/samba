@@ -621,7 +621,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry_dn(ads, (void**)&msg, user_dn, attrs);
+	rc = ads_search_retry_dn(ads, (void**)(void *)&msg, user_dn, attrs);
 	if (!ADS_ERR_OK(rc)) {
 		status = ads_ntstatus(rc);
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", 
