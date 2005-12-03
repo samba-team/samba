@@ -525,7 +525,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 char **file_lines_load(const char *fname, int *numlines)
 {
 	char *p;
-	size_t size;
+	size_t size = 0;
 
 	p = file_load(fname, &size);
 	if (!p) {

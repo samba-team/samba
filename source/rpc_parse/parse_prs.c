@@ -708,6 +708,35 @@ BOOL prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 }
 
 /*******************************************************************
+ Stream an int32.
+ ********************************************************************/
+
+BOOL prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32)
+{
+	char *q = prs_mem_get(ps, sizeof(int32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*data32 = RIVALS(q,0);
+		else
+			*data32 = IVALS(q,0);
+	} else {
+		if (ps->bigendian_data)
+			RSIVALS(q,0,*data32);
+		else
+			SIVALS(q,0,*data32);
+	}
+
+	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(depth), ps->data_offset, name, *data32));
+
+	ps->data_offset += sizeof(int32);
+
+	return True;
+}
+
+/*******************************************************************
  Stream a NTSTATUS
  ********************************************************************/
 

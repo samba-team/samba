@@ -54,7 +54,7 @@ static REGISTRY_KEY *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 {
 	REGISTRY_KEY *regkey = NULL;
 
-	if(!find_policy_by_hnd(p,hnd,(void **)&regkey)) {
+	if(!find_policy_by_hnd(p,hnd,(void **)(void *)&regkey)) {
 		DEBUG(2,("find_regkey_index_by_hnd: Registry Key not found: "));
 		return NULL;
 	}

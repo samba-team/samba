@@ -267,7 +267,7 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 {
 	Printer_entry *find_printer = NULL;
 
-	if(!find_policy_by_hnd(p,hnd,(void **)&find_printer)) {
+	if(!find_policy_by_hnd(p,hnd,(void **)(void *)&find_printer)) {
 		DEBUG(2,("find_printer_index_by_hnd: Printer handle not found: "));
 		return NULL;
 	}

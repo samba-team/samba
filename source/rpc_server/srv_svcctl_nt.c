@@ -186,7 +186,7 @@ static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 {
 	SERVICE_INFO *service_info = NULL;
 
-	if( !find_policy_by_hnd( p, hnd, (void **)&service_info) ) {
+	if( !find_policy_by_hnd( p, hnd, (void **)(void *)&service_info) ) {
 		DEBUG(2,("find_service_info_by_hnd: handle not found"));
 		return NULL;
 	}

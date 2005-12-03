@@ -65,7 +65,7 @@ static void msg_deliver(void)
    * Incoming message is in DOS codepage format. Convert to UNIX.
    */
   
-  if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **) &msg, True)) < 0 || !msg) {
+  if ((len = (int)convert_string_allocate(NULL,CH_DOS, CH_UNIX, msgbuf, msgpos, (void **)(void *)&msg, True)) < 0 || !msg) {
     DEBUG(3,("Conversion failed, delivering message in DOS codepage format\n"));
     for (i = 0; i < msgpos;) {
       if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
