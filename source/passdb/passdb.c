@@ -929,16 +929,6 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 		return True;
 	}
 
-	/* Do we need the stuff down from here? I don't think so, but this
-	 * needs better testing -- VL */
-
-#if 1
-	{	
-		unbecome_root();
-		return False;
-	}
-#endif
-
 	/* it's not a mapped group */
 	grp = getgrnam(user);
 	if(!grp) {
