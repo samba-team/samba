@@ -14,7 +14,7 @@ MSGFILES="de.msg en.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
 VFSLIBS="audit.so default_quota.so extd_audit.so full_audit.so readonly.so shadow_copy.so cap.so expand_msdfs.so fake_perms.so netatalk.so recycle.so"
 DATFILES="lowcase.dat upcase.dat valid.dat"
 CHARSETLIBS="CP437.so CP850.so"
-AUTHLIBS="auth_script.so"
+AUTHLIBS="script.so"
 
 add_dynamic_entries() 
 {
