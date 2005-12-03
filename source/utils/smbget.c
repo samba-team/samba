@@ -22,8 +22,10 @@
 
 #if _FILE_OFFSET_BITS==64
 #define OFF_T_FORMAT "%lld"
+#define OFF_T_FORMAT_CAST long long
 #else
 #define OFF_T_FORMAT "%ld"
+#define OFF_T_FORMAT_CAST long
 #endif
 
 int columns = 0;
@@ -76,7 +78,7 @@ void human_readable(off_t s, char *buffer, int l)
 	if(s > 1024 * 1024 * 1024) snprintf(buffer, l, "%.2fGb", 1.0 * s / (1024 * 1024 * 1024));
 	else if(s > 1024 * 1024) snprintf(buffer, l, "%.2fMb", 1.0 * s / (1024 * 1024));
 	else if(s > 1024) snprintf(buffer, l, "%.2fkb", 1.0 * s / 1024);
-	else snprintf(buffer, l, OFF_T_FORMAT"b", s);
+	else snprintf(buffer, l, OFF_T_FORMAT"b", (OFF_T_FORMAT_CAST)s);
 }
 
 void get_auth_data(const char *srv, const char *shr, char *wg, int wglen, char *un, int unlen, char *pw, int pwlen)
@@ -327,8 +329,10 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 			offset_download = localstat.st_size - RESUME_DOWNLOAD_OFFSET;
 			offset_check = localstat.st_size - RESUME_CHECK_OFFSET;
 			if(verbose)printf("Trying to start resume of %s at "OFF_T_FORMAT"\n"
-				   "At the moment "OFF_T_FORMAT" of "OFF_T_FORMAT" bytes have been retrieved\n", newpath, offset_check, 
-				   localstat.st_size, remotestat.st_size);
+				   "At the moment "OFF_T_FORMAT" of "OFF_T_FORMAT" bytes have been retrieved\n",
+				newpath, (OFF_T_FORMAT_CAST)offset_check, 
+				(OFF_T_FORMAT_CAST)localstat.st_size,
+				(OFF_T_FORMAT_CAST)remotestat.st_size);
 		}
 
 		if(offset_check) { 
@@ -336,20 +340,24 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 			/* First, check all bytes from offset_check to offset_download */
 			off1 = lseek(localhandle, offset_check, SEEK_SET);
 			if(off1 < 0) {
-				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in local file %s\n", offset_check, newpath);
+				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in local file %s\n",
+					(OFF_T_FORMAT_CAST)offset_check, newpath);
 				smbc_close(remotehandle); close(localhandle);
 				return 0;
 			}
 
 			off2 = smbc_lseek(remotehandle, offset_check, SEEK_SET); 
 			if(off2 < 0) {
-				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in remote file %s\n", offset_check, newpath);
+				fprintf(stderr, "Can't seek to "OFF_T_FORMAT" in remote file %s\n",
+					(OFF_T_FORMAT_CAST)offset_check, newpath);
 				smbc_close(remotehandle); close(localhandle);
 				return 0;
 			}
 
 			if(off1 != off2) {
-				fprintf(stderr, "Offset in local and remote files is different (local: "OFF_T_FORMAT", remote: "OFF_T_FORMAT")\n", off1, off2);
+				fprintf(stderr, "Offset in local and remote files is different (local: "OFF_T_FORMAT", remote: "OFF_T_FORMAT")\n",
+					(OFF_T_FORMAT_CAST)off1,
+					(OFF_T_FORMAT_CAST)off2);
 				return 0;
 			}
 
@@ -366,7 +374,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 			}
 
 			if(memcmp(checkbuf[0], checkbuf[1], RESUME_CHECK_SIZE) == 0) {
-				if(verbose)printf("Current local and remote file appear to be the same. Starting download from offset "OFF_T_FORMAT"\n", offset_download);
+				if(verbose)printf("Current local and remote file appear to be the same. Starting download from offset "OFF_T_FORMAT"\n", (OFF_T_FORMAT_CAST)offset_download);
 			} else {
 				fprintf(stderr, "Local and remote file appear to be different, not doing resume for %s\n", path);
 				smbc_close(remotehandle); close(localhandle);
@@ -386,7 +394,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 	for(curpos = offset_download; curpos < remotestat.st_size; curpos+=blocksize) {
 		ssize_t bytesread = smbc_read(remotehandle, readbuf, blocksize);
 		if(bytesread < 0) {
-			fprintf(stderr, "Can't read %d bytes at offset "OFF_T_FORMAT", file %s\n", blocksize, curpos, path);
+			fprintf(stderr, "Can't read %u bytes at offset "OFF_T_FORMAT", file %s\n", (unsigned int)blocksize, (OFF_T_FORMAT_CAST)curpos, path);
 			smbc_close(remotehandle);
 			if (localhandle != STDOUT_FILENO) close(localhandle);
 			free(readbuf);
@@ -396,7 +404,7 @@ int smb_download_file(const char *base, const char *name, int recursive, int res
 		total_bytes += bytesread;
 
 		if(write(localhandle, readbuf, bytesread) < 0) {
-			fprintf(stderr, "Can't write %d bytes to local file %s at offset "OFF_T_FORMAT"\n", bytesread, path, curpos);
+			fprintf(stderr, "Can't write %u bytes to local file %s at offset "OFF_T_FORMAT"\n", (unsigned int)bytesread, path, (OFF_T_FORMAT_CAST)curpos);
 			free(readbuf);
 			smbc_close(remotehandle);
 			if (localhandle != STDOUT_FILENO) close(localhandle);
