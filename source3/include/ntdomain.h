@@ -284,7 +284,7 @@ typedef struct pipes_struct {
 
 	output_data out_data;
 
-	/* This context is used for PUD data and is freed between each pdu.
+	/* This context is used for PDU data and is freed between each pdu.
 		Don't use for pipe state storage. */
 	TALLOC_CTX *mem_ctx;
 
