@@ -93,7 +93,7 @@ uint32 crc32_calc_buffer(const char *buf, size_t size)
 	const unsigned char *p;
 	uint32 crc;
 
-	p = buf;
+	p = (const unsigned char *)buf;
 	crc = ~0U;
 
 	while (size--)
