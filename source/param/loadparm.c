@@ -4220,16 +4220,112 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 }
 
 /***************************************************************************
+ Parse the contents of an acl string.
+***************************************************************************/
+
+static BOOL parse_share_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
+{
+	return False;
+}
+
+#if 0
+/***************************************************************************
+ A user and group id cache.
+***************************************************************************/
+
+struct ug_cache {
+	struct ug_cache *prev, *next;
+	uid_t user_id;
+	gid_t *group_list;
+	size_t num_groups;
+};
+#endif
+
+/***************************************************************************
  Parse the contents of a usershare file.
 ***************************************************************************/
 
 static BOOL parse_usershare_file(TALLOC_CTX *ctx, 
 			SMB_STRUCT_STAT *psbuf,
+			int snum,
 			char **lines,
 			int numlines,
 			pstring sharepath,
 			SEC_DESC **ppsd)
 {
+	SMB_STRUCT_DIR *dp;
+	SMB_STRUCT_STAT sbuf;
+
+	if (!strequal(lines[0], "#VERSION 1")) {
+		return False;
+	}
+
+	if (strnequal(lines[1], "path=", 5)) {
+		return False;
+	}
+
+	pstrcpy(sharepath, &lines[1][5]);
+	trim_string(sharepath, " ", " ");
+
+	if (strnequal(lines[2], "usershare_acl=", 14)) {
+		return False;
+	}
+
+	if (!parse_share_acl(ctx, &lines[2][14], ppsd)) {
+		return False;
+	}
+
+	if (snum != -1 && strequal(sharepath, ServicePtrs[snum]->szPath)) {
+		/* Path didn't change, no checks needed. */
+		return True;
+	}
+
+	/* Ensure this is pointing to a directory. */
+	dp = sys_opendir(sharepath);
+
+	if (!dp) {
+		DEBUG(0,("parse_usershare_file: path %s is not a directory.\n",
+			sharepath));
+		return False;
+	}
+
+	/* Ensure the owner of the usershare file has permission to share
+	   this directory. */
+
+	if (sys_stat(sharepath, &sbuf) == -1) {
+		DEBUG(0,("parse_usershare_file: stat failed on path %s. %s\n",
+			sharepath, strerror(errno) ));
+		sys_closedir(dp);
+		return False;
+	}
+
+	if (!S_ISDIR(sbuf.st_mode)) {
+		DEBUG(0,("parse_usershare_file: %s is not a directory.\n",
+			sharepath ));
+		sys_closedir(dp);
+		return False;
+	}
+
+	/* Owner can always share. */
+	if (sbuf.st_uid == psbuf->st_uid) {
+		sys_closedir(dp);
+		return True;
+	}
+
+#if 0
+	/* We have to check if the user requesting the share is in the
+	   owning group of the directory. */
+
+	username = uidtoname(psbuf->st_uid);
+	owning_group_name = gidtoname(sbuf.st_gid);
+
+	getgroups_user();
+
+	user_in_group_list(u_name, g_name, NULL, 0);
+#endif
+
+	sys_closedir(dp);
+
 	return False;
 }
 
@@ -4347,7 +4443,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return 1;
 	}
 
-	if (!parse_usershare_file(ctx, &sbuf, lines, numlines, sharepath, &psd)) {
+	if (!parse_usershare_file(ctx, &sbuf, snum, lines, numlines, sharepath, &psd)) {
 		talloc_destroy(ctx);
 		SAFE_FREE(lines);
 		return -1;
@@ -4371,6 +4467,14 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Write the ACL of the new/modified share. */
+	if (!set_share_security(ctx, service_name, psd)) {
+		 DEBUG(0, ("process_usershare_file: Failed to set share "
+			"security for user share %s\n",
+			service_name ));
+		lp_remove_service(snum);
+		talloc_destroy(ctx);
+		return 1;
+	}
 
 	talloc_destroy(ctx);
 
@@ -4382,6 +4486,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* And note when it was loaded. */
 	ServicePtrs[snum]->usershare_last_mod = sbuf.st_mtime;
+
+	string_set(&ServicePtrs[snum]->szPath, sharepath);
 
 	return 0;
 }
