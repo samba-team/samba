@@ -376,6 +376,13 @@ typedef struct pdb_context
 				    const char **pp_names,
 				    uint32 *attrs);
 
+	NTSTATUS (*pdb_lookup_names)(struct pdb_context *context,
+				     const DOM_SID *domain_sid,
+				     size_t num_names,
+				     const char **names,
+				     uint32 *rids,
+				     uint32 *attrs);
+
 	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
 					   int policy_index, uint32 *value);
 
@@ -498,6 +505,13 @@ typedef struct pdb_methods
 				uint32 *rids,
 				const char **pp_names,
 				uint32 *attrs);
+
+	NTSTATUS (*lookup_names)(struct pdb_methods *methods,
+				 const DOM_SID *domain_sid,
+				 int num_names,
+				 const char **pp_names,
+				 uint32 *rids,
+				 uint32 *attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
 				       int policy_index, uint32 *value);

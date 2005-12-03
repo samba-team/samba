@@ -105,27 +105,6 @@ static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
 	return result;
 }
 	
-
-/* Ok, this is sort-of a hack. We assume here that we have winbind users in
- * AFS. And yet another copy of parse_domain_user.... */
-
-static BOOL parse_domain_user(const char *domuser, fstring domain,
-			      fstring user)
-{
-	char *p = strchr(domuser,*lp_winbind_separator());
-
-	if (p==NULL) {
-		return False;
-	}
-
-	fstrcpy(user, p+1);
-	fstrcpy(domain, domuser);
-	domain[PTR_DIFF(p, domuser)] = 0;
-	strupper_m(domain);
-	
-	return True;
-}
-
 static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 				   BOOL positive,
 				   const char *name, uint32 rights)
@@ -168,14 +147,16 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 
 	} else {
 
-		fstring user, domain;
+		fstring domain, uname;
+		char *p;
 
-		if (!parse_domain_user(name, domain, user)) {
-			fstrcpy(user, name);
-			fstrcpy(domain, lp_workgroup());
+		p = strchr_m(name, lp_winbind_separator());
+		if (p != NULL) {
+			*p = '\\';
 		}
-		    
-		if (!lookup_name(domain, user, &sid, &type)) {
+
+		if (!lookup_name(name, LOOKUP_NAME_FULL,
+				 domain, uname, &sid, &type)) {
 			DEBUG(10, ("Could not find AFS user %s\n", name));
 
 			sid_copy(&sid, &global_sid_NULL);

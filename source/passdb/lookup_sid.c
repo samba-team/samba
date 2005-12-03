@@ -22,43 +22,247 @@
 #include "includes.h"
 
 /*****************************************************************
- *THE CANONICAL* convert name to SID function.
- Tries local lookup first - for local domains - then uses winbind.
+ Dissect a user-provided name into domain, name, sid and type.
+
+ If an explicit domain name was given in the form domain\user, it
+ has to try that. If no explicit domain name was given, we have
+ to do guesswork.
 *****************************************************************/  
 
-BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
+BOOL lookup_name(TALLOC_CTX *mem_ctx,
+		 const char *full_name, int flags,
+		 char **ret_domain, char **ret_name,
+		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
 {
-	fstring sid;
-	BOOL local_lookup = False;
-	
-	*name_type = SID_NAME_UNKNOWN;
+	char *p, *tmp;
+	char *domain = NULL;
+	char *name = NULL;
+	uint32 rid;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
 
-	/* If we are looking up a domain user, make sure it is
-	   for the local machine only */
-	
-	if (strequal(domain, get_global_sam_name())) {
-		if (local_lookup_name(name, psid, name_type)) {
-			DEBUG(10,
-			      ("lookup_name: (local) [%s]\\[%s] -> SID %s (type %s: %u)\n",
-			       domain, name, sid_to_string(sid,psid),
-			       sid_type_lookup(*name_type), (unsigned int)*name_type));
-			return True;
-		}
+	p = strchr_m(full_name, '\\');
+
+	if (p != NULL) {
+		domain = talloc_strndup(mem_ctx, full_name,
+					PTR_DIFF(p, full_name));
+		name = talloc_strdup(mem_ctx, p+1);
 	} else {
-		/* Remote */
-		if (winbind_lookup_name(domain, name, psid, name_type)) {
-			
-			DEBUG(10,("lookup_name (winbindd): [%s]\\[%s] -> SID %s (type %u)\n",
-				  domain, name, sid_to_string(sid, psid), 
-				  (unsigned int)*name_type));
-			return True;
+		domain = talloc_strdup(mem_ctx, "");
+		name = talloc_strdup(mem_ctx, full_name);
+	}
+
+	if ((domain == NULL) || (name == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	if (strequal(domain, get_global_sam_name())) {
+
+		/* It's our own domain, lookup the name in passdb */
+		if (lookup_global_sam_name(name, &rid, &type)) {
+			sid_copy(&sid, get_global_sam_sid());
+			sid_append_rid(&sid, rid);
+			goto ok;
+		}
+		return False;
+	}
+
+	if (strequal(domain, builtin_domain_name())) {
+
+		/* Explicit request for a name in BUILTIN */
+		if (lookup_builtin_name(name, &rid)) {
+			sid_copy(&sid, &global_sid_Builtin);
+			sid_append_rid(&sid, rid);
+			type = SID_NAME_ALIAS;
+			goto ok;
+		}
+		return False;
+	}
+
+	if (domain[0] != '\0') {
+		/* An explicit domain name was given, here our last resort is
+		 * winbind. */
+		if (winbind_lookup_name(domain, name, &sid, &type)) {
+			goto ok;
+		}
+		return False;
+	}
+
+	if (!(flags & LOOKUP_NAME_ISOLATED)) {
+		return False;
+	}
+
+	/* Now the guesswork begins, we haven't been given an explicit
+	 * domain. Try the sequence as documented on
+	 * http://msdn.microsoft.com/library/en-us/secmgmt/security/lsalookupnames.asp
+	 * November 27, 2005 */
+
+	/* 1. well-known names */
+
+	{
+		tmp = domain;
+		if (lookup_wellknown_name(mem_ctx, name, &sid, &domain)) {
+			talloc_free(tmp);
+			type = SID_NAME_WKN_GRP;
+			goto ok;
 		}
 	}
-	
-	DEBUG(10, ("lookup_name: %s lookup for [%s]\\[%s] failed\n", 
-		   local_lookup ? "local" : "winbind", domain, name));
+
+	/* 2. Builtin domain as such */
+
+	if (strequal(name, builtin_domain_name())) {
+		/* Swap domain and name */
+		tmp = name; name = domain; domain = tmp;
+		sid_copy(&sid, &global_sid_Builtin);
+		type = SID_NAME_DOMAIN;
+		goto ok;
+	}
+
+	/* 3. Account domain */
+
+	if (strequal(name, get_global_sam_name())) {
+		if (!secrets_fetch_domain_sid(name, &sid)) {
+			DEBUG(3, ("Could not fetch my SID\n"));
+			return False;
+		}
+		/* Swap domain and name */
+		tmp = name; name = domain; domain = tmp;
+		type = SID_NAME_DOMAIN;
+		goto ok;
+	}
+
+	/* 4. Primary domain */
+
+	if (!IS_DC && strequal(name, lp_workgroup())) {
+		if (!secrets_fetch_domain_sid(name, &sid)) {
+			DEBUG(3, ("Could not fetch the domain SID\n"));
+			return False;
+		}
+		/* Swap domain and name */
+		tmp = name; name = domain; domain = tmp;
+		type = SID_NAME_DOMAIN;
+		goto ok;
+	}
+
+	/* 5. Trusted domains as such, to me it looks as if members don't do
+              this, tested an XP workstation in a NT domain -- vl */
+
+	if (IS_DC && (secrets_fetch_trusted_domain_password(name, NULL,
+							    &sid, NULL))) {
+		/* Swap domain and name */
+		tmp = name; name = domain; domain = tmp;
+		type = SID_NAME_DOMAIN;
+		goto ok;
+	}
+
+	/* 6. Builtin aliases */	
+
+	if (lookup_builtin_name(name, &rid)) {
+		domain = talloc_strdup(mem_ctx, builtin_domain_name());
+		sid_copy(&sid, &global_sid_Builtin);
+		sid_append_rid(&sid, rid);
+		type = SID_NAME_ALIAS;
+		goto ok;
+	}
+
+	/* 7. Local systems' SAM (DCs don't have a local SAM) */
+	/* 8. Primary SAM (On members, this is the domain) */
+
+	/* Both cases are done by looking at our passdb */
+
+	if (lookup_global_sam_name(name, &rid, &type)) {
+		domain = talloc_strdup(mem_ctx, get_global_sam_name());
+		sid_copy(&sid, get_global_sam_sid());
+		sid_append_rid(&sid, rid);
+		goto ok;
+	}
+
+	/* Now our local possibilities are exhausted. */
+
+	if (!(flags & LOOKUP_NAME_REMOTE)) {
+		return False;
+	}
+
+	/* If we are not a DC, we have to ask in our primary domain. Let
+	 * winbind do that. */
+
+	if (!IS_DC &&
+	    (winbind_lookup_name(lp_workgroup(), name, &sid, &type))) {
+		domain = talloc_strdup(mem_ctx, lp_workgroup());
+		goto ok;
+	}
+
+	/* 9. Trusted domains */
+
+	/* If we're a DC we have to ask all trusted DC's. Winbind does not do
+	 * that (yet), but give it a chance. */
+
+	if (IS_DC && winbind_lookup_name("", name, &sid, &type)) {
+		DOM_SID dom_sid;
+		uint32 tmp_rid;
+		enum SID_NAME_USE domain_type;
+		
+		if (type == SID_NAME_DOMAIN) {
+			/* Swap name and type */
+			tmp = name; name = domain; domain = tmp;
+			goto ok;
+		}
+
+		talloc_free(domain);
+
+		/* Here we have to cope with a little deficiency in the
+		 * winbind API: We have to ask it again for the name of the
+		 * domain it figured out itself. Maybe fix that later... */
+
+		sid_copy(&dom_sid, &sid);
+		sid_split_rid(&dom_sid, &tmp_rid);
+
+		if (!winbind_lookup_sid(mem_ctx, &dom_sid, &domain, NULL,
+					&domain_type) ||
+		    (domain_type != SID_NAME_DOMAIN)) {
+			DEBUG(2, ("winbind could not find the domain's name it "
+				  "just looked up for us\n"));
+			return False;
+		}
+
+		talloc_free(domain);
+		goto ok;
+	}
+
+	/* 10. Don't translate */
 
 	return False;
+
+ ok:
+	if ((domain == NULL) || (name == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	strupper_m(domain);
+
+	if (ret_name != NULL) {
+		*ret_name = name;
+	} else {
+		talloc_free(name);
+	}
+
+	if (ret_domain != NULL) {
+		*ret_domain = domain;
+	} else {
+		talloc_free(domain);
+	}
+
+	if (ret_sid != NULL) {
+		sid_copy(ret_sid, &sid);
+	}
+
+	if (ret_type != NULL) {
+		*ret_type = type;
+	}
+
+	return True;
 }
 
 /*****************************************************************
@@ -66,22 +270,21 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid, enum SID_N
  Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
-BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
-		enum SID_NAME_USE *name_type)
+BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+		char **ret_domain, char **ret_name,
+		enum SID_NAME_USE *ret_type)
 {
-	if (!name_type)
-		return False;
-
-	*name_type = SID_NAME_UNKNOWN;
-
+	char *domain = NULL;
+	char *name = NULL;
+	enum SID_NAME_USE type;
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
 
 	if (sid_check_is_domain(sid)) {
-		fstrcpy(dom_name, get_global_sam_name());
-		fstrcpy(name, "");
-		*name_type = SID_NAME_DOMAIN;
-		return True;
+		domain = talloc_strdup(mem_ctx, get_global_sam_name());
+		name = talloc_strdup(mem_ctx, "");
+		type = SID_NAME_DOMAIN;
+		goto ok;
 	}
 
 	if (sid_check_is_in_our_domain(sid)) {
@@ -89,22 +292,22 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
 		/* For our own domain passdb is responsible */
-		fstrcpy(dom_name, get_global_sam_name());
-		return lookup_global_sam_rid(rid, name, name_type);
+		if (!lookup_global_sam_rid(mem_ctx, rid, &name, &type)) {
+			return False;
+		}
+
+		domain = talloc_strdup(mem_ctx, get_global_sam_name());
+		goto ok;
 	}
 
 	if (sid_check_is_builtin(sid)) {
 
-		/* Got through map_domain_sid_to_name here so that the mapping
-		 * of S-1-5-32 to the name "BUILTIN" in as few places as
-		 * possible. We might add i18n... */
-		SMB_ASSERT(map_domain_sid_to_name(sid, dom_name));
+		domain = talloc_strdup(mem_ctx, builtin_domain_name());
 
 		/* Yes, W2k3 returns "BUILTIN" both as domain and name here */
-		fstrcpy(name, dom_name); 
-
-		*name_type = SID_NAME_DOMAIN;
-		return True;
+		name = talloc_strdup(mem_ctx, builtin_domain_name());
+		type = SID_NAME_DOMAIN;
+		goto ok;
 	}
 
 	if (sid_check_is_in_builtin(sid)) {
@@ -112,39 +315,56 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 
 		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
-		/* Got through map_domain_sid_to_name here so that the mapping
-		 * of S-1-5-32 to the name "BUILTIN" in as few places as
-		 * possible. We might add i18n... */
-		SMB_ASSERT(map_domain_sid_to_name(&global_sid_Builtin,
-						  dom_name));
+		if (!lookup_builtin_rid(mem_ctx, rid, &name)) {
+			return False;
+		}
 
 		/* There's only aliases in S-1-5-32 */
-		*name_type = SID_NAME_ALIAS;
+		type = SID_NAME_ALIAS;
+		domain = talloc_strdup(mem_ctx, builtin_domain_name());
 
-		return lookup_builtin_rid(rid, name);
+		goto ok;
 	}
 
-	if (winbind_lookup_sid(sid, dom_name, name, name_type)) {
-		return True;
+	if (winbind_lookup_sid(mem_ctx, sid, &domain, &name, &type)) {
+		goto ok;
 	}
 
 	DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying "
 		  "special SIDs.\n", sid_string_static(sid)));
 
-	{
-		const char *dom, *obj_name;
-		
-		if (lookup_special_sid(sid, &dom, &obj_name, name_type)) {
-			DEBUG(10, ("found %s\\%s\n", dom, obj_name));
-			fstrcpy(dom_name, dom);
-			fstrcpy(name, obj_name);
-			return True;
-		}
+	if (lookup_wellknown_sid(mem_ctx, sid, &domain, &name)) {
+		type = SID_NAME_WKN_GRP;
+		goto ok;
 	}
 
-	DEBUG(10, ("lookup_sid failed\n"));
-
+	DEBUG(10, ("Failed to lookup sid %s\n", sid_string_static(sid)));
 	return False;
+
+ ok:
+
+	if ((domain == NULL) || (name == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	if (ret_domain != NULL) {
+		*ret_domain = domain;
+	} else {
+		talloc_free(domain);
+	}
+
+	if (ret_name != NULL) {
+		*ret_name = name;
+	} else {
+		talloc_free(name);
+	}
+
+	if (ret_type != NULL) {
+		*ret_type = type;
+	}
+
+	return True;
 }
 
 /*****************************************************************
@@ -187,10 +407,9 @@ static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 
 	for (pc = uid_sid_cache_head; pc; pc = pc->next) {
 		if (pc->uid == uid) {
-			fstring sid;
 			*psid = pc->sid;
 			DEBUG(3,("fetch sid from uid cache %u -> %s\n",
-				(unsigned int)uid, sid_to_string(sid, psid)));
+				 (unsigned int)uid, sid_string_static(psid)));
 			DLIST_PROMOTE(uid_sid_cache_head, pc);
 			return True;
 		}
@@ -208,10 +427,9 @@ static BOOL fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
 
 	for (pc = uid_sid_cache_head; pc; pc = pc->next) {
 		if (sid_compare(&pc->sid, psid) == 0) {
-			fstring sid;
 			*puid = pc->uid;
 			DEBUG(3,("fetch uid from cache %u -> %s\n",
-				(unsigned int)*puid, sid_to_string(sid, psid)));
+				 (unsigned int)*puid, sid_string_static(psid)));
 			DLIST_PROMOTE(uid_sid_cache_head, pc);
 			return True;
 		}
@@ -261,10 +479,9 @@ static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
 
 	for (pc = gid_sid_cache_head; pc; pc = pc->next) {
 		if (pc->gid == gid) {
-			fstring sid;
 			*psid = pc->sid;
 			DEBUG(3,("fetch sid from gid cache %u -> %s\n",
-				(unsigned int)gid, sid_to_string(sid, psid)));
+				 (unsigned int)gid, sid_string_static(psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
 			return True;
 		}
@@ -282,10 +499,9 @@ static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 
 	for (pc = gid_sid_cache_head; pc; pc = pc->next) {
 		if (sid_compare(&pc->sid, psid) == 0) {
-			fstring sid;
 			*pgid = pc->gid;
 			DEBUG(3,("fetch gid from cache %u -> %s\n",
-				 (unsigned int)*pgid, sid_to_string(sid, psid)));
+				 (unsigned int)*pgid, sid_string_static(psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
 			return True;
 		}
@@ -331,7 +547,6 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 
 NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-	fstring sid;
 	uid_t low, high;
 
 	ZERO_STRUCTP(psid);
@@ -348,7 +563,7 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 		if (winbind_uid_to_sid(psid, uid)) {
 
 			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
-				(unsigned int)uid, sid_to_string(sid, psid)));
+				  (unsigned int)uid, sid_string_static(psid)));
 
 			if (psid)
 				store_uid_sid_cache(psid, uid);
@@ -361,7 +576,8 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
         
-	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
+	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid,
+		  sid_string_static(psid)));
 
 	store_uid_sid_cache(psid, uid);
 	return NT_STATUS_OK;
@@ -373,7 +589,6 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 
 NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-	fstring sid;
 	gid_t low, high;
 
 	ZERO_STRUCTP(psid);
@@ -390,7 +605,7 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 		if (winbind_gid_to_sid(psid, gid)) {
 
 			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
-				(unsigned int)gid, sid_to_string(sid, psid)));
+				  (unsigned int)gid, sid_string_static(psid)));
                         
 			if (psid)
 				store_gid_sid_cache(psid, gid);
@@ -403,7 +618,8 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
         
-	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
+	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid,
+		  sid_string_static(psid)));
 
 	store_gid_sid_cache(psid, gid);
 	return NT_STATUS_OK;
@@ -415,7 +631,6 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 
 NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
-	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
 
 	if (fetch_uid_from_cache(puid, psid))
@@ -437,7 +652,7 @@ NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	
 	/* If it is not our local domain, only hope is winbindd */
 
-	if ( !winbind_lookup_sid(psid, dom_name, name, &name_type) ) {
+	if ( !winbind_lookup_sid(NULL, psid, NULL, NULL, &name_type) ) {
 		DEBUG(10,("sid_to_uid: winbind lookup for non-local sid %s failed\n",
 			sid_string_static(psid) ));
 			
@@ -456,12 +671,12 @@ NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
 
 	if ( !winbind_sid_to_uid(puid, psid) ) {
 		DEBUG(10,("sid_to_uid: winbind failed to allocate a new uid for sid %s\n",
-			sid_to_string(sid_str, psid) ));
+			  sid_string_static(psid)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 success:
-	DEBUG(10,("sid_to_uid: %s -> %u\n", sid_to_string(sid_str, psid),
+	DEBUG(10,("sid_to_uid: %s -> %u\n", sid_string_static(psid),
 		(unsigned int)*puid ));
 
 	store_uid_sid_cache(psid, *puid);
@@ -475,7 +690,6 @@ success:
 
 NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
-	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
 
 	if (fetch_gid_from_cache(pgid, psid))
@@ -489,8 +703,9 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	if ( local_sid_to_gid(pgid, psid, &name_type) )
 		goto success;
 	
-	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		DEBUG(10,("sid_to_gid: no one knows the SID %s (tried local, then winbind)\n", sid_to_string(sid_str, psid)));
+	if (!winbind_lookup_sid(NULL, psid, NULL, NULL, &name_type)) {
+		DEBUG(10,("sid_to_gid: no one knows the SID %s (tried local, then "
+			  "winbind)\n", sid_string_static(psid)));
 		
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -514,13 +729,13 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 
 	if ( !winbind_sid_to_gid(pgid, psid) ) {
 		DEBUG(10,("sid_to_gid: winbind failed to allocate a new gid for sid %s\n",
-			sid_to_string(sid_str, psid) ));
+			  sid_string_static(psid)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 success:
-	DEBUG(10,("sid_to_gid: %s -> %u\n", sid_to_string(sid_str, psid),
-		(unsigned int)*pgid ));
+	DEBUG(10,("sid_to_gid: %s -> %u\n", sid_string_static(psid),
+		  (unsigned int)*pgid ));
 
 	store_gid_sid_cache(psid, *pgid);
 	

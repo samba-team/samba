@@ -1366,9 +1366,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
-	uint32 local_rid;
 	enum SID_NAME_USE type[MAX_SAM_ENTRIES];
-	enum SID_NAME_USE local_type;
 	int i;
 	int num_rids = q_u->num_names2;
 	DOM_SID pol_sid;
@@ -1400,42 +1398,30 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	
 	for (i = 0; i < num_rids; i++) {
 		fstring name;
-            	DOM_SID sid;
             	int ret;
 
 	        r_u->status = NT_STATUS_NONE_MAPPED;
+	        type[i] = SID_NAME_UNKNOWN;
 
 	        rid [i] = 0xffffffff;
-	        type[i] = SID_NAME_UNKNOWN;
 
 		ret = rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
 
- 		/*
-		 * we are only looking for a name
-		 * the SID we get back can be outside
-		 * the scope of the pol_sid
-		 * 
-		 * in clear: it prevents to reply to domain\group: yes
-		 * when only builtin\group exists.
-		 *
-		 * a cleaner code is to add the sid of the domain we're looking in
-		 * to the local_lookup_name function.
-		 */
-		 
-            	if ((ret > 0) && local_lookup_name(name, &sid, &local_type)) {
-                	sid_split_rid(&sid, &local_rid);
-				
-			if (sid_equal(&sid, &pol_sid)) {
-				rid[i]=local_rid;
+		if (ret <= 0) {
+			continue;
+		}
 
-				/* Windows does not return WKN_GRP here, even
-				 * on lookups in builtin */
-				type[i] = (local_type == SID_NAME_WKN_GRP) ?
-					SID_NAME_ALIAS : local_type;
-
-                		r_u->status = NT_STATUS_OK;
+		if (sid_check_is_builtin(&pol_sid)) {
+			if (lookup_builtin_name(name, &rid[i])) {
+				type[i] = SID_NAME_ALIAS;
 			}
-            	}
+		} else {
+			lookup_global_sam_name(name, &rid[i], &type[i]);
+		}
+
+		if (type[i] != SID_NAME_UNKNOWN) {
+			r_u->status = NT_STATUS_OK;
+		}
 	}
 
 	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
@@ -2247,6 +2233,41 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	return r_u->status;
 }
 
+/* W2k3 seems to use the same check for all 3 objects that can be created via
+ * SAMR, if you try to create for example "Dialup" as an alias it says
+ * "NT_STATUS_USER_EXISTS". This is racy, but we can't really lock the user
+ * database. */
+
+static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
+{
+	enum SID_NAME_USE type;
+	BOOL result;
+
+	become_root();
+	/* Lookup in our local databases (only LOOKUP_NAME_ISOLATED set)
+	 * whether the name already exists */
+	result = lookup_name(mem_ctx, new_name, LOOKUP_NAME_ISOLATED,
+			     NULL, NULL, NULL, &type);
+	unbecome_root();
+
+	if (!result) {
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(5, ("trying to create %s, exists as %s\n",
+		  new_name, sid_type_lookup(type)));
+
+	if (type == SID_NAME_DOM_GRP) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+	if (type == SID_NAME_ALIAS) {
+		return NT_STATUS_ALIAS_EXISTS;
+	}
+
+	/* Yes, the default is NT_STATUS_USER_EXISTS */
+	return NT_STATUS_USER_EXISTS;
+}
+
 /*******************************************************************
  _samr_create_user
  Create an account, can be either a normal user or a machine.
@@ -2294,18 +2315,10 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
 
-	pdb_init_sam(&sam_pass);
-
-	become_root();
-	ret = pdb_getsampwnam(sam_pass, account);
-	unbecome_root();
-	if (ret == True) {
-		/* this account exists: say so */
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_USER_EXISTS;
+	nt_status = can_create(p->mem_ctx, account);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
-
-	pdb_free_sam(&sam_pass);
 
 	/*********************************************************************
 	 * HEADS UP!  If we have to create a new user account, we have to get 
@@ -2776,7 +2789,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	/* append the alias' RID to it */
 	
 	if (!sid_append_rid(&sid, alias_rid))
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_ALIAS;
 		
 	/*check if access can be granted as requested by client. */
 	
@@ -2793,12 +2806,21 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	/*
-	 * we should check if the rid really exist !!!
-	 * JFM.
-	 */
+	{
+		/* Check we actually have the requested alias */
+		enum SID_NAME_USE type;
+		BOOL result;
 
-	/* associate the user's SID with the new handle. */
+		become_root();
+		result = lookup_sid(NULL, &sid, NULL, NULL, &type);
+		unbecome_root();
+
+		if (!result || (type != SID_NAME_ALIAS)) {
+			return NT_STATUS_NO_SUCH_ALIAS;
+		}
+	}
+
+	/* associate the alias SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 		
@@ -2814,12 +2836,11 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 /*******************************************************************
  set_user_info_7
  ********************************************************************/
-static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
+static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
+				const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 {
 	fstring new_name;
-	SAM_ACCOUNT *check_acct = NULL;
 	NTSTATUS rc;
-	BOOL check_rc;
 
 	if (id7 == NULL) {
 		DEBUG(5, ("set_user_info_7: NULL id7\n"));
@@ -2842,13 +2863,9 @@ static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
 	   simply that the rename fails with a slightly different status
 	   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
 
-	pdb_init_sam(&check_acct);
-	check_rc = pdb_getsampwnam(check_acct, new_name);
-	pdb_free_sam(&check_acct);
-
-	if (check_rc == True) {
-		/* this account exists: say so */
-		return NT_STATUS_USER_EXISTS;
+	rc = can_create(mem_ctx, new_name);
+	if (!NT_STATUS_IS_OK(rc)) {
+		return rc;
 	}
 
 	rc = pdb_rename_sam_account(pwd, new_name);
@@ -3365,7 +3382,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	
 	switch (switch_value) {
 		case 7:
-			r_u->status = set_user_info_7(ctr->info.id7, pwd);
+			r_u->status = set_user_info_7(p->mem_ctx,
+						      ctr->info.id7, pwd);
 			break;
 		case 16:
 			if (!set_user_info_16(ctr->info.id16, pwd))
@@ -4199,9 +4217,10 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
-	/* check if group already exist */
-	if ((grp=getgrnam(name)) != NULL)
-		return NT_STATUS_GROUP_EXISTS;
+	r_u->status = can_create(p->mem_ctx, name);
+	if (!NT_STATUS_IS_OK(r_u->status)) {
+		return r_u->status;
+	}
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
@@ -4288,6 +4307,11 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
+
+	r_u->status = can_create(p->mem_ctx, name);
+	if (!NT_STATUS_IS_OK(r_u->status)) {
+		return r_u->status;
+	}
 
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
