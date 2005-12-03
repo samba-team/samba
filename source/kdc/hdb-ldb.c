@@ -706,10 +706,13 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 						      &msg, &realm_ref_msg);
 		free(principal_string);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+			talloc_free(mem_ctx);
 			return HDB_ERR_NOENTRY;
 		} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
+			talloc_free(mem_ctx);
 			return ENOMEM;
 		} else if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
 			return EINVAL;
 		}
 
@@ -751,6 +754,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 				break;
 			} else {
 				/* we should lookup trusted domains */
+				talloc_free(mem_ctx);
 				return HDB_ERR_NOENTRY;
 			}
 
