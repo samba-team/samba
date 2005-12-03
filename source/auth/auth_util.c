@@ -1598,8 +1598,6 @@ BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 BOOL is_trusted_domain(const char* dom_name)
 {
 	DOM_SID trustdom_sid;
-	char *pass = NULL;
-	time_t lct;
 	BOOL ret;
 
 	/* no trusted domains for a standalone server */
