@@ -214,9 +214,15 @@ mkt_remove_entry(krb5_context context,
 	krb5_clear_error_string (context);
 	return KRB5_KT_NOTFOUND;
     }
-    e = realloc(d->entries, d->num_entries * sizeof(*d->entries));
-    if(e != NULL)
-	d->entries = e;
+    if (d->num_entries == 0) {
+	free(d->entries);
+	d->entries = NULL;
+    } else {
+	e = realloc(d->entries, d->num_entries * sizeof(*d->entries));
+	if(e != NULL)
+	    d->entries = e;
+    }
+
     return 0;
 }
 
