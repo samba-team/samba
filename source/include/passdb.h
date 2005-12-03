@@ -200,29 +200,6 @@ typedef struct sam_passwd {
 	
 } SAM_ACCOUNT;
 
-typedef struct sam_group {
-	TALLOC_CTX *mem_ctx;
-	
-	void (*free_fn)(struct sam_group **);
-
-	struct pdb_methods *methods;
-
-	struct group_data {
-		/* initialization flags */
-		struct bitmap *change_flags;
-		struct bitmap *set_flags;
-
-		const char *name;		/* Windows group name string */
-
-		DOM_SID sid;			/* Group SID */
-		enum SID_NAME_USE sid_name_use;	/* Group type */
-
-		uint32 mem_num;			/* Number of member SIDs */
-		DOM_SID *members;		/* SID array */
-	} private_g;
-
-} SAM_GROUP;
-
 struct acct_info {
 	fstring acct_name; /* account name */
 	fstring acct_desc; /* account name */
