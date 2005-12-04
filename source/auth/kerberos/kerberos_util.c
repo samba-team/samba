@@ -50,7 +50,7 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	char *machine_username;
 	char *salt_body;
 	char *lower_realm;
-	char *salt_principal;
+	const char *salt_principal;
 	struct principal_container *mem_ctx = talloc(parent_ctx, struct principal_container);
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -249,7 +249,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	int i;
 	krb5_error_code ret;
 	krb5_enctype *enctypes;
-	char *enctype_string = NULL;
+	char *enctype_string;
 	struct enctypes_container *etc;
 	krb5_data password;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
@@ -283,7 +283,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 		krb5_keytab_entry entry;
 		ret = create_kerberos_key_from_string(smb_krb5_context->krb5_context, 
 						      salt_princ, &password, &entry.keyblock, enctypes[i]);
-		if (ret) {
+		if (ret != 0) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
@@ -291,19 +291,21 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
                 entry.principal = princ;
                 entry.vno       = kvno;
 		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
+		enctype_string = NULL;
+		krb5_enctype_to_string(smb_krb5_context->krb5_context, enctypes[i], &enctype_string);
 		if (ret != 0) {
-			DEBUG(1, ("Failed to add entry for %s(kvno %d) to keytab: %s",
+			DEBUG(1, ("Failed to add %s entry for %s(kvno %d) to keytab: %s\n",
+				  enctype_string,
 				  princ_string,
 				  kvno,
 				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 							     ret, mem_ctx)));
 			talloc_free(mem_ctx);
+			free(enctype_string);		
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 			return ret;
 		}
 
-		enctype_string = NULL;
-		krb5_keytype_to_string(smb_krb5_context->krb5_context, enctypes[i], &enctype_string);
 		DEBUG(5, ("Added %s(kvno %d) to keytab (%s)\n", 
 			  princ_string, kvno,
 			  enctype_string));
@@ -318,7 +320,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 static int create_keytab(TALLOC_CTX *parent_ctx,
 			 struct cli_credentials *machine_account,
 			 struct smb_krb5_context *smb_krb5_context,
-			 struct keytab_container *keytab_container,
+			 krb5_keytab keytab,
 			 BOOL add_old) 
 {
 	krb5_error_code ret;
@@ -328,7 +330,6 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 	int kvno;
 	krb5_principal salt_princ;
 	krb5_principal princ;
-	krb5_keytab keytab;
 	const char *princ_string;
 
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
@@ -336,8 +337,6 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	keytab = keytab_container->keytab;
-	
 	princ_string = cli_credentials_get_principal(machine_account, mem_ctx);
 	/* Get the principal we will store the new keytab entries under */
 	ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, &princ);
@@ -400,7 +399,7 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 			return ret;
 		}
 		
-		krb5_keytype_to_string(smb_krb5_context->krb5_context, ENCTYPE_ARCFOUR_HMAC, &enctype_string);
+		krb5_enctype_to_string(smb_krb5_context->krb5_context, ENCTYPE_ARCFOUR_HMAC, &enctype_string);
 		DEBUG(5, ("Added %s(kvno %d) to keytab (%s)\n", 
 			  cli_credentials_get_principal(machine_account, mem_ctx),
 			  cli_credentials_get_kvno(machine_account),
@@ -417,7 +416,7 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 	kvno = cli_credentials_get_kvno(machine_account);
 	/* good, we actually have the real plaintext */
 	ret = keytab_add_keys(mem_ctx, princ_string, princ, salt_princ, 
-		       kvno, password_s, smb_krb5_context, keytab);
+			      kvno, password_s, smb_krb5_context, keytab);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -599,7 +598,7 @@ int update_keytab(TALLOC_CTX *parent_ctx,
 	 * Otherwise, add kvno, and kvno -1 */
 	
 	ret = create_keytab(mem_ctx, machine_account, smb_krb5_context, 
-			    keytab_container, 
+			    keytab_container->keytab, 
 			    found_previous ? False : True);
 	talloc_free(mem_ctx);
 	return ret;
@@ -639,7 +638,9 @@ int create_memory_keytab(TALLOC_CTX *parent_ctx,
 	ret = update_keytab(mem_ctx, machine_account, smb_krb5_context, *keytab_container);
 	if (ret == 0) {
 		talloc_steal(parent_ctx, *keytab_container);
-	} 
+	} else {
+		*keytab_container = NULL;
+	}
 	talloc_free(mem_ctx);
 	return ret;
 }
