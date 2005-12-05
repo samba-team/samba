@@ -1096,8 +1096,6 @@ static BOOL test_conflict_same_owner(struct test_wrepl_conflict_conn *ctx)
 		}
 	};
 
-	if (!ctx) return False;
-
 	name.name	= "_SAME_OWNER_A";
 	name.type	= 0;
 	name.scope	= NULL;
@@ -4634,8 +4632,6 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 		}
 	}}; /* do not add entries here, this should be the last record! */
 
-	if (!ctx) return False;
-
 	wins_name_r1	= &wins_name1;
 	wins_name_r2	= &wins_name2;
 
@@ -6384,8 +6380,6 @@ static BOOL test_conflict_owned_released_vs_replica(struct test_wrepl_conflict_c
 		},
 	},
 	};
-
-	if (!ctx) return False;
 
 	printf("Test Replica records vs. owned released records\n");
 
@@ -9018,8 +9012,6 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	},
 	};
 
-	if (!ctx) return False;
-
 	if (!ctx->nbtsock_srv) {
 		printf("SKIP: Test Replica records vs. owned active records: not bound to port[%d]\n",
 			lp_nbt_port());
@@ -9511,6 +9503,7 @@ BOOL torture_nbt_winsreplication_quick(void)
 	ret &= test_wins_replication(mem_ctx, address);
 
 	ctx = test_create_conflict_ctx(mem_ctx, address);
+	if (!ctx) return False;
 
 	ret &= test_conflict_same_owner(ctx);
 	ret &= test_conflict_owned_released_vs_replica(ctx);
@@ -9549,6 +9542,7 @@ BOOL torture_nbt_winsreplication(void)
 	ret &= test_wins_replication(mem_ctx, address);
 
 	ctx = test_create_conflict_ctx(mem_ctx, address);
+	if (!ctx) return False;
 
 	ret &= test_conflict_same_owner(ctx);
 	ret &= test_conflict_different_owner(ctx);
