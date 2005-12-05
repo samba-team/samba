@@ -584,24 +584,9 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		return NULL;
 	}
 
-#if 0 /* choice 1 */
-        /* Look for a cached connection, using the provided authinfo */
-        srv = find_server(context, server, share,
-                          workgroup, username, password);
-
-        /* If we didn't find one... */
-        if (! srv)
-        {
-            /* ... then see if there's one using anonymous login */
-            fstring anonymous = "";
-            srv = find_server(context, server, share,
-                              workgroup, anonymous, password);
-        }
-#else
         /* Look for a cached connection */
         srv = find_server(context, server, share,
                           workgroup, username, password);
-#endif
         
         /*
          * If we found a connection and we're only allowed one share per
@@ -796,11 +781,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-#if 0 /* choice 2 */
-	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username_used)) {
-#else
 	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
-#endif
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
