@@ -1,5 +1,8 @@
 2005-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.h: Change gss_krb5_import_ccache to gss_krb5_import_cred,
+	it can handle keytabs too.
+
 	* add_cred.c (gss_add_cred): avoid deadlock
 
 	* context_time.c (gssapi_lifetime_left): define the 0 lifetime as
