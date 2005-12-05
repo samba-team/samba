@@ -774,9 +774,11 @@ OM_uint32 gss_krb5_copy_ccache
 	 struct krb5_ccache_data */*out*/);
 
 OM_uint32
-gss_krb5_import_ccache(OM_uint32 */*minor*/,
-		       struct krb5_ccache_data * /*in*/,
-		       gss_cred_id_t */*out*/);
+gss_krb5_import_cred(OM_uint32 */*minor*/,
+		     struct krb5_ccache_data * /*in*/,
+		     struct Principal * /*keytab_principal*/,
+		     struct krb5_keytab_data * /*keytab*/,
+		     gss_cred_id_t */*out*/);
 
 OM_uint32 gss_krb5_get_tkt_flags
 	(OM_uint32 */*minor*/,
