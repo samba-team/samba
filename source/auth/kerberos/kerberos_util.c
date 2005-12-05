@@ -611,13 +611,27 @@ int create_memory_keytab(TALLOC_CTX *parent_ctx,
 {
 	krb5_error_code ret;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
-	const char *keytab_name = "MEMORY:";
+	const char *rand_string;
+	const char *keytab_name;
 	krb5_keytab keytab;
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
 	
 	*keytab_container = talloc(mem_ctx, struct keytab_container);
+
+	rand_string = generate_random_str(mem_ctx, 16);
+	if (!rand_string) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	keytab_name = talloc_asprintf(mem_ctx, "MEMORY:%s", 
+				      rand_string);
+	if (!keytab_name) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
 
 	/* Find the keytab */
 	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, keytab_name, &keytab);
