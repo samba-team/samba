@@ -29,27 +29,46 @@
 const static struct gensec_security_ops **generic_security_ops;
 static int gensec_num_backends;
 
-static const struct gensec_security_ops *gensec_security_by_authtype(uint8_t auth_type)
+const struct gensec_security_ops **gensec_security_all(void)
+{
+	return generic_security_ops;
+}
+
+static const struct gensec_security_ops *gensec_security_by_authtype(struct gensec_security *gensec_security,
+								     uint8_t auth_type)
 {
 	int i;
-	for (i=0; i < gensec_num_backends; i++) {
-		if (generic_security_ops[i]->auth_type == auth_type) {
-			return generic_security_ops[i];
+	const struct gensec_security_ops **backends;
+	if (!gensec_security) {
+		backends = gensec_security_all();
+	} else {
+		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	}
+	for (i=0; backends && backends[i]; i++) {
+		if (backends[i]->auth_type == auth_type) {
+			return backends[i];
 		}
 	}
 
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_oid(const char *oid_string)
+static const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security *gensec_security,
+								const char *oid_string)
 {
 	int i, j;
-	for (i=0; i < gensec_num_backends; i++) {
-		if (generic_security_ops[i]->oid) {
-			for (j=0; generic_security_ops[i]->oid[j]; j++) { 
-				if (generic_security_ops[i]->oid[j] &&
-				    (strcmp(generic_security_ops[i]->oid[j], oid_string) == 0)) {
-					return generic_security_ops[i];
+	const struct gensec_security_ops **backends;
+	if (!gensec_security) {
+		backends = gensec_security_all();
+	} else {
+		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	}
+	for (i=0; backends && backends[i]; i++) {
+		if (backends[i]->oid) {
+			for (j=0; backends[i]->oid[j]; j++) { 
+				if (backends[i]->oid[j] &&
+				    (strcmp(backends[i]->oid[j], oid_string) == 0)) {
+					return backends[i];
 				}
 			}
 		}
@@ -58,60 +77,68 @@ static const struct gensec_security_ops *gensec_security_by_oid(const char *oid_
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_sasl_name(const char *sasl_name)
+static const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,
+								      const char *sasl_name)
 {
 	int i;
-	for (i=0; i < gensec_num_backends; i++) {
-		if (generic_security_ops[i]->sasl_name 
-		    && (strcmp(generic_security_ops[i]->sasl_name, sasl_name) == 0)) {
-			return generic_security_ops[i];
+	const struct gensec_security_ops **backends;
+	if (!gensec_security) {
+		backends = gensec_security_all();
+	} else {
+		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	}
+	for (i=0; backends && backends[i]; i++) {
+		if (backends[i]->sasl_name 
+		    && (strcmp(backends[i]->sasl_name, sasl_name) == 0)) {
+			return backends[i];
 		}
 	}
 
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_name(const char *name)
+static const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
+								 const char *name)
 {
 	int i;
-	for (i=0; i < gensec_num_backends; i++) {
-		if (generic_security_ops[i]->name 
-		    && (strcmp(generic_security_ops[i]->name, name) == 0)) {
-			return generic_security_ops[i];
+	const struct gensec_security_ops **backends;
+	if (!gensec_security) {
+		backends = gensec_security_all();
+	} else {
+		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	}
+	for (i=0; backends && backends[i]; i++) {
+		if (backends[i]->name 
+		    && (strcmp(backends[i]->name, name) == 0)) {
+			return backends[i];
 		}
 	}
 
 	return NULL;
-}
-
-const struct gensec_security_ops **gensec_security_all(int *num_backends_out)
-{
-	*num_backends_out = gensec_num_backends;
-	return generic_security_ops;
 }
 
 /**
  * Return a unique list of security subsystems from those specified in
- * the OID list.  That is, where two OIDs refer to the same module,
- * return that module only once 
+ * the list of SASL names.   
  *
- * The list is in the exact order of the OIDs asked for, where available.
+ * Use the list of enabled GENSEC mechanisms from the credentials
+ * attached to the gensec_security, and return in our preferred order.
  */
 
-const struct gensec_security_ops **gensec_security_by_sasl(TALLOC_CTX *mem_ctx, 
-							  const char **sasl_names)
+const struct gensec_security_ops **gensec_security_by_sasl(struct gensec_security *gensec_security,
+							   TALLOC_CTX *mem_ctx, 
+							   const char **sasl_names)
 {
 	const struct gensec_security_ops **backends_out;
 	const struct gensec_security_ops **backends;
 	int i, k, sasl_idx;
 	int num_backends_out = 0;
-	int num_backends;
 
 	if (!sasl_names) {
 		return NULL;
 	}
 
-	backends = gensec_security_all(&num_backends);
+	backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
 
 	backends_out = talloc_array(mem_ctx, const struct gensec_security_ops *, 1);
 	if (!backends_out) {
@@ -121,7 +148,7 @@ const struct gensec_security_ops **gensec_security_by_sasl(TALLOC_CTX *mem_ctx,
 
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
-	for (i=0; i < num_backends; i++) {
+	for (i=0; backends && backends[i]; i++) {
 		for (sasl_idx = 0; sasl_names[sasl_idx]; sasl_idx++) {
 			if (!backends[i]->sasl_name ||
 			    !(strcmp(backends[i]->sasl_name, 
@@ -158,12 +185,14 @@ const struct gensec_security_ops **gensec_security_by_sasl(TALLOC_CTX *mem_ctx,
 /**
  * Return a unique list of security subsystems from those specified in
  * the OID list.  That is, where two OIDs refer to the same module,
- * return that module only once 
+ * return that module only once. 
  *
- * The list is in the exact order of the OIDs asked for, where available.
+ * Use the list of enabled GENSEC mechanisms from the credentials
+ * attached to the gensec_security, and return in our preferred order.
  */
 
-const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX *mem_ctx, 
+const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gensec_security *gensec_security,
+								      TALLOC_CTX *mem_ctx, 
 								      const char **oid_strings,
 								      const char *skip)
 {
@@ -171,13 +200,12 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX
 	const struct gensec_security_ops **backends;
 	int i, j, k, oid_idx;
 	int num_backends_out = 0;
-	int num_backends;
 
 	if (!oid_strings) {
 		return NULL;
 	}
 
-	backends = gensec_security_all(&num_backends);
+	backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
 
 	backends_out = talloc_array(mem_ctx, struct gensec_security_ops_wrapper, 1);
 	if (!backends_out) {
@@ -188,7 +216,7 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX
 
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
-	for (i=0; i < num_backends; i++) {
+	for (i=0; backends && backends[i]; i++) {
 		if (!backends[i]->oid) {
 			continue;
 		}
@@ -239,7 +267,6 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX
 
 const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx, 
 					   const struct gensec_security_ops **ops,				   
-					   int num_backends,
 					   const char *skip) 
 {
 	int i;
@@ -254,7 +281,7 @@ const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	
-	for (i=0; i<num_backends; i++) {
+	for (i=0; ops && ops[i]; i++) {
 		if (!ops[i]->oid) {
 			continue;
 		}
@@ -315,15 +342,20 @@ const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
 
 
 /**
- * Return all the security subsystems currently enabled in GENSEC 
+ * Return all the security subsystems currently enabled on a GENSEC context.
+ * 
+ * This is taken from a list attached to the cli_credentails, and
+ * skips the OID in 'skip'.  (Typically the SPNEGO OID)
+ * 
  */
 
-const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip) 
+const char **gensec_security_oids(struct gensec_security *gensec_security, 
+				  TALLOC_CTX *mem_ctx, 
+				  const char *skip) 
 {
-	int num_backends;
-	const struct gensec_security_ops **ops = gensec_security_all(&num_backends);
-	return gensec_security_oids_from_ops(mem_ctx, ops, 
-					     num_backends, skip);
+	const struct gensec_security_ops **ops
+		= cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	return gensec_security_oids_from_ops(mem_ctx, ops, skip);
 }
 
 
@@ -465,7 +497,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
 				       uint8_t auth_type, uint8_t auth_level) 
 {
-	gensec_security->ops = gensec_security_by_authtype(auth_type);
+	gensec_security->ops = gensec_security_by_authtype(gensec_security, auth_type);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for auth_type=%d\n", (int)auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -491,7 +523,7 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 const char *gensec_get_name_by_authtype(uint8_t authtype) 
 {
 	const struct gensec_security_ops *ops;
-	ops = gensec_security_by_authtype(authtype);
+	ops = gensec_security_by_authtype(NULL, authtype);
 	if (ops) {
 		return ops->name;
 	}
@@ -502,7 +534,7 @@ const char *gensec_get_name_by_authtype(uint8_t authtype)
 const char *gensec_get_name_by_oid(const char *oid_string) 
 {
 	const struct gensec_security_ops *ops;
-	ops = gensec_security_by_oid(oid_string);
+	ops = gensec_security_by_oid(NULL, oid_string);
 	if (ops) {
 		return ops->name;
 	}
@@ -532,7 +564,7 @@ NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security,
 NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
 				  const char *mech_oid) 
 {
-	gensec_security->ops = gensec_security_by_oid(mech_oid);
+	gensec_security->ops = gensec_security_by_oid(gensec_security, mech_oid);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for oid=%s\n", mech_oid));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -548,7 +580,7 @@ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security,
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
 					const char *sasl_name) 
 {
-	gensec_security->ops = gensec_security_by_sasl_name(sasl_name);
+	gensec_security->ops = gensec_security_by_sasl_name(gensec_security, sasl_name);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for sasl_name=%s\n", sasl_name));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -564,7 +596,7 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 NTSTATUS gensec_start_mech_by_name(struct gensec_security *gensec_security, 
 					const char *name) 
 {
-	gensec_security->ops = gensec_security_by_name(name);
+	gensec_security->ops = gensec_security_by_name(gensec_security, name);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for name=%s\n", name));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -862,7 +894,7 @@ NTSTATUS gensec_register(const void *_ops)
 		return NT_STATUS_OK;
 	}
 
-	if (gensec_security_by_name(ops->name) != NULL) {
+	if (gensec_security_by_name(NULL, ops->name) != NULL) {
 		/* its already registered! */
 		DEBUG(0,("GENSEC backend '%s' already registered\n", 
 			 ops->name));
