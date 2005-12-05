@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -77,8 +77,8 @@ test_add(gss_cred_id_t cred_handle)
 	errx(1, "release_cred failed");
 }
 
-int
-main(int argc, char **argv)
+static void
+copy_cred(void)
 {
     OM_uint32 major_status, minor_status;
     gss_cred_id_t cred_handle;
@@ -105,6 +105,60 @@ main(int argc, char **argv)
 				    &cred_handle);
     if (GSS_ERROR(major_status))
 	errx(1, "release_cred failed");
+}
+
+static void
+acquire_cred_service(const char *service)
+{
+    OM_uint32 major_status, minor_status;
+    gss_cred_id_t cred_handle;
+    OM_uint32 time_rec;
+    gss_buffer_desc name_buffer;
+    gss_name_t name;
+
+    name_buffer.value = rk_UNCONST(service);
+    name_buffer.length = strlen(service);
+
+    major_status = gss_import_name(&minor_status,
+				   &name_buffer,
+				   GSS_C_NT_HOSTBASED_SERVICE,
+				   &name);
+    if (GSS_ERROR(major_status))
+	errx(1, "import_name failed");
+
+
+    major_status = gss_acquire_cred(&minor_status, 
+				    name,
+				    0,
+				    NULL,
+				    GSS_C_ACCEPT,
+				    &cred_handle,
+				    NULL,
+				    &time_rec);
+    if (GSS_ERROR(major_status))
+	errx(1, "acquire_cred failed");
+	
+    print_time(time_rec);
+
+    major_status = gss_release_cred(&minor_status,
+				    &cred_handle);
+    if (GSS_ERROR(major_status))
+	errx(1, "release_cred failed");
+
+
+    major_status = gss_release_name(&minor_status,
+				    &name);
+    if (GSS_ERROR(major_status))
+	errx(1, "release_name failed");
+
+}
+
+int
+main(int argc, char **argv)
+{
+    copy_cred();
+
+    acquire_cred_service("host@xen2-heimdal-linux.lab.it.su.se");
 
     return 0;
 }
