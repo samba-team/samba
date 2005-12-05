@@ -8489,7 +8489,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SM_U", 0x00, NULL),
-		.skip	= (ctx->addresses_mhomed_num != 2),
+		.skip	= (ctx->addresses_mhomed_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8516,7 +8516,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_P", 0x00, NULL),
-		.skip	= (ctx->addresses_mhomed_num != 2),
+		.skip	= (ctx->addresses_mhomed_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8576,7 +8576,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_PRA", 0x00, NULL),
-		.skip	= (ctx->addresses_all_num < 3),
+		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8608,7 +8608,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_O", 0x00, NULL),
 
-		.skip	= (ctx->addresses_all_num < 3),
+		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8638,7 +8638,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_N", 0x00, NULL),
-		.skip	= (ctx->addresses_mhomed_num != 2),
+		.skip	= (ctx->addresses_mhomed_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8670,7 +8670,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.line	= __location__,
 		.section= "Test Replica vs. owned active: some more UNIQUE,MHOMED combinations",
 		.name	= _NBT_NAME("_MA_UA_SB_P", 0x00, NULL),
-		.skip	= (ctx->addresses_all_num < 3),
+		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
 			.mhomed		= True,
@@ -8690,6 +8690,39 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			.num_ips	= ctx->addresses_best_num,
 			.ips		= ctx->addresses_best,
 			.mhomed_merge	= True
+		},
+	},
+	/*
+	 * unique,active vs. unique,active with different ip(s), positive response, with replicas address
+	 * TODO: check why the server sends a name release demand for one address?
+	 *       the release demand has no effect to the database record...
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_UA_UA_DI_PRA", 0x00, NULL),
+		.skip	= (ctx->addresses_all_num < 2),
+		.wins	= {
+			.nb_flags	= 0,
+			.mhomed		= False,
+			.num_ips	= ctx->addresses_best_num,
+			.ips		= ctx->addresses_best,
+			.apply_expected	= True
+		},
+		.defend	= {
+			.timeout	= 10,
+			.positive	= True,
+			.num_ips	= ctx->addresses_best2_num,
+			.ips		= ctx->addresses_best2,
+			.late_release	= True
+		},
+		.replica= {
+			.type		= WREPL_TYPE_UNIQUE,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ctx->addresses_best2_num,
+			.ips		= ctx->addresses_best2,
+			.apply_expected	= False,
 		},
 	},
 	/*
