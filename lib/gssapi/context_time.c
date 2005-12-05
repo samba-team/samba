@@ -43,6 +43,11 @@ gssapi_lifetime_left(OM_uint32 *minor_status,
     krb5_timestamp timeret;
     krb5_error_code kret;
 
+    if (lifetime == 0) {
+	*lifetime_rec = GSS_C_INDEFINITE;
+	return GSS_S_COMPLETE;
+    }
+
     kret = krb5_timeofday(gssapi_krb5_context, &timeret);
     if (kret) {
 	*minor_status = kret;
