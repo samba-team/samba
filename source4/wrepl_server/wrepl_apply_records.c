@@ -500,6 +500,16 @@ _SA_MA_DI_U<1c> => NOT REPLACE
 _SA_MT_SI_U<1c> => NOT REPLACE
 _SA_MT_DI_U<1c> => NOT REPLACE
 
+Test Replica vs. owned active: SGROUP vs. SGROUP tests
+_SA_SA_DI_U<1c> => SGROUP_MERGE
+_SA_SA_SI_U<1c> => SGROUP_MERGE
+_SA_SA_SP_U<1c> => SGROUP_MERGE
+_SA_SA_SB_U<1c> => SGROUP_MERGE
+_SA_ST_DI_U<1c> => NOT REPLACE
+_SA_ST_SI_U<1c> => NOT REPLACE
+_SA_ST_SP_U<1c> => NOT REPLACE
+_SA_ST_SB_U<1c> => NOT REPLACE
+
 SGROUP,ACTIVE vs. SGROUP,* is not handled here!
 
 released:
@@ -527,13 +537,18 @@ static enum _R_ACTION replace_sgroup_owned_vs_X_replica(struct winsdb_record *r1
 		return R_DO_REPLACE;
 	}
 
-	if (R_IS_SGROUP(r2)) {
-		/* not handled here: MERGE */
-		return R_DO_SGROUP_MERGE;
+	if (!R_IS_SGROUP(r2) || !R_IS_ACTIVE(r2)) {
+		/* NOT REPLACE */
+		return R_NOT_REPLACE;
 	}
 
-	/* NOT REPLACE */
-	return R_NOT_REPLACE;
+	/*
+	 * TODO: should we have the same logic here like in 
+	 *       replace_sgroup_replica_vs_X_replica() ?
+	 */
+
+	/* not handled here: MERGE */
+	return R_DO_SGROUP_MERGE;
 }
 
 /*
