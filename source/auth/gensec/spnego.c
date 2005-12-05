@@ -247,9 +247,9 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 						  const DATA_BLOB in, DATA_BLOB *out) 
 {
 	int i,j;
-	int num_ops;
-	const struct gensec_security_ops **all_ops = gensec_security_all(&num_ops);
-	for (i=0; i < num_ops; i++) {
+	const struct gensec_security_ops **all_ops
+		= cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	for (i=0; all_ops[i]; i++) {
 		BOOL is_spnego;
 		NTSTATUS nt_status;
 		if (!all_ops[i]->oid) {
@@ -315,7 +315,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	DATA_BLOB null_data_blob = data_blob(NULL,0);
 
 	const struct gensec_security_ops_wrapper *all_sec
-		= gensec_security_by_oid_list(out_mem_ctx, 
+		= gensec_security_by_oid_list(gensec_security, 
+					      out_mem_ctx, 
 					      mechType,
 					      GENSEC_OID_SPNEGO);
 	for (i=0; all_sec && all_sec[i].op; i++) {
@@ -413,9 +414,11 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	const struct gensec_security_ops_wrapper *all_sec;
 	const char *principal = NULL;
 
-	mechTypes = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
+	mechTypes = gensec_security_oids(gensec_security, 
+					 out_mem_ctx, GENSEC_OID_SPNEGO);
 
-	all_sec	= gensec_security_by_oid_list(out_mem_ctx, 
+	all_sec	= gensec_security_by_oid_list(gensec_security, 
+					      out_mem_ctx, 
 					      mechTypes,
 					      GENSEC_OID_SPNEGO);
 	for (i=0; all_sec && all_sec[i].op; i++) {

@@ -55,6 +55,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->smb_krb5_context = NULL;
 	cred->salt_principal = NULL;
 	cred->machine_account = False;
+	cred->gensec_list = NULL;
 
 	return cred;
 }
