@@ -604,6 +604,8 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	cli_credentials_set_conf(session_info->credentials);
+	/* set anonymous as the fallback, if the machine account won't work */
+	cli_credentials_set_anonymous(session_info->credentials);
 	cli_credentials_set_machine_account_pending(session_info->credentials);
 	*_session_info = session_info;
 
