@@ -170,6 +170,9 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
 			goto failed;
 		}
+		if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {
+			goto failed;
+		}
 #endif
 		if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
 			fprintf(stderr, "Failed to connect to %s - %s\n", 
