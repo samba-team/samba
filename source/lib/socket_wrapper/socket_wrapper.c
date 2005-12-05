@@ -426,8 +426,12 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
 	struct socket_info *parent_si, *child_si;
 	int fd;
-	socklen_t un_addrlen = sizeof(struct sockaddr_un);
 	struct sockaddr_un un_addr;
+	socklen_t un_addrlen = sizeof(un_addr);
+	struct sockaddr_un un_my_addr;
+	socklen_t un_my_addrlen = sizeof(un_my_addr);
+	struct sockaddr my_addr;
+	socklen_t my_addrlen = sizeof(my_addr);
 	int ret;
 
 	parent_si = find_socket_info(s);
@@ -436,6 +440,8 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	}
 
 	memset(&un_addr, 0, sizeof(un_addr));
+	memset(&un_my_addr, 0, sizeof(un_my_addr));
+	memset(&my_addr, 0, sizeof(my_addr));
 
 	ret = real_accept(s, (struct sockaddr *)&un_addr, &un_addrlen);
 	if (ret == -1) return ret;
@@ -450,10 +456,20 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
+	child_si->domain = parent_si->domain;
+	child_si->type = parent_si->type;
+	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
 
-	child_si->myname_len = parent_si->myname_len;
-	child_si->myname = sockaddr_dup(parent_si->myname, parent_si->myname_len);
+	ret = real_getsockname(fd, &un_my_addr, &un_my_addrlen);
+	if (ret == -1) return ret;
+
+	ret = sockaddr_convert_from_un(child_si, &un_my_addr, un_my_addrlen,
+				       child_si->domain, &my_addr, &my_addrlen);
+	if (ret == -1) return ret;
+
+	child_si->myname_len = my_addrlen;
+	child_si->myname = sockaddr_dup(&my_addr, my_addrlen);
 
 	child_si->peername_len = *addrlen;
 	child_si->peername = sockaddr_dup(addr, *addrlen);
