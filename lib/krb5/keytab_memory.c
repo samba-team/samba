@@ -215,7 +215,7 @@ mkt_remove_entry(krb5_context context,
 	return KRB5_KT_NOTFOUND;
     }
     e = realloc(d->entries, d->num_entries * sizeof(*d->entries));
-    if(e != NULL)
+    if(e != NULL || d->num_entries == 0)
 	d->entries = e;
     return 0;
 }
