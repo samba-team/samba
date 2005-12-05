@@ -1,3 +1,25 @@
+2005-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/test_keytab.c: more tests, From Andrew Bartlet
+
+	* lib/krb5/keytab_memory.c (mkt_remove_entry): realloc can return
+	NULL on success in the case 0 entries are allocated, From Andrew
+	Bartlet
+	
+2005-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/acl.c (acl_parse_format): tmp needs to be freed too on
+	failure to parse format specifier.
+	
+	* lib/krb5/store-test.c: Free more of the allocated memory.
+
+	* lib/krb5/crypto.c (krb5_derive_key): Free more of the allocated
+	memory, this function is only used by the test program.
+	
+	* lib/krb5/parse-name-test.c: Free more of the allocated memory.
+
+	* lib/krb5/derived-key-test.c: Free more of the allocated memory.
+	
 2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/setup.texi: spelling, From Måns Nilsson
