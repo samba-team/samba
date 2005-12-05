@@ -6512,6 +6512,7 @@ struct test_conflict_owned_active_vs_replica_struct {
 	const char *line; /* just better debugging */
 	const char *section; /* just better debugging */
 	struct nbt_name name;
+	const char *comment;
 	BOOL skip;
 	struct {
 		uint32_t nb_flags;
@@ -8462,6 +8463,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.line	= __location__,
 		.section= "Test Replica vs. owned active: some more MHOMED combinations",
 		.name	= _NBT_NAME("_MA_MA_SP_U", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:ALL => B:ALL",
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8489,6 +8491,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SM_U", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:MHOMED => B:MHOMED",
 		.skip	= (ctx->addresses_mhomed_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8516,6 +8519,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_P", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:BEST (C:MHOMED) => B:MHOMED",
 		.skip	= (ctx->addresses_mhomed_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8544,6 +8548,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_A", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:BEST (C:ALL) => B:MHOMED",
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8576,6 +8581,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_PRA", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:BEST (C:BEST) => C:MHOMED",
 		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8607,7 +8613,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_O", 0x00, NULL),
-
+		.comment= "C:MHOMED vs. B:BEST (B:B_3_4) =>C:MHOMED",
 		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8638,6 +8644,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_MA_MA_SB_N", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:BEST (NEGATIVE) => B:BEST",
 		.skip	= (ctx->addresses_mhomed_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8670,6 +8677,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 		.line	= __location__,
 		.section= "Test Replica vs. owned active: some more UNIQUE,MHOMED combinations",
 		.name	= _NBT_NAME("_MA_UA_SB_P", 0x00, NULL),
+		.comment= "C:MHOMED vs. B:UNIQUE,BEST (C:MHOMED) => B:MHOMED",
 		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8700,6 +8708,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_UA_UA_DI_PRA", 0x00, NULL),
+		.comment= "C:BEST vs. B:BEST2 (C:BEST2,LR:BEST2) => C:BEST",
 		.skip	= (ctx->addresses_all_num < 2),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8731,6 +8740,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_UA_UA_DI_A", 0x00, NULL),
+		.comment= "C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED",
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
@@ -8761,6 +8771,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_UA_MA_DI_A", 0x00, NULL),
+		.comment= "C:BEST vs. B:BEST (C:ALL) => B:MHOMED",
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
@@ -9046,7 +9057,11 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			action = "NOT REPLACE";
 		}
 
-		printf("%s => %s\n", nbt_name_string(ctx, &records[i].name), action);
+		printf("%s%s%s => %s\n",
+			nbt_name_string(ctx, &records[i].name),
+			(records[i].comment?": ":""),
+			(records[i].comment?records[i].comment:""),
+			action);
 
 		/* Prepare for multi homed registration */
 		ZERO_STRUCT(records[i].defend);
