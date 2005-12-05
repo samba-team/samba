@@ -93,5 +93,5 @@ struct cli_credentials {
 	BOOL machine_account;
 
 	/* A list of valid GENSEC mechanisms for use on this account */
-	struct gensec_security_ops **gensec_list;
+	const struct gensec_security_ops **gensec_list;
 };
