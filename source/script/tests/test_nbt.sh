@@ -21,7 +21,7 @@ export PATH
 testit "nmblookup -U $SERVER $SERVER" bin/nmblookup $TORTURE_OPTIONS -U $SERVER $SERVER || failed=`expr $failed + 1`
 testit "nmblookup $SERVER" bin/nmblookup $TORTURE_OPTIONS $SERVER || failed=`expr $failed + 1`
 
-for f in NBT-REGISTER NBT-WINS NBT-WINSREPLICATION-QUICK; do
+for f in NBT-REGISTER NBT-WINS NBT-WINSREPLICATION; do
     testit "$f" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ $f || failed=`expr $failed + 1`
 done
 
