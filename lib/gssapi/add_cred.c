@@ -207,6 +207,8 @@ OM_uint32 gss_add_cred (
 	    goto failure;
     }
 
+    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
+
     ret = gss_inquire_cred(minor_status, cred, NULL, &lifetime,
 			   NULL, actual_mechs);
     if (ret)
@@ -219,7 +221,6 @@ OM_uint32 gss_add_cred (
 
     if (output_cred_handle) {
 	*output_cred_handle = handle;
-	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     }
 
     *minor_status = 0;
