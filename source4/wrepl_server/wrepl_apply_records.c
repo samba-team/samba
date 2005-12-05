@@ -903,7 +903,7 @@ static void r_do_challenge_handler(struct irpc_request *ireq)
 	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private,
 							     struct r_do_challenge_state);
 	BOOL old_is_subset = False;
-	BOOL new_is_subset = False;;
+	BOOL new_is_subset = False;
 	BOOL found = False;
 	uint32_t i,j;
 	uint32_t num_rec_addrs;
