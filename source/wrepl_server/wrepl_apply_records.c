@@ -729,6 +729,89 @@ static NTSTATUS r_not_replace(struct wreplsrv_partner *partner,
 	return NT_STATUS_OK;
 }
 
+/* 
+Test Replica vs. owned active: some more MHOMED combinations
+_MA_MA_SP_U<00>: C:MHOMED vs. B:ALL => B:ALL => REPLACE
+_MA_MA_SM_U<00>: C:MHOMED vs. B:MHOMED => B:MHOMED => REPLACE
+_MA_MA_SB_P<00>: C:MHOMED vs. B:BEST (C:MHOMED) => B:MHOMED => MHOMED_MERGE
+_MA_MA_SB_A<00>: C:MHOMED vs. B:BEST (C:ALL) => B:MHOMED => MHOMED_MERGE
+_MA_MA_SB_PRA<00>: C:MHOMED vs. B:BEST (C:BEST) => C:MHOMED => NOT REPLACE
+_MA_MA_SB_O<00>: C:MHOMED vs. B:BEST (B:B_3_4) =>C:MHOMED => NOT REPLACE
+_MA_MA_SB_N<00>: C:MHOMED vs. B:BEST (NEGATIVE) => B:BEST => REPLACE
+Test Replica vs. owned active: some more UNIQUE,MHOMED combinations
+_MA_UA_SB_P<00>: C:MHOMED vs. B:UNIQUE,BEST (C:MHOMED) => B:MHOMED => MHOMED_MERGE
+_UA_UA_DI_PRA<00>: C:BEST vs. B:BEST2 (C:BEST2,LR:BEST2) => C:BEST => NOT REPLACE
+_UA_UA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
+_UA_MA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
+*/
+static NTSTATUS r_do_mhomed_merge(struct wreplsrv_partner *partner,
+				  TALLOC_CTX *mem_ctx,
+				  struct winsdb_record *rec,
+				  struct wrepl_wins_owner *owner,
+				  struct wrepl_name *replica)
+{
+	struct winsdb_record *merge;
+	uint32_t i,j;
+	uint8_t ret;
+	size_t len;
+
+	merge = talloc(mem_ctx, struct winsdb_record);
+	NT_STATUS_HAVE_NO_MEMORY(merge);
+
+	merge->name		= &replica->name;
+	merge->type		= WREPL_TYPE_MHOMED;
+	merge->state		= replica->state;
+	merge->node		= replica->node;
+	merge->is_static	= replica->is_static;
+	merge->expire_time	= time(NULL) + partner->service->config.verify_interval;
+	merge->version		= replica->version_id;
+	merge->wins_owner	= replica->owner;
+	merge->addresses	= winsdb_addr_list_make(merge);
+	NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
+	merge->registered_by = NULL;
+
+	for (i=0; i < replica->num_addresses; i++) {
+		/* TODO: find out if rec->expire_time is correct here */
+		merge->addresses = winsdb_addr_list_add(merge->addresses,
+							replica->addresses[i].address,
+							replica->addresses[i].owner,
+							merge->expire_time);
+		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
+	}
+
+	len = winsdb_addr_list_length(rec->addresses);
+
+	for (i=0; i < len; i++) {
+		BOOL found = False;
+		for (j=0; j < replica->num_addresses; j++) {
+			if (strcmp(replica->addresses[j].address, rec->addresses[i]->address) == 0) {
+				found = True;
+				break;
+			}
+		}
+		if (found) continue;
+
+		/* TODO: find out if rec->expire_time is correct here */
+		merge->addresses = winsdb_addr_list_add(merge->addresses,
+							rec->addresses[i]->address,
+							rec->addresses[i]->wins_owner,
+							merge->expire_time);
+		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
+	}
+
+	ret = winsdb_modify(partner->service->wins_db, merge, 0);
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(0,("Failed to modify mhomed merge record %s: %u\n",
+			nbt_name_string(mem_ctx, &replica->name), ret));
+		return NT_STATUS_FOOBAR;
+	}
+
+	DEBUG(4,("mhomed merge record %s\n",
+		nbt_name_string(mem_ctx, &replica->name)));
+
+	return NT_STATUS_OK;
+}
+
 struct r_do_challenge_state {
 	struct messaging_context *msg_ctx;
 	struct wreplsrv_partner *partner;
@@ -738,11 +821,77 @@ struct r_do_challenge_state {
 	struct nbtd_proxy_wins_challenge r;
 };
 
+static void r_do_late_release_demand_handler(struct irpc_request *ireq)
+{
+	NTSTATUS status;
+	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private,
+							     struct r_do_challenge_state);
+
+	status = irpc_call_recv(ireq);
+	/* don't care about the result */
+	talloc_free(state);
+}
+
+static NTSTATUS r_do_late_release_demand(struct r_do_challenge_state *state)
+{
+	struct irpc_request *ireq;
+	uint32_t *nbt_servers;
+	struct nbtd_proxy_wins_release_demand r;
+	uint32_t i;
+
+	DEBUG(4,("late release demand record %s\n",
+		 nbt_name_string(state, &state->replica.name)));
+
+	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
+	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	r.in.name	= state->replica.name;
+	r.in.num_addrs	= state->r.out.num_addrs;
+	r.in.addrs	= talloc_array(state, struct nbtd_proxy_wins_addr, r.in.num_addrs);
+	NT_STATUS_HAVE_NO_MEMORY(r.in.addrs);
+	/* TODO: fix pidl to handle inline ipv4address arrays */
+	for (i=0; i < r.in.num_addrs; i++) {
+		r.in.addrs[i].addr = state->r.out.addrs[i].addr;
+	}
+
+	ireq = IRPC_CALL_SEND(state->msg_ctx, nbt_servers[0],
+			      irpc, NBTD_PROXY_WINS_RELEASE_DEMAND,
+			      &r, state);
+	NT_STATUS_HAVE_NO_MEMORY(ireq);
+
+	ireq->async.fn		= r_do_late_release_demand_handler;
+	ireq->async.private	= state;
+
+	return NT_STATUS_OK;
+}
+
+/* 
+Test Replica vs. owned active: some more MHOMED combinations
+_MA_MA_SP_U<00>: C:MHOMED vs. B:ALL => B:ALL => REPLACE
+_MA_MA_SM_U<00>: C:MHOMED vs. B:MHOMED => B:MHOMED => REPLACE
+_MA_MA_SB_P<00>: C:MHOMED vs. B:BEST (C:MHOMED) => B:MHOMED => MHOMED_MERGE
+_MA_MA_SB_A<00>: C:MHOMED vs. B:BEST (C:ALL) => B:MHOMED => MHOMED_MERGE
+_MA_MA_SB_PRA<00>: C:MHOMED vs. B:BEST (C:BEST) => C:MHOMED => NOT REPLACE
+_MA_MA_SB_O<00>: C:MHOMED vs. B:BEST (B:B_3_4) =>C:MHOMED => NOT REPLACE
+_MA_MA_SB_N<00>: C:MHOMED vs. B:BEST (NEGATIVE) => B:BEST => REPLACE
+Test Replica vs. owned active: some more UNIQUE,MHOMED combinations
+_MA_UA_SB_P<00>: C:MHOMED vs. B:UNIQUE,BEST (C:MHOMED) => B:MHOMED => MHOMED_MERGE
+_UA_UA_DI_PRA<00>: C:BEST vs. B:BEST2 (C:BEST2,LR:BEST2) => C:BEST => NOT REPLACE
+_UA_UA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
+_UA_MA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
+*/
 static void r_do_challenge_handler(struct irpc_request *ireq)
 {
 	NTSTATUS status;
 	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private,
 							     struct r_do_challenge_state);
+	BOOL old_is_subset = False;
+	BOOL new_is_subset = False;;
+	BOOL found = False;
+	uint32_t i,j;
+	uint32_t num_rec_addrs;
 
 	status = irpc_call_recv(ireq);
 
@@ -752,12 +901,58 @@ static void r_do_challenge_handler(struct irpc_request *ireq)
 	if (NT_STATUS_EQUAL(NT_STATUS_IO_TIMEOUT, status) ||
 	    NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		r_do_replace(state->partner, state, state->rec, &state->owner, &state->replica);
+		talloc_free(state);
 		return;
 	}
 
-	DEBUG(0,("TODO: r_do_challenge_handler: do MHOMED merging for %s: %s\n", 
-		 nbt_name_string(state, &state->replica.name), nt_errstr(status)));
-	/* TODO: handle MHOMED merging */
+	for (i=0; i < state->replica.num_addresses; i++) {
+		found = False;
+		new_is_subset = True;
+		for (j=0; j < state->r.out.num_addrs; j++) {
+			if (strcmp(state->replica.addresses[i].address, state->r.out.addrs[j].addr) == 0) {
+				found = True;
+				break;
+			}
+		}
+		if (found) continue;
+
+		new_is_subset = False;
+		break;
+	}
+
+	if (!new_is_subset) {
+		r_not_replace(state->partner, state, state->rec, &state->owner, &state->replica);
+		talloc_free(state);
+		return;
+	}
+
+	num_rec_addrs = winsdb_addr_list_length(state->rec->addresses);
+	for (i=0; i < num_rec_addrs; i++) {
+		found = False;
+		old_is_subset = True;
+		for (j=0; j < state->r.out.num_addrs; j++) {
+			if (strcmp(state->rec->addresses[i]->address, state->r.out.addrs[j].addr) == 0) {
+				found = True;
+				break;
+			}
+		}
+		if (found) continue;
+
+		old_is_subset = False;
+		break;
+	}
+
+	if (!old_is_subset) {
+		r_do_late_release_demand(state);
+		/* 
+		 * don't free state here, because we pass it down,
+		 * and r_do_late_release_demand() will free it
+		 */
+		return;
+	}
+
+	r_do_mhomed_merge(state->partner, state, state->rec, &state->owner, &state->replica);
+	talloc_free(state);
 }
 
 static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
