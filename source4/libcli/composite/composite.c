@@ -46,7 +46,7 @@ NTSTATUS composite_wait(struct composite_context *c)
 
 
 /* 
-   callback from composite_trigger_done() 
+   callback from composite_trigger_done() and composite_trigger_error()
 */
 static void composite_trigger(struct event_context *ev, struct timed_event *te,
 			      struct timeval t, void *ptr)
