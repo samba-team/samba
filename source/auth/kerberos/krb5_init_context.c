@@ -94,14 +94,9 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 			talloc_free(tmp_ctx);
 			return;
 		}
-		if (dsize == 0) {
-			smb_krb5->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-			talloc_free(tmp_ctx);
-			return;
-		}
-		
+
 		blob = data_blob_talloc(tmp_ctx, NULL, dsize);
-		if (blob.data == NULL) {
+		if (blob.data == NULL && dsize != 0) {
 			smb_krb5->status = NT_STATUS_NO_MEMORY;
 			talloc_free(tmp_ctx);
 			return;
