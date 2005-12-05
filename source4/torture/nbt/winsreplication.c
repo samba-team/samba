@@ -8765,7 +8765,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 	{
 		.line	= __location__,
 		.name	= _NBT_NAME("_UA_MA_DI_A", 0x00, NULL),
-		.comment= "C:BEST vs. B:BEST (C:ALL) => B:MHOMED",
+		.comment= "C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED",
 		.skip	= (ctx->addresses_all_num < 3),
 		.wins	= {
 			.nb_flags	= 0,
