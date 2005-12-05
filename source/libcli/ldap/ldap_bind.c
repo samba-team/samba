@@ -223,7 +223,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	}
 	sasl_names[i] = NULL;
 	
-	mechs = gensec_security_by_sasl(tmp_ctx, sasl_names);
+	mechs = gensec_security_by_sasl(conn->gensec, tmp_ctx, sasl_names);
 	if (!mechs || !mechs[0]) {
 		DEBUG(1, ("None of the %d proposed SASL mechs were acceptable\n",
 			  count));
