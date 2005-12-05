@@ -214,11 +214,15 @@ AC_SUBST(libc_cv_fpie)
 AC_SUBST(PIE_CFLAGS)
 AC_SUBST(PIE_LDFLAGS)
 AC_SUBST(SHLIBEXT)
-AC_SUBST(INSTALLCLIENT)
-AC_SUBST(INSTALLCLIENTCMD_SH)
-AC_SUBST(INSTALLCLIENTCMD_A)
+AC_SUBST(INSTALLLIBCMD_SH)
+AC_SUBST(INSTALLLIBCMD_A)
+AC_SUBST(INSTALL_LIBMSRPC)
+AC_SUBST(LIBMSRPC_SHARED)
+AC_SUBST(LIBMSRPC)
+AC_SUBST(INSTALL_LIBSMBCLIENT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
+AC_SUBST(INSTALL_LIBSMBSHAREMODES)
 AC_SUBST(LIBSMBSHAREMODES_SHARED)
 AC_SUBST(LIBSMBSHAREMODES)
 AC_SUBST(PRINT_LIBS)
@@ -3988,20 +3992,62 @@ else
         AC_MSG_RESULT(no$utmp_no_reason)
 fi
 
-#################################################
-# should we build libsmbclient?
-
-INSTALLCLIENTCMD_SH=:
-INSTALLCLIENTCMD_A=:
+INSTALLLIBCMD_SH=:
+INSTALLLIBCMD_A=:
 
 if test $BLDSHARED = true; then
-	INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+	INSTALLLIBCMD_SH="\$(INSTALLCMD)"
 fi
 if test $enable_static = yes; then
-	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+	INSTALLLIBCMD_A="\$(INSTALLCMD)"
 fi
 
-INSTALLCLIENT=
+#################################################
+# should we build libmsrpc?
+INSTALL_LIBMSRPC=
+LIBMSRPC_SHARED=
+LIBMSRPC=
+AC_MSG_CHECKING(whether to build the libmsrpc shared library)
+AC_ARG_WITH(libmsrpc,
+[  --with-libmsrpc         Build the libmsrpc shared library (default=yes if shared libs supported)],
+[ case "$withval" in
+  no) 
+     AC_MSG_RESULT(no)
+     ;;
+  *)
+     if test $BLDSHARED = true; then
+        LIBMSRPC_SHARED=bin/libmsrpc.$SHLIBEXT
+        LIBMSRPC=libmsrpc
+        AC_MSG_RESULT(yes)
+     else
+	enable_static=yes
+        AC_MSG_RESULT(no shared library support -- will supply static library)
+     fi
+     if test $enable_static = yes; then
+        LIBMSRPC=libmsrpc
+     fi
+     INSTALL_LIBMSRPC=installlibmsrpc
+     ;;
+  esac ],
+[
+# if unspecified, default is to built it if possible.
+  if test $BLDSHARED = true; then
+     LIBMSRPC_SHARED=bin/libmsrpc.$SHLIBEXT
+     LIBMSRPC=libmsrpc
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     LIBMSRPC=libmsrpc
+  fi]
+  INSTALL_LIBMSRPC=installlibmsrpc
+)
+
+#################################################
+# should we build libsmbclient?
+INSTALL_LIBSMBCLIENT=
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -4023,11 +4069,11 @@ AC_ARG_WITH(libsmbclient,
      if test $enable_static = yes; then
         LIBSMBCLIENT=libsmbclient
      fi
-     INSTALLCLIENT=installclientlib
+     INSTALL_LIBSMBCLIENT=installclientlib
      ;;
   esac ],
 [
-# if unspecified, default is to built it iff possible.
+# if unspecified, default is to built it if possible.
   if test $BLDSHARED = true; then
      LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
      LIBSMBCLIENT=libsmbclient
@@ -4039,10 +4085,10 @@ AC_ARG_WITH(libsmbclient,
    if test $enable_static = yes; then
      LIBSMBCLIENT=libsmbclient
   fi]
-  INSTALLCLIENT=installclientlib
+  INSTALL_LIBSMBCLIENT=installclientlib
 )
 
-INSTALLCLIENT=
+INSTALL_LIBSMBSHAREMODES=
 LIBSMBSHAREMODES_SHARED=
 LIBSMBSHAREMODES=
 AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
@@ -4064,11 +4110,11 @@ AC_ARG_WITH(libsmbsharemodes,
      if test $enable_static = yes; then
         LIBSMBSHAREMODES=libsmbsharemodes
      fi
-     INSTALLCLIENT=installclientlib
+     INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
      ;;
   esac ],
 [
-# if unspecified, default is to built it iff possible.
+# if unspecified, default is to built it if possible.
   if test $BLDSHARED = true; then
      LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
      LIBSMBSHAREMODES=libsmbsharemodes
@@ -4080,7 +4126,7 @@ AC_ARG_WITH(libsmbsharemodes,
    if test $enable_static = yes; then
      LIBSMBSHAREMODES=libsmbsharemodes
   fi]
-  INSTALLCLIENT=installclientlib
+  INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
 )
 
 #################################################
