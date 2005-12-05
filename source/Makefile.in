@@ -36,8 +36,8 @@ KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 
 INSTALLCMD=@INSTALL@
-INSTALLCLIENTCMD_SH=@INSTALLCLIENTCMD_SH@
-INSTALLCLIENTCMD_A=@INSTALLCLIENTCMD_A@
+INSTALLLIBCMD_SH=@INSTALLLIBCMD_SH@
+INSTALLLIBCMD_A=@INSTALLLIBCMD_A@
 
 VPATH=@srcdir@
 srcdir=@abs_srcdir@
@@ -1074,7 +1074,7 @@ bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_PICOBJS)
 bin/libmsrpc.@SHLIBEXT@: $(CAC_PICOBJS)
 	@echo Linking libmsrpc shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_PICOBJS) $(LDFLAGS) $(LIBS) \
-	@SONAMEFLAG@`basename $@`
+	@SONAMEFLAG@`basename $@`.$(LIBMSRPC_MAJOR)
 
 bin/libmsrpc.a: $(CAC_PICOBJS)
 	@echo Linking libmsrpc non-shared library $@
@@ -1389,7 +1389,7 @@ bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 
 bin/t_snprintf@EXEEXT@: lib/snprintf.c
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) -DTEST_SNPRINTF lib/snprintf.c -lm
-install: installbin installman installscripts installdat installswat installmodules @INSTALLCLIENT@
+install: installbin installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
 
 install-everything: install installmodules
 
@@ -1439,14 +1439,18 @@ installmsg: installdirs
 installswat: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installclientlib: installdirs libsmbclient libmsrpc
+installclientlib: installdirs libsmbclient
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCLIENTCMD_SH) bin/libmsrpc.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCLIENTCMD_A) bin/libmsrpc.a $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libsmbclient.a $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) $(srcdir)/include/libsmbclient.h $(DESTDIR)${prefix}/include
+
+installlibmsrpc: installdirs libmsrpc
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libmsrpc.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libmsrpc.a $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) $(srcdir)/include/libmsrpc.h $(DESTDIR)${prefix}/include
 
 # Python extensions
