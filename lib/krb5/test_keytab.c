@@ -65,11 +65,11 @@ test_empty_keytab(krb5_context context, const char *keytab)
  */
 
 static void
-test_memory_keytab(krb5_context context, const char *keytab)
+test_memory_keytab(krb5_context context, const char *keytab, const char *keytab2)
 {
     krb5_error_code ret;
-    krb5_keytab id, id2;
-    krb5_keytab_entry entry, entry2;
+    krb5_keytab id, id2, id3;
+    krb5_keytab_entry entry, entry2, entry3;
 
     ret = krb5_kt_resolve(context, keytab, &id);
     if (ret)
@@ -119,6 +119,23 @@ test_memory_keytab(krb5_context context, const char *keytab)
 	krb5_err(context, 1, ret, "krb5_kt_close");
 
 
+    ret = krb5_kt_resolve(context, keytab2, &id3);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_resolve");
+
+    memset(&entry3, 0, sizeof(entry3));
+    ret = krb5_parse_name(context, "lha3@SU.SE", &entry3.principal);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+    entry3.vno = 1;
+    ret = krb5_generate_random_keyblock(context,
+					ETYPE_AES256_CTS_HMAC_SHA1_96,
+					&entry3.keyblock);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_generate_random_keyblock");
+
+    krb5_kt_add_entry(context, id3, &entry3);
+
 
     ret = krb5_kt_resolve(context, keytab, &id);
     if (ret)
@@ -132,11 +149,21 @@ test_memory_keytab(krb5_context context, const char *keytab)
     if (ret == 0)
 	krb5_errx(context, 1, "krb5_kt_get_entry when if should fail");
 
+    krb5_kt_remove_entry(context, id, &entry);
+
     ret = krb5_kt_close(context, id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_close");
 
     krb5_kt_free_entry(context, &entry);
+
+    krb5_kt_remove_entry(context, id3, &entry3);
+
+    ret = krb5_kt_close(context, id3);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_close");
+
+
 }
 
 int
@@ -155,7 +182,7 @@ main(int argc, char **argv)
     test_empty_keytab(context, "FILE:foo");
     test_empty_keytab(context, "KRB4:foo");
 
-    test_memory_keytab(context, "MEMORY:foo");
+    test_memory_keytab(context, "MEMORY:foo", "MEMORY:foo2");
 
     krb5_free_context(context);
 
