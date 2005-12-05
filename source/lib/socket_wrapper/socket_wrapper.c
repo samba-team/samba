@@ -357,14 +357,21 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 				    socklen_t un_addrlen,
 				    int family,
 				    struct sockaddr *out_addr,
-				    socklen_t *out_len)
+				    socklen_t *_out_addrlen)
 {
-	if (out_addr == NULL || out_len == NULL) 
+	socklen_t out_addrlen;
+
+	if (out_addr == NULL || _out_addrlen == NULL) 
 		return 0;
 
 	if (un_addrlen == 0) {
-		*out_len = 0;
+		*_out_addrlen = 0;
 		return 0;
+	}
+
+	out_addrlen = *_out_addrlen;
+	if (out_addrlen > un_addrlen) {
+		out_addrlen = un_addrlen;
 	}
 
 	switch (family) {
@@ -377,10 +384,10 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
-		return convert_un_in(in_addr, (struct sockaddr_in *)out_addr, out_len);
+		return convert_un_in(in_addr, (struct sockaddr_in *)out_addr, _out_addrlen);
 	case AF_UNIX:
-		memcpy(out_addr, in_addr, sizeof(*in_addr));
-		*out_len = sizeof(*in_addr);
+		memcpy(out_addr, in_addr, out_addrlen);
+		*_out_addrlen = out_addrlen;
 		return 0;
 	default:
 		break;
