@@ -521,6 +521,9 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	if (rec->state == WREPL_STATE_ACTIVE && addr_count == 0) {
 		rec->state = WREPL_STATE_RELEASED;
 	}
+	if (rec->type == WREPL_TYPE_UNIQUE && addr_count > 1) {
+		rec->type = WREPL_TYPE_MHOMED;
+	}
 
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
