@@ -1,3 +1,10 @@
+2005-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* add_cred.c (gss_add_cred): avoid deadlock
+
+	* context_time.c (gssapi_lifetime_left): define the 0 lifetime as
+	GSS_C_INDEFINITE.
+	
 2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* acquire_cred.c (acquire_acceptor_cred): only check if principal
