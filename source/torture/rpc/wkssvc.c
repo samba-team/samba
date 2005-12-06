@@ -58,13 +58,15 @@ static BOOL test_NetWkstaTransportEnum(struct dcerpc_pipe *p,
 	struct wkssvc_NetWkstaTransportEnum r;
 	BOOL ret = True;
 	uint32_t resume_handle = 0;
+	union wkssvc_NetWkstaTransportCtr ctr;
 	struct wkssvc_NetWkstaTransportCtr0 ctr0;
 
 	ZERO_STRUCT(ctr0);
+	ctr.ctr0 = &ctr0;
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.level = 0;
-	r.in.ctr.ctr0 = &ctr0;
+	r.in.ctr = &ctr;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = &resume_handle;
 	r.out.resume_handle = &resume_handle;
