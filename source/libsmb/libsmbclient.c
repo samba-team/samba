@@ -483,6 +483,8 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
 
 	context->callbacks.remove_cached_srv_fn(context, srv);
+
+        SAFE_FREE(srv);
 	
 	return 0;
 }
@@ -822,9 +824,9 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 	SMBCSRV *ipc_srv=NULL;
 
         /*
-         * See if we've already created this special connection.  Reference our
-         * "special" share name '*IPC$', which is an impossible real share name
-         * due to the leading asterisk.
+         * See if we've already created this special connection.  Reference
+         * our "special" share name '*IPC$', which is an impossible real share
+         * name due to the leading asterisk.
          */
         ipc_srv = find_server(context, server, "*IPC$",
                               workgroup, username, password);
@@ -2386,9 +2388,11 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
                         /* Now, list the stuff ... */
                         
-                        if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_unique_wg_fn,
+                        if (!cli_NetServerEnum(&srv->cli,
+                                               workgroup,
+                                               SV_TYPE_DOMAIN_ENUM,
+                                               list_unique_wg_fn,
                                                (void *)dir)) {
-                                
                                 if (dir) {
                                         SAFE_FREE(dir->fname);
                                         SAFE_FREE(dir);
