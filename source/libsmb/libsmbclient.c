@@ -584,9 +584,10 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		return NULL;
 	}
 
+        /* Look for a cached connection */
         srv = find_server(context, server, share,
                           workgroup, username, password);
-
+        
         /*
          * If we found a connection and we're only allowed one share per
          * server...
@@ -780,7 +781,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username_used)) {
+	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
@@ -2169,6 +2170,7 @@ list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *stat
                         /* Found the end of the list.  Remove it. */
                         dir->dir_end = dir_list;
                         free(dir_list->next);
+                        free(dirent);
                         dir_list->next = NULL;
                         break;
                 }
@@ -2337,7 +2339,11 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                  * a single master browser.
                  */
 
+                ip_list = NULL;
                 if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+
+                        SAFE_FREE(ip_list);
+
                         if (!find_master_ip(workgroup, &server_addr.ip)) {
 
                                 errno = ENOENT;
@@ -2383,9 +2389,16 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_unique_wg_fn,
                                                (void *)dir)) {
                                 
+                                if (dir) {
+                                        SAFE_FREE(dir->fname);
+                                        SAFE_FREE(dir);
+                                }
+
                                 continue;
                         }
                 }
+
+                SAFE_FREE(ip_list);
         } else { 
                 /*
                  * Server not an empty string ... Check the rest and see what
