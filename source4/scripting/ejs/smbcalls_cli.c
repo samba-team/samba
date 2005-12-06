@@ -25,6 +25,7 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "clilist.h"
 
 #if 0
@@ -410,6 +411,7 @@ static int ejs_cli_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 {
 	struct cli_credentials *creds;
+	struct smb_composite_connect io;
 	struct smbcli_tree *tree;
 	const char *hostname, *sharename;
 	NTSTATUS result;
@@ -433,8 +435,17 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 
 	/* Do connect */
 
-	result = smbcli_tree_full_connection(NULL, &tree, hostname, 0,
-					     sharename, "?????", creds, NULL);
+	io.in.dest_host              = hostname;
+	io.in.port                   = 0;
+	io.in.called_name            = strupper_talloc(mem_ctx, hostname);
+	io.in.service                = sharename;
+	io.in.service_type           = "?????";
+	io.in.credentials            = creds;
+	io.in.fallback_to_anonymous  = False;
+	io.in.workgroup              = lp_workgroup();
+
+	result = smb_composite_connect(&io, mem_ctx, NULL);
+	tree = io.out.tree;
 
 	talloc_free(mem_ctx);
 
