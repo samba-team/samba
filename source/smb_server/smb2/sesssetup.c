@@ -67,6 +67,11 @@ static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct sm
 
 		/* allocate a new session */
 		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
+		status = smbsrv_smb2_init_tcons(smb_sess);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(smb_sess);
+			smb_sess = NULL;
+		}
 	} else {
 		/* lookup an existing session */
 		smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);

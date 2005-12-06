@@ -66,7 +66,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	tcon = smbsrv_tcon_new(req->smb_conn);
+	tcon = smbsrv_smb_tcon_new(req->smb_conn);
 	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;

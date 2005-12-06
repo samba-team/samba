@@ -129,7 +129,7 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uid		= BVAL(req->in.hdr, SMB2_HDR_UID);
 
 	req->session	= smbsrv_session_find(req->smb_conn, uid);
-	req->tcon	= smbsrv_tcon_find(req->smb_conn, tid);
+	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid);
 
 	errno = 0;
 
@@ -320,9 +320,6 @@ NTSTATUS smbsrv_init_smb2_connection(struct smbsrv_connection *smb_conn)
 	smb_conn->config.nt_status_support = True;
 
 	status = smbsrv_init_sessions(smb_conn, UINT64_MAX);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	status = smbsrv_init_tcons(smb_conn, UINT32_MAX);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;

@@ -470,7 +470,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	flags = smb_messages[type].flags;
 
-	req->tcon = smbsrv_tcon_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
+	req->tcon = smbsrv_smb_tcon_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
 
 	if (!req->session) {
 		/* setup the user context for this request if it
@@ -645,7 +645,7 @@ NTSTATUS smbsrv_init_smb_connection(struct smbsrv_connection *smb_conn)
 	status = smbsrv_init_sessions(smb_conn, UINT16_MAX);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = smbsrv_init_tcons(smb_conn, UINT16_MAX);
+	status = smbsrv_smb_init_tcons(smb_conn);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	srv_init_signing(smb_conn);
