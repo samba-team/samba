@@ -129,9 +129,9 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	s->pipe          = p;
 	s->monitor_fn    = monitor;
 	
-	c->state       = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data= s;
-	c->event_ctx   = dcerpc_event_context(p);
+	c->state        = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx    = dcerpc_event_context(p);
 
 	/* preparing parameters to send rpc request */
 	s->createuser.in.domain_handle         = &io->in.domain_handle;
