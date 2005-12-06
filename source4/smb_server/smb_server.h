@@ -32,11 +32,38 @@
   these basic elements
 */
 
+struct smbsrv_tcons_context {
+	/* an id tree used to allocate tids */
+	struct idr_context *idtree_tid;
+
+	/* this is the limit of vuid values for this connection */
+	uint32_t idtree_limit;
+
+	/* list of open tree connects */
+	struct smbsrv_tcon *list;
+};
+
+struct smbsrv_sessions_context {
+	/* an id tree used to allocate vuids */
+	/* this holds info on session vuids that are already
+	 * validated for this VC */
+	struct idr_context *idtree_vuid;
+
+	/* this is the limit of vuid values for this connection */
+	uint64_t idtree_limit;
+
+	/* also kept as a link list so it can be enumerated by
+	   the management code */
+	struct smbsrv_session *list;
+} sessions;
+
 /* the current user context for a request */
 struct smbsrv_session {
 	struct smbsrv_session *prev, *next;
 
 	struct smbsrv_connection *smb_conn;
+
+	struct smbsrv_tcons_context smb2_tcons;
 
 	/* 
 	 * an index passed over the wire:
@@ -93,6 +120,12 @@ struct smbsrv_tcon {
 		/* in share level security we need to fake up a session */
 		struct smbsrv_session *session;
 	} sec_share;
+
+	/* some stuff to support share level security */
+	struct {
+		/* in SMB2 a tcon always belongs to one session */
+		struct smbsrv_session *session;
+	} smb2;
 
 	/* some statictics for the management tools */
 	struct {
@@ -232,31 +265,10 @@ struct smbsrv_connection {
 	} negotiate;
 
 	/* the context associated with open tree connects on a smb socket */
-	struct {
-		/* an id tree used to allocate tids */
-		struct idr_context *idtree_tid;
-
-		/* this is the limit of vuid values for this connection */
-		uint32_t idtree_limit;
-
-		/* list of open tree connects */
-		struct smbsrv_tcon *list;
-	} tcons;
+	struct smbsrv_tcons_context smb_tcons;
 
 	/* context associated with currently valid session setups */
-	struct {
-		/* an id tree used to allocate vuids */
-		/* this holds info on session vuids that are already
-		 * validated for this VC */
-		struct idr_context *idtree_vuid;
-
-		/* this is the limit of vuid values for this connection */
-		uint64_t idtree_limit;
-
-		/* also kept as a link list so it can be enumerated by
-		   the management code */
-		struct smbsrv_session *list;
-	} sessions;
+	struct smbsrv_sessions_context sessions;
 
 	/* the server_context holds a linked list of pending requests,
 	 * this is used for blocking locks and requests blocked due to oplock
