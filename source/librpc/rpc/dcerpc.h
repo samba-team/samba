@@ -195,6 +195,16 @@ struct dcerpc_binding {
 };
 
 
+struct dcerpc_pipe_connect {
+	struct dcerpc_pipe *pipe;
+	struct dcerpc_binding *binding;
+	const char *pipe_uuid;
+	const char *pipe_name;
+	uint32_t pipe_version;
+	struct cli_credentials *creds;
+};
+
+
 enum rpc_request_state {
 	RPC_REQUEST_PENDING,
 	RPC_REQUEST_DONE

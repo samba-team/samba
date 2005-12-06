@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 
 /*
@@ -1015,65 +1016,6 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 }
 
 
-/* open a rpc connection to a rpc pipe on SMB using the binding
-   structure to determine the endpoint and options */
-static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb(TALLOC_CTX *tmp_ctx, 
-						 struct dcerpc_pipe *p, 
-						 struct dcerpc_binding *binding,
-						 const char *pipe_uuid, 
-						 uint32_t pipe_version,
-						 struct cli_credentials *credentials)
-{
-	NTSTATUS status;
-	struct smb_composite_connect conn;
-	struct smbcli_state *cli;
-	const char *pipe_name = NULL;
-
-	conn.in.dest_host              = binding->host;
-	conn.in.port                   = 0;
-	conn.in.called_name            = strupper_talloc(tmp_ctx, binding->host);
-	conn.in.service                = "IPC$";
-	conn.in.service_type           = NULL;
-	conn.in.fallback_to_anonymous  = False;
-	conn.in.workgroup              = lp_workgroup();
-
-	if (binding->flags & DCERPC_SCHANNEL) {
-		struct cli_credentials *anon_creds
-			= cli_credentials_init(tmp_ctx);
-		cli_credentials_set_anonymous(anon_creds);
-		cli_credentials_guess(anon_creds);
-
-		conn.in.credentials = anon_creds;
-		status = smb_composite_connect(&conn, p->conn, p->conn->event_ctx);
-
-	} else {
-
-		conn.in.credentials = credentials;
-		status = smb_composite_connect(&conn, p->conn, p->conn->event_ctx);
-
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
-		return status;
-	}
-
-	cli = smbcli_state_init(p->conn);
-	cli->tree      = conn.out.tree;
-	cli->session   = conn.out.tree->session;
-	cli->transport = conn.out.tree->session->transport;
-
-	pipe_name = binding->endpoint;
-
-	status = dcerpc_pipe_open_smb(p->conn, cli->tree, pipe_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to open pipe %s - %s\n", pipe_name, nt_errstr(status)));
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /* open a rpc connection to a rpc pipe on SMB2 using the binding
    structure to determine the endpoint and options */
 static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *tmp_ctx, 
@@ -1117,18 +1059,14 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *tmp_ctx,
 /* open a rpc connection to a rpc pipe on SMB using the binding
    structure to determine the endpoint and options */
 static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx, 
-					     struct dcerpc_pipe *p, 
-					     struct dcerpc_binding *binding,
-					     const char *pipe_uuid, 
-					     uint32_t pipe_version,
-					     struct cli_credentials *credentials)
+					     struct dcerpc_pipe_connect *io)
 {
-	if (binding->flags & DCERPC_SMB2) {
-		return dcerpc_pipe_connect_ncacn_np_smb2(tmp_ctx, p, binding, pipe_uuid, 
-							 pipe_version, credentials);
+	if (io->binding->flags & DCERPC_SMB2) {
+		return dcerpc_pipe_connect_ncacn_np_smb2(tmp_ctx, io->pipe, io->binding,
+							 io->pipe_uuid, io->pipe_version,
+							 io->creds);
 	}
-	return dcerpc_pipe_connect_ncacn_np_smb(tmp_ctx, p, binding, pipe_uuid, 
-						pipe_version, credentials);
+	return dcerpc_pipe_connect_ncacn_np_smb(tmp_ctx, io);
 }
 
 /* open a rpc connection to a rpc pipe on SMP using the binding
@@ -1215,6 +1153,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	struct dcerpc_pipe *p; 
+	struct dcerpc_pipe_connect pc;
 	
 	TALLOC_CTX *tmp_ctx;
 
@@ -1249,11 +1188,17 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 		break;
 	}
 
+	pc.pipe          = p;
+	pc.binding       = binding;
+	pc.pipe_uuid     = pipe_uuid;
+	pc.pipe_version  = pipe_version;
+	pc.creds         = credentials;
+
 	switch (binding->transport) {
 	case NCACN_NP:
-		status = dcerpc_pipe_connect_ncacn_np(tmp_ctx, 
-						      p, binding, pipe_uuid, pipe_version, credentials);
+		status = dcerpc_pipe_connect_ncacn_np(tmp_ctx, &pc);
 		break;
+
 	case NCACN_IP_TCP:
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(tmp_ctx, 
 							  p, binding, pipe_uuid, pipe_version);
