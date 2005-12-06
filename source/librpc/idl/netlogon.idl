@@ -91,7 +91,7 @@ interface netlogon
 
 	typedef struct {
 		lsa_String  domain_name;
-		uint32      parameter_control;
+		uint32      parameter_control; /* see MSV1_0_* */
 		uint32      logon_id_low;
 		uint32      logon_id_high;
 		lsa_String  account_name;
