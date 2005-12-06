@@ -517,7 +517,7 @@ WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		break;
 	case 3:
 		if (!decode_printer_info_3(mem_ctx, out.buffer, out.returned, &ctr->printers_3)) {
-			WERR_GENERAL_FAILURE;
+			return WERR_GENERAL_FAILURE;
 		}
 		break;
 	default:
