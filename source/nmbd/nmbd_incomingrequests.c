@@ -339,7 +339,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 
 	names_added = 0;
 
-	namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+	namerec = subrec->namelist;
 
 	while (buf < bufend) {
 		if( (namerec->data.source == SELF_NAME) || (namerec->data.source == PERMANENT_NAME) ) {
@@ -389,7 +389,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 
 		buf = buf0 + 18*names_added;
 
-		namerec = (struct name_record *)ubi_trNext( namerec );
+		namerec = namerec->next;
 
 		if (!namerec) {
 			/* End of the subnet specific name list. Now 
@@ -398,7 +398,7 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 
 			if (uni_subrec != subrec) {
 				subrec = uni_subrec;
-				namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
+				namerec = subrec->namelist;
 			}
 		}
 		if (!namerec)

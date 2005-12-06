@@ -58,7 +58,7 @@ static void terminate(void)
 	DEBUG(0,("Got SIGTERM: going down...\n"));
   
 	/* Write out wins.dat file if samba is a WINS server */
-	wins_write_database(False);
+	wins_write_database(0,False);
   
 	/* Remove all SELF registered names from WINS */
 	release_wins_names();
@@ -773,7 +773,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	pidfile_create("nmbd");
 	message_init();
 	message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+#if 0
+	/* Until winsrepl is done. */
 	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+#endif
 	message_register(MSG_SHUTDOWN, nmbd_terminate);
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet);

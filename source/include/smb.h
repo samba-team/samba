@@ -1532,17 +1532,14 @@ struct node_status_extra {
 	/* There really is more here ... */ 
 };
 
-struct pwd_info
-{
+struct pwd_info {
 	BOOL null_pwd;
 	BOOL cleartext;
 
 	fstring password;
-
 };
 
-typedef struct user_struct
-{
+typedef struct user_struct {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */
 	uid_t uid; /* uid of a validated user */

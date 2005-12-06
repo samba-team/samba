@@ -217,7 +217,7 @@ struct nmb_data {
 
 /* This structure represents an entry in a local netbios name list. */
 struct name_record {
-	ubi_trNode            node[1];
+	struct name_record *prev, *next;
 	struct subnet_record *subnet;
 	struct nmb_name       name;    /* The netbios name. */
 	struct nmb_data       data;    /* The netbios data. */
@@ -225,7 +225,7 @@ struct name_record {
 
 /* Browser cache for synchronising browse lists. */
 struct browse_cache_record {
-	ubi_dlNode     node[1];
+	struct browse_cache_record *prev, *next;
 	unstring        lmb_name;
 	unstring        work_group;
 	struct in_addr ip;
@@ -425,7 +425,7 @@ struct subnet_record {
 	enum subnet_type type;   /* To catagorize the subnet. */
 
 	struct work_record     *workgrouplist; /* List of workgroups. */
-	ubi_trRoot              namelist[1];   /* List of netbios names. */
+	struct name_record     *namelist;   /* List of netbios names. */
 	struct response_record *responselist;  /* List of responses expected. */
 
 	BOOL namelist_changed;
