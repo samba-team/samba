@@ -54,7 +54,7 @@ void continue_pipe_open_smb(struct composite_context *ctx)
 	if (!NT_STATUS_IS_OK(c->status)) {
 
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
-		composite_trigger_error(c);
+		composite_error(c, c->status);
 		return;
 	}
 
@@ -74,7 +74,7 @@ void continue_smb_connect(struct composite_context *ctx)
 	if (!NT_STATUS_IS_OK(c->status)) {
 
 		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
-		composite_trigger_error(c);
+		composite_error(c, c->status);
 		return;
 	}
 
@@ -82,6 +82,10 @@ void continue_smb_connect(struct composite_context *ctx)
 	s->io.pipe_name = s->io.binding->endpoint;
 
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
+	if (open_ctx == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	composite_continue(c, open_ctx, continue_pipe_open_smb, c);
 }
@@ -102,8 +106,8 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 
 	s = talloc_zero(c, struct pipe_np_smb_state);
 	if (s == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
 	}
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
@@ -122,9 +126,13 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	conn->in.workgroup              = lp_workgroup();
 
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
-		struct cli_credentials *anon_creds
-			= cli_credentials_init(tmp_ctx);
-		if (composite_nomem(anon_creds, c)) return NULL;
+		struct cli_credentials *anon_creds;
+
+		anon_creds = cli_credentials_init(tmp_ctx);
+		if (!anon_creds) {
+			composite_error(c, NT_STATUS_NO_MEMORY);
+			goto done;
+		}
 
 		cli_credentials_set_anonymous(anon_creds);
 		cli_credentials_guess(anon_creds);
@@ -136,14 +144,15 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	}
 
 	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, s->io.pipe->conn->event_ctx);
+	if (!conn_req) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
 
 	composite_continue(c, conn_req, continue_smb_connect, c);
-	
-	return c;
 
-failed:
-	composite_trigger_error(c);
-	return NULL;
+done:
+	return c;
 }
 
 
