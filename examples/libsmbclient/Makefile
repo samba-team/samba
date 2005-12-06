@@ -15,6 +15,7 @@ TESTS=	testsmbc \
 	tree \
 	testacl \
 	testbrowse \
+	testbrowse2 \
 	teststat \
 	testchmod \
 	testutime \
@@ -36,6 +37,10 @@ testacl: testacl.o
 
 testbrowse: testbrowse.o
 	@echo Linking testbrowse
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -lsmbclient -lpopt $<
+
+testbrowse2: testbrowse2.o
+	@echo Linking testbrowse2
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -lsmbclient -lpopt $<
 
 teststat: teststat.o
