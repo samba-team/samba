@@ -1731,9 +1731,8 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	if (trans->in.params.length == param_total &&
 	    trans->in.data.length == data_total) {
 		/* its now complete */
-		reply_trans_complete(tp->req, command, trans);
 		DLIST_REMOVE(tp->req->smb_conn->trans_partial, tp);
-		talloc_free(tp);
+		reply_trans_complete(tp->req, command, trans);
 	}
 	return;
 
