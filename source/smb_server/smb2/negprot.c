@@ -123,8 +123,6 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 		return;
 	}
 
-	SIVAL(req->out.hdr, SMB2_HDR_STATUS, NT_STATUS_V(req->status));
-
 	SSVAL(req->out.body, 0x02, io->out._pad);
 	SIVAL(req->out.body, 0x04, io->out.unknown2);
 	memcpy(req->out.body+0x08, io->out.sessid, 16);
