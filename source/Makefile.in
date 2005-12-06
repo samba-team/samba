@@ -106,7 +106,7 @@ LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=1
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
@@ -643,7 +643,7 @@ RPCTORTURE_OBJ = torture/rpctorture.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ)
 
-DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
+DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) 
