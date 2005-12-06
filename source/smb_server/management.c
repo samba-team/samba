@@ -71,7 +71,7 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 	struct smbsrv_tcon *tcon;
 
 	/* count the number of tcons */
-	for (tcon=smb_conn->tcons.list; tcon; tcon=tcon->next) {
+	for (tcon=smb_conn->smb_tcons.list; tcon; tcon=tcon->next) {
 		count++;
 	}
 
@@ -79,7 +79,7 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 	r->out.info.tcons.tcons = talloc_array(r, struct smbsrv_tcon_info, count);
 	NT_STATUS_HAVE_NO_MEMORY(r->out.info.tcons.tcons);
 
-	for (tcon=smb_conn->tcons.list; tcon; tcon=tcon->next) {
+	for (tcon=smb_conn->smb_tcons.list; tcon; tcon=tcon->next) {
 		struct smbsrv_tcon_info *info = &r->out.info.tcons.tcons[i];
 		info->tid          = tcon->tid;
 		info->share_name   = lp_servicename(tcon->service);

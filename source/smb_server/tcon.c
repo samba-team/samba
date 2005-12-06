@@ -29,7 +29,7 @@
 /****************************************************************************
 init the tcon structures
 ****************************************************************************/
-NTSTATUS smbsrv_init_tcons(struct smbsrv_connection *smb_conn, uint32_t limit)
+static NTSTATUS smbsrv_init_tcons(struct smbsrv_tcons_context *tcons_ctx, TALLOC_CTX *mem_ctx, uint32_t limit)
 {
 	/* 
 	 * the idr_* functions take 'int' as limit,
@@ -37,27 +37,37 @@ NTSTATUS smbsrv_init_tcons(struct smbsrv_connection *smb_conn, uint32_t limit)
 	 */
 	limit &= 0x00FFFFFF;
 
-	smb_conn->tcons.idtree_tid	= idr_init(smb_conn);
-	NT_STATUS_HAVE_NO_MEMORY(smb_conn->tcons.idtree_tid);
-	smb_conn->tcons.idtree_limit	= limit;
-	smb_conn->tcons.list		= NULL;
+	tcons_ctx->idtree_tid	= idr_init(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tcons_ctx->idtree_tid);
+	tcons_ctx->idtree_limit	= limit;
+	tcons_ctx->list		= NULL;
 
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smbsrv_smb_init_tcons(struct smbsrv_connection *smb_conn)
+{
+	return smbsrv_init_tcons(&smb_conn->smb_tcons, smb_conn, UINT16_MAX);
+}
+
+NTSTATUS smbsrv_smb2_init_tcons(struct smbsrv_session *smb_sess)
+{
+	return smbsrv_init_tcons(&smb_sess->smb2_tcons, smb_sess, UINT32_MAX);
+}
+
 /****************************************************************************
-find a tcon given a cnum
+find a tcon given a tid for SMB
 ****************************************************************************/
-struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_connection *smb_conn, uint32_t tid)
+static struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_tcons_context *tcons_ctx, uint32_t tid)
 {
 	void *p;
 	struct smbsrv_tcon *tcon;
 
 	if (tid == 0) return NULL;
 
-	if (tid > smb_conn->tcons.idtree_limit) return NULL;
+	if (tid > tcons_ctx->idtree_limit) return NULL;
 
-	p = idr_find(smb_conn->tcons.idtree_tid, tid);
+	p = idr_find(tcons_ctx->idtree_tid, tid);
 	if (!p) return NULL;
 
 	tcon = talloc_get_type(p, struct smbsrv_tcon);
@@ -65,12 +75,24 @@ struct smbsrv_tcon *smbsrv_tcon_find(struct smbsrv_connection *smb_conn, uint32_
 	return tcon;
 }
 
+struct smbsrv_tcon *smbsrv_smb_tcon_find(struct smbsrv_connection *smb_conn, uint32_t tid)
+{
+	return smbsrv_tcon_find(&smb_conn->smb_tcons, tid);
+}
+
+struct smbsrv_tcon *smbsrv_smb2_tcon_find(struct smbsrv_session *smb_sess, uint32_t tid)
+{
+	if (!smb_sess) return NULL;
+	return smbsrv_tcon_find(&smb_sess->smb2_tcons, tid);
+}
+
 /*
   destroy a connection structure
 */
 static int smbsrv_tcon_destructor(void *ptr)
 {
-	struct smbsrv_tcon *tcon = ptr;
+	struct smbsrv_tcon *tcon = talloc_get_type(ptr, struct smbsrv_tcon);
+	struct smbsrv_tcons_context *tcons_ctx;
 
 	DEBUG(3,("%s closed connection to service %s\n",
 		 socket_get_peer_addr(tcon->smb_conn->connection->socket, tcon),
@@ -81,35 +103,62 @@ static int smbsrv_tcon_destructor(void *ptr)
 		ntvfs_disconnect(tcon);
 	}
 
-	idr_remove(tcon->smb_conn->tcons.idtree_tid, tcon->tid);
-	DLIST_REMOVE(tcon->smb_conn->tcons.list, tcon);
+	if (tcon->smb2.session) {
+		tcons_ctx = &tcon->smb2.session->smb2_tcons;
+	} else {
+		tcons_ctx = &tcon->smb_conn->smb_tcons;
+	}
+
+	idr_remove(tcons_ctx->idtree_tid, tcon->tid);
+	DLIST_REMOVE(tcons_ctx->list, tcon);
 	return 0;
 }
 
 /*
   find first available connection slot
 */
-struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
+static struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn, struct smbsrv_session *smb_sess)
 {
+	TALLOC_CTX *mem_ctx;
+	struct smbsrv_tcons_context *tcons_ctx;
 	struct smbsrv_tcon *tcon;
 	int i;
 
-	tcon = talloc_zero(smb_conn, struct smbsrv_tcon);
-	if (!tcon) return NULL;
-	tcon->smb_conn = smb_conn;
+	if (smb_sess) {
+		mem_ctx = smb_sess;
+		tcons_ctx = &smb_sess->smb2_tcons;
+	} else {
+		mem_ctx = smb_conn;
+		tcons_ctx = &smb_conn->smb_tcons;
+	}
 
-	i = idr_get_new_random(smb_conn->tcons.idtree_tid, tcon, smb_conn->tcons.idtree_limit);
+	tcon = talloc_zero(mem_ctx, struct smbsrv_tcon);
+	if (!tcon) return NULL;
+	tcon->smb_conn		= smb_conn;
+	tcon->smb2.session	= smb_sess;
+
+	i = idr_get_new_random(tcons_ctx->idtree_tid, tcon, tcons_ctx->idtree_limit);
 	if (i == -1) {
-		DEBUG(1,("ERROR! Out of connection structures\n"));	       
+		DEBUG(1,("ERROR! Out of connection structures\n"));
 		return NULL;
 	}
 	tcon->tid = i;
 
-	DLIST_ADD(smb_conn->tcons.list, tcon);
+	DLIST_ADD(tcons_ctx->list, tcon);
 	talloc_set_destructor(tcon, smbsrv_tcon_destructor);
 
 	/* now fill in some statistics */
 	tcon->statistics.connect_time = timeval_current();
 
 	return tcon;
+}
+
+struct smbsrv_tcon *smbsrv_smb_tcon_new(struct smbsrv_connection *smb_conn)
+{
+	return smbsrv_tcon_new(smb_conn, NULL);
+}
+
+struct smbsrv_tcon *smbsrv_smb2_tcon_new(struct smbsrv_session *smb_sess)
+{
+	return smbsrv_tcon_new(smb_sess->smb_conn, smb_sess);
 }
