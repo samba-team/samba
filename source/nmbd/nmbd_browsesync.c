@@ -24,7 +24,7 @@
 #include "includes.h"
 
 /* This is our local master browser list database. */
-extern ubi_dlList lmb_browserlist[];
+extern struct browse_cache_record *lmb_browserlist;
 
 /****************************************************************************
 As a domain master browser, do a sync with a local master browser.
@@ -87,9 +87,7 @@ void dmb_expire_and_sync_browser_lists(time_t t)
 
 	expire_lmb_browsers(t);
 
-	for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
-			browc;
-			browc = (struct browse_cache_record *)ubi_dlNext( browc ) ) {
+	for( browc = lmb_browserlist; browc; browc = browc->next ) {
 		if (browc->sync_time < t)
 			sync_with_lmb(browc);
 	}
