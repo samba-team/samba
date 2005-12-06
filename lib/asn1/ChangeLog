@@ -1,5 +1,16 @@
-2005-10-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test.asn1: Add test string for constraints.
+
+	* symbol.h: Add support for part of the Constraint-s
+
+	* gen.c: Set new constraints pointer in Type to NULL for inline
+	constructed types.
+
+	* parse.y: Add support for parsing part of the Constraint-s
+	
+2005-10-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* Makefile.am: Add some X9.57 (DSA) oids, sort lines
 
 	* rfc2459.asn1: Add some X9.57 (DSA) oids.
