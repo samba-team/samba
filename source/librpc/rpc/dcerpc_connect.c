@@ -43,16 +43,18 @@ struct pipe_np_smb_state {
 };
 
 
+/*
+  Stage 3 of ncacn_np_smb: Named pipe opened (?)
+*/
 void continue_pipe_open_smb(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
 						      struct pipe_np_smb_state);
-
+	/* receive result of named pipe open request */
 	c->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
-
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
@@ -61,7 +63,9 @@ void continue_pipe_open_smb(struct composite_context *ctx)
 	composite_done(c);
 }
 
-
+/*
+  Stage 2 of ncacn_np_smb: Open a named pipe after successful smb connection
+*/
 void continue_smb_connect(struct composite_context *ctx)
 {
 	struct composite_context *open_ctx;
@@ -70,17 +74,19 @@ void continue_smb_connect(struct composite_context *ctx)
 	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
 						      struct pipe_np_smb_state);
 	
+	/* receive result of smb connect request */
 	c->status = smb_composite_connect_recv(ctx, c);
 	if (!NT_STATUS_IS_OK(c->status)) {
-
 		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
 	}
 
+	/* prepare named pipe open parameters */
 	s->tree         = s->conn.out.tree;
 	s->io.pipe_name = s->io.binding->endpoint;
 
+	/* send named pipe open request */
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
 	if (open_ctx == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -91,8 +97,10 @@ void continue_smb_connect(struct composite_context *ctx)
 }
 
 
-/* open a rpc connection to a rpc pipe on SMB using the binding
-   structure to determine the endpoint and options */
+/*
+  Initiate async open of a rpc connection to a rpc pipe on SMB using
+  the binding structure to determine the endpoint and options
+*/
 struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_ctx, 
 								struct dcerpc_pipe_connect *io)
 {
@@ -101,6 +109,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	struct composite_context *conn_req;
 	struct smb_composite_connect *conn;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(tmp_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -117,6 +126,8 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	s->io  = *io;
 	conn   = &s->conn;
 
+	/* prepare smb connection parameters: we're connecting to IPC$ share on
+	   remote rpc server */
 	conn->in.dest_host              = s->io.binding->host;
 	conn->in.port                   = 0;
 	conn->in.called_name            = strupper_talloc(tmp_ctx, s->io.binding->host);
@@ -125,6 +136,10 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	conn->in.fallback_to_anonymous  = False;
 	conn->in.workgroup              = lp_workgroup();
 
+	/*
+	 * provide proper credentials - user supplied or anonymous in case this is
+	 * schannel connection
+	 */
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
 		struct cli_credentials *anon_creds;
 
@@ -143,6 +158,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 		s->conn.in.credentials = s->io.creds;
 	}
 
+	/* send smb connect request */
 	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, s->io.pipe->conn->event_ctx);
 	if (!conn_req) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -156,6 +172,9 @@ done:
 }
 
 
+/*
+  Receive result of a rpc connection to a rpc pipe on SMB
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_np_smb_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -165,6 +184,9 @@ NTSTATUS dcerpc_pipe_connect_ncacn_np_smb_recv(struct composite_context *c)
 }
 
 
+/*
+  Sync version of a rpc connection to a rpc pipe on SMB
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_np_smb(TALLOC_CTX *tmp_ctx,
 					  struct dcerpc_pipe_connect *io)
 {
