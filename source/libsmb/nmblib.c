@@ -331,7 +331,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
  Useful for debugging messages.
 ******************************************************************/
 
-char *nmb_namestr(struct nmb_name *n)
+char *nmb_namestr(const struct nmb_name *n)
 {
 	static int i=0;
 	static fstring ret[4];

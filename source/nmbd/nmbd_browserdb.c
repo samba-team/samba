@@ -35,7 +35,7 @@
  *  lmb_browserlist - This is our local master browser list. 
  */
 
-ubi_dlNewList( lmb_browserlist );
+struct browse_cache_record *lmb_browserlist;
 
 /* -------------------------------------------------------------------------- **
  * Functions...
@@ -52,7 +52,8 @@ ubi_dlNewList( lmb_browserlist );
  */
 static void remove_lmb_browser_entry( struct browse_cache_record *browc )
 {
-	safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
+	DLIST_REMOVE(lmb_browserlist, browc);
+	SAFE_FREE(browc);
 }
 
 /* ************************************************************************** **
@@ -85,6 +86,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
                                                          struct in_addr ip )
 {
 	struct browse_cache_record *browc;
+	struct browse_cache_record *tmp_browc;
 	time_t now = time( NULL );
 
 	browc = SMB_MALLOC_P(struct browse_cache_record);
@@ -113,7 +115,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
   
 	browc->ip = ip;
  
-	(void)ubi_dlAddTail( lmb_browserlist, browc );
+	DLIST_ADD_END(lmb_browserlist, browc, tmp_browc);
 
 	if( DEBUGLVL( 3 ) ) {
 		Debug1( "nmbd_browserdb:create_browser_in_lmb_cache()\n" );
@@ -138,12 +140,13 @@ struct browse_cache_record *find_browser_in_lmb_cache( const char *browser_name 
 {
 	struct browse_cache_record *browc;
 
-	for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
-			browc; browc = (struct browse_cache_record *)ubi_dlNext( browc ) )
-		if( strequal( browser_name, browc->lmb_name ) )
+	for( browc = lmb_browserlist; browc; browc = browc->next ) {
+		if( strequal( browser_name, browc->lmb_name ) ) {
 			break;
+		}
+	}
 
-	return( browc );
+	return browc;
 }
 
 /* ************************************************************************** **
@@ -160,9 +163,8 @@ void expire_lmb_browsers( time_t t )
 	struct browse_cache_record *browc;
 	struct browse_cache_record *nextbrowc;
 
-	for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
-			browc; browc = nextbrowc ) {
-		nextbrowc = (struct browse_cache_record *)ubi_dlNext( browc );
+	for( browc = lmb_browserlist; browc; browc = nextbrowc) {
+		nextbrowc = browc->next;
 
 		if( browc->death_time < t ) {
 			if( DEBUGLVL( 3 ) ) {

@@ -863,8 +863,6 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "intl.h"
-#include "ubi_sLinkList.h"
-#include "ubi_dLinkList.h"
 #include "dlinklist.h"
 #include "tdb/tdb.h"
 #include "tdb/spinlock.h"
@@ -886,10 +884,6 @@ extern int errno;
 #include "dynconfig.h"
 
 #include "util_getent.h"
-
-#ifndef UBI_BINTREE_H
-#include "ubi_Cache.h"
-#endif /* UBI_BINTREE_H */
 
 #include "debugparse.h"
 
