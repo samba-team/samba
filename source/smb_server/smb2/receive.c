@@ -120,11 +120,20 @@ void smb2srv_send_error(struct smb2srv_request *req, NTSTATUS error)
 static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 {
 	uint16_t opcode;
+	uint32_t tid;
+	uint64_t uid;
 
 	opcode		= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
 	req->seqnum	= BVAL(req->in.hdr, SMB2_HDR_SEQNUM);
+	tid		= IVAL(req->in.hdr, SMB2_HDR_TID);
+	uid		= BVAL(req->in.hdr, SMB2_HDR_UID);
+
+	req->session	= smbsrv_session_find(req->smb_conn, uid);
+	req->tcon	= smbsrv_tcon_find(req->smb_conn, tid);
 
 	errno = 0;
+
+	/* TODO: check the seqnum */
 
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
@@ -134,60 +143,97 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 		smb2srv_sesssetup_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_LOGOFF:
+		if (!req->session) goto nosession;
 		smb2srv_logoff_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_TCON:
+		if (!req->session) goto nosession;
 		smb2srv_tcon_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_TDIS:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_tdis_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_CREATE:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_create_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_CLOSE:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_close_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_FLUSH:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_flush_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_READ:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_read_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_WRITE:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_write_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_LOCK:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_lock_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_IOCTL:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_ioctl_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_CANCEL:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_cancel_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_KEEPALIVE:
 		smb2srv_keepalive_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_FIND:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_find_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_NOTIFY:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_notify_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_GETINFO:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_getinfo_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_SETINFO:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_setinfo_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_BREAK:
+		if (!req->session) goto nosession;
+		if (!req->tcon)	goto notcon;
 		smb2srv_break_recv(req);
 		return NT_STATUS_OK;
 	}
 
 	DEBUG(1,("Invalid SMB2 opcode: 0x%04X\n", opcode));
 	smbsrv_terminate_connection(req->smb_conn, "Invalid SMB2 opcode");
+	return NT_STATUS_OK;
+
+nosession:
+	smb2srv_send_error(req, NT_STATUS_USER_SESSION_DELETED);
+	return NT_STATUS_OK;
+notcon:
+	smb2srv_send_error(req, NT_STATUS_NETWORK_NAME_DELETED);
 	return NT_STATUS_OK;
 }
 
