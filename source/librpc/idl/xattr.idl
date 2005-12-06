@@ -41,7 +41,7 @@ interface xattr
 		NTTIME     create_time;
 		NTTIME     change_time;
 		NTTIME     write_time; /* only used when sticky write time is set */
-		[string,charset(UTF8)] uint8 *name;       /* will be used for case-insensitive speedup */
+		utf8string name;
 	} xattr_DosInfo2;
 
 	typedef [switch_type(uint16)] union {
@@ -59,7 +59,7 @@ interface xattr
 	const char *XATTR_DOSEAS_NAME = "user.DosEAs";
 
 	typedef struct {
-		[string,charset(UTF8)] uint8 *name;
+		utf8string name;
 		DATA_BLOB value;
 	} xattr_EA;
 
@@ -85,7 +85,7 @@ interface xattr
 		uint32     flags;
 		udlong     size;
 		udlong     alloc_size;
-		[charset(UTF8),string] uint8 name[];
+		utf8string name;
 	} xattr_DosStream;
 
 	typedef [public] struct {
