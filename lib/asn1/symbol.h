@@ -111,6 +111,10 @@ struct range {
     int max;
 };
 
+enum ctype { CT_CONTENTS, CT_USER } ;
+
+struct constraint_spec;
+
 struct type {
     Typetype type;
     struct memhead *members;
@@ -118,9 +122,20 @@ struct type {
     struct type *subtype;
     struct tagtype tag;
     struct range *range;
+    struct constraint_spec *constraint;
 };
 
 typedef struct type Type;
+
+struct constraint_spec {
+    enum ctype ctype;
+    union {
+	struct {
+	    Type *type;
+	    struct value *encoding;
+	} content;
+    } u;
+};
 
 struct objid {
     const char *label;
