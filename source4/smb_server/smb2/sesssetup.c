@@ -27,13 +27,6 @@
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
 
-struct smb2srv_session {
-	struct smb2srv_session *prev,*next;
-	uint64_t uid;
-	struct gensec_security *gensec_ctx;
-	struct auth_session_info *session_info;
-};
-
 static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct smb2_session_setup *io)
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
@@ -134,7 +127,6 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, struct smb2_sess
 		return;
 	}
 
-	SIVAL(req->out.hdr, SMB2_HDR_STATUS, NT_STATUS_V(req->status));
 	SBVAL(req->out.hdr, SMB2_HDR_UID,    io->out.uid);
 
 	SSVAL(req->out.body, 0x02, io->out._pad);
@@ -182,4 +174,53 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 		return;
 	}
 	smb2srv_sesssetup_send(req, io);
+}
+
+static NTSTATUS smb2srv_logoff_backend(struct smb2srv_request *req)
+{
+	/* TODO: call ntvfs backends to close file of this session */
+	talloc_free(req->session);
+	req->session = NULL;
+	return NT_STATUS_OK;
+}
+
+static void smb2srv_logoff_send(struct smb2srv_request *req)
+{
+	NTSTATUS status;
+
+	if (NT_STATUS_IS_ERR(req->status)) {
+		smb2srv_send_error(req, req->status);
+		return;
+	}
+
+	status = smb2srv_setup_reply(req, 0x04, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+		talloc_free(req);
+		return;
+	}
+
+	SSVAL(req->out.body, 0x02, 0);
+
+	smb2srv_send_reply(req);
+}
+
+void smb2srv_logoff_recv(struct smb2srv_request *req)
+{
+	uint16_t _pad;
+
+	if (req->in.body_size < 0x04) {
+		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
+		return;
+	}
+
+	_pad	= SVAL(req->in.body, 0x02);
+
+	req->status = smb2srv_logoff_backend(req);
+
+	if (req->control_flags & SMB2SRV_REQ_CTRL_FLAG_NOT_REPLY) {
+		talloc_free(req);
+		return;
+	}
+	smb2srv_logoff_send(req);
 }

@@ -56,7 +56,7 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint_t body_fixed_size
 	SIVAL(req->out.hdr, 0,                SMB2_MAGIC);
 	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,  SMB2_HDR_BODY);
 	SSVAL(req->out.hdr, SMB2_HDR_PAD1,    0);
-	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  0);
+	SIVAL(req->out.hdr, SMB2_HDR_STATUS,  NT_STATUS_V(req->status));
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,  SVAL(req->in.hdr, SMB2_HDR_OPCODE));
 	SSVAL(req->out.hdr, SMB2_HDR_PAD2,    0);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,   0x00000001);
@@ -133,6 +133,9 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	case SMB2_OP_SESSSETUP:
 		smb2srv_sesssetup_recv(req);
 		return NT_STATUS_OK;
+	case SMB2_OP_LOGOFF:
+		smb2srv_logoff_recv(req);
+		return NT_STATUS_OK;
 	case SMB2_OP_TCON:
 		smb2srv_tcon_recv(req);
 		return NT_STATUS_OK;
@@ -145,14 +148,26 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	case SMB2_OP_CLOSE:
 		smb2srv_close_recv(req);
 		return NT_STATUS_OK;
+	case SMB2_OP_FLUSH:
+		smb2srv_flush_recv(req);
+		return NT_STATUS_OK;
 	case SMB2_OP_READ:
 		smb2srv_read_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_WRITE:
 		smb2srv_write_recv(req);
 		return NT_STATUS_OK;
+	case SMB2_OP_LOCK:
+		smb2srv_lock_recv(req);
+		return NT_STATUS_OK;
+	case SMB2_OP_IOCTL:
+		smb2srv_ioctl_recv(req);
+		return NT_STATUS_OK;
 	case SMB2_OP_CANCEL:
 		smb2srv_cancel_recv(req);
+		return NT_STATUS_OK;
+	case SMB2_OP_KEEPALIVE:
+		smb2srv_keepalive_recv(req);
 		return NT_STATUS_OK;
 	case SMB2_OP_FIND:
 		smb2srv_find_recv(req);
