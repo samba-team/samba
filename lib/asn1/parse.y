@@ -48,6 +48,7 @@
 RCSID("$Id$");
 
 static Type *new_type (Typetype t);
+static struct constraint_spec *new_constraint_spec(enum ctype);
 static Type *new_tag(int tagclass, int tagvalue, int tagenv, Type *oldtype);
 void yyerror (const char *);
 static struct objid *new_objid(const char *label, int value);
@@ -73,6 +74,7 @@ struct string_list {
     struct string_list *sl;
     struct tagtype tag;
     struct memhead *members;
+    struct constraint_spec *constraint_spec;
 }
 
 %token kw_ABSENT
@@ -183,6 +185,7 @@ struct string_list {
 %type <type> BitStringType
 %type <type> BooleanType
 %type <type> ChoiceType
+%type <type> ConstrainedType
 %type <type> EnumeratedType
 %type <type> IntegerType
 %type <type> NullType
@@ -214,6 +217,12 @@ struct string_list {
 %type <range> range
 
 %type <sl> referencenames
+
+%type <constraint_spec> Constraint
+%type <constraint_spec> ConstraintSpec
+%type <constraint_spec> GeneralConstraint
+%type <constraint_spec> ContentsConstraint
+%type <constraint_spec> UserDefinedConstraint
 
 %start ModuleDefinition
 
@@ -300,6 +309,7 @@ TypeAssignment	: IDENTIFIER EEQUAL Type
 
 Type		: BuiltinType
 		| ReferencedType
+		| ConstrainedType
 		;
 
 BuiltinType	: BitStringType
@@ -504,6 +514,65 @@ UsefulType	: kw_GeneralizedTime
 		{
 			$$ = new_tag(ASN1_C_UNIV, UT_UTCTime, 
 				     TE_EXPLICIT, new_type(TUTCTime));
+		}
+		;
+
+ConstrainedType	: Type Constraint
+		{
+		    /* if (Constraint.type == contentConstrant) {
+		       assert(Constraint.u.constraint.type == octetstring|bitstring-w/o-NamedBitList); // remember to check type reference too
+		       if (Constraint.u.constraint.type) {
+		         assert((Constraint.u.constraint.type.length % 8) == 0);
+		       }
+		      }
+		      if (Constraint.u.constraint.encoding) {
+		        type == der-oid|ber-oid
+		      }
+		    */
+		}
+		;
+
+
+Constraint	: '(' ConstraintSpec  ExceptionSpec ')'
+		{
+		    $$ = $2;
+		}
+
+ExceptionSpec	:
+
+ConstraintSpec	: GeneralConstraint
+
+GeneralConstraint: ContentsConstraint
+		| UserDefinedConstraint
+		;
+
+ContentsConstraint: kw_CONTAINING Type
+		{
+		    $$ = new_constraint_spec(CT_CONTENTS);
+		    $$->u.content.type = $2;
+		    $$->u.content.encoding = NULL;
+		}
+		| kw_ENCODED kw_BY Value
+		{
+		    if ($3->type != objectidentifiervalue)
+			error_message("Non-OID used in ENCODED BY constraint");
+		    $$ = new_constraint_spec(CT_CONTENTS);
+		    $$->u.content.type = NULL;
+		    $$->u.content.encoding = $3;
+		}
+		| kw_CONTAINING Type kw_ENCODED kw_BY Value
+		{
+		    if ($5->type != objectidentifiervalue)
+			error_message("Non-OID used in ENCODED BY constraint");
+		    $$ = new_constraint_spec(CT_CONTENTS);
+		    $$->u.content.type = $2;
+		    $$->u.content.encoding = $5;
+		}
+		;
+
+UserDefinedConstraint: kw_CONSTRAINED kw_BY '{' '}'
+		{
+		    $$ = new_constraint_spec(CT_USER);
 		}
 		;
 
@@ -859,6 +928,14 @@ new_type (Typetype tt)
     Type *t = ecalloc(1, sizeof(*t));
     t->type = tt;
     return t;
+}
+
+static struct constraint_spec *
+new_constraint_spec(enum ctype ct)
+{
+    struct constraint_spec *c = ecalloc(1, sizeof(*c));
+    c->ctype = ct;
+    return c;
 }
 
 static void fix_labels2(Type *t, const char *prefix);
