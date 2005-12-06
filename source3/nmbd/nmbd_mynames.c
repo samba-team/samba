@@ -182,8 +182,8 @@ void release_wins_names(void)
 	struct subnet_record *subrec = unicast_subnet;
 	struct name_record *namerec, *nextnamerec;
 
-	for (namerec = (struct name_record *)ubi_trFirst( subrec->namelist ); namerec; namerec = nextnamerec) {
-		nextnamerec = (struct name_record *)ubi_trNext( namerec );
+	for (namerec = subrec->namelist; namerec; namerec = nextnamerec) {
+		nextnamerec = namerec->next;
 		if( (namerec->data.source == SELF_NAME)
 		    && !NAME_IS_DEREGISTERING(namerec) )
 			release_name( subrec, namerec, standard_success_release,
@@ -202,9 +202,7 @@ void refresh_my_names(time_t t)
 	if (wins_srv_count() < 1)
 		return;
 
-	for (namerec = (struct name_record *)ubi_trFirst(unicast_subnet->namelist);
-	     namerec;
-	     namerec = (struct name_record *)ubi_trNext(namerec)) {
+	for (namerec = unicast_subnet->namelist; namerec; namerec = namerec->next) {
 		/* Each SELF name has an individual time to be refreshed. */
 		if ((namerec->data.source == SELF_NAME) &&
 		    (namerec->data.refresh_time < t) &&

@@ -33,7 +33,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
 	unstring name;
 	struct packet_struct *original_packet;
 	struct subnet_record *orig_broadcast_subnet;
-	struct name_record *namerec;
+	struct name_record *namerec = NULL;
 	uint16 nb_flags;
 	int num_ips;
 	int i;
@@ -64,22 +64,34 @@ returned for name %s.\n", nmb_namestr(nmbname) ));
 			return;
 		}
 
-		for(i = 0; i < num_ips; i++)
+		for(i = 0; i < num_ips; i++) {
 			putip( (char *)&iplist[i], (char *)&rrec->rdata[ (i*6) + 2]);
+		}
 	}
 
 	/* Add the queried name to the original subnet as a WINS_PROXY_NAME. */
 
-	if(rrec == PERMANENT_TTL)
+	if(rrec == PERMANENT_TTL) {
 		ttl = lp_max_ttl();
+	}
 
 	pull_ascii_nstring(name, sizeof(name), nmbname->name);
-	namerec = add_name_to_subnet( orig_broadcast_subnet, name,
+	add_name_to_subnet( orig_broadcast_subnet, name,
 					nmbname->name_type, nb_flags, ttl,
 					WINS_PROXY_NAME, num_ips, iplist );
 
-	if(iplist != &ip)
+	namerec = find_name_on_subnet(orig_broadcast_subnet, nmbname, FIND_ANY_NAME);
+	if (!namerec) {
+		DEBUG(0,("wins_proxy_name_query_request_success: failed to add "
+			"name %s to subnet %s !\n",
+			name,
+			orig_broadcast_subnet->subnet_name ));
+		return;
+	}
+
+	if(iplist != &ip) {
 		SAFE_FREE(iplist);
+	}
 
 	/*
 	 * Check that none of the IP addresses we are returning is on the
