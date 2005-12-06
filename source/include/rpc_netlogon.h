@@ -946,7 +946,7 @@ typedef struct net_q_dsr_getdcname {
 	struct uuid *domain_guid;
 	uint32 ptr_site_guid;
 	struct uuid *site_guid;
-	uint32_t flags;
+	uint32 flags;
 } NET_Q_DSR_GETDCNAME;
 
 /* NET_R_DSR_GETDCNAME - Ask a DC for a trusted DC name and its address */
