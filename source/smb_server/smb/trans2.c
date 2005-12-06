@@ -742,6 +742,10 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 	case RAW_FILEINFO_UNIX_BASIC:
 	case RAW_FILEINFO_UNIX_LINK:
 		return NT_STATUS_INVALID_LEVEL;
+
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
