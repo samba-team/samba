@@ -84,18 +84,58 @@
 		BOOL use_512_byte_max_transfer;
 	} wkssvc_NetWkstaInfo502;
 
+	typedef struct {
+		uint32 char_wait;
+	} wkssvc_NetWkstaInfo1010;
+
+	typedef struct {
+		uint32 collection_time;
+	} wkssvc_NetWkstaInfo1011;
+
+	typedef struct {
+		uint32 maximum_collection_count;
+	} wkssvc_NetWkstaInfo1012;
+
+	typedef struct {
+		uint32 keep_connection;
+	} wkssvc_NetWkstaInfo1013;
+
+	typedef struct {
+		uint32 session_timeout;
+	} wkssvc_NetWkstaInfo1018;
+
+	typedef struct {
+		uint32 size_char_buf;
+	} wkssvc_NetWkstaInfo1023;
+
+	typedef struct {
+		uint32 errorlog_sz;
+	} wkssvc_NetWkstaInfo1027;
+
+	typedef struct {
+		uint32 max_threads;
+	} wkssvc_NetWkstaInfo1033;
+
 	typedef union {
 		[case(100)] wkssvc_NetWkstaInfo100 *info100;
 		[case(101)] wkssvc_NetWkstaInfo101 *info101;
 		[case(102)] wkssvc_NetWkstaInfo102 *info102;
 		[case(502)] wkssvc_NetWkstaInfo502 *info502;
+		[case(1010)] wkssvc_NetWkstaInfo1010 *info1010;
+		[case(1011)] wkssvc_NetWkstaInfo1011 *info1011;
+		[case(1012)] wkssvc_NetWkstaInfo1012 *info1012;
+		[case(1013)] wkssvc_NetWkstaInfo1013 *info1013;
+		[case(1018)] wkssvc_NetWkstaInfo1018 *info1018;
+		[case(1023)] wkssvc_NetWkstaInfo1023 *info1023;
+		[case(1027)] wkssvc_NetWkstaInfo1027 *info1027;
+		[case(1033)] wkssvc_NetWkstaInfo1033 *info1033;
 		[default] ;
 	} wkssvc_NetWkstaInfo;
 
 	WERROR wkssvc_NetWkstaGetInfo(
 		[in]   [string,charset(UTF16)] uint16 *server_name,
 		[in]   uint32 level,
-		[out,switch_is(level)]  wkssvc_NetWkstaInfo info
+		[out,switch_is(level),ref]  wkssvc_NetWkstaInfo *info
 		);
 
 
@@ -104,13 +144,48 @@
 	WERROR wkssvc_NetWkstaSetInfo(
 		[in]   [string,charset(UTF16)] uint16 *server_name,
 		[in]   uint32 level,
-		[in,switch_is(level)]  wkssvc_NetWkstaInfo info,
-		[in,out]   uint32 *parm_error
+		[in,switch_is(level),ref]  wkssvc_NetWkstaInfo *info,
+		[in,out,ref]   uint32 *parm_error
 		);
+
 
 	/*****************************/
 	/* Function        0x02      */
-	WERROR WKSSVC_NETRWKSTAUSERENUM ();
+	typedef struct {
+		[string,charset(UTF16)] uint16 *user;
+	} USER_INFO_0;
+
+	typedef struct {
+		uint32 entries_read;
+		[size_is(entries_read)] USER_INFO_0 *user0;
+	} USER_INFO_0_CONTAINER;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *logon_domain;
+		[string,charset(UTF16)] uint16 *other_domains;
+		[string,charset(UTF16)] uint16 *logon_server;
+	} USER_INFO_1;
+
+	typedef struct {
+		uint32 entries_read;
+		[size_is(entries_read)] USER_INFO_1 *user1;
+	} USER_INFO_1_CONTAINER;
+
+	typedef [switch_type(uint32)] union {
+		[case(0)] USER_INFO_0_CONTAINER *user0;
+		[case(1)] USER_INFO_1_CONTAINER *user1;
+	} WKS_USER_ENUM_UNION;
+
+	WERROR wkssvc_NetWkstaEnumUsers(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] uint32 level,
+		[in] [out] [ref] WKS_USER_ENUM_UNION *users,
+		[in] uint32 prefmaxlen,
+		[out] uint32 *entriesread,
+		[out] uint32 *totalentries,
+		[in] [out] [ref] uint32 *resumehandle
+		);
 
 	/*****************************/
 	/* Function        0x03      */
@@ -145,8 +220,9 @@
 	WERROR wkssvc_NetWkstaTransportEnum (
 		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in,out]     uint32 level,
-		[in,out,switch_is(level)] wkssvc_NetWkstaTransportCtr ctr,
+		[in,out,switch_is(level),ref] wkssvc_NetWkstaTransportCtr *ctr,
 		[in]         uint32 max_buffer,
+		[out] 	     uint32 *entriesread,
 		[out]        uint32 totalentries,
 		[in,out]     uint32 *resume_handle
 		);
@@ -216,17 +292,71 @@
 	/* Function        0x15      */
 	WERROR WKSSVC_NETRGETJOINABLEOUS ();
 
+	typedef struct {
+		uint8 blob[524];
+	} wkssvc_PasswordBuffer;
+
+	typedef [bitmap32bit] bitmap {
+		/* TRUE: defer setting the SPN and dNSHostName until a rename operation */
+		WKSSVC_JOIN_FLAGS_DEFER_SPN		= 0x00000100,
+
+		/* TRUE: set the machine password to the provided one after the join completes */
+		WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED	= 0x00000080,
+
+		/* TRUE: perform an unsecured join */
+		WKSSVC_JOIN_FLAGS_JOIN_UNSECURE		= 0x00000040,
+
+		/* TRUE: allow the join to complete even if the account already exists */
+		WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED	= 0x00000020,
+	
+		/* TRUE: this join is part of a w9x upgrade */
+		WKSSVC_JOIN_FLAGS_WIN9X_UPGRADE		= 0x00000010,
+
+		/* TRUE: delete the account when the domain is left */
+		WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE	= 0x00000004,
+
+		/* TRUE: create the account in the domain */
+		WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE	= 0x00000002,
+
+		/* TRUE: join domain    FALSE: join workgroup */
+		WKSSVC_JOIN_FLAGS_JOIN_TYPE		= 0x00000001
+		
+	} wkssvc_joinflags;
+
 	/*****************************/
 	/* Function        0x16      */
-	WERROR WKSSVC_NETRJOINDOMAIN2 ();
+	WERROR wkssvc_NetrJoinDomain2 (
+		[in]         [string,charset(UTF16)] uint16 *server_name,
+		[in]         [string,charset(UTF16),ref] uint16 *domain_name,
+		[in]         [string,charset(UTF16)] uint16 *account_name,
+		[in]         [string,charset(UTF16)] uint16 *admin_account,
+		[in]         wkssvc_PasswordBuffer *type_30,
+		[in]         wkssvc_joinflags join_flags
+		);
 
 	/*****************************/
 	/* Function        0x17      */
-	WERROR WKSSVC_NETRUNJOINDOMAIN2 ();
+	WERROR wkssvc_NetrUnjoinDomain2 (
+		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
+		[in] [unique] [string,charset(UTF16)] uint16 *account,
+		[in] [unique] wkssvc_PasswordBuffer *Encrypted_password,
+		[in] wkssvc_joinflags unjoin_flags
+		);
+
+	typedef [bitmap32bit] bitmap {
+		/* TRUE: create the account in the domain */
+		WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE	= 0x00000002
+	} wkssvc_renameflags;
 
 	/*****************************/
 	/* Function        0x18      */
-	WERROR WKSSVC_NETRRENAMEMACHINEINDOMAIN2 ();
+	WERROR wkssvc_NetrRenameMachineInDomain2(
+		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
+		[in] [unique] [string,charset(UTF16)] uint16 *NewMachineName,
+		[in] [unique] [string,charset(UTF16)] uint16 *Account,
+		[in] [unique] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] wkssvc_renameflags RenameOptions
+		);
 
 	/*****************************/
 	/* Function        0x19      */
@@ -238,11 +368,23 @@
 
 	/*****************************/
 	/* Function        0x1b      */
-	WERROR WKSSVC_NETRADDALTERNATECOMPUTERNAME ();
+	WERROR wkssvc_NetrAddAlternateComputerName(
+		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
+		[in] [unique] [string,charset(UTF16)] uint16 *NewAlternateMachineName,
+		[in] [unique] [string,charset(UTF16)] uint16 *Account,
+		[in] [unique] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] uint32 Reserved
+		);
 
 	/*****************************/
 	/* Function        0x1c      */
-	WERROR WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME ();
+	WERROR wkssvc_NetrRemoveAlternateComputerName(
+		[in] [unique] [string,charset(UTF16)] uint16 *server_name,
+		[in] [unique] [string,charset(UTF16)] uint16 *AlternateMachineNameToRemove,
+		[in] [unique] [string,charset(UTF16)] uint16 *Account,
+		[in] [unique] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in] uint32 Reserved
+		);
 
 	/*****************************/
 	/* Function        0x1d      */
