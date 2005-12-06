@@ -52,6 +52,7 @@ void continue_pipe_open_smb(struct composite_context *ctx)
 
 	c->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
+
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
@@ -71,6 +72,7 @@ void continue_smb_connect(struct composite_context *ctx)
 	
 	c->status = smb_composite_connect_recv(ctx, c);
 	if (!NT_STATUS_IS_OK(c->status)) {
+
 		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
@@ -80,6 +82,10 @@ void continue_smb_connect(struct composite_context *ctx)
 	s->io.pipe_name = s->io.binding->endpoint;
 
 	open_ctx = dcerpc_pipe_open_smb_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
+	if (open_ctx == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	composite_continue(c, open_ctx, continue_pipe_open_smb, c);
 }
@@ -98,15 +104,15 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	c = talloc_zero(tmp_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
+	s = talloc_zero(c, struct pipe_np_smb_state);
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 	c->event_ctx = io->pipe->conn->event_ctx;
-
-	s = talloc_zero(c, struct pipe_np_smb_state);
-	if (s == NULL) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
 
 	s->io  = *io;
 	conn   = &s->conn;
@@ -114,10 +120,6 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	conn->in.dest_host              = s->io.binding->host;
 	conn->in.port                   = 0;
 	conn->in.called_name            = strupper_talloc(tmp_ctx, s->io.binding->host);
-	if (conn->in.called_name) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
 	conn->in.fallback_to_anonymous  = False;
@@ -128,28 +130,28 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 
 		anon_creds = cli_credentials_init(tmp_ctx);
 		if (!anon_creds) {
-			c->status = NT_STATUS_NO_MEMORY;
-			goto failed;
+			composite_error(c, NT_STATUS_NO_MEMORY);
+			goto done;
 		}
 
 		cli_credentials_set_anonymous(anon_creds);
 		cli_credentials_guess(anon_creds);
 
 		s->conn.in.credentials = anon_creds;
+
 	} else {
 		s->conn.in.credentials = s->io.creds;
 	}
 
 	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, s->io.pipe->conn->event_ctx);
 	if (!conn_req) {
-		c->status = NT_STATUS_NO_MEMORY;
-		goto failed;
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
 	}
 
 	composite_continue(c, conn_req, continue_smb_connect, c);
-	return c;
-failed:
-	composite_trigger_error(c);
+
+done:
 	return c;
 }
 
