@@ -33,12 +33,27 @@ void smb2srv_close_recv(struct smb2srv_request *req)
 	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
 }
 
+void smb2srv_flush_recv(struct smb2srv_request *req)
+{
+	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+}
+
 void smb2srv_read_recv(struct smb2srv_request *req)
 {
 	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
 }
 
 void smb2srv_write_recv(struct smb2srv_request *req)
+{
+	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+}
+
+void smb2srv_lock_recv(struct smb2srv_request *req)
+{
+	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
+}
+
+void smb2srv_ioctl_recv(struct smb2srv_request *req)
 {
 	smb2srv_send_error(req, NT_STATUS_NOT_IMPLEMENTED);
 }
