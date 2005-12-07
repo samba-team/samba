@@ -246,10 +246,11 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 */
 static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
-	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-	struct smbsrv_session *smb_sess;
-	struct gensec_security *gensec_ctx;
+	NTSTATUS status;
+	NTSTATUS skey_status;
+	struct smbsrv_session *smb_sess = NULL;
 	struct auth_session_info *session_info = NULL;
+	DATA_BLOB session_key;
 	uint16_t vuid;
 
 	sess->spnego.out.vuid = 0;
@@ -266,10 +267,12 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 	}
 
 	vuid = SVAL(req->in.hdr,HDR_UID);
+
+	/* lookup an existing session */
 	smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
-	if (smb_sess) {
-		gensec_ctx = smb_sess->gensec_ctx;
-	} else {
+	if (!smb_sess) {
+		struct gensec_security *gensec_ctx;
+
 		status = gensec_server_start(req, &gensec_ctx,
 					     req->smb_conn->connection->event.ctx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -289,55 +292,57 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return status;
 		}
 
+		/* allocate a new session */
 		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
-		if (!smb_sess) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
 	}
 
-	status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
-	if (NT_STATUS_IS_OK(status)) {
-		DATA_BLOB session_key;
-		
-		status = gensec_session_info(gensec_ctx, &session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(smb_sess);
-			return status;
-		}
-		
-		status = gensec_session_key(gensec_ctx, 
-					    &session_key);
-/* TODO: what if getting the session key failed? */
-		if (NT_STATUS_IS_OK(status) 
-		    && session_info->server_info->authenticated
-		    && srv_setup_signing(req->smb_conn, &session_key, NULL)) {
-			/* Force check of the request packet, now we know the session key */
-			req_signing_check_incoming(req);
+	if (!smb_sess) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
-			srv_signing_restart(req->smb_conn, &session_key, NULL);
-		}
+	if (!smb_sess->gensec_ctx) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		DEBUG(1, ("Internal ERROR: no gensec_ctx on session: %s\n", nt_errstr(status)));
+		goto failed;
+	}
 
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-	} else {
-		status = auth_nt_status_squash(status);
-		
-		/* This invalidates the VUID of the failed login */
-		talloc_free(smb_sess);
+	status = gensec_update(smb_sess->gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		sess->spnego.out.vuid = smb_sess->vuid;
 		return status;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
 	}
-		
-	if (NT_STATUS_IS_OK(status)) {
-		/* Ensure this is marked as a 'real' vuid, not one
-		 * simply valid for the session setup leg */
-		status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			return auth_nt_status_squash(status);
-		}
-		req->session = smb_sess;
-	}
-	sess->spnego.out.vuid = smb_sess->vuid;
 
-	return status;
+	status = gensec_session_info(smb_sess->gensec_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	skey_status = gensec_session_key(smb_sess->gensec_ctx, &session_key);
+	if (NT_STATUS_IS_OK(skey_status) &&
+	    session_info->server_info->authenticated &&
+	    srv_setup_signing(req->smb_conn, &session_key, NULL)) {
+		/* Force check of the request packet, now we know the session key */
+		req_signing_check_incoming(req);
+
+		srv_signing_restart(req->smb_conn, &session_key, NULL);
+	}
+
+	/* Ensure this is marked as a 'real' vuid, not one
+	 * simply valid for the session setup leg */
+	status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+	req->session = smb_sess;
+
+	sess->spnego.out.vuid = smb_sess->vuid;
+	return NT_STATUS_OK;
+
+failed:
+	talloc_free(smb_sess);
+	return auth_nt_status_squash(status);
 }
 
 /*
