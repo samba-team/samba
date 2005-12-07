@@ -24,7 +24,7 @@
 	<para>
 	In Samba version 3.0.21 this parameter has been changed to be
 	a per-share parameter, and in addition the parameter
-	<smbconfoption name="dfree cache time"/>dfree cache time was added
+	<smbconfoption name="dfree cache time"/> was added
 	to allow the output of this script to be cached for systems under
 	heavy load.
 	</para>
