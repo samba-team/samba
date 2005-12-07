@@ -16,8 +16,7 @@
 	It specifies in seconds the time that smbd will cache the output
 	of a disk free query. If set to zero (the default) no caching is
 	done. This allows a heavily loaded server to prevent rapid spawning
-	of <smbconfoption name="dfree command"/>dfree command scripts
-	increasing the load.
+	of <smbconfoption name="dfree command"/> scripts increasing the load.
 	</para>
 
 </description>
