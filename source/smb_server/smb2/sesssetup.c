@@ -29,7 +29,7 @@
 
 static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct smb2_session_setup *io)
 {
-	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
+	NTSTATUS status;
 	struct smbsrv_session *smb_sess = NULL;
 	struct auth_session_info *session_info = NULL;
 	uint64_t vuid;
@@ -40,8 +40,8 @@ static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct sm
 
 	vuid = BVAL(req->in.hdr, SMB2_HDR_UID);
 
-	/* TODO: we're stricter than the SMB version till we have
-	 *       SMB2-CONTEXT test
+	/*
+	 * only when we got '0' we should allocate a new session
 	 */
 	if (vuid == 0) {
 		struct gensec_security *gensec_ctx;
@@ -67,10 +67,10 @@ static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct sm
 
 		/* allocate a new session */
 		smb_sess = smbsrv_session_new(req->smb_conn, gensec_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(smb_sess);
 		status = smbsrv_smb2_init_tcons(smb_sess);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(smb_sess);
-			smb_sess = NULL;
+			goto failed;
 		}
 	} else {
 		/* lookup an existing session */
@@ -78,7 +78,7 @@ static NTSTATUS smb2srv_sesssetup_backend(struct smb2srv_request *req, struct sm
 	}
 
 	if (!smb_sess) {
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_USER_SESSION_DELETED;
 	}
 
 	if (!smb_sess->gensec_ctx) {
