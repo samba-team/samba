@@ -216,19 +216,19 @@ BOOL torture_smb2_connect(void)
 		return False;
 	}
 
- 	status = smb2_logoff(tree);
+ 	status = smb2_logoff(tree->session);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Logoff failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	status = smb2_logoff(tree);
+	status = smb2_logoff(tree->session);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("Logoff should have disabled session - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	status = smb2_keepalive(tree);
+	status = smb2_keepalive(tree->session->transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("keepalive failed? - %s\n", nt_errstr(status));
 		return False;
