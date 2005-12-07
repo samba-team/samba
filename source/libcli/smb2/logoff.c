@@ -28,12 +28,14 @@
 /*
   send a logoff request
 */
-struct smb2_request *smb2_logoff_send(struct smb2_tree *tree)
+struct smb2_request *smb2_logoff_send(struct smb2_session *session)
 {
 	struct smb2_request *req;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_LOGOFF, 0x04, 0);
+	req = smb2_request_init(session->transport, SMB2_OP_LOGOFF, 0x04, 0);
 	if (req == NULL) return NULL;
+
+	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
 
 	SSVAL(req->out.body, 0x02, 0);
 
@@ -60,8 +62,8 @@ NTSTATUS smb2_logoff_recv(struct smb2_request *req)
 /*
   sync logoff request
 */
-NTSTATUS smb2_logoff(struct smb2_tree *tree)
+NTSTATUS smb2_logoff(struct smb2_session *session)
 {
-	struct smb2_request *req = smb2_logoff_send(tree);
+	struct smb2_request *req = smb2_logoff_send(session);
 	return smb2_logoff_recv(req);
 }
