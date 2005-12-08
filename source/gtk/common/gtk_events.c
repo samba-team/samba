@@ -171,8 +171,6 @@ static struct fd_event *gtk_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 */
 static uint16_t gtk_event_get_fd_flags(struct fd_event *fde)
 {
-	if (!fde) return 0;
-
 	return fde->flags;
 }
 
@@ -184,8 +182,6 @@ static void gtk_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	struct gtk_fd_event *gtk_fd = talloc_get_type(fde->additional_data,
 						      struct gtk_fd_event);
 	GIOCondition condition = 0;
-
-	if (!fde) return;
 
 	if (fde->flags == flags) return;
 

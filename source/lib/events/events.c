@@ -115,6 +115,7 @@ struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 */
 uint16_t event_get_fd_flags(struct fd_event *fde)
 {
+	if (!fde) return 0;
 	return fde->event_ctx->ops->get_fd_flags(fde);
 }
 
@@ -123,6 +124,7 @@ uint16_t event_get_fd_flags(struct fd_event *fde)
 */
 void event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 {
+	if (!fde) return;
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
 }
 
