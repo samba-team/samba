@@ -20,7 +20,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* NOTE: this code compiles fine, but is completly *UNTESTED*
+/* 
+NOTE: this code compiles fine, but is completly *UNTESTED*
          and is only commited as example
 */
 
@@ -29,6 +30,15 @@
 #include "lib/events/events_internal.h"
 
 #include <oop.h>
+
+/*
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+
+ NOTE: this code compiles fine, but is completly *UNTESTED*
+       and is only commited as example
+
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	 
+*/
 
 static int oop_event_context_destructor(void *ptr)
 {
@@ -139,8 +149,6 @@ static struct fd_event *oop_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 */
 static uint16_t oop_event_get_fd_flags(struct fd_event *fde)
 {
-	if (!fde) return 0;
-
 	return fde->flags;
 }
 
@@ -151,8 +159,6 @@ static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 {
 	oop_source_sys *oop_sys;
 	oop_source *oop;
-
-	if (!fde) return;
 
 	oop_sys = fde->event_ctx->additional_data;
 	oop = oop_sys_source(oop_sys);

@@ -240,7 +240,7 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 */
 static uint16_t std_event_get_fd_flags(struct fd_event *fde)
 {
-	return fde?fde->flags:0;
+	return fde->flags;
 }
 
 /*
@@ -251,8 +251,7 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 #if WITH_EPOLL
 	struct event_context *ev;
 	struct std_event_context *std_ev;
-	if (fde == NULL || 
-	    fde->flags == flags) {
+	if (fde->flags == flags) {
 		return;
 	}
 	ev = fde->event_ctx;
@@ -267,9 +266,7 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 		}
 	}
 #endif
-	if (fde) {
-		fde->flags = flags;
-	}
+	fde->flags = flags;
 }
 
 /*
