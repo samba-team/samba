@@ -20,11 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* 
-NOTE: this code compiles fine, but is completly *UNTESTED*
-         and is only commited as example
-*/
-
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
