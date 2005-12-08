@@ -156,12 +156,12 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 		if (!wreplconn->sock->dead) {
 			state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
 			state->wreplconn= wreplconn;
-			composite_trigger_done(c);
+			composite_done(c);
 			return c;
 		} else if (!cached_connection) {
 			state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
 			state->wreplconn= NULL;
-			composite_trigger_done(c);
+			composite_done(c);
 			return c;
 		} else {
 			talloc_free(wreplconn);
@@ -328,7 +328,7 @@ struct composite_context *wreplsrv_pull_table_send(TALLOC_CTX *mem_ctx, struct w
 		state->table_io.out.num_partners	= io->in.num_owners;
 		state->table_io.out.partners		= io->in.owners;
 		state->stage				= WREPLSRV_PULL_TABLE_STAGE_DONE;
-		composite_trigger_done(c);
+		composite_done(c);
 		return c;
 	}
 

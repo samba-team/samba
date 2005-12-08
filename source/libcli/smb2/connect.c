@@ -201,7 +201,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	return c;
 
 failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 

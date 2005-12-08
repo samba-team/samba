@@ -153,7 +153,7 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 		struct ipv4_addr ip = interpret_addr2(state->name.name);
 		state->reply_addr = talloc_strdup(state, sys_inet_ntoa(ip));
 		if (!state->reply_addr) goto failed;
-		composite_trigger_done(c);
+		composite_done(c);
 		return c;
 	}
 

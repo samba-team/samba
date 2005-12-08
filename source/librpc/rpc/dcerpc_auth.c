@@ -47,7 +47,7 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(2,("Invalid uuid string in "
 			 "dcerpc_bind_auth_none_send\n"));
-		composite_trigger_error(c);
+		composite_error(c, c->status);
 		return c;
 	}
 
@@ -277,7 +277,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED);
 
 	if (state->credentials.length == 0) {
-		composite_trigger_done(c);
+		composite_done(c);
 		return c;
 	}
 
@@ -296,7 +296,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
