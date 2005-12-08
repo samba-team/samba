@@ -340,6 +340,8 @@ struct param_section;
 struct param;
 
 struct socket_context;
+struct packet_context;
+
 struct smbcli_socket;
 struct smbcli_request;
 
