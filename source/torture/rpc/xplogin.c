@@ -683,6 +683,7 @@ static NTSTATUS lookupsids_recv(struct composite_context *creq,
 
 struct get_samr_domain_state {
 	struct dcerpc_pipe *samr_pipe;
+	struct cli_credentials *creds;
 	struct policy_handle connect_handle;
 	struct policy_handle domain_handle;
 	struct policy_handle group_handle;
@@ -828,7 +829,11 @@ static void get_samr_domain_recv_bind(struct composite_context *creq)
 				struct get_samr_domain_state);
 	struct rpc_request *req;
 
-	c->status = dcerpc_bind_auth_none_recv(creq);
+	if (lp_parm_bool(-1,"rpc_login", "samr_auth", False)) {
+		c->status = dcerpc_bind_auth_recv(creq);
+	} else {
+		c->status = dcerpc_bind_auth_none_recv(creq);
+	}
 	if (!composite_is_ok(c)) return;
 
 	state->conn.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -855,14 +860,25 @@ static void get_samr_domain_recv_pipe(struct composite_context *creq)
 	c->status = dcerpc_pipe_open_smb_recv(creq);
 	if (!composite_is_ok(c)) return;
 
-	creq = dcerpc_bind_auth_none_send(state, state->samr_pipe,
-					  DCERPC_SAMR_UUID,
-					  DCERPC_SAMR_VERSION);
+	if (lp_parm_bool(-1,"rpc_login", "samr_auth", False)) {
+		state->samr_pipe->conn->flags |= DCERPC_SIGN;
+		creq = dcerpc_bind_auth_send(state, state->samr_pipe,
+					     DCERPC_SAMR_UUID,
+					     DCERPC_SAMR_VERSION, 
+					     state->creds,
+					     DCERPC_AUTH_TYPE_NTLMSSP,
+					     NULL);
+	} else {
+		creq = dcerpc_bind_auth_none_send(state, state->samr_pipe,
+						  DCERPC_SAMR_UUID,
+						  DCERPC_SAMR_VERSION);
+	}
 	composite_continue(c, creq, get_samr_domain_recv_bind, c);
 }
 
 static struct composite_context *get_samr_domain_send(TALLOC_CTX *mem_ctx,
-						      struct smbcli_tree *tree)
+						      struct smbcli_tree *tree,
+						      struct cli_credentials *creds)
 {
 	struct composite_context *c, *creq;
 	struct get_samr_domain_state *state;
@@ -885,6 +901,8 @@ static struct composite_context *get_samr_domain_send(TALLOC_CTX *mem_ctx,
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
+
+	state->creds = creds;
 
 	creq = dcerpc_pipe_open_smb_send(state->samr_pipe->conn, tree,
 					 "\\samr");
@@ -1080,7 +1098,8 @@ static void domadmins_recv_domain(struct composite_context *creq)
 }
 
 static struct composite_context *domadmins_send(TALLOC_CTX *mem_ctx,
-						struct smbcli_tree *tree)
+						struct smbcli_tree *tree,
+						struct cli_credentials *creds)
 {
 	struct composite_context *c, *creq;
 	struct domadmins_state *state;
@@ -1098,7 +1117,7 @@ static struct composite_context *domadmins_send(TALLOC_CTX *mem_ctx,
 	c->private_data = state;
 	c->event_ctx = tree->session->transport->socket->event.ctx;
 
-	creq = get_samr_domain_send(state, tree);
+	creq = get_samr_domain_send(state, tree, creds);
 	if (creq == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -1385,7 +1404,8 @@ static void memberships_recv_domain(struct composite_context *creq)
 
 static struct composite_context *memberships_send(TALLOC_CTX *mem_ctx,
 						  struct smbcli_tree *tree,
-						  const char *username)
+						  const char *username,
+						  struct cli_credentials *creds)
 {
 	struct composite_context *c, *creq;
 	struct memberships_state *state;
@@ -1409,7 +1429,7 @@ static struct composite_context *memberships_send(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	creq = get_samr_domain_send(state, tree);
+	creq = get_samr_domain_send(state, tree, creds);
 	if (creq == NULL) {
 		c->status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -1912,7 +1932,8 @@ static void xp_login_recv_names(struct composite_context *creq)
 	if (!composite_is_ok(c)) return;
 
 	creq = domadmins_send(state,
-			      dcerpc_smb_tree(state->netlogon_pipe->conn));
+			      dcerpc_smb_tree(state->netlogon_pipe->conn),
+			      state->wks_creds);
 	composite_continue(c, creq, xp_login_recv_domadmins, c);
 }
 	
@@ -1954,7 +1975,8 @@ static void xp_login_recv_ntconfig(struct composite_context *creq)
 
 	creq = memberships_send(state,
 				dcerpc_smb_tree(state->netlogon_pipe->conn),
-				state->user_name);
+				state->user_name,
+				state->wks_creds);
 	composite_continue(c, creq, xp_login_recv_memberships, c);
 }
 
@@ -1976,7 +1998,8 @@ static void xp_login_recv_memberships(struct composite_context *creq)
 		   to ntconfig.pol and local security policy settings. */
 		creq = memberships_send(
 			state, dcerpc_smb_tree(state->netlogon_pipe->conn),
-			state->user_name);
+			state->user_name,
+			state->wks_creds);
 		composite_continue(c, creq, xp_login_recv_memberships, c);
 		return;
 	}
@@ -2060,7 +2083,7 @@ static BOOL read_pwd_file(TALLOC_CTX *mem_ctx,
 }
 
 #if 0
-/* Stolen from testjoin.c for easy mass-joining */p
+/* Stolen from testjoin.c for easy mass-joining */
 static BOOL joinme(int i)
 {
 	TALLOC_CTX *mem_ctx;
