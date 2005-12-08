@@ -27,7 +27,6 @@ gen_files_hdb = \
 
 CLEANFILES = $(BUILT_SOURCES) $(gen_files_hdb) hdb_asn1.h hdb_asn1_files
 
-noinst_PROGRAMS = convert_db
 LDADD = libhdb.la \
 	$(LIB_openldap) \
 	../krb5/libkrb5.la \
