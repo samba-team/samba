@@ -295,9 +295,6 @@ struct smbsrv_connection {
 		uint8_t command;
 	} *trans_partial;
 
-	/* mark a connection for termination */
-	const char *terminate;
-
 	/* configuration parameters */
 	struct {
 		enum security_types security;
