@@ -3193,7 +3193,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	char **values;
 	int i;
 	pstring filter;
-	size_t num_members;
+	size_t num_members = 0;
 
 	*pp_members = NULL;
 	*p_num_members = 0;
