@@ -341,7 +341,7 @@ struct composite_context *ldap_connect_send(struct ldap_connection *conn,
 	state->ctx->status = ldap_parse_basic_url(conn, url, &conn->host,
 						  &conn->port, &conn->ldaps);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) {
-		composite_trigger_error(state->ctx);
+		composite_error(state->ctx, state->ctx->status);
 		return result;
 	}
 

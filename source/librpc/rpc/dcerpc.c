@@ -722,7 +722,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -1633,7 +1633,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 

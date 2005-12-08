@@ -119,7 +119,7 @@ struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  failed:
-	composite_trigger_error(result);
+	composite_error(result, result->status);
 	return result;
 }
 

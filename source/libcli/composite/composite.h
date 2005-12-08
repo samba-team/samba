@@ -57,4 +57,6 @@ struct composite_context {
 		void (*fn)(struct composite_context *);
 		void *private_data;
 	} async;
+
+	BOOL used_wait;
 };

@@ -138,7 +138,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 	return result;
 
 failed:
-	composite_trigger_error(result);
+	composite_error(result, result->status);
 	return result;
 }
 

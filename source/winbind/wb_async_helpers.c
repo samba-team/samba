@@ -230,7 +230,7 @@ struct composite_context *wb_get_schannel_creds_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 

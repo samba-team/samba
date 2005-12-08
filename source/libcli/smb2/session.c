@@ -253,7 +253,7 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 	return c;
 
 failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
