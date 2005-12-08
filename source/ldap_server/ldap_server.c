@@ -41,12 +41,11 @@
 static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
 					 const char *reason)
 {
-	/* we don't actually do the stream termination here as the
-	   recv/send functions dereference the connection after the
-	   packet processing callbacks. Instead we mark it for
-	   termination and do the real termination in the send/recv
-	   functions */
-	conn->terminate = reason;
+	if (conn->tls) {
+		talloc_free(conn->tls);
+		conn->tls = NULL;
+	}
+	stream_terminate_connection(conn->connection, reason);
 }
 
 /*
@@ -231,14 +230,6 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 		talloc_get_type(c->private, struct ldapsrv_connection);
 	
 	packet_recv(conn->packet);
-
-	if (conn->terminate) {
-		if (conn->tls) {
-			talloc_free(conn->tls);
-			conn->tls = NULL;
-		}
-		stream_terminate_connection(conn->connection, conn->terminate);
-	}
 }
 
 /*
@@ -264,14 +255,6 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 		talloc_get_type(c->private, struct ldapsrv_connection);
 	
 	packet_queue_run(conn->packet);
-
-	if (conn->terminate) {
-		if (conn->tls) {
-			talloc_free(conn->tls);
-			conn->tls = NULL;
-		}
-		stream_terminate_connection(conn->connection, conn->terminate);
-	}
 }
 
 /*
@@ -304,13 +287,13 @@ static void ldapsrv_accept(struct stream_connection *c)
 				    c->event.fde, NULL, port != 389);
 	if (!conn->tls) {
 		ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
-		goto done;
+		return;
 	}
 
 	conn->packet = packet_init(conn);
 	if (conn->packet == NULL) {
 		ldapsrv_terminate_connection(conn, "out of memory");
-		goto done;
+		return;
 	}
 	packet_set_private(conn->packet, conn);
 	packet_set_tls(conn->packet, conn->tls);
@@ -324,35 +307,26 @@ static void ldapsrv_accept(struct stream_connection *c)
 	/* Connections start out anonymous */
 	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, &conn->session_info))) {
 		ldapsrv_terminate_connection(conn, "failed to setup anonymous session info");
-		goto done;
+		return;
 	}
 
 	part = talloc(conn, struct ldapsrv_partition);
 	if (part == NULL) {
 		ldapsrv_terminate_connection(conn, "talloc failed");
-		goto done;
+		return;
 	}
 
 	part->base_dn = "*"; /* default partition */
 	part->ops = ldapsrv_get_sldb_partition_ops();
 	if (!NT_STATUS_IS_OK(part->ops->Init(part, conn))) {
 		ldapsrv_terminate_connection(conn, "default partition Init failed");
-		goto done;
+		return;
 	}
 
 	conn->default_partition = part;
 	DLIST_ADD_END(conn->partitions, part, struct ldapsrv_partition *);
 
 	irpc_add_name(c->msg_ctx, "ldap_server");
-
-done:
-	if (conn->terminate) {
-		if (conn->tls) {
-			talloc_free(conn->tls);
-			conn->tls = NULL;
-		}
-		stream_terminate_connection(conn->connection, conn->terminate);
-	}
 }
 
 static const struct stream_server_ops ldap_stream_ops = {

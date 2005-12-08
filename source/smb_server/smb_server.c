@@ -75,7 +75,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
 */
 void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char *reason)
 {
-	smb_conn->terminate = reason;
+	stream_terminate_connection(smb_conn->connection, reason);
 }
 
 /*
@@ -83,17 +83,12 @@ void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char 
 */
 static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private,
+							     struct smbsrv_connection);
 
 	DEBUG(10,("smbsrv_recv\n"));
 
 	packet_recv(smb_conn->packet);
-	if (smb_conn->terminate) {
-		talloc_free(conn->event.fde);
-		conn->event.fde = NULL;
-		stream_terminate_connection(smb_conn->connection, smb_conn->terminate);
-		return;
-	}
 
 	/* free up temporary memory */
 	lp_talloc_free();
@@ -108,7 +103,6 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 							     struct smbsrv_connection);
 	packet_queue_run(smb_conn->packet);
 }
-
 
 /*
   handle socket recv errors
@@ -131,11 +125,14 @@ static void smbsrv_accept(struct stream_connection *conn)
 	DEBUG(5,("smbsrv_accept\n"));
 
 	smb_conn = talloc_zero(conn, struct smbsrv_connection);
-	if (!smb_conn) return;
+	if (!smb_conn) {
+		stream_terminate_connection(conn, "out of memory");
+		return;
+	}
 
 	smb_conn->packet = packet_init(smb_conn);
-	if (smb_conn->packet == NULL) {
-		stream_terminate_connection(conn, "out of memory");
+	if (!smb_conn->packet) {
+		smbsrv_terminate_connection(smb_conn, "out of memory");
 		return;
 	}
 	packet_set_private(smb_conn->packet, smb_conn);
