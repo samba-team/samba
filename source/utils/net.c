@@ -722,6 +722,7 @@ static struct functable net_func[] = {
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
 	{"STATUS", net_status},
+	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
 #ifdef WITH_FAKE_KASERVER
 	{"AFS", net_afs},

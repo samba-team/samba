@@ -4362,6 +4362,7 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 static int process_usershare_file(const char *dir_name, const char *file_name, int snum_template)
 {
 	SMB_STRUCT_STAT sbuf;
+	SMB_STRUCT_STAT lsbuf;
 	pstring fname;
 	pstring sharepath;
 	pstring comment;
@@ -4400,16 +4401,16 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	pstrcat(fname, "/");
 	pstrcat(fname, file_name);
 
-	/* Minimize the race condition by doing a stat before we
-	   open and fstat. */
+	/* Minimize the race condition by doing an lstat before we
+	   open and fstat. Ensure this isn't a symlink link. */
 
-	if (sys_stat(fname, &sbuf) != 0) {
+	if (sys_lstat(fname, &lsbuf) != 0) {
 		DEBUG(0,("process_usershare_file: stat of %s failed. %s\n",
 			fname, strerror(errno) ));
 		return -1;
 	}
 
-	if (snum != -1 && ServicePtrs[snum]->usershare_last_mod == sbuf.st_mtime) {
+	if (snum != -1 && ServicePtrs[snum]->usershare_last_mod == lsbuf.st_mtime) {
 		/* Nothing changed - Mark valid and return. */
 		DEBUG(10,("process_usershare_file: service %s not changed.\n",
 			service_name ));
@@ -4419,7 +4420,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* This must be a regular file, not a symlink, directory or
 	   other strange filetype. */
-	if (!check_usershare_stat(fname, &sbuf)) {
+	if (!check_usershare_stat(fname, &lsbuf)) {
 		return -1;
 	}
 
@@ -4441,6 +4442,14 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s failed. %s\n",
 			fname, strerror(errno) ));
+		return -1;
+	}
+
+	/* Is it the same dev/inode as was lstated ? */
+	if (lsbuf.st_dev != sbuf.st_dev || lsbuf.st_ino != sbuf.st_ino) {
+		close(fd);
+		DEBUG(0,("process_usershare_file: fstat of %s is a different file from lstat. "
+			"Symlink spoofing going on ?\n", fname ));
 		return -1;
 	}
 

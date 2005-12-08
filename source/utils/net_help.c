@@ -232,6 +232,7 @@ static int net_usage(int argc, const char **argv)
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
 		 "  net status\t\tShow server status\n"\
 		"  net usersidlist\tto get a list of all users with their SIDs\n"
+		"  net usershare\t\tto add, delete and list locally user-modifiable shares\n"
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
@@ -269,6 +270,7 @@ int net_help(int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{"TIME", net_time_usage},
 		{"LOOKUP", net_lookup_usage},
+		{"USERSHARE", net_usershare_usage},
 		{"USERSIDLIST", net_usersidlist_usage},
 #ifdef WITH_FAKE_KASERVER
 		{"AFS", net_help_afs},
