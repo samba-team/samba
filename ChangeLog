@@ -1,3 +1,8 @@
+2005-12-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb: drop convert_db, 0.0 to 0.1 transition was a long long
+	time ago
+
 2005-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_keytab.c: more tests, From Andrew Bartlet
