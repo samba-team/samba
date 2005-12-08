@@ -130,7 +130,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		printf("forest name is %s\n", forest_name);
 
 	if (info_class == 12) {
-		printf("domain GUID is ");
+		printf("domain GUID is %s\n");
 		smb_uuid_string_static(*dom_guid);
 	}
 
