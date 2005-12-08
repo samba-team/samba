@@ -128,22 +128,21 @@ static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
 #define SHARE_DATABASE_VERSION_V1 1
 #define SHARE_DATABASE_VERSION_V2 2 /* version id in little endian. */
 
-BOOL share_info_db_init(void)
+static BOOL share_info_db_init(void)
 {
-	static pid_t local_pid;
 	const char *vstring = "INFO/version";
 	int32 vers_id;
  
-	if (share_tdb && local_pid == sys_getpid())
+	if (share_tdb) {
 		return True;
+	}
+
 	share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!share_tdb) {
 		DEBUG(0,("Failed to open share info database %s (%s)\n",
 			lock_path("share_info.tdb"), strerror(errno) ));
 		return False;
 	}
- 
-	local_pid = sys_getpid();
  
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(share_tdb, vstring, 0);
@@ -168,16 +167,15 @@ BOOL share_info_db_init(void)
 }
 
 /*******************************************************************
- Fake up a Everyone, full access as a default.
+ Fake up a Everyone, default access as a default.
  ********************************************************************/
 
-static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
+SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
 {
 	SEC_ACCESS sa;
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
-	uint32 def_access = GENERIC_ALL_ACCESS;
 
 	se_map_generic(&def_access, &file_generic_mapping);
 
@@ -206,6 +204,10 @@ static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
 	fstring key;
 	SEC_DESC *psd = NULL;
 
+	if (!share_info_db_init()) {
+		return NULL;
+	}
+
 	*psize = 0;
 
 	/* Fetch security descriptor from tdb */
@@ -217,7 +219,7 @@ static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
  
 		DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename(snum) ));
  
-		return get_share_security_default(ctx, snum, psize);
+		return get_share_security_default(ctx, psize, GENERIC_ALL_ACCESS);
 	}
 
 	if (psd)
@@ -237,6 +239,10 @@ BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	BOOL ret = False;
+
+	if (!share_info_db_init()) {
+		return False;
+	}
 
 	mem_ctx = talloc_init("set_share_security");
 	if (mem_ctx == NULL)

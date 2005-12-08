@@ -882,9 +882,6 @@ void build_options(BOOL screen);
 	if (!locking_init(0))
 		exit(1);
 
-	if (!share_info_db_init())
-		exit(1);
-
 	namecache_enable();
 
 	if (!init_registry())

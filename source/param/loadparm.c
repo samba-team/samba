@@ -4225,7 +4225,15 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 
 static BOOL parse_share_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 {
-	return False;
+	size_t s_size = 0;
+	/* For now - fake up Everyone, read-only. */
+	SEC_DESC *psd = get_share_security_default(ctx, &s_size, GENERIC_READ_ACCESS);
+
+	if (!psd) {
+		return False;
+	}
+	*ppsd = psd;
+	return True;
 }
 
 #if 0
@@ -4251,23 +4259,36 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 			char **lines,
 			int numlines,
 			pstring sharepath,
+			pstring comment,
 			SEC_DESC **ppsd)
 {
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
 
+	if (numlines < 4) {
+		return False;
+	}
+
 	if (!strequal(lines[0], "#VERSION 1")) {
 		return False;
 	}
 
-	if (strnequal(lines[1], "path=", 5)) {
+	if (!strnequal(lines[1], "path=", 5)) {
 		return False;
 	}
 
 	pstrcpy(sharepath, &lines[1][5]);
 	trim_string(sharepath, " ", " ");
 
-	if (strnequal(lines[2], "usershare_acl=", 14)) {
+	if (!strnequal(lines[2], "comment=", 8)) {
+		return False;
+	}
+
+	pstrcpy(comment, &lines[2][8]);
+	trim_string(comment, " ", " ");
+	trim_char(comment, '"', '"');
+
+	if (!strnequal(lines[3], "usershare_acl=", 14)) {
 		return False;
 	}
 
@@ -4326,7 +4347,7 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 
 	sys_closedir(dp);
 
-	return False;
+	return True;
 }
 
 /***************************************************************************
@@ -4343,6 +4364,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	SMB_STRUCT_STAT sbuf;
 	pstring fname;
 	pstring sharepath;
+	pstring comment;
 	fstring service_name;
 	char **lines = NULL;
 	int numlines = 0;
@@ -4443,7 +4465,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return 1;
 	}
 
-	if (!parse_usershare_file(ctx, &sbuf, snum, lines, numlines, sharepath, &psd)) {
+	if (!parse_usershare_file(ctx, &sbuf, snum, lines, numlines, sharepath, comment, &psd)) {
 		talloc_destroy(ctx);
 		SAFE_FREE(lines);
 		return -1;
@@ -4452,7 +4474,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	SAFE_FREE(lines);
 
 	/* Everything ok - add the service possibly using a template. */
-	if (snum <= 0) {
+	if (snum < 0) {
 		const service *sp = &sDefault;
 		if (snum_template != -1) {
 			sp = ServicePtrs[snum_template];
@@ -4488,6 +4510,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	ServicePtrs[snum]->usershare_last_mod = sbuf.st_mtime;
 
 	string_set(&ServicePtrs[snum]->szPath, sharepath);
+	string_set(&ServicePtrs[snum]->comment, comment);
 
 	return 0;
 }
@@ -4567,13 +4590,23 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 	for (num_dir_entries = 0, num_bad_dir_entries = 0;
 			(de = sys_readdir(dp));
 			num_dir_entries++ ) {
-		int ret = process_usershare_file(usersharepath, de->d_name, snum_template);
+		int ret;
+		const char *n = de->d_name;
+
+		/* Ignore . and .. */
+		if (*n == '.') {
+			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
+				continue;
+			}
+		}
+
+		ret = process_usershare_file(usersharepath, n, snum_template);
 		if (ret == 0) {
 			num_usershares++;
 			if (num_usershares >= max_user_shares) {
 				DEBUG(0,("process_usershare_directory: max user shares reached "
 					"on file %s in directory %s\n",
-					de->d_name, usersharepath ));
+					n, usersharepath ));
 				break;
 			}
 		} else if (ret == -1) {
