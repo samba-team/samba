@@ -855,8 +855,10 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
-                if(pol) {
-		pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli, PI_LSARPC, &nt_status);
+                if (pol) {
+                        pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli,
+                                                            PI_LSARPC,
+                                                            &nt_status);
                         if (!pipe_hnd) {
                                 DEBUG(1, ("cli_nt_session_open fail!\n"));
                                 errno = ENOTSUP;
@@ -864,14 +866,18 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                                 return NULL;
                         }
 
-                        /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
-                           but NT sends 0x2000000 so we might as well do it too. */
+                        /*
+                         * Some systems don't support
+                         * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
+                         * so we might as well do it too.
+                         */
         
-                        nt_status = rpccli_lsa_open_policy(pipe_hnd,
-                                                         ipc_cli->mem_ctx,
-                                                         True, 
-                                                         GENERIC_EXECUTE_ACCESS,
-                                                         pol);
+                        nt_status = rpccli_lsa_open_policy(
+                                pipe_hnd,
+                                ipc_cli->mem_ctx,
+                                True, 
+                                GENERIC_EXECUTE_ACCESS,
+                                pol);
         
                         if (!NT_STATUS_IS_OK(nt_status)) {
                                 errno = smbc_errno(context, ipc_cli);
@@ -2236,6 +2242,83 @@ dir_list_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
 
 }
 
+static int
+net_share_enum_rpc(struct cli_state *cli,
+                   void (*fn)(const char *name,
+                              uint32 type,
+                              const char *comment,
+                              void *state),
+                   void *state)
+{
+        int i;
+	WERROR result;
+        NTSTATUS nt_status;
+	ENUM_HND enum_hnd;
+        uint32 info_level = 1;
+	uint32 preferred_len = 0xffffffff;
+	SRV_SHARE_INFO_CTR ctr;
+	fstring name = "";
+        fstring comment = "";
+        void *mem_ctx;
+	struct rpc_pipe_client *pipe_hnd;
+
+        /* Open the server service pipe */
+        pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &nt_status);
+        if (!pipe_hnd) {
+                DEBUG(1, ("net_share_enum_rpc pipe open fail!\n"));
+                return -1;
+        }
+
+        /* Allocate a context for parsing and for the entries in "ctr" */
+        mem_ctx = talloc_init("libsmbclient: net_share_enum_rpc");
+        if (mem_ctx == NULL) {
+                DEBUG(0, ("out of memory for net_share_enum_rpc!\n"));
+                return -1; 
+        }
+
+        /* Issue the NetShareEnum RPC call and retrieve the response */
+	init_enum_hnd(&enum_hnd, 0);
+	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
+                                              mem_ctx,
+                                              info_level,
+                                              &ctr,
+                                              preferred_len,
+                                              &enum_hnd);
+
+        /* Was it successful? */
+	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
+                /*  Nope.  Go clean up. */
+		goto done;
+        }
+
+        /* For each returned entry... */
+        for (i = 0; i < ctr.num_entries; i++) {
+
+                /* pull out the share name */
+                rpcstr_pull_unistr2_fstring(
+                        name, &ctr.share.info1[i].info_1_str.uni_netname);
+
+                /* pull out the share's comment */
+                rpcstr_pull_unistr2_fstring(
+                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
+
+                /* Add this share to the list */
+                (*fn)(name, SMBC_FILE_SHARE, comment, state);
+        }
+
+        /* We're done with the pipe */
+        cli_rpc_pipe_close(pipe_hnd);
+        
+done:
+        /* Free all memory which was allocated for this request */
+        talloc_free(mem_ctx);
+
+        /* Tell 'em if it worked */
+        return W_ERROR_IS_OK(result) ? 0 : -1;
+}
+
+
+
 static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
 	fstring server, share, user, password, options;
@@ -2494,9 +2577,15 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 					/* Now, list the servers ... */
 
-					if (cli_RNetShareEnum(&srv->cli, list_fn, 
-							      (void *)dir) < 0) {
-
+					if (net_share_enum_rpc(
+                                                    &srv->cli,
+                                                    list_fn,
+                                                    (void *) dir) < 0 &&
+                                            cli_RNetShareEnum(
+                                                    &srv->cli,
+                                                    list_fn, 
+                                                    (void *)dir) < 0) {
+                                                
 						errno = cli_errno(&srv->cli);
 						if (dir) {
 							SAFE_FREE(dir->fname);
