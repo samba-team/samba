@@ -2476,11 +2476,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                                                SV_TYPE_DOMAIN_ENUM,
                                                list_unique_wg_fn,
                                                (void *)dir)) {
-                                if (dir) {
-                                        SAFE_FREE(dir->fname);
-                                        SAFE_FREE(dir);
-                                }
-
                                 continue;
                         }
                 }
