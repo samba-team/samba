@@ -373,7 +373,7 @@ static struct composite_context *lsa_enumtrust_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -475,7 +475,7 @@ static struct composite_context *get_netlogon_schannel_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -655,7 +655,7 @@ static struct composite_context *lookupsids_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -898,7 +898,7 @@ static struct composite_context *get_samr_domain_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -1109,7 +1109,7 @@ static struct composite_context *domadmins_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -1420,7 +1420,7 @@ static struct composite_context *memberships_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -1550,7 +1550,7 @@ static struct composite_context *ntconfig_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 
@@ -1689,7 +1689,7 @@ static struct composite_context *xp_login_send(TALLOC_CTX *mem_ctx,
 	return c;
 
  failed:
-	composite_trigger_error(c);
+	composite_error(c, c->status);
 	return c;
 }
 

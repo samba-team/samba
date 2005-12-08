@@ -85,7 +85,7 @@ struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
 	state->domain = find_domain_from_sid(service, sid);
 	if (state->domain != NULL) {
 		result->status = NT_STATUS_OK;
-		composite_trigger_done(result);
+		composite_done(result);
 		return result;
 	}
 
