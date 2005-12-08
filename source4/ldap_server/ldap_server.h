@@ -33,9 +33,6 @@ struct ldapsrv_connection {
 	/* are we using gensec wrapping? */
 	BOOL enable_wrap;
 
-	/* connection should be terminated if non-null */
-	const char *terminate;
-
 	struct packet_context *packet;
 };
 
