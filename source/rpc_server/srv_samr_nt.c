@@ -2243,6 +2243,8 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 	enum SID_NAME_USE type;
 	BOOL result;
 
+	DEBUG(10, ("Checking whether [%s] can be created\n", new_name));
+
 	become_root();
 	/* Lookup in our local databases (only LOOKUP_NAME_ISOLATED set)
 	 * whether the name already exists */
@@ -2251,6 +2253,7 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 	unbecome_root();
 
 	if (!result) {
+		DEBUG(10, ("%s does not exist, can create it\n", new_name));
 		return NT_STATUS_OK;
 	}
 
@@ -4308,15 +4311,15 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	r_u->status = can_create(p->mem_ctx, name);
-	if (!NT_STATUS_IS_OK(r_u->status)) {
-		return r_u->status;
-	}
-
 	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+
+	result = can_create(p->mem_ctx, name);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 	
