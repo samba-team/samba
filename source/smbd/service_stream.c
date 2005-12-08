@@ -55,7 +55,24 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 {
 	struct event_context *event_ctx = srv_conn->event.ctx;
 	const struct model_ops *model_ops = srv_conn->model_ops;
+
+	if (!reason) reason = "unknwon reason";
+
+	srv_conn->terminate = reason;
+
+	if (srv_conn->processing) {
+		/* 
+		 * if we're currently inside the stream_io_handler(),
+		 * deferr the termination to the end of stream_io_hendler()
+		 *
+		 * and we don't want to read or write to the connection...
+		 */
+		event_set_fd_flags(srv_conn->event.fde, 0);
+		return;
+	}
+
 	talloc_free(srv_conn->event.fde);
+	srv_conn->event.fde = NULL;
 	talloc_free(srv_conn);
 	model_ops->terminate(event_ctx, reason);
 }
@@ -68,13 +85,17 @@ static void stream_io_handler(struct event_context *ev, struct fd_event *fde,
 {
 	struct stream_connection *conn = talloc_get_type(private, 
 							 struct stream_connection);
+
+	conn->processing = True;
 	if (flags & EVENT_FD_WRITE) {
 		conn->ops->send_handler(conn, flags);
-		return;
-	}
-
-	if (flags & EVENT_FD_READ) {
+	} else if (flags & EVENT_FD_READ) {
 		conn->ops->recv_handler(conn, flags);
+	}
+	conn->processing = False;
+
+	if (conn->terminate) {
+		stream_terminate_connection(conn, conn->terminate);
 	}
 }
 

@@ -23,10 +23,10 @@
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
- * with a comment and maybe update struct process_model_critical_sizes.
+ * with a comment and maybe update struct stream_connection_critical_sizes.
  */
-/* version 1 - initial version - metze */
-#define SERVER_SERVICE_VERSION 1
+/* version 0 - initial version - metze */
+#define SERVER_SERVICE_VERSION 0
 
 /*
   top level context for an established stream connection
@@ -44,6 +44,9 @@ struct stream_connection {
 
 	struct socket_context *socket;
 	struct messaging_context *msg_ctx;
+
+	BOOL processing;
+	const char *terminate;
 };
 
 
