@@ -41,6 +41,13 @@ struct kdc_reply {
 	DATA_BLOB packet;
 };
 
+typedef BOOL (*kdc_process_fn_t)(struct kdc_server *kdc,
+				 TALLOC_CTX *mem_ctx, 
+				 DATA_BLOB *input, 
+				 DATA_BLOB *reply,
+				 const char *src_addr,
+				 int src_port);
+
 /* hold information about one kdc socket */
 struct kdc_socket {
 	struct socket_context *sock;
@@ -50,12 +57,7 @@ struct kdc_socket {
 	/* a queue of outgoing replies that have been deferred */
 	struct kdc_reply *send_queue;
 
-	BOOL (*process)(struct kdc_server *kdc,
-			TALLOC_CTX *mem_ctx, 
-			DATA_BLOB *input, 
-			DATA_BLOB *reply,
-			const char *from,
-			int src_port);
+	kdc_process_fn_t process;
 };
 /*
   state of an open tcp connection
@@ -69,12 +71,7 @@ struct kdc_tcp_connection {
 
 	struct packet_context *packet;
 
-	BOOL (*process)(struct kdc_server *kdc,
-			 TALLOC_CTX *mem_ctx, 
-			 DATA_BLOB *input, 
-			 DATA_BLOB *reply,
-			 const char *from,
-			 int src_port);
+	kdc_process_fn_t process;
 };
 
 /*
@@ -334,7 +331,7 @@ static BOOL kdc_process(struct kdc_server *kdc,
 /*
   called when we get a new connection
 */
-static void kdc_tcp_accept(struct stream_connection *conn)
+static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_fn_t process_fn)
 {
 	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
 	struct kdc_tcp_connection *kdcconn;
@@ -346,12 +343,12 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 	}
 	kdcconn->conn	 = conn;
 	kdcconn->kdc	 = kdc;
-	kdcconn->process = kdc_process;
+	kdcconn->process = process_fn;
 	conn->private    = kdcconn;
 
 	kdcconn->packet = packet_init(kdcconn);
 	if (kdcconn->packet == NULL) {
-		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
+		kdc_tcp_terminate_connection(kdcconn, "kdc_tcp_accept: out of memory");
 		return;
 	}
 	packet_set_private(kdcconn->packet, kdcconn);
@@ -364,6 +361,11 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 	packet_set_serialise(kdcconn->packet);
 }
 
+static void kdc_tcp_accept(struct stream_connection *conn)
+{
+	kdc_tcp_generic_accept(conn, kdc_process);
+}
+
 static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.name			= "kdc_tcp",
 	.accept_connection	= kdc_tcp_accept,
@@ -371,36 +373,9 @@ static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.send_handler		= kdc_tcp_send
 };
 
-/*
-  called when we get a new connection
-*/
-void kpasswdd_tcp_accept(struct stream_connection *conn)
+static void kpasswdd_tcp_accept(struct stream_connection *conn)
 {
-	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
-	struct kdc_tcp_connection *kdcconn;
-
-	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
-	if (!kdcconn) {
-		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
-		return;
-	}
-	kdcconn->conn	 = conn;
-	kdcconn->kdc	 = kdc;
-	kdcconn->process = kpasswdd_process;
-	conn->private    = kdcconn;
-	kdcconn->packet = packet_init(kdcconn);
-	if (kdcconn->packet == NULL) {
-		stream_terminate_connection(conn, "kdc_tcp_accept: out of memory");
-		return;
-	}
-	packet_set_private(kdcconn->packet, kdcconn);
-	packet_set_socket(kdcconn->packet, conn->socket);
-	packet_set_callback(kdcconn->packet, kdc_tcp_recv);
-	packet_set_full_request(kdcconn->packet, packet_full_request_u32);
-	packet_set_error_handler(kdcconn->packet, kdc_tcp_recv_error);
-	packet_set_event_context(kdcconn->packet, conn->event.ctx);
-	packet_set_fde(kdcconn->packet, conn->event.fde);
-	packet_set_serialise(kdcconn->packet);
+	kdc_tcp_generic_accept(conn, kpasswdd_process);
 }
 
 static const struct stream_server_ops kpasswdd_tcp_stream_ops = {
