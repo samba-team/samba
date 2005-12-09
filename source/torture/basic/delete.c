@@ -697,27 +697,30 @@ BOOL torture_test_delete(void)
 
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
-                                                                                                                                        
         printf("eleventh delete on close test succeeded.\n");
 
-	/* test 12 - does having read only attribute still allow delete on close at time of open. */
+	/* test 12 - does having read only attribute still allow delete on
+	 * close at time of open. */
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
 				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_READONLY,
-				      NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OVERWRITE_IF, 
 				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 != -1) {
-		printf("(%s) open of %s succeeded. Should fail with NT_STATUS_CANNOT_DELETE.\n", 
-		       __location__, fname);
+		printf("(%s) open of %s succeeded. Should fail with "
+		       "NT_STATUS_CANNOT_DELETE.\n", __location__, fname);
 		smbcli_close(cli1->tree, fnum1);
 		correct = False;
 		goto fail;
 	} else {
 		status = smbcli_nt_error(cli1->tree);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
-			printf("(%s) setting delete_on_close on open should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", 
+			printf("(%s) setting delete_on_close on open should "
+			       "fail with NT_STATUS_CANNOT_DELETE. Got %s "
+			       "instead)\n", 
 			       __location__, smbcli_errstr(cli1->tree));
 			correct = False;
 			goto fail;
@@ -737,7 +740,9 @@ BOOL torture_test_delete(void)
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
 				      FILE_ATTRIBUTE_NORMAL, 
-				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
 				      NTCREATEX_DISP_OVERWRITE_IF,
 				      0, 0);
 	
@@ -753,7 +758,9 @@ BOOL torture_test_delete(void)
 				      SEC_FILE_WRITE_DATA|
 				      SEC_STD_DELETE,
 				      FILE_ATTRIBUTE_NORMAL, 
-				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
 				      NTCREATEX_DISP_OPEN, 0, 0);
 	
 	if (fnum2 == -1) {
