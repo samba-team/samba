@@ -222,7 +222,6 @@
 		[in,out]     uint32 level,
 		[in,out,switch_is(level),ref] wkssvc_NetWkstaTransportCtr *ctr,
 		[in]         uint32 max_buffer,
-		[out] 	     uint32 *entriesread,
 		[out]        uint32 totalentries,
 		[in,out]     uint32 *resume_handle
 		);
