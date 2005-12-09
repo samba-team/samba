@@ -92,8 +92,8 @@ static void epoll_fallback_to_select(struct std_event_context *std_ev, const cha
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= EPOLLIN;
-	if (flags & EVENT_FD_WRITE) ret |= EPOLLOUT;
+	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
