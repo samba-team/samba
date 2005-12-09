@@ -135,6 +135,7 @@ static struct fd_event *gtk_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->additional_flags	= 0;
 	fde->additional_data	= gtk_fd;
 
 	channel = g_io_channel_unix_new(fde->fd);
@@ -339,6 +340,11 @@ static const struct event_ops gtk_event_ops = {
 	.loop_once	= gtk_event_loop_once,
 	.loop_wait	= gtk_event_loop_wait,
 };
+
+const struct event_ops *gtk_event_get_ops(void)
+{
+	return &gtk_event_ops;
+}
 
 int gtk_event_loop(void)
 {

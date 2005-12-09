@@ -56,6 +56,7 @@ struct fd_event {
 	/* this is private for the specific handler */
 	void *private_data;
 	/* this is private for the events_ops implementation */
+	uint16_t additional_flags;
 	void *additional_data;
 };
 
