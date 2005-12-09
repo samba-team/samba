@@ -194,3 +194,121 @@ NTSTATUS dcerpc_pipe_connect_ncacn_np_smb(TALLOC_CTX *tmp_ctx,
 	c = dcerpc_pipe_connect_ncacn_np_smb_send(tmp_ctx, io);
 	return dcerpc_pipe_connect_ncacn_np_smb_recv(c);
 }
+
+
+struct pipe_np_smb2_state {
+	struct smb2_tree *tree;
+	struct dcerpc_pipe_connect io;
+};
+
+
+void continue_pipe_open_smb2(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
+						       struct pipe_np_smb2_state);
+
+	c->status = dcerpc_pipe_open_smb2_recv(ctx);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
+		composite_error(c, c->status);
+		return;
+	}
+
+	composite_done(c);
+}
+
+
+void continue_smb2_connect(struct composite_context *ctx)
+{
+	struct composite_context *open_req;
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
+						       struct pipe_np_smb2_state);
+
+	c->status = smb2_connect_recv(ctx, c, &s->tree);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
+		composite_error(c, c->status);
+		return;
+	}
+	
+	s->io.pipe_name = s->io.binding->endpoint;
+
+	open_req = dcerpc_pipe_open_smb2_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
+	if (open_req == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	composite_continue(c, open_req, continue_pipe_open_smb2, c);
+}
+
+
+struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem_ctx,
+								 struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	struct pipe_np_smb2_state *s;
+	struct composite_context *conn_req;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_np_smb2_state);
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+	
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = io->pipe->conn->event_ctx;
+
+	s->io = *io;
+
+	if (s->io.binding->flags & DCERPC_SCHANNEL) {
+		s->io.creds = cli_credentials_init(mem_ctx);
+		if (s->io.creds) {
+			composite_error(c, NT_STATUS_NO_MEMORY);
+			goto done;
+		}
+
+		cli_credentials_set_anonymous(s->io.creds);
+		cli_credentials_guess(s->io.creds);
+	}
+
+	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", s->io.creds,
+				     c->event_ctx);
+	if (conn_req == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	composite_continue(c, conn_req, continue_smb2_connect, c);
+
+done:
+	return c;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	
+	talloc_free(c);
+	return status;
+}
+
+
+/* open a rpc connection to a rpc pipe on SMB2 using the binding
+   structure to determine the endpoint and options */
+NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *mem_ctx,
+					   struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	c = dcerpc_pipe_connect_ncacn_np_smb2_send(mem_ctx, io);
+	return dcerpc_pipe_connect_ncacn_np_smb2_recv(c);
+}

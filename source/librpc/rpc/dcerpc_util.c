@@ -1016,58 +1016,18 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 }
 
 
-/* open a rpc connection to a rpc pipe on SMB2 using the binding
-   structure to determine the endpoint and options */
-static NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *tmp_ctx, 
-						  struct dcerpc_pipe *p, 
-						  struct dcerpc_binding *binding,
-						  const char *pipe_uuid, 
-						  uint32_t pipe_version,
-						  struct cli_credentials *credentials)
-{
-	NTSTATUS status;
-	struct smb2_tree *tree;
-	const char *pipe_name = NULL;
-
-	if (binding->flags & DCERPC_SCHANNEL) {
-		credentials = cli_credentials_init(tmp_ctx);
-		cli_credentials_set_anonymous(credentials);
-		cli_credentials_guess(credentials);
-	}
-	status = smb2_connect(tmp_ctx, binding->host, "IPC$", credentials, &tree,
-			      p->conn->event_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to connect to %s - %s\n", 
-			 binding->host, nt_errstr(status)));
-		return status;
-	}
-
-	pipe_name = binding->endpoint;
-
-	status = dcerpc_pipe_open_smb2(p->conn, tree, pipe_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to open pipe %s - %s\n", pipe_name, nt_errstr(status)));
-		return status;
-	}
-
-	talloc_steal(p->conn, tree);
-
-	return NT_STATUS_OK;
-}
-
-
 /* open a rpc connection to a rpc pipe on SMB using the binding
    structure to determine the endpoint and options */
 static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx, 
 					     struct dcerpc_pipe_connect *io)
 {
 	if (io->binding->flags & DCERPC_SMB2) {
-		return dcerpc_pipe_connect_ncacn_np_smb2(tmp_ctx, io->pipe, io->binding,
-							 io->pipe_uuid, io->pipe_version,
-							 io->creds);
+		return dcerpc_pipe_connect_ncacn_np_smb2(tmp_ctx, io);
+
 	}
 	return dcerpc_pipe_connect_ncacn_np_smb(tmp_ctx, io);
 }
+
 
 /* open a rpc connection to a rpc pipe on SMP using the binding
    structure to determine the endpoint and options */
