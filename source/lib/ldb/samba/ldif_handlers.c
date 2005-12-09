@@ -214,6 +214,65 @@ static int ldb_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
 
+
+/*
+  convert a ldif (SDDL) formatted ntSecurityDescriptor to a NDR formatted blob
+*/
+static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx,
+					  const struct ldb_val *in, struct ldb_val *out)
+{
+	struct security_descriptor *sd;
+	NTSTATUS status;
+	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
+	if (domain_sid == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+	sd = sddl_decode(mem_ctx, (const char *)in->data, domain_sid);
+	if (sd == NULL) {
+		return -1;
+	}
+	status = ndr_push_struct_blob(out, mem_ctx, sd, 
+				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	talloc_free(sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return 0;
+}
+
+/*
+  convert a NDR formatted blob to a ldif formatted ntSecurityDescriptor (SDDL format)
+*/
+static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx,
+					   const struct ldb_val *in, struct ldb_val *out)
+{
+	struct security_descriptor *sd;
+	NTSTATUS status;
+	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
+
+	if (domain_sid == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	sd = talloc(mem_ctx, struct security_descriptor);
+	if (sd == NULL) {
+		return -1;
+	}
+	status = ndr_pull_struct_blob(in, sd, sd, 
+				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(sd);
+		return -1;
+	}
+	out->data = (uint8_t *)sddl_encode(mem_ctx, sd, domain_sid);
+	talloc_free(sd);
+	if (out->data == NULL) {
+		return -1;
+	}
+	out->length = strlen((const char *)out->data);
+	return 0;
+}
+
 static const struct ldb_attrib_handler samba_handlers[] = {
 	{ 
 		.attr            = "objectSid",
@@ -230,6 +289,14 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 		.ldif_write_fn   = ldif_write_objectSid,
 		.canonicalise_fn = ldb_canonicalise_objectSid,
 		.comparison_fn   = ldb_comparison_objectSid
+	},
+	{ 
+		.attr            = "ntSecurityDescriptor",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_ntSecurityDescriptor,
+		.ldif_write_fn   = ldif_write_ntSecurityDescriptor,
+		.canonicalise_fn = ldb_handler_copy,
+		.comparison_fn   = ldb_comparison_binary
 	},
 	{ 
 		.attr            = "objectGUID",
