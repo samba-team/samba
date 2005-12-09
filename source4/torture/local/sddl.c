@@ -57,6 +57,13 @@ static BOOL test_sddl(TALLOC_CTX *mem_ctx, const char *sddl)
 		return False;
 	}
 
+#if 0
+	/* flags don't have a canonical order ... */
+	if (strcmp(sddl, sddl2) != 0) {
+		printf("Failed sddl equality test\norig: %s\n new: %s\n", sddl, sddl2);
+	}
+#endif
+
 	if (DEBUGLVL(2)) {
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}
