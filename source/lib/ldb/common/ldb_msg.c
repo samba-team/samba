@@ -671,3 +671,20 @@ time_t ldb_string_to_time(const char *s)
 	return timegm(&tm);
 }
 
+
+/*
+  dump a set of results to a file. Useful from within gdb
+*/
+void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f)
+{
+	int i;
+
+	for (i = 0; i < result->count; i++) {
+		struct ldb_ldif ldif;
+		fprintf(f, "# record %d\n", i+1);
+		ldif.changetype = LDB_CHANGETYPE_NONE;
+		ldif.msg = result->msgs[i];
+		ldb_ldif_write_file(ldb, f, &ldif);
+	}
+}
+
