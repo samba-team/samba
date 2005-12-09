@@ -44,6 +44,9 @@
 #endif
 
 struct std_event_context {
+	/* a pointer back to the generic event_context */
+	struct event_context *ev;
+
 	/* list of filedescriptor events */
 	struct fd_event *fd_events;
 
@@ -64,57 +67,186 @@ struct std_event_context {
 	*/
 	uint32_t destruction_count;
 
-#if WITH_EPOLL
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
-#endif
 };
 
-/*
-  destroy an event context
-*/
-static int std_event_context_destructor(void *ptr)
-{
+static void std_event_loop_timer(struct std_event_context *std_ev);
+
 #if WITH_EPOLL
-	struct event_context *ev = talloc_get_type(ptr, struct event_context);
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
+/*
+  called when a epoll call fails, and we should fallback
+  to using select
+*/
+static void epoll_fallback_to_select(struct std_event_context *std_ev, const char *reason)
+{
+	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
+	close(std_ev->epoll_fd);
+	std_ev->epoll_fd = -1;
+	talloc_set_destructor(std_ev, NULL);
+}
+
+/*
+  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
+*/
+static uint32_t epoll_map_flags(uint16_t flags)
+{
+	uint32_t ret = 0;
+	if (flags & EVENT_FD_READ) ret |= EPOLLIN;
+	if (flags & EVENT_FD_WRITE) ret |= EPOLLOUT;
+	return ret;
+}
+
+/*
+ free the epoll fd
+*/
+static int epoll_ctx_destructor(void *ptr)
+{
+	struct std_event_context *std_ev = talloc_get_type(ptr,
 							   struct std_event_context);
-	if (std_ev->epoll_fd != -1) {
-		close(std_ev->epoll_fd);
-		std_ev->epoll_fd = -1;
-	}
-#endif
+	close(std_ev->epoll_fd);
+	std_ev->epoll_fd = -1;
 	return 0;
 }
 
 /*
+ init the epoll fd
+*/
+static void epoll_init_ctx(struct std_event_context *std_ev, BOOL try_epoll)
+{
+	if (!try_epoll)	return;
+	std_ev->epoll_fd = epoll_create(64);
+	talloc_set_destructor(std_ev, epoll_ctx_destructor);
+}
+
+/*
+ add the epoll event to the given fd_event
+*/
+static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde)
+{
+	struct epoll_event event;
+	if (std_ev->epoll_fd == -1) return;
+	ZERO_STRUCT(event);
+	event.events = epoll_map_flags(fde->flags);
+	event.data.ptr = fde;
+	if (epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
+		epoll_fallback_to_select(std_ev, "EPOLL_CTL_ADD failed");
+	}
+}
+
+/*
+ remove the epoll event for given fd_event
+*/
+static void epoll_remove_event(struct std_event_context *std_ev, struct fd_event *fde)
+{
+	struct epoll_event event;
+	if (std_ev->epoll_fd == -1) return;
+	ZERO_STRUCT(event);
+	event.events = epoll_map_flags(fde->flags);
+	event.data.ptr = fde;
+	epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
+}
+
+/*
+ change the epoll event to the given fd_event
+*/
+static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde, uint16_t flags)
+{
+	struct epoll_event event;
+	if (std_ev->epoll_fd == -1) return;
+	ZERO_STRUCT(event);
+	event.events = epoll_map_flags(flags);
+	event.data.ptr = fde;
+	if (epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
+		epoll_fallback_to_select(std_ev, "EPOLL_CTL_MOD failed");
+	}
+}
+
+/*
+  event loop handling using epoll
+*/
+static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tvalp)
+{
+	int ret, i;
+#define MAXEVENTS 8
+	struct epoll_event events[MAXEVENTS];
+	uint32_t destruction_count = std_ev->destruction_count;
+	int timeout = -1;
+
+	if (std_ev->epoll_fd == -1) return -1;
+
+	if (tvalp) {
+		/* it's better to trigger timed events a bit later than to early */
+		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
+	}
+
+	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
+
+	if (ret == -1 && errno != EINTR) {
+		epoll_fallback_to_select(std_ev, "epoll_wait() failed");
+		return -1;
+	}
+
+	if (ret == 0 && tvalp) {
+		std_event_loop_timer(std_ev);
+		return 0;
+	}
+
+	for (i=0;i<ret;i++) {
+		struct fd_event *fde = talloc_get_type(events[i].data.ptr, 
+						       struct fd_event);
+		uint16_t flags = 0;
+
+		if (fde == NULL) {
+			epoll_fallback_to_select(std_ev, "epoll_wait() gave bad data");
+			return -1;
+		}
+		if (events[i].events & (EPOLLHUP|EPOLLERR)) flags |= EVENT_FD_READ;
+		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
+		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+		if (flags) {
+			fde->handler(std_ev->ev, fde, flags, fde->private_data);
+			if (destruction_count != std_ev->destruction_count) {
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+#else
+#define epoll_init_ctx(std_ev,try_epoll) if (try_epoll) {/* fix unused variable warning*/}
+#define epoll_add_event(std_ev,fde)
+#define epoll_remove_event(std_ev,fde)
+#define epoll_change_event(std_ev,fde,flags)
+#define epoll_event_loop(std_ev,tvalp) (-1)
+#endif
+
+/*
   create a std_event_context structure.
 */
-static int std_event_context_init(struct event_context *ev, void *privata_data)
+static int std_event_context_init(struct event_context *ev, void *private_data)
 {
 	struct std_event_context *std_ev;
+	BOOL *_try_epoll = private_data;
+	BOOL try_epoll = (_try_epoll == NULL ? True : *_try_epoll);
 
 	std_ev = talloc_zero(ev, struct std_event_context);
 	if (!std_ev) return -1;
+	std_ev->ev = ev;
+	std_ev->epoll_fd = -1;
 
-#if WITH_EPOLL
-	std_ev->epoll_fd = epoll_create(64);
-#endif
+	epoll_init_ctx(std_ev, try_epoll);
 
 	ev->additional_data = std_ev;
-
-	talloc_set_destructor(ev, std_event_context_destructor);
-
 	return 0;
 }
 
 /*
   recalculate the maxfd
 */
-static void calc_maxfd(struct event_context *ev)
+static void calc_maxfd(struct std_event_context *std_ev)
 {
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
 	struct fd_event *fde;
 
 	std_ev->maxfd = 0;
@@ -131,36 +263,6 @@ static void calc_maxfd(struct event_context *ev)
  */
 #define EVENT_INVALID_MAXFD (-1)
 
-
-#if WITH_EPOLL
-/*
-  called when a epoll call fails, and we should fallback
-  to using select
-*/
-static void epoll_fallback_to_select(struct event_context *ev, const char *reason)
-{
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
-	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
-	close(std_ev->epoll_fd);
-	std_ev->epoll_fd = -1;
-}
-#endif
-
-
-#if WITH_EPOLL
-/*
-  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
-*/
-static uint32_t epoll_map_flags(uint16_t flags)
-{
-	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= EPOLLIN;
-	if (flags & EVENT_FD_WRITE) ret |= EPOLLOUT;
-	return ret;
-}
-#endif
-
 /*
   destroy an fd_event
 */
@@ -174,17 +276,12 @@ static int std_event_fd_destructor(void *ptr)
 	if (std_ev->maxfd == fde->fd) {
 		std_ev->maxfd = EVENT_INVALID_MAXFD;
 	}
+
 	DLIST_REMOVE(std_ev->fd_events, fde);
 	std_ev->destruction_count++;
-#if WITH_EPOLL
-	if (std_ev->epoll_fd != -1) {
-		struct epoll_event event;
-		ZERO_STRUCT(event);
-		event.events = epoll_map_flags(fde->flags);
-		event.data.ptr = fde;
-		epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
-	}
-#endif
+
+	epoll_remove_event(std_ev, fde);
+
 	return 0;
 }
 
@@ -213,24 +310,12 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	fde->additional_data	= NULL;
 
 	DLIST_ADD(std_ev->fd_events, fde);
-
 	if (fde->fd > std_ev->maxfd) {
 		std_ev->maxfd = fde->fd;
 	}
-
 	talloc_set_destructor(fde, std_event_fd_destructor);
 
-#if WITH_EPOLL
-	if (std_ev->epoll_fd != -1) {
-		struct epoll_event event;
-		ZERO_STRUCT(event);
-		event.events = epoll_map_flags(flags);
-		event.data.ptr = fde;
-		if (epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
-			epoll_fallback_to_select(ev, "EPOLL_CTL_ADD failed");
-		}
-	}
-#endif
+	epoll_add_event(std_ev, fde);
 
 	return fde;
 }
@@ -249,24 +334,16 @@ static uint16_t std_event_get_fd_flags(struct fd_event *fde)
 */
 static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 {
-#if WITH_EPOLL
 	struct event_context *ev;
 	struct std_event_context *std_ev;
-	if (fde->flags == flags) {
-		return;
-	}
+
+	if (fde->flags == flags) return;
+
 	ev = fde->event_ctx;
 	std_ev = talloc_get_type(ev->additional_data, struct std_event_context);
-	if (std_ev->epoll_fd != -1) {
-		struct epoll_event event;
-		ZERO_STRUCT(event);
-		event.events = epoll_map_flags(flags);
-		event.data.ptr = fde;
-		if (epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
-			epoll_fallback_to_select(ev, "EPOLL_CTL_MOD failed");
-		}
-	}
-#endif
+
+	epoll_change_event(std_ev, fde, flags);
+
 	fde->flags = flags;
 }
 
@@ -332,10 +409,8 @@ static struct timed_event *std_event_add_timed(struct event_context *ev, TALLOC_
 /*
   a timer has gone off - call it
 */
-static void std_event_loop_timer(struct event_context *ev)
+static void std_event_loop_timer(struct std_event_context *std_ev)
 {
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
 	struct timeval t = timeval_current();
 	struct timed_event *te = std_ev->timed_events;
 
@@ -351,7 +426,7 @@ static void std_event_loop_timer(struct event_context *ev)
 	 * handler we don't want to come across this event again -- vl */
 	DLIST_REMOVE(std_ev->timed_events, te);
 
-	te->handler(ev, te, t, te->private_data);
+	te->handler(std_ev->ev, te, t, te->private_data);
 
 	/* The destructor isn't necessary anymore, we've already removed the
 	 * event from the list. */
@@ -360,68 +435,11 @@ static void std_event_loop_timer(struct event_context *ev)
 	talloc_free(te);
 }
 
-#if WITH_EPOLL
-/*
-  event loop handling using epoll
-*/
-static int std_event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
-{
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-		 					   struct std_event_context);
-	int ret, i;
-#define MAXEVENTS 8
-	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = std_ev->destruction_count;
-	int timeout = -1;
-
-	if (tvalp) {
-		/* it's better to trigger timed events a bit later than to early */
-		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
-	}
-
-	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
-
-	if (ret == -1 && errno != EINTR) {
-		epoll_fallback_to_select(ev, "epoll_wait() failed");
-		return -1;
-	}
-
-	if (ret == 0 && tvalp) {
-		std_event_loop_timer(ev);
-		return 0;
-	}
-
-	for (i=0;i<ret;i++) {
-		struct fd_event *fde = talloc_get_type(events[i].data.ptr, 
-						       struct fd_event);
-		uint16_t flags = 0;
-
-		if (fde == NULL) {
-			epoll_fallback_to_select(ev, "epoll_wait() gave bad data");
-			return -1;
-		}
-		if (events[i].events & (EPOLLIN|EPOLLHUP|EPOLLERR)) 
-			flags |= EVENT_FD_READ;
-		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
-		if (flags) {
-			fde->handler(ev, fde, flags, fde->private_data);
-			if (destruction_count != std_ev->destruction_count) {
-				break;
-			}
-		}
-	}
-
-	return 0;
-}		
-#endif
-
 /*
   event loop handling using select()
 */
-static int std_event_loop_select(struct event_context *ev, struct timeval *tvalp)
+static int std_event_loop_select(struct std_event_context *std_ev, struct timeval *tvalp)
 {
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-		 					   struct std_event_context);
 	fd_set r_fds, w_fds;
 	struct fd_event *fde;
 	int selrtn;
@@ -429,7 +447,7 @@ static int std_event_loop_select(struct event_context *ev, struct timeval *tvalp
 
 	/* we maybe need to recalculate the maxfd */
 	if (std_ev->maxfd == EVENT_INVALID_MAXFD) {
-		calc_maxfd(ev);
+		calc_maxfd(std_ev);
 	}
 
 	FD_ZERO(&r_fds);
@@ -459,7 +477,7 @@ static int std_event_loop_select(struct event_context *ev, struct timeval *tvalp
 	}
 
 	if (selrtn == 0 && tvalp) {
-		std_event_loop_timer(ev);
+		std_event_loop_timer(std_ev);
 		return 0;
 	}
 
@@ -473,7 +491,7 @@ static int std_event_loop_select(struct event_context *ev, struct timeval *tvalp
 			if (FD_ISSET(fde->fd, &r_fds)) flags |= EVENT_FD_READ;
 			if (FD_ISSET(fde->fd, &w_fds)) flags |= EVENT_FD_WRITE;
 			if (flags) {
-				fde->handler(ev, fde, flags, fde->private_data);
+				fde->handler(std_ev->ev, fde, flags, fde->private_data);
 				if (destruction_count != std_ev->destruction_count) {
 					break;
 				}
@@ -498,7 +516,7 @@ static int std_event_loop_once(struct event_context *ev)
 		struct timeval t = timeval_current();
 		tval = timeval_until(&t, &std_ev->timed_events->next_event);
 		if (timeval_is_zero(&tval)) {
-			std_event_loop_timer(ev);
+			std_event_loop_timer(std_ev);
 			return 0;
 		}
 	} else {
@@ -508,15 +526,11 @@ static int std_event_loop_once(struct event_context *ev)
 		tval = timeval_set(30, 0);
 	}
 
-#if WITH_EPOLL
-	if (std_ev->epoll_fd != -1) {
-		if (std_event_loop_epoll(ev, &tval) == 0) {
-			return 0;
-		}
+	if (epoll_event_loop(std_ev, &tval) == 0) {
+		return 0;
 	}
-#endif
 
-	return std_event_loop_select(ev, &tval);
+	return std_event_loop_select(std_ev, &tval);
 }
 
 /*
