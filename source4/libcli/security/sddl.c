@@ -146,7 +146,6 @@ static const struct flag_map ace_flags[] = {
 };
 
 static const struct flag_map ace_access_mask[] = {
-	{ "RC", SEC_STD_READ_CONTROL },
 	{ "RP", SEC_ADS_READ_PROP },
 	{ "WP", SEC_ADS_WRITE_PROP },
 	{ "CR", SEC_ADS_CONTROL_ACCESS },
@@ -154,6 +153,7 @@ static const struct flag_map ace_access_mask[] = {
 	{ "DC", SEC_ADS_DELETE_CHILD },
 	{ "LC", SEC_ADS_LIST },
 	{ "LO", SEC_ADS_LIST_OBJECT },
+	{ "RC", SEC_STD_READ_CONTROL },
 	{ "WO", SEC_STD_WRITE_OWNER },
 	{ "WD", SEC_STD_WRITE_DAC },
 	{ "SD", SEC_STD_DELETE },
@@ -408,6 +408,33 @@ failed:
 static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			     struct dom_sid *domain_sid)
 {
+	int i;
+	char *sidstr;
+
+	sidstr = dom_sid_string(mem_ctx, sid);
+	if (sidstr == NULL) return NULL;
+
+	/* seen if its a well known sid */ 
+	for (i=0;sid_codes[i].sid;i++) {
+		if (strcmp(sidstr, sid_codes[i].sid) == 0) {
+			talloc_free(sidstr);
+			return talloc_strdup(mem_ctx, sid_codes[i].code);
+		}
+	}
+
+	/* or a well known rid in our domain */
+	if (dom_sid_in_domain(domain_sid, sid)) {
+		uint32_t rid = sid->sub_auths[sid->num_auths-1];
+		for (;i<ARRAY_SIZE(sid_codes);i++) {
+			if (rid == sid_codes[i].rid) {
+				talloc_free(sidstr);
+				return talloc_strdup(mem_ctx, sid_codes[i].code);
+			}
+		}
+	}
+	
+	talloc_free(sidstr);
+
 	/* TODO: encode well known sids as two letter codes */
 	return dom_sid_string(mem_ctx, sid);
 }
@@ -435,11 +462,23 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 	s_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask, ace->access_mask, True);
 	if (s_mask == NULL) goto failed;
 
-	s_object = GUID_string(tmp_ctx, &ace->object.object.type.type);
+	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
+	    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
+	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
+	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT) {
+		if (!GUID_all_zero(&ace->object.object.type.type)) {
+			s_object = GUID_string(tmp_ctx, &ace->object.object.type.type);
+			if (s_object == NULL) goto failed;
+		}
 
-	s_iobject = GUID_string(tmp_ctx, &ace->object.object.inherited_type.inherited_type);
+		if (!GUID_all_zero(&ace->object.object.inherited_type.inherited_type)) {
+			s_iobject = GUID_string(tmp_ctx, &ace->object.object.inherited_type.inherited_type);
+			if (s_iobject == NULL) goto failed;
+		}
+	}
 	
 	s_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, domain_sid);
+	if (s_trustee == NULL) goto failed;
 
 	sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s",
 			       s_type, s_flags, s_mask, s_object, s_iobject, s_trustee);
