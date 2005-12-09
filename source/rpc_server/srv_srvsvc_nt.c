@@ -177,7 +177,7 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
-	uint32 spec_access;
+	uint32 spec_access = def_access;
 
 	se_map_generic(&spec_access, &file_generic_mapping);
 
