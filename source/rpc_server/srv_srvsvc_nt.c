@@ -2361,12 +2361,15 @@ BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 
 		switch (*pacl) {
 			case 'F': /* Full Control, ie. R+W */
+			case 'f': /* Full Control, ie. R+W */
 				s_access = g_access = GENERIC_ALL_ACCESS;
 				break;
 			case 'R': /* Read only. */
+			case 'r': /* Read only. */
 				s_access = g_access = GENERIC_READ_ACCESS;
 				break;
 			case 'D': /* Deny all to this SID. */
+			case 'd': /* Deny all to this SID. */
 				type = SEC_ACE_TYPE_ACCESS_DENIED;
 				s_access = g_access = GENERIC_ALL_ACCESS;
 				break;

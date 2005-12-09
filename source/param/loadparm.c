@@ -4275,7 +4275,7 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 		return False;
 	}
 
-	if (!parse_usershare_acl(ctx, &lines[2][14], ppsd)) {
+	if (!parse_usershare_acl(ctx, &lines[3][14], ppsd)) {
 		return False;
 	}
 
@@ -4478,6 +4478,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 			talloc_destroy(ctx);
 			return 1;
 		}
+
+		/* Read only is controlled by usershare ACL below. */
+		ServicePtrs[snum]->bRead_only = False;
 	}
 
 	/* Write the ACL of the new/modified share. */
