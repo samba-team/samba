@@ -168,6 +168,7 @@ static BOOL share_info_db_init(void)
 
 /*******************************************************************
  Fake up a Everyone, default access as a default.
+ def_access is a GENERIC_XXX access mode.
  ********************************************************************/
 
 SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
@@ -176,10 +177,11 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
+	uint32 spec_access;
 
-	se_map_generic(&def_access, &file_generic_mapping);
+	se_map_generic(&spec_access, &file_generic_mapping);
 
-	init_sec_access(&sa, GENERIC_ALL_ACCESS | def_access );
+	init_sec_access(&sa, def_access | spec_access );
 	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 1, &ace)) != NULL) {
@@ -2298,4 +2300,103 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 	}
 
 	return WERR_OK;
+}
+
+/***************************************************************************
+ Parse the contents of an acl string from a usershare file.
+***************************************************************************/
+
+BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
+{
+	size_t s_size = 0;
+	const char *pacl = acl_str;
+	int num_aces = 0;
+	SEC_ACE *ace_list = NULL;
+	SEC_ACL *psa = NULL;
+	SEC_DESC *psd = NULL;
+	size_t sd_size = 0;
+	int i;
+
+	*ppsd = NULL;
+
+	/* If the acl string is blank return "Everyone:R" */
+	if (!*acl_str) {
+		SEC_DESC *default_psd = get_share_security_default(ctx, &s_size, GENERIC_READ_ACCESS);
+		if (!default_psd) {
+			return False;
+		}
+		*ppsd = default_psd;
+		return True;
+	}
+
+	num_aces = 1;
+
+	/* Add the number of ',' characters to get the number of aces. */
+	num_aces += count_chars(pacl,',');
+
+	ace_list = TALLOC_ARRAY(ctx, SEC_ACE, num_aces);
+	if (!ace_list) {
+		return False;
+	}
+
+	for (i = 0; i < num_aces; i++) {
+		SEC_ACCESS sa;
+		uint32 g_access;
+		uint32 s_access;
+		DOM_SID sid;
+		fstring sidstr;
+		uint8 type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+
+		if (!next_token(&pacl, sidstr, ":", sizeof(sidstr))) {
+			DEBUG(0,("parse_usershare_acl: malformed usershare acl looking "
+				"for ':' in string '%s'\n", pacl));
+			return False;
+		}
+
+		if (!string_to_sid(&sid, sidstr)) {
+			DEBUG(0,("parse_usershare_acl: failed to convert %s to sid.\n",
+				sidstr ));
+			return False;
+		}
+
+		switch (*pacl) {
+			case 'F': /* Full Control, ie. R+W */
+				s_access = g_access = GENERIC_ALL_ACCESS;
+				break;
+			case 'R': /* Read only. */
+				s_access = g_access = GENERIC_READ_ACCESS;
+				break;
+			case 'D': /* Deny all to this SID. */
+				type = SEC_ACE_TYPE_ACCESS_DENIED;
+				s_access = g_access = GENERIC_ALL_ACCESS;
+				break;
+			default:
+				DEBUG(0,("parse_usershare_acl: unknown acl type at %s.\n",
+					pacl ));
+				return False;
+		}
+
+		pacl++;
+		if (*pacl && *pacl != ',') {
+			DEBUG(0,("parse_usershare_acl: bad acl string at %s.\n",
+				pacl ));
+			return False;
+		}
+
+		se_map_generic(&s_access, &file_generic_mapping);
+		init_sec_access(&sa, g_access | s_access );
+		init_sec_ace(&ace_list[i], &sid, type, sa, 0);
+	}
+
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, num_aces, ace_list)) != NULL) {
+		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, &sd_size);
+	}
+
+	if (!psd) {
+		DEBUG(0,("parse_usershare_acl: Failed to make SEC_DESC.\n"));
+		return False;
+	}
+
+	*ppsd = psd;
+	return True;
 }

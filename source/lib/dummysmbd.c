@@ -48,3 +48,8 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 {
 	return NULL;
 }
+
+BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
+{
+	return False;
+}

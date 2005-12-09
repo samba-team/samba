@@ -4219,23 +4219,6 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 	return True;
 }
 
-/***************************************************************************
- Parse the contents of an acl string.
-***************************************************************************/
-
-static BOOL parse_share_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
-{
-	size_t s_size = 0;
-	/* For now - fake up Everyone, read-only. */
-	SEC_DESC *psd = get_share_security_default(ctx, &s_size, GENERIC_READ_ACCESS);
-
-	if (!psd) {
-		return False;
-	}
-	*ppsd = psd;
-	return True;
-}
-
 #if 0
 /***************************************************************************
  A user and group id cache.
@@ -4292,7 +4275,7 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 		return False;
 	}
 
-	if (!parse_share_acl(ctx, &lines[2][14], ppsd)) {
+	if (!parse_usershare_acl(ctx, &lines[2][14], ppsd)) {
 		return False;
 	}
 
