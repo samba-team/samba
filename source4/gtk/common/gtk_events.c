@@ -145,7 +145,7 @@ static struct fd_event *gtk_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	}
 
 	if (fde->flags & EVENT_FD_READ)
-		condition |= G_IO_IN;
+		condition |= (G_IO_IN | G_IO_ERR | G_IO_HUP);
 	if (fde->flags & EVENT_FD_WRITE)
 		condition |= G_IO_OUT;
 
@@ -187,7 +187,7 @@ static void gtk_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	if (fde->flags == flags) return;
 
 	if (flags & EVENT_FD_READ)
-		condition |= G_IO_IN;
+		condition |= (G_IO_IN | G_IO_ERR | G_IO_HUP);
 	if (flags & EVENT_FD_WRITE)
 		condition |= G_IO_OUT;
 
