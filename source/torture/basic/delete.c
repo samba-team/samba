@@ -148,6 +148,7 @@ BOOL torture_test_delete(void)
 	struct smbcli_state *cli1;
 	struct smbcli_state *cli2 = NULL;
 	const char *fname = "\\delete.file";
+	const char *fname_new = "\\delete.new";
 	const char *dirname = "\\delete.dir";
 	int fnum1 = -1;
 	int fnum2 = -1;
@@ -950,6 +951,130 @@ BOOL torture_test_delete(void)
 	/* Now it should be gone... */
 
 	printf("fifteenth delete on close test succeeded.\n");
+
+	/* Test 16: delete on close under rename */
+
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+	smbcli_unlink(cli1->tree, fname_new);
+	
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_FILE_READ_DATA,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OVERWRITE_IF,
+				      0, 0);
+
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	status = smbcli_rename(cli2->tree, fname, fname_new);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%s) renaming failed: %s !\n",
+		       __location__, nt_errstr(status));
+		correct = False;
+		goto fail;
+	}
+
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname_new, 0, 
+				      SEC_GENERIC_ALL,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OVERWRITE_IF,
+				      0, 0);
+
+	if (fnum2 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname_new, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	status = smbcli_nt_delete_on_close(cli2->tree, fnum2, True);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+
+	smbcli_close(cli2->tree, fnum2);
+
+	/* The file should be around under the new name, there's a second
+	 * handle open */
+
+	if (!check_delete_on_close(cli1, fnum1, fname_new, True)) {
+		printf("(%s) checking delete on close on file %s failed!\n",
+		       __location__, fname_new);
+		correct = False;
+		goto fail;
+	}
+
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
+				      SEC_GENERIC_ALL,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OVERWRITE_IF,
+				      0, 0);
+
+	if (fnum2 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	smbcli_close(cli2->tree, fnum2);
+	smbcli_close(cli1->tree, fnum1);
+
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_FILE_READ_EA,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	smbcli_close(cli1->tree, fnum1);
+
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname_new, 0, 
+				      SEC_FILE_READ_EA,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	if (fnum1 != -1) {
+		printf("(%s) smbcli_open succeeded, should have "
+		       "failed\n", __location__);
+		smbcli_close(cli1->tree, fnum1);
+		correct = False;
+		goto fail;
+	}
+
+	printf("sixteenth delete on close test succeeded.\n");
 
 	printf("finished delete test\n");
 
