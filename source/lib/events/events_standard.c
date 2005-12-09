@@ -119,6 +119,10 @@ static void epoll_init_ctx(struct std_event_context *std_ev, BOOL try_epoll)
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
 }
 
+#define EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT	(1<<0)
+#define EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR	(1<<1)
+#define EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR	(1<<2)
+
 /*
  add the epoll event to the given fd_event
 */
@@ -126,39 +130,99 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
+
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+
+	/* if we don't want events yet, don't add an epoll_event */
+	if (fde->flags == 0) return;
+
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
 		epoll_fallback_to_select(std_ev, "EPOLL_CTL_ADD failed");
 	}
+	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
+
+	/* only if we want to read we want to tell the event handler about errors */
+	if (fde->flags & EVENT_FD_READ) {
+		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+	}
 }
 
 /*
- remove the epoll event for given fd_event
+ delete the epoll event for given fd_event
 */
-static void epoll_remove_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_del_event(struct std_event_context *std_ev, struct fd_event *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
+
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+
+	/* if there's no epoll_event, we don't need to delete it */
+	if (!(fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT)) return;
+
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }
 
 /*
  change the epoll event to the given fd_event
 */
-static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde, uint16_t flags)
+static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
+
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+
 	ZERO_STRUCT(event);
-	event.events = epoll_map_flags(flags);
+	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(std_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
 		epoll_fallback_to_select(std_ev, "EPOLL_CTL_MOD failed");
+	}
+
+	/* only if we want to read we want to tell the event handler about errors */
+	if (fde->flags & EVENT_FD_READ) {
+		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+	}
+}
+
+static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde)
+{
+	BOOL got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
+	BOOL want_read = (fde->flags & EVENT_FD_READ);
+	BOOL want_write= (fde->flags & EVENT_FD_WRITE);
+
+	if (std_ev->epoll_fd == -1) return;
+
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+
+	/* there's already an event */
+	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT) {
+		if (want_read || (want_write && !got_error)) {
+			epoll_mod_event(std_ev, fde);
+			return;
+		}
+		/* 
+		 * if we want to match the select behavior, we need to remove the epoll_event
+		 * when the caller isn't interested in events.
+		 *
+		 * this is because epoll reports EPOLLERR and EPOLLHUP, even without asking for them
+		 */
+		epoll_del_event(std_ev, fde);
+		return;
+	}
+
+	/* there's no epoll_event attached to the fde */
+	if (want_read || (want_write && !got_error)) {
+		epoll_add_event(std_ev, fde);
+		return;
 	}
 }
 
@@ -201,7 +265,20 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 			epoll_fallback_to_select(std_ev, "epoll_wait() gave bad data");
 			return -1;
 		}
-		if (events[i].events & (EPOLLHUP|EPOLLERR)) flags |= EVENT_FD_READ;
+		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
+			fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
+			/*
+			 * if we only wait for EVENT_FD_WRITE, we should not tell the
+			 * event handler about it, and remove the epoll_event,
+			 * as we only report errors when waiting for read events,
+			 * to match the select() behavior
+			 */
+			if (!(fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR)) {
+				epoll_del_event(std_ev, fde);
+				continue;
+			}
+			flags |= EVENT_FD_READ;
+		}
 		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
 		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
 		if (flags) {
@@ -217,8 +294,8 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 #else
 #define epoll_init_ctx(std_ev,try_epoll) if (try_epoll) {/* fix unused variable warning*/}
 #define epoll_add_event(std_ev,fde)
-#define epoll_remove_event(std_ev,fde)
-#define epoll_change_event(std_ev,fde,flags)
+#define epoll_del_event(std_ev,fde)
+#define epoll_change_event(std_ev,fde)
 #define epoll_event_loop(std_ev,tvalp) (-1)
 #endif
 
@@ -280,7 +357,7 @@ static int std_event_fd_destructor(void *ptr)
 	DLIST_REMOVE(std_ev->fd_events, fde);
 	std_ev->destruction_count++;
 
-	epoll_remove_event(std_ev, fde);
+	epoll_del_event(std_ev, fde);
 
 	return 0;
 }
@@ -342,9 +419,9 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	ev = fde->event_ctx;
 	std_ev = talloc_get_type(ev->additional_data, struct std_event_context);
 
-	epoll_change_event(std_ev, fde, flags);
-
 	fde->flags = flags;
+
+	epoll_change_event(std_ev, fde);
 }
 
 /*
