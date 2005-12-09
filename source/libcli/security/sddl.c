@@ -92,7 +92,7 @@ static const struct {
   It can either be a special 2 letter code, or in S-* format
 */
 static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
-				       struct dom_sid *domain_sid)
+				       const struct dom_sid *domain_sid)
 {
 	const char *sddl = (*sddlp);
 	int i;
@@ -172,7 +172,7 @@ static const struct flag_map ace_access_mask[] = {
   note that this routine modifies the string
 */
 static BOOL sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char *str,
-			    struct dom_sid *domain_sid)
+			    const struct dom_sid *domain_sid)
 {
 	const char *tok[6];
 	const char *s;
@@ -259,7 +259,7 @@ static const struct flag_map acl_flags[] = {
 */
 static struct security_acl *sddl_decode_acl(struct security_descriptor *sd, 
 					    const char **sddlp, uint32_t *flags,
-					    struct dom_sid *domain_sid)
+					    const struct dom_sid *domain_sid)
 {
 	const char *sddl = *sddlp;
 	struct security_acl *acl;
@@ -316,7 +316,7 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
   decode a security descriptor in SDDL format
 */
 struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
-					struct dom_sid *domain_sid)
+					const struct dom_sid *domain_sid)
 {
 	struct security_descriptor *sd;
 	sd = talloc_zero(mem_ctx, struct security_descriptor);
@@ -408,7 +408,7 @@ failed:
   encode a sid in SDDL format
 */
 static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-			     struct dom_sid *domain_sid)
+			     const struct dom_sid *domain_sid)
 {
 	int i;
 	char *sidstr;
@@ -446,7 +446,7 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
   encode an ACE in SDDL format
 */
 static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
-			     struct dom_sid *domain_sid)
+			     const struct dom_sid *domain_sid)
 {
 	char *sddl;
 	TALLOC_CTX *tmp_ctx;
@@ -497,7 +497,7 @@ failed:
   encode an ACL in SDDL format
 */
 static char *sddl_encode_acl(TALLOC_CTX *mem_ctx, const struct security_acl *acl,
-			     uint32_t flags, struct dom_sid *domain_sid)
+			     uint32_t flags, const struct dom_sid *domain_sid)
 {
 	char *sddl;
 	int i;
@@ -527,7 +527,7 @@ failed:
   encode a security descriptor to SDDL format
 */
 char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
-		  struct dom_sid *domain_sid)
+		  const struct dom_sid *domain_sid)
 {
 	char *sddl;
 	TALLOC_CTX *tmp_ctx;
