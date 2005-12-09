@@ -209,6 +209,7 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
 	DLIST_ADD(std_ev->fd_events, fde);

@@ -127,6 +127,7 @@ static struct fd_event *oop_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
 	if (fde->flags & EVENT_FD_READ)
@@ -269,7 +270,7 @@ static int oop_event_loop_wait(struct event_context *ev)
 	return -1;
 }
 
-static const struct event_ops events_oop_ops = {
+static const struct event_ops event_oop_ops = {
 	.context_init	= oop_event_context_init,
 	.add_fd		= oop_event_add_fd,
 	.get_fd_flags	= oop_event_get_fd_flags,
@@ -279,7 +280,7 @@ static const struct event_ops events_oop_ops = {
 	.loop_wait	= oop_event_loop_wait,
 };
 
-const struct event_ops *events_oop_get_ops(void)
+const struct event_ops *event_liboop_get_ops(void)
 {
-	return &events_oop_ops;
+	return &event_oop_ops;
 }
