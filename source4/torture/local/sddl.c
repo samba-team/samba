@@ -29,14 +29,34 @@
 */
 static BOOL test_sddl(TALLOC_CTX *mem_ctx, const char *sddl)
 {
-	struct security_descriptor *sd;
+	struct security_descriptor *sd, *sd2;
 	struct dom_sid *domain;
+	const char *sddl2;
+
 	domain = dom_sid_parse_talloc(mem_ctx, "S-1-2-3-4");
 	sd = sddl_decode(mem_ctx, sddl, domain);
 	if (sd == NULL) {
 		printf("Failed to decode '%s'\n", sddl);
 		return False;
 	}
+
+	sddl2 = sddl_encode(mem_ctx, sd, domain);
+	if (sddl2 == NULL) {
+		printf("Failed to re-encode '%s'\n", sddl);
+		return False;
+	}
+
+	sd2 = sddl_decode(mem_ctx, sddl2, domain);
+	if (sd2 == NULL) {
+		printf("Failed to decode2 '%s'\n", sddl2);
+		return False;
+	}
+
+	if (!security_descriptor_equal(sd, sd2)) {
+		printf("Failed equality test for '%s'\n", sddl);
+		return False;
+	}
+
 	if (DEBUGLVL(2)) {
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}
