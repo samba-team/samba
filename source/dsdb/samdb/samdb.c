@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
@@ -992,4 +993,69 @@ struct ldb_dn *samdb_base_dn(TALLOC_CTX *mem_ctx)
 		return dn;
 	}
 	return ldb_dn_string_compose(mem_ctx, NULL, "cn=%s", lp_netbios_name());
+}
+
+
+/*
+  work out the domain sid for the current open ldb
+*/
+const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
+{
+	const char *attrs[] = { "rootDomainNamingContext", NULL };
+	int ret;
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct dom_sid *domain_sid;
+	const char *basedn_s;
+	struct ldb_dn *basedn;
+
+	/* see if we have a cached copy */
+	domain_sid = ldb_get_opaque(ldb, "cache.domain_sid");
+	if (domain_sid) {
+		return domain_sid;
+	}
+
+	basedn = ldb_dn_explode(tmp_ctx, "");
+	if (basedn == NULL) {
+		goto failed;
+	}
+	
+	/* find the basedn of the domain from the rootdse */
+	ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	talloc_steal(tmp_ctx, res);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		goto failed;
+	}
+
+	basedn_s = ldb_msg_find_string(res->msgs[0], "rootDomainNamingContext", NULL);
+	if (basedn_s == NULL) {
+		goto failed;
+	}
+
+	basedn = ldb_dn_explode(tmp_ctx, basedn_s);
+	if (basedn == NULL) {
+		goto failed;
+	}
+
+	/* find the domain_sid */
+	domain_sid = samdb_search_dom_sid(ldb, tmp_ctx, basedn, 
+					  "objectSid", "objectClass=domainDNS");
+	if (domain_sid == NULL) {
+		goto failed;
+	}
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, "cache.domain_sid", domain_sid) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, domain_sid);
+	talloc_free(tmp_ctx);
+
+	return domain_sid;
+
+failed:
+	DEBUG(1,("Failed to find domain_sid for open ldb\n"));
+	talloc_free(tmp_ctx);
+	return NULL;
 }
