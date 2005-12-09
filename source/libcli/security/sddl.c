@@ -263,6 +263,8 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 	struct security_acl *acl;
 	size_t len;
 
+	*flags = 0;
+
 	acl = talloc_zero(sd, struct security_acl);
 	if (acl == NULL) return NULL;
 	acl->revision = SECURITY_ACL_REVISION_NT4;
@@ -361,3 +363,171 @@ failed:
 	talloc_free(sd);
 	return NULL;
 }
+
+/*
+  turn a set of flags into a string
+*/
+static char *sddl_flags_to_string(TALLOC_CTX *mem_ctx, const struct flag_map *map,
+				  uint32_t flags, BOOL check_all)
+{
+	int i;
+	char *s;
+
+	/* try to find an exact match */
+	for (i=0;map[i].name;i++) {
+		if (map[i].flag == flags) {
+			return talloc_strdup(mem_ctx, map[i].name);
+		}
+	}
+
+	s = talloc_strdup(mem_ctx, "");
+
+	/* now by bits */
+	for (i=0;map[i].name;i++) {
+		if ((flags & map[i].flag) != 0) {
+			s = talloc_asprintf_append(s, "%s", map[i].name);
+			if (s == NULL) goto failed;
+			flags &= ~map[i].flag;
+		}
+	}
+
+	if (check_all && flags != 0) {
+		goto failed;
+	}
+
+	return s;
+
+failed:
+	talloc_free(s);
+	return NULL;
+}
+
+/*
+  encode a sid in SDDL format
+*/
+static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+			     struct dom_sid *domain_sid)
+{
+	/* TODO: encode well known sids as two letter codes */
+	return dom_sid_string(mem_ctx, sid);
+}
+
+
+/*
+  encode an ACE in SDDL format
+*/
+static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
+			     struct dom_sid *domain_sid)
+{
+	char *sddl;
+	TALLOC_CTX *tmp_ctx;
+	const char *s_type="", *s_flags="", *s_mask="", 
+		*s_object="", *s_iobject="", *s_trustee="";
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	s_type = sddl_flags_to_string(tmp_ctx, ace_types, ace->type, True);
+	if (s_type == NULL) goto failed;
+
+	s_flags = sddl_flags_to_string(tmp_ctx, ace_flags, ace->flags, True);
+	if (s_flags == NULL) goto failed;
+
+	s_mask = sddl_flags_to_string(tmp_ctx, ace_access_mask, ace->access_mask, True);
+	if (s_mask == NULL) goto failed;
+
+	s_object = GUID_string(tmp_ctx, &ace->object.object.type.type);
+
+	s_iobject = GUID_string(tmp_ctx, &ace->object.object.inherited_type.inherited_type);
+	
+	s_trustee = sddl_encode_sid(tmp_ctx, &ace->trustee, domain_sid);
+
+	sddl = talloc_asprintf(mem_ctx, "%s;%s;%s;%s;%s;%s",
+			       s_type, s_flags, s_mask, s_object, s_iobject, s_trustee);
+
+failed:
+	talloc_free(tmp_ctx);
+	return sddl;
+}
+
+/*
+  encode an ACL in SDDL format
+*/
+static char *sddl_encode_acl(TALLOC_CTX *mem_ctx, const struct security_acl *acl,
+			     uint32_t flags, struct dom_sid *domain_sid)
+{
+	char *sddl;
+	int i;
+
+	/* add any ACL flags */
+	sddl = sddl_flags_to_string(mem_ctx, acl_flags, flags, False);
+	if (sddl == NULL) goto failed;
+
+	/* now the ACEs, encoded in braces */
+	for (i=0;i<acl->num_aces;i++) {
+		char *ace = sddl_encode_ace(sddl, &acl->aces[i], domain_sid);
+		if (ace == NULL) goto failed;
+		sddl = talloc_asprintf_append(sddl, "(%s)", ace);
+		if (sddl == NULL) goto failed;
+		talloc_free(ace);
+	}
+
+	return sddl;
+
+failed:
+	talloc_free(sddl);
+	return NULL;
+}
+
+
+/*
+  encode a security descriptor to SDDL format
+*/
+char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
+		  struct dom_sid *domain_sid)
+{
+	char *sddl;
+	TALLOC_CTX *tmp_ctx;
+
+	/* start with a blank string */
+	sddl = talloc_strdup(mem_ctx, "");
+	if (sddl == NULL) goto failed;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	if (sd->owner_sid != NULL) {
+		char *sid = sddl_encode_sid(tmp_ctx, sd->owner_sid, domain_sid);
+		if (sid == NULL) goto failed;
+		sddl = talloc_asprintf_append(sddl, "O:%s", sid);
+		if (sddl == NULL) goto failed;
+	}
+
+	if (sd->group_sid != NULL) {
+		char *sid = sddl_encode_sid(tmp_ctx, sd->group_sid, domain_sid);
+		if (sid == NULL) goto failed;
+		sddl = talloc_asprintf_append(sddl, "G:%s", sid);
+		if (sddl == NULL) goto failed;
+	}
+
+	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl != NULL) {
+		char *acl = sddl_encode_acl(tmp_ctx, sd->dacl, sd->type, domain_sid);
+		if (acl == NULL) goto failed;
+		sddl = talloc_asprintf_append(sddl, "D:%s", acl);
+		if (sddl == NULL) goto failed;
+	}
+
+	if ((sd->type & SEC_DESC_SACL_PRESENT) && sd->sacl != NULL) {
+		char *acl = sddl_encode_acl(tmp_ctx, sd->sacl, sd->type>>1, domain_sid);
+		if (acl == NULL) goto failed;
+		sddl = talloc_asprintf_append(sddl, "S:%s", acl);
+		if (sddl == NULL) goto failed;
+	}
+
+	talloc_free(tmp_ctx);
+	return sddl;
+
+failed:
+	talloc_free(sddl);
+	return NULL;
+}
+
+
