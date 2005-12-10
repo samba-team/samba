@@ -156,41 +156,6 @@ const char *get_global_sam_name(void)
 	return global_myname();
 }
 
-/**************************************************************************
- Splits a name of format \DOMAIN\name or name into its two components.
- Sets the DOMAIN name to global_myname() if it has not been specified.
-***************************************************************************/
-
-void split_domain_name(const char *fullname, char *domain, char *name)
-{
-	pstring full_name;
-	const char *sep;
-	char *p;
-
-	sep = lp_winbind_separator();
-
-	*domain = *name = '\0';
-
-	if (fullname[0] == sep[0] || fullname[0] == '\\')
-		fullname++;
-
-	pstrcpy(full_name, fullname);
-	p = strchr_m(full_name+1, '\\');
-	if (!p) p = strchr_m(full_name+1, sep[0]);
-
-	if (p != NULL) {
-		*p = 0;
-		fstrcpy(domain, full_name);
-		fstrcpy(name, p+1);
-	} else {
-		fstrcpy(domain, get_global_sam_name());
-		fstrcpy(name, full_name);
-	}
-
-	DEBUG(10,("split_domain_name:name '%s' split into domain :'%s' and user :'%s'\n",
-			fullname, domain, name));
-}
-
 /*****************************************************************
  Convert a SID to an ascii string.
 *****************************************************************/
