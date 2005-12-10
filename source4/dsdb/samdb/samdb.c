@@ -1004,7 +1004,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	const char *attrs[] = { "rootDomainNamingContext", NULL };
 	int ret;
 	struct ldb_result *res = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	TALLOC_CTX *tmp_ctx;
 	struct dom_sid *domain_sid;
 	const char *basedn_s;
 	struct ldb_dn *basedn;
@@ -1013,6 +1013,11 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	domain_sid = ldb_get_opaque(ldb, "cache.domain_sid");
 	if (domain_sid) {
 		return domain_sid;
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
 	}
 
 	basedn = ldb_dn_explode(tmp_ctx, "");
