@@ -192,7 +192,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_file: Could not get share mode lock for file %s\n", fsp->fsp_name));
@@ -305,7 +305,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));
