@@ -1894,7 +1894,7 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	for (i=0; i<num_groups; i++) {
 
-		char *grp_name;
+		const char *grp_name;
 	
 		if ( lookup_sid(sampw->mem_ctx, &sids[i], NULL, &grp_name,
 				NULL) ) {
