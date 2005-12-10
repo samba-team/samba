@@ -735,7 +735,7 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Look up a rid in the SAM we're responsible for (i.e. passdb)
  ********************************************************************/
 
-BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid, char **name,
+BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name,
 			   enum SID_NAME_USE *psid_name_use)
 {
 	SAM_ACCOUNT *sam_account = NULL;

@@ -31,25 +31,32 @@
 
 BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
-		 char **ret_domain, char **ret_name,
+		 const char **ret_domain, const char **ret_name,
 		 DOM_SID *ret_sid, enum SID_NAME_USE *ret_type)
 {
-	char *p, *tmp;
-	char *domain = NULL;
-	char *name = NULL;
+	char *p;
+	const char *tmp;
+	const char *domain = NULL;
+	const char *name = NULL;
 	uint32 rid;
 	DOM_SID sid;
 	enum SID_NAME_USE type;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	if (tmp_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
 
 	p = strchr_m(full_name, '\\');
 
 	if (p != NULL) {
-		domain = talloc_strndup(mem_ctx, full_name,
+		domain = talloc_strndup(tmp_ctx, full_name,
 					PTR_DIFF(p, full_name));
-		name = talloc_strdup(mem_ctx, p+1);
+		name = talloc_strdup(tmp_ctx, p+1);
 	} else {
-		domain = talloc_strdup(mem_ctx, "");
-		name = talloc_strdup(mem_ctx, full_name);
+		domain = talloc_strdup(tmp_ctx, "");
+		name = talloc_strdup(tmp_ctx, full_name);
 	}
 
 	if ((domain == NULL) || (name == NULL)) {
@@ -65,7 +72,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			sid_append_rid(&sid, rid);
 			goto ok;
 		}
-		return False;
+		goto failed;
 	}
 
 	if (strequal(domain, builtin_domain_name())) {
@@ -77,7 +84,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			type = SID_NAME_ALIAS;
 			goto ok;
 		}
-		return False;
+		goto failed;
 	}
 
 	if (domain[0] != '\0') {
@@ -86,11 +93,11 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		if (winbind_lookup_name(domain, name, &sid, &type)) {
 			goto ok;
 		}
-		return False;
+		goto failed;
 	}
 
 	if (!(flags & LOOKUP_NAME_ISOLATED)) {
-		return False;
+		goto failed;
 	}
 
 	/* Now the guesswork begins, we haven't been given an explicit
@@ -101,9 +108,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 1. well-known names */
 
 	{
-		tmp = domain;
-		if (lookup_wellknown_name(mem_ctx, name, &sid, &domain)) {
-			talloc_free(tmp);
+		if (lookup_wellknown_name(tmp_ctx, name, &sid, &domain)) {
 			type = SID_NAME_WKN_GRP;
 			goto ok;
 		}
@@ -124,7 +129,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (strequal(name, get_global_sam_name())) {
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch my SID\n"));
-			return False;
+			goto failed;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -137,7 +142,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (!IS_DC && strequal(name, lp_workgroup())) {
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch the domain SID\n"));
-			return False;
+			goto failed;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -159,7 +164,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* 6. Builtin aliases */	
 
 	if (lookup_builtin_name(name, &rid)) {
-		domain = talloc_strdup(mem_ctx, builtin_domain_name());
+		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
 		sid_copy(&sid, &global_sid_Builtin);
 		sid_append_rid(&sid, rid);
 		type = SID_NAME_ALIAS;
@@ -172,7 +177,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* Both cases are done by looking at our passdb */
 
 	if (lookup_global_sam_name(name, &rid, &type)) {
-		domain = talloc_strdup(mem_ctx, get_global_sam_name());
+		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
 		sid_copy(&sid, get_global_sam_sid());
 		sid_append_rid(&sid, rid);
 		goto ok;
@@ -181,7 +186,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	/* Now our local possibilities are exhausted. */
 
 	if (!(flags & LOOKUP_NAME_REMOTE)) {
-		return False;
+		goto failed;
 	}
 
 	/* If we are not a DC, we have to ask in our primary domain. Let
@@ -189,7 +194,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	if (!IS_DC &&
 	    (winbind_lookup_name(lp_workgroup(), name, &sid, &type))) {
-		domain = talloc_strdup(mem_ctx, lp_workgroup());
+		domain = talloc_strdup(tmp_ctx, lp_workgroup());
 		goto ok;
 	}
 
@@ -209,8 +214,6 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 		}
 
-		talloc_free(domain);
-
 		/* Here we have to cope with a little deficiency in the
 		 * winbind API: We have to ask it again for the name of the
 		 * domain it figured out itself. Maybe fix that later... */
@@ -218,40 +221,36 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		sid_copy(&dom_sid, &sid);
 		sid_split_rid(&dom_sid, &tmp_rid);
 
-		if (!winbind_lookup_sid(mem_ctx, &dom_sid, &domain, NULL,
+		if (!winbind_lookup_sid(tmp_ctx, &dom_sid, &domain, NULL,
 					&domain_type) ||
 		    (domain_type != SID_NAME_DOMAIN)) {
-			DEBUG(2, ("winbind could not find the domain's name it "
-				  "just looked up for us\n"));
-			return False;
+			DEBUG(2, ("winbind could not find the domain's name "
+				  "it just looked up for us\n"));
+			goto failed;
 		}
-
-		talloc_free(domain);
 		goto ok;
 	}
 
 	/* 10. Don't translate */
-
+ failed:
+	talloc_free(tmp_ctx);
 	return False;
 
  ok:
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		talloc_free(tmp_ctx);
 		return False;
 	}
 
-	strupper_m(domain);
-
 	if (ret_name != NULL) {
-		*ret_name = name;
-	} else {
-		talloc_free(name);
+		*ret_name = talloc_steal(mem_ctx, name);
 	}
 
 	if (ret_domain != NULL) {
-		*ret_domain = domain;
-	} else {
-		talloc_free(domain);
+		char *tmp_dom = talloc_strdup(tmp_ctx, domain);
+		strupper_m(tmp_dom);
+		*ret_domain = talloc_steal(mem_ctx, tmp_dom);
 	}
 
 	if (ret_sid != NULL) {
@@ -262,6 +261,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		*ret_type = type;
 	}
 
+	talloc_free(tmp_ctx);
 	return True;
 }
 
@@ -271,18 +271,25 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 *****************************************************************/  
 
 BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-		char **ret_domain, char **ret_name,
+		const char **ret_domain, const char **ret_name,
 		enum SID_NAME_USE *ret_type)
 {
-	char *domain = NULL;
-	char *name = NULL;
+	const char *domain = NULL;
+	const char *name = NULL;
 	enum SID_NAME_USE type;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
 	/* Check if this is our own sid.  This should perhaps be done by
 	   winbind?  For the moment handle it here. */
 
+	if (tmp_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
 	if (sid_check_is_domain(sid)) {
-		domain = talloc_strdup(mem_ctx, get_global_sam_name());
-		name = talloc_strdup(mem_ctx, "");
+		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
+		name = talloc_strdup(tmp_ctx, "");
 		type = SID_NAME_DOMAIN;
 		goto ok;
 	}
@@ -292,20 +299,20 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
 		/* For our own domain passdb is responsible */
-		if (!lookup_global_sam_rid(mem_ctx, rid, &name, &type)) {
-			return False;
+		if (!lookup_global_sam_rid(tmp_ctx, rid, &name, &type)) {
+			goto failed;
 		}
 
-		domain = talloc_strdup(mem_ctx, get_global_sam_name());
+		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
 		goto ok;
 	}
 
 	if (sid_check_is_builtin(sid)) {
 
-		domain = talloc_strdup(mem_ctx, builtin_domain_name());
+		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
 
 		/* Yes, W2k3 returns "BUILTIN" both as domain and name here */
-		name = talloc_strdup(mem_ctx, builtin_domain_name());
+		name = talloc_strdup(tmp_ctx, builtin_domain_name());
 		type = SID_NAME_DOMAIN;
 		goto ok;
 	}
@@ -315,55 +322,55 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 		SMB_ASSERT(sid_peek_rid(sid, &rid));
 
-		if (!lookup_builtin_rid(mem_ctx, rid, &name)) {
-			return False;
+		if (!lookup_builtin_rid(tmp_ctx, rid, &name)) {
+			goto failed;
 		}
 
 		/* There's only aliases in S-1-5-32 */
 		type = SID_NAME_ALIAS;
-		domain = talloc_strdup(mem_ctx, builtin_domain_name());
+		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
 
 		goto ok;
 	}
 
-	if (winbind_lookup_sid(mem_ctx, sid, &domain, &name, &type)) {
+	if (winbind_lookup_sid(tmp_ctx, sid, &domain, &name, &type)) {
 		goto ok;
 	}
 
 	DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying "
 		  "special SIDs.\n", sid_string_static(sid)));
 
-	if (lookup_wellknown_sid(mem_ctx, sid, &domain, &name)) {
+	if (lookup_wellknown_sid(tmp_ctx, sid, &domain, &name)) {
 		type = SID_NAME_WKN_GRP;
 		goto ok;
 	}
 
+ failed:
 	DEBUG(10, ("Failed to lookup sid %s\n", sid_string_static(sid)));
+	talloc_free(tmp_ctx);
 	return False;
 
  ok:
 
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
+		talloc_free(tmp_ctx);
 		return False;
 	}
 
 	if (ret_domain != NULL) {
-		*ret_domain = domain;
-	} else {
-		talloc_free(domain);
+		*ret_domain = talloc_steal(mem_ctx, domain);
 	}
 
 	if (ret_name != NULL) {
-		*ret_name = name;
-	} else {
-		talloc_free(name);
+		*ret_name = talloc_steal(mem_ctx, name);
 	}
 
 	if (ret_type != NULL) {
 		*ret_type = type;
 	}
 
+	talloc_free(tmp_ctx);
 	return True;
 }
 
