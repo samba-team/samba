@@ -448,12 +448,16 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
 			     const struct dom_sid *domain_sid)
 {
-	char *sddl;
+	char *sddl = NULL;
 	TALLOC_CTX *tmp_ctx;
 	const char *s_type="", *s_flags="", *s_mask="", 
 		*s_object="", *s_iobject="", *s_trustee="";
 
 	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NULL;
+	}
 
 	s_type = sddl_flags_to_string(tmp_ctx, ace_types, ace->type, True);
 	if (s_type == NULL) goto failed;
