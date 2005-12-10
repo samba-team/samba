@@ -44,7 +44,7 @@ struct pipe_np_smb_state {
 
 
 /*
-  Stage 3 of ncacn_np_smb: Named pipe opened (?)
+  Stage 3 of ncacn_np_smb: Named pipe opened (or not)
 */
 void continue_pipe_open_smb(struct composite_context *ctx)
 {
@@ -52,7 +52,8 @@ void continue_pipe_open_smb(struct composite_context *ctx)
 						      struct composite_context);
 	struct pipe_np_smb_state *s = talloc_get_type(c->private_data,
 						      struct pipe_np_smb_state);
-	/* receive result of named pipe open request */
+
+	/* receive result of named pipe open request on smb */
 	c->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
@@ -202,6 +203,9 @@ struct pipe_np_smb2_state {
 };
 
 
+/*
+  Stage 3 of ncacn_np_smb: Named pipe opened (or not)
+*/
 void continue_pipe_open_smb2(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -209,6 +213,7 @@ void continue_pipe_open_smb2(struct composite_context *ctx)
 	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
 						       struct pipe_np_smb2_state);
 
+	/* receive result of named pipe open request on smb2 */
 	c->status = dcerpc_pipe_open_smb2_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to open pipe %s - %s\n", s->io.pipe_name, nt_errstr(c->status)));
@@ -220,6 +225,9 @@ void continue_pipe_open_smb2(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of ncacn_np_smb2: Open a named pipe after successful smb2 connection
+*/
 void continue_smb2_connect(struct composite_context *ctx)
 {
 	struct composite_context *open_req;
@@ -228,15 +236,18 @@ void continue_smb2_connect(struct composite_context *ctx)
 	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
 						       struct pipe_np_smb2_state);
 
+	/* receive result of smb2 connect request */
 	c->status = smb2_connect_recv(ctx, c, &s->tree);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", s->io.binding->host, nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
 	}
-	
+
+	/* prepare named pipe open parameters */
 	s->io.pipe_name = s->io.binding->endpoint;
 
+	/* send named pipe open request */
 	open_req = dcerpc_pipe_open_smb2_send(s->io.pipe->conn, s->tree, s->io.pipe_name);
 	if (open_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -247,6 +258,10 @@ void continue_smb2_connect(struct composite_context *ctx)
 }
 
 
+/* 
+   Initiate async open of a rpc connection request on SMB2 using
+   the binding structure to determine the endpoint and options
+*/
 struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem_ctx,
 								 struct dcerpc_pipe_connect *io)
 {
@@ -254,6 +269,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem
 	struct pipe_np_smb2_state *s;
 	struct composite_context *conn_req;
 
+	/* composite context allocation and setup */
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
@@ -269,6 +285,10 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem
 
 	s->io = *io;
 
+	/*
+	 * provide proper credentials - user supplied or anonymous in case this is
+	 * schannel connection
+	 */
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
 		s->io.creds = cli_credentials_init(mem_ctx);
 		if (s->io.creds) {
@@ -280,6 +300,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(TALLOC_CTX *mem
 		cli_credentials_guess(s->io.creds);
 	}
 
+	/* send smb2 connect request */
 	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", s->io.creds,
 				     c->event_ctx);
 	if (conn_req == NULL) {
@@ -294,6 +315,9 @@ done:
 }
 
 
+/*
+  Receive result of a rpc connection to a rpc pipe on SMB2
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -303,8 +327,9 @@ NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2_recv(struct composite_context *c)
 }
 
 
-/* open a rpc connection to a rpc pipe on SMB2 using the binding
-   structure to determine the endpoint and options */
+/*
+  Sync version of a rpc connection to a rpc pipe on SMB2
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *mem_ctx,
 					   struct dcerpc_pipe_connect *io)
 {
