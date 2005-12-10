@@ -290,6 +290,21 @@ typedef struct sid_info
 
 } DOM_SID;
 
+struct lsa_dom_info {
+	BOOL valid;
+	DOM_SID sid;
+	const char *name;
+	int num_idxs;
+	int *idxs;
+};
+
+struct lsa_name_info {
+	uint32 rid;
+	enum SID_NAME_USE type;
+	const char *name;
+	int dom_idx;
+};
+
 /* Some well-known SIDs */
 extern const DOM_SID global_sid_World_Domain;
 extern const DOM_SID global_sid_World;

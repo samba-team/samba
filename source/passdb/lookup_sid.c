@@ -3,6 +3,7 @@
    uid/user handling
    Copyright (C) Andrew Tridgell         1992-1998
    Copyright (C) Gerald (Jerry) Carter   2003
+   Copyright (C) Volker Lendecke	 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -265,113 +266,403 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL winbind_lookup_rids(TALLOC_CTX *mem_ctx,
+				const DOM_SID *domain_sid,
+				int num_rids, uint32 *rids,
+				const char **domain_name,
+				const char **names, uint32 *types)
+{
+	/* Unless the winbind interface is upgraded, fall back to ask for
+	 * individual sids. I imagine introducing a lookuprids operation that
+	 * directly proxies to lsa_lookupsids to the correct DC. -- vl */
+
+	int i;
+	for (i=0; i<num_rids; i++) {
+		DOM_SID sid;
+
+		sid_copy(&sid, domain_sid);
+		sid_append_rid(&sid, rids[i]);
+
+		if (winbind_lookup_sid(mem_ctx, &sid,
+				       *domain_name == NULL ?
+				       domain_name : NULL,
+				       &names[i], &types[i])) {
+			if ((names[i] == NULL) || ((*domain_name) == NULL)) {
+				return False;
+			}
+		} else {
+			types[i] = SID_NAME_UNKNOWN;
+		}
+	}
+	return True;
+}
+
+static BOOL lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
+			int num_rids, uint32_t *rids,
+			const char **domain_name,
+			const char ***names, enum SID_NAME_USE **types)
+{
+	int i;
+
+	*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
+	*types = TALLOC_ARRAY(mem_ctx, enum SID_NAME_USE, num_rids);
+
+	if ((*names == NULL) || (*types == NULL)) {
+		return False;
+	}
+
+	if (sid_check_is_domain(domain_sid)) {
+		NTSTATUS result;
+
+		if (*domain_name == NULL) {
+			*domain_name = talloc_strdup(
+				mem_ctx, get_global_sam_name());
+		}
+
+		if (*domain_name == NULL) {
+			return False;
+		}
+
+		become_root();
+		result = pdb_lookup_rids(domain_sid, num_rids, rids,
+					 *names, *types);
+		unbecome_root();
+
+		return (NT_STATUS_IS_OK(result) ||
+			NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) ||
+			NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED));
+	}
+
+	if (sid_check_is_builtin(domain_sid)) {
+
+		if (*domain_name == NULL) {
+			*domain_name = talloc_strdup(
+				mem_ctx, builtin_domain_name());
+		}
+
+		if (*domain_name == NULL) {
+			return False;
+		}
+
+		for (i=0; i<num_rids; i++) {
+			if (lookup_builtin_rid(*names, rids[i],
+					       &(*names)[i])) {
+				if ((*names)[i] == NULL) {
+					return False;
+				}
+				(*types)[i] = SID_NAME_ALIAS;
+			} else {
+				(*types)[i] = SID_NAME_UNKNOWN;
+			}
+		}
+		return True;
+	}
+
+	if (sid_check_is_wellknown_domain(domain_sid, NULL)) {
+		for (i=0; i<num_rids; i++) {
+			DOM_SID sid;
+			sid_copy(&sid, domain_sid);
+			sid_append_rid(&sid, rids[i]);
+			if (lookup_wellknown_sid(mem_ctx, &sid,
+						 domain_name, &(*names)[i])) {
+				if ((*names)[i] == NULL) {
+					return False;
+				}
+				(*types)[i] = SID_NAME_WKN_GRP;
+			} else {
+				(*types)[i] = SID_NAME_UNKNOWN;
+			}
+		}
+		return True;
+	}
+
+	return winbind_lookup_rids(mem_ctx, domain_sid, num_rids, rids,
+				   domain_name, *names, *types);
+}
+
+/*
+ * Is the SID a domain as such? If yes, lookup its name.
+ */
+
+static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
+			     const char **name)
+{
+	const char *tmp;
+	enum SID_NAME_USE type;
+
+	if (sid_check_is_domain(sid)) {
+		*name = talloc_strdup(mem_ctx, get_global_sam_name());
+		return True;
+	}
+
+	if (sid_check_is_builtin(sid)) {
+		*name = talloc_strdup(mem_ctx, builtin_domain_name());
+		return True;
+	}
+
+	if (sid_check_is_wellknown_domain(sid, &tmp)) {
+		*name = talloc_strdup(mem_ctx, tmp);
+		return True;
+	}
+
+	if ((sid->num_auths == 4) &&
+	    winbind_lookup_sid(mem_ctx, sid, &tmp, NULL, &type) &&
+	    (type == SID_NAME_DOMAIN)) {
+		*name = tmp;
+		return True;
+	}
+
+	/* TODO: As a DC, see if we trust SID */
+
+	return False;
+}
+
+/*
+ * Lookup a bunch of SIDs. This is modeled after lsa_lookup_sids with
+ * references to domains, it is explicitly made for this.
+ *
+ * This attempts to be as efficient as possible: It collects all SIDs
+ * belonging to a domain and hands them in bulk to the appropriate lookup
+ * function. In particular pdb_lookup_rids with ldapsam_trusted benefits
+ * *hugely* from this. Winbind is going to be extended with a lookup_rids
+ * interface as well, so on a DC we can do a bulk lsa_lookuprids to the
+ * appropriate DC.
+ */
+
+NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
+		     const DOM_SID **sids,
+		     struct lsa_dom_info **ret_domains,
+		     struct lsa_name_info **ret_names)
+{
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_name_info *name_infos;
+	struct lsa_dom_info *dom_infos;
+
+	int i, j;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	name_infos = TALLOC_ARRAY(tmp_ctx, struct lsa_name_info, num_sids);
+	dom_infos = TALLOC_ZERO_ARRAY(tmp_ctx, struct lsa_dom_info,
+				      MAX_REF_DOMAINS);
+	if ((name_infos == NULL) || (dom_infos == NULL)) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* First build up the data structures:
+	 * 
+	 * dom_infos is a list of domains referenced in the list of
+	 * SIDs. Later we will walk the list of domains and look up the RIDs
+	 * in bulk.
+	 *
+	 * name_infos is a shadow-copy of the SIDs array to collect the real
+	 * data.
+	 *
+	 * dom_info->idxs is an index into the name_infos array. The
+	 * difficulty we have here is that we need to keep the SIDs the client
+	 * asked for in the same order for the reply
+	 */
+
+	for (i=0; i<num_sids; i++) {
+		DOM_SID sid;
+		uint32 rid;
+		const char *domain_name = NULL;
+
+		sid_copy(&sid, sids[i]);
+		name_infos[i].type = SID_NAME_USE_NONE;
+
+		if (lookup_as_domain(&sid, name_infos, &domain_name)) {
+			/* We can't push that through the normal lookup
+			 * process, as this would reference illegal
+			 * domains.
+			 *
+			 * For example S-1-5-32 would end up referencing
+			 * domain S-1-5- with RID 32 which is clearly wrong.
+			 */
+			if (domain_name == NULL) {
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+				
+			name_infos[i].rid = 0;
+			name_infos[i].type = SID_NAME_DOMAIN;
+			name_infos[i].name = NULL;
+
+			if (sid_check_is_builtin(&sid)) {
+				/* Yes, W2k3 returns "BUILTIN" both as domain
+				 * and name here */
+				name_infos[i].name = talloc_strdup(
+					name_infos, builtin_domain_name());
+				if (name_infos[i].name == NULL) {
+					result = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
+			}
+		} else {
+			/* This is a normal SID with rid component */
+			if (!sid_split_rid(&sid, &rid)) {
+				result = NT_STATUS_INVALID_PARAMETER;
+				goto done;
+			}
+		}
+
+		for (j=0; j<MAX_REF_DOMAINS; j++) {
+			if (!dom_infos[j].valid) {
+				break;
+			}
+			if (sid_equal(&sid, &dom_infos[j].sid)) {
+				break;
+			}
+		}
+
+		if (j == MAX_REF_DOMAINS) {
+			/* TODO: What's the right error message here? */
+			result = NT_STATUS_NONE_MAPPED;
+			goto done;
+		}
+
+		if (!dom_infos[j].valid) {
+			/* We found a domain not yet referenced, create a new
+			 * ref. */
+			dom_infos[j].valid = True;
+			sid_copy(&dom_infos[j].sid, &sid);
+
+			if (domain_name != NULL) {
+				/* This name was being found above in the case
+				 * when we found a domain SID */
+				dom_infos[j].name =
+					talloc_steal(dom_infos, domain_name);
+			} else {
+				/* lookup_rids will take care of this */
+				dom_infos[j].name = NULL;
+			}
+		}
+
+		name_infos[i].dom_idx = j;
+
+		if (name_infos[i].type == SID_NAME_USE_NONE) {
+			name_infos[i].rid = rid;
+
+			ADD_TO_ARRAY(dom_infos, int, i, &dom_infos[j].idxs,
+				     &dom_infos[j].num_idxs);
+
+			if (dom_infos[j].idxs == NULL) {
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		}
+	}
+
+	/* Iterate over the domains found */
+
+	for (i=0; i<MAX_REF_DOMAINS; i++) {
+		uint32_t *rids;
+		const char **names;
+		enum SID_NAME_USE *types;
+		struct lsa_dom_info *dom = &dom_infos[i];
+
+		if (!dom->valid) {
+			/* No domains left, we're done */
+			break;
+		}
+
+		rids = TALLOC_ARRAY(tmp_ctx, uint32, dom->num_idxs);
+
+		if (rids == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		for (j=0; j<dom->num_idxs; j++) {
+			rids[j] = name_infos[dom->idxs[j]].rid;
+		}
+
+		if (!lookup_rids(tmp_ctx, &dom->sid,
+				 dom->num_idxs, rids, &dom->name,
+				 &names, &types)) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		talloc_steal(dom_infos, dom->name);
+
+		for (j=0; j<dom->num_idxs; j++) {
+			int idx = dom->idxs[j];
+			name_infos[idx].type = types[j];
+			if (types[j] != SID_NAME_UNKNOWN) {
+				name_infos[idx].name =
+					talloc_steal(name_infos, names[j]);
+			} else {
+				name_infos[idx].name = NULL;
+			}
+		}
+	}
+
+	*ret_domains = talloc_steal(mem_ctx, dom_infos);
+	*ret_names = talloc_steal(mem_ctx, name_infos);
+	result = NT_STATUS_OK;
+
+ done:
+	talloc_free(tmp_ctx);
+	return result;
+}
+
 /*****************************************************************
  *THE CANONICAL* convert SID to name function.
- Tries local lookup first - for local sids, then tries winbind.
 *****************************************************************/  
 
 BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		const char **ret_domain, const char **ret_name,
 		enum SID_NAME_USE *ret_type)
 {
-	const char *domain = NULL;
-	const char *name = NULL;
-	enum SID_NAME_USE type;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct lsa_dom_info *domain;
+	struct lsa_name_info *name;
+	TALLOC_CTX *tmp_ctx;
+	BOOL ret = False;
 
-	/* Check if this is our own sid.  This should perhaps be done by
-	   winbind?  For the moment handle it here. */
+	tmp_ctx = talloc_new(mem_ctx);
 
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return False;
 	}
 
-	if (sid_check_is_domain(sid)) {
-		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
-		name = talloc_strdup(tmp_ctx, "");
-		type = SID_NAME_DOMAIN;
-		goto ok;
+	if (!NT_STATUS_IS_OK(lookup_sids(mem_ctx, 1, &sid,
+					 &domain, &name))) {
+		goto done;
 	}
 
-	if (sid_check_is_in_our_domain(sid)) {
-		uint32 rid;
-		SMB_ASSERT(sid_peek_rid(sid, &rid));
-
-		/* For our own domain passdb is responsible */
-		if (!lookup_global_sam_rid(tmp_ctx, rid, &name, &type)) {
-			goto failed;
-		}
-
-		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
-		goto ok;
-	}
-
-	if (sid_check_is_builtin(sid)) {
-
-		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
-
-		/* Yes, W2k3 returns "BUILTIN" both as domain and name here */
-		name = talloc_strdup(tmp_ctx, builtin_domain_name());
-		type = SID_NAME_DOMAIN;
-		goto ok;
-	}
-
-	if (sid_check_is_in_builtin(sid)) {
-		uint32 rid;
-
-		SMB_ASSERT(sid_peek_rid(sid, &rid));
-
-		if (!lookup_builtin_rid(tmp_ctx, rid, &name)) {
-			goto failed;
-		}
-
-		/* There's only aliases in S-1-5-32 */
-		type = SID_NAME_ALIAS;
-		domain = talloc_strdup(tmp_ctx, builtin_domain_name());
-
-		goto ok;
-	}
-
-	if (winbind_lookup_sid(tmp_ctx, sid, &domain, &name, &type)) {
-		goto ok;
-	}
-
-	DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying "
-		  "special SIDs.\n", sid_string_static(sid)));
-
-	if (lookup_wellknown_sid(tmp_ctx, sid, &domain, &name)) {
-		type = SID_NAME_WKN_GRP;
-		goto ok;
-	}
-
- failed:
-	DEBUG(10, ("Failed to lookup sid %s\n", sid_string_static(sid)));
-	talloc_free(tmp_ctx);
-	return False;
-
- ok:
-
-	if ((domain == NULL) || (name == NULL)) {
-		DEBUG(0, ("talloc failed\n"));
-		talloc_free(tmp_ctx);
-		return False;
+	if (name->type == SID_NAME_UNKNOWN) {
+		goto done;
 	}
 
 	if (ret_domain != NULL) {
-		*ret_domain = talloc_steal(mem_ctx, domain);
+		*ret_domain = talloc_steal(mem_ctx, domain->name);
 	}
 
 	if (ret_name != NULL) {
-		*ret_name = talloc_steal(mem_ctx, name);
+		*ret_name = talloc_steal(mem_ctx, name->name);
 	}
 
 	if (ret_type != NULL) {
-		*ret_type = type;
+		*ret_type = name->type;
 	}
 
+	ret = True;
+
+ done:
+	if (!ret) {
+		DEBUG(10, ("failed to lookup sid %s\n",
+			   sid_string_static(sid)));
+	}
 	talloc_free(tmp_ctx);
-	return True;
+	return ret;
 }
 
 /*****************************************************************
