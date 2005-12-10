@@ -84,7 +84,7 @@ void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID **sids,
 	}
 
 	for (i=0; i<num_sids; i++) {
-		char *dom, *nam;
+		const char *dom, *nam;
 		state->ctrs[i].sid = sids[i];
 		state->ctrs[i].finished =
 			lookup_wellknown_sid(mem_ctx, sids[i],
