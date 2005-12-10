@@ -1691,7 +1691,7 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	if (sid_check_is_builtin(domain_sid)) {
 
 		for (i=0; i<num_rids; i++) {
-			char *name;
+			const char *name;
 
 			if (lookup_builtin_rid(names, rids[i], &name)) {
 				attrs[i] = SID_NAME_ALIAS;
@@ -1713,7 +1713,7 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	}
 
 	for (i = 0; i < num_rids; i++) {
-		char *name;
+		const char *name;
 
 		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
 			names[i] = name;
@@ -1772,7 +1772,7 @@ NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		char *name;
+		const char *name;
 
 		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
 			names[i] = name;

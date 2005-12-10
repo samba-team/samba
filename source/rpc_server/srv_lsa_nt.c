@@ -96,7 +96,7 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
  init_dom_ref - adds a domain if it's not already in, returns the index.
 ***************************************************************************/
 
-static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
+static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 {
 	int num = 0;
 
@@ -153,7 +153,8 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 		DOM_SID sid;
 		uint32 rid;
 		int dom_idx;
-		char *full_name, *domain;
+		char *full_name;
+		const char *domain;
 		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
 
 		/* Split name into domain and user component */
@@ -258,7 +259,7 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 		DOM_SID find_sid = sid[i].sid;
 		uint32 rid = 0xffffffff;
 		int dom_idx = -1;
-		char *name, *domain;
+		const char *name, *domain;
 		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
 
 		DEBUG(5, ("init_lsa_trans_names: looking up sid %s\n",
