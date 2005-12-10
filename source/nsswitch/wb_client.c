@@ -108,7 +108,8 @@ BOOL winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	*name_type = (enum SID_NAME_USE)response.data.name.type;
 
 	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
-		   sid_string_static(sid), *domain, *name));
+		   sid_string_static(sid), response.data.name.dom_name,
+		   response.data.name.name));
 	return True;
 }
 
