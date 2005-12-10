@@ -75,7 +75,7 @@ static struct sid_name_map_info special_domains[] = {
 ***************************************************************************/
 
 BOOL lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			  char **domain, char **name)
+			  const char **domain, const char **name)
 {
 	int i;
 	DOM_SID dom_sid;
@@ -121,7 +121,7 @@ BOOL lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 ***************************************************************************/
 
 BOOL lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
-			   DOM_SID *sid, char **domain)
+			   DOM_SID *sid, const char **domain)
 {
 	int i, j;
 

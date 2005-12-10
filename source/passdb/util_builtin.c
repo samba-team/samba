@@ -42,7 +42,7 @@ static const struct rid_name_map builtin_aliases[] = {
 /*******************************************************************
  Look up a rid in the BUILTIN domain
  ********************************************************************/
-BOOL lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, char **name)
+BOOL lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name)
 {
 	const struct rid_name_map *aliases = builtin_aliases;
 
