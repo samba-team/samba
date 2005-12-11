@@ -221,7 +221,12 @@ port 445 is tried and if no response then port 139 is tried.
                 <listitem><para>If the CIFS Unix extensions are negotiated with the server
                 the client will attempt to set the effective uid and gid of
                 the local process on newly created files, directories, and
-                devices (create, mkdir, mknod).</para></listitem>
+                devices (create, mkdir, mknod). If the CIFS Unix Extensions
+                are not negotiated, for newly created files and directories
+                instead of using the default uid and gid specified on the
+                the mount, cache the new file's uid and gid locally which means
+                that the uid for the file can change when the inode is
+                reloaded (or the user remounts the share).</para></listitem>
         </varlistentry>
 
         <varlistentry>
@@ -231,9 +236,10 @@ port 445 is tried and if no response then port 139 is tried.
                 mkdir, mknod) which will result in the server setting the
                 uid and gid to the default (usually the server uid of the
                 user who mounted the share).  Letting the server (rather than
-                the client) set the uid and gid is the default. This
-                parameter has no effect if the CIFS Unix Extensions are not
-                negotiated.</para></listitem>
+                the client) set the uid and gid is the default.If the CIFS
+                Unix Extensions are not negotiated then the uid and gid for
+                new files will appear to be the uid (gid) of the mounter or the
+                uid (gid) parameter specified on the mount.</para></listitem>
         </varlistentry>
 
         <varlistentry>
@@ -313,11 +319,6 @@ port 445 is tried and if no response then port 139 is tried.
                 <listitem><para>(default) The  program  accessing  a file on the cifs mounted file system will not hang when the server crashes and will return errors to the user application.</para></listitem>
         </varlistentry>
 
-        <varlistentry>
-                <term>--verbose</term>
-                <listitem><para>Print additional debugging information for the mount. Note that this parameter must be specified before the -o. For example:</para><para>mount -t cifs //server/share /mnt --verbose -o user=username</para></listitem>
-        </varlistentry>
-
 	<varlistentry>
                 <term>noacl</term>
                 <listitem><para>Do not allow POSIX ACL operations even if server would support them.</para><para>
@@ -326,8 +327,68 @@ port 445 is tried and if no response then port 139 is tried.
 		then POSIX support in the CIFS configuration options when building the cifs
 		module.  POSIX ACL support can be disabled on a per mount basic by specifying
 		"noacl" on mount.</para>
-	</listitem>
+		</listitem>
 	</varlistentry>
+
+        <varlistentry>
+                <term>nocase</term>
+                <listitem>
+		<para>Request case insensitive path name matching (case
+                sensitive is the default if the server suports it).
+		</para>
+                </listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>sec=</term>
+                <listitem>
+                <para>Security mode.  Allowed values are:</para>
+			<itemizedlist>
+                        <listitem><para>none    attempt to connection as a null user (no name) </para></listitem>
+                        <listitem><para>krb5    Use Kerberos version 5 authentication</para></listitem>
+                        <listitem><para>krb5i   Use Kerberos authentication and packet signing</para></listitem>
+                        <listitem><para>ntlm    Use NTLM password hashing (default)</para></listitem>
+                        <listitem><para>ntlmi   Use NTLM password hashing with signing (if
+                                /proc/fs/cifs/PacketSigningEnabled on or if
+                                server requires signing also can be the default)</para></listitem>
+                        <listitem><para>ntlmv2  Use NTLMv2 password hashing</para></listitem>
+                        <listitem><para>ntlmv2i Use NTLMv2 password hashing with packet signing</para></listitem>
+			</itemizedlist>
+
+			<para>[NB This [sec parameter] is under development and expected to be available in cifs kernel module 1.40 and later]
+                </para>
+                </listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>nobrl</term>
+                <listitem>
+                <para>Do not send byte range lock requests to the server.
+                This is necessary for certain applications that break
+                with cifs style mandatory byte range locks (and most
+                cifs servers do not yet support requesting advisory
+                byte range locks).
+                </para>
+                </listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>sfu</term>
+                <listitem>
+                <para>
+		When the CIFS Unix Extensions are not negotiated, attempt to
+                create device files and fifos in a format compatible with
+                Services for Unix (SFU).  In addition retrieve bits 10-12
+                of the mode via the SETFILEBITS extended attribute (as
+                SFU does).  In the future the bottom 9 bits of the mode
+                mode also will be emulated using queries of the security
+                descriptor (ACL). [NB: requires version 1.39 or later
+		of the CIFS VFS.  To recognize symlinks and be able
+		to create symlinks in an SFU interoperable form
+		requires version 1.40 or later of the CIFS VFS kernel module.
+                </para>
+                </listitem>
+        </varlistentry>
 
         <varlistentry>
                 <term>serverino</term>
@@ -372,6 +433,11 @@ port 445 is tried and if no response then port 139 is tried.
 
 		<listitem><para>default network write size</para></listitem>
 	</varlistentry>
+	 <varlistentry>
+                <term>--verbose</term>
+                <listitem><para>Print additional debugging information for the mount. Note that this parameter must be specified before the -o. For example:</para><para>mount -t cifs //server/share /mnt --verbose -o user=username</para></listitem>
+        </varlistentry>
+
 
 	</variablelist>
 </refsect1>
@@ -412,6 +478,11 @@ The primary mechanism for making configuration changes and for reading
 debug information for the cifs vfs is via the Linux /proc filesystem.
 In the directory <filename>/proc/fs/cifs</filename> are various 
 configuration files and pseudo files which can display debug information.  
+There are additional startup options such as maximum buffer size and number
+of buffers which only may be set when the kernel cifs vfs (cifs.ko module) is 
+loaded.  These can be seen by running the modinfo utility against the file
+cifs.ko which will list the options that may be passed to cifs during module
+installation (device driver load).
 For more information see the kernel file <filename>fs/cifs/README</filename>.
 </para>
 </refsect1>
@@ -439,8 +510,8 @@ server type you are trying to contact.
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 1.34 of 
-	the cifs vfs filesystem (roughly Linux kernel 2.6.12).</para>
+	<para>This man page is correct for version 1.39 of 
+	the cifs vfs filesystem (roughly Linux kernel 2.6.15).</para>
 </refsect1>
 
 <refsect1>
