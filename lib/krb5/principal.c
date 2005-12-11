@@ -69,21 +69,21 @@ krb5_principal_set_type(krb5_context context,
 
 int KRB5_LIB_FUNCTION
 krb5_principal_get_type(krb5_context context,
-			krb5_principal principal)
+			krb5_const_principal principal)
 {
     return princ_type(principal);
 }
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_realm(krb5_context context,
-			 krb5_principal principal)
+			 krb5_const_principal principal)
 {
     return princ_realm(principal);
 }			 
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_comp_string(krb5_context context,
-			       krb5_principal principal,
+			       krb5_const_principal principal,
 			       unsigned int component)
 {
     if(component >= princ_num_comp(principal))

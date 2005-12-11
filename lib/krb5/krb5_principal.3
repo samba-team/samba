@@ -101,11 +101,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_boolean
 .Fn krb5_principal_compare_any_realm "krb5_context context" "krb5_const_principal princ1 "krb5_const_principal princ2"
 .Ft "const char *"
-.Fn krb5_principal_get_comp_string "krb5_context context" "krb5_principal principal" "unsigned int component"
+.Fn krb5_principal_get_comp_string "krb5_context context" "krb5_const_principal principal" "unsigned int component"
 .Ft "const char *"
-.Fn krb5_principal_get_realm "krb5_context context" "krb5_principal principal"
+.Fn krb5_principal_get_realm "krb5_context context" "krb5_const_principal principal"
 .Ft int
-.Fn krb5_principal_get_type "krb5_context context" "krb5_principal principal"
+.Fn krb5_principal_get_type "krb5_context context" "krb5_const_principal principal"
 .Ft krb5_boolean
 .Fn krb5_principal_match "krb5_context context" "krb5_const_principal principal" "krb5_const_principal pattern"
 .Ft void
