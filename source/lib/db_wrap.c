@@ -79,6 +79,10 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	   the main event_context */
 	ev = event_context_find(ldb);
 
+	if (ldb_set_opaque(ldb, "EventContext", ev)) {
+		return NULL;
+	}
+
 	ret = ldb_register_samba_handlers(ldb);
 	if (ret == -1) {
 		talloc_free(ldb);
