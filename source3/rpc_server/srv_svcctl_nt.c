@@ -615,8 +615,19 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name, SERVICE_CONFIG
 	
 	config->tag_id           = 0x00000000;			/* unassigned loadorder group */
 	config->service_type     = SVCCTL_WIN32_OWN_PROC;
-	config->start_type       = SVCCTL_DEMAND_START;
 	config->error_control    = SVCCTL_SVC_ERROR_NORMAL;
+
+	/* set the start type.  NetLogon and WINS are disabled to prevent 
+	   the client from showing the "Start" button (if of course the services
+	   are not running */
+
+	if ( strequal( name, "NETLOGON" ) && ( lp_servicenumber(name) == -1 ) )
+		config->start_type = SVCCTL_DISABLED;
+	else if ( strequal( name, "WINS" ) && ( !lp_wins_support() ))
+		config->start_type = SVCCTL_DISABLED;
+	else
+		config->start_type = SVCCTL_DEMAND_START;
+	
 
 	TALLOC_FREE( values );
 

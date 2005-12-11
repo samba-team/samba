@@ -69,6 +69,7 @@
 
 /* SERVER_STATUS - ControlAccepted */
 
+#define SVCCTL_ACCEPT_NONE			0x00000000
 #define SVCCTL_ACCEPT_STOP			0x00000001
 #define SVCCTL_ACCEPT_PAUSE_CONTINUE		0x00000002
 #define SVCCTL_ACCEPT_SHUTDOWN			0x00000004
@@ -126,7 +127,7 @@ typedef struct {
 	uint32 type;
 	uint32 state;
 	uint32 controls_accepted;
-	uint32 win32_exit_code;
+	WERROR win32_exit_code;
 	uint32 service_exit_code;
 	uint32 check_point;
 	uint32 wait_hint;
