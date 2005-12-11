@@ -40,6 +40,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/iconv.h"
 #include "librpc/gen_ndr/netlogon.h"
+#include "auth/auth.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
@@ -588,7 +589,8 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 		talloc_free(res);
 		return HDB_ERR_NOENTRY;
 	}
-	*pmsg = talloc_steal(mem_ctx, res->msgs);
+	talloc_steal(mem_ctx, res->msgs);
+	*pmsg = res->msgs;
 	talloc_free(res);
 	return 0;
 }
@@ -680,7 +682,7 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 
 	const char *realm;
 	const struct ldb_dn *realm_dn;
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "LDB_fetch context");
+	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "LDB_fetch context");
 
 	if (!mem_ctx) {
 		krb5_set_error_string(context, "LDB_fetch: talloc_named() failed!");
@@ -1037,25 +1039,44 @@ static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
 	return 0;
 }
 
-krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx, 
-			       krb5_context context, struct HDB **db, const char *arg)
+NTSTATUS hdb_ldb_create(TALLOC_CTX *mem_ctx, 
+			krb5_context context, struct HDB **db, const char *arg)
 {
+	NTSTATUS nt_status;
+	struct auth_session_info *session_info;
 	*db = talloc(mem_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_string(context, "malloc: out of memory");
-		return ENOMEM;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*db)->hdb_master_key_set = 0;
 	(*db)->hdb_db = NULL;
 
+	nt_status = auth_system_session_info(*db, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	
+	/* The idea here is very simple.  Using Kerberos to
+	 * authenticate the KDC to the LDAP server is higly likely to
+	 * be circular.
+	 *
+	 * In future we may set this up to use EXERNAL and SSL
+	 * certificates, for now it will almost certainly be NTLMSSP
+	*/
+	
+	nt_status = cli_credentials_gensec_remove_oid(session_info->credentials, 
+						      GENSEC_OID_KERBEROS5);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	/* Setup the link to LDB */
-	(*db)->hdb_db = samdb_connect(*db, system_session(db));
+	(*db)->hdb_db = samdb_connect(*db, session_info);
 	if ((*db)->hdb_db == NULL) {
-		krb5_warnx(context, "hdb_ldb_create: samdb_connect failed!");
-		krb5_set_error_string(context, "samdb_connect failed!");
-		talloc_free(*db);
-		return HDB_ERR_NOENTRY;
+		DEBUG(1, ("hdb_ldb_create: Cannot open samdb for KDC backend!"));
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	(*db)->hdb_openp = 0;
@@ -1077,5 +1098,5 @@ krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb__del = NULL;
 	(*db)->hdb_destroy = LDB_destroy;
 
-	return 0;
+	return NT_STATUS_OK;
 }

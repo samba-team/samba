@@ -564,12 +564,10 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	ret = hdb_ldb_create(kdc, kdc->smb_krb5_context->krb5_context, 
-			     &kdc->config->db[0], NULL);
-	if (ret != 0) {
-		DEBUG(1, ("kdc_task_init: hdb_ldb_create fails: %s\n", 
-			  smb_get_krb5_error_message(kdc->smb_krb5_context->krb5_context, ret, kdc))); 
-		task_server_terminate(task, "kdc: hdb_ldb_create failed");
+	status = hdb_ldb_create(kdc, kdc->smb_krb5_context->krb5_context, 
+				   &kdc->config->db[0], NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "kdc: hdb_ldb_create (setup KDC database) failed");
 		return; 
 	}
 

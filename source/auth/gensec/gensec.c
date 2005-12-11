@@ -53,8 +53,8 @@ static const struct gensec_security_ops *gensec_security_by_authtype(struct gens
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security *gensec_security,
-								const char *oid_string)
+const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security *gensec_security,
+							 const char *oid_string)
 {
 	int i, j;
 	const struct gensec_security_ops **backends;
@@ -805,6 +805,9 @@ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct 
 
 struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security) 
 {
+	if (!gensec_security) {
+		return NULL;
+	}
 	return gensec_security->credentials;
 }
 

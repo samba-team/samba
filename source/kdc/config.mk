@@ -3,6 +3,7 @@
 #######################
 # Start SUBSYSTEM KDC
 [SUBSYSTEM::KDC]
+NOPROTO = YES
 INIT_OBJ_FILES = \
 		kdc.o \
 		pac-glue.o \

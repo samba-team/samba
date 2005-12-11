@@ -81,7 +81,7 @@ static krb5_error_code samba_get_pac(krb5_context context,
 }
 
 /* Wrap the PAC in the right ASN.1.  Will always free 'pac', on success or failure */
-krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData **out) 
+static krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData **out) 
 {
 	krb5_error_code ret;
 
@@ -144,7 +144,7 @@ krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData
    set, or if they specificaly asked not to get it.
 */
 
- krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
+krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
 					   METHOD_DATA* pa_data_seq,
 					   time_t authtime,
 					   EncryptionKey *tgtkey,
@@ -204,7 +204,7 @@ krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData
 
 /* Resign (and reform, including possibly new groups) a PAC */
 
- krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
+krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entry_ex *entry_ex, 
 					    krb5_principal client, 
 					    AuthorizationData *in, 
 					    time_t authtime,
@@ -316,7 +316,7 @@ krb5_error_code wrap_pac(krb5_context context, krb5_data *pac, AuthorizationData
 /* Given an hdb entry (and in particular it's private member), consult
  * the account_ok routine in auth/auth_sam.c for consistancy */
 
- krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *entry_ex, 
+krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *entry_ex, 
 					    HostAddresses *addresses)
 {
 	krb5_error_code ret;
