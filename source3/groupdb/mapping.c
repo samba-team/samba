@@ -35,43 +35,34 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
 
+static struct sid_name_mapping {
+	enum SID_NAME_USE type;
+	const char *name;
+} sid_name_use_strings[] = {
+	{ SID_NAME_USE_NONE, "Not initialized" },
+	{ SID_NAME_USER,     "User" },
+	{ SID_NAME_DOM_GRP,  "Domain group" },
+	{ SID_NAME_DOMAIN,   "Domain" },
+	{ SID_NAME_ALIAS,    "Local group" },
+	{ SID_NAME_WKN_GRP,  "Builtin group" },
+	{ SID_NAME_DELETED,  "Deleted" },
+	{ SID_NAME_INVALID,  "Invalid" },
+	{ 0, NULL }
+};
+
 /****************************************************************************
 dump the mapping group mapping to a text file
 ****************************************************************************/
-char *decode_sid_name_use(fstring group, enum SID_NAME_USE name_use)
-{	
-	static fstring group_type;
+const char *decode_sid_name_use(enum SID_NAME_USE name_use)
+{
+	struct sid_name_mapping *m;
 
-	switch(name_use) {
-		case SID_NAME_USER:
-			fstrcpy(group_type,"User");
-			break;
-		case SID_NAME_DOM_GRP:
-			fstrcpy(group_type,"Domain group");
-			break;
-		case SID_NAME_DOMAIN:
-			fstrcpy(group_type,"Domain");
-			break;
-		case SID_NAME_ALIAS:
-			fstrcpy(group_type,"Local group");
-			break;
-		case SID_NAME_WKN_GRP:
-			fstrcpy(group_type,"Builtin group");
-			break;
-		case SID_NAME_DELETED:
-			fstrcpy(group_type,"Deleted");
-			break;
-		case SID_NAME_INVALID:
-			fstrcpy(group_type,"Invalid");
-			break;
-		case SID_NAME_UNKNOWN:
-		default:
-			fstrcpy(group_type,"Unknown type");
-			break;
+	for (m = sid_name_use_strings; m->name != NULL; m++) {
+		if (m->type == name_use)
+			return m->name;
 	}
-	
-	fstrcpy(group, group_type);
-	return group_type;
+
+	return "Unknown type";
 }
 
 /****************************************************************************
@@ -405,7 +396,6 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rm
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
-	fstring group_type;
 	GROUP_MAP map;
 	GROUP_MAP *mapt;
 	int ret;
@@ -455,8 +445,8 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rm
 
 		string_to_sid(&map.sid, string_sid);
 		
-		decode_sid_name_use(group_type, map.sid_name_use);
-		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n", map.nt_name ,group_type));
+		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n",
+			  map.nt_name, decode_sid_name_use(map.sid_name_use)));
 
 		mapt= SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
