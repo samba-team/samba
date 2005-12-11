@@ -35,36 +35,6 @@ static TDB_CONTEXT *tdb; /* used for driver files */
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
 
-static struct sid_name_mapping {
-	enum SID_NAME_USE type;
-	const char *name;
-} sid_name_use_strings[] = {
-	{ SID_NAME_USE_NONE, "Not initialized" },
-	{ SID_NAME_USER,     "User" },
-	{ SID_NAME_DOM_GRP,  "Domain group" },
-	{ SID_NAME_DOMAIN,   "Domain" },
-	{ SID_NAME_ALIAS,    "Local group" },
-	{ SID_NAME_WKN_GRP,  "Builtin group" },
-	{ SID_NAME_DELETED,  "Deleted" },
-	{ SID_NAME_INVALID,  "Invalid" },
-	{ 0, NULL }
-};
-
-/****************************************************************************
-dump the mapping group mapping to a text file
-****************************************************************************/
-const char *decode_sid_name_use(enum SID_NAME_USE name_use)
-{
-	struct sid_name_mapping *m;
-
-	for (m = sid_name_use_strings; m->name != NULL; m++) {
-		if (m->type == name_use)
-			return m->name;
-	}
-
-	return "Unknown type";
-}
-
 /****************************************************************************
 initialise first time the mapping list - called from init_group_mapping()
 ****************************************************************************/
@@ -445,8 +415,9 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rm
 
 		string_to_sid(&map.sid, string_sid);
 		
-		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n",
-			  map.nt_name, decode_sid_name_use(map.sid_name_use)));
+		DEBUG(11,("enum_group_mapping: returning group %s of "
+			  "type %s\n", map.nt_name,
+			  sid_type_lookup(map.sid_name_use)));
 
 		mapt= SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
