@@ -41,7 +41,7 @@ static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, 
 	if(!prs_uint32("controls_accepted", ps, depth, &status->controls_accepted))
 		return False;
 
-	if(!prs_uint32("win32_exit_code", ps, depth, &status->win32_exit_code))
+	if(!prs_werror("win32_exit_code", ps, depth, &status->win32_exit_code))
 		return False;
 
 	if(!prs_uint32("service_exit_code", ps, depth, &status->service_exit_code))
