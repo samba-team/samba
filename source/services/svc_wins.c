@@ -25,8 +25,30 @@
 /*********************************************************************
 *********************************************************************/
 
+static WERROR wins_status( const char *service, SERVICE_STATUS *service_status )
+{
+	ZERO_STRUCTP( service_status );
+
+	service_status->type              = 0x10;
+	service_status->controls_accepted = SVCCTL_ACCEPT_NONE;
+
+	if ( lp_wins_support() ) 
+		service_status->state     = SVCCTL_RUNNING;
+	else {
+		service_status->state              = SVCCTL_STOPPED;
+		service_status->win32_exit_code    = WERR_SERVICE_NEVER_STARTED;
+	}
+	
+	return WERR_OK;
+}
+
+/*********************************************************************
+*********************************************************************/
+
 static WERROR wins_stop( const char *service, SERVICE_STATUS *service_status )
 {
+	wins_status( service, service_status );
+
 	return WERR_ACCESS_DENIED;
 }
 
@@ -36,22 +58,6 @@ static WERROR wins_stop( const char *service, SERVICE_STATUS *service_status )
 static WERROR wins_start( const char *service )
 {
 	return WERR_ACCESS_DENIED;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-static WERROR wins_status( const char *service, SERVICE_STATUS *service_status )
-{
-	ZERO_STRUCTP( service_status );
-
-	service_status->type              = 0x10;
-	if ( lp_wins_support() ) 
-		service_status->state     = SVCCTL_RUNNING;
-	else
-		service_status->state     = SVCCTL_STOPPED;
-	
-	return WERR_OK;
 }
 
 /*********************************************************************
