@@ -87,19 +87,15 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
 
 static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 {
-	fstring string_sid;
-	fstring group_type;
-	
-	decode_sid_name_use(group_type, map.sid_name_use);
-	sid_to_string(string_sid, &map.sid);
-		
 	if (!long_list)
-		d_printf("%s (%s) -> %s\n", map.nt_name, string_sid, gidtoname(map.gid));
+		d_printf("%s (%s) -> %s\n", map.nt_name,
+			 sid_string_static(&map.sid), gidtoname(map.gid));
 	else {
 		d_printf("%s\n", map.nt_name);
-		d_printf("\tSID       : %s\n", string_sid);
+		d_printf("\tSID       : %s\n", sid_string_static(&map.sid));
 		d_printf("\tUnix group: %s\n", gidtoname(map.gid));
-		d_printf("\tGroup type: %s\n", group_type);
+		d_printf("\tGroup type: %s\n",
+			 decode_sid_name_use(map.sid_name_use));
 		d_printf("\tComment   : %s\n", map.comment);
 	}
 
