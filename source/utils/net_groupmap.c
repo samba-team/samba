@@ -95,7 +95,7 @@ static void print_map_entry ( GROUP_MAP map, BOOL long_list )
 		d_printf("\tSID       : %s\n", sid_string_static(&map.sid));
 		d_printf("\tUnix group: %s\n", gidtoname(map.gid));
 		d_printf("\tGroup type: %s\n",
-			 decode_sid_name_use(map.sid_name_use));
+			 sid_type_lookup(map.sid_name_use));
 		d_printf("\tComment   : %s\n", map.comment);
 	}
 
