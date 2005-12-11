@@ -29,6 +29,26 @@ extern struct generic_mapping file_generic_mapping;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#define INVALID_SHARENAME_CHARS "<>*?|"
+
+/********************************************************************
+ Check a string for any occurrences of a specified list of invalid 
+ characters.
+********************************************************************/
+
+static BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len )
+{
+	int i;
+
+	for ( i=0; i<max_len && name[i]; i++ ) {
+		/* fail if strchr_m() finds one of the invalid characters */
+		if ( name[i] && strchr_m( invalid_chars, name[i] ) )
+			return False;
+	}
+
+	return True;
+}
+
 /*******************************************************************
  Utility function to get the 'type' of a share from an snum.
  ********************************************************************/
@@ -1768,6 +1788,13 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_UNKNOWN_LEVEL;
 	}
 
+	/* check for invalid share names */
+
+	if ( !validate_net_name( share_name, INVALID_SHARENAME_CHARS, sizeof(share_name) ) ) {
+		DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", share_name));
+		return WERR_INVALID_NAME;
+	}
+
 	if ( strequal(share_name,"IPC$") 
 		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
 		|| strequal(share_name,"global") )
@@ -2284,17 +2311,26 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 	return r_u->status;
 }
 
+/********************************************************************
+********************************************************************/
+
 WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
 {
-	fstring share_name;
+	fstring sharename;
 
 	switch ( q_u->type ) {
 	case 0x9:
-		/* check if share name is ok. 
-		  TODO: check for invalid characters in name? */
+		/* Run the name through alpha_strcpy() to remove any unsafe 
+		   shell characters.  Compare the copied string with the original
+		   and fail if the strings don't match */
 
-		unistr2_to_ascii(share_name, &q_u->uni_name, sizeof(share_name));
+		unistr2_to_ascii(sharename, &q_u->uni_name, sizeof(sharename));
+		if ( !validate_net_name( sharename, INVALID_SHARENAME_CHARS, sizeof(sharename) ) ) {
+			DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", sharename));
+			return WERR_INVALID_NAME;
+		}
 		break;
+
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
