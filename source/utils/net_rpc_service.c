@@ -254,6 +254,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 	/* print out the configuration information for the service */
 
 	d_printf("Configuration details:\n");
+	d_printf("\tControls Accepted    = 0x%x\n", service_status.controls_accepted);
 	d_printf("\tService Type         = 0x%x\n", config.service_type);
 	d_printf("\tStart Type           = 0x%x\n", config.start_type);
 	d_printf("\tError Control        = 0x%x\n", config.error_control);
