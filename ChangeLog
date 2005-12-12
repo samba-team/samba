@@ -1,7 +1,7 @@
 2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/hdb: Wrap hdb_entry with hdb_entry_ex, patch originally from
-	Andrew Bartlet
+	* lib/hdb, kdc, kadmin/load.c: Wrap hdb_entry with hdb_entry_ex, patch
+	originally from Andrew Bartlet
 
 	* lib/hdb/hdb-ldap.c: Wrap hdb_entry with hdb_entry_ex, add url
 	support, add ldapi support.
