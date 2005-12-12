@@ -70,12 +70,14 @@ install: build
 	$(MAKE) -C $(SOURCEPATH) install DESTDIR=$(CURDIR)/debian/tmp
 	$(MAKE) -C $(SOURCEPATH) manpages installman DESTDIR=$(CURDIR)/debian/tmp
 	cp $(CURDIR)/debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
+	cp $(SOURCEPATH)/setup/provision $(CURDIR)/debian/tmp/usr/lib/samba/setup
 	$(MAKE) -C $(SOURCEPATH)/pidl install DESTDIR=$(CURDIR)/debian/tmp
 
 binary-arch: build install
 	dh_testdir
 	dh_testroot
 	dh_install -a --sourcedir=debian/tmp
+	dh_installdocs -a
 	dh_installchangelogs -a
 	dh_strip -a
 	dh_perl -a
