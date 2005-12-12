@@ -300,6 +300,7 @@ struct wreplsrv_push_notify_io;
 struct winsdb_record;
 
 struct wrepl_packet;
+struct wrepl_send_ctrl;
 struct wrepl_associate;
 struct wrepl_associate_stop;
 struct wrepl_pull_table;
