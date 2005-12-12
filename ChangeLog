@@ -1,5 +1,12 @@
 2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5.3: Add some more entrypoints.
+
+	* lib/krb5/changepw.c: If there is a target principal, use the
+	realm of the realm to change the password with,
+
+	* kuser/kinit.c: Default to use DH when fetching keys.
+
 	* lib/hdb, kdc, kadmin/load.c: Wrap hdb_entry with hdb_entry_ex, patch
 	originally from Andrew Bartlet
 
