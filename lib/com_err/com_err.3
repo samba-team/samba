@@ -44,7 +44,10 @@
 .Nm init_error_table ,
 .Nm set_com_err_hook ,
 .Nm reset_com_err_hook ,
-.Nm add_to_error_table
+.Nm add_to_error_table ,
+.Nm initialize_error_table_r
+.Nm free_error_table ,
+.Nm com_right
 .Nd common error display library
 .Sh LIBRARY
 Common Error Library (libcom_err, -lcom_err)
@@ -71,6 +74,12 @@ typedef void (*errf)(const char *, long, const char *, ...);
 .Fn reset_com_err_hook ""
 .Ft void
 .Fn add_to_error_table "struct et_list *new_table"
+.Ft void
+.Fn initialize_error_table_r "struct et_list **et_list" "const char **msgs" "int base" "long count"
+.Ft void
+.Fn free_error_table "struct et_list *"
+.Ft const char *
+.Fn com_right "struct et_list *list" long code"
 .Sh DESCRIPTION
 The
 .Nm
@@ -89,6 +98,12 @@ file.  The initialisation function is generally defined as
 where
 .Em name
 is the name of the error table.
+.Pp
+If a thread-safe version of the library is needed 
+.Fn initialize_<name>_error_table_r
+that internally calls
+.Fn initialize_error_table_r
+instead be used.
 .Pp
 Any variable which is to contain an error code should be declared
 .Em <name>_error_number
@@ -134,6 +149,12 @@ Although this routine is available for use when needed, its use should
 be left to circumstances which render
 .Fn com_err
 unusable.
+.Pp
+.Fn com_right
+returns the error string just like
+.Fa com_err
+but in a thread-safe way.
+.Pp
 .It Fn error_table_name "num"
 Convert a machine-independent error table number
 .Fa num
@@ -151,6 +172,14 @@ custom error tables that have not been generated with
 .Xr compile_et 1 .
 Although this routine is available for use when needed, its use should
 be restricted.
+.Pp
+.Fn initialize_error_table_r
+initialize the
+.Fa et_list
+in the same way as
+.Fn init_error_table ,
+but in a thread-safe way.
+.Pp
 .It Fn set_com_err_hook "func"
 Provides a hook into the
 .Nm
