@@ -24,6 +24,105 @@ extern struct timeval smb_last_time;
 extern userdom_struct current_user_info;
 
 /****************************************************************************
+ Ensure when setting connectpath it is a canonicalized (no ./ // or ../)
+ absolute path stating in / and not ending in /.
+ Observent people will notice a similarity between this and check_path_syntax :-).
+****************************************************************************/
+
+void set_conn_connectpath(connection_struct *conn, const pstring connectpath)
+{
+	pstring destname;
+	char *d = destname;
+	const char *s = connectpath;
+        BOOL start_of_name_component = True;
+
+	*d++ = '/'; /* Always start with root. */
+
+	while (*s) {
+		if (*s == '/') {
+			/* Eat multiple '/' */
+			while (*s == '/') {
+                                s++;
+                        }
+			if ((d != destname) && (*s != '\0')) {
+				*d++ = '/';
+			}
+			start_of_name_component = True;
+			continue;
+		}
+
+		if (start_of_name_component) {
+			if ((s[0] == '.') && (s[1] == '.') && (s[2] == '/' || s[2] == '\0')) {
+				/* Uh oh - "/../" or "/..\0" ! */
+
+				/* Go past the ../ or .. */
+				if (s[2] == '/') {
+					s += 3;
+				} else {
+					s += 2; /* Go past the .. */
+				}
+
+				/* If  we just added a '/' - delete it */
+				if ((d > destname) && (*(d-1) == '/')) {
+					*(d-1) = '\0';
+					d--;
+				}
+
+				/* Are we at the start ? Can't go back further if so. */
+				if (d <= destname) {
+					*d++ = '/'; /* Can't delete root */
+					continue;
+				}
+				/* Go back one level... */
+				/* Decrement d first as d points to the *next* char to write into. */
+				for (d--; d > destname; d--) {
+					if (*d == '/') {
+						break;
+					}
+				}
+				/* We're still at the start of a name component, just the previous one. */
+				continue;
+			} else if ((s[0] == '.') && ((s[1] == '\0') || s[1] == '/')) {
+				/* Component of pathname can't be "." only - skip the '.' . */
+				if (s[1] == '/') {
+					s += 2;
+				} else {
+					s++;
+				}
+				continue;
+			}
+		}
+
+		if (!(*s & 0x80)) {
+			*d++ = *s++;
+		} else {
+			switch(next_mb_char_size(s)) {
+				case 4:
+					*d++ = *s++;
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					break;
+			}
+		}
+		start_of_name_component = False;
+	}
+	*d = '\0';
+
+	/* And must not end in '/' */
+	if (d > destname + 1 && (*(d-1) == '/')) {
+		*(d-1) = '\0';
+	}
+
+	string_set(&conn->connectpath, destname);
+}
+
+/****************************************************************************
  Load parameters specific to a connection/service.
 ****************************************************************************/
 
@@ -474,7 +573,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
 		standard_sub_conn(conn,s,sizeof(s));
-		string_set(&conn->connectpath,s);
+		set_conn_connectpath(conn,s);
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s, lp_servicename(snum)));
 	}
 
@@ -537,7 +636,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		canonicalize_path(conn, s);
-		string_set(&conn->connectpath,s);
+		set_conn_connectpath(conn,s);
 	}
 
 /* ROOT Activities: */	
@@ -652,7 +751,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		vfs_GetWd(conn,s);
-		string_set(&conn->connectpath,s);
+		set_conn_connectpath(conn,s);
 		vfs_ChDir(conn,conn->connectpath);
 	}
 #endif

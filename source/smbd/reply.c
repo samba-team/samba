@@ -4954,7 +4954,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	} else {
 		ok = vfs_directory_exist(conn,newdir,NULL);
 		if (ok)
-			string_set(&conn->connectpath,newdir);
+			set_conn_connectpath(conn,newdir);
 	}
   
 	if (!ok) {
