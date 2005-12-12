@@ -1,3 +1,5 @@
-usr/bin/smbclient
 usr/bin/net
 usr/bin/nmblookup
+usr/bin/setntacl
+usr/bin/setnttoken
+usr/bin/smbclient
