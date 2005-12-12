@@ -646,6 +646,7 @@ struct share_mode_entry {
 };
 
 struct share_mode_lock {
+	const char *servicepath; /* canonicalized. */
 	const char *filename;
 	SMB_DEV_T dev;
 	SMB_INO_T ino;

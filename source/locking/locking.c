@@ -464,10 +464,15 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 	}
 
-	/* Save off the associated filename. */
+	/* Save off the associated service path and filename. */
+	lck->servicepath = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
+				      (lck->num_share_modes *
+				      sizeof(struct share_mode_entry)));
+
 	lck->filename = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
-				      lck->num_share_modes *
-				      sizeof(struct share_mode_entry));
+				      (lck->num_share_modes *
+				      sizeof(struct share_mode_entry)) +
+				      strlen(lck->servicepath) + 1 );
 
 	/*
 	 * Ensure that each entry has a real process attached.
@@ -495,6 +500,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	int i;
 	struct locking_data *data;
 	ssize_t offset;
+	ssize_t sp_len;
 
 	result.dptr = NULL;
 	result.dsize = 0;
@@ -509,8 +515,11 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 		return result;
 	}
 
+	sp_len = strlen(lck->servicepath);
+
 	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
+		sp_len + 1 +
 		strlen(lck->filename) + 1;
 	result.dptr = talloc_size(lck, result.dsize);
 
@@ -529,6 +538,9 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
 	offset = sizeof(*data) +
 		sizeof(struct share_mode_entry)*lck->num_share_modes;
+	safe_strcpy(result.dptr + offset, lck->servicepath,
+		    result.dsize - offset - 1);
+	offset += sp_len + 1;
 	safe_strcpy(result.dptr + offset, lck->filename,
 		    result.dsize - offset - 1);
 	print_share_mode_table(data);
@@ -569,8 +581,9 @@ static int share_mode_lock_destructor(void *p)
 }
 
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    SMB_DEV_T dev, SMB_INO_T ino,
-					    const char *fname)
+						SMB_DEV_T dev, SMB_INO_T ino,
+						const char *servicepath,
+						const char *fname)
 {
 	struct share_mode_lock *lck;
 	TDB_DATA key = locking_key(dev, ino);
@@ -599,13 +612,15 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->fresh = (data.dptr == NULL);
 
 	if (lck->fresh) {
-		if (fname == NULL) {
-			DEBUG(0, ("New file, but no filename supplied\n"));
+
+		if (fname == NULL || servicepath == NULL) {
+			DEBUG(0, ("New file, but no filename or servicepath supplied\n"));
 			talloc_free(lck);
 			return NULL;
 		}
 		lck->filename = talloc_strdup(lck, fname);
-		if (lck->filename == NULL) {
+		lck->servicepath = talloc_strdup(lck, servicepath);
+		if (lck->filename == NULL || lck->servicepath == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			talloc_free(lck);
 			return NULL;
@@ -625,12 +640,41 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
-BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode,
-			      const char *fname)
+/*******************************************************************
+ Sets the service name and filename for rename.
+ At this point we should emit "rename" smbd messages to all
+ interested process id's.
+********************************************************************/
+
+BOOL rename_share_filename(struct share_mode_lock *lck,
+			const char *servicepath,
+			const char *newname)
+{
+	/*
+	 * rename_internal_fsp() and rename_internals() add './' to
+	 * head of newname if newname does not contain a '/'.
+	 */
+	while (newname[0] && newname[1] && newname[0] == '.' && newname[1] == '/') {
+		newname += 2;
+	}
+
+	lck->filename = talloc_strdup(lck, newname);
+	lck->servicepath = talloc_strdup(lck, servicepath);
+	if (lck->filename == NULL || lck->servicepath == NULL) {
+		DEBUG(0, ("rename_share_filename: talloc failed\n"));
+		return False;
+	}
+	lck->modified = True;
+	return True;
+}
+
+BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	BOOL result;
-	struct share_mode_lock *lck = get_share_mode_lock(NULL, dev, inode,
-							  fname);
+	struct share_mode_lock *lck = get_share_mode_lock(NULL, dev, inode, NULL, NULL);
+	if (!lck) {
+		return False;
+	}
 	result = lck->delete_on_close;
 	talloc_free(lck);
 	return result;
@@ -964,7 +1008,7 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 		return True;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 	if (lck == NULL) {
 		return False;
 	}
@@ -982,9 +1026,10 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 {
 	struct locking_data *data;
 	struct share_mode_entry *shares;
-	char *name;
+	const char *sharepath;
+	const char *fname;
 	int i;
-	void (*traverse_callback)(struct share_mode_entry *, char *) = state;
+	void (*traverse_callback)(struct share_mode_entry *, const char *, const char *) = state;
 
 	/* Ensure this is a locking_key record. */
 	if (kbuf.dsize != sizeof(struct locking_key))
@@ -992,11 +1037,14 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
-	name = dbuf.dptr + sizeof(*data) +
+	sharepath = dbuf.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares);
+	fname = dbuf.dptr + sizeof(*data) +
+		data->u.s.num_share_mode_entries*sizeof(*shares) +
+		strlen(sharepath) + 1;
 
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
-		traverse_callback(&shares[i], name);
+		traverse_callback(&shares[i], sharepath, fname);
 	}
 	return 0;
 }
@@ -1006,7 +1054,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
  share mode system.
 ********************************************************************/
 
-int share_mode_forall(void (*fn)(const struct share_mode_entry *, char *))
+int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *, const char *))
 {
 	if (tdb == NULL)
 		return 0;
