@@ -42,14 +42,14 @@ modify_principal(void *server_handle,
 		 u_int32_t forbidden_mask)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     kadm5_ret_t ret;
     if((mask & forbidden_mask))
 	return KADM5_BAD_MASK;
     if((mask & KADM5_POLICY) && strcmp(princ->policy, "default"))
 	return KADM5_UNK_POLICY;
     
-    ent.principal = princ->principal;
+    ent.entry.principal = princ->principal;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
@@ -59,16 +59,16 @@ modify_principal(void *server_handle,
     ret = _kadm5_setup_entry(context, &ent, mask, princ, mask, NULL, 0);
     if(ret)
 	goto out2;
-    ret = _kadm5_set_modifier(context, &ent);
+    ret = _kadm5_set_modifier(context, &ent.entry);
     if(ret)
 	goto out2;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out2;
 
     kadm5_log_modify (context,
-		      &ent,
+		      &ent.entry,
 		      mask | KADM5_MOD_NAME | KADM5_MOD_TIME);
 		      
     ret = context->db->hdb_store(context->context, context->db, 

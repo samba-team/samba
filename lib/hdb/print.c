@@ -268,7 +268,7 @@ hdb_entry2string (krb5_context context, hdb_entry *ent, char **str)
 /* print a hdb_entry to (FILE*)data; suitable for hdb_foreach */
 
 krb5_error_code
-hdb_print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
+hdb_print_entry(krb5_context context, HDB *db, hdb_entry_ex *entry, void *data)
 {
     krb5_error_code ret;
     krb5_storage *sp;
@@ -282,7 +282,7 @@ hdb_print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 	return ENOMEM;
     }
     
-    ret = entry2string_int(context, sp, entry);
+    ret = entry2string_int(context, sp, &entry->entry);
     if(ret) {
 	krb5_storage_free(sp);
 	return ret;

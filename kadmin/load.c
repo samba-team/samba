@@ -369,7 +369,7 @@ doit(const char *filename, int mergep)
     int line;
     int flags = O_RDWR;
     struct entry e;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     HDB *db = _kadm5_s_get_db(kadm_handle);
 
     f = fopen(filename, "r");
@@ -447,7 +447,7 @@ doit(const char *filename, int mergep)
 	p = skip_next(p);
 
 	memset(&ent, 0, sizeof(ent));
-	ret = krb5_parse_name(context, e.principal, &ent.principal);
+	ret = krb5_parse_name(context, e.principal, &ent.entry.principal);
 	if(ret) {
 	    fprintf(stderr, "%s:%d:%s (%s)\n", 
 		    filename, 
@@ -457,73 +457,73 @@ doit(const char *filename, int mergep)
 	    continue;
 	}
 	
-	if (parse_keys(&ent, e.key)) {
+	if (parse_keys(&ent.entry, e.key)) {
 	    fprintf (stderr, "%s:%d:error parsing keys (%s)\n",
 		     filename, line, e.key);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
 	
-	if (parse_event(&ent.created_by, e.created) == -1) {
+	if (parse_event(&ent.entry.created_by, e.created) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing created event (%s)\n",
 		     filename, line, e.created);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
-	if (parse_event_alloc (&ent.modified_by, e.modified) == -1) {
+	if (parse_event_alloc (&ent.entry.modified_by, e.modified) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing event (%s)\n",
 		     filename, line, e.modified);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
-	if (parse_time_string_alloc (&ent.valid_start, e.valid_start) == -1) {
+	if (parse_time_string_alloc (&ent.entry.valid_start, e.valid_start) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing time (%s)\n",
 		     filename, line, e.valid_start);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
-	if (parse_time_string_alloc (&ent.valid_end,   e.valid_end) == -1) {
+	if (parse_time_string_alloc (&ent.entry.valid_end,   e.valid_end) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing time (%s)\n",
 		     filename, line, e.valid_end);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
-	if (parse_time_string_alloc (&ent.pw_end,      e.pw_end) == -1) {
+	if (parse_time_string_alloc (&ent.entry.pw_end,      e.pw_end) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing time (%s)\n",
 		     filename, line, e.pw_end);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
 
-	if (parse_integer_alloc (&ent.max_life,  e.max_life) == -1) {
+	if (parse_integer_alloc (&ent.entry.max_life,  e.max_life) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing lifetime (%s)\n",
 		     filename, line, e.max_life);
 	    hdb_free_entry (context, &ent);
 	    continue;
 
 	}
-	if (parse_integer_alloc (&ent.max_renew, e.max_renew) == -1) {
+	if (parse_integer_alloc (&ent.entry.max_renew, e.max_renew) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing lifetime (%s)\n",
 		     filename, line, e.max_renew);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
 
-	if (parse_hdbflags2int (&ent.flags, e.flags) != 1) {
+	if (parse_hdbflags2int (&ent.entry.flags, e.flags) != 1) {
 	    fprintf (stderr, "%s:%d:error parsing flags (%s)\n",
 		     filename, line, e.flags);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
 
-	if(parse_generation(e.generation, &ent.generation) == -1) {
+	if(parse_generation(e.generation, &ent.entry.generation) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing generation (%s)\n",
 		     filename, line, e.generation);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
 
-	if(parse_extensions(e.extensions, &ent.extensions) == -1) {
+	if(parse_extensions(e.extensions, &ent.entry.extensions) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing extension (%s)\n",
 		     filename, line, e.extensions);
 	    hdb_free_entry (context, &ent);

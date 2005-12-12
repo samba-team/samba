@@ -1,4 +1,11 @@
-2005-09-08 Love Hörnquist Åstrand <lha@it.su.se>
+2005-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* context_s.c (set_field): try another way to calculate the path
+	to the database/logfile/signal-socket
+
+	* log.c (kadm5_log_init): set error string on failures
+	
+2005-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Constify password.
 

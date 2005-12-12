@@ -271,13 +271,15 @@ kadm5_log_replay_create (kadm5_server_context *context,
 {
     krb5_error_code ret;
     krb5_data data;
-    hdb_entry ent;
+    hdb_entry_ex ent;
+
+    memset(&ent, 0, sizeof(ent));
 
     ret = krb5_data_alloc (&data, len);
     if (ret)
 	return ret;
     krb5_storage_read (sp, data.data, len);
-    ret = hdb_value2entry (context->context, &data, &ent);
+    ret = hdb_value2entry (context->context, &data, &ent.entry);
     krb5_data_free(&data);
     if (ret)
 	return ret;
@@ -342,12 +344,12 @@ kadm5_log_replay_delete (kadm5_server_context *context,
 			 krb5_storage *sp)
 {
     krb5_error_code ret;
-    hdb_entry ent;
+    hdb_entry_ex ent;
 
-    krb5_ret_principal (sp, &ent.principal);
+    krb5_ret_principal (sp, &ent.entry.principal);
 
     ret = context->db->hdb_remove(context->context, context->db, &ent);
-    krb5_free_principal (context->context, ent.principal);
+    krb5_free_principal (context->context, ent.entry.principal);
     return ret;
 }
 
@@ -419,10 +421,12 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 {
     krb5_error_code ret;
     krb5_principal source;
-    hdb_entry source_ent, target_ent;
+    hdb_entry_ex source_ent, target_ent;
     krb5_data value;
     off_t off;
     size_t princ_len, data_len;
+
+    memset(&target_ent, 0, sizeof(target_ent));
 
     off = krb5_storage_seek(sp, 0, SEEK_CUR);
     krb5_ret_principal (sp, &source);
@@ -434,7 +438,7 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 	return ret;
     }
     krb5_storage_read (sp, value.data, data_len);
-    ret = hdb_value2entry (context->context, &value, &target_ent);
+    ret = hdb_value2entry (context->context, &value, &target_ent.entry);
     krb5_data_free(&value);
     if (ret) {
 	krb5_free_principal (context->context, source);
@@ -447,7 +451,7 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 	krb5_free_principal (context->context, source);
 	return ret;
     }
-    source_ent.principal = source;
+    source_ent.entry.principal = source;
     ret = context->db->hdb_remove (context->context, context->db, &source_ent);
     krb5_free_principal (context->context, source);
     return ret;
@@ -517,7 +521,9 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     krb5_error_code ret;
     int32_t mask;
     krb5_data value;
-    hdb_entry ent, log_ent;
+    hdb_entry_ex ent, log_ent;
+
+    memset(&log_ent, 0, sizeof(log_ent));
 
     krb5_ret_int32 (sp, &mask);
     len -= 4;
@@ -525,79 +531,79 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     if (ret)
 	return ret;
     krb5_storage_read (sp, value.data, len);
-    ret = hdb_value2entry (context->context, &value, &log_ent);
+    ret = hdb_value2entry (context->context, &value, &log_ent.entry);
     krb5_data_free(&value);
     if (ret)
 	return ret;
-    ent.principal = log_ent.principal;
-    log_ent.principal = NULL;
+    ent.entry.principal = log_ent.entry.principal;
+    log_ent.entry.principal = NULL;
     ret = context->db->hdb_fetch(context->context, context->db, 
 				 HDB_F_DECRYPT, &ent);
     if (ret)
 	goto out;
     if (mask & KADM5_PRINC_EXPIRE_TIME) {
-	if (log_ent.valid_end == NULL) {
-	    ent.valid_end = NULL;
+	if (log_ent.entry.valid_end == NULL) {
+	    ent.entry.valid_end = NULL;
 	} else {
-	    if (ent.valid_end == NULL) {
-		ent.valid_end = malloc(sizeof(*ent.valid_end));
-		if (ent.valid_end == NULL) {
+	    if (ent.entry.valid_end == NULL) {
+		ent.entry.valid_end = malloc(sizeof(*ent.entry.valid_end));
+		if (ent.entry.valid_end == NULL) {
 		    ret = ENOMEM;
 		    goto out;
 		}
 	    }
-	    *ent.valid_end = *log_ent.valid_end;
+	    *ent.entry.valid_end = *log_ent.entry.valid_end;
 	}
     }
     if (mask & KADM5_PW_EXPIRATION) {
-	if (log_ent.pw_end == NULL) {
-	    ent.pw_end = NULL;
+	if (log_ent.entry.pw_end == NULL) {
+	    ent.entry.pw_end = NULL;
 	} else {
-	    if (ent.pw_end == NULL) {
-		ent.pw_end = malloc(sizeof(*ent.pw_end));
-		if (ent.pw_end == NULL) {
+	    if (ent.entry.pw_end == NULL) {
+		ent.entry.pw_end = malloc(sizeof(*ent.entry.pw_end));
+		if (ent.entry.pw_end == NULL) {
 		    ret = ENOMEM;
 		    goto out;
 		}
 	    }
-	    *ent.pw_end = *log_ent.pw_end;
+	    *ent.entry.pw_end = *log_ent.entry.pw_end;
 	}
     }
     if (mask & KADM5_LAST_PWD_CHANGE) {
 	abort ();		/* XXX */
     }
     if (mask & KADM5_ATTRIBUTES) {
-	ent.flags = log_ent.flags;
+	ent.entry.flags = log_ent.entry.flags;
     }
     if (mask & KADM5_MAX_LIFE) {
-	if (log_ent.max_life == NULL) {
-	    ent.max_life = NULL;
+	if (log_ent.entry.max_life == NULL) {
+	    ent.entry.max_life = NULL;
 	} else {
-	    if (ent.max_life == NULL) {
-		ent.max_life = malloc (sizeof(*ent.max_life));
-		if (ent.max_life == NULL) {
+	    if (ent.entry.max_life == NULL) {
+		ent.entry.max_life = malloc (sizeof(*ent.entry.max_life));
+		if (ent.entry.max_life == NULL) {
 		    ret = ENOMEM;
 		    goto out;
 		}
 	    }
-	    *ent.max_life = *log_ent.max_life;
+	    *ent.entry.max_life = *log_ent.entry.max_life;
 	}
     }
     if ((mask & KADM5_MOD_TIME) && (mask & KADM5_MOD_NAME)) {
-	if (ent.modified_by == NULL) {
-	    ent.modified_by = malloc(sizeof(*ent.modified_by));
-	    if (ent.modified_by == NULL) {
+	if (ent.entry.modified_by == NULL) {
+	    ent.entry.modified_by = malloc(sizeof(*ent.entry.modified_by));
+	    if (ent.entry.modified_by == NULL) {
 		ret = ENOMEM;
 		goto out;
 	    }
 	} else
-	    free_Event(ent.modified_by);
-	ret = copy_Event(log_ent.modified_by, ent.modified_by);
+	    free_Event(ent.entry.modified_by);
+	ret = copy_Event(log_ent.entry.modified_by, ent.entry.modified_by);
 	if (ret)
 	    goto out;
     }
     if (mask & KADM5_KVNO) {
-	ent.kvno = log_ent.kvno;
+	ent.entry.kvno = log_ent.entry.kvno;
     }
     if (mask & KADM5_MKVNO) {
 	abort ();		/* XXX */
@@ -612,17 +618,17 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	abort ();		/* XXX */
     }
     if (mask & KADM5_MAX_RLIFE) {
-	if (log_ent.max_renew == NULL) {
-	    ent.max_renew = NULL;
+	if (log_ent.entry.max_renew == NULL) {
+	    ent.entry.max_renew = NULL;
 	} else {
-	    if (ent.max_renew == NULL) {
-		ent.max_renew = malloc (sizeof(*ent.max_renew));
-		if (ent.max_renew == NULL) {
+	    if (ent.entry.max_renew == NULL) {
+		ent.entry.max_renew = malloc (sizeof(*ent.entry.max_renew));
+		if (ent.entry.max_renew == NULL) {
 		    ret = ENOMEM;
 		    goto out;
 		}
 	    }
-	    *ent.max_renew = *log_ent.max_renew;
+	    *ent.entry.max_renew = *log_ent.entry.max_renew;
 	}
     }
     if (mask & KADM5_LAST_SUCCESS) {
@@ -638,34 +644,34 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	size_t num;
 	int i;
 
-	for (i = 0; i < ent.keys.len; ++i)
-	    free_Key(&ent.keys.val[i]);
-	free (ent.keys.val);
+	for (i = 0; i < ent.entry.keys.len; ++i)
+	    free_Key(&ent.entry.keys.val[i]);
+	free (ent.entry.keys.val);
 
-	num = log_ent.keys.len;
+	num = log_ent.entry.keys.len;
 
-	ent.keys.len = num;
-	ent.keys.val = malloc(len * sizeof(*ent.keys.val));
-	for (i = 0; i < ent.keys.len; ++i) {
-	    ret = copy_Key(&log_ent.keys.val[i],
-			   &ent.keys.val[i]);
+	ent.entry.keys.len = num;
+	ent.entry.keys.val = malloc(len * sizeof(*ent.entry.keys.val));
+	for (i = 0; i < ent.entry.keys.len; ++i) {
+	    ret = copy_Key(&log_ent.entry.keys.val[i],
+			   &ent.entry.keys.val[i]);
 	    if (ret)
 		goto out;
 	}
     }
-    if ((mask & KADM5_TL_DATA) && log_ent.extensions) {
-	HDB_extensions *es = ent.extensions;
+    if ((mask & KADM5_TL_DATA) && log_ent.entry.extensions) {
+	HDB_extensions *es = ent.entry.extensions;
 
-	if (ent.extensions == NULL) {
-	    ent.extensions = calloc(1, sizeof(*ent.extensions));
-	    if (ent.extensions == NULL)
+	if (ent.entry.extensions == NULL) {
+	    ent.entry.extensions = calloc(1, sizeof(*ent.entry.extensions));
+	    if (ent.entry.extensions == NULL)
 		goto out;
 	}
 
-	ret = copy_HDB_extensions(es, ent.extensions);
+	ret = copy_HDB_extensions(es, ent.entry.extensions);
 	if (ret) {
-	    free(ent.extensions);
-	    ent.extensions = es;
+	    free(ent.entry.extensions);
+	    ent.entry.extensions = es;
 	    goto out;
 	}
 	if (es) {

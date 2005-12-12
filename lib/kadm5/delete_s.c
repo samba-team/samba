@@ -40,9 +40,9 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 {
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
-    hdb_entry ent;
+    hdb_entry_ex ent;
 
-    ent.principal = princ;
+    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret) {
 	krb5_warn(context->context, ret, "opening database");
@@ -52,12 +52,12 @@ kadm5_s_delete_principal(void *server_handle, krb5_principal princ)
 				 HDB_F_DECRYPT, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out2;
-    if(ent.flags.immutable) {
+    if(ent.entry.flags.immutable) {
 	ret = KADM5_PROTECT_PRINCIPAL;
 	goto out;
     }
     
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out;
 

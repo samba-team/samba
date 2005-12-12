@@ -72,9 +72,9 @@ kadm5_s_get_principal(void *server_handle,
 {
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     
-    ent.principal = princ;
+    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDONLY, 0);
     if(ret)
 	return ret;
@@ -86,49 +86,49 @@ kadm5_s_get_principal(void *server_handle,
 
     memset(out, 0, sizeof(*out));
     if(mask & KADM5_PRINCIPAL)
-	ret  = krb5_copy_principal(context->context, ent.principal, 
+	ret  = krb5_copy_principal(context->context, ent.entry.principal, 
 				   &out->principal);
     if(ret)
 	goto out;
-    if(mask & KADM5_PRINC_EXPIRE_TIME && ent.valid_end)
-	out->princ_expire_time = *ent.valid_end;
-    if(mask & KADM5_PW_EXPIRATION && ent.pw_end)
-	out->pw_expiration = *ent.pw_end;
+    if(mask & KADM5_PRINC_EXPIRE_TIME && ent.entry.valid_end)
+	out->princ_expire_time = *ent.entry.valid_end;
+    if(mask & KADM5_PW_EXPIRATION && ent.entry.pw_end)
+	out->pw_expiration = *ent.entry.pw_end;
     if(mask & KADM5_LAST_PWD_CHANGE)
-	hdb_entry_get_pw_change_time(&ent, &out->last_pwd_change);
+	hdb_entry_get_pw_change_time(&ent.entry, &out->last_pwd_change);
     if(mask & KADM5_ATTRIBUTES){
-	out->attributes |= ent.flags.postdate ? 0 : KRB5_KDB_DISALLOW_POSTDATED;
-	out->attributes |= ent.flags.forwardable ? 0 : KRB5_KDB_DISALLOW_FORWARDABLE;
-	out->attributes |= ent.flags.initial ? KRB5_KDB_DISALLOW_TGT_BASED : 0;
-	out->attributes |= ent.flags.renewable ? 0 : KRB5_KDB_DISALLOW_RENEWABLE;
-	out->attributes |= ent.flags.proxiable ? 0 : KRB5_KDB_DISALLOW_PROXIABLE;
-	out->attributes |= ent.flags.invalid ? KRB5_KDB_DISALLOW_ALL_TIX : 0;
-	out->attributes |= ent.flags.require_preauth ? KRB5_KDB_REQUIRES_PRE_AUTH : 0;
-	out->attributes |= ent.flags.server ? 0 : KRB5_KDB_DISALLOW_SVR;
-	out->attributes |= ent.flags.change_pw ? KRB5_KDB_PWCHANGE_SERVICE : 0;
-	out->attributes |= ent.flags.ok_as_delegate ? KRB5_KDB_OK_AS_DELEGATE : 0;
+	out->attributes |= ent.entry.flags.postdate ? 0 : KRB5_KDB_DISALLOW_POSTDATED;
+	out->attributes |= ent.entry.flags.forwardable ? 0 : KRB5_KDB_DISALLOW_FORWARDABLE;
+	out->attributes |= ent.entry.flags.initial ? KRB5_KDB_DISALLOW_TGT_BASED : 0;
+	out->attributes |= ent.entry.flags.renewable ? 0 : KRB5_KDB_DISALLOW_RENEWABLE;
+	out->attributes |= ent.entry.flags.proxiable ? 0 : KRB5_KDB_DISALLOW_PROXIABLE;
+	out->attributes |= ent.entry.flags.invalid ? KRB5_KDB_DISALLOW_ALL_TIX : 0;
+	out->attributes |= ent.entry.flags.require_preauth ? KRB5_KDB_REQUIRES_PRE_AUTH : 0;
+	out->attributes |= ent.entry.flags.server ? 0 : KRB5_KDB_DISALLOW_SVR;
+	out->attributes |= ent.entry.flags.change_pw ? KRB5_KDB_PWCHANGE_SERVICE : 0;
+	out->attributes |= ent.entry.flags.ok_as_delegate ? KRB5_KDB_OK_AS_DELEGATE : 0;
     }
     if(mask & KADM5_MAX_LIFE) {
-	if(ent.max_life)
-	    out->max_life = *ent.max_life;
+	if(ent.entry.max_life)
+	    out->max_life = *ent.entry.max_life;
 	else
 	    out->max_life = INT_MAX;
     }
     if(mask & KADM5_MOD_TIME) {
-	if(ent.modified_by)
-	    out->mod_date = ent.modified_by->time;
+	if(ent.entry.modified_by)
+	    out->mod_date = ent.entry.modified_by->time;
 	else
-	    out->mod_date = ent.created_by.time;
+	    out->mod_date = ent.entry.created_by.time;
     }
     if(mask & KADM5_MOD_NAME) {
-	if(ent.modified_by) {
-	    if (ent.modified_by->principal != NULL)
+	if(ent.entry.modified_by) {
+	    if (ent.entry.modified_by->principal != NULL)
 		ret = krb5_copy_principal(context->context, 
-					  ent.modified_by->principal,
+					  ent.entry.modified_by->principal,
 					  &out->mod_name);
-	} else if(ent.created_by.principal != NULL)
+	} else if(ent.entry.created_by.principal != NULL)
 	    ret = krb5_copy_principal(context->context, 
-				      ent.created_by.principal,
+				      ent.entry.created_by.principal,
 				      &out->mod_name);
 	else
 	    out->mod_name = NULL;
@@ -137,13 +137,13 @@ kadm5_s_get_principal(void *server_handle,
 	goto out;
 
     if(mask & KADM5_KVNO)
-	out->kvno = ent.kvno;
+	out->kvno = ent.entry.kvno;
     if(mask & KADM5_MKVNO) {
 	int n;
 	out->mkvno = 0; /* XXX */
-	for(n = 0; n < ent.keys.len; n++)
-	    if(ent.keys.val[n].mkvno) {
-		out->mkvno = *ent.keys.val[n].mkvno; /* XXX this isn't right */
+	for(n = 0; n < ent.entry.keys.len; n++)
+	    if(ent.entry.keys.val[n].mkvno) {
+		out->mkvno = *ent.entry.keys.val[n].mkvno; /* XXX this isn't right */
 		break;
 	    }
     }
@@ -152,8 +152,8 @@ kadm5_s_get_principal(void *server_handle,
     if(mask & KADM5_POLICY)
 	out->policy = NULL;
     if(mask & KADM5_MAX_RLIFE) {
-	if(ent.max_renew)
-	    out->max_renewable_life = *ent.max_renew;
+	if(ent.entry.max_renew)
+	    out->max_renewable_life = *ent.entry.max_renew;
 	else
 	    out->max_renewable_life = INT_MAX;
     }
@@ -169,13 +169,13 @@ kadm5_s_get_principal(void *server_handle,
 	krb5_key_data *kd;
 	krb5_salt salt;
 	krb5_data *sp;
-	krb5_get_pw_salt(context->context, ent.principal, &salt);
-	out->key_data = malloc(ent.keys.len * sizeof(*out->key_data));
-	for(i = 0; i < ent.keys.len; i++){
-	    key = &ent.keys.val[i];
+	krb5_get_pw_salt(context->context, ent.entry.principal, &salt);
+	out->key_data = malloc(ent.entry.keys.len * sizeof(*out->key_data));
+	for(i = 0; i < ent.entry.keys.len; i++){
+	    key = &ent.entry.keys.val[i];
 	    kd = &out->key_data[i];
 	    kd->key_data_ver = 2;
-	    kd->key_data_kvno = ent.kvno;
+	    kd->key_data_kvno = ent.entry.kvno;
 	    kd->key_data_type[0] = key->key.keytype;
 	    if(key->salt)
 		kd->key_data_type[1] = key->salt->type;
@@ -215,7 +215,7 @@ kadm5_s_get_principal(void *server_handle,
     if(mask & KADM5_TL_DATA) {
 	time_t last_pw_expire;
 
-	ret = hdb_entry_get_pw_change_time(&ent, &last_pw_expire);
+	ret = hdb_entry_get_pw_change_time(&ent.entry, &last_pw_expire);
 	if (ret == 0 && last_pw_expire) {
 	    unsigned char buf[4];
 	    _krb5_put_int(buf, last_pw_expire, sizeof(buf));
@@ -233,7 +233,7 @@ kadm5_s_get_principal(void *server_handle,
 	    heim_utf8_string pw;
 
 	    ret = hdb_entry_get_password(context->context, 
-					 context->db, &ent, &pw);
+					 context->db, &ent.entry, &pw);
 	    if (ret == 0) {
 		ret = add_tl_data(out, KRB5_TL_PASSWORD, pw, strlen(pw) + 1);
 		free(pw);

@@ -42,8 +42,9 @@ kadm5_s_rename_principal(void *server_handle,
 {
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
-    hdb_entry ent, ent2;
-    ent.principal = source;
+    hdb_entry_ex ent, ent2;
+
+    ent.entry.principal = source;
     if(krb5_principal_compare(context->context, source, target))
 	return KADM5_DUP; /* XXX is this right? */
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
@@ -54,7 +55,7 @@ kadm5_s_rename_principal(void *server_handle,
 	context->db->hdb_close(context->context, context->db);
 	goto out;
     }
-    ret = _kadm5_set_modifier(context, &ent);
+    ret = _kadm5_set_modifier(context, &ent.entry);
     if(ret)
 	goto out2;
     {
@@ -65,10 +66,11 @@ kadm5_s_rename_principal(void *server_handle,
 	krb5_get_pw_salt(context->context, source, &salt2);
 	salt.type = hdb_pw_salt;
 	salt.salt = salt2.saltvalue;
-	for(i = 0; i < ent.keys.len; i++){
-	    if(ent.keys.val[i].salt == NULL){
-		ent.keys.val[i].salt = malloc(sizeof(*ent.keys.val[i].salt));
-		ret = copy_Salt(&salt, ent.keys.val[i].salt);
+	for(i = 0; i < ent.entry.keys.len; i++){
+	    if(ent.entry.keys.val[i].salt == NULL){
+		ent.entry.keys.val[i].salt = 
+		    malloc(sizeof(*ent.entry.keys.val[i].salt));
+		ret = copy_Salt(&salt, ent.entry.keys.val[i].salt);
 		if(ret)
 		    break;
 	    }
@@ -77,26 +79,26 @@ kadm5_s_rename_principal(void *server_handle,
     }
     if(ret)
 	goto out2;
-    ent2.principal = ent.principal;
-    ent.principal = target;
+    ent2.entry.principal = ent.entry.principal;
+    ent.entry.principal = target;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret) {
-	ent.principal = ent2.principal;
+	ent.entry.principal = ent2.entry.principal;
 	goto out2;
     }
 
     kadm5_log_rename (context,
 		      source,
-		      &ent);
+		      &ent.entry);
 
     ret = context->db->hdb_store(context->context, context->db, 0, &ent);
     if(ret){
-	ent.principal = ent2.principal;
+	ent.entry.principal = ent2.entry.principal;
 	goto out2;
     }
     ret = context->db->hdb_remove(context->context, context->db, &ent2);
-    ent.principal = ent2.principal;
+    ent.entry.principal = ent2.entry.principal;
 out2:
     context->db->hdb_close(context->context, context->db);
     hdb_free_entry(context->context, &ent);

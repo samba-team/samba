@@ -41,16 +41,16 @@ krb5_error_code
 _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_principal principal,
-	      hdb_entry **h)
+	      hdb_entry_ex **h)
 {
-    hdb_entry *ent;
+    hdb_entry_ex *ent;
     krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
 
     ent = malloc (sizeof (*ent));
     if (ent == NULL)
 	return ENOMEM;
-    ent->principal = principal;
+    ent->entry.principal = principal;
 
     for(i = 0; i < config->num_db; i++) {
 	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
@@ -74,7 +74,7 @@ _kdc_db_fetch(krb5_context context,
 }
 
 void
-_kdc_free_ent(krb5_context context, hdb_entry *ent)
+_kdc_free_ent(krb5_context context, hdb_entry_ex *ent)
 {
     hdb_free_entry (context, ent);
     free (ent);

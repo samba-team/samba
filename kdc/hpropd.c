@@ -377,7 +377,7 @@ main(int argc, char **argv)
     nprincs = 0;
     while(1){
 	krb5_data data;
-	hdb_entry entry;
+	hdb_entry_ex entry;
 
 	if(from_stdin) {
 	    ret = krb5_read_message(context, &fd, &data);
@@ -417,7 +417,8 @@ main(int argc, char **argv)
 	    }
 	    break;
 	}
-	ret = hdb_value2entry(context, &data, &entry);
+	memset(&entry, 0, sizeof(entry));
+	ret = hdb_value2entry(context, &data, &entry.entry);
 	if(ret)
 	    krb5_err(context, 1, ret, "hdb_value2entry");
 	if(print_dump)
@@ -434,7 +435,7 @@ main(int argc, char **argv)
 		ret = db->hdb_store(context, db, 0, &entry);
 		if(ret == HDB_ERR_EXISTS) {
 		    char *s;
-		    ret = krb5_unparse_name(context, entry.principal, &s);
+		    ret = krb5_unparse_name(context, entry.entry.principal, &s);
 		    if (ret)
 			s = strdup("unparseable name");
 		    krb5_warnx(context, "Entry exists: %s", s);

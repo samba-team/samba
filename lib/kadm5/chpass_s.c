@@ -42,13 +42,13 @@ change(void *server_handle,
        int cond)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     kadm5_ret_t ret;
     Key *keys;
     size_t num_keys;
     int cmp = 1;
 
-    ent.principal = princ;
+    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
@@ -57,20 +57,20 @@ change(void *server_handle,
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
 
-    num_keys = ent.keys.len;
-    keys     = ent.keys.val;
+    num_keys = ent.entry.keys.len;
+    keys     = ent.entry.keys.val;
 
-    ent.keys.len = 0;
-    ent.keys.val = NULL;
+    ent.entry.keys.len = 0;
+    ent.entry.keys.val = NULL;
 
-    ret = _kadm5_set_keys(context, &ent, password);
+    ret = _kadm5_set_keys(context, &ent.entry, password);
     if(ret) {
 	_kadm5_free_keys (context->context, num_keys, keys);
 	goto out2;
     }
-    ent.kvno++;
+    ent.entry.kvno++;
     if (cond)
-	cmp = _kadm5_cmp_keys (ent.keys.val, ent.keys.len,
+	cmp = _kadm5_cmp_keys (ent.entry.keys.val, ent.entry.keys.len,
 			       keys, num_keys);
     _kadm5_free_keys (context->context, num_keys, keys);
 
@@ -80,20 +80,20 @@ change(void *server_handle,
 	goto out2;
     }
 
-    ret = _kadm5_set_modifier(context, &ent);
+    ret = _kadm5_set_modifier(context, &ent.entry);
     if(ret)
 	goto out2;
 
-    ret = _kadm5_bump_pw_expire(context, &ent);
+    ret = _kadm5_bump_pw_expire(context, &ent.entry);
     if (ret)
 	goto out2;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out2;
 
     kadm5_log_modify (context,
-		      &ent,
+		      &ent.entry,
 		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
 		      KADM5_KEY_DATA | KADM5_KVNO | KADM5_PW_EXPIRATION |
 		      KADM5_TL_DATA);
@@ -116,7 +116,7 @@ out:
 kadm5_ret_t
 kadm5_s_chpass_principal_cond(void *server_handle, 
 			      krb5_principal princ,
-			      char *password)
+			      const char *password)
 {
     return change (server_handle, princ, password, 1);
 }
@@ -128,7 +128,7 @@ kadm5_s_chpass_principal_cond(void *server_handle,
 kadm5_ret_t
 kadm5_s_chpass_principal(void *server_handle, 
 			 krb5_principal princ,
-			 char *password)
+			 const char *password)
 {
     return change (server_handle, princ, password, 0);
 }
@@ -144,32 +144,32 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
 				  krb5_key_data *key_data)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     kadm5_ret_t ret;
-    ent.principal = princ;
+    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
     ret = context->db->hdb_fetch(context->context, context->db, 0, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
-    ret = _kadm5_set_keys2(context, &ent, n_key_data, key_data);
+    ret = _kadm5_set_keys2(context, &ent.entry, n_key_data, key_data);
     if(ret)
 	goto out2;
-    ent.kvno++;
-    ret = _kadm5_set_modifier(context, &ent);
+    ent.entry.kvno++;
+    ret = _kadm5_set_modifier(context, &ent.entry);
     if(ret)
 	goto out2;
-    ret = _kadm5_bump_pw_expire(context, &ent);
+    ret = _kadm5_bump_pw_expire(context, &ent.entry);
     if (ret)
 	goto out2;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out2;
 
     kadm5_log_modify (context,
-		      &ent,
+		      &ent.entry,
 		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
 		      KADM5_KEY_DATA | KADM5_KVNO | KADM5_PW_EXPIRATION |
 		      KADM5_TL_DATA);

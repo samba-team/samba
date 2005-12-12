@@ -79,22 +79,22 @@ hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent)
 }
 
 krb5_error_code
-_hdb_fetch(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
+_hdb_fetch(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
     krb5_data key, value;
     int code;
 
-    hdb_principal2key(context, entry->principal, &key);
+    hdb_principal2key(context, entry->entry.principal, &key);
     code = db->hdb__get(context, db, key, &value);
     krb5_data_free(&key);
     if(code)
 	return code;
-    code = hdb_value2entry(context, &value, entry);
+    code = hdb_value2entry(context, &value, &entry->entry);
     krb5_data_free(&value);
     if (code)
 	return code;
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
-	code = hdb_unseal_keys (context, db, entry);
+	code = hdb_unseal_keys (context, db, &entry->entry);
 	if (code)
 	    hdb_free_entry(context, entry);
     }
@@ -102,31 +102,31 @@ _hdb_fetch(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 }
 
 krb5_error_code
-_hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
+_hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
     krb5_data key, value;
     int code;
 
-    if(entry->generation == NULL) {
+    if(entry->entry.generation == NULL) {
 	struct timeval t;
-	entry->generation = malloc(sizeof(*entry->generation));
-	if(entry->generation == NULL) {
+	entry->entry.generation = malloc(sizeof(*entry->entry.generation));
+	if(entry->entry.generation == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
 	}
 	gettimeofday(&t, NULL);
-	entry->generation->time = t.tv_sec;
-	entry->generation->usec = t.tv_usec;
-	entry->generation->gen = 0;
+	entry->entry.generation->time = t.tv_sec;
+	entry->entry.generation->usec = t.tv_usec;
+	entry->entry.generation->gen = 0;
     } else
-	entry->generation->gen++;
-    hdb_principal2key(context, entry->principal, &key);
-    code = hdb_seal_keys(context, db, entry);
+	entry->entry.generation->gen++;
+    hdb_principal2key(context, entry->entry.principal, &key);
+    code = hdb_seal_keys(context, db, &entry->entry);
     if (code) {
 	krb5_data_free(&key);
 	return code;
     }
-    hdb_entry2value(context, entry, &value);
+    hdb_entry2value(context, &entry->entry, &value);
     code = db->hdb__put(context, db, flags & HDB_F_REPLACE, key, value);
     krb5_data_free(&value);
     krb5_data_free(&key);
@@ -134,12 +134,12 @@ _hdb_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
 }
 
 krb5_error_code
-_hdb_remove(krb5_context context, HDB *db, hdb_entry *entry)
+_hdb_remove(krb5_context context, HDB *db, hdb_entry_ex *entry)
 {
     krb5_data key;
     int code;
 
-    hdb_principal2key(context, entry->principal, &key);
+    hdb_principal2key(context, entry->entry.principal, &key);
     code = db->hdb__del(context, db, key);
     krb5_data_free(&key);
     return code;

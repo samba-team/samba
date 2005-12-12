@@ -52,6 +52,13 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 typedef struct hdb_master_key_data *hdb_master_key;
 
+typedef struct hdb_entry_ex {
+    void *ctx;
+    hdb_entry entry;
+    void (*free_entry)(krb5_context, struct hdb_entry_ex *);
+} hdb_entry_ex;
+
+
 typedef struct HDB{
     void *hdb_db;
     void *hdb_dbc;
@@ -62,13 +69,16 @@ typedef struct HDB{
 
     krb5_error_code (*hdb_open)(krb5_context, struct HDB*, int, mode_t);
     krb5_error_code (*hdb_close)(krb5_context, struct HDB*);
-    krb5_error_code (*hdb_fetch)(krb5_context,struct HDB*,unsigned,hdb_entry*);
-    krb5_error_code (*hdb_store)(krb5_context,struct HDB*,unsigned,hdb_entry*);
-    krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry*);
-    krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*, 
-				    unsigned, hdb_entry*);
-    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*, 
-				   unsigned, hdb_entry*);
+    void	    (*hdb_free)(krb5_context,struct HDB*,hdb_entry_ex*);
+    krb5_error_code (*hdb_fetch)(krb5_context,struct HDB*,
+				 unsigned,hdb_entry_ex*);
+    krb5_error_code (*hdb_store)(krb5_context,struct HDB*,
+				 unsigned,hdb_entry_ex*);
+    krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry_ex*);
+    krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*,
+				    unsigned, hdb_entry_ex*);
+    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*,
+				   unsigned, hdb_entry_ex*);
     krb5_error_code (*hdb_lock)(krb5_context, struct HDB*, int operation);
     krb5_error_code (*hdb_unlock)(krb5_context, struct HDB*);
     krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
@@ -79,7 +89,7 @@ typedef struct HDB{
     krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	2
+#define HDB_INTERFACE_VERSION	3
 
 struct hdb_so_method {
     int version;
@@ -92,7 +102,7 @@ struct hdb_so_method {
 #define HDB_DB_FORMAT_ENTRY "hdb/db-format"
 
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
-					      hdb_entry*, void*);
+					      hdb_entry_ex*, void*);
 extern krb5_kt_ops hdb_kt_ops;
 
 #include <hdb-protos.h>

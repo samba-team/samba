@@ -193,7 +193,7 @@ hdb_get_entry(krb5_context context,
 	      krb5_enctype enctype,
 	      krb5_keytab_entry *entry)
 {
-    hdb_entry ent;
+    hdb_entry_ex ent;
     krb5_error_code ret;
     struct hdb_data *d = id->data;
     int i;
@@ -218,7 +218,7 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
-    ent.principal = rk_UNCONST(principal);
+    ent.entry.principal = rk_UNCONST(principal);
     ret = (*db->hdb_fetch)(context, db, HDB_F_DECRYPT, &ent);
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
@@ -227,20 +227,20 @@ hdb_get_entry(krb5_context context,
 	return KRB5_KT_NOTFOUND;
     else if(ret)
 	return ret;
-    if(kvno && ent.kvno != kvno) {
+    if(kvno && ent.entry.kvno != kvno) {
 	hdb_free_entry(context, &ent);
  	return KRB5_KT_NOTFOUND;
     }
     if(enctype == 0)
-	if(ent.keys.len > 0)
-	    enctype = ent.keys.val[0].key.keytype;
+	if(ent.entry.keys.len > 0)
+	    enctype = ent.entry.keys.val[0].key.keytype;
     ret = KRB5_KT_NOTFOUND;
-    for(i = 0; i < ent.keys.len; i++) {
-	if(ent.keys.val[i].key.keytype == enctype) {
+    for(i = 0; i < ent.entry.keys.len; i++) {
+	if(ent.entry.keys.val[i].key.keytype == enctype) {
 	    krb5_copy_principal(context, principal, &entry->principal);
-	    entry->vno = ent.kvno;
+	    entry->vno = ent.entry.kvno;
 	    krb5_copy_keyblock_contents(context, 
-					&ent.keys.val[i].key, 
+					&ent.entry.keys.val[i].key, 
 					&entry->keyblock);
 	    ret = 0;
 	    break;

@@ -57,7 +57,7 @@ static kadm5_ret_t
 create_principal(kadm5_server_context *context,
 		 kadm5_principal_ent_t princ,
 		 u_int32_t mask,
-		 hdb_entry *ent,
+		 hdb_entry_ex *ent,
 		 u_int32_t required_mask,
 		 u_int32_t forbidden_mask)
 {
@@ -74,7 +74,7 @@ create_principal(kadm5_server_context *context,
 	return KADM5_UNK_POLICY;
     memset(ent, 0, sizeof(*ent));
     ret  = krb5_copy_principal(context->context, princ->principal, 
-			       &ent->principal);
+			       &ent->entry.principal);
     if(ret)
 	return ret;
     
@@ -94,9 +94,9 @@ create_principal(kadm5_server_context *context,
     if(defent)
 	kadm5_free_principal_ent(context, defent);
     
-    ent->created_by.time = time(NULL);
+    ent->entry.created_by.time = time(NULL);
     ret = krb5_copy_principal(context->context, context->caller, 
-			      &ent->created_by.principal);
+			      &ent->entry.created_by.principal);
 
     return ret;
 }
@@ -107,7 +107,7 @@ kadm5_s_create_principal_with_key(void *server_handle,
 				  u_int32_t mask)
 {
     kadm5_ret_t ret;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     kadm5_server_context *context = server_handle;
 
     ret = create_principal(context, princ, mask, &ent,
@@ -120,13 +120,13 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if(ret)
 	goto out;
 
-    ent.kvno = 1;
+    ent.entry.kvno = 1;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out;
     
-    kadm5_log_create (context, &ent);
+    kadm5_log_create (context, &ent.entry);
 
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
@@ -143,10 +143,10 @@ kadm5_ret_t
 kadm5_s_create_principal(void *server_handle,
 			 kadm5_principal_ent_t princ, 
 			 u_int32_t mask,
-			 char *password)
+			 const char *password)
 {
     kadm5_ret_t ret;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     kadm5_server_context *context = server_handle;
 
     ret = create_principal(context, princ, mask, &ent,
@@ -159,18 +159,18 @@ kadm5_s_create_principal(void *server_handle,
     if(ret)
 	goto out;
 
-    ent.keys.len = 0;
-    ent.keys.val = NULL;
+    ent.entry.keys.len = 0;
+    ent.entry.keys.val = NULL;
 
-    ret = _kadm5_set_keys(context, &ent, password);
+    ret = _kadm5_set_keys(context, &ent.entry, password);
     if (ret)
 	goto out;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out;
     
-    kadm5_log_create (context, &ent);
+    kadm5_log_create (context, &ent.entry);
 
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)

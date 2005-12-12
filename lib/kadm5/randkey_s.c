@@ -47,10 +47,10 @@ kadm5_s_randkey_principal(void *server_handle,
 			  int *n_keys)
 {
     kadm5_server_context *context = server_handle;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     kadm5_ret_t ret;
 
-    ent.principal = princ;
+    ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
@@ -59,26 +59,26 @@ kadm5_s_randkey_principal(void *server_handle,
 	goto out;
 
     ret = _kadm5_set_keys_randomly (context,
-				    &ent,
+				    &ent.entry,
 				    new_keys,
 				    n_keys);
     if (ret)
 	goto out2;
-    ent.kvno++;
+    ent.entry.kvno++;
 
-    ret = _kadm5_set_modifier(context, &ent);
+    ret = _kadm5_set_modifier(context, &ent.entry);
     if(ret)
 	goto out3;
-    ret = _kadm5_bump_pw_expire(context, &ent);
+    ret = _kadm5_bump_pw_expire(context, &ent.entry);
     if (ret)
 	goto out2;
 
-    ret = hdb_seal_keys(context->context, context->db, &ent);
+    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out2;
 
     kadm5_log_modify (context,
-		      &ent,
+		      &ent.entry,
 		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
 		      KADM5_KEY_DATA | KADM5_KVNO | KADM5_PW_EXPIRATION |
 		      KADM5_TL_DATA);

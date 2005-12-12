@@ -100,28 +100,28 @@ open_socket(krb5_context context, const char *hostname, const char *port)
 }
 
 krb5_error_code
-v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
+v5_prop(krb5_context context, HDB *db, hdb_entry_ex *entry, void *appdata)
 {
     krb5_error_code ret;
     struct prop_data *pd = appdata;
     krb5_data data;
 
     if(encrypt_flag) {
-	ret = hdb_seal_keys_mkey(context, entry, mkey5);
+	ret = hdb_seal_keys_mkey(context, &entry->entry, mkey5);
 	if (ret) {
 	    krb5_warn(context, ret, "hdb_seal_keys_mkey");
 	    return ret;
 	}
     }
     if(decrypt_flag) {
-	ret = hdb_unseal_keys_mkey(context, entry, mkey5);
+	ret = hdb_unseal_keys_mkey(context, &entry->entry, mkey5);
 	if (ret) {
 	    krb5_warn(context, ret, "hdb_unseal_keys_mkey");
 	    return ret;
 	}
     }	
 
-    ret = hdb_entry2value(context, entry, &data);
+    ret = hdb_entry2value(context, &entry->entry, &data);
     if(ret) {
 	krb5_warn(context, ret, "hdb_entry2value");
 	return ret;
@@ -176,13 +176,13 @@ int
 v4_prop(void *arg, struct v4_principal *p)
 {
     struct prop_data *pd = arg;
-    hdb_entry ent;
+    hdb_entry_ex ent;
     krb5_error_code ret;
 
     memset(&ent, 0, sizeof(ent));
 
     ret = krb5_425_conv_principal(pd->context, p->name, p->instance, v4_realm,
-				  &ent.principal);
+				  &ent.entry.principal);
     if(ret) {
 	krb5_warn(pd->context, ret,
 		  "krb5_425_conv_principal %s.%s@%s",
@@ -192,49 +192,49 @@ v4_prop(void *arg, struct v4_principal *p)
 
     if(verbose_flag) {
 	char *s;
-	krb5_unparse_name_short(pd->context, ent.principal, &s);
+	krb5_unparse_name_short(pd->context, ent.entry.principal, &s);
 	krb5_warnx(pd->context, "%s.%s -> %s", p->name, p->instance, s);
 	free(s);
     }
 
-    ent.kvno = p->kvno;
-    ent.keys.len = 3;
-    ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
+    ent.entry.kvno = p->kvno;
+    ent.entry.keys.len = 3;
+    ent.entry.keys.val = malloc(ent.entry.keys.len * sizeof(*ent.entry.keys.val));
     if(p->mkvno != -1) {
-	ent.keys.val[0].mkvno = malloc (sizeof(*ent.keys.val[0].mkvno));
-	*(ent.keys.val[0].mkvno) = p->mkvno;
+	ent.entry.keys.val[0].mkvno = malloc (sizeof(*ent.entry.keys.val[0].mkvno));
+	*(ent.entry.keys.val[0].mkvno) = p->mkvno;
     } else
-	ent.keys.val[0].mkvno = NULL;
-    ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
-    ent.keys.val[0].salt->type = KRB5_PADATA_PW_SALT;
-    ent.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
-    krb5_data_alloc(&ent.keys.val[0].key.keyvalue, DES_KEY_SZ);
-    memcpy(ent.keys.val[0].key.keyvalue.data, p->key, 8);
+	ent.entry.keys.val[0].mkvno = NULL;
+    ent.entry.keys.val[0].salt = calloc(1, sizeof(*ent.entry.keys.val[0].salt));
+    ent.entry.keys.val[0].salt->type = KRB5_PADATA_PW_SALT;
+    ent.entry.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
+    krb5_data_alloc(&ent.entry.keys.val[0].key.keyvalue, DES_KEY_SZ);
+    memcpy(ent.entry.keys.val[0].key.keyvalue.data, p->key, 8);
 
-    copy_Key(&ent.keys.val[0], &ent.keys.val[1]);
-    ent.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
-    copy_Key(&ent.keys.val[0], &ent.keys.val[2]);
-    ent.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
+    copy_Key(&ent.entry.keys.val[0], &ent.entry.keys.val[1]);
+    ent.entry.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
+    copy_Key(&ent.entry.keys.val[0], &ent.entry.keys.val[2]);
+    ent.entry.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
 
     {
 	int life = _krb5_krb_life_to_time(0, p->max_life);
 	if(life == NEVERDATE){
-	    ent.max_life = NULL;
+	    ent.entry.max_life = NULL;
 	} else {
 	    /* clean up lifetime a bit */
 	    if(life > 86400)
 		life = (life + 86399) / 86400 * 86400;
 	    else if(life > 3600)
 		life = (life + 3599) / 3600 * 3600;
-	    ALLOC(ent.max_life);
-	    *ent.max_life = life;
+	    ALLOC(ent.entry.max_life);
+	    *ent.entry.max_life = life;
 	}
     }
 
-    ALLOC(ent.valid_end);
-    *ent.valid_end = p->exp_date;
+    ALLOC(ent.entry.valid_end);
+    *ent.entry.valid_end = p->exp_date;
 
-    ret = krb5_make_principal(pd->context, &ent.created_by.principal,
+    ret = krb5_make_principal(pd->context, &ent.entry.created_by.principal,
 			      v4_realm,
 			      "kadmin",
 			      "hprop",
@@ -244,44 +244,44 @@ v4_prop(void *arg, struct v4_principal *p)
 	ret = 0;
 	goto out;
     }
-    ent.created_by.time = time(NULL);
-    ALLOC(ent.modified_by);
+    ent.entry.created_by.time = time(NULL);
+    ALLOC(ent.entry.modified_by);
     ret = krb5_425_conv_principal(pd->context, p->mod_name, p->mod_instance, 
-				  v4_realm, &ent.modified_by->principal);
+				  v4_realm, &ent.entry.modified_by->principal);
     if(ret){
 	krb5_warn(pd->context, ret, "%s.%s@%s", p->name, p->instance, v4_realm);
-	ent.modified_by->principal = NULL;
+	ent.entry.modified_by->principal = NULL;
 	ret = 0;
 	goto out;
     }
-    ent.modified_by->time = p->mod_date;
+    ent.entry.modified_by->time = p->mod_date;
 
-    ent.flags.forwardable = 1;
-    ent.flags.renewable = 1;
-    ent.flags.proxiable = 1;
-    ent.flags.postdate = 1;
-    ent.flags.client = 1;
-    ent.flags.server = 1;
+    ent.entry.flags.forwardable = 1;
+    ent.entry.flags.renewable = 1;
+    ent.entry.flags.proxiable = 1;
+    ent.entry.flags.postdate = 1;
+    ent.entry.flags.client = 1;
+    ent.entry.flags.server = 1;
     
     /* special case password changing service */
     if(strcmp(p->name, "changepw") == 0 && 
        strcmp(p->instance, "kerberos") == 0) {
-	ent.flags.forwardable = 0;
-	ent.flags.renewable = 0;
-	ent.flags.proxiable = 0;
-	ent.flags.postdate = 0;
-	ent.flags.initial = 1;
-	ent.flags.change_pw = 1;
+	ent.entry.flags.forwardable = 0;
+	ent.entry.flags.renewable = 0;
+	ent.entry.flags.proxiable = 0;
+	ent.entry.flags.postdate = 0;
+	ent.entry.flags.initial = 1;
+	ent.entry.flags.change_pw = 1;
     }
 
     ret = v5_prop(pd->context, NULL, &ent, pd);
 
     if (strcmp (p->name, "krbtgt") == 0
 	&& strcmp (v4_realm, p->instance) != 0) {
-	krb5_free_principal (pd->context, ent.principal);
+	krb5_free_principal (pd->context, ent.entry.principal);
 	ret = krb5_425_conv_principal (pd->context, p->name,
 				       v4_realm, p->instance,
-				       &ent.principal);
+				       &ent.entry.principal);
 	if (ret == 0)
 	    ret = v5_prop (pd->context, NULL, &ent, pd);
     }
@@ -317,87 +317,90 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent)
 {
     int32_t flags = ntohl(ent->flags);
     krb5_error_code ret;
-    hdb_entry hdb;
+    hdb_entry_ex hdb;
 
     if(!kaspecials_flag
        && (flags & KAFNORMAL) == 0) /* remove special entries */
 	return 0;
     memset(&hdb, 0, sizeof(hdb));
     ret = krb5_425_conv_principal(pd->context, ent->name, ent->instance, 
-				  v4_realm, &hdb.principal);
+				  v4_realm, &hdb.entry.principal);
     if(ret) {
 	krb5_warn(pd->context, ret,
 		  "krb5_425_conv_principal (%s.%s@%s)",
 		  ent->name, ent->instance, v4_realm);
 	return 0;
     }
-    hdb.kvno = ntohl(ent->kvno);
-    hdb.keys.len = 3;
-    hdb.keys.val = malloc(hdb.keys.len * sizeof(*hdb.keys.val));
-    hdb.keys.val[0].mkvno = NULL;
-    hdb.keys.val[0].salt = calloc(1, sizeof(*hdb.keys.val[0].salt));
+    hdb.entry.kvno = ntohl(ent->kvno);
+    hdb.entry.keys.len = 3;
+    hdb.entry.keys.val = 
+	malloc(hdb.entry.keys.len * sizeof(*hdb.entry.keys.val));
+    hdb.entry.keys.val[0].mkvno = NULL;
+    hdb.entry.keys.val[0].salt = calloc(1, sizeof(*hdb.entry.keys.val[0].salt));
     if (ka_use_null_salt) {
-	hdb.keys.val[0].salt->type = hdb_pw_salt;
-	hdb.keys.val[0].salt->salt.data = NULL;
-	hdb.keys.val[0].salt->salt.length = 0;
+	hdb.entry.keys.val[0].salt->type = hdb_pw_salt;
+	hdb.entry.keys.val[0].salt->salt.data = NULL;
+	hdb.entry.keys.val[0].salt->salt.length = 0;
     } else {
-	hdb.keys.val[0].salt->type = hdb_afs3_salt;
-	hdb.keys.val[0].salt->salt.data = strdup(afs_cell);
-	hdb.keys.val[0].salt->salt.length = strlen(afs_cell);
+	hdb.entry.keys.val[0].salt->type = hdb_afs3_salt;
+	hdb.entry.keys.val[0].salt->salt.data = strdup(afs_cell);
+	hdb.entry.keys.val[0].salt->salt.length = strlen(afs_cell);
     }
     
-    hdb.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
-    krb5_data_copy(&hdb.keys.val[0].key.keyvalue, ent->key, sizeof(ent->key));
-    copy_Key(&hdb.keys.val[0], &hdb.keys.val[1]);
-    hdb.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
-    copy_Key(&hdb.keys.val[0], &hdb.keys.val[2]);
-    hdb.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
+    hdb.entry.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
+    krb5_data_copy(&hdb.entry.keys.val[0].key.keyvalue,
+		   ent->key,
+		   sizeof(ent->key));
+    copy_Key(&hdb.entry.keys.val[0], &hdb.entry.keys.val[1]);
+    hdb.entry.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
+    copy_Key(&hdb.entry.keys.val[0], &hdb.entry.keys.val[2]);
+    hdb.entry.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
 
-    ALLOC(hdb.max_life);
-    *hdb.max_life = ntohl(ent->max_life);
+    ALLOC(hdb.entry.max_life);
+    *hdb.entry.max_life = ntohl(ent->max_life);
 
     if(ntohl(ent->valid_end) != NEVERDATE && ntohl(ent->valid_end) != 0xffffffff) {
-	ALLOC(hdb.valid_end);
-	*hdb.valid_end = ntohl(ent->valid_end);
+	ALLOC(hdb.entry.valid_end);
+	*hdb.entry.valid_end = ntohl(ent->valid_end);
     }
     
     if (ntohl(ent->pw_change) != NEVERDATE && 
 	ent->pw_expire != 255 &&
 	ent->pw_expire != 0) {
-	ALLOC(hdb.pw_end);
-	*hdb.pw_end = ntohl(ent->pw_change)
+	ALLOC(hdb.entry.pw_end);
+	*hdb.entry.pw_end = ntohl(ent->pw_change)
 	    + 24 * 60 * 60 * ent->pw_expire;
     }
 
-    ret = krb5_make_principal(pd->context, &hdb.created_by.principal,
+    ret = krb5_make_principal(pd->context, &hdb.entry.created_by.principal,
 			      v4_realm,
 			      "kadmin",
 			      "hprop",
 			      NULL);
-    hdb.created_by.time = time(NULL);
+    hdb.entry.created_by.time = time(NULL);
 
     if(ent->mod_ptr){
 	struct ka_entry mod;
-	ALLOC(hdb.modified_by);
+	ALLOC(hdb.entry.modified_by);
 	read_block(pd->context, fd, ntohl(ent->mod_ptr), &mod, sizeof(mod));
 	
 	krb5_425_conv_principal(pd->context, mod.name, mod.instance, v4_realm, 
-				&hdb.modified_by->principal);
-	hdb.modified_by->time = ntohl(ent->mod_time);
+				&hdb.entry.modified_by->principal);
+	hdb.entry.modified_by->time = ntohl(ent->mod_time);
 	memset(&mod, 0, sizeof(mod));
     }
 
-    hdb.flags.forwardable = 1;
-    hdb.flags.renewable = 1;
-    hdb.flags.proxiable = 1;
-    hdb.flags.postdate = 1;
+    hdb.entry.flags.forwardable = 1;
+    hdb.entry.flags.renewable = 1;
+    hdb.entry.flags.proxiable = 1;
+    hdb.entry.flags.postdate = 1;
     /* XXX - AFS 3.4a creates krbtgt.REALMOFCELL as NOTGS+NOSEAL */
     if (strcmp(ent->name, "krbtgt") == 0 &&
 	(flags & (KAFNOTGS|KAFNOSEAL)) == (KAFNOTGS|KAFNOSEAL))
 	flags &= ~(KAFNOTGS|KAFNOSEAL);
 
-    hdb.flags.client = (flags & KAFNOTGS) == 0;
-    hdb.flags.server = (flags & KAFNOSEAL) == 0;
+    hdb.entry.flags.client = (flags & KAFNOTGS) == 0;
+    hdb.entry.flags.server = (flags & KAFNOSEAL) == 0;
 
     ret = v5_prop(pd->context, NULL, &hdb, pd);
     hdb_free_entry(pd->context, &hdb);

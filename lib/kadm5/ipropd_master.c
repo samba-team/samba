@@ -279,14 +279,14 @@ struct prop_context {
 };
 
 static int
-prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
+prop_one (krb5_context context, HDB *db, hdb_entry_ex *entry, void *v)
 {
     krb5_error_code ret;
     krb5_storage *sp;
     krb5_data data;
     struct slave *s = (struct slave *)v;
 
-    ret = hdb_entry2value (context, entry, &data);
+    ret = hdb_entry2value (context, &entry->entry, &data);
     if (ret)
 	return ret;
     ret = krb5_data_realloc (&data, data.length + 4);

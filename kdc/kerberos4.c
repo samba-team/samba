@@ -92,7 +92,7 @@ krb5_error_code
 _kdc_db_fetch4(krb5_context context,
 	  krb5_kdc_configuration *config,
 	  const char *name, const char *instance, const char *realm,
-	  hdb_entry **ent)
+	  hdb_entry_ex **ent)
 {
     krb5_principal p;
     krb5_error_code ret;

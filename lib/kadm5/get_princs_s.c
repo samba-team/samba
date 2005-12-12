@@ -55,12 +55,12 @@ add_princ(struct foreach_data *d, char *princ)
 }
 
 static krb5_error_code
-foreach(krb5_context context, HDB *db, hdb_entry *ent, void *data)
+foreach(krb5_context context, HDB *db, hdb_entry_ex *ent, void *data)
 {
     struct foreach_data *d = data;
     char *princ;
     krb5_error_code ret;
-    ret = krb5_unparse_name(context, ent->principal, &princ);
+    ret = krb5_unparse_name(context, ent->entry.principal, &princ);
     if(ret)
 	return ret;
     if(d->exp){

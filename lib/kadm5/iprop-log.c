@@ -148,7 +148,7 @@ print_entry(kadm5_server_context *server_context,
 	free(name1);
 	free(name2);
 	krb5_free_principal(context, source);
-	hdb_free_entry(context, &ent);
+	free_hdb_entry(&ent);
 	break;
     case kadm_create:
 	ret = krb5_data_alloc(&data, len);
@@ -250,7 +250,7 @@ print_entry(kadm5_server_context *server_context,
 	if(mask & KADM5_TL_DATA) {
 	    printf("    tl data\n");
 	}
-	hdb_free_entry(context, &ent);
+	free_hdb_entry(&ent);
 	break;
     case kadm_nop :
 	break;

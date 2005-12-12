@@ -77,7 +77,7 @@ NDBM_unlock(krb5_context context, HDB *db)
 
 static krb5_error_code
 NDBM_seq(krb5_context context, HDB *db, 
-	 unsigned flags, hdb_entry *entry, int first)
+	 unsigned flags, hdb_entry_ex *entry, int first)
 
 {
     struct ndbm_db *d = (struct ndbm_db *)db->hdb_db;
@@ -99,21 +99,21 @@ NDBM_seq(krb5_context context, HDB *db,
     db->hdb_unlock(context, db);
     data.data = value.dptr;
     data.length = value.dsize;
-    if(hdb_value2entry(context, &data, entry))
+    if(hdb_value2entry(context, &data, &entry->entry))
 	return NDBM_seq(context, db, flags, entry, 0);
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
-	ret = hdb_unseal_keys (context, db, entry);
+	ret = hdb_unseal_keys (context, db, &entry->entry);
 	if (ret)
 	    hdb_free_entry (context, entry);
     }
-    if (entry->principal == NULL) {
-	entry->principal = malloc (sizeof(*entry->principal));
-	if (entry->principal == NULL) {
+    if (ret == 0 && entry->entry.principal == NULL) {
+	entry->entry.principal = malloc (sizeof(*entry->entry.principal));
+	if (entry->entry.principal == NULL) {
 	    ret = ENOMEM;
 	    hdb_free_entry (context, entry);
 	    krb5_set_error_string(context, "malloc: out of memory");
 	} else {
-	    hdb_key2principal (context, &key_data, entry->principal);
+	    hdb_key2principal (context, &key_data, entry->entry.principal);
 	}
     }
     return ret;
@@ -121,14 +121,14 @@ NDBM_seq(krb5_context context, HDB *db,
 
 
 static krb5_error_code
-NDBM_firstkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
+NDBM_firstkey(krb5_context context, HDB *db,unsigned flags,hdb_entry_ex *entry)
 {
     return NDBM_seq(context, db, flags, entry, 1);
 }
 
 
 static krb5_error_code
-NDBM_nextkey(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
+NDBM_nextkey(krb5_context context, HDB *db, unsigned flags,hdb_entry_ex *entry)
 {
     return NDBM_seq(context, db, flags, entry, 0);
 }
