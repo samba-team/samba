@@ -466,7 +466,7 @@ pcert_print(struct print_options *opt, int argc, char **argv)
 	int ret;
 	ret = hx509_certs_init(argv[0], 0, lock, &certs);
 	if (ret)
-	    errx(1, "hx509_certs_init");
+	    errx(1, "hx509_certs_init: %d", ret);
 	hx509_certs_iter(certs, print_f, &s);
 	hx509_certs_free(&certs);
 	argv++;
@@ -503,7 +503,7 @@ pcert_validate(struct validate_options *opt, int argc, char **argv)
 	int ret;
 	ret = hx509_certs_init(argv[0], 0, lock, &certs);
 	if (ret)
-	    errx(1, "hx509_certs_init");
+	    errx(1, "hx509_certs_init: %d", ret);
 	hx509_certs_iter(certs, validate_f, ctx);
 	hx509_certs_free(&certs);
 	argv++;
