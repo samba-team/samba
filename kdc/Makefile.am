@@ -39,7 +39,7 @@ libkdc_la_SOURCES = \
 	rx.h
 
 
-$(libkdc_la_OBJECTS): $(srcdir)/kdc-protos.h
+$(libkdc_la_OBJECTS): $(srcdir)/kdc-protos.h $(srcdir)/kdc-private.h
 
 libkdc_la_LDFLAGS = -version-info 1:0:0
 
@@ -47,6 +47,9 @@ CHECK_SYMBOLS = -lib kdc -version krb5_kdc kdc_ _kdc_
 
 $(srcdir)/kdc-protos.h:
 	cd $(srcdir) && perl ../cf/make-proto.pl -q -P comment -o kdc-protos.h $(libkdc_la_SOURCES) || rm -f kdc-protos.h
+
+$(srcdir)/kdc-private.h:
+	cd $(srcdir) && perl ../cf/make-proto.pl -q -P comment -p kdc-private.h $(libkdc_la_SOURCES) || rm -f kdc-private.h
 
 
 hprop_LDADD = \
