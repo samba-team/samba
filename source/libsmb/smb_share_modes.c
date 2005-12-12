@@ -255,11 +255,12 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
  * Create an entry in the Samba share mode db.
  */
 
-int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
+int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
 				uint64_t ino,
 				const struct smb_share_mode_entry *new_entry,
-				const char *filename) /* Must be abolute utf8 path. */
+				const char *sharepath, /* Must be absolute utf8 path. */
+				const char *filename) /* Must be relative utf8 path. */
 {
 	TDB_DATA db_data;
 	TDB_DATA locking_key =  get_locking_key(dev, ino);
@@ -272,7 +273,9 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
-		db_data.dptr = malloc((2*sizeof(struct share_mode_entry)) + strlen(filename) + 1);
+		db_data.dptr = malloc((2*sizeof(struct share_mode_entry)) +
+					strlen(sharepath) + 1 +
+					strlen(filename) + 1);
 		if (!db_data.dptr) {
 			return -1;
 		}
@@ -281,11 +284,18 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 		ld->u.s.delete_on_close = 0;
 		shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 		create_share_mode_entry(shares, new_entry);
+
 		memcpy(db_data.dptr + 2*sizeof(struct share_mode_entry),
+			sharepath,
+			strlen(sharepath) + 1);
+		memcpy(db_data.dptr + 2*sizeof(struct share_mode_entry) +
+			strlen(sharepath) + 1,
 			filename,
 			strlen(filename) + 1);
 
-		db_data.dsize = 2*sizeof(struct share_mode_entry) + strlen(filename) + 1;
+		db_data.dsize = 2*sizeof(struct share_mode_entry) +
+					strlen(sharepath) + 1 +
+					strlen(filename) + 1;
 		if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_INSERT) == -1) {
 			free(db_data.dptr);
 			return -1;
@@ -334,6 +344,25 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 	free(db_data.dptr);
 	return 0;
+}
+
+/* 
+ * Create an entry in the Samba share mode db. Original interface - doesn't
+ * Distinguish between share path and filename. Fudge this by using a
+ * sharepath of / and a relative filename of (filename+1).
+ */
+
+int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
+				uint64_t dev,
+				uint64_t ino,
+				const struct smb_share_mode_entry *new_entry,
+				const char *filename) /* Must be absolute utf8 path. */
+{
+	if (*filename != '/') {
+		abort();
+	}
+	return smb_create_share_mode_entry_ex(db_ctx, dev, ino, new_entry,
+						"/", &filename[1]);
 }
 
 int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,

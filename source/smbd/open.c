@@ -1123,8 +1123,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		   spurious oplock break. */
 
 		/* Now remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(NULL, state->dev, state->inode,
-					  fname);
+		lck = get_share_mode_lock(NULL, state->dev, state->inode, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
@@ -1334,7 +1333,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
-		lck = get_share_mode_lock(NULL, dev, inode, fname);
+		lck = get_share_mode_lock(NULL, dev, inode,
+					conn->connectpath,
+					fname);
 
 		if (lck == NULL) {
 			DEBUG(0, ("Could not get share mode lock\n"));
@@ -1533,7 +1534,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		dev = fsp->dev;
 		inode = fsp->inode;
 
-		lck = get_share_mode_lock(NULL, dev, inode, fname);
+		lck = get_share_mode_lock(NULL, dev, inode,
+					conn->connectpath,
+					fname);
 
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
@@ -1940,7 +1943,9 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->is_stat = False;
 	string_set(&fsp->fsp_name,fname);
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fname);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode,
+				conn->connectpath,
+				fname);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));

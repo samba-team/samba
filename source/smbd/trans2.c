@@ -2824,10 +2824,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
 
-			delete_pending =
-				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino,
-							 fname);
+			delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2840,10 +2837,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
 			pos = fsp->fh->position_information;
-			delete_pending = 
-				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino,
-							 fname);
+			delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -2885,9 +2879,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
 
-		delete_pending = get_delete_on_close_flag(sbuf.st_dev,
-							  sbuf.st_ino,
-							  fname);
+		delete_pending = get_delete_on_close_flag(sbuf.st_dev, sbuf.st_ino);
 		if (delete_pending) {
 			return ERROR_NT(NT_STATUS_DELETE_PENDING);
 		}
