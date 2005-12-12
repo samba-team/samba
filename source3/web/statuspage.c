@@ -106,7 +106,7 @@ static char *tstring(time_t t)
 	return buf;
 }
 
-static void print_share_mode(const struct share_mode_entry *e, char *fname)
+static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
 {
 	char           *utf8_fname;
 	int deny_mode = map_share_mode_to_deny_mode(e->share_access,

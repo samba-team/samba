@@ -98,13 +98,13 @@ static BOOL Ucrit_addPid( pid_t pid )
 	return True;
 }
 
-static void print_share_mode(const struct share_mode_entry *e, char *fname)
+static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
 {
 	static int count;
 	if (count==0) {
 		d_printf("Locked files:\n");
-		d_printf("Pid    DenyMode   Access      R/W        Oplock           Name\n");
-		d_printf("--------------------------------------------------------------\n");
+		d_printf("Pid    DenyMode   Access      R/W        Oplock           SharePath           Name\n");
+		d_printf("----------------------------------------------------------------------------------\n");
 	}
 	count++;
 
@@ -150,7 +150,7 @@ static void print_share_mode(const struct share_mode_entry *e, char *fname)
 			d_printf("NONE            ");
 		}
 
-		d_printf(" %s   %s",fname, asctime(localtime((time_t *)&e->time.tv_sec)));
+		d_printf(" %s   %s   %s",sharepath, fname, asctime(localtime((time_t *)&e->time.tv_sec)));
 	}
 }
 
