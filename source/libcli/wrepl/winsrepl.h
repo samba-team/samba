@@ -28,16 +28,15 @@
 */
 struct wrepl_socket {
 	struct socket_context *sock;
-	struct event_context *event_ctx;
+	struct packet_context *packet;
 
-	/* a queue of requests pending to be sent */
-	struct wrepl_request *send_queue;
+	struct {
+		struct event_context *ctx;
+		struct fd_event *fde;
+	} event;
 
 	/* a queue of replies waiting to be received */
 	struct wrepl_request *recv_queue;
-
-	/* the fd event */
-	struct fd_event *fde;
 
 	/* the default timeout for requests, 0 means no timeout */
 #define WREPL_SOCKET_REQUEST_TIMEOUT	(60)
@@ -50,8 +49,13 @@ struct wrepl_socket {
 	BOOL dead;
 };
 
+struct wrepl_send_ctrl {
+	BOOL send_only;
+	BOOL disconnect_after_send;
+};
+
 enum wrepl_request_state {
-	WREPL_REQUEST_SEND  = 0,
+	WREPL_REQUEST_INIT  = 0,
 	WREPL_REQUEST_RECV  = 1,
 	WREPL_REQUEST_DONE  = 2,
 	WREPL_REQUEST_ERROR = 3
@@ -65,15 +69,8 @@ struct wrepl_request {
 	struct wrepl_socket *wrepl_socket;
 
 	enum wrepl_request_state state;
+	BOOL trigger;
 	NTSTATUS status;
-
-	DATA_BLOB buffer;
-
-	BOOL disconnect_after_send;
-
-	BOOL send_only;
-
-	size_t num_read;
 
 	struct timed_event *te;
 
