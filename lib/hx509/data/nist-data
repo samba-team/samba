@@ -19,8 +19,8 @@ p s BasicSelfIssuedNewKeyOldWithNewCACert.crt
 p s BasicSelfIssuedOldKeyCACert.crt
 p s BasicSelfIssuedOldKeyNewWithOldCACert.crt
 p s CPSPointerQualifierTest20EE.crt
-p s DSACACert.crt
-p s DSAParametersInheritedCACert.crt
+p p DSACACert.crt
+p s DSAParametersInheritedCACert.crt DSACACert.crt
 p s DifferentPoliciesTest12EE.crt
 p s DifferentPoliciesTest3EE.crt
 p s DifferentPoliciesTest4EE.crt
@@ -217,7 +217,7 @@ p s ValidDNnameConstraintsTest4EE.crt
 p s ValidDNnameConstraintsTest5EE.crt
 p s ValidDNnameConstraintsTest6EE.crt
 p s ValidDSAParameterInheritanceTest5EE.crt
-p s ValidDSASignaturesTest4EE.crt
+p s ValidDSASignaturesTest4EE.crt DSACACert.crt
 p s ValidGeneralizedTimeCRLnextUpdateTest13EE.crt
 p s ValidGeneralizedTimenotAfterDateTest8EE.crt
 p s ValidGeneralizedTimenotBeforeDateTest4EE.crt
