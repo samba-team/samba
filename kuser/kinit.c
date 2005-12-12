@@ -42,6 +42,7 @@ struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
 struct _krb5_krb_auth_data;
+struct krb5_dh_moduli;
 #include "krb5-private.h"
 
 int forwardable_flag	= -1;
@@ -69,7 +70,7 @@ int convert_524		= 0;
 int fcache_version;
 char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
-int pk_use_dh		= -1;
+
 
 static char *krb4_cc_name;
 
@@ -154,8 +155,6 @@ static struct getargs args[] = {
     {  "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
        "directory with CA certificates", "directory" },
 
-    {  "pkinit-use-dh",       0,  arg_flag, &pk_use_dh,
-       "make pkinit use DH" },
 #endif
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -461,14 +460,11 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_pac_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
     if (pk_user_id) {
-	int flags = 0;
-	if (pk_use_dh == 1)
-	    flags |= 1;
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
 						 pk_user_id,
 						 pk_x509_anchors,
-						 flags,
+						 0,
 						 NULL,
 						 NULL,
 						 NULL);
@@ -808,13 +804,6 @@ main (int argc, char **argv)
 	krb5_appdefault_string(context, "kinit",
 			       krb5_principal_get_realm(context, principal), 
 			       "pkinit-anchors", NULL, &pk_x509_anchors);
-
-#ifdef PKINIT
-    if(pk_use_dh == -1)
-	krb5_appdefault_boolean(context, "kinit", 
-				krb5_principal_get_realm(context, principal), 
-				"pkinit-use-dh", FALSE, &pk_use_dh);
-#endif
 
     if(!addrs_flag && extra_addresses.num_strings > 0)
 	krb5_errx(context, 1, "specifying both extra addresses and "
