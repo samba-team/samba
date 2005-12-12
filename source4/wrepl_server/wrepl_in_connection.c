@@ -24,6 +24,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "lib/stream/packet.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
@@ -35,6 +36,108 @@
 void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
 {
 	stream_terminate_connection(wreplconn->conn, reason);
+}
+
+static int terminate_after_send_destructor(void *ptr)
+{
+	struct wreplsrv_in_connection **tas = talloc_get_type(ptr, struct wreplsrv_in_connection *);
+	wreplsrv_terminate_in_connection(*tas, "wreplsrv_in_connection: terminate_after_send");
+	return 0;
+}
+
+/*
+  receive some data on a WREPL connection
+*/
+static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
+{
+	struct wreplsrv_in_connection *wreplconn = talloc_get_type(private, struct wreplsrv_in_connection);
+	struct wreplsrv_in_call *call;
+	DATA_BLOB packet_in_blob;
+	DATA_BLOB packet_out_blob;
+	struct wrepl_wrap packet_out_wrap;
+	NTSTATUS status;
+
+	call = talloc_zero(wreplconn, struct wreplsrv_in_call);
+	NT_STATUS_HAVE_NO_MEMORY(call);
+	call->wreplconn = wreplconn;
+	talloc_steal(call, blob.data);
+
+	packet_in_blob.data = blob.data + 4;
+	packet_in_blob.length = blob.length - 4;
+
+	status = ndr_pull_struct_blob(&packet_in_blob, call, &call->req_packet,
+				      (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (DEBUGLVL(10)) {
+		DEBUG(10,("Received WINS-Replication packet of length %u\n", packet_in_blob.length + 4));
+		NDR_PRINT_DEBUG(wrepl_packet, &call->req_packet);
+	}
+
+	status = wreplsrv_in_call(call);
+	NT_STATUS_IS_ERR_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* w2k just ignores invalid packets, so we do */
+		DEBUG(10,("Received WINS-Replication packet was invalid, we just ignore it\n"));
+		talloc_free(call);
+		return NT_STATUS_OK;
+	}
+
+	/* and now encode the reply */
+	packet_out_wrap.packet = call->rep_packet;
+	status = ndr_push_struct_blob(&packet_out_blob, call, &packet_out_wrap,
+				      (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (DEBUGLVL(10)) {
+		DEBUG(10,("Sending WINS-Replication packet of length %d\n", (int)packet_out_blob.length));
+		NDR_PRINT_DEBUG(wrepl_packet, &call->rep_packet);
+	}
+
+	if (call->terminate_after_send) {
+		struct wreplsrv_in_connection **tas;
+		tas = talloc(packet_out_blob.data, struct wreplsrv_in_connection *);
+		NT_STATUS_HAVE_NO_MEMORY(tas);
+		*tas = wreplconn;
+		talloc_set_destructor(tas, terminate_after_send_destructor);
+	}
+
+	status = packet_send(wreplconn->packet, packet_out_blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	talloc_free(call);
+	return NT_STATUS_OK;
+}
+
+/*
+  called when the socket becomes readable
+*/
+static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
+{
+	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private,
+								   struct wreplsrv_in_connection);
+
+	packet_recv(wreplconn->packet);
+}
+
+/*
+  called when the socket becomes writable
+*/
+static void wreplsrv_send(struct stream_connection *conn, uint16_t flags)
+{
+	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private,
+								   struct wreplsrv_in_connection);
+	packet_queue_run(wreplconn->packet);
+}
+
+/*
+  handle socket recv errors
+*/
+static void wreplsrv_recv_error(void *private, NTSTATUS status)
+{
+	struct wreplsrv_in_connection *wreplconn = talloc_get_type(private,
+								   struct wreplsrv_in_connection);
+	wreplsrv_terminate_in_connection(wreplconn, nt_errstr(status));
 }
 
 /*
@@ -51,6 +154,20 @@ static void wreplsrv_accept(struct stream_connection *conn)
 		stream_terminate_connection(conn, "wreplsrv_accept: out of memory");
 		return;
 	}
+
+	wreplconn->packet = packet_init(wreplconn);
+	if (!wreplconn->packet) {
+		wreplsrv_terminate_in_connection(wreplconn, "wreplsrv_accept: out of memory");
+		return;
+	}
+	packet_set_private(wreplconn->packet, wreplconn);
+	packet_set_socket(wreplconn->packet, conn->socket);
+	packet_set_callback(wreplconn->packet, wreplsrv_recv_request);
+	packet_set_full_request(wreplconn->packet, packet_full_request_u32);
+	packet_set_error_handler(wreplconn->packet, wreplsrv_recv_error);
+	packet_set_event_context(wreplconn->packet, conn->event.ctx);
+	packet_set_fde(wreplconn->packet, conn->event.fde);
+	packet_set_serialise(wreplconn->packet);
 
 	wreplconn->conn		= conn;
 	wreplconn->service	= service;
@@ -73,192 +190,6 @@ static void wreplsrv_accept(struct stream_connection *conn)
 	irpc_add_name(conn->msg_ctx, "wreplsrv_connection");
 }
 
-/*
-  receive some data on a WREPL connection
-*/
-static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
-{
-	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private, struct wreplsrv_in_connection);
-	struct wreplsrv_in_call *call;
-	DATA_BLOB packet_in_blob;
-	DATA_BLOB packet_out_blob;
-	struct wrepl_wrap packet_out_wrap;
-	struct data_blob_list_item *rep;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	size_t nread;
-
-	/* avoid recursion, because of half async code */
-	if (wreplconn->processing) {
-		EVENT_FD_NOT_READABLE(conn->event.fde);
-		return;
-	}
-
-	if (wreplconn->partial.length == 0) {
-		wreplconn->partial = data_blob_talloc(wreplconn, NULL, 4);
-		if (wreplconn->partial.data == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-		wreplconn->partial_read = 0;
-	}
-
-	/* read in the packet length */
-	if (wreplconn->partial_read < 4) {
-		uint32_t packet_length;
-
-		status = socket_recv(conn->socket, 
-				     wreplconn->partial.data + wreplconn->partial_read,
-				     4 - wreplconn->partial_read,
-				     &nread, 0);
-		if (NT_STATUS_IS_ERR(status)) goto failed;
-		if (!NT_STATUS_IS_OK(status)) return;
-
-		wreplconn->partial_read += nread;
-		if (wreplconn->partial_read != 4) return;
-
-		packet_length = RIVAL(wreplconn->partial.data, 0) + 4;
-
-		wreplconn->partial.data = talloc_realloc(wreplconn, wreplconn->partial.data, 
-							 uint8_t, packet_length);
-		if (wreplconn->partial.data == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-		wreplconn->partial.length = packet_length;
-	}
-
-	/* read in the body */
-	status = socket_recv(conn->socket, 
-			     wreplconn->partial.data + wreplconn->partial_read,
-			     wreplconn->partial.length - wreplconn->partial_read,
-			     &nread, 0);
-	if (NT_STATUS_IS_ERR(status)) goto failed;
-	if (!NT_STATUS_IS_OK(status)) return;
-
-	wreplconn->partial_read += nread;
-	if (wreplconn->partial_read != wreplconn->partial.length) return;
-
-	packet_in_blob.data = wreplconn->partial.data + 4;
-	packet_in_blob.length = wreplconn->partial.length - 4;
-
-	call = talloc_zero(wreplconn, struct wreplsrv_in_call);
-	if (!call) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-	call->wreplconn = wreplconn;
-
-	/* we have a full request - parse it */
-	status = ndr_pull_struct_blob(&packet_in_blob,
-				      call, &call->req_packet,
-				      (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("Failed to parse incoming WINS-Replication packet - %s\n",
-			 nt_errstr(status)));
-		DEBUG(10,("packet length %lu\n", (long)wreplconn->partial.length));
-		NDR_PRINT_DEBUG(wrepl_packet, &call->req_packet);
-		goto failed;
-	}
-
-	/*
-	 * we have parsed the request, so we can reset the wreplconn->partial_read,
-	 * maybe we could also free wreplconn->partial, but for now we keep it,
-	 * and overwrite it the next time
-	 */
-	wreplconn->partial_read = 0;
-
-	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received WINS-Replication packet of length %lu\n", (long)wreplconn->partial.length));
-		NDR_PRINT_DEBUG(wrepl_packet, &call->req_packet);
-	}
-
-	/* actually process the request */
-	wreplconn->processing = True;
-	status = wreplsrv_in_call(call);
-	wreplconn->processing = False;
-	if (NT_STATUS_IS_ERR(status)) goto failed;
-	if (!NT_STATUS_IS_OK(status)) {
-		/* w2k just ignores invalid packets, so we do */
-		DEBUG(10,("Received WINS-Replication packet was invalid, we just ignore it\n"));
-		talloc_free(call);
-		return;
-	}
-
-	/* and now encode the reply */
-	packet_out_wrap.packet = call->rep_packet;
-	status = ndr_push_struct_blob(&packet_out_blob, call, &packet_out_wrap,
-				      (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	if (DEBUGLVL(10)) {
-		DEBUG(10,("Sending WINS-Replication packet of length %d\n", (int)packet_out_blob.length));
-		NDR_PRINT_DEBUG(wrepl_packet, &call->rep_packet);
-	}
-
-	rep = talloc(wreplconn, struct data_blob_list_item);
-	if (!rep) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	rep->blob = packet_out_blob;
-	talloc_steal(rep, packet_out_blob.data);
-	/* we don't need the call anymore */
-	talloc_free(call);
-
-	if (!wreplconn->send_queue) {
-		EVENT_FD_WRITEABLE(conn->event.fde);
-	}
-	DLIST_ADD_END(wreplconn->send_queue, rep, struct data_blob_list_item *);
-
-	if (wreplconn->terminate) {
-		EVENT_FD_NOT_READABLE(conn->event.fde);
-	} else {
-		EVENT_FD_READABLE(conn->event.fde);
-	}
-	return;
-
-failed:
-	wreplsrv_terminate_in_connection(wreplconn, nt_errstr(status));
-}
-
-/*
-  called when we can write to a connection
-*/
-static void wreplsrv_send(struct stream_connection *conn, uint16_t flags)
-{
-	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private, struct wreplsrv_in_connection);
-	NTSTATUS status;
-
-	while (wreplconn->send_queue) {
-		struct data_blob_list_item *rep = wreplconn->send_queue;
-		size_t sendlen;
-
-		status = socket_send(conn->socket, &rep->blob, &sendlen, 0);
-		if (NT_STATUS_IS_ERR(status)) goto failed;
-		if (!NT_STATUS_IS_OK(status)) return;
-
-		rep->blob.length -= sendlen;
-		rep->blob.data   += sendlen;
-
-		if (rep->blob.length == 0) {
-			DLIST_REMOVE(wreplconn->send_queue, rep);
-			talloc_free(rep);
-		}
-	}
-
-	if (wreplconn->terminate) {
-		wreplsrv_terminate_in_connection(wreplconn, "connection terminated after all pending packets are send");
-		return;
-	}
-
-	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
-	return;
-
-failed:
-	wreplsrv_terminate_in_connection(wreplconn, nt_errstr(status));
-}
-
 static const struct stream_server_ops wreplsrv_stream_ops = {
 	.name			= "wreplsrv",
 	.accept_connection	= wreplsrv_accept,
@@ -271,6 +202,7 @@ static const struct stream_server_ops wreplsrv_stream_ops = {
 */
 NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 				      struct socket_context *sock,
+				      struct packet_context *packet,
 				      struct wreplsrv_in_connection **_wrepl_in)
 {
 	struct wreplsrv_service *service = partner->service;
@@ -301,8 +233,25 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 					     wrepl_in, &conn);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	/*
+	 * make the wreplsrv_in_connection structure a child of the 
+	 * stream_connection, to match the hierachie of wreplsrv_accept
+	 */
 	wrepl_in->conn		= conn;
 	talloc_steal(conn, wrepl_in);
+
+	/*
+	 * now update the packet handling callback,...
+	 */
+	wrepl_in->packet	= talloc_steal(wrepl_in, packet);
+	packet_set_private(wrepl_in->packet, wrepl_in);
+	packet_set_socket(wrepl_in->packet, conn->socket);
+	packet_set_callback(wrepl_in->packet, wreplsrv_recv_request);
+	packet_set_full_request(wrepl_in->packet, packet_full_request_u32);
+	packet_set_error_handler(wrepl_in->packet, wreplsrv_recv_error);
+	packet_set_event_context(wrepl_in->packet, conn->event.ctx);
+	packet_set_fde(wrepl_in->packet, conn->event.fde);
+	packet_set_serialise(wrepl_in->packet);
 
 	*_wrepl_in = wrepl_in;
 	return NT_STATUS_OK;

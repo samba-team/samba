@@ -106,7 +106,7 @@ static NTSTATUS wreplsrv_in_stop_association(struct wreplsrv_in_call *call)
 	}
 
 	/* this will cause to not receive packets anymore and terminate the connection if the reply is send */
-	call->wreplconn->terminate = True;
+	call->terminate_after_send = True;
 	return wreplsrv_in_stop_assoc_ctx(call);
 }
 
@@ -315,6 +315,7 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	struct wreplsrv_out_connection *wrepl_out;
 	struct wrepl_table *update_in = &call->req_packet.message.replication.info.table;
 	struct wreplsrv_in_update_state *update_state;
+	uint16_t fde_flags;
 
 	DEBUG(2,("WREPL_REPL_UPDATE: partner[%s] initiator[%s] num_owners[%u]\n",
 		call->wreplconn->partner->address,
@@ -325,6 +326,7 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	 * and do a WREPL_REPL_SEND_REQUEST's on the that connection
 	 * and then stop this connection
 	 */
+	fde_flags = event_get_fd_flags(wrepl_in->conn->event.fde);
 	talloc_free(wrepl_in->conn->event.fde);
 	wrepl_in->conn->event.fde = NULL;
 
@@ -339,8 +341,11 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	wrepl_out->assoc_ctx.peer_ctx	= wrepl_in->assoc_ctx.peer_ctx;
 	wrepl_out->sock			= wrepl_socket_merge(wrepl_out,
 							     wrepl_in->conn->event.ctx,
-							     wrepl_in->conn->socket);
+							     wrepl_in->conn->socket,
+							     wrepl_in->packet);
 	NT_STATUS_HAVE_NO_MEMORY(wrepl_out->sock);
+
+	event_set_fd_flags(wrepl_out->sock->event.fde, fde_flags);
 
 	update_state->wrepl_in			= wrepl_in;
 	update_state->wrepl_out			= wrepl_out;

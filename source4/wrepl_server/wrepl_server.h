@@ -35,6 +35,7 @@ struct wreplsrv_in_call {
 	struct wreplsrv_in_connection *wreplconn;
 	struct wrepl_packet req_packet;
 	struct wrepl_packet rep_packet;
+	BOOL terminate_after_send;
 };
 
 /*
@@ -43,6 +44,7 @@ struct wreplsrv_in_call {
 struct wreplsrv_in_connection {
 	struct wreplsrv_in_connection *prev,*next;
 	struct stream_connection *conn;
+	struct packet_context *packet;
 
 	/* our global service context */
 	struct wreplsrv_service *service;
@@ -67,25 +69,6 @@ struct wreplsrv_in_connection {
 		uint32_t our_ctx;
 		uint32_t peer_ctx;
 	} assoc_ctx;
-
-	/* the partial input on the connection */
-	DATA_BLOB partial;
-	size_t partial_read;
-
-	/*
-	 * are we currently processing a request?
-	 * this prevents loops, with half async code
-	 */
-	BOOL processing;
-
-	/*
-	 * if this is set we no longer accept incoming packets
-	 * and terminate the connection after we have send all packets
-	 */
-	BOOL terminate;
-
-	/* the list of outgoing DATA_BLOB's that needs to be send */
-	struct data_blob_list_item *send_queue;
 };
 
 /*

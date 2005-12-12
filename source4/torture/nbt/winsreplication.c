@@ -103,6 +103,8 @@ static BOOL test_assoc_ctx1(TALLOC_CTX *mem_ctx, const char *address)
 	struct wrepl_socket *wrepl_socket2;
 	struct wrepl_associate associate2;
 	struct wrepl_pull_table pull_table;
+	struct wrepl_packet packet;
+	struct wrepl_send_ctrl ctrl;
 	struct wrepl_packet *rep_packet;
 	struct wrepl_associate_stop assoc_stop;
 	NTSTATUS status;
@@ -137,9 +139,14 @@ static BOOL test_assoc_ctx1(TALLOC_CTX *mem_ctx, const char *address)
 	printf("association context (conn2): 0x%x\n", associate2.out.assoc_ctx);
 
 	printf("Send a replication table query, with assoc 1 (conn2), the anwser should be on conn1\n");
-	pull_table.in.assoc_ctx = associate1.out.assoc_ctx;
-	req = wrepl_pull_table_send(wrepl_socket2, &pull_table);
-	req->send_only = True;
+	ZERO_STRUCT(packet);
+	packet.opcode                      = WREPL_OPCODE_BITS;
+	packet.assoc_ctx                   = associate1.out.assoc_ctx;
+	packet.mess_type                   = WREPL_REPLICATION;
+	packet.message.replication.command = WREPL_REPL_TABLE_QUERY;
+	ZERO_STRUCT(ctrl);
+	ctrl.send_only = True;
+	req = wrepl_request_send(wrepl_socket2, &packet, &ctrl);
 	status = wrepl_request_recv(req, mem_ctx, &rep_packet);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -281,7 +288,7 @@ static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 		packet.mess_type                   = WREPL_STOP_ASSOCIATION;
 		packet.message.stop.reason         = 0;
 
-		req = wrepl_request_send(wrepl_socket, &packet);
+		req = wrepl_request_send(wrepl_socket, &packet, NULL);
 		talloc_free(req);
 
 		printf("failed - We are not a valid pull partner for the server\n");
