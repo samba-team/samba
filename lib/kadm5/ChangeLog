@@ -1,3 +1,8 @@
+2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Wrap hdb_entry with hdb_entry_ex, patch originally 
+	from Andrew Bartlet
+
 2005-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* context_s.c (set_field): try another way to calculate the path

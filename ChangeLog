@@ -1,5 +1,27 @@
 2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb: Wrap hdb_entry with hdb_entry_ex, patch originally from
+	Andrew Bartlet
+
+	* lib/hdb/hdb-ldap.c: Wrap hdb_entry with hdb_entry_ex, add url
+	support, add ldapi support.
+
+	* kdc/kerberos5.c (tgs_make_reply): there are no such things a
+	keytypes any more, just use enctypes.
+
+	* kdc/kdc_locl.h: Remove private prototypes and instead include
+	<kdc-private.h>.
+
+	* kdc/Makefile.am: Build kdc-private.h and depend on it.
+
+	* kdc/config.c (configure): wrap line
+
+	* doc/kerberos4.texi: KDC 4 support is always compiled in.
+	
+	* TODO: Remove some stuff that have been done.
+
+	* Makefile.am: Split long line
+
 	* doc/apps.texi: Spelling, From Måns Nilsson.
 
 	* doc/install.texi: spelling, From Måns Nilsson
