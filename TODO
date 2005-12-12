@@ -36,7 +36,6 @@ implicit optional CONS types
 
 untag optional
 
-
 ** lib/auth
 
 ** lib/auth/sia
@@ -45,11 +44,7 @@ PAM
 
 ** lib/com_err
 
-write a man-page
-
 ** lib/des
-
-make everything work with openssl and make prototypes compatible
 
 ** lib/gssapi
 
@@ -73,8 +68,6 @@ add policies?
 fix to use rpc?
 
 ** lib/krb5
-
-iv for aes
 
 the replay cache is, in its current state, not very useful
 
