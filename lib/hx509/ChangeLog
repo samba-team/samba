@@ -1,3 +1,13 @@
+2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* data/nist-data: Can handle DSA certificate.
+	
+	* hxtool.c: Print error code on failure.
+	
+2005-10-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* crypto.c: Support DSA signature operations.
+	
 2005-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* print.c: Validate that issuerAltName and subjectAltName isn't
