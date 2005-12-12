@@ -7,7 +7,8 @@ SOURCEPATH=../source
 
 package=samba4
 
-configure:
+configure: configure-stamp
+configure-stamp:
 	dh_testdir
 	cd $(SOURCEPATH) && ./autogen.sh
 	cd $(SOURCEPATH) && ./configure --with-fhs \
@@ -17,6 +18,7 @@ configure:
 		--enable-static \
 		--sysconfdir=/etc \
 		--libdir=/etc/samba4 \
+		--with-configdir=/etc/samba4 \
 		--with-privatedir=/etc/samba4 \
 		--with-piddir=/var/run/samba4 \
 		--localstatedir=/var \
@@ -27,29 +29,31 @@ configure:
 	cd $(SOURCEPATH)/pidl && perl Makefile.PL verbose INSTALLDIRS=vendor PREFIX=/usr
 	touch $@
 
-build: configure
+build: build-stamp
+build-stamp: configure
 	dh_testdir
 	$(MAKE) -C $(SOURCEPATH) proto 
 	-$(MAKE) -C $(SOURCEPATH) pch
 	$(MAKE) -C $(SOURCEPATH) all
-	$(MAKE) -C $(SOURCEPATH)/pidl all doc
+	$(MAKE) -C $(SOURCEPATH)/pidl all
 	touch $@
 
 clean:
 	dh_testdir
+	dh_testroot
 	dh_clean
-	rm -f build configure
+	$(RM) debian/tmp
 	-$(MAKE) -C $(SOURCEPATH) clean
+	$(RM) build-stamp configure-stamp
 
 binary-indep: build install
-	dh_testdir -i
-	dh_testroot -i
+	dh_testdir
+	dh_testroot
 	dh_install -i --sourcedir=debian/tmp
 	dh_installdocs -i
 	dh_installchangelogs -i
 	dh_compress -i
 	dh_fixperms -i
-	dh_python -i
 	dh_installdeb -i
 	dh_gencontrol -i
 	dh_md5sums -i
@@ -61,20 +65,20 @@ binary-indep: build install
 install: build
 	dh_clean -k
 	dh_installdirs
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
+	mkdir -p $(CURDIR)/debian/tmp/etc/samba4
 	$(MAKE) -C $(SOURCEPATH) install DESTDIR=$(CURDIR)/debian/tmp
 	$(MAKE) -C $(SOURCEPATH) manpages installman DESTDIR=$(CURDIR)/debian/tmp
-	mkdir -p $(CURDIR)/debian/tmp/etc/samba4
 	cp $(CURDIR)/debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
 	$(MAKE) -C $(SOURCEPATH)/pidl install DESTDIR=$(CURDIR)/debian/tmp
 
 binary-arch: build install
-	dh_testdir -a
-	dh_testroot -a
+	dh_testdir
+	dh_testroot
 	dh_install -a --sourcedir=debian/tmp
 	dh_installchangelogs -a
-	dh_installdocs -a
 	dh_strip -a
-	dh_python -a
+	dh_perl -a
 	dh_compress -a
 	dh_fixperms -a
 	dh_makeshlibs -a
@@ -86,4 +90,4 @@ binary-arch: build install
 
 binary: binary-arch binary-indep 
 
-.PHONY: binary binary-arch binary-indep clean
+.PHONY: configure build install binary binary-arch binary-indep clean

@@ -1,1 +1,3 @@
 etc/samba4/smb.conf
+usr/lib/samba/*.dat
+usr/lib/samba/setup
