@@ -209,7 +209,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 					WINBIND_SERVER_MUTEX_WAIT_TIME);
 
 	if (!got_mutex) {
-		DEBUG(0,("cm_open_connection: mutex grab failed for %s\n",
+		DEBUG(0,("cm_prepare_connection: mutex grab failed for %s\n",
 			 controller));
 		result = NT_STATUS_POSSIBLE_DEADLOCK;
 		goto done;

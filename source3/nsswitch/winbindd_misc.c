@@ -179,7 +179,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	result = cm_connect_netlogon(domain, &netlogon_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(1, ("Can't contact our the NETLOGON pipe\n"));
+		DEBUG(1, ("Can't contact the NETLOGON pipe\n"));
 		return WINBINDD_ERROR;
 	}
 
