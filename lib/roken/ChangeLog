@@ -1,4 +1,9 @@
-2005-09-28  Love  <lha@kth.se>
+2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* getifaddrs.c: Try handle HP/UX 11.nn, its diffrent from Solaris
+	large SIOCGIFCONF.
+	
+2005-09-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken-common.h: Move rk_UNCONST to roken.h.in since it might use
 	uintptr_t depending on avaibility.
