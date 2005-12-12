@@ -56,6 +56,21 @@ struct mbuf;
 
 #include <ifaddrs.h>
 
+#ifdef __hpux
+#define lifconf if_laddrconf
+#define lifc_len iflc_len
+#define lifc_buf iflc_buf
+#define lifc_req iflc_req
+
+#define lifreq if_laddrreq
+#define lifr_addr iflr_addr
+#define lifr_name iflr_name
+#define lifr_dstaddr iflr_dstaddr
+#define lifr_broadaddr iflr_broadaddr
+#define lifr_flags iflr_flags
+#define lifr_index iflr_index
+#endif
+
 #ifdef AF_NETLINK
 
 /*
@@ -1011,8 +1026,10 @@ getlifaddrs2(struct ifaddrs **ifap,
 	    ret = ENOMEM;
 	    goto error_out;
 	}
+#ifndef __hpux
 	ifconf.lifc_family = AF_UNSPEC;
 	ifconf.lifc_flags  = 0;
+#endif
 	ifconf.lifc_len    = buf_size;
 	ifconf.lifc_buf    = buf;
 
