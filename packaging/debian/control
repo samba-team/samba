@@ -2,13 +2,8 @@ Source: samba4
 Section: net
 Priority: optional
 Maintainer: Jelmer Vernooij <jelmer@samba.org>
-Standards-Version: 3.6.1.0
-Build-Depends: build-essential, libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl, perl
-
-Package: samba4
-Architecture: all
-Description: Samba4 misc
- Files common for all programs in Samba
+Standards-Version: 3.6.2
+Build-Depends: libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl, perl, docbook-xsl, xsltproc
 
 Package: samba4-common
 Architecture: all
@@ -17,7 +12,7 @@ Description: Common samba files
 
 Package: samba4-client
 Architecture: any
-Depends: ${shlibs:Depends}, 
+Depends: ${shlibs:Depends}
 Description: Client utilities from Samba4
  Client utilities for NetBIOS, SMB and RPC.
 
@@ -41,9 +36,9 @@ Depends: ${shlibs:Depends}
 Description: Graphical Samba client utilities
  Contains GTK+ programs for maintaining:
  .
- * Remote SAM databases
- * Local and remote registries
- * DCE/RPC endpoints
+   * Remote SAM databases
+   * Local and remote registries
+   * DCE/RPC endpoints
 
 Package: winregistry-tools
 Architecture: any
@@ -53,7 +48,7 @@ Description: Tools for viewing and manipulating
 
 Package: libparse-pidl-perl
 Architecture: any
-Depends: perl
+Depends: ${perl:Depends}
 Description: IDL compiler written in Perl
  FIXME
  
