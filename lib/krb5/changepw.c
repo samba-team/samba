@@ -522,7 +522,12 @@ change_password_loop (krb5_context	context,
     int sock;
     int i;
     int done = 0;
-    krb5_realm realm = creds->client->realm;
+    krb5_realm realm;
+
+    if (targprinc)
+	realm = targprinc->realm;
+    else
+	realm = creds->client->realm;
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
@@ -712,7 +717,7 @@ krb5_set_password(krb5_context context,
 
     for (i = 0; procs[i].name != NULL; i++) {
 	*result_code = 0;
-	ret = change_password_loop(context, creds, targprinc, newpw, 
+	ret = change_password_loop(context, creds, principal, newpw, 
 				   result_code, result_code_string, 
 				   result_string, 
 				   &procs[i]);
