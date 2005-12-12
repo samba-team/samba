@@ -4220,7 +4220,7 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	connection_struct conn;
 	files_struct finfo;
 	struct fd_handle fh;
-	fstring path;
+	pstring path;
 	pstring filename;
 	
 	ZERO_STRUCT( conn );
@@ -4231,8 +4231,8 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 		return NULL;
 	}
 	
-	fstrcpy( path, "/" );
-	string_set(&conn.connectpath, path);
+	pstrcpy( path, "/" );
+	set_conn_connectpath(&conn, path);
 	
 	if (!smbd_vfs_init(&conn)) {
 		DEBUG(0,("novfs_get_nt_acl: Unable to create a fake connection struct!\n"));

@@ -146,7 +146,7 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
                 return False;
         }
 	
-	string_set(&conn->connectpath, connpath);
+	set_conn_connectpath(conn, connpath);
 
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
