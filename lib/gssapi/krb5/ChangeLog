@@ -1,3 +1,8 @@
+2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss_acquire_cred.3: Replace gss_krb5_import_ccache with
+	gss_krb5_import_cred and add more references
+	
 2005-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.h: Change gss_krb5_import_ccache to gss_krb5_import_cred,
