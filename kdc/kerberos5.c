@@ -1679,17 +1679,14 @@ tgs_make_reply(krb5_context context,
     
     if(adtkt) {
 	int i;
-	krb5_keytype kt;
 	ekey = &adtkt->key;
-	for(i = 0; i < b->etype.len; i++){
-	    ret = krb5_enctype_to_keytype(context, b->etype.val[i], &kt);
-	    if(ret)
-		continue;
-	    if(adtkt->key.keytype == kt)
+	for(i = 0; i < b->etype.len; i++)
+	    if (b->etype.val[i] == adtkt->key.keytype)
 		break;
-	}
-	if(i == b->etype.len)
+	if(i == b->etype.len) {
+	    krb5_clear_error_string(context);
 	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	}
 	etype = b->etype.val[i];
     }else{
 	ret = find_keys(context, config, 
