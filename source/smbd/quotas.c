@@ -216,7 +216,9 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 	devno = S.st_dev ;
   
-	fp = setmntent(MOUNTED,"r");
+	if ((fp = setmntent(MOUNTED,"r")) == NULL)
+		return(False) ;
+
 	found = False ;
   
 	while ((mnt = getmntent(fp))) {

@@ -37,6 +37,9 @@
  * codepoints in UTF-8).  This may have to change at some point
  **/
 
+
+#define LDAP_SERVER_TREE_DELETE_OID	"1.2.840.113556.1.4.805"
+
 static SIG_ATOMIC_T gotalarm;
                                                                                                                    
 /***************************************************************
@@ -1796,6 +1799,11 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	void *res, *msg;
 	char *hostnameDN, *host; 
 	int rc;
+	LDAPControl ldap_control;
+	LDAPControl  * pldap_control[] = {&ldap_control, 0};
+
+	memset(&ldap_control, 0, sizeof(LDAPControl));
+	ldap_control.ldctl_oid = (char *)LDAP_SERVER_TREE_DELETE_OID;
 
 	/* hostname must be lowercase */
 	host = SMB_STRDUP(hostname);
@@ -1813,7 +1821,15 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	}
 
 	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
-	rc = ldap_delete_s(ads->ld, hostnameDN);
+
+
+	rc = ldap_delete_ext_s(ads->ld, hostnameDN, pldap_control, NULL);
+	if (rc) {
+		DEBUG(3,("ldap_delete_ext_s failed with error code %d\n", rc));
+	}else {
+		DEBUG(3,("ldap_delete_ext_s succeeded with error code %d\n", rc));
+	}
+
 	ads_memfree(ads, hostnameDN);
 	if (rc != LDAP_SUCCESS) {
 		return ADS_ERROR(rc);

@@ -90,6 +90,14 @@ static BOOL is_internal_domain(const DOM_SID *sid)
 	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
 }
 
+static BOOL is_in_internal_domain(const DOM_SID *sid)
+{
+	if (sid == NULL)
+		return False;
+
+	return (sid_check_is_in_our_domain(sid) || sid_check_is_in_builtin(sid));
+}
+
 
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
@@ -648,12 +656,18 @@ struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 	 * one to contact the external DC's. On member servers the internal
 	 * domains are different: These are part of the local SAM. */
 
-	if (IS_DC || is_internal_domain(sid))
+	DEBUG(10, ("find_lookup_domain_from_sid(%s)\n",
+		   sid_string_static(sid)));
+
+	if (IS_DC || is_internal_domain(sid) || is_in_internal_domain(sid)) {
+		DEBUG(10, ("calling find_domain_from_sid\n"));
 		return find_domain_from_sid(sid);
+	}
 
 	/* On a member server a query for SID or name can always go to our
 	 * primary DC. */
 
+	DEBUG(10, ("calling find_our_domain\n"));
 	return find_our_domain();
 }
 

@@ -678,6 +678,9 @@ static int net_groupmap_listmem(int argc, const char **argv)
 		return -1;
 	}
 
+	members = NULL;
+	num = 0;
+
 	if (!pdb_enum_aliasmem(&alias, &members, &num)) {
 		d_printf("Could not list members for sid %s\n", argv[0]);
 		return -1;

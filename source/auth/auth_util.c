@@ -471,9 +471,12 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	NT_USER_TOKEN *ptoken;
 	int i;
 	int sid_ndx;
+	DOM_SID domadm;
+	BOOL is_domain_admin = False;
+	BOOL domain_mode = False;
 	
 	if ((ptoken = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL) {
-		DEBUG(0, ("create_nt_token: Out of memory allocating token\n"));
+		DEBUG(0, ("create_nt_user_token: Out of memory allocating token\n"));
 		nt_status = NT_STATUS_NO_MEMORY;
 		return nt_status;
 	}
@@ -483,7 +486,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	ptoken->num_sids = n_groupSIDs + 5;
 
 	if ((ptoken->user_sids = SMB_MALLOC_ARRAY( DOM_SID, ptoken->num_sids )) == NULL) {
-		DEBUG(0, ("create_nt_token: Out of memory allocating SIDs\n"));
+		DEBUG(0, ("create_nt_user_token: Out of memory allocating SIDs\n"));
 		nt_status = NT_STATUS_NO_MEMORY;
 		return nt_status;
 	}
@@ -517,6 +520,27 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	
 	sid_ndx = 5; /* next available spot */
 
+	/* this is where we construct the domain admins SID if we can
+	   so that we can add the BUILTIN\Administrators SID to the token */
+
+	ZERO_STRUCT( domadm );
+	if ( IS_DC || lp_server_role()==ROLE_DOMAIN_MEMBER ) {
+		domain_mode = True;
+
+		if ( IS_DC ) 
+			sid_copy( &domadm, get_global_sam_sid() );
+		else {
+			/* if we a re a member server and cannot find
+			   out domain SID then reset the domain_mode flag */
+			if ( !secrets_fetch_domain_sid( lp_workgroup(), &domadm ) )
+				domain_mode = False;
+		}
+
+		sid_append_rid( &domadm, DOMAIN_GROUP_RID_ADMINS );
+	}
+	
+	/* add the group SIDs to teh token */
+	
 	for (i = 0; i < n_groupSIDs; i++) {
 		size_t check_sid_idx;
 		for (check_sid_idx = 1; check_sid_idx < ptoken->num_sids; check_sid_idx++) {
@@ -530,6 +554,30 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 			sid_copy(&ptoken->user_sids[sid_ndx++], &groupSIDs[i]);
 		} else {
 			ptoken->num_sids--;
+		}
+		
+		/* here we check if the user is a domain admin and add the
+		   BUILTIN\Administrators SID to the token the group membership
+		   check succeeds. */
+
+		if ( domain_mode ) {
+			if ( sid_equal( &domadm, &groupSIDs[i] ) )
+				is_domain_admin = True;
+		}
+		
+	}
+
+	/* finally realloc the SID array and add the BUILTIN\Administrators 
+	   SID if necessary */
+
+	if ( is_domain_admin ) {
+		DOM_SID *sids;
+
+		if ( !(sids = SMB_REALLOC_ARRAY( ptoken->user_sids, DOM_SID, ptoken->num_sids+1 )) ) 
+			DEBUG(0,("create_nt_user_token: Failed to realloc SID arry of size %d\n", ptoken->num_sids+1));
+		else  {
+			ptoken->user_sids = sids;
+			sid_copy( &(ptoken->user_sids)[ptoken->num_sids++], &global_sid_Builtin_Administrators );
 		}
 	}
 
@@ -602,6 +650,8 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 		return NULL;
 	}
 
+	/* convert the Unix group ids to SIDS */
+
 	for (i = 0; i < ngroups; i++) {
 		if (!NT_STATUS_IS_OK(gid_to_sid(&(group_sids)[i], (groups)[i]))) {
 			DEBUG(1, ("create_nt_token: failed to convert gid %ld to a sid!\n", (long int)groups[i]));
@@ -640,7 +690,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 		return token;
 		
 	if ( !(pw = getpwnam( "root" )) ) {
-		DEBUG(0,("create_root_nt_token: getpwnam\"root\") failed!\n"));
+		DEBUG(0,("get_root_nt_token: getpwnam\"root\") failed!\n"));
 		return NULL;
 	}
 	
