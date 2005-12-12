@@ -254,7 +254,8 @@ add_one_address (krb5_context context, const char *str, int first)
     krb5_free_addresses (context, &tmp);
 }
 
-krb5_kdc_configuration *configure(krb5_context context, int argc, char **argv)
+krb5_kdc_configuration *
+configure(krb5_context context, int argc, char **argv)
 {
     krb5_kdc_configuration *config = malloc(sizeof(*config));
     krb5_error_code ret;
