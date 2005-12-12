@@ -46,9 +46,10 @@ instead, you can use this option.
 @item @kbd{--with-krb4=@file{dir}}
 Gives the location of Kerberos 4 libraries and headers. This enables
 Kerberos 4 support in the applications (telnet, rsh, popper, etc) and
-the KDC. It is automatically check for in @file{/usr/athena}. If you
-keep libraries and headers in different places, you can instead give the
-path to each with the @kbd{--with-krb4-lib=@file{dir}}, and
+the KDC. It is automatically found if present under
+@file{/usr/athena}.  If you keep libraries and headers in different
+places, you can instead give the path to each with the
+@kbd{--with-krb4-lib=@file{dir}}, and
 @kbd{--with-krb4-include=@file{dir}} options.
 
 You will need a fairly recent version of our Kerberos 4 distribution for
