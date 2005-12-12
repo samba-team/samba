@@ -1146,7 +1146,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
 	    netsamlogon_cache_have(user_sid)) {
-		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		DEBUG(10, ("lookup_usergroups: cached access denied and have cached info3\n"));
 		domain->last_status = NT_STATUS_OK;
 		centry_free(centry);
 		goto do_query;
