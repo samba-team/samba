@@ -48,6 +48,7 @@ change(void *server_handle,
     size_t num_keys;
     int cmp = 1;
 
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
@@ -146,6 +147,8 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     kadm5_server_context *context = server_handle;
     hdb_entry_ex ent;
     kadm5_ret_t ret;
+
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)

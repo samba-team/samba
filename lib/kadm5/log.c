@@ -535,6 +535,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     krb5_data_free(&value);
     if (ret)
 	return ret;
+
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = log_ent.entry.principal;
     log_ent.entry.principal = NULL;
     ret = context->db->hdb_fetch(context->context, context->db, 

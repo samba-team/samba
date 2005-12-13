@@ -49,6 +49,7 @@ modify_principal(void *server_handle,
     if((mask & KADM5_POLICY) && strcmp(princ->policy, "default"))
 	return KADM5_UNK_POLICY;
     
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = princ->principal;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)

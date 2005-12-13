@@ -50,6 +50,7 @@ kadm5_s_randkey_principal(void *server_handle,
     hdb_entry_ex ent;
     kadm5_ret_t ret;
 
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)

@@ -44,6 +44,7 @@ kadm5_s_rename_principal(void *server_handle,
     kadm5_ret_t ret;
     hdb_entry_ex ent, ent2;
 
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = source;
     if(krb5_principal_compare(context->context, source, target))
 	return KADM5_DUP; /* XXX is this right? */
