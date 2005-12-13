@@ -323,7 +323,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question)
 	struct in_addr dns_ip;
 	unstring qname;
 
-	pull_ascii_nstring(qname, question->name);
+	pull_ascii_nstring(qname, sizeof(qname), question->name);
 
 	DEBUG(3,("DNS search for %s - ", nmb_namestr(question)));
 
