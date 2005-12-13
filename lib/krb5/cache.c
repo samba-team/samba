@@ -358,14 +358,12 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	if (e == NULL) {
 	    e = krb5_config_get_string(context, NULL, "libdefaults",
 				       "default_cc_name", NULL);
-	    if (e) {
-		ret = _krb5_expand_default_cc_name(context, e, &p);
-		if (ret)
-		    return ret;
-	    }
+	    if (e == NULL)
+		e = KRB5_DEFAULT_CCNAME;
+	    ret = _krb5_expand_default_cc_name(context, e, &p);
+	    if (ret)
+		return ret;
 	}
-	if (e == NULL)
-	    asprintf(&p,"FILE:/tmp/krb5cc_%u", (unsigned)getuid());
     } else
 	p = strdup(name);
 
