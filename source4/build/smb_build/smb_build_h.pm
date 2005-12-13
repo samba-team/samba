@@ -1,10 +1,8 @@
-###########################################################
-### SMB Build System					###
-### - create output for smb_build.h			###
-###							###
-###  Copyright (C) Stefan (metze) Metzmacher 2004	###
-###  Released under the GNU GPL				###
-###########################################################
+# SMB Build System
+# - create output for smb_build.h
+#
+#  Copyright (C) Stefan (metze) Metzmacher 2004
+#  Released under the GNU GPL
 
 package smb_build_h;
 use strict;

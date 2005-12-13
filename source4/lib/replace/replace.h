@@ -166,4 +166,8 @@ int rep_mkstemp(char *temp);
 #define HOST_NAME_MAX 64
 #endif
 
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
+
 #endif

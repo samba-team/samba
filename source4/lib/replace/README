@@ -56,6 +56,10 @@ uint_t
 uint{8,16,32,64}_t
 int{8,16,32,64}_t
 
+Constants:
+PATH_NAME_MAX
+UINT16_MAX
+
 Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)

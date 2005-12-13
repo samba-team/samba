@@ -112,7 +112,6 @@ struct ipv4_addr {
 #include "smb_interfaces.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
-#include "lib/com/com.h"
 #include "auth/credentials/credentials.h"
 
 /***** automatically generated prototypes *****/
@@ -160,9 +159,5 @@ extern int DEBUGLEVEL;
 */
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-
-#ifndef UINT16_MAX
-#define UINT16_MAX 65535
-#endif
 
 #endif /* _INCLUDES_H */
