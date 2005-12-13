@@ -216,6 +216,16 @@ sub array2oneperline($)
 	return $output;
 }
 
+sub _prepare_list($$$)
+{
+	my ($self,$ctx,$var) = @_;
+
+	my $tmplist = array2oneperline($ctx->{$var});
+	return if ($tmplist eq "");
+
+	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
+}
+
 sub _prepare_obj_list($$$)
 {
 	my ($self,$var,$ctx) = @_;
@@ -226,16 +236,6 @@ sub _prepare_obj_list($$$)
 	$self->output("$var\_$ctx->{NAME}_OBJS =$tmplist\n");
 }
 
-sub _prepare_cflags($$$)
-{
-	my ($self, $var,$ctx) = @_;
-
-	my $tmplist = array2oneperline($ctx->{CFLAGS});
-	return if ($tmplist eq "");
-
-	$self->output("$var\_$ctx->{NAME}_CFLAGS =$tmplist\n");
-}
-
 sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
@@ -243,23 +243,19 @@ sub SharedLibrary($$)
 	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_NAME}");
 
 	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
-	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
-
-	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	my $tmpshlink = array2oneperline($ctx->{LINK_LIST});
-	my $tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
+	$self->_prepare_list($ctx, "CFLAGS");
+	$self->_prepare_list($ctx, "DEPEND_LIST");
+	$self->_prepare_list($ctx, "LINK_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	$self->output(<< "__EOD__"
-LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
-LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
-LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
 
 $ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) \$(LIBRARY_$ctx->{NAME}_OBJS) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
-		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)
+		\$(LIBRARY_$ctx->{NAME}_LINK_FLAGS) \\
+		\$(LIBRARY_$ctx->{NAME}_LINK_LIST)
 
 __EOD__
 );
@@ -287,11 +283,9 @@ sub MergedObj($$)
 
 	return unless $ctx->{TARGET};
 
-	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-
 	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
-	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
-	$self->output("$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n");
+	$self->_prepare_list($ctx, "CFLAGS");
+	$self->_prepare_list($ctx, "DEPEND_LIST");
 
 	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n");
 
@@ -303,13 +297,12 @@ sub MergedObj($$)
 sub ObjList($$)
 {
 	my ($self,$ctx) = @_;
-	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
 	return unless $ctx->{TARGET};
 
 	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
-	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
-	$self->output("$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n");
+	$self->_prepare_list($ctx, "CFLAGS");
+	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->output("$ctx->{TARGET}: ");
 	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n");
 	$self->output("\t\@touch $ctx->{TARGET}\n");
@@ -322,21 +315,18 @@ sub StaticLibrary($$)
 	push (@{$self->{static_libs}}, $ctx->{OUTPUT});
 
 	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
-	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "CFLAGS");
 
-	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	my $tmpstlink = array2oneperline($ctx->{LINK_LIST});
-	my $tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
+	$self->_prepare_list($ctx, "DEPEND_LIST");
+	$self->_prepare_list($ctx, "LINK_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	$self->output(<< "__EOD__"
-LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
-#
-LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
 #
 $ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) \$(LIBRARY_$ctx->{NAME}_OBJS) bin/.dummy
 	\@echo Linking \$@
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
-		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
+		\$(LIBRARY_$ctx->{NAME}_LINK_LIST)
 
 library_$ctx->{NAME}: basics $ctx->{TARGET}
 
@@ -365,21 +355,17 @@ sub Binary($$)
 	}
 
 	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
-	$self->_prepare_cflags($ctx->{TYPE}, $ctx);
-	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	my $tmplink = array2oneperline($ctx->{LINK_LIST});
-	my $tmpflag = array2oneperline($ctx->{LINK_FLAGS});
+	$self->_prepare_list($ctx, "CFLAGS");
+	$self->_prepare_list($ctx, "DEPEND_LIST");
+	$self->_prepare_list($ctx, "LINK_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	$self->output(<< "__EOD__"
 #
-BINARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
-BINARY_$ctx->{NAME}_LINK_LIST =$tmplink
-BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 #
 bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST) \$(BINARY_$ctx->{NAME}_OBJS)
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \\
-		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_LIST) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS)
 binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
