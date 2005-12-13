@@ -1459,6 +1459,12 @@ struct kernel_oplock_message {
 	unsigned long file_id;
 };
 
+struct file_renamed_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	char names[1]; /* A variable area containing sharepath and filename. */
+};
+
 /*
  * On the wire return values for oplock types.
  */

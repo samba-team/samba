@@ -44,7 +44,7 @@ void set_conn_connectpath(connection_struct *conn, const pstring connectpath)
 			while (*s == '/') {
                                 s++;
                         }
-			if ((d != destname) && (*s != '\0')) {
+			if ((d > destname + 1) && (*s != '\0')) {
 				*d++ = '/';
 			}
 			start_of_name_component = True;
@@ -118,6 +118,9 @@ void set_conn_connectpath(connection_struct *conn, const pstring connectpath)
 	if (d > destname + 1 && (*(d-1) == '/')) {
 		*(d-1) = '\0';
 	}
+
+	DEBUG(10,("set_conn_connectpath: service %s, connectpath = %s\n",
+		lp_servicename(SNUM(conn)), destname ));
 
 	string_set(&conn->connectpath, destname);
 }
