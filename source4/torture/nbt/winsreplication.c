@@ -1193,7 +1193,7 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			BOOL sgroup_merge;
 			struct wrepl_wins_owner *merge_owner;
 			BOOL sgroup_cleanup;
-		} r1, r2, result;
+		} r1, r2;
 	} records[] = {
 	/* 
 	 * NOTE: the first record and the last applied one
