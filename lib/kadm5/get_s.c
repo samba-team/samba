@@ -74,6 +74,7 @@ kadm5_s_get_principal(void *server_handle,
     kadm5_ret_t ret;
     hdb_entry_ex ent;
     
+    memset(&ent, 0, sizeof(ent));
     ent.entry.principal = princ;
     ret = context->db->hdb_open(context->context, context->db, O_RDONLY, 0);
     if(ret)
