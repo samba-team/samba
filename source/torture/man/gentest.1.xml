@@ -149,6 +149,8 @@
 <refsect1>
 	<title>AUTHOR</title>
 
+	<para>This utility is part of the <ulink url="http://www.samba.org/">Samba</ulink> suite, which is developed by the global <ulink url="http://www.samba.org/samba/team/">Samba Team</ulink>.</para>
+
 	<para>gentest was written by Andrew Tridgell.</para>
 
 	<para>This manpage was written by Jelmer Vernooij.</para>

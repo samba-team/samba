@@ -86,7 +86,15 @@
 <refsect1>
 	<title>AUTHOR</title>
 
-	&man.credits.samba;
+		<para> ldb was written by 
+		 <ulink url="http://samba.org/~tridge/">Andrew Tridgell</ulink>.
+	</para>
+
+	<para>
+If you wish to report a problem or make a suggestion then please see
+the <ulink url="http://ldb.samba.org/"/> web site for
+current contact and maintainer information.
+	</para>
 
 	<para>ldbdel was written by Andrew Tridgell.</para>
 

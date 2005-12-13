@@ -75,8 +75,6 @@
 	</variablelist>
 </refsect1>
 
-&man.registry.backends;
-
 <refsect1>
 	<title>VERSION</title>
 
@@ -93,7 +91,7 @@
 <refsect1>
 	<title>AUTHOR</title>
 
-	&man.credits.samba;
+	<para>This utility is part of the <ulink url="http://www.samba.org/">Samba</ulink> suite, which is developed by the global <ulink url="http://www.samba.org/samba/team/">Samba Team</ulink>.</para>
 	
 	<para>This manpage and regdiff were written by Jelmer Vernooij. </para>
 	
