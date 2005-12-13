@@ -21,6 +21,8 @@
 #ifndef _DCOM_H /* _DCOM_H */
 #define _DCOM_H 
 
+#include "lib/com/com.h"
+
 struct dcom_client_context {
 	struct cli_credentials *credentials;
 	struct dcom_object_exporter {

@@ -57,13 +57,4 @@
 #define strlower(s) strlower_m(s)
 #define strupper(s) strupper_m(s)
 
-/* the addition of the DEVELOPER checks in safe_strcpy means we must
- * update a lot of code. To make this a little easier here are some
- * functions that provide the lengths with less pain */
-#define pstrcpy_base(dest, src, pstring_base) \
-    safe_strcpy(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1)
-
-#define push_pstring_base(dest, src, pstring_base) \
-    push_ascii(dest, src, sizeof(pstring)-PTR_DIFF(dest,pstring_base)-1, STR_TERMINATE)
-
 #endif

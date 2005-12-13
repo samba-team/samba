@@ -1110,4 +1110,3 @@ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 
 	return ret;
 }
-

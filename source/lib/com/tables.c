@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "lib/com/com.h"
 
 /* Specific implementation of one or more interfaces */
 struct com_class

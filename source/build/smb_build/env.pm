@@ -1,4 +1,3 @@
-#
 # Environment class
 #
 # Samba Build Environment

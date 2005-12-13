@@ -1,5 +1,8 @@
 - split up proto.h into headers with public or private prototypes. 
   Public prototypes can be marked with _PUBLIC_ in the source
+   - get rid of include/structs.h
+- install Samba-specific headers in $INCLUDEDIR/samba-4.0. talloc.h, tdb.h and 
+	ldb.h belong in $INCLUDEDIR
 - never install -rpath binaries / libraries, always relink before install
  - keep files without -rpath in bin/install
 - init functions may be called more then once as different libraries 

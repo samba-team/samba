@@ -365,3 +365,7 @@ struct smb2_find;
 struct smb2_ioctl;
 struct smb2_flush;
 struct smb2_handle;
+
+struct com_context;
+struct IUnknown;
+struct IUnknown_vtable;

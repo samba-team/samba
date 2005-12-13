@@ -1,11 +1,9 @@
-###########################################################
-### SMB Build System					###
-### - the input checking functions			###
-###							###
-###  Copyright (C) Stefan (metze) Metzmacher 2004	###
-###  Copyright (C) Jelmer Vernooij 2004	###
-###  Released under the GNU GPL				###
-###########################################################
+# Samba Build System
+# - the input checking functions
+#
+#  Copyright (C) Stefan (metze) Metzmacher 2004
+#  Copyright (C) Jelmer Vernooij 2004
+#  Released under the GNU GPL
 
 use strict;
 package smb_build::input;

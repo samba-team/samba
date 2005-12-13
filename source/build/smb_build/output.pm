@@ -1,11 +1,9 @@
-###########################################################
-### SMB Build System					###
-### - the output generating functions			###
-###							###
-###  Copyright (C) Stefan (metze) Metzmacher 2004	###
-###  Copyright (C) Jelmer Vernooij 2004	###
-###  Released under the GNU GPL				###
-###########################################################
+# SMB Build System
+# - the output generating functions
+#
+#  Copyright (C) Stefan (metze) Metzmacher 2004
+#  Copyright (C) Jelmer Vernooij 2004
+#  Released under the GNU GPL
 
 package output;
 use strict;

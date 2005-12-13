@@ -1,11 +1,9 @@
-###########################################################
-### SMB Build System					###
-### - create output for Makefile			###
-###							###
-###  Copyright (C) Stefan (metze) Metzmacher 2004	###
-###  Copyright (C) Jelmer Vernooij 2005			###
-###  Released under the GNU GPL				###
-###########################################################
+# Samba Build System
+# - create output for Makefile
+#
+#  Copyright (C) Stefan (metze) Metzmacher 2004
+#  Copyright (C) Jelmer Vernooij 2005
+#  Released under the GNU GPL
 
 package smb_build::makefile;
 use smb_build::env;

@@ -1,11 +1,9 @@
-###########################################################
-### SMB Build System					###
-### - the main program					###
-###							###
-###  Copyright (C) Stefan (metze) Metzmacher 2004	###
-###  Copyright (C) Jelmer Vernooij 2005
-###  Released under the GNU GPL				###
-###########################################################
+# Samba Build System					
+# - the main program					
+#							
+#  Copyright (C) Stefan (metze) Metzmacher 2004	
+#  Copyright (C) Jelmer Vernooij 2005
+#  Released under the GNU GPL				
 
 use smb_build::makefile;
 use smb_build::smb_build_h;

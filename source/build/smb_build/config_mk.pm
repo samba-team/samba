@@ -1,10 +1,10 @@
-###########################################################
-### SMB Build System					###
-### - config.mk parsing functions			###
-###							###
-###  Copyright (C) Stefan (metze) Metzmacher 2004	###
-###  Released under the GNU GPL				###
-###########################################################
+# Samba Build System
+# - config.mk parsing functions
+#
+#  Copyright (C) Stefan (metze) Metzmacher 2004
+#  Copyright (C) Jelmer Vernooij 2005
+#  Released under the GNU GPL
+#
 
 package smb_build::config_mk;
 use smb_build::input;
