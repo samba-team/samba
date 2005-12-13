@@ -99,13 +99,13 @@ SHELL=$self->{config}->{SHELL}
 
 PERL=$self->{config}->{PERL}
 
-CC=$self->{config}->{CC}
-CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CFLAGS} $self->{config}->{CPPFLAGS}
-PICFLAG=$self->{config}->{PICFLAG}
-HOSTCC=$self->{config}->{HOSTCC}
-
 CPP=$self->{config}->{CPP}
 CPPFLAGS=$self->{config}->{CPPFLAGS}
+
+CC=$self->{config}->{CC}
+CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $self->{config}->{CFLAGS} \$(CPPFLAGS)
+PICFLAG=$self->{config}->{PICFLAG}
+HOSTCC=$self->{config}->{HOSTCC}
 
 DEVEL_LDFLAGS=-Wl,-rpath,bin/
 LD=$self->{config}->{LD} 
@@ -226,23 +226,13 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
 }
 
-sub _prepare_obj_list($$$)
-{
-	my ($self,$var,$ctx) = @_;
-
-	my $tmplist = array2oneperline($ctx->{OBJ_LIST});
-	return if ($tmplist eq "");
-
-	$self->output("$var\_$ctx->{NAME}_OBJS =$tmplist\n");
-}
-
 sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
 	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_NAME}");
 
-	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_LIST");
@@ -251,11 +241,11 @@ sub SharedLibrary($$)
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) \$(LIBRARY_$ctx->{NAME}_OBJS) bin/.dummy
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
-		\$(LIBRARY_$ctx->{NAME}_LINK_FLAGS) \\
-		\$(LIBRARY_$ctx->{NAME}_LINK_LIST)
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
 __EOD__
 );
@@ -283,14 +273,14 @@ sub MergedObj($$)
 
 	return unless $ctx->{TARGET};
 
-	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 
-	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n");
+	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
 
 	$self->output("\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n");
-	$self->output("\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) -o $ctx->{TARGET}\n");
+	$self->output("\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) -o $ctx->{TARGET}\n");
 	$self->output("\n");
 }
 
@@ -300,11 +290,11 @@ sub ObjList($$)
 
 	return unless $ctx->{TARGET};
 
-	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->output("$ctx->{TARGET}: ");
-	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n");
+	$self->output("\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
 	$self->output("\t\@touch $ctx->{TARGET}\n");
 }
 
@@ -314,7 +304,7 @@ sub StaticLibrary($$)
 
 	push (@{$self->{static_libs}}, $ctx->{OUTPUT});
 
-	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
@@ -323,10 +313,10 @@ sub StaticLibrary($$)
 
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) \$(LIBRARY_$ctx->{NAME}_OBJS) bin/.dummy
+$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) bin/.dummy
 	\@echo Linking \$@
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
-		\$(LIBRARY_$ctx->{NAME}_LINK_LIST)
+		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
 library_$ctx->{NAME}: basics $ctx->{TARGET}
 
@@ -354,7 +344,7 @@ sub Binary($$)
 		push (@{$self->{bin_progs}}, $ctx->{TARGET});
 	}
 
-	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_LIST");
@@ -363,11 +353,11 @@ sub Binary($$)
 	$self->output(<< "__EOD__"
 #
 #
-bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST) \$(BINARY_$ctx->{NAME}_OBJS)
+bin/$ctx->{BINARY}: bin/.dummy \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 	\@\$(CC) \$(LDFLAGS) -o \$\@ \\
-		\$\(BINARY_$ctx->{NAME}_LINK_LIST) \\
-		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS)
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
 binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 
 __EOD__
@@ -412,7 +402,7 @@ sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->_prepare_obj_list($ctx->{TYPE}, $ctx);
+	$self->_prepare_list($ctx, "OBJ_LIST");
 }
 
 sub write($$)
@@ -432,7 +422,7 @@ sub write($$)
 
 	if ($self->{developer}) {
 		$self->output(<<__EOD__
-#-include \$(_ALL_OBJS_OBJS:.o=.d)
+#-include \$(_ALL_OBJS_OBJ_LIST:.o=.d)
 IDL_FILES = \$(wildcard librpc/idl/*.idl)
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,\$(IDL_FILES)) \\
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_\%_c.c,\$(IDL_FILES)) \\
