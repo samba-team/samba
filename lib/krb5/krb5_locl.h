@@ -170,6 +170,14 @@ struct _krb5_krb_auth_data;
 
 #define KRB5_BUFSIZ 1024
 
+#ifndef KRB5_DEFAULT_CCNAME
+#ifdef __APPLE__
+#define KRB5_DEFAULT_CCNAME "API:"
+#else
+#define KRB5_DEFAULT_CCNAME "FILE:/tmp/krb5cc_%{uid}"
+#endif
+#endif
+
 typedef enum {
     KRB5_PA_PAC_DONT_CARE = 0, 
     KRB5_PA_PAC_REQ_TRUE,
