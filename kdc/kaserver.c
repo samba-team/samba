@@ -404,8 +404,8 @@ do_authenticate (krb5_context context,
     time_t end_time;
     krb5_data request;
     int32_t max_seq_len;
-    hdb_entry *client_entry = NULL;
-    hdb_entry *server_entry = NULL;
+    hdb_entry_ex *client_entry = NULL;
+    hdb_entry_ex *server_entry = NULL;
     Key *ckey = NULL;
     Key *skey = NULL;
     krb5_storage *reply_sp;
@@ -451,8 +451,8 @@ do_authenticate (krb5_context context,
     }
 
     ret = _kdc_check_flags (context, config,
-			    client_entry, client_name,
-			    server_entry, server_name,
+			    &client_entry->entry, client_name,
+			    &server_entry->entry, server_name,
 			    TRUE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
@@ -514,17 +514,17 @@ do_authenticate (krb5_context context,
        time skew between client and server. Let's make sure it is postive */
     if(max_life < 1)
 	max_life = 1;
-    if (client_entry->max_life)
-	max_life = min(max_life, *client_entry->max_life);
-    if (server_entry->max_life)
-	max_life = min(max_life, *server_entry->max_life);
+    if (client_entry->entry.max_life)
+	max_life = min(max_life, *client_entry->entry.max_life);
+    if (server_entry->entry.max_life)
+	max_life = min(max_life, *server_entry->entry.max_life);
 
     life = krb_time_to_life(kdc_time, kdc_time + max_life);
 
     create_reply_ticket (context, 
 			 hdr, skey,
 			 name, instance, config->v4_realm,
-			 addr, life, server_entry->kvno,
+			 addr, life, server_entry->entry.kvno,
 			 max_seq_len,
 			 "krbtgt", config->v4_realm,
 			 chal + 1, "tgsT",
@@ -616,9 +616,9 @@ do_getticket (krb5_context context,
     char *instance = NULL;
     krb5_data times;
     int32_t max_seq_len;
-    hdb_entry *server_entry = NULL;
-    hdb_entry *client_entry = NULL;
-    hdb_entry *krbtgt_entry = NULL;
+    hdb_entry_ex *server_entry = NULL;
+    hdb_entry_ex *client_entry = NULL;
+    hdb_entry_ex *krbtgt_entry = NULL;
     Key *kkey = NULL;
     Key *skey = NULL;
     DES_cblock key;
@@ -647,7 +647,8 @@ do_getticket (krb5_context context,
     snprintf (server_name, sizeof(server_name),
 	      "%s.%s@%s", name, instance, config->v4_realm);
 
-    ret = _kdc_db_fetch4 (context, config, name, instance, config->v4_realm, &server_entry);
+    ret = _kdc_db_fetch4 (context, config, name, instance, 
+			  config->v4_realm, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
@@ -746,8 +747,8 @@ do_getticket (krb5_context context,
     }
 
     ret = _kdc_check_flags (context, config, 
-			    client_entry, client_name,
-			    server_entry, server_name,
+			    &client_entry->entry, client_name,
+			    &server_entry->entry, server_name,
 			    FALSE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
@@ -783,21 +784,21 @@ do_getticket (krb5_context context,
        time skew between client and server. Let's make sure it is postive */
     if(max_life < 1)
 	max_life = 1;
-    if (krbtgt_entry->max_life)
-	max_life = min(max_life, *krbtgt_entry->max_life);
-    if (server_entry->max_life)
-	max_life = min(max_life, *server_entry->max_life);
+    if (krbtgt_entry->entry.max_life)
+	max_life = min(max_life, *krbtgt_entry->entry.max_life);
+    if (server_entry->entry.max_life)
+	max_life = min(max_life, *server_entry->entry.max_life);
     /* if this is a cross realm request, the client_entry will likely
        be NULL */
-    if (client_entry && client_entry->max_life)
-	max_life = min(max_life, *client_entry->max_life);
+    if (client_entry && client_entry->entry.max_life)
+	max_life = min(max_life, *client_entry->entry.max_life);
 
     life = _krb5_krb_time_to_life(kdc_time, kdc_time + max_life);
 
     create_reply_ticket (context, 
 			 hdr, skey,
 			 ad.pname, ad.pinst, ad.prealm,
-			 addr, life, server_entry->kvno,
+			 addr, life, server_entry->entry.kvno,
 			 max_seq_len,
 			 name, instance,
 			 0, "gtkt",
