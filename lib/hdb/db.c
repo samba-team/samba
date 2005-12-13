@@ -106,6 +106,7 @@ DB_seq(krb5_context context, HDB *db,
     key_data.length = key.size;
     data.data = value.data;
     data.length = value.size;
+    memset(entry, 0, sizeof(*entry));
     if (hdb_value2entry(context, &data, &entry->entry))
 	return DB_seq(context, db, flags, entry, R_NEXT);
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {

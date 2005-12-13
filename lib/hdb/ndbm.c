@@ -99,6 +99,7 @@ NDBM_seq(krb5_context context, HDB *db,
     db->hdb_unlock(context, db);
     data.data = value.dptr;
     data.length = value.dsize;
+    memset(entry, 0, sizeof(*entry));
     if(hdb_value2entry(context, &data, &entry->entry))
 	return NDBM_seq(context, db, flags, entry, 0);
     if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
