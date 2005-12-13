@@ -2042,3 +2042,50 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 
 	return fsp;
 }
+
+/****************************************************************************
+ Receive notification that one of our open files has been renamed by another
+ smbd process.
+****************************************************************************/
+
+void msg_file_was_renamed(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	files_struct *fsp;
+	struct file_renamed_message *frm = (struct file_renamed_message *)buf;
+	const char *sharepath;
+	const char *newname;
+	size_t sp_len;
+
+	if (buf == NULL || len < sizeof(*frm)) {
+                DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n", (int)len));
+                return;
+        }
+
+	sharepath = &frm->names[0];
+	newname = sharepath + strlen(sharepath) + 1;
+	sp_len = strlen(sharepath);
+
+	DEBUG(10,("msg_file_was_renamed: Got rename message for sharepath %s, new name %s, "
+		"dev %x, inode  %.0f\n",
+		sharepath, newname, (unsigned int)frm->dev, (double)frm->inode ));
+
+	for(fsp = file_find_di_first(frm->dev, frm->inode); fsp; fsp = file_find_di_next(fsp)) {
+		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
+	                DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
+				fsp->fnum, fsp->fsp_name, newname ));
+			string_set(&fsp->fsp_name, newname);
+		} else {
+			/* TODO. JRA. */
+			/* Now we have the complete path we can work out if this is
+			   actually within this share and adjust newname accordingly. */
+	                DEBUG(10,("msg_file_was_renamed: share mismatch (sharepath %s "
+				"not sharepath %s) "
+				"fnum %d from %s -> %s\n",
+				fsp->conn->connectpath,
+				sharepath,
+				fsp->fnum,
+				fsp->fsp_name,
+				newname ));
+		}
+        }
+}
