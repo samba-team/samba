@@ -166,11 +166,11 @@ include/config.h:
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-include/proto.h: $(PROTO_PROTO_OBJS:.o=.c)
+include/proto.h: $(PROTO_PROTO_OBJ_LIST:.o=.c)
 	@-rm -f include/includes.h.gch
 	@$(SHELL) script/mkproto.sh "$(PERL)" \
 	  -h _PROTO_H_ include/proto.h \
-	  $(PROTO_PROTO_OBJS)
+	  $(PROTO_PROTO_OBJ_LIST)
 	@touch include/proto.h
 
 proto: include/proto.h

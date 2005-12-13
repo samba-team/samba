@@ -36,7 +36,7 @@ sub generate_objlist($)
 	my $subsys = shift;
 
 	$subsys->{TARGET} = "bin/.$subsys->{TYPE}_$subsys->{NAME}";
-	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
+	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJ_LIST)";
 }
 
 sub generate_shared_library($)
@@ -45,7 +45,7 @@ sub generate_shared_library($)
 	my $link_name;
 
 	@{$lib->{DEPEND_LIST}} = ();
-	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 
 	$link_name = $lib->{NAME};
 	$link_name =~ s/^LIB//;
@@ -73,7 +73,7 @@ sub generate_static_library($)
 	$link_name =~ s/^LIB//;
 
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
-	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJ_LIST)");
 	@{$lib->{LINK_FLAGS}} = ();
 
 	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
@@ -85,7 +85,7 @@ sub generate_binary($)
 	my $bin = shift;
 
 	@{$bin->{DEPEND_LIST}} = ();
-	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJS)");
+	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
 	@{$bin->{LINK_FLAGS}} = ();
 
 	$bin->{TARGET} = $bin->{OUTPUT} = "bin/$bin->{NAME}";
