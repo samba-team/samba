@@ -1,5 +1,16 @@
 2005-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kaserver.c: Finish up transition from hdb_entry to
+	hdb_entry_ex.
+
+	* kdc/kerberos4.c: Finish up transition from hdb_entry to
+	hdb_entry_ex.
+
+	* kdc/524.c: Finish up transition from hdb_entry to hdb_entry_ex.
+
+	* kdc/kerberos5.c: Finish up transition from hdb_entry with
+	hdb_entry_ex.
+
 	* lib/krb5/cache.c (krb5_cc_set_default_name): use
 	KRB5_DEFAULT_CCNAME.
 
