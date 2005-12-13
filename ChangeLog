@@ -1,5 +1,11 @@
 2005-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/cache.c (krb5_cc_set_default_name): use
+	KRB5_DEFAULT_CCNAME.
+
+	* lib/krb5/krb5_locl.h: Add KRB5_DEFAULT_CCNAME, pointer to
+	default credential cache.
+
 	* lib/hdb/ndbm.c: memset hdb_entry_ex before use
 
 	* lib/hdb/db3.c: memset hdb_entry_ex before use
