@@ -4082,13 +4082,15 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 }
 
 /****************************************************************************
- Ensure open files have their names updates.
+ Ensure open files have their names updated. Updated to notify other smbd's
+ asynchronously.
 ****************************************************************************/
 
-static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T inode, char *newname)
+static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T inode, const char *newname)
 {
 	files_struct *fsp;
 	BOOL did_rename = False;
+	struct share_mode_lock *lck = NULL;
 
 	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
 		DEBUG(10,("rename_open_files: renaming file fnum %d (dev = %x, inode = %.0f) from %s -> %s\n",
@@ -4098,9 +4100,24 @@ static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T 
 		did_rename = True;
 	}
 
-	if (!did_rename)
+	if (!did_rename) {
 		DEBUG(10,("rename_open_files: no open files on dev %x, inode %.0f for %s\n",
 			(unsigned int)dev, (double)inode, newname ));
+	}
+
+	/* Notify all remote smbd's. */
+	lck = get_share_mode_lock(NULL, dev, inode, NULL, NULL);
+	if (lck == NULL) {
+		DEBUG(5,("rename_open_files: Could not get share mode lock for file %s\n",
+			fsp->fsp_name));
+		return;
+	}
+
+	/* Change the stored filename. */
+	rename_share_filename(lck, conn->connectpath, newname);
+
+	/* Send messages to all smbd's (not ourself) that the name has changed. */
+	talloc_free(lck);
 }
 
 /****************************************************************************
@@ -4238,10 +4255,11 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		return NT_STATUS_OK;	
 	}
 
-	if (errno == ENOTDIR || errno == EISDIR)
+	if (errno == ENOTDIR || errno == EISDIR) {
 		error = NT_STATUS_OBJECT_NAME_COLLISION;
-	else
+	} else {
 		error = map_nt_error_from_unix(errno);
+	}
 		
 	DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
 		nt_errstr(error), fsp->fsp_name,newname));

@@ -227,20 +227,43 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 */
 
 	if (normal_close && delete_file) {
+		SMB_STRUCT_STAT sbuf;
+
 		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 			fsp->fsp_name));
-		if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
-			/*
-			 * This call can potentially fail as another smbd may have
-			 * had the file open with delete on close set and deleted
-			 * it when its last reference to this file went away. Hence
-			 * we log this but not at debug level zero.
-			 */
 
-		DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
-with error %s\n", fsp->fsp_name, strerror(errno) ));
+		/* We can only delete the file if the name we have
+		   is still valid and hasn't been renamed. */
+
+		if(SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) != 0) {
+			DEBUG(5,("close_file: file %s. Delete on close was set "
+				"and stat failed with error %s\n",
+				fsp->fsp_name, strerror(errno) ));
+		} else {
+			if(sbuf.st_dev != fsp->dev || sbuf.st_ino != fsp->inode) {
+				DEBUG(5,("close_file: file %s. Delete on close was set and "
+					"dev and/or inode does not match\n",
+					fsp->fsp_name ));
+				DEBUG(5,("close_file: file %s. stored dev = %x, inode = %.0f "
+					"stat dev = %x, inode = %.0f\n",
+					fsp->fsp_name,
+					(unsigned int)fsp->dev, (double)fsp->inode,
+					(unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
+
+			} else if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
+				/*
+				 * This call can potentially fail as another smbd may have
+				 * had the file open with delete on close set and deleted
+				 * it when its last reference to this file went away. Hence
+				 * we log this but not at debug level zero.
+				 */
+
+				DEBUG(5,("close_file: file %s. Delete on close was set "
+					"and unlink failed with error %s\n",
+					fsp->fsp_name, strerror(errno) ));
+			}
+			process_pending_change_notify_queue((time_t)0);
 		}
-		process_pending_change_notify_queue((time_t)0);
 	}
 
 	talloc_free(lck);

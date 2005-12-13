@@ -642,14 +642,24 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 
 /*******************************************************************
  Sets the service name and filename for rename.
- At this point we should emit "rename" smbd messages to all
- interested process id's.
+ At this point we emit "file renamed" messages to all
+ process id's that have this file open.
+ Based on an initial code idea from SATOH Fumiyasu <fumiya@samba.gr.jp>
 ********************************************************************/
 
 BOOL rename_share_filename(struct share_mode_lock *lck,
 			const char *servicepath,
 			const char *newname)
 {
+	struct file_renamed_message *frm = NULL;
+	size_t sp_len;
+	size_t fn_len;
+	size_t msg_len;
+	int i;
+
+	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
+		servicepath, newname));
+
 	/*
 	 * rename_internal_fsp() and rename_internals() add './' to
 	 * head of newname if newname does not contain a '/'.
@@ -658,13 +668,53 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 		newname += 2;
 	}
 
-	lck->filename = talloc_strdup(lck, newname);
 	lck->servicepath = talloc_strdup(lck, servicepath);
+	lck->filename = talloc_strdup(lck, newname);
 	if (lck->filename == NULL || lck->servicepath == NULL) {
 		DEBUG(0, ("rename_share_filename: talloc failed\n"));
 		return False;
 	}
 	lck->modified = True;
+
+	sp_len = strlen(lck->servicepath);
+	fn_len = strlen(lck->filename);
+
+	msg_len = sizeof(*frm) + sp_len + 1 + fn_len + 1;
+
+	/* Set up the name changed message. */
+	frm = TALLOC(lck, msg_len);
+	if (!frm) {
+		return False;
+	}
+	frm->dev = lck->dev;
+	frm->inode = lck->ino;
+
+	DEBUG(10,("rename_share_filename: msg_len = %d\n", msg_len ));
+
+	safe_strcpy(&frm->names[0], lck->servicepath, sp_len);
+	safe_strcpy(&frm->names[sp_len + 1], lck->filename, fn_len);
+
+	/* Send the messages. */
+	for (i=0; i<lck->num_share_modes; i++) {
+		struct share_mode_entry *se = &lck->share_modes[i];
+		if (!is_valid_share_mode_entry(se)) {
+			continue;
+		}
+		/* But not to ourselves... */
+		if (procid_is_me(&se->pid)) {
+			continue;
+		}
+
+		DEBUG(10,("rename_share_filename: sending rename message to pid %u "
+			"dev %x, inode  %.0f sharepath %s newname %s\n",
+			(unsigned int)procid_to_pid(&se->pid),
+			(unsigned int)frm->dev, (double)frm->inode,
+			lck->servicepath, lck->filename ));
+
+		message_send_pid(se->pid, MSG_SMB_FILE_RENAME,
+				frm, msg_len, True);
+	}
+
 	return True;
 }
 

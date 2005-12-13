@@ -330,6 +330,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
         message_register(MSG_SMB_SAM_SYNC, msg_sam_sync);
         message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
         message_register(MSG_SHUTDOWN, msg_exit_server);
+        message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
