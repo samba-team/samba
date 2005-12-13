@@ -6,6 +6,8 @@ Changes in release 0.8
 
  * Libkafs defaults to use 2b tokens
 
+ * Default to use the API cache on Mac OS X
+
  * Bug fixes
 
 Changes in release 0.7.1
