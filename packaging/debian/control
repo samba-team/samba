@@ -3,38 +3,92 @@ Section: net
 Priority: optional
 Maintainer: Jelmer Vernooij <jelmer@samba.org>
 Standards-Version: 3.6.2
-Build-Depends: libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl, perl, docbook-xsl, xsltproc
+Build-Depends: libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl, perl, docbook-xsl, xsltproc, po-debconf
 
 Package: samba4-common
 Architecture: all
-Description: Common samba files
- Files common for all programs in Samba
+Description: Samba 4 common files used by both the server and the client
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains the common files that are used by both the server
+ (provided in the samba4-server package) and the client (provided in the
+ samba4-client package).
 
 Package: samba4-client
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Client utilities from Samba4
- Client utilities for NetBIOS, SMB and RPC.
+Description: client utilities from Samba 4
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains some client components of the Samba suite. In
+ particular it includes the command line utilities smbclient, net,
+ and some ACL tools.
 
 Package: samba4-testsuite
 Architecture: any
 Depends: ${shlibs:Depends}, samba4-common
-Description: Testsuite from Samba4
+Description: test suite from Samba 4
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
  This package contains programs for testing the reliability and speed 
  of SMB servers, Samba in particular.
  
 Package: samba4-server
 Architecture: any
 Recommends: samba4-swat
-Depends: ${shlibs:Depends}, samba4-common
-Description: SMB Server
- Contains smbd, the Samba server. 
+Depends: ${shlibs:Depends}, samba4-common, debconf
+Description: LanManager-like file and printer server for Unix (version 4)
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains smbd, the Samba file, print and domain server.
 
 Package: samba4-gtk-frontends
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Graphical Samba client utilities
- Contains GTK+ programs for maintaining:
+Description: graphical Samba client utilities
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains GTK+ programs for maintaining:
  .
    * Remote SAM databases
    * Local and remote registries
@@ -43,29 +97,89 @@ Description: Graphical Samba client utilities
 Package: winregistry-tools
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Tools for viewing and manipulating 
- FIXME
+Description: tools for viewing and manipulating the Windows registry 
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains tools for viewing and manipulating the binary
+ "registry" found on Windows machines, both locally and remote.
 
 Package: libparse-pidl-perl
 Architecture: any
 Depends: ${perl:Depends}
 Description: IDL compiler written in Perl
- FIXME
- 
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains the IDL (Interface Description Language) compiler pidl,
+ which takes in IDL files and can output C code for various uses. It is
+ primarily of interest to developers.
+
 Package: samba4-dev
 Architecture: any
 Depends: libparse-pidl-perl, libc6-dev, pkg-config (>= 0.14.0)
-Description: Tools for extending Samba
- Contains Samba includes and tools
+Description: tools for extending Samba
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains include files and libraries for interfacing to
+ and extending Samba. In particular, it contains development files for
+ the talloc and ldb libraries.
 
 Package: ldb-tools
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Tools for maintaining LDB database files
- FIXME
+Description: tools for maintaining LDB database files
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains tools for maintaining, creating and editing
+ LDB database files, which are central to Samba 4's operation. They
+ are primarily useful for debugging and developing Samba or other
+ applications using LDB.
 
 Package: samba4-swat
 Architecture: all
-Description: Swat data files
- Data files for SWAT.
+Description: data files for SWAT
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients, as well as
+ run as a domain controller for Active Directory.
+ .
+ These packages contain snapshot versions of Samba 4, the next-generation
+ version of Samba. These should be considered _experimental_, and should
+ not be used in production. In particular, no guarantees are made with
+ regard to upgrades between versions.
+ .
+ This package contains the data files for SWAT, the Samba Web Administration
+ Tool. These are used by the embedded Samba 4 web server to provide web-based
+ administration of shares and other settings.
 
