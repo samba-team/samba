@@ -2419,6 +2419,7 @@ BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 				pacl ));
 			return False;
 		}
+		pacl++; /* Go past any ',' */
 
 		se_map_generic(&s_access, &file_generic_mapping);
 		init_sec_access(&sa, g_access | s_access );
