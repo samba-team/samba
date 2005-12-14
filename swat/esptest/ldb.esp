@@ -9,6 +9,8 @@ var lp = loadparm_init();
 var dbfile = lp.get("sam database");
 var attrs = new Array("name", "dnsDomain", "objectSid", "dn");
 var ldb = ldb_init();
+ldb.session_info = session.authinfo.session_info;
+
 var ok = ldb.connect(dbfile);
 assert(ok);
 
