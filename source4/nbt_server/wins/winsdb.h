@@ -54,6 +54,19 @@ struct wins_server {
 	/* wins server database handle */
 	struct ldb_context *wins_db;
 
-	uint32_t min_ttl;
-	uint32_t max_ttl;
+	/* some configuration */
+	struct {
+		/* 
+		 * the interval (in secs) till an active record will be marked as RELEASED
+		 */
+		uint32_t min_renew_interval;
+		uint32_t max_renew_interval;
+
+		/* 
+		 * the interval (in secs) a record remains in RELEASED state,
+		 * before it will be marked as TOMBSTONE
+		 * (also known as extinction interval)
+		 */
+		uint32_t tombstone_interval;
+	} config;
 };
