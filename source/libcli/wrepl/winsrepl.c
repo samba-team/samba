@@ -505,7 +505,7 @@ NTSTATUS wrepl_request_recv(struct wrepl_request *req,
 			    struct wrepl_packet **packet)
 {
 	NTSTATUS status = wrepl_request_wait(req);
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && packet) {
 		*packet = talloc_steal(mem_ctx, req->packet);
 	}
 	talloc_free(req);
