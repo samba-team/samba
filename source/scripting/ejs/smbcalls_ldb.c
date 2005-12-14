@@ -350,10 +350,16 @@ static int ejs_ldbModify(MprVarHandle eid, int argc, struct MprVar **argv)
   usage:
    ok = ldb.connect(dbfile);
    ok = ldb.connect(dbfile, "modules:modlist");
+
+  ldb.credentials or ldb.session_info may be setup first
+
 */
 static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 {
 	struct ldb_context *ldb;
+	struct auth_session_info *session_info;
+	struct cli_credentials *creds;
+
 	const char *dbfile;
 
 	if (argc < 1) {
@@ -361,9 +367,15 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
+	session_info = mprGetThisPtr(eid, "session_info");
+
+	creds = mprGetThisPtr(eid, "credentials");
+
 	dbfile = argv[0];
 
-	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, (const char **)(argv+1));
+	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 
+			       session_info, creds,
+			       0, (const char **)(argv+1));
 	if (ldb == NULL) {
 		ejsSetErrorMsg(eid, "ldb.connect failed to open %s", dbfile);
 	}

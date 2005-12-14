@@ -40,7 +40,8 @@
  */
 static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, lp_spoolss_url(), 0, NULL);
+	return ldb_wrap_connect(mem_ctx, lp_spoolss_url(), system_session(mem_ctx), 
+				NULL, 0, NULL);
 }
 
 static int sptr_db_search(struct ldb_context *ldb,

@@ -224,7 +224,7 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 		msg = ldapres[i];
 		search = &msg->r.SearchResultEntry;
 
-		(*res)->msgs[i] = talloc(*res, struct ldb_message);
+		(*res)->msgs[i] = talloc((*res)->msgs, struct ldb_message);
 		if (!(*res)->msgs[i]) {
 			goto failed;
 		}
@@ -504,10 +504,8 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	creds = talloc_get_type(ldb_get_opaque(ldb, "credentials"), struct cli_credentials);
 	if (creds == NULL) {
 		struct auth_session_info *session_info = talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"), struct auth_session_info);
-		if (session_info && session_info->credentials) {
+		if (session_info) {
 			creds = session_info->credentials;
-		} else {
-			creds = cmdline_credentials;
 		}
 	}
 

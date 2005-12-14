@@ -208,6 +208,8 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	/* Local secrets are stored in secrets.ldb */
 	ldb = secrets_db_connect(mem_ctx);
 	if (!ldb) {
+		/* set anonymous as the fallback, if the machine account won't work */
+		cli_credentials_set_anonymous(cred);
 		DEBUG(1, ("Could not open secrets.ldb\n"));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -220,11 +222,15 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	if (ldb_ret == 0) {
 		DEBUG(1, ("Could not find entry to match filter: %s\n",
 			  filter));
+		/* set anonymous as the fallback, if the machine account won't work */
+		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else if (ldb_ret != 1) {
 		DEBUG(1, ("Found more than one (%d) entry to match filter: %s\n",
 			  ldb_ret, filter));
+		/* set anonymous as the fallback, if the machine account won't work */
+		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -237,6 +243,8 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	if (!machine_account) {
 		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
 			  cli_credentials_get_domain(cred)));
+		/* set anonymous as the fallback, if the machine account won't work */
+		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -262,6 +270,10 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		
 			DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
 				  cli_credentials_get_domain(cred)));
+
+			/* set anonymous as the fallback, if the machine account won't work */
+			cli_credentials_set_anonymous(cred);
+
 			talloc_free(mem_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -312,7 +324,12 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
  */
 NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 {
-	char *filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
+	char *filter;
+	/* Bleh, nasty recursion issues: We are setting a machine
+	 * account here, so we don't want the 'pending' flag around
+	 * any more */
+	cred->machine_account_pending = False;
+	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
 	return cli_credentials_set_secrets(cred, SECRETS_PRIMARY_DOMAIN_DN,
 					   filter);
@@ -326,7 +343,12 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
  */
 NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 {
-	char *filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
+	char *filter;
+	/* Bleh, nasty recursion issues: We are setting a machine
+	 * account here, so we don't want the 'pending' flag around
+	 * any more */
+	cred->machine_account_pending = False;
+	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
 	return cli_credentials_set_secrets(cred, SECRETS_PRINCIPALS_DN,
@@ -342,10 +364,15 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred)
 NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
 					      const char *serviceprincipal)
 {
-	char *filter = talloc_asprintf(cred, SECRETS_PRINCIPAL_SEARCH,
-				       cli_credentials_get_realm(cred),
-				       cli_credentials_get_domain(cred),
-				       serviceprincipal);
+	char *filter;
+	/* Bleh, nasty recursion issues: We are setting a machine
+	 * account here, so we don't want the 'pending' flag around
+	 * any more */
+	cred->machine_account_pending = False;
+	filter = talloc_asprintf(cred, SECRETS_PRINCIPAL_SEARCH,
+				 cli_credentials_get_realm(cred),
+				 cli_credentials_get_domain(cred),
+				 serviceprincipal);
 	return cli_credentials_set_secrets(cred, SECRETS_PRINCIPALS_DN,
 					   filter);
 }

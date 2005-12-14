@@ -171,6 +171,10 @@ BOOL cli_credentials_set_principal_callback(struct cli_credentials *cred,
 
 BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
 	if (cred->principal_obtained >= CRED_SPECIFIED) {
 		return True;
 	}

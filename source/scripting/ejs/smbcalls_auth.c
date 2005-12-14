@@ -26,12 +26,14 @@
 #include "auth/auth.h"
 #include "scripting/ejs/smbcalls.h"
 
-static int ejs_doauth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
+static int ejs_doauth(MprVarHandle eid,
+		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
 		      const char *password, const char *domain, const char *remote_host,
 		      const char *authtype)
 {
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_session_info *session_info = NULL;
 	struct auth_context *auth_context;
 	const char *auth_types[] = { authtype, NULL };
 	NTSTATUS nt_status;
@@ -76,10 +78,20 @@ static int ejs_doauth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *user
 
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprString("Login Failed"));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		goto done;
 	}
+
+	nt_status = auth_generate_session_info(tmp_ctx, server_info, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		goto done;
+	}
+
+	talloc_steal(mprMemCtx(), session_info);
+	mprSetThisPtr(eid, "session_info", session_info);
 
 	mprSetPropertyValue(auth, "result", mprCreateBoolVar(server_info->authenticated));
 	mprSetPropertyValue(auth, "username", mprString(server_info->account_name));
@@ -138,9 +150,9 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	auth = mprObject("auth");
 
 	if (domain && (strcmp("System User", domain) == 0)) {
-		ejs_doauth(tmp_ctx, &auth, username, password, domain, remote_host, "unix");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, remote_host, "unix");
 	} else {
-		ejs_doauth(tmp_ctx, &auth, username, password, domain, remote_host, "sam");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, remote_host, "sam");
 	}
 
 	mpr_Return(eid, auth);
