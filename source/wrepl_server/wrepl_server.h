@@ -169,8 +169,17 @@ struct wreplsrv_partner {
 		/* change count till push notification */
 		uint32_t change_count;
 
+		/* we should use WREPL_REPL_INFORM* messages to this partner */
+		BOOL use_inform;
+
+		/* the error count till the last success */
+		uint32_t error_count;
+
 		/* the status of the last push cycle */
 		NTSTATUS last_status;
+
+		/* the timestamp of the last run */
+		struct timeval last_run;
 
 		/* the outgoing connection to the partner */
 		struct wreplsrv_out_connection *wreplconn;
@@ -180,9 +189,6 @@ struct wreplsrv_partner {
 
 		/* the pull cycle io params */
 		struct wreplsrv_push_notify_io *notify_io;
-
-		/* the current timed_event to the next push notify */
-		struct timed_event *te;
 	} push;
 };
 
@@ -252,7 +258,12 @@ struct wreplsrv_service {
 	/* some stuff for periodic processing */
 	struct {
 		/*
-		 * the timestamp for the current or next event,
+		 * the timestamp for the current event,
+		 */
+		struct timeval current_event;
+
+		/*
+		 * the timestamp for the next event,
 		 * this is the timstamp passed to event_add_timed()
 		 */
 		struct timeval next_event;

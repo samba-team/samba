@@ -109,6 +109,7 @@ static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 		partner->our_address		= ldb_msg_find_string(res->msgs[i], "ourAddress", NULL);
 		partner->push.change_count	= ldb_msg_find_uint(res->msgs[i], "pushChangeCount",
 								    WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
+		partner->push.use_inform	= ldb_msg_find_uint(res->msgs[i], "pushUseInform", False);
 
 		talloc_steal(partner, partner->address);
 		talloc_steal(partner, partner->name);
