@@ -29,7 +29,7 @@ extern struct generic_mapping file_generic_mapping;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define INVALID_SHARENAME_CHARS "<>*?|"
+#define INVALID_SHARENAME_CHARS "<>*?|/\\+=;:\","
 
 /********************************************************************
  Check a string for any occurrences of a specified list of invalid 
