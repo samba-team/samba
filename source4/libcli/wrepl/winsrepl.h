@@ -47,6 +47,9 @@ struct wrepl_socket {
 
 	/* remember is the socket is dead */
 	BOOL dead;
+
+	/* remember if we need to free the wrepl_socket at the end of wrepl_socket_dead() */
+	BOOL free_skipped;
 };
 
 struct wrepl_send_ctrl {
