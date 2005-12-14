@@ -605,8 +605,8 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
 	lck->delete_on_close = False;
-	lck->modified = False;
 	lck->fresh = False;
+	lck->modified = False;
 
 	if (tdb_chainlock(tdb, key) != 0) {
 		DEBUG(3, ("Could not lock share entry\n"));
@@ -667,6 +667,10 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	size_t fn_len;
 	size_t msg_len;
 	int i;
+
+	if (!lck) {
+		return False;
+	}
 
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
 		servicepath, newname));
