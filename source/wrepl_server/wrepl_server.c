@@ -55,6 +55,9 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 	/* the default verify interval is 24 days */
 	service->config.verify_interval   = lp_parm_int(-1,"wreplsrv","verify_interval", 24*24*60*60);
 
+	/* the maximun interval to the next periodic processing event */
+	service->config.periodic_interval = lp_parm_int(-1,"wreplsrv","periodic_interval", 60);
+
 	return NT_STATUS_OK;
 }
 
@@ -333,9 +336,6 @@ static NTSTATUS wreplsrv_setup_partners(struct wreplsrv_service *service)
 	status = wreplsrv_load_table(service);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = wreplsrv_setup_out_connections(service);
-	NT_STATUS_NOT_OK_RETURN(status);
-
 	return NT_STATUS_OK;
 }
 
@@ -380,6 +380,12 @@ static void wreplsrv_task_init(struct task_server *task)
 	status = wreplsrv_setup_sockets(service);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_sockets() failed");
+		return;
+	}
+
+	status = wreplsrv_setup_periodic(service);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "wreplsrv_task_init: wreplsrv_setup_periodic() failed");
 		return;
 	}
 

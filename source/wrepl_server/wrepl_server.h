@@ -232,6 +232,12 @@ struct wreplsrv_service {
 		 * with the owning wins server
 		 */
 		uint32_t verify_interval;
+
+		/* 
+		 * the interval (in secs) to the next periodic processing
+		 * (this is the maximun interval)
+		 */
+		uint32_t periodic_interval;
 	} config;
 
 	/* all incoming connections */
@@ -242,4 +248,16 @@ struct wreplsrv_service {
 
 	/* this is a list of each wins_owner we know about in our database */
 	struct wreplsrv_owner *table;
+
+	/* some stuff for periodic processing */
+	struct {
+		/*
+		 * the timestamp for the current or next event,
+		 * this is the timstamp passed to event_add_timed()
+		 */
+		struct timeval next_event;
+
+		/* here we have a reference to the timed event the schedules the periodic stuff */
+		struct timed_event *te;
+	} periodic;
 };
