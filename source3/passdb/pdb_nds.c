@@ -824,6 +824,15 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 					case LDAP_INVALID_CREDENTIALS:
 						nt_status = NT_STATUS_WRONG_PASSWORD;
 						break;
+					case LDAP_UNWILLING_TO_PERFORM:
+						/* eDir returns this if the account was disabled. */
+						/* The problem is we don't know if the given
+						   password was correct for this account or
+						   not. We have to return more info than we
+						   should and tell the client NT_STATUS_ACCOUNT_DISABLED
+						   so they don't think the password was bad. JRA. */
+						nt_status = NT_STATUS_ACCOUNT_DISABLED;
+						break;
 					default:
 						break;
 				}
