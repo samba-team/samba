@@ -421,7 +421,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	}
 
 	if (rec->state == WREPL_STATE_RELEASED) {
-		rec->expire_time = winssrv->config.tombstone_interval;
+		rec->expire_time = time(NULL) + winssrv->config.tombstone_interval;
 	}
 
 	ret = winsdb_modify(winssrv->wins_db, rec, modify_flags);
