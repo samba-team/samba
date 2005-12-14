@@ -82,7 +82,6 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 /*
  * Find an lsa pipe handle associated with a cli struct.
  */
-
 static struct rpc_pipe_client *find_lsa_pipe_hnd(struct cli_state *ipc_cli)
 {
 	struct rpc_pipe_client *pipe_hnd;
@@ -855,37 +854,6 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
-                if (pol) {
-                        pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli,
-                                                            PI_LSARPC,
-                                                            &nt_status);
-                        if (!pipe_hnd) {
-                                DEBUG(1, ("cli_nt_session_open fail!\n"));
-                                errno = ENOTSUP;
-                                cli_shutdown(ipc_cli);
-                                return NULL;
-                        }
-
-                        /*
-                         * Some systems don't support
-                         * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
-                         * so we might as well do it too.
-                         */
-        
-                        nt_status = rpccli_lsa_open_policy(
-                                pipe_hnd,
-                                ipc_cli->mem_ctx,
-                                True, 
-                                GENERIC_EXECUTE_ACCESS,
-                                pol);
-        
-                        if (!NT_STATUS_IS_OK(nt_status)) {
-                                errno = smbc_errno(context, ipc_cli);
-                                cli_shutdown(ipc_cli);
-                                return NULL;
-                        }
-                }
-
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
                 if (!ipc_srv) {
                         errno = ENOMEM;
@@ -897,6 +865,38 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                 ipc_srv->cli = *ipc_cli;
 
                 free(ipc_cli);
+
+                if (pol) {
+                        pipe_hnd = cli_rpc_pipe_open_noauth(&ipc_srv->cli,
+                                                            PI_LSARPC,
+                                                            &nt_status);
+                        if (!pipe_hnd) {
+                                DEBUG(1, ("cli_nt_session_open fail!\n"));
+                                errno = ENOTSUP;
+                                cli_shutdown(&ipc_srv->cli);
+                                free(ipc_srv);
+                                return NULL;
+                        }
+
+                        /*
+                         * Some systems don't support
+                         * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
+                         * so we might as well do it too.
+                         */
+        
+                        nt_status = rpccli_lsa_open_policy(
+                                pipe_hnd,
+                                ipc_srv->cli.mem_ctx,
+                                True, 
+                                GENERIC_EXECUTE_ACCESS,
+                                pol);
+        
+                        if (!NT_STATUS_IS_OK(nt_status)) {
+                                errno = smbc_errno(context, &ipc_srv->cli);
+                                cli_shutdown(&ipc_srv->cli);
+                                return NULL;
+                        }
+                }
 
                 /* now add it to the cache (internal or external) */
 
@@ -2191,12 +2191,23 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 	SMBCFILE *dir = (SMBCFILE *)state;
 	int dirent_type;
 
-	/* We need to process the type a little ... */
-
+	/*
+         * We need to process the type a little ...
+         *
+         * Disk share     = 0x00000000
+         * Print share    = 0x00000001
+         * Comms share    = 0x00000002 (obsolete?)
+         * IPC$ share     = 0x00000003 
+         *
+         * administrative shares:
+         * ADMIN$, IPC$, C$, D$, E$ ...  are type |= 0x80000000
+         */
+        
 	if (dir->dir_type == SMBC_FILE_SHARE) {
 		
 		switch (type) {
-		case 0: /* Directory tree */
+                case 0 | 0x80000000:
+		case 0:
 			dirent_type = SMBC_FILE_SHARE;
 			break;
 
@@ -2208,6 +2219,7 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 			dirent_type = SMBC_COMMS_SHARE;
 			break;
 
+                case 3 | 0x80000000:
 		case 3:
 			dirent_type = SMBC_IPC_SHARE;
 			break;
@@ -2217,7 +2229,9 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 			break;
 		}
 	}
-	else dirent_type = dir->dir_type;
+	else {
+                dirent_type = dir->dir_type;
+        }
 
 	if (add_dirent(dir, name, comment, dirent_type) < 0) {
 
@@ -2252,15 +2266,16 @@ net_share_enum_rpc(struct cli_state *cli,
 {
         int i;
 	WERROR result;
-        NTSTATUS nt_status;
 	ENUM_HND enum_hnd;
         uint32 info_level = 1;
 	uint32 preferred_len = 0xffffffff;
+        uint32 type;
 	SRV_SHARE_INFO_CTR ctr;
 	fstring name = "";
         fstring comment = "";
         void *mem_ctx;
 	struct rpc_pipe_client *pipe_hnd;
+        NTSTATUS nt_status;
 
         /* Open the server service pipe */
         pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &nt_status);
@@ -2273,6 +2288,7 @@ net_share_enum_rpc(struct cli_state *cli,
         mem_ctx = talloc_init("libsmbclient: net_share_enum_rpc");
         if (mem_ctx == NULL) {
                 DEBUG(0, ("out of memory for net_share_enum_rpc!\n"));
+                cli_rpc_pipe_close(pipe_hnd);
                 return -1; 
         }
 
@@ -2302,14 +2318,17 @@ net_share_enum_rpc(struct cli_state *cli,
                 rpcstr_pull_unistr2_fstring(
                         comment, &ctr.share.info1[i].info_1_str.uni_remark);
 
+                /* Get the type value */
+                type = ctr.share.info1[i].info_1.type;
+
                 /* Add this share to the list */
-                (*fn)(name, SMBC_FILE_SHARE, comment, state);
+                (*fn)(name, type, comment, state);
         }
 
-        /* We're done with the pipe */
-        cli_rpc_pipe_close(pipe_hnd);
-        
 done:
+        /* Close the server service pipe */
+        cli_rpc_pipe_close(pipe_hnd);
+
         /* Free all memory which was allocated for this request */
         talloc_free(mem_ctx);
 
