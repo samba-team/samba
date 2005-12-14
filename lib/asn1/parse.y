@@ -533,12 +533,10 @@ ConstrainedType	: Type Constraint
 		;
 
 
-Constraint	: '(' ConstraintSpec  ExceptionSpec ')'
+Constraint	: '(' ConstraintSpec ')'
 		{
 		    $$ = $2;
 		}
-
-ExceptionSpec	:
 
 ConstraintSpec	: GeneralConstraint
 
