@@ -61,6 +61,8 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
  */
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     const char *url,
+				     struct auth_session_info *session_info,
+				     struct cli_credentials *credentials,
 				     unsigned int flags,
 				     const char *options[])
 {
@@ -80,6 +82,17 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	ev = event_context_find(ldb);
 
 	if (ldb_set_opaque(ldb, "EventContext", ev)) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	if (ldb_set_opaque(ldb, "credentials", credentials)) {
+		talloc_free(ldb);
 		return NULL;
 	}
 

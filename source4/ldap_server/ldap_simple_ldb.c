@@ -62,14 +62,11 @@ NTSTATUS sldb_Init(struct ldapsrv_partition *partition, struct ldapsrv_connectio
 	url = lp_parm_string(-1, "ldapsrv", "samdb");
 	if (url) {
 
-		ldb = ldb_wrap_connect(mem_ctx, url, 0, NULL);
+		ldb = ldb_wrap_connect(mem_ctx, url, conn->session_info, 
+				       NULL, 0, NULL);
 		if (ldb == NULL) {
 			talloc_free(mem_ctx);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		if (ldb_set_opaque(ldb, "sessionInfo", conn->session_info)) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
 		}
 		talloc_steal(partition, ldb);
 		partition->private = ldb;

@@ -106,8 +106,10 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 	}
 	
 	existed = file_exists(path);
-	
-	ldb = ldb_wrap_connect(mem_ctx, path, 0, NULL);
+
+	/* Secrets.ldb *must* always be local.  If we call for a
+	 * system_session() we will recurse */
+	ldb = ldb_wrap_connect(mem_ctx, path, NULL, NULL, 0, NULL);
 	talloc_free(path);
 	if (!ldb) {
 		return NULL;

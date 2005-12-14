@@ -396,7 +396,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	remote_ldb = ldb_wrap_connect(tmp_ctx, remote_ldb_url, 0, NULL);
+	remote_ldb = ldb_wrap_connect(tmp_ctx, remote_ldb_url, 
+				      NULL, ctx->cred, 0, NULL);
 	if (!remote_ldb) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -1131,7 +1132,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		}
 	}
 
-	account_name = talloc_asprintf(tmp_mem, "%s$", netbios_name);			
+	account_name = talloc_asprintf(tmp_mem, "%s$", netbios_name);
 	if (!account_name) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
@@ -1142,7 +1143,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	 * Local secrets are stored in secrets.ldb 
 	 * open it to make sure we can write the info into it after the join
 	 */
-	ldb = secrets_db_connect(tmp_mem);						
+	ldb = secrets_db_connect(tmp_mem);
 	if (!ldb) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
