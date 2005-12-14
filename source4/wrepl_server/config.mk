@@ -10,7 +10,8 @@ INIT_OBJ_FILES = \
 		wrepl_out_connection.o \
 		wrepl_out_helpers.o \
 		wrepl_apply_records.o \
-		wrepl_periodic.o
+		wrepl_periodic.o \
+		wrepl_out_push.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_WREPL WINSDB
 # End SUBSYSTEM WREPL_SRV

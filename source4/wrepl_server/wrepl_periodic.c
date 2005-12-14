@@ -37,6 +37,8 @@
 
 static uint32_t wreplsrv_periodic_run(struct wreplsrv_service *service, uint32_t next_interval)
 {
+	next_interval = wreplsrv_out_push_run(service, next_interval);
+
 	DEBUG(2,("wreplsrv_periodic_run: next in %u secs\n", next_interval));
 	return next_interval;
 }
@@ -48,6 +50,7 @@ static void wreplsrv_periodic_handler_te(struct event_context *ev, struct timed_
 	uint32_t next_interval;
 
 	service->periodic.te = NULL;
+	service->periodic.current_event = t;
 
 	next_interval = wreplsrv_periodic_run(service, service->config.periodic_interval);
 
