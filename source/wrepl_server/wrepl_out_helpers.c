@@ -802,7 +802,7 @@ NTSTATUS wreplsrv_pull_cycle_recv(struct composite_context *c)
 
 enum wreplsrv_push_notify_stage {
 	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT,
-	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE,
+	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM,
 	WREPLSRV_PUSH_NOTIFY_STAGE_DONE
 };
 
@@ -944,7 +944,7 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 	state->req->async.fn		= wreplsrv_push_notify_handler_req;
 	state->req->async.private	= state;
 
-	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE;
+	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM;
 
 	return NT_STATUS_OK;
 }
@@ -976,9 +976,15 @@ static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_st
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
-static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_state *state)
+static NTSTATUS wreplsrv_push_notify_wait_inform(struct wreplsrv_push_notify_state *state)
 {
-	return NT_STATUS_FOOBAR;
+	NTSTATUS status;
+
+	status =  wrepl_request_recv(state->req, state, NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_DONE;
+	return status;
 }
 
 static void wreplsrv_push_notify_handler(struct wreplsrv_push_notify_state *state)
@@ -989,8 +995,8 @@ static void wreplsrv_push_notify_handler(struct wreplsrv_push_notify_state *stat
 	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT:
 		c->status = wreplsrv_push_notify_wait_connect(state);
 		break;
-	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE:
-		c->status = wreplsrv_push_notify_wait_update(state);
+	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM:
+		c->status = wreplsrv_push_notify_wait_inform(state);
 		break;
 	case WREPLSRV_PUSH_NOTIFY_STAGE_DONE:
 		c->status = NT_STATUS_INTERNAL_ERROR;
