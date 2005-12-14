@@ -4,7 +4,8 @@
    core wins server handling
 
    Copyright (C) Andrew Tridgell	2005
-   
+   Copyright (C) Stefan Metzmacher	2005
+      
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -31,8 +32,8 @@
 */
 uint32_t wins_server_ttl(struct wins_server *winssrv, uint32_t ttl)
 {
-	ttl = MIN(ttl, winssrv->max_ttl);
-	ttl = MAX(ttl, winssrv->min_ttl);
+	ttl = MIN(ttl, winssrv->config.max_renew_interval);
+	ttl = MAX(ttl, winssrv->config.min_renew_interval);
 	return ttl;
 }
 
@@ -419,6 +420,10 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 		break;
 	}
 
+	if (rec->state == WREPL_STATE_RELEASED) {
+		rec->expire_time = winssrv->config.tombstone_interval;
+	}
+
 	ret = winsdb_modify(winssrv->wins_db, rec, modify_flags);
 	if (ret != NBT_RCODE_OK) {
 		DEBUG(1,("WINS: FAILED: released name %s at %s: error:%u\n",
@@ -468,6 +473,8 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 */
 NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 {
+	uint32_t tombstone_interval;
+
 	if (!lp_wins_support()) {
 		nbtsrv->winssrv = NULL;
 		return NT_STATUS_OK;
@@ -476,8 +483,10 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	nbtsrv->winssrv = talloc_zero(nbtsrv, struct wins_server);
 	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);
 
-	nbtsrv->winssrv->max_ttl     = lp_max_wins_ttl();
-	nbtsrv->winssrv->min_ttl     = lp_min_wins_ttl();
+	nbtsrv->winssrv->config.max_renew_interval = lp_max_wins_ttl();
+	nbtsrv->winssrv->config.min_renew_interval = lp_min_wins_ttl();
+	tombstone_interval = lp_parm_int(-1,"wreplsrv","tombstone_interval", 6*24*60*60);
+	nbtsrv->winssrv->config.tombstone_interval = tombstone_interval;
 
 	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv);
 	if (!nbtsrv->winssrv->wins_db) {
