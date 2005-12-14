@@ -35,7 +35,6 @@ static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, N
 */
 static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status)
 {
-	talloc_set_destructor(wrepl_socket, NULL);
 	wrepl_socket->dead = True;
 
 	if (wrepl_socket->packet) {
@@ -61,6 +60,11 @@ static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status
 		struct wrepl_request *req = wrepl_socket->recv_queue;
 		DLIST_REMOVE(wrepl_socket->recv_queue, req);
 		wrepl_request_finished(req, status);
+	}
+
+	talloc_set_destructor(wrepl_socket, NULL);
+	if (wrepl_socket->free_skipped) {
+		talloc_free(wrepl_socket);
 	}
 }
 
@@ -135,6 +139,10 @@ static void wrepl_error(void *private, NTSTATUS status)
 static int wrepl_socket_destructor(void *ptr)
 {
 	struct wrepl_socket *sock = talloc_get_type(ptr, struct wrepl_socket);
+	if (sock->dead) {
+		sock->free_skipped = True;
+		return -1;
+	}
 	wrepl_socket_dead(sock, NT_STATUS_LOCAL_DISCONNECT);
 	return 0;
 }
