@@ -238,4 +238,7 @@
 /* tdb hash size for the open database. */
 #define SMB_OPEN_DATABASE_TDB_HASH_SIZE 1049
 
+/* Characters we disallow in sharenames. */
+#define INVALID_SHARENAME_CHARS "%<>*?|/\\+=;:\","
+
 #endif

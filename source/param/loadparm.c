@@ -4284,6 +4284,13 @@ static BOOL parse_usershare_file(TALLOC_CTX *ctx,
 		return True;
 	}
 
+	/* The path *must* be absolute. */
+	if (sharepath[0] != '/') {
+		DEBUG(0,("parse_usershare_file: path %s is not an absolute path.\n",
+			sharepath));
+		return False;
+	}
+
 	/* Ensure this is pointing to a directory. */
 	dp = sys_opendir(sharepath);
 
@@ -4357,8 +4364,11 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	TALLOC_CTX *ctx = NULL;
 	SEC_DESC *psd = NULL;
 
-	/* No names containing substitute chars. */
-	if (strchr_m(file_name, '%')) {
+	/* Ensure share name doesn't contain invalid characters. */
+	if (!validate_net_name(file_name, INVALID_SHARENAME_CHARS, strlen(file_name))) {
+		DEBUG(0,("process_usershare_file: share name %s contains "
+			"invalid characters (any of %s)\n",
+			file_name, INVALID_SHARENAME_CHARS ));
 		return -1;
 	}
 
