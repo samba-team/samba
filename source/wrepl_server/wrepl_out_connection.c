@@ -158,79 +158,6 @@ requeue:
 	return NT_STATUS_OK;
 }
 
-static void wreplsrv_push_handler_te(struct event_context *ev, struct timed_event *te,
-				     struct timeval t, void *ptr);
-
-static void wreplsrv_push_handler_creq(struct composite_context *creq)
-{
-	struct wreplsrv_partner *partner = talloc_get_type(creq->async.private_data, struct wreplsrv_partner);
-	uint32_t interval;
-
-	partner->push.last_status = wreplsrv_push_notify_recv(partner->push.creq);
-	partner->push.creq = NULL;
-	talloc_free(partner->push.notify_io);
-	partner->push.notify_io = NULL;
-
-	if (!NT_STATUS_IS_OK(partner->push.last_status)) {
-		interval = 15;
-
-		DEBUG(1,("wreplsrv_push_notify(%s): %s: next: %us\n",
-			 partner->address, nt_errstr(partner->push.last_status),
-			 interval));
-	} else {
-		interval = 100;
-
-		DEBUG(2,("wreplsrv_push_notify(%s): %s: next: %us\n",
-			 partner->address, nt_errstr(partner->push.last_status),
-			 interval));
-	}
-
-	partner->push.te = event_add_timed(partner->service->task->event_ctx, partner,
-					   timeval_current_ofs(interval, 0),
-					   wreplsrv_push_handler_te, partner);
-	if (!partner->push.te) {
-		DEBUG(0,("wreplsrv_push_handler_creq: event_add_timed() failed! no memory!\n"));
-	}
-}
-
-static void wreplsrv_push_handler_te(struct event_context *ev, struct timed_event *te,
-				     struct timeval t, void *ptr)
-{
-	struct wreplsrv_partner *partner = talloc_get_type(ptr, struct wreplsrv_partner);
-
-	partner->push.te = NULL;
-
-	partner->push.notify_io = talloc(partner, struct wreplsrv_push_notify_io);
-	if (!partner->push.notify_io) {
-		goto requeue;
-	}
-
-	partner->push.notify_io->in.partner	= partner;
-	partner->push.notify_io->in.inform	= False;
-	partner->push.notify_io->in.propagate	= False;
-	partner->push.creq = wreplsrv_push_notify_send(partner->push.notify_io, partner->push.notify_io);
-	if (!partner->push.creq) {
-		DEBUG(1,("wreplsrv_push_notify_send(%s) failed\n",
-			 partner->address));
-		goto requeue;
-	}
-
-	partner->push.creq->async.fn		= wreplsrv_push_handler_creq;
-	partner->push.creq->async.private_data	= partner;
-
-	return;
-requeue:
-	talloc_free(partner->push.notify_io);
-	partner->push.notify_io = NULL;
-	/* retry later */
-	partner->push.te = event_add_timed(partner->service->task->event_ctx, partner,
-					   timeval_add(&t, 5, 0),
-					   wreplsrv_push_handler_te, partner);
-	if (!partner->push.te) {
-		DEBUG(0,("wreplsrv_push_handler_te: event_add_timed() failed! no memory!\n"));
-	}
-}
-
 NTSTATUS wreplsrv_setup_out_connections(struct wreplsrv_service *service)
 {
 	struct wreplsrv_partner *cur;
@@ -240,11 +167,6 @@ NTSTATUS wreplsrv_setup_out_connections(struct wreplsrv_service *service)
 			cur->pull.te = event_add_timed(service->task->event_ctx, cur,
 						       timeval_zero(), wreplsrv_pull_handler_te, cur);
 			NT_STATUS_HAVE_NO_MEMORY(cur->pull.te);
-		}
-		if ((cur->type & WINSREPL_PARTNER_PUSH) && cur->push.change_count) {
-			cur->push.te = event_add_timed(service->task->event_ctx, cur,
-						       timeval_zero(), wreplsrv_push_handler_te, cur);
-			NT_STATUS_HAVE_NO_MEMORY(cur->push.te);
 		}
 	}
 
