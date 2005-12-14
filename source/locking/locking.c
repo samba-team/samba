@@ -582,11 +582,16 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/* Ensure we set every field here as the destructor must be
+	   valid even if parse_share_modes fails. */
+
+	lck->filename = NULL;
 	lck->dev = dev;
 	lck->ino = ino;
-	lck->delete_on_close = False;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
+	lck->delete_on_close = False;
+	lck->fresh = False;
 	lck->modified = False;
 
 	if (tdb_chainlock(tdb, key) != 0) {
@@ -594,6 +599,12 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		talloc_free(lck);
 		return NULL;
 	}
+
+	/* We must set the destructor immediately after the chainlock
+	   ensure the lock is cleaned up on any of the error return
+	   paths below. */
+
+	talloc_set_destructor(lck, share_mode_lock_destructor);
 
 	data = tdb_fetch(tdb, key);
 	lck->fresh = (data.dptr == NULL);
@@ -619,7 +630,6 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	talloc_set_destructor(lck, share_mode_lock_destructor);
 	SAFE_FREE(data.dptr);
 
 	return lck;
