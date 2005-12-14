@@ -280,6 +280,15 @@ function provision(subobj, message, blank, paths)
 		setup_file("provision.smb.conf", paths.smbconf, subobj);
 		lp.reload();
 	}
+	message("Setting up secrets.ldb\n");
+	setup_ldb("secrets.ldif", paths.secrets, subobj);
+	message("Setting up DNS zone file\n");
+	setup_file("provision.zone", 
+		   paths.dns, 
+		   subobj);
+	message("Setting up keytabs\n");
+	var keytab_ok = credentials_update_all_keytabs();
+	assert(keytab_ok);
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", paths.hklm, subobj);
 	message("Setting up sam.ldb attributes\n");
@@ -296,15 +305,6 @@ function provision(subobj, message, blank, paths)
 		message("Setting up sam.ldb users and groups\n");
 		setup_ldb("provision_users.ldif", paths.samdb, subobj, data, false);
 	}
-	message("Setting up secrets.ldb\n");
-	setup_ldb("secrets.ldif", paths.secrets, subobj);
-	message("Setting up DNS zone file\n");
-	setup_file("provision.zone", 
-		   paths.dns, 
-		   subobj);
-	message("Setting up keytabs\n");
-	var keytab_ok = credentials_update_all_keytabs();
-	assert(keytab_ok);
 }
 
 /*
