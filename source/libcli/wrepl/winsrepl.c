@@ -38,15 +38,18 @@ static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status
 	talloc_set_destructor(wrepl_socket, NULL);
 	wrepl_socket->dead = True;
 
-	if (wrepl_socket->event.fde) {
+	if (wrepl_socket->packet) {
 		packet_recv_disable(wrepl_socket->packet);
 		packet_set_fde(wrepl_socket->packet, NULL);
+		packet_set_socket(wrepl_socket->packet, NULL);
+	}
+
+	if (wrepl_socket->event.fde) {
 		talloc_free(wrepl_socket->event.fde);
 		wrepl_socket->event.fde = NULL;
 	}
 
 	if (wrepl_socket->sock) {
-		packet_set_socket(wrepl_socket->packet, NULL);
 		talloc_free(wrepl_socket->sock);
 		wrepl_socket->sock = NULL;
 	}
