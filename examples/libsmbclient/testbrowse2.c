@@ -85,7 +85,7 @@ void smbc_auth_fn(
 
     strncpy(wrkgrp, workgroup, wrkgrplen - 1); wrkgrp[wrkgrplen - 1] = 0;
     strncpy(user, username, userlen - 1); user[userlen - 1] = 0;
-    strncpy(passwd, password, passwdlen - 1); passwd[passwdlen - 1] = 0;	
+    strncpy(passwd, password, passwdlen - 1); passwd[passwdlen - 1] = 0;
 }
 
 SMBCCTX* create_smbctx(){

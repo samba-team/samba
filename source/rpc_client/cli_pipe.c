@@ -2150,6 +2150,15 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 /****************************************************************************
  Open a named pipe over SMB to a remote server.
+ *
+ * CAVEAT CALLER OF THIS FUNCTION:
+ *    The returned rpc_pipe_client saves a copy of the cli_state cli pointer,
+ *    so be sure that this function is called AFTER any structure (vs pointer)
+ *    assignment of the cli.  In particular, libsmbclient does structure
+ *    assignments of cli, which invalidates the data in the returned
+ *    rpc_pipe_client if this function is called before the structure assignment
+ *    of cli.
+ * 
  ****************************************************************************/
 
 static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)

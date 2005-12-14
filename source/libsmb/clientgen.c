@@ -358,11 +358,13 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
 	if (!cli_close(cli->cli, cli->fnum)) {
-		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "
-			"to machine %s.  Error was %s\n",
-			cli->pipe_name,
-			cli->cli->desthost,
-			cli_errstr(cli->cli)));
+		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s, "
+                         "fnum 0x%x "
+                         "to machine %s.  Error was %s\n",
+                         cli->pipe_name,
+                         (int) cli->fnum,
+                         cli->cli->desthost,
+                         cli_errstr(cli->cli)));
 	}
 
 	if (cli->auth.cli_auth_data_free_func) {
