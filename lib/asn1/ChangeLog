@@ -1,3 +1,7 @@
+2005-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse.y: Drop ExceptionSpec for now, its not used.
+	
 2005-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test.asn1: Add test string for constraints.
