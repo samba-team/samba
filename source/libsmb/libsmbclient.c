@@ -774,6 +774,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 	ZERO_STRUCTP(srv);
 	srv->cli = c;
+        srv->cli.allocated = False;
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
@@ -863,6 +864,7 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 
                 ZERO_STRUCTP(ipc_srv);
                 ipc_srv->cli = *ipc_cli;
+                ipc_srv->cli.allocated = False;
 
                 free(ipc_cli);
 
