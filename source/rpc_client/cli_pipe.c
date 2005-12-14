@@ -2189,7 +2189,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	fnum = cli_nt_create(cli, result->pipe_name, DESIRED_ACCESS_PIPE);
 
 	if (fnum == -1) {
-		DEBUG(0,("cli_rpc_pipe_open: cli_nt_create failed on pipe %s "
+		DEBUG(1,("cli_rpc_pipe_open: cli_nt_create failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
 			 result->pipe_name, cli->desthost,
 			 cli_errstr(cli)));
