@@ -1,4 +1,9 @@
-2005-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c (tgs_rep2): also print the principal for which
+	the enctype was missing
+	
+2005-12-13  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* kdc/kaserver.c: Finish up transition from hdb_entry to
 	hdb_entry_ex.
