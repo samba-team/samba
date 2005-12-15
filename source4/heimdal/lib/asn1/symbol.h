@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: symbol.h,v 1.12 2005/07/12 06:27:40 lha Exp $ */
+/* $Id: symbol.h,v 1.13 2005/12/06 19:59:52 lha Exp $ */
 
 #ifndef _SYMBOL_H
 #define _SYMBOL_H
@@ -111,6 +111,10 @@ struct range {
     int max;
 };
 
+enum ctype { CT_CONTENTS, CT_USER } ;
+
+struct constraint_spec;
+
 struct type {
     Typetype type;
     struct memhead *members;
@@ -118,9 +122,20 @@ struct type {
     struct type *subtype;
     struct tagtype tag;
     struct range *range;
+    struct constraint_spec *constraint;
 };
 
 typedef struct type Type;
+
+struct constraint_spec {
+    enum ctype ctype;
+    union {
+	struct {
+	    Type *type;
+	    struct value *encoding;
+	} content;
+    } u;
+};
 
 struct objid {
     const char *label;

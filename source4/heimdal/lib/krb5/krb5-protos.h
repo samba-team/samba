@@ -21,19 +21,10 @@ extern "C" {
 #endif
 
 void
-initialize_heim_error_table (void);
-
-void
 initialize_heim_error_table_r (struct et_list **/*list*/);
 
 void
-initialize_k524_error_table (void);
-
-void
 initialize_k524_error_table_r (struct et_list **/*list*/);
-
-void
-initialize_krb5_error_table (void);
 
 void
 initialize_krb5_error_table_r (struct et_list **/*list*/);

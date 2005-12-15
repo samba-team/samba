@@ -210,7 +210,7 @@
 
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 64 "parse.y"
+#line 65 "parse.y"
 typedef union YYSTYPE {
     int constant;
     struct value *value;
@@ -223,9 +223,10 @@ typedef union YYSTYPE {
     struct string_list *sl;
     struct tagtype tag;
     struct memhead *members;
+    struct constraint_spec *constraint_spec;
 } YYSTYPE;
 /* Line 1318 of yacc.c.  */
-#line 229 "parse.h"
+#line 230 "parse.h"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1

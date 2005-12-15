@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 
 #include <krb5-v4compat.h>
 
-RCSID("$Id: kerberos4.c,v 1.54 2005/06/30 01:51:43 lha Exp $");
+RCSID("$Id: kerberos4.c,v 1.56 2005/12/13 19:44:01 lha Exp $");
 
 #ifndef swap32
 static u_int32_t
@@ -70,7 +70,7 @@ valid_princ(krb5_context context,
     krb5_kdc_configuration *config = funcctx;
     krb5_error_code ret;
     char *s;
-    hdb_entry *ent;
+    hdb_entry_ex *ent;
 
     ret = krb5_unparse_name(context, princ, &s);
     if (ret)
@@ -93,7 +93,7 @@ _kdc_db_fetch4(krb5_context context,
 	  krb5_kdc_configuration *config,
 	  const char *name, const char *instance, const char *realm,
 	  enum hdb_ent_type ent_type, 
-	  hdb_entry **ent)
+	  hdb_entry_ex **ent)
 {
     krb5_principal p;
     krb5_error_code ret;
@@ -126,7 +126,7 @@ _kdc_do_version4(krb5_context context,
 {
     krb5_storage *sp;
     krb5_error_code ret;
-    hdb_entry *client = NULL, *server = NULL;
+    hdb_entry_ex *client = NULL, *server = NULL;
     Key *ckey, *skey;
     int8_t pvno;
     int8_t msg_type;
@@ -201,8 +201,8 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	ret = _kdc_check_flags (context, config, 
-				client, client_name,
-				server, server_name,
+				&client->entry, client_name,
+				&server->entry, server_name,
 				TRUE);
 	if (ret) {
 	    /* good error code? */
@@ -217,8 +217,8 @@ _kdc_do_version4(krb5_context context,
 	 */
 
 	if (config->require_preauth
-	    || client->flags.require_preauth
-	    || server->flags.require_preauth) {
+	    || client->entry.flags.require_preauth
+	    || server->entry.flags.require_preauth) {
 	    kdc_log(context, config, 0,
 		    "Pre-authentication required for v4-request: "
 		    "%s for %s",
@@ -240,7 +240,7 @@ _kdc_do_version4(krb5_context context,
 	/* this is not necessary with the new code in libkrb */
 	/* find a properly salted key */
 	while(ckey->salt == NULL || ckey->salt->salt.length != 0)
-	    ret = hdb_next_keytype2key(context, client, KEYTYPE_DES, &ckey);
+	    ret = hdb_next_keytype2key(context, &client->entry, KEYTYPE_DES, &ckey);
 	if(ret){
 	    kdc_log(context, config, 0, "No version-4 salted key in database -- %s.%s@%s", 
 		    name, inst, realm);
@@ -260,10 +260,10 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	max_life = _krb5_krb_life_to_time(0, life);
-	if(client->max_life)
-	    max_life = min(max_life, *client->max_life);
-	if(server->max_life)
-	    max_life = min(max_life, *server->max_life);
+	if(client->entry.max_life)
+	    max_life = min(max_life, *client->entry.max_life);
+	if(server->entry.max_life)
+	    max_life = min(max_life, *server->entry.max_life);
 
 	life = krb_time_to_life(kdc_time, kdc_time + max_life);
     
@@ -302,7 +302,7 @@ _kdc_do_version4(krb5_context context,
 				    sinst,
 				    config->v4_realm,
 				    life,
-				    server->kvno % 255,
+				    server->entry.kvno % 255,
 				    &ticket,
 				    kdc_time,
 				    &ckey->key,
@@ -321,8 +321,8 @@ _kdc_do_version4(krb5_context context,
 					  realm,
 					  req_time,
 					  0,
-					  client->pw_end ? *client->pw_end : 0,
-					  client->kvno % 256,
+					  client->entry.pw_end ? *client->entry.pw_end : 0,
+					  client->entry.kvno % 256,
 					  &cipher,
 					  reply);
 	krb5_data_free(&cipher);
@@ -339,7 +339,7 @@ _kdc_do_version4(krb5_context context,
 	int32_t address;
 	size_t pos;
 	krb5_principal tgt_princ = NULL;
-	hdb_entry *tgt = NULL;
+	hdb_entry_ex *tgt = NULL;
 	Key *tkey;
 	time_t max_end, actual_end, issue_time;
 	
@@ -373,10 +373,10 @@ _kdc_do_version4(krb5_context context,
 	    goto out2;
 	}
 	
-	if(tgt->kvno % 256 != kvno){
+	if(tgt->entry.kvno % 256 != kvno){
 	    kdc_log(context, config, 0,
 		    "tgs-req (krb4) with old kvno %d (current %d) for "
-		    "krbtgt.%s@%s", kvno, tgt->kvno % 256, 
+		    "krbtgt.%s@%s", kvno, tgt->entry.kvno % 256, 
 		    realm, config->v4_realm);
 	    make_err_reply(context, reply, KDC_AUTH_EXP,
 			   "old krbtgt kvno used");
@@ -489,8 +489,8 @@ _kdc_do_version4(krb5_context context,
 	}
 
 	ret = _kdc_check_flags (context, config, 
-				client, client_name,
-				server, server_name,
+				&client->entry, client_name,
+				&server->entry, server_name,
 				FALSE);
 	if (ret) {
 	    /* good error code? */
@@ -511,10 +511,10 @@ _kdc_do_version4(krb5_context context,
 
 	max_end = _krb5_krb_life_to_time(ad.time_sec, ad.life);
 	max_end = min(max_end, _krb5_krb_life_to_time(kdc_time, life));
-	if(server->max_life)
-	    max_end = min(max_end, kdc_time + *server->max_life);
-	if(client && client->max_life)
-	    max_end = min(max_end, kdc_time + *client->max_life);
+	if(server->entry.max_life)
+	    max_end = min(max_end, kdc_time + *server->entry.max_life);
+	if(client && client->entry.max_life)
+	    max_end = min(max_end, kdc_time + *client->entry.max_life);
 	life = min(life, krb_time_to_life(kdc_time, max_end));
 	
 	issue_time = kdc_time;
@@ -571,7 +571,7 @@ _kdc_do_version4(krb5_context context,
 					sinst,
 					config->v4_realm,
 					life,
-					server->kvno % 255,
+					server->entry.kvno % 255,
 					&ticket,
 					issue_time,
 					&ad.session,
@@ -721,7 +721,7 @@ _kdc_encode_v4_ticket(krb5_context context,
 
 krb5_error_code
 _kdc_get_des_key(krb5_context context, 
-		 hdb_entry *principal, krb5_boolean is_server, 
+		 hdb_entry_ex *principal, krb5_boolean is_server, 
 		 krb5_boolean prefer_afs_key, Key **ret_key)
 {
     Key *v5_key = NULL, *v4_key = NULL, *afs_key = NULL, *server_key = NULL;
@@ -736,7 +736,7 @@ _kdc_get_des_key(krb5_context context,
 		afs_key == NULL || server_key == NULL);
 	++i) {
 	Key *key = NULL;
-	while(hdb_next_enctype2key(context, principal, etypes[i], &key) == 0) {
+	while(hdb_next_enctype2key(context, &principal->entry, etypes[i], &key) == 0) {
 	    if(key->salt == NULL) {
 		if(v5_key == NULL)
 		    v5_key = key;

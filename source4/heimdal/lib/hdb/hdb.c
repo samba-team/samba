@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c,v 1.59 2005/11/30 12:22:09 lha Exp $");
+RCSID("$Id: hdb.c,v 1.60 2005/12/12 12:35:36 lha Exp $");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -133,25 +133,18 @@ hdb_unlock(int fd)
 }
 
 void
-hdb_free_entry(krb5_context context, hdb_entry *ent)
+hdb_free_entry(krb5_context context, hdb_entry_ex *ent)
 {
     int i;
 
-    for(i = 0; i < ent->keys.len; ++i) {
-	Key *k = &ent->keys.val[i];
+    if (ent->free_entry)
+	(*ent->free_entry)(context, ent);
+
+    for(i = 0; i < ent->entry.keys.len; ++i) {
+	Key *k = &ent->entry.keys.val[i];
 
 	memset (k->key.keyvalue.data, 0, k->key.keyvalue.length);
     }
-    free_hdb_entry(ent);
-}
-
-void
-hdb_free_entry_ex(krb5_context context, hdb_entry_ex *ent)
-{
-    if (ent->free_private) {
-	    ent->free_private(context, ent);
-    }
-
     free_hdb_entry(&ent->entry);
 }
 
@@ -163,7 +156,7 @@ hdb_foreach(krb5_context context,
 	    void *data)
 {
     krb5_error_code ret;
-    hdb_entry entry;
+    hdb_entry_ex entry;
     ret = db->hdb_firstkey(context, db, flags, &entry);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);

@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: cache.c,v 1.76 2005/11/29 09:10:47 lha Exp $");
+RCSID("$Id: cache.c,v 1.77 2005/12/13 15:42:36 lha Exp $");
 
 /*
  * Add a new ccache type with operations `ops', overwriting any
@@ -358,14 +358,12 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 	if (e == NULL) {
 	    e = krb5_config_get_string(context, NULL, "libdefaults",
 				       "default_cc_name", NULL);
-	    if (e) {
-		ret = _krb5_expand_default_cc_name(context, e, &p);
-		if (ret)
-		    return ret;
-	    }
+	    if (e == NULL)
+		e = KRB5_DEFAULT_CCNAME;
+	    ret = _krb5_expand_default_cc_name(context, e, &p);
+	    if (ret)
+		return ret;
 	}
-	if (e == NULL)
-	    asprintf(&p,"FILE:/tmp/krb5cc_%u", (unsigned)getuid());
     } else
 	p = strdup(name);
 
