@@ -81,6 +81,7 @@ REQUIRED_SUBSYSTEMS = \
 [LIBRARY::REGISTRY]
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
+DESCRIPTION = Windows-style registry library
 RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		common/reg_interface.o

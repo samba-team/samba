@@ -77,6 +77,7 @@ ADD_OBJ_FILES = \
 PUBLIC_HEADERS = ntvfs.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
+DESCRIPTION = Virtual File System with NTFS semantics
 RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		ntvfs_base.o

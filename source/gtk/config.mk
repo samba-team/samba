@@ -4,6 +4,7 @@
 # Start SUBSYSTEM GTKSMB
 [LIBRARY::GTKSMB]
 MAJOR_VERSION = 0
+DESCRIPTION = Common Samba-related widgets for GTK+ applications
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 NOPROTO = YES
