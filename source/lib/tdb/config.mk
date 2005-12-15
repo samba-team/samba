@@ -4,6 +4,7 @@
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
+DESCRIPTION = Trivial Database Library
 INIT_OBJ_FILES = \
 		common/tdb.o
 ADD_OBJ_FILES = common/dump.o common/io.o common/lock.o \
