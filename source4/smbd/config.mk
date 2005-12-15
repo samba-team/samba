@@ -90,6 +90,16 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE server_service_web
 ################################################
 
+################################################
+# Start MODULE server_service_winbind
+[MODULE::server_service_winbind]
+INIT_FUNCTION = server_service_winbind_init
+SUBSYSTEM = SERVER_SERVICE
+REQUIRED_SUBSYSTEMS = \
+		WINBIND
+# End MODULE server_service_winbind
+################################################
+
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
