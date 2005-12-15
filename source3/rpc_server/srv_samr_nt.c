@@ -4516,6 +4516,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 					ctr->alias.info3.description.string, 
 					sizeof(info.acct_desc)-1 );
 			}
+			else
+				fstrcpy( info.acct_desc, "" );
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
