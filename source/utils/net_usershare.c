@@ -30,8 +30,8 @@ static int net_usershare_add_usage(int argc, const char **argv)
 		"\tAdds the specified share name for this user.\n"
 		"\t<sharename> is the new share name.\n"
 		"\t<path> is the path on the filesystem to export.\n"
-		"\t<comment> is the (optional) comment for the new share.\n"
-		"\t<acl> is a share acl in the format \"Username1:f|r|d,username2:f|r|d,....\"\n"
+		"\t<comment> is the optional comment for the new share.\n"
+		"\t<acl> is an optional share acl in the format \"Username1:f|r|d,username2:f|r|d,....\"\n"
 		"\t\twhere \"f\" means full control, \"r\" means read-only, \"d\" means deny access.\n"
 		"\t\tThe default acl is \"Everyone:r\" which means everyone read-only.\n");
 	return -1;
@@ -48,46 +48,50 @@ static int net_usershare_delete_usage(int argc, const char **argv)
 static int net_usershare_info_usage(int argc, const char **argv)
 {
 	d_printf(
-		"net usershare info <sharename>\n"\
-		"\tPrints out the path, comment and acl elements of this share.\n");
+		"net usershare info [all] [wildcard sharename]\n"\
+		"\tPrints out the path, comment and acl elements of shares that match the wildcard.\n"
+		"\tBy default only gives info on shares owned by the current user\n"
+		"\tAdd all to apply this to all shares\n"
+		"\tOmit the sharename or use a wildcard of '*' to see all shares\n");
 	return -1;
 }
 
 static int net_usershare_list_usage(int argc, const char **argv)
 {
 	d_printf(
-		"net usershare list\n"\
-		"\tLists the names of all shares created by the current user.\n");
+		"net usershare list [all] [wildcard sharename]\n"\
+		"\tLists the names of all shares that match the wildcard.\n"
+		"\tBy default only lists shares owned by the current user\n"
+		"\tAdd all to apply this to all shares\n"
+		"\tOmit the sharename or use a wildcard of '*' to see all shares\n");
 	return -1;
 }
-
-static int net_usershare_listall_usage(int argc, const char **argv)
-{
-	d_printf(
-		"net usershare listall\n"\
-		"\tLists the names of all user-modifiable shares created by any user on the system.\n");
-	return -1;
-}
-
 
 int net_usershare_usage(int argc, const char **argv)
 {
 	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] to add a user defined share.\n"
 		"net usershare delete <sharename> to delete a user defined share.\n"
-		"net usershare info <sharename> to print info about a user defined share.\n"
-		"net usershare list to list all the user defined shares for this user.\n"
-		"net usershare listall to list the user defined shares for all users.\n"
+		"net usershare info [all] [wildcard sharename] to print info about a user defined share.\n"
+		"net usershare list [all] [wildcard sharename] to list user defined shares.\n"
 		"net usershare help\n"\
-		"\nType \"net help <option>\" to get more information on that option\n\n");
+		"\nType \"net usershare help <option>\" to get more information on that option\n\n");
 
 	net_common_flags_usage(argc, argv);
 	return -1;
 }
 
+/***************************************************************************
+ Add a single userlevel share.
+***************************************************************************/
+
 static int net_usershare_add(int argc, const char **argv)
 {
 	return -1;
 }
+
+/***************************************************************************
+ Delete a single userlevel share.
+***************************************************************************/
 
 static int net_usershare_delete(int argc, const char **argv)
 {
@@ -117,24 +121,184 @@ static int net_usershare_delete(int argc, const char **argv)
 	return 0;
 }
 
+/***************************************************************************
+ Data structures to handle a list of usershare files.
+***************************************************************************/
+
+struct file_list {
+	struct file_list *next, *prev;
+	const char *pathname;
+};
+
+static struct file_list *flist;
+
+/***************************************************************************
+***************************************************************************/
+
+static void get_basepath(pstring basepath)
+{
+	pstrcpy(basepath, lp_usershare_path());
+	if (basepath[strlen(basepath)-1] == '/') {
+		basepath[strlen(basepath)-1] = '\0';
+	}
+}
+
+/***************************************************************************
+***************************************************************************/
+
+static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
+{
+	SMB_STRUCT_DIR *dp;
+	SMB_STRUCT_DIRENT *de;
+	uid_t myuid = geteuid();
+	struct file_list *fl = NULL;
+	pstring basepath;
+
+	get_basepath(basepath);
+	dp = sys_opendir(basepath);
+	if (!dp) {
+		d_printf("get_share_list: cannot open usershare directory %s. Error %s\n",
+			basepath, strerror(errno) );
+		return -1;
+	}
+
+	while((de = sys_readdir(dp)) != 0) {
+		SMB_STRUCT_STAT sbuf;
+		pstring path;
+		const char *n = de->d_name;
+
+		/* Ignore . and .. */
+		if (*n == '.') {
+			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
+				continue;
+			}
+		}
+
+		if (!validate_net_name(n, INVALID_SHARENAME_CHARS, strlen(n))) {
+			d_printf("get_share_list: ignoring bad share name %s\n",n);
+			continue;
+		}
+		pstrcpy(path, basepath);
+		pstrcat(path, "/");
+		pstrcat(path, n);
+
+		if (sys_lstat(path, &sbuf) != 0) {
+			d_printf("get_share_list: can't lstat file %s. Error was %s\n",
+				path, strerror(errno) );
+			continue;
+		}
+
+		if (!S_ISREG(sbuf.st_mode)) {
+			d_printf("get_share_list: file %s is not a regular file. Ignoring.\n",
+				path );
+			continue;
+		}
+
+		if (only_ours && sbuf.st_uid != myuid) {
+			continue;
+		}
+
+		/* (Finally) - add to list. */ 
+		fl = TALLOC_P(ctx, struct file_list);
+		if (!fl) {
+			return -1;
+		}
+		fl->pathname = talloc_strdup(ctx, n);
+		if (!fl->pathname) {
+			return -1;
+		}
+
+		DLIST_ADD(flist, fl);
+	}
+
+	sys_closedir(dp);
+	return 0;
+}
+
+/***************************************************************************
+ Call a function for every share on the list.
+***************************************************************************/
+
+static int process_share_list(int (*fn)(struct file_list *))
+{
+	struct file_list *fl;
+	int ret = 0;
+
+	for (fl = flist; fl; fl = fl->next) {
+		ret = (*fn)(fl);
+	}
+
+	return ret;
+}
+
+/***************************************************************************
+ Print out info (internal detail) on userlevel shares.
+***************************************************************************/
+
 static int net_usershare_info(int argc, const char **argv)
 {
 	return -1;
 }
 
+/***************************************************************************
+ List function.
+***************************************************************************/
+
+static int list_fn(struct file_list *fl)
+{
+	d_printf("%s\n", fl->pathname);
+	return 0;
+}
+
+/***************************************************************************
+ List userlevel shares.
+***************************************************************************/
+
 static int net_usershare_list(int argc, const char **argv)
 {
-	return -1;
+	fstring wcard;
+	BOOL only_ours = True;
+	int ret = -1;
+	TALLOC_CTX *ctx;
+
+	fstrcpy(wcard, "*");
+
+	switch (argc) {
+		case 0:
+			break;
+		case 1:
+			if (strnequal(argv[0], "all", 3)) {
+				only_ours = False;
+			} else {
+				fstrcpy(wcard, argv[0]);
+			}
+			break;
+		case 2:
+			if (strnequal(argv[0], "all", 3)) {
+				only_ours = False;
+			} else {
+				return net_usershare_list_usage(argc, argv);
+			}
+			fstrcpy(wcard, argv[1]);
+			break;
+		default:
+			return net_usershare_list_usage(argc, argv);
+	}
+
+	ctx = talloc_init("share_list");
+	ret = get_share_list(ctx, wcard, only_ours);
+	if (ret) {
+		return ret;
+	}
+	ret = process_share_list(list_fn);
+	talloc_destroy(ctx);
+	return ret;
 }
 
-static int net_usershare_listall(int argc, const char **argv)
-{
-	return -1;
-}
+/***************************************************************************
+ Handle "net usershare help *" subcommands.
+***************************************************************************/
 
-/*
-  handle "net usershare help *" subcommands
-*/
 int net_usershare_help(int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -142,13 +306,14 @@ int net_usershare_help(int argc, const char **argv)
 		{"DELETE", net_usershare_delete_usage},
 		{"INFO", net_usershare_info_usage},
 		{"LIST", net_usershare_list_usage},
-		{"LISTALL", net_usershare_listall_usage},
 		{NULL, NULL}};
 
 	return net_run_function(argc, argv, func, net_usershare_usage);
 }
 
-/* Entry-point for all the USERSHARE functions. */
+/***************************************************************************
+ Entry-point for all the USERSHARE functions.
+***************************************************************************/
 
 int net_usershare(int argc, const char **argv)
 {
@@ -159,7 +324,6 @@ int net_usershare(int argc, const char **argv)
 		{"DELETE", net_usershare_delete},
 		{"INFO", net_usershare_info},
 		{"LIST", net_usershare_list},
-		{"LISTALL", net_usershare_listall},
 		{"HELP", net_usershare_help},
 		{NULL, NULL}
 	};
