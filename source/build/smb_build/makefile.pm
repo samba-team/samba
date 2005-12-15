@@ -89,9 +89,16 @@ sub _prepare_compiler_linker($)
 {
 	my ($self) = @_;
 
-	my $devld = "";
-	if ($self->{developer}) {
-		$devld = " \$(DEVEL_LDFLAGS)";
+	my $devld_local = "";
+	my $devld_install = "";
+
+	$self->{duplicate_build} = 0;
+	if ($self->{config}->{LIBRARY_OUTPUT_TYPE} eq "SHARED_LIBRARY") {
+		if ($self->{developer}) {
+			$self->{duplicate_build} = 1;
+			$devld_local = " -Wl,-rpath,\$(builddir)/bin";
+		}
+		$devld_install = " -Wl,-rpath-link,\$(builddir)/bin";
 	}
 
 	$self->output(<< "__EOD__"
@@ -107,15 +114,16 @@ CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE
 PICFLAG=$self->{config}->{PICFLAG}
 HOSTCC=$self->{config}->{HOSTCC}
 
-DEVEL_LDFLAGS=-Wl,-rpath,bin/
 LD=$self->{config}->{LD} 
-LDFLAGS=$self->{config}->{LDFLAGS} -Lbin/$devld
+LDFLAGS=$self->{config}->{LDFLAGS} -L\$(builddir)/bin
+LOCAL_LINK_FLAGS=$devld_local
+INSTALL_LINK_FLAGS=$devld_install
 
 STLD=$self->{config}->{AR}
-STLD_FLAGS=-rc -Lbin/
+STLD_FLAGS=-rc -L\$(builddir)/bin
 
 SHLD=$self->{config}->{CC}
-SHLD_FLAGS=$self->{config}->{LDSHFLAGS} -Lbin/$devld
+SHLD_FLAGS=$self->{config}->{LDSHFLAGS} -L\$(builddir)/bin
 SONAMEFLAG=$self->{config}->{SONAMEFLAG}
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
@@ -241,7 +249,7 @@ sub SharedLibrary($$)
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) bin/.dummy
+bin/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
@@ -263,8 +271,6 @@ bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
 __EOD__
 );
 	}
-
-	$self->output("library_$ctx->{NAME}: basics bin/lib$ctx->{LIBRARY_NAME}\n");
 }
 
 sub MergedObj($$)
@@ -318,8 +324,6 @@ $ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST)
 
-library_$ctx->{NAME}: basics $ctx->{TARGET}
-
 __EOD__
 );
 }
@@ -337,12 +341,22 @@ sub Binary($$)
 {
 	my ($self,$ctx) = @_;
 
+	my $installdir;
+	
+	if ($self->{duplicate_build}) {
+		$installdir = "bin/install";
+	} else {
+		$installdir = "bin";
+	}
+
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		push (@{$self->{sbin_progs}}, $ctx->{TARGET});
+		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		push (@{$self->{bin_progs}}, $ctx->{TARGET});
+		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
 	}
+
+	push (@{$self->{binaries}}, "bin/$ctx->{BINARY}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -350,15 +364,25 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
+	if ($self->{duplicate_build}) {
 	$self->output(<< "__EOD__"
-#
 #
 bin/$ctx->{BINARY}: bin/.dummy \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
-	\@\$(CC) \$(LDFLAGS) -o \$\@ \\
+	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(LOCAL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
-binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
+
+__EOD__
+);
+	}
+
+$self->output(<< "__EOD__"
+$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)
+	\@echo Linking \$\@
+	\@\$(CC) \$(LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_LIST) \\
+		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 );
@@ -412,6 +436,7 @@ sub write($$)
 	$self->output("MANPAGES = ".array2oneperline($self->{manpages})."\n");
 	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
 	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
+	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");

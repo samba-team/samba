@@ -3,8 +3,6 @@
    - get rid of include/structs.h
 - install Samba-specific headers in $INCLUDEDIR/samba-4.0. talloc.h, tdb.h and 
 	ldb.h belong in $INCLUDEDIR
-- never install -rpath binaries / libraries, always relink before install
- - keep files without -rpath in bin/install
 - init functions may be called more then once as different libraries 
  (in Samba or other projects) can use the same (3rd) library.
 - add register function to smbtorture

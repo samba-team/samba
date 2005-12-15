@@ -8,11 +8,6 @@
 use strict;
 package smb_build::input;
 
-use vars qw($library_output_type $subsystem_output_type $module_output_type);
-
-$library_output_type = "OBJ_LIST";
-$subsystem_output_type = "OBJ_LIST";
-$module_output_type = "OBJ_LIST";
 my $srcdir = ".";
 
 sub strtrim($)
@@ -34,22 +29,22 @@ sub str2array($)
 	return split /[ \t\n]/;
 }
 
-sub check_subsystem($$)
+sub check_subsystem($$$)
 {
-	my ($INPUT, $subsys) = @_;
+	my ($INPUT, $subsys, $default_ot) = @_;
 	if ($subsys->{ENABLE} ne "YES") {
 		printf("Subsystem `%s' disabled\n",$subsys->{NAME});
 		return;
 	}
 	
 	unless(defined($subsys->{OUTPUT_TYPE})) {
-		$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
+		$subsys->{OUTPUT_TYPE} = $default_ot;
 	}
 }
 
-sub check_module($$)
+sub check_module($$$)
 {
-	my ($INPUT, $mod) = @_;
+	my ($INPUT, $mod, $default_ot) = @_;
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
@@ -70,7 +65,7 @@ sub check_module($$)
 	{
 		$mod->{OUTPUT_TYPE} = $mod->{CHOSEN_BUILD};
 	} else {
-		$mod->{OUTPUT_TYPE} = $module_output_type;
+		$mod->{OUTPUT_TYPE} = $default_ot;
 	}
 
 	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY" or 
@@ -82,17 +77,16 @@ sub check_module($$)
 	}
 }
 
-sub check_library($$)
+sub check_library($$$)
 {
-	my ($INPUT, $lib) = @_;
+	my ($INPUT, $lib, $default_ot) = @_;
 
 	if ($lib->{ENABLE} ne "YES") {
 		printf("Library `%s' disabled\n",$lib->{NAME});
 		return;
 	}
 
-
-	$lib->{OUTPUT_TYPE} = $library_output_type;
+	$lib->{OUTPUT_TYPE} = $default_ot;
 
 	unless (defined($lib->{MAJOR_VERSION})) {
 		print "$lib->{NAME}: Please specify MAJOR_VERSION\n";
@@ -133,16 +127,9 @@ sub calc_unique_deps($$)
 	}
 }
 
-###########################################################
-# This function checks the input from the configure script 
-#
-# check_input($INPUT)
-#
-# $INPUT -	the global INPUT context
-# $enabled - list of enabled subsystems/libs
-sub check($$)
+sub check($$$$$)
 {
-	my ($INPUT, $enabled) = @_;
+	my ($INPUT, $enabled, $subsys_ot, $lib_ot, $module_ot) = @_;
 
 	foreach my $part (values %$INPUT) {
 		if (defined($enabled->{$part->{NAME}})) { 
@@ -158,9 +145,9 @@ sub check($$)
 	foreach my $k (keys %$INPUT) {
 		my $part = $INPUT->{$k};
 
-		check_subsystem($INPUT, $part) if ($part->{TYPE} eq "SUBSYSTEM");
-		check_module($INPUT, $part) if ($part->{TYPE} eq "MODULE");
-		check_library($INPUT, $part) if ($part->{TYPE} eq "LIBRARY");
+		check_subsystem($INPUT, $part, $subsys_ot) if ($part->{TYPE} eq "SUBSYSTEM");
+		check_module($INPUT, $part, $module_ot) if ($part->{TYPE} eq "MODULE");
+		check_library($INPUT, $part, $lib_ot) if ($part->{TYPE} eq "LIBRARY");
 		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
 	}
 

@@ -18,34 +18,48 @@ my $INPUT = {};
 
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, "main.mk");
 
+my $subsystem_output_type;
+
 if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"})) {
-	$smb_build::input::subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE};
+	$subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE};
 } elsif ($config::config{BLDMERGED} eq "true") {
-	$smb_build::input::subsystem_output_type = "MERGEDOBJ";
+	$subsystem_output_type = "MERGEDOBJ";
+} else {
+	$subsystem_output_type = "OBJ_LIST";
 }
 
+my $library_output_type;
 if (defined($ENV{"LIBRARY_OUTPUT_TYPE"})) {
-	$smb_build::input::library_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
+	$library_output_type = $ENV{LIBRARY_OUTPUT_TYPE};
 } elsif ($config::config{BLDSHARED} eq "true") {
 	#FIXME: This should eventually become SHARED_LIBRARY 
 	# rather then MERGEDOBJ once I'm certain it works ok -- jelmer
-	$smb_build::input::library_output_type = "MERGEDOBJ";
+	$library_output_type = "MERGEDOBJ";
 } elsif ($config::config{BLDMERGED} eq "true") {
-	$smb_build::input::library_output_type = "MERGEDOBJ";
+	$library_output_type = "MERGEDOBJ";
+} else {
+	$library_output_type = "OBJ_LIST";
 }
 
+my $module_output_type;
 if (defined($ENV{"MODULE_OUTPUT_TYPE"})) {
-	$smb_build::input::module_output_type = $ENV{MODULE_OUTPUT_TYPE};
+	$module_output_type = $ENV{MODULE_OUTPUT_TYPE};
 } elsif ($config::config{BLDSHARED} eq "true") {
 	#FIXME: This should eventually become SHARED_LIBRARY 
 	# rather then MERGEDOBJ once I'm certain it works ok -- jelmer
-	$smb_build::input::module_output_type = "MERGEDOBJ";
+	$module_output_type = "MERGEDOBJ";
 } elsif ($config::config{BLDMERGED} eq "true") {
-	$smb_build::input::module_output_type = "MERGEDOBJ";
+	$module_output_type = "MERGEDOBJ";
+} else {
+	$module_output_type = "OBJ_LIST";
 }
 
-my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
+my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
+	$subsystem_output_type, $library_output_type, $module_output_type);
 my $OUTPUT = output::create_output($DEPEND);
+$config::config{SUBSYSTEM_OUTPUT_TYPE} = $subsystem_output_type;
+$config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
+$config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
 foreach my $key (values %$OUTPUT) {
