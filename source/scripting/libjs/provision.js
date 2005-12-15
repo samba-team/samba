@@ -160,6 +160,9 @@ function ldb_erase(ldb)
 	for (i=0;i<res.length;i++) {
 		ldb.del(res[i].dn);
 	}
+	/* extra hack to ensure it's gone on remote ldap */
+	ldb.del("cn=ROOTDSE");
+
 	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", attrs);
 	if (res.length != 0) {
 		ldb_delete(ldb);
@@ -237,7 +240,7 @@ function provision_default_paths(subobj)
 	paths.hku = "hku.ldb";
 	paths.hkpd = "hkpd.ldb";
 	paths.hkpt = "hkpt.ldb";
-	paths.samdb = "sam.ldb";
+	paths.samdb = lp.get("sam database");
 	paths.secrets = "secrets.ldb";
 	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
 	paths.winsdb = "wins.ldb";
