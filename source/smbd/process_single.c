@@ -28,12 +28,17 @@
 #include "smb_server/smb_server.h"
 #include "system/filesys.h"
 
+/* For sepecifiying event context to GSSAPI below */
+#include "heimdal/lib/gssapi/gssapi_locl.h"
+
 
 /*
   called when the process model is selected
 */
 static void single_model_init(struct event_context *ev)
 {
+	/* Hack to ensure that GSSAPI uses the right event context */
+	gssapi_krb5_init_ev(ev);
 }
 
 /*
