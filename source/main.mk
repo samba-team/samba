@@ -113,7 +113,7 @@ installmisc: installdirs
 	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(BINDIR)
 
 installpc: installdirs
-	@cp $(PC_FILES) $(DESTDIR)$(PKGCONFIGDIR)
+	@$(SHELL) $(srcdir)/script/installpc.sh $(srcdir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
 
 uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader
 
