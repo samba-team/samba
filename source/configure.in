@@ -3091,6 +3091,8 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -3392,6 +3394,29 @@ if test x"$with_ads_support" != x"no"; then
 LIBS="$ac_save_LIBS"
 fi
 
+#################################################
+# check for KCM support
+
+with_kcm_support=no
+AC_MSG_CHECKING([for KCM support])
+
+AC_ARG_WITH(kcm,
+[  --with-kcm              KCM support (default no)],
+[ case "$withval" in
+    yes)
+	if test x$FOUND_KRB5 = x"no"; then
+		AC_MSG_ERROR(libkrb5 is needed for KCM support)
+	fi
+	with_kcm_support="$withval"
+	AC_DEFINE(WITH_KCM,1,[Whether to include KCM support])
+    	;;
+    *)
+	with_kcm_support="no"
+	AC_DEFINE(WITH_KCM,0,[Whether to include KCM support])
+    	;;
+  esac ])
+
+AC_MSG_RESULT($with_kcm_support)
 ########################################################
 # Compile experimental passdb backends?
 # (pdb_xml, pdb_mysql, pdb_pgsql)
