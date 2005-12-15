@@ -29,6 +29,8 @@ New features introduced in Samba 3.0.21 include:
   o Performance Counter external daemon.
   o Winbindd auto-detection query methods when communicating with
     a domain controller.
+  o The ability to enumerate long share names in libsmbclient 
+    applications.
 
 
 ######################################################################
@@ -86,7 +88,10 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Derrell Lipman <derrell@samba.org>
-    * libsmbclient memory leak fixes.
+    * Libsmbclient memory & file descriptor leak fixes.
+    * Fix crash bug in libsmbclient.
+    * Add long share name support to libsmbclient when enumerating shares.
+    
 
 
 o   Brian Moran <bmoran@centeris.com>
