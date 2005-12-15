@@ -238,7 +238,7 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_NAME}");
+	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_REALNAME}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -407,6 +407,11 @@ sub PkgConfig($$)
 
 	$link_name =~ s/^LIB//g;
 	$link_name = lc($link_name);
+
+	if (not defined($ctx->{DESCRIPTION})) {
+		warn("$ctx->{NAME} has not DESCRIPTION set, not generating .pc file");
+		return;
+	}
 
 	my $path = "$ctx->{BASEDIR}/$link_name.pc";
 

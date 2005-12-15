@@ -80,6 +80,7 @@ NOPROTO = YES
 [LIBRARY::LIBLDB]
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
+DESCRIPTION = LDAP-like embedded database library
 RELEASE_VERSION = 1
 INIT_OBJ_FILES = \
 		common/ldb.o

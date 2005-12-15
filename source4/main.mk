@@ -65,6 +65,7 @@ INSTALLPERMS = 0755
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
 CONFIGFILE = $(CONFIGDIR)/smb.conf
+PKGCONFIGDIR = $(LIBDIR)/pkgconfig
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
@@ -75,7 +76,7 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
 
 install: showlayout installbin installdat installswat installmisc installlib \
-	installheader
+	installheader installpc
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -86,7 +87,7 @@ install: showlayout installbin installdat installswat installmisc installlib \
 # is not used.
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR) $(DESTDIR)$(PRIVATEDIR)/tls $(DESTDIR)$(INCLUDEDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR) $(DESTDIR)$(PRIVATEDIR)/tls $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(PKGCONFIGDIR)
 
 installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
@@ -110,6 +111,9 @@ installman: installdirs
 
 installmisc: installdirs
 	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(BINDIR)
+
+installpc: installdirs
+	@cp $(PC_FILES) $(DESTDIR)$(PKGCONFIGDIR)
 
 uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader
 

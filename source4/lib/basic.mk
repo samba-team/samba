@@ -32,6 +32,7 @@ PUBLIC_HEADERS = tdr/tdr.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
+DESCRIPTION = Simple marshall/unmarshall library
 INIT_OBJ_FILES = tdr/tdr.o
 
 ##############################
