@@ -106,6 +106,9 @@ static void setup_signals(void)
 	BlockSignals(True,SIGFPE);
 #endif
 
+	/* We are no longer interested in USR1 */
+	BlockSignals(True, SIGUSR1);
+
 #if defined(SIGUSR2)
 	/* We are no longer interested in USR2 */
 	BlockSignals(True,SIGUSR2);
@@ -114,10 +117,12 @@ static void setup_signals(void)
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't recieve them. */
 	BlockSignals(False, SIGHUP);
-	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGTERM);
-}
 
+	/* as we don't handle on this signals yet, we need to ignore them,
+	 * instead of terminating */
+	CatchSignal(SIGHUP, SIG_IGN);
+}
 
 /*
   handle io on stdin
