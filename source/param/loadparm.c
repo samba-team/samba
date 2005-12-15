@@ -54,6 +54,7 @@
 #include "includes.h"
 
 BOOL in_client = False;		/* Not in the client by default */
+BOOL in_server = False;		/* Not in the server by default */
 BOOL bLoaded = False;
 
 extern userdom_struct current_user_info;
@@ -1827,6 +1828,7 @@ FN_GLOBAL_INTEGER(lp_ldap_page_size, &Globals.ldap_page_size)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
+FN_GLOBAL_STRING(lp_usershare_path, &Globals.szUsersharePath)
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
@@ -4729,7 +4731,8 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	init_iconv();
 
-	if (!in_client && Globals.iUsershareMaxShares > 0 && Globals.szUsersharePath[0]) {
+	/* Only load usershares in the smbd server if we're told to. */
+	if (in_server && Globals.iUsershareMaxShares > 0 && Globals.szUsersharePath[0]) {
 		process_usershare_directory(Globals.szUsersharePath, Globals.iUsershareMaxShares);
 	}
 

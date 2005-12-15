@@ -697,6 +697,7 @@ void build_options(BOOL screen);
 
  int main(int argc,const char *argv[])
 {
+	extern BOOL in_server;
 	/* shall I run as a daemon */
 	static BOOL is_daemon = False;
 	static BOOL interactive = False;
@@ -717,6 +718,8 @@ void build_options(BOOL screen);
 	POPT_COMMON_SAMBA
 	{ NULL }
 	};
+
+	in_server = True;
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);

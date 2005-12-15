@@ -21,31 +21,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-static int net_usershare_add(int argc, const char **argv)
-{
-	return -1;
-}
-
-static int net_usershare_delete(int argc, const char **argv)
-{
-	return -1;
-}
-
-static int net_usershare_info(int argc, const char **argv)
-{
-	return -1;
-}
-
-static int net_usershare_list(int argc, const char **argv)
-{
-	return -1;
-}
-
-static int net_usershare_listall(int argc, const char **argv)
-{
-	return -1;
-}
-
 /* The help subsystem for the USERSHARE subcommand */
 
 static int net_usershare_add_usage(int argc, const char **argv)
@@ -109,6 +84,54 @@ int net_usershare_usage(int argc, const char **argv)
 	return -1;
 }
 
+static int net_usershare_add(int argc, const char **argv)
+{
+	return -1;
+}
+
+static int net_usershare_delete(int argc, const char **argv)
+{
+	pstring us_path;
+
+	if (argc != 1) {
+		return net_usershare_delete_usage(argc, argv);
+	}
+
+	if (!validate_net_name(argv[0], INVALID_SHARENAME_CHARS, strlen(argv[0]))) {
+		d_printf("net usershare delete: share name %s contains "
+                        "invalid characters (any of %s)\n",
+                        argv[0], INVALID_SHARENAME_CHARS);
+		return -1;
+	}
+
+	pstrcpy(us_path, lp_usershare_path());
+	pstrcat(us_path, "/");
+	pstrcat(us_path, argv[0]);
+
+	if (unlink(us_path) != 0) {
+		d_printf("net usershare delete: unable to remove usershare %s. "
+			"Error was %s\n",
+                        us_path, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+static int net_usershare_info(int argc, const char **argv)
+{
+	return -1;
+}
+
+static int net_usershare_list(int argc, const char **argv)
+{
+	return -1;
+}
+
+static int net_usershare_listall(int argc, const char **argv)
+{
+	return -1;
+}
+
 /*
   handle "net usershare help *" subcommands
 */
@@ -129,6 +152,8 @@ int net_usershare_help(int argc, const char **argv)
 
 int net_usershare(int argc, const char **argv)
 {
+	SMB_STRUCT_DIR *dp;
+
 	struct functable func[] = {
 		{"ADD", net_usershare_add},
 		{"DELETE", net_usershare_delete},
@@ -139,5 +164,18 @@ int net_usershare(int argc, const char **argv)
 		{NULL, NULL}
 	};
 	
+	if (lp_usershare_max_shares() == 0) {
+		d_printf("net usershare: usershares are currently disabled\n");
+		return -1;
+	}
+
+	dp = sys_opendir(lp_usershare_path());
+	if (!dp) {
+		d_printf("net usershare: cannot open usershare directory %s. Error %s\n",
+			lp_usershare_path(), strerror(errno) );
+		return -1;
+	}
+	sys_closedir(dp);
+
 	return net_run_function(argc, argv, func, net_usershare_usage);
 }

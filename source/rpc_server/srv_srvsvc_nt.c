@@ -29,24 +29,6 @@ extern struct generic_mapping file_generic_mapping;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-/********************************************************************
- Check a string for any occurrences of a specified list of invalid 
- characters.
-********************************************************************/
-
-BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len )
-{
-	int i;
-
-	for ( i=0; i<max_len && name[i]; i++ ) {
-		/* fail if strchr_m() finds one of the invalid characters */
-		if ( name[i] && strchr_m( invalid_chars, name[i] ) )
-			return False;
-	}
-
-	return True;
-}
-
 /*******************************************************************
  Utility function to get the 'type' of a share from an snum.
  ********************************************************************/

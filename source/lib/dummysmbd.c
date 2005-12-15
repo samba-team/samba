@@ -53,8 +53,3 @@ BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 {
 	return False;
 }
-
-BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len )
-{
-	return False;
-}
