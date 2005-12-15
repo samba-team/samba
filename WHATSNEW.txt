@@ -1,13 +1,12 @@
-                   =================================
-                   Release Notes for Samba 3.0.21rc2
-                               Dec 2, 2005
-                   =================================
+                   ==============================
+                   Release Notes for Samba 3.0.21
+                            Dec 16, 2005
+                   ==============================
 
-This is a release candidate of the 3.0.21 code base and is provided
-for testing purposes only.  While this snapshot is *not* intended 
-for production servers, we do believe that this will become the 3.0.21 
-final release.  Your testing and feedback is greatly appreciated.
-
+This is the latest stable release of Samba. This is the version
+that production Samba servers should be running for all current
+bug-fixes.  Please read the following important changes in this
+release.
 
 Common bugs fixed in 3.0.21 include:
 
@@ -52,131 +51,53 @@ smb.conf changes
     svcctl list 			Renamed from 'enable svcctl'
 
 
-Changes since 3.0.21rc1
-------------------------
+Changes since 3.0.21rc2
+-----------------------
 
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
-    * Filter stored DOS attributes by SAMBA_ATTRIBUTES_MASK.
-    * Remove #define of close -> close_fn macro in libsmbclient.
-    * Return early if -1 returned from *BSD EA call (reported by 
-      Timur).
-    * Name space cleanup by marking local functions static.
-    * Move samr enumeration cache from per handle basis to a shared 
-      cache.
-    * BUG 3274: Fix invalid smbclient qpath_basic() queries against 
-      OS/2 servers (based on patch from Guenter Kukkukk).
-    * Ensure default applies to new files (reported by Thomas 
-      Neumann).
-    * BUG 3293: Use SMBecho to testing the server in client rather 
-      than SMBchkpath.
-    * Merge talloc fixes from Samba 4 branch.
-    * Add support DCE/RPC cancel operation.
-    * Don't reset attrs to zero in EA get.  Fixes 'hide dot files'
-      when using EA for DOS attributes.
-    * Fix bug in returning remote time (reported by Thomas Bork).
-    * No users or groups to return in BUILTIN domain.
-    * Removed separate "builtin" search enumeration.
-    * Added count_sam_aliases to return the correct alias count.
-
-
-o   Rashid N. Achilov <shelton@granch.ru>
-    * Add better service description names to the svcctl code.
-
-
-o   Timur Bakeyev <timur@com.bat.ru>
-    * BUG 3262: Improve FreeBSD DOS attribute error reporting.
+    * Correctly handle the LDAP_UNWILLING_TO_PERFORM error from 
+      eDirectory when accessing the universal password.
+    * Fix deadlock condition in share mode locking code.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Add smbget to the list of tools built by default.
-    * Fix clearing of eventlog tdb files.
-    * Fix sequential reads in eventlog support.
-    * BUG 2718: Don't use qpathinfo_basic() call when remote server 
-      is Win9x.
-    * Fix build issues with the Sun compiler.
-    * BUG 3156: Don't use find_service() when explicitly looking 
-      for a printer.
-    * Fix nss_winbind_solaris.c build breakage on HP=UX.
-
-
-o   Alex Deiter <tiamat@komi.mts.ru>
-    * BUG 3196: Patch to compile against the Sun LDAP client libs.
-      (not for AD support; just ldap support).
+    * Initialize the local group description.
+    * Disable WINS and NetLogon services in the MMC services
+      plugin when the associated smb.conf features are not enabled.
+    * Add checks for invalid characters in new share names on the 
+      srvsvc pipe.
 
 
 o   Guenther Deschner <gd@samba.org>
-    * Avoid an infinite loop when retrying to connect in smbspool.
-    * Memory leak fixes in the kerberos PAC parsing code.
-    * Improve NT_STATUS error messages returned from pam_winbind.
-    * Rename unknown samr group fields in samr structures with 
-      the correct name.removed separate "builtin" search enumeration.
-    * Cleanup redundant StartTLS code.
-    * Allow StartTLS support when connecting to Windows 2003 by
-      setting 'ldap ssl = start_tls'.
-    * Support raw NTLMSSP session setups in smbspool.
-    * Add rpccli_samr_chgpasswd3().
-    * Add 'wbinfo --separator'.
+    * Uninitialized warnings fixes.
+    * Fix return value in client spooler code.
+
+
+o   Krishna Ganugapati <krishnag@centeris.com>
+    * Use the subtree delete ldap control when running 'net ads 
+      leave'.
 
 
 o   Volker Lendecke <vl@samba.org>
-    * Removed unused alternative_name code from winbindd.
-    * Protect against NULL alternative_name strings in winbindd.
-    * Define a default panic action with -DEVELOPER is defined.
-    * Add the capability to reset smbd connections on a zero VC id.
-    * Allow smb.conf variable expansion to be disabled in passdb 
-      backends.
-    * Add lookupname to rpcclient query_user as a fallback.
-    * BUG 3292: Prevent smbclient from spinning when the server 
-      disconnects.
-    * BUG 2191: Fix valgrind error in cli_session_setup_guest().
-    * Add samr_lookup_rids for the builtin domain.
-    * Memory allocation cleanups in passdb.
-    * Restrict samr_open_domain() to our domain only.
-    * Change local_lookup_sid() to local_lookup_rid() since it 
-      is responsible for our domain only.
+    * Fix some uninitialized variable warnings.
+    * Fix winbind_lookup_name for the local domain, 
 
 
-o   Jim McDonough <jmcd@us.ibm.com>
-    * BUG 3187: Fix time zone offset in logon hours restrictions.
-
-
-o   Steve French <sfrench@us.ibm.com>
-    * Fix cifs to handle non-numeric uid and gid parameters.
-    * Merge trunk and SAMBA_3_0 mount.cifs code.
-    * Cleanup cifs cfs help message.
+o   Derrell Lipman <derrell@samba.org>
+    * libsmbclient memory leak fixes.
 
 
 o   Lars Müller <lmuelle@samba.org>
-    * Only install smbsh manpage if smbwrapper has been successfully
-      built.
+    * Ensure setmntent() returns with != NULL in the disk_quotas() 
+      Linux version.
+    * Add configure switch to disable libmsrpc build.
+    * Add a soname to libmsrpc.
 
 
-o   Tim Potter <tpot@samba.org>
-    * BUG 3260: Fix DYNEXP flags on HPUX.
-
-
-o   Aruna Prabakar <aruna.prabakar@hp.com.
-    * Add checks to verify that the spooler is running on HP-UX when
-      reloading the printer name cache.
-
-
-o   Marcin Porwit <mporwit@centeris.com>
-    * Fix directory permissions in the perfcounter daemon.
-    * Add the 'File' registry value for the eventlog keys.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Change license notice of standalone talloc library to LGPL.
-
-
-o   Darren Tucker <dtucker@zip.com.au>
-    o Crash fix for snprintf() code.
-
-
-o   Rainer Weikusat <rainer.weikusat@sncag.com>
-    * Fix function name typo in skeleton VFS code.
+o   John Terpstra <jht@samba.org>
+    * Add 'net idmap' usage help text.
 
 
 
@@ -231,6 +152,35 @@ o   Jeremy Allison <jra@samba.org>
     * Backport Samba 4 time zone handling.
     * Fix core dump if setmntent() returns NULL.
     * Replace old crc32 code with one from the FreeBSD tree.
+    * Filter stored DOS attributes by SAMBA_ATTRIBUTES_MASK.
+    * Remove #define of close -> close_fn macro in libsmbclient.
+    * Return early if -1 returned from *BSD EA call (reported by 
+      Timur).
+    * Name space cleanup by marking local functions static.
+    * Move samr enumeration cache from per handle basis to a shared 
+      cache.
+    * BUG 3274: Fix invalid smbclient qpath_basic() queries against 
+      OS/2 servers (based on patch from Guenter Kukkukk).
+    * Ensure default applies to new files (reported by Thomas 
+      Neumann).
+    * BUG 3293: Use SMBecho to testing the server in client rather 
+      than SMBchkpath.
+    * Merge talloc fixes from Samba 4 branch.
+    * Add support DCE/RPC cancel operation.
+    * Don't reset attrs to zero in EA get.  Fixes 'hide dot files'
+      when using EA for DOS attributes.
+    * Fix bug in returning remote time (reported by Thomas Bork).
+    * No users or groups to return in BUILTIN domain.
+    * Removed separate "builtin" search enumeration.
+    * Added count_sam_aliases to return the correct alias count.
+
+
+o   Rashid N. Achilov <shelton@granch.ru>
+    * Add better service description names to the svcctl code.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 3262: Improve FreeBSD DOS attribute error reporting.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -285,6 +235,20 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       validation.
     * Fix lockup when running 'wbinfo -t' on a Samba PDC caused 
       by mangling machine names in sub_set_smb_name().
+    * Add smbget to the list of tools built by default.
+    * Fix clearing of eventlog tdb files.
+    * Fix sequential reads in eventlog support.
+    * BUG 2718: Don't use qpathinfo_basic() call when remote server 
+      is Win9x.
+    * Fix build issues with the Sun compiler.
+    * BUG 3156: Don't use find_service() when explicitly looking 
+      for a printer.
+    * Fix nss_winbind_solaris.c build breakage on HP-UX.
+
+
+o   Alex Deiter <tiamat@komi.mts.ru>
+    * BUG 3196: Patch to compile against the Sun LDAP client libs.
+      (not for AD support; just ldap support).
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -303,6 +267,23 @@ o   Guenther Deschner <gd@samba.org>
     * Add small helper function to return a PAC_LOGON_INFO.
     * Use LDAP bitwise matching rule when searching for groups 
       in ADS.
+    * Avoid an infinite loop when retrying to connect in smbspool.
+    * Memory leak fixes in the kerberos PAC parsing code.
+    * Improve NT_STATUS error messages returned from pam_winbind.
+    * Rename unknown samr group fields in samr structures with 
+      the correct name.removed separate "builtin" search enumeration.
+    * Cleanup redundant StartTLS code.
+    * Allow StartTLS support when connecting to Windows 2003 by
+      setting 'ldap ssl = start_tls'.
+    * Support raw NTLMSSP session setups in smbspool.
+    * Add rpccli_samr_chgpasswd3().
+    * Add 'wbinfo --separator'.
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Fix cifs to handle non-numeric uid and gid parameters.
+    * Merge trunk and SAMBA_3_0 mount.cifs code.
+    * Cleanup cifs cfs help message.
 
 
 o   Paul Green <paulg@samba.org>
@@ -336,6 +317,21 @@ o   Volker Lendecke <vl@samba.org>
     * Add additional calls to initialize_krb5_error_table() for 
       kerberos client code.
     * Implement the possibility to have AFS users as SIDs in pts.
+    * Removed unused alternative_name code from winbindd.
+    * Protect against NULL alternative_name strings in winbindd.
+    * Define a default panic action with -DEVELOPER is defined.
+    * Add the capability to reset smbd connections on a zero VC id.
+    * Allow smb.conf variable expansion to be disabled in passdb 
+      backends.
+    * Add lookupname to rpcclient query_user as a fallback.
+    * BUG 3292: Prevent smbclient from spinning when the server 
+      disconnects.
+    * BUG 2191: Fix valgrind error in cli_session_setup_guest().
+    * Add samr_lookup_rids for the builtin domain.
+    * Memory allocation cleanups in passdb.
+    * Restrict samr_open_domain() to our domain only.
+    * Change local_lookup_sid() to local_lookup_rid() since it 
+      is responsible for our domain only.
 
 
 o   Derrell Lipman <derrell@samba.org>
@@ -355,6 +351,7 @@ o   Jim McDonough <jmcd@us.ibm.com>
       unneeded strncmp() calls.
     * Implement user rename for smbpasswd and LDAP backends.
     * BUG 2961 (partial): Add rename support for user accounts to tdbsam
+    * BUG 3187: Fix time zone offset in logon hours restrictions.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -372,6 +369,11 @@ o   Brian Moran <bmoran@centeris.com>
       eventlog tdb.
 
 
+o   Lars Müller <lmuelle@samba.org>
+    * Only install smbsh manpage if smbwrapper has been successfully
+      built.
+
+
 o   Ricky Nance <ricky.nance@gmail.com>
     * Updates for the mklogon perl scripts.
 
@@ -386,10 +388,21 @@ o   James Peach <jpeach@sgi.com>
     * Fix parsing error for smb ports parameter.
 
 
+o   Tim Potter <tpot@samba.org>
+    * BUG 3260: Fix DYNEXP flags on HPUX.
+
+
 o   Marcin Porwit <mporwit@centeris.com>
     * Eventlog and ServiceControl support.
     * Added basic Performance Counter daemon which can feed data
       for the Windows perfmon.exe tool.
+    * Fix directory permissions in the perfcounter daemon.
+    * Add the 'File' registry value for the eventlog keys.
+
+
+o   Aruna Prabakar <aruna.prabakar@hp.com.
+    * Add checks to verify that the spooler is running on HP-UX when
+      reloading the printer name cache.
 
 
 o   Joel Smith <joel.j.smith@novell.com>
@@ -402,6 +415,19 @@ o   Toomas Soome <Toomas.Soome@mls.ee>
 
 o   Simo Sorce <idra@samba.org>
     * Update Debian packaging.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Change license notice of standalone talloc library to LGPL.
+
+
+o   Darren Tucker <dtucker@zip.com.au>
+    o Crash fix for snprintf() code.
+
+
+o   Rainer Weikusat <rainer.weikusat@sncag.com>
+    * Fix function name typo in skeleton VFS code.
+
 
 
 Release Notes for older release follow:
