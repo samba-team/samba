@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5_locl.h,v 1.83 2005/10/07 12:08:02 lha Exp $ */
+/* $Id: krb5_locl.h,v 1.84 2005/12/13 15:40:50 lha Exp $ */
 
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
@@ -169,6 +169,14 @@ struct _krb5_krb_auth_data;
 #endif
 
 #define KRB5_BUFSIZ 1024
+
+#ifndef KRB5_DEFAULT_CCNAME
+#ifdef __APPLE__
+#define KRB5_DEFAULT_CCNAME "API:"
+#else
+#define KRB5_DEFAULT_CCNAME "FILE:/tmp/krb5cc_%{uid}"
+#endif
+#endif
 
 typedef enum {
     KRB5_PA_PAC_DONT_CARE = 0, 

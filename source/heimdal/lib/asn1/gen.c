@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.63 2005/08/23 10:49:16 lha Exp $");
+RCSID("$Id: gen.c,v 1.64 2005/12/06 19:59:13 lha Exp $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -567,6 +567,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	i.type = TInteger;
 	i.range = &range;
 	i.members = NULL;
+	i.constraint = NULL;
 
 	space(level);
 	if(ASN1_TAILQ_EMPTY(t->members)) 
@@ -640,6 +641,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	i.type = TInteger;
 	i.range = &range;
 	i.members = NULL;
+	i.constraint = NULL;
 
 	space(level);
 	fprintf (headerfile, "struct %s {\n", typedefp ? name : "");

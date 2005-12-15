@@ -62,6 +62,9 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #ifndef HAVE_STRNDUP
 #define HAVE_STRNDUP
 #endif
+#ifndef HAVE_SOCKLEN_T
+#define HAVE_SOCKLEN_T
+#endif
 
 #ifndef HAVE_SSIZE_T
 #define HAVE_SSIZE_T

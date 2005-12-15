@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: context_time.c,v 1.10 2003/06/03 15:08:00 lha Exp $");
+RCSID("$Id: context_time.c,v 1.11 2005/12/05 09:19:52 lha Exp $");
 
 OM_uint32
 gssapi_lifetime_left(OM_uint32 *minor_status, 
@@ -42,6 +42,11 @@ gssapi_lifetime_left(OM_uint32 *minor_status,
 {
     krb5_timestamp timeret;
     krb5_error_code kret;
+
+    if (lifetime == 0) {
+	*lifetime_rec = GSS_C_INDEFINITE;
+	return GSS_S_COMPLETE;
+    }
 
     kret = krb5_timeofday(gssapi_krb5_context, &timeret);
     if (kret) {

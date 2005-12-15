@@ -139,6 +139,7 @@ AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
 AC_HAVE_TYPE([struct ifaddrs], [#include <ifaddrs.h>])
+AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
 
 
 AC_DEFUN([AC_KRB_STRUCT_WINSIZE], [
