@@ -130,13 +130,13 @@ static void setup_signals(void)
 static void server_stdin_handler(struct event_context *event_ctx, struct fd_event *fde, 
 				 uint16_t flags, void *private)
 {
+	const char *binary_name = private;
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
-		DEBUG(0,("smbd: EOF on stdin - terminating\n"));
+		DEBUG(0,("%s: EOF on stdin - terminating\n", binary_name));
 		exit(0);
 	}
 }
-
 
 /*
   die if the user selected maximum runtime is exceeded
@@ -144,15 +144,15 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 static void max_runtime_handler(struct event_context *ev, struct timed_event *te, 
 				struct timeval t, void *private)
 {
-	DEBUG(0,("smbd maximum runtime exceeded - terminating\n"));
+	const char *binary_name = private;
+	DEBUG(0,("%s: maximum runtime exceeded - terminating\n", binary_name));
 	exit(0);
 }
-
 
 /*
  main server.
 */
-static int binary_smbd_main(int argc, const char *argv[])
+static int binary_smbd_main(const char *binary_name, int argc, const char *argv[])
 {
 	BOOL interactive = False;
 	int opt;
@@ -168,13 +168,13 @@ static int binary_smbd_main(int argc, const char *argv[])
 		{"model", 'M', POPT_ARG_STRING, &model, True, 
 		 "Select process model", "MODEL"},
 		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, True, 
-		 "set maximum time for smbd to live", "seconds"},
+		 "set maximum runtime of the server process, till autotermination", "seconds"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
-	
-	pc = poptGetContext("smbd", argc, argv, long_options, 0);
+
+	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
 	
 	while((opt = poptGetNextOpt(pc)) != -1) /* noop */ ;
 
@@ -187,7 +187,7 @@ static int binary_smbd_main(int argc, const char *argv[])
 	   so set our umask to 0 */
 	umask(0);
 
-	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION_STRING));
+	DEBUG(0,("%s version %s started.\n", binary_name, SAMBA_VERSION_STRING));
 	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2005\n"));
 
 	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4 || sizeof(uint64_t) < 8) {
@@ -206,7 +206,7 @@ static int binary_smbd_main(int argc, const char *argv[])
 		mkdir(lp_lockdir(), 0755);
 	}
 
-	pidfile_create("smbd");
+	pidfile_create(binary_name);
 
 	/* Do *not* remove this, until you have removed
 	 * passdb/secrets.c, and proved that Samba still builds... */
@@ -227,17 +227,19 @@ static int binary_smbd_main(int argc, const char *argv[])
 		signal(SIGTTIN, SIG_IGN);
 #endif
 		event_add_fd(event_ctx, event_ctx, 0, EVENT_FD_READ, 
-			     server_stdin_handler, NULL);
+			     server_stdin_handler,
+			     discard_const(binary_name));
 	}
 
 
 	if (max_runtime) {
 		event_add_timed(event_ctx, event_ctx, 
 				timeval_current_ofs(max_runtime, 0), 
-				max_runtime_handler, NULL);
+				max_runtime_handler,
+				discard_const(binary_name));
 	}
 
-	DEBUG(0,("Using %s process model\n", model));
+	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
 	status = server_service_startup(event_ctx, model, lp_server_services());
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
@@ -260,5 +262,5 @@ static int binary_smbd_main(int argc, const char *argv[])
 
  int main(int argc, const char *argv[])
 {
-	return binary_smbd_main(argc, argv);
+	return binary_smbd_main("smbd", argc, argv);
 }
