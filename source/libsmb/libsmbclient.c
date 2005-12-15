@@ -82,7 +82,6 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 /*
  * Find an lsa pipe handle associated with a cli struct.
  */
-
 static struct rpc_pipe_client *find_lsa_pipe_hnd(struct cli_state *ipc_cli)
 {
 	struct rpc_pipe_client *pipe_hnd;
@@ -483,6 +482,8 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
 
 	context->callbacks.remove_cached_srv_fn(context, srv);
+
+        SAFE_FREE(srv);
 	
 	return 0;
 }
@@ -584,9 +585,10 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		return NULL;
 	}
 
+        /* Look for a cached connection */
         srv = find_server(context, server, share,
                           workgroup, username, password);
-
+        
         /*
          * If we found a connection and we're only allowed one share per
          * server...
@@ -772,6 +774,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
 	ZERO_STRUCTP(srv);
 	srv->cli = c;
+        srv->cli.allocated = False;
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
@@ -780,7 +783,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
-	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username_used)) {
+	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
@@ -821,9 +824,9 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 	SMBCSRV *ipc_srv=NULL;
 
         /*
-         * See if we've already created this special connection.  Reference our
-         * "special" share name '*IPC$', which is an impossible real share name
-         * due to the leading asterisk.
+         * See if we've already created this special connection.  Reference
+         * our "special" share name '*IPC$', which is an impossible real share
+         * name due to the leading asterisk.
          */
         ipc_srv = find_server(context, server, "*IPC$",
                               workgroup, username, password);
@@ -852,31 +855,6 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
-                if(pol) {
-		pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli, PI_LSARPC, &nt_status);
-                        if (!pipe_hnd) {
-                                DEBUG(1, ("cli_nt_session_open fail!\n"));
-                                errno = ENOTSUP;
-                                cli_shutdown(ipc_cli);
-                                return NULL;
-                        }
-
-                        /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
-                           but NT sends 0x2000000 so we might as well do it too. */
-        
-                        nt_status = rpccli_lsa_open_policy(pipe_hnd,
-                                                         ipc_cli->mem_ctx,
-                                                         True, 
-                                                         GENERIC_EXECUTE_ACCESS,
-                                                         pol);
-        
-                        if (!NT_STATUS_IS_OK(nt_status)) {
-                                errno = smbc_errno(context, ipc_cli);
-                                cli_shutdown(ipc_cli);
-                                return NULL;
-                        }
-                }
-
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
                 if (!ipc_srv) {
                         errno = ENOMEM;
@@ -886,8 +864,41 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 
                 ZERO_STRUCTP(ipc_srv);
                 ipc_srv->cli = *ipc_cli;
+                ipc_srv->cli.allocated = False;
 
                 free(ipc_cli);
+
+                if (pol) {
+                        pipe_hnd = cli_rpc_pipe_open_noauth(&ipc_srv->cli,
+                                                            PI_LSARPC,
+                                                            &nt_status);
+                        if (!pipe_hnd) {
+                                DEBUG(1, ("cli_nt_session_open fail!\n"));
+                                errno = ENOTSUP;
+                                cli_shutdown(&ipc_srv->cli);
+                                free(ipc_srv);
+                                return NULL;
+                        }
+
+                        /*
+                         * Some systems don't support
+                         * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
+                         * so we might as well do it too.
+                         */
+        
+                        nt_status = rpccli_lsa_open_policy(
+                                pipe_hnd,
+                                ipc_srv->cli.mem_ctx,
+                                True, 
+                                GENERIC_EXECUTE_ACCESS,
+                                pol);
+        
+                        if (!NT_STATUS_IS_OK(nt_status)) {
+                                errno = smbc_errno(context, &ipc_srv->cli);
+                                cli_shutdown(&ipc_srv->cli);
+                                return NULL;
+                        }
+                }
 
                 /* now add it to the cache (internal or external) */
 
@@ -2169,6 +2180,7 @@ list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *stat
                         /* Found the end of the list.  Remove it. */
                         dir->dir_end = dir_list;
                         free(dir_list->next);
+                        free(dirent);
                         dir_list->next = NULL;
                         break;
                 }
@@ -2181,12 +2193,23 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 	SMBCFILE *dir = (SMBCFILE *)state;
 	int dirent_type;
 
-	/* We need to process the type a little ... */
-
+	/*
+         * We need to process the type a little ...
+         *
+         * Disk share     = 0x00000000
+         * Print share    = 0x00000001
+         * Comms share    = 0x00000002 (obsolete?)
+         * IPC$ share     = 0x00000003 
+         *
+         * administrative shares:
+         * ADMIN$, IPC$, C$, D$, E$ ...  are type |= 0x80000000
+         */
+        
 	if (dir->dir_type == SMBC_FILE_SHARE) {
 		
 		switch (type) {
-		case 0: /* Directory tree */
+                case 0 | 0x80000000:
+		case 0:
 			dirent_type = SMBC_FILE_SHARE;
 			break;
 
@@ -2198,6 +2221,7 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 			dirent_type = SMBC_COMMS_SHARE;
 			break;
 
+                case 3 | 0x80000000:
 		case 3:
 			dirent_type = SMBC_IPC_SHARE;
 			break;
@@ -2207,7 +2231,9 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 			break;
 		}
 	}
-	else dirent_type = dir->dir_type;
+	else {
+                dirent_type = dir->dir_type;
+        }
 
 	if (add_dirent(dir, name, comment, dirent_type) < 0) {
 
@@ -2231,6 +2257,88 @@ dir_list_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
 	} 
 
 }
+
+static int
+net_share_enum_rpc(struct cli_state *cli,
+                   void (*fn)(const char *name,
+                              uint32 type,
+                              const char *comment,
+                              void *state),
+                   void *state)
+{
+        int i;
+	WERROR result;
+	ENUM_HND enum_hnd;
+        uint32 info_level = 1;
+	uint32 preferred_len = 0xffffffff;
+        uint32 type;
+	SRV_SHARE_INFO_CTR ctr;
+	fstring name = "";
+        fstring comment = "";
+        void *mem_ctx;
+	struct rpc_pipe_client *pipe_hnd;
+        NTSTATUS nt_status;
+
+        /* Open the server service pipe */
+        pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SRVSVC, &nt_status);
+        if (!pipe_hnd) {
+                DEBUG(1, ("net_share_enum_rpc pipe open fail!\n"));
+                return -1;
+        }
+
+        /* Allocate a context for parsing and for the entries in "ctr" */
+        mem_ctx = talloc_init("libsmbclient: net_share_enum_rpc");
+        if (mem_ctx == NULL) {
+                DEBUG(0, ("out of memory for net_share_enum_rpc!\n"));
+                cli_rpc_pipe_close(pipe_hnd);
+                return -1; 
+        }
+
+        /* Issue the NetShareEnum RPC call and retrieve the response */
+	init_enum_hnd(&enum_hnd, 0);
+	result = rpccli_srvsvc_net_share_enum(pipe_hnd,
+                                              mem_ctx,
+                                              info_level,
+                                              &ctr,
+                                              preferred_len,
+                                              &enum_hnd);
+
+        /* Was it successful? */
+	if (!W_ERROR_IS_OK(result) || ctr.num_entries == 0) {
+                /*  Nope.  Go clean up. */
+		goto done;
+        }
+
+        /* For each returned entry... */
+        for (i = 0; i < ctr.num_entries; i++) {
+
+                /* pull out the share name */
+                rpcstr_pull_unistr2_fstring(
+                        name, &ctr.share.info1[i].info_1_str.uni_netname);
+
+                /* pull out the share's comment */
+                rpcstr_pull_unistr2_fstring(
+                        comment, &ctr.share.info1[i].info_1_str.uni_remark);
+
+                /* Get the type value */
+                type = ctr.share.info1[i].info_1.type;
+
+                /* Add this share to the list */
+                (*fn)(name, type, comment, state);
+        }
+
+done:
+        /* Close the server service pipe */
+        cli_rpc_pipe_close(pipe_hnd);
+
+        /* Free all memory which was allocated for this request */
+        talloc_free(mem_ctx);
+
+        /* Tell 'em if it worked */
+        return W_ERROR_IS_OK(result) ? 0 : -1;
+}
+
+
 
 static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
@@ -2337,7 +2445,11 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                  * a single master browser.
                  */
 
+                ip_list = NULL;
                 if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+
+                        SAFE_FREE(ip_list);
+
                         if (!find_master_ip(workgroup, &server_addr.ip)) {
 
                                 errno = ENOENT;
@@ -2380,12 +2492,16 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
                         /* Now, list the stuff ... */
                         
-                        if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_unique_wg_fn,
+                        if (!cli_NetServerEnum(&srv->cli,
+                                               workgroup,
+                                               SV_TYPE_DOMAIN_ENUM,
+                                               list_unique_wg_fn,
                                                (void *)dir)) {
-                                
                                 continue;
                         }
                 }
+
+                SAFE_FREE(ip_list);
         } else { 
                 /*
                  * Server not an empty string ... Check the rest and see what
@@ -2482,9 +2598,15 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 					/* Now, list the servers ... */
 
-					if (cli_RNetShareEnum(&srv->cli, list_fn, 
-							      (void *)dir) < 0) {
-
+					if (net_share_enum_rpc(
+                                                    &srv->cli,
+                                                    list_fn,
+                                                    (void *) dir) < 0 &&
+                                            cli_RNetShareEnum(
+                                                    &srv->cli,
+                                                    list_fn, 
+                                                    (void *)dir) < 0) {
+                                                
 						errno = cli_errno(&srv->cli);
 						if (dir) {
 							SAFE_FREE(dir->fname);
