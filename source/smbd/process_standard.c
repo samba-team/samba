@@ -29,6 +29,9 @@
 #include "smb_server/smb_server.h"
 #include "system/filesys.h"
 
+/* For sepecifiying event context to GSSAPI below */
+#include "heimdal/lib/gssapi/gssapi_locl.h"
+
 /*
   called when the process model is selected
 */
@@ -93,6 +96,9 @@ static void standard_accept_connection(struct event_context *ev,
 	if (tdb_reopen_all() == -1) {
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
+
+	/* Hack to ensure that GSSAPI uses the right event context */
+	gssapi_krb5_init_ev(ev2);
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
