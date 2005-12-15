@@ -1,3 +1,10 @@
+2005-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c (tgs_make_reply): less const on hdb_entry_ex to
+	make samba happy
+
+	* fix-export: Build kdc-private.h.
+	
 2005-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c (tgs_rep2): also print the principal for which
