@@ -207,7 +207,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
 	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
-	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
+	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o

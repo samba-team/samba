@@ -973,6 +973,8 @@ extern int errno;
 
 #include "rpc_client.h"
 
+#include "event.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
