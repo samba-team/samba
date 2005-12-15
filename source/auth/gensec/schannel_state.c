@@ -122,12 +122,29 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_string(msg, "flatname", creds->domain);
 	samdb_msg_add_dom_sid(ldb, mem_ctx, msg, "objectSid", creds->sid);
 
+	ret = ldb_transaction_start(ldb);
+	if (ret != 0) {
+		DEBUG(0,("Unable to start transaction to add %s to session key db - %s\n", 
+			 ldb_dn_linearize(msg, msg->dn), ldb_errstring(ldb)));
+		talloc_free(ldb);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	ldb_delete(ldb, msg->dn);
 
 	ret = ldb_add(ldb, msg);
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
+			 ldb_dn_linearize(msg, msg->dn), ldb_errstring(ldb)));
+		talloc_free(ldb);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = ldb_transaction_commit(ldb);
+
+	if (ret != 0) {
+		DEBUG(0,("Unable to commit adding %s to session key db - %s\n", 
 			 ldb_dn_linearize(msg, msg->dn), ldb_errstring(ldb)));
 		talloc_free(ldb);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
