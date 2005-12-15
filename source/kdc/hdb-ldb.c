@@ -198,10 +198,17 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
-static krb5_error_code hdb_ldb_free_private(krb5_context context, hdb_entry_ex *entry_ex)
+static int hdb_ldb_destrutor(void *ptr)
 {
-	talloc_free(entry_ex->private);
-	return 0;
+    struct hdb_ldb_private *private = ptr;
+    hdb_entry_ex *entry_ex = private->entry_ex;
+    free_hdb_entry(&entry_ex->entry);
+    return 0;
+}
+
+static void hdb_ldb_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
+{
+	talloc_free(entry_ex->ctx);
 }
 
 /*
@@ -223,10 +230,9 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, realm_ref_msg, "nCName", ldb_dn_new(mem_ctx));
 
 	struct hdb_ldb_private *private;
-	hdb_entry *ent = &entry_ex->entry;
 	NTTIME acct_expiry;
 
-	memset(ent, 0, sizeof(*ent));
+	memset(entry_ex, 0, sizeof(*entry_ex));
 
 	krb5_warnx(context, "LDB_message2entry:\n");
 
@@ -236,9 +242,22 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 			
+	private = talloc(mem_ctx, struct hdb_ldb_private);
+	if (!private) {
+		ret = ENOMEM;
+		goto out;
+	}
+
+	private->entry_ex = entry_ex;
+
+	talloc_set_destructor(private, hdb_ldb_destrutor);
+
+	entry_ex->ctx = private;
+	entry_ex->free_entry = hdb_ldb_free_entry;
+
 	userAccountControl = ldb_msg_find_uint(msg, "userAccountControl", 0);
 	
-	ent->principal = malloc(sizeof(*(ent->principal)));
+	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == HDB_LDB_ENT_TYPE_ANY && principal == NULL) {
 		const char *samAccountName = ldb_msg_find_string(msg, "samAccountName", NULL);
 		if (!samAccountName) {
@@ -247,10 +266,10 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 			goto out;
 		}
 		samAccountName = ldb_msg_find_string(msg, "samAccountName", NULL);
-		krb5_make_principal(context, &ent->principal, realm, samAccountName, NULL);
+		krb5_make_principal(context, &entry_ex->entry.principal, realm, samAccountName, NULL);
 	} else {
 		char *strdup_realm;
-		ret = copy_Principal(principal, ent->principal);
+		ret = copy_Principal(principal, entry_ex->entry.principal);
 		if (ret) {
 			krb5_clear_error_string(context);
 			goto out;
@@ -263,7 +282,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		 * we determine from our records */
 		
 		/* don't leak */
-		free(*krb5_princ_realm(context, ent->principal));
+		free(*krb5_princ_realm(context, entry_ex->entry.principal));
 		
 		/* this has to be with malloc() */
 		strdup_realm = strdup(realm);
@@ -272,56 +291,56 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 			krb5_clear_error_string(context);
 			goto out;
 		}
-		krb5_princ_set_realm(context, ent->principal, &strdup_realm);
+		krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
 	}
 
-	ent->kvno = ldb_msg_find_int(msg, "msDS-KeyVersionNumber", 0);
+	entry_ex->entry.kvno = ldb_msg_find_int(msg, "msDS-KeyVersionNumber", 0);
 
-	ent->flags = uf2HDBFlags(context, userAccountControl, ent_type);
+	entry_ex->entry.flags = uf2HDBFlags(context, userAccountControl, ent_type);
 
 	if (ent_type == HDB_LDB_ENT_TYPE_KRBTGT) {
-		ent->flags.invalid = 0;
-		ent->flags.server = 1;
-		ent->flags.forwardable = 1;
-		ent->flags.ok_as_delegate = 1;
+		entry_ex->entry.flags.invalid = 0;
+		entry_ex->entry.flags.server = 1;
+		entry_ex->entry.flags.forwardable = 1;
+		entry_ex->entry.flags.ok_as_delegate = 1;
 	}
 
 	if (lp_parm_bool(-1, "kdc", "require spn for service", True)) {
 		if (!ldb_msg_find_string(msg, "servicePrincipalName", NULL)) {
-			ent->flags.server = 0;
+			entry_ex->entry.flags.server = 0;
 		}
 	}
 
 	/* use 'whenCreated' */
-	ent->created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
+	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 	/* use '???' */
-	ent->created_by.principal = NULL;
+	entry_ex->entry.created_by.principal = NULL;
 
-	ent->modified_by = (Event *) malloc(sizeof(Event));
-	if (ent->modified_by == NULL) {
+	entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
+	if (entry_ex->entry.modified_by == NULL) {
 		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
 		goto out;
 	}
 
 	/* use 'whenChanged' */
-	ent->modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
+	entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
 	/* use '???' */
-	ent->modified_by->principal = NULL;
+	entry_ex->entry.modified_by->principal = NULL;
 
-	ent->valid_start = NULL;
+	entry_ex->entry.valid_start = NULL;
 
 	acct_expiry = samdb_result_nttime(msg, "accountExpires", (NTTIME)-1);
 	if ((acct_expiry == (NTTIME)-1) ||
 	    (acct_expiry == 0x7FFFFFFFFFFFFFFFULL)) {
-		ent->valid_end = NULL;
+		entry_ex->entry.valid_end = NULL;
 	} else {
-		ent->valid_end = malloc(sizeof(*ent->valid_end));
-		if (ent->valid_end == NULL) {
+		entry_ex->entry.valid_end = malloc(sizeof(*entry_ex->entry.valid_end));
+		if (entry_ex->entry.valid_end == NULL) {
 			ret = ENOMEM;
 			goto out;
 		}
-		*ent->valid_end = nt_time_to_unix(acct_expiry);
+		*entry_ex->entry.valid_end = nt_time_to_unix(acct_expiry);
 	}
 
 	if ((ent_type != HDB_LDB_ENT_TYPE_KRBTGT) && (!(userAccountControl & UF_DONT_EXPIRE_PASSWD))) {
@@ -330,24 +349,24 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 							     domain_dn, msg, 
 							     "pwdLastSet");
 		if (must_change_time != 0) {
-			ent->pw_end = malloc(sizeof(*ent->pw_end));
-			if (ent->pw_end == NULL) {
+			entry_ex->entry.pw_end = malloc(sizeof(*entry_ex->entry.pw_end));
+			if (entry_ex->entry.pw_end == NULL) {
 				ret = ENOMEM;
 				goto out;
 			}
-			*ent->pw_end = nt_time_to_unix(must_change_time);
+			*entry_ex->entry.pw_end = nt_time_to_unix(must_change_time);
 		} else {
-			ent->pw_end = NULL;
+			entry_ex->entry.pw_end = NULL;
 		}
 	} else {
-		ent->pw_end = NULL;
+		entry_ex->entry.pw_end = NULL;
 	}
 			
-	ent->max_life = NULL;
+	entry_ex->entry.max_life = NULL;
 
-	ent->max_renew = NULL;
+	entry_ex->entry.max_renew = NULL;
 
-	ent->generation = NULL;
+	entry_ex->entry.generation = NULL;
 
 	/* create the keys and enctypes */
 	unicodePwd = ldb_msg_find_string(msg, "unicodePwd", NULL);
@@ -399,21 +418,21 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		}
 
 		if (ret == 0) {
-			size_t num_keys = ent->keys.len;
+			size_t num_keys = entry_ex->entry.keys.len;
 			/*
 			 * create keys from unicodePwd
 			 */
 			ret = hdb_generate_key_set_password(context, salt_principal, 
 							    unicodePwd, 
-							    &ent->keys.val, &num_keys);
-			ent->keys.len = num_keys;
+							    &entry_ex->entry.keys.val, &num_keys);
+			entry_ex->entry.keys.len = num_keys;
 			krb5_free_principal(context, salt_principal);
 		}
 
 		if (ret != 0) {
 			krb5_warnx(context, "could not generate keys from unicodePwd\n");
-			ent->keys.val = NULL;
-			ent->keys.len = 0;
+			entry_ex->entry.keys.val = NULL;
+			entry_ex->entry.keys.len = 0;
 			goto out;
 		}
 	} else {
@@ -423,11 +442,11 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		val = ldb_msg_find_ldb_val(msg, "ntPwdHash");
 		if (!val) {
 			krb5_warnx(context, "neither type of key available for this account\n");
-			ent->keys.val = NULL;
-			ent->keys.len = 0;
+			entry_ex->entry.keys.val = NULL;
+			entry_ex->entry.keys.len = 0;
 		} else if (val->length < 16) {
-			ent->keys.val = NULL;
-			ent->keys.len = 0;
+			entry_ex->entry.keys.val = NULL;
+			entry_ex->entry.keys.len = 0;
 			krb5_warnx(context, "ntPwdHash has invalid length: %d\n",
 				   (int)val->length);
 		} else {
@@ -440,53 +459,45 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 			memcpy(keyvalue.data, val->data, 16);
 
-			ent->keys.val = malloc(sizeof(ent->keys.val[0]));
-			if (ent->keys.val == NULL) {
+			entry_ex->entry.keys.val = malloc(sizeof(entry_ex->entry.keys.val[0]));
+			if (entry_ex->entry.keys.val == NULL) {
 				krb5_data_free(&keyvalue);
 				krb5_clear_error_string(context);
 				ret = ENOMEM;
 				goto out;
 			}
 			
-			memset(&ent->keys.val[0], 0, sizeof(Key));
-			ent->keys.val[0].key.keytype = ETYPE_ARCFOUR_HMAC_MD5;
-			ent->keys.val[0].key.keyvalue = keyvalue;
+			memset(&entry_ex->entry.keys.val[0], 0, sizeof(Key));
+			entry_ex->entry.keys.val[0].key.keytype = ETYPE_ARCFOUR_HMAC_MD5;
+			entry_ex->entry.keys.val[0].key.keyvalue = keyvalue;
 			
-			ent->keys.len = 1;
+			entry_ex->entry.keys.len = 1;
 		}
 	}		
 
 
-	ent->etypes = malloc(sizeof(*(ent->etypes)));
-	if (ent->etypes == NULL) {
+	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
+	if (entry_ex->entry.etypes == NULL) {
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	}
-	ent->etypes->len = ent->keys.len;
-	ent->etypes->val = calloc(ent->etypes->len, sizeof(int));
-	if (ent->etypes->val == NULL) {
+	entry_ex->entry.etypes->len = entry_ex->entry.keys.len;
+	entry_ex->entry.etypes->val = calloc(entry_ex->entry.etypes->len, sizeof(int));
+	if (entry_ex->entry.etypes->val == NULL) {
 		krb5_clear_error_string(context);
 		ret = ENOMEM;
 		goto out;
 	}
-	for (i=0; i < ent->etypes->len; i++) {
-		ent->etypes->val[i] = ent->keys.val[i].key.keytype;
+	for (i=0; i < entry_ex->entry.etypes->len; i++) {
+		entry_ex->entry.etypes->val[i] = entry_ex->entry.keys.val[i].key.keytype;
 	}
 
-
-	private = talloc(db, struct hdb_ldb_private);
-	if (!private) {
-		ret = ENOMEM;
-		goto out;
-	}
 
 	private->msg = talloc_steal(private, msg);
 	private->realm_ref_msg = talloc_steal(private, realm_ref_msg);
 	private->samdb = (struct ldb_context *)db->hdb_db;
 	
-	entry_ex->private = private;
-	entry_ex->free_private = hdb_ldb_free_private;
 	entry_ex->check_client_access = hdb_ldb_check_client_access;
 	entry_ex->authz_data_tgs_req = hdb_ldb_authz_data_tgs_req;
 	entry_ex->authz_data_as_req = hdb_ldb_authz_data_as_req;
@@ -494,7 +505,9 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
-		hdb_free_entry(context, &entry_ex->entry);
+		hdb_free_entry(context, entry_ex);
+	} else {
+		talloc_steal(db, entry_ex->ctx);
 	}
 
 	return ret;
@@ -669,10 +682,10 @@ static krb5_error_code LDB_rename(krb5_context context, HDB *db, const char *new
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flags,
-				    krb5_const_principal principal,
-				    enum hdb_ent_type ent_type,
-				    hdb_entry_ex *entry_ex)
+static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
+				 krb5_const_principal principal,
+				 enum hdb_ent_type ent_type,
+				 hdb_entry_ex *entry_ex)
 {
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_ref_msg = NULL;
@@ -860,32 +873,12 @@ static krb5_error_code LDB_fetch_ex(krb5_context context, HDB *db, unsigned flag
 	return ret;
 }
 
-static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
-				 krb5_const_principal principal,
-				 enum hdb_ent_type ent_type,
-				 hdb_entry *entry)
-{
-	struct hdb_entry_ex entry_ex;
-	krb5_error_code ret;
-
-	memset(&entry_ex, '\0', sizeof(entry_ex));
-	ret = LDB_fetch_ex(context, db, flags, principal, ent_type, &entry_ex);
-	
-	if (ret == 0) {
-		if (entry_ex.free_private) {
-			entry_ex.free_private(context, &entry_ex);
-		}
-		*entry = entry_ex.entry;
-	}
-	return ret;
-}
-
-static krb5_error_code LDB_store(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
+static krb5_error_code LDB_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code LDB_remove(krb5_context context, HDB *db, hdb_entry *entry)
+static krb5_error_code LDB_remove(krb5_context context, HDB *db, hdb_entry_ex *entry)
 {
 	return HDB_ERR_DB_INUSE;
 }
@@ -898,7 +891,7 @@ struct hdb_ldb_seq {
 	struct ldb_message **realm_ref_msgs;
 };
 
-static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hdb_entry *entry)
+static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
 	krb5_error_code ret;
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
@@ -921,13 +914,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					NULL, HDB_LDB_ENT_TYPE_ANY, 
 					priv->msgs[priv->index++], 
-					priv->realm_ref_msgs[0], &entry_ex);
-		if (ret == 0) {
-			if (entry_ex.free_private) {
-				entry_ex.free_private(context, &entry_ex);
-			}
-			*entry = entry_ex.entry;
-		}
+					priv->realm_ref_msgs[0], entry);
 	} else {
 		ret = HDB_ERR_NOENTRY;
 	}
@@ -943,7 +930,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 }
 
 static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flags,
-					hdb_entry *entry)
+					hdb_entry_ex *entry)
 {
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
@@ -1028,7 +1015,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 }
 
 static krb5_error_code LDB_nextkey(krb5_context context, HDB *db, unsigned flags,
-					hdb_entry *entry)
+				   hdb_entry_ex *entry)
 {
 	return LDB_seq(context, db, flags, entry);
 }
@@ -1083,7 +1070,6 @@ NTSTATUS hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_open = LDB_open;
 	(*db)->hdb_close = LDB_close;
 	(*db)->hdb_fetch = LDB_fetch;
-	(*db)->hdb_fetch_ex = LDB_fetch_ex;
 	(*db)->hdb_store = LDB_store;
 	(*db)->hdb_remove = LDB_remove;
 	(*db)->hdb_firstkey = LDB_firstkey;

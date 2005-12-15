@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h,v 1.73 2005/08/15 11:07:25 lha Exp $ 
+ * $Id: kdc_locl.h,v 1.74 2005/12/12 12:23:33 lha Exp $ 
  */
 
 #ifndef __KDC_LOCL_H__
@@ -40,6 +40,9 @@
 
 #include "headers.h"
 #include "kdc.h"
+
+typedef struct pk_client_params pk_client_params;
+#include <kdc-private.h>
 
 extern sig_atomic_t exit_flag;
 extern size_t max_request;
@@ -68,20 +71,13 @@ krb5_kdc_configuration *
 configure(krb5_context context, int argc, char **argv);
 
 krb5_error_code
-_kdc_db_fetch(krb5_context, krb5_kdc_configuration *,
-	      krb5_principal, enum hdb_ent_type, hdb_entry **);
-
-krb5_error_code
-_kdc_db_fetch_ex(krb5_context context,
-		 krb5_kdc_configuration *config,
-		 krb5_principal principal, enum hdb_ent_type ent_type, 
-		 hdb_entry_ex **h);
+_kdc_db_fetch(krb5_context context,
+	      krb5_kdc_configuration *config,
+	      krb5_principal principal, enum hdb_ent_type ent_type, 
+	      hdb_entry_ex **h);
 
 void
-_kdc_free_ent(krb5_context context, hdb_entry *);
-
-void
-_kdc_free_ent_ex(krb5_context context, hdb_entry_ex *ent);
+_kdc_free_ent(krb5_context context, hdb_entry_ex *ent);
 
 void
 loop(krb5_context context, krb5_kdc_configuration *config);
@@ -99,7 +95,7 @@ _kdc_check_flags(krb5_context context,
 		 krb5_boolean is_as_req);
 
 krb5_error_code
-_kdc_get_des_key(krb5_context context, hdb_entry*, 
+_kdc_get_des_key(krb5_context context, hdb_entry_ex*, 
 		 krb5_boolean, krb5_boolean, Key**);
 
 krb5_error_code
@@ -145,7 +141,7 @@ void _kdc_pk_free_client_param(krb5_context, pk_client_params *);
 krb5_error_code
 _kdc_db_fetch4 (krb5_context context, 
 		krb5_kdc_configuration *config,
-		const char*, const char*, const char*, enum hdb_ent_type, hdb_entry**);
+		const char*, const char*, const char*, enum hdb_ent_type, hdb_entry_ex**);
 
 krb5_error_code
 _kdc_do_version4 (krb5_context context, 

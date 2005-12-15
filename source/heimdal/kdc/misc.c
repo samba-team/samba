@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: misc.c,v 1.25 2005/06/30 01:53:48 lha Exp $");
+RCSID("$Id: misc.c,v 1.26 2005/12/12 12:37:31 lha Exp $");
 
 struct timeval _kdc_now;
 
@@ -41,16 +41,15 @@ krb5_error_code
 _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_principal principal, enum hdb_ent_type ent_type, 
-	      hdb_entry **h)
+	      hdb_entry_ex **h)
 {
-    hdb_entry *ent;
+    hdb_entry_ex *ent;
     krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
 
     ent = malloc (sizeof (*ent));
     if (ent == NULL)
 	return ENOMEM;
-    ent->principal = principal;
 
     for(i = 0; i < config->num_db; i++) {
 	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
@@ -76,65 +75,9 @@ _kdc_db_fetch(krb5_context context,
 }
 
 void
-_kdc_free_ent(krb5_context context, hdb_entry *ent)
+_kdc_free_ent(krb5_context context, hdb_entry_ex *ent)
 {
     hdb_free_entry (context, ent);
-    free (ent);
-}
-
-krb5_error_code
-_kdc_db_fetch_ex(krb5_context context,
-		 krb5_kdc_configuration *config,
-		 krb5_principal principal, enum hdb_ent_type ent_type, 
-		 hdb_entry_ex **h)
-{
-    hdb_entry_ex *ent;
-    krb5_error_code ret = HDB_ERR_NOENTRY;
-    int i;
-
-    ent = malloc (sizeof (*ent));
-    if (ent == NULL)
-	return ENOMEM;
-    memset(ent, '\0', sizeof(*ent));
-
-    ent->entry.principal = principal;
-
-    for(i = 0; i < config->num_db; i++) {
-	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
-	if (ret) {
-	    kdc_log(context, config, 0, "Failed to open database: %s", 
-		    krb5_get_err_text(context, ret));
-	    continue;
-	}
-	if (config->db[i]->hdb_fetch_ex) {
-		ret = config->db[i]->hdb_fetch_ex(context, 
-						  config->db[i],
-						  HDB_F_DECRYPT, 
-						  principal, 
-						  ent_type,
-						  ent);
-	} else {
-		ret = config->db[i]->hdb_fetch(context, 
-					       config->db[i],
-					       HDB_F_DECRYPT, 
-					       principal, 
-					       ent_type,
-					       &ent->entry);
-	}
-	config->db[i]->hdb_close(context, config->db[i]);
-	if(ret == 0) {
-	    *h = ent;
-	    return 0;
-	}
-    }
-    free(ent);
-    return ret;
-}
-
-void
-_kdc_free_ent_ex(krb5_context context, hdb_entry_ex *ent)
-{
-    hdb_free_entry_ex (context, ent);
     free (ent);
 }
 

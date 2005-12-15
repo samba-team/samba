@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: crypto.c,v 1.129 2005/09/19 22:13:54 lha Exp $");
+RCSID("$Id: crypto.c,v 1.130 2005/12/02 14:47:44 lha Exp $");
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -3942,6 +3942,8 @@ krb5_derive_key(krb5_context context,
     struct encryption_type *et;
     struct key_data d;
 
+    *derived_key = NULL;
+
     et = _find_enctype (etype);
     if (et == NULL) {
 	krb5_set_error_string(context, "encryption type %d not supported",
@@ -3949,16 +3951,15 @@ krb5_derive_key(krb5_context context,
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
 
-    ret = krb5_copy_keyblock(context, key, derived_key);
+    ret = krb5_copy_keyblock(context, key, &d.key);
     if (ret)
 	return ret;
 
-    d.key = *derived_key;
     d.schedule = NULL;
     ret = derive_key(context, et, &d, constant, constant_len);
-    if (ret)
-	return ret;
-    ret = krb5_copy_keyblock(context, d.key, derived_key);
+    if (ret == 0)
+	ret = krb5_copy_keyblock(context, d.key, derived_key);
+    free_key_data(context, &d);    
     return ret;
 }
 

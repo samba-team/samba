@@ -25,6 +25,7 @@
 	struct ldb_context *samdb;
 	struct ldb_message *msg;
 	struct ldb_message *realm_ref_msg;
+	hdb_entry_ex *entry_ex;
  };
 
  krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry_ex *entry_ex, 

@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: changepw.c,v 1.54 2005/09/08 11:38:01 lha Exp $");
+RCSID("$Id: changepw.c,v 1.55 2005/12/12 12:48:57 lha Exp $");
 
 static void
 str2data (krb5_data *d,
@@ -522,7 +522,12 @@ change_password_loop (krb5_context	context,
     int sock;
     int i;
     int done = 0;
-    krb5_realm realm = creds->client->realm;
+    krb5_realm realm;
+
+    if (targprinc)
+	realm = targprinc->realm;
+    else
+	realm = creds->client->realm;
 
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret)
@@ -712,7 +717,7 @@ krb5_set_password(krb5_context context,
 
     for (i = 0; procs[i].name != NULL; i++) {
 	*result_code = 0;
-	ret = change_password_loop(context, creds, targprinc, newpw, 
+	ret = change_password_loop(context, creds, principal, newpw, 
 				   result_code, result_code_string, 
 				   result_string, 
 				   &procs[i]);

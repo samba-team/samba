@@ -157,7 +157,7 @@ krb5_error_code hdb_ldb_authz_data_as_req(krb5_context context, struct hdb_entry
 	krb5_boolean pac_wanted = TRUE;
 	unsigned int userAccountControl;
 	struct PA_PAC_REQUEST pac_request;
-	struct hdb_ldb_private *private = talloc_get_type(entry_ex->private, struct hdb_ldb_private);
+	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
 	
 	/* The user account may be set not to want the PAC */
 	userAccountControl = ldb_msg_find_uint(private->msg, "userAccountControl", 0);
@@ -218,7 +218,7 @@ krb5_error_code hdb_ldb_authz_data_tgs_req(krb5_context context, struct hdb_entr
 
 	unsigned int userAccountControl;
 
-	struct hdb_ldb_private *private = talloc_get_type(entry_ex->private, struct hdb_ldb_private);
+	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
 	krb5_data k5pac_in, k5pac_out;
 	DATA_BLOB pac_in, pac_out;
 
@@ -321,8 +321,8 @@ krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
-	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->private);
-	struct hdb_ldb_private *private = talloc_get_type(entry_ex->private, struct hdb_ldb_private);
+	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->ctx);
+	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
 	char *name, *workstation = NULL;
 	int i;
 

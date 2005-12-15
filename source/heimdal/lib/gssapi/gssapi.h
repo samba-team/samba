@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gssapi.h,v 1.38 2005/10/26 11:22:13 lha Exp $ */
+/* $Id: gssapi.h,v 1.39 2005/12/05 11:52:45 lha Exp $ */
 
 #ifndef GSSAPI_H_
 #define GSSAPI_H_

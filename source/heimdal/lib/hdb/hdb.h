@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: hdb.h,v 1.35 2005/08/11 13:16:44 lha Exp $ */
+/* $Id: hdb.h,v 1.36 2005/12/12 12:35:36 lha Exp $ */
 
 #ifndef __HDB_H__
 #define __HDB_H__
@@ -55,26 +55,29 @@ enum hdb_ent_type{ HDB_ENT_TYPE_CLIENT, HDB_ENT_TYPE_SERVER, HDB_ENT_TYPE_ANY };
 typedef struct hdb_master_key_data *hdb_master_key;
 
 typedef struct hdb_entry_ex {
-	struct hdb_entry entry;
-	void *private;
-
-	krb5_error_code (*free_private)(krb5_context, struct hdb_entry_ex *);
-	krb5_error_code (*check_client_access)(krb5_context, struct hdb_entry_ex *, HostAddresses *);
-	krb5_error_code (*authz_data_as_req)(krb5_context, struct hdb_entry_ex *, 
-					     METHOD_DATA* pa_data_seq,
-					     time_t authtime,
-					     EncryptionKey *tgtkey,
-					     EncryptionKey *sessionkey,
-					     AuthorizationData **out);
-	krb5_error_code (*authz_data_tgs_req)(krb5_context, struct hdb_entry_ex *, 
-					      krb5_principal client, 
-					      AuthorizationData *in, 
-					      time_t authtime,
-					      EncryptionKey *tgtkey,
-					      EncryptionKey *servicekey,
-					      EncryptionKey *sessionkey,
-					      AuthorizationData **out);
+    void *ctx;
+    hdb_entry entry;
+    void (*free_entry)(krb5_context, struct hdb_entry_ex *);
+    krb5_error_code (*check_client_access)(krb5_context, struct hdb_entry_ex *, 
+					   HostAddresses *);
+    krb5_error_code (*authz_data_as_req)(krb5_context, 
+					 struct hdb_entry_ex *, 
+					 METHOD_DATA* pa_data_seq,
+					 time_t authtime,
+					 EncryptionKey *tgtkey,
+					 EncryptionKey *sessionkey,
+					 AuthorizationData **out);
+    krb5_error_code (*authz_data_tgs_req)(krb5_context, 
+					  struct hdb_entry_ex *, 
+					  krb5_principal client, 
+					  AuthorizationData *in, 
+					  time_t authtime,
+					  EncryptionKey *tgtkey,
+					  EncryptionKey *servicekey,
+					  EncryptionKey *sessionkey,
+					  AuthorizationData **out);
 } hdb_entry_ex;
+
 
 typedef struct HDB{
     void *hdb_db;
@@ -86,16 +89,17 @@ typedef struct HDB{
 
     krb5_error_code (*hdb_open)(krb5_context, struct HDB*, int, mode_t);
     krb5_error_code (*hdb_close)(krb5_context, struct HDB*);
-    krb5_error_code (*hdb_fetch)(krb5_context,struct HDB*,unsigned hdb_flags, krb5_const_principal principal,
-				 enum hdb_ent_type ent_type, hdb_entry*);
-    krb5_error_code (*hdb_fetch_ex)(krb5_context,struct HDB*,unsigned hdb_flags, krb5_const_principal principal,
+    void	    (*hdb_free)(krb5_context,struct HDB*,hdb_entry_ex*);
+    krb5_error_code (*hdb_fetch)(krb5_context,struct HDB*,unsigned hdb_flags, 
+				 krb5_const_principal principal,
 				 enum hdb_ent_type ent_type, hdb_entry_ex*);
-    krb5_error_code (*hdb_store)(krb5_context,struct HDB*,unsigned,hdb_entry*);
-    krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry*);
-    krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*, 
-				    unsigned, hdb_entry*);
-    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*, 
-				   unsigned, hdb_entry*);
+    krb5_error_code (*hdb_store)(krb5_context,struct HDB*,
+				 unsigned,hdb_entry_ex*);
+    krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry_ex*);
+    krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*,
+				    unsigned, hdb_entry_ex*);
+    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*,
+				   unsigned, hdb_entry_ex*);
     krb5_error_code (*hdb_lock)(krb5_context, struct HDB*, int operation);
     krb5_error_code (*hdb_unlock)(krb5_context, struct HDB*);
     krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
@@ -119,7 +123,7 @@ struct hdb_so_method {
 #define HDB_DB_FORMAT_ENTRY "hdb/db-format"
 
 typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
-					      hdb_entry*, void*);
+					      hdb_entry_ex*, void*);
 extern krb5_kt_ops hdb_kt_ops;
 
 #include <hdb-protos.h>

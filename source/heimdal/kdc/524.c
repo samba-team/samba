@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: 524.c,v 1.34 2005/06/30 01:47:35 lha Exp $");
+RCSID("$Id: 524.c,v 1.35 2005/12/13 19:42:37 lha Exp $");
 
 #include <krb5-v4compat.h>
 
@@ -47,7 +47,7 @@ fetch_server (krb5_context context,
 	      krb5_kdc_configuration *config,
 	      const Ticket *t,
 	      char **spn,
-	      hdb_entry **server,
+	      hdb_entry_ex **server,
 	      const char *from)
 {
     krb5_error_code ret;
@@ -221,7 +221,7 @@ static krb5_error_code
 encode_524_response(krb5_context context, 
 		    krb5_kdc_configuration *config,
 		    const char *spn, const EncTicketPart et,
-		    const Ticket *t, hdb_entry *server, 
+		    const Ticket *t, hdb_entry_ex *server, 
 		    EncryptedData *ticket, int *kvno)
 {
     krb5_error_code ret;
@@ -274,7 +274,7 @@ encode_524_response(krb5_context context,
 		    "Failed to encrypt v4 ticket (%s)", spn);
 	    return ret;
 	}
-	*kvno = server->kvno;
+	*kvno = server->entry.kvno;
     }
 
     return 0;
@@ -293,7 +293,7 @@ _kdc_do_524(krb5_context context,
 {
     krb5_error_code ret = 0;
     krb5_crypto crypto;
-    hdb_entry *server = NULL;
+    hdb_entry_ex *server = NULL;
     Key *skey;
     krb5_data et_data;
     EncTicketPart et;
@@ -316,7 +316,7 @@ _kdc_do_524(krb5_context context,
 	goto out;
     }
 
-    ret = hdb_enctype2key(context, server, t->enc_part.etype, &skey);
+    ret = hdb_enctype2key(context, &server->entry, t->enc_part.etype, &skey);
     if(ret){
 	kdc_log(context, config, 0,
 		"No suitable key found for server (%s) from %s", spn, from);

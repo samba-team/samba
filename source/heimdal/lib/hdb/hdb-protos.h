@@ -428,11 +428,6 @@ hdb_foreach (
 void
 hdb_free_entry (
 	krb5_context /*context*/,
-	hdb_entry */*ent*/);
-
-void
-hdb_free_entry_ex (
-	krb5_context /*context*/,
 	hdb_entry_ex */*ent*/);
 
 void
@@ -477,7 +472,20 @@ hdb_key2principal (
 	krb5_principal /*p*/);
 
 krb5_error_code
+hdb_ldap_common (
+	krb5_context /*context*/,
+	HDB ** /*db*/,
+	const char */*search_base*/,
+	const char */*url*/);
+
+krb5_error_code
 hdb_ldap_create (
+	krb5_context /*context*/,
+	HDB ** /*db*/,
+	const char */*arg*/);
+
+krb5_error_code
+hdb_ldapi_create (
 	krb5_context /*context*/,
 	HDB ** /*db*/,
 	const char */*arg*/);
@@ -515,7 +523,7 @@ krb5_error_code
 hdb_print_entry (
 	krb5_context /*context*/,
 	HDB */*db*/,
-	hdb_entry */*entry*/,
+	hdb_entry_ex */*entry*/,
 	void */*data*/);
 
 krb5_error_code
@@ -612,9 +620,6 @@ hdb_write_master_key (
 	krb5_context /*context*/,
 	const char */*filename*/,
 	hdb_master_key /*mkey*/);
-
-void
-initialize_hdb_error_table (void);
 
 void
 initialize_hdb_error_table_r (struct et_list **/*list*/);
