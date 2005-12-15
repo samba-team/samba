@@ -51,9 +51,13 @@ static void display_eventlog_names( void )
 	elogs = lp_eventlog_list(  );
 	printf( "Active eventlog names (from smb.conf):\n" );
 	printf( "--------------------------------------\n" );
-	for ( i = 0; elogs[i]; i++ ) {
-		printf( "\t%s\n", elogs[i] );
-	}
+	if ( elogs ) {
+		for ( i = 0; elogs[i]; i++ ) {
+			printf( "\t%s\n", elogs[i] );
+		}
+	} 
+	else
+		printf( "\t<None specified>\n");
 }
 
 int DoAddSourceCommand( int argc, char **argv, BOOL debugflag, char *exename )
