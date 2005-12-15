@@ -35,6 +35,9 @@
 #include "smb_server/smb_server.h"
 #include "mutex.h"
 
+/* For sepecifiying event context to GSSAPI below */
+#include "heimdal/lib/gssapi/gssapi_locl.h"
+
 struct new_conn_state {
 	struct event_context *ev;
 	struct socket_context *sock;
@@ -502,7 +505,10 @@ static void thread_model_init(struct event_context *event_context)
 	d_ops.get_task_id = thread_get_task_id;
 	d_ops.log_task_id = thread_log_task_id;
 
-	register_debug_handlers("thread", &d_ops);	
+	register_debug_handlers("thread", &d_ops);
+
+	/* Hack to ensure that GSSAPI uses the right event context */
+	gssapi_krb5_init_ev(event_context);
 }
 
 
