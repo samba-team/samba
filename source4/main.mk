@@ -1,4 +1,4 @@
-all: binary_asn1_compile binary_compile_et binaries
+all: basics bin/asn1_compile bin/compile_et binaries
 
 include heimdal_build/config.mk
 include config.mk
@@ -30,7 +30,7 @@ include libcli/config.mk
 include scripting/config.mk
 include kdc/config.mk
 
-binaries: $(BIN_PROGS) $(SBIN_PROGS)
+binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
 headers: $(PUBLIC_HEADERS)
 manpages: $(MANPAGES)
@@ -53,7 +53,7 @@ showlayout:
 showflags:
 	@echo "Samba will be compiled with flags:"
 	@echo "  CFLAGS = $(CFLAGS)"
-	@echo "  LD_FLAGS = $(LD_FLAGS)"
+	@echo "  LDFLAGS = $(LDFLAGS)"
 	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
 	@echo "  LIBS = $(LIBS)"
@@ -88,7 +88,7 @@ install: showlayout installbin installdat installswat installmisc installlib \
 installdirs:
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR) $(DESTDIR)$(PRIVATEDIR)/tls $(DESTDIR)$(INCLUDEDIR)
 
-installbin: binaries installdirs
+installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
@@ -200,7 +200,7 @@ clean: heimdal_clean
 	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
 
 distclean: clean
-	-rm -f bin/.dummy
+	-rm -f bin/.dummy 
 	-rm -f include/config.h include/smb_build.h
 	-rm -f Makefile 
 	-rm -f config.status

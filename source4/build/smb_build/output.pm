@@ -51,7 +51,7 @@ sub generate_shared_library($)
 	$link_name =~ s/^LIB//;
 	$link_name = lc($link_name);
 
-	$lib->{LIBRARY_NAME} = "lib$link_name.\$(SHLIBEXT)";
+	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_NAME} = "lib$link_name.\$(SHLIBEXT)";
 	$lib->{TARGET} = "bin/$lib->{LIBRARY_NAME}";
 	if (defined($lib->{MAJOR_VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
