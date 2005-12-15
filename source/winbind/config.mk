@@ -1,10 +1,8 @@
 # server subsystem
 
-################################################
-# Start MODULE server_service_winbind
-[MODULE::server_service_winbind]
-INIT_FUNCTION = server_service_winbind_init
-SUBSYSTEM = SERVER_SERVICE
+#######################
+# Start SUBSYSTEM WINBIND
+[SUBSYSTEM::WINBIND]
 INIT_OBJ_FILES = \
 		wb_server.o \
 		wb_samba3_protocol.o \
@@ -23,8 +21,8 @@ INIT_OBJ_FILES = \
 		wb_cmd_list_trustdom.o \
 		wb_pam_auth.o
 REQUIRED_SUBSYSTEMS = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR
-# End MODULE server_service_winbind
-################################################
+# End SUBSYSTEM WINBIND
+#######################
 
 ################################################
 # Start SUBYSTEM WB_HELPER
