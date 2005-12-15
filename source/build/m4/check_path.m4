@@ -121,6 +121,19 @@ AC_ARG_WITH(swatdir,
     ;;
   esac])
 
+#################################################
+# set lib directory location
+AC_ARG_WITH(libdir,
+[  --with-libdir=DIR    Where to put modules files (\$libdir)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-libdir called without argument - will use default])
+  ;;
+  * )
+    libdir="$withval"
+    ;;
+  esac])
+
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
