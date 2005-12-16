@@ -2532,7 +2532,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 		string_set(&ServicePtrs[i]->comment, comment);
 	}
 
-	/* set the browseable flag from the gloabl default */
+	/* set the browseable flag from the global default */
 
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
