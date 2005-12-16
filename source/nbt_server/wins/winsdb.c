@@ -677,6 +677,6 @@ failed:
 
 struct ldb_context *winsdb_connect(TALLOC_CTX *mem_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, lp_wins_url(), system_session(mem_ctx), 
-			       NULL, 0, NULL);
+	return ldb_wrap_connect(mem_ctx, lock_path(mem_ctx, lp_wins_url()),
+				system_session(mem_ctx), NULL, 0, NULL);
 }
