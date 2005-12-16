@@ -319,7 +319,7 @@ static BOOL matchparam(const char **haystack_list, const char *needle)
 	}
 
 	for(i=0; haystack_list[i] ; i++) {
-		if(!unix_wild_match(haystack_list[i], needle)) {
+		if(unix_wild_match(haystack_list[i], needle)) {
 			return True;
 		}
 	}
