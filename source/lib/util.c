@@ -625,6 +625,29 @@ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 	return fname;
 }
 
+
+/*****************************************************************
+ A useful function for returning a path in the Samba piddir directory.
+*****************************************************************/  
+char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
+{
+	char *fname, *dname;
+
+	dname = talloc_strdup(mem_ctx, lp_piddir());
+	trim_string(dname,"","/");
+	
+	if (!directory_exist(dname)) {
+		mkdir(dname,0755);
+	}
+	
+	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
+
+	talloc_free(dname);
+
+	return fname;
+}
+
+
 /**
  * @brief Returns an absolute path to a file in the Samba lib directory.
  *
@@ -670,7 +693,7 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 {
 	char *fname, *dname;
 
-	dname = lock_path(mem_ctx, "smbd.tmp");
+	dname = pid_path(mem_ctx, "smbd.tmp");
 	if (!directory_exist(dname)) {
 		mkdir(dname,0755);
 	}
