@@ -610,6 +610,12 @@ char *name_to_fqdn(TALLOC_CTX *mem_ctx, const char *name)
 char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
+	if (name == NULL) {
+		return NULL;
+	}
+	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
+		return talloc_strdup(mem_ctx, name);
+	}
 
 	dname = talloc_strdup(mem_ctx, lp_lockdir());
 	trim_string(dname,"","/");
