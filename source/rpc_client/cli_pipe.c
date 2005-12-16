@@ -789,6 +789,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 			(unsigned int)cli->fnum,
 			cli_errstr(cli->cli)));
 		ret = cli_get_nt_error(cli->cli);
+		SAFE_FREE(rparam);
+		SAFE_FREE(prdata);
 		goto err;
 	}
 
