@@ -25,15 +25,20 @@
 
 static int net_usershare_add_usage(int argc, const char **argv)
 {
+	char c = *lp_winbind_separator();
 	d_printf(
 		"net usershare add <sharename> <path> [<comment>] [<acl>]\n"
 		"\tAdds the specified share name for this user.\n"
 		"\t<sharename> is the new share name.\n"
 		"\t<path> is the path on the filesystem to export.\n"
 		"\t<comment> is the optional comment for the new share.\n"
-		"\t<acl> is an optional share acl in the format \"Username1:f|r|d,username2:f|r|d,....\"\n"
+		"\t<acl> is an optional share acl in the format \"DOMAIN%cname:X,DOMAIN%cname:X,....\"\n"
+		"\t\t\"X\" represents a permission and can be any one of the characters f, r or d\n"
 		"\t\twhere \"f\" means full control, \"r\" means read-only, \"d\" means deny access.\n"
-		"\t\tThe default acl is \"Everyone:r\" which means everyone read-only.\n");
+		"\t\tname may be a domain user or group. For local users use the local server name "
+		"instead of \"DOMAIN\"\n"
+		"\t\tThe default acl is \"Everyone:r\" which allows everyone read-only access.\n",
+		c, c );
 	return -1;
 }
 
@@ -69,7 +74,7 @@ static int net_usershare_list_usage(int argc, const char **argv)
 
 int net_usershare_usage(int argc, const char **argv)
 {
-	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] to add a user defined share.\n"
+	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] to add or change a user defined share.\n"
 		"net usershare delete <sharename> to delete a user defined share.\n"
 		"net usershare info [all] [wildcard sharename] to print info about a user defined share.\n"
 		"net usershare list [all] [wildcard sharename] to list user defined shares.\n"
