@@ -177,7 +177,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	poptFreeContext(pc);
 
-	setup_logging(argv[0], interactive?DEBUG_STDOUT:DEBUG_FILE);
+	setup_logging(binary_name, interactive?DEBUG_STDOUT:DEBUG_FILE);
 	setup_signals();
 
 	/* we want total control over the permissions on created files,
