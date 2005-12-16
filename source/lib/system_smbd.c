@@ -190,8 +190,8 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	return retval;
 }
 
-BOOL getgroups_user(const char *user, gid_t primary_gid,
-		    gid_t **ret_groups, size_t *p_ngroups)
+static BOOL getgroups_user(const char *user, gid_t primary_gid,
+			   gid_t **ret_groups, size_t *p_ngroups)
 {
 	size_t ngrp;
 	int max_grp;
