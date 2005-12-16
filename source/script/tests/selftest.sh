@@ -85,7 +85,7 @@ export PATH
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
 
-cat >$PRIVATEDIR/wins.ldif<<EOF
+cat >$LOCKDIR/wins.ldif<<EOF
 dn: name=TORTURE_26,CN=PARTNERS
 objectClass: wreplPartner
 name: TORTURE_26
@@ -156,7 +156,7 @@ echo -n "PROVISIONING..."
     --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
 
-./bin/ldbadd -H $PRIVATEDIR/wins.ldb < $PRIVATEDIR/wins.ldif >/dev/null || exit 1
+./bin/ldbadd -H $LOCKDIR/wins.ldb < $LOCKDIR/wins.ldif >/dev/null || exit 1
 
 echo "DONE"
 
