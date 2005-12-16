@@ -83,10 +83,10 @@ void winbindd_lookupname(struct winbindd_cli_state *state)
 	char *p;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
+	state->request.data.name.dom_name[sizeof(state->request.data.name.dom_name)-1]='\0';
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
+	state->request.data.name.name[sizeof(state->request.data.name.name)-1]='\0';
 
 	/* cope with the name being a fully qualified name */
 	p = strstr(state->request.data.name.name, lp_winbind_separator());
