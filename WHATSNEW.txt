@@ -62,6 +62,8 @@ o   Jeremy Allison <jra@samba.org>
     * Correctly handle the LDAP_UNWILLING_TO_PERFORM error from 
       eDirectory when accessing the universal password.
     * Fix deadlock condition in share mode locking code.
+    * Fix logic bug in unix_mask_match().
+    * Fix memory leak in SMB client code found by Mikhail Kshevetskiy.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>

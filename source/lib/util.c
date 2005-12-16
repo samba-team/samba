@@ -2640,6 +2640,7 @@ static BOOL unix_do_match(const char *regexp, const char *str)
 
 /*******************************************************************
  Simple case insensitive interface to a UNIX wildcard matcher.
+ Returns True if match, False if not.
 *******************************************************************/
 
 BOOL unix_wild_match(const char *pattern, const char *string)
@@ -2660,7 +2661,7 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 	if (strequal(p2,"*"))
 		return True;
 
-	return unix_do_match(p2, s2) == 0;	
+	return unix_do_match(p2, s2);
 }
 
 /**********************************************************************
