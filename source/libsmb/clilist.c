@@ -271,6 +271,10 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
+
+			SAFE_FREE(rdata);
+			SAFE_FREE(rparam);
+
 			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror)
 				break;
@@ -278,8 +282,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			continue;
 		}
 
-                if (cli_is_error(cli) || !rdata || !rparam) 
+                if (cli_is_error(cli) || !rdata || !rparam) {
+			SAFE_FREE(rdata);
+			SAFE_FREE(rparam);
 			break;
+		}
 
 		if (total_received == -1)
 			total_received = 0;
@@ -297,8 +304,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			ff_lastname = SVAL(p,6);
 		}
 
-		if (ff_searchcount == 0) 
+		if (ff_searchcount == 0) {
+			SAFE_FREE(rdata);
+			SAFE_FREE(rparam);
 			break;
+		}
 
 		/* point to the data bytes */
 		p = rdata;
@@ -332,6 +342,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		if (!tdl) {
 			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
+			SAFE_FREE(rdata);
+			SAFE_FREE(rparam);
 			break;
 		} else {
 			dirlist = tdl;
