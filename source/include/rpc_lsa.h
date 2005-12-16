@@ -80,6 +80,7 @@
 #define LSA_UNK_GET_CONNUSER   0x2d /* LsaGetConnectedCredentials ? */
 #define LSA_QUERYINFO2         0x2e
 #define LSA_QUERYTRUSTDOMINFOBYNAME 0x30
+#define LSA_QUERYDOMINFOPOL    0x35
 #define LSA_OPENTRUSTDOMBYNAME 0x37
 
 /* XXXX these are here to get a compile! */
@@ -393,7 +394,7 @@ typedef struct lsa_trans_name_info
 } LSA_TRANS_NAME;
 
 /* This number is based on Win2k and later maximum response allowed */
-#define MAX_LOOKUP_SIDS 20480
+#define MAX_LOOKUP_SIDS 20480	/* 0x5000 */
 
 /* LSA_TRANS_NAME_ENUM - LSA Translated Name Enumeration container */
 typedef struct lsa_trans_name_enum_info
@@ -750,6 +751,25 @@ typedef struct {
 
 /*******************************************************/
 
+/* LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME - LSA Query Open Trusted Domain by Name*/
+typedef struct lsa_q_open_trusted_domain_by_name
+{
+	POLICY_HND 	pol; 	/* policy handle */
+	LSA_STRING 	name;	/* domain name */
+	uint32 	access_mask;	/* access mask */
+	
+} LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME;
+
+/* LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME - response to LSA Query Open Trusted Domain by Name */
+typedef struct {
+	POLICY_HND	handle;	/* trustdom policy handle */
+	NTSTATUS	status; /* return code */
+} LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME;
+
+
+/*******************************************************/
+
+
 typedef struct {
 	POLICY_HND	handle;	
 	UNISTR4		secretname;
@@ -954,5 +974,39 @@ typedef struct r_lsa_query_trusted_domain_info
 	LSA_TRUSTED_DOMAIN_INFO *info;
 	NTSTATUS status;
 } LSA_R_QUERY_TRUSTED_DOMAIN_INFO;
+
+typedef struct dom_info_kerberos {
+	uint32 enforce_restrictions;
+	NTTIME service_tkt_lifetime;
+	NTTIME user_tkt_lifetime;
+	NTTIME user_tkt_renewaltime;
+	NTTIME clock_skew;
+	NTTIME unknown6;
+} LSA_DOM_INFO_POLICY_KERBEROS;
+
+typedef struct dom_info_efs {
+	uint32 blob_len;
+	UNISTR2 efs_blob;
+} LSA_DOM_INFO_POLICY_EFS;
+
+typedef struct lsa_dom_info_union {
+	uint16 info_class;
+	LSA_DOM_INFO_POLICY_EFS efs_policy;
+	LSA_DOM_INFO_POLICY_KERBEROS krb_policy;
+} LSA_DOM_INFO_UNION;
+
+/* LSA_Q_QUERY_DOM_INFO_POLICY - LSA query info */
+typedef struct lsa_q_query_dom_info_policy
+{
+	POLICY_HND pol;    /* policy handle */
+	uint16 info_class; /* info class */
+} LSA_Q_QUERY_DOM_INFO_POLICY;
+
+typedef struct lsa_r_query_dom_info_policy
+{
+	LSA_DOM_INFO_UNION *info;
+	NTSTATUS status;
+} LSA_R_QUERY_DOM_INFO_POLICY;
+
 
 #endif /* _RPC_LSA_H */

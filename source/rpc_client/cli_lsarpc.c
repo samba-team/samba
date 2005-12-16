@@ -1298,6 +1298,42 @@ done:
 	return result;
 }
 
+NTSTATUS rpccli_lsa_open_trusted_domain_by_name(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+						POLICY_HND *pol, const char *name, uint32 access_mask,
+						POLICY_HND *trustdom_pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME q;
+	LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_open_trusted_domain_by_name(&q, pol, name, access_mask);
+
+	/* Marshall data and send request */
+
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENTRUSTDOMBYNAME,
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_open_trusted_domain_by_name,
+		lsa_io_r_open_trusted_domain_by_name,
+		NT_STATUS_UNSUCCESSFUL);
+
+	/* Return output parameters */
+	
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
+		*trustdom_pol = r.handle;
+	}
+
+	return result;
+}
+
 
 NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 						  POLICY_HND *pol, 
@@ -1372,3 +1408,39 @@ done:
 	
 	return result;
 }
+
+NTSTATUS cli_lsa_query_domain_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+					  POLICY_HND *pol, 
+					  uint16 info_class, LSA_DOM_INFO_UNION **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_DOM_INFO_POLICY q;
+	LSA_R_QUERY_DOM_INFO_POLICY r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_q_query_dom_info(&q, pol, info_class); 
+
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYDOMINFOPOL, 
+		q, r,
+		qbuf, rbuf,
+		lsa_io_q_query_dom_info,
+		lsa_io_r_query_dom_info,
+		NT_STATUS_UNSUCCESSFUL);
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	*info = r.info;
+
+done:
+	return result;
+}
+

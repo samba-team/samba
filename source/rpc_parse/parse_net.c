@@ -1490,6 +1490,47 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	/* "other" sids are set up above */
 }
 
+ void dump_acct_flags(uint32 acct_flags) {
+
+	int lvl = 10;
+	DEBUG(lvl,("dump_acct_flags\n"));
+	if (acct_flags & ACB_NORMAL) {
+		DEBUGADD(lvl,("\taccount has UF_NORMAL_ACCOUNT\n"));
+	}
+	if (acct_flags & ACB_PWNOEXP) {
+		DEBUGADD(lvl,("\taccount has UF_DONT_EXPIRE_PASSWD\n"));
+	}
+	if (acct_flags & ACB_ENC_TXT_PWD_ALLOWED) {
+		DEBUGADD(lvl,("\taccount has UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED\n"));
+	}
+	if (acct_flags & ACB_NOT_DELEGATED) {
+		DEBUGADD(lvl,("\taccount has UF_NOT_DELEGATED\n"));
+	}
+	if (acct_flags & ACB_USE_DES_KEY_ONLY) {
+		DEBUGADD(lvl,("\taccount has UF_USE_DES_KEY_ONLY set, sig verify wont work\n"));
+	}
+}
+
+ void dump_user_flgs(uint32 user_flags) {
+
+	int lvl = 10;
+	DEBUG(lvl,("dump_user_flgs\n"));
+	if (user_flags & LOGON_EXTRA_SIDS) {
+		DEBUGADD(lvl,("\taccount has LOGON_EXTRA_SIDS\n"));
+	}
+	if (user_flags & LOGON_RESOURCE_GROUPS) {
+		DEBUGADD(lvl,("\taccount has LOGON_RESOURCE_GROUPS\n"));
+	}
+	if (user_flags & LOGON_NTLMV2_ENABLED) {
+		DEBUGADD(lvl,("\taccount has LOGON_NTLMV2_ENABLED\n"));
+	}
+	if (user_flags & LOGON_CACHED_ACCOUNT) {
+		DEBUGADD(lvl,("\taccount has LOGON_CACHED_ACCOUNT\n"));
+	}
+
+
+}
+
 /*******************************************************************
  This code has been modified to cope with a NET_USER_INFO_2 - which is
  exactly the same as a NET_USER_INFO_3, minus the other sids parameters.
@@ -1562,7 +1603,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 		return False;
 	if(!prs_uint32("user_flgs     ", ps, depth, &usr->user_flgs))     /* user flags */
 		return False;
-
+	dump_user_flgs(usr->user_flgs);
 	if(!prs_uint8s(False, "user_sess_key", ps, depth, usr->user_sess_key, 16)) /* user session key */
 		return False;
 
@@ -1579,7 +1620,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 
 	if(!prs_uint32("acct_flags ", ps, depth, &usr->acct_flags)) /* Account flags  */
 		return False;
-
+	dump_acct_flags(usr->acct_flags);
 	for (i = 0; i < 7; i++)
 	{
 		if (!prs_uint32("unkown", ps, depth, &usr->unknown[i])) /* unknown */

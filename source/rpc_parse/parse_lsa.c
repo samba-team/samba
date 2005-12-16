@@ -2539,8 +2539,78 @@ BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *i
 }
 #endif
 
+
 /*******************************************************************
- Reads or writes an LSA_Q_OPEN_TRUSTED_DOMAIN structure.
+ Inits an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
+********************************************************************/
+
+void init_lsa_q_open_trusted_domain_by_name(LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q, 
+					    POLICY_HND *hnd, 
+					    const char *name, 
+					    uint32 desired_access)
+{
+	memcpy(&q->pol, hnd, sizeof(q->pol));
+
+	init_lsa_string(&q->name, name);
+	q->access_mask = desired_access;
+}
+
+/*******************************************************************
+********************************************************************/
+
+
+/*******************************************************************
+ Reads or writes an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
+********************************************************************/
+
+BOOL lsa_io_q_open_trusted_domain_by_name(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q_o, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_domain_by_name");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &q_o->pol, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_lsa_string("name", &q_o->name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+ 	if(!prs_uint32("access", ps, depth, &q_o->access_mask))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
+********************************************************************/
+
+BOOL lsa_io_r_open_trusted_domain_by_name(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME *out, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_domain_by_name");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!smb_io_pol_hnd("handle", &out->handle, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 ********************************************************************/
 
 BOOL lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *q_o, prs_struct *ps, int depth)
@@ -3110,4 +3180,131 @@ BOOL lsa_io_r_query_trusted_domain_info(const char *desc,
 
 	return True;
 }
+
+/*******************************************************************
+ Inits an LSA_Q_QUERY_DOM_INFO_POLICY structure.
+********************************************************************/
+
+void init_q_query_dom_info(LSA_Q_QUERY_DOM_INFO_POLICY *in, POLICY_HND *hnd, uint16 info_class)
+{
+	DEBUG(5, ("init_q_query_dom_info\n"));
+
+	memcpy(&in->pol, hnd, sizeof(in->pol));
+
+	in->info_class = info_class;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_QUERY_DOM_INFO_POLICY structure.
+********************************************************************/
+
+BOOL lsa_io_q_query_dom_info(const char *desc, LSA_Q_QUERY_DOM_INFO_POLICY *in, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_query_dom_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &in->pol, ps, depth))
+		return False;
+	
+	if(!prs_uint16("info_class", ps, depth, &in->info_class))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_QUERY_DOM_INFO_POLICY structure.
+********************************************************************/
+
+static BOOL lsa_io_dominfo_query_3(const char *desc, LSA_DOM_INFO_POLICY_KERBEROS *krb_policy, 
+				   prs_struct *ps, int depth)
+{
+	if (!prs_align_uint64(ps))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("enforce_restrictions", ps, depth, &krb_policy->enforce_restrictions))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+
+	if (!smb_io_nttime("service_tkt_lifetime", ps, depth, &krb_policy->service_tkt_lifetime))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("user_tkt_lifetime", ps, depth, &krb_policy->user_tkt_lifetime))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("user_tkt_renewaltime", ps, depth, &krb_policy->user_tkt_renewaltime))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("clock_skew", ps, depth, &krb_policy->clock_skew))
+		return False;
+
+	if (!prs_align_uint64(ps))
+		return False;
+	
+	if (!smb_io_nttime("unknown6", ps, depth, &krb_policy->unknown6))
+		return False;
+
+	return True;
+}
+
+static BOOL lsa_io_dom_info_query(const char *desc, prs_struct *ps, int depth, LSA_DOM_INFO_UNION *info)
+{
+	prs_debug(ps, depth, desc, "lsa_io_dom_info_query");
+	depth++;
+
+	if(!prs_align_uint16(ps))
+		return False;
+
+	if(!prs_uint16("info_class", ps, depth, &info->info_class))
+		return False;
+
+	switch (info->info_class) {
+	case 3: 
+		if (!lsa_io_dominfo_query_3("krb_policy", &info->krb_policy, ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("unsupported info-level: %d\n", info->info_class));
+		return False;
+		break;
+	}
+
+	return True;
+}
+
+
+BOOL lsa_io_r_query_dom_info(const char *desc, LSA_R_QUERY_DOM_INFO_POLICY *out,
+			     prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_query_dom_info");
+	depth++;
+
+	if (!prs_pointer("dominfo", ps, depth, (void**)&out->info, 
+			 sizeof(LSA_DOM_INFO_UNION), 
+			 (PRS_POINTER_CAST)lsa_io_dom_info_query) )
+		return False;
+	
+	if(!prs_ntstatus("status", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
 

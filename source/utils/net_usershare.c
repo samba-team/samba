@@ -198,6 +198,10 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
 			continue;
 		}
 
+		if (!unix_wild_match(wcard, n)) {
+			continue;
+		}
+
 		/* (Finally) - add to list. */ 
 		fl = TALLOC_P(ctx, struct file_list);
 		if (!fl) {
@@ -232,12 +236,59 @@ static int process_share_list(int (*fn)(struct file_list *))
 }
 
 /***************************************************************************
+ Info function.
+***************************************************************************/
+
+static int info_fn(struct file_list *fl)
+{
+	/* Placeholder for now. */
+	d_printf("%s\n", fl->pathname);
+	return 0;
+}
+
+/***************************************************************************
  Print out info (internal detail) on userlevel shares.
 ***************************************************************************/
 
 static int net_usershare_info(int argc, const char **argv)
 {
-	return -1;
+	fstring wcard;
+	BOOL only_ours = True;
+	int ret = -1;
+	TALLOC_CTX *ctx;
+
+	fstrcpy(wcard, "*");
+
+	switch (argc) {
+		case 0:
+			break;
+		case 1:
+			if (strnequal(argv[0], "all", 3)) {
+				only_ours = False;
+			} else {
+				fstrcpy(wcard, argv[0]);
+			}
+			break;
+		case 2:
+			if (strnequal(argv[0], "all", 3)) {
+				only_ours = False;
+			} else {
+				return net_usershare_info_usage(argc, argv);
+			}
+			fstrcpy(wcard, argv[1]);
+			break;
+		default:
+			return net_usershare_info_usage(argc, argv);
+	}
+
+	ctx = talloc_init("share_info");
+	ret = get_share_list(ctx, wcard, only_ours);
+	if (ret) {
+		return ret;
+	}
+	ret = process_share_list(info_fn);
+	talloc_destroy(ctx);
+	return ret;
 }
 
 /***************************************************************************
