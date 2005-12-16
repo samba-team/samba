@@ -223,13 +223,13 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
  Call a function for every share on the list.
 ***************************************************************************/
 
-static int process_share_list(int (*fn)(struct file_list *))
+static int process_share_list(int (*fn)(struct file_list *, void *), void *private)
 {
 	struct file_list *fl;
 	int ret = 0;
 
 	for (fl = flist; fl; fl = fl->next) {
-		ret = (*fn)(fl);
+		ret = (*fn)(fl, private);
 	}
 
 	return ret;
@@ -239,10 +239,73 @@ static int process_share_list(int (*fn)(struct file_list *))
  Info function.
 ***************************************************************************/
 
-static int info_fn(struct file_list *fl)
+static int info_fn(struct file_list *fl, void *private)
 {
-	/* Placeholder for now. */
-	d_printf("%s\n", fl->pathname);
+	SMB_STRUCT_STAT sbuf;
+	char **lines = NULL;
+	TALLOC_CTX *ctx = (TALLOC_CTX *)private;
+	int fd = -1;
+	int numlines = 0;
+	SEC_DESC *psd = NULL;
+	pstring basepath;
+	pstring sharepath;
+	pstring comment;
+
+	get_basepath(basepath);
+	pstrcat(basepath, "/");
+	pstrcat(basepath, fl->pathname);
+
+#ifdef O_NOFOLLOW
+	fd = sys_open(basepath, O_RDONLY|O_NOFOLLOW, 0);
+#else
+	fd = sys_open(basepath, O_RDONLY, 0);
+#endif
+
+	if (fd == -1) {
+		d_printf("info_fn: unable to open %s. %s\n",
+                        basepath, strerror(errno) );
+                return -1;
+        }
+
+	/* Paranoia... */
+	if (sys_fstat(fd, &sbuf) != 0) {
+		d_printf("info_fn: can't fstat file %s. Error was %s\n",
+			basepath, strerror(errno) );
+		close(fd);
+		return -1;
+	}
+
+	if (!S_ISREG(sbuf.st_mode)) {
+		d_printf("info_fn: file %s is not a regular file. Ignoring.\n",
+			basepath );
+		close(fd);
+		return -1;
+	}
+
+	lines = fd_lines_load(fd, &numlines);
+	close(fd);
+
+	if (lines == NULL) {
+		return -1;
+	}
+
+	/* Ensure it's well formed. */
+	if (!parse_usershare_file(ctx, &sbuf, -1, lines, numlines,
+				sharepath,
+				comment,
+				&psd)) {
+		d_printf("info_fn: file %s is not a well formed usershare file.\n",
+			basepath );
+		return -1;
+	}
+
+	d_printf("[%s]\n", fl->pathname );
+	d_printf("path=%s\n", sharepath );
+	d_printf("comment=%s\n", comment);
+
+	/* TODO - sid to uid.... */
+	d_printf("usershare_acl=%s\n\n", &lines[3][14]);
+
 	return 0;
 }
 
@@ -286,7 +349,7 @@ static int net_usershare_info(int argc, const char **argv)
 	if (ret) {
 		return ret;
 	}
-	ret = process_share_list(info_fn);
+	ret = process_share_list(info_fn, ctx);
 	talloc_destroy(ctx);
 	return ret;
 }
@@ -295,7 +358,7 @@ static int net_usershare_info(int argc, const char **argv)
  List function.
 ***************************************************************************/
 
-static int list_fn(struct file_list *fl)
+static int list_fn(struct file_list *fl, void *private)
 {
 	d_printf("%s\n", fl->pathname);
 	return 0;
@@ -341,7 +404,7 @@ static int net_usershare_list(int argc, const char **argv)
 	if (ret) {
 		return ret;
 	}
-	ret = process_share_list(list_fn);
+	ret = process_share_list(list_fn, NULL);
 	talloc_destroy(ctx);
 	return ret;
 }

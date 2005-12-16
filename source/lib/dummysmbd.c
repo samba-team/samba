@@ -43,13 +43,3 @@ BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
 {
 	return False;
 }
-
-SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
-{
-	return NULL;
-}
-
-BOOL parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
-{
-	return False;
-}

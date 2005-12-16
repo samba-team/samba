@@ -4238,7 +4238,7 @@ struct ug_cache {
  Parse the contents of a usershare file.
 ***************************************************************************/
 
-static BOOL parse_usershare_file(TALLOC_CTX *ctx, 
+BOOL parse_usershare_file(TALLOC_CTX *ctx, 
 			SMB_STRUCT_STAT *psbuf,
 			int snum,
 			char **lines,
