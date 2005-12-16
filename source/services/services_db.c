@@ -36,11 +36,11 @@ struct service_display_info {
 
 struct service_display_info builtin_svcs[] = {  
   { "Spooler",	      "smbd", 	"Print Spooler", "Internal service for spooling files to print devices" },
-  { "NETLOGON",	      "smbd", 	"Net Logon", "File service providing access to policy and profile data" },
+  { "NETLOGON",	      "smbd", 	"Net Logon", "File service providing access to policy and profile data (not remotely manageable)" },
   { "RemoteRegistry", "smbd", 	"Remote Registry Service", "Internal service providing remote access to "
 				"the Samba registry" },
   { "WINS",           "nmbd", 	"Windows Internet Name Service (WINS)", "Internal service providing a "
-				"NetBIOS point-to-point name server" },
+				"NetBIOS point-to-point name server (not remotely manageable)" },
   { NULL, NULL, NULL, NULL }
 };
 
