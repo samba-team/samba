@@ -223,18 +223,26 @@ typedef struct nttime_info {
 
 
 /* Allowable account control bits */
-#define ACB_DISABLED   0x0001  /* 1 = User account disabled */
-#define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
-#define ACB_PWNOTREQ   0x0004  /* 1 = User password not required */
-#define ACB_TEMPDUP    0x0008  /* 1 = Temporary duplicate account */
-#define ACB_NORMAL     0x0010  /* 1 = Normal user account */
-#define ACB_MNS        0x0020  /* 1 = MNS logon user account */
-#define ACB_DOMTRUST   0x0040  /* 1 = Interdomain trust account */
-#define ACB_WSTRUST    0x0080  /* 1 = Workstation trust account */
-#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account (BDC) */
-#define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
-#define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
- 
+#define ACB_DISABLED			0x00000001  /* 1 = User account disabled */
+#define ACB_HOMDIRREQ			0x00000002  /* 1 = Home directory required */
+#define ACB_PWNOTREQ			0x00000004  /* 1 = User password not required */
+#define ACB_TEMPDUP			0x00000008  /* 1 = Temporary duplicate account */
+#define ACB_NORMAL			0x00000010  /* 1 = Normal user account */
+#define ACB_MNS				0x00000020  /* 1 = MNS logon user account */
+#define ACB_DOMTRUST			0x00000040  /* 1 = Interdomain trust account */
+#define ACB_WSTRUST			0x00000080  /* 1 = Workstation trust account */
+#define ACB_SVRTRUST			0x00000100  /* 1 = Server trust account (BDC) */
+#define ACB_PWNOEXP			0x00000200  /* 1 = User password does not expire */
+#define ACB_AUTOLOCK			0x00000400  /* 1 = Account auto locked */
+
+/* only valid for > Windows 2000 */
+#define ACB_ENC_TXT_PWD_ALLOWED		0x00000800  /* 1 = Text password encryped */
+#define ACB_SMARTCARD_REQUIRED		0x00001000  /* 1 = Smart Card required */
+#define ACB_TRUSTED_FOR_DELEGATION	0x00002000  /* 1 = Trusted for Delegation */
+#define ACB_NOT_DELEGATED		0x00004000  /* 1 = Not delegated */
+#define ACB_USE_DES_KEY_ONLY		0x00008000  /* 1 = Use DES key only */
+#define ACB_DONT_REQUIRE_PREAUTH	0x00010000  /* 1 = Preauth not required */
+
 #define MAX_HOURS_LEN 32
 
 /* 
