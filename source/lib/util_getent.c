@@ -239,6 +239,37 @@ static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_he
 	return list_head;
 }
 
+/*****************************************************************
+ Splits passed user or group name to domain and user/group name parts
+ Returns True if name was splitted and False otherwise.
+*****************************************************************/
+
+static BOOL split_domain_and_name(const char *name, char *domain,
+				  char* username)
+{
+	char *p = strchr(name,*lp_winbind_separator());
+	
+	
+	/* Parse a string of the form DOMAIN/user into a domain and a user */
+	DEBUG(10,("split_domain_and_name: checking whether name |%s| local or "
+		  "not\n", name));
+	
+	if (p) {
+		fstrcpy(username, p+1);
+		fstrcpy(domain, name);
+		domain[PTR_DIFF(p, name)] = 0;
+	} else if (lp_winbind_use_default_domain()) {
+		fstrcpy(username, name);
+		fstrcpy(domain, lp_workgroup());
+	} else {
+		return False;
+	}
+
+	DEBUG(10,("split_domain_and_name: all is fine, domain is |%s| and "
+		  "name is |%s|\n", domain, username));
+	return True;
+}
+
 /****************************************************************
  Get the list of UNIX users in a group.
  We have to enumerate the /etc/group file as some UNIX getgrnam()
