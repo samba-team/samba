@@ -14,7 +14,7 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
     configdir="${sysconfdir}/samba"
-    lockdir="\${localstatedir}/cache/samba"
+    lockdir="\${localstatedir}/lib/samba"
     piddir="\${localstatedir}/run/samba"
     logfilebase="\${localstatedir}/log/samba"
     privatedir="\${CONFIGDIR}/private"
