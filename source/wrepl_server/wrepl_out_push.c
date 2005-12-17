@@ -40,19 +40,20 @@ static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL pro
 static void wreplsrv_push_handler_creq(struct composite_context *creq)
 {
 	struct wreplsrv_partner *partner = talloc_get_type(creq->async.private_data, struct wreplsrv_partner);
+	struct wreplsrv_push_notify_io *old_notify_io;
 
 	partner->push.last_status = wreplsrv_push_notify_recv(partner->push.creq);
 	partner->push.creq = NULL;
-	talloc_free(partner->push.notify_io);
-	partner->push.notify_io = NULL;
-
 	partner->push.last_run = timeval_current();
+
+	old_notify_io = partner->push.notify_io;
+	partner->push.notify_io = NULL;
 
 	if (NT_STATUS_IS_OK(partner->push.last_status)) {
 		partner->push.error_count = 0;
 		DEBUG(2,("wreplsrv_push_notify(%s): %s\n",
 			 partner->address, nt_errstr(partner->push.last_status)));
-		return;
+		goto done;
 	}
 
 	partner->push.error_count++;
@@ -61,13 +62,15 @@ static void wreplsrv_push_handler_creq(struct composite_context *creq)
 		DEBUG(1,("wreplsrv_push_notify(%s): %s: error_count: %u: giving up\n",
 			 partner->address, nt_errstr(partner->push.last_status),
 			 partner->push.error_count));
-		return;
+		goto done;
 	}
 
 	DEBUG(1,("wreplsrv_push_notify(%s): %s: error_count: %u: retry\n",
 		 partner->address, nt_errstr(partner->push.last_status),
 		 partner->push.error_count));
-	wreplsrv_out_partner_push(partner, partner->push.notify_io->in.propagate);
+	wreplsrv_out_partner_push(partner, old_notify_io->in.propagate);
+done:
+	talloc_free(old_notify_io);
 }
 
 static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL propagate)
