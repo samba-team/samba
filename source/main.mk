@@ -47,6 +47,7 @@ showlayout:
 	@echo "  privatedir:  $(PRIVATEDIR)"
 	@echo "  piddir:   $(PIDDIR)"
 	@echo "  lockdir:  $(LOCKDIR)"
+	@echo "  logfilebase:  $(LOGFILEBASE)"
 	@echo "  swatdir:  $(SWATDIR)"
 	@echo "  mandir:   $(MANDIR)"
 
@@ -87,11 +88,35 @@ install: showlayout installbin installdat installswat installmisc installlib \
 # is not used.
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR) $(DESTDIR)$(PRIVATEDIR)/tls $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(PKGCONFIGDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh \
+		$(DESTDIR)$(BASEDIR) \
+		$(DESTDIR)$(BINDIR) \
+		$(DESTDIR)$(SBINDIR) \
+		$(DESTDIR)$(LIBDIR) \
+		$(DESTDIR)$(VARDIR) \
+		$(DESTDIR)$(PRIVATEDIR) \
+		$(DESTDIR)$(PIDDIR) \
+		$(DESTDIR)$(LOCKDIR) \
+		$(DESTDIR)$(LOGFILEBASE) \
+		$(DESTDIR)$(PRIVATEDIR)/tls \
+		$(DESTDIR)$(INCLUDEDIR) \
+		$(DESTDIR)$(PKGCONFIGDIR)
 
 installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh \
+		$(INSTALLPERMS) \
+		$(DESTDIR)$(BASEDIR) \
+		$(DESTDIR)$(SBINDIR) \
+		$(DESTDIR)$(LIBDIR) \
+		$(DESTDIR)$(VARDIR) \
+		$(SBIN_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh \
+		$(INSTALLPERMS) \
+		$(DESTDIR)$(BASEDIR) \
+		$(DESTDIR)$(BINDIR) \
+		$(DESTDIR)$(LIBDIR) \
+		$(DESTDIR)$(VARDIR) \
+		$(BIN_PROGS)
 
 installlib: libraries installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS) 
