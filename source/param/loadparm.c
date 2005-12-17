@@ -119,6 +119,7 @@ typedef struct
 	char *szConfigFile;
 	char *szSAM_URL;
 	char *szSPOOLSS_URL;
+	char *szWINS_CONFIG_URL;
 	char *szWINS_URL;
 	char *szPrivateDir;
 	char **jsInclude;
@@ -417,6 +418,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_LIST, P_GLOBAL, &Globals.szPasswordServers, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"wins config database", P_STRING, P_GLOBAL, &Globals.szWINS_CONFIG_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"wins database", P_STRING, P_GLOBAL, &Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -613,6 +615,7 @@ static void init_globals(void)
 	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
 	do_parameter("sam database", "sam.ldb", NULL);
 	do_parameter("spoolss database", "spoolss.ldb", NULL);
+	do_parameter("wins config database", "wins_config.ldb", NULL);
 	do_parameter("wins database", "wins.ldb", NULL);
 	do_parameter("registry:HKEY_LOCAL_MACHINE", "hklm.ldb", NULL);
 
@@ -817,6 +820,7 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
+FN_GLOBAL_STRING(lp_wins_config_url, &Globals.szWINS_CONFIG_URL)
 FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &Globals.bWinbindSealedPipes)

@@ -214,6 +214,9 @@ struct wreplsrv_service {
 
 	/* some configuration */
 	struct {
+		/* the wins config db handle */
+		struct ldb_context *ldb;
+
 		/* 
 		 * the interval (in secs) till an active record will be marked as RELEASED 
 		 */

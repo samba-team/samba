@@ -33,6 +33,12 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 
+static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx)
+{
+	return ldb_wrap_connect(mem_ctx, private_path(mem_ctx, lp_wins_config_url()),
+				system_session(mem_ctx), NULL, 0, NULL);
+}
+
 /*
   open winsdb
 */
@@ -40,6 +46,11 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 {
 	service->wins_db     = winsdb_connect(service);
 	if (!service->wins_db) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	service->config.ldb = wins_config_db_connect(service);
+	if (!service->config.ldb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -85,7 +96,7 @@ static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	int i;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(service->wins_db, ldb_dn_explode(tmp_ctx, "CN=PARTNERS"), LDB_SCOPE_ONELEVEL,
+	ret = ldb_search(service->config.ldb, ldb_dn_explode(tmp_ctx, "CN=PARTNERS"), LDB_SCOPE_SUBTREE,
 			 "(objectClass=wreplPartner)", NULL, &res);
 	if (ret != LDB_SUCCESS) goto failed;
 	talloc_steal(tmp_ctx, res);
