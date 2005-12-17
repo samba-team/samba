@@ -140,7 +140,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	if ( sid ) {
 		init_sec_access( &mask, sid_access );
 		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-}
+	}
 
 	/* create the security descriptor */
 

@@ -2141,7 +2141,7 @@ void init_samr_group_info1(GROUP_INFO1 * gr1,
 {
 	DEBUG(5, ("init_samr_group_info1\n"));
 
-	gr1->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not |SE_GROUP_ENABLED ? */
+	gr1->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
 	gr1->num_members = num_members;
 
 	init_unistr2(&gr1->uni_acct_name, acct_name, UNI_FLAGS_NONE);
@@ -2238,7 +2238,7 @@ void init_samr_group_info3(GROUP_INFO3 *gr3)
 {
 	DEBUG(5, ("init_samr_group_info3\n"));
 
-	gr3->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not |SE_GROUP_ENABLED ? */
+	gr3->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
 }
 
 /*******************************************************************
