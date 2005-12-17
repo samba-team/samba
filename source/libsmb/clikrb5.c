@@ -409,9 +409,10 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 				      krb5_creds  *credsp)
 {
 	krb5_error_code retval;
+	const char *cc_type = krb5_cc_get_type(context, ccache);
 
-	DEBUG(3, ("Ticket in ccache[%s] expiration %s\n",
-		  krb5_cc_default_name(context),
+	DEBUG(3, ("ads_cleanup_expired_creds: Ticket in ccache[%s:%s] expiration %s\n",
+		  cc_type, krb5_cc_get_name(context, ccache),
 		  http_timestring(credsp->times.endtime)));
 
 	/* we will probably need new tickets if the current ones
@@ -425,11 +426,11 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 	   use memory ccaches, and a FILE one probably means that
 	   we're using creds obtained outside of our exectuable
 	*/
-	if (StrCaseCmp(krb5_cc_get_type(context, ccache), "FILE") == 0) {
-		DEBUG(5, ("ads_cleanup_expired_creds: We do not remove creds from a FILE ccache\n"));
+	if (strequal(cc_type, "KCM") || strequal(cc_type, "FILE")) {
+		DEBUG(5, ("ads_cleanup_expired_creds: We do not remove creds from a %s ccache\n", cc_type));
 		return False;
 	}
-	
+
 	retval = krb5_cc_remove_cred(context, ccache, 0, credsp);
 	if (retval) {
 		DEBUG(1, ("ads_cleanup_expired_creds: krb5_cc_remove_cred failed, err %s\n",
@@ -466,7 +467,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	/* obtain ticket & session key */
 	ZERO_STRUCT(creds);
 	if ((retval = krb5_copy_principal(context, server, &creds.server))) {
-		DEBUG(1,("krb5_copy_principal failed (%s)\n", 
+		DEBUG(1,("ads_krb5_mk_req: krb5_copy_principal failed (%s)\n", 
 			 error_message(retval)));
 		goto cleanup_princ;
 	}
@@ -499,8 +500,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			creds_ready = True;
 	}
 
-	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s) is valid until: (%s - %u)\n",
-		  principal, krb5_cc_default_name(context),
+	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s:%s) is valid until: (%s - %u)\n",
+		  principal, krb5_cc_get_type(context, ccache), krb5_cc_get_name(context, ccache),
 		  http_timestring((unsigned)credsp->times.endtime), 
 		  (unsigned)credsp->times.endtime));
 
@@ -527,7 +528,8 @@ cleanup_princ:
   get a kerberos5 ticket for the given service 
 */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts)
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, 
+			uint32 extra_ap_opts, const char *ccname)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -541,7 +543,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 		ENCTYPE_DES_CBC_MD5, 
 		ENCTYPE_DES_CBC_CRC, 
 		ENCTYPE_NULL};
-	
+
 	initialize_krb5_error_table();
 	retval = krb5_init_context(&context);
 	if (retval) {
@@ -554,7 +556,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 		krb5_set_real_time(context, time(NULL) + time_offset, 0);
 	}
 
-	if ((retval = krb5_cc_default(context, &ccdef))) {
+	if ((retval = krb5_cc_resolve(context, ccname ?
+			ccname : krb5_cc_default_name(context), &ccdef))) {
 		DEBUG(1,("cli_krb5_get_ticket: krb5_cc_default failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
@@ -988,10 +991,154 @@ out:
 #endif
 }
 
+ krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
+				       const char *client_string,	/* gd@BER.SUSE.DE */
+				       const char *service_string,	/* krbtgt/BER.SUSE.DE@BER.SUSE.DE */
+				       time_t *new_start_time)
+{
+	krb5_error_code ret;
+	krb5_context context = NULL;
+	krb5_ccache ccache = NULL;
+	krb5_principal client = NULL;
+
+	initialize_krb5_error_table();
+	ret = krb5_init_context(&context);
+	if (ret) {
+		goto done;
+	}
+
+	if (!ccache_string) {
+		ccache_string = krb5_cc_default_name(context);
+	}
+
+	DEBUG(10,("smb_krb5_renew_ticket: using %s as ccache\n", ccache_string));
+
+	/* FIXME: we should not fall back to defaults */
+	ret = krb5_cc_resolve(context, CONST_DISCARD(char *, ccache_string), &ccache);
+	if (ret) {
+		goto done;
+	}
+
+#ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
+	{
+		krb5_creds creds;
+	
+		if (client_string) {
+			ret = krb5_parse_name(context, client_string, &client);
+			if (ret) {
+				goto done;
+			}
+		} else {
+			ret = krb5_cc_get_principal(context, ccache, &client);
+			if (ret) {
+				goto done;
+			}
+		}
+	
+		ret = krb5_get_renewed_creds(context, &creds, client, ccache, CONST_DISCARD(char *, service_string));
+		if (ret) {
+			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
+			goto done;
+		}
+
+		/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
+		ret = krb5_cc_initialize(context, ccache, client);
+		if (ret) {
+			goto done;
+		}
+	
+		ret = krb5_cc_store_cred(context, ccache, &creds);
+
+		if (new_start_time) {
+			*new_start_time = (time_t) creds.times.renew_till;
+		}
+
+		krb5_free_cred_contents(context, &creds);
+	}
+#elif defined(HAVE_KRB5_GET_KDC_CRED)	/* Heimdal */
+	{
+		krb5_kdc_flags flags;
+		krb5_creds creds_in;
+		krb5_realm *client_realm;
+		krb5_creds *creds;
+
+		memset(&creds_in, 0, sizeof(creds_in));
+
+		if (client_string) {
+			ret = krb5_parse_name(context, client_string, &creds_in.client);
+			if (ret) {
+				goto done;
+			}
+		} else {
+			ret = krb5_cc_get_principal(context, ccache, &creds_in.client);
+			if (ret) {
+				goto done;
+			}
+		}
+
+		if (service_string) {
+			ret = krb5_parse_name(context, service_string, &creds_in.server);
+			if (ret) { 
+				goto done;
+			}
+		} else {
+			/* build tgt service by default */
+			client_realm = krb5_princ_realm(context, client);
+			ret = krb5_make_principal(context, &creds_in.server, *client_realm, KRB5_TGS_NAME, *client_realm, NULL);
+			if (ret) {
+				goto done;
+			}
+		}
+
+		flags.i = 0;
+		flags.b.renewable = flags.b.renew = True;
+
+		ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &creds_in, &creds);
+		if (ret) {
+			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
+			goto done;
+		}
+		
+		/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
+		ret = krb5_cc_initialize(context, ccache, creds_in.client);
+		if (ret) {
+			goto done;
+		}
+	
+		ret = krb5_cc_store_cred(context, ccache, creds);
+
+		if (new_start_time) {
+			*new_start_time = (time_t) creds->times.renew_till;
+		}
+						
+		krb5_free_cred_contents(context, &creds_in);
+		krb5_free_creds(context, creds);
+	}
+#else
+#error No suitable krb5 ticket renew function available
+#endif
+
+
+done:
+	if (client) {
+		krb5_free_principal(context, client);
+	}
+	if (context) {
+		krb5_free_context(context);
+	}
+	if (ccache) {
+		krb5_cc_close(context, ccache);
+	}
+
+	return ret;
+    
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts) 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
+			const char *ccname) 
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return 1;
