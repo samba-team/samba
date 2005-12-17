@@ -1404,19 +1404,29 @@ static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 	char *p;
 	size_t ea_namelen = strlen(ea_name);
 
-	data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-	data = SMB_MALLOC(data_len);
-	if (!data) {
-		return False;
+	if (ea_namelen == 0 && ea_len == 0) {
+		data_len = 4;
+		data = SMB_MALLOC(data_len);
+		if (!data) {
+			return False;
+		}
+		p = data;
+		SIVAL(p,0,data_len);
+	} else {
+		data_len = 4 + 4 + ea_namelen + 1 + ea_len;
+		data = SMB_MALLOC(data_len);
+		if (!data) {
+			return False;
+		}
+		p = data;
+		SIVAL(p,0,data_len);
+		p += 4;
+		SCVAL(p, 0, 0); /* EA flags. */
+		SCVAL(p, 1, ea_namelen);
+		SSVAL(p, 2, ea_len);
+		memcpy(p+4, ea_name, ea_namelen+1); /* Copy in the name. */
+		memcpy(p+4+ea_namelen+1, ea_val, ea_len);
 	}
-	p = data;
-	SIVAL(p,0,data_len);
-	p += 4;
-	SCVAL(p, 0, 0); /* EA flags. */
-	SCVAL(p, 1, ea_namelen);
-	SSVAL(p, 2, ea_len);
-	memcpy(p+4, ea_name, ea_namelen+1); /* Copy in the name. */
-	memcpy(p+4+ea_namelen+1, ea_val, ea_len);
 
 	if (!cli_send_trans(cli, SMBtrans2,
 		NULL,                        /* name */
