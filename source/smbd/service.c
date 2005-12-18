@@ -569,7 +569,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		 * Otherwise, the meaning of the '+' would be ignored.
 		 */
 		if (conn->force_user && user_must_be_member) {
-			if (user_in_group_list( user, gname, NULL, 0)) {
+			if (user_in_group(user, gname)) {
 				conn->gid = gid;
 				DEBUG(3,("Forced group %s for member %s\n",
 					 gname,user));

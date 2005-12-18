@@ -371,7 +371,7 @@ void add_session_user(const char *user)
  Check if a username is valid.
 ****************************************************************************/
 
-static BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
+static BOOL user_ok(const char *user, int snum)
 {
 	char **valid, **invalid;
 	BOOL ret;
@@ -387,8 +387,7 @@ static BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 			     str_list_sub_basic(invalid,
 						current_user_info.smb_name) ) {
 				ret = !user_in_list(user,
-						    (const char **)invalid,
-						    groups, n_groups);
+						    (const char **)invalid);
 			}
 		}
 	}
@@ -402,8 +401,7 @@ static BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 			if ( valid &&
 			     str_list_sub_basic(valid,
 						current_user_info.smb_name) ) {
-				ret = user_in_list(user, (const char **)valid,
-						   groups, n_groups);
+				ret = user_in_list(user, (const char **)valid);
 			}
 		}
 	}
@@ -415,8 +413,7 @@ static BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",
 					lp_servicename(snum))) {
-			ret = user_in_list(user, (const char **)user_list,
-					   groups, n_groups);
+			ret = user_in_list(user, (const char **)user_list);
 		}
 		if (user_list) str_list_free (&user_list);
 	}
@@ -436,7 +433,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 		setnetgrent(group);
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
-				if (user_ok(user, snum, NULL, 0) && 
+				if (user_ok(user, snum) && 
 				    password_ok(user,password)) {
 					endnetgrent();
 					return(user);
@@ -491,7 +488,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 			while (*member) {
 				static fstring name;
 				fstrcpy(name,member);
-				if (user_ok(name,snum, NULL, 0) &&
+				if (user_ok(name,snum) &&
 				    password_ok(name,password)) {
 					endgrent();
 					return(&name[0]);
@@ -558,7 +555,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 		     auser = strtok(NULL,LIST_SEP)) {
 			fstring user2;
 			fstrcpy(user2,auser);
-			if (!user_ok(user2,snum, NULL, 0))
+			if (!user_ok(user2,snum))
 				continue;
 			
 			if (password_ok(user2,password)) {
@@ -595,7 +592,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 			} else {
 				fstring user2;
 				fstrcpy(user2,auser);
-				if (user_ok(user2,snum, NULL, 0) &&
+				if (user_ok(user2,snum) &&
 				    password_ok(user2,password)) {
 					ok = True;
 					fstrcpy(user,user2);
@@ -624,7 +621,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 		*guest = True;
 	}
 
-	if (ok && !user_ok(user, snum, NULL, 0)) {
+	if (ok && !user_ok(user, snum)) {
 		DEBUG(0,("authorise_login: rejected invalid user %s\n",user));
 		ok = False;
 	}

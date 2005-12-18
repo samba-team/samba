@@ -121,7 +121,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 		if (*prefix == '&') {
-			if (user_in_netgroup_list(username, name)) {
+			if (user_in_netgroup(username, name)) {
 				return True;
 			}
 			continue;
