@@ -37,7 +37,7 @@
  *		-i,--scope
  */
 
-enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL, OPT_DEBUG_STDERR};
+enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL, OPT_DEBUG_STDERR, OPT_SIMPLE_BIND_DN};
 
 struct cli_credentials *cmdline_credentials = NULL;
 
@@ -242,6 +242,9 @@ static void popt_common_credentials_callback(poptContext con,
 		
 		/* machine accounts only work with kerberos (fall though)*/
 		break;
+	case OPT_SIMPLE_BIND_DN:
+		cli_credentials_set_bind_dn(cmdline_credentials, arg);
+		break;
 	}
 }
 
@@ -254,5 +257,6 @@ struct poptOption popt_common_credentials[] = {
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
+	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
 	POPT_TABLEEND
 };
