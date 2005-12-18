@@ -123,11 +123,9 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	ent->vuid = vuser->vuid;
 	ent->read_only = readonly_share;
 
-	if (user_in_list(vuser->user.unix_name ,lp_admin_users(conn->service), vuser->groups, vuser->n_groups)) {
-		ent->admin_user = True;
-	} else {
-		ent->admin_user = False;
-	}
+	ent->admin_user = token_contains_name_in_list(
+		vuser->user.unix_name, NULL, vuser->nt_user_token,
+		lp_admin_users(conn->service));
 
 	conn->read_only = ent->read_only;
 	conn->admin_user = ent->admin_user;

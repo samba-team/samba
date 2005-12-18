@@ -5328,9 +5328,11 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
         /* see if we need to try the printer admin list */
 
-        if ( access_granted == 0 ) {
-                if ( user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups) )
-                        return True;
+        if ((access_granted == 0) &&
+	    (token_contains_name_in_list(uidtoname(user->uid), NULL,
+					 user->nt_user_token,
+					 lp_printer_admin(snum)))) {
+		return True;
         }
 
 	talloc_destroy(mem_ctx);

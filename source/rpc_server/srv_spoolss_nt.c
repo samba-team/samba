@@ -1620,10 +1620,13 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 			
-			if ( user.uid != 0
-				&& !user_has_privileges( user.nt_user_token, &se_printop )
-				&& !user_in_list(uidtoname(user.uid), lp_printer_admin(snum), user.groups, user.ngroups) )
-			{
+			if ((user.uid != 0) &&
+			    !user_has_privileges(user.nt_user_token,
+						 &se_printop ) &&
+			    !token_contains_name_in_list(
+				    uidtoname(user.uid), NULL,
+				    user.nt_user_token,
+				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
 			}
