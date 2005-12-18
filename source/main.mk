@@ -218,6 +218,8 @@ clean: heimdal_clean
 	@-rm -f include/proto.h
 	@echo Removing objects
 	@-find . -name '*.o' -exec rm -f '{}' \;
+	@echo Removing hostcc objects
+	@-find . -name '*.ho' -exec rm -f '{}' \;
 	@echo Removing binaries
 	@-rm -f $(BIN_PROGS) $(SBIN_PROGS)
 	@echo Removing libraries
@@ -267,8 +269,6 @@ bin/.dummy:
 ###############################################################################
 # File types
 ###############################################################################
-
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .ho
 
 .c.d:
 	@echo "Generating dependencies for $<"
