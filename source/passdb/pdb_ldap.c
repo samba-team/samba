@@ -3708,8 +3708,7 @@ char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 	escaped = escape_ldap_string_alloc(username);
 	if (escaped == NULL) goto done;
 
-	filter = realloc_string_sub(filter, "%u", username);
-	result = talloc_strdup(mem_ctx, filter);
+	result = talloc_string_sub(mem_ctx, filter, "%u", username);
 
  done:
 	SAFE_FREE(filter);
