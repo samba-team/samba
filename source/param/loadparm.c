@@ -4334,7 +4334,7 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 
 	getgroups_user();
 
-	user_in_group_list(u_name, g_name, NULL, 0);
+	user_in_group(u_name, g_name);
 #endif
 
 	sys_closedir(dp);
