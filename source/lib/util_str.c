@@ -1003,7 +1003,8 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
  as string.
 **/
 
-char *realloc_string_sub(char *string, const char *pattern, const char *insert)
+char *realloc_string_sub(char *string, const char *pattern,
+			 const char *insert)
 {
 	char *p, *in;
 	char *s;
@@ -1046,6 +1047,77 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 			char *t = SMB_REALLOC(string, ls + ld + 1);
 			if (!t) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+				SAFE_FREE(in);
+				return NULL;
+			}
+			string = t;
+			p = t + offset + (p - s);
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
+		memcpy(p, in, li);
+		s = p + li;
+		ls += ld;
+	}
+	SAFE_FREE(in);
+	return string;
+}
+
+/* Same as string_sub, but returns a talloc'ed string */
+
+char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern, const char *insert)
+{
+	char *p, *in;
+	char *s;
+	char *string;
+	ssize_t ls,lp,li,ld, i;
+
+	if (!insert || !pattern || !*pattern || !src || !*src)
+		return NULL;
+
+	string = talloc_strdup(mem_ctx, src);
+	if (string == NULL) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return NULL;
+	}
+
+	s = string;
+
+	in = SMB_STRDUP(insert);
+	if (!in) {
+		DEBUG(0, ("talloc_string_sub: out of memory!\n"));
+		return NULL;
+	}
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li - lp;
+	for (i=0;i<li;i++) {
+		switch (in[i]) {
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+			case '$':
+			case '%':
+			case '\r':
+			case '\n':
+				in[i] = '_';
+			default:
+				/* ok */
+				break;
+		}
+	}
+	
+	while ((p = strstr_m(s,pattern))) {
+		if (ld > 0) {
+			int offset = PTR_DIFF(s,string);
+			char *t = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
+			if (!t) {
+				DEBUG(0, ("talloc_string_sub: out of "
+					  "memory!\n"));
 				SAFE_FREE(in);
 				return NULL;
 			}
