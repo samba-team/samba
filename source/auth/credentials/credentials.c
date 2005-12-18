@@ -57,6 +57,8 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->machine_account = False;
 	cred->gensec_list = NULL;
 
+	cred->bind_dn = NULL;
+
 	return cred;
 }
 
@@ -104,6 +106,23 @@ BOOL cli_credentials_set_username_callback(struct cli_credentials *cred,
 	return False;
 }
 
+BOOL cli_credentials_set_bind_dn(struct cli_credentials *cred, 
+				 const char *bind_dn)
+{
+	cred->bind_dn = talloc_strdup(cred, bind_dn);
+	return True;
+}
+
+/**
+ * Obtain the BIND DN for this credentials context.
+ * @param cred credentials context
+ * @retval The username set on this context.
+ * @note Return value will be NULL if not specified explictly
+ */
+const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
+{
+	return cred->bind_dn;
+}
 
 
 /**
@@ -171,6 +190,10 @@ BOOL cli_credentials_set_principal_callback(struct cli_credentials *cred,
 
 BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
+	if (cred->bind_dn) {
+		return True;
+	}
+
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred);
 	}
