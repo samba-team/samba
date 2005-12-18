@@ -15,6 +15,8 @@ if (options == undefined) {
    return -1;
 }
 
+libinclude("base.js");
+
 if (options.ARGV.length != 1) {
    println("Usage: ldap.js <HOST>");
    return -1;
@@ -57,8 +59,13 @@ function find_basedn(ldb)
     return res[0].defaultNamingContext;
 }
 
+/* use command line creds if available */
+ldb.credentials = options.get_credentials();
+
 var ok = ldb.connect("ldap://" + host);
 var base_dn = find_basedn(ldb);
+
+printf("baseDN: %s\n", base_dn);
 
 basic_tests(ldb, base_dn)
 
