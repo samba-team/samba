@@ -77,61 +77,6 @@ BOOL change_to_guest(void)
 	return True;
 }
 
-/****************************************************************************
- Readonly share for this user ?
-****************************************************************************/
-
-static BOOL is_share_read_only_for_user(int snum, user_struct *vuser)
-{
-	char **list;
-	const char *service = lp_servicename(snum);
-	BOOL read_only_ret = lp_readonly(snum);
-
-	if (!service)
-		return read_only_ret;
-
-	str_list_copy(&list, lp_readlist(snum));
-	if (list) {
-		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: read "
-				  "list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: read "
-				  "list service substitution failed\n"));
-		}
-		if (user_in_list(vuser->user.unix_name, (const char **)list,
-				 vuser->groups, vuser->n_groups)) {
-			read_only_ret = True;
-		}
-		str_list_free(&list);
-	}
-
-	str_list_copy(&list, lp_writelist(snum));
-	if (list) {
-		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: write "
-				  "list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: write "
-				  "list service substitution failed\n"));
-		}
-		if (user_in_list(vuser->user.unix_name, (const char **)list,
-				 vuser->groups, vuser->n_groups)) {
-			read_only_ret = False;
-		}
-		str_list_free(&list);
-	}
-
-	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user "
-		  "%s\n", service,
-		  read_only_ret ? "read-only" : "read-write",
-		  vuser->user.unix_name ));
-
-	return read_only_ret;
-}
-
 /*******************************************************************
  Check if a username is OK.
 ********************************************************************/
@@ -154,7 +99,9 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	if (!user_ok_token(vuser->user.unix_name, vuser->nt_user_token, snum))
 		return(False);
 
-	readonly_share = is_share_read_only_for_user(conn->service, vuser);
+	readonly_share = is_share_read_only_for_token(vuser->user.unix_name,
+						      vuser->nt_user_token,
+						      conn->service);
 
 	if (!readonly_share &&
 	    !share_access_check(conn, snum, vuser, FILE_WRITE_DATA)) {
