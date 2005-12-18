@@ -875,6 +875,7 @@ extern int errno;
 
 #include "nt_status.h"
 #include "ads.h"
+#include "gpo.h"
 #include "interfaces.h"
 #include "trans2.h"
 #include "nterr.h"

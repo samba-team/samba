@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
+   Copyright (C) Guenther Deschner 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -801,6 +802,65 @@ char *ads_get_dn(ADS_STRUCT *ads, void *msg)
 	}
 	ldap_memfree(utf8_dn);
 	return unix_dn;
+}
+
+/**
+ * Get a canonical dn from search results
+ * @param ads connection to ads server
+ * @param msg Search result
+ * @return dn string
+ **/
+char *ads_get_dn_canonical(ADS_STRUCT *ads, void *msg)
+{
+#ifdef HAVE_LDAP_DN2AD_CANONICAL
+	return ldap_dn2ad_canonical(ads_get_dn(ads, msg));
+#else
+	return NULL;
+#endif
+}
+
+
+/**
+ * Get the parent dn from a search result
+ * @param ads connection to ads server
+ * @param msg Search result
+ * @return parent dn string
+ **/
+char *ads_get_parent_dn(ADS_STRUCT *ads, void *msg)
+{
+	char *mydn, *p, *dn;
+
+	dn = ads_get_dn(ads, msg);
+	if (dn == NULL) {
+		return NULL;
+	}
+
+	mydn = dn;
+	ads_memfree(ads, dn);
+	
+	p = strchr(mydn, ',');
+
+	if (p == NULL) {
+		return NULL;
+	}
+
+	return p+1;
+}
+
+/**
+ * Get the parent from a dn
+ * @param dn the dn to return the parent from
+ * @return parent dn string
+ **/
+char *ads_parent_dn(const char *dn)
+{
+	char *p = strchr(dn, ',');
+
+	if (p == NULL) {
+		return NULL;
+	}
+
+	return p+1;
 }
 
 /**
@@ -2693,6 +2753,169 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	}
 	
 	return ADS_SUCCESS;
+}
+
+/**
+ * find our site name 
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param site_name Pointer to the sitename
+ * @return status of search
+ **/
+ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_name)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *dn, *service_name;
+	const char *attrs[] = { "dsServiceName", NULL };
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	service_name = ads_pull_string(ads, mem_ctx, res, "dsServiceName");
+	if (service_name == NULL) {
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	/* go up three levels */
+	dn = ads_parent_dn(ads_parent_dn(ads_parent_dn(service_name)));
+	if (dn == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	*site_name = talloc_strdup(mem_ctx, dn);
+	if (*site_name == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
+	/*
+	dsServiceName: CN=NTDS Settings,CN=W2K3DC,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ber,DC=suse,DC=de
+	*/						 
+}
+
+/**
+ * find the site dn where a machine resides
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param computer_name name of the machine
+ * @param site_name Pointer to the sitename
+ * @return status of search
+ **/
+ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site_dn)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *parent, *config_context, *filter;
+	const char *attrs[] = { "configurationNamingContext", NULL };
+	char *dn;
+
+	/* shortcut a query */
+	if (strequal(computer_name, ads->config.ldap_server_name)) {
+		return ads_site_dn(ads, mem_ctx, site_dn);
+	}
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
+	if (config_context == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	filter = talloc_asprintf(mem_ctx, "(cn=%s)", computer_name);
+	if (filter == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_do_search(ads, config_context, LDAP_SCOPE_SUBTREE, filter, NULL, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+	}
+
+	dn = ads_get_dn(ads, res);
+	if (dn == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	/* go up three levels */
+	parent = ads_parent_dn(ads_parent_dn(ads_parent_dn(dn)));
+	if (parent == NULL) {
+		ads_memfree(ads, dn);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	*site_dn = talloc_strdup(mem_ctx, parent);
+	if (*site_dn == NULL) {
+		ads_memfree(ads, dn);
+		ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_memfree(ads, dn);
+	ads_msgfree(ads, res);
+
+	return status;
+}
+
+/**
+ * get the upn suffixes for a domain
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param suffixes Pointer to an array of suffixes
+ * @param site_name Pointer to the number of suffixes
+ * @return status of search
+ **/
+ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixes, uint32 *num_suffixes)
+{
+	ADS_STATUS status;
+	void *res;
+	const char *config_context, *base;
+	const char *attrs[] = { "configurationNamingContext", NULL };
+	const char *attrs2[] = { "uPNSuffixes", NULL };
+
+	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	config_context = ads_pull_string(ads, mem_ctx, res, "configurationNamingContext");
+	if (config_context == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	base = talloc_asprintf(mem_ctx, "cn=Partitions,%s", config_context);
+	if (base == NULL) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_search_dn(ads, &res, base, attrs2); 
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(ads, res) != 1) {
+		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+	}
+
+	suffixes = ads_pull_strings(ads, mem_ctx, &res, "uPNSuffixes", num_suffixes);
+	if (suffixes == NULL) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
 }
 
 #endif

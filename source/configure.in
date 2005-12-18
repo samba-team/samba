@@ -2818,6 +2818,8 @@ if test x"$with_ldap_support" != x"no"; then
   
   AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $smb_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
 
+  AC_CHECK_FUNC_EXT(ldap_dn2ad_canonical,$LDAP_LIBS)	
+  
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     CPPFLAGS="$CPPFLAGS -DLDAP_DEPRECATED"

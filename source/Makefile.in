@@ -227,7 +227,8 @@ LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
 	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
-	     libads/ads_ldap.o libads/authdata.o
+	     libads/ads_ldap.o libads/authdata.o \
+	     libads/gpo.o libads/gpo_util.o
 
 LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
 
@@ -248,7 +249,8 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o $(ERRORMAP_OBJ) libsmb/clirap2.o \
 	     $(DOSERR_OBJ) \
-	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ) 
+	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ) \
+	     libsmb/gpo.o
 
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o \
@@ -563,7 +565,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
 	   utils/net_status.o utils/net_rpc_printer.o utils/net_rpc_rights.o \
-	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o
+	   utils/net_rpc_service.o utils/net_rpc_registry.o utils/net_usershare.o \
+	   utils/net_ads_gpo.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
