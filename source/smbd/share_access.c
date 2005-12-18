@@ -134,10 +134,12 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 /*
  * Check whether a user is contained in the list provided.
  *
- * Please note that the user name and share names passed in here only for the
- * substitution routines that expand the parameter values, the decision
+ * Please note that the user name and share names passed in here mainly for
+ * the substitution routines that expand the parameter values, the decision
  * whether a user is in the list is done after a lookup_name on the expanded
  * parameter value, solely based on comparing the SIDs in token.
+ *
+ * The other use is the netgroup check when using @group or &group.
  */
 
 BOOL token_contains_name_in_list(const char *username,
@@ -174,10 +176,12 @@ BOOL token_contains_name_in_list(const char *username,
  *
  * This looks at "invalid users", "valid users" and "only user/username"
  *
- * Please note that the user name is passed in here only for the substitution
- * routines that expand the parameter values, the decision whether a user is
- * allowed access is done after a lookup_name on the expanded parameter value,
- * solely based on comparing the SIDs in token.
+ * Please note that the user name and share names passed in here mainly for
+ * the substitution routines that expand the parameter values, the decision
+ * whether a user is in the list is done after a lookup_name on the expanded
+ * parameter value, solely based on comparing the SIDs in token.
+ *
+ * The other use is the netgroup check when using @group or &group.
  */
 
 BOOL user_ok_token(const char *username, struct nt_user_token *token, int snum)
@@ -223,10 +227,12 @@ BOOL user_ok_token(const char *username, struct nt_user_token *token, int snum)
  *
  * This looks at "invalid users", "valid users" and "only user/username"
  *
- * Please note that the user name is passed in here only for the substitution
- * routines that expand the parameter values, the decision whether a user is
- * allowed access is done after a lookup_name on the expanded parameter value,
- * solely based on comparing the SIDs in token.
+ * Please note that the user name and share names passed in here mainly for
+ * the substitution routines that expand the parameter values, the decision
+ * whether a user is in the list is done after a lookup_name on the expanded
+ * parameter value, solely based on comparing the SIDs in token.
+ *
+ * The other use is the netgroup check when using @group or &group.
  */
 
 BOOL is_share_read_only_for_token(const char *username,
