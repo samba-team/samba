@@ -26,6 +26,7 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "lib/cmdline/popt_common.h"
 
 /*
   get the connected db
@@ -370,6 +371,9 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 	session_info = mprGetThisPtr(eid, "session_info");
 
 	creds = mprGetThisPtr(eid, "credentials");
+	if (creds == NULL) {
+		creds = cmdline_credentials;
+	}
 
 	dbfile = argv[0];
 
