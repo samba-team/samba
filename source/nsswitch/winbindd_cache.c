@@ -1735,6 +1735,25 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	return True;
 }
 
+void cache_cleanup_response(pid_t pid)
+{
+	fstring key_str;
+
+	if (!init_wcache())
+		return;
+
+	DEBUG(10,("Cleaning up response for pid %d\n", pid));
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	tdb_delete(wcache->tdb, string_tdb_data(key_str));
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	tdb_delete(wcache->tdb, string_tdb_data(key_str));
+
+	return;
+}
+
+
 BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       const char **domain_name, const char **name,
 		       enum SID_NAME_USE *type)

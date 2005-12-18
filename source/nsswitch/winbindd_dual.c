@@ -197,6 +197,8 @@ static void async_reply_recv(void *private_data, BOOL success)
 	SMB_ASSERT(cache_retrieve_response(child->pid,
 					   state->response));
 
+	cache_cleanup_response(child->pid);
+	
 	DLIST_REMOVE(child->requests, state);
 
 	schedule_async_request(child);
