@@ -525,8 +525,6 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	char *filter = NULL;
 	const char * const *princ_attrs = krb5_attrs;
 
-	char *princ_str;
-	char *princ_str_talloc;
 	char *short_princ;
 	char *short_princ_talloc;
 
@@ -534,28 +532,17 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	struct ldb_result *res = NULL;
 
-	ret = krb5_unparse_name(context, principal, &princ_str);
-
-	if (ret != 0) {
-		krb5_set_error_string(context, "LDB_lookup_principal: could not parse principal");
-		krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
-		return ret;
-	}
-
 	ret = krb5_unparse_name_norealm(context, principal, &short_princ);
 
 	if (ret != 0) {
-		free(princ_str);
 		krb5_set_error_string(context, "LDB_lookup_principal: could not parse principal");
 		krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
 		return ret;
 	}
 
-	princ_str_talloc = talloc_strdup(mem_ctx, princ_str);
 	short_princ_talloc = talloc_strdup(mem_ctx, short_princ);
-	free(princ_str);
 	free(short_princ);
-	if (!short_princ || !princ_str_talloc) {
+	if (!short_princ || !short_princ_talloc) {
 		krb5_set_error_string(context, "LDB_lookup_principal: talloc_strdup() failed!");
 		return ENOMEM;
 	}
@@ -564,7 +551,9 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	case HDB_LDB_ENT_TYPE_CLIENT:
 		/* Can't happen */
 		return EINVAL;
-		break;
+	case HDB_LDB_ENT_TYPE_ANY:
+		/* Can't happen */
+		return EINVAL;
 	case HDB_LDB_ENT_TYPE_KRBTGT:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
 					 KRB5_TGS_NAME);
@@ -572,10 +561,6 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	case HDB_LDB_ENT_TYPE_SERVER:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
 					 short_princ_talloc);
-		break;
-	case HDB_LDB_ENT_TYPE_ANY:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(|(samAccountName=%s)(servicePrincipalName=%s))(userPrincipalName=%s)))", 
-					 short_princ_talloc, short_princ_talloc, princ_str_talloc);
 		break;
 	}
 
@@ -830,8 +815,9 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 			break;
 		}
 	case HDB_ENT_TYPE_ANY:
-		ldb_ent_type = HDB_LDB_ENT_TYPE_ANY;
-		break;
+		krb5_warnx(context, "LDB_fetch: ENT_TYPE_ANY is not valid in hdb-ldb!");
+		talloc_free(mem_ctx);
+		return HDB_ERR_NOENTRY;
 	default:
 		krb5_warnx(context, "LDB_fetch: invalid ent_type specified!");
 		talloc_free(mem_ctx);
