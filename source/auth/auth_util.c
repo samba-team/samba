@@ -591,33 +591,36 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	    (strlen(lp_log_nt_token_command()) > 0)) {
 		TALLOC_CTX *mem_ctx;
 		char *command;
-		fstring sidstr;
-		char *user_sidstr, *group_sidstr;
+		char *group_sidstr;
 
 		mem_ctx = talloc_init("setnttoken");
 		if (mem_ctx == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		sid_to_string(sidstr, &ptoken->user_sids[0]);
-		user_sidstr = talloc_strdup(mem_ctx, sidstr);
-
 		group_sidstr = talloc_strdup(mem_ctx, "");
 		for (i=1; i<ptoken->num_sids; i++) {
-			sid_to_string(sidstr, &ptoken->user_sids[i]);
-			group_sidstr = talloc_asprintf(mem_ctx, "%s %s",
-						       group_sidstr, sidstr);
+			group_sidstr = talloc_asprintf(
+				mem_ctx, "%s %s", group_sidstr,
+				sid_string_static(&ptoken->user_sids[i]));
 		}
 
-		command = SMB_STRDUP(lp_log_nt_token_command());
-		command = realloc_string_sub(command, "%s", user_sidstr);
-		command = realloc_string_sub(command, "%t", group_sidstr);
+		command = talloc_string_sub(
+			mem_ctx, lp_log_nt_token_command(),
+			"%s", sid_string_static(&ptoken->user_sids[0]));
+		command = talloc_string_sub(
+			mem_ctx, command, "%t", group_sidstr);
+
+		if (command == NULL) {
+			talloc_destroy(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		DEBUG(8, ("running command: [%s]\n", command));
 		if (smbrun(command, NULL) != 0) {
 			DEBUG(0, ("Could not log NT token\n"));
 			nt_status = NT_STATUS_ACCESS_DENIED;
 		}
 		talloc_destroy(mem_ctx);
-		SAFE_FREE(command);
 	}
 
 	*token = ptoken;
