@@ -371,7 +371,7 @@ void add_session_user(const char *user)
  Check if a username is valid.
 ****************************************************************************/
 
-BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
+static BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 {
 	char **valid, **invalid;
 	BOOL ret;

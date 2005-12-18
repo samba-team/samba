@@ -151,7 +151,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		}
 	}
 
-	if (!user_ok(vuser->user.unix_name,snum, vuser->groups, vuser->n_groups))
+	if (!user_ok_token(vuser->user.unix_name, vuser->nt_user_token, snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_user(conn->service, vuser);

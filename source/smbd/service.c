@@ -421,8 +421,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				      return NULL;
 			}
 		} else {
-			if (!user_ok(vuser->user.unix_name, snum,
-				     vuser->groups, vuser->n_groups)) {
+			if (!user_ok_token(vuser->user.unix_name,
+					   vuser->nt_user_token, snum)) {
 				DEBUG(2, ("user '%s' (from session setup) not "
 					  "permitted to access this share "
 					  "(%s)\n", vuser->user.unix_name,

@@ -1676,7 +1676,10 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok(uidtoname(user.uid), snum, user.groups, user.ngroups) || !print_access_check(&user, snum, printer_default->access_required)) {
+		if (!user_ok_token(uidtoname(user.uid), user.nt_user_token,
+				   snum) ||
+		    !print_access_check(&user, snum,
+					printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
