@@ -278,6 +278,9 @@ enum SID_NAME_USE
 #define LOOKUP_NAME_REMOTE   2  /* Ask others */
 #define LOOKUP_NAME_ALL (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
 
+#define LOOKUP_NAME_GROUP    4  /* This is a NASTY hack for valid users = @foo
+				 * where foo also exists in as user. */
+
 /**
  * @brief Security Identifier
  *
@@ -349,7 +352,7 @@ extern const DOM_SID global_sid_Builtin_Replicator;
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-typedef struct _nt_user_token {
+typedef struct nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 	SE_PRIV privileges;

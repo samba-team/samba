@@ -333,7 +333,7 @@ struct passwd *Get_Pwnam(const char *user)
  try lower case.
 ****************************************************************************/
 
-static BOOL user_in_netgroup_list(const char *user, const char *ngname)
+BOOL user_in_netgroup_list(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
 	static char *mydomain = NULL;

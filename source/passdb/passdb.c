@@ -735,7 +735,8 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE *type)
+BOOL lookup_global_sam_name(const char *c_user, int flags, uint32_t *rid,
+			    enum SID_NAME_USE *type)
 {
 	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
@@ -758,7 +759,13 @@ BOOL lookup_global_sam_name(const char *c_user, uint32_t *rid, enum SID_NAME_USE
 	/* BEGIN ROOT BLOCK */
 	
 	become_root();
-	if (pdb_getsampwnam(sam_account, user)) {
+
+	/* LOOKUP_NAME_GROUP is a hack to allow valid users = @foo to work
+	 * correctly in the case where foo also exists as a user. If the flag
+	 * is set, don't look for users at all. */
+
+	if (((flags & LOOKUP_NAME_GROUP) == 0) &&
+	    pdb_getsampwnam(sam_account, user)) {
 		const DOM_SID *user_sid;
 
 		unbecome_root();

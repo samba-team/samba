@@ -68,7 +68,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	if (strequal(domain, get_global_sam_name())) {
 
 		/* It's our own domain, lookup the name in passdb */
-		if (lookup_global_sam_name(name, &rid, &type)) {
+		if (lookup_global_sam_name(name, flags, &rid, &type)) {
 			sid_copy(&sid, get_global_sam_sid());
 			sid_append_rid(&sid, rid);
 			goto ok;
@@ -177,7 +177,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* Both cases are done by looking at our passdb */
 
-	if (lookup_global_sam_name(name, &rid, &type)) {
+	if (lookup_global_sam_name(name, flags, &rid, &type)) {
 		domain = talloc_strdup(tmp_ctx, get_global_sam_name());
 		sid_copy(&sid, get_global_sam_sid());
 		sid_append_rid(&sid, rid);

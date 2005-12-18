@@ -1603,7 +1603,7 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
  Check for a SID in an NT_USER_TOKEN
 ****************************************************************************/
 
-static BOOL nt_token_check_sid ( DOM_SID *sid, NT_USER_TOKEN *token )
+BOOL nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
 {
 	int i;
 	

@@ -391,7 +391,8 @@ BUILDOPT_OBJ = smbd/build_options.o
 
 SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/utmp.o smbd/session.o \
-               smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
+               smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o \
+	       smbd/share_access.o smbd/fileio.o \
                smbd/ipc.o smbd/lanman.o smbd/negprot.o \
                smbd/message.o smbd/nttrans.o smbd/pipes.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \

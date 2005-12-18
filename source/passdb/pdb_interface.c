@@ -1892,7 +1892,7 @@ NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		if (lookup_global_sam_name(names[i], &rids[i], &attrs[i])) {
+		if (lookup_global_sam_name(names[i], 0, &rids[i], &attrs[i])) {
 			DEBUG(5,("lookup_names: %s-> %d:%d\n", names[i],
 				 rids[i], attrs[i]));
 			have_mapped = True;

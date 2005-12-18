@@ -1416,7 +1416,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 				type[i] = SID_NAME_ALIAS;
 			}
 		} else {
-			lookup_global_sam_name(name, &rid[i], &type[i]);
+			lookup_global_sam_name(name, 0, &rid[i], &type[i]);
 		}
 
 		if (type[i] != SID_NAME_UNKNOWN) {
