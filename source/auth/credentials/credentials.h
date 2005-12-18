@@ -61,6 +61,8 @@ struct cli_credentials {
 	const char *principal;
 	const char *salt_principal;
 
+	const char *bind_dn;
+
 	struct samr_Password *nt_hash;
 
 	struct ccache_container *ccache;

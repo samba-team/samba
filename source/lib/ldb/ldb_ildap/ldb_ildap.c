@@ -510,11 +510,22 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	if (creds != NULL && cli_credentials_authentication_requested(creds)) {
-		status = ldap_bind_sasl(ildb->ldap, creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
-				  ldap_errstr(ildb->ldap, status));
-			goto failed;
+		const char *bind_dn = cli_credentials_get_bind_dn(creds);
+		if (bind_dn) {
+			const char *password = cli_credentials_get_password(creds);
+			status = ldap_bind_simple(ildb->ldap, bind_dn, password);
+			if (!NT_STATUS_IS_OK(status)) {
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
+					  ldap_errstr(ildb->ldap, status));
+				goto failed;
+			}
+		} else {
+			status = ldap_bind_sasl(ildb->ldap, creds);
+			if (!NT_STATUS_IS_OK(status)) {
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
+					  ldap_errstr(ildb->ldap, status));
+				goto failed;
+			}
 		}
 	}
 
