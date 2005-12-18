@@ -188,6 +188,22 @@ static uint32 centry_uint32(struct cache_entry *centry)
 }
 
 /*
+  pull a uint16 from a cache entry 
+*/
+static uint16 centry_uint16(struct cache_entry *centry)
+{
+	uint16 ret;
+	if (centry->len - centry->ofs < 2) {
+		DEBUG(0,("centry corruption? needed 2 bytes, have %d\n", 
+			 centry->len - centry->ofs));
+		smb_panic("centry_uint16");
+	}
+	ret = CVAL(centry->data, centry->ofs);
+	centry->ofs += 2;
+	return ret;
+}
+
+/*
   pull a uint8 from a cache entry 
 */
 static uint8 centry_uint8(struct cache_entry *centry)
@@ -200,6 +216,24 @@ static uint8 centry_uint8(struct cache_entry *centry)
 	}
 	ret = CVAL(centry->data, centry->ofs);
 	centry->ofs += 1;
+	return ret;
+}
+
+/*
+  pull a NTTIME from a cache entry 
+*/
+static NTTIME centry_nttime(struct cache_entry *centry)
+{
+	NTTIME ret;
+	if (centry->len - centry->ofs < 8) {
+		DEBUG(0,("centry corruption? needed 8 bytes, have %d\n", 
+			 centry->len - centry->ofs));
+		smb_panic("centry_nttime");
+	}
+	ret.low = IVAL(centry->data, centry->ofs);
+	centry->ofs += 4;
+	ret.high = IVAL(centry->data, centry->ofs);
+	centry->ofs += 4;
 	return ret;
 }
 
@@ -522,6 +556,16 @@ static void centry_put_uint32(struct cache_entry *centry, uint32 v)
 }
 
 /*
+  push a uint16 into a centry 
+*/
+static void centry_put_uint16(struct cache_entry *centry, uint16 v)
+{
+	centry_expand(centry, 2);
+	SIVAL(centry->data, centry->ofs, v);
+	centry->ofs += 2;
+}
+
+/*
   push a uint8 into a centry 
 */
 static void centry_put_uint8(struct cache_entry *centry, uint8 v)
@@ -558,6 +602,18 @@ static void centry_put_sid(struct cache_entry *centry, const DOM_SID *sid)
 {
 	fstring sid_string;
 	centry_put_string(centry, sid_to_string(sid_string, sid));
+}
+
+/*
+  push a NTTIME into a centry 
+*/
+static void centry_put_nttime(struct cache_entry *centry, NTTIME nt)
+{
+	centry_expand(centry, 8);
+	SIVAL(centry->data, centry->ofs, nt.low);
+	centry->ofs += 4;
+	SIVAL(centry->data, centry->ofs, nt.high);
+	centry->ofs += 4;
 }
 
 /*
@@ -664,6 +720,45 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 	centry_free(centry);
 }
 
+static void wcache_save_lockout_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_12 *lockout_policy)
+{
+	struct cache_entry *centry;
+
+	centry = centry_start(domain, status);
+	if (!centry)
+		return;
+
+	centry_put_nttime(centry, lockout_policy->duration);
+	centry_put_nttime(centry, lockout_policy->reset_count);
+	centry_put_uint16(centry, lockout_policy->bad_attempt_lockout);
+
+	centry_end(centry, "LOC_POL/%s", domain->name);
+	
+	DEBUG(10,("wcache_save_lockout_policy: %s\n", domain->name));
+
+	centry_free(centry);
+}
+
+static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS status, SAM_UNK_INFO_1 *password_policy)
+{
+	struct cache_entry *centry;
+
+	centry = centry_start(domain, status);
+	if (!centry)
+		return;
+
+	centry_put_uint16(centry, password_policy->min_length_password);
+	centry_put_uint16(centry, password_policy->password_history);
+	centry_put_uint32(centry, password_policy->password_properties);
+	centry_put_nttime(centry, password_policy->expire);
+	centry_put_nttime(centry, password_policy->min_passwordage);
+
+	centry_end(centry, "PWD_POL/%s", domain->name);
+	
+	DEBUG(10,("wcache_save_password_policy: %s\n", domain->name));
+
+	centry_free(centry);
+}
 
 /* Query display info. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
@@ -1561,7 +1656,107 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	/* we don't cache this call */
 	return domain->backend->trusted_domains(domain, mem_ctx, num_domains, 
 					       names, alt_names, dom_sids);
+}	
+
+/* get lockout policy */
+static NTSTATUS lockout_policy(struct winbindd_domain *domain,
+ 			       TALLOC_CTX *mem_ctx,
+			       SAM_UNK_INFO_12 *lockout_policy){
+ 	struct winbind_cache *cache = get_cache(domain);
+ 	struct cache_entry *centry = NULL;
+ 	NTSTATUS status;
+ 
+	if (!cache->tdb)
+		goto do_query;
+ 
+	centry = wcache_fetch(cache, domain, "LOC_POL/%s", domain->name);
+	
+	if (!centry)
+ 		goto do_query;
+ 
+	lockout_policy->duration = centry_nttime(centry);
+	lockout_policy->reset_count = centry_nttime(centry);
+	lockout_policy->bad_attempt_lockout = centry_uint16(centry);
+ 
+ 	status = centry->status;
+ 
+	DEBUG(10,("lockout_policy: [Cached] - cached info for domain %s status %s\n",
+		domain->name, get_friendly_nt_error_msg(status) ));
+ 
+ 	centry_free(centry);
+ 	return status;
+ 
+do_query:
+	ZERO_STRUCTP(lockout_policy);
+ 
+	/* Return status value returned by seq number check */
+
+ 	if (!NT_STATUS_IS_OK(domain->last_status))
+ 		return domain->last_status;
+	
+	DEBUG(10,("lockout_policy: [Cached] - doing backend query for info for domain %s\n",
+		domain->name ));
+ 
+	status = domain->backend->lockout_policy(domain, mem_ctx, lockout_policy); 
+ 
+	/* and save it */
+ 	refresh_sequence_number(domain, False);
+	wcache_save_lockout_policy(domain, status, lockout_policy);
+ 
+ 	return status;
 }
+ 
+/* get password policy */
+static NTSTATUS password_policy(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				SAM_UNK_INFO_1 *password_policy)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+
+	if (!cache->tdb)
+		goto do_query;
+ 
+	centry = wcache_fetch(cache, domain, "PWD_POL/%s", domain->name);
+	
+	if (!centry)
+		goto do_query;
+
+	password_policy->min_length_password = centry_uint16(centry);
+	password_policy->password_history = centry_uint16(centry);
+	password_policy->password_properties = centry_uint32(centry);
+	password_policy->expire = centry_nttime(centry);
+	password_policy->min_passwordage = centry_nttime(centry);
+
+	status = centry->status;
+
+	DEBUG(10,("lockout_policy: [Cached] - cached info for domain %s status %s\n",
+		domain->name, get_friendly_nt_error_msg(status) ));
+
+	centry_free(centry);
+	return status;
+
+do_query:
+	ZERO_STRUCTP(password_policy);
+
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+	
+	DEBUG(10,("password_policy: [Cached] - doing backend query for info for domain %s\n",
+		domain->name ));
+
+	status = domain->backend->password_policy(domain, mem_ctx, password_policy); 
+
+	/* and save it */
+	refresh_sequence_number(domain, False);
+	wcache_save_password_policy(domain, status, password_policy);
+
+	return status;
+}
+
 
 /* Invalidate cached user and group lists coherently */
 
@@ -1602,25 +1797,6 @@ void wcache_invalidate_cache(void)
 			tdb_traverse(cache->tdb, traverse_fn, NULL);
 	}
 }
-
-/* the ADS backend methods are exposed via this structure */
-struct winbindd_methods cache_methods = {
-	True,
-	query_user_list,
-	enum_dom_groups,
-	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
-	msrpc_lookupsids,
-	query_user,
-	lookup_usergroups,
-	lookup_useraliases,
-	lookup_groupmem,
-	query_aliasmem,
-	query_groupmem,
-	sequence_number,
-	trusted_domains,
-};
 
 static BOOL init_wcache(void)
 {
@@ -1797,3 +1973,25 @@ void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
 	wcache_save_sid_to_name(domain, NT_STATUS_OK, sid, domain_name,
 				name, type);
 }
+
+/* theecache backend methods are exposed via this structure */
+struct winbindd_methods cache_methods = {
+	True,
+	query_user_list,
+	enum_dom_groups,
+	enum_local_groups,
+	name_to_sid,
+	sid_to_name,
+	msrpc_lookupsids,
+	query_user,
+	lookup_usergroups,
+	lookup_useraliases,
+	lookup_groupmem,
+	query_aliasmem,
+	query_groupmem,
+	sequence_number,
+	lockout_policy,
+	password_policy,
+	trusted_domains
+};
+

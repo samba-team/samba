@@ -357,8 +357,33 @@ static NTSTATUS query_groupmem(struct winbindd_domain *domain,
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
-	*seq = 1;
+	BOOL result;
+	time_t seq_num;
+
+	result = pdb_get_seq_num(&seq_num);
+	if (!result) {
+		*seq = 1;
+	}
+
+	*seq = (int) seq_num;
+	/* *seq = 1; */
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS lockout_policy(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       SAM_UNK_INFO_12 *lockout_policy)
+{
+	/* actually we have that */
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS password_policy(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				SAM_UNK_INFO_1 *password_policy)
+{
+	/* actually we have that */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /* get a list of trusted domains */
@@ -423,5 +448,7 @@ struct winbindd_methods passdb_methods = {
 	query_aliasmem,
 	query_groupmem,
 	sequence_number,
+	lockout_policy,
+	password_policy,
 	trusted_domains,
 };

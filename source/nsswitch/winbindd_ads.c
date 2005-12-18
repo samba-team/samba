@@ -933,6 +933,51 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
+static NTSTATUS lockout_policy(struct winbindd_domain *domain, 
+			       TALLOC_CTX *mem_ctx,
+			       SAM_UNK_INFO_12 *lockout_policy)
+{
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS rc;
+
+	ads = ads_cached_connection(domain);
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = gpo_lockout_policy(ads, mem_ctx, get_global_sam_name(), lockout_policy);
+	if (!ADS_ERR_OK(rc)) {
+		return msrpc_lockout_policy(domain, mem_ctx, lockout_policy);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS password_policy(struct winbindd_domain *domain, 
+				TALLOC_CTX *mem_ctx,
+				SAM_UNK_INFO_1 *password_policy)
+{
+	ADS_STRUCT *ads = NULL;
+	ADS_STATUS rc;
+
+	ads = ads_cached_connection(domain);
+	
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = gpo_password_policy(ads, mem_ctx, get_global_sam_name(), password_policy);
+	if (!ADS_ERR_OK(rc)) {
+		return msrpc_password_policy(domain, mem_ctx, password_policy);
+	}
+
+	return NT_STATUS_OK;
+}
+
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	True,
@@ -949,6 +994,8 @@ struct winbindd_methods ads_methods = {
 	msrpc_query_aliasmem,
 	msrpc_query_groupmem,
 	sequence_number,
+	lockout_policy,
+	password_policy,
 	trusted_domains,
 };
 

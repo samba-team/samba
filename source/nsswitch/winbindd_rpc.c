@@ -970,6 +970,71 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
+/* find the lockout policy for a domain */
+NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain, 
+			      TALLOC_CTX *mem_ctx,
+			      SAM_UNK_INFO_12 *lockout_policy)
+{
+	NTSTATUS result;
+	struct rpc_pipe_client *cli;
+	POLICY_HND dom_pol;
+	SAM_UNK_CTR ctr;
+
+	DEBUG(10,("rpc: fetch lockout policy for %s\n", domain->name));
+
+	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 12, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	*lockout_policy = ctr.info.inf12;
+
+	DEBUG(10,("msrpc_lockout_policy: bad_attempt_lockout %d\n", 
+		ctr.info.inf12.bad_attempt_lockout));
+
+  done:
+
+	return result;
+}
+
+/* find the password policy for a domain */
+NTSTATUS msrpc_password_policy(struct winbindd_domain *domain, 
+			       TALLOC_CTX *mem_ctx,
+			       SAM_UNK_INFO_1 *password_policy)
+{
+	NTSTATUS result;
+	struct rpc_pipe_client *cli;
+	POLICY_HND dom_pol;
+	SAM_UNK_CTR ctr;
+
+	DEBUG(10,("rpc: fetch password policy for %s\n", domain->name));
+
+	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 1, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	*password_policy = ctr.info.inf1;
+
+	DEBUG(10,("msrpc_password_policy: min_length_password %d\n", 
+		ctr.info.inf1.min_length_password));
+
+  done:
+
+	return result;
+}
+
+
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	False,
@@ -986,5 +1051,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_query_aliasmem,
 	msrpc_query_groupmem,
 	sequence_number,
+	msrpc_lockout_policy,
+	msrpc_password_policy,
 	trusted_domains,
 };
