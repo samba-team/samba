@@ -170,4 +170,12 @@ int rep_mkstemp(char *temp);
 #define UINT16_MAX 65535
 #endif
 
+#ifndef UINT32_MAX
+#define UINT32_MAX (4294967295U)
+#endif
+
+#ifndef UINT64_MAX
+#define UINT64_MAX ((uint64_t)-1)
+#endif
+
 #endif

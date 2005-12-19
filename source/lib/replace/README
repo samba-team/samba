@@ -59,6 +59,8 @@ int{8,16,32,64}_t
 Constants:
 PATH_NAME_MAX
 UINT16_MAX
+UINT32_MAX
+UINT64_MAX
 
 Prerequisites:
 memset (for bzero)
