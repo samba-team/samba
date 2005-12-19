@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "utils/net.h"
 
 struct con_struct {
 	BOOL failed_connect;
@@ -61,21 +62,22 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	talloc_set_destructor(cs, cs_destructor);
 
 	/* Connect to localhost with given username/password. */
-	if (!cmdline_auth_info.got_pass) {
+	if (!opt_password && !opt_machine_pass) {
 		char *pass = getpass("Password:");
 		if (pass) {
-			pstrcpy(cmdline_auth_info.password, pass);
+			opt_password = SMB_STRDUP(pass);
 		}
 	}
 
 	nt_status = cli_full_connection(&cs->cli, global_myname(), global_myname(),
 					&loopback_ip, 0,
 					"IPC$", "IPC",
-					cmdline_auth_info.username,
-					lp_workgroup(),
-					cmdline_auth_info.password,
-					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
-					cmdline_auth_info.signing_state,NULL);
+					opt_user_name,
+					opt_workgroup,
+					opt_password,
+					0,
+					Undefined,
+					NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: Connect failed. Error was %s\n", nt_errstr(nt_status)));
