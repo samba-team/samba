@@ -1543,7 +1543,8 @@ done:
 void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	char *oldpass, *newpass;
+	char *oldpass;
+	char *newpass = NULL;
 	fstring domain, user;
 	POLICY_HND dom_pol;
 	struct winbindd_domain *contact_domain;
