@@ -225,12 +225,24 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	unsigned int userAccountControl;
 	int i;
 	krb5_error_code ret = 0;
+	krb5_boolean is_computer = FALSE;
 	const char *dnsdomain = ldb_msg_find_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
 	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, realm_ref_msg, "nCName", ldb_dn_new(mem_ctx));
 
 	struct hdb_ldb_private *private;
 	NTTIME acct_expiry;
+
+	struct ldb_message_element *objectclasses;
+	struct ldb_val computer_val;
+	computer_val.data = discard_const_p(uint8_t,"computer");
+	computer_val.length = strlen((const char *)computer_val.data);
+	
+	objectclasses = ldb_msg_find_element(msg, "objectClass");
+	
+	if (objectclasses && ldb_msg_find_val(objectclasses, &computer_val)) {
+		is_computer = TRUE;
+	}
 
 	memset(entry_ex, 0, sizeof(*entry_ex));
 
@@ -256,6 +268,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->free_entry = hdb_ldb_free_entry;
 
 	userAccountControl = ldb_msg_find_uint(msg, "userAccountControl", 0);
+
 	
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == HDB_LDB_ENT_TYPE_ANY && principal == NULL) {
@@ -306,7 +319,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	}
 
 	if (lp_parm_bool(-1, "kdc", "require spn for service", True)) {
-		if (!ldb_msg_find_string(msg, "servicePrincipalName", NULL)) {
+		if (!is_computer && !ldb_msg_find_string(msg, "servicePrincipalName", NULL)) {
 			entry_ex->entry.flags.server = 0;
 		}
 	}
@@ -377,14 +390,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 		Principal *salt_principal;
 		const char *user_principal_name = ldb_msg_find_string(msg, "userPrincipalName", NULL);
-		struct ldb_message_element *objectclasses;
-		struct ldb_val computer_val;
-		computer_val.data = discard_const_p(uint8_t,"computer");
-		computer_val.length = strlen((const char *)computer_val.data);
-		
-		objectclasses = ldb_msg_find_element(msg, "objectClass");
-
-		if (objectclasses && ldb_msg_find_val(objectclasses, &computer_val)) {
+		if (is_computer) {
 			/* Determine a salting principal */
 			char *samAccountName = talloc_strdup(mem_ctx, ldb_msg_find_string(msg, "samAccountName", NULL));
 			char *saltbody;
