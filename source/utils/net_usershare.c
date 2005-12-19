@@ -259,7 +259,12 @@ static int info_fn(struct file_list *fl, void *private)
 	pstring basepath;
 	pstring sharepath;
 	pstring comment;
+	pstring acl_str;
 	int num_aces;
+	char sep_str[2];
+
+	sep_str[0] = *lp_winbind_separator();
+	sep_str[1] = '\0';
 
 	get_basepath(basepath);
 	pstrcat(basepath, "/");
@@ -309,21 +314,45 @@ static int info_fn(struct file_list *fl, void *private)
 		return -1;
 	}
 
+	pstrcpy(acl_str, "usershare_acl=");
+
 	for (num_aces = 0; num_aces < psd->dacl->num_aces; num_aces++) {
+		char access_str[2];
 		const char *domain;
 		const char *name;
 
+		access_str[1] = '\0';
+
 		if (net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name)) {
-			d_printf("domain = %s, name = %s\n", domain, name );
+			if (*domain) {
+				pstrcat(acl_str, domain);
+				pstrcat(acl_str, sep_str);
+			}
+			pstrcat(acl_str,name);
+		} else {
+			fstring sidstr;
+			sid_to_string(sidstr, &psd->dacl->ace[num_aces].trustee);
+			pstrcat(acl_str,sidstr);
+		}
+		pstrcat(acl_str, ":");
+
+		if (psd->dacl->ace[num_aces].type == SEC_ACE_TYPE_ACCESS_DENIED) {
+			pstrcat(acl_str, "D,");
+		} else {
+			if (psd->dacl->ace[num_aces].info.mask & GENERIC_ALL_ACCESS) {
+				pstrcat(acl_str, "F,");
+			} else {
+				pstrcat(acl_str, "R,");
+			}
 		}
 	}
+
+	acl_str[strlen(acl_str)-1] = '\0';
 
 	d_printf("[%s]\n", fl->pathname );
 	d_printf("path=%s\n", sharepath );
 	d_printf("comment=%s\n", comment);
-
-	/* TODO - sid to uid.... */
-	d_printf("usershare_acl=%s\n\n", &lines[3][14]);
+	d_printf("%s\n\n", acl_str);
 
 	return 0;
 }
