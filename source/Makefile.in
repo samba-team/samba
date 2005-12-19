@@ -257,7 +257,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o rpc_client/cli_echo.o \
 	       rpc_client/cli_shutdown.o rpc_client/cli_svcctl.o \
-	       rpc_client/cli_unixinfo.o
+	       rpc_client/cli_unixinfo.o rpc_client/cli_netlookup.o
 
 REGOBJS_OBJ = registry/reg_objects.o
 
@@ -482,7 +482,7 @@ TESTPARM_OBJ = utils/testparm.o \
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
-                $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+                $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
@@ -953,10 +953,10 @@ bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) 
 
-bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(PASSDB_LIBS) \
-		$(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) 
+		$(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) 
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@

@@ -27,8 +27,10 @@ static int net_usershare_add_usage(int argc, const char **argv)
 {
 	char c = *lp_winbind_separator();
 	d_printf(
-		"net usershare add <sharename> <path> [<comment>] [<acl>]\n"
+		"net usershare add [-Uusername%%password|-k] <sharename> <path> [<comment>] [<acl>]\n"
 		"\tAdds the specified share name for this user.\n"
+		"\tusername and password are credentials to use to query a server in looking up names\n"
+		"\t-k specifies use kerberos authentication\n"
 		"\t<sharename> is the new share name.\n"
 		"\t<path> is the path on the filesystem to export.\n"
 		"\t<comment> is the optional comment for the new share.\n"
@@ -53,10 +55,12 @@ static int net_usershare_delete_usage(int argc, const char **argv)
 static int net_usershare_info_usage(int argc, const char **argv)
 {
 	d_printf(
-		"net usershare info [all] [wildcard sharename]\n"\
+		"net usershare info [-l|--long] [-Uusername%%password|-k] [wildcard sharename]\n"\
 		"\tPrints out the path, comment and acl elements of shares that match the wildcard.\n"
 		"\tBy default only gives info on shares owned by the current user\n"
-		"\tAdd all to apply this to all shares\n"
+		"\tAdd -l or --long to apply this to all shares\n"
+		"\tusername and password are credentials to use to query a server in looking up names\n"
+		"\t-k specifies use kerberos authentication\n"
 		"\tOmit the sharename or use a wildcard of '*' to see all shares\n");
 	return -1;
 }
@@ -64,20 +68,20 @@ static int net_usershare_info_usage(int argc, const char **argv)
 static int net_usershare_list_usage(int argc, const char **argv)
 {
 	d_printf(
-		"net usershare list [all] [wildcard sharename]\n"\
+		"net usershare list [-l|--long] [wildcard sharename]\n"\
 		"\tLists the names of all shares that match the wildcard.\n"
 		"\tBy default only lists shares owned by the current user\n"
-		"\tAdd all to apply this to all shares\n"
+		"\tAdd -l or --long to apply this to all shares\n"
 		"\tOmit the sharename or use a wildcard of '*' to see all shares\n");
 	return -1;
 }
 
 int net_usershare_usage(int argc, const char **argv)
 {
-	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] to add or change a user defined share.\n"
+	d_printf("net usershare add [-Uusername%%password|-k] <sharename> <path> [<comment>] [<acl>] to add or change a user defined share.\n"
 		"net usershare delete <sharename> to delete a user defined share.\n"
-		"net usershare info [all] [wildcard sharename] to print info about a user defined share.\n"
-		"net usershare list [all] [wildcard sharename] to list user defined shares.\n"
+		"net usershare info [-l|--long] [-Uusername%%pasword|-k] [wildcard sharename] to print info about a user defined share.\n"
+		"net usershare list [-l|--long] [wildcard sharename] to list user defined shares.\n"
 		"net usershare help\n"\
 		"\nType \"net usershare help <option>\" to get more information on that option\n\n");
 
@@ -255,6 +259,7 @@ static int info_fn(struct file_list *fl, void *private)
 	pstring basepath;
 	pstring sharepath;
 	pstring comment;
+	int num_aces;
 
 	get_basepath(basepath);
 	pstrcat(basepath, "/");
@@ -304,6 +309,15 @@ static int info_fn(struct file_list *fl, void *private)
 		return -1;
 	}
 
+	for (num_aces = 0; num_aces < psd->dacl->num_aces; num_aces++) {
+		const char *domain;
+		const char *name;
+
+		if (net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name)) {
+			d_printf("domain = %s, name = %s\n", domain, name );
+		}
+	}
+
 	d_printf("[%s]\n", fl->pathname );
 	d_printf("path=%s\n", sharepath );
 	d_printf("comment=%s\n", comment);
@@ -327,23 +341,15 @@ static int net_usershare_info(int argc, const char **argv)
 
 	fstrcpy(wcard, "*");
 
+	if (opt_long_list_entries) {
+		only_ours = False;
+	}
+
 	switch (argc) {
 		case 0:
 			break;
 		case 1:
-			if (strnequal(argv[0], "all", 3)) {
-				only_ours = False;
-			} else {
-				fstrcpy(wcard, argv[0]);
-			}
-			break;
-		case 2:
-			if (strnequal(argv[0], "all", 3)) {
-				only_ours = False;
-			} else {
-				return net_usershare_info_usage(argc, argv);
-			}
-			fstrcpy(wcard, argv[1]);
+			fstrcpy(wcard, argv[0]);
 			break;
 		default:
 			return net_usershare_info_usage(argc, argv);
@@ -382,23 +388,15 @@ static int net_usershare_list(int argc, const char **argv)
 
 	fstrcpy(wcard, "*");
 
+	if (opt_long_list_entries) {
+		only_ours = False;
+	}
+
 	switch (argc) {
 		case 0:
 			break;
 		case 1:
-			if (strnequal(argv[0], "all", 3)) {
-				only_ours = False;
-			} else {
-				fstrcpy(wcard, argv[0]);
-			}
-			break;
-		case 2:
-			if (strnequal(argv[0], "all", 3)) {
-				only_ours = False;
-			} else {
-				return net_usershare_list_usage(argc, argv);
-			}
-			fstrcpy(wcard, argv[1]);
+			fstrcpy(wcard, argv[0]);
 			break;
 		default:
 			return net_usershare_list_usage(argc, argv);
