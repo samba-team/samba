@@ -108,8 +108,11 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	return cs;
 }
 
-static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx, DOM_SID *psid,
-						const char **ppdomain, const char **ppname, uint32 *ptype)
+static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx,
+						DOM_SID *psid,
+						const char **ppdomain,
+						const char **ppname,
+						uint32 *ptype)
 {
 	NTSTATUS nt_status;
 	struct con_struct *csp = NULL;
@@ -145,9 +148,28 @@ static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx, DOM_SID *psid,
         return True;
 }
 
-static BOOL lookup_name_from_sid_via_winbind(TALLOC_CTX *ctx, DOM_SID *psid, const char **ppdomain, const char **ppname)
+static BOOL lookup_name_from_sid_via_winbind(TALLOC_CTX *ctx,
+						DOM_SID *psid,
+						const char **ppdomain,
+						const char **ppname)
 {
-	return False;
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	sid_to_string(request.data.sid, psid);
+
+	if (winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response) != NSS_STATUS_SUCCESS) {
+                DEBUG(2, ("lookup_name_from_sid_via_winbind could not resolve %s\n", request.data.sid));
+                return False;
+        }
+
+	*ppdomain = talloc_strdup(ctx, response.data.name.dom_name);
+	*ppname = talloc_strdup(ctx, response.data.name.name);
+
+	return True;
 }
 
 BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx, DOM_SID *psid, const char **ppdomain, const char **ppname)
