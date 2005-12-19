@@ -27,10 +27,8 @@ static int net_usershare_add_usage(int argc, const char **argv)
 {
 	char c = *lp_winbind_separator();
 	d_printf(
-		"net usershare add [-Uusername%%password|-k] <sharename> <path> [<comment>] [<acl>]\n"
+		"net usershare add <sharename> <path> [<comment>] [<acl>]\n"
 		"\tAdds the specified share name for this user.\n"
-		"\tusername and password are credentials to use to query a server in looking up names\n"
-		"\t-k specifies use kerberos authentication\n"
 		"\t<sharename> is the new share name.\n"
 		"\t<path> is the path on the filesystem to export.\n"
 		"\t<comment> is the optional comment for the new share.\n"
@@ -55,12 +53,10 @@ static int net_usershare_delete_usage(int argc, const char **argv)
 static int net_usershare_info_usage(int argc, const char **argv)
 {
 	d_printf(
-		"net usershare info [-l|--long] [-Uusername%%password|-k] [wildcard sharename]\n"\
+		"net usershare info [-l|--long] [wildcard sharename]\n"\
 		"\tPrints out the path, comment and acl elements of shares that match the wildcard.\n"
 		"\tBy default only gives info on shares owned by the current user\n"
 		"\tAdd -l or --long to apply this to all shares\n"
-		"\tusername and password are credentials to use to query a server in looking up names\n"
-		"\t-k specifies use kerberos authentication\n"
 		"\tOmit the sharename or use a wildcard of '*' to see all shares\n");
 	return -1;
 }
@@ -78,9 +74,9 @@ static int net_usershare_list_usage(int argc, const char **argv)
 
 int net_usershare_usage(int argc, const char **argv)
 {
-	d_printf("net usershare add [-Uusername%%password|-k] <sharename> <path> [<comment>] [<acl>] to add or change a user defined share.\n"
+	d_printf("net usershare add <sharename> <path> [<comment>] [<acl>] to add or change a user defined share.\n"
 		"net usershare delete <sharename> to delete a user defined share.\n"
-		"net usershare info [-l|--long] [-Uusername%%pasword|-k] [wildcard sharename] to print info about a user defined share.\n"
+		"net usershare info [-l|--long] [wildcard sharename] to print info about a user defined share.\n"
 		"net usershare list [-l|--long] [wildcard sharename] to list user defined shares.\n"
 		"net usershare help\n"\
 		"\nType \"net usershare help <option>\" to get more information on that option\n\n");

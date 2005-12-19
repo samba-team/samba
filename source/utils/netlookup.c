@@ -74,6 +74,7 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	talloc_set_destructor(cs, cs_destructor);
 
 	/* Connect to localhost with given username/password. */
+	/* JRA. Pretty sure we can just do this anonymously.... */
 #if 0
 	if (!opt_password && !opt_machine_pass) {
 		char *pass = getpass("Password:");
