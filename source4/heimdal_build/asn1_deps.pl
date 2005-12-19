@@ -8,8 +8,10 @@ use File::Basename;
 my $file = shift;
 my $prefix = shift;
 my $options = shift;
-my $x_file, @x_files;
-my $c_file, @c_files;
+my $x_file;
+my @x_files = ();
+my $c_file;
+my @c_files = ();
 if (not defined ($prefix)) { $prefix = "asn1"; }
 
 $dirname = dirname($file);
