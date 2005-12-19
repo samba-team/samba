@@ -6,6 +6,7 @@
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett 2001-2002
+   Copyright (C) Guenther Deschner 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -209,14 +210,15 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_LOGON_FAILURE;
 }
 
-static struct winbindd_domain *find_auth_domain(const char *domain_name)
+static struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state, 
+						const char *domain_name)
 {
 	struct winbindd_domain *domain;
 
 	if (IS_DC) {
 		domain = find_domain_from_name_noinit(domain_name);
 		if (domain == NULL) {
-			DEBUG(3, ("Authentication for domain [%s] "
+			DEBUG(3, ("Authentication for domain [%s] refused"
 				  "as it is not a trusted domain\n", 
 				  domain_name));
 		}
@@ -228,6 +230,18 @@ static struct winbindd_domain *find_auth_domain(const char *domain_name)
 			  "to this server) not supported at this "
 			  "stage\n", domain_name));
 		return NULL;
+	}
+
+	/* we can auth against trusted domains */
+	if (state->request.flags & WBFLAG_PAM_CONTACT_TRUSTDOM) {
+		domain = find_domain_from_name_noinit(domain_name);
+		if (domain == NULL) {
+			DEBUG(3, ("Authentication for domain [%s] skipped " 
+				  "as it is not a trusted domain\n", 
+				  domain_name));
+		} else {
+			return domain;
+		}
 	}
 
 	return find_our_domain();
@@ -633,7 +647,7 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 	parse_domain_user(state->request.data.auth.user,
 			  name_domain, name_user);
 
-	domain = find_auth_domain(name_domain);
+	domain = find_auth_domain(state, name_domain);
 
 	if (domain == NULL) {
 		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
@@ -1290,7 +1304,7 @@ void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 	if (domain_name != NULL)
-		domain = find_auth_domain(domain_name);
+		domain = find_auth_domain(state, domain_name);
 
 	if (domain != NULL) {
 		sendto_domain(state, domain);
@@ -1439,6 +1453,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	} while ( (attempts < 2) && retry );
 
 	if (NT_STATUS_IS_OK(result)) {
+
 		netsamlogon_cache_store(name_user, &info3);
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 
