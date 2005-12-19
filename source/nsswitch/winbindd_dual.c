@@ -520,7 +520,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		tp = get_timed_events_timeout(&t, (time_t)-1);
 		if (tp) {
-			DEBUG(11,("select will use timeout of %d seconds\n", tp->tv_sec));
+			DEBUG(11,("select will use timeout of %d seconds\n", (int)tp->tv_sec));
 		}
 
 		FD_ZERO(&read_fds);

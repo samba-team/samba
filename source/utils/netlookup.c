@@ -122,13 +122,16 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 
 /********************************************************
  Do a lookup_sids call to localhost.
+ Check if the local machine is authoritative for this sid. We can't
+ check if this is our SID as that's stored in the root-read-only
+ secrets.tdb.
+ The local smbd will also ask winbindd for us, so we don't have to.
 ********************************************************/
 
-static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx,
-						DOM_SID *psid,
-						const char **ppdomain,
-						const char **ppname,
-						uint32 *ptype)
+BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx,
+				DOM_SID *psid,
+				const char **ppdomain,
+				const char **ppname)
 {
 	NTSTATUS nt_status;
 	struct con_struct *csp = NULL;
@@ -138,7 +141,6 @@ static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx,
 
 	*ppdomain = NULL;
 	*ppname = NULL;
-	*ptype = (uint32)SID_NAME_UNKNOWN;
 
 	csp = create_cs(ctx);
 	if (csp == NULL) {
@@ -158,78 +160,41 @@ static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx,
 
 	*ppdomain = domains[0];
 	*ppname = names[0];
-	*ptype = types[0];
-	
+	/* Don't care about type here. */
+
         /* Converted OK */
         return True;
 }
 
 /********************************************************
- Do a lookup_sids call to winbindd.
+ Do a lookup_names call to localhost.
 ********************************************************/
 
-static BOOL lookup_name_from_sid_via_winbind(TALLOC_CTX *ctx,
-						DOM_SID *psid,
-						const char **ppdomain,
-						const char **ppname)
+BOOL net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SID *pret_sid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	NTSTATUS nt_status;
+	struct con_struct *csp = NULL;
+	DOM_SID *sids = NULL;
+	uint32 *types = NULL;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	sid_to_string(request.data.sid, psid);
-
-	if (winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response) != NSS_STATUS_SUCCESS) {
-                DEBUG(2, ("lookup_name_from_sid_via_winbind could not resolve %s\n", request.data.sid));
-                return False;
-        }
-
-	*ppdomain = talloc_strdup(ctx, response.data.name.dom_name);
-	*ppname = talloc_strdup(ctx, response.data.name.name);
-
-	return True;
-}
-
-/********************************************************
- The generic lookup name from sid call for net.
-********************************************************/
-
-BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx, DOM_SID *psid, const char **ppdomain, const char **ppname)
-{
-	uint32 sidtype;
-
-	/* Check if local and we don't need to look up ... */
-	if (lookup_wellknown_sid(ctx, psid, ppdomain, ppname)) {
-		return True;
+	csp = create_cs(ctx);
+	if (csp == NULL) {
+		return False;
 	}
 
-	/* Check if the local machine is authoritative for this sid. We can't
-	   check if this is our SID as that's stored in the root-read-only
-	   secrets.tdb. */
+	nt_status = rpccli_lsa_lookup_names(csp->lsapipe, ctx,
+						&csp->pol,
+						1,
+						&full_name,
+						&sids,
+						&types);
 
-	if (lookup_name_from_sid_via_localhost(ctx, psid, ppdomain, ppname, &sidtype)) {
-		/* Cache here.... */
-		return True;
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return False;
 	}
 
-	/* Finally it may be a trusted domain sid, ask winbindd. */
+	*pret_sid = sids[0];
 
-	if (lookup_name_from_sid_via_winbind(ctx, psid, ppdomain, ppname)) {
-		/* Cache here.... */
-		return True;
-	}
-
-	/* Can't map SID to name */
-	return False;
-}
-
-/********************************************************
- The generic lookup sid from name call for net.
-********************************************************/
-
-BOOL net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *domain, const char *name, DOM_SID *pret_sid)
-{
-	return False;
+        /* Converted OK */
+        return True;
 }

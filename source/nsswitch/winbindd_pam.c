@@ -514,8 +514,8 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	/* does http_timestring use heimdals libroken strftime?? - Guenther */
 	DEBUG(10,("got TGT for %s in %s (valid until: %s (%d), renewable till: %s (%d))\n", 
 		principal_s, cc, 
-		http_timestring(ticket_lifetime), ticket_lifetime, 
-		http_timestring(renewal_until), renewal_until));
+		http_timestring(ticket_lifetime), (int)ticket_lifetime, 
+		http_timestring(renewal_until), (int)renewal_until));
 
 	client_princ = talloc_strdup(state->mem_ctx, global_myname());
 	if (client_princ == NULL) {
