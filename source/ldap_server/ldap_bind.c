@@ -30,7 +30,21 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
+	int result;
+	const char *errstr;
+	const char *nt4_domain, *nt4_account;
+
+	struct auth_session_info *session_info;
+
+	NTSTATUS status;
+
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
+
+	status = crack_dn_to_nt4_name(call, req->dn, &nt4_domain, &nt4_account);
+	if (NT_STATUS_IS_OK(status)) {
+		status = authenticate_username_pw(call, nt4_domain, nt4_account, 
+						  req->creds.password, &session_info);
+	}
 
 	/* When we add authentication here, we also need to handle telling the backends */
 
@@ -39,11 +53,37 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (NT_STATUS_IS_OK(status)) {
+		struct ldapsrv_partition *part;
+		result = LDAP_SUCCESS;
+		errstr = NULL;
+
+		talloc_free(call->conn->session_info);
+		call->conn->session_info = session_info;
+		for (part = call->conn->partitions; part; part = part->next) {
+			if (!part->ops->Bind) {
+				continue;
+			}
+			status = part->ops->Bind(part, call->conn);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = LDAP_OPERATIONS_ERROR;
+				errstr = talloc_asprintf(reply, "Simple Bind: Failed to advise partition %s of new credentials: %s", part->base_dn, nt_errstr(status));
+			}
+		}
+	} else {
+		status = auth_nt_status_squash(status);
+
+		result = LDAP_INVALID_CREDENTIALS;
+		errstr = talloc_asprintf(reply, "Simple Bind Failed: %s", nt_errstr(status));
+	}
+
 	resp = &reply->msg->r.BindResponse;
-	resp->response.resultcode = 0;
+	resp->response.resultcode = result;
+	resp->response.errormessage = errstr;
 	resp->response.dn = NULL;
-	resp->response.errormessage = NULL;
 	resp->response.referral = NULL;
+
+	/* This looks wrong... */
 	resp->SASL.secblob = data_blob(NULL, 0);
 
 	ldapsrv_queue_reply(call, reply);
