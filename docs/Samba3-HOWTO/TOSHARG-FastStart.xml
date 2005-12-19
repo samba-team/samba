@@ -490,7 +490,6 @@ Added user jackb.
 <smbconfoption name="path">/export</smbconfoption>
 <smbconfoption name="force user">maryo</smbconfoption>
 <smbconfoption name="force group">users</smbconfoption>
-<smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection name="[printers]"/>
