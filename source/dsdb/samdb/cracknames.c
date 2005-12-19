@@ -692,7 +692,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result_res[0], "objectSid");
 		const char *_acc = "", *_dom = "";
 		
-		if ((sid->num_auths < 4) || (sid->num_auths > 5)) {
+		if (!sid || (sid->num_auths < 4) || (sid->num_auths > 5)) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
 			return WERR_OK;
 		}
@@ -905,7 +905,13 @@ NTSTATUS crack_dn_to_nt4_name(TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsNameInfo1 info1;
 	struct ldb_context *ldb;
 	char *p;
-	
+
+	/* Handle anonymous bind */
+	if (!dn || !*dn) {
+		*nt4_domain = "";
+		*nt4_account = "";
+	}
+
 	ldb = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
