@@ -453,11 +453,20 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 			return WERR_NOMEM;
 		}
+
 		service = principal->name.name_string.val[0];
 		if ((principal->name.name_string.len == 2) && (strcasecmp(service, "host") == 0)) {
+			/* the 'cn' attribute is just the leading part of the name */
+			char *computer_name;
+			computer_name = talloc_strndup(mem_ctx, principal->name.name_string.val[1], 
+						      strcspn(principal->name.name_string.val[1], "."));
+			if (computer_name == NULL) {
+				return WERR_NOMEM;
+			}
+
 			result_filter = talloc_asprintf(mem_ctx, "(|(&(servicePrincipalName=%s)(objectClass=user))(&(cn=%s)(objectClass=computer)))", 
 							ldb_binary_encode_string(mem_ctx, unparsed_name_short), 
-							ldb_binary_encode_string(mem_ctx, principal->name.name_string.val[1]));
+							ldb_binary_encode_string(mem_ctx, computer_name));
 		} else {
 			result_filter = talloc_asprintf(mem_ctx, "(&(servicePrincipalName=%s)(objectClass=user))",
 							ldb_binary_encode_string(mem_ctx, unparsed_name_short));
