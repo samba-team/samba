@@ -4536,8 +4536,9 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_DIRENT *de;
 	int num_usershares = 0;
-	unsigned int num_dir_entries, num_bad_dir_entries;
+	unsigned int num_dir_entries, num_bad_dir_entries, num_tmp_dir_entries;
 	unsigned int allowed_bad_entries = ((2*max_user_shares)/10);
+	unsigned int allowed_tmp_entries = ((2*max_user_shares)/10);
 	int iService;
 	int snum_template = -1;
 
@@ -4598,7 +4599,7 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 		return;
 	}
 
-	for (num_dir_entries = 0, num_bad_dir_entries = 0;
+	for (num_dir_entries = 0, num_bad_dir_entries = 0, num_tmp_dir_entries = 0;
 			(de = sys_readdir(dp));
 			num_dir_entries++ ) {
 		int ret;
@@ -4609,6 +4610,19 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
 				continue;
 			}
+		}
+
+		if (n[0] == ':') {
+			/* Temporary file used when creating a share. */
+			num_tmp_dir_entries++;
+		}
+
+		/* Allow 20% tmp entries. */
+		if (num_tmp_dir_entries > allowed_tmp_entries) {
+			DEBUG(0,("process_usershare_directory: too many temp entries (%u) "
+				"in directory %s\n",
+				num_tmp_dir_entries, usersharepath));
+			break;
 		}
 
 		ret = process_usershare_file(usersharepath, n, snum_template);
@@ -4628,7 +4642,7 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 		if (num_bad_dir_entries > allowed_bad_entries) {
 			DEBUG(0,("process_usershare_directory: too many bad entries (%u) "
 				"in directory %s\n",
-				allowed_bad_entries, usersharepath));
+				num_bad_dir_entries, usersharepath));
 			break;
 		}
 

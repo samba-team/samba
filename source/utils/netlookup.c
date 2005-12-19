@@ -74,19 +74,27 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	talloc_set_destructor(cs, cs_destructor);
 
 	/* Connect to localhost with given username/password. */
+#if 0
 	if (!opt_password && !opt_machine_pass) {
 		char *pass = getpass("Password:");
 		if (pass) {
 			opt_password = SMB_STRDUP(pass);
 		}
 	}
+#endif
 
 	nt_status = cli_full_connection(&cs->cli, global_myname(), global_myname(),
 					&loopback_ip, 0,
 					"IPC$", "IPC",
+#if 0
 					opt_user_name,
 					opt_workgroup,
 					opt_password,
+#else
+					"",
+					opt_workgroup,
+					"",
+#endif
 					0,
 					Undefined,
 					NULL);
