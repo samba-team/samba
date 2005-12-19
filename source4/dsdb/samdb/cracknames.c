@@ -910,6 +910,7 @@ NTSTATUS crack_dn_to_nt4_name(TALLOC_CTX *mem_ctx,
 	if (!dn || !*dn) {
 		*nt4_domain = "";
 		*nt4_account = "";
+		return NT_STATUS_OK;
 	}
 
 	ldb = samdb_connect(mem_ctx, system_session(mem_ctx));
