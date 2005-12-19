@@ -778,14 +778,17 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			addrs[1].sin_port = htons(139);
 			if (!open_any_socket_out(addrs, 2, 10000,
 						 &dummy, &fd)) {
+				domain->online = False;
 				fd = -1;
 			}
 		}
 
 		if ((fd == -1) &&
 		    !find_new_dc(mem_ctx, domain, domain->dcname,
-				 &domain->dcaddr, &fd))
+				 &domain->dcaddr, &fd)) {
+			domain->online = False;
 			break;
+		}
 
 		new_conn->cli = NULL;
 
@@ -794,6 +797,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		if (!retry)
 			break;
+	}
+
+	if (NT_STATUS_IS_OK(result)) {
+		domain->online = True;
 	}
 
 	talloc_destroy(mem_ctx);

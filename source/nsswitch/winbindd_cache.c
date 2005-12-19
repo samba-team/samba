@@ -58,12 +58,14 @@ void wcache_flush_cache(void)
 	if (opt_nocache)
 		return;
 
+	/* when working offline we must not clear the cache on restart */
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
+				   TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
 	}
+
 	DEBUG(10,("wcache_flush_cache success\n"));
 }
 
@@ -437,10 +439,18 @@ done:
 */
 static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, struct cache_entry *centry)
 {
+	/* when the domain is offline and we havent checked in the last 30
+	 * seconds if it has become online again, return the cached entry */
+	if (!domain->online && !NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, domain->dcname))) {
+		DEBUG(10,("centry_expired: Key %s for domain %s valid as domain is offline.\n",
+			keystr, domain->name ));
+		return False;
+	}
+
 	/* if the server is OK and our cache entry came from when it was down then
 	   the entry is invalid */
-	if (domain->sequence_number != DOM_SEQUENCE_NONE && 
-	    centry->sequence_number == DOM_SEQUENCE_NONE) {
+	if ((domain->sequence_number != DOM_SEQUENCE_NONE) &&  
+	    (centry->sequence_number == DOM_SEQUENCE_NONE)) {
 		DEBUG(10,("centry_expired: Key %s for domain %s invalid sequence.\n",
 			keystr, domain->name ));
 		return True;
@@ -1640,7 +1650,9 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	return NT_STATUS_OK;
 }
 
-/* enumerate trusted domains */
+/* enumerate trusted domains 
+ * (we need to have the list of trustdoms in the cache when we go offline) -
+ * Guenther */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_domains,
@@ -1648,14 +1660,82 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***alt_names,
 				DOM_SID **dom_sids)
 {
-	get_cache(domain);
+ 	struct winbind_cache *cache = get_cache(domain);
+ 	struct cache_entry *centry = NULL;
+ 	NTSTATUS status;
+	int i;
+ 
+	if (!cache->tdb)
+		goto do_query;
+ 
+	centry = wcache_fetch(cache, domain, "TRUSTDOMS/%s", domain->name);
+	
+	if (!centry) {
+ 		goto do_query;
+	}
+ 
+	*num_domains = centry_uint32(centry);
+	
+	(*names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+	(*alt_names) 	= TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+	(*dom_sids) 	= TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
+ 
+	if (! (*dom_sids) || ! (*names) || ! (*alt_names)) {
+		smb_panic("trusted_domains out of memory");
+ 	}
+ 
+	for (i=0; i<(*num_domains); i++) {
+		(*names)[i] = centry_string(centry, mem_ctx);
+		(*alt_names)[i] = centry_string(centry, mem_ctx);
+		centry_sid(centry, &(*dom_sids)[i]);
+	}
 
+ 	status = centry->status;
+ 
+	DEBUG(10,("trusted_domains: [Cached] - cached info for domain %s status %s\n",
+		domain->name, get_friendly_nt_error_msg(status) ));
+ 
+ 	centry_free(centry);
+ 	return status;
+ 
+do_query:
+	(*num_domains) = 0;
+	(*dom_sids) = NULL;
+	(*names) = NULL;
+	(*alt_names) = NULL;
+ 
+	/* Return status value returned by seq number check */
+
+ 	if (!NT_STATUS_IS_OK(domain->last_status))
+ 		return domain->last_status;
+	
 	DEBUG(10,("trusted_domains: [Cached] - doing backend query for info for domain %s\n",
 		domain->name ));
+ 
+	status = domain->backend->trusted_domains(domain, mem_ctx, num_domains,
+						names, alt_names, dom_sids);
+ 
+	/* and save it */
+	refresh_sequence_number(domain, False);
+ 
+ 	centry = centry_start(domain, status);
+	if (!centry)
+		goto skip_save;
 
-	/* we don't cache this call */
-	return domain->backend->trusted_domains(domain, mem_ctx, num_domains, 
-					       names, alt_names, dom_sids);
+	centry_put_uint32(centry, *num_domains);
+
+	for (i=0; i<(*num_domains); i++) {
+		centry_put_string(centry, (*names)[i]);
+		centry_put_string(centry, (*alt_names)[i]);
+		centry_put_sid(centry, &(*dom_sids)[i]);
+ 	}
+	
+	centry_end(centry, "TRUSTDOMS/%s", domain->name);
+ 
+ 	centry_free(centry);
+ 
+skip_save:
+ 	return status;
 }	
 
 /* get lockout policy */
@@ -1808,8 +1888,9 @@ static BOOL init_wcache(void)
 	if (wcache->tdb != NULL)
 		return True;
 
+	/* when working offline we must not clear the cache on restart */
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
+				   TDB_DEFAULT /*TDB_CLEAR_IF_FIRST*/, O_RDWR|O_CREAT, 0600);
 
 	if (wcache->tdb == NULL) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));

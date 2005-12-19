@@ -158,6 +158,7 @@ struct winbindd_domain {
 	BOOL active_directory;                 /* is this a win2k active directory ? */
 	BOOL primary;                          /* is this our primary domain ? */
 	BOOL internal;                         /* BUILTIN and member SAM */
+	BOOL online;			       /* is this domain available ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
