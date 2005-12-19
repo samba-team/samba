@@ -181,6 +181,7 @@ typedef struct {
 	BOOL bWinbindUseDefaultDomain;
 	BOOL bWinbindTrustedDomainsOnly;
 	BOOL bWinbindNestedGroups;
+	BOOL bWinbindRefreshTickets;
 	char **szIdmapBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
@@ -1269,6 +1270,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind max idle children", P_INTEGER, P_GLOBAL, &Globals.winbind_max_idle_children, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nss info", P_LIST, P_GLOBAL, &Globals.szWinbindNssInfo, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind refresh tickets", P_BOOL, P_GLOBAL, &Globals.bWinbindRefreshTickets, NULL, NULL, FLAG_ADVANCED}, 
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1614,6 +1616,7 @@ static void init_globals(void)
 	Globals.bWinbindNestedGroups = False;
 	Globals.winbind_max_idle_children = 3;
 	Globals.szWinbindNssInfo = str_list_make("template", NULL);
+	Globals.bWinbindRefreshTickets = False;
 
 	Globals.bEnableRidAlgorithm = True;
 	Globals.bPassdbExpandExplicit = True;
@@ -1807,6 +1810,7 @@ FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 FN_GLOBAL_BOOL(lp_winbind_trusted_domains_only, &Globals.bWinbindTrustedDomainsOnly)
 FN_GLOBAL_BOOL(lp_winbind_nested_groups, &Globals.bWinbindNestedGroups)
+FN_GLOBAL_BOOL(lp_winbind_refresh_tickets, &Globals.bWinbindRefreshTickets)
 
 
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
