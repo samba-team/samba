@@ -507,9 +507,11 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ)
 
-PAM_WINBIND_PICOBJ = nsswitch/pam_winbind.@PICSUFFIX@ \
-	nsswitch/wb_common.@PICSUFFIX@ lib/replace1.@PICSUFFIX@ \
-	lib/snprintf.@PICSUFFIX@
+PAM_WINBIND_OBJ = nsswitch/pam_winbind.o \
+		  $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) libsmb/nterr.o
+
+PAM_WINBIND_PICOBJ = $(PAM_WINBIND_OBJ:.o=.@PICSUFFIX@)
+
 
 SMBW_OBJ1 = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
@@ -1194,7 +1196,7 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_PICOBJ) \
-		@SONAMEFLAG@`basename $@` -lpam
+		@SONAMEFLAG@`basename $@` $(LIBS) -lpam
 
 bin/rhosts.@SHLIBEXT@: $(AUTH_RHOSTS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"

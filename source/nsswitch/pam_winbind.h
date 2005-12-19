@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include <config.h>
 
@@ -83,6 +84,10 @@ do {                             \
 #define WINBIND_USE_FIRST_PASS_ARG (1<<4)
 #define WINBIND__OLD_PASSWORD (1<<5)
 #define WINBIND_REQUIRED_MEMBERSHIP (1<<6)
+#define WINBIND_KRB5_AUTH (1<<7)
+#define WINBIND_KRB5_CCACHE_TYPE (1<<8)
+#define WINBIND_CACHED_LOGIN (1<<9)
+#define WINBIND_CREATE_HOMEDIR (1<<10)
 
 /*
  * here is the string to inform the user that the new passwords they
@@ -94,4 +99,45 @@ do {                             \
 #define on(x, y) (x & y)
 #define off(x, y) (!(x & y))
 
+#define PAM_WINBIND_NEW_AUTHTOK_REQD "PAM_WINBIND_NEW_AUTHTOK_REQD"
+#define PAM_WINBIND_HOMEDIR "PAM_WINBIND_HOMEDIR"
+
+#define SECONDS_PER_DAY 86400
+
+#define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
+
+#define REJECT_REASON_TOO_SHORT		0x00000001
+#define REJECT_REASON_IN_HISTORY	0x00000002
+
 #include "winbind_client.h"
+
+#define PAM_WB_REMARK_DIRECT(h,x)\
+{\
+	const char *error_string = NULL; \
+	error_string = _get_ntstatus_error_string(x);\
+	if (error_string != NULL) {\
+		_make_remark(h, PAM_ERROR_MSG, error_string);\
+		return ret;\
+	};\
+	_make_remark(h, PAM_ERROR_MSG, x);\
+	return ret;\
+};
+	
+#define PAM_WB_REMARK_CHECK_RESPONSE(h,x,y)\
+{\
+	const char *ntstatus = x.data.auth.nt_status_string; \
+	const char *error_string = NULL; \
+	if (strequal(ntstatus,y)) {\
+		error_string = _get_ntstatus_error_string(y);\
+		if (error_string != NULL) {\
+			_make_remark(h, PAM_ERROR_MSG, error_string);\
+			return ret;\
+		};\
+		if (x.data.auth.error_string[0] != '\0') {\
+			_make_remark(h, PAM_ERROR_MSG, x.data.auth.error_string);\
+			return ret;\
+		};\
+		_make_remark(h, PAM_ERROR_MSG, y);\
+		return ret;\
+	};\
+};
