@@ -72,6 +72,7 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		auth_util.o \
 		auth_sam_reply.o \
-		ntlm_check.o
+		ntlm_check.o \
+		auth_simple.o
 # End SUBSYSTEM AUTH
 #######################
