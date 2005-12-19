@@ -108,10 +108,13 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
 		readonly_share = True;
-		DEBUG(5,("falling back to read-only access-evaluation due to security descriptor\n"));
+		DEBUG(5,("falling back to read-only access-evaluation due to "
+			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(conn, snum, vuser, readonly_share ? FILE_READ_DATA : FILE_WRITE_DATA)) {
+	if (!share_access_check(conn, snum, vuser,
+				readonly_share ?
+				FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
 
@@ -135,7 +138,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 /****************************************************************************
  Become the user of a connection number without changing the security context
- stack, but modify the currnet_user entries.
+ stack, but modify the current_user entries.
 ****************************************************************************/
 
 BOOL change_to_user(connection_struct *conn, uint16 vuid)
@@ -162,20 +165,24 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
 	   (current_user.uid == conn->uid)) {
-		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
+		DEBUG(4,("change_to_user: Skipping user change - already "
+			 "user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != 0) && (current_user.vuid == vuid) && 
 		   (current_user.uid == vuser->uid)) {
-		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
+		DEBUG(4,("change_to_user: Skipping user change - already "
+			 "user\n"));
 		return(True);
 	}
 
 	snum = SNUM(conn);
 
 	if ((vuser) && !check_user_ok(conn, vuser, snum)) {
-		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) not permitted access to share %s.\n",
-			vuser->user.smb_name, vuser->user.unix_name, vuid, lp_servicename(snum)));
+		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
+			 "not permitted access to share %s.\n",
+			 vuser->user.smb_name, vuser->user.unix_name, vuid,
+			 lp_servicename(snum)));
 		return False;
 	}
 
@@ -192,7 +199,8 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.groups  = vuser->groups;
 		token = vuser->nt_user_token;
 	} else {
-		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing share %s.\n",vuid, lp_servicename(snum) ));
+		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
+			 "share %s.\n",vuid, lp_servicename(snum) ));
 		return False;
 	}
 
@@ -233,15 +241,17 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		if (vuser && vuser->guest)
 			is_guest = True;
 
-		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest);
+		token = create_nt_token(uid, gid, current_user.ngroups,
+					current_user.groups, is_guest);
 		if (!token) {
-			DEBUG(1, ("change_to_user: create_nt_token failed!\n"));
+			DEBUG(1,("change_to_user: create_nt_token failed!\n"));
 			return False;
 		}
 		must_free_token = True;
 	}
 	
-	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups, token);
+	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups,
+		    token);
 
 	/*
 	 * Free the new token (as set_sec_ctx copies it).
@@ -289,7 +299,8 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 		return False;
 
 	set_sec_ctx(p->pipe_user.uid, p->pipe_user.gid, 
-		    p->pipe_user.ngroups, p->pipe_user.groups, p->pipe_user.nt_user_token);
+		    p->pipe_user.ngroups, p->pipe_user.groups,
+		    p->pipe_user.nt_user_token);
 
 	return True;
 }
