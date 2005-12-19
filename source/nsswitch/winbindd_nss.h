@@ -179,6 +179,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_RECURSE			0x0800
 
 #define WBFLAG_PAM_KRB5			0x1000
+#define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x2000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
@@ -204,6 +205,8 @@ struct winbindd_request {
 			fstring user;
 			fstring pass;
 		        fstring require_membership_of_sid;
+			fstring krb5_cc_type;
+			uid_t uid;
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
@@ -312,6 +315,7 @@ struct winbindd_response {
 			int pam_error;
 			char user_session_key[16];
 			char first_8_lm_hash[8];
+			fstring krb5ccname;
 			struct policy_settings {
 				uint16 min_length_password;
 				uint16 password_history;

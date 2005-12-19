@@ -208,7 +208,8 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/events.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o @SOCKWRAP@
+	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o @SOCKWRAP@ \
+	  libads/krb5_errs.o
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -712,7 +713,8 @@ WINBINDD_OBJ = \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) \
-		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ)
+		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
+		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ)
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ)
