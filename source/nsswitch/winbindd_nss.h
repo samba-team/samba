@@ -178,6 +178,8 @@ typedef struct winbindd_gr {
 /* Flag to say this is a winbindd internal send - don't recurse. */
 #define WBFLAG_RECURSE			0x0800
 
+#define WBFLAG_PAM_KRB5			0x1000
+
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
 /* Winbind request structure */
@@ -310,6 +312,14 @@ struct winbindd_response {
 			int pam_error;
 			char user_session_key[16];
 			char first_8_lm_hash[8];
+			struct policy_settings {
+				uint16 min_length_password;
+				uint16 password_history;
+				uint32 password_properties;
+				time_t expire;
+				time_t min_passwordage;
+			} policy;
+			uint32 reject_reason;
 		} auth;
 		uint32 rid;	/* create user or group or allocate rid */
 		struct {

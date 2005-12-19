@@ -181,9 +181,33 @@ static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
 	resp->data.auth.pam_error = nt_status_to_pam(result);
 }
 
-/**********************************************************************
- Authenticate a user with a clear text password
-**********************************************************************/
+static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
+				       struct winbindd_cli_state *state)
+{
+	struct winbindd_methods *methods;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	SAM_UNK_INFO_1 password_policy;
+
+	methods = domain->methods;
+
+	status = methods->password_policy(domain, state->mem_ctx, &password_policy);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	state->response.data.auth.policy.min_length_password =
+		password_policy.min_length_password;
+	state->response.data.auth.policy.password_history =
+		password_policy.password_history;
+	state->response.data.auth.policy.password_properties =
+		password_policy.password_properties;
+	state->response.data.auth.policy.expire	=
+		nt_time_to_unix_abs(&(password_policy.expire));
+	state->response.data.auth.policy.min_passwordage = 
+		nt_time_to_unix_abs(&(password_policy.min_passwordage));
+
+	return NT_STATUS_OK;
+}
 
 void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
@@ -762,12 +786,15 @@ done:
 
 void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *oldpass, *newpass;
 	fstring domain, user;
 	POLICY_HND dom_pol;
 	struct winbindd_domain *contact_domain;
 	struct rpc_pipe_client *cli;
+	BOOL got_info = False;
+	SAM_UNK_INFO_1 *info;
+	SAMR_CHANGE_REJECT *reject;
 
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
@@ -788,6 +815,36 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	oldpass = state->request.data.chauthtok.oldpass;
 	newpass = state->request.data.chauthtok.newpass;
 
+
+	if (contact_domain->active_directory &&
+	    (state->request.flags & WBFLAG_PAM_KRB5)) {
+
+		/* the error mapping is just too hard to get correct (at least at the moment) - Guenther */
+		DEBUG(3,("winbindd_pam_chauthtok: password change over Kerberos is currently disabled;"
+			"falling back to msrpc method\n"));
+
+		goto chauthtok_rpc;
+#if 0
+		ADS_STATUS status;
+
+		status = kerberos_set_password(contact_domain->dcname, user, 
+					       oldpass, user, newpass, 
+					       0);
+
+		/* derive the resulting NT_STATUS code from the ADS_ERROR */
+		result = krb5_to_nt_status(status.err.rc);
+
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(0,("failed to set password using Kerberos: %s\n",
+				nt_errstr(result)));
+		}
+
+		goto done;
+#endif
+	}
+
+chauthtok_rpc:
+
 	/* Get sam handle */
 
 	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli,
@@ -797,10 +854,56 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	result = rpccli_samr_chgpasswd_user(cli, state->mem_ctx, user, newpass,
-					    oldpass);
+	result = rpccli_samr_chgpasswd3(cli, state->mem_ctx, user, newpass, oldpass, &info, &reject);
 
-done:    
+	/* FIXME: need to check for other error codes ? */
+	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
+
+		state->response.data.auth.policy.min_length_password = 
+			info->min_length_password;
+		state->response.data.auth.policy.password_history = 
+			info->password_history;
+		state->response.data.auth.policy.password_properties = 
+			info->password_properties;
+		state->response.data.auth.policy.expire = 
+			nt_time_to_unix_abs(&info->expire);
+		state->response.data.auth.policy.min_passwordage = 
+			nt_time_to_unix_abs(&info->min_passwordage);
+
+		state->response.data.auth.reject_reason = 
+			reject->reject_reason;
+
+		got_info = True;
+		
+	} else if (!NT_STATUS_IS_OK(result)) {
+
+		DEBUG(10,("Password change with chgpasswd3 failed with: %s, retrying chgpasswd_user\n", 
+			nt_errstr(result)));
+		
+		state->response.data.auth.reject_reason = 0;
+
+		result = rpccli_samr_chgpasswd_user(cli, state->mem_ctx, user, newpass, oldpass);
+	}
+
+done: 
+	if (!NT_STATUS_IS_OK(result) && !got_info) {
+
+		NTSTATUS policy_ret;
+		
+		policy_ret = fillup_password_policy(contact_domain, state);
+
+		/* failure of this is non critical, it will just provide no
+		 * additional information to the client why the change has
+		 * failed - Guenther */
+
+		if (!NT_STATUS_IS_OK(policy_ret)) {
+			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(policy_ret)));
+			goto process_result;
+		}
+	}
+
+process_result:
+
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
 	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
