@@ -127,6 +127,19 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 	return ret;	
 }
 
+/*
+   encode a string as a RFC2254 binary string, escaping any
+   non-printable or '\' characters.  This routine is suitable for use
+   in escaping user data in ldap filters.
+*/
+char *ldb_binary_encode_string(void *mem_ctx, const char *string)
+{
+	struct ldb_val val;
+	val.data = string;
+	val.length = strlen(string);
+	return ldb_binary_encode(mem_ctx, val);
+}
+
 /* find the first matching wildcard */
 static char *ldb_parse_find_wildcard(char *value)
 {

@@ -186,7 +186,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, NULL, &ref_msgs, ref_attrs,
 				   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
-				   r->in.domain_name->string);
+				   ldb_binary_encode_string(mem_ctx, r->in.domain_name->string));
 		if (ret != 1) {
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
@@ -537,7 +537,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
 				   "sAMAccountName",
 				   "(&(sAMAccountName=%s)(objectclass=group))",
-				   groupname);
+				   ldb_binary_encode_string(mem_ctx, groupname));
 	if (name != NULL) {
 		return NT_STATUS_GROUP_EXISTS;
 	}
@@ -741,7 +741,8 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* check if the user already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
 				   "sAMAccountName", 
-				   "(&(sAMAccountName=%s)(objectclass=user))", account_name);
+				   "(&(sAMAccountName=%s)(objectclass=user))", 
+				   ldb_binary_encode_string(mem_ctx, account_name));
 	if (name != NULL) {
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -969,7 +970,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 				   "sAMAccountName",
 				   "(sAMAccountName=%s)(objectclass=group))",
-				   alias_name);
+				   ldb_binary_encode_string(mem_ctx, alias_name));
 
 	if (name != NULL) {
 		return NT_STATUS_ALIAS_EXISTS;
@@ -1251,7 +1252,8 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		r->out.types.ids[i] = SID_NAME_UNKNOWN;
 
 		count = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
-				     "sAMAccountName=%s", r->in.names[i].string);
+				     "sAMAccountName=%s", 
+				     ldb_binary_encode_string(mem_ctx, r->in.names[i].string));
 		if (count != 1) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;

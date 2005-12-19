@@ -579,7 +579,7 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
 			   "(&(cn=%s)(objectclass=trustedDomain))", 
-			   r->in.info->name.string);
+			   ldb_binary_encode_string(mem_ctx, r->in.info->name.string));
 	if (ret > 0) {
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
@@ -740,7 +740,7 @@ static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
 	ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
 			   "(&(flatname=%s)(objectclass=trustedDomain))", 
-			   r->in.name.string);
+			   ldb_binary_encode_string(mem_ctx, r->in.name.string));
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -1709,7 +1709,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		name2 = talloc_asprintf(mem_ctx, "%s Secret", name);
+		name2 = talloc_asprintf(mem_ctx, "%s Secret", ldb_binary_encode_string(mem_ctx, name));
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, policy_state->system_dn, &msgs, attrs,
@@ -1745,7 +1745,8 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
 				   ldb_dn_explode(mem_ctx, "cn=LSA Secrets"),
 				   &msgs, attrs,
-				   "(&(cn=%s)(objectclass=secret))", name);
+				   "(&(cn=%s)(objectclass=secret))", 
+				   ldb_binary_encode_string(mem_ctx, name));
 		if (ret > 0) {
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
@@ -1843,7 +1844,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, policy_state->system_dn, &msgs, attrs,
 				   "(&(cn=%s Secret)(objectclass=secret))", 
-				   name);
+				   ldb_binary_encode_string(mem_ctx, name));
 		if (ret == 0) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
@@ -1867,7 +1868,8 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
 				   ldb_dn_explode(mem_ctx, "cn=LSA Secrets"),
 				   &msgs, attrs,
-				   "(&(cn=%s)(objectclass=secret))", name);
+				   "(&(cn=%s)(objectclass=secret))", 
+				   ldb_binary_encode_string(mem_ctx, name));
 		if (ret == 0) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
@@ -2496,7 +2498,7 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 		name = p + 1;
 	}
 
-	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
+	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", ldb_binary_encode_string(mem_ctx, name));
 	if (ret == 1) {
 		*sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
 		if (*sid == NULL) {

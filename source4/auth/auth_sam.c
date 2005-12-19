@@ -280,10 +280,11 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	const struct ldb_dn *domain_dn = NULL;
 
 	if (domain_name) {
+		char *escaped_domain = ldb_binary_encode_string(mem_ctx, domain_name);
 		/* find the domain's DN */
 		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain_ref, domain_ref_attrs,
 					  "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))", 
-					  domain_name, domain_name);
+					  escaped_domain, escaped_domain);
 		if (ret_domain == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -306,7 +307,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	/* pull the user attributes */
 	ret = gendb_search(sam_ctx, mem_ctx, domain_dn, &msgs, user_attrs,
 			   "(&(sAMAccountName=%s)(objectclass=user))", 
-			   account_name);
+			   ldb_binary_encode_string(mem_ctx, account_name));
 	if (ret == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
