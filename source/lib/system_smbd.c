@@ -28,47 +28,6 @@
 
 #ifndef HAVE_GETGROUPLIST
 
-static int int_compare( int *a, int *b )
-{
-	if ( *a == *b )
-		return 0;
-	else if ( *a < *b )
-		return -1;
-	else
-		return 1;
-}
-
-void remove_duplicate_gids( int *num_groups, gid_t *groups )
-{
-	int i;
-	int count = *num_groups;
-
-	if ( *num_groups <= 0 || !groups )
-		return;
-
-	DEBUG(8,("remove_duplicate_gids: Enter %d gids\n", *num_groups));
-
-	qsort( groups, *num_groups, sizeof(gid_t), QSORT_CAST int_compare );
-
-	for ( i=1; i<count; ) {
-		if ( groups[i-1] == groups[i] ) {
-			memmove(&groups[i-1], &groups[i], (count - i + 1)*sizeof(gid_t));
-
-			/* decrement the total number of groups and do not increment
-			   the loop counter */
-			count--;
-			continue;
-		}
-		i++;
-	}
-
-	*num_groups = count;
-
-	DEBUG(8,("remove_duplicate_gids: Exit %d gids\n", *num_groups));
-
-	return;
-}
-
 /*
   This is a *much* faster way of getting the list of groups for a user
   without changing the current supplementary group list. The old
@@ -141,9 +100,6 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 		}
 		groups[0] = gid;
 		*grpcnt = ret + 1;
-
-		/* remove any duplicates gids in the list */
-		remove_duplicate_gids( grpcnt, groups );
 	}
 
 	restore_re_gid();
