@@ -628,6 +628,67 @@ static BOOL wbinfo_lookupname(char *name)
 
 /* Authenticate a user with a plaintext password */
 
+static BOOL wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	p = strchr(username, '%');
+
+	if (p) {
+		*p = 0;
+		fstrcpy(request.data.auth.user, username);
+		fstrcpy(request.data.auth.pass, p + 1);
+		*p = '%';
+	} else
+		fstrcpy(request.data.auth.user, username);
+
+	request.flags = flags;
+
+	fstrcpy(request.data.auth.krb5_cc_type, cctype);
+
+	request.data.auth.uid = geteuid();
+
+	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
+
+	/* Display response */
+
+	d_printf("plaintext kerberos password authentication for [%s] %s (requesting cctype: %s)\n", 
+		username, (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", cctype);
+
+	if (response.data.auth.nt_status)
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+	if (result == NSS_STATUS_SUCCESS) {
+
+		if (request.flags & WBFLAG_PAM_INFO3_TEXT) {
+			if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
+				d_printf("user_flgs: LOGON_CACHED_ACCOUNT\n");
+			}
+		}
+
+		if (response.data.auth.krb5ccname[0] != '\0') {
+			d_printf("credentials were put in: %s\n", response.data.auth.krb5ccname);
+		} else {
+			d_printf("no credentials cached\n");
+		}
+	}
+
+	return result == NSS_STATUS_SUCCESS;
+}
+
+/* Authenticate a user with a plaintext password */
+
 static BOOL wbinfo_auth(char *username)
 {
 	struct winbindd_request request;
@@ -1073,6 +1134,11 @@ int main(int argc, char **argv)
 #ifdef WITH_FAKE_KASERVER
  		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
 #endif
+#ifdef HAVE_KRB5
+		{ "krb5auth", 'K', POPT_ARG_STRING, &string_arg, 'K', "authenticate user using Kerberos", "user%password" },
+			/* destroys wbinfo --help output */
+			/* "user%password,DOM\\user%password,user@EXAMPLE.COM,EXAMPLE.COM\\user%password" }, */
+#endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
@@ -1258,6 +1324,38 @@ int main(int argc, char **argv)
 
 				if (got_error)
 					goto done;
+				break;
+			}
+		case 'K': {
+				BOOL got_error = False;
+				uint32 flags =  WBFLAG_PAM_KRB5 |
+						WBFLAG_PAM_CACHED_LOGIN |
+						WBFLAG_PAM_FALLBACK_AFTER_KRB5 |
+						WBFLAG_PAM_INFO3_TEXT;
+				fstring tok;
+				int i;
+				const char *arg[] = { string_arg, NULL };
+				const char *cctypes[] = { "FILE", 
+							  "KCM", 
+							  "KCM:0", 
+							  "Garbage", 
+							  NULL, 
+							  "0"};
+
+				while (next_token(arg, tok, LIST_SEP, sizeof(tok))) {
+
+					for (i=0; i < ARRAY_SIZE(cctypes); i++) {
+						if (!wbinfo_auth_krb5(tok, cctypes[i], flags)) {
+							d_printf("Could not authenticate user [%s] with "
+								"Kerberos (ccache: %s)\n", tok, cctypes[i]);
+							got_error = True;
+						}
+					}
+				}
+
+				if (got_error)
+					goto done;
+
 				break;
 			}
 		case 'k':
