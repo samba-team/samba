@@ -181,6 +181,7 @@ typedef struct winbindd_gr {
 
 #define WBFLAG_PAM_KRB5			0x1000
 #define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x2000
+#define WBFLAG_PAM_CACHED_LOGIN		0x4000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 

@@ -239,6 +239,22 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 	return ret;
 }
 
+/*
+  pull a time_t from a cache entry 
+*/
+static time_t centry_time(struct cache_entry *centry)
+{
+	time_t ret;
+	if (centry->len - centry->ofs < sizeof(time_t)) {
+		DEBUG(0,("centry corruption? needed %d bytes, have %d\n", 
+			 sizeof(time_t), centry->len - centry->ofs));
+		smb_panic("centry_time");
+	}
+	ret = IVAL(centry->data, centry->ofs); /* FIXME: correct ? */
+	centry->ofs += sizeof(time_t);
+	return ret;
+}
+
 /* pull a string from a cache entry, using the supplied
    talloc context 
 */
@@ -629,6 +645,16 @@ static void centry_put_nttime(struct cache_entry *centry, NTTIME nt)
 }
 
 /*
+  push a time_t into a centry 
+*/
+static void centry_put_time(struct cache_entry *centry, time_t t)
+{
+	centry_expand(centry, sizeof(time_t));
+	SIVAL(centry->data, centry->ofs, t); /* FIXME: is this correct ?? */
+	centry->ofs += sizeof(time_t);
+}
+
+/*
   start a centry for output. When finished, call centry_end()
 */
 struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status)
@@ -771,6 +797,90 @@ static void wcache_save_password_policy(struct winbindd_domain *domain, NTSTATUS
 
 	centry_free(centry);
 }
+
+NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID *sid)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	TDB_DATA data;
+	fstring key_str;
+
+	if (!cache->tdb) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	fstr_sprintf(key_str, "CRED/%s", sid_string_static(sid));
+
+	data = tdb_fetch(cache->tdb, make_tdb_data(key_str, strlen(key_str)));
+	if (!data.dptr) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/* Lookup creds for a SID */
+NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
+			  TALLOC_CTX *mem_ctx, 
+			  const DOM_SID *sid,
+			  const uint8 **cached_nt_pass)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	time_t t;
+
+	if (!cache->tdb) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	centry = wcache_fetch(cache, domain, "CRED/%s", sid_string_static(sid));
+	
+	if (!centry) {
+		DEBUG(10,("wcache_get_creds: entry for [CRED/%s] not found\n", 
+			sid_string_static(sid)));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	t = centry_time(centry);
+	*cached_nt_pass = (const uint8 *)centry_string(centry, mem_ctx);
+
+	dump_data(10, (const char *)cached_nt_pass, NT_HASH_LEN);
+	status = centry->status;
+
+	DEBUG(10,("wcache_get_creds: [Cached] - cached creds for user %s status %s\n",
+		sid_string_static(sid), get_friendly_nt_error_msg(status) ));
+
+	centry_free(centry);
+	return status;
+}
+
+NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
+			   TALLOC_CTX *mem_ctx, 
+			   const DOM_SID *sid, 
+			   const uint8 nt_pass[NT_HASH_LEN])
+{
+	struct cache_entry *centry;
+	fstring sid_string;
+	NTSTATUS status = NT_STATUS_OK; /* ??? */
+
+	centry = centry_start(domain, status);
+	if (!centry) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	dump_data(100, (const char *)nt_pass, NT_HASH_LEN);
+
+	centry_put_time(centry, time(NULL));
+	centry_put_string(centry, (const char *)nt_pass);
+	centry_end(centry, "CRED/%s", sid_to_string(sid_string, sid));
+
+	DEBUG(10,("wcache_save_creds: %s\n", sid_string));
+
+	centry_free(centry);
+
+	return NT_STATUS_OK;
+}
+
 
 /* Query display info. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
@@ -2099,7 +2209,147 @@ void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
 				name, type);
 }
 
-/* theecache backend methods are exposed via this structure */
+/* Count cached creds */
+
+static int traverse_fn_cached_creds(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+			 	    void *state)
+{
+	int *cred_count = (int*)state;
+ 
+	if (strncmp(kbuf.dptr, "CRED/", 5) == 0) {
+		(*cred_count)++;
+	}
+	return 0;
+}
+
+NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count)
+{
+	struct winbind_cache *cache = get_cache(domain);
+
+	*count = 0;
+
+	if (!cache->tdb) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+ 
+	tdb_traverse(cache->tdb, traverse_fn_cached_creds, (void *)count);
+
+	return NT_STATUS_OK;
+}
+
+struct cred_list {
+	struct cred_list *prev, *next;
+	TDB_DATA key;
+	fstring name;
+	time_t created;
+};
+static struct cred_list *wcache_cred_list;
+
+static int traverse_fn_get_credlist(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+				    void *state)
+{
+	struct cred_list *cred;
+
+	if (strncmp(kbuf.dptr, "CRED/", 5) == 0) {
+
+		cred = SMB_MALLOC_P(struct cred_list);
+		if (cred == NULL) {
+			DEBUG(0,("traverse_fn_remove_first_creds: failed to malloc new entry for list\n"));
+			return -1;
+		}
+
+		ZERO_STRUCTP(cred);
+		
+		/* save a copy of the key */
+		
+		fstrcpy(cred->name, kbuf.dptr);		
+		DLIST_ADD(wcache_cred_list, cred);
+	}
+	
+	return 0;
+}
+
+NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const DOM_SID *sid) 
+{
+	struct winbind_cache *cache = get_cache(domain);
+	NTSTATUS status;
+	int ret;
+	struct cred_list *cred, *oldest = NULL;
+
+	if (!cache->tdb) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	/* we possibly already have an entry */
+ 	if (sid && NT_STATUS_IS_OK(wcache_cached_creds_exist(domain, sid))) {
+	
+		fstring key_str;
+
+		DEBUG(11,("we already have an entry, deleting that\n"));
+
+		fstr_sprintf(key_str, "CRED/%s", sid_string_static(sid));
+
+		tdb_delete(cache->tdb, string_tdb_data(key_str));
+
+		return NT_STATUS_OK;
+	}
+
+	ret = tdb_traverse(cache->tdb, traverse_fn_get_credlist, NULL);
+	if (ret == 0) {
+		return NT_STATUS_OK;
+	} else if (ret == -1) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	ZERO_STRUCTP(oldest);
+
+	for (cred = wcache_cred_list; cred; cred = cred->next) {
+
+		TDB_DATA data;
+		time_t t;
+
+		data = tdb_fetch(cache->tdb, make_tdb_data(cred->name, strlen(cred->name)));
+		if (!data.dptr) {
+			DEBUG(10,("wcache_remove_oldest_cached_creds: entry for [%s] not found\n", 
+				cred->name));
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			goto done;
+		}
+	
+		t = IVAL(data.dptr, 0);
+		SAFE_FREE(data.dptr);
+
+		if (!oldest) {
+			oldest = SMB_MALLOC_P(struct cred_list);
+			if (oldest == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+
+			fstrcpy(oldest->name, cred->name);
+			oldest->created = t;
+			continue;
+		}
+
+		if (t < oldest->created) {
+			fstrcpy(oldest->name, cred->name);
+			oldest->created = t;
+		}
+	}
+
+	if (tdb_delete(cache->tdb, string_tdb_data(oldest->name)) == 0) {
+		status = NT_STATUS_OK;
+	} else {
+		status = NT_STATUS_UNSUCCESSFUL;
+	}
+done:
+	SAFE_FREE(wcache_cred_list);
+	SAFE_FREE(oldest);
+	
+	return status;
+}
+
+/* the cache backend methods are exposed via this structure */
 struct winbindd_methods cache_methods = {
 	True,
 	query_user_list,

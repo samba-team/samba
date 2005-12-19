@@ -706,6 +706,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_lookupsids.o \
 		nsswitch/winbindd_groupmem.o \
 		nsswitch/winbindd_async.o \
+		nsswitch/winbindd_creds.o \
 		nsswitch/winbindd_cred_cache.o 
 
 WINBINDD_OBJ = \
