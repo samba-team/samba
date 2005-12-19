@@ -23,6 +23,7 @@ fi
 if test x"$debug" = x"yes";then
 	PERL="$PERL -W"
 fi
+export PERL
 
 AC_PATH_PROG(YAPP, yapp, false)
 
