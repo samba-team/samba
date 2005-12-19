@@ -64,7 +64,8 @@ static const char *user_attrs[] = {
 	NULL,
 };
 
-static const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName", "dnsRoot", NULL};
+static const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName", 
+					  "dnsRoot", "objectClass", NULL};
 
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
