@@ -34,7 +34,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 12
+#define WINBIND_INTERFACE_VERSION 13
 
 /* Socket commands */
 
