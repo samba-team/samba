@@ -552,6 +552,23 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	 * environment */
 	setup_return_cc_name(state, cc, internal_ccache);
 
+	result = add_ccache_to_list(principal_s,
+				    cc,
+				    service,
+				    state->request.data.auth.user,
+				    NULL,
+				    state->request.data.auth.pass,
+				    uid,
+				    time(NULL),
+				    ticket_lifetime,
+				    renewal_until, 
+				    lp_winbind_refresh_tickets());
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n", 
+			nt_errstr(result)));
+	}
+
 	result = NT_STATUS_OK;
 
 done:

@@ -378,4 +378,20 @@ struct winbindd_response {
 	void *extra_data;               /* getgrnam, getgrgid, getgrent */
 };
 
+struct WINBINDD_CCACHE_ENTRY {
+	const char *principal_name;
+	const char *ccname;
+	const char *service;
+	const char *username;
+	const char *sid_string;
+	const char *pass;
+	uid_t uid;
+	time_t create_time;
+	time_t renew_until;
+	BOOL refresh_tgt;
+	time_t refresh_time;
+	struct timed_event *event;
+	struct WINBINDD_CCACHE_ENTRY *next, *prev;
+};
+
 #endif
