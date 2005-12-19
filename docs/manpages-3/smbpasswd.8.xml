@@ -17,6 +17,7 @@
 	<cmdsynopsis>
 		<command>smbpasswd</command>
 		<arg choice="opt">-a</arg>	
+		<arg choice="opt">-c &lt;config file&gt;</arg>	
 		<arg choice="opt">-x</arg>	
 		<arg choice="opt">-d</arg>	
 		<arg choice="opt">-e</arg>	
@@ -86,30 +87,37 @@
 	<variablelist>
 		<varlistentry>
 		<term>-a</term>
-		<listitem><para>This option specifies that the username 
-		following should be added to the local smbpasswd file, with the 
-		new password typed (type &lt;Enter&gt; for the old password). This 
-		option is ignored if the username following already exists in 
-		the smbpasswd file and it is treated like a regular change 
-		password command.  Note that the default passdb backends require 
-                the user to already exist in the system password file (usually 
-                <filename>/etc/passwd</filename>), else the request to add the 
-                user will fail. </para>
+		<listitem><para>
+		This option specifies that the username following should be added to the local smbpasswd file, with the new
+		password typed (type &lt;Enter&gt; for the old password). This option is ignored if the username following
+		already exists in the smbpasswd file and it is treated like a regular change password command.  Note that the
+		default passdb backends require the user to already exist in the system password file (usually
+		<filename>/etc/passwd</filename>), else the request to add the user will fail.
+		</para>
 		
 		<para>This option is only available when running smbpasswd 
 		as root. </para></listitem>
 		</varlistentry>
 		
+
+		<varlistentry>
+		<term>-c</term>
+		<listitem><para>
+		This option can be used to specify the path and file name of the &smb.conf; configuration file when it
+		is important to use other than the default file and / or location.
+		</para></listitem>
+		</varlistentry>
 		
 		
 		<varlistentry>
 		<term>-x</term>
-		<listitem><para>This option specifies that the username 
-		following should be deleted from the local smbpasswd file.
+		<listitem><para>
+		This option specifies that the username following should be deleted from the local smbpasswd file.
 		</para>
 
-		<para>This option is only available when running smbpasswd as 
-		root.</para></listitem>
+		<para>
+		This option is only available when running smbpasswd as root.
+		</para></listitem>
 		</varlistentry>
 		
 		
