@@ -23,6 +23,10 @@
 #include "includes.h"
 #include "utils/net.h"
 
+/********************************************************
+ Connection cachine struct. Goes away when ctx destroyed.
+********************************************************/
+
 struct con_struct {
 	BOOL failed_connect;
 	struct cli_state *cli;
@@ -32,6 +36,10 @@ struct con_struct {
 
 static struct con_struct *cs;
 
+/********************************************************
+ Close connection on context destruction.
+********************************************************/
+
 static int cs_destructor(void *p)
 {
 	if (cs->cli) {
@@ -40,6 +48,10 @@ static int cs_destructor(void *p)
 	cs = NULL;
 	return 0;
 }
+
+/********************************************************
+ Create the connection to localhost.
+********************************************************/
 
 static struct con_struct *create_cs(TALLOC_CTX *ctx)
 {
@@ -108,6 +120,10 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	return cs;
 }
 
+/********************************************************
+ Do a lookup_sids call to localhost.
+********************************************************/
+
 static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx,
 						DOM_SID *psid,
 						const char **ppdomain,
@@ -148,6 +164,10 @@ static BOOL lookup_name_from_sid_via_localhost(TALLOC_CTX *ctx,
         return True;
 }
 
+/********************************************************
+ Do a lookup_sids call to winbindd.
+********************************************************/
+
 static BOOL lookup_name_from_sid_via_winbind(TALLOC_CTX *ctx,
 						DOM_SID *psid,
 						const char **ppdomain,
@@ -171,6 +191,10 @@ static BOOL lookup_name_from_sid_via_winbind(TALLOC_CTX *ctx,
 
 	return True;
 }
+
+/********************************************************
+ The generic lookup name from sid call for net.
+********************************************************/
 
 BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx, DOM_SID *psid, const char **ppdomain, const char **ppname)
 {
@@ -200,6 +224,10 @@ BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx, DOM_SID *psid, const char **ppdom
 	/* Can't map SID to name */
 	return False;
 }
+
+/********************************************************
+ The generic lookup sid from name call for net.
+********************************************************/
 
 BOOL net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *domain, const char *name, DOM_SID *pret_sid)
 {
