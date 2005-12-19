@@ -3216,8 +3216,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			   BasicFileInformationTest. -tpot */
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
-			SIVAL(pdata,4,sbuf.st_ino); /* FileIndexLow */
-			SIVAL(pdata,0,sbuf.st_dev); /* FileIndexHigh */
+			SIVAL(pdata,0,sbuf.st_ino); /* FileIndexLow */
+			SIVAL(pdata,4,sbuf.st_dev); /* FileIndexHigh */
 			data_size = 8;
 			break;
 
