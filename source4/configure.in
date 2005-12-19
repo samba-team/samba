@@ -114,5 +114,5 @@ $SMB_INFO_SUBSYSTEMS
 $SMB_INFO_LIBRARIES
 CEOF
 
-AC_OUTPUT_COMMANDS([$PERL -I. -Ibuild build/smb_build/main.pl],[PERL="$PERL"])
+AC_OUTPUT_COMMANDS([$PERL -I. -Ibuild build/smb_build/main.pl],[PERL="$PERL";export PERL])
 AC_OUTPUT
