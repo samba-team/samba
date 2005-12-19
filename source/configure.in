@@ -3093,6 +3093,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_set_pac_request, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
 
