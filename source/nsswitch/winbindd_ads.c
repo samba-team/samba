@@ -102,6 +102,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads->auth.realm = SMB_STRDUP( lp_realm() );
 	}
 
+	ads->auth.renewable = 1;
+
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
 		extern struct winbindd_methods msrpc_methods, cache_methods;
