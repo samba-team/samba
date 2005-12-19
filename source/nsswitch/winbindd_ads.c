@@ -206,8 +206,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (use_nss_info("sfu")) {
-			homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-			shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+			homedir = ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_homedir_attr);
+			shell = ads_pull_string(ads, mem_ctx, msg, 
+						ads->schema.sfu_shell_attr);
 		}
 	
 		if (!ads_pull_sid(ads, msg, "objectSid",
@@ -474,8 +476,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 
 	if (use_nss_info("sfu")) {
-		info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-		info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+		info->homedir = ads_pull_string(ads, mem_ctx, msg, 
+						ads->schema.sfu_homedir_attr);
+		info->shell = ads_pull_string(ads, mem_ctx, msg, 
+					      ads->schema.sfu_shell_attr);
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {

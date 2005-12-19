@@ -140,7 +140,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		/* make sure to allow machine accounts */
 
 		if (name_types[i] != SID_NAME_USER && name_types[i] != SID_NAME_COMPUTER) {
-			DEBUG(3, ("name %s isn't a domain user\n", the_name));
+			DEBUG(3, ("name %s isn't a domain user (%s)\n", the_name, sid_type_lookup(name_types[i])));
 			continue;
 		}
 

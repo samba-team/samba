@@ -120,7 +120,7 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %lu, sock %d\n",
+			DEBUGADD(2, ("\t\tpid %lu, sock %d\n",
 				  (unsigned long)tmp->pid, tmp->sock));
 		}
 	}
