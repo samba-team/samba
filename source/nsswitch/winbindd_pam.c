@@ -27,6 +27,70 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx, 
+				    struct winbindd_cli_state *state, 
+				    NET_USER_INFO_3 *info3) 
+{
+	DOM_SID user_sid, group_sid;
+	fstring str_sid;
+
+	state->response.data.auth.info3.logon_time = 
+		nt_time_to_unix(&(info3->logon_time));
+	state->response.data.auth.info3.logoff_time = 
+		nt_time_to_unix(&(info3->logoff_time));
+	state->response.data.auth.info3.kickoff_time = 
+		nt_time_to_unix(&(info3->kickoff_time));
+	state->response.data.auth.info3.pass_last_set_time = 
+		nt_time_to_unix(&(info3->pass_last_set_time));
+	state->response.data.auth.info3.pass_can_change_time = 
+		nt_time_to_unix(&(info3->pass_can_change_time));
+	state->response.data.auth.info3.pass_must_change_time = 
+		nt_time_to_unix(&(info3->pass_must_change_time));
+
+	state->response.data.auth.info3.logon_count = info3->logon_count;
+	state->response.data.auth.info3.bad_pw_count = info3->bad_pw_count;
+
+	sid_copy(&user_sid, &(info3->dom_sid.sid));
+	sid_append_rid(&user_sid, info3->user_rid);
+
+	sid_to_string(str_sid, &user_sid);
+	fstrcpy(state->response.data.auth.info3.user_sid, str_sid);
+
+	sid_copy(&group_sid, &(info3->dom_sid.sid));
+	sid_append_rid(&group_sid, info3->group_rid);
+
+	sid_to_string(str_sid, &group_sid);
+	fstrcpy(state->response.data.auth.info3.group_sid, str_sid);
+
+	sid_to_string(str_sid, &(info3->dom_sid.sid));
+	fstrcpy(state->response.data.auth.info3.dom_sid, str_sid);
+
+	state->response.data.auth.info3.num_groups = info3->num_groups;
+	state->response.data.auth.info3.user_flgs = info3->user_flgs;
+
+	state->response.data.auth.info3.acct_flags = info3->acct_flags;
+	state->response.data.auth.info3.num_other_sids = info3->num_other_sids;
+
+	unistr2_to_ascii(state->response.data.auth.info3.user_name, 
+		&info3->uni_user_name, -1);
+	unistr2_to_ascii(state->response.data.auth.info3.full_name, 
+		&info3->uni_full_name, -1);
+	unistr2_to_ascii(state->response.data.auth.info3.logon_script, 
+		&info3->uni_logon_script, -1);
+	unistr2_to_ascii(state->response.data.auth.info3.profile_path, 
+		&info3->uni_profile_path, -1);
+	unistr2_to_ascii(state->response.data.auth.info3.home_dir, 
+		&info3->uni_home_dir, -1);
+	unistr2_to_ascii(state->response.data.auth.info3.dir_drive, 
+		&info3->uni_dir_drive, -1);
+
+	unistr2_to_ascii(state->response.data.auth.info3.logon_srv, 
+		&info3->uni_logon_srv, -1);
+	unistr2_to_ascii(state->response.data.auth.info3.logon_dom, 
+		&info3->uni_logon_dom, -1);
+
+	return NT_STATUS_OK;
+}
 
 static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx, 
 				    struct winbindd_cli_state *state, 

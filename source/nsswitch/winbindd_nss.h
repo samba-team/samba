@@ -320,6 +320,31 @@ struct winbindd_response {
 				time_t min_passwordage;
 			} policy;
 			uint32 reject_reason;
+			struct info3_text {
+				time_t logon_time;
+				time_t logoff_time;
+				time_t kickoff_time;
+				time_t pass_last_set_time;
+				time_t pass_can_change_time;
+				time_t pass_must_change_time;
+				uint16 logon_count;
+				uint16 bad_pw_count;
+				fstring user_sid;
+				fstring group_sid;
+				fstring dom_sid;
+				uint32 num_groups;
+				uint32 user_flgs;
+				uint32 acct_flags;
+				uint32 num_other_sids;
+				fstring user_name;
+				fstring full_name;
+				fstring logon_script;
+				fstring profile_path;
+				fstring home_dir;
+				fstring dir_drive;
+				fstring logon_srv;
+				fstring logon_dom;
+			} info3;
 		} auth;
 		uint32 rid;	/* create user or group or allocate rid */
 		struct {
