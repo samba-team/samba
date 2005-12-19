@@ -33,6 +33,7 @@
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-k</arg>
 		<arg choice="opt">-P</arg>
+		<arg choice="opt">-c &lt;command&gt;</arg>
 	</cmdsynopsis>
 		
 	<cmdsynopsis>
