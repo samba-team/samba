@@ -1966,6 +1966,48 @@ BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	return NT_STATUS_IS_OK(status);
 }
 
+BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
+			const char *domain_name,
+			const char *name,
+			DOM_SID *sid,
+			enum SID_NAME_USE *type)
+{
+	struct winbindd_domain *domain;
+	struct winbind_cache *cache;
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	fstring uname;
+
+	domain = find_lookup_domain_from_name(domain_name);
+	if (domain == NULL) {
+		return False;
+	}
+
+	cache = get_cache(domain);
+
+	if (cache->tdb == NULL) {
+		return False;
+	}
+
+	fstrcpy(uname, name);
+	strupper_m(uname);
+	
+	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
+	if (centry == NULL) {
+		return False;
+	}
+
+	if (NT_STATUS_IS_OK(centry->status)) {
+		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		centry_sid(centry, sid);
+	}
+
+	status = centry->status;
+	centry_free(centry);
+	
+	return NT_STATUS_IS_OK(status);
+}
+
 void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
 		    const char *domain_name, const char *name,
 		    enum SID_NAME_USE type)
