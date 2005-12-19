@@ -178,9 +178,6 @@ struct wreplsrv_partner {
 		/* the status of the last push cycle */
 		NTSTATUS last_status;
 
-		/* the timestamp of the last run */
-		struct timeval last_run;
-
 		/* the outgoing connection to the partner */
 		struct wreplsrv_out_connection *wreplconn;
 
@@ -260,11 +257,6 @@ struct wreplsrv_service {
 
 	/* some stuff for periodic processing */
 	struct {
-		/*
-		 * the timestamp for the current event,
-		 */
-		struct timeval current_event;
-
 		/*
 		 * the timestamp for the next event,
 		 * this is the timstamp passed to event_add_timed()

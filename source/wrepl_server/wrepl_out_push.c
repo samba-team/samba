@@ -44,7 +44,6 @@ static void wreplsrv_push_handler_creq(struct composite_context *creq)
 
 	partner->push.last_status = wreplsrv_push_notify_recv(partner->push.creq);
 	partner->push.creq = NULL;
-	partner->push.last_run = timeval_current();
 
 	old_notify_io = partner->push.notify_io;
 	partner->push.notify_io = NULL;
@@ -112,7 +111,7 @@ static uint32_t wreplsrv_calc_change_count(struct wreplsrv_partner *partner)
 	return (uint32_t)-1;
 }
 
-uint32_t wreplsrv_out_push_run(struct wreplsrv_service *service, uint32_t next_interval)
+NTSTATUS wreplsrv_out_push_run(struct wreplsrv_service *service)
 {
 	struct wreplsrv_partner *partner;
 	uint32_t change_count;
@@ -133,5 +132,5 @@ uint32_t wreplsrv_out_push_run(struct wreplsrv_service *service, uint32_t next_i
 		wreplsrv_out_partner_push(partner, False);
 	}
 
-	return next_interval;
+	return NT_STATUS_OK;
 }

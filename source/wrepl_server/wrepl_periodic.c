@@ -35,33 +35,76 @@
 #include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_out_helpers.h"
 
-static uint32_t wreplsrv_periodic_run(struct wreplsrv_service *service, uint32_t next_interval)
+static NTSTATUS wreplsrv_periodic_run(struct wreplsrv_service *service)
 {
-	next_interval = wreplsrv_out_push_run(service, next_interval);
+	NTSTATUS status;
 
-	DEBUG(2,("wreplsrv_periodic_run: next in %u secs\n", next_interval));
-	return next_interval;
+	status = wreplsrv_out_push_run(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 static void wreplsrv_periodic_handler_te(struct event_context *ev, struct timed_event *te,
 					 struct timeval t, void *ptr)
 {
 	struct wreplsrv_service *service = talloc_get_type(ptr, struct wreplsrv_service);
-	uint32_t next_interval;
+	NTSTATUS status;
 
 	service->periodic.te = NULL;
-	service->periodic.current_event = t;
 
-	next_interval = wreplsrv_periodic_run(service, service->config.periodic_interval);
-
-	service->periodic.next_event = timeval_current_ofs(next_interval, 0);
-	service->periodic.te = event_add_timed(service->task->event_ctx, service,
-					       service->periodic.next_event,
-					       wreplsrv_periodic_handler_te, service);
-	if (!service->periodic.te) {
-		task_server_terminate(service->task,"event_add_timed() failed! no memory!\n");
+	status = wreplsrv_periodic_schedule(service, service->config.periodic_interval);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(service->task, nt_errstr(status));
 		return;
 	}
+
+	status = wreplsrv_periodic_run(service);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("wresrv_periodic_run() failed: %s\n", nt_errstr(status)));
+	}
+}
+
+NTSTATUS wreplsrv_periodic_schedule(struct wreplsrv_service *service, uint32_t next_interval)
+{
+	TALLOC_CTX *tmp_mem;
+	struct timed_event *new_te;
+	struct timeval next_time;
+
+	/* prevent looping */
+	if (next_interval == 0) next_interval = 1;
+
+	next_time = timeval_current_ofs(next_interval, 0);
+
+	if (service->periodic.te) {
+		/*
+		 * if the timestamp of the new event is higher,
+		 * as current next we don't need to reschedule
+		 */
+		if (timeval_compare(&next_time, &service->periodic.next_event) > 0) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	/* reset the next scheduled timestamp */
+	service->periodic.next_event = next_time;
+
+	new_te = event_add_timed(service->task->event_ctx, service,
+			         service->periodic.next_event,
+			         wreplsrv_periodic_handler_te, service);
+	NT_STATUS_HAVE_NO_MEMORY(new_te);
+
+	tmp_mem = talloc_new(service);
+	DEBUG(4,("wreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
+		next_interval,
+		(service->periodic.te?"re":""),
+		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));
+	talloc_free(tmp_mem);
+
+	talloc_free(service->periodic.te);
+	service->periodic.te = new_te;
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS wreplsrv_setup_periodic(struct wreplsrv_service *service)
@@ -75,11 +118,8 @@ NTSTATUS wreplsrv_setup_periodic(struct wreplsrv_service *service)
 	status = wreplsrv_setup_out_connections(service);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	service->periodic.next_event = timeval_current();
-	service->periodic.te = event_add_timed(service->task->event_ctx, service,
-					       service->periodic.next_event,
-					       wreplsrv_periodic_handler_te, service);
-	NT_STATUS_HAVE_NO_MEMORY(service->periodic.te);
+	status = wreplsrv_periodic_schedule(service, 0);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
 }
