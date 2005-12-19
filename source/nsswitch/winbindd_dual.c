@@ -502,9 +502,41 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	}
 	
 	while (1) {
+
+		int ret;
+		fd_set read_fds;
+		struct timeval t;
+		struct timeval *tp;
+		struct timeval now;
+
 		/* free up any talloc memory */
 		lp_talloc_free();
 		main_loop_talloc_free();
+
+		run_events();
+
+		GetTimeOfDay(&now);
+
+		tp = get_timed_events_timeout(&t, (time_t)-1);
+		if (tp) {
+			DEBUG(11,("select will use timeout of %d seconds\n", tp->tv_sec));
+		}
+
+		FD_ZERO(&read_fds);
+		FD_SET(state.sock, &read_fds);
+
+		ret = sys_select(state.sock + 1, &read_fds, NULL, NULL, tp);
+
+		if (ret == 0) {
+			DEBUG(10,("nothing is ready yet, continue\n"));
+			continue;
+		}
+
+		if (ret == -1 && errno != EINTR) {
+			DEBUG(0,("select error occured\n"));
+			perror("select");
+			return False;
+		}
 
 		/* fetch a request from the main daemon */
 		child_read_request(&state);
