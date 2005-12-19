@@ -350,6 +350,7 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_SHOW_SEQUENCE,        winbindd_dual_show_sequence,         "SHOW_SEQUENCE" },
 	{ WINBINDD_PAM_AUTH,             winbindd_dual_pam_auth,              "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP,        winbindd_dual_pam_auth_crap,         "AUTH_CRAP" },
+	{ WINBINDD_PAM_LOGOFF,           winbindd_dual_pam_logoff,            "PAM_LOGOFF" },
 	{ WINBINDD_CHECK_MACHACC,        winbindd_dual_check_machine_acct,    "CHECK_MACHACC" },
 	{ WINBINDD_DUAL_SID2UID,         winbindd_dual_sid2uid,               "DUAL_SID2UID" },
 	{ WINBINDD_DUAL_SID2GID,         winbindd_dual_sid2gid,               "DUAL_SID2GID" },

@@ -64,6 +64,7 @@ enum winbindd_cmd {
 	WINBINDD_PAM_AUTH,
 	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
+	WINBINDD_PAM_LOGOFF,
 
 	/* List various things */
 
@@ -225,6 +226,11 @@ struct winbindd_request {
                     fstring oldpass;
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
+		struct {
+			fstring user;
+			fstring krb5ccname;
+			uid_t uid;
+		} logoff;              /* pam_winbind session module */
 		fstring sid;         /* lookupsid, sid_to_[ug]id */
 		struct {
 			fstring dom_name;       /* lookupname */

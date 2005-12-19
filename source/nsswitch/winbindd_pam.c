@@ -1451,3 +1451,112 @@ process_result:
 	else
 		request_error(state);
 }
+
+void winbindd_pam_logoff(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	fstring name_domain, user;
+	
+	DEBUG(3, ("[%5lu]: pam logoff %s\n", (unsigned long)state->pid,
+		state->request.data.logoff.user));
+
+	/* Ensure null termination */
+	state->request.data.logoff.user
+		[sizeof(state->request.data.logoff.user)-1]='\0';
+
+	state->request.data.logoff.krb5ccname
+		[sizeof(state->request.data.logoff.krb5ccname)-1]='\0';
+
+	parse_domain_user(state->request.data.logoff.user, name_domain, user);
+
+	domain = find_auth_domain(state, name_domain);
+
+	if (domain == NULL) {
+		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
+		DEBUG(5, ("Pam Logoff for %s returned %s "
+			  "(PAM: %d)\n",
+			  state->request.data.auth.user, 
+			  state->response.data.auth.nt_status_string,
+			  state->response.data.auth.pam_error));
+		request_error(state);
+		return;
+	}
+
+	sendto_domain(state, domain);
+}
+
+enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
+					      struct winbindd_cli_state *state) 
+{
+	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
+	struct WINBINDD_CCACHE_ENTRY *entry;
+	int ret;
+
+	DEBUG(3, ("[%5lu]: pam dual logoff %s\n", (unsigned long)state->pid,
+		state->request.data.logoff.user));
+
+	if (!(state->request.flags & WBFLAG_PAM_KRB5)) {
+		result = NT_STATUS_OK;
+		goto process_result;
+	}
+
+#ifdef HAVE_KRB5
+	
+	/* what we need here is to find the corresponding krb5 ccache name *we*
+	 * created for a given username and destroy it (as the user who created it) */
+	
+	entry = get_ccache_from_list_by_name(state->request.data.logoff.user);
+	if (entry == NULL) {
+		DEBUG(10,("winbindd_pam_logoff: could not get ccname for user %s\n", 
+			state->request.data.logoff.user));
+		goto process_result;
+	}
+
+	DEBUG(10,("winbindd_pam_logoff: found ccache [%s]\n", entry->ccname));
+
+	if (entry->uid < 0 || state->request.data.logoff.uid < 0) {
+		DEBUG(0,("winbindd_pam_logoff: invalid uid\n"));
+		goto process_result;
+	}
+
+	if (entry->uid != state->request.data.logoff.uid) {
+		DEBUG(0,("winbindd_pam_logoff: uid's differ: %d != %d\n", 
+			entry->uid, state->request.data.logoff.uid));
+		goto process_result;
+	}
+
+	if (!strcsequal(entry->ccname, state->request.data.logoff.krb5ccname)) {
+		DEBUG(0,("winbindd_pam_logoff: krb5ccnames differ: %s != %s\n", 
+			entry->ccname, state->request.data.logoff.krb5ccname));
+		goto process_result;
+	}
+
+	seteuid(entry->uid);
+
+	ret = ads_kdestroy(entry->ccname);
+
+	seteuid(0);
+
+	if (ret) {
+		DEBUG(0,("winbindd_pam_logoff: failed to destroy user ccache %s with: %s\n", 
+			entry->ccname, error_message(ret)));
+	} else {
+		DEBUG(10,("winbindd_pam_logoff: successfully destroyed ccache %s for user %s\n", 
+			entry->ccname, state->request.data.logoff.user));
+		remove_ccache_from_list_by_name(entry->ccname);
+	}
+
+	result = krb5_to_nt_status(ret);
+#else
+	result = NT_STATUS_NOT_SUPPORTED;
+#endif
+
+process_result:
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}
+
