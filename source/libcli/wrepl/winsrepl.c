@@ -84,6 +84,11 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	struct wrepl_request *req = wrepl_socket->recv_queue;
 	DATA_BLOB blob;
 
+	if (!req) {
+		DEBUG(1,("Received unexpected WINS packet of length %u!\n", packet_blob_in.length));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	req->packet = talloc(req, struct wrepl_packet);
 	NT_STATUS_HAVE_NO_MEMORY(req->packet);
 
