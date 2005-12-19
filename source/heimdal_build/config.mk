@@ -412,15 +412,15 @@ heimdal/lib/roken/vis.h: heimdal/lib/roken/vis.hin
 heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
 	@cp heimdal/lib/roken/err.hin heimdal/lib/roken/err.h
 
-include asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1|
-include asn1_deps.pl heimdal/lib/gssapi/spnego.asn1 spnego_asn1|
-include asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego.asn1 spnego_asn1|
+include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string|
 
-include et_deps.pl heimdal/lib/asn1/asn1_err.et|
-include et_deps.pl heimdal/lib/hdb/hdb_err.et|
-include et_deps.pl heimdal/lib/krb5/heim_err.et|
-include et_deps.pl heimdal/lib/krb5/k524_err.et|
-include et_deps.pl heimdal/lib/krb5/krb5_err.et|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et|
+include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
 heimdal_basics: \
 	heimdal/lib/roken/vis.h \
