@@ -52,7 +52,7 @@ void remove_duplicate_gids( int *num_groups, gid_t *groups )
 
 	for ( i=1; i<count; ) {
 		if ( groups[i-1] == groups[i] ) {
-			memmove( &groups[i-1], &groups[i], (count - i + 1)*sizeof(gid_t) );
+			memmove(&groups[i-1], &groups[i], (count - i + 1)*sizeof(gid_t));
 
 			/* decrement the total number of groups and do not increment
 			   the loop counter */
@@ -79,7 +79,8 @@ void remove_duplicate_gids( int *num_groups, gid_t *groups )
   NOTE!! this function only works if it is called as root!
   */
 
-static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
+static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
+				  int *grpcnt)
 {
 	gid_t *gids_saved;
 	int ret, ngrp_saved, num_gids;
@@ -169,11 +170,11 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	/* see if we should disable winbindd lookups for local users */
 	if (strchr(user, *lp_winbind_separator()) == NULL) {
 		if ( !winbind_off() )
-			DEBUG(0,("sys_getgroup_list: Insufficient environment space for %s\n",
-				WINBINDD_DONT_ENV));
+			DEBUG(0,("sys_getgroup_list: Insufficient environment space "
+				 "for %s\n", WINBINDD_DONT_ENV));
 		else
-			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group lookup [user == %s]\n",
-				user));
+			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
+				  "lookup [user == %s]\n", user));
 	}
 
 #ifdef HAVE_GETGROUPLIST
