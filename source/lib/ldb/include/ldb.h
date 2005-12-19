@@ -214,7 +214,7 @@ struct ldb_parse_tree {
 struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s);
 char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
 char *ldb_binary_encode(void *ctx, struct ldb_val val);
-
+char *ldb_binary_encode_string(void *mem_ctx, const char *string);
 
 /*
   functions for controlling attribute handling
