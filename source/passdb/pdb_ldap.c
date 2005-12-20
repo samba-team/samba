@@ -3331,7 +3331,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods, int policy_index, uint32 value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	int rc;
@@ -3344,7 +3344,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 
 	const char *attrs[2];
 
-	DEBUG(10,("ldapsam_set_account_policy\n"));
+	DEBUG(10,("ldapsam_set_account_policy_in_ldap\n"));
 
 	if (!ldap_state->domain_dn) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -3352,7 +3352,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 
 	policy_attr = get_account_policy_attr(policy_index);
 	if (policy_attr == NULL) {
-		DEBUG(0,("ldapsam_set_account_policy: invalid policy\n"));
+		DEBUG(0,("ldapsam_set_account_policy_in_ldap: invalid policy\n"));
 		return ntstatus;
 	}
 
@@ -3372,7 +3372,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_set_account_policy: Could not set account policy "
+		DEBUG(0, ("ldapsam_set_account_policy_in_ldap: Could not set account policy "
 			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
@@ -3380,11 +3380,20 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 	}
 
 	if (!cache_account_policy_set(policy_index, value)) {
-		DEBUG(0,("ldapsam_set_account_policy: failed to update local tdb cache\n"));
+		DEBUG(0,("ldapsam_set_account_policy_in_ldap: failed to update local tdb cache\n"));
 		return ntstatus;
 	}
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+{
+	if (!account_policy_migrated(False)) {
+		return (account_policy_set(policy_index, value)) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return ldapsam_set_account_policy_in_ldap(methods, policy_index, value);
 }
 
 static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods, int policy_index, uint32 *value)
@@ -3425,7 +3434,7 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_get_account_policy_from_ldap: Could not get account policy "
+		DEBUG(3, ("ldapsam_get_account_policy_from_ldap: Could not get account policy "
 			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
@@ -3461,6 +3470,8 @@ out:
 
 /* wrapper around ldapsam_get_account_policy_from_ldap(), handles tdb as cache 
 
+   - if user hasn't decided to use account policies inside LDAP just reuse the old tdb values
+   
    - if there is a valid cache entry, return that
    - if there is an LDAP entry, update cache and return 
    - otherwise set to default, update cache and return
@@ -3470,6 +3481,10 @@ out:
 static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+
+	if (!account_policy_migrated(False)) {
+		return (account_policy_get(policy_index, value)) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (cache_account_policy_get(policy_index, value)) {
 		DEBUG(11,("ldapsam_get_account_policy: got valid value from cache\n"));
@@ -3481,7 +3496,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 		goto update_cache;
 	}
 
-	DEBUG(10,("ldapsam_get_account_policy: failed to retrieve from ldap, returning default.\n"));
+	DEBUG(10,("ldapsam_get_account_policy: failed to retrieve from ldap\n"));
 
 #if 0
 	/* should we automagically migrate old tdb value here ? */
