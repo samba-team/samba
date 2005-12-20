@@ -213,7 +213,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 	uint32 conv;
   
 	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
-		DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
+		DEBUG(3,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
 		return False;
 	}
 
@@ -223,7 +223,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 	p = sidstr + 2;
 	conv = (uint32) strtoul(p, &q, 10);
 	if (!q || (*q != '-')) {
-		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		DEBUG(3,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
 		return False;
 	}
 	sidout->sid_rev_num = (uint8) conv;
