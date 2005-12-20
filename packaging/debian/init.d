@@ -43,7 +43,7 @@ case "$1" in
     start-stop-daemon --start --verbose --exec $DAEMON
     ;;
   *)
-    echo "Usage: /etc/init.d/samba4 {start|stop|restart|force-reload}"
+    echo "Usage: /etc/init.d/samba {start|stop|restart|force-reload}"
     exit 1
     ;;
 esac

@@ -5,7 +5,7 @@
 
 SOURCEPATH=../source
 
-package=samba4
+package=samba
 
 configure: configure-stamp
 configure-stamp:
@@ -17,10 +17,10 @@ configure-stamp:
 		--enable-shared \
 		--enable-static \
 		--sysconfdir=/etc \
-		--libdir=/etc/samba4 \
-		--with-configdir=/etc/samba4 \
-		--with-privatedir=/etc/samba4 \
-		--with-piddir=/var/run/samba4 \
+		--libdir=/etc/samba \
+		--with-configdir=/etc/samba \
+		--with-privatedir=/etc/samba \
+		--with-piddir=/var/run/samba \
 		--localstatedir=/var \
 		--with-pam \
 		--with-syslog \
@@ -66,7 +66,7 @@ install: build
 	dh_clean -k
 	dh_installdirs
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
-	mkdir -p $(CURDIR)/debian/tmp/etc/samba4
+	mkdir -p $(CURDIR)/debian/tmp/etc/samba
 	$(MAKE) -C $(SOURCEPATH) install DESTDIR=$(CURDIR)/debian/tmp
 	$(MAKE) -C $(SOURCEPATH) manpages installman DESTDIR=$(CURDIR)/debian/tmp
 	cp $(SOURCEPATH)/setup/provision $(CURDIR)/debian/tmp/usr/lib/samba/setup
@@ -83,7 +83,7 @@ binary-arch: build install
 	dh_compress -a
 	dh_fixperms -a
 	dh_makeshlibs -a
-	dh_installinit -a --name=samba4
+	dh_installinit -a --name=samba
 	dh_installdebconf -a
 	dh_installdeb -a
 	dh_shlibdeps -a

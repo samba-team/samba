@@ -1,4 +1,4 @@
-Template: samba4-server/setup-pdc
+Template: samba-server/setup-pdc
 Type: boolean
 Default: false
 _Description: Set up Samba 4 as a PDC?
@@ -10,20 +10,20 @@ _Description: Set up Samba 4 as a PDC?
  it serves the data from the zone file in that directory before you can use
  your Active Directory domain.
 
-Template: samba4-server/realm
+Template: samba-server/realm
 Type: string
 _Description: Realm
  What Kerberos realm will your server be in? In many cases, this will be
  the same as your DNS domain name (ie. YOUR.REALM).
 
-Template: samba4-server/domain
+Template: samba-server/domain
 Type: string
 _Description: Domain
  What will be the domain of your server? This is also known as the
  "workgroup" of your server, and is typically a short name without any dots
  (ie. DOMAIN).
 
-Template: samba4-server/password
+Template: samba-server/password
 Type: password
 _Description: Administrator password
  You will need a password for the "Administrator" account. Note that in the

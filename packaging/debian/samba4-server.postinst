@@ -4,16 +4,16 @@ set -e
 
 . /usr/share/debconf/confmodule
 
-db_get samba4-server/setup-pdc || true
+db_get samba-server/setup-pdc || true
 
 if [ "$RET" = "true" ]; then
-	db_get samba4-server/realm
+	db_get samba-server/realm
 	REALM="$RET"
 
-	db_get samba4-server/domain
+	db_get samba-server/domain
 	DOMAIN="$RET"
 
-	db_get samba4-server/password
+	db_get samba-server/password
 	PASSWORD="$RET"
 
 	db_stop

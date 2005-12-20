@@ -1,4 +1,4 @@
-etc/samba4/tls
+etc/samba/tls
 usr/lib/samba
 var/cache/samba
-var/run/samba4
+var/run/samba
