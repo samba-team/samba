@@ -2875,7 +2875,7 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
  * @param site_name Pointer to the number of suffixes
  * @return status of search
  **/
-ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixes, uint32 *num_suffixes)
+ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char **suffixes, size_t *num_suffixes)
 {
 	ADS_STATUS status;
 	void *res;
