@@ -335,12 +335,14 @@ krb5_error_code hdb_ldb_check_client_access(krb5_context context, hdb_entry_ex *
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	
-	for (i=0; i < addresses->len; i++) {
-		if (addresses->val->addr_type == KRB5_ADDRESS_NETBIOS) {
-			workstation = talloc_strndup(tmp_ctx, addresses->val->address.data, MIN(addresses->val->address.length, 15));
-			if (workstation) {
-				break;
+
+	if (addresses) {
+		for (i=0; i < addresses->len; i++) {
+			if (addresses->val->addr_type == KRB5_ADDRESS_NETBIOS) {
+				workstation = talloc_strndup(tmp_ctx, addresses->val->address.data, MIN(addresses->val->address.length, 15));
+				if (workstation) {
+					break;
+				}
 			}
 		}
 	}
