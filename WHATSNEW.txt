@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.0.21
-                            Dec 16, 2005
+                            Dec 20, 2005
                    ==============================
 
 This is the latest stable release of Samba. This is the version
@@ -72,11 +72,13 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       plugin when the associated smb.conf features are not enabled.
     * Add checks for invalid characters in new share names on the 
       srvsvc pipe.
+    * Fix SWAT installation issues with 'make install'.
 
 
 o   Guenther Deschner <gd@samba.org>
     * Uninitialized warnings fixes.
     * Fix return value in client spooler code.
+    * Require forced migration of account policies.  
 
 
 o   Krishna Ganugapati <krishnag@centeris.com>
@@ -94,7 +96,6 @@ o   Derrell Lipman <derrell@samba.org>
     * Fix crash bug in libsmbclient.
     * Add long share name support to libsmbclient when enumerating shares.
     
-
 
 o   Brian Moran <bmoran@centeris.com>
     * Fix segv in eventlogadm when not event logs are listed in 
