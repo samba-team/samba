@@ -4560,15 +4560,16 @@ static void process_usershare_directory(const char *usersharepath, int max_user_
 
 	/*
 	 * This directory must be owned by root, and have the 't' bit set.
+	 * It also must not be writable by "other".
 	 */
 
 #ifdef S_ISVTX
-	if (sbuf.st_uid != 0 || !(sbuf.st_mode & S_ISVTX)) {
+	if (sbuf.st_uid != 0 || !(sbuf.st_mode & S_ISVTX) || (sbuf.st_mode & S_IWOTH)) {
 #else
-	if (sbuf.st_uid != 0) {
+	if (sbuf.st_uid != 0 || (sbuf.st_mode & S_IWOTH)) {
 #endif
 		DEBUG(0,("process_usershare_directory: directory %s is not owned by root "
-			"or does not have the sticky bit 't' set.\n",
+			"or does not have the sticky bit 't' set or is writable by anyone.\n",
 			usersharepath ));
 		return;
 	}
