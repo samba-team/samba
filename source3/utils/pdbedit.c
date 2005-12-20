@@ -119,6 +119,35 @@ static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 }
 
 /*********************************************************
+ Reset account policies to their default values and remove marker
+ ********************************************************/
+
+static int reinit_account_policies (void) 
+{
+	int i;
+
+	for (i=1; decode_account_policy_name(i) != NULL; i++) {
+		uint32 policy_value;
+		if (!account_policy_get_default(i, &policy_value)) {
+			fprintf(stderr, "Can't get default account policy\n");
+			return -1;
+		}
+		if (!account_policy_set(i, policy_value)) {
+			fprintf(stderr, "Can't set account policy in tdb\n");
+			return -1;
+		}
+	}
+
+	if (!remove_account_policy_migrated()) {
+		fprintf(stderr, "Can't remove marker from tdb\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*********************************************************
  Add all currently available account policy from tdb to one backend
  ********************************************************/
 
@@ -126,13 +155,23 @@ static int export_account_policies (struct pdb_context *in, struct pdb_context *
 {
 	int i;
 
+	if (!account_policy_migrated(True)) {
+		fprintf(stderr, "Can't set account policy marker in tdb\n");
+		return -1;
+	}
+
 	for (i=1; decode_account_policy_name(i) != NULL; i++) {
 		uint32 policy_value;
 		if (NT_STATUS_IS_ERR(in->pdb_get_account_policy(in, i, &policy_value))) {
 			fprintf(stderr, "Can't get account policy from tdb\n");
+			remove_account_policy_migrated();
 			return -1;
 		}
-		out->pdb_set_account_policy(out, i, policy_value);
+		if (NT_STATUS_IS_ERR(out->pdb_set_account_policy(out, i, policy_value))) {
+			fprintf(stderr, "Can't set account policy in passdb\n");
+			remove_account_policy_migrated();
+			return -1;
+		}
 	}
 
 	return 0;
@@ -677,6 +716,7 @@ int main (int argc, char **argv)
 	static char *backend_out = NULL;
 	static BOOL transfer_groups = False;
 	static BOOL transfer_account_policies = False;
+	static BOOL reset_account_policies = False;
 	static BOOL  force_initialised_password = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
@@ -721,6 +761,7 @@ int main (int argc, char **argv)
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
 		{"group",	'g', POPT_ARG_NONE, &transfer_groups, 0, "use -i and -e for groups", NULL},
 		{"policies",	'y', POPT_ARG_NONE, &transfer_account_policies, 0, "use -i and -e to move account policies between backends", NULL},
+		{"policies-reset",	0, POPT_ARG_NONE, &reset_account_policies, 0, "restore default policies", NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
 		{"value",       'C', POPT_ARG_LONG, &account_policy_value, 'C',"set the account policy to this value", NULL},
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
@@ -839,6 +880,14 @@ int main (int argc, char **argv)
 			printf("account policy \"%s\" value is: %u\n", account_policy, value);
 			exit(0);
 		}
+	}
+
+	if (reset_account_policies) {
+		if (!reinit_account_policies()) {
+			exit(1);
+		}
+
+		exit(0);
 	}
 
 	/* import and export operations */

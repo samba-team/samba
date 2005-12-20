@@ -73,7 +73,7 @@ static const struct ap_table account_policy_names[] = {
 		"Lockout users after bad logon attempts (default: 0 => off)", 
 		"sambaLockoutThreshold" },
 		
-	{AP_TIME_TO_LOGOUT, "disconnect time", -1,
+	{AP_TIME_TO_LOGOUT, "disconnect time", (uint32) -1,
 		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)", 
 		"sambaForceLogoff" }, 
 		
@@ -116,8 +116,9 @@ const char *decode_account_policy_name(int field)
 {
 	int i;
 	for (i=0; account_policy_names[i].string; i++) {
-		if (field == account_policy_names[i].field)
+		if (field == account_policy_names[i].field) {
 			return account_policy_names[i].string;
+		}
 	}
 	return NULL;
 }
@@ -130,8 +131,9 @@ const char *get_account_policy_attr(int field)
 {
 	int i;
 	for (i=0; account_policy_names[i].field; i++) {
-		if (field == account_policy_names[i].field)
+		if (field == account_policy_names[i].field) {
 			return account_policy_names[i].ldap_attr;
+		}
 	}
 	return NULL;
 }
@@ -144,8 +146,9 @@ const char *account_policy_get_desc(int field)
 {
 	int i;
 	for (i=0; account_policy_names[i].string; i++) {
-		if (field == account_policy_names[i].field)
+		if (field == account_policy_names[i].field) {
 			return account_policy_names[i].description;
+		}
 	}
 	return NULL;
 }
@@ -158,8 +161,9 @@ int account_policy_name_to_fieldnum(const char *name)
 {
 	int i;
 	for (i=0; account_policy_names[i].string; i++) {
-		if (strcmp(name, account_policy_names[i].string) == 0)
+		if (strcmp(name, account_policy_names[i].string) == 0) {
 			return account_policy_names[i].field;
+		}
 	}
 	return 0;
 }
@@ -180,8 +184,9 @@ static BOOL account_policy_cache_timestamp(uint32 *value, BOOL update,
 		
 	slprintf(key, sizeof(key)-1, "%s/%s", ap_name, AP_LASTSET);
 
-	if (!init_account_policy())
+	if (!init_account_policy()) {
 		return False;
+	}
 
 	if (!tdb_fetch_uint32(tdb, key, &val) && !update) {
 		DEBUG(10,("failed to get last set timestamp of cache\n"));
@@ -253,8 +258,9 @@ BOOL init_account_policy(void)
 	uint32 version;
 	int i;
 
-	if (tdb)
+	if (tdb) {
 		return True;
+	}
 
 	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
@@ -300,23 +306,28 @@ BOOL account_policy_get(int field, uint32 *value)
 	fstring name;
 	uint32 regval;
 
-	if (!init_account_policy())
+	if (!init_account_policy()) {
 		return False;
+	}
 
-	if (value)
+	if (value) {
 		*value = 0;
+	}
 
 	fstrcpy(name, decode_account_policy_name(field));
 	if (!*name) {
 		DEBUG(1, ("account_policy_get: Field %d is not a valid account policy type!  Cannot get, returning 0.\n", field));
 		return False;
 	}
+	
 	if (!tdb_fetch_uint32(tdb, name, &regval)) {
 		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for field %d (%s), returning 0\n", field, name));
 		return False;
 	}
-	if (value)
+	
+	if (value) {
 		*value = regval;
+	}
 
 	DEBUG(10,("account_policy_get: name: %s, val: %d\n", name, regval));
 	return True;
@@ -331,8 +342,9 @@ BOOL account_policy_set(int field, uint32 value)
 {
 	fstring name;
 
-	if (!init_account_policy())
+	if (!init_account_policy()) {
 		return False;
+	}
 
 	fstrcpy(name, decode_account_policy_name(field));
 	if (!*name) {
@@ -383,6 +395,54 @@ BOOL cache_account_policy_set(int field, uint32 value)
 }
 
 /*****************************************************************************
+Check whether account policies have been migrated to passdb
+*****************************************************************************/
+
+BOOL account_policy_migrated(BOOL init)
+{
+	pstring key;
+	uint32 val;
+	time_t now;
+
+	slprintf(key, sizeof(key)-1, "AP_MIGRATED_TO_PASSDB");
+
+	if (!init_account_policy()) {
+		return False;
+	}
+
+	if (init) {
+		now = time(NULL);
+
+		if (!tdb_store_uint32(tdb, key, (uint32)now)) {
+			DEBUG(1, ("tdb_store_uint32 failed for %s\n", key));
+			return False;
+		}
+
+		return True;
+	}
+
+	if (!tdb_fetch_uint32(tdb, key, &val)) {
+		return False;
+	}
+
+	return True;
+}
+
+/*****************************************************************************
+ Remove marker that informs that account policies have been migrated to passdb
+*****************************************************************************/
+
+BOOL remove_account_policy_migrated(void)
+{
+	if (!init_account_policy()) {
+		return False;
+	}
+
+	return tdb_delete_bystring(tdb, "AP_MIGRATED_TO_PASSDB");
+}
+
+
+/*****************************************************************************
 Get an account policy from the cache 
 *****************************************************************************/
 
@@ -413,8 +473,9 @@ TDB_CONTEXT *get_account_pol_tdb( void )
 {
 
 	if ( !tdb ) {
-		if ( !init_account_policy() )
+		if ( !init_account_policy() ) {
 			return NULL;
+		}
 	}
 
 	return tdb;
