@@ -151,6 +151,13 @@ static int net_usershare_add(int argc, const char **argv)
 		return -1;
 	}
 
+	/* Disallow shares the same as users. */
+	if (getpwnam(sharename)) {
+		d_printf("net usershare add: share name %s is already a valid system user name\n",
+			sharename );
+		return -1;
+	}
+
 	/* Construct the full path for the usershare file. */
 	get_basepath(full_path);
 	pstrcat(full_path, "/");
