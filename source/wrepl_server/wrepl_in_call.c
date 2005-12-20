@@ -373,14 +373,12 @@ static NTSTATUS wreplsrv_in_update2(struct wreplsrv_in_call *call)
 static NTSTATUS wreplsrv_in_inform(struct wreplsrv_in_call *call)
 {
 	struct wrepl_table *inform_in = &call->req_packet.message.replication.info.table;
-	NTSTATUS status;
 
 	DEBUG(2,("WREPL_REPL_INFORM: partner[%s] initiator[%s] num_owners[%u]\n",
 		call->wreplconn->partner->address,
 		inform_in->initiator, inform_in->partner_count));
 
-	status = wreplsrv_sched_inform_action(call->wreplconn->partner, inform_in);
-	NT_STATUS_NOT_OK_RETURN(status);
+	wreplsrv_out_partner_pull(call->wreplconn->partner, inform_in);
 
 	/* we don't reply to WREPL_REPL_INFORM messages */
 	return ERROR_INVALID_PARAMETER;
