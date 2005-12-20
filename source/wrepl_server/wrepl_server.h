@@ -148,6 +148,9 @@ struct wreplsrv_partner {
 		/* the status of the last pull cycle */
 		NTSTATUS last_status;
 
+		/* the timestamp of the next pull try */
+		struct timeval next_run;
+
 		/* this is a list of each wins_owner the partner knows about */
 		struct wreplsrv_owner *table;
 

@@ -39,6 +39,9 @@ static NTSTATUS wreplsrv_periodic_run(struct wreplsrv_service *service)
 {
 	NTSTATUS status;
 
+	status = wreplsrv_out_pull_run(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	status = wreplsrv_out_push_run(service);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -74,7 +77,7 @@ NTSTATUS wreplsrv_periodic_schedule(struct wreplsrv_service *service, uint32_t n
 	/* prevent looping */
 	if (next_interval == 0) next_interval = 1;
 
-	next_time = timeval_current_ofs(next_interval, 0);
+	next_time = timeval_current_ofs(next_interval, 5000);
 
 	if (service->periodic.te) {
 		/*
@@ -110,13 +113,6 @@ NTSTATUS wreplsrv_periodic_schedule(struct wreplsrv_service *service, uint32_t n
 NTSTATUS wreplsrv_setup_periodic(struct wreplsrv_service *service)
 {
 	NTSTATUS status;
-
-	/*
-	 * TODO: this should go away, and we should do everything
-	 *        within the wreplsrv_periodic_run()
-	 */
-	status = wreplsrv_setup_out_connections(service);
-	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = wreplsrv_periodic_schedule(service, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
