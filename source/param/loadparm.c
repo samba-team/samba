@@ -4213,6 +4213,14 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 		return False;
 	}
 
+	/* Ensure this doesn't have the other write bit set. */
+	if (psbuf->st_mode & S_IWOTH) {
+		DEBUG(0,("check_usershare_stat: file %s owned by uid %u allows "
+			"public write. Refusing to allow as a usershare file.\n",
+			fname, (unsigned int)psbuf->st_uid ));
+		return False;
+	}
+
 	/* Should be 10k or less. */
 	if (psbuf->st_size > 10240) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
