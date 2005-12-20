@@ -532,7 +532,7 @@ static myFILE *OpenConfFile( const char *FileName )
 	if (!ret)
 		return NULL;
 
-	ret->buf = file_load(FileName, &ret->size);
+	ret->buf = file_load(FileName, &ret->size, 0);
 	if( NULL == ret->buf ) {
 		DEBUG( lvl, ("%s Unable to open configuration file \"%s\":\n\t%s\n",
 			func, FileName, strerror(errno)) );

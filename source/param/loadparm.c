@@ -4199,6 +4199,19 @@ static void set_allowed_client_auth(void)
 }
 
 /***************************************************************************
+ JRA.
+ The following code allows smbd to read a user defined share file.
+ Yes, this is my intent. Yes, I'm comfortable with that...
+
+ THE FOLLOWING IS SECURITY CRITICAL CODE.
+
+ It washes your clothes, it cleans your house, it guards you while you sleep...
+ Do not f%^k with it....
+***************************************************************************/
+
+#define MAX_USERSHARE_FILE_SIZE (10*1024)
+
+/***************************************************************************
  Check allowed stat state of a usershare file.
  Ensure we print out who is dicking with us so the admin can
  get their sorry ass fired.
@@ -4222,7 +4235,7 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 	}
 
 	/* Should be 10k or less. */
-	if (psbuf->st_size > 10240) {
+	if (psbuf->st_size > MAX_USERSHARE_FILE_SIZE) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
 			"too large (%u) to be a user share file.\n",
 			fname, (unsigned int)psbuf->st_uid,
@@ -4232,19 +4245,6 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 
 	return True;
 }
-
-#if 0
-/***************************************************************************
- A user and group id cache.
-***************************************************************************/
-
-struct ug_cache {
-	struct ug_cache *prev, *next;
-	uid_t user_id;
-	gid_t *group_list;
-	size_t num_groups;
-};
-#endif
 
 /***************************************************************************
  Parse the contents of a usershare file.
@@ -4466,7 +4466,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return -1;
 	}
 
-	lines = fd_lines_load(fd, &numlines);
+	lines = fd_lines_load(fd, &numlines, MAX_USERSHARE_FILE_SIZE);
 
 	close(fd);
 	if (lines == NULL) {

@@ -108,7 +108,7 @@ BOOL map_username(fstring user)
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines);
+		qlines = fd_lines_load(fd, &numlines,0);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 

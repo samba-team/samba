@@ -1034,107 +1034,111 @@ static int get_server_info(uint32 servertype,
 			   struct srv_info_struct **servers,
 			   const char *domain)
 {
-  int count=0;
-  int alloced=0;
-  char **lines;
-  BOOL local_list_only;
-  int i;
+	int count=0;
+	int alloced=0;
+	char **lines;
+	BOOL local_list_only;
+	int i;
 
-  lines = file_lines_load(lock_path(SERVER_LIST), NULL);
-  if (!lines) {
-    DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
-    return(0);
-  }
-
-  /* request for everything is code for request all servers */
-  if (servertype == SV_TYPE_ALL) 
-	servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
-
-  local_list_only = (servertype & SV_TYPE_LOCAL_LIST_ONLY);
-
-  DEBUG(4,("Servertype search: %8x\n",servertype));
-
-  for (i=0;lines[i];i++) {
-    fstring stype;
-    struct srv_info_struct *s;
-    const char *ptr = lines[i];
-    BOOL ok = True;
-
-    if (!*ptr) continue;
-    
-    if (count == alloced) {
-      struct srv_info_struct *ts;
-      
-      alloced += 10;
-      ts = SMB_REALLOC_ARRAY(*servers,struct srv_info_struct, alloced);
-      if (!ts) {
-      	DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
-	return(0);
-      }
-      else *servers = ts;
-      memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
-    }
-    s = &(*servers)[count];
-    
-    if (!next_token(&ptr,s->name   , NULL, sizeof(s->name))) continue;
-    if (!next_token(&ptr,stype     , NULL, sizeof(stype))) continue;
-    if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
-    if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
-      /* this allows us to cope with an old nmbd */
-      fstrcpy(s->domain,lp_workgroup()); 
-    }
-    
-    if (sscanf(stype,"%X",&s->type) != 1) { 
-      DEBUG(4,("r:host file ")); 
-      ok = False; 
-    }
-    
-	/* Filter the servers/domains we return based on what was asked for. */
-
-	/* Check to see if we are being asked for a local list only. */
-	if(local_list_only && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0)) {
-	  DEBUG(4,("r: local list only"));
-	  ok = False;
+	lines = file_lines_load(lock_path(SERVER_LIST), NULL, 0);
+	if (!lines) {
+		DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
+		return 0;
 	}
 
-    /* doesn't match up: don't want it */
-    if (!(servertype & s->type)) { 
-      DEBUG(4,("r:serv type ")); 
-      ok = False; 
-    }
-    
-    if ((servertype & SV_TYPE_DOMAIN_ENUM) != 
-	(s->type & SV_TYPE_DOMAIN_ENUM))
-      {
-	DEBUG(4,("s: dom mismatch "));
-	ok = False;
-      }
-    
-    if (!strequal(domain, s->domain) && !(servertype & SV_TYPE_DOMAIN_ENUM))
-      {
-	ok = False;
-      }
-    
-	/* We should never return a server type with a SV_TYPE_LOCAL_LIST_ONLY set. */
-	s->type &= ~SV_TYPE_LOCAL_LIST_ONLY;
+	/* request for everything is code for request all servers */
+	if (servertype == SV_TYPE_ALL) {
+		servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
+	}
 
-    if (ok)
-      {
-    	DEBUG(4,("**SV** %20s %8x %25s %15s\n",
-		 s->name, s->type, s->comment, s->domain));
-	
-    	s->server_added = True;
-    	count++;
-      }
-    else
-      {
-	DEBUG(4,("%20s %8x %25s %15s\n",
-		 s->name, s->type, s->comment, s->domain));
-      }
-  }
+	local_list_only = (servertype & SV_TYPE_LOCAL_LIST_ONLY);
+
+	DEBUG(4,("Servertype search: %8x\n",servertype));
+
+	for (i=0;lines[i];i++) {
+		fstring stype;
+		struct srv_info_struct *s;
+		const char *ptr = lines[i];
+		BOOL ok = True;
+
+		if (!*ptr) {
+			continue;
+		}
+    
+		if (count == alloced) {
+			struct srv_info_struct *ts;
+      
+			alloced += 10;
+			ts = SMB_REALLOC_ARRAY(*servers,struct srv_info_struct, alloced);
+			if (!ts) {
+				DEBUG(0,("get_server_info: failed to enlarge servers info struct!\n"));
+				return 0;
+			} else {
+				*servers = ts;
+			}
+			memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
+		}
+		s = &(*servers)[count];
+    
+		if (!next_token(&ptr,s->name, NULL, sizeof(s->name))) {
+			continue;
+		}
+		if (!next_token(&ptr,stype, NULL, sizeof(stype))) {
+			continue;
+		}
+		if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) {
+			continue;
+		}
+		if (!next_token(&ptr,s->domain, NULL, sizeof(s->domain))) {
+			/* this allows us to cope with an old nmbd */
+			fstrcpy(s->domain,lp_workgroup()); 
+		}
+    
+		if (sscanf(stype,"%X",&s->type) != 1) { 
+			DEBUG(4,("r:host file ")); 
+			ok = False; 
+		}
+    
+		/* Filter the servers/domains we return based on what was asked for. */
+
+		/* Check to see if we are being asked for a local list only. */
+		if(local_list_only && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0)) {
+			DEBUG(4,("r: local list only"));
+			ok = False;
+		}
+
+		/* doesn't match up: don't want it */
+		if (!(servertype & s->type)) { 
+			DEBUG(4,("r:serv type ")); 
+			ok = False; 
+		}
+    
+		if ((servertype & SV_TYPE_DOMAIN_ENUM) != 
+				(s->type & SV_TYPE_DOMAIN_ENUM)) {
+			DEBUG(4,("s: dom mismatch "));
+			ok = False;
+		}
+    
+		if (!strequal(domain, s->domain) && !(servertype & SV_TYPE_DOMAIN_ENUM)) {
+			ok = False;
+		}
+    
+		/* We should never return a server type with a SV_TYPE_LOCAL_LIST_ONLY set. */
+		s->type &= ~SV_TYPE_LOCAL_LIST_ONLY;
+
+		if (ok) {
+			DEBUG(4,("**SV** %20s %8x %25s %15s\n",
+				s->name, s->type, s->comment, s->domain));
+			s->server_added = True;
+			count++;
+		} else {
+			DEBUG(4,("%20s %8x %25s %15s\n",
+				s->name, s->type, s->comment, s->domain));
+		}
+	}
   
-  file_lines_free(lines);
-  return(count);
+	file_lines_free(lines);
+	return count;
 }
 
 /*******************************************************************
@@ -1145,75 +1149,79 @@ static int fill_srv_info(struct srv_info_struct *service,
 			 int uLevel, char **buf, int *buflen, 
 			 char **stringbuf, int *stringspace, char *baseaddr)
 {
-  int struct_len;
-  char* p;
-  char* p2;
-  int l2;
-  int len;
+	int struct_len;
+	char* p;
+	char* p2;
+	int l2;
+	int len;
  
-  switch (uLevel) {
-  case 0: struct_len = 16; break;
-  case 1: struct_len = 26; break;
-  default: return -1;
-  }  
+	switch (uLevel) {
+		case 0:
+			struct_len = 16;
+			break;
+		case 1:
+			struct_len = 26;
+			break;
+		default:
+			return -1;
+	}
  
-  if (!buf)
-    {
-      len = 0;
-      switch (uLevel) 
-	{
-	case 1:
-	  len = strlen(service->comment)+1;
-	  break;
+	if (!buf) {
+		len = 0;
+		switch (uLevel) {
+			case 1:
+				len = strlen(service->comment)+1;
+				break;
+		}
+
+		if (buflen) {
+			*buflen = struct_len;
+		}
+		if (stringspace) {
+			*stringspace = len;
+		}
+		return struct_len + len;
+	}
+  
+	len = struct_len;
+	p = *buf;
+	if (*buflen < struct_len) {
+		return -1;
+	}
+	if (stringbuf) {
+		p2 = *stringbuf;
+		l2 = *stringspace;
+	} else {
+		p2 = p + struct_len;
+		l2 = *buflen - struct_len;
+	}
+	if (!baseaddr) {
+		baseaddr = p;
+	}
+  
+	switch (uLevel) {
+		case 0:
+			push_ascii(p,service->name, MAX_NETBIOSNAME_LEN, STR_TERMINATE);
+			break;
+
+		case 1:
+			push_ascii(p,service->name,MAX_NETBIOSNAME_LEN, STR_TERMINATE);
+			SIVAL(p,18,service->type);
+			SIVAL(p,22,PTR_DIFF(p2,baseaddr));
+			len += CopyAndAdvance(&p2,service->comment,&l2);
+			break;
 	}
 
-      if (buflen) *buflen = struct_len;
-      if (stringspace) *stringspace = len;
-      return struct_len + len;
-    }
-  
-  len = struct_len;
-  p = *buf;
-  if (*buflen < struct_len) return -1;
-  if (stringbuf)
-    {
-      p2 = *stringbuf;
-      l2 = *stringspace;
-    }
-  else
-    {
-      p2 = p + struct_len;
-      l2 = *buflen - struct_len;
-    }
-  if (!baseaddr) baseaddr = p;
-  
-  switch (uLevel)
-    {
-    case 0:
-	    push_ascii(p,service->name, MAX_NETBIOSNAME_LEN, STR_TERMINATE);
-	    break;
-
-    case 1:
-	    push_ascii(p,service->name,MAX_NETBIOSNAME_LEN, STR_TERMINATE);
-	    SIVAL(p,18,service->type);
-	    SIVAL(p,22,PTR_DIFF(p2,baseaddr));
-	    len += CopyAndAdvance(&p2,service->comment,&l2);
-	    break;
-    }
-
-  if (stringbuf)
-    {
-      *buf = p + struct_len;
-      *buflen -= struct_len;
-      *stringbuf = p2;
-      *stringspace = l2;
-    }
-  else
-    {
-      *buf = p2;
-      *buflen -= len;
-    }
-  return len;
+	if (stringbuf) {
+		*buf = p + struct_len;
+		*buflen -= struct_len;
+		*stringbuf = p2;
+		*stringspace = l2;
+	} else {
+		*buf = p2;
+		*buflen -= len;
+	}
+	return len;
 }
 
 
@@ -1391,22 +1399,31 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *pa
 
 static BOOL check_share_info(int uLevel, char* id)
 {
-  switch( uLevel ) {
-  case 0:
-    if (strcmp(id,"B13") != 0) return False;
-    break;
-  case 1:
-    if (strcmp(id,"B13BWz") != 0) return False;
-    break;
-  case 2:
-    if (strcmp(id,"B13BWzWWWzB9B") != 0) return False;
-    break;
-  case 91:
-    if (strcmp(id,"B13BWzWWWzB9BB9BWzWWzWW") != 0) return False;
-    break;
-  default: return False;
-  }
-  return True;
+	switch( uLevel ) {
+		case 0:
+			if (strcmp(id,"B13") != 0) {
+				return False;
+			}
+			break;
+		case 1:
+			if (strcmp(id,"B13BWz") != 0) {
+				return False;
+			}
+			break;
+		case 2:
+			if (strcmp(id,"B13BWzWWWzB9B") != 0) {
+				return False;
+			}
+			break;
+		case 91:
+			if (strcmp(id,"B13BWzWWWzB9BB9BWzWWzWW") != 0) {
+				return False;
+			}
+			break;
+		default:
+			return False;
+	}
+	return True;
 }
 
 static int fill_share_info(connection_struct *conn, int snum, int uLevel,
@@ -1509,31 +1526,39 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *netname = skip_string(str2,1);
-  char *p = skip_string(netname,1);
-  int uLevel = SVAL(p,0);
-  int snum = find_service(netname);
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *netname = skip_string(str2,1);
+	char *p = skip_string(netname,1);
+	int uLevel = SVAL(p,0);
+	int snum = find_service(netname);
   
-  if (snum < 0) return False;
+	if (snum < 0) {
+		return False;
+	}
   
-  /* check it's a supported varient */
-  if (!prefix_ok(str1,"zWrLh")) return False;
-  if (!check_share_info(uLevel,str2)) return False;
+	/* check it's a supported varient */
+	if (!prefix_ok(str1,"zWrLh")) {
+		return False;
+	}
+	if (!check_share_info(uLevel,str2)) {
+		return False;
+	}
  
-  *rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
-  p = *rdata;
-  *rdata_len = fill_share_info(conn,snum,uLevel,&p,&mdrcnt,0,0,0);
-  if (*rdata_len < 0) return False;
+	*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+	p = *rdata;
+	*rdata_len = fill_share_info(conn,snum,uLevel,&p,&mdrcnt,0,0,0);
+	if (*rdata_len < 0) {
+		return False;
+	}
  
-  *rparam_len = 6;
-  *rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
-  SSVAL(*rparam,0,NERR_Success);
-  SSVAL(*rparam,2,0);		/* converter word */
-  SSVAL(*rparam,4,*rdata_len);
+	*rparam_len = 6;
+	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	SSVAL(*rparam,0,NERR_Success);
+	SSVAL(*rparam,2,0);		/* converter word */
+	SSVAL(*rparam,4,*rdata_len);
  
-  return(True);
+	return True;
 }
 
 /****************************************************************************
@@ -3181,16 +3206,27 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 static int check_printdest_info(struct pack_desc* desc,
 				int uLevel, char* id)
 {
-  desc->subformat = NULL;
-  switch( uLevel ) {
-  case 0: desc->format = "B9"; break;
-  case 1: desc->format = "B9B21WWzW"; break;
-  case 2: desc->format = "z"; break;
-  case 3: desc->format = "zzzWWzzzWW"; break;
-  default: return False;
-  }
-  if (strcmp(desc->format,id) != 0) return False;
-  return True;
+	desc->subformat = NULL;
+	switch( uLevel ) {
+		case 0:
+			desc->format = "B9";
+			break;
+		case 1:
+			desc->format = "B9B21WWzW";
+			break;
+		case 2:
+			desc->format = "z";
+			break;
+		case 3:
+			desc->format = "zzzWWzzzWW";
+			break;
+		default:
+			return False;
+	}
+	if (strcmp(desc->format,id) != 0) {
+		return False;
+	}
+	return True;
 }
 
 static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,

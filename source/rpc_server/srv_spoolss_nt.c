@@ -6003,7 +6003,7 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 
 	numlines = 0;
 	/* Get lines and convert them back to dos-codepage */
-	qlines = fd_lines_load(fd, &numlines);
+	qlines = fd_lines_load(fd, &numlines, 0);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	close(fd);
 
@@ -7201,7 +7201,7 @@ WERROR enumports_hook( int *count, char ***lines )
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines);
+		qlines = fd_lines_load(fd, &numlines, 0);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 	}

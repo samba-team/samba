@@ -503,7 +503,7 @@ static int info_fn(struct file_list *fl, void *private)
 		return -1;
 	}
 
-	lines = fd_lines_load(fd, &numlines);
+	lines = fd_lines_load(fd, &numlines, 10240);
 	close(fd);
 
 	if (lines == NULL) {
