@@ -1736,7 +1736,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 			if (retdata)
 				ber_bvfree(retdata);
 			if (retoid)
-				ber_memfree(retoid);
+				ldap_memfree(retoid);
 		}
 		ber_bvfree(bv);
 	}
