@@ -1,11 +1,11 @@
-Source: samba4
+Source: samba
 Section: net
 Priority: optional
 Maintainer: Jelmer Vernooij <jelmer@samba.org>
 Standards-Version: 3.6.2
 Build-Depends: libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl, perl, docbook-xsl, xsltproc, po-debconf
 
-Package: samba4-common
+Package: samba-common
 Architecture: all
 Description: Samba 4 common files used by both the server and the client
  The Samba software suite is a collection of programs that
@@ -19,10 +19,10 @@ Description: Samba 4 common files used by both the server and the client
  regard to upgrades between versions.
  .
  This package contains the common files that are used by both the server
- (provided in the samba4-server package) and the client (provided in the
- samba4-client package).
+ (provided in the samba-server package) and the client (provided in the
+ samba-client package).
 
-Package: samba4-client
+Package: samba-client
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: client utilities from Samba 4
@@ -40,9 +40,9 @@ Description: client utilities from Samba 4
  particular it includes the command line utilities smbclient, net,
  and some ACL tools.
 
-Package: samba4-testsuite
+Package: samba-testsuite
 Architecture: any
-Depends: ${shlibs:Depends}, samba4-common
+Depends: ${shlibs:Depends}, samba-common
 Description: test suite from Samba 4
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
@@ -57,10 +57,10 @@ Description: test suite from Samba 4
  This package contains programs for testing the reliability and speed 
  of SMB servers, Samba in particular.
  
-Package: samba4-server
+Package: samba-server
 Architecture: any
-Recommends: samba4-swat
-Depends: ${shlibs:Depends}, samba4-common, debconf
+Recommends: samba-swat
+Depends: ${shlibs:Depends}, samba-common, debconf
 Description: LanManager-like file and printer server for Unix (version 4)
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
@@ -74,7 +74,7 @@ Description: LanManager-like file and printer server for Unix (version 4)
  .
  This package contains smbd, the Samba file, print and domain server.
 
-Package: samba4-gtk-frontends
+Package: samba-gtk-frontends
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: graphical Samba client utilities
@@ -129,7 +129,7 @@ Description: IDL compiler written in Perl
  which takes in IDL files and can output C code for various uses. It is
  primarily of interest to developers.
 
-Package: samba4-dev
+Package: samba-dev
 Architecture: any
 Depends: libparse-pidl-perl, libc6-dev, pkg-config (>= 0.14.0)
 Description: tools for extending Samba
@@ -166,7 +166,7 @@ Description: tools for maintaining LDB database files
  are primarily useful for debugging and developing Samba or other
  applications using LDB.
 
-Package: samba4-swat
+Package: samba-swat
 Architecture: all
 Description: data files for SWAT
  The Samba software suite is a collection of programs that
