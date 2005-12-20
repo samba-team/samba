@@ -64,7 +64,7 @@ serverName: CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site,CN=Sites,CN=Confi
 domainFunctionality: 0
 forestFunctionality: 0
 domainControllerFunctionality: 2
-isSyncronized: TRUE
+isSynchronized: TRUE
 
 #Add modules to the list to activate them by default
 #beware often order is important
