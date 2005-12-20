@@ -88,7 +88,7 @@ static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL pro
 	partner->push.notify_io->in.propagate	= propagate;
 	partner->push.creq = wreplsrv_push_notify_send(partner->push.notify_io, partner->push.notify_io);
 	if (!partner->push.creq) {
-		DEBUG(1,("wreplsrv_push_notify_send(%s) failed\n",
+		DEBUG(1,("wreplsrv_push_notify_send(%s) failed nomem?\n",
 			 partner->address));
 		goto nomem;
 	}
@@ -100,8 +100,8 @@ static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL pro
 nomem:
 	talloc_free(partner->push.notify_io);
 	partner->push.notify_io = NULL;
-	DEBUG(1,("wreplsrv_push_notify_send(%s) failed nomem? (ignoring)\n",
-		 partner->address));
+	DEBUG(1,("wreplsrv_out_partner_push(%s,%u) failed nomem? (ignoring)\n",
+		 partner->address, propagate));
 	return;
 }
 
