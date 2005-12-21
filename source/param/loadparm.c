@@ -4188,7 +4188,7 @@ static void set_server_role(void)
 			break;
 	}
 
-	DEBUG(10, ("set_server_role: role = %s", server_role_str(server_role)));
+	DEBUG(10, ("set_server_role: role = %s\n", server_role_str(server_role)));
 }
 
 /***********************************************************
