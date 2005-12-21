@@ -111,8 +111,9 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	CHECK_STRING(io.out.wins_server, address);
 	CHECK_VALUE(io.out.rcode, 0);
 
-	if (name->type != NBT_NAME_MASTER && 
+	if (name->type != NBT_NAME_MASTER &&
 	    name->type != NBT_NAME_LOGON && 
+	    name->type != NBT_NAME_BROWSER && 
 	    (nb_flags & NBT_NM_GROUP)) {
 		printf("Try to register as non-group\n");
 		io.in.nb_flags &= ~NBT_NM_GROUP;
@@ -291,7 +292,7 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 {
 	struct nbt_name name;
 	BOOL ret = True;
-	uint32_t r = (unsigned)(random() % (100000));
+	uint32_t r = (uint32_t)(random() % (100000));
 
 	name.name = talloc_asprintf(mem_ctx, "_TORTURE-%5u", r);
 				    
@@ -305,6 +306,9 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
 	name.type = NBT_NAME_LOGON;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
+
+	name.type = NBT_NAME_BROWSER;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
 	name.scope = "example";
