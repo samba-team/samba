@@ -21,5 +21,4 @@ LDADD = $(LIB_kafs) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(LIB_des) \
-	$(LIB_roken) \
-	$(LIB_kdfs)
+	$(LIB_roken)
