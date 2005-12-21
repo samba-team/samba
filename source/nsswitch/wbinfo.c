@@ -45,7 +45,7 @@ static char winbind_separator_int(BOOL strict)
 
 	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind separator!\n");
+		d_fprintf(stderr, "could not obtain winbind separator!\n");
 		if (strict) {
 			return -1;
 		}
@@ -57,7 +57,7 @@ static char winbind_separator_int(BOOL strict)
 	got_sep = True;
 
 	if (!sep) {
-		d_printf("winbind separator was NULL!\n");
+		d_fprintf(stderr, "winbind separator was NULL!\n");
 		if (strict) {
 			return -1;
 		}
@@ -84,7 +84,7 @@ static const char *get_winbind_domain(void)
 
 	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("could not obtain winbind domain name!\n");
+		d_fprintf(stderr, "could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
 		return lp_workgroup();
@@ -249,7 +249,7 @@ static BOOL wbinfo_get_groupmem(const char *group_sid)
 		return False;
 
 	if (response.data.num_entries != 0)
-		printf("%s", (char *)response.extra_data);
+		d_printf("%s", (char *)response.extra_data);
 	
 	SAFE_FREE(response.extra_data);
 
@@ -277,7 +277,7 @@ static BOOL wbinfo_wins_byname(char *name)
 
 	/* Display response */
 
-	printf("%s\n", response.data.winsresp);
+	d_printf("%s\n", response.data.winsresp);
 
 	return True;
 }
@@ -303,7 +303,7 @@ static BOOL wbinfo_wins_byip(char *ip)
 
 	/* Display response */
 
-	printf("%s\n", response.data.winsresp);
+	d_printf("%s\n", response.data.winsresp);
 
 	return True;
 }
@@ -332,7 +332,7 @@ static BOOL wbinfo_list_domains(void)
 		while(next_token(&extra_data, name, "\n", sizeof(fstring))) {
 			p = strchr(name, '\\');
 			if (p == 0) {
-				d_printf("Got invalid response: %s\n",
+				d_fprintf(stderr, "Got invalid response: %s\n",
 					 extra_data);
 				return False;
 			}
@@ -429,7 +429,7 @@ static BOOL wbinfo_getdcname(const char *domain_name)
 
 	if (winbindd_request_response(WINBINDD_GETDCNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		d_printf("Could not get dc name for %s\n", domain_name);
+		d_fprintf(stderr, "Could not get dc name for %s\n", domain_name);
 		return False;
 	}
 
@@ -455,7 +455,7 @@ static BOOL wbinfo_check_secret(void)
 		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (result != NSS_STATUS_SUCCESS)	
-		d_printf("error code was %s (0x%x)\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\n", 
 		 	 response.data.auth.nt_status_string, 
 		 	 response.data.auth.nt_status);
 	
@@ -664,7 +664,7 @@ static BOOL wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 		username, (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", cctype);
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -719,7 +719,7 @@ static BOOL wbinfo_auth(char *username)
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -819,7 +819,7 @@ static BOOL wbinfo_auth_crap(char *username)
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -863,7 +863,7 @@ static BOOL wbinfo_klog(char *username)
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -872,12 +872,12 @@ static BOOL wbinfo_klog(char *username)
 		return False;
 
 	if (response.extra_data == NULL) {
-		d_printf("Did not get token data\n");
+		d_fprintf(stderr, "Did not get token data\n");
 		return False;
 	}
 
 	if (!afs_settoken_str((char *)response.extra_data)) {
-		d_printf("Could not set token\n");
+		d_fprintf(stderr, "Could not set token\n");
 		return False;
 	}
 
@@ -1181,128 +1181,128 @@ int main(int argc, char **argv)
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users(opt_domain_name)) {
-				d_printf("Error looking up domain users\n");
+				d_fprintf(stderr, "Error looking up domain users\n");
 				goto done;
 			}
 			break;
 		case 'g':
 			if (!print_domain_groups(opt_domain_name)) {
-				d_printf("Error looking up domain groups\n");
+				d_fprintf(stderr, "Error looking up domain groups\n");
 				goto done;
 			}
 			break;
 		case 's':
 			if (!wbinfo_lookupsid(string_arg)) {
-				d_printf("Could not lookup sid %s\n", string_arg);
+				d_fprintf(stderr, "Could not lookup sid %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'n':
 			if (!wbinfo_lookupname(string_arg)) {
-				d_printf("Could not lookup name %s\n", string_arg);
+				d_fprintf(stderr, "Could not lookup name %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'N':
 			if (!wbinfo_wins_byname(string_arg)) {
-				d_printf("Could not lookup WINS by name %s\n", string_arg);
+				d_fprintf(stderr, "Could not lookup WINS by name %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'I':
 			if (!wbinfo_wins_byip(string_arg)) {
-				d_printf("Could not lookup WINS by IP %s\n", string_arg);
+				d_fprintf(stderr, "Could not lookup WINS by IP %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case 'U':
 			if (!wbinfo_uid_to_sid(int_arg)) {
-				d_printf("Could not convert uid %d to sid\n", int_arg);
+				d_fprintf(stderr, "Could not convert uid %d to sid\n", int_arg);
 				goto done;
 			}
 			break;
 		case 'G':
 			if (!wbinfo_gid_to_sid(int_arg)) {
-				d_printf("Could not convert gid %d to sid\n",
+				d_fprintf(stderr, "Could not convert gid %d to sid\n",
 				       int_arg);
 				goto done;
 			}
 			break;
 		case 'S':
 			if (!wbinfo_sid_to_uid(string_arg)) {
-				d_printf("Could not convert sid %s to uid\n",
+				d_fprintf(stderr, "Could not convert sid %s to uid\n",
 				       string_arg);
 				goto done;
 			}
 			break;
 		case 'Y':
 			if (!wbinfo_sid_to_gid(string_arg)) {
-				d_printf("Could not convert sid %s to gid\n",
+				d_fprintf(stderr, "Could not convert sid %s to gid\n",
 				       string_arg);
 				goto done;
 			}
 			break;
 		case 'A':
 			if (!wbinfo_allocate_rid()) {
-				d_printf("Could not allocate a RID\n");
+				d_fprintf(stderr, "Could not allocate a RID\n");
 				goto done;
 			}
 			break;
 		case 't':
 			if (!wbinfo_check_secret()) {
-				d_printf("Could not check secret\n");
+				d_fprintf(stderr, "Could not check secret\n");
 				goto done;
 			}
 			break;
 		case 'm':
 			if (!wbinfo_list_domains()) {
-				d_printf("Could not list trusted domains\n");
+				d_fprintf(stderr, "Could not list trusted domains\n");
 				goto done;
 			}
 			break;
 		case OPT_SEQUENCE:
 			if (!wbinfo_show_sequence(opt_domain_name)) {
-				d_printf("Could not show sequence numbers\n");
+				d_fprintf(stderr, "Could not show sequence numbers\n");
 				goto done;
 			}
 			break;
 		case 'D':
 			if (!wbinfo_domain_info(string_arg)) {
-				d_printf("Could not get domain info\n");
+				d_fprintf(stderr, "Could not get domain info\n");
 				goto done;
 			}
 			break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
-				d_printf("Could not get groups for user %s\n", 
+				d_fprintf(stderr, "Could not get groups for user %s\n", 
 				       string_arg);
 				goto done;
 			}
 			break;
 		case OPT_USERSIDS:
 			if (!wbinfo_get_usersids(string_arg)) {
-				d_printf("Could not get group SIDs for user SID %s\n", 
+				d_fprintf(stderr, "Could not get group SIDs for user SID %s\n", 
 				       string_arg);
 				goto done;
 			}
 			break;
 		case OPT_USERDOMGROUPS:
 			if (!wbinfo_get_userdomgroups(string_arg)) {
-				d_printf("Could not get user's domain groups "
+				d_fprintf(stderr, "Could not get user's domain groups "
 					 "for user SID %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case OPT_ALIASMEM:
 			if (!wbinfo_get_aliasmem(string_arg)) {
-				d_printf("Could not get alias members "
+				d_fprintf(stderr, "Could not get alias members "
 					 "for user SID %s\n", string_arg);
 				goto done;
 			}
 			break;
 		case OPT_GROUPMEM:
 			if (!wbinfo_get_groupmem(string_arg)) {
-				d_printf("Could not get group members "
+				d_fprintf(stderr, "Could not get group members "
 					 "for user SID %s\n", string_arg);
 				goto done;
 			}
@@ -1311,13 +1311,13 @@ int main(int argc, char **argv)
 				BOOL got_error = False;
 
 				if (!wbinfo_auth(string_arg)) {
-					d_printf("Could not authenticate user %s with "
+					d_fprintf(stderr, "Could not authenticate user %s with "
 						"plaintext password\n", string_arg);
 					got_error = True;
 				}
 
 				if (!wbinfo_auth_crap(string_arg)) {
-					d_printf("Could not authenticate user %s with "
+					d_fprintf(stderr, "Could not authenticate user %s with "
 						"challenge/response\n", string_arg);
 					got_error = True;
 				}
@@ -1346,7 +1346,7 @@ int main(int argc, char **argv)
 
 					for (i=0; i < ARRAY_SIZE(cctypes); i++) {
 						if (!wbinfo_auth_krb5(tok, cctypes[i], flags)) {
-							d_printf("Could not authenticate user [%s] with "
+							d_fprintf(stderr, "Could not authenticate user [%s] with "
 								"Kerberos (ccache: %s)\n", tok, cctypes[i]);
 							got_error = True;
 						}
@@ -1360,29 +1360,37 @@ int main(int argc, char **argv)
 			}
 		case 'k':
 			if (!wbinfo_klog(string_arg)) {
-				d_printf("Could not klog user\n");
+				d_fprintf(stderr, "Could not klog user\n");
 				goto done;
 			}
 			break;
 		case 'p':
 			if (!wbinfo_ping()) {
-				d_printf("could not ping winbindd!\n");
+				d_fprintf(stderr, "could not ping winbindd!\n");
 				goto done;
 			}
 			break;
 		case OPT_SET_AUTH_USER:
-			wbinfo_set_auth_user(string_arg);
+			if (!wbinfo_set_auth_user(string_arg)) {
+				goto done;
+			}
 			break;
 		case OPT_GET_AUTH_USER:
 			wbinfo_get_auth_user();
 			break;
 		case OPT_GETDCNAME:
-			wbinfo_getdcname(string_arg);
+			if (!wbinfo_getdcname(string_arg)) {
+				goto done;
+			}
 			break;
-		case OPT_SEPARATOR:
-			d_printf("%c\n", winbind_separator_int(True));
+		case OPT_SEPARATOR: {
+			const char sep = winbind_separator_int(True);
+			if (sep == -1) {
+				goto done;
+			}
+			d_printf("%c\n", sep);
 			break;
-
+		}
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 			break;
