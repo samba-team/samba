@@ -17,6 +17,7 @@ ADD_OBJ_FILES = \
 		libnet_join.o \
 		libnet_vampire.o \
 		libnet_samdump.o \
+		libnet_samdump_keytab.o \
 		libnet_samsync_ldb.o \
 		libnet_user.o \
 		libnet_share.o \
