@@ -65,7 +65,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", name, container,
 				       ads->config.bind_path)))
 		goto done;
-	if (!(controlstr = talloc_asprintf(ctx, "%u", UF_NORMAL_ACCOUNT)))
+	if (!(controlstr = talloc_asprintf(ctx, "%u", (UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE))))
 		goto done;
 	if (!(mods = ads_init_mods(ctx)))
 		goto done;
