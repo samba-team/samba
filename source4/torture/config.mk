@@ -100,7 +100,6 @@ ADD_OBJ_FILES = \
 		rpc/autoidl.o \
 		rpc/countcalls.o \
 		rpc/testjoin.o \
-		rpc/xplogin.o \
 		rpc/schannel.o \
 		rpc/netlogon.o \
 		rpc/samlogon.o \
