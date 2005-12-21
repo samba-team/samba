@@ -348,7 +348,7 @@ print command parameter is ignored when using CUPS libraries.\n",
 
 
 	if (!silent_mode && !section_name && !parameter_name) {
-		fprintf(stderr,"Server role: %s", server_role_str(lp_server_role()));
+		fprintf(stderr,"Server role: %s\n", server_role_str(lp_server_role()));
 	}
 
 	if (!cname) {
