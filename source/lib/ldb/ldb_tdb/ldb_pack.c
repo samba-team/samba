@@ -59,6 +59,17 @@ static unsigned int pull_uint32(uint8_t *p, int ofs)
 	return p[0] | (p[1]<<8) | (p[2]<<16) | (p[3]<<24);
 }
 
+static int attribute_storable_values(const struct ldb_message_element *el)
+{
+	if (el->num_values == 0) return 0;
+
+	if (ldb_attr_cmp(el->name, "dn") == 0) return 0;
+
+	if (ldb_attr_cmp(el->name, "distinguishedName") == 0) return 0;
+
+	return el->num_values;
+}
+
 /*
   pack a ldb message into a linear buffer in a TDB_DATA
 
@@ -84,21 +95,18 @@ int ltdb_pack_data(struct ldb_module *module,
 		return -1;
 	}
 
-	for (i=0;i<message->num_elements;i++) {
-		if (message->elements[i].num_values != 0) {
-			real_elements++;
-		}
-	}
-
 	/* work out how big it needs to be */
 	size = 8;
 
 	size += 1 + strlen(dn);
 
 	for (i=0;i<message->num_elements;i++) {
-		if (message->elements[i].num_values == 0) {
+		if (attribute_storable_values(&message->elements[i]) == 0) {
 			continue;
 		}
+
+		real_elements++;
+
 		size += 1 + strlen(message->elements[i].name) + 4;
 		for (j=0;j<message->elements[i].num_values;j++) {
 			size += 4 + message->elements[i].values[j].length + 1;
@@ -126,7 +134,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	p += len + 1;
 	
 	for (i=0;i<message->num_elements;i++) {
-		if (message->elements[i].num_values == 0) {
+		if (attribute_storable_values(&message->elements[i]) == 0) {
 			continue;
 		}
 		len = strlen(message->elements[i].name);
