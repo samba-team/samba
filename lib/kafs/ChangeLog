@@ -1,3 +1,9 @@
+2005-12-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Remove dependency on config.h, breaks IRIX build,
+	could depend on libkafs_la_OBJECTS, but that is just asking for
+	trubble.
+	
 2005-10-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afssys.c (k_hasafs_recheck): new function, allow rechecking if
