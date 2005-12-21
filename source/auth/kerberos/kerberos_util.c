@@ -226,6 +226,32 @@ static int free_keytab(void *ptr) {
 	return 0;
 }
 
+int smb_krb5_open_keytab(TALLOC_CTX *mem_ctx,
+			 struct smb_krb5_context *smb_krb5_context, 
+			 const char *keytab_name, struct keytab_container **ktc) 
+{
+	krb5_keytab keytab;
+	int ret;
+	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, keytab_name, &keytab);
+	if (ret) {
+		DEBUG(1,("failed to open krb5 keytab: %s\n", 
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+						    ret, mem_ctx)));
+		return ret;
+	}
+
+	*ktc = talloc(mem_ctx, struct keytab_container);
+	if (!*ktc) {
+		return ENOMEM;
+	}
+
+	(*ktc)->smb_krb5_context = talloc_reference(*ktc, smb_krb5_context);
+	(*ktc)->keytab = keytab;
+	talloc_set_destructor(*ktc, free_keytab);
+
+	return 0;
+}
+
 struct enctypes_container {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_enctype *enctypes;
@@ -574,10 +600,10 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-int update_keytab(TALLOC_CTX *parent_ctx,
-		  struct cli_credentials *machine_account,
-		  struct smb_krb5_context *smb_krb5_context,
-		  struct keytab_container *keytab_container) 
+int smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
+			   struct cli_credentials *machine_account,
+			   struct smb_krb5_context *smb_krb5_context,
+			   struct keytab_container *keytab_container) 
 {
 	krb5_error_code ret;
 	BOOL found_previous;
@@ -604,16 +630,15 @@ int update_keytab(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-int create_memory_keytab(TALLOC_CTX *parent_ctx,
-			 struct cli_credentials *machine_account,
-			 struct smb_krb5_context *smb_krb5_context,
-			 struct keytab_container **keytab_container) 
+int smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
+				  struct cli_credentials *machine_account,
+				  struct smb_krb5_context *smb_krb5_context,
+				  struct keytab_container **keytab_container) 
 {
 	krb5_error_code ret;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	const char *rand_string;
 	const char *keytab_name;
-	krb5_keytab keytab;
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
@@ -633,23 +658,12 @@ int create_memory_keytab(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	/* Find the keytab */
-	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, keytab_name, &keytab);
+	ret = smb_krb5_open_keytab(mem_ctx, smb_krb5_context, keytab_name, keytab_container);
 	if (ret) {
-		DEBUG(1,("failed to resolve keytab: %s: %s\n",
-			 keytab_name,
-			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
-					 	    ret, mem_ctx)));
-		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	(*keytab_container)->smb_krb5_context = talloc_reference(*keytab_container, smb_krb5_context);
-	(*keytab_container)->keytab = keytab;
-
-	talloc_set_destructor(*keytab_container, free_keytab);
-	
-	ret = update_keytab(mem_ctx, machine_account, smb_krb5_context, *keytab_container);
+	ret = smb_krb5_update_keytab(mem_ctx, machine_account, smb_krb5_context, *keytab_container);
 	if (ret == 0) {
 		talloc_steal(parent_ctx, *keytab_container);
 	} else {

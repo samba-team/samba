@@ -25,11 +25,77 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
+static int net_samdump_keytab_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("net samdump keytab <keytab>\n");
+	return 0;	
+}
+
+static int net_samdump_keytab_help(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Dumps kerberos keys of a domain into a keytab.\n");
+	return 0;	
+}
+
+static int net_samdump_keytab(struct net_context *ctx, int argc, const char **argv) 
+{
+	NTSTATUS status;
+	struct libnet_context *libnetctx;
+	struct libnet_SamDump_keytab r;
+
+	switch (argc) {
+	case 0:
+		return net_samdump_keytab_usage(ctx, argc, argv);
+		break;
+	case 1:
+		r.keytab_name = argv[0];
+		break;
+	}
+
+	libnetctx = libnet_context_init(NULL);
+	if (!libnetctx) {
+		return -1;	
+	}
+	libnetctx->cred = ctx->credentials;
+
+	r.level	       = LIBNET_SAMDUMP_GENERIC;
+	r.error_string = NULL;
+
+	status = libnet_SamDump_keytab(libnetctx, ctx->mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("libnet_SamDump returned %s: %s\n",
+			 nt_errstr(status),
+			 r.error_string));
+		return -1;
+	}
+
+	talloc_free(libnetctx);
+
+	return 0;
+}
+
+/* main function table */
+static const struct net_functable net_samdump_functable[] = {
+	{"keytab", "dump keys into a keytab\n", net_samdump_keytab, net_samdump_keytab_usage},
+	{NULL, NULL, NULL, NULL}
+};
+
 int net_samdump(struct net_context *ctx, int argc, const char **argv) 
 {
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
 	struct libnet_SamDump r;
+	int rc;
+
+	switch (argc) {
+	case 0:
+		break;
+	case 1:
+	default:
+		rc = net_run_function(ctx, argc, argv, net_samdump_functable, 
+				      net_samdump_usage);
+		return rc;
+	}
 
 	libnetctx = libnet_context_init(NULL);
 	if (!libnetctx) {
@@ -56,6 +122,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 int net_samdump_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("net samdump\n");
+	d_printf("net samdump keytab <keytab>\n");
 	return 0;	
 }
 

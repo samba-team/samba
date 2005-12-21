@@ -301,13 +301,13 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	 * (chewing CPU time) from the password */
 	keytab = ldb_msg_find_string(msgs[0], "krb5Keytab", NULL);
 	if (keytab) {
-		cli_credentials_set_keytab(cred, keytab, CRED_SPECIFIED);
+		cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
 	} else {
 		keytab = ldb_msg_find_string(msgs[0], "privateKeytab", NULL);
 		if (keytab) {
 			keytab = talloc_asprintf(mem_ctx, "FILE:%s", private_path(mem_ctx, keytab));
 			if (keytab) {
-				cli_credentials_set_keytab(cred, keytab, CRED_SPECIFIED);
+				cli_credentials_set_keytab_name(cred, keytab, CRED_SPECIFIED);
 			}
 		}
 	}
