@@ -94,8 +94,6 @@ man_MANS = kafs.3
 afslib.so: afslib.o
 	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp $(AFS_EXTRA_LD) afslib.o -lc
 
-$(OBJECTS): ../../include/config.h
-
 resolve.c:
 	$(LN_S) $(srcdir)/../roken/resolve.c .
 
