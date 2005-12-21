@@ -192,6 +192,7 @@ struct libnet_AddShare;
 struct libnet_DelShare;
 struct libnet_Lookup;
 struct libnet_SamDump;
+struct libnet_SamDump_keytab;
 struct libnet_SamSync;
 struct libnet_samsync_ldb;
 struct net_functable;

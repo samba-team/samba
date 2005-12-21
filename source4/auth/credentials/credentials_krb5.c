@@ -398,7 +398,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = create_memory_keytab(mem_ctx, cred, smb_krb5_context, &ktc);
+	ret = smb_krb5_create_memory_keytab(mem_ctx, cred, smb_krb5_context, &ktc);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -417,14 +417,13 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 /* Given the name of a keytab (presumably in the format
  * FILE:/etc/krb5.keytab), open it and attach it */
 
-int cli_credentials_set_keytab(struct cli_credentials *cred, 
-			       const char *keytab_name, 
-			       enum credentials_obtained obtained) 
+int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
+				    const char *keytab_name, 
+				    enum credentials_obtained obtained) 
 {
 	krb5_error_code ret;
 	struct keytab_container *ktc;
 	struct smb_krb5_context *smb_krb5_context;
-	krb5_keytab keytab;
 	TALLOC_CTX *mem_ctx;
 
 	if (cred->keytab_obtained >= obtained) {
@@ -441,23 +440,11 @@ int cli_credentials_set_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, keytab_name, &keytab);
+	ret = smb_krb5_open_keytab(mem_ctx, smb_krb5_context, 
+				   keytab_name, &ktc);
 	if (ret) {
-		DEBUG(1,("failed to open krb5 keytab: %s\n", 
-			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
-						    ret, mem_ctx)));
-		talloc_free(mem_ctx);
 		return ret;
 	}
-
-	ktc = talloc(mem_ctx, struct keytab_container);
-	if (!ktc) {
-		talloc_free(mem_ctx);
-		return ENOMEM;
-	}
-
-	ktc->smb_krb5_context = talloc_reference(ktc, smb_krb5_context);
-	ktc->keytab = keytab;
 
 	cred->keytab_obtained = obtained;
 
@@ -492,7 +479,7 @@ int cli_credentials_update_keytab(struct cli_credentials *cred)
 		return ret;
 	}
 
-	ret = update_keytab(mem_ctx, cred, smb_krb5_context, ktc);
+	ret = smb_krb5_update_keytab(mem_ctx, cred, smb_krb5_context, ktc);
 
 	talloc_free(mem_ctx);
 	return ret;
