@@ -1043,6 +1043,8 @@ logdir /data/logs
 </screen>
 		</para>
 
+<?latex \newpage ?>
+
 		<para>
 		The diagnostic process should follow these steps:
 		</para>
@@ -3836,6 +3838,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 	<para>
 	<indexterm><primary>Outlook</primary><secondary>PST</secondary></indexterm>
+	<indexterm><primary>MS Outlook</primary><secondary>PST</secondary></indexterm>
 	Microsoft Outlook can store a Personal Storage file, generally known as a PST file.
 	It is the nature of email storage that this file grows, at times quite rapidly.
 	So that users' email is available to them at every workstation they may log onto,
@@ -3843,23 +3846,116 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	users' home directory. Follow these steps for each user who wishes to do this.
 	</para>
 
+	<para>
+	To redirect the Outlook PST file in Outlook 2003 (older versions of Outlook behave
+	slightly differently), follow these steps:
+	</para>
+
+	<procedure>
+	<title>Outlook PST File Relocation</title>
+
+		<step><para>
+		Close Outlook if it is open.
+		</para></step>
+
+		<step><para>
+		From the <guimenu>Control Panel</guimenu>, launch the Mail icon.
+		</para></step>
+
+		<step><para>
+		Click <guimenu>Email Accounts.</guimenu>
+		</para></step>
+
+		<step><para>
+		Make a note of the location of the PST file(s). From this location, move
+		the files to the desired new target location. The most desired new target location 
+		may well be the users' home directory.
+		</para></step>
+
+		<step><para>
+		Add a new data file, selecting the PST file in the new desired target location.
+		Gice this entry (not the filename) a new name such as <quote>Personal Mail Folders.</quote>
+		</para>
+
+		<para>
+		Note: If MS Outlook has been configured to use an IMAP account configuration there may be problems
+		following these instructions. Feedback from users suggests that where IMAP is used the PST
+		file is used to store rules and filters. When the PST store is relocated it appears to break
+		MS Outlook's Send/Receive button. If anyone has sucessfully relocated PST files where IMAP is 
+		used please email <literal>jht@samba.org</literal> with useful tips and suggestions so that
+		this warning can be removed or modified.
+		</para></step>
+
+		<step><para>
+		Close the <guimenu>Date Files</guimenu> windows, then click <guimenu>Email Accounts</guimenu>.
+		</para></step>
+
+		<step><para>
+		Select <guimenu>View of Change</guimenu> exiting email accounts, click <guibutton>Next.</guibutton>
+		</para></step>
+
+		<step><para>
+		Change the <guimenu>Mail Delivery Location</guimenu> so as to use the data file in the new
+		target location.
+		</para></step>
+
+		<step><para>
+		Go back to the <guimenu>Data Files</guimenu> window, then delete the old data file entry.
+		</para></step>
+
+	</procedure>
+	
 	<note><para>
-	It is presumed that Outlook Express has been configured for use.
+	<indexterm><primary>Outlook Address Book</primary></indexterm>
+	You may have to remove and reinstall the Outlook Address Book (Contacts) entries, otherwise 
+	the user may be not be able to retrieve contacts when addressing a new email message.
 	</para></note>
 
-	<para>
-	Launch Outlook Express 6. Click
-	<menuchoice>
-		<guimenu>Tools</guimenu>
-		<guimenuitem>Options</guimenuitem>
-		<guimenuitem>Maintenance</guimenuitem>
-		<guimenuitem>Store Folder</guimenuitem>
-		<guimenuitem>Change</guimenuitem>
-	</menuchoice>.
+	<note><para>
+	<indexterm><primary>Outlook Express</primary></indexterm>
+	Outlook Express is not at all like MS OutLook. It stores file very differently also. Outlook
+	Express storage files can not be redirected to network shares. The options panel will not permit
+	this, but they can be moved to folders outside of the user's profile. They can also be excluded
+	from folder synchronization as part of the roaming profile.
 	</para>
 
 	<para>
-	Follow the on-screen prompts to relocate the PST file to the desired location.
+	While it is possible to redirect the data stores for Outlook Express data stores by editing the 
+	registry, experience has shown that data corruption and loss of email messages will result.
+	</para>
+
+	<para>
+	<indexterm><primary>Outlook Express</primary></indexterm>
+	<indexterm><primary>MS Outlook</primary></indexterm>
+	In the same vane as MS Outlook, Outlook Express data stores can become very large. When used with
+	roaming profiles this can result in excruciatingly long login and logout behavior will files are
+	synchronized. For this reason, it is highly recommended not to use Outlook Express where roaming
+	profiles are used.
+	</para></note>
+
+	<para>
+	<indexterm><primary>PST file</primary></indexterm>
+	Microsoft does not support storing PST files on network shares, although the practice does appear
+	to be rather popular. Anyone who does relocation the PST file to a network resource should refer
+	the Microsoft <ulink url="http://support.microsoft.com/kb/297019/">reference</ulink> to better
+	understand the issues.
+	</para>
+
+	<para>
+	<indexterm><primary>PST file</primary></indexterm>
+	Apart from manually moving PST files to a network share, it is possible to set the default PST
+	location for new accounts by following the instructions at the WindowsITPro <ulink
+	url="http://www.windowsitpro.com/Windows/Article/ArticleID/48228/48228.html">web</ulink> site.
+	</para>
+
+	<para>
+	<indexterm><primary>PST file</primary></indexterm>
+	User feedback suggests that disabling of oplocks on PST files will significantly improve
+	network performance by reducing locking overheads. One way this can be done is to add to the
+	&smb.conf; file stanza for the share the PST file the following:
+<screen>
+veto oplock files = /*.pdf/*.PST/
+</screen>
 	</para>
 
 	</sect2>
