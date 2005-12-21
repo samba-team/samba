@@ -62,6 +62,18 @@ static void smbd_set_server_fd(int fd)
 	client_setfd(fd);
 }
 
+/*******************************************************************
+ What to do when smb.conf is updated.
+ ********************************************************************/
+
+static void smb_conf_updated(int msg_type, struct process_id src,
+			     void *buf, size_t len)
+{
+	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
+	reload_services(False);
+}
+
+
 /****************************************************************************
  Terminate signal.
 ****************************************************************************/
@@ -331,6 +343,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
         message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
         message_register(MSG_SHUTDOWN, msg_exit_server);
         message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
+	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated); 
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */

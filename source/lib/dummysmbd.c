@@ -34,12 +34,3 @@ int find_service(fstring service)
 	return -1;
 }
 
-BOOL delete_share_security(int snum)
-{
-	return False;
-}
-
-BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
-{
-	return False;
-}
