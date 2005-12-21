@@ -212,7 +212,7 @@ static BOOL parse_ace( TALLOC_CTX *ctx, SEC_ACE *ace, char *entry )
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* parse_acl_string( TALLOC_CTX *ctx, const char *szACL, uint32 *sd_size )
+static SEC_DESC* parse_acl_string( TALLOC_CTX *ctx, const char *szACL, size_t *sd_size )
 {
 	SEC_DESC *sd = NULL;
 	SEC_ACE *ace;
@@ -266,7 +266,7 @@ int main(int argc, const char *argv[])
 	static char *the_acl = NULL;
 	fstring sharename;
 	BOOL force_acl = False;
-	uint32 sd_size = 0;
+	size_t sd_size = 0;
 	SEC_DESC *secdesc;
 	int snum;
 	poptContext pc;
