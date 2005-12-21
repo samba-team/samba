@@ -196,12 +196,25 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		goto done;
 	}
 
+	/* w2k3 refuses 0x1E names with out marked as group */
+	if (name->type == NBT_NAME_BROWSER && !(nb_flags & NBT_NM_GROUP)) {
+		rcode = NBT_RCODE_RFS;
+		goto done;
+	}
+
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		rcode = wins_register_new(nbtsock, packet, src, new_type);
 		goto done;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		rcode = NBT_RCODE_SVR;
+		goto done;
+	} else if (rec->is_static) {
+		if (rec->type == WREPL_TYPE_GROUP || rec->type == WREPL_TYPE_SGROUP) {
+			rcode = NBT_RCODE_OK;
+			goto done;
+		}
+		rcode = NBT_RCODE_ACT;
 		goto done;
 	}
 
