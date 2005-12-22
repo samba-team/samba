@@ -250,7 +250,10 @@ The <command>net rpc rights</command> utility in Samba 3.0.11 has three new subc
 <indexterm><primary>Domain Admins</primary></indexterm>
 <indexterm><primary>revoke privileges</primary></indexterm>
 You must be connected as a member of the Domain Admins group to be able to grant or revoke privileges assigned
-to an account.  This capability is inherent to the Domain Admins group and is not configurable.
+to an account.  This capability is inherent to the Domain Admins group and is not configurable. There are no
+default rights and privileges, except the ability for a member of the Domain Admins group to assign them.
+This means that all administrative rights and privileges (other than the ability to assign them) must be 
+explicitly assigned, even for the Domain Admins group.
 </para></note>
 
 <para>
