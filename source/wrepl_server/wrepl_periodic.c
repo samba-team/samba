@@ -39,6 +39,9 @@ static NTSTATUS wreplsrv_periodic_run(struct wreplsrv_service *service)
 {
 	NTSTATUS status;
 
+	status = wreplsrv_scavenging_run(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	status = wreplsrv_out_pull_run(service);
 	NT_STATUS_NOT_OK_RETURN(status);
 

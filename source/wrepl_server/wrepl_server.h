@@ -209,6 +209,9 @@ struct wreplsrv_service {
 	/* the whole wrepl service is in one task */
 	struct task_server *task;
 
+	/* the time the service was started */
+	struct timeval startup_time;
+
 	/* the winsdb handle */
 	struct ldb_context *wins_db;
 
@@ -232,15 +235,30 @@ struct wreplsrv_service {
 		/* 
 		 * the interval (in secs) a record remains in TOMBSTONE state,
 		 * before it will be removed from the database.
+		 * See also 'tombstone_extra_timeout'.
 		 * (also known as extinction timeout)
 		 */
 		uint32_t tombstone_timeout;
+
+		/* 
+		 * the interval (in secs) a record remains in TOMBSTONE state,
+		 * even after 'tombstone_timeout' passes the current timestamp.
+		 * this is the minimum uptime of the wrepl service, before
+		 * we start delete tombstones. This is to prevent deletion of
+		 * tombstones, without replacte them.
+		 */
+		uint32_t tombstone_extra_timeout;
 
 		/* 
 		 * the interval (in secs) till a replica record will be verified
 		 * with the owning wins server
 		 */
 		uint32_t verify_interval;
+
+		/* 
+		 * the interval (in secs) till a do a database cleanup
+		 */
+		uint32_t scavenging_interval;
 
 		/* 
 		 * the interval (in secs) to the next periodic processing
@@ -269,4 +287,18 @@ struct wreplsrv_service {
 		/* here we have a reference to the timed event the schedules the periodic stuff */
 		struct timed_event *te;
 	} periodic;
+
+	/* some stuff for scavenging processing */
+	struct {
+		/*
+		 * the timestamp for the next scavenging run,
+		 * this is the timstamp passed to event_add_timed()
+		 */
+		struct timeval next_run;
+
+		/*
+		 * are we currently inside a scavenging run
+		 */
+		BOOL processing;	
+	} scavenging;
 };

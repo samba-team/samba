@@ -9,6 +9,7 @@ INIT_OBJ_FILES = \
 		wrepl_in_call.o \
 		wrepl_apply_records.o \
 		wrepl_periodic.o \
+		wrepl_scavenging.o \
 		wrepl_out_pull.o \
 		wrepl_out_push.o \
 		wrepl_out_helpers.o
