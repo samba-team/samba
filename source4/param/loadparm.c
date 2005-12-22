@@ -696,7 +696,7 @@ static void init_globals(void)
 
 	do_parameter("nt status support", "True", NULL);
 
-	do_parameter("max wins ttl", "432000", NULL);
+	do_parameter("max wins ttl", "518400", NULL); /* 6 days */
 	do_parameter("min wins ttl", "10", NULL);
 
 	do_parameter("tls enabled", "True", NULL);
