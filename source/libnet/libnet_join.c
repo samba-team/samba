@@ -745,8 +745,6 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		}
 	}
 
-	DEBUG(0, ("Joining domain %s\n", domain_name));
-
 	/*
 	  establish a SAMR connection, on the same CIFS transport
 	*/
@@ -937,15 +935,13 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			
 			/* &cu filled in above */
 			status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);			
-			if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			if (!NT_STATUS_IS_OK(status)) {
 				r->out.error_string = talloc_asprintf(mem_ctx,
 								      "samr_CreateUser2 (recreate) for [%s] failed: %s\n",
 								      r->in.domain_name, nt_errstr(status));
 				talloc_free(tmp_ctx);
 				return status;
 			}
-			DEBUG(0, ("Recreated account in domain %s\n", domain_name));
-
 		}
 	}
 
@@ -1429,6 +1425,8 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	talloc_steal(mem_ctx, r2->out.join_password);
 	r->out.domain_sid	= r2->out.domain_sid;
 	talloc_steal(mem_ctx, r2->out.domain_sid);
+	r->out.domain_name      = r2->out.domain_name;
+	talloc_steal(mem_ctx, r2->out.domain_name);
 	talloc_free(tmp_mem);
 	return NT_STATUS_OK;
 }
