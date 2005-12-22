@@ -94,6 +94,10 @@ int gendb_search(struct ldb_context *ldb,
 	return count;
 }
 
+/*
+  search the LDB for a specified record (by DN)
+*/
+
 int gendb_search_dn(struct ldb_context *ldb,
 		 TALLOC_CTX *mem_ctx, 
 		 const struct ldb_dn *dn,
