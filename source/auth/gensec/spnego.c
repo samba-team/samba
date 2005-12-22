@@ -352,6 +352,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				}
 
 				spnego_state->neg_oid = all_sec[i].oid;
+				break;
 			}
 		}
 	}
