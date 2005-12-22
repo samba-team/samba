@@ -279,6 +279,9 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 		if (ret[count] == NULL) goto failed;
 		count++;
 	}
+
+	if (ret == NULL) goto failed;
+
 	ret[count] = NULL;
 	return ret;
 
