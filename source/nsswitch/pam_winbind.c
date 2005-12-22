@@ -509,7 +509,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 	/* TODO: tell the history length ? */
 	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PWD_HISTORY_CONFLICT");
 
-	if (strequal(response.data.auth.nt_status_string, "NT_STATUS_PASSWORD_RESTRICTION") == 0) {
+	if (strequal(response.data.auth.nt_status_string, "NT_STATUS_PASSWORD_RESTRICTION")) {
 
 		_make_remark_format(pamh, PAM_ERROR_MSG,  
 			"Your password must be at least %d characters; "
@@ -1110,7 +1110,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		}
 		/* verify that this is the password for this user */
 		
-		retval = winbind_auth_request(pamh, ctrl, user, pass_old, NULL, NULL, True);
+		retval = winbind_auth_request(pamh, ctrl, user, pass_old, NULL, NULL, False);
 
 		if (retval != PAM_ACCT_EXPIRED 
 		    && retval != PAM_AUTHTOK_EXPIRED
