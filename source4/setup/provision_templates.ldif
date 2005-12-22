@@ -38,33 +38,13 @@ logonCount: 0
 sAMAccountType: 0x30000000
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 
-dn: CN=TemplateMemberServer,CN=Templates,${BASEDN}
+dn: CN=TemplateServer,CN=Templates,${BASEDN}
 objectClass: top
 objectClass: Template
 objectClass: userTemplate
-cn: TemplateMemberServer
+cn: TemplateServer
 instanceType: 4
 userAccountControl: 0x1002
-badPwdCount: 0
-codePage: 0
-countryCode: 0
-badPasswordTime: 0
-lastLogoff: 0
-lastLogon: 0
-pwdLastSet: 0
-primaryGroupID: 513
-accountExpires: -1
-logonCount: 0
-sAMAccountType: 0x30000001
-objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
-
-dn: CN=TemplateDomainController,CN=Templates,${BASEDN}
-objectClass: top
-objectClass: Template
-objectClass: userTemplate
-cn: TemplateDomainController
-instanceType: 4
-userAccountControl: 0x2002
 badPwdCount: 0
 codePage: 0
 countryCode: 0
