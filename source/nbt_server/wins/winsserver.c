@@ -395,6 +395,10 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	uint32_t modify_flags = 0;
 	uint8_t ret;
 
+	if (name->type == NBT_NAME_MASTER) {
+		goto done;
+	}
+
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
