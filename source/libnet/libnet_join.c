@@ -595,7 +595,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct samr_GetUserPwInfo pwp;
 	struct lsa_String samr_account_name;
 	
-	uint32_t acct_flags;
+	uint32_t acct_flags, old_acct_flags;
 	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
 
@@ -936,8 +936,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			/* We want to recreate, so delete and another samr_CreateUser2 */
 			
 			/* &cu filled in above */
-			cu_status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);			
-			status = cu_status;
+			status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);			
 			if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 				r->out.error_string = talloc_asprintf(mem_ctx,
 								      "samr_CreateUser2 (recreate) for [%s] failed: %s\n",
@@ -948,30 +947,6 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			DEBUG(0, ("Recreated account in domain %s\n", domain_name));
 
 		}
-	}
-	/* Find out what password policy this user has */
-	pwp.in.user_handle = u_handle;
-
-	status = dcerpc_samr_GetUserPwInfo(samr_pipe, tmp_ctx, &pwp);				
-	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
-	}
-	
-	/* Grab a password of that minimum length */
-	
-	password_str = generate_random_str(tmp_ctx, MAX(8, policy_min_pw_len));	
-
-	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
-	r2.samr_handle.in.account_name	= r->in.account_name;
-	r2.samr_handle.in.newpassword	= password_str;
-	r2.samr_handle.in.user_handle   = u_handle;
-	r2.samr_handle.in.dcerpc_pipe   = samr_pipe;
-
-	status = libnet_SetPassword(ctx, tmp_ctx, &r2);	
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_steal(mem_ctx, r2.samr_handle.out.error_string);
-		talloc_free(tmp_ctx);
-		return status;
 	}
 
 	/* prepare samr_QueryUserInfo (get flags) */
@@ -998,16 +973,87 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	/* Possibly change account type (if we are creating a new account) */
-	if (((qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST)) 
-	    != r->in.acct_type) && (!NT_STATUS_EQUAL(cu_status, NT_STATUS_USER_EXISTS))) {
-		acct_flags = (qui.out.info->info16.acct_flags & ~(ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST))
-			      | r->in.acct_type;
+	old_acct_flags = (qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST));
+	/* Possibly bail if the account is of the wrong type */
+	if (old_acct_flags
+	    != r->in.acct_type) {
+		const char *old_account_type, *new_account_type;
+		switch (old_acct_flags) {
+		case ACB_WSTRUST:
+			old_account_type = "domain member (member)";
+			break;
+		case ACB_SVRTRUST:
+			old_account_type = "domain controller (bdc)";
+			break;
+		case ACB_DOMTRUST:
+			old_account_type = "trusted domain";
+			break;
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		switch (r->in.acct_type) {
+		case ACB_WSTRUST:
+			new_account_type = "domain member (member)";
+			break;
+		case ACB_SVRTRUST:
+			new_account_type = "domain controller (bdc)";
+			break;
+		case ACB_DOMTRUST:
+			new_account_type = "trusted domain";
+			break;
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (!NT_STATUS_EQUAL(cu_status, NT_STATUS_USER_EXISTS)) {
+			/* We created a new user, but they didn't come out the right type?!? */
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "We asked to create a new machine account (%s) of type %s, but we got an account of type %s.  This is unexpected.  Perhaps delete the account and try again.\n",
+						  r->in.account_name, new_account_type, old_account_type);
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INVALID_PARAMETER;
+		} else {
+			/* The account is of the wrong type, so bail */
+
+			/* TODO: We should allow a --force option to override, and redo this from the top setting r.in.recreate_account */
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "The machine account (%s) already exists in the domain %s, but is a %s.  You asked to join as a %s.  Please delete the account and try again.\n",
+						  r->in.account_name, domain_name, old_account_type, new_account_type);
+			talloc_free(tmp_ctx);
+			return NT_STATUS_USER_EXISTS;
+		}
 	} else {
 		acct_flags = qui.out.info->info16.acct_flags;
 	}
 	
 	acct_flags = (acct_flags & ~ACB_DISABLED);
+
+	/* Find out what password policy this user has */
+	pwp.in.user_handle = u_handle;
+
+	status = dcerpc_samr_GetUserPwInfo(samr_pipe, tmp_ctx, &pwp);				
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info.min_password_length;
+	}
+	
+	/* Grab a password of that minimum length */
+	
+	password_str = generate_random_str(tmp_ctx, MAX(8, policy_min_pw_len));	
+
+	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
+	r2.samr_handle.in.account_name	= r->in.account_name;
+	r2.samr_handle.in.newpassword	= password_str;
+	r2.samr_handle.in.user_handle   = u_handle;
+	r2.samr_handle.in.dcerpc_pipe   = samr_pipe;
+
+	status = libnet_SetPassword(ctx, tmp_ctx, &r2);	
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_steal(mem_ctx, r2.samr_handle.out.error_string);
+		talloc_free(tmp_ctx);
+		return status;
+	}
 
 	/* reset flags (if required) */
 	if (acct_flags != qui.out.info->info16.acct_flags) {	
