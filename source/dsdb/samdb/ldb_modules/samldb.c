@@ -406,7 +406,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	}
 
 	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
-		if (samldb_copy_template(module, msg2, "(&(CN=TemplateMemberServer)(objectclass=userTemplate))") != 0) {
+		if (samldb_copy_template(module, msg2, "(&(CN=TemplateServer)(objectclass=userTemplate))") != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
 			return NULL;
 		}
