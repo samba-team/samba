@@ -99,6 +99,13 @@ Jean-Baptiste.Marchand@hsc.fr reminds me:
 
 We implement this in hdb-ldb.
 
+Implicit names for Win2000 Accounts
+-----------------------------------
+
+Despite not having a DNS name, nor a servicePrincipalName on accounts
+created by computers running win2000, it appears we are expected to
+have an implicit mapping from host/computer.full.name and
+host/computer to it's entry.
 
 Returned Salt for PreAuthentication
 -----------------------------------
@@ -276,12 +283,8 @@ DCE-RPC service) and when interacting on a kerberos basis, the
 password is salted by the client.  (That is, no salt infromation
 appears to be convayed from the KDC to the member).
 
-In dealing with this modal, the traditional file keytab seems
-outmoded, because it is not the primary source of the keys, and as
-such we have replaced it with an IN-MEMORY keytab.  This avoids Samba4
-needing to deal with system files for it's internal operation.  (We
-will however forward-port parts of Samba3's net ads keytab, for the
-benifit of other applications).
+In dealing with this modal, we leverage both the traditional file
+keytab and in-MEMORY keytabs.  
 
 When dealing with a windows KDC, the behaviour regarding case
 sensitivity and canonacolisation must be accomidated.  This means that
@@ -296,9 +299,14 @@ cifs/foo@realm (winxp clients, using netbios)
 
 as well as all case variations on the above.  
 
-Because that all got 'too hard' to put into a real keytab (and because we
-still wanted to supply a keytab to the GSSAPI code), we use in-memory
-keytabs, and specify the target name.
+Because that all got 'too hard' to put into a keytab in the
+traditional way (with the client to specify the name), we either
+pre-compute the keys into a traditional keytab or make an in-MEMORY
+keytab at run time.  In both cases we specifiy the principal name to
+GSSAPI, which avoids the need to store duplicate principals.
+
+We use a 'private' keytab in our private dir, referenced from the
+secrets.ldb by default.
 
 Extra Heimdal functions used
 ----------------------------
