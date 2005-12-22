@@ -2401,7 +2401,7 @@ BOOL lp_load(void)
 
 	bLoaded = True;
 
-	if (Globals.bWINSsupport) {
+	if (!Globals.szWINSservers && Globals.bWINSsupport) {
 		lp_do_parameter(-1, "wins server", "127.0.0.1");
 	}
 
