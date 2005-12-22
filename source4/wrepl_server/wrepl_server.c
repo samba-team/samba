@@ -63,8 +63,15 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 	/* the default tombstone (extinction) timeout is 1 day */
 	service->config.tombstone_timeout = lp_parm_int(-1,"wreplsrv","tombstone_timeout", 1*24*60*60);
 
+	/* the default tombstone extra timeout is 3 days */
+	service->config.tombstone_extra_timeout = lp_parm_int(-1,"wreplsrv","tombstone_extra_timeout", 3*24*60*60);
+
 	/* the default verify interval is 24 days */
 	service->config.verify_interval   = lp_parm_int(-1,"wreplsrv","verify_interval", 24*24*60*60);
+
+	/* the default scavenging interval is 'renew_interval/2' */
+	service->config.scavenging_interval=lp_parm_int(-1,"wreplsrv","scavenging_interval",
+							service->config.renew_interval/2);
 
 	/* the maximun interval to the next periodic processing event */
 	service->config.periodic_interval = lp_parm_int(-1,"wreplsrv","periodic_interval", 60);
@@ -364,8 +371,9 @@ static void wreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, "wreplsrv_task_init: out of memory");
 		return;
 	}
-	service->task = task;
-	task->private = service;
+	service->task		= task;
+	service->startup_time	= timeval_current();
+	task->private		= service;
 
 	/*
 	 * setup up all partners, and open the winsdb
