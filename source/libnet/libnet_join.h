@@ -73,6 +73,7 @@ struct libnet_Join {
 		const char *error_string;
 		const char *join_password;
 		struct dom_sid *domain_sid;
+		const char *domain_name;
 	} out;
 };
 
