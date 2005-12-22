@@ -834,7 +834,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	od.in.sid = domain_sid;
 	od.out.domain_handle = &d_handle;
 
-	/* 4. do a samr_OpenDomain to get a domain handle */
+	/* do a samr_OpenDomain to get a domain handle */
 	status = dcerpc_samr_OpenDomain(samr_pipe, tmp_ctx, &od);			
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
@@ -856,17 +856,10 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	cu.out.rid            = &rid;
 	cu.out.access_granted = &access_granted;
 
-	/* 4. do a samr_CreateUser2 to get an account handle, or an error */
+	/* do a samr_CreateUser2 to get an account handle, or an error */
 	cu_status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);			
 	status = cu_status;
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-								"samr_CreateUser2 for [%s] failed: %s\n",
-								r->in.domain_name, nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		/* prepare samr_LookupNames */
 		ln.in.domain_handle = &d_handle;
 		ln.in.num_names = 1;
@@ -943,6 +936,12 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 				return status;
 			}
 		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "samr_CreateUser2 for [%s] failed: %s\n",
+						      r->in.domain_name, nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
 	}
 
 	/* prepare samr_QueryUserInfo (get flags) */
@@ -1078,6 +1077,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* Finish out by pushing various bits of status data out for the caller to use */
 	r->out.join_password = password_str;
 	talloc_steal(mem_ctx, password_str);
 
