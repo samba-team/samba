@@ -496,6 +496,18 @@ NTSTATUS winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct wins
 	}
 	rec->addresses[i] = NULL;
 
+	if (rec->is_static) {
+		if (num_values < 1) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto failed;
+		}
+		rec->state = WREPL_STATE_ACTIVE;
+		rec->expire_time = get_time_t_max();
+		for (i=0;rec->addresses[i];i++) {
+			rec->addresses[i]->expire_time = rec->expire_time;
+		}
+	}
+
 	*_rec = rec;
 	return NT_STATUS_OK;
 failed:
@@ -516,6 +528,14 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	size_t addr_count;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
+
+	if (rec->is_static) {
+		rec->state = WREPL_STATE_ACTIVE;
+		rec->expire_time = get_time_t_max();
+		for (i=0;rec->addresses[i];i++) {
+			rec->addresses[i]->expire_time = rec->expire_time;
+		}
+	}
 
 	/* make sure we don't put in corrupted records */
 	addr_count = winsdb_addr_list_length(rec->addresses);
