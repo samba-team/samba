@@ -374,15 +374,11 @@ static uid_t get_uid_from_state(struct winbindd_cli_state *state)
 	return uid;
 }
 
-static void setup_return_cc_name(struct winbindd_cli_state *state, const char *cc, BOOL internal_ccache)
+static void setup_return_cc_name(struct winbindd_cli_state *state, const char *cc)
 {
 	const char *type = state->request.data.auth.krb5_cc_type;
 
 	state->response.data.auth.krb5ccname[0] = '\0';
-
-	if (internal_ccache) {
-		return;
-	}
 
 	if (type[0] == '\0') {
 		return;
@@ -587,23 +583,27 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	/* if we had a user's ccache then return that string for the pam
 	 * environment */
-	setup_return_cc_name(state, cc, internal_ccache);
 
-	result = add_ccache_to_list(principal_s,
-				    cc,
-				    service,
-				    state->request.data.auth.user,
-				    NULL,
-				    state->request.data.auth.pass,
-				    uid,
-				    time(NULL),
-				    ticket_lifetime,
-				    renewal_until, 
-				    lp_winbind_refresh_tickets());
+	if (!internal_ccache) {
+		
+		setup_return_cc_name(state, cc);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n", 
-			nt_errstr(result)));
+		result = add_ccache_to_list(principal_s,
+					    cc,
+					    service,
+					    state->request.data.auth.user,
+					    NULL,
+					    state->request.data.auth.pass,
+					    uid,
+					    time(NULL),
+					    ticket_lifetime,
+					    renewal_until, 
+					    lp_winbind_refresh_tickets());
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n", 
+				nt_errstr(result)));
+		}
 	}
 
 	result = NT_STATUS_OK;
@@ -1766,7 +1766,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 	}
 
 	if (!strcsequal(entry->ccname, state->request.data.logoff.krb5ccname)) {
-		DEBUG(0,("winbindd_pam_logoff: krb5ccnames differ: %s != %s\n", 
+		DEBUG(0,("winbindd_pam_logoff: krb5ccnames differ: (daemon) %s != (client) %s\n", 
 			entry->ccname, state->request.data.logoff.krb5ccname));
 		goto process_result;
 	}
