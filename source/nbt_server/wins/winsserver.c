@@ -193,6 +193,12 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		goto done;
 	}
 
+	/* w2k3 refuses 0x1B names with marked as group */
+	if (name->type == NBT_NAME_PDC && (nb_flags & NBT_NM_GROUP)) {
+		rcode = NBT_RCODE_RFS;
+		goto done;
+	}
+
 	/* w2k3 refuses 0x1C names with out marked as group */
 	if (name->type == NBT_NAME_LOGON && !(nb_flags & NBT_NM_GROUP)) {
 		rcode = NBT_RCODE_RFS;
