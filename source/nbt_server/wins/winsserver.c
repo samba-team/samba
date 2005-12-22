@@ -387,6 +387,14 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 		goto done;
 	}
 
+	if (rec->is_static) {
+		if (rec->type == WREPL_TYPE_UNIQUE || rec->type == WREPL_TYPE_MHOMED) {
+			goto done;
+		}
+		nbtd_name_release_reply(nbtsock, packet, src, NBT_RCODE_ACT);
+		return;
+	}
+
 	if (rec->state != WREPL_STATE_ACTIVE) {
 		goto done;
 	}
