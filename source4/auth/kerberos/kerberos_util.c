@@ -89,6 +89,8 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	} 
 
 	if (ret == 0) {
+		/* This song-and-dance effectivly puts the principal
+		 * into talloc, so we can't loose it. */
 		mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
 		mem_ctx->principal = *salt_princ;
 		talloc_set_destructor(mem_ctx, free_principal);
@@ -115,7 +117,8 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 	
 	princ_string = cli_credentials_get_principal(credentials, mem_ctx);
 
-	/* A NULL here has meaning, as the gssapi server case will then use the principal from the client */
+	/* A NULL here has meaning, as the gssapi server case will
+	 * then use the principal from the client */
 	if (!princ_string) {
 		talloc_free(mem_ctx);
 		princ = NULL;
@@ -548,7 +551,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			 * because deletes during enumeration may not
 			 * always be consistant.
 			 *
-			 * Also, the enumeration locks the keytab
+			 * Also, the enumeration locks a FILE: keytab
 			 */
 		
 			krb5_kt_end_seq_get(smb_krb5_context->krb5_context, keytab, &cursor);
