@@ -66,7 +66,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 	if (!r) {
 		return -1;
 	}
-	/* prepare password change */
+	/* prepare parameters for the join */
 	r->in.netbios_name		= lp_netbios_name();
 	r->in.domain_name		= domain_name;
 	r->in.secure_channel_type	= secure_channel_type;
@@ -83,6 +83,8 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 		talloc_free(libnetctx);
 		return -1;
 	}
+	d_printf("Joined domain %s (%s)\n", r->out.domain_name, dom_sid_string(ctx->mem_ctx, r->out.domain_sid));
+
 	talloc_free(libnetctx);
 	return 0;
 }
