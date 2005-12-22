@@ -846,11 +846,18 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 	sid = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
 	if (sid == NULL) {
+		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	/* Change the account control to be the correct account type.
+	 * The default is for a workstation account */
 	user_account_control = samdb_result_uint(msgs[0], "userAccountControl", 0);
-	user_account_control = (user_account_control & ~(UF_NORMAL_ACCOUNT|UF_INTERDOMAIN_TRUST_ACCOUNT|UF_WORKSTATION_TRUST_ACCOUNT|UF_SERVER_TRUST_ACCOUNT));
+	user_account_control = (user_account_control & 
+				~(UF_NORMAL_ACCOUNT |
+				  UF_INTERDOMAIN_TRUST_ACCOUNT | 
+				  UF_WORKSTATION_TRUST_ACCOUNT | 
+				  UF_SERVER_TRUST_ACCOUNT));
 	user_account_control |= samdb_acb2uf(r->in.acct_flags);
 
 	talloc_free(msg);
