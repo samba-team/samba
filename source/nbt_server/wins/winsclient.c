@@ -127,6 +127,11 @@ static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
 
+	if (!io.in.addresses) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
 	c = nbt_name_refresh_wins_send(wins_socket(iface), &io);
 	if (c == NULL) {
 		talloc_free(tmp_ctx);
@@ -217,6 +222,10 @@ void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 	io.in.addresses       = nbtd_address_list(iface, iname);
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
+
+	if (!io.in.addresses) {
+		return;
+	}
 
 	c = nbt_name_register_wins_send(wins_socket(iface), &io);
 	if (c == NULL) {
