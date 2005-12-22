@@ -183,9 +183,12 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	enum wrepl_name_type new_type = wrepl_type(nb_flags, name, mhomed);
 	struct winsdb_addr *winsdb_addr = NULL;
 
-	/* as a special case, the local master browser name is always accepted
-	   for registration, but never stored */
-	if (name->type == NBT_NAME_MASTER) {
+	/*
+	 * as a special case, the local master browser name is always accepted
+	 * for registration, but never stored, but w2k3 stores it if it's registered
+	 * as a group name, (but a query for the 0x1D name still returns not found!)
+	 */
+	if (name->type == NBT_NAME_MASTER && !(nb_flags & NBT_NM_GROUP)) {
 		rcode = NBT_RCODE_OK;
 		goto done;
 	}
@@ -327,6 +330,10 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	struct winsdb_record *rec;
 	const char **addresses;
 	uint16_t nb_flags = 0; /* TODO: ... */
+
+	if (name->type == NBT_NAME_MASTER) {
+		goto notfound;
+	}
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (!NT_STATUS_IS_OK(status)) {
