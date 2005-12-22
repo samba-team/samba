@@ -887,34 +887,6 @@ BOOL get_builtin_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 	return True;
 }
 
-
-
-/****************************************************************************
-Returns a GROUP_MAP struct based on the gid.
-****************************************************************************/
-BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
-{
-	BOOL ret;
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
-
-	if ( getgrgid(gid) == NULL)
-		return False;
-
-	become_root();
-	ret = pdb_getgrgid(map, gid);
-	unbecome_root();
-	
-	if ( !ret ) {
-		return False;
-	}
-	
-	return True;
-}
-
 /****************************************************************************
  Create a UNIX group on demand.
 ****************************************************************************/
