@@ -35,7 +35,6 @@ enum spnego_state_position {
 };
 
 struct spnego_state {
-	uint_t ref_count;
 	enum spnego_message_type expected_packet;
 	enum spnego_state_position state_position;
 	struct gensec_security *sub_sec_security;
@@ -319,46 +318,85 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 					      out_mem_ctx, 
 					      mechType,
 					      GENSEC_OID_SPNEGO);
-	for (i=0; all_sec && all_sec[i].op; i++) {
-		nt_status = gensec_subcontext_start(spnego_state,
-						    gensec_security,
-						    &spnego_state->sub_sec_security);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-		/* select the sub context */
-		nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
-						     all_sec[i].op);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(spnego_state->sub_sec_security);
-			spnego_state->sub_sec_security = NULL;
-			continue;
-		}
+	if (spnego_state->state_position == SPNEGO_SERVER_START) {
+		for (i=0; all_sec && all_sec[i].op; i++) {
+			/* optomisitic token */
+			if (strcmp(all_sec[i].oid, mechType[0]) == 0) {
+				nt_status = gensec_subcontext_start(spnego_state,
+								    gensec_security,
+								    &spnego_state->sub_sec_security);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					return nt_status;
+				}
+				/* select the sub context */
+				nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
+								     all_sec[i].op);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					talloc_free(spnego_state->sub_sec_security);
+					spnego_state->sub_sec_security = NULL;
+					break;
+				}
+				
+				nt_status = gensec_update(spnego_state->sub_sec_security,
+							  out_mem_ctx, 
+							  unwrapped_in,
+							  unwrapped_out);
+				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
+					/* Pretend we never started it (lets the first run find some incompatible demand) */
+					
+					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse: %s\n", 
+						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+					talloc_free(spnego_state->sub_sec_security);
+					spnego_state->sub_sec_security = NULL;
+					break;
+				}
 
-		if ((i == 0) && (strcmp(all_sec[0].oid, mechType[0]) == 0)) {
-			nt_status = gensec_update(spnego_state->sub_sec_security,
-						  out_mem_ctx, 
-						  unwrapped_in,
-						  unwrapped_out);
-		} else {
+				spnego_state->neg_oid = all_sec[i].oid;
+			}
+		}
+	}
+	
+	if (!spnego_state->sub_sec_security) {
+		for (i=0; all_sec && all_sec[i].op; i++) {
+			nt_status = gensec_subcontext_start(spnego_state,
+							    gensec_security,
+							    &spnego_state->sub_sec_security);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+			/* select the sub context */
+			nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
+							     all_sec[i].op);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				talloc_free(spnego_state->sub_sec_security);
+				spnego_state->sub_sec_security = NULL;
+				continue;
+			}
+			
+			spnego_state->neg_oid = all_sec[i].oid;
+
 			/* only get the helping start blob for the first OID */
 			nt_status = gensec_update(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  null_data_blob, 
 						  unwrapped_out);
-			/* it is likely that a NULL input token will
-			 * not be liked by most server mechs, but this
-			 * does the right thing in the CIFS client.
-			 * just push us along the merry-go-round
-			 * again, and hope for better luck next
-			 * time */
-
-			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
-				*unwrapped_out = data_blob(NULL, 0);
-				nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-			}
+			break;
 		}
-			
+	}
+
+	if (spnego_state->sub_sec_security) {
+		/* it is likely that a NULL input token will
+		 * not be liked by most server mechs, but this
+		 * does the right thing in the CIFS client.
+		 * just push us along the merry-go-round
+		 * again, and hope for better luck next
+		 * time */
+		
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
+			*unwrapped_out = data_blob(NULL, 0);
+			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		}
+		
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) 
 		    && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
 		    && !NT_STATUS_IS_OK(nt_status)) {
@@ -366,25 +404,15 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 			talloc_free(spnego_state->sub_sec_security);
 			spnego_state->sub_sec_security = NULL;
-
+			
 			/* We started the mech correctly, and the
 			 * input from the other side was valid.
 			 * Return the error (say bad password, invalid
 			 * ticket) */
 			return nt_status;
-
-		} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
-			/* Pretend we never started it (lets the first run find some incompatible demand) */
-
-			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse: %s\n", 
-				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-			talloc_free(spnego_state->sub_sec_security);
-			spnego_state->sub_sec_security = NULL;
-			continue;
 		}
-
-		spnego_state->neg_oid = all_sec[i].oid;
-
+	
+		
 		return nt_status; /* OK, INVALID_PARAMETER ore MORE PROCESSING */
 	}
 
