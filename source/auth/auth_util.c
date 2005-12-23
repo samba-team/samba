@@ -78,32 +78,32 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 
 	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
 
-	(*user_info)->smb_name.str = SMB_STRDUP(smb_name);
-	if ((*user_info)->smb_name.str == NULL) { 
+	(*user_info)->smb_name = SMB_STRDUP(smb_name);
+	if ((*user_info)->smb_name == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	(*user_info)->internal_username.str = SMB_STRDUP(internal_username);
-	if ((*user_info)->internal_username.str == NULL) { 
+	(*user_info)->internal_username = SMB_STRDUP(internal_username);
+	if ((*user_info)->internal_username == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->domain.str = SMB_STRDUP(domain);
-	if ((*user_info)->domain.str == NULL) { 
+	(*user_info)->domain = SMB_STRDUP(domain);
+	if ((*user_info)->domain == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->client_domain.str = SMB_STRDUP(client_domain);
-	if ((*user_info)->client_domain.str == NULL) { 
+	(*user_info)->client_domain = SMB_STRDUP(client_domain);
+	if ((*user_info)->client_domain == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->wksta_name.str = SMB_STRDUP(wksta_name);
-	if ((*user_info)->wksta_name.str == NULL) { 
+	(*user_info)->wksta_name = SMB_STRDUP(wksta_name);
+	if ((*user_info)->wksta_name == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1551,15 +1551,15 @@ void free_user_info(auth_usersupplied_info **user_info)
 {
 	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
 	if (*user_info != NULL) {
-		if ((*user_info)->smb_name.str) {
+		if ((*user_info)->smb_name) {
 			DEBUG(10,("structure was created for %s\n",
-				  (*user_info)->smb_name.str));
+				  (*user_info)->smb_name));
 		}
-		SAFE_FREE((*user_info)->smb_name.str);
-		SAFE_FREE((*user_info)->internal_username.str);
-		SAFE_FREE((*user_info)->client_domain.str);
-		SAFE_FREE((*user_info)->domain.str);
-		SAFE_FREE((*user_info)->wksta_name.str);
+		SAFE_FREE((*user_info)->smb_name);
+		SAFE_FREE((*user_info)->internal_username);
+		SAFE_FREE((*user_info)->client_domain);
+		SAFE_FREE((*user_info)->domain);
+		SAFE_FREE((*user_info)->wksta_name);
 		data_blob_free(&(*user_info)->lm_resp);
 		data_blob_free(&(*user_info)->nt_resp);
 		data_blob_clear_free(&(*user_info)->lm_interactive_pwd);

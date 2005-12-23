@@ -20,11 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* AUTH_STR - string */
-typedef struct normal_string {
-	char *str;
-} AUTH_STR;
-
 typedef struct auth_usersupplied_info {
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
@@ -34,11 +29,12 @@ typedef struct auth_usersupplied_info {
 	
 	BOOL encrypted;
 	
-	AUTH_STR           client_domain;          /* domain name string */
-	AUTH_STR           domain;               /* domain name after mapping */
-	AUTH_STR           internal_username;    /* username after mapping */
-	AUTH_STR           smb_name;        /* username before mapping */
-	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
+	char *client_domain;          /* domain name string */
+	char *domain;                 /* domain name after mapping */
+	char *internal_username;      /* username after mapping */
+	char *smb_name;               /* username before mapping */
+	char *wksta_name;             /* workstation name (netbios calling
+				       * name) unicode string */
 	
 	uint32 logon_parameters;
 

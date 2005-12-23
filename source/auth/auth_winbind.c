@@ -71,13 +71,13 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	if (!auth_context) {
 		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
-			 user_info->internal_username.str));		
+			 user_info->internal_username));
 		return NT_STATUS_INVALID_PARAMETER;
 	}		
 
-	if (strequal(user_info->domain.str, get_global_sam_name())) {
+	if (strequal(user_info->domain, get_global_sam_name())) {
 		DEBUG(3,("check_winbind_security: Not using winbind, requested domain [%s] was for this SAM.\n",
-			user_info->domain.str));
+			user_info->domain));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -90,12 +90,9 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	request.data.auth_crap.logon_parameters = user_info->logon_parameters;
 
-	fstrcpy(request.data.auth_crap.user, 
-			  user_info->smb_name.str);
-	fstrcpy(request.data.auth_crap.domain, 
-			  user_info->domain.str);
-	fstrcpy(request.data.auth_crap.workstation, 
-			  user_info->wksta_name.str);
+	fstrcpy(request.data.auth_crap.user, user_info->smb_name);
+	fstrcpy(request.data.auth_crap.domain, user_info->domain);
+	fstrcpy(request.data.auth_crap.workstation, user_info->wksta_name);
 
 	memcpy(request.data.auth_crap.chal, auth_context->challenge.data, sizeof(request.data.auth_crap.chal));
 	
@@ -131,8 +128,8 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) { 
 				nt_status = make_server_info_info3(mem_ctx, 
-					user_info->internal_username.str, 
-					user_info->smb_name.str, user_info->domain.str, 
+					user_info->internal_username, 
+					user_info->smb_name, user_info->domain, 
 					server_info, &info3); 
 			}
 			

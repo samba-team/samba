@@ -193,7 +193,7 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 	NTSTATUS nt_status;
 	SAM_ACCOUNT *account = NULL;
 	if (!NT_STATUS_IS_OK(nt_status = 
-			     auth_get_sam_account(user_info->internal_username.str, 
+			     auth_get_sam_account(user_info->internal_username,
 						  &account))) {
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) 
 			nt_status = NT_STATUS_NOT_IMPLEMENTED;
@@ -239,7 +239,7 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 	const char *home;
 	
 	if (!NT_STATUS_IS_OK(nt_status = 
-			     auth_get_sam_account(user_info->internal_username.str, 
+			     auth_get_sam_account(user_info->internal_username,
 						  &account))) {
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) 
 			nt_status = NT_STATUS_NOT_IMPLEMENTED;
