@@ -106,10 +106,7 @@ static int _pam_parse(int argc, const char **argv)
 
 static void _pam_winbind_cleanup_func(pam_handle_t *pamh, void *data, int error_status)
 {
-	if (data != NULL) {
-		free(data);
-	}
-	return;
+	SAFE_FREE(data);
 }
 
 static const struct ntstatus_errors {
@@ -1026,10 +1023,9 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		}
 
 		fstrcpy(request.data.logoff.user, user);
+		fstrcpy(request.data.logoff.krb5ccname, ccname);
 
 		request.data.logoff.uid = geteuid();
-
-		fstrcpy(request.data.logoff.krb5ccname, ccname);
 
 		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
 
