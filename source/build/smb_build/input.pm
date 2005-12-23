@@ -132,6 +132,10 @@ sub check($$$$$)
 	my ($INPUT, $enabled, $subsys_ot, $lib_ot, $module_ot) = @_;
 
 	foreach my $part (values %$INPUT) {
+		unless(defined($part->{NOPROTO})) {
+			$part->{NOPROTO} = "NO";
+		}
+
 		if (defined($enabled->{$part->{NAME}})) { 
 			$part->{ENABLE} = $enabled->{$part->{NAME}};
 			next;

@@ -247,6 +247,12 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+		
+	if ($ctx->{NOPROTO} eq "NO") {
+		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
+	}
+
 	$self->output(<< "__EOD__"
 #
 
@@ -284,6 +290,12 @@ sub MergedObj($$)
 	$self->_prepare_list($ctx, "CFLAGS");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+		
+	if ($ctx->{NOPROTO} eq "NO") {
+		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
+	}
+
 	$self->output("$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n");
 
 	$self->output("\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n");
@@ -296,6 +308,12 @@ sub ObjList($$)
 	my ($self,$ctx) = @_;
 
 	return unless $ctx->{TARGET};
+
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+		
+	if ($ctx->{NOPROTO} eq "NO") {
+		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
+	}
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -317,6 +335,12 @@ sub StaticLibrary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
+
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+		
+	if ($ctx->{NOPROTO} eq "NO") {
+		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
+	}
 
 	$self->output(<< "__EOD__"
 #
@@ -348,6 +372,12 @@ sub Binary($$)
 		$installdir = "bin/install";
 	} else {
 		$installdir = "bin";
+	}
+
+	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)");
+		
+	if ($ctx->{NOPROTO} eq "NO") {
+		push(@{$self->{proto_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST\)");
 	}
 
 	unless (defined($ctx->{INSTALLDIR})) {
@@ -447,13 +477,15 @@ sub write($$)
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
+	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
+	$self->output("PROTO_OBJS = " . array2oneperline($self->{proto_objs}) . "\n");
 
 
 	$self->_prepare_mk_files();
 
 	if ($self->{developer}) {
 		$self->output(<<__EOD__
-#-include \$(_ALL_OBJS_OBJ_LIST:.o=.d)
+#-include \$(ALL_OBJS:.o=.d)
 IDL_FILES = \$(wildcard librpc/idl/*.idl)
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,\$(IDL_FILES)) \\
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_\%_c.c,\$(IDL_FILES)) \\

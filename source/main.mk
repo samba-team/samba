@@ -195,12 +195,12 @@ include/config.h:
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-include/proto.h: $(PROTO_PROTO_OBJ_LIST:.o=.c)
+include/proto.h: $(PROTO_OBJS:.o=.c)
 	@-rm -f include/includes.h.gch
 	@echo "Creating include/proto.h"
 	@$(PERL) script/mkproto.pl --public-define=_PROTO_H_ \
 		--public=include/proto.h --private=include/proto.h \
-		$(PROTO_PROTO_OBJ_LIST)
+		$(PROTO_OBJS)
 
 proto: include/proto.h
 pch: include/config.h \
