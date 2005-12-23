@@ -27,28 +27,28 @@ GetOptions(
 	'private-define=s' => \$private_define
 );
 
-if ($public_define eq undef and $public_file ne undef) {
+if (not defined($public_define) and defined($public_file)) {
 	$public_define = $public_file;
 	$public_define =~ tr{./}{__};
-} elsif ($public_define eq undef) {
+} elsif (not defined($public_define)) {
 	$public_define = '_PROTO_H_';
 }
 
-if ($private_define eq undef and $private_file ne undef) {
+if (not defined($private_define) and defined($private_file)) {
 	$private_define = $private_file;
 	$private_define =~ tr{./}{__};
-} elsif ($public_define eq undef) {
+} elsif (not defined($public_define)) {
 	$public_define = '_PROTO_H_';
 }
 
-if ($public_file ne undef) {
+if (defined($public_file)) {
 	open PUBLIC, ">$public_file"; 
 	$public_fd = \*PUBLIC;
 }
 
 if ($private_file eq $public_file) {
 	$private_fd = $public_fd;
-} elsif ($private_file ne undef) {
+} elsif (not defined($private_file)) {
 	open PRIVATE, ">$private_file"; 
 	$private_fd = \*PRIVATE;
 }
@@ -153,12 +153,12 @@ sub process_file($$$)
 	close(FH);
 }
 
-if ($public_file != $private_file) {
+if ($public_file ne $private_file) {
 	print_header($private_fd, $private_define);
 }
 print_header($public_fd, $public_define);
 process_file($public_fd, $private_fd, $_) foreach (@ARGV);
 print_footer($public_fd, $public_define);
-if ($public_file != $private_file) {
+if ($public_file ne $private_file) {
 	print_footer($private_fd, $private_define);
 }
