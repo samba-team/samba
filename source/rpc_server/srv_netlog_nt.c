@@ -734,10 +734,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		break;
 	}
 	case INTERACTIVE_LOGON_TYPE:
-		/* 'Interactive' autheticaion, supplies the password in its
-		   MD4 form, encrypted with the session key.  We will
-		   convert this to chellange/responce for the auth
-		   subsystem to chew on */
+		/* 'Interactive' authentication, supplies the password in its
+		   MD4 form, encrypted with the session key.  We will convert
+		   this to challenge/response for the auth subsystem to chew
+		   on */
 	{
 		const uint8 *chal;
 		
