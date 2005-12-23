@@ -76,10 +76,6 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 }
 
-# FIXME: These two lines are a hack
-$mkenv->ProtoHeader($OUTPUT->{PROTO});
-$mkenv->ProtoHeader($OUTPUT->{ALL_OBJS});
-
 $mkenv->write("Makefile");
 smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
 

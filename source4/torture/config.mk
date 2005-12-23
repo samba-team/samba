@@ -280,6 +280,6 @@ gcov:
 		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
 		LD_FLAGS="$(LD_FLAGS) $(GCOV_FLAGS)" \
 		LIBS="$(LIBS) $(GCOV_LIBS)"
-	for I in $(sort $(dir $(_ALL_OBJS_OBJ_LIST))); \
+	for I in $(sort $(dir $(ALL_OBJS))); \
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
