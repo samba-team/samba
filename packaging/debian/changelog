@@ -2,7 +2,7 @@ samba (3.9.0+SVN12395-1) unstable; urgency=low
 
   * New snapshot, drop 4 suffix
 
- -- Jelmer Vernooij <jelmer@rhonwyn.lan.vernstok.nl>  Tue, 20 Dec 2005 13:38:26 +0100
+ -- Jelmer Vernooij <jelmer@samba.org>  Tue, 20 Dec 2005 13:38:26 +0100
 
 samba4 (3.9.0+SVN12312-1) unstable; urgency=low
 
