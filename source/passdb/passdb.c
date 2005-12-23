@@ -666,6 +666,11 @@ uid_t algorithmic_pdb_user_rid_to_uid(uint32 user_rid)
 	return (uid_t)(((user_rid & (~USER_RID_TYPE)) - rid_offset)/RID_MULTIPLIER);
 }
 
+uid_t max_algorithmic_uid(void)
+{
+	return algorithmic_pdb_user_rid_to_uid(0xfffffffe);
+}
+
 /*******************************************************************
  converts UNIX uid to an NT User RID.
  ********************************************************************/
@@ -684,6 +689,11 @@ gid_t pdb_group_rid_to_gid(uint32 group_rid)
 {
 	int rid_offset = algorithmic_rid_base();
 	return (gid_t)(((group_rid & (~GROUP_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
+}
+
+gid_t max_algorithmic_gid(void)
+{
+	return pdb_group_rid_to_gid(0xffffffff);
 }
 
 /*******************************************************************
@@ -816,6 +826,8 @@ BOOL lookup_global_sam_name(const char *c_user, int flags, uint32_t *rid,
 		*type = map.sid_name_use;
 		return True;
 	}
+
+	return False;
 
 	/* it's not a mapped group */
 	grp = getgrnam(user);
@@ -997,231 +1009,6 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	}
 
 	pdb_free_sam(&sam_pass);
-	return True;
-}
-
-/****************************************************************************
- Convert a uid to SID - algorithmic.
-****************************************************************************/
-
-DOM_SID *algorithmic_uid_to_sid(DOM_SID *psid, uid_t uid)
-{
-	if ( !lp_enable_rid_algorithm() )
-		return NULL;
-
-	DEBUG(8,("algorithmic_uid_to_sid: falling back to RID algorithm\n"));
-	sid_copy( psid, get_global_sam_sid() );
-	sid_append_rid( psid, algorithmic_pdb_uid_to_user_rid(uid) );
-	DEBUG(10,("algorithmic_uid_to_sid:  uid (%d) -> SID %s.\n",
-		(unsigned int)uid, sid_string_static(psid) ));
-
-	return psid;
-}
-
-/****************************************************************************
- Convert a uid to SID - locally.
-****************************************************************************/
-
-DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
-{
-	SAM_ACCOUNT *sampw = NULL;
-	struct passwd *unix_pw;
-	BOOL ret;
-	
-	unix_pw = sys_getpwuid( uid );
-
-	if ( !unix_pw ) {
-		DEBUG(4,("local_uid_to_sid: host has no idea of uid %lu\n", (unsigned long)uid));
-		return algorithmic_uid_to_sid( psid, uid);
-	}
-	
-	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
-		DEBUG(0,("local_uid_to_sid: failed to allocate SAM_ACCOUNT object\n"));
-		return NULL;
-	}
-	
-	become_root();
-	ret = pdb_getsampwnam( sampw, unix_pw->pw_name );
-	unbecome_root();
-	
-	if ( ret )
-		sid_copy( psid, pdb_get_user_sid(sampw) );
-	else {
-		DEBUG(4,("local_uid_to_sid: User %s [uid == %lu] has no samba account\n",
-			unix_pw->pw_name, (unsigned long)uid));
-
-		algorithmic_uid_to_sid( psid, uid);
-	}
-
-	pdb_free_sam(&sampw);
-
-	DEBUG(10,("local_uid_to_sid:  uid (%d) -> SID %s (%s).\n", 
-		(unsigned int)uid, sid_string_static(psid), unix_pw->pw_name));
-	
-	return psid;
-}
-
-/****************************************************************************
- Convert a SID to uid - locally.
-****************************************************************************/
-
-BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
-{
-	SAM_ACCOUNT *sampw = NULL;	
-	struct passwd *unix_pw;
-	const char *user_name;
-
-	*name_type = SID_NAME_UNKNOWN;
-
-	/*
-	 * We can only convert to a uid if this is our local
-	 * Domain SID (ie. we are the controling authority).
-	 */
-	if (!sid_check_is_in_our_domain(psid) ) {
-		DEBUG(5,("local_sid_to_uid: this SID (%s) is not from our domain\n", sid_string_static(psid)));
-		return False;
-	}
-
-	/* lookup the user account */
-	
-	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
-		DEBUG(0,("local_sid_to_uid: Failed to allocate memory for SAM_ACCOUNT object\n"));
-		return False;
-	}
-		
-	become_root();
-	if ( !pdb_getsampwsid(sampw, psid) ) {
-		unbecome_root();
-		pdb_free_sam(&sampw);
-		DEBUG(8,("local_sid_to_uid: Could not find SID %s in passdb\n",
-			sid_string_static(psid)));
-		return False;
-	}
-	unbecome_root();
-	
-	user_name = pdb_get_username(sampw);
-
-	unix_pw = sys_getpwnam( user_name );
-
-	if ( !unix_pw ) {
-		DEBUG(0,("local_sid_to_uid: %s found in passdb but getpwnam() return NULL!\n",
-			user_name));
-		pdb_free_sam( &sampw );
-		return False;
-	}
-		
-	*puid = unix_pw->pw_uid;
-	
-	DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_string_static(psid),
-		(unsigned int)*puid, user_name ));
-
-	*name_type = SID_NAME_USER;
-	pdb_free_sam( &sampw );
-	return True;
-}
-
-/****************************************************************************
- Convert a gid to SID - locally.
-****************************************************************************/
-
-DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
-{
-	GROUP_MAP group;
-	BOOL ret;
-	
-	/* we don't need to disable winbindd since the gid is stored in 
-	   the GROUP_MAP object */
-	   
-	/* done as root since ldap backend requires root to open a connection */
-
-	become_root();
-	ret = pdb_getgrgid( &group, gid );
-	unbecome_root();
-	
-	if ( !ret ) {
-
-		/* fallback to rid mapping if enabled */
-
-		if ( lp_enable_rid_algorithm() ) {
-			sid_copy(psid, get_global_sam_sid());
-			sid_append_rid(psid, pdb_gid_to_group_rid(gid));
-
-			DEBUG(10,("local_gid_to_sid: Fall back to algorithmic mapping: %u -> %s\n", 
-				(unsigned int)gid, sid_string_static(psid)));
-				
-			return psid;
-		}
-		else
-			return NULL;
-	}
-	
-	sid_copy( psid, &group.sid );
-	
-	DEBUG(10,("local_gid_to_sid:  gid (%d) -> SID %s.\n", 
-		(unsigned int)gid, sid_string_static(psid)));	
-	
-	return psid;
-}
-
-/****************************************************************************
- Convert a SID to gid - locally.
-****************************************************************************/
-
-BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
-{
-	uint32 rid;
-	GROUP_MAP group;
-	BOOL ret;
-
-	*name_type = SID_NAME_UNKNOWN;
-
-	/* This call can enumerate group mappings for foreign sids as well.
-	   So don't check for a match against our domain SID */
-
-	/* we don't need to disable winbindd since the gid is stored in 
-	   the GROUP_MAP object */
-	   
-	become_root();
-	ret = pdb_getgrsid(&group, *psid);
-	unbecome_root();
-	
-	if ( !ret ) {
-
-		/* Fallback to algorithmic rid mapping if enabled */
-
-		if ( lp_enable_rid_algorithm() ) {
-
-			if (!sid_check_is_in_our_domain(psid) ) {
-				DEBUG(5,("local_sid_to_gid: RID algorithm only supported for our domain (%s is not)\n", sid_string_static(psid)));
-				return False;
-			}
-
-			if (!sid_peek_rid(psid, &rid)) {
-				DEBUG(10,("local_sid_to_gid: invalid SID!\n"));
-					return False;
-			}
-
-			DEBUG(10,("local_sid_to_gid: Fall back to algorithmic mapping\n"));
-
-			if (algorithmic_pdb_rid_is_user(rid)) {
-				DEBUG(3, ("local_sid_to_gid: SID %s is *NOT* a group\n", sid_string_static(psid)));
-				return False;
-			} else {
-				*pgid = pdb_group_rid_to_gid(rid);
-				DEBUG(10,("local_sid_to_gid: mapping: %s -> %u\n", sid_string_static(psid), (unsigned int)(*pgid)));
-				return True;
-			}
-		}
-		
-		return False;
-	}
-
-	*pgid = group.gid;
-	*name_type = group.sid_name_use;
-
-	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u)\n", sid_string_static(psid),
-		(unsigned int)*pgid));
-
 	return True;
 }
 

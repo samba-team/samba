@@ -675,12 +675,8 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid,
 	NT_USER_TOKEN *token;
 	int i;
 
-	if (!NT_STATUS_IS_OK(uid_to_sid(&user_sid, uid))) {
-		return NULL;
-	}
-	if (!NT_STATUS_IS_OK(gid_to_sid(&group_sid, gid))) {
-		return NULL;
-	}
+	uid_to_sid(&user_sid, uid);
+	gid_to_sid(&group_sid, gid);
 
 	group_sids = SMB_MALLOC_ARRAY(DOM_SID, ngroups);
 	if (!group_sids) {
@@ -692,13 +688,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid,
 	/* convert the Unix group ids to SIDS */
 
 	for (i = 0; i < ngroups; i++) {
-		if (!NT_STATUS_IS_OK(gid_to_sid(&(group_sids)[i],
-						(groups)[i]))) {
-			DEBUG(1, ("create_nt_token: failed to convert gid %ld "
-				  "to a sid!\n", (long int)groups[i]));
-			SAFE_FREE(group_sids);
-			return NULL;
-		}
+		gid_to_sid(&(group_sids)[i], (groups)[i]);
 	}
 
 	if (!NT_STATUS_IS_OK(create_nt_user_token(&user_sid, &group_sid, 
@@ -739,11 +729,9 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	/* get the user and primary group SIDs; although the 
 	   BUILTIN\Administrators SId is really the one that matters here */
 	   
-	if ( !NT_STATUS_IS_OK(uid_to_sid(&u_sid, pw->pw_uid)) )
-		return NULL;
-	if ( !NT_STATUS_IS_OK(gid_to_sid(&g_sid, pw->pw_gid)) )
-		return NULL;
-		
+	uid_to_sid(&u_sid, pw->pw_uid);
+	gid_to_sid(&g_sid, pw->pw_gid);
+
 	sid_copy( &g_sids[0], &global_sid_Builtin_Administrators );
 	
 	result = create_nt_user_token( &u_sid, &g_sid, 1, g_sids, False,
@@ -817,15 +805,7 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 	*n_groups = n_unix_groups;
 
 	for (i = 0; i < *n_groups; i++) {
-		if (!NT_STATUS_IS_OK(gid_to_sid(&(*groups)[i],
-						(*unix_groups)[i]))) {
-			DEBUG(1, ("get_user_groups: failed to convert gid %ld "
-				  "to a sid!\n",
-				  (long int)(*unix_groups)[i+1]));
-			SAFE_FREE(*groups);
-			SAFE_FREE(*unix_groups);
-			return NT_STATUS_NO_SUCH_USER;
-		}
+		gid_to_sid(&(*groups)[i], (*unix_groups)[i]);
 	}
 		     
 	return NT_STATUS_OK;

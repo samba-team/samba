@@ -222,14 +222,7 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	}
 
 	for (i=0; i<*p_num_groups; i++) {
-		if (!NT_STATUS_IS_OK(gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]))) {
-			DEBUG(1, ("get_user_groups: failed to convert "
-				  "gid %ld to a sid!\n", 
-				  (long int)(*pp_gids)[i+1]));
-			SAFE_FREE(*pp_sids);
-			SAFE_FREE(*pp_gids);
-			return NT_STATUS_NO_SUCH_USER;
-		}
+		gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]);
 	}
 
 	return NT_STATUS_OK;

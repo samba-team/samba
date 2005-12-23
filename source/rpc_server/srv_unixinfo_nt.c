@@ -37,7 +37,7 @@ NTSTATUS _unixinfo_sid_to_uid(pipes_struct *p,
 	r_u->uid.low = 0;
 	r_u->uid.high = 0;
 
-	r_u->status = sid_to_uid(&q_u->sid, &uid);
+	r_u->status = sid_to_uid(&q_u->sid, &uid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 	if (NT_STATUS_IS_OK(r_u->status))
 		r_u->uid.low = uid;
 
@@ -55,7 +55,8 @@ NTSTATUS _unixinfo_uid_to_sid(pipes_struct *p,
 	r_u->status = NT_STATUS_NO_SUCH_USER;
 
 	if (q_u->uid.high == 0) {
-		r_u->status = uid_to_sid(&sid, q_u->uid.low);
+		uid_to_sid(&sid, q_u->uid.low);
+		r_u->status = NT_STATUS_OK;
 	}
 
 	init_r_unixinfo_uid_to_sid(r_u,
@@ -75,7 +76,7 @@ NTSTATUS _unixinfo_sid_to_gid(pipes_struct *p,
 	r_u->gid.low = 0;
 	r_u->gid.high = 0;
 
-	r_u->status = sid_to_gid(&q_u->sid, &gid);
+	r_u->status = sid_to_gid(&q_u->sid, &gid) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 	if (NT_STATUS_IS_OK(r_u->status))
 		r_u->gid.low = gid;
 
@@ -93,7 +94,8 @@ NTSTATUS _unixinfo_gid_to_sid(pipes_struct *p,
 	r_u->status = NT_STATUS_NO_SUCH_USER;
 
 	if (q_u->gid.high == 0) {
-		r_u->status = gid_to_sid(&sid, q_u->gid.low);
+		gid_to_sid(&sid, q_u->gid.low);
+		r_u->status = NT_STATUS_OK;
 	}
 
 	init_r_unixinfo_gid_to_sid(r_u,

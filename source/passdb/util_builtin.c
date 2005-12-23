@@ -105,6 +105,6 @@ BOOL sid_check_is_in_builtin(const DOM_SID *sid)
 	sid_copy(&dom_sid, sid);
 	sid_split_rid(&dom_sid, &rid);
 	
-	return sid_equal(&dom_sid, &global_sid_Builtin);
+	return sid_check_is_builtin(&dom_sid);
 }
 

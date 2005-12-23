@@ -75,6 +75,11 @@ const DOM_SID global_sid_Builtin_Backup_Operators =	/* Builtin backup operators 
 const DOM_SID global_sid_Builtin_Replicator =		/* Builtin replicator */
 { 1, 2, {0,0,0,0,0,5}, {32,552,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
+const DOM_SID global_sid_Unix_Users =			/* Unmapped Unix users */
+{ 1, 1, {0,0,0,0,0,22}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Unix_Groups =			/* Unmapped Unix groups */
+{ 1, 1, {0,0,0,0,0,22}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
 /* Unused, left here for documentary purposes */
 #if 0
 #define SECURITY_NULL_SID_AUTHORITY    0

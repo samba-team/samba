@@ -338,6 +338,8 @@ extern const DOM_SID global_sid_Builtin_Server_Operators;
 extern const DOM_SID global_sid_Builtin_Print_Operators;
 extern const DOM_SID global_sid_Builtin_Backup_Operators;
 extern const DOM_SID global_sid_Builtin_Replicator;
+extern const DOM_SID global_sid_Unix_Users;
+extern const DOM_SID global_sid_Unix_Groups;
 
 /*
  * The complete list of SIDS belonging to this user.

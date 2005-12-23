@@ -2948,8 +2948,7 @@ static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
 	struct group *grp;
 	gid_t gid;
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(pdb_get_group_sid(sampass),
-					&gid))) {
+	if (!sid_to_gid(pdb_get_group_sid(sampass), &gid)) {
 		DEBUG(2,("Could not get gid for primary group of "
 			 "user %s\n", pdb_get_username(sampass)));
 		return False;
@@ -3798,7 +3797,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	}
 
 	/* check a real user exist before we run the script to add a user to a group */
-	if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
+	if (!sid_to_uid(pdb_get_user_sid(sam_user), &uid)) {
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -4340,7 +4339,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, r_u->rid);
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(&info_sid, &gid)))
+	if (!sid_to_gid(&info_sid, &gid))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */

@@ -36,7 +36,10 @@ static void lazy_initialize_passdb(void)
 }
 
 static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
-
+static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
+				  const char **name,
+				  enum SID_NAME_USE *psid_name_use,
+				  union unid_t *unix_id);
 /*******************************************************************
  Clean up uninitialised passwords.  The only way to tell 
  that these values are not 'real' is that they do not
@@ -757,6 +760,42 @@ static NTSTATUS context_get_seq_num(struct pdb_context *context, time_t *seq_num
 
 	return context->pdb_methods->get_seq_num(context->pdb_methods, seq_num);
 }
+
+static BOOL context_uid_to_rid(struct pdb_context *context, uid_t uid,
+			       uint32 *rid)
+{
+	if ((context == NULL) || (context->pdb_methods == NULL)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+
+	return context->pdb_methods->uid_to_rid(context->pdb_methods, uid,
+						rid);
+}
+	
+static BOOL context_gid_to_sid(struct pdb_context *context, gid_t gid,
+			       DOM_SID *sid)
+{
+	if ((context == NULL) || (context->pdb_methods == NULL)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+
+	return context->pdb_methods->gid_to_sid(context->pdb_methods, gid,
+						sid);
+}
+
+static BOOL context_rid_to_id(struct pdb_context *context, uint32 rid,
+			      union unid_t *id, enum SID_NAME_USE *type)
+{
+	if ((context == NULL) || (context->pdb_methods == NULL)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+
+	return context->pdb_methods->rid_to_id(context->pdb_methods, rid,
+					       id, type);
+}
 	
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
@@ -935,6 +974,10 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_search_users = context_search_users;
 	(*context)->pdb_search_groups = context_search_groups;
 	(*context)->pdb_search_aliases = context_search_aliases;
+
+	(*context)->pdb_uid_to_rid = context_uid_to_rid;
+	(*context)->pdb_gid_to_sid = context_gid_to_sid;
+	(*context)->pdb_rid_to_id = context_rid_to_id;
 
 	(*context)->free_fn = free_pdb_context;
 
@@ -1484,6 +1527,40 @@ BOOL pdb_get_seq_num(time_t *seq_num)
 	return NT_STATUS_IS_OK(pdb_context->
 			       pdb_get_seq_num(pdb_context, seq_num));
 }
+
+BOOL pdb_uid_to_rid(uid_t uid, uint32 *rid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return pdb_context->pdb_uid_to_rid(pdb_context, uid, rid);
+}
+
+BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return pdb_context->pdb_gid_to_sid(pdb_context, gid, sid);
+}
+
+BOOL pdb_rid_to_id(uint32 rid, union unid_t *id, enum SID_NAME_USE *type)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return pdb_context->pdb_rid_to_id(pdb_context, rid, id, type);
+}
+
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
 
@@ -1567,6 +1644,84 @@ static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq
 	return NT_STATUS_OK;
 }
 
+static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
+				   uint32 *rid)
+{
+	SAM_ACCOUNT *sampw = NULL;
+	struct passwd *unix_pw;
+	BOOL ret;
+	
+	unix_pw = sys_getpwuid( uid );
+
+	if ( !unix_pw ) {
+		DEBUG(4,("pdb_default_uid_to_rid: host has no idea of uid "
+			 "%lu\n", (unsigned long)uid));
+		return False;
+	}
+	
+	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
+		DEBUG(0,("pdb_default_uid_to_rid: failed to allocate "
+			 "SAM_ACCOUNT object\n"));
+		return False;
+	}
+	
+	become_root();
+	ret = NT_STATUS_IS_OK(
+		methods->getsampwnam(methods, sampw, unix_pw->pw_name ));
+	unbecome_root();
+
+	if (!ret) {
+		DEBUG(5, ("pdb_default_uid_to_rid: Did not find user "
+			  "%s (%d)\n", unix_pw->pw_name, uid));
+		pdb_free_sam(&sampw);
+		return False;
+	}
+
+	ret = sid_peek_check_rid(get_global_sam_sid(),
+				 pdb_get_user_sid(sampw), rid);
+
+	if (!ret) {
+		DEBUG(1, ("Could not peek rid out of sid %s\n",
+			  sid_string_static(pdb_get_user_sid(sampw))));
+	}
+
+	pdb_free_sam(&sampw);
+	return ret;
+}
+
+static BOOL pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
+				   DOM_SID *sid)
+{
+	GROUP_MAP map;
+
+	if (!NT_STATUS_IS_OK(methods->getgrgid(methods, &map, gid))) {
+		return False;
+	}
+
+	sid_copy(sid, &map.sid);
+	return True;
+}
+
+static BOOL pdb_default_rid_to_id(struct pdb_methods *methods, uint32 rid,
+				  union unid_t *id, enum SID_NAME_USE *type)
+{
+	TALLOC_CTX *mem_ctx;
+	BOOL ret;
+	const char *name;
+
+	mem_ctx = talloc_new(NULL);
+
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
+	ret = lookup_global_sam_rid(mem_ctx, rid, &name, type, id);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static void add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uid_t uid, uid_t **pp_uids, size_t *p_num)
 {
@@ -1644,7 +1799,7 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	*pp_member_rids = NULL;
 	*p_num_members = 0;
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(group, &gid)))
+	if (!sid_to_gid(group, &gid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	if(!get_memberuids(mem_ctx, gid, &uids, &num_uids))
@@ -1658,10 +1813,7 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	for (i=0; i<num_uids; i++) {
 		DOM_SID sid;
 
-		if (!NT_STATUS_IS_OK(uid_to_sid(&sid, uids[i]))) {
-			DEBUG(1, ("Could not map member uid to SID\n"));
-			continue;
-		}
+		uid_to_sid(&sid, uids[i]);
 
 		if (!sid_check_is_in_our_domain(&sid)) {
 			DEBUG(1, ("Inconsistent SAM -- group member uid not "
@@ -1682,7 +1834,8 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 
 static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  const char **name,
-				  enum SID_NAME_USE *psid_name_use)
+				  enum SID_NAME_USE *psid_name_use,
+				  union unid_t *unix_id)
 {
 	SAM_ACCOUNT *sam_account = NULL;
 	GROUP_MAP map;
@@ -1705,12 +1858,23 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	/* BEING ROOT BLLOCK */
 	become_root();
 	if (pdb_getsampwsid(sam_account, &sid)) {
+		struct passwd *pw;
+
 		unbecome_root();		/* -----> EXIT BECOME_ROOT() */
 		*name = talloc_strdup(mem_ctx, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
 		pdb_free_sam(&sam_account);
-			
+
+		if (unix_id == NULL) {
+			return True;
+		}
+
+		pw = Get_Pwnam(*name);
+		if (pw == NULL) {
+			return False;
+		}
+		unix_id->uid = pw->pw_uid;
 		return True;
 	}
 	pdb_free_sam(&sam_account);
@@ -1732,6 +1896,18 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 
 		*name = talloc_strdup(mem_ctx, map.nt_name);
 		*psid_name_use = map.sid_name_use;
+
+		if (unix_id == NULL) {
+			return True;
+		}
+
+		if (map.gid == (gid_t)-1) {
+			DEBUG(5, ("Can't find a unix id for an unmapped "
+				  "group\n"));
+			return False;
+		}
+
+		unix_id->gid = map.gid;
 		return True;
 	}
 
@@ -1835,7 +2011,8 @@ NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	for (i = 0; i < num_rids; i++) {
 		const char *name;
 
-		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i])) {
+		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i],
+					  NULL)) {
 			names[i] = name;
 			DEBUG(5,("lookup_rids: %s:%d\n", names[i], attrs[i]));
 			have_mapped = True;
@@ -2275,6 +2452,9 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->get_account_policy = pdb_default_get_account_policy;
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
 	(*methods)->get_seq_num = pdb_default_get_seq_num;
+	(*methods)->uid_to_rid = pdb_default_uid_to_rid;
+	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
+	(*methods)->rid_to_id = pdb_default_rid_to_id;
 
 	(*methods)->search_users = pdb_default_search_users;
 	(*methods)->search_groups = pdb_default_search_groups;

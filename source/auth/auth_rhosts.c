@@ -167,7 +167,7 @@ static BOOL check_hosts_equiv(SAM_ACCOUNT *account)
 	char *fname = NULL;
 
 	fname = lp_hosts_equiv();
-	if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(account), &uid)))
+	if (!sid_to_uid(pdb_get_user_sid(account), &uid))
 		return False;
 
 	/* note: don't allow hosts.equiv on root */

@@ -925,7 +925,7 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
-		if (!NT_STATUS_IS_OK(sid_to_uid(&owner_sid, puser))) {
+		if (!sid_to_uid(&owner_sid, puser)) {
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take ownership to work
 				 * reasonably */
@@ -946,7 +946,7 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
-		if (!NT_STATUS_IS_OK(sid_to_gid( &grp_sid, pgrp))) {
+		if (!sid_to_gid( &grp_sid, pgrp)) {
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take group ownership to work
 				 * reasonably */
@@ -1390,10 +1390,10 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			if (nt4_compatible_acls())
 				psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-		} else if (NT_STATUS_IS_OK(sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid))) {
+		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid)) {
 			current_ace->owner_type = UID_ACE;
 			current_ace->type = SMB_ACL_USER;
-		} else if (NT_STATUS_IS_OK(sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid))) {
+		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid)) {
 			current_ace->owner_type = GID_ACE;
 			current_ace->type = SMB_ACL_GROUP;
 		} else {

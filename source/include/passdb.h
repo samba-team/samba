@@ -376,6 +376,12 @@ typedef struct pdb_context
 	BOOL (*pdb_search_aliases)(struct pdb_context *context,
 				   struct pdb_search *search,
 				   const DOM_SID *sid);
+	BOOL (*pdb_uid_to_rid)(struct pdb_context *context,
+			       uid_t uid, uint32 *rid);
+	BOOL (*pdb_gid_to_sid)(struct pdb_context *context,
+			       uid_t gid, DOM_SID *sid);
+	BOOL (*pdb_rid_to_id)(struct pdb_context *context, uint32 rid,
+			      union unid_t *id, enum SID_NAME_USE *type);
 
 	void (*free_fn)(struct pdb_context **);
 	
@@ -506,6 +512,13 @@ typedef struct pdb_methods
 	BOOL (*search_aliases)(struct pdb_methods *methods,
 			       struct pdb_search *search,
 			       const DOM_SID *sid);
+
+	BOOL (*uid_to_rid)(struct pdb_methods *methods, uid_t uid,
+			   uint32 *rid);
+	BOOL (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
+			   DOM_SID *sid);
+	BOOL (*rid_to_id)(struct pdb_methods *methods, uint32 rid,
+			  union unid_t *id, enum SID_NAME_USE *type);
 
 	void *private_data;  /* Private data of some kind */
 	
