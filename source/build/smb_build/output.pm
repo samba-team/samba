@@ -97,23 +97,7 @@ sub create_output($)
 	my $depend = shift;
 	my $part;
 
-	$depend->{PROTO} = {
-		OUTPUT_TYPE => "OBJLIST",
-		TYPE => "PROTO",
-		NAME => "PROTO",
-		OBJ_LIST => []
-	};
-
-	$depend->{ALL_OBJS} = {
-		OUTPUT_TYPE => "OBJLIST",
-		TYPE => "",
-		NAME => "ALL_OBJS",
-		OBJ_LIST => []
-	};
-
 	foreach $part (values %{$depend}) {
-		next if $part->{NAME} eq "PROTO";
-		next if $part->{NAME} eq "ALL_OBJS";
 		next if not defined($part->{OUTPUT_TYPE});
 
 		# Combine object lists
@@ -133,12 +117,6 @@ sub create_output($)
 		generate_shared_library($part) if $part->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 		generate_static_library($part) if $part->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 
-
-		push(@{$depend->{ALL_OBJS}->{OBJ_LIST}}, @{$part->{OBJ_LIST}}) if (defined(@{$part->{OBJ_LIST}}));
-		
-		if ((not defined ($part->{NOPROTO})) or ($part->{NOPROTO} eq "NO")) {
-			push(@{$depend->{PROTO}->{OBJ_LIST}}, @{$part->{OBJ_LIST}}) if (defined(@{$part->{OBJ_LIST}}));
-		}
 	}
 
 	foreach $part (values %{$depend}) {
