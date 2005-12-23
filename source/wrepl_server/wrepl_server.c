@@ -134,8 +134,13 @@ static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 		talloc_steal(partner, partner->our_address);
 
 		DLIST_ADD(service->partners, partner);
+
+		DEBUG(3,("wreplsrv_load_partners: found partner: %s type: 0x%X\n",
+			partner->address, partner->type));
 	}
 done:
+	DEBUG(1,("wreplsrv_load_partners: %u partners found\n", res->count));
+
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 failed:
