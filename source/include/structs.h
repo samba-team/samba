@@ -180,6 +180,7 @@ struct dcesrv_endpoint;
 struct dcesrv_call_state;
 struct dcesrv_auth;
 
+struct libnet_context;
 struct libnet_Join;
 struct libnet_JoinDomain;
 union libnet_ChangePassword;
