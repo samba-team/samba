@@ -277,6 +277,7 @@ struct wins_server;
 struct nbtd_proxy_wins_challenge;
 struct nbtd_proxy_wins_release_demand;
 
+struct nbt_iface_name;
 struct nbt_dc_name;
 struct wb_sid_object;
 struct wb_dom_info;
