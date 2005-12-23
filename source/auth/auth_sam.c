@@ -183,8 +183,8 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			
 			
 		while (next_token(&s, tok, ",", sizeof(tok))) {
-			DEBUG(10,("sam_account_ok: checking for workstation match %s and %s (len=%d)\n",
-				  tok, user_info->wksta_name.str, user_info->wksta_name.len));
+			DEBUG(10,("sam_account_ok: checking for workstation match %s and %s\n",
+				  tok, user_info->wksta_name.str));
 			if(strequal(tok, user_info->wksta_name.str)) {
 				invalid_ws = False;
 				break;

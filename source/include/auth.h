@@ -22,7 +22,6 @@
 
 /* AUTH_STR - string */
 typedef struct normal_string {
-	int len;
 	char *str;
 } AUTH_STR;
 

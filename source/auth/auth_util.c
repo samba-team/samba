@@ -79,41 +79,31 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
 
 	(*user_info)->smb_name.str = SMB_STRDUP(smb_name);
-	if ((*user_info)->smb_name.str) { 
-		(*user_info)->smb_name.len = strlen(smb_name);
-	} else {
+	if ((*user_info)->smb_name.str == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	(*user_info)->internal_username.str = SMB_STRDUP(internal_username);
-	if ((*user_info)->internal_username.str) { 
-		(*user_info)->internal_username.len = strlen(internal_username);
-	} else {
+	if ((*user_info)->internal_username.str == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*user_info)->domain.str = SMB_STRDUP(domain);
-	if ((*user_info)->domain.str) { 
-		(*user_info)->domain.len = strlen(domain);
-	} else {
+	if ((*user_info)->domain.str == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*user_info)->client_domain.str = SMB_STRDUP(client_domain);
-	if ((*user_info)->client_domain.str) { 
-		(*user_info)->client_domain.len = strlen(client_domain);
-	} else {
+	if ((*user_info)->client_domain.str == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	(*user_info)->wksta_name.str = SMB_STRDUP(wksta_name);
-	if ((*user_info)->wksta_name.str) { 
-		(*user_info)->wksta_name.len = strlen(wksta_name);
-	} else {
+	if ((*user_info)->wksta_name.str == NULL) { 
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
