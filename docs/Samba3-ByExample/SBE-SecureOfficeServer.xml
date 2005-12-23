@@ -1336,7 +1336,7 @@ zone "abmas.us" {
 	type master;
 	file "/var/lib/named/master/abmas.us.hosts";
 	allow-query {
-		all;
+		any;
 	};
 	allow-transfer {
 		seconddns;
