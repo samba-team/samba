@@ -858,7 +858,6 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 		
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
-		free_server_info(server_info);
 		return status;
 	}
 	
@@ -873,7 +872,6 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 		DEBUG(4,("create_nt_user_token failed\n"));
 		SAFE_FREE(groupSIDs);
 		SAFE_FREE(unix_groups);
-		free_server_info(server_info);
 		return status;
 	}
 	
@@ -984,6 +982,7 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 				 sampass, pwd->pw_uid, pwd->pw_gid);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		free_server_info(server_info);
 		return status;
 	}
 
@@ -1028,6 +1027,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 				 sampass, pwd->pw_uid, pwd->pw_gid);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		free_server_info(server_info);
 		return status;
 	}
 
