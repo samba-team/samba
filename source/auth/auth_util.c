@@ -915,8 +915,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		return status;
 	}
 
-	(*server_info)->sam_fill_level = SAM_FILL_ALL;
-
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
 		 pdb_get_username(sampass), (*server_info)->unix_name));
 
@@ -978,7 +976,6 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 
 	(*server_info)->unix_name = smb_xstrdup(unix_username);
 
-	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->uid = pwd->pw_uid;
 	(*server_info)->gid = pwd->pw_gid;
 
@@ -1023,7 +1020,6 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 
 	(*server_info)->unix_name = smb_xstrdup(unix_username);
 
-	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->uid = pwd->pw_uid;
 	(*server_info)->gid = pwd->pw_gid;
 
@@ -1428,7 +1424,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* Fill in the unix info we found on the way */
 
-	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->uid = uid;
 	(*server_info)->gid = gid;
 

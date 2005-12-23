@@ -40,12 +40,6 @@ typedef struct auth_usersupplied_info {
 
 } auth_usersupplied_info;
 
-#define SAM_FILL_NAME  0x01
-#define SAM_FILL_INFO3 0x02
-#define SAM_FILL_SAM   0x04
-#define SAM_FILL_UNIX  0x08
-#define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
-
 typedef struct auth_serversupplied_info {
 	BOOL guest;
 
@@ -64,8 +58,6 @@ typedef struct auth_serversupplied_info {
 	DATA_BLOB lm_session_key;
 
         char *login_server; /* which server authorized the login? */
-	
-	uint32 sam_fill_level;  /* How far is this structure filled? */
 	
 	SAM_ACCOUNT *sam_account;
 	
