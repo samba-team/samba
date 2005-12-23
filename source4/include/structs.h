@@ -370,3 +370,5 @@ struct smb2_handle;
 struct com_context;
 struct IUnknown;
 struct IUnknown_vtable;
+
+struct MprVar;
