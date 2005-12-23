@@ -160,4 +160,6 @@ extern int DEBUGLEVEL;
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
+#define _PUBLIC_
+
 #endif /* _INCLUDES_H */

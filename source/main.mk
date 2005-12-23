@@ -197,10 +197,10 @@ include/config.h:
 
 include/proto.h: $(PROTO_PROTO_OBJ_LIST:.o=.c)
 	@-rm -f include/includes.h.gch
-	@$(SHELL) script/mkproto.sh "$(PERL)" \
-	  -h _PROTO_H_ include/proto.h \
-	  $(PROTO_PROTO_OBJ_LIST)
-	@touch include/proto.h
+	@echo "Creating include/proto.h"
+	@$(PERL) script/mkproto.pl --public-define=_PROTO_H_ \
+		--public=include/proto.h --private=include/proto.h \
+		$(PROTO_PROTO_OBJ_LIST)
 
 proto: include/proto.h
 pch: include/config.h \
