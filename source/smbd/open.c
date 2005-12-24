@@ -683,11 +683,15 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 	}
 
 	if (delay_it) {
+		BOOL ret;
 		DEBUG(10, ("Sending break request to PID %s\n",
 			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
-		if (!message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
-				      exclusive, sizeof(*exclusive), True)) {
+		become_root();
+		ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
+				       exclusive, sizeof(*exclusive), True);
+		unbecome_root();
+		if (!ret) {
 			DEBUG(3, ("Could not send oplock break message\n"));
 		}
 		file_free(fsp);
