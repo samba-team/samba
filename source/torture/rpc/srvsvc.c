@@ -622,9 +622,8 @@ static BOOL test_NetDiskEnum(struct dcerpc_pipe *p,
 	uint32_t resume_handle=0;
 
 	r.in.server_unc = NULL;
-	r.in.unknown = 0;
 	r.in.resume_handle = &resume_handle;
-	r.in.ctr.ctr0 = NULL;
+	r.in.disks.discs = NULL;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		ZERO_STRUCT(r.out);
@@ -660,9 +659,9 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	BOOL ret = True;
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
-	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
+	r.in.transports.ctr0 = &c0;
+	r.in.transports.ctr0->count = 0;
+	r.in.transports.ctr0->array = NULL;
 	r.in.max_buffer = (uint32_t)-1;
 	r.in.resume_handle = NULL;
 
