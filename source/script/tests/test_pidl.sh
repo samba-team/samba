@@ -1,8 +1,8 @@
 #!/bin/sh
-PERL=perl
-$PERL -Ibuild/pidl ./build/pidl/tests/ndr_simple.pl
-$PERL -Ibuild/pidl ./build/pidl/tests/ndr_align.pl
-$PERL -Ibuild/pidl ./build/pidl/tests/ndr_alloc.pl
-$PERL -Ibuild/pidl ./build/pidl/tests/ndr_refptr.pl
-$PERL -Ibuild/pidl ./build/pidl/tests/ndr_string.pl
-$PERL -Ibuild/pidl ./build/pidl/tests/ndr_array.pl
+if [ ! -n "$PERL" ]
+then
+	PERL=perl
+fi
+#$PERL -MExtUtils::Command::MM -e "test_harness()" pidl/tests/*.pl
+$PERL -MExtUtils::Command::MM -e "test_harness()" pidl/tests/parse_idl.pl
+

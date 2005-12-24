@@ -3,12 +3,7 @@
 # (C) 2005 Jelmer Vernooij. Published under the GNU GPL
 use strict;
 
-use Parse::Pidl::Test;
-
-my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
-$settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
-$settings{'IncludeFiles'} = ['ndr_test.h'];
-$settings{'ExtraFiles'} = ['ndr_test.c'];
+use Test::Simple tests => 1;
 
 # Check that an outgoing scalar pointer is allocated correctly
 
@@ -39,14 +34,9 @@ Parse::Pidl::Test::test_idl("alloc-scalar", \%settings,
 # Check that an outgoing buffer pointer is allocated correctly
 Parse::Pidl::Test::test_idl("alloc-buffer", \%settings, 
 '	
-	typedef struct {
-		uint8 data;
-	} blie;
+	typedef struct { uint8 data; } blie;
+	typedef struct { blie *x; } bla; 
 
-	typedef struct {
-		blie *x;
-	} bla;
-	
 	[public] void TestAlloc([in] bla foo);
 ','
 	uint8_t data[] = { 0xde, 0xad, 0xbe, 0xef, 0x03 };

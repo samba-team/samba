@@ -13,15 +13,18 @@ Parse::Pidl::NDR - NDR parsing information generator
 
 =head1 DESCRIPTION
 
-#####################################################################
-# return a table describing the order in which the parts of an element
-# should be parsed
-# Possible level types:
-#  - POINTER
-#  - ARRAY
-#  - SUBCONTEXT
-#  - SWITCH
-#  - DATA
+Return a table describing the order in which the parts of an element
+should be parsed
+Possible level types:
+ - POINTER
+ - ARRAY
+ - SUBCONTEXT
+ - SWITCH
+ - DATA
+
+=head1 AUTHOR
+
+Jelmer Vernooij <jelmer@samba.org>
 
 =cut
 
@@ -629,6 +632,9 @@ sub ParseInterface($)
 sub Parse($)
 {
 	my $idl = shift;
+
+	return undef unless (defined($idl));
+	
 	my @ndr = ();
 
 	push(@ndr, ParseInterface($_)) foreach (@{$idl});
