@@ -4,13 +4,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Parse::Pidl::Test;
-
-my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
-
-$settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
-$settings{'IncludeFiles'} = ['ndr_test.h'];
-$settings{'ExtraFiles'} = ['ndr_test.c'];
+use Test::Simple tests => 1;
 
 Parse::Pidl::Test::test_idl("string-pull-empty", \%settings,
 ' [public] void TestString([in,flag(STR_ASCII|LIBNDR_FLAG_STR_SIZE4)] string data);',

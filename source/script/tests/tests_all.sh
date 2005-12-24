@@ -8,3 +8,4 @@
  $SRCDIR/script/tests/test_echo.sh $SERVER $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_posix.sh //$SERVER/tmp $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_local.sh || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_pidl.sh || failed=`expr $failed + $?`
