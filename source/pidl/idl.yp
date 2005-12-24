@@ -416,9 +416,24 @@ again:
 	}
 }
 
-sub parse_idl($$)
+sub parse_string($)
 {
-	my ($self,$filename) = @_;
+	my ($data) = @_;
+
+	my $self = new Parse::Pidl::IDL;
+
+    $self->YYData->{INPUT} = $data;
+    $self->YYData->{LINE} = 0;
+    $self->YYData->{LAST_TOKEN} = "NONE";
+
+	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+
+	return CleanData($idl);
+}
+
+sub parse_file($)
+{
+	my ($filename) = @_;
 
 	my $saved_delim = $/;
 	undef $/;
@@ -429,11 +444,5 @@ sub parse_idl($$)
 	my $data = `$cpp -D__PIDL__ -xc $filename`;
 	$/ = $saved_delim;
 
-    $self->YYData->{INPUT} = $data;
-    $self->YYData->{LINE} = 0;
-    $self->YYData->{LAST_TOKEN} = "NONE";
-
-	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
-
-	return CleanData($idl);
+	return parse_string($data);
 }
