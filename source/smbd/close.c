@@ -130,8 +130,10 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
  			 */
  			schedule_deferred_open_smb_message(e->op_mid);
  		} else {
+			become_root();
  			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
  					 e, sizeof(*e), True);
+			unbecome_root();
  		}
  	}
 }
