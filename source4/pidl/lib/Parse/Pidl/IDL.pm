@@ -2690,6 +2690,7 @@ sub CleanData($)
 {
     sub CleanData($);
     my($v) = shift;
+	return undef if (not defined($v));
     if (ref($v) eq "ARRAY") {
 	foreach my $i (0 .. $#{$v}) {
 	    CleanData($v->[$i]);
@@ -2776,12 +2777,13 @@ again:
 	}
 }
 
-sub parse_string($)
+sub parse_string
 {
-	my ($data) = @_;
+	my ($data,$filename) = @_;
 
 	my $self = new Parse::Pidl::IDL;
 
+    $self->YYData->{INPUT_FILENAME} = $filename;
     $self->YYData->{INPUT} = $data;
     $self->YYData->{LINE} = 0;
     $self->YYData->{LAST_TOKEN} = "NONE";
@@ -2804,7 +2806,7 @@ sub parse_file($)
 	my $data = `$cpp -D__PIDL__ -xc $filename`;
 	$/ = $saved_delim;
 
-	return parse_string($data);
+	return parse_string($data, $filename);
 }
 
 1;
