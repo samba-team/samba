@@ -616,8 +616,8 @@ sub process_file($)
 	}
 
 	if (defined($opt_com_header)) {
-		require Parse::Pidl::Samba::COM::Header;
-		my $res = Parse::Pidl::Samba::COM::Header::Parse($pidl);
+		require Parse::Pidl::Samba4::COM::Header;
+		my $res = Parse::Pidl::Samba4::COM::Header::Parse($pidl);
 		if ($res) {
 			my $comh_filename = ($opt_com_header or "$outputdir/com_$basename.h");
 			FileSave($comh_filename, 
@@ -628,8 +628,8 @@ sub process_file($)
 	}
 
 	if (defined($opt_dcom_proxy)) {
-		require Parse::Pidl::Samba::COM::Proxy;
-		my $res = Parse::Pidl::Samba::COM::Proxy::Parse($pidl);
+		require Parse::Pidl::Samba4::COM::Proxy;
+		my $res = Parse::Pidl::Samba4::COM::Proxy::Parse($pidl);
 		if ($res) {
 			my ($client) = ($opt_dcom_proxy or "$outputdir/$basename\_p.c");
 			FileSave($client, 
@@ -664,51 +664,51 @@ sub process_file($)
 
 	if (defined($opt_header)) {
 		my $header = ($opt_header or "$outputdir/$basename.h");
-		require Parse::Pidl::Samba::Header;
-		FileSave($header, Parse::Pidl::Samba::Header::Parse($pidl));
+		require Parse::Pidl::Samba4::Header;
+		FileSave($header, Parse::Pidl::Samba4::Header::Parse($pidl));
 	}
 
 	if (defined($opt_ndr_header)) {
 		my $header = ($opt_ndr_header or "$outputdir/ndr_$basename.h");
-		require Parse::Pidl::Samba::NDR::Header;
-		FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl, $basename));
+		require Parse::Pidl::Samba4::NDR::Header;
+		FileSave($header, Parse::Pidl::Samba4::NDR::Header::Parse($pidl, $basename));
 		if (defined($opt_swig)) {
-		  require Parse::Pidl::Samba::SWIG;
+		  require Parse::Pidl::Samba4::SWIG;
 		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
-		  Parse::Pidl::Samba::SWIG::RewriteHeader($pidl, $header, $filename);
+		  Parse::Pidl::Samba4::SWIG::RewriteHeader($pidl, $header, $filename);
 		}
 	}
 
 	my $h_filename = "$outputdir/ndr_$basename.h";
 	if (defined($opt_client)) {
-		require Parse::Pidl::Samba::NDR::Client;
+		require Parse::Pidl::Samba4::NDR::Client;
 		my ($client) = ($opt_client or "$outputdir/ndr_$basename\_c.c");
 
-		FileSave($client, Parse::Pidl::Samba::NDR::Client::Parse($ndr,$h_filename));
+		FileSave($client, Parse::Pidl::Samba4::NDR::Client::Parse($ndr,$h_filename));
 	}
 
 	if (defined($opt_ejs)) {
-		require Parse::Pidl::Samba::EJS;
-		require Parse::Pidl::Samba::EJSHeader;
-		FileSave("$outputdir/ndr_$basename\_ejs.c", Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
+		require Parse::Pidl::Samba4::EJS;
+		require Parse::Pidl::Samba4::EJSHeader;
+		FileSave("$outputdir/ndr_$basename\_ejs.c", Parse::Pidl::Samba4::EJS::Parse($ndr, $h_filename));
 
-		FileSave("$outputdir/ndr_$basename\_ejs.h", Parse::Pidl::Samba::EJSHeader::Parse($ndr));
+		FileSave("$outputdir/ndr_$basename\_ejs.h", Parse::Pidl::Samba4::EJSHeader::Parse($ndr));
 	}
 
 	if (defined($opt_server)) {
-		require Parse::Pidl::Samba::NDR::Server;
+		require Parse::Pidl::Samba4::NDR::Server;
 		my $dcom = "";
 
 		foreach my $x (@{$pidl}) {
 			next if ($x->{TYPE} ne "INTERFACE");
 
 			if (Parse::Pidl::Util::has_property($x, "object")) {
-				require Parse::Pidl::Samba::COM::Stub;
-				$dcom .= Parse::Pidl::Samba::COM::Stub::ParseInterface($x);
+				require Parse::Pidl::Samba4::COM::Stub;
+				$dcom .= Parse::Pidl::Samba4::COM::Stub::ParseInterface($x);
 			}
 		}
 
-		FileSave(($opt_server or "$outputdir/ndr_$basename\_s.c"), Parse::Pidl::Samba::NDR::Server::Parse($ndr,$h_filename));
+		FileSave(($opt_server or "$outputdir/ndr_$basename\_s.c"), Parse::Pidl::Samba4::NDR::Server::Parse($ndr,$h_filename));
 
 		if ($dcom ne "") {
 			$dcom = "
@@ -725,8 +725,8 @@ $dcom
 
 	if (defined($opt_ndr_parser)) {
 		my $parser = ($opt_ndr_parser or "$outputdir/ndr_$basename.c");
-		require Parse::Pidl::Samba::NDR::Parser;
-		FileSave($parser, Parse::Pidl::Samba::NDR::Parser::Parse($ndr, $parser));
+		require Parse::Pidl::Samba4::NDR::Parser;
+		FileSave($parser, Parse::Pidl::Samba4::NDR::Parser::Parse($ndr, $parser));
 	}
 
 	if (defined($opt_eth_parser)) {
@@ -745,18 +745,18 @@ $dcom
 	my $tdr_parser = ($opt_tdr_parser or "$outputdir/tdr_$basename.c");
 	my $tdr_header = ($opt_tdr_header or "$outputdir/tdr_$basename.h");
 	if (defined($opt_tdr_parser)) {
-		require Parse::Pidl::Samba::TDR;
-		FileSave($tdr_parser, Parse::Pidl::Samba::TDR::Parser($pidl, $tdr_header));
+		require Parse::Pidl::Samba4::TDR;
+		FileSave($tdr_parser, Parse::Pidl::Samba4::TDR::Parser($pidl, $tdr_header));
 	}
 
 	if (defined($opt_tdr_header)) {
-		require Parse::Pidl::Samba::TDR;
-		FileSave($tdr_header, Parse::Pidl::Samba::TDR::Header($pidl, $outputdir,$basename));
+		require Parse::Pidl::Samba4::TDR;
+		FileSave($tdr_header, Parse::Pidl::Samba4::TDR::Header($pidl, $outputdir,$basename));
 	}
 
 	if ($opt_template) {
-		require Parse::Pidl::Samba::Template;
-		print Parse::Pidl::Samba::Template::Parse($pidl);
+		require Parse::Pidl::Samba4::Template;
+		print Parse::Pidl::Samba4::Template::Parse($pidl);
 	}
 
 	if (defined($opt_samba3_header) or defined($opt_samba3_parser) or

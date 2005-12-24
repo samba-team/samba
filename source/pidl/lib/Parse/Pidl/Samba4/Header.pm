@@ -4,7 +4,7 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package Parse::Pidl::Samba::Header;
+package Parse::Pidl::Samba4::Header;
 
 use strict;
 use Parse::Pidl::Typelist qw(mapType);
