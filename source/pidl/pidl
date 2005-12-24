@@ -587,9 +587,8 @@ sub process_file($)
 		defined $pidl || die "Failed to load $idl_file";
 	} else {
 		require Parse::Pidl::IDL;
-		my $idl_parser = new Parse::Pidl::IDL;
 
-		$pidl = $idl_parser->parse_idl($idl_file);
+		$pidl = Parse::Pidl::IDL::parse_file($idl_file);
 		defined @$pidl || die "Failed to parse $idl_file";
 		require Parse::Pidl::Typelist;
 		Parse::Pidl::Typelist::LoadIdl($pidl);
