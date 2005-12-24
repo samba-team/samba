@@ -4,13 +4,13 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package Parse::Pidl::Samba::NDR::Header;
+package Parse::Pidl::Samba4::NDR::Header;
 
 use strict;
 use Parse::Pidl::Typelist qw(mapType);
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel GetPrevLevel);
-use Parse::Pidl::Samba::NDR::Parser;
+use Parse::Pidl::Samba4::NDR::Parser;
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -36,7 +36,7 @@ sub HeaderTypedefProto($)
 {
     my($d) = shift;
 
-	my $tf = Parse::Pidl::Samba::NDR::Parser::get_typefamily($d->{DATA}{TYPE});
+	my $tf = Parse::Pidl::Samba4::NDR::Parser::get_typefamily($d->{DATA}{TYPE});
 
     if (has_property($d, "gensize")) {
 		my $size_args = $tf->{SIZE_FN_ARGS}->($d);

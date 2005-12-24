@@ -5,7 +5,7 @@
 # Copyright jelmer@samba.org 2004-2005
 # released under the GNU GPL
 
-package Parse::Pidl::Samba::NDR::Parser;
+package Parse::Pidl::Samba4::NDR::Parser;
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);

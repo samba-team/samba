@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2005
 # released under the GNU GPL
 
-package Parse::Pidl::Samba::EJSHeader;
+package Parse::Pidl::Samba4::EJSHeader;
 
 use strict;
 use Parse::Pidl::Typelist;

@@ -3,7 +3,7 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package Parse::Pidl::Samba::TDR;
+package Parse::Pidl::Samba4::TDR;
 use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
 
 use vars qw($VERSION);

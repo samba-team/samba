@@ -5,11 +5,17 @@
 use strict;
 
 use Parse::Pidl::Test;
+use Parse::Pidl::IDL;
+use Parse::Pidl::NDR;
+use Parse::Pidl::Samba::NDR;
 
 my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
 $settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
 $settings{'IncludeFiles'} = ['ndr_test.h'];
 $settings{'ExtraFiles'} = ['ndr_test.c'];
+
+my $pidl = Parse::Pidl::IDL::parse_string('void Test();');
+my $pndr = Parse::Pidl::NDR::Parse($pidl);
 
 Parse::Pidl::Test::test_idl(
 	# Name
@@ -18,8 +24,6 @@ Parse::Pidl::Test::test_idl(
 	# Settings
 	\%settings,
 	
-	# IDL 
-	'void Test();',
 	
 	# C Test
 	'

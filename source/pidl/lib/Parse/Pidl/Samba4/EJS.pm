@@ -4,7 +4,7 @@
 # Copyright Andrew Tridgell 2005
 # released under the GNU GPL
 
-package Parse::Pidl::Samba::EJS;
+package Parse::Pidl::Samba4::EJS;
 
 use strict;
 use Parse::Pidl::Typelist;
