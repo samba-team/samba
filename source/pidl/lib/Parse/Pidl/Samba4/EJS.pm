@@ -706,7 +706,7 @@ sub EjsInterface($$)
 
 	%constants = ();
 
-	foreach my $d (@{$interface->{TYPEDEFS}}) {
+	foreach my $d (@{$interface->{TYPES}}) {
 		($needed->{"push_$d->{NAME}"}) && EjsTypedefPush($d);
 		($needed->{"pull_$d->{NAME}"}) && EjsTypedefPull($d);
 	}
@@ -831,7 +831,7 @@ sub NeededInterface($$)
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
 	    NeededFunction($d, $needed);
 	}
-	foreach my $d (reverse @{$interface->{TYPEDEFS}}) {
+	foreach my $d (reverse @{$interface->{TYPES}}) {
 	    NeededTypedef($d, $needed);
 	}
 }

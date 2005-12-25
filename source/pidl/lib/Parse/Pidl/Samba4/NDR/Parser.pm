@@ -2313,7 +2313,7 @@ sub ParseInterface($$)
 	HeaderInterface($interface);
 
 	# Typedefs
-	foreach my $d (@{$interface->{TYPEDEFS}}) {
+	foreach my $d (@{$interface->{TYPES}}) {
 		($needed->{"push_$d->{NAME}"}) && ParseTypedefPush($d);
 		($needed->{"pull_$d->{NAME}"}) && ParseTypedefPull($d);
 		($needed->{"print_$d->{NAME}"}) && ParseTypedefPrint($d);
@@ -2456,7 +2456,7 @@ sub NeededInterface($$)
 {
 	my ($interface,$needed) = @_;
 	NeededFunction($_, $needed) foreach (@{$interface->{FUNCTIONS}});
-	NeededTypedef($_, $needed) foreach (reverse @{$interface->{TYPEDEFS}});
+	NeededTypedef($_, $needed) foreach (reverse @{$interface->{TYPES}});
 }
 
 1;
