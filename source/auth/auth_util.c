@@ -744,7 +744,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
  * the domain   --jerry
  ******************************************************************************/
 
-static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
+static NTSTATUS get_user_groups(const char *username, gid_t gid,
                                 size_t *n_groups, DOM_SID **groups,
 				gid_t **unix_groups)
 {
@@ -775,9 +775,6 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 		return NT_STATUS_NO_SUCH_USER; /* what should this return
 						* value be? */	
 
-	debug_unix_user_token(DBGC_CLASS, 5, uid, gid,
-			      n_unix_groups, *unix_groups);
-	
 	/* now setup the space for storing the SIDS */
 	
 	if (n_unix_groups > 0) {
@@ -843,13 +840,16 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 	BOOL is_guest;
 	uint32 rid;
 
-	status = get_user_groups(unix_username, uid, gid, 
+	status = get_user_groups(unix_username, gid, 
 				 &n_groupSIDs, &groupSIDs, &unix_groups);
 		
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
 		return status;
 	}
+	
+	debug_unix_user_token(DBGC_CLASS, 5, uid, gid,
+			      n_groupSIDs, unix_groups);
 	
 	is_guest = (sid_peek_rid(user_sid, &rid) &&
 		    rid == DOMAIN_USER_RID_GUEST);
@@ -1317,7 +1317,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   consistent username mapping behavior between kerberos and NTLM[SSP]
 	   authentication in domain mode security.  I.E. Username mapping
 	   should be applied to the fully qualified username
-	   (e.g. DOMAIN\user) and no just the login name.  Yes this mean swe
+	   (e.g. DOMAIN\user) and not just the login name.  Yes this means we
 	   called map_username() unnecessarily in make_user_info_map() but
 	   that is how the current code is designed.  Making the change here
 	   is the least disruptive place.  -- jerry */
@@ -1430,14 +1430,17 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* Store the user group information in the server_info 
 	   returned to the caller. */
 	
-	nt_status = get_user_groups((*server_info)->unix_name,
-		uid, gid, &n_lgroupSIDs, &lgroupSIDs, &unix_groups);
+	nt_status = get_user_groups((*server_info)->unix_name, gid,
+				    &n_lgroupSIDs, &lgroupSIDs, &unix_groups);
 		
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(4,("get_user_groups failed\n"));
 		return nt_status;
 	}
 
+	debug_unix_user_token(DBGC_CLASS, 5, uid, gid,
+			      n_lgroupSIDs, unix_groups);
+	
 	(*server_info)->groups = unix_groups;
 	(*server_info)->n_groups = n_lgroupSIDs;
 	
