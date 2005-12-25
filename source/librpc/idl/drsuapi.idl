@@ -119,7 +119,7 @@ interface drsuapi
 
 	/*****************/
 	/* Function 0x02 */
-	typedef [gensize] struct {
+	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags)-4)] uint32 __ndr_size;
 		[value(ndr_length_dom_sid(&r->sid))]  uint32 __ndr_size_sid;
 		GUID guid;
@@ -441,7 +441,7 @@ interface drsuapi
 	} drsuapi_DsAttributeValueCtrUnicodeString;
 
 	/* DN String values */
-	typedef [gensize] struct {
+	typedef [public,gensize] struct {
 		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->flags))] uint32 __ndr_size;
 		[value(ndr_length_dom_sid(&r->sid))]  uint32 __ndr_size_sid;
 		GUID guid;
@@ -582,7 +582,7 @@ interface drsuapi
 		drsuapi_DsReplicaMetaDataCtr *meta_data_ctr;
 	} drsuapi_DsReplicaObjectListItemEx;
 
-	typedef [gensize] struct {
+	typedef [public,gensize] struct {
 		GUID guid1;
 		GUID guid2;
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
