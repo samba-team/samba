@@ -55,24 +55,24 @@ void profile_message(int msg_type, struct process_id src, void *buf, size_t len)
 		do_profile_flag = False;
 		do_profile_times = False;
 		DEBUG(1,("INFO: Profiling turned OFF from pid %d\n",
-			 (int)procid_to_pid(src)));
+			 (int)procid_to_pid(&src)));
 		break;
 	case 1:		/* turn on counter profiling only */
 		do_profile_flag = True;
 		do_profile_times = False;
 		DEBUG(1,("INFO: Profiling counts turned ON from pid %d\n",
-			 (int)procid_to_pid(src)));
+			 (int)procid_to_pid(&src)));
 		break;
 	case 2:		/* turn on complete profiling */
 		do_profile_flag = True;
 		do_profile_times = True;
 		DEBUG(1,("INFO: Full profiling turned ON from pid %d\n",
-			 (int)procid_to_pid(src)));
+			 (int)procid_to_pid(&src)));
 		break;
 	case 3:		/* reset profile values */
 		memset((char *)profile_p, 0, sizeof(*profile_p));
 		DEBUG(1,("INFO: Profiling values cleared from pid %d\n",
-			 (int)procid_to_pid(src)));
+			 (int)procid_to_pid(&src)));
 		break;
 	}
 #else /* WITH_PROFILE */
