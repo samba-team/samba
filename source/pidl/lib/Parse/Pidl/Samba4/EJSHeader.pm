@@ -54,9 +54,7 @@ sub HeaderInterface($)
 
 	pidl "\n";
 
-	foreach my $d (@{$interface->{TYPEDEFS}}) {
-		HeaderTypedefProto($d);
-	}
+	HeaderTypedefProto($_) foreach (@{$interface->{TYPES}});
 
 	pidl "\n";
 	pidl "#endif /* _HEADER_EJS_$interface->{NAME} */\n";
