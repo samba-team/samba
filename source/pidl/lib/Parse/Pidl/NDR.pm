@@ -634,6 +634,8 @@ sub Parse($)
 	my $idl = shift;
 
 	return undef unless (defined($idl));
+
+	Parse::Pidl::NDR::Validate($idl);
 	
 	my @ndr = ();
 

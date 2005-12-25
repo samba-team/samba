@@ -4,9 +4,13 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::Simple tests => 1;
+use Test::More tests => 2 * 8;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use lib "$RealBin";
+use Util qw(test_samba4_ndr);
 
-Parse::Pidl::Test::test_idl("string-pull-empty", \%settings,
+test_samba4_ndr("string-pull-empty", 
 ' [public] void TestString([in,flag(STR_ASCII|LIBNDR_FLAG_STR_SIZE4)] string data);',
 '
 	uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
@@ -25,7 +29,7 @@ Parse::Pidl::Test::test_idl("string-pull-empty", \%settings,
 		return 3;
 ');
 
-Parse::Pidl::Test::test_idl("string-ascii-pull", \%settings,
+test_samba4_ndr("string-ascii-pull", 
 '
 	[public] void TestString([in,flag(STR_ASCII|LIBNDR_FLAG_STR_SIZE4)] string data);
 ',

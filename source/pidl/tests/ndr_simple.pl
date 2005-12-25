@@ -4,45 +4,18 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::Simple tests => 6;
+use Test::More tests => 8;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
-use Parse::Pidl::IDL;
-use Parse::Pidl::NDR;
-use Parse::Pidl::Samba4::NDR::Parser;
-use Parse::Pidl::Samba4::Header;
+use lib "$RealBin";
+use Util qw(test_samba4_ndr);
 
-my $pidl = Parse::Pidl::IDL::parse_string(
-"interface test { void Test(); }; ", "<test>");
-ok (defined($pidl));
-my $pndr = Parse::Pidl::NDR::Parse($pidl);
-ok(defined($pndr));
-my $header = Parse::Pidl::Samba4::Header::Parse($pidl);
-ok(defined($header));
-my ($ndrheader,$parser) = Parse::Pidl::Samba4::NDR::Parser::Parse($pndr, "foo");
-ok(defined($parser));
-ok(defined($ndrheader));
-
-my $outfile = "test";
-
-#my $cflags = $ENV{CFLAGS};
-my $cflags = "-Iinclude -I.";
-
-open CC, "|cc -x c -o $outfile $cflags -";
-#open CC, ">foo";
-print CC "#include \"includes.h\"";
-print CC $header;
-print CC $ndrheader;
-print CC $parser;
-print CC
-	'
-int main(int argc, const char **argv)
-{
+test_samba4_ndr("simple", "void Test(); ", 
+"
  	uint8_t data[] = { 0x02 };
  	uint8_t result;
  	DATA_BLOB b;
  	struct ndr_pull *ndr;
-	TALLOC_CTX *mem_ctx = talloc_init(NULL);
  
  	b.data = data;
  	b.length = 1;
@@ -53,12 +26,4 @@ int main(int argc, const char **argv)
  
  	if (result != 0x02) 
  		return 2;
-
-	talloc_free(mem_ctx);
-	
-	return 0;
-}
-';
-close CC;
-
-ok(-f $outfile);
+");
