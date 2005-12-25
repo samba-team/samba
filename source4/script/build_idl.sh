@@ -6,7 +6,7 @@ PIDL_EXTRA_ARGS="$*"
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
 
-PIDL="$PERL ./pidl/pidl --outputdir librpc/gen_ndr --ndr-header --header --ndr-parser --server --client --dcom-proxy --com-header --swig --ejs $PIDL_EXTRA_ARGS"
+PIDL="$PERL ./pidl/pidl --outputdir librpc/gen_ndr --header --ndr-parser --server --client --dcom-proxy --com-header --swig --ejs $PIDL_EXTRA_ARGS"
 
 if [ x$FULLBUILD = xFULL ]; then
       echo Rebuilding all idl files in librpc/idl

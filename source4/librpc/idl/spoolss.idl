@@ -56,7 +56,7 @@
 		uint32 unknown29;
 	} spoolss_PrinterInfo0;
 
-	typedef [gensize] struct {
+	typedef [public,gensize] struct {
 	        string32 devicename;
 		uint16 specversion;
 		uint16 driverversion;
@@ -752,7 +752,7 @@
 		SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY = 7
 	} spoolss_PrinterDataType;
 
-	typedef [nodiscriminant,gensize] union {
+	typedef [nodiscriminant,public,gensize] union {
 		[case(SPOOLSS_PRINTER_DATA_TYPE_NULL)];
 		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] nstring string;
 		[case(SPOOLSS_PRINTER_DATA_TYPE_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;

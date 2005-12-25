@@ -83,11 +83,11 @@ interface drsblobs {
 	 * w2k  uses version 1
 	 * w2k3 uses version 1
 	 */
-	typedef [gensize] struct {
+	typedef [public,gensize] struct {
 		asclstr dns_name;
 	} repsFromTo1OtherInfo;
 
-	typedef [gensize,flag(NDR_PAHEX)] struct {
+	typedef [public,gensize,flag(NDR_PAHEX)] struct {
 		/* this includes the 8 bytes of the repsFromToBlob header */
 		[value(ndr_size_repsFromTo1(r, ndr->flags)+8)] uint32 blobsize;
 		uint32 consecutive_sync_failures;
