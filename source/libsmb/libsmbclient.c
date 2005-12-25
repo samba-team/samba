@@ -1380,8 +1380,10 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 	}
   
 	if (!srv->no_pathinfo2 &&
-		cli_qpathinfo2(targetcli, targetpath, c_time, a_time, m_time, NULL,
-			   size, mode, ino)) return True;
+            cli_qpathinfo2(targetcli, targetpath,
+                           c_time, a_time, m_time, NULL, size, mode, ino)) {
+            return True;
+        }
 
 	/* if this is NT then don't bother with the getatr */
 	if (targetcli->capabilities & CAP_NT_SMBS) {
