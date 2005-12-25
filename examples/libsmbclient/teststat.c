@@ -48,7 +48,7 @@ int main(int argc, char * argv[])
         return 1;
     }
     
-    printf("SAMBA\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
+    printf("\nSAMBA\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
            st.st_mtime, ctime_r(&st.st_mtime, mtime),
            st.st_ctime, ctime_r(&st.st_ctime, ctime),
            st.st_atime, ctime_r(&st.st_atime, atime)); 
