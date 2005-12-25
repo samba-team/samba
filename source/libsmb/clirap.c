@@ -592,18 +592,18 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	if (!rdata || data_len < 22) {
 		return False;
 	}
-
+        
 	if (c_time) {
                 *c_time = interpret_long_date(rdata+0);
 	}
 	if (a_time) {
 		*a_time = interpret_long_date(rdata+8);
 	}
-	if (m_time) {
-		*m_time = interpret_long_date(rdata+16);
-	}
 	if (w_time) {
-		*w_time = interpret_long_date(rdata+24);
+		*w_time = interpret_long_date(rdata+16);
+	}
+	if (m_time) {
+		*m_time = interpret_long_date(rdata+24);
 	}
 	if (mode) {
 		*mode = SVAL(rdata, 32);
