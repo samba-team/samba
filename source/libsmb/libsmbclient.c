@@ -5673,8 +5673,6 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 
                 /* Here we would open the smb.conf file if needed ... */
                 
-                load_interfaces();  /* Load the list of interfaces ... */
-                
                 in_client = True; /* FIXME, make a param */
 
                 home = getenv("HOME");
@@ -5716,6 +5714,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
                         }
                 }
 
+                load_interfaces();  /* Load the list of interfaces ... */
+                
                 reopen_logs();  /* Get logging working ... */
         
                 /* 
