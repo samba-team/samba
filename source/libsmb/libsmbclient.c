@@ -2509,10 +2509,10 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                  * Server not an empty string ... Check the rest and see what
                  * gives
                  */
-		if (share[0] == (char)0) {
+		if (*share == '\0') {
+			if (*path != '\0') {
 
-			if (path[0] != (char)0) { /* Should not have empty share with path */
-
+                                /* Should not have empty share with path */
 				errno = EINVAL + 8197;
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -2522,12 +2522,28 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	
 			}
 
-			/* Check to see if <server><1D>, <server><1B>, or <server><20> translates */
-			/* However, we check to see if <server> is an IP address first */
+			/*
+                         * We don't know if <server> is really a server name
+                         * or is a workgroup/domain name.  If we already have
+                         * a server structure for it, we'll use it.
+                         * Otherwise, check to see if <server><1D>,
+                         * <server><1B>, or <server><20> translates.  We check
+                         * to see if <server> is an IP address first.
+                         */
 
-			if (!is_ipaddress(server) &&  /* Not an IP addr so check next */
-			    (resolve_name(server, &rem_ip, 0x1d) ||   /* Found LMB */
-                                    resolve_name(server, &rem_ip, 0x1b) )) { /* Found DMB */
+                        /* See if we have an existing server */
+                        srv = smbc_server(context, server, "IPC$",
+                                          workgroup, user, password);
+
+                        /*
+                         * If no existing server and not an IP addr, look for
+                         * LMB or DMB
+                         */
+			if (!srv &&
+                            !is_ipaddress(server) &&
+			    (resolve_name(server, &rem_ip, 0x1d) ||   /* LMB */
+                             resolve_name(server, &rem_ip, 0x1b) )) { /* DMB */
+
 				fstring buserver;
 
 				dir->dir_type = SMBC_SERVER;
@@ -2535,22 +2551,23 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				/*
 				 * Get the backup list ...
 				 */
+				if (!name_status_find(server, 0, 0,
+                                                      rem_ip, buserver)) {
 
-
-				if (!name_status_find(server, 0, 0, rem_ip, buserver)) {
-
-					DEBUG(0, ("Could not get name of local/domain master browser for server %s\n", server));
-					errno = EPERM;  /* FIXME, is this correct */
+                                        DEBUG(0, ("Could not get name of "
+                                                  "local/domain master browser "
+                                                  "for server %s\n", server));
+					errno = EPERM;
 					return NULL;
 
 				}
 
 				/*
-				 * Get a connection to IPC$ on the server if we do not already have one
-				 */
-
-				srv = smbc_server(context, buserver, "IPC$", workgroup, user, password);
-
+                                 * Get a connection to IPC$ on the server if
+                                 * we do not already have one
+                                 */
+				srv = smbc_server(context, buserver, "IPC$",
+                                                  workgroup, user, password);
 				if (!srv) {
 				        DEBUG(0, ("got no contact to IPC$\n"));
 					if (dir) {
@@ -2564,8 +2581,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				dir->srv = srv;
 
 				/* Now, list the servers ... */
-
-				if (!cli_NetServerEnum(&srv->cli, server, 0x0000FFFE, list_fn,
+				if (!cli_NetServerEnum(&srv->cli, server,
+                                                       0x0000FFFE, list_fn,
 						       (void *)dir)) {
 
 					if (dir) {
@@ -2573,75 +2590,72 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 						SAFE_FREE(dir);
 					}
 					return NULL;
-					
 				}
-			}
-			else {
+			} else if (srv ||
+                                   (resolve_name(server, &rem_ip, 0x20))) {
+                                
+                                /* If we hadn't found the server, get one now */
+                                if (!srv) {
+                                        srv = smbc_server(context, server,
+                                                          "IPC$", workgroup,
+                                                          user, password);
+                                }
 
-				if (resolve_name(server, &rem_ip, 0x20)) {
+                                if (!srv) {
+                                        if (dir) {
+                                                SAFE_FREE(dir->fname);
+                                                SAFE_FREE(dir);
+                                        }
+                                        return NULL;
 
-					/* Now, list the shares ... */
+                                }
 
-					dir->dir_type = SMBC_FILE_SHARE;
+                                dir->dir_type = SMBC_FILE_SHARE;
+                                dir->srv = srv;
 
-					srv = smbc_server(context, server, "IPC$", workgroup, user, password);
+                                /* List the shares ... */
 
-					if (!srv) {
-
-						if (dir) {
-							SAFE_FREE(dir->fname);
-							SAFE_FREE(dir);
-						}
-						return NULL;
-
-					}
-
-					dir->srv = srv;
-
-					/* Now, list the servers ... */
-
-					if (net_share_enum_rpc(
-                                                    &srv->cli,
-                                                    list_fn,
-                                                    (void *) dir) < 0 &&
-                                            cli_RNetShareEnum(
-                                                    &srv->cli,
-                                                    list_fn, 
-                                                    (void *)dir) < 0) {
+                                if (net_share_enum_rpc(
+                                            &srv->cli,
+                                            list_fn,
+                                            (void *) dir) < 0 &&
+                                    cli_RNetShareEnum(
+                                            &srv->cli,
+                                            list_fn, 
+                                            (void *)dir) < 0) {
                                                 
-						errno = cli_errno(&srv->cli);
-						if (dir) {
-							SAFE_FREE(dir->fname);
-							SAFE_FREE(dir);
-						}
-						return NULL;
+                                        errno = cli_errno(&srv->cli);
+                                        if (dir) {
+                                                SAFE_FREE(dir->fname);
+                                                SAFE_FREE(dir);
+                                        }
+                                        return NULL;
 
-					}
-
-				}
-				else {
-
-					errno = ECONNREFUSED;   /* Neither the workgroup nor server exists */
-					if (dir) {
-						SAFE_FREE(dir->fname);
-						SAFE_FREE(dir);
-					}
-					return NULL;
-
-				}
-
+                                }
+                        } else {
+                                /* Neither the workgroup nor server exists */
+                                errno = ECONNREFUSED;   
+                                if (dir) {
+                                        SAFE_FREE(dir->fname);
+                                        SAFE_FREE(dir);
+                                }
+                                return NULL;
 			}
 
 		}
-		else { /* The server and share are specified ... work from there ... */
+		else {
+                        /*
+                         * The server and share are specified ... work from
+                         * there ...
+                         */
 			pstring targetpath;
 			struct cli_state *targetcli;
 
-			/* Well, we connect to the server and list the directory */
-
+			/* We connect to the server and list the directory */
 			dir->dir_type = SMBC_FILE_SHARE;
 
-			srv = smbc_server(context, server, share, workgroup, user, password);
+			srv = smbc_server(context, server, share,
+                                          workgroup, user, password);
 
 			if (!srv) {
 
