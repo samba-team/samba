@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="libsmbclient.8">
+<refentry id="libsmbclient.7">
 
 <refmeta>
 	<refentrytitle>libsmbclient</refentrytitle>
-	<manvolnum>8</manvolnum>
+	<manvolnum>7</manvolnum>
 </refmeta>
 
 
@@ -28,7 +28,7 @@
 
 	<para>
 	This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> suite.
+	<manvolnum>7</manvolnum></citerefentry> suite.
 	</para>
 
 	<para>
