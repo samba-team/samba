@@ -5673,6 +5673,11 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 
                 /* Here we would open the smb.conf file if needed ... */
                 
+                if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+                    DEBUG(5, ("Could not load config file: %s\n",
+                              dyn_CONFIGFILE));
+                }
+	
                 load_interfaces();  /* Load the list of interfaces ... */
                 
                 in_client = True; /* FIXME, make a param */
