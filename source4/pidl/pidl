@@ -648,7 +648,6 @@ sub process_file($)
 	    defined($opt_samba3_header) or defined($opt_samba3_server) or 
 		defined($opt_samba3_template) or defined($opt_samba3_client)) {
 		require Parse::Pidl::NDR;
-		Parse::Pidl::NDR::Validate($pidl);
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
 

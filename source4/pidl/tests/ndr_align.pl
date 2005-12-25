@@ -3,9 +3,13 @@
 # (C) 2005 Jelmer Vernooij. Published under the GNU GPL
 use strict;
 
-use Test::Simple tests => 1;
+use Test::More tests => 5 * 8;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use lib "$RealBin";
+use Util qw(test_samba4_ndr);
 
-Parse::Pidl::Test::test_idl('align-uint8-uint16', \%settings,
+test_samba4_ndr('align-uint8-uint16', 
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -30,7 +34,7 @@ Parse::Pidl::Test::test_idl('align-uint8-uint16', \%settings,
 		return 2;
 ');
 
-Parse::Pidl::Test::test_idl('align-uint8-uint32', \%settings,
+test_samba4_ndr('align-uint8-uint32', 
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -56,7 +60,7 @@ Parse::Pidl::Test::test_idl('align-uint8-uint32', \%settings,
 ');
 
 
-Parse::Pidl::Test::test_idl('align-uint8-hyper', \%settings,
+test_samba4_ndr('align-uint8-hyper', 
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -82,7 +86,7 @@ Parse::Pidl::Test::test_idl('align-uint8-hyper', \%settings,
 		return 2;
 ');
 
-Parse::Pidl::Test::test_idl('noalignflag-uint8-uint16', \%settings,
+test_samba4_ndr('noalignflag-uint8-uint16', 
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -109,7 +113,7 @@ Parse::Pidl::Test::test_idl('noalignflag-uint8-uint16', \%settings,
 		return 2;
 ');
 
-Parse::Pidl::Test::test_idl('align-blob-align2', \%settings,
+test_samba4_ndr('align-blob-align2', 
 '
 	typedef [public] struct { 
 		uint8 x;

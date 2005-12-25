@@ -4,7 +4,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::Simple tests => 26;
+use Test::More tests => 26;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 use Parse::Pidl::IDL;
