@@ -4,7 +4,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 46;
+use Test::More tests => 51;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 use Parse::Pidl::IDL;
@@ -29,6 +29,7 @@ sub testfail($$)
 	ok ((not defined $pidl), $name);
 }
 
+testfail "unknowntag", "bla test {};";
 testok "test1", "interface test { void Test(); }; ";
 testok "voidtest", "interface test { int Testx(void); }; ";
 testfail "voidtest", "interface test { Test(); }; ";
@@ -69,12 +70,13 @@ testfail "enum2", "interface test { enum { A=1, B=2, C} a; };";
 testok "nested1", "interface test { struct x { struct { int a; } z; }; };";
 testok "nested2", "interface test { struct x { struct y { int a; } z; }; };";
 testok "bitmap1", "interface test { bitmap x { a=1 }; };";
-TODO: {
-	local $TODO = "qualifiers on defined types not supported yet";
-	testok "unsigned", "interface test { struct x { unsigned short y; }; };";
-	testok "signed", "interface test { struct x { signed short y; }; };";
-	testok "structqual", "interface test { struct x { struct y z; }; };";
-	testok "unionqual", "interface test { struct x { union y z; }; };";
-	testok "enumqual", "interface test { struct x { enum y z; }; };";
-	testok "bitmapqual", "interface test { struct x { bitmap y z; }; };"
-};
+testok "unsigned", "interface test { struct x { unsigned short y; }; };";
+testok "signed", "interface test { struct x { signed short y; }; };";
+testok "declarg", "interface test { void test(struct { int x; } a); };";
+testok "structqual", "interface test { struct x { struct y z; }; };";
+testok "unionqual", "interface test { struct x { union y z; }; };";
+testok "enumqual", "interface test { struct x { enum y z; }; };";
+testok "bitmapqual", "interface test { struct x { bitmap y z; }; };";
+testok "emptystructdecl", "interface test { struct x; };";
+testok "emptyenumdecl", "interface test { enum x; };";
+testok "emptytdstructdecl", "interface test { typedef struct x y; };";
