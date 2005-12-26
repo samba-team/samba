@@ -1,9 +1,8 @@
 #######################
 # Start SUBSYSTEM SMB2_PROTOCOL
 [SUBSYSTEM::SMB2_PROTOCOL]
-INIT_OBJ_FILES = \
-		receive.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		receive.o \
 		negprot.o \
 		sesssetup.o \
 		tcon.o \

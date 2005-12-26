@@ -2,7 +2,7 @@
 #################################
 # Start SUBSYSTEM TORTURE_SMB2
 [SUBSYSTEM::TORTURE_SMB2]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		connect.o \
 		scan.o \
 		util.o \

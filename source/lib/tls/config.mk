@@ -1,7 +1,7 @@
 ################################################
 # Start SUBSYSTEM LIBTLS
 [SUBSYSTEM::LIBTLS]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		tls.o \
 		tlscert.o
 REQUIRED_SUBSYSTEMS = \

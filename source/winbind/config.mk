@@ -3,7 +3,7 @@
 #######################
 # Start SUBSYSTEM WINBIND
 [SUBSYSTEM::WINBIND]
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		wb_server.o \
 		wb_samba3_protocol.o \
 		wb_samba3_cmd.o \
@@ -27,7 +27,7 @@ REQUIRED_SUBSYSTEMS = WB_HELPER RPC_NDR_LSA RPC_NDR_SAMR
 ################################################
 # Start SUBYSTEM WB_HELPER
 [SUBSYSTEM::WB_HELPER]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		wb_async_helpers.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA RPC_NDR_SAMR
 # End SUBSYSTEM WB_HELPER

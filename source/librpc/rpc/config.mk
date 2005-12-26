@@ -1,9 +1,8 @@
 ################################################
 # Start SUBSYSTEM RPC_RAW
 [SUBSYSTEM::RPC_RAW]
-INIT_OBJ_FILES = \
-		dcerpc.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		dcerpc.o \
 		dcerpc_auth.o \
 		dcerpc_schannel.o \
 		dcerpc_util.o \

@@ -3,7 +3,7 @@ include ldap/config.mk
 include security/config.mk
 
 [SUBSYSTEM::LIBCLI_UTILS]
-ADD_OBJ_FILES = util/asn1.o \
+OBJ_FILES = util/asn1.o \
 		util/doserr.o \
 		util/errormap.o \
 		util/clierror.o \
@@ -11,16 +11,16 @@ ADD_OBJ_FILES = util/asn1.o \
 		util/smbdes.o
 
 [SUBSYSTEM::LIBCLI_LSA]
-ADD_OBJ_FILES = util/clilsa.o
+OBJ_FILES = util/clilsa.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 
 [SUBSYSTEM::LIBCLI_COMPOSITE]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	composite/composite.o
 REQUIRED_SUBSYSTEMS = LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_SMB_COMPOSITE]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	smb_composite/loadfile.o \
 	smb_composite/savefile.o \
 	smb_composite/connect.o \
@@ -35,7 +35,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = NetBios over TCP/IP client library
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	nbt/nbtname.o \
 	nbt/nbtsocket.o \
 	nbt/namequery.o \
@@ -46,7 +46,7 @@ REQUIRED_SUBSYSTEMS = LIBNDR NDR_NBT SOCKET LIBCLI_COMPOSITE LIBEVENTS \
 	LIB_SECURITY_NDR
 
 [SUBSYSTEM::LIBCLI_DGRAM]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	dgram/dgramsocket.o \
 	dgram/mailslot.o \
 	dgram/netlogon.o \
@@ -60,7 +60,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = CLDAP client library
-ADD_OBJ_FILES = cldap/cldap.o
+OBJ_FILES = cldap/cldap.o
 PUBLIC_HEADERS = cldap/cldap.h
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_LDAP
@@ -70,12 +70,12 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = WINS Replication client library
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	wrepl/winsrepl.o
 REQUIRED_SUBSYSTEMS = NDR_WINSREPL SOCKET LIBEVENTS
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	resolve/resolve.o \
 	resolve/nbtlist.o \
 	resolve/bcast.o \
@@ -94,7 +94,7 @@ REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH \
 
 [SUBSYSTEM::LIBSMB]
 REQUIRED_SUBSYSTEMS = LIBCLI SOCKET
-ADD_OBJ_FILES = clireadwrite.o \
+OBJ_FILES = clireadwrite.o \
 		cliconnect.o \
 		clifile.o \
 		clilist.o \

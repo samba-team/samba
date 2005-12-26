@@ -3,12 +3,9 @@
    - get rid of include/structs.h
 - install Samba-specific headers in $INCLUDEDIR/samba-4.0. talloc.h, tdb.h and 
 	ldb.h belong in $INCLUDEDIR
-- init functions may be called more then once as different libraries 
- (in Samba or other projects) can use the same (3rd) library.
 - add register function to smbtorture
 - init functions per shared library / binary
- - add init functions + use lists of function pointers
-  - rpc_ndr
+ - rpc_ndr
  - list not automatically generated
  - utility function for 'init mutex'
 - install shared modules

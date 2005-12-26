@@ -103,7 +103,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		service.o \
 		service_stream.o \
 		service_task.o
