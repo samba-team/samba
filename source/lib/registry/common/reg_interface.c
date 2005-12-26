@@ -64,6 +64,19 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 	return NULL;
 }
 
+NTSTATUS registry_init(void)
+{
+	init_module_fn static_init[] = STATIC_REGISTRY_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "registry");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
+	return NT_STATUS_OK;
+}
+
 /* Check whether a certain backend is present */
 BOOL reg_has_backend(const char *backend)
 {

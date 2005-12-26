@@ -21,65 +21,77 @@
 #include "includes.h"
 #include "system/dir.h"
 
-static BOOL load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
+static void *load_module(TALLOC_CTX *mem_ctx, const char *dir, const char *name)
 {
 	char *path;
 	void *handle;
-	BOOL (*init_module_fn) (void);
-	BOOL ret;
+	void *init_fn;
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", dir, name);
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
 		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
-		return False;
+		talloc_free(path);
+		return NULL;
 	}
 
-	init_module_fn = dlsym(handle, "init_module");
+	init_fn = dlsym(handle, "init_module");
 
-	if (init_module_fn == NULL) {
+	if (init_fn == NULL) {
 		DEBUG(0, ("Unable to find init_module() in %s: %s\n", path, dlerror()));
-		return False;
-	}
-
-	ret = init_module_fn();
-	if (!ret) {
 		DEBUG(1, ("Loading module '%s' failed\n", path));
+		dlclose(handle);
+		talloc_free(path);
+		return NULL;
 	}
-
-	dlclose(handle);
 
 	talloc_free(path);
 
-	return ret;
+	return init_fn;
 }
 
-BOOL load_modules(const char *path)
+init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
-	BOOL ret = True;
-	TALLOC_CTX *mem_ctx;
-	
-	mem_ctx = talloc_init(NULL);
+	int success = 0;
+	init_module_fn *ret = talloc_array(mem_ctx, init_module_fn, 2);
 
+	ret[0] = NULL;
+	
 	dir = opendir(path);
 	if (dir == NULL) {
-		talloc_free(mem_ctx);
-		return False;
+		talloc_free(ret);
+		return NULL;
 	}
 
 	while((entry = readdir(dir))) {
 		if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
 			continue;
 
-		ret &= load_module(mem_ctx, path, entry->d_name);
+		ret[success] = load_module(mem_ctx, path, entry->d_name);
+		if (ret[success]) {
+			ret = talloc_realloc(mem_ctx, ret, init_module_fn, success+2);
+			success++;
+			ret[success] = NULL;
+		}
 	}
 
 	closedir(dir);
 
-	talloc_free(mem_ctx);
+	return ret;
+}
+
+BOOL run_init_functions(NTSTATUS (**fns) (void))
+{
+	int i;
+	BOOL ret;
+	
+	if (fns == NULL)
+		return True;
+	
+	for (i = 0; fns[i]; i++) { ret &= NT_STATUS_IS_OK(fns[i]()); }
 
 	return ret;
 }

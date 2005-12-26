@@ -1,4 +1,5 @@
 [SUBSYSTEM::COM]
+INIT_FUNCTION = com_init
 INIT_OBJ_FILES = \
 		tables.o \
 		rot.o \

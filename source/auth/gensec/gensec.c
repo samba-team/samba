@@ -942,5 +942,13 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 */
 NTSTATUS gensec_init(void)
 {
+	init_module_fn static_init[] = STATIC_GENSEC_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "gensec");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
 	return NT_STATUS_OK;
 }

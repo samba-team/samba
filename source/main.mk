@@ -42,6 +42,7 @@ showlayout:
 	@echo "  bindir:  $(BINDIR)"
 	@echo "  sbindir: $(SBINDIR)"
 	@echo "  libdir:  $(LIBDIR)"
+	@echo "  modulesdir:  $(MODULESDIR)"
 	@echo "  includedir:  $(INCLUDEDIR)"
 	@echo "  vardir:  $(VARDIR)"
 	@echo "  privatedir:  $(PRIVATEDIR)"
@@ -74,7 +75,8 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DLIBDIR=\"$(LIBDIR)\" \
 	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
-	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
+	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
+	 -DMODULESDIR=\"$(MODULESDIR)\"
 
 install: showlayout installbin installdat installswat installmisc installlib \
 	installheader installpc

@@ -69,6 +69,19 @@ NTSTATUS ntptr_register(const void *_ops)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ntptr_init(void)
+{
+	init_module_fn static_init[] = STATIC_NTPTR_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "ntptr");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
+	return NT_STATUS_OK;	
+}
+
 
 /*
   return the operations structure for a named backend

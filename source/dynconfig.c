@@ -59,6 +59,8 @@ const char *dyn_LMHOSTSFILE = LMHOSTSFILE;
 /** Samba library directory. */
 const char *dyn_LIBDIR = LIBDIR;
 
+const char *dyn_MODULESDIR = MODULESDIR;
+
 /** Shared library extension */
 const char *dyn_SHLIBEXT = SHLIBEXT;
 

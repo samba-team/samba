@@ -690,6 +690,23 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 	return fname;
 }
 
+char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
+{
+	return talloc_asprintf(mem_ctx, "%s/%s", dyn_MODULESDIR, name);
+}
+
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
+{
+	char *path = modules_path(mem_ctx, subsystem);
+	init_module_fn *ret;
+
+	ret = load_modules(mem_ctx, path);
+
+	talloc_free(path);
+
+	return ret;
+}
+
 void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 {
 #ifdef DEBUG_PASSWORD

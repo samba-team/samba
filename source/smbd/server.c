@@ -154,6 +154,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	BOOL interactive = False;
 	int opt;
 	poptContext pc;
+	init_module_fn static_init[] = STATIC_SERVER_SERVICE_MODULES;
+	init_module_fn *shared_init;
 	struct event_context *event_ctx;
 	NTSTATUS status;
 	const char *model = "standard";
@@ -214,6 +216,13 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	smbd_init_subsystems;
 
+	shared_init = load_samba_modules(NULL, "service");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
 	event_ctx = event_context_init(NULL);

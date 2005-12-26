@@ -7,6 +7,10 @@
  (in Samba or other projects) can use the same (3rd) library.
 - add register function to smbtorture
 - init functions per shared library / binary
+ - add init functions + use lists of function pointers
+  - rpc_ndr
+ - list not automatically generated
+ - utility function for 'init mutex'
 - install shared modules
 - call load_modules() from subsystems/libraries/binaries with modules
 - remove smb_build.h include from includes.h and INIT_OBJ_FILES. Replace 
