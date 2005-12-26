@@ -248,11 +248,11 @@ int register_vuid(auth_serversupplied_info *server_info,
 			}
 		} else {
 			struct passwd *passwd =
-				getpwnam_alloc(vuser->user.unix_name);
+				getpwnam_alloc(NULL, vuser->user.unix_name);
 			if (passwd) {
 				vuser->unix_homedir =
 					smb_xstrdup(passwd->pw_dir);
-				passwd_free(&passwd);
+				talloc_free(passwd);
 			}
 		}
 		

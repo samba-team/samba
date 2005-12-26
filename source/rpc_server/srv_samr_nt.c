@@ -1882,28 +1882,6 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 			return r_u->status;
 		break;
 
-#if 0
-/* whoops - got this wrong.  i think.  or don't understand what's happening. */
-        case 17:
-        {
-            NTTIME expire;
-            info = (void *)&id11;
-
-            expire.low = 0xffffffff;
-            expire.high = 0x7fffffff;
-
-            ctr->info.id = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_17));
-	    ZERO_STRUCTP(ctr->info.id17);
-            init_sam_user_info17(ctr->info.id17, &expire,
-                         "BROOKFIELDS$",    /* name */
-                         0x03ef,    /* user rid */
-                         0x201, /* group rid */
-                         0x0080);   /* acb info */
-
-            break;
-        }
-#endif
-
 	case 18:
 		ctr->info.id18 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_18);
 		if (ctr->info.id18 == NULL)
@@ -1951,7 +1929,9 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	struct passwd *passwd;
 	DOM_SID  sid;
 	DOM_SID *sids;
+	DOM_GID dom_gid;
 	DOM_GID *gids = NULL;
+	uint32 primary_group_rid;
 	size_t num_groups = 0;
 	gid_t *unix_gids;
 	size_t i, num_gids;
@@ -1997,7 +1977,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	passwd = getpwnam_alloc(pdb_get_username(sam_pass));
+	passwd = getpwnam_alloc(p->mem_ctx, pdb_get_username(sam_pass));
 	if (passwd == NULL) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
@@ -2011,33 +1991,57 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 					    &sids, &unix_gids, &num_groups);
 	unbecome_root();
 
-	pdb_free_sam(&sam_pass);
-	passwd_free(&passwd);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		pdb_free_sam(&sam_pass);
 		return result;
+	}
 
 	SAFE_FREE(unix_gids);
 
 	gids = NULL;
 	num_gids = 0;
 
+	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+			SE_GROUP_ENABLED);
+
+	if (!sid_peek_check_rid(get_global_sam_sid(),
+				pdb_get_group_sid(sam_pass),
+				&primary_group_rid)) {
+		DEBUG(5, ("Group sid %s for user %s not in our domain\n",
+			  sid_string_static(pdb_get_group_sid(sam_pass)),
+			  pdb_get_username(sam_pass)));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	pdb_free_sam(&sam_pass);
+
+	dom_gid.g_rid = primary_group_rid;
+
+	ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
+
 	for (i=0; i<num_groups; i++) {
-		uint32 rid;
 
 		if (!sid_peek_check_rid(get_global_sam_sid(),
-					&(sids[i]), &rid))
+					&(sids[i]), &dom_gid.g_rid)) {
+			DEBUG(10, ("Found sid %s not in our domain\n",
+				   sid_string_static(&sids[i])));
 			continue;
+		}
 
-		gids = TALLOC_REALLOC_ARRAY(p->mem_ctx, gids, DOM_GID, num_gids+1);
-		gids[num_gids].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
-		gids[num_gids].g_rid = rid;
-		num_gids += 1;
+		if (dom_gid.g_rid == primary_group_rid) {
+			/* We added the primary group directly from the
+			 * sam_account. The other SIDs are unique from
+			 * enum_group_memberships */
+			continue;
+		}
+
+		ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
 	}
 	SAFE_FREE(sids);
 	
 	/* construct the response.  lkclXXXX: gids are not copied! */
-	init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
+	init_samr_r_query_usergroups(r_u, num_gids, gids, r_u->status);
 	
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 	
@@ -3804,12 +3808,11 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	pdb_free_sam(&sam_user);
 
-	if ((pwd=getpwuid_alloc(uid)) == NULL) {
+	if ((pwd=getpwuid_alloc(p->mem_ctx, uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if ((grp=getgrgid(map.gid)) == NULL) {
-		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -3818,7 +3821,6 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	/* if the user is already in the group */
 	if(user_in_unix_group(pwd->pw_name, grp_name)) {
-		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
@@ -3845,11 +3847,8 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	
 	/* check if the user has been added then ... */
 	if(!user_in_unix_group(pwd->pw_name, grp_name)) {
-		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
 	}
-
-	passwd_free(&pwd);
 
 	force_flush_samr_cache(disp_info);
 

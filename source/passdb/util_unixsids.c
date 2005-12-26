@@ -45,7 +45,7 @@ BOOL lookup_unix_user_name(const char *name, DOM_SID *sid)
 {
 	struct passwd *pwd;
 
-	pwd = getpwnam_alloc(name);
+	pwd = getpwnam_alloc(NULL, name);
 	if (pwd == NULL) {
 		return False;
 	}
@@ -53,7 +53,7 @@ BOOL lookup_unix_user_name(const char *name, DOM_SID *sid)
 	sid_copy(sid, &global_sid_Unix_Users);
 	sid_append_rid(sid, pwd->pw_uid); /* For 64-bit uid's we have enough
 					  * space ... */
-	passwd_free(&pwd);
+	talloc_free(pwd);
 	return True;
 }
 

@@ -22,8 +22,12 @@
 #include "includes.h"
 
 /* internal functions */
-static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (const char *), int N);
-static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (const char *), int N);
+static struct passwd *uname_string_combinations(char *s, TALLOC_CTX *mem_ctx,
+						struct passwd * (*fn) (TALLOC_CTX *mem_ctx, const char *),
+						int N);
+static struct passwd *uname_string_combinations2(char *s, TALLOC_CTX *mem_ctx, int offset,
+						 struct passwd * (*fn) (TALLOC_CTX *mem_ctx, const char *),
+						 int N);
 
 /*****************************************************************
  Check if a user or group name is local (this is a *local* name for
@@ -219,7 +223,8 @@ BOOL map_username(fstring user)
 
 static struct passwd *Get_Pwnam_ret = NULL;
 
-static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
+static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
+					  const char *user, char *user2)
 {
 	struct passwd *ret = NULL;
 
@@ -233,7 +238,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	   common case on UNIX systems */
 	strlower_m(user2);
 	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
-	ret = getpwnam_alloc(user2);
+	ret = getpwnam_alloc(mem_ctx, user2);
 	if(ret)
 		goto done;
 
@@ -241,7 +246,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",
 			 user));
-		ret = getpwnam_alloc(user);
+		ret = getpwnam_alloc(mem_ctx, user);
 		if(ret)
 			goto done;
 	}
@@ -251,7 +256,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",
 			 user2));
-		ret = getpwnam_alloc(user2);
+		ret = getpwnam_alloc(mem_ctx, user2);
 		if(ret)
 			goto done;
 	}
@@ -260,7 +265,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	strlower_m(user2);
 	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",
 		 lp_usernamelevel(), user2));
-	ret = uname_string_combinations(user2, getpwnam_alloc,
+	ret = uname_string_combinations(user2, mem_ctx, getpwnam_alloc,
 					lp_usernamelevel());
 
 done:
@@ -276,7 +281,7 @@ done:
   This will return an allocated structure
 ****************************************************************************/
 
-struct passwd *Get_Pwnam_alloc(const char *user)
+struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user)
 {
 	fstring user2;
 	struct passwd *ret;
@@ -290,7 +295,7 @@ struct passwd *Get_Pwnam_alloc(const char *user)
 
 	DEBUG(5,("Finding user %s\n", user));
 
-	ret = Get_Pwnam_internals(user, user2);
+	ret = Get_Pwnam_internals(mem_ctx, user, user2);
 	
 	return ret;  
 }
@@ -304,7 +309,7 @@ struct passwd *Get_Pwnam(const char *user)
 {
 	struct passwd *ret;
 
-	ret = Get_Pwnam_alloc(user);
+	ret = Get_Pwnam_alloc(NULL, user);
 	
 	/* This call used to just return the 'passwd' static buffer.
 	   This could then have accidental reuse implications, so 
@@ -321,7 +326,7 @@ struct passwd *Get_Pwnam(const char *user)
 	*/
 
 	if (Get_Pwnam_ret) {
-		passwd_free(&Get_Pwnam_ret);
+		talloc_free(Get_Pwnam_ret);
 	}
 	
 	Get_Pwnam_ret = ret;
@@ -683,21 +688,24 @@ BOOL user_in_list(const char *user,const char **list)
  it assumes the string starts lowercased
 ****************************************************************************/
 
-static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(const char *),int N)
+static struct passwd *uname_string_combinations2(char *s, TALLOC_CTX *mem_ctx,
+						 int offset,
+						 struct passwd *(*fn)(TALLOC_CTX *mem_ctx, const char *),
+						 int N)
 {
 	ssize_t len = (ssize_t)strlen(s);
 	int i;
 	struct passwd *ret;
 
 	if (N <= 0 || offset >= len)
-		return(fn(s));
+		return(fn(mem_ctx, s));
 
 	for (i=offset;i<(len-(N-1));i++) {
 		char c = s[i];
 		if (!islower((int)c))
 			continue;
 		s[i] = toupper(c);
-		ret = uname_string_combinations2(s,i+1,fn,N-1);
+		ret = uname_string_combinations2(s, mem_ctx, i+1, fn, N-1);
 		if(ret)
 			return(ret);
 		s[i] = c;
@@ -713,13 +721,15 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
  it assumes the string starts lowercased
 ****************************************************************************/
 
-static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(const char *),int N)
+static struct passwd * uname_string_combinations(char *s, TALLOC_CTX *mem_ctx,
+						 struct passwd * (*fn)(TALLOC_CTX *mem_ctx, const char *),
+						 int N)
 {
 	int n;
 	struct passwd *ret;
 
 	for (n=1;n<=N;n++) {
-		ret = uname_string_combinations2(s,0,fn,n);
+		ret = uname_string_combinations2(s,mem_ctx,0,fn,n);
 		if(ret)
 			return(ret);
 	}  

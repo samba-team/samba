@@ -603,13 +603,13 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	fstrcpy(machineaccount, machinename);
 	fstrcat(machineaccount, "$");
 
-	if ((pwd = getpwnam_alloc(machineaccount))) {
+	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
 		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
 			fprintf(stderr, "Could not init sam from pw\n");
-			passwd_free(&pwd);
+			talloc_free(pwd);
 			return -1;
 		}
-		passwd_free(&pwd);
+		talloc_free(&pwd);
 	} else {
 		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 			fprintf(stderr, "Could not init sam from pw\n");

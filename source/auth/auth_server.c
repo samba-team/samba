@@ -380,11 +380,11 @@ use this machine as the password server.\n"));
 		fstring real_username;
 		struct passwd *pass;
 
-		if ( (pass = smb_getpwnam( user_info->internal_username, 
+		if ( (pass = smb_getpwnam( NULL, user_info->internal_username, 
 			real_username, True )) != NULL ) 
 		{
 			nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
-			passwd_free(&pass);
+			talloc_free(pass);
 		}
 		else
 		{

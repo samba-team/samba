@@ -1954,7 +1954,7 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	/* Lookup the user information; This should only be one of 
 	   our accounts (not remote domains) */
 
-	passwd = getpwnam_alloc(UserName);
+	passwd = getpwnam_alloc(NULL, UserName);
 
 	if (passwd == NULL)
 		return False;
@@ -2001,7 +2001,7 @@ out:
 	unbecome_root();				/* END ROOT BLOCK */
 
 	pdb_free_sam( &sampw );
-	passwd_free(&passwd);
+	talloc_free(passwd);
 
 	return ret;
 }

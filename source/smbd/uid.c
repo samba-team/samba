@@ -56,7 +56,7 @@ BOOL change_to_guest(void)
 
 	if (!pass) {
 		/* Don't need to free() this as its stored in a static */
-		pass = getpwnam_alloc(lp_guestaccount());
+		pass = getpwnam_alloc(NULL, lp_guestaccount());
 		if (!pass)
 			return(False);
 	}
@@ -71,9 +71,10 @@ BOOL change_to_guest(void)
 	
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
-	
-	passwd_free(&pass);
 
+	talloc_free(pass);
+	pass = NULL;
+	
 	return True;
 }
 

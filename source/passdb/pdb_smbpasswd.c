@@ -1161,14 +1161,13 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 		
 		/* If the user specified a RID, make sure its able to be both stored and retreived */
 		if (rid == DOMAIN_USER_RID_GUEST) {
-			struct passwd *passwd = getpwnam_alloc(lp_guestaccount());
+			struct passwd *passwd = getpwnam_alloc(NULL, lp_guestaccount());
 			if (!passwd) {
 				DEBUG(0, ("Could not find gest account via getpwnam()! (%s)\n", lp_guestaccount()));
 				return False;
 			}
 			smb_pw->smb_userid=passwd->pw_uid;
-			passwd_free(&passwd);
-
+			talloc_free(passwd);
 		} else if (algorithmic_pdb_rid_is_user(rid)) {
 			smb_pw->smb_userid=algorithmic_pdb_user_rid_to_uid(rid);
 		} else {
@@ -1204,7 +1203,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 
 	/* verify the user account exists */
 			
-	if ( !(pwfile = getpwnam_alloc(pw_buf->smb_name)) ) {
+	if ( !(pwfile = getpwnam_alloc(NULL, pw_buf->smb_name)) ) {
 		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid "
 		"%u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;
@@ -1213,7 +1212,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 	if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile)))
 		return False;
 		
-	passwd_free(&pwfile);
+	talloc_free(pwfile);
 
 	/* set remaining fields */
 		

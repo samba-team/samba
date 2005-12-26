@@ -891,7 +891,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 
 	(*server_info)->sam_account    = sampass;
 
-	pwd = getpwnam_alloc(pdb_get_username(sampass));
+	pwd = getpwnam_alloc(NULL, pdb_get_username(sampass));
 
 	if ( pwd == NULL )  {
 		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
@@ -904,7 +904,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	(*server_info)->gid = pwd->pw_gid;
 	(*server_info)->uid = pwd->pw_uid;
 	
-	passwd_free(&pwd);
+	talloc_free(pwd);
 
 	status = add_user_groups(server_info, pdb_get_username(sampass), 
 				 sampass, (*server_info)->uid, 
@@ -1144,7 +1144,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 
 	map_username( dom_user );
 
-	if ( !(passwd = smb_getpwnam( dom_user, real_username, True )) )
+	if ( !(passwd = smb_getpwnam( NULL, dom_user, real_username, True )) )
 		return NT_STATUS_NO_SUCH_USER;
 
 	*uid = passwd->pw_uid;
@@ -1162,7 +1162,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 		*found_username));
 
 	nt_status = pdb_init_sam_pw(sam_account, passwd);
-	passwd_free(&passwd);
+	talloc_free(passwd);
 	return nt_status;
 }
 
@@ -1172,8 +1172,8 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
  the username if we fallback to the username only.
  ****************************************************************************/
  
-struct passwd *smb_getpwnam( char *domuser, fstring save_username,
-			     BOOL create )
+struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
+			     fstring save_username, BOOL create )
 {
 	struct passwd *pw = NULL;
 	char *p;
@@ -1196,7 +1196,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username,
 	if ( p ) {
 		fstring strip_username;
 
-		pw = Get_Pwnam_alloc( domuser );
+		pw = Get_Pwnam_alloc( mem_ctx, domuser );
 		if ( pw ) {	
 			/* make sure we get the case of the username correct */
 			/* work around 'winbind use default domain = yes' */
@@ -1227,7 +1227,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username,
 	
 	/* just lookup a plain username */
 	
-	pw = Get_Pwnam_alloc(username);
+	pw = Get_Pwnam_alloc(mem_ctx, username);
 		
 	/* Create local user if requested. */
 	
@@ -1237,7 +1237,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username,
 			return NULL;
 
 		smb_create_user(NULL, username, NULL);
-		pw = Get_Pwnam_alloc(username);
+		pw = Get_Pwnam_alloc(mem_ctx, username);
 	}
 	
 	/* one last check for a valid passwd struct */

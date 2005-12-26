@@ -395,7 +395,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
 		guest = True;
-		pass = getpwnam_alloc(guestname);
+		pass = getpwnam_alloc(NULL, guestname);
 		if (!pass) {
 			DEBUG(0,("make_connection_snum: Invalid guest "
 				 "account %s??\n",guestname));
@@ -408,7 +408,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->uid = pass->pw_uid;
 		conn->gid = pass->pw_gid;
 		string_set(&conn->user,pass->pw_name);
-		passwd_free(&pass);
+		talloc_free(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
 		if (vuser->guest) {
