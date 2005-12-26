@@ -13,9 +13,11 @@ void usage(char *command) {
 		comm = c + 1;
 	}
 
-	fprintf(stderr, "Usage: %s -d dictionary\n\n", comm);
-	fprintf(stderr, "     -d dictionary file for cracklib\n\n");
-	fprintf(stderr, "	The password is expected to be given via stdin.\n\n");
+	fprintf(stderr, "Usage: %s [-c] [-s] [-d <dictionary>]\n\n", comm);
+	fprintf(stderr, "     -c    enables NT like complexity checks\n");
+	fprintf(stderr, "     -d <dictionary file>    for cracklib\n");
+	fprintf(stderr, "     -s    simple check use NT like checks ONLY\n\n");
+	fprintf(stderr, "The password is read via stdin.\n\n");
 	exit(-1);
 }
 
@@ -79,14 +81,14 @@ fail:
 
 int main(int argc, char **argv) {
 	extern char *optarg;
-	int c, ret, complex_check = 0;
+	int c, ret, complex_check = 0, simplex_check = 0;
 
 	char f[256];
 	char *dictionary = NULL;
 	char *password;
 	char *reply;
 
-	while ( (c = getopt(argc, argv, "d:c")) != EOF){
+	while ( (c = getopt(argc, argv, "d:cs")) != EOF){
 		switch(c) {
 		case 'd':
 			dictionary = strdup(optarg);
@@ -94,13 +96,17 @@ int main(int argc, char **argv) {
 		case 'c':
 			complex_check = 1;
 			break;
+		case 's':
+			complex_check = 1;
+			simplex_check = 1;
+			break;
 		default:
 			usage(argv[0]);
 		}
 	}
 
-	if (dictionary == NULL) {
-		fprintf(stderr, "ERR - Wrong Command Line\n\n");
+	if (!simplex_check && dictionary == NULL) {
+		fprintf(stderr, "ERR - Missing cracklib dictionary\n\n");
 		usage(argv[0]);
 	} 
 
@@ -119,6 +125,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (simplex_check) {
+		exit(0);
+	}
+
 	reply = FascistCheck(password, dictionary);
 	if (reply != NULL) {
 		fprintf(stderr, "ERR - %s\n\n", reply);
@@ -126,6 +136,5 @@ int main(int argc, char **argv) {
 	}
 
 	exit(0);
-
 }
 
