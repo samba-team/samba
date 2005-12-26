@@ -363,43 +363,6 @@ done:
 	return 0;
 }
 
-/* a list of registered ejs rpc modules */
-static struct ejs_register {
-	struct ejs_register *next, *prev;
-	const char *name;
-	MprCFunction fn;
-} *ejs_registered;
-
-/*
-  register a generated ejs module
-*/
- NTSTATUS smbcalls_register_ejs(const char *name, MprCFunction fn)
-{
-	struct ejs_register *r;
-	void *ctx = ejs_registered;
-	if (ctx == NULL) {
-		ctx = talloc_autofree_context();
-	}
-	r = talloc(ctx, struct ejs_register);
-	NT_STATUS_HAVE_NO_MEMORY(r);
-	r->name = name;
-	r->fn = fn;
-	DLIST_ADD(ejs_registered, r);
-	return NT_STATUS_OK;
-}
-
-/*
-  setup C functions that be called from ejs
-*/
-void smb_setup_ejs_rpc(void)
-{
-	struct ejs_register *r;
-
-	for (r=ejs_registered;r;r=r->next) {
-		ejsDefineCFunction(-1, r->name, r->fn, NULL, MPR_VAR_SCRIPT_HANDLE);
-	}
-}
-
 /*
   hook called by generated RPC interfaces at the end of their init routines
   used to add generic operations on the pipe

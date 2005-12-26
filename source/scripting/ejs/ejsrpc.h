@@ -115,6 +115,23 @@ NTSTATUS ejs_push_array_uint8(struct ejs_rpc *ejs,
 			      struct MprVar *v, const char *name, 
 			      const uint8_t *r, uint32_t length);
 
+NTSTATUS ejs_pull_GUID(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, struct GUID *r);
+NTSTATUS ejs_push_GUID(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, const struct GUID *r);
+
+struct lsa_String;
+NTSTATUS ejs_pull_lsa_String(struct ejs_rpc *ejs, 
+			    struct MprVar *v, const char *name, struct lsa_String *r);
+NTSTATUS ejs_push_lsa_String(struct ejs_rpc *ejs, 
+			    struct MprVar *v, const char *name, const struct lsa_String *r);
+
+struct winreg_String;
+NTSTATUS ejs_pull_winreg_String(struct ejs_rpc *ejs, 
+			     struct MprVar *v, const char *name, struct winreg_String *r);
+NTSTATUS ejs_push_winreg_String(struct ejs_rpc *ejs, 
+			     struct MprVar *v, const char *name, const struct winreg_String *r);
+
 #define EJS_ALLOC_SIZE(ejs, s, size) do { \
   (s) = talloc_size(ejs, size); \
   if (!(s)) return ejs_panic(ejs, "out of memory"); \

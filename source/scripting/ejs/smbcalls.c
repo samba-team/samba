@@ -124,7 +124,6 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_ldb();
 	smb_setup_ejs_nbt();
 	smb_setup_ejs_cli();
-	smb_setup_ejs_rpc();
 	smb_setup_ejs_auth();
 	smb_setup_ejs_options();
 	smb_setup_ejs_nss();
