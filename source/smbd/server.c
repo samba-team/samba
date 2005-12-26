@@ -217,6 +217,17 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	smbd_init_subsystems;
 
+	registry_init(); /* FIXME: maybe run this in the initialization function 
+						of the winreg RPC server instead? */
+
+	ntptr_init();	/* FIXME: maybe run this in the initialization function 
+						of the spoolss RPC server instead? */
+
+	ntvfs_init(); 	/* FIXME: maybe run this in the initialization functions 
+						of the SMB[,2] server instead? */
+
+	process_model_init(); 
+
 	shared_init = load_samba_modules(NULL, "service");
 
 	run_init_functions(static_init);

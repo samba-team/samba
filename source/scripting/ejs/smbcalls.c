@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
+#include "smb_build.h"
 
 /*
   return the type of a variable
@@ -116,6 +117,9 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 */
 void smb_setup_ejs_functions(void)
 {
+	init_module_fn static_init[] = STATIC_SMBCALLS_MODULES;
+	init_module_fn *shared_init;
+
 	smb_setup_ejs_config();
 	smb_setup_ejs_ldb();
 	smb_setup_ejs_nbt();
@@ -131,7 +135,15 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_samba3();
 	smb_setup_ejs_param();
 	smb_setup_ejs_datablob();
+	
 	ejsnet_setup();
+
+	shared_init = load_samba_modules(NULL, "ejs");
+	
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);

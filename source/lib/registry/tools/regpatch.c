@@ -46,6 +46,8 @@ int main(int argc, char **argv)
 
 	regpatch_init_subsystems;
 
+	registry_init();
+
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
