@@ -706,7 +706,9 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   samr_CreateUser2 
 
-  TODO: This should do some form of locking, especially around the rid allocation
+  This call uses transactions to ensure we don't get a new conflicting
+  user while we are processing this, and to ensure the user either
+  completly exists, or does not.
 */
 static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_CreateUser2 *r)
@@ -771,7 +773,11 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	cn_name   = talloc_strdup(mem_ctx, account_name);
-	NT_STATUS_HAVE_NO_MEMORY(cn_name);
+	if (!cn_name) {
+		ldb_transaction_cancel(d_state->sam_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	cn_name_len = strlen(cn_name);
 
 	/* This must be one of these values *only* */
