@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<refentry id="pam_winbind.8">
+<refentry id="pam_winbind.7">
 
 <refmeta>
 	<refentrytitle>pam_winbind</refentrytitle>
-	<manvolnum>8</manvolnum>
+	<manvolnum>7</manvolnum>
 </refmeta>
 
 
