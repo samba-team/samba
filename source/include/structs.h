@@ -273,6 +273,7 @@ struct stream_server_ops;
 
 struct nbtd_server;
 struct nbtd_interface;
+struct nbtd_iface_name;
 struct wins_server;
 struct nbtd_proxy_wins_challenge;
 struct nbtd_proxy_wins_release_demand;
