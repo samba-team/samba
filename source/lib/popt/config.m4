@@ -26,12 +26,12 @@ fi
 AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" != x"no"; then
 	CPPFLAGS="$CPPFLAGS -I$srcdir/lib/popt"
-	SMB_SUBSYSTEM(LIBPOPT,[],
+	SMB_SUBSYSTEM(LIBPOPT,
 		[],
 		[INT_LIB_POPT])
 	AC_MSG_RESULT(yes)
 else
-	SMB_SUBSYSTEM(LIBPOPT,[],
+	SMB_SUBSYSTEM(LIBPOPT,
 		[],
 		[EXT_LIB_POPT])
 	SMB_EXT_LIB(POPT, [${TMP_LIBPOPT_LIBS}])

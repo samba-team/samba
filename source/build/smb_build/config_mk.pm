@@ -21,8 +21,6 @@ my $section_types = {
 		},
 	"SUBSYSTEM" => {
 		"INIT_FUNCTION"		=> "string",
-		"INIT_OBJ_FILES"	=> "list",
-		"ADD_OBJ_FILES"		=> "list",
 		"OBJ_FILES"		=> "list",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
@@ -36,8 +34,6 @@ my $section_types = {
 		"SUBSYSTEM"		=> "string",
 
 		"INIT_FUNCTION"		=> "string",
-		"INIT_OBJ_FILES"	=> "list",
-		"ADD_OBJ_FILES"		=> "list",
 		"OBJ_FILES"		=> "list",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
@@ -64,8 +60,6 @@ my $section_types = {
 		"RELEASE_VERSION"	=> "string",
 
 		"INIT_FUNCTION"		=> "string",
-		"INIT_OBJ_FILES"	=> "list",
-		"ADD_OBJ_FILES"		=> "list",
 		"OBJ_FILES"		=> "list",
 
 		"DESCRIPTION" => "string",

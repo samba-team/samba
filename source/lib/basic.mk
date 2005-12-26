@@ -20,9 +20,8 @@ include stream/config.mk
 ##############################
 # Start SUBSYSTEM LIBNETIF
 [SUBSYSTEM::LIBNETIF]
-INIT_OBJ_FILES = \
-		netif/interface.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		netif/interface.o \
 		netif/netif.o
 # End SUBSYSTEM LIBNETIF
 ##############################
@@ -33,15 +32,14 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = Simple marshall/unmarshall library
-INIT_OBJ_FILES = tdr/tdr.o
+OBJ_FILES = tdr/tdr.o
 
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
 [SUBSYSTEM::LIBCRYPTO]
 NOPROTO = YES
-INIT_OBJ_FILES = \
-		crypto/crc32.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		crypto/crc32.o \
 		crypto/md5.o \
 		crypto/hmacmd5.o \
 		crypto/md4.o \
@@ -52,7 +50,7 @@ ADD_OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		compression/mszip.o
 # End SUBSYSTEM LIBCOMPRESION
 ################################################
@@ -64,8 +62,7 @@ OBJ_FILES = \
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
-INIT_OBJ_FILES = version.o
-ADD_OBJ_FILES = \
+OBJ_FILES = version.o \
 		xfile.o \
 		debug.o \
 		fault.o \

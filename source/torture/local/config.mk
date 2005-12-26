@@ -1,7 +1,7 @@
 #################################
 # Start SUBSYSTEM TORTURE_LOCAL
 [SUBSYSTEM::TORTURE_LOCAL]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		iconv.o \
 		../../lib/talloc/testsuite.o \
 		messaging.o \

@@ -1,7 +1,7 @@
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/kdc/default_config.o \
 	../heimdal/kdc/kerberos5.o \
 	../heimdal/kdc/pkinit.o \
@@ -18,7 +18,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
 [SUBSYSTEM::HEIMDAL_HDB]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/hdb/db.o \
 	../heimdal/lib/hdb/hdb.o \
 	../heimdal/lib/hdb/ext.o \
@@ -47,7 +47,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_GSSAPI
 [SUBSYSTEM::HEIMDAL_GSSAPI]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/gssapi/init_sec_context.o \
 	../heimdal/lib/gssapi/inquire_cred.o \
 	../heimdal/lib/gssapi/release_buffer.o \
@@ -94,7 +94,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_KRB5]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/krb5/acache.o \
 	../heimdal/lib/krb5/add_et_list.o \
 	../heimdal/lib/krb5/addr_families.o \
@@ -183,7 +183,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_ASN1
 [SUBSYSTEM::HEIMDAL_ASN1]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/asn1/der_get.o \
 	../heimdal/lib/asn1/der_put.o \
 	../heimdal/lib/asn1/der_free.o \
@@ -258,7 +258,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_DES
 [SUBSYSTEM::HEIMDAL_DES]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/des/aes.o \
 	../heimdal/lib/des/des.o \
 	../heimdal/lib/des/md4.o \
@@ -276,19 +276,19 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_GAI_STRERROR]
-ADD_OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
+OBJ_FILES = ../heimdal/lib/roken/gai_strerror.o
 NOPROTO = YES
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
 [SUBSYSTEM::HEIMDAL_ROKEN_INET_ATON]
-ADD_OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
+OBJ_FILES = ../heimdal/lib/roken/inet_aton.o
 NOPROTO = YES
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
 [SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/roken/getaddrinfo.o \
 	../heimdal/lib/roken/freeaddrinfo.o \
 	../heimdal/lib/roken/getipnodebyaddr.o \
@@ -301,7 +301,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/roken/base64.o \
 	../heimdal/lib/roken/bswap.o \
 	../heimdal/lib/roken/get_window_size.o \
@@ -333,7 +333,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_VERS
 [SUBSYSTEM::HEIMDAL_VERS]
-ADD_OBJ_FILES = ../heimdal/lib/vers/print_version.o
+OBJ_FILES = ../heimdal/lib/vers/print_version.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_VERS
 #######################
@@ -341,14 +341,14 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
-ADD_OBJ_FILES = glue.o
+OBJ_FILES = glue.o
 # End SUBSYSTEM HEIMDAL_GLUE
 #######################
 
 #######################
 # Start SUBSYSTEM HEIMDAL_COM_ERR
 [SUBSYSTEM::HEIMDAL_COM_ERR]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/com_err/com_err.o \
 	../heimdal/lib/com_err/error.o
 NOPROTO = YES

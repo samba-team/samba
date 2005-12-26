@@ -7,6 +7,6 @@ RELEASE_VERSION = 1
 NOPROTO = YES
 DESCRIPTION = Wrapper library for testing TCP/IP connections using Unix Sockets
 PUBLIC_HEADERS = socket_wrapper.h
-INIT_OBJ_FILES = socket_wrapper.o
+OBJ_FILES = socket_wrapper.o
 # End SUBSYSTEM SOCKET_WRAPPER
 ##############################

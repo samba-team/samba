@@ -3,7 +3,7 @@
 [MODULE::ntvfs_unixuid]
 INIT_FUNCTION = ntvfs_unixuid_init
 SUBSYSTEM = NTVFS
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		vfs_unixuid.o
 REQUIRED_SUBSYSTEMS = \
 		ntvfs_common

@@ -2,10 +2,8 @@
 ################################################
 # Start SUBSYSTEM MESSAGING
 [SUBSYSTEM::MESSAGING]
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		messaging.o
-# \
-#		msgutil.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = \
 		NDR_IRPC \

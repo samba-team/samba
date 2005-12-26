@@ -5,7 +5,7 @@
 [MODULE::registry_nt4]
 INIT_FUNCTION = registry_nt4_init
 SUBSYSTEM = REGISTRY
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		reg_backend_nt4.o
 REQUIRED_SUBSYSTEMS = TDR_REGF
 # End MODULE registry_nt4
@@ -14,7 +14,7 @@ REQUIRED_SUBSYSTEMS = TDR_REGF
 [SUBSYSTEM::TDR_REGF]
 REQUIRED_SUBSYSTEMS = TDR 
 NOPROTO = YES
-INIT_OBJ_FILES = tdr_regf.o
+OBJ_FILES = tdr_regf.o
 
 lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: lib/registry/regf.idl
@@ -25,7 +25,7 @@ lib/registry/tdr_regf.c: lib/registry/regf.idl
 [MODULE::registry_w95]
 INIT_FUNCTION = registry_w95_init
 SUBSYSTEM = REGISTRY
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		reg_backend_w95.o
 # End MODULE registry_w95
 ################################################
@@ -35,7 +35,7 @@ INIT_OBJ_FILES = \
 [MODULE::registry_dir]
 INIT_FUNCTION = registry_dir_init
 SUBSYSTEM = REGISTRY
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		reg_backend_dir.o
 # End MODULE registry_dir
 ################################################
@@ -45,7 +45,7 @@ INIT_OBJ_FILES = \
 [MODULE::registry_rpc]
 INIT_FUNCTION = registry_rpc_init
 SUBSYSTEM = REGISTRY
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		reg_backend_rpc.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 # End MODULE registry_rpc
@@ -58,7 +58,7 @@ REQUIRED_SUBSYSTEMS = RPC_NDR_WINREG
 [MODULE::registry_gconf]
 INIT_FUNCTION = registry_gconf_init
 SUBSYSTEM = REGISTRY
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		reg_backend_gconf.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 # End MODULE registry_gconf
@@ -69,7 +69,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 [MODULE::registry_ldb]
 INIT_FUNCTION = registry_ldb_init
 SUBSYSTEM = REGISTRY
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		reg_backend_ldb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB
@@ -84,9 +84,8 @@ MINOR_VERSION = 0
 INIT_FUNCTION = registry_init
 DESCRIPTION = Windows-style registry library
 RELEASE_VERSION = 1
-INIT_OBJ_FILES = \
-		common/reg_interface.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		common/reg_interface.o \
 		common/reg_util.o \
 		reg_samba.o \
 		patchfile.o

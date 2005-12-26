@@ -5,7 +5,7 @@
 [MODULE::ntptr_simple_ldb]
 INIT_FUNCTION = ntptr_simple_ldb_init
 SUBSYSTEM = NTPTR
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		simple_ldb/ntptr_simple_ldb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB
@@ -16,9 +16,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM NTPTR
 [SUBSYSTEM::NTPTR]
 INIT_FUNCTION = ntptr_init
-INIT_OBJ_FILES = \
-		ntptr_base.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		ntptr_base.o \
 		ntptr_interface.o
 #
 # End SUBSYSTEM NTPTR

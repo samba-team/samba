@@ -7,7 +7,7 @@ include unixuid/config.mk
 [MODULE::ntvfs_cifs]
 INIT_FUNCTION = ntvfs_cifs_init 
 SUBSYSTEM = NTVFS
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		cifs/vfs_cifs.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI
@@ -19,9 +19,8 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::ntvfs_simple]
 INIT_FUNCTION = ntvfs_simple_init 
 SUBSYSTEM = NTVFS
-INIT_OBJ_FILES = \
-		simple/vfs_simple.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		simple/vfs_simple.o \
 		simple/svfs_util.o
 # End MODULE ntvfs_cifs
 ################################################
@@ -31,7 +30,7 @@ ADD_OBJ_FILES = \
 [MODULE::ntvfs_print]
 INIT_FUNCTION = ntvfs_print_init 
 SUBSYSTEM = NTVFS
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		print/vfs_print.o
 # End MODULE ntvfs_print
 ################################################
@@ -41,7 +40,7 @@ INIT_OBJ_FILES = \
 [MODULE::ntvfs_ipc]
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_ipc_init 
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		ipc/vfs_ipc.o \
 		ipc/ipc_rap.o \
 		ipc/rap_server.o
@@ -55,7 +54,7 @@ INIT_OBJ_FILES = \
 [MODULE::ntvfs_nbench]
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_nbench_init 
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		nbench/vfs_nbench.o
 # End MODULE ntvfs_nbench
 ################################################
@@ -63,7 +62,7 @@ INIT_OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM ntvfs_common
 [SUBSYSTEM::ntvfs_common]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		common/brlock.o \
 		common/opendb.o \
 		common/sidmap.o
@@ -80,9 +79,8 @@ MINOR_VERSION = 0
 INIT_FUNCTION = ntvfs_init
 DESCRIPTION = Virtual File System with NTFS semantics
 RELEASE_VERSION = 1
-INIT_OBJ_FILES = \
-		ntvfs_base.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		ntvfs_base.o \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
 		ntvfs_util.o

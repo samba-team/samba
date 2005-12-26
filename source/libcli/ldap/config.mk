@@ -1,7 +1,7 @@
 #################################
 # Start SUBSYSTEM LIBCLI_LDAP
 [SUBSYSTEM::LIBCLI_LDAP]
-ADD_OBJ_FILES = ldap.o \
+OBJ_FILES = ldap.o \
 		ldap_client.o \
 		ldap_bind.o \
 		ldap_msg.o \

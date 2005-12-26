@@ -1,7 +1,7 @@
 #################################
 # Start SUBSYSTEM LIBCLI_AUTH
 [SUBSYSTEM::LIBCLI_AUTH]
-ADD_OBJ_FILES = credentials.o \
+OBJ_FILES = credentials.o \
 		session.o \
 		smbencrypt.o 
 REQUIRED_SUBSYSTEMS = \

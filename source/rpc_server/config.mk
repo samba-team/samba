@@ -3,7 +3,7 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		common/server_info.o \
 		common/share_info.o
 #
@@ -16,7 +16,7 @@ ADD_OBJ_FILES = \
 ENABLE = NO
 INIT_FUNCTION = dcerpc_server_dcom_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		dcom/oxidresolver.o \
 		dcom/rot.o \
 		dcom/rodb.o \
@@ -33,7 +33,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_rpcecho]
 INIT_FUNCTION = dcerpc_server_rpcecho_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		echo/rpc_echo.o
 REQUIRED_SUBSYSTEMS = NDR_ECHO
 # End MODULE dcerpc_rpcecho
@@ -44,7 +44,7 @@ REQUIRED_SUBSYSTEMS = NDR_ECHO
 [MODULE::dcerpc_epmapper]
 INIT_FUNCTION = dcerpc_server_epmapper_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		epmapper/rpc_epmapper.o
 REQUIRED_SUBSYSTEMS = NDR_EPMAPPER
 # End MODULE dcerpc_epmapper
@@ -55,7 +55,7 @@ REQUIRED_SUBSYSTEMS = NDR_EPMAPPER
 [MODULE::dcerpc_remote]
 INIT_FUNCTION = dcerpc_server_remote_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		remote/dcesrv_remote.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB NDR_ALL
@@ -67,7 +67,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_srvsvc]
 INIT_FUNCTION = dcerpc_server_srvsvc_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		srvsvc/dcesrv_srvsvc.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON NDR_SRVSVC
@@ -79,7 +79,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_wkssvc]
 INIT_FUNCTION = dcerpc_server_wkssvc_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		wkssvc/dcesrv_wkssvc.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON NDR_WKSSVC
@@ -91,7 +91,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_unixinfo]
 INIT_FUNCTION = dcerpc_server_unixinfo_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		unixinfo/dcesrv_unixinfo.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
@@ -104,9 +104,8 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
-		samr/dcesrv_samr.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		samr/dcesrv_samr.o \
 		samr/samr_password.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
@@ -120,7 +119,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_winreg]
 INIT_FUNCTION = dcerpc_server_winreg_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		winreg/rpc_winreg.o
 REQUIRED_SUBSYSTEMS = \
 		REGISTRY NDR_WINREG
@@ -132,7 +131,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_netlogon]
 INIT_FUNCTION = dcerpc_server_netlogon_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		netlogon/dcerpc_netlogon.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
@@ -146,7 +145,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_lsarpc]
 INIT_FUNCTION = dcerpc_server_lsarpc_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		lsa/dcesrv_lsa.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
@@ -160,7 +159,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_spoolss]
 INIT_FUNCTION = dcerpc_server_spoolss_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		spoolss/dcesrv_spoolss.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
@@ -174,7 +173,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_drsuapi]
 INIT_FUNCTION = dcerpc_server_drsuapi_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		drsuapi/dcesrv_drsuapi.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
@@ -188,7 +187,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_dssetup]
 INIT_FUNCTION = dcerpc_server_dssetup_init
 SUBSYSTEM = DCERPC
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		dssetup/dcesrv_dssetup.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
@@ -200,9 +199,8 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM DCERPC
 [SUBSYSTEM::DCERPC]
-INIT_OBJ_FILES = \
-		dcerpc_server.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		dcerpc_server.o \
 		dcerpc_sock.o \
 		dcesrv_auth.o \
 		handles.o

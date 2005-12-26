@@ -9,7 +9,7 @@ include credentials/config.mk
 [MODULE::auth_sam]
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = AUTH
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		auth_sam.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB
@@ -21,7 +21,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::auth_anonymous]
 INIT_FUNCTION = auth_anonymous_init
 SUBSYSTEM = AUTH
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		auth_anonymous.o
 # End MODULE auth_anonymous
 #######################
@@ -31,7 +31,7 @@ INIT_OBJ_FILES = \
 [MODULE::auth_winbind]
 INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = AUTH
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		auth_winbind.o
 REQUIRED_SUBSYSTEMS = \
 		LIBWINBIND_CLIENT \
@@ -44,7 +44,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::auth_developer]
 INIT_FUNCTION = auth_developer_init
 SUBSYSTEM = AUTH
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		auth_developer.o
 # End MODULE auth_developer
 #######################
@@ -54,7 +54,7 @@ INIT_OBJ_FILES = \
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = AUTH
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		auth_unix.o
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_CRYPT EXT_LIB_PAM PAM_ERRORS
@@ -67,9 +67,8 @@ OBJ_FILES = pam_errors.o
 #######################
 # Start SUBSYSTEM AUTH
 [SUBSYSTEM::AUTH]
-INIT_OBJ_FILES = \
-		auth.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		auth.o \
 		auth_util.o \
 		auth_sam_reply.o \
 		ntlm_check.o \

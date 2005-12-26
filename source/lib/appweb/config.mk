@@ -1,7 +1,7 @@
 #######################
 # Start SUBSYSTEM MPR
 [SUBSYSTEM::MPR]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		mpr/miniMpr.o \
 		mpr/var.o
 NOPROTO=YES
@@ -12,7 +12,7 @@ NOPROTO=YES
 #######################
 # Start SUBSYSTEM EJS
 [SUBSYSTEM::EJS]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		ejs/ejsLib.o  \
 		ejs/ejsLex.o \
 		ejs/ejsParser.o \
@@ -25,7 +25,7 @@ NOPROTO=YES
 #######################
 # Start SUBSYSTEM ESP
 [SUBSYSTEM::ESP]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		esp/esp.o  \
 		esp/espProcs.o
 REQUIRED_SUBSYSTEMS = EJS

@@ -3,9 +3,8 @@
 #######################
 # Start SUBSYSTEM SMB
 [SUBSYSTEM::SMB]
-INIT_OBJ_FILES = \
-		smb_server.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		smb_server.o \
 		tcon.o \
 		session.o \
 		management.o

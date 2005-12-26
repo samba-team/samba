@@ -1,7 +1,7 @@
 #######################
 # Start SUBSYSTEM HEIMDAL
 [LIBRARY::HEIMDAL]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 	../heimdal/lib/vers/print_version.o \
 	../heimdal/kdc/default_config.o \
 	../heimdal/kdc/kerberos5.o \

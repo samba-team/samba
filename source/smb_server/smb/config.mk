@@ -1,9 +1,8 @@
 #######################
 # Start SUBSYSTEM SMB_PROTOCOL
 [SUBSYSTEM::SMB_PROTOCOL]
-INIT_OBJ_FILES = \
-		receive.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		receive.o \
 		negprot.o \
 		nttrans.o \
 		reply.o \

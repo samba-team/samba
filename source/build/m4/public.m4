@@ -4,7 +4,7 @@ dnl Copyright (C) 2004 Stefan Metzmacher
 dnl Copyright (C) 2004-2005 Jelmer Vernooij
 dnl Published under the GPL
 dnl
-dnl SMB_SUBSYSTEM(name,init_obj_files,add_obj_files,required_subsystems)
+dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
 dnl
 dnl SMB_EXT_LIB_ENABLE(name,default_build)
 dnl
@@ -18,7 +18,7 @@ dnl #######################################################
 dnl ### And now the implementation			###
 dnl #######################################################
 
-dnl SMB_SUBSYSTEM(name,init_obj_files,add_obj_files,required_subsystems)
+dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
 	if test -z "$[SMB_SUBSYSTEM_NOPROTO_][$1]"; then
@@ -29,9 +29,8 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
-INIT_OBJ_FILES = $2
-ADD_OBJ_FILES = $3
-REQUIRED_SUBSYSTEMS = $4
+OBJ_FILES = $2
+REQUIRED_SUBSYSTEMS = $3
 ENABLE = YES
 # End Subsystem $1
 ###################################
