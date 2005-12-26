@@ -28,6 +28,7 @@
 #include "ldb/tools/cmdline.h"
 #ifdef _SAMBA_BUILD_
 #include "lib/cmdline/popt_common.h"
+#include "smb_build.h"
 #endif
 
 /*

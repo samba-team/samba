@@ -34,6 +34,7 @@
 #include "dlinklist.h"
 #include "system/readline.h"
 #include "pstring.h"
+#include "smb_build.h"
 
 static struct smbcli_state *cli;
 static int port = 0;

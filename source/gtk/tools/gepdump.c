@@ -25,6 +25,7 @@
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 #include "lib/cmdline/popt_common.h"
+#include "smb_build.h"
 
 /* 
  * Show: 
@@ -459,7 +460,7 @@ static GtkWidget* create_mainwindow (void)
 }
 
 
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	gepdump_init_subsystems;
 	lp_load();

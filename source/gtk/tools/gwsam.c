@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
+#include "smb_build.h"
 
 struct policy_handle sam_handle;
 struct dcerpc_pipe *sam_pipe = NULL;

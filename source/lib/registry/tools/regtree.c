@@ -23,6 +23,7 @@
 #include "dynconfig.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
+#include "smb_build.h"
 
 static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 {

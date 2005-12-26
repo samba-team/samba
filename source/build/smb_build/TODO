@@ -9,7 +9,4 @@
  - list not automatically generated
  - utility function for 'init mutex'
 - install shared modules
-- call load_modules() from subsystems/libraries/binaries with modules
-- remove smb_build.h include from includes.h and INIT_OBJ_FILES. Replace 
-  with individual include/smb_build.h includes
 - improve (un)install scripts (rewrite in perl?)

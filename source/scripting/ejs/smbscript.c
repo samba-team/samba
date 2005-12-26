@@ -25,6 +25,7 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
+#include "smb_build.h"
 
 static EjsId eid;
 

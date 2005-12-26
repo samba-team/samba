@@ -24,6 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "pstring.h"
+#include "smb_build.h"
 
 static struct cli_credentials *credentials;
 static BOOL showall = False;

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
+#include "smb_build.h"
 
 /* the list of currently registered GENSEC backends */
 const static struct gensec_security_ops **generic_security_ops;

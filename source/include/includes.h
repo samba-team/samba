@@ -113,10 +113,6 @@ struct ipv4_addr {
 #include "cli_context.h"
 #include "auth/credentials/credentials.h"
 
-#ifndef NO_CONFIG_H
-#include "smb_build.h"
-#endif
-
 /***** automatically generated prototypes *****/
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "include/proto.h"
