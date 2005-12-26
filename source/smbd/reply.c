@@ -5465,7 +5465,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	outsize = set_message(outbuf,0,0,True);
 
 	if(!fsp || (fsp->conn != conn)) {
-		END_PROFILE(SMBgetattrE);
+		END_PROFILE(SMBsetattrE);
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
