@@ -419,6 +419,8 @@ static char **reg_completion(const char *text, int start, int end)
 
 	regshell_init_subsystems;
 
+	registry_init();
+
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {

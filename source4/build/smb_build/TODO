@@ -5,7 +5,8 @@
 	ldb.h belong in $INCLUDEDIR
 - add register function to smbtorture
 - init functions per shared library / binary
- - rpc_ndr
+ - gensec
+ - rpc/ndr ??
  - list not automatically generated
  - utility function for 'init mutex'
 - install shared modules

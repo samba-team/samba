@@ -85,6 +85,8 @@ BOOL torture_registry(void)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_registry");
 
+	registry_init();
+
 	ret &= test_hive(mem_ctx, "nt4", "TEST.DAT");
 	ret &= test_hive(mem_ctx, "ldb", "test.ldb");
 	ret &= test_hive(mem_ctx, "gconf", ".");
