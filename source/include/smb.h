@@ -608,5 +608,6 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 #define FS_ATTR_ENCRYPTION                        0x00020000
 #define FS_ATTR_NAMED_STREAMS                     0x00040000
 
+typedef NTSTATUS (*init_module_fn) (void);
 
 #endif /* _SMB_H */

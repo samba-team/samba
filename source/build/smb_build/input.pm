@@ -49,6 +49,10 @@ sub check_module($$$)
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
 	my $use_default = 0;
+	
+	if (not exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS})) {
+		$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS} = [];
+	}
 
 	if (!(defined($INPUT->{$mod->{SUBSYSTEM}}))) {
 		$mod->{ENABLE} = "NO";
@@ -68,12 +72,12 @@ sub check_module($$$)
 		$mod->{OUTPUT_TYPE} = $default_ot;
 	}
 
-	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY" or 
-	    $mod->{OUTPUT_TYPE} eq "STATIC_LIBRARY") {
+	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
 		$mod->{INSTALLDIR} = "LIBDIR/$mod->{SUBSYSTEM}";
 		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM});
 	} else {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
 }
 

@@ -117,7 +117,7 @@ sub process_file($$$)
 		next unless ( $line =~ /
 			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
 			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
-			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_|^REG_KEY|^REG_HANDLE|^REG_VAL|
+			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_|^init_module|
 			      ^GtkWidget|^GType|^smb_ucs2_t
 			      /xo);
 

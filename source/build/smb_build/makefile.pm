@@ -70,6 +70,7 @@ BINDIR = $self->{config}->{bindir}
 SBINDIR = $self->{config}->{sbindir}
 datadir = $self->{config}->{datadir}
 LIBDIR = $self->{config}->{libdir}
+MODULESDIR = $self->{config}->{libdir}
 INCLUDEDIR = $self->{config}->{includedir}
 CONFIGDIR = $self->{config}->{configdir}
 localstatedir = $self->{config}->{localstatedir}

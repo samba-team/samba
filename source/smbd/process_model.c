@@ -80,6 +80,19 @@ NTSTATUS register_process_model(const void *_ops)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS process_model_init(void)
+{
+	init_module_fn static_init[] = STATIC_PROCESS_MODEL_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "process_model");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
+	return NT_STATUS_OK;
+}
+
 /*
   return the operations structure for a named backend of the specified type
 */
