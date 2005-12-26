@@ -15,7 +15,7 @@
 	</para>
 
 	<para>
-	To make Samba scale well in large environments, the <smbcomfoption name="ldapsam:trusted">yes</smbconfoption>
+	o make Samba scale well in large environments, the <smbconfoption name="ldapsam:trusted">yes</smbconfoption>
 	option assumes that the complete user and group database that is relevant to Samba is stored in LDAP with the
 	standard posixAccount/posixGroup attributes. It further assumes that the Samba auxiliary object classes are 
 	stored together with the POSIX data in the same LDAP object. If these assumptions are met, 
