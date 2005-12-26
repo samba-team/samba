@@ -76,7 +76,6 @@ OBJ_FILES = \
 PUBLIC_HEADERS = ntvfs.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
-INIT_FUNCTION = ntvfs_init
 DESCRIPTION = Virtual File System with NTFS semantics
 RELEASE_VERSION = 1
 OBJ_FILES = \
