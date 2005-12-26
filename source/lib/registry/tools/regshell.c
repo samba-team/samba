@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "smb_build.h"
 
 /* 
  * ck/cd - change key

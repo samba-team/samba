@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "pstring.h"
+#include "smb_build.h"
 
 static int numops = 1000;
 static BOOL showall;

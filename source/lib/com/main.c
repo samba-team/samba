@@ -23,6 +23,7 @@
 #include "lib/com/com.h"
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/com_dcom.h"
+#include "smb_build.h"
 
 WERROR com_init_ctx(struct com_context **ctx, struct event_context *event_ctx)
 {

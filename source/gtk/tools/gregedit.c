@@ -24,6 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
+#include "smb_build.h"
 
 static GtkTreeStore *store_keys;
 static GtkListStore *store_vals;

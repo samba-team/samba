@@ -44,6 +44,7 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "lib/cmdline/popt_common.h"
+#include "smb_build.h"
 
 /*
   run a function from a function table. If not found then
