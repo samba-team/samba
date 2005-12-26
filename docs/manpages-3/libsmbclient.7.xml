@@ -32,19 +32,17 @@
 	</para>
 
 	<para>
-	<command>libsmbclient</command> is a library toolset that permits applications
-	to manipulate CIFS/SMB network resources using many of the standards POSIX functions
-	available for manipulating local UNIX/Linux files. It permits much more than just browsing,
-	files can be opened and read or written, permissions changed, file times modified, attributes
-	and ACL's can be manipulated, and so on. Of course, its functionality includes all the
+	<command>libsmbclient</command> is a library toolset that permits applications to manipulate CIFS/SMB network
+	resources using many of the standards POSIX functions available for manipulating local UNIX/Linux files. It
+	permits much more than just browsing, files can be opened and read or written, permissions changed, file times
+	modified, attributes and ACL's can be manipulated, and so on. Of course, its functionality includes all the
 	capabilities commonly called browsing.
 	</para>
 
 	<para>
-	<command>libsmbclient</command> can not be used directly from the command line, instead
-	it provides an extension of the capabilities of tools such as file managers and browsers.
-	This man page describes the configuration options for this tool so that the user may
-	obtain greatest utility of use.
+	<command>libsmbclient</command> can not be used directly from the command line, instead it provides an
+	extension of the capabilities of tools such as file managers and browsers.  This man page describes the
+	configuration options for this tool so that the user may obtain greatest utility of use.
 	</para>
 </refsect1>
 
