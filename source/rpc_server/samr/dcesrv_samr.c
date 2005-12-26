@@ -3521,9 +3521,22 @@ static NTSTATUS samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
   samr_RidToSid 
 */
 static NTSTATUS samr_RidToSid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_RidToSid *r)
+			      struct samr_RidToSid *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_domain_state *d_state;
+	struct dcesrv_handle *h;
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	/* form the users SID */
+	r->out.sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (!r->out.sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
