@@ -24,7 +24,7 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/com_dcom.h"
 
-WERROR com_init(struct com_context **ctx, struct event_context *event_ctx)
+WERROR com_init_ctx(struct com_context **ctx, struct event_context *event_ctx)
 {
 	*ctx = talloc(NULL, struct com_context);
 	if (event_ctx == NULL) {
@@ -87,4 +87,17 @@ WERROR com_get_class_object(struct com_context *ctx, struct GUID *clsid, struct 
 	}
 	
 	return IUnknown_QueryInterface(iu, ctx, iid, ip);
+}
+
+NTSTATUS com_init(void)
+{
+	init_module_fn static_init[] = STATIC_COM_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "com");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
+	return NT_STATUS_OK;	
 }

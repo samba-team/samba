@@ -15,6 +15,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start SUBSYSTEM NTPTR
 [SUBSYSTEM::NTPTR]
+INIT_FUNCTION = ntptr_init
 INIT_OBJ_FILES = \
 		ntptr_base.o
 ADD_OBJ_FILES = \

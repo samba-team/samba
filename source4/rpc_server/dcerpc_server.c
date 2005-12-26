@@ -1338,5 +1338,13 @@ static NTSTATUS dcesrv_init(struct event_context *event_context, const struct mo
 
 NTSTATUS server_service_rpc_init(void)
 {
+	init_module_fn static_init[] = STATIC_DCERPC_MODULES;
+	init_module_fn *shared_init = load_samba_modules(NULL, "rpc_server");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+	
 	return register_server_service("rpc", dcesrv_init);
 }
