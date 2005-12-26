@@ -3,7 +3,7 @@
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
 [SUBSYSTEM::TORTURE_BASIC]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		basic/scanner.o \
 		basic/utable.o \
 		basic/charset.o \
@@ -28,7 +28,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_RAW
 [SUBSYSTEM::TORTURE_RAW]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		raw/qfsinfo.o \
 		raw/qfileinfo.o \
 		raw/setfileinfo.o \
@@ -62,7 +62,7 @@ include smb2/config.mk
 #################################
 # Start SUBSYSTEM TORTURE_COM
 [SUBSYSTEM::TORTURE_COM]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		com/simple.o
 REQUIRED_SUBSYSTEMS = \
 		COM DCOM
@@ -72,7 +72,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_RPC
 [SUBSYSTEM::TORTURE_RPC]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		rpc/join.o \
 		rpc/lsa.o \
 		rpc/session_key.o \
@@ -122,7 +122,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_RAP
 [SUBSYSTEM::TORTURE_RAP]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		rap/rap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
@@ -132,7 +132,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
 [SUBSYSTEM::TORTURE_AUTH]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 REQUIRED_SUBSYSTEMS = \
@@ -145,7 +145,7 @@ include local/config.mk
 #################################
 # Start SUBSYSTEM TORTURE_NBENCH
 [SUBSYSTEM::TORTURE_NBENCH]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		nbench/nbio.o \
 		nbench/nbench.o
 # End SUBSYSTEM TORTURE_NBENCH
@@ -154,7 +154,7 @@ ADD_OBJ_FILES = \
 #################################
 # Start SUBSYSTEM TORTURE_LDAP
 [SUBSYSTEM::TORTURE_LDAP]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		ldap/common.o \
 		ldap/basic.o \
 		ldap/cldap.o \
@@ -167,7 +167,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_NBT
 [SUBSYSTEM::TORTURE_NBT]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		nbt/query.o \
 		nbt/register.o \
 		nbt/wins.o \
@@ -182,7 +182,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_NET
 [SUBSYSTEM::TORTURE_NET]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		libnet/userinfo.o \
 		libnet/userman.o \
 		libnet/domain.o \

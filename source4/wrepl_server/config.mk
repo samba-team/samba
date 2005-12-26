@@ -3,7 +3,7 @@
 #######################
 # Start SUBSYSTEM WREPL_SRV
 [SUBSYSTEM::WREPL_SRV]
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		wrepl_server.o \
 		wrepl_in_connection.o \
 		wrepl_in_call.o \

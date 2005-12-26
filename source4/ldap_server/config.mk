@@ -3,7 +3,7 @@
 #######################
 # Start SUBSYSTEM LDAP
 [SUBSYSTEM::LDAP]
-INIT_OBJ_FILES = \
+OBJ_FILES = \
 		ldap_server.o \
 		ldap_backend.o \
 		ldap_bind.o \

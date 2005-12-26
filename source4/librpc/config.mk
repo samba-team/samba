@@ -6,9 +6,8 @@ MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = Network Data Representation Core Library
 PUBLIC_HEADERS = ndr/libndr.h
-INIT_OBJ_FILES = \
-		ndr/ndr.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		ndr/ndr.o \
 		ndr/ndr_basic.o \
 		ndr/ndr_string.o \
 		ndr/ndr_obfuscate.o \
@@ -20,7 +19,7 @@ REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBTALLOC
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
 [SUBSYSTEM::NDR_COMPRESSION]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		ndr/ndr_compression.o
 REQUIRED_SUBSYSTEMS = LIBCOMPRESSION
 # End SUBSYSTEM NDR_COMPRESSION
@@ -30,300 +29,300 @@ include rpc/config.mk
 
 [SUBSYSTEM::NDR_AUDIOSRV]
 INIT_FUNCTION = dcerpc_audiosrv_init
-INIT_OBJ_FILES = gen_ndr/ndr_audiosrv.o
+OBJ_FILES = gen_ndr/ndr_audiosrv.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DCERPC]
 INIT_FUNCTION = dcerpc_dcerpc_init
-INIT_OBJ_FILES = gen_ndr/ndr_dcerpc.o
+OBJ_FILES = gen_ndr/ndr_dcerpc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_ECHO]
 INIT_FUNCTION = dcerpc_echo_init
-INIT_OBJ_FILES = gen_ndr/ndr_echo.o
+OBJ_FILES = gen_ndr/ndr_echo.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_IRPC]
 INIT_FUNCTION = dcerpc_irpc_init
-INIT_OBJ_FILES = gen_ndr/ndr_irpc.o
+OBJ_FILES = gen_ndr/ndr_irpc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_EXCHANGE]
 INIT_FUNCTION = dcerpc_exchange_init
-INIT_OBJ_FILES = gen_ndr/ndr_exchange.o
+OBJ_FILES = gen_ndr/ndr_exchange.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DSBACKUP]
 INIT_FUNCTION = dcerpc_dsbackup_init
-INIT_OBJ_FILES = gen_ndr/ndr_dsbackup.o
+OBJ_FILES = gen_ndr/ndr_dsbackup.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_EFS]
 INIT_FUNCTION = dcerpc_efs_init
-INIT_OBJ_FILES = gen_ndr/ndr_efs.o
+OBJ_FILES = gen_ndr/ndr_efs.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_MISC]
 INIT_FUNCTION = dcerpc_misc_init
-INIT_OBJ_FILES = gen_ndr/ndr_misc.o
+OBJ_FILES = gen_ndr/ndr_misc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_ROT]
 INIT_FUNCTION = dcerpc_rot_init
-INIT_OBJ_FILES = gen_ndr/ndr_rot.o
+OBJ_FILES = gen_ndr/ndr_rot.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_LSA]
 INIT_FUNCTION = dcerpc_lsa_init
-INIT_OBJ_FILES = gen_ndr/ndr_lsa.o
+OBJ_FILES = gen_ndr/ndr_lsa.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DFS]
 INIT_FUNCTION = dcerpc_dfs_init
-INIT_OBJ_FILES = gen_ndr/ndr_dfs.o
+OBJ_FILES = gen_ndr/ndr_dfs.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DRSUAPI]
 INIT_FUNCTION = dcerpc_drsuapi_init
-INIT_OBJ_FILES = gen_ndr/ndr_drsuapi.o
+OBJ_FILES = gen_ndr/ndr_drsuapi.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_DRSUAPI_PRINT NDR_COMPRESSION
 
 [SUBSYSTEM::NDR_DRSUAPI_PRINT]
-INIT_OBJ_FILES = ndr/ndr_drsuapi.o
+OBJ_FILES = ndr/ndr_drsuapi.o
 
 [SUBSYSTEM::NDR_DRSBLOBS]
 INIT_FUNCTION = dcerpc_drsblobs_init
-INIT_OBJ_FILES = gen_ndr/ndr_drsblobs.o
+OBJ_FILES = gen_ndr/ndr_drsblobs.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_POLICYAGENT]
 INIT_FUNCTION = dcerpc_policyagent_init
-INIT_OBJ_FILES = gen_ndr/ndr_policyagent.o
+OBJ_FILES = gen_ndr/ndr_policyagent.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_UNIXINFO]
 INIT_FUNCTION = dcerpc_unixinfo_init
-INIT_OBJ_FILES = gen_ndr/ndr_unixinfo.o
+OBJ_FILES = gen_ndr/ndr_unixinfo.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_SAMR]
 INIT_FUNCTION = dcerpc_samr_init
-INIT_OBJ_FILES = gen_ndr/ndr_samr.o
+OBJ_FILES = gen_ndr/ndr_samr.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_SPOOLSS]
 INIT_FUNCTION = dcerpc_spoolss_init
-INIT_OBJ_FILES = gen_ndr/ndr_spoolss.o
+OBJ_FILES = gen_ndr/ndr_spoolss.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_SPOOLSS_BUF
 
 [SUBSYSTEM::NDR_SPOOLSS_BUF]
-INIT_OBJ_FILES = ndr/ndr_spoolss_buf.o
+OBJ_FILES = ndr/ndr_spoolss_buf.o
 
 [SUBSYSTEM::NDR_WKSSVC]
 INIT_FUNCTION = dcerpc_wkssvc_init
-INIT_OBJ_FILES = gen_ndr/ndr_wkssvc.o
+OBJ_FILES = gen_ndr/ndr_wkssvc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_SRVSVC]
 INIT_FUNCTION = dcerpc_srvsvc_init
-INIT_OBJ_FILES = gen_ndr/ndr_srvsvc.o
+OBJ_FILES = gen_ndr/ndr_srvsvc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_SVCCTL
 
 [SUBSYSTEM::NDR_SVCCTL]
 INIT_FUNCTION = dcerpc_svcctl_init
-INIT_OBJ_FILES = gen_ndr/ndr_svcctl.o
+OBJ_FILES = gen_ndr/ndr_svcctl.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_ATSVC]
 INIT_FUNCTION = dcerpc_atsvc_init
-INIT_OBJ_FILES = gen_ndr/ndr_atsvc.o
+OBJ_FILES = gen_ndr/ndr_atsvc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_EVENTLOG]
 INIT_FUNCTION = dcerpc_eventlog_init
-INIT_OBJ_FILES = gen_ndr/ndr_eventlog.o
+OBJ_FILES = gen_ndr/ndr_eventlog.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_EPMAPPER]
 INIT_FUNCTION = dcerpc_epmapper_init
-INIT_OBJ_FILES = gen_ndr/ndr_epmapper.o
+OBJ_FILES = gen_ndr/ndr_epmapper.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DBGIDL]
 INIT_FUNCTION = dcerpc_dbgidl_init
-INIT_OBJ_FILES = gen_ndr/ndr_dbgidl.o
+OBJ_FILES = gen_ndr/ndr_dbgidl.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DSSETUP]
 INIT_FUNCTION = dcerpc_dssetup_init
-INIT_OBJ_FILES = gen_ndr/ndr_dssetup.o
+OBJ_FILES = gen_ndr/ndr_dssetup.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_MSGSVC]
 INIT_FUNCTION = dcerpc_msgsvc_init
-INIT_OBJ_FILES = gen_ndr/ndr_msgsvc.o
+OBJ_FILES = gen_ndr/ndr_msgsvc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_WINS]
 INIT_FUNCTION = dcerpc_wins_init
-INIT_OBJ_FILES = gen_ndr/ndr_wins.o
+OBJ_FILES = gen_ndr/ndr_wins.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_WINREG]
 INIT_FUNCTION = dcerpc_winreg_init
-INIT_OBJ_FILES = gen_ndr/ndr_winreg.o
+OBJ_FILES = gen_ndr/ndr_winreg.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_INITSHUTDOWN
 
 [SUBSYSTEM::NDR_INITSHUTDOWN]
 INIT_FUNCTION = dcerpc_initshutdown_init
-INIT_OBJ_FILES = gen_ndr/ndr_initshutdown.o
+OBJ_FILES = gen_ndr/ndr_initshutdown.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_MGMT]
 INIT_FUNCTION = dcerpc_mgmt_init
-INIT_OBJ_FILES = gen_ndr/ndr_mgmt.o
+OBJ_FILES = gen_ndr/ndr_mgmt.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_PROTECTED_STORAGE]
 INIT_FUNCTION = dcerpc_protected_storage_init
-INIT_OBJ_FILES = gen_ndr/ndr_protected_storage.o
+OBJ_FILES = gen_ndr/ndr_protected_storage.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_DCOM]
 INIT_FUNCTION = dcerpc_dcom_init
-INIT_OBJ_FILES = gen_ndr/ndr_dcom.o
+OBJ_FILES = gen_ndr/ndr_dcom.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_ORPC
 
 [SUBSYSTEM::NDR_ORPC_MANUAL]
-INIT_OBJ_FILES = ndr/ndr_orpc.o 
+OBJ_FILES = ndr/ndr_orpc.o 
 
 [SUBSYSTEM::NDR_ORPC]
 INIT_FUNCTION = dcerpc_orpc_init
-INIT_OBJ_FILES = gen_ndr/ndr_orpc.o
+OBJ_FILES = gen_ndr/ndr_orpc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_ORPC_MANUAL
 
 [SUBSYSTEM::NDR_OXIDRESOLVER]
 INIT_FUNCTION = dcerpc_oxidresolver_init
-INIT_OBJ_FILES = gen_ndr/ndr_oxidresolver.o
+OBJ_FILES = gen_ndr/ndr_oxidresolver.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_ORPC
 
 [SUBSYSTEM::NDR_REMACT]
 INIT_FUNCTION = dcerpc_remact_init
-INIT_OBJ_FILES = gen_ndr/ndr_remact.o
+OBJ_FILES = gen_ndr/ndr_remact.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_ORPC
 
 [SUBSYSTEM::NDR_WZCSVC]
 INIT_FUNCTION = dcerpc_wzcsvc_init
-INIT_OBJ_FILES = gen_ndr/ndr_wzcsvc.o
+OBJ_FILES = gen_ndr/ndr_wzcsvc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_BROWSER]
 INIT_FUNCTION = dcerpc_browser_init
-INIT_OBJ_FILES = gen_ndr/ndr_browser.o
+OBJ_FILES = gen_ndr/ndr_browser.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_W32TIME]
 INIT_FUNCTION = dcerpc_w32time_init
-INIT_OBJ_FILES = gen_ndr/ndr_w32time.o
+OBJ_FILES = gen_ndr/ndr_w32time.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_SCERPC]
 INIT_FUNCTION = dcerpc_scerpc_init
-INIT_OBJ_FILES = gen_ndr/ndr_scerpc.o
+OBJ_FILES = gen_ndr/ndr_scerpc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_NTSVCS]
 INIT_FUNCTION = dcerpc_ntsvcs_init
-INIT_OBJ_FILES = gen_ndr/ndr_ntsvcs.o
+OBJ_FILES = gen_ndr/ndr_ntsvcs.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_NETLOGON]
 INIT_FUNCTION = dcerpc_netlogon_init
-INIT_OBJ_FILES = gen_ndr/ndr_netlogon.o
+OBJ_FILES = gen_ndr/ndr_netlogon.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_SAMR
 
 [SUBSYSTEM::NDR_TRKWKS]
 INIT_FUNCTION = dcerpc_trkwks_init
-INIT_OBJ_FILES = gen_ndr/ndr_trkwks.o
+OBJ_FILES = gen_ndr/ndr_trkwks.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_KEYSVC]
 INIT_FUNCTION = dcerpc_keysvc_init
-INIT_OBJ_FILES = gen_ndr/ndr_keysvc.o
+OBJ_FILES = gen_ndr/ndr_keysvc.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_KRB5PAC]
 INIT_FUNCTION = dcerpc_krb5pac_init
-INIT_OBJ_FILES = gen_ndr/ndr_krb5pac.o
+OBJ_FILES = gen_ndr/ndr_krb5pac.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_KRB5PAC_UTIL
 
 [SUBSYSTEM::NDR_KRB5PAC_UTIL]
-INIT_OBJ_FILES = ndr/ndr_krb5pac.o
+OBJ_FILES = ndr/ndr_krb5pac.o
 
 [SUBSYSTEM::NDR_XATTR]
 INIT_FUNCTION = dcerpc_xattr_init
-INIT_OBJ_FILES = gen_ndr/ndr_xattr.o
+OBJ_FILES = gen_ndr/ndr_xattr.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_SCHANNEL]
 INIT_FUNCTION = dcerpc_schannel_init
-INIT_OBJ_FILES = gen_ndr/ndr_schannel.o
+OBJ_FILES = gen_ndr/ndr_schannel.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR
 
 [SUBSYSTEM::NDR_NBT]
-INIT_OBJ_FILES = gen_ndr/ndr_nbt.o
+OBJ_FILES = gen_ndr/ndr_nbt.o
 INIT_FUNCTION = dcerpc_nbt_init
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_MISC
 
 [SUBSYSTEM::NDR_WINSREPL]
-INIT_OBJ_FILES = gen_ndr/ndr_winsrepl.o
+OBJ_FILES = gen_ndr/ndr_winsrepl.o
 INIT_FUNCTION = dcerpc_winsrepl_init
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_NBT
@@ -341,197 +340,197 @@ REQUIRED_SUBSYSTEMS = NDR_AUDIOSRV NDR_ECHO NDR_DCERPC NDR_EXCHANGE \
 	NDR_INITSHUTDOWN
 
 [SUBSYSTEM::RPC_NDR_ROT]
-ADD_OBJ_FILES = gen_ndr/ndr_rot_c.o
+OBJ_FILES = gen_ndr/ndr_rot_c.o
 REQUIRED_SUBSYSTEMS = NDR_ROT LIBRPC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_AUDIOSRV]
-ADD_OBJ_FILES = gen_ndr/ndr_audiosrv_c.o
+OBJ_FILES = gen_ndr/ndr_audiosrv_c.o
 REQUIRED_SUBSYSTEMS = NDR_AUDIOSRV LIBRPC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_ECHO]
-ADD_OBJ_FILES = gen_ndr/ndr_echo_c.o
+OBJ_FILES = gen_ndr/ndr_echo_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_ECHO
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_EXCHANGE]
-ADD_OBJ_FILES = gen_ndr/ndr_exchange_c.o
+OBJ_FILES = gen_ndr/ndr_exchange_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_EXCHANGE
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_DSBACKUP]
-ADD_OBJ_FILES = gen_ndr/ndr_dsbackup_c.o
+OBJ_FILES = gen_ndr/ndr_dsbackup_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DSBACKUP
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_EFS]
-ADD_OBJ_FILES = gen_ndr/ndr_efs_c.o
+OBJ_FILES = gen_ndr/ndr_efs_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_EFS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_LSA]
-ADD_OBJ_FILES = gen_ndr/ndr_lsa_c.o
+OBJ_FILES = gen_ndr/ndr_lsa_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_LSA
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_DFS]
-ADD_OBJ_FILES = gen_ndr/ndr_dfs_c.o
+OBJ_FILES = gen_ndr/ndr_dfs_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DFS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_DRSUAPI]
-ADD_OBJ_FILES = gen_ndr/ndr_drsuapi_c.o
+OBJ_FILES = gen_ndr/ndr_drsuapi_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DRSUAPI
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_DRSBLOBS]
-ADD_OBJ_FILES = gen_ndr/ndr_drsblobs_c.o
+OBJ_FILES = gen_ndr/ndr_drsblobs_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DRSBLOBS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_POLICYAGENT]
-ADD_OBJ_FILES = gen_ndr/ndr_policyagent_c.o
+OBJ_FILES = gen_ndr/ndr_policyagent_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_POLICYAGENT
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_UNIXINFO]
-ADD_OBJ_FILES = gen_ndr/ndr_unixinfo_c.o
+OBJ_FILES = gen_ndr/ndr_unixinfo_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_UNIXINFO
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_SAMR]
-ADD_OBJ_FILES = gen_ndr/ndr_samr_c.o
+OBJ_FILES = gen_ndr/ndr_samr_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_SAMR
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_SPOOLSS]
-ADD_OBJ_FILES = gen_ndr/ndr_spoolss_c.o
+OBJ_FILES = gen_ndr/ndr_spoolss_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_SPOOLSS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_WKSSVC]
-ADD_OBJ_FILES = gen_ndr/ndr_wkssvc_c.o
+OBJ_FILES = gen_ndr/ndr_wkssvc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_WKSSVC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_SRVSVC]
-ADD_OBJ_FILES = gen_ndr/ndr_srvsvc_c.o
+OBJ_FILES = gen_ndr/ndr_srvsvc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_SRVSVC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_SVCCTL]
-ADD_OBJ_FILES = gen_ndr/ndr_svcctl_c.o
+OBJ_FILES = gen_ndr/ndr_svcctl_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_SVCCTL
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_ATSVC]
-ADD_OBJ_FILES = gen_ndr/ndr_atsvc_c.o
+OBJ_FILES = gen_ndr/ndr_atsvc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_ATSVC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
-ADD_OBJ_FILES = gen_ndr/ndr_eventlog_c.o
+OBJ_FILES = gen_ndr/ndr_eventlog_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_EVENTLOG
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_EPMAPPER]
-ADD_OBJ_FILES = gen_ndr/ndr_epmapper_c.o
+OBJ_FILES = gen_ndr/ndr_epmapper_c.o
 REQUIRED_SUBSYSTEMS = NDR_EPMAPPER
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_DBGIDL]
-ADD_OBJ_FILES = gen_ndr/ndr_dbgidl_c.o
+OBJ_FILES = gen_ndr/ndr_dbgidl_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DBGIDL
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_DSSETUP]
-ADD_OBJ_FILES = gen_ndr/ndr_dssetup_c.o
+OBJ_FILES = gen_ndr/ndr_dssetup_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DSSETUP
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_MSGSVC]
-ADD_OBJ_FILES = gen_ndr/ndr_msgsvc_c.o
+OBJ_FILES = gen_ndr/ndr_msgsvc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_MSGSVC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_WINS]
-ADD_OBJ_FILES = gen_ndr/ndr_wins_c.o
+OBJ_FILES = gen_ndr/ndr_wins_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_WINS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_WINREG]
-ADD_OBJ_FILES = gen_ndr/ndr_winreg_c.o
+OBJ_FILES = gen_ndr/ndr_winreg_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_WINREG
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_INITSHUTDOWN]
-ADD_OBJ_FILES = gen_ndr/ndr_initshutdown_c.o
+OBJ_FILES = gen_ndr/ndr_initshutdown_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_INITSHUTDOWN
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_MGMT]
-ADD_OBJ_FILES = gen_ndr/ndr_mgmt_c.o
+OBJ_FILES = gen_ndr/ndr_mgmt_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_MGMT
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_PROTECTED_STORAGE]
-ADD_OBJ_FILES = gen_ndr/ndr_protected_storage_c.o
+OBJ_FILES = gen_ndr/ndr_protected_storage_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_PROTECTED_STORAGE
 NOPROTO = YES
 
 [SUBSYSTEM::DCOM_PROXY_DCOM]
-ADD_OBJ_FILES = gen_ndr/ndr_dcom_c.o
+OBJ_FILES = gen_ndr/ndr_dcom_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_DCOM
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_OXIDRESOLVER]
-ADD_OBJ_FILES = gen_ndr/ndr_oxidresolver_c.o
+OBJ_FILES = gen_ndr/ndr_oxidresolver_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_OXIDRESOLVER
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_REMACT]
-ADD_OBJ_FILES = gen_ndr/ndr_remact_c.o
+OBJ_FILES = gen_ndr/ndr_remact_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_REMACT
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_WZCSVC]
-ADD_OBJ_FILES = gen_ndr/ndr_wzcsvc_c.o
+OBJ_FILES = gen_ndr/ndr_wzcsvc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_WZCSVC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_BROWSER]
-ADD_OBJ_FILES = gen_ndr/ndr_browser_c.o
+OBJ_FILES = gen_ndr/ndr_browser_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_BROWSER
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_W32TIME]
-ADD_OBJ_FILES = gen_ndr/ndr_w32time_c.o
+OBJ_FILES = gen_ndr/ndr_w32time_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_W32TIME
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_SCERPC]
-ADD_OBJ_FILES = gen_ndr/ndr_scerpc_c.o
+OBJ_FILES = gen_ndr/ndr_scerpc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_SCERPC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_NTSVCS]
-ADD_OBJ_FILES = gen_ndr/ndr_ntsvcs_c.o
+OBJ_FILES = gen_ndr/ndr_ntsvcs_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_NTSVCS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_NETLOGON]
-ADD_OBJ_FILES = gen_ndr/ndr_netlogon_c.o
+OBJ_FILES = gen_ndr/ndr_netlogon_c.o
 REQUIRED_SUBSYSTEMS = NDR_NETLOGON
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_TRKWKS]
-ADD_OBJ_FILES = gen_ndr/ndr_trkwks_c.o
+OBJ_FILES = gen_ndr/ndr_trkwks_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_TRKWKS
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_NDR_KEYSVC]
-ADD_OBJ_FILES = gen_ndr/ndr_keysvc_c.o
+OBJ_FILES = gen_ndr/ndr_keysvc_c.o
 REQUIRED_SUBSYSTEMS = LIBRPC NDR_KEYSVC
 NOPROTO = YES
 

@@ -3,7 +3,7 @@
 #######################
 # Start SUBSYSTEM WINSDB
 [SUBSYSTEM::WINSDB]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		wins/winsdb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB
@@ -13,7 +13,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM NBTD_WINS
 [SUBSYSTEM::NBTD_WINS]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		wins/winsserver.o \
 		wins/winsclient.o \
 		wins/winswack.o
@@ -25,7 +25,7 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM NBTD_DGRAM
 [SUBSYSTEM::NBTD_DGRAM]
-ADD_OBJ_FILES = \
+OBJ_FILES = \
 		dgram/request.o \
 		dgram/netlogon.o \
 		dgram/ntlogon.o \
@@ -38,9 +38,8 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM NBTD
 [SUBSYSTEM::NBTD]
-INIT_OBJ_FILES = \
-		nbt_server.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		nbt_server.o \
 		interfaces.o \
 		register.o \
 		query.o \

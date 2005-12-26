@@ -8,9 +8,8 @@ DESCRIPTION = User-friendly access to Samba interfaces
 PUBLIC_HEADERS = libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
 				 libnet_rpc.h libnet_share.h libnet_time.h libnet_user.h \
 				 libnet_vampire.h userinfo.h userman.h
-INIT_OBJ_FILES = \
-		libnet.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		libnet.o \
 		libnet_passwd.o \
 		libnet_time.o \
 		libnet_rpc.o \

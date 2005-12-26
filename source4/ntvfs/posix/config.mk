@@ -3,9 +3,8 @@
 [MODULE::ntvfs_posix]
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_posix_init 
-INIT_OBJ_FILES = \
-		vfs_posix.o
-ADD_OBJ_FILES = \
+OBJ_FILES = \
+		vfs_posix.o \
 		pvfs_util.o \
 		pvfs_search.o \
 		pvfs_dirlist.o \
