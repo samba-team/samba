@@ -19,8 +19,9 @@
 	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>pam_winbind is a PAM module that can authenticate users against the local domain 
-	by talking to the Winbind daemon.</para>
+	<para>
+	pam_winbind is a PAM module that can authenticate users against the local domain by talking to the Winbind daemon.
+	</para>
 
 </refsect1>
 
@@ -38,14 +39,12 @@
 		<varlistentry>
 		<term>require_membership_of=[SID or NAME]</term>
 		<listitem><para>
-		If this option is set, pam_winbind will only succeed if the
-		user is a member of the given SID or NAME. A SID can be either a group-SID, a
-		alias-SID or even a user-SID. It is also possible to give a NAME instead of the
+		If this option is set, pam_winbind will only succeed if the user is a member of the given SID or NAME. A SID
+		can be either a group-SID, a alias-SID or even a user-SID. It is also possible to give a NAME instead of the
 		SID. That name must have the form: <parameter>MYDOMAIN\mygroup</parameter> or
-		<parameter>MYDOMAIN\myuser</parameter>.  pam_winbind will, in that case, lookup
-		the SID internally. Note that NAME may not contain any spaces. It is thus 
-		recommended to only use SIDs. You can verify the list of SIDs a user is a member 
-		of with <command>wbinfo --user-sids=SID</command>.
+		<parameter>MYDOMAIN\myuser</parameter>.  pam_winbind will, in that case, lookup the SID internally. Note that
+		NAME may not contain any spaces. It is thus recommended to only use SIDs. You can verify the list of SIDs a
+		user is a member of with <command>wbinfo --user-sids=SID</command>.
 		</para></listitem>
 		</varlistentry>
 
@@ -57,19 +56,17 @@
 		<varlistentry>
 		<term>use_first_pass</term>
 		<listitem><para>
-		By default, pam_winbind tries to get the
-		authentication token from a previous module. If no token is available it asks the user
-		for the old password. With this option, pam_winbind aborts with an
-		error if no authentication token from a previous module is available.
+		By default, pam_winbind tries to get the authentication token from a previous module. If no token is available
+		it asks the user for the old password. With this option, pam_winbind aborts with an error if no authentication
+		token from a previous module is available.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>use_authtok</term>
 		<listitem><para>
-		Set the new password to the one provided by the previously
-		stacked password module. If this option is not set pam_winbind will ask the
-		user for the new password.
+		Set the new password to the one provided by the previously stacked password module. If this option is not set 
+		pam_winbind will ask the user for the new password.
 		</para></listitem>
 		</varlistentry>
 
@@ -98,10 +95,10 @@
 <refsect1>
 	<title>AUTHOR</title>
 	
-	<para>The original Samba software and related utilities 
-	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</para>
+	<para>
+	The original Samba software and related utilities were created by Andrew Tridgell. Samba is now developed by
+	the Samba Team as an Open Source project similar to the way the Linux kernel is developed.
+	</para>
 	
 	<para>This manpage was written by Jelmer Vernooij and Guenther Deschner.</para>
 
