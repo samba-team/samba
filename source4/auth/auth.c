@@ -23,6 +23,7 @@
 #include "dlinklist.h"
 #include "auth/auth.h"
 #include "lib/events/events.h"
+#include "smb_build.h"
 
 /***************************************************************************
  Set a fixed challenge

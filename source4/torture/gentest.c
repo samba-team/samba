@@ -24,6 +24,7 @@
 #include "request.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "smb_build.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2

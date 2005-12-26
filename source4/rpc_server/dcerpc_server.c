@@ -31,6 +31,7 @@
 #include "lib/events/events.h"
 #include "smbd/service_stream.h"
 #include "system/filesys.h"
+#include "smb_build.h"
 
 /*
   see if two endpoints match

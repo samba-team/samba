@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "smb_server/smb_server.h"
+#include "smb_build.h"
 
 /*
   setup the events for the chosen process model
