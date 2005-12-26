@@ -1135,9 +1135,12 @@ BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (policy_min_pw_len) /* try again with the right min password length */ {
 			ret = test_ChangePasswordUser3(p, mem_ctx, account_string, policy_min_pw_len, password);
 		} else {
-			printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
+			printf("ChangePasswordUser3 failed (no min length known) - %s\n", nt_errstr(status));
 			ret = False;
 		}
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+		printf("ChangePasswordUser3 failed: %s unacceptable as new password - %s\n", newpass, nt_errstr(status));
+		ret = False;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
 		ret = False;
@@ -2752,21 +2755,38 @@ static BOOL test_TestPrivateFunctionsDomain(struct dcerpc_pipe *p, TALLOC_CTX *m
 }
 
 static BOOL test_RidToSid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct dom_sid *domain_sid,
 			  struct policy_handle *domain_handle)
 {
     	struct samr_RidToSid r;
 	NTSTATUS status;
 	BOOL ret = True;
+	struct dom_sid *calc_sid;
+	int rids[] = { 0, 42, 512, 10200 };
+	int i;
 
-	printf("Testing RidToSid\n");
+	for (i=0;i<ARRAY_SIZE(rids);i++) {
+	
+		printf("Testing RidToSid\n");
+		
+		calc_sid = dom_sid_dup(mem_ctx, domain_sid);
+		r.in.domain_handle = domain_handle;
+		r.in.rid = rids[i];
+		
+		status = dcerpc_samr_RidToSid(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("RidToSid for %d failed - %s\n", rids[i], nt_errstr(status));
+			ret = False;
+		} else {
+			calc_sid = dom_sid_add_rid(calc_sid, calc_sid, rids[i]);
 
-	r.in.domain_handle = domain_handle;
-	r.in.rid = 512;
-
-	status = dcerpc_samr_RidToSid(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("RidToSid failed - %s\n", nt_errstr(status));
-		ret = False;
+			if (!dom_sid_equal(calc_sid, r.out.sid)) {
+				printf("RidToSid for %d failed - got %s, expected %s\n", rids[i], 
+				       dom_sid_string(mem_ctx, r.out.sid), 
+				       dom_sid_string(mem_ctx, calc_sid));
+				ret = False;
+			}
+		}
 	}
 
 	return ret;
@@ -3005,7 +3025,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
 	ret &= test_GroupList(p, mem_ctx, &domain_handle);
 	ret &= test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle);
-	ret &= test_RidToSid(p, mem_ctx, &domain_handle);
+	ret &= test_RidToSid(p, mem_ctx, sid, &domain_handle);
 	ret &= test_GetBootKeyInformation(p, mem_ctx, &domain_handle);
 
 	if (!policy_handle_empty(&user_handle) &&
