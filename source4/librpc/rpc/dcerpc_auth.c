@@ -31,8 +31,7 @@
 
 struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 						     struct dcerpc_pipe *p,
-						     const char *uuid,
-						     uint_t version)
+							 const struct dcerpc_interface_table *table)
 {
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;
@@ -42,7 +41,7 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
-	c->status = dcerpc_init_syntaxes(uuid, version,
+	c->status = dcerpc_init_syntaxes(table,
 					 &syntax, &transfer_syntax);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(2,("Invalid uuid string in "
@@ -63,10 +62,10 @@ NTSTATUS dcerpc_bind_auth_none_recv(struct composite_context *ctx)
 }
 
 NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
-			       const char *uuid, uint_t version)
+			       const struct dcerpc_interface_table *table)
 {
 	struct composite_context *ctx;
-	ctx = dcerpc_bind_auth_none_send(p, p, uuid, version);
+	ctx = dcerpc_bind_auth_none_send(p, p, table);
 	return dcerpc_bind_auth_none_recv(ctx);
 }
 
@@ -166,7 +165,7 @@ static void bind_auth_recv_bindreply(struct composite_context *creq)
 
 struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 						struct dcerpc_pipe *p,
-						const char *uuid, uint_t version,
+						const struct dcerpc_interface_table *table,
 						struct cli_credentials *credentials,
 						uint8_t auth_type,
 						const char *service)
@@ -192,7 +191,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	state->pipe = p;
 
-	c->status = dcerpc_init_syntaxes(uuid, version,
+	c->status = dcerpc_init_syntaxes(table,
 					 &syntax,
 					 &transfer_syntax);
 	if (!NT_STATUS_IS_OK(c->status)) goto failed;
@@ -321,13 +320,13 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
   setup GENSEC on a DCE-RPC pipe
 */
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
-			  const char *uuid, uint_t version,
+			  const struct dcerpc_interface_table *table,
 			  struct cli_credentials *credentials,
 			  uint8_t auth_type,
 			  const char *service)
 {
 	struct composite_context *creq;
-	creq = dcerpc_bind_auth_send(p, p, uuid, version, credentials,
+	creq = dcerpc_bind_auth_send(p, p, table, credentials,
 				     auth_type, service);
 	return dcerpc_bind_auth_recv(creq);
 }

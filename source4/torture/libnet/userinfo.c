@@ -279,9 +279,7 @@ BOOL torture_userinfo(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,
-					DCERPC_SAMR_NAME,
-					DCERPC_SAMR_UUID,
-					DCERPC_SAMR_VERSION);
+					&dcerpc_table_samr);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;

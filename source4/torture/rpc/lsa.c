@@ -1818,11 +1818,7 @@ BOOL torture_rpc_lsa(void)
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					DCERPC_LSARPC_NAME, 
-					DCERPC_LSARPC_UUID, 
-					DCERPC_LSARPC_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

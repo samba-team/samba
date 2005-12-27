@@ -823,7 +823,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 }
 
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				const char *uuid, uint_t version, struct event_context *ev)
+				const struct dcerpc_interface_table *table, struct event_context *ev)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
@@ -832,7 +832,6 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	struct GUID guid;
 	struct epm_twr_t twr, *twr_r;
 	struct dcerpc_binding *epmapper_binding;
-	const struct dcerpc_interface_table *table = idl_iface_by_uuid(uuid);
 	int i;
 
 	struct cli_credentials *anon_creds
@@ -879,8 +878,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	status = dcerpc_pipe_connect_b(mem_ctx, 
 				       &p,
 				       epmapper_binding,
-				       DCERPC_EPMAPPER_UUID,
-				       DCERPC_EPMAPPER_VERSION,
+					   &dcerpc_table_epmapper,
 				       anon_creds, ev);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -890,12 +888,12 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	ZERO_STRUCT(handle);
 	ZERO_STRUCT(guid);
 
-	status = GUID_from_string(uuid, &binding->object);
+	status = GUID_from_string(table->uuid, &binding->object);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
-	binding->object_version = version;
+	binding->object_version = table->if_version;
 
 	status = dcerpc_binding_build_tower(p, binding, &twr.tower);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -944,8 +942,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 */
 NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p, 
 			  struct dcerpc_binding *binding,
-			  const char *pipe_uuid, 
-			  uint32_t pipe_version,
+			  const struct dcerpc_interface_table *table,
 			  struct cli_credentials *credentials)
 {
 	NTSTATUS status;
@@ -964,9 +961,7 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		/* If we don't already have netlogon credentials for
 		 * the schannel bind, then we have to get these
 		 * first */
-		status = dcerpc_bind_auth_schannel(tmp_ctx, 
-						   p, pipe_uuid, pipe_version, 
-						   credentials);
+		status = dcerpc_bind_auth_schannel(tmp_ctx, p, table, credentials);
 	} else if (!cli_credentials_is_anonymous(credentials) &&
 		!(binding->transport == NCACN_NP &&
 		  !(binding->flags & DCERPC_SIGN) &&
@@ -1001,15 +996,15 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		}
 
-		status = dcerpc_bind_auth(p, pipe_uuid, pipe_version, 
+		status = dcerpc_bind_auth(p, table,
 					  credentials, auth_type,
 					  binding->authservice);
 	} else {
-		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
+		status = dcerpc_bind_auth_none(p, table);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", pipe_uuid, nt_errstr(status)));
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", table->uuid, nt_errstr(status)));
 	}
 	talloc_free(tmp_ctx);
 	return status;
@@ -1034,8 +1029,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 static NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *tmp_ctx, 
 					    struct dcerpc_pipe *p, 
 					    struct dcerpc_binding *binding,
-					    const char *pipe_uuid, 
-					    uint32_t pipe_version)
+						const struct dcerpc_interface_table *table)
 {
 	NTSTATUS status;
 
@@ -1056,8 +1050,7 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *tmp_ctx,
 static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(TALLOC_CTX *tmp_ctx, 
 						      struct dcerpc_pipe *p, 
 						      struct dcerpc_binding *binding,
-						      const char *pipe_uuid, 
-						      uint32_t pipe_version)
+						 	  const struct dcerpc_interface_table *table)
 {
 	NTSTATUS status;
 
@@ -1071,7 +1064,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(TALLOC_CTX *tmp_ctx,
 		DEBUG(0,("Failed to open unix socket %s - %s\n", 
 			 binding->endpoint, nt_errstr(status)));
 		talloc_free(p);
-                return status;
+        return status;
 	}
 
 	return status;
@@ -1082,8 +1075,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(TALLOC_CTX *tmp_ctx,
 static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *tmp_ctx, 
 						 struct dcerpc_pipe *p, 
 						 struct dcerpc_binding *binding,
-						 const char *pipe_uuid, 
-						 uint32_t pipe_version)
+						 const struct dcerpc_interface_table *table)
 {
 	NTSTATUS status;
 	uint32_t port = 0;
@@ -1106,8 +1098,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *tmp_ctx,
 NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx, 
 			       struct dcerpc_pipe **pp, 
 			       struct dcerpc_binding *binding,
-			       const char *pipe_uuid, 
-			       uint32_t pipe_version,
+				   const struct dcerpc_interface_table *table,
 			       struct cli_credentials *credentials,
 			       struct event_context *ev)
 {
@@ -1130,12 +1121,11 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 	case NCACN_IP_TCP:
 	case NCALRPC:
 		if (!binding->endpoint) {
-			status = dcerpc_epm_map_binding(tmp_ctx, binding, 
-							pipe_uuid, pipe_version, 
+			status = dcerpc_epm_map_binding(tmp_ctx, binding, table,
 							p->conn->event_ctx);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("Failed to map DCERPC endpoint for '%s' - %s\n", 
-					 pipe_uuid, nt_errstr(status)));
+					 table->uuid, nt_errstr(status)));
 				return status;
 			}
 			DEBUG(2,("Mapped to DCERPC endpoint %s\n", binding->endpoint));
@@ -1150,8 +1140,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 
 	pc.pipe          = p;
 	pc.binding       = binding;
-	pc.pipe_uuid     = pipe_uuid;
-	pc.pipe_version  = pipe_version;
+	pc.interface 	 = table;
 	pc.creds         = credentials;
 
 	switch (binding->transport) {
@@ -1161,15 +1150,15 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 
 	case NCACN_IP_TCP:
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(tmp_ctx, 
-							  p, binding, pipe_uuid, pipe_version);
+							  p, binding, table);
 		break;
 	case NCACN_UNIX_STREAM:
 		status = dcerpc_pipe_connect_ncacn_unix_stream(tmp_ctx, 
-							       p, binding, pipe_uuid, pipe_version);
+							       p, binding, table);
 		break;
 	case NCALRPC:
 		status = dcerpc_pipe_connect_ncalrpc(tmp_ctx, 
-						     p, binding, pipe_uuid, pipe_version);
+						     p, binding, table);
 		break;
 	default:
 		return NT_STATUS_NOT_SUPPORTED;
@@ -1180,7 +1169,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 		return status;
 	}
 
-	status = dcerpc_pipe_auth(p, binding, pipe_uuid, pipe_version, credentials);
+	status = dcerpc_pipe_auth(p, binding, table, credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p);
 		return status;
@@ -1196,9 +1185,8 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
    binding to determine the endpoint and options */
 NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
 			     struct dcerpc_pipe **pp, 
-			     const char *binding,
-			     const char *pipe_uuid, 
-			     uint32_t pipe_version,
+				 const char *binding,
+				 const struct dcerpc_interface_table *table,
 			     struct cli_credentials *credentials,
 			     struct event_context *ev)
 {
@@ -1220,9 +1208,7 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 
 	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
 
-	status = dcerpc_pipe_connect_b(tmp_ctx,
-				       pp, b, pipe_uuid, pipe_version, 
-				       credentials, ev);
+	status = dcerpc_pipe_connect_b(tmp_ctx, pp, b, table, credentials, ev);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*pp = talloc_steal(parent_ctx, *pp);
@@ -1344,8 +1330,7 @@ void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
 */
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
 				  struct dcerpc_pipe **pp2,
-				  const char *pipe_uuid,
-				  uint32_t pipe_version)
+				  const struct dcerpc_interface_table *table)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
@@ -1359,12 +1344,12 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->context_id = ++p->conn->next_context_id;
 
-	status = GUID_from_string(pipe_uuid, &p2->syntax.uuid);
+	status = GUID_from_string(table->uuid, &p2->syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p2);
 		return status;
 	}
-	p2->syntax.if_version = pipe_version;
+	p2->syntax.if_version = table->if_version;
 
 	status = GUID_from_string(NDR_GUID, &p2->transfer_syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {

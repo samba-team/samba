@@ -82,17 +82,15 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 
 	if (server == NULL) { 
 		return dcerpc_pipe_connect(ctx, p, "ncalrpc", 
-					   DCERPC_IREMOTEACTIVATION_UUID, 
-					   DCERPC_IREMOTEACTIVATION_VERSION,
-					   ctx->dcom->credentials, ctx->event_ctx);
+								   &dcerpc_table_IRemoteActivation,
+					   			   ctx->dcom->credentials, ctx->event_ctx);
 	}
 
 	/* Allow server name to contain a binding string */
 	if (NT_STATUS_IS_OK(dcerpc_parse_binding(mem_ctx, server, &bd))) {
 		status = dcerpc_pipe_connect_b(ctx, p, bd, 
-					       DCERPC_IREMOTEACTIVATION_UUID, 
-					       DCERPC_IREMOTEACTIVATION_VERSION, 
-					       ctx->dcom->credentials, ctx->event_ctx);
+									   &dcerpc_table_IRemoteActivation,
+					       			   ctx->dcom->credentials, ctx->event_ctx);
 
 		talloc_free(mem_ctx);
 		return status;
@@ -107,8 +105,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		}
 		
 		status = dcerpc_pipe_connect(ctx, p, binding, 
-					     DCERPC_IREMOTEACTIVATION_UUID, 
-					     DCERPC_IREMOTEACTIVATION_VERSION, 
+									 &dcerpc_table_IRemoteActivation,
 					     ctx->dcom->credentials, ctx->event_ctx);
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -282,7 +279,11 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 		if (!GUID_equal(&p->syntax.uuid, &iid)) {
 			struct dcerpc_pipe *p2;
 			ox->pipe->syntax.uuid = iid;
-			status = dcerpc_secondary_context(p, &p2, uuid, 0);
+
+			/* interface will always be present, so 
+			 * idl_iface_by_uuid can't return NULL */
+			status = dcerpc_secondary_context(p, &p2, idl_iface_by_uuid(uuid));
+
 			if (NT_STATUS_IS_OK(status)) {
 				p = p2;
 			}
@@ -301,13 +302,10 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Error parsing string binding"));
 		} else {
-			/* TODO: jelmer, please look at this. The
-			   "NULL" here should be a real event
-			   context */
 			status = dcerpc_pipe_connect_b(NULL, &p, binding, 
-						       uuid, 0.0, 
+						       idl_iface_by_uuid(uuid),
 						       iface->ctx->dcom->credentials,
-						       NULL);
+							   iface->ctx->event_ctx);
 		}
 		talloc_free(binding);
 		i++;

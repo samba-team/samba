@@ -174,8 +174,7 @@ static BOOL _test_DsBind(struct DsSyncTest *ctx, struct cli_credentials *credent
 
 	status = dcerpc_pipe_connect_b(ctx,
 				       &b->pipe, ctx->drsuapi_binding, 
-				       DCERPC_DRSUAPI_UUID,
-				       DCERPC_DRSUAPI_VERSION,
+					   &dcerpc_table_drsuapi,
 				       credentials, event);
 	
 	if (!NT_STATUS_IS_OK(status)) {

@@ -218,9 +218,7 @@ BOOL torture_delshare(void)
 
 	status = torture_rpc_connection(mem_ctx,
 					&p,
-					DCERPC_SRVSVC_NAME,
-					DCERPC_SRVSVC_UUID,
-					DCERPC_SRVSVC_VERSION);
+					&dcerpc_table_srvsvc);
 
 	if (!test_addshare(p, mem_ctx, host, TEST_SHARENAME)) {
 		ret = False;

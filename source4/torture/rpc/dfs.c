@@ -175,9 +175,7 @@ BOOL torture_rpc_dfs(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					DCERPC_NETDFS_NAME,
-					DCERPC_NETDFS_UUID,
-					DCERPC_NETDFS_VERSION);
+					&dcerpc_table_netdfs);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

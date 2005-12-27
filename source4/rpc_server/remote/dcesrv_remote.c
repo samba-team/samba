@@ -31,6 +31,7 @@ struct dcesrv_remote_private {
 static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
         NTSTATUS status;
+		const struct dcerpc_interface_table *table;
         struct dcesrv_remote_private *private;
 	const char *binding = lp_parm_string(-1, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
@@ -48,13 +49,19 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	dce_call->context->private = private;
 
 	if (!binding) {
-		DEBUG(0,("You must specify a ncacn binding string\n"));
+		DEBUG(0,("You must specify a DCE/RPC binding string\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	user = lp_parm_string(-1, "dcerpc_remote", "user");
 	pass = lp_parm_string(-1, "dcerpc_remote", "password");
 	domain = lp_parm_string(-1, "dceprc_remote", "domain");
+
+	table = idl_iface_by_uuid(iface->uuid); /* FIXME: What about if_version ? */
+	if (!table) {
+		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
 
 	if (user && pass) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using specified account\n"));
@@ -88,8 +95,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	}
 
 	status = dcerpc_pipe_connect(private, 
-				     &(private->c_pipe), binding, 
-				     iface->uuid, iface->if_version, 
+				     &(private->c_pipe), binding, table,
 				     credentials, dce_call->event_ctx);
 
 	talloc_free(credentials);
@@ -272,13 +278,10 @@ static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const ch
 
 static BOOL remote_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
-	const struct dcerpc_interface_list *l;
+	const struct dcerpc_interface_table *tbl = idl_iface_by_name(name);
 
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (strcmp(l->table->name, name)==0) {
-			return remote_fill_interface(iface, l->table);
-		}
-	}
+	if (tbl)
+		return remote_fill_interface(iface, tbl);
 
 	return False;	
 }

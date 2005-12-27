@@ -31,15 +31,13 @@ BOOL test_lsa_connect(struct libnet_context *ctx)
 	struct libnet_RpcConnect connect;
 	connect.level                     = LIBNET_RPC_CONNECT_PDC;
 	connect.in.domain_name            = lp_workgroup();
-	connect.in.dcerpc_iface_name      = DCERPC_LSARPC_NAME;
-	connect.in.dcerpc_iface_uuid      = DCERPC_LSARPC_UUID;
-	connect.in.dcerpc_iface_version   = DCERPC_LSARPC_VERSION;
+	connect.in.dcerpc_iface			  = &dcerpc_table_lsarpc;
 
 	status = libnet_RpcConnect(ctx, ctx, &connect);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't connect to rpc service %s on %s: %s\n",
-		       connect.in.dcerpc_iface_name, connect.in.domain_name,
+		       connect.in.dcerpc_iface->name, connect.in.domain_name,
 		       nt_errstr(status));
 
 		return False;
@@ -55,15 +53,13 @@ BOOL test_samr_connect(struct libnet_context *ctx)
 	struct libnet_RpcConnect connect;
 	connect.level                     = LIBNET_RPC_CONNECT_PDC;
 	connect.in.domain_name            = lp_workgroup();
-	connect.in.dcerpc_iface_name      = DCERPC_SAMR_NAME;
-	connect.in.dcerpc_iface_uuid      = DCERPC_SAMR_UUID;
-	connect.in.dcerpc_iface_version   = DCERPC_SAMR_VERSION;
+	connect.in.dcerpc_iface      	  = &dcerpc_table_samr;
 
 	status = libnet_RpcConnect(ctx, ctx, &connect);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't connect to rpc service %s on %s: %s\n",
-		       connect.in.dcerpc_iface_name, connect.in.domain_name,
+		       connect.in.dcerpc_iface->name, connect.in.domain_name,
 		       nt_errstr(status));
 
 		return False;

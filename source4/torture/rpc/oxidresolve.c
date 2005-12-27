@@ -227,9 +227,7 @@ BOOL torture_rpc_oxidresolve(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&premact, 
-					DCERPC_IREMOTEACTIVATION_NAME, 
-					DCERPC_IREMOTEACTIVATION_UUID, 
-					DCERPC_IREMOTEACTIVATION_VERSION);								
+					&dcerpc_table_IRemoteActivation);
 			
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
@@ -238,9 +236,7 @@ BOOL torture_rpc_oxidresolve(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					DCERPC_IOXIDRESOLVER_NAME, 
-					DCERPC_IOXIDRESOLVER_UUID, 
-					DCERPC_IOXIDRESOLVER_VERSION);
+					&dcerpc_table_IOXIDResolver);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
