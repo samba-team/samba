@@ -27,68 +27,6 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "libcli/raw/libcliraw.h"
-#include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
-
-/*
-  find the pipe name for a local IDL interface
-*/
-const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
-{
-	const struct dcerpc_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (GUID_equal(&l->table->uuid, uuid) &&
-		    l->table->if_version == if_version) {
-			return l->table->name;
-		}
-	}
-	return "UNKNOWN";
-}
-
-/*
-  find the number of calls defined by local IDL
-*/
-int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
-{
-	const struct dcerpc_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next){
-		if (GUID_equal(&l->table->uuid, uuid) &&
-		    l->table->if_version == if_version) {
-			return l->table->num_calls;
-		}
-	}
-	return -1;
-}
-
-
-/*
-  find a dcerpc interface by name
-*/
-const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
-{
-	const struct dcerpc_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (strcasecmp(l->table->name, name) == 0) {
-			return l->table;
-		}
-	}
-	return NULL;
-}
-
-/*
-  find a dcerpc interface by uuid
-*/
-const struct dcerpc_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
-{
-	const struct dcerpc_interface_list *l;
-	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (GUID_equal(&l->table->uuid, uuid)) {
-			return l->table;
-		}
-	}
-	return NULL;
-}
 
 /*
   find a dcerpc call on an interface by name

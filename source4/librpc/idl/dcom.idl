@@ -188,15 +188,6 @@ interface IRemUnknown2 : IRemUnknown
 [
 	object,
 	pointer_default(unique),
-	uuid("00000136-0000-0000-C000-000000000046")
-	] interface ISCMActivator : IClassActivator
-{
-	WERROR SCMActivator_CreateInstance();
-}
-
-[
-	object,
-	pointer_default(unique),
 	uuid("00020400-0000-0000-C000-000000000046")
 	] interface IDispatch : IUnknown
 {
