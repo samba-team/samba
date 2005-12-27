@@ -526,8 +526,7 @@ enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_domain *domain,
 	 * odd. This needs discussion I think. For now only allocate user
 	 * rids. */
 
-	if (!NT_STATUS_IS_OK(idmap_allocate_rid(&state->response.data.rid,
-						USER_RID_TYPE)))
+	if (!NT_STATUS_IS_OK(idmap_allocate_rid(&state->response.data.rid)))
 		return WINBINDD_ERROR;
 
 	return WINBINDD_OK;
@@ -555,8 +554,7 @@ enum winbindd_result winbindd_dual_allocate_rid_and_gid(struct winbindd_domain *
 	 * historic and needs to be fixed. I *think* this has to do with the
 	 * way winbind determines its free RID space. */
 
-	result = idmap_allocate_rid(&state->response.data.rid_and_gid.rid,
-				    USER_RID_TYPE);
+	result = idmap_allocate_rid(&state->response.data.rid_and_gid.rid);
 
 	if (!NT_STATUS_IS_OK(result))
 		return WINBINDD_ERROR;

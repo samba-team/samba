@@ -49,16 +49,11 @@ static struct idmap_state {
  allocate a new RID; We don't care if is a user or group
 **********************************************************************/
 
-static NTSTATUS db_allocate_rid(uint32 *rid, int rid_type)
+static NTSTATUS db_allocate_rid(uint32 *rid)
 {
 	uint32 lowrid, highrid;
 	uint32 tmp_rid;
 
-	/* can't handle group rids right now.  This is such a mess.... */
-
-	if ( rid_type == GROUP_RID_TYPE )
-		return NT_STATUS_UNSUCCESSFUL;
-	
 	/* cannot fail since idmap is only called winbindd */
 	
 	get_free_rid_range( &lowrid, &highrid );

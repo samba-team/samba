@@ -43,7 +43,7 @@ struct idmap_methods {
 	/* Called when backend is first loaded */
 	NTSTATUS (*init)( char *params );
 
-	NTSTATUS (*allocate_rid)(uint32 *rid, int rid_type);
+	NTSTATUS (*allocate_rid)(uint32 *rid);
 	NTSTATUS (*allocate_id)(unid_t *id, int id_type);
 	NTSTATUS (*get_sid_from_id)(DOM_SID *sid, unid_t id, int id_type);
 	NTSTATUS (*get_id_from_sid)(unid_t *id, int *id_type, const DOM_SID *sid);

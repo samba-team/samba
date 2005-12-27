@@ -527,7 +527,7 @@ static NTSTATUS rid_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_allocate_rid(uint32 *rid, int rid_type)
+static NTSTATUS rid_idmap_allocate_rid(uint32 *rid)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

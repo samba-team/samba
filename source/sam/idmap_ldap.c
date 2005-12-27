@@ -163,8 +163,7 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
  manually stole it :-).
 *********************************************************************/
 
-static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid, 
-                              int rid_type)
+static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	LDAPMessage *domain_result = NULL;
@@ -246,21 +245,10 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 		}
 
 		if (!next_rid) { /* not got one already */
-			switch (rid_type) {
-			case USER_RID_TYPE:
-				if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry,
-							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
-							 old_rid_string)) {
-					*rid = (uint32)atol(old_rid_string);					
-				}
-				break;
-			case GROUP_RID_TYPE:
-				if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry, 
-							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
-							 old_rid_string)) {
-					*rid = (uint32)atol(old_rid_string);
-				}
-				break;
+			if (smbldap_get_single_pstring(state->smbldap_state->ldap_struct, entry,
+						       get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
+						       old_rid_string)) {
+				*rid = (uint32)atol(old_rid_string);
 			}
 			
 			/* This is the core of the whole routine. If we had
@@ -270,23 +258,11 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			next_rid = *rid+RID_MULTIPLIER;
 			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
 			
-			switch (rid_type) {
-			case USER_RID_TYPE:
-				/* Try to make the modification atomically by enforcing the
-				   old value in the delete mod. */
-				smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
-						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
-						 next_rid_string);
-				break;
-				
-			case GROUP_RID_TYPE:
-				/* Try to make the modification atomically by enforcing the
-				   old value in the delete mod. */
-				smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods,
-						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
-						 next_rid_string);
-				break;
-			}
+			/* Try to make the modification atomically by enforcing the
+			   old value in the delete mod. */
+			smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
+					 next_rid_string);
 		}
 
 		if ((smbldap_modify(state->smbldap_state, dn, mods)) == LDAP_SUCCESS) {
@@ -362,9 +338,9 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
  Allocate a new RID
 *****************************************************************************/
 
-static NTSTATUS ldap_allocate_rid(uint32 *rid, int rid_type)
+static NTSTATUS ldap_allocate_rid(uint32 *rid)
 {
-	return ldap_next_rid( &ldap_state, rid, rid_type );
+	return ldap_next_rid( &ldap_state, rid );
 }
 
 /*****************************************************************************

@@ -372,7 +372,7 @@ static NTSTATUS ad_idmap_close(void)
 }
 
 /* New for beta3 */
-static NTSTATUS ad_idmap_allocate_rid(uint32 *rid, int rid_type)
+static NTSTATUS ad_idmap_allocate_rid(uint32 *rid)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

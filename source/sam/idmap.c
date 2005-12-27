@@ -329,7 +329,7 @@ NTSTATUS idmap_allocate_id(unid_t *id, int id_type)
  Alloocate a new RID
 **************************************************************************/
 
-NTSTATUS idmap_allocate_rid(uint32 *rid, int type)
+NTSTATUS idmap_allocate_rid(uint32 *rid)
 {
 	/* we have to allocate from the authoritative backend */
 	
@@ -337,9 +337,9 @@ NTSTATUS idmap_allocate_rid(uint32 *rid, int type)
 		return NT_STATUS_UNSUCCESSFUL;
 
 	if ( remote_map )
-		return remote_map->allocate_rid( rid, type );
+		return remote_map->allocate_rid(rid);
 
-	return cache_map->allocate_rid( rid, type );
+	return cache_map->allocate_rid(rid);
 }
 
 /**************************************************************************
