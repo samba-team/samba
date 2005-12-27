@@ -201,8 +201,8 @@ int StrCaseCmp(const char *s, const char *t)
 			/* not ascii anymore, do it the hard way from here on in */
 			break;
 
-		us = toupper(*ps);
-		ut = toupper(*pt);
+		us = toupper_ascii(*ps);
+		ut = toupper_ascii(*pt);
 		if (us == ut)
 			continue;
 		else if (us < ut)
@@ -309,7 +309,7 @@ int strwicmp(const char *psz1, const char *psz2)
 			psz1++;
 		while (isspace((int)*psz2))
 			psz2++;
-		if (toupper(*psz1) != toupper(*psz2) || *psz1 == '\0'
+		if (toupper_ascii(*psz1) != toupper_ascii(*psz2) || *psz1 == '\0'
 		    || *psz2 == '\0')
 			break;
 		psz1++;
@@ -680,7 +680,7 @@ char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, con
 
 	for(i = 0; i < len; i++) {
 		int val = (src[i] & 0xff);
-		if (isupper(val) || islower(val) || isdigit(val) || strchr_m(other_safe_chars, val))
+		if (isupper_ascii(val) || islower_ascii(val) || isdigit(val) || strchr_m(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = '_';
@@ -774,12 +774,12 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 			continue;
 		}
 
-		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
+		if (!(p1 = strchr_m(hexchars, toupper_ascii(strhex[i]))))
 			break;
 
 		i++; /* next hex digit */
 
-		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
+		if (!(p2 = strchr_m(hexchars, toupper_ascii(strhex[i]))))
 			break;
 
 		/* get the two nybbles */
@@ -1510,7 +1510,7 @@ void strlower_m(char *s)
 	   (ie. they match for the first 128 chars) */
 
 	while (*s && !(((unsigned char)s[0]) & 0x80)) {
-		*s = tolower((unsigned char)*s);
+		*s = tolower_ascii((unsigned char)*s);
 		s++;
 	}
 
@@ -1544,7 +1544,7 @@ void strupper_m(char *s)
 	   (ie. they match for the first 128 chars) */
 
 	while (*s && !(((unsigned char)s[0]) & 0x80)) {
-		*s = toupper((unsigned char)*s);
+		*s = toupper_ascii((unsigned char)*s);
 		s++;
 	}
 
