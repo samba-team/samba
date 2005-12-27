@@ -2281,7 +2281,8 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
  This funcion will need to be updated for bdc/domain trusts.
  ********************************************************************/
 
-NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
+NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
+			   SAMR_R_CREATE_USER *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
 	fstring account;
@@ -2306,20 +2307,26 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	DISP_INFO *disp_info = NULL;
 
 	/* Get the domain SID stored in the domain policy */
-	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted, &disp_info))
+	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted,
+				     &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(nt_status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_USER, "_samr_create_user"))) {
+	nt_status = access_check_samr_function(acc_granted,
+					       SA_RIGHT_DOMAIN_CREATE_USER,
+					       "_samr_create_user");
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	if (!(acb_info == ACB_NORMAL || acb_info == ACB_DOMTRUST || acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)) { 
+	if (!(acb_info == ACB_NORMAL || acb_info == ACB_DOMTRUST ||
+	      acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)) { 
 		/* Match Win2k, and return NT_STATUS_INVALID_PARAMETER if 
 		   this parameter is not an account type */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
+	rpcstr_pull(account, user_account.buffer, sizeof(account),
+		    user_account.uni_str_len*2, 0);
 	strlower_m(account);
 
 	nt_status = can_create(p->mem_ctx, account);
@@ -2328,14 +2335,14 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	}
 
 	/*********************************************************************
-	 * HEADS UP!  If we have to create a new user account, we have to get 
-	 * a new RID from somewhere.  This used to be done by the passdb 
-	 * backend. It has been moved into idmap now.  Since idmap is now 
-	 * wrapped up behind winbind, this means you have to run winbindd if you
-	 * want new accounts to get a new RID when "enable rid algorithm = no".
-	 * Tough.  We now have a uniform way of allocating RIDs regardless
-	 * of what ever passdb backend people may use.
-	 *                                             --jerry (2003-07-10)
+	 * HEADS UP!  If we have to create a new user account, we have to get
+	 * a new RID from somewhere.  This used to be done by the passdb
+	 * backend. It has been moved into idmap now.  Since idmap is now
+	 * wrapped up behind winbind, this means you have to run winbindd if
+	 * you want new accounts to get a new RID when "enable rid algorithm =
+	 * no".  Tough.  We now have a uniform way of allocating RIDs
+	 * regardless of what ever passdb backend people may use.  --jerry
+	 * (2003-07-10)
 	 *********************************************************************/
 
 	pw = Get_Pwnam(account);
@@ -2346,24 +2353,30 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		se_priv_copy( &se_rights, &se_machine_account );
-		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+		can_add_account = user_has_privileges(
+			p->pipe_user.nt_user_token, &se_rights );
 	} 
 	/* usrmgr.exe (and net rpc trustdom grant) creates a normal user 
 	   account for domain trusts and changes the ACB flags later */
-	else if ( acb_info & ACB_NORMAL && (account[strlen(account)-1] != '$') )
+	else if ( acb_info & ACB_NORMAL &&
+		  (account[strlen(account)-1] != '$') )
 	{
 		pstrcpy(add_script, lp_adduser_script());
 		se_priv_copy( &se_rights, &se_add_users );
-		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+		can_add_account = user_has_privileges(
+			p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else 	/* implicit assumption of a BDC or domain trust account here (we already check the flags earlier) */
+	else 	/* implicit assumption of a BDC or domain trust account here
+		 * (we already check the flags earlier) */
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		if ( lp_enable_privileges() ) {
 			/* only Domain Admins can add a BDC or domain trust */
 			se_priv_copy( &se_rights, &se_priv_none );
-			can_add_account = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
-	}
+			can_add_account = nt_token_check_domain_rid(
+				p->pipe_user.nt_user_token,
+				DOMAIN_GROUP_RID_ADMINS );
+		}
 	}
 		
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
@@ -2378,13 +2391,17 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		if (*add_script) {
 			int add_ret;
 
-			all_string_sub(add_script, "%u", account, sizeof(add_script));
+			all_string_sub(add_script, "%u", account,
+				       sizeof(add_script));
 			add_ret = smbrun(add_script,NULL);
-			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running "
+					       "the command `%s' gave %d\n",
+					       add_script, add_ret));
 		}
 	}
 
-	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
+	/* implicit call to getpwnam() next.  we have a valid SID coming out
+	 * of this call */
 
 	flush_pwnam_cache();
 	nt_status = pdb_init_sam_new(&sam_pass, account, new_rid);
@@ -2397,7 +2414,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 		if ( !(ret = pdb_add_sam_account(sam_pass)) ) {
 	 		pdb_free_sam(&sam_pass);
- 			DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
+ 			DEBUG(0, ("could not add user/computer %s to passdb. "
+				  "Check permissions?\n", 
 				account));
 			nt_status = NT_STATUS_ACCESS_DENIED;
 		}
@@ -2417,7 +2435,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	sid_copy(&sid, pdb_get_user_sid(sam_pass));
 	
-	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
+			    &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
