@@ -8,9 +8,7 @@
    encoding if it doesn't work out
 */
 
-[ uuid("1-2-3-4"),
-  version(1.0),
-  depends(security)
+[ depends(security)
 ] interface nbt
 {
 	const int NBT_NAME_SERVICE_PORT  = 137;
