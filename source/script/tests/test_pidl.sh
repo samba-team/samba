@@ -7,4 +7,9 @@ fi
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-$PERL -MExtUtils::Command::MM -e "test_harness()" pidl/tests/*.pl || testok $0 1
+
+for f in pidl/tests/*.pl; do
+    testit "$f" $PERL -MExtUtils::Command::MM -e "test_harness()" $f || failed=`expr $failed + 1`
+done
+
+testok $0 $failed
