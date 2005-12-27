@@ -38,18 +38,6 @@ struct dcesrv_ep_iface {
 };
 
 /*
-  simple routine to compare a GUID string to a GUID structure
-*/
-static int guid_cmp(TALLOC_CTX *mem_ctx, const struct GUID *guid, const char *uuid_str)
-{
-	const char *s = GUID_string(mem_ctx, guid);
-	if (!s || strcasecmp(s, uuid_str)) {
-		return -1;
-	}
-	return 0;
-}
-
-/*
   build a list of all interfaces handled by all endpoint servers
 */
 static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
@@ -213,8 +201,8 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_uuid, &ndr_version);
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-	    guid_cmp(mem_ctx, &ndr_uuid, NDR_GUID) != 0 ||
-	    ndr_version != NDR_GUID_VERSION) {
+		!GUID_equal(&ndr_uuid, &ndr_transfer_syntax.uuid) ||
+	    ndr_version != ndr_transfer_syntax.if_version) {
 		goto failed;
 	}
 

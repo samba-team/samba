@@ -221,11 +221,15 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 				/* lhs is used: UUID */
 				char *uuidstr;
 
-				uuidstr = GUID_string(mem_ctx, &uuid);
-
-				if (strcasecmp(uuidstr, NDR_GUID) == 0) {
+				if (GUID_equal(&uuid, &ndr_transfer_syntax.uuid)) {
 					return "NDR";
 				} 
+
+				if (GUID_equal(&uuid, &ndr64_transfer_syntax.uuid)) {
+					return "NDR64";
+				} 
+
+				uuidstr = GUID_string(mem_ctx, &uuid);
 
 				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, if_version);
 			} else { /* IPX */
@@ -497,7 +501,7 @@ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct GUID *uui
 	return status;
 }
 
-static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, struct GUID *uuid, uint32_t if_version)
+static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct GUID *uuid, uint32_t if_version)
 {
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 
@@ -743,7 +747,6 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 {
 	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
-	struct GUID ndr_guid;
 	NTSTATUS status;
 	
 	/* Find transport */
@@ -773,12 +776,9 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 
-	status = GUID_from_string(NDR_GUID, &ndr_guid);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &ndr_guid, NDR_GUID_VERSION);
+	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, 
+								&ndr_transfer_syntax.uuid, 
+								ndr_transfer_syntax.if_version);
 	
 	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
 	
@@ -1340,12 +1340,7 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 	p2->syntax.uuid = table->uuid;
 	p2->syntax.if_version = table->if_version;
 
-	status = GUID_from_string(NDR_GUID, &p2->transfer_syntax.uuid);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p2);
-		return status;
-	}
-	p2->transfer_syntax.if_version = NDR_GUID_VERSION;
+	p2->transfer_syntax = ndr_transfer_syntax;
 
 	status = dcerpc_alter_context(p2, p2, &p2->syntax, &p2->transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
