@@ -74,6 +74,8 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Binary($key) if $key->{OUTPUT_TYPE} eq "BINARY";
 	$mkenv->Manpage($key) if defined($key->{MANPAGE});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
+	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
+
 }
 
 $mkenv->write("Makefile");

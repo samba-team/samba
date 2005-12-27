@@ -425,8 +425,8 @@ sub Manpage($$)
 	my ($self,$ctx) = @_;
 
 	my $dir = $ctx->{BASEDIR};
-
-	$dir =~ s/^\.\///g;
+	
+	$ctx->{BASEDIR} =~ s/^\.\///g;
 
 	push (@{$self->{manpages}}, "$dir/$ctx->{MANPAGE}");
 }
@@ -463,7 +463,21 @@ sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->_prepare_list($ctx, "OBJ_LIST");
+	my $dir = $ctx->{BASEDIR};
+	$ctx->{BASEDIR} =~ s/^\.\///g;
+
+	my $comment = "";
+	my $target = "$dir/$ctx->{PRIVATE_PROTO_HEADER}";
+	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
+		$comment.= " and $dir/$ctx->{PRIVATE_PROTO_HEADER}";
+	} else {
+		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
+	}	
+
+	$self->output("$target: \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c)\n");
+	$self->output("\t\@echo \"Creating $dir/$ctx->{PRIVATE_PROTO_HEADER}$comment\"\n");
+
+	$self->output("\t\@\$(PERL) \${srcdir}/script/mkproto.pl --private=$dir/$ctx->{PRIVATE_PROTO_HEADER} --public=$dir/$ctx->{PUBLIC_PROTO_HEADER} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
@@ -479,8 +493,7 @@ sub write($$)
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
-	$self->output("PROTO_OBJS = " . array2oneperline($self->{proto_objs}) . "\n");
-
+	$self->output("PROTO_OBJS = " . array2oneperline($self->{proto_objs}) .  "\n");
 
 	$self->_prepare_mk_files();
 

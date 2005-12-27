@@ -198,17 +198,20 @@ include/config.h:
 	@/bin/false
 
 include/proto.h: $(PROTO_OBJS:.o=.c)
-	@-rm -f include/includes.h.gch
 	@echo "Creating include/proto.h"
 	@$(PERL) script/mkproto.pl --public-define=_PROTO_H_ \
 		--public=include/proto.h --private=include/proto.h \
 		$(PROTO_OBJS)
 
 proto: include/proto.h
+
 pch: include/config.h \
 	include/proto.h \
 	idl \
 	include/includes.h.gch
+
+clean_pch: 
+	-rm -f include/includes.h.gch
 
 basics: include/config.h \
 	include/proto.h \
