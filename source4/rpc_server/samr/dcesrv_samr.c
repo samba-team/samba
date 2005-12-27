@@ -752,7 +752,8 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	ret = ldb_transaction_start(d_state->sam_ctx);
 	if (ret != 0) {
-		DEBUG(0,("Failed to start a transaction for user creation\n"));
+		DEBUG(0,("Failed to start a transaction for user creation: %s\n",
+			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -825,8 +826,9 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		ldb_transaction_cancel(d_state->sam_ctx);
-		DEBUG(0,("Failed to create user record %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -885,18 +887,20 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* modify the samdb record */
 	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to modify account record %s to set userAccountControl\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
 		ldb_transaction_cancel(d_state->sam_ctx);
 
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ldb_transaction_commit(d_state->sam_ctx);
+	ret = ldb_transaction_commit(d_state->sam_ctx);
 	if (ret != 0) {
-		DEBUG(0,("Failed to commit transaction to add and modify account record %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+		DEBUG(0,("Failed to commit transaction to add and modify account record %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_errstring(d_state->sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
