@@ -43,7 +43,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uin
 	r.in.num_protseqs = 3;
 	r.in.protseq = protseq;
 	r.in.Interfaces = 1;
-	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
+	iids[0] = dcerpc_table_IUnknown.uuid;
 	r.in.pIIDs = iids;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
