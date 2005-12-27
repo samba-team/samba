@@ -31,6 +31,7 @@
 #include "system/filesys.h"
 #include "system/kerberos.h"
 #include "smb_build.h"
+#include "registry/registry.h"
 
 /*
   recursively delete a directory tree
