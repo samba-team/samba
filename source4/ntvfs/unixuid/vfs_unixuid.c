@@ -27,6 +27,7 @@
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "smb_server/smb_server.h"
+#include "ntvfs/ntvfs.h"
 
 struct unixuid_private {
 	struct sidmap_context *sidmap;

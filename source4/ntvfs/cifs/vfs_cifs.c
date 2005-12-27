@@ -33,6 +33,7 @@
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
 #include "auth/auth.h"
+#include "ntvfs/ntvfs.h"
 
 /* this is stored in ntvfs_private */
 struct cvfs_private {

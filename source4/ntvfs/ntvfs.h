@@ -180,3 +180,5 @@ struct ntvfs_critical_sizes {
 	int sizeof_smbsrv_tcon;
 	int sizeof_smbsrv_request;
 };
+
+#include "ntvfs/ntvfs_proto.h"

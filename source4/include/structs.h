@@ -157,7 +157,6 @@ struct request_buffer;
 struct smb2srv_request;
 struct smb2_request_buffer;
 
-struct ntvfs_context;
 struct ntvfs_module_context;
 
 struct pvfs_dir;
@@ -267,14 +266,10 @@ struct task_server;
 struct model_ops;
 struct stream_server_ops;
 
-struct nbtd_server;
-struct nbtd_interface;
-struct nbtd_iface_name;
 struct wins_server;
 struct nbtd_proxy_wins_challenge;
 struct nbtd_proxy_wins_release_demand;
 
-struct nbt_iface_name;
 struct nbt_dc_name;
 struct wb_sid_object;
 struct wb_dom_info;
@@ -373,3 +368,6 @@ struct IUnknown_vtable;
 struct MprVar;
 
 struct registry_context;
+struct nbtd_interface;
+struct nbtd_iface_name;
+struct nbtd_server;
