@@ -498,7 +498,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	
 	get_global_sam_sid();
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username, 0))) {
+	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username))) {
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}

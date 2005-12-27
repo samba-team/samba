@@ -2299,7 +2299,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	uint32 acc_granted;
 	SEC_DESC *psd;
 	size_t    sd_size;
-	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	BOOL can_add_account = False;
@@ -2404,7 +2403,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	 * of this call */
 
 	flush_pwnam_cache();
-	nt_status = pdb_init_sam_new(&sam_pass, account, new_rid);
+	nt_status = pdb_init_sam_new(&sam_pass, account);
 
 	/* this code is order such that we have no unnecessary retuns 
 	   out of the admin block of code */	
@@ -4258,19 +4257,28 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 		/* so far, so good */
 		
 		result = NT_STATUS_OK;
-		
-		r_u->rid = pdb_gid_to_group_rid( grp->gr_gid );
 
-		/* add the group to the mapping table */
+		if (pdb_rid_algorithm()) {
+			r_u->rid = pdb_gid_to_group_rid( grp->gr_gid );
+		} else {
+			if (!pdb_new_rid(&r_u->rid)) {
+				result = NT_STATUS_ACCESS_DENIED;
+			}
+		}
+
+		if (NT_STATUS_IS_OK(result)) {
+
+			/* add the group to the mapping table */
 		
-		sid_copy( &info_sid, get_global_sam_sid() );
-		sid_append_rid( &info_sid, r_u->rid );
-		sid_to_string( sid_string, &info_sid );
+			sid_copy( &info_sid, get_global_sam_sid() );
+			sid_append_rid( &info_sid, r_u->rid );
+			sid_to_string( sid_string, &info_sid );
 		
-		/* reset the error code if we fail to add the mapping entry */
+			/* reset the error code if we fail to add the mapping entry */
 		
-		if ( !add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL) )
-			result = NT_STATUS_ACCESS_DENIED;
+			if ( !add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL) )
+				result = NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if ( can_add_accounts )

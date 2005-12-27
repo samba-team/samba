@@ -350,12 +350,12 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
  on the UNIX user.  Pass in a RID if you have one
  ************************************************************/
 
-NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
-                          uint32 rid)
+NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 {
 	NTSTATUS 	nt_status = NT_STATUS_NO_MEMORY;
 	struct passwd 	*pwd;
 	BOOL		ret;
+	uint32 rid;
 	
 	pwd = Get_Pwnam(username);
 
@@ -366,11 +366,14 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
 		*new_sam_acct = NULL;
 		return nt_status;
 	}
-	
-	/* see if we need to generate a new rid using the 2.2 algorithm */
-	if ( rid == 0 && pdb_rid_algorithm() ) {
-		DEBUG(10,("pdb_init_sam_new: no RID specified.  Generating one via old algorithm\n"));
+
+	if (pdb_rid_algorithm()) {
 		rid = algorithmic_pdb_uid_to_user_rid(pwd->pw_uid);
+	} else {
+		if (!pdb_new_rid(&rid)) {
+			DEBUG(10,("Could not generate a new RID\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 	
 	/* set the new SID */
@@ -886,7 +889,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			/* Might not exist in /etc/passwd.  Use rid algorithm here */
-			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name, 0))) {
+			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name))) {
 				slprintf(err_str, err_str_len-1, "Failed to initialise SAM_ACCOUNT for user %s. Does this user exist in the UNIX password database ?\n", user_name);
 				return False;
 			}

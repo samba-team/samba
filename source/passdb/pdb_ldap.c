@@ -4224,6 +4224,11 @@ static BOOL ldapsam_rid_algorithm(struct pdb_methods *methods)
 	return False;
 }
 
+static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
+{
+	return winbind_allocate_rid(rid);
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -4290,6 +4295,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->get_seq_num = ldapsam_get_seq_num;
 
 	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
+	(*pdb_method)->new_rid = ldapsam_new_rid;
 
 	/* TODO: Setup private data and free */
 

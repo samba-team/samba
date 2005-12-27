@@ -869,6 +869,11 @@ static BOOL tdbsam_rid_algorithm(struct pdb_methods *methods)
 	return False;
 }
 	
+static BOOL tdbsam_new_rid(struct pdb_methods *methods, uint32 *rid)
+{
+	return winbind_allocate_rid(rid);
+}
+
 static void free_private_data(void **vp) 
 {
 	struct tdbsam_privates **tdb_state = (struct tdbsam_privates **)vp;
@@ -913,6 +918,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->rename_sam_account = tdbsam_rename_sam_account;
 
 	(*pdb_method)->rid_algorithm = tdbsam_rid_algorithm;
+	(*pdb_method)->new_rid = tdbsam_new_rid;
 
 	tdb_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct tdbsam_privates);
 
