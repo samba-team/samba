@@ -359,8 +359,6 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	b->authservice = NULL;
-
 	p = strchr(s, '@');
 
 	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
@@ -844,8 +842,6 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	if (table) {
 		struct dcerpc_binding *default_binding;
 
-		binding->authservice = talloc_strdup(binding, table->authservices->names[0]);
-
 		/* Find one of the default pipes for this interface */
 		for (i = 0; i < table->endpoints->count; i++) {
 			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
@@ -873,7 +869,6 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	epmapper_binding->options = NULL;
 	epmapper_binding->flags = 0;
 	epmapper_binding->endpoint = NULL;
-	epmapper_binding->authservice = NULL;
 	
 	status = dcerpc_pipe_connect_b(mem_ctx, 
 				       &p,
@@ -997,8 +992,7 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		}
 
 		status = dcerpc_bind_auth(p, table,
-					  credentials, auth_type,
-					  binding->authservice);
+					  credentials, auth_type, table->authservices->names[0]);
 	} else {
 		status = dcerpc_bind_auth_none(p, table);
 	}
