@@ -716,9 +716,9 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
 
 	for (i=offset;i<(len-(N-1));i++) {
 		char c = s[i];
-		if (!islower((int)c))
+		if (!islower_ascii((int)c))
 			continue;
-		s[i] = toupper(c);
+		s[i] = toupper_ascii(c);
 		ret = uname_string_combinations2(s,i+1,fn,N-1);
 		if(ret)
 			return(ret);

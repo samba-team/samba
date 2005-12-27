@@ -368,7 +368,7 @@ static NTSTATUS pgsqlsam_getsampwnam ( struct pdb_methods *methods, SAM_ACCOUNT 
   lowercasename = smb_xstrdup(sname);
   l = strlen(lowercasename);
   for(i = 0; i < l; i++) {
-    lowercasename[i] = tolower(lowercasename[i]);
+    lowercasename[i] = tolower_ascii(lowercasename[i]);
   }
   
   result = pgsqlsam_select_by_field( methods, user, SQL_SEARCH_USER_NAME, lowercasename ) ;

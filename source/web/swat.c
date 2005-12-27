@@ -103,7 +103,7 @@ static char *stripspaceupper(const char *str)
 	char *p = newstring;
 
 	while (*str) {
-		if (*str != ' ') *p++ = toupper(*str);
+		if (*str != ' ') *p++ = toupper_ascii(*str);
 		++str;
 	}
 	*p = '\0';

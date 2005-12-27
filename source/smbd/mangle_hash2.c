@@ -560,7 +560,7 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, 
 		if (! FLAG_CHECK(lead_chars[i], FLAG_ASCII)) {
 			lead_chars[i] = '_';
 		}
-		lead_chars[i] = toupper(lead_chars[i]);
+		lead_chars[i] = toupper_ascii(lead_chars[i]);
 	}
 	for (;i<mangle_prefix;i++) {
 		lead_chars[i] = '_';
@@ -580,7 +580,7 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, 
 		for (i=1; extension_length < 3 && dot_p[i]; i++) {
 			char c = dot_p[i];
 			if (FLAG_CHECK(c, FLAG_ASCII)) {
-				extension[extension_length++] = toupper(c);
+				extension[extension_length++] = toupper_ascii(c);
 			}
 		}
 	}
@@ -679,10 +679,10 @@ static void init_tables(void)
 		char_flags[c2] |= FLAG_POSSIBLE2;
 		char_flags[c3] |= FLAG_POSSIBLE3;
 		char_flags[c4] |= FLAG_POSSIBLE4;
-		char_flags[tolower(c1)] |= FLAG_POSSIBLE1;
-		char_flags[tolower(c2)] |= FLAG_POSSIBLE2;
-		char_flags[tolower(c3)] |= FLAG_POSSIBLE3;
-		char_flags[tolower(c4)] |= FLAG_POSSIBLE4;
+		char_flags[tolower_ascii(c1)] |= FLAG_POSSIBLE1;
+		char_flags[tolower_ascii(c2)] |= FLAG_POSSIBLE2;
+		char_flags[tolower_ascii(c3)] |= FLAG_POSSIBLE3;
+		char_flags[tolower_ascii(c4)] |= FLAG_POSSIBLE4;
 
 		char_flags[(unsigned char)'.'] |= FLAG_POSSIBLE4;
 	}

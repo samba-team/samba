@@ -51,6 +51,7 @@ static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
 void load_case_tables(void)
 {
 	static int initialised;
+	char *old_locale = NULL, *saved_locale = NULL;
 	int i;
 
 	if (initialised) {
@@ -60,6 +61,17 @@ void load_case_tables(void)
 
 	upcase_table = map_file(lib_path("upcase.dat"), 0x20000);
 	lowcase_table = map_file(lib_path("lowcase.dat"), 0x20000);
+
+#ifdef HAVE_SETLOCALE
+	/* Get the name of the current locale.  */
+	old_locale = setlocale(LC_ALL, NULL);
+
+	/* Save it as it is in static storage. */
+	saved_locale = SMB_STRDUP(old_locale);
+
+	/* We set back the locale to C to get ASCII-compatible toupper/lower functions. */
+	setlocale(LC_ALL, "C");
+#endif
 
 	/* we would like Samba to limp along even if these tables are
 	   not available */
@@ -92,6 +104,12 @@ void load_case_tables(void)
 			lowcase_table[v] = UCS2_CHAR(isupper(i)?tolower(i):i);
 		}
 	}
+
+#ifdef HAVE_SETLOCALE
+	/* Restore the old locale. */
+	setlocale (LC_ALL, saved_locale);
+	SAFE_FREE(saved_locale);
+#endif
 }
 
 /*
@@ -996,4 +1014,42 @@ UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src)
 	strncpy_w(dst->buffer, src, dst->uni_max_len);
 	
 	return dst;
+}
+
+/*************************************************************
+ ascii only toupper - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int toupper_ascii(int c)
+{
+	smb_ucs2_t uc = toupper_w(UCS2_CHAR(c));
+	return UCS2_TO_CHAR(uc);
+}
+
+/*************************************************************
+ ascii only tolower - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int tolower_ascii(int c)
+{
+	smb_ucs2_t uc = tolower_w(UCS2_CHAR(c));
+	return UCS2_TO_CHAR(uc);
+}
+
+/*************************************************************
+ ascii only isupper - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int isupper_ascii(int c)
+{
+	return isupper_w(UCS2_CHAR(c));
+}
+
+/*************************************************************
+ ascii only islower - saves the need for smbd to be in C locale.
+*************************************************************/
+
+int islower_ascii(int c)
+{
+	return islower_w(UCS2_CHAR(c));
 }

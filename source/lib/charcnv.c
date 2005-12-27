@@ -84,15 +84,6 @@ static const char *charset_name(charset_t ch)
 		}
 		ret = ln;
 	}
-#ifdef HAVE_SETLOCALE
-	/* We set back the locale to C to get ASCII-compatible toupper/lower functions.
-	   For now we do not need any other POSIX localisations anyway. When we should
-	   really need localized string functions one day we need to write our own
-	   ascii_tolower etc.
-	*/
-	setlocale(LC_ALL, "C");
- #endif
-
 #endif
 
 	if (!ret || !*ret) ret = "ASCII";
@@ -747,7 +738,7 @@ char *strdup_upper(const char *s)
 	while (1) {
 		if (*p & 0x80)
 			break;
-		*q++ = toupper(*p);
+		*q++ = toupper_ascii(*p);
 		if (!*p)
 			break;
 		p++;
