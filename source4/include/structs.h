@@ -138,10 +138,6 @@ struct ldap_connection;
 struct ldap_message;
 struct ldap_Result;
 struct rw_buffer;
-struct registry_context;
-struct registry_key;
-struct registry_value;
-struct reg_diff_file;
 
 struct rap_NetShareEnum;
 struct rap_NetServerEnum2;
@@ -375,3 +371,5 @@ struct IUnknown;
 struct IUnknown_vtable;
 
 struct MprVar;
+
+struct registry_context;

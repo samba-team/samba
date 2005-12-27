@@ -90,6 +90,7 @@ OBJ_FILES = \
 		patchfile.o
 REQUIRED_SUBSYSTEMS = \
 		LIBBASIC
+PRIVATE_PROTO_HEADER = registry_proto.h
 PUBLIC_HEADERS = registry.h
 # End MODULE registry_ldb
 ################################################

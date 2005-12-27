@@ -216,7 +216,8 @@ clean_pch:
 basics: include/config.h \
 	include/proto.h \
 	idl \
-	heimdal_basics
+	heimdal_basics \
+	$(PROTO_HEADERS)
 
 clean: heimdal_clean
 	@echo Removing headers
@@ -234,6 +235,8 @@ clean: heimdal_clean
 	@echo Removing generated files
 	@-rm -rf librpc/gen_* 
 	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
+	@echo Removing proto headers
+	@-rm -f $(PROTO_HEADERS)
 
 distclean: clean
 	-rm -f bin/.dummy 

@@ -161,4 +161,6 @@ struct reg_diff
 	struct reg_diff_key *keys;
 };
 
+#include "registry_proto.h"
+
 #endif /* _REGISTRY_H */
