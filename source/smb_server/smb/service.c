@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
+#include "ntvfs/ntvfs.h"
 
 
 /**

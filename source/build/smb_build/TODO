@@ -11,3 +11,4 @@
  - utility function for 'init mutex'
 - install shared modules
 - improve (un)install scripts (rewrite in perl?)
+- proper #include dependencies

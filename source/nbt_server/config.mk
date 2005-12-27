@@ -47,6 +47,7 @@ OBJ_FILES = \
 		defense.o \
 		packet.o \
 		irpc.o
+PRIVATE_PROTO_HEADER = nbt_server_proto.h
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_NBT NBTD_WINS NBTD_DGRAM
 # End SUBSYSTEM NBTD

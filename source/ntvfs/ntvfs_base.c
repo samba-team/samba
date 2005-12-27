@@ -27,6 +27,7 @@
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "smb_build.h"
+#include "ntvfs/ntvfs.h"
 
 /* the list of currently registered NTVFS backends, note that there
  * can be more than one backend with the same name, as long as they

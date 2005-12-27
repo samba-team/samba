@@ -54,3 +54,5 @@ struct tdr_print {
 
 typedef NTSTATUS (*tdr_push_fn_t) (struct tdr_push *, const void *);
 typedef NTSTATUS (*tdr_pull_fn_t) (struct tdr_pull *, TALLOC_CTX *, void *);
+
+#include "tdr/tdr_proto.h"

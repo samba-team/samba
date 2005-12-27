@@ -32,6 +32,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = Simple marshall/unmarshall library
+PRIVATE_PROTO_HEADER = tdr/tdr_proto.h
 OBJ_FILES = tdr/tdr.o
 
 ##############################
@@ -62,6 +63,7 @@ OBJ_FILES = \
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
+PRIVATE_PROTO_HEADER = basic.h
 OBJ_FILES = version.o \
 		xfile.o \
 		debug.o \
