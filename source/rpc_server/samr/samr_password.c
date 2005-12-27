@@ -4,6 +4,7 @@
    samr server password set/change handling
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
