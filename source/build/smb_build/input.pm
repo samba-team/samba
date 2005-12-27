@@ -140,9 +140,13 @@ sub check($$$$$)
 			$part->{NOPROTO} = "NO";
 		}
 
-		if (defined($part->{PRIVATE_PROTO_HEADER}) or 
-			defined($part->{PUBLIC_PROTO_HEADER})) {
+		if (defined($part->{PRIVATE_PROTO_HEADER})) {
 			$part->{NOPROTO} = "YES";
+		}
+		
+		if (defined($part->{PUBLIC_PROTO_HEADER})) {
+			$part->{NOPROTO} = "YES";
+			push (@{$part->{PUBLIC_HEADERS}}, $part->{PUBLIC_PROTO_HEADER});
 		}
 
 		if (defined($enabled->{$part->{NAME}})) { 
