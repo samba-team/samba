@@ -133,6 +133,23 @@ NTSTATUS ejs_push_int32(struct ejs_rpc *ejs,
 	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
+/*
+  pull a uint32 from a mpr variable to a C element
+*/
+NTSTATUS ejs_pull_time_t(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, time_t *r)
+{
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_time_t(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const time_t *r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+}
+
 NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
