@@ -50,15 +50,12 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 	}
 
 	for (i=0;i<r.out.if_id_vector->count;i++) {
-		const char *uuid;
 		struct dcerpc_syntax_id *id = r.out.if_id_vector->if_id[i].id;
 		if (!id) continue;
 
-		uuid = GUID_string(mem_ctx, &id->uuid);
-
 		printf("\tuuid %s  version 0x%08x  '%s'\n",
-		       uuid,
-		       id->if_version, idl_pipe_name(uuid, id->if_version));
+		       GUID_string(mem_ctx, &id->uuid),
+		       id->if_version, idl_pipe_name(&id->uuid, id->if_version));
 	}
 
 	return True;
@@ -212,8 +209,9 @@ BOOL torture_rpc_mgmt(void)
 		if (b->transport == NCACN_IP_TCP) {
 			status = dcerpc_epm_map_binding(loop_ctx, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
+				printf("Failed to map port for uuid %s\n", 
+					   GUID_string(loop_ctx, &l->table->uuid));
 				talloc_free(loop_ctx);
-				printf("Failed to map port for uuid %s\n", l->table->uuid);
 				continue;
 			}
 		} else {
