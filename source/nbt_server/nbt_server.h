@@ -86,3 +86,5 @@ struct nbtd_server {
 		return; \
 	} \
 } while (0)
+
+#include "nbt_server/nbt_server_proto.h"

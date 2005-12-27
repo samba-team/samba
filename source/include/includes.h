@@ -101,7 +101,6 @@ struct ipv4_addr {
 #include "smb_macros.h"
 #include "smb.h"
 #include "byteorder.h"
-#include "lib/tdr/tdr.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/dcerpc.h"
@@ -109,13 +108,13 @@ struct ipv4_addr {
 #include "librpc/gen_ndr/orpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "smb_interfaces.h"
-#include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "auth/credentials/credentials.h"
 
 /***** automatically generated prototypes *****/
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "include/proto.h"
+#include "basic.h"
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 

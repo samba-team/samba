@@ -8,6 +8,7 @@ OBJ_FILES = \
 		tcon.o \
 		session.o \
 		management.o
+PRIVATE_PROTO_HEADER = smb_server_proto.h
 REQUIRED_SUBSYSTEMS = \
 		LIBPACKET \
 		SMB_PROTOCOL \

@@ -29,6 +29,7 @@
 #include "system/filesys.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
+#include "ntvfs/ntvfs.h"
 
 #define IPC_BASE_FNUM 0x400
 

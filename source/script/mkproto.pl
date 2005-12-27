@@ -56,14 +56,14 @@ if (not defined($private_define) and defined($private_file)) {
 }
 
 if (defined($public_file)) {
-	open PUBLIC, ">$public_file"; 
+	open PUBLIC, ">$public_file" or die("Can't open `$public_file': $!"); 
 	$public_fd = \*PUBLIC;
 }
 
 if ($private_file eq $public_file) {
 	$private_fd = $public_fd;
 } elsif (defined($private_file)) {
-	open PRIVATE, ">$private_file"; 
+	open PRIVATE, ">$private_file" or die("Can't open `$private_file': $!"); ; 
 	$private_fd = \*PRIVATE;
 }
 
@@ -128,6 +128,10 @@ sub process_file($$$)
 
 		next if ($line =~ /^\/|[;]/);
 
+		if ($line =~ s/^_PUBLIC_[\t ]//) {
+			$target = $public_file;
+		}
+
 		next unless ( $line =~ /
 			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
 			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
@@ -140,10 +144,6 @@ sub process_file($$$)
 		if ($line =~ /^FN_/) {
 			handle_loadparm($public_file, $line);
 			next;
-		}
-
-		if ($line =~ s/_PUBLIC_//xo) {
-			$target = $public_file;
 		}
 
 		if ( $line =~ /\(.*\)\s*$/o ) {

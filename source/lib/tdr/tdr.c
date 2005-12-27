@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "tdr/tdr.h"
 
 #define TDR_BASE_MARSHALL_SIZE 1024
 

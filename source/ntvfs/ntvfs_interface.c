@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
-
+#include "ntvfs/ntvfs.h"
 
 /* connect/disconnect */
 NTSTATUS ntvfs_connect(struct smbsrv_request *req, const char *sharename)

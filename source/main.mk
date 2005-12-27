@@ -215,9 +215,9 @@ clean_pch:
 
 basics: include/config.h \
 	include/proto.h \
+	$(PROTO_HEADERS) \
 	idl \
-	heimdal_basics \
-	$(PROTO_HEADERS)
+	heimdal_basics
 
 clean: heimdal_clean
 	@echo Removing headers

@@ -77,6 +77,7 @@ PUBLIC_HEADERS = ntvfs.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 DESCRIPTION = Virtual File System with NTFS semantics
+PRIVATE_PROTO_HEADER = ntvfs_proto.h
 RELEASE_VERSION = 1
 OBJ_FILES = \
 		ntvfs_base.o \

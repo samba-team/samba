@@ -29,7 +29,7 @@ static struct reg_init_function_entry *backends = NULL;
 static struct reg_init_function_entry *reg_find_backend_entry(const char *name);
 
 /* Register new backend */
-NTSTATUS registry_register(const void *_hive_ops)  
+_PUBLIC_ NTSTATUS registry_register(const void *_hive_ops)  
 {
 	const struct hive_operations *hive_ops = _hive_ops;
 	struct reg_init_function_entry *entry = backends;
@@ -65,7 +65,7 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 	return NULL;
 }
 
-NTSTATUS registry_init(void)
+_PUBLIC_ NTSTATUS registry_init(void)
 {
 	init_module_fn static_init[] = STATIC_REGISTRY_MODULES;
 	init_module_fn *shared_init = load_samba_modules(NULL, "registry");
@@ -101,7 +101,7 @@ static struct {
 	{ 0, NULL }
 };
 
-int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **hkeys)
+_PUBLIC_ int reg_list_predefs(TALLOC_CTX *mem_ctx, char ***predefs, uint32_t **hkeys)
 {
 	int i;
 	*predefs = talloc_array(mem_ctx, char *, ARRAY_SIZE(predef_names));
@@ -151,7 +151,7 @@ WERROR reg_get_predefined_key(struct registry_context *ctx, uint32_t hkey, struc
 }
 
 /* Open a registry file/host/etc */
-WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
+_PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *location, const char *credentials, struct registry_key **root)
 {
 	struct registry_hive *rethive;
 	struct registry_key *retkey = NULL;
@@ -200,7 +200,7 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *backend, const char *lo
  * First tries to use the open_key function from the backend
  * then falls back to get_subkey_by_name and later get_subkey_by_index 
  */
-WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, struct registry_key **result)
+_PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, struct registry_key **result)
 {
 	WERROR error;
 
@@ -251,7 +251,7 @@ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char
 	return WERR_OK;
 }
 
-WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *key, int idx, struct registry_value **val)
+_PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *key, int idx, struct registry_value **val)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
@@ -434,7 +434,7 @@ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, const struct registry_key *parent, 
 	return WERR_OK;
 }
 
-WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, DATA_BLOB data)
+_PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, DATA_BLOB data)
 {
 	/* A 'real' set function has preference */
 	if (key->hive->functions->set_value) 
@@ -455,7 +455,7 @@ WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct 
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_del_value(const struct registry_key *key, const char *valname)
+_PUBLIC_ WERROR reg_del_value(const struct registry_key *key, const char *valname)
 {
 	WERROR ret = WERR_OK;
 	if(!key->hive->functions->del_value)

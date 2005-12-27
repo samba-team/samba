@@ -25,6 +25,7 @@
 #include "smbd/service_stream.h"
 #include "smb_server/smb_server.h"
 #include "lib/stream/packet.h"
+#include "ntvfs/ntvfs.h"
 
 
 /*

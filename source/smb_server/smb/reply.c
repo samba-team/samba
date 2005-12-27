@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "smb_server/smb_server.h"
 #include "libcli/nbt/libnbt.h"
+#include "ntvfs/ntvfs.h"
 
 
 /* useful way of catching wct errors with file and line number */

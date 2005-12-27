@@ -32,6 +32,7 @@
 #include "system/kerberos.h"
 #include "smb_build.h"
 #include "registry/registry.h"
+#include "ntvfs/ntvfs.h"
 
 /*
   recursively delete a directory tree

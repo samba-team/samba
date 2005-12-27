@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
+#include "ntvfs/ntvfs.h"
 
 
 /* check req->async.status and if not OK then send an error reply */

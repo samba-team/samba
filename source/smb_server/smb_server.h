@@ -301,3 +301,5 @@ struct smbsrv_connection {
 		BOOL nt_status_support;
 	} config;
 };
+
+#include "smb_server/smb_server_proto.h"

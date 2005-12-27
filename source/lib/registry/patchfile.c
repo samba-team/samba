@@ -173,7 +173,7 @@ static WERROR reg_generate_diff_key(struct reg_diff *diff, struct registry_key *
 /* 
  * Generate diff between two registry contexts 
  */
-struct reg_diff *reg_generate_diff(TALLOC_CTX *mem_ctx, struct registry_context *ctx1, struct registry_context *ctx2)
+_PUBLIC_ struct reg_diff *reg_generate_diff(TALLOC_CTX *mem_ctx, struct registry_context *ctx1, struct registry_context *ctx2)
 {
 	struct reg_diff *diff = talloc_zero(mem_ctx, struct reg_diff);
 	int i;
@@ -202,7 +202,7 @@ struct reg_diff *reg_generate_diff(TALLOC_CTX *mem_ctx, struct registry_context 
 /*
  * Save registry diff
  */
-WERROR reg_diff_save(const struct reg_diff *diff, const char *filename)
+_PUBLIC_ WERROR reg_diff_save(const struct reg_diff *diff, const char *filename)
 {
 	int xf, i, j;
 
@@ -363,7 +363,7 @@ struct reg_diff *reg_diff_load(TALLOC_CTX *ctx, const char *fn)
 /* 
  * Apply diff to a registry context 
  */
-BOOL reg_diff_apply (const struct reg_diff *diff, struct registry_context *ctx)
+_PUBLIC_ BOOL reg_diff_apply (const struct reg_diff *diff, struct registry_context *ctx)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("apply_cmd_file");
 	struct registry_key *tmp = NULL;

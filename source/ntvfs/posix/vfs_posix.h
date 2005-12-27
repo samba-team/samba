@@ -25,6 +25,7 @@
 
 #include "system/filesys.h"
 #include "smb_server/smb_server.h"
+#include "ntvfs/ntvfs.h"
 
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
