@@ -259,7 +259,7 @@ static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct epm_InqObject r;
 
 	r.in.epm_object = talloc(mem_ctx, struct GUID);
-	GUID_from_string(DCERPC_EPMAPPER_UUID, r.in.epm_object);
+	*r.in.epm_object = dcerpc_table_epmapper.uuid;
 
 	status = dcerpc_epm_InqObject(p, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {

@@ -31,33 +31,30 @@
 
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 
-static struct dcerpc_interface_list *dcerpc_pipes = NULL;
+struct dcerpc_interface_list *dcerpc_pipes = NULL;
 
 /*
   register a dcerpc client interface
 */
 NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface)
 {
-	struct dcerpc_interface_list *l = talloc(talloc_autofree_context(),
-						   struct dcerpc_interface_list);
-		
-	if (idl_iface_by_name (interface->name) != NULL) {
-		DEBUG(0, ("Attempt to register interface %s twice\n", interface->name));
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+	struct dcerpc_interface_list *l;
+
+	for (l = dcerpc_pipes; l; l = l->next) {
+		if (GUID_equal(&interface->uuid, &l->table->uuid)) {
+			DEBUG(0, ("Attempt to register interface %s which has the "
+					  "same UUID as already registered interface %s\n", 
+					  interface->name, l->table->name));
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
 	}
+		
+	l = talloc(talloc_autofree_context(), struct dcerpc_interface_list);
 	l->table = interface;
 
 	DLIST_ADD(dcerpc_pipes, l);
 	
   	return NT_STATUS_OK;
-}
-
-/*
-  return the list of registered dcerpc_pipes
-*/
-const struct dcerpc_interface_list *librpc_dcerpc_pipes(void)
-{
-	return dcerpc_pipes;
 }
 
 /* destroy a dcerpc connection */
