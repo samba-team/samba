@@ -44,8 +44,7 @@ BOOL torture_rpc_countcalls(void)
 		return False;
 	}
 
-	status = torture_rpc_connection(NULL, &p, iface->endpoints->names[0], 
-					iface->uuid, iface->if_version);
+	status = torture_rpc_connection(NULL, &p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open '%s' - %s\n", iface->name, nt_errstr(status));
 		return False;

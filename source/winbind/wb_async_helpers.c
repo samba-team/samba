@@ -247,8 +247,7 @@ static void get_schannel_creds_recv_pipe(struct composite_context *creq)
 	if (!composite_is_ok(c)) return;
 
 	creq = dcerpc_bind_auth_none_send(state, state->p,
-					  DCERPC_NETLOGON_UUID,
-					  DCERPC_NETLOGON_VERSION);
+									  &dcerpc_table_netlogon);
 	composite_continue(c, creq, get_schannel_creds_recv_anonbind, c);
 }
 

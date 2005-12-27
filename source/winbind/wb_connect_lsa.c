@@ -95,8 +95,7 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 	switch (state->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
 		ctx = dcerpc_bind_auth_none_send(state, state->lsa_pipe,
-						 DCERPC_LSARPC_UUID,
-						 DCERPC_LSARPC_VERSION);
+										 &dcerpc_table_lsarpc);
 		composite_continue(state->ctx, ctx, init_lsa_recv_anon_bind,
 				   state);
 		break;
@@ -108,8 +107,7 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 		}
 		state->lsa_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 		ctx = dcerpc_bind_auth_send(state, state->lsa_pipe,
-					    DCERPC_LSARPC_UUID,
-					    DCERPC_LSARPC_VERSION,
+									&dcerpc_table_lsarpc,
 					    state->creds, state->auth_type,
 					    NULL);
 		composite_continue(state->ctx, ctx, init_lsa_recv_auth_bind,

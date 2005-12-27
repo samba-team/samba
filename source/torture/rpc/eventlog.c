@@ -229,11 +229,7 @@ BOOL torture_rpc_eventlog(void)
 
 	mem_ctx = talloc_init("torture_rpc_atsvc");
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					DCERPC_EVENTLOG_NAME, 
-					DCERPC_EVENTLOG_UUID, 
-					DCERPC_EVENTLOG_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_eventlog);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

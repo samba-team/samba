@@ -181,10 +181,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
-	status = dcerpc_pipe_connect_b(test_ctx, 
-				       &p, b, 
-				       DCERPC_SAMR_UUID,
-				       DCERPC_SAMR_VERSION,
+	status = dcerpc_pipe_connect_b(test_ctx, &p, b, &dcerpc_table_samr,
 				       credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
@@ -201,8 +198,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	 * the second */
 
 	/* Swap the binding details from SAMR to NETLOGON */
-	status = dcerpc_epm_map_binding(test_ctx, b, DCERPC_NETLOGON_UUID,
-					DCERPC_NETLOGON_VERSION, NULL);
+	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_netlogon, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -214,9 +210,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_bind_auth(p_netlogon, 
-				  DCERPC_NETLOGON_UUID,
-				  DCERPC_NETLOGON_VERSION, 
+	status = dcerpc_bind_auth(p_netlogon, &dcerpc_table_netlogon,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  NULL);
 
@@ -236,8 +230,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Swap the binding details from SAMR to LSARPC */
-	status = dcerpc_epm_map_binding(test_ctx, b, DCERPC_LSARPC_UUID,
-					DCERPC_LSARPC_VERSION, NULL);
+	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_lsarpc, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -249,9 +242,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	status = dcerpc_bind_auth(p_lsa, 
-				  DCERPC_LSARPC_UUID,
-				  DCERPC_LSARPC_VERSION, 
+	status = dcerpc_bind_auth(p_lsa, &dcerpc_table_lsarpc,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  NULL);
 

@@ -784,15 +784,13 @@ BOOL torture_rpc_drsuapi_cracknames(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					DCERPC_DRSUAPI_NAME,
-					DCERPC_DRSUAPI_UUID,
-					DCERPC_DRSUAPI_VERSION);
+					&dcerpc_table_drsuapi);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	printf("Connected to DRAUAPI pipe\n");
+	printf("Connected to DRSUAPI pipe\n");
 
 	ZERO_STRUCT(priv);
 

@@ -36,12 +36,16 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	int i;
 	DATA_BLOB stub_in, stub_out;
 	int idl_calls;
+	struct dcerpc_interface_table tbl;
 
-	uuid = GUID_string(mem_ctx, &id->uuid);
+	/* FIXME: This should be fixed when torture_rpc_connection 
+	 * takes a dcerpc_syntax_id */
+	tbl.name = iface->name;
+	tbl.uuid = GUID_string(mem_ctx, &id->uuid);
+	tbl.if_version = id->if_version;
 
 	status = torture_rpc_connection(mem_ctx, 
-					&p, iface->name,
-					uuid, id->if_version);
+					&p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
 		       uuid, iface->name, nt_errstr(status));
@@ -166,9 +170,7 @@ BOOL torture_rpc_scanner(void)
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		if (b->transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(mem_ctx, b, 
-							 l->table->uuid,
-							 l->table->if_version, NULL);
+			status = dcerpc_epm_map_binding(mem_ctx, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_free(loop_ctx);
 				printf("Failed to map port for uuid %s\n", l->table->uuid);
@@ -180,11 +182,7 @@ BOOL torture_rpc_scanner(void)
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
 
-		status = torture_rpc_connection(loop_ctx, 
-						&p, 
-						l->table->name,
-						DCERPC_MGMT_UUID,
-						DCERPC_MGMT_VERSION);
+		status = torture_rpc_connection(loop_ctx, &p, &dcerpc_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
 			ret = False;

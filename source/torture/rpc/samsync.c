@@ -1475,9 +1475,7 @@ BOOL torture_rpc_samsync(void)
 
 	status = torture_rpc_connection(samsync_state,
 					&samsync_state->p_lsa, 
-					DCERPC_LSARPC_NAME,
-					DCERPC_LSARPC_UUID,
-					DCERPC_LSARPC_VERSION);
+					&dcerpc_table_lsarpc);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
@@ -1529,8 +1527,7 @@ BOOL torture_rpc_samsync(void)
 
 	status = dcerpc_pipe_connect_b(samsync_state,
 				       &samsync_state->p, b, 
-				       DCERPC_NETLOGON_UUID,
-				       DCERPC_NETLOGON_VERSION,
+					   &dcerpc_table_netlogon,
 				       credentials, NULL);
 	
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1569,8 +1566,7 @@ BOOL torture_rpc_samsync(void)
 	status = dcerpc_pipe_connect_b(samsync_state, 
 				       &samsync_state->p_netlogon_wksta, 
 				       b_netlogon_wksta, 
-				       DCERPC_NETLOGON_UUID,
-				       DCERPC_NETLOGON_VERSION,
+					   &dcerpc_table_netlogon,
 				       credentials_wksta, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
