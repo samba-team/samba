@@ -447,9 +447,8 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 */
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
-	const char *transfer_syntax;
 	uint32_t if_version, transfer_syntax_version;
-	struct GUID uuid;
+	struct GUID uuid, *transfer_syntax_uuid;
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
@@ -473,13 +472,13 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uuid = call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid;
 
 	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].if_version;
-	transfer_syntax = GUID_string(call, 
-				      &call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].uuid);
-	if (!transfer_syntax ||
-	    strcasecmp(NDR_GUID, transfer_syntax) != 0 ||
-	    NDR_GUID_VERSION != transfer_syntax_version) {
+	transfer_syntax_uuid = &call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].uuid;
+	if (!GUID_equal(&ndr_transfer_syntax.uuid, transfer_syntax_uuid) != 0 ||
+	    ndr_transfer_syntax.if_version != transfer_syntax_version) {
+		char *uuid_str = GUID_string(call, transfer_syntax_uuid);
 		/* we only do NDR encoded dcerpc */
-		DEBUG(0,("Non NDR transfer syntax requested - %s\n", transfer_syntax));
+		DEBUG(0,("Non NDR transfer syntax requested - %s\n", uuid_str));
+		talloc_free(uuid_str);
 		return dcesrv_bind_nak(call, 0);
 	}
 
@@ -542,8 +541,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 	pkt.u.bind_ack.ctx_list[0].result = result;
 	pkt.u.bind_ack.ctx_list[0].reason = reason;
-	GUID_from_string(NDR_GUID, &pkt.u.bind_ack.ctx_list[0].syntax.uuid);
-	pkt.u.bind_ack.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
+	pkt.u.bind_ack.ctx_list[0].syntax = ndr_transfer_syntax;
 	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
 
 	if (!dcesrv_auth_bind_ack(call, &pkt)) {
@@ -605,22 +603,19 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_t context_id)
 {
 	uint32_t if_version, transfer_syntax_version;
-	const char *transfer_syntax;
 	struct dcesrv_connection_context *context;
 	const struct dcesrv_interface *iface;
-	struct GUID uuid;
+	struct GUID uuid, *transfer_syntax_uuid;
 
 	if_version = call->pkt.u.alter.ctx_list[0].abstract_syntax.if_version;
 	uuid = call->pkt.u.alter.ctx_list[0].abstract_syntax.uuid;
 
 	transfer_syntax_version = call->pkt.u.alter.ctx_list[0].transfer_syntaxes[0].if_version;
-	transfer_syntax = GUID_string(call, 
-				      &call->pkt.u.alter.ctx_list[0].transfer_syntaxes[0].uuid);
-	if (!transfer_syntax ||
-	    strcasecmp(NDR_GUID, transfer_syntax) != 0 ||
-	    NDR_GUID_VERSION != transfer_syntax_version) {
+	transfer_syntax_uuid = &call->pkt.u.alter.ctx_list[0].transfer_syntaxes[0].uuid;
+	if (!GUID_equal(transfer_syntax_uuid, &ndr_transfer_syntax.uuid) ||
+	    ndr_transfer_syntax.if_version != transfer_syntax_version) {
 		/* we only do NDR encoded dcerpc */
-		return NT_STATUS_NO_MEMORY;
+		return NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED;
 	}
 
 	iface = find_interface_by_uuid(call->conn->endpoint, &uuid, if_version);
@@ -694,8 +689,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	}
 	pkt.u.alter_resp.ctx_list[0].result = result;
 	pkt.u.alter_resp.ctx_list[0].reason = reason;
-	GUID_from_string(NDR_GUID, &pkt.u.alter_resp.ctx_list[0].syntax.uuid);
-	pkt.u.alter_resp.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
+	pkt.u.alter_resp.ctx_list[0].syntax = ndr_transfer_syntax;
 	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
 	pkt.u.alter_resp.secondary_address = "";
 

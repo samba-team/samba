@@ -794,15 +794,10 @@ NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
 			      struct dcerpc_syntax_id *syntax,
 			      struct dcerpc_syntax_id *transfer_syntax)
 {
-	NTSTATUS status;
-
 	syntax->uuid = table->uuid;
 	syntax->if_version = table->if_version;
 
-	status = GUID_from_string(NDR_GUID, &transfer_syntax->uuid);
-	if (!NT_STATUS_IS_OK(status)) return status;
-
-	transfer_syntax->if_version = NDR_GUID_VERSION;
+	*transfer_syntax = ndr_transfer_syntax;
 
 	return NT_STATUS_OK;
 }
