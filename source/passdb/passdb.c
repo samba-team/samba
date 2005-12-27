@@ -1955,6 +1955,7 @@ BOOL get_free_rid_range(uint32 *low, uint32 *high)
 	if (!lp_enable_rid_algorithm()) {
 		*low = BASE_RID;
 		*high = (uint32)-1;
+		return True;
 	}
 
 	if (!get_free_ugid_range(&id_low, &id_high)) {

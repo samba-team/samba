@@ -161,13 +161,13 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	{
 		fstring rid_str;
 		
-		fstr_sprintf( rid_str, "%i", rid_high|USER_RID_TYPE );
+		fstr_sprintf( rid_str, "%i", rid_low|USER_RID_TYPE );
 		DEBUG(10,("setting next available user rid [%s]\n", rid_str));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
 			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
 			rid_str);
 			
-		fstr_sprintf( rid_str, "%i", rid_high|GROUP_RID_TYPE );
+		fstr_sprintf( rid_str, "%i", rid_low|GROUP_RID_TYPE );
 		DEBUG(10,("setting next available group rid [%s]\n", rid_str));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
 			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID), 
