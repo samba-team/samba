@@ -50,21 +50,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	a_state = h->data;
 
-	/* To change a password we need to open as system */
-	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
-	if (sam_ctx == NULL) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-
-	/* fetch the old hashes */
-	ret = gendb_search_dn(sam_ctx, mem_ctx,
-			      a_state->account_dn, &res, attrs);
-	if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	msg = res[0];
-
-	/* basic sanity checking on parameters */
+	/* basic sanity checking on parameters.  Do this before any database ops */
 	if (!r->in.lm_present || !r->in.nt_present ||
 	    !r->in.old_lm_crypted || !r->in.new_lm_crypted ||
 	    !r->in.old_nt_crypted || !r->in.new_nt_crypted) {
@@ -79,8 +65,30 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED;
 	}
 
+	/* To change a password we need to open as system */
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	ret = ldb_transaction_start(sam_ctx);
+	if (ret) {
+		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* fetch the old hashes */
+	ret = gendb_search_dn(sam_ctx, mem_ctx,
+			      a_state->account_dn, &res, attrs);
+	if (ret != 1) {
+		ldb_transaction_cancel(sam_ctx);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	msg = res[0];
+
 	status = samdb_result_passwords(mem_ctx, msg, &lm_pwd, &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) || !lm_pwd || !nt_pwd) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -88,6 +96,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	D_P16(lm_pwd->hash, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
 	D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, lm_pwd, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -95,31 +104,38 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	D_P16(nt_pwd->hash, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
 	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, nt_pwd, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 	
 	/* check the nt cross hash */
 	D_P16(lm_pwd->hash, r->in.nt_cross->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* check the lm cross hash */
 	D_P16(nt_pwd->hash, r->in.lm_cross->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	msg->dn = ldb_dn_copy(msg, a_state->account_dn);
 	if (!msg->dn) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* set the password on the user DN specified.  This may fail
+	 * due to password policies */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    a_state->account_dn, a_state->domain_state->domain_dn,
 				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
@@ -128,13 +144,25 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 				    NULL,
 				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
+		ldb_transaction_cancel(sam_ctx);
 		return status;
 	}
 
-	/* modify the samdb record */
+	/* The above call only setup the modifications, this actually
+	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* And this confirms it in a transaction commit */
+	ret = ldb_transaction_commit(sam_ctx);
+	if (ret != 0) {
+		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
+			 ldb_errstring(sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
@@ -170,6 +198,12 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
+	ret = ldb_transaction_start(sam_ctx);
+	if (ret) {
+		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	/* we need the users dn and the domain dn (derived from the
 	   user SID). We also need the current lm password hash in
 	   order to decrypt the incoming password */
@@ -178,13 +212,16 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->string);
 	if (ret != 1) {
-		return NT_STATUS_NO_SUCH_USER;
+		ldb_transaction_cancel(sam_ctx);
+		/* Don't give the game away:  (don't allow anonymous users to prove the existance of usernames) */
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	user_dn = res[0]->dn;
 
 	status = samdb_result_passwords(mem_ctx, res[0], &lm_pwd, NULL);
 	if (!NT_STATUS_IS_OK(status) || !lm_pwd) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -195,33 +232,38 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_ASCII)) {
+		ldb_transaction_cancel(sam_ctx);
 		DEBUG(3,("samr: failed to decode password buffer\n"));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* check LM verifier */
 	if (lm_pwd == NULL || r->in.hash == NULL) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	E_deshash(new_pass, new_lm_hash);
 	E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
 	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	mod = ldb_msg_new(mem_ctx);
 	if (mod == NULL) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	mod->dn = ldb_dn_copy(mod, user_dn);
 	if (!mod->dn) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* set the password - samdb needs to know both the domain and user DNs,
-	   so the domain password policy can be used */
+	/* set the password on the user DN specified.  This may fail
+	 * due to password policies */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, NULL, 
 				    mod, new_pass, 
@@ -231,13 +273,25 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 				    NULL, 
 				    NULL);
 	if (!NT_STATUS_IS_OK(status)) {
+		ldb_transaction_cancel(sam_ctx);
 		return status;
 	}
 
-	/* modify the samdb record */
+	/* The above call only setup the modifications, this actually
+	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
+		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* And this confirms it in a transaction commit */
+	ret = ldb_transaction_commit(sam_ctx);
+	if (ret != 0) {
+		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_errstring(sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
@@ -254,16 +308,16 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	char new_pass[512];
 	uint32_t new_pass_len;
-	struct ldb_context *sam_ctx;
+	struct ldb_context *sam_ctx = NULL;
 	const struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "ntPwdHash", "lmPwdHash", "unicodePwd", NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
-	struct samr_DomInfo1 *dominfo;
-	struct samr_ChangeReject *reject;
-	uint32_t reason = 0;
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
+	enum samr_RejectReason reason = SAMR_REJECT_OTHER;
 	uint8_t new_nt_hash[16], new_lm_hash[16];
 	struct samr_Password nt_verifier, lm_verifier;
 
@@ -271,15 +325,20 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	if (r->in.nt_password == NULL ||
 	    r->in.nt_verifier == NULL) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto failed;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* To change a password we need to open as system */
 	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-		goto failed;
+	}
+
+	ret = ldb_transaction_start(sam_ctx);
+	if (ret) {
+		talloc_free(sam_ctx);
+		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* we need the users dn and the domain dn (derived from the
@@ -290,7 +349,8 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->string);
 	if (ret != 1) {
-		status = NT_STATUS_NO_SUCH_USER;
+		/* Don't give the game away:  (don't allow anonymous users to prove the existance of usernames) */
+		status = NT_STATUS_WRONG_PASSWORD;
 		goto failed;
 	}
 
@@ -353,8 +413,8 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	/* set the password - samdb needs to know both the domain and user DNs,
-	   so the domain password policy can be used */
+	/* set the password on the user DN specified.  This may fail
+	 * due to password policies */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, NULL, 
 				    mod, new_pass, 
@@ -367,27 +427,40 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	/* modify the samdb record */
+	/* The above call only setup the modifications, this actually
+	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
 
+	/* And this confirms it in a transaction commit */
+	ret = ldb_transaction_commit(sam_ctx);
+	if (ret != 0) {
+		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_errstring(sam_ctx)));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+
 	return NT_STATUS_OK;
 
 failed:
+	ldb_transaction_cancel(sam_ctx);
+	talloc_free(sam_ctx);
 
 	reject = talloc(mem_ctx, struct samr_ChangeReject);
+	r->out.dominfo = dominfo;
+	r->out.reject = reject;
+
 	if (reject == NULL) {
 		return status;
 	}
 	ZERO_STRUCTP(reject);
 
 	reject->reason = reason;
-
-	r->out.dominfo = dominfo;
-	r->out.reject = reject;
 
 	return status;
 }
@@ -433,6 +506,8 @@ static BOOL samdb_password_complexity_ok(const char *pass)
   elements to setup the correct change when samdb_replace() is
   called. This allows the caller to combine the change with other
   changes (as is needed by some of the set user info levels)
+
+  The caller should probably have a transaction wrapping this
 */
 NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    const struct ldb_dn *user_dn,
@@ -443,7 +518,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct samr_Password *ntNewHash,
 			    BOOL user_change,
 			    BOOL restrictions,
-			    uint32_t *reject_reason,
+			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
@@ -838,10 +913,17 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	int ret;
 
+	ret = ldb_transaction_start(ctx);
+	if (ret) {
+		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	user_dn = samdb_search_dn(ctx, mem_ctx, NULL, 
 				  "(&(objectSid=%s)(objectClass=user))", 
 				  ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 	if (!user_dn) {
+		ldb_transaction_cancel(ctx);
 		DEBUG(3, ("samdb_set_password_sid: SID %s not found in samdb, returning NO_SUCH_USER\n",
 			  dom_sid_string(mem_ctx, user_sid)));
 		return NT_STATUS_NO_SUCH_USER;
@@ -849,11 +931,13 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
+		ldb_transaction_cancel(ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	msg->dn = ldb_dn_copy(msg, user_dn);
 	if (!msg->dn) {
+		ldb_transaction_cancel(ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -865,14 +949,23 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				       restrictions, /* run restriction tests */
 				       reject_reason, _dominfo);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		ldb_transaction_cancel(ctx);
 		return nt_status;
 	}
 	
 	/* modify the samdb record */
 	ret = samdb_replace(ctx, mem_ctx, msg);
 	if (ret != 0) {
+		ldb_transaction_cancel(ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	ret = ldb_transaction_commit(ctx);
+	if (ret != 0) {
+		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn),
+			 ldb_errstring(ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 	return NT_STATUS_OK;
 }
