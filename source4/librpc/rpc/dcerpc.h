@@ -189,7 +189,6 @@ struct dcerpc_binding {
 	uint16_t object_version;
 	const char *host;
 	const char *endpoint;
-	const char *authservice;
 	const char **options;
 	uint32_t flags;
 };
