@@ -797,6 +797,26 @@ static BOOL context_rid_to_id(struct pdb_context *context, uint32 rid,
 					       id, type);
 }
 	
+static BOOL context_rid_algorithm(struct pdb_context *context)
+{
+	if ((context == NULL) || (context->pdb_methods == NULL)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+
+	return context->pdb_methods->rid_algorithm(context->pdb_methods);
+}
+	
+static BOOL context_new_rid(struct pdb_context *context, uint32 *rid)
+{
+	if ((context == NULL) || (context->pdb_methods == NULL)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return False;
+	}
+
+	return context->pdb_methods->new_rid(context->pdb_methods, rid);
+}
+	
 /******************************************************************
   Free and cleanup a pdb context, any associated data and anything
   that the attached modules might have associated.
@@ -978,6 +998,9 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_uid_to_rid = context_uid_to_rid;
 	(*context)->pdb_gid_to_sid = context_gid_to_sid;
 	(*context)->pdb_rid_to_id = context_rid_to_id;
+
+	(*context)->pdb_rid_algorithm = context_rid_algorithm;
+	(*context)->pdb_new_rid = context_new_rid;
 
 	(*context)->free_fn = free_pdb_context;
 
@@ -1559,6 +1582,28 @@ BOOL pdb_rid_to_id(uint32 rid, union unid_t *id, enum SID_NAME_USE *type)
 	}
 
 	return pdb_context->pdb_rid_to_id(pdb_context, rid, id, type);
+}
+
+BOOL pdb_rid_algorithm(void)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return pdb_context->pdb_rid_algorithm(pdb_context);
+}
+
+BOOL pdb_new_rid(uint32 *rid)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return pdb_context->pdb_new_rid(pdb_context, rid);
 }
 
 /***************************************************************

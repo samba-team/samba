@@ -383,6 +383,9 @@ typedef struct pdb_context
 	BOOL (*pdb_rid_to_id)(struct pdb_context *context, uint32 rid,
 			      union unid_t *id, enum SID_NAME_USE *type);
 
+	BOOL (*pdb_rid_algorithm)(struct pdb_context *context);
+	BOOL (*pdb_new_rid)(struct pdb_context *context, uint32 *rid);
+
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -519,6 +522,9 @@ typedef struct pdb_methods
 			   DOM_SID *sid);
 	BOOL (*rid_to_id)(struct pdb_methods *methods, uint32 rid,
 			  union unid_t *id, enum SID_NAME_USE *type);
+
+	BOOL (*rid_algorithm)(struct pdb_methods *methods);
+	BOOL (*new_rid)(struct pdb_methods *methods, uint32 *rid);
 
 	void *private_data;  /* Private data of some kind */
 	

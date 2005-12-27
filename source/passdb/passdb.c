@@ -368,7 +368,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username,
 	}
 	
 	/* see if we need to generate a new rid using the 2.2 algorithm */
-	if ( rid == 0 && lp_enable_rid_algorithm() ) {
+	if ( rid == 0 && pdb_rid_algorithm() ) {
 		DEBUG(10,("pdb_init_sam_new: no RID specified.  Generating one via old algorithm\n"));
 		rid = algorithmic_pdb_uid_to_user_rid(pwd->pw_uid);
 	}
@@ -1952,7 +1952,7 @@ BOOL get_free_rid_range(uint32 *low, uint32 *high)
 {
 	uint32 id_low, id_high;
 
-	if (!lp_enable_rid_algorithm()) {
+	if (!pdb_rid_algorithm()) {
 		*low = BASE_RID;
 		*high = (uint32)-1;
 		return True;

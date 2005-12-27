@@ -863,6 +863,11 @@ done:
 	
 	return (ret);	
 }
+
+static BOOL tdbsam_rid_algorithm(struct pdb_methods *methods)
+{
+	return False;
+}
 	
 static void free_private_data(void **vp) 
 {
@@ -906,6 +911,8 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
 	(*pdb_method)->rename_sam_account = tdbsam_rename_sam_account;
+
+	(*pdb_method)->rid_algorithm = tdbsam_rid_algorithm;
 
 	tdb_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct tdbsam_privates);
 

@@ -925,7 +925,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 		goto done;
 	}
 
-	if (lp_enable_rid_algorithm() && (uid < max_algorithmic_uid())) {
+	if (pdb_rid_algorithm() && (uid < max_algorithmic_uid())) {
 		sid_copy(psid, get_global_sam_sid());
 		sid_append_rid(psid, algorithmic_pdb_uid_to_user_rid(uid));
 		goto done;
@@ -969,7 +969,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 		goto done;
 	}
 
-	if (lp_enable_rid_algorithm() && (gid < max_algorithmic_gid())) {
+	if (pdb_rid_algorithm() && (gid < max_algorithmic_gid())) {
 		sid_copy(psid, get_global_sam_sid());
 		sid_append_rid(psid, pdb_gid_to_group_rid(gid));
 		goto done;
@@ -1018,7 +1018,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 			*puid = id.uid;
 			goto done;
 		}
-		if (lp_enable_rid_algorithm() &&
+		if (pdb_rid_algorithm() &&
 		    algorithmic_pdb_rid_is_user(rid)) {
 			*puid = algorithmic_pdb_user_rid_to_uid(rid);
 			goto done;
@@ -1099,7 +1099,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 			*pgid = id.gid;
 			goto done;
 		}
-		if (lp_enable_rid_algorithm() &&
+		if (pdb_rid_algorithm() &&
 		    !algorithmic_pdb_rid_is_user(rid)) {
 			/* This must be a group, presented as alias */
 			*pgid = pdb_group_rid_to_gid(rid);

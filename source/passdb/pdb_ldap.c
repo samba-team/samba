@@ -4219,6 +4219,11 @@ static BOOL ldapsam_search_aliases(struct pdb_methods *methods,
 	return False;
 }
 
+static BOOL ldapsam_rid_algorithm(struct pdb_methods *methods)
+{
+	return False;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -4283,6 +4288,8 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->set_account_policy = ldapsam_set_account_policy;
 
 	(*pdb_method)->get_seq_num = ldapsam_get_seq_num;
+
+	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
 
 	/* TODO: Setup private data and free */
 
