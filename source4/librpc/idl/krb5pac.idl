@@ -5,7 +5,6 @@
 #include "idl_types.h"
 
 [
-  uuid("1-2-3-4"),
   version(0.0),
   pointer_default(unique),
   depends(security,netlogon)

@@ -77,7 +77,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			(*eps)[total].name = iface->iface.name;
 
 			description = d->ep_description;
-			GUID_from_string(iface->iface.uuid, &description->object);
+			description->object = iface->iface.uuid;
 			description->object_version = iface->iface.if_version;
 
 			status = dcerpc_binding_build_tower(mem_ctx, description, &(*eps)[total].ep);

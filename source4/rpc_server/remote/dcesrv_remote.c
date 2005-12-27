@@ -57,7 +57,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	pass = lp_parm_string(-1, "dcerpc_remote", "password");
 	domain = lp_parm_string(-1, "dceprc_remote", "domain");
 
-	table = idl_iface_by_uuid(iface->uuid); /* FIXME: What about if_version ? */
+	table = idl_iface_by_uuid(&iface->uuid); /* FIXME: What about if_version ? */
 	if (!table) {
 		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
 		return NT_STATUS_NET_WRITE_FAULT;
@@ -262,13 +262,13 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct d
 	return True;
 }
 
-static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32_t if_version)
+static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const struct GUID *uuid, uint32_t if_version)
 {
 	const struct dcerpc_interface_list *l;
 
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
 		if (l->table->if_version == if_version &&
-			strcmp(l->table->uuid, uuid)==0) {
+			GUID_equal(&l->table->uuid, uuid)==0) {
 			return remote_fill_interface(iface, l->table);
 		}
 	}

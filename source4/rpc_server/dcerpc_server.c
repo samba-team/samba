@@ -87,15 +87,8 @@ static struct dcesrv_connection_context *dcesrv_find_context(struct dcesrv_conne
 static BOOL interface_match(const struct dcesrv_interface *if1,
 							const struct dcesrv_interface *if2)
 {
-	if (if1->if_version != if2->if_version) {
-		return False;
-	}
-
-	if (strcmp(if1->uuid, if2->uuid)==0) {
-		return True;
-	}			
-
-	return False;
+	return (if1->if_version == if2->if_version && 
+			GUID_equal(&if1->uuid, &if2->uuid));
 }
 
 /*
@@ -117,24 +110,16 @@ static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoin
   see if a uuid and if_version match to an interface
 */
 static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
-				    const char *uuid, uint32_t if_version)
+				    const struct GUID *uuid, uint32_t if_version)
 {
-	if (iface->if_version != if_version) {
-		return False;
-	}
-
-	if (strcmp(iface->uuid, uuid)==0) {
-		return True;
-	}			
-
-	return False;
+	return (iface->if_version == if_version && GUID_equal(&iface->uuid, uuid));
 }
 
 /*
   find the interface operations on an endpoint by uuid
 */
 static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
-							     const char *uuid, uint32_t if_version)
+							     const struct GUID *uuid, uint32_t if_version)
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
@@ -462,8 +447,9 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 */
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
-	const char *uuid, *transfer_syntax;
+	const char *transfer_syntax;
 	uint32_t if_version, transfer_syntax_version;
+	struct GUID uuid;
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
@@ -484,10 +470,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.if_version;
-	uuid = GUID_string(call, &call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid);
-	if (!uuid) {
-		return dcesrv_bind_nak(call, 0);
-	}
+	uuid = call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid;
 
 	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].if_version;
 	transfer_syntax = GUID_string(call, 
@@ -500,9 +483,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	iface = find_interface_by_uuid(call->conn->endpoint, uuid, if_version);
+	iface = find_interface_by_uuid(call->conn->endpoint, &uuid, if_version);
 	if (iface == NULL) {
-		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
+		char *uuid_str = GUID_string(call, &uuid);
+		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid_str, if_version));
+		talloc_free(uuid_str);
+
 		/* we don't know about that interface */
 		result = DCERPC_BIND_PROVIDER_REJECT;
 		reason = DCERPC_BIND_REASON_ASYNTAX;		
@@ -567,8 +553,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (iface) {
 		status = iface->bind(call, iface);
 		if (!NT_STATUS_IS_OK(status)) {
+			char *uuid_str = GUID_string(call, &uuid);
 			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n", 
-				 uuid, if_version, nt_errstr(status)));
+				 uuid_str, if_version, nt_errstr(status)));
+			talloc_free(uuid_str);
 			return dcesrv_bind_nak(call, 0);
 		}
 	}
@@ -617,15 +605,13 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_t context_id)
 {
 	uint32_t if_version, transfer_syntax_version;
-	const char *uuid, *transfer_syntax;
+	const char *transfer_syntax;
 	struct dcesrv_connection_context *context;
 	const struct dcesrv_interface *iface;
+	struct GUID uuid;
 
 	if_version = call->pkt.u.alter.ctx_list[0].abstract_syntax.if_version;
-	uuid = GUID_string(call, &call->pkt.u.alter.ctx_list[0].abstract_syntax.uuid);
-	if (!uuid) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	uuid = call->pkt.u.alter.ctx_list[0].abstract_syntax.uuid;
 
 	transfer_syntax_version = call->pkt.u.alter.ctx_list[0].transfer_syntaxes[0].if_version;
 	transfer_syntax = GUID_string(call, 
@@ -637,9 +623,11 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	iface = find_interface_by_uuid(call->conn->endpoint, uuid, if_version);
+	iface = find_interface_by_uuid(call->conn->endpoint, &uuid, if_version);
 	if (iface == NULL) {
-		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
+		char *uuid_str = GUID_string(call, &uuid);
+		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid_str, if_version));
+		talloc_free(uuid_str);
 		return NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED;
 	}
 
