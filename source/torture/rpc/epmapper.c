@@ -44,7 +44,6 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct epm_Map r;
 	struct GUID uuid;
-	const char *uuid_str;
 	struct policy_handle handle;
 	int i;
 	struct GUID if_uuid;
@@ -60,10 +59,9 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.max_towers = 100;
 
 	dcerpc_floor_get_lhs_data(&twr->tower.floors[0], &if_uuid, &if_version);
-	uuid_str = GUID_string(mem_ctx, &if_uuid);
 
 	printf("epm_Map results for '%s':\n", 
-	       idl_pipe_name(uuid_str, if_version));
+	       idl_pipe_name(&if_uuid, if_version));
 
 	twr->tower.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr->tower.floors[2].lhs.lhs_data = data_blob(NULL, 0);

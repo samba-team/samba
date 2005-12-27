@@ -37,7 +37,7 @@ struct dcesrv_auth;
 
 struct dcesrv_interface {
 	const char *name;
-	const char *uuid;
+	struct GUID uuid;
 	uint32_t if_version;
 
 	/* this function is called when the client binds to this interface  */
@@ -192,7 +192,7 @@ struct dcesrv_endpoint_server {
 	 * ask for a dcesrv_interface implementation
 	 * - iface must be reference to an already existing struct !
 	 */
-	BOOL (*interface_by_uuid)(struct dcesrv_interface *iface, const char *, uint32_t);
+	BOOL (*interface_by_uuid)(struct dcesrv_interface *iface, const struct GUID *, uint32_t);
 
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation

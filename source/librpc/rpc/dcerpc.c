@@ -796,9 +796,7 @@ NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
 {
 	NTSTATUS status;
 
-	status = GUID_from_string(table->uuid, &syntax->uuid);
-	if (!NT_STATUS_IS_OK(status)) return status;
-
+	syntax->uuid = table->uuid;
 	syntax->if_version = table->if_version;
 
 	status = GUID_from_string(NDR_GUID, &transfer_syntax->uuid);

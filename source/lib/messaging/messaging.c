@@ -479,7 +479,7 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 	irpc->callnum = callnum;
 	irpc->fn      = fn;
 	irpc->private = private;
-	GUID_from_string(irpc->table->uuid, &irpc->uuid);
+	irpc->uuid = irpc->table->uuid;
 
 	return NT_STATUS_OK;
 }
@@ -689,8 +689,7 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	talloc_set_destructor(irpc, irpc_destructor);
 
 	/* setup the header */
-	status = GUID_from_string(table->uuid, &header.uuid);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	header.uuid = table->uuid;
 
 	header.if_version = table->if_version;
 	header.callid     = irpc->callid;

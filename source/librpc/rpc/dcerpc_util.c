@@ -34,11 +34,11 @@
 /*
   find the pipe name for a local IDL interface
 */
-const char *idl_pipe_name(const char *uuid, uint32_t if_version)
+const char *idl_pipe_name(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct dcerpc_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (strcasecmp(l->table->uuid, uuid) == 0 &&
+		if (GUID_equal(&l->table->uuid, uuid) &&
 		    l->table->if_version == if_version) {
 			return l->table->name;
 		}
@@ -49,11 +49,11 @@ const char *idl_pipe_name(const char *uuid, uint32_t if_version)
 /*
   find the number of calls defined by local IDL
 */
-int idl_num_calls(const char *uuid, uint32_t if_version)
+int idl_num_calls(const struct GUID *uuid, uint32_t if_version)
 {
 	const struct dcerpc_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next){
-		if (strcasecmp(l->table->uuid, uuid) == 0 &&
+		if (GUID_equal(&l->table->uuid, uuid) &&
 		    l->table->if_version == if_version) {
 			return l->table->num_calls;
 		}
@@ -79,11 +79,11 @@ const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
 /*
   find a dcerpc interface by uuid
 */
-const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
+const struct dcerpc_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
 {
 	const struct dcerpc_interface_list *l;
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {
-		if (strcasecmp(l->table->uuid, uuid) == 0) {
+		if (GUID_equal(&l->table->uuid, uuid)) {
 			return l->table;
 		}
 	}
@@ -883,11 +883,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	ZERO_STRUCT(handle);
 	ZERO_STRUCT(guid);
 
-	status = GUID_from_string(table->uuid, &binding->object);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
+	binding->object = table->uuid;
 	binding->object_version = table->if_version;
 
 	status = dcerpc_binding_build_tower(p, binding, &twr.tower);
@@ -998,7 +994,9 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to uuid %s - %s\n", table->uuid, nt_errstr(status)));
+		char *uuid_str = GUID_string(p, &table->uuid);
+		DEBUG(0,("Failed to bind to uuid %s - %s\n", uuid_str, nt_errstr(status)));
+		talloc_free(uuid_str);
 	}
 	talloc_free(tmp_ctx);
 	return status;
@@ -1119,7 +1117,8 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 							p->conn->event_ctx);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("Failed to map DCERPC endpoint for '%s' - %s\n", 
-					 table->uuid, nt_errstr(status)));
+					 GUID_string(tmp_ctx, &table->uuid), nt_errstr(status)));
+				talloc_free(tmp_ctx);
 				return status;
 			}
 			DEBUG(2,("Mapped to DCERPC endpoint %s\n", binding->endpoint));
@@ -1338,11 +1337,7 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 
 	p2->context_id = ++p->conn->next_context_id;
 
-	status = GUID_from_string(table->uuid, &p2->syntax.uuid);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(p2);
-		return status;
-	}
+	p2->syntax.uuid = table->uuid;
 	p2->syntax.if_version = table->if_version;
 
 	status = GUID_from_string(NDR_GUID, &p2->transfer_syntax.uuid);

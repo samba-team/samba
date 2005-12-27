@@ -9,7 +9,7 @@ package Parse::Pidl::Samba4::NDR::Parser;
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
-use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::Util qw(has_property ParseExpr print_uuid);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 
 use vars qw($VERSION);
@@ -2218,7 +2218,7 @@ sub FunctionTable($)
 
 	pidl "\nconst struct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {";
 	pidl "\t.name\t\t= \"$interface->{NAME}\",";
-	pidl "\t.uuid\t\t= DCERPC_$uname\_UUID,";
+	pidl "\t.uuid\t\t= ". print_uuid($interface->{UUID}) .",";
 	pidl "\t.if_version\t= DCERPC_$uname\_VERSION,";
 	pidl "\t.helpstring\t= DCERPC_$uname\_HELPSTRING,";
 	pidl "\t.num_calls\t= $count,";

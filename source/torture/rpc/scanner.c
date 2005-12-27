@@ -32,7 +32,6 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
-	const char *uuid;
 	int i;
 	DATA_BLOB stub_in, stub_out;
 	int idl_calls;
@@ -41,14 +40,15 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	/* FIXME: This should be fixed when torture_rpc_connection 
 	 * takes a dcerpc_syntax_id */
 	tbl.name = iface->name;
-	tbl.uuid = GUID_string(mem_ctx, &id->uuid);
+	tbl.uuid = id->uuid;
 	tbl.if_version = id->if_version;
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, iface);
+	status = torture_rpc_connection(mem_ctx, &p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
+		char *uuid_str = GUID_string(mem_ctx, &id->uuid);
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
-		       uuid, iface->name, nt_errstr(status));
+		       uuid_str, iface->name, nt_errstr(status));
+		talloc_free(uuid_str);
 		return False;
 	}
 
@@ -75,7 +75,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	}
 
 	printf("\t%d calls available\n", i);
-	idl_calls = idl_num_calls(uuid, id->if_version);
+	idl_calls = idl_num_calls(&id->uuid, id->if_version);
 	if (idl_calls == -1) {
 		printf("\tinterface not known in local IDL\n");
 	} else if (i != idl_calls) {
@@ -125,7 +125,8 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 
 		printf("\n\tuuid %s  version 0x%08x '%s'\n",
 		       uuid,
-		       id->if_version, idl_pipe_name(uuid, id->if_version));
+		       id->if_version, idl_pipe_name(&id->uuid, id->if_version));
+
 		test_num_calls(iface, mem_ctx, id);
 	}
 
@@ -172,8 +173,9 @@ BOOL torture_rpc_scanner(void)
 		if (b->transport == NCACN_IP_TCP) {
 			status = dcerpc_epm_map_binding(mem_ctx, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
+				printf("Failed to map port for uuid %s\n", 
+					   GUID_string(loop_ctx, &l->table->uuid));
 				talloc_free(loop_ctx);
-				printf("Failed to map port for uuid %s\n", l->table->uuid);
 				continue;
 			}
 		} else {

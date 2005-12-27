@@ -262,7 +262,6 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 	int i;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *tmp_ctx;
-	const char *uuid;
 	struct dcom_object_exporter *ox;
 
 	ox = object_exporter_by_ip(iface->ctx, iface);
@@ -273,8 +272,6 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 	
 	iid = iface->vtable->iid;
 
-	uuid = GUID_string(tmp_ctx, &iid);
-	
 	if (p) {
 		if (!GUID_equal(&p->syntax.uuid, &iid)) {
 			struct dcerpc_pipe *p2;
@@ -282,7 +279,7 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 
 			/* interface will always be present, so 
 			 * idl_iface_by_uuid can't return NULL */
-			status = dcerpc_secondary_context(p, &p2, idl_iface_by_uuid(uuid));
+			status = dcerpc_secondary_context(p, &p2, idl_iface_by_uuid(&iid));
 
 			if (NT_STATUS_IS_OK(status)) {
 				p = p2;
@@ -303,7 +300,7 @@ NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 			DEBUG(1, ("Error parsing string binding"));
 		} else {
 			status = dcerpc_pipe_connect_b(NULL, &p, binding, 
-						       idl_iface_by_uuid(uuid),
+						       idl_iface_by_uuid(&iid),
 						       iface->ctx->dcom->credentials,
 							   iface->ctx->event_ctx);
 		}

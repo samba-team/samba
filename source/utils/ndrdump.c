@@ -148,8 +148,13 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	p = idl_iface_by_name(pipe_name);
 
 	if (!p) {
+		struct GUID uuid;
 
-		p = idl_iface_by_uuid(pipe_name);
+		status = GUID_from_string(pipe_name, &uuid);
+
+		if (NT_STATUS_IS_OK(status)) {
+			p = idl_iface_by_uuid(&uuid);
+		}
 
 		if (!p) {
 			printf("Unknown pipe or UUID '%s'\n", pipe_name);
