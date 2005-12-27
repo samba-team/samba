@@ -452,9 +452,9 @@ static NTSTATUS string_combinations2(char *s, int offset, NTSTATUS (*fn) (const 
 
 	for (i = offset; i < (len - (N - 1)); i++) {
 		char c = s[i];
-		if (!islower(c))
+		if (!islower_ascii(c))
 			continue;
-		s[i] = toupper(c);
+		s[i] = toupper_ascii(c);
 		if (!NT_STATUS_EQUAL(nt_status = string_combinations2(s, i + 1, fn, N - 1),NT_STATUS_WRONG_PASSWORD)) {
 			return (nt_status);
 		}

@@ -390,7 +390,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 		if (isdigit(c))
 			c -= '0';
 		else if (isalpha(c))
-			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+			c -= isupper_ascii(c) ? 'A' - 10 : 'a' - 10;
 		else
 			break;
 		if (c >= base)

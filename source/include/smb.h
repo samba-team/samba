@@ -172,6 +172,9 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 /* turn a 7 bit character into a ucs2 character */
 #define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
+/* return an ascii version of a ucs2 character */
+#define UCS2_TO_CHAR(c) ((c) & 0xff)
+
 /* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
 				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
