@@ -128,9 +128,7 @@ struct test_join *torture_create_testuser(const char *username,
 
 	status = torture_rpc_connection(join, 
 					&join->p, 
-					DCERPC_SAMR_NAME,
-					DCERPC_SAMR_UUID,
-					DCERPC_SAMR_VERSION);
+					&dcerpc_table_samr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}

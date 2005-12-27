@@ -153,9 +153,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 
 	ev = event_context_find(mprMemCtx());
 
-	status = dcerpc_pipe_connect(this, &p, binding, 
-				     iface->uuid, iface->if_version, 
-				     creds, ev);
+	status = dcerpc_pipe_connect(this, &p, binding, iface, creds, ev);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	/* callers don't allocate ref vars in the ejs interface */

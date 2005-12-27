@@ -216,8 +216,7 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 	state->domain->netlogon_pipe->conn->flags |=
 		(DCERPC_SIGN | DCERPC_SEAL);
 	ctx = dcerpc_bind_auth_send(state, state->domain->netlogon_pipe,
-				    DCERPC_NETLOGON_UUID,
-				    DCERPC_NETLOGON_VERSION, 
+								&dcerpc_table_netlogon,
 				    state->domain->schannel_creds,
 				    DCERPC_AUTH_TYPE_SCHANNEL,
 				    NULL);

@@ -131,7 +131,7 @@ static void connect_sam(void)
 	/* If connected, get list of jobs */
 	status = dcerpc_pipe_connect_b(mem_ctx, &sam_pipe,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
-				       DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, cred, NULL);
+				       &dcerpc_table_samr, cred, NULL);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "While connecting to SAMR interface", status);

@@ -105,9 +105,7 @@ BOOL torture_rpc_remact(void)
 
 	status = torture_rpc_connection(mem_ctx,
 					&p, 
-					DCERPC_IREMOTEACTIVATION_NAME,
-					DCERPC_IREMOTEACTIVATION_UUID, 
-					DCERPC_IREMOTEACTIVATION_VERSION);
+					&dcerpc_table_IRemoteActivation);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

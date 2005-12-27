@@ -198,9 +198,8 @@ struct dcerpc_binding {
 struct dcerpc_pipe_connect {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding *binding;
-	const char *pipe_uuid;
 	const char *pipe_name;
-	uint32_t pipe_version;
+	const struct dcerpc_interface_table *interface;
 	struct cli_credentials *creds;
 };
 

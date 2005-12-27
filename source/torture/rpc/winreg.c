@@ -798,11 +798,7 @@ BOOL torture_rpc_winreg(void)
 	int i;
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					DCERPC_WINREG_NAME, 
-					DCERPC_WINREG_UUID, 
-					DCERPC_WINREG_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_winreg);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

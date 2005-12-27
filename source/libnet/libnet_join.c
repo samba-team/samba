@@ -274,8 +274,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	status = dcerpc_pipe_connect_b(tmp_ctx, 
 				       &drsuapi_pipe,
 				       drsuapi_binding,
-				       DCERPC_DRSUAPI_UUID,
-				       DCERPC_DRSUAPI_VERSION, 
+					   &dcerpc_table_drsuapi,
 				       ctx->cred, 
 				       ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -644,9 +643,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		c->level             = LIBNET_RPC_CONNECT_BINDING;
 		c->in.binding        = r->in.binding;
 	}
-	c->in.dcerpc_iface_name      = DCERPC_LSARPC_NAME;
-	c->in.dcerpc_iface_uuid      = DCERPC_LSARPC_UUID;
-	c->in.dcerpc_iface_version   = DCERPC_LSARPC_VERSION;
+	c->in.dcerpc_iface      = &dcerpc_table_lsarpc;
 	
 	/* connect to the LSA pipe of the PDC */
 
@@ -761,7 +758,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* Make binding string for samr, not the other pipe */
 	status = dcerpc_epm_map_binding(tmp_ctx, samr_binding, 					
-					DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION,
+					&dcerpc_table_samr,
 					lsa_pipe->conn->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
@@ -782,8 +779,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	status = dcerpc_pipe_auth(samr_pipe, samr_binding, DCERPC_SAMR_UUID, 
-				  DCERPC_SAMR_VERSION, ctx->cred);
+	status = dcerpc_pipe_auth(samr_pipe, samr_binding, &dcerpc_table_samr, ctx->cred);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						"SAMR bind failed: %s",

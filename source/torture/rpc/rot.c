@@ -33,9 +33,7 @@ BOOL torture_rpc_rot(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					DCERPC_ROT_NAME, 
-					DCERPC_ROT_UUID, 
-					DCERPC_ROT_VERSION);
+					&dcerpc_table_rot);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

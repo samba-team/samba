@@ -64,10 +64,7 @@ BOOL torture_rpc_dssetup(void)
 
 	mem_ctx = talloc_init("torture_rpc_dssetup");
 
-	status = torture_rpc_connection(mem_ctx, &p, 
-					DCERPC_DSSETUP_NAME, 
-					DCERPC_DSSETUP_UUID, 
-					DCERPC_DSSETUP_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_dssetup);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 

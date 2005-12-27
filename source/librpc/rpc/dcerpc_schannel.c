@@ -65,7 +65,7 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 
 	/* Make binding string for netlogon, not the other pipe */
 	status = dcerpc_epm_map_binding(tmp_ctx, b, 
-					DCERPC_NETLOGON_UUID, DCERPC_NETLOGON_VERSION,
+									&dcerpc_table_netlogon,
 					p->conn->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
@@ -78,8 +78,7 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 		return status;
 	}
 
-	status = dcerpc_bind_auth_none(p2, DCERPC_NETLOGON_UUID, 
-				       DCERPC_NETLOGON_VERSION);
+	status = dcerpc_bind_auth_none(p2, &dcerpc_table_netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p2);
                 return status;
@@ -142,7 +141,7 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 
 NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
 				   struct dcerpc_pipe *p,
-				   const char *uuid, uint_t version,
+				   const struct dcerpc_interface_table *table,
 				   struct cli_credentials *credentials)
 {
 	NTSTATUS status;
@@ -158,8 +157,7 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 		return status;
 	}
 
-	return dcerpc_bind_auth(p, uuid, version, 
-				credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+	return dcerpc_bind_auth(p, table, credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				NULL);
 }
 

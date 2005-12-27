@@ -169,9 +169,7 @@ BOOL torture_rpc_lsa_secrets(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					DCERPC_LSARPC_NAME, 
-					DCERPC_LSARPC_UUID, 
-					DCERPC_LSARPC_VERSION);
+					&dcerpc_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

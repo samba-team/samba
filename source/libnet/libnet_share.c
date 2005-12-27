@@ -34,9 +34,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 
 	c.level                      = LIBNET_RPC_CONNECT_SERVER;
 	c.in.domain_name             = r->in.server_name;
-	c.in.dcerpc_iface_name       = DCERPC_SRVSVC_NAME;
-	c.in.dcerpc_iface_uuid       = DCERPC_SRVSVC_UUID;
-	c.in.dcerpc_iface_version    = DCERPC_SRVSVC_VERSION;
+	c.in.dcerpc_iface       	 = &dcerpc_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -87,9 +85,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 
 	c.level                     = LIBNET_RPC_CONNECT_SERVER;
 	c.in.domain_name            = r->in.server_name;
-	c.in.dcerpc_iface_name      = DCERPC_SRVSVC_NAME;
-	c.in.dcerpc_iface_uuid      = DCERPC_SRVSVC_UUID;
-	c.in.dcerpc_iface_version   = DCERPC_SRVSVC_VERSION;
+	c.in.dcerpc_iface      		= &dcerpc_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -128,9 +124,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 
 	c.level                      = LIBNET_RPC_CONNECT_SERVER;
 	c.in.domain_name             = r->in.server_name;
-	c.in.dcerpc_iface_name       = DCERPC_SRVSVC_NAME;
-	c.in.dcerpc_iface_uuid       = DCERPC_SRVSVC_UUID;
-	c.in.dcerpc_iface_version    = DCERPC_SRVSVC_VERSION;
+	c.in.dcerpc_iface       	 = &dcerpc_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {

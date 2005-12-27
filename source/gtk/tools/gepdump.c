@@ -196,7 +196,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	cli_credentials_set_gtk_callbacks(credentials);
 
 	status = dcerpc_pipe_connect(talloc_autofree_context(), &epmapper_pipe, bs, 
-				     DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, 
+					 &dcerpc_table_epmapper,
 				     credentials, NULL);
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -208,7 +208,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 
 	refresh_eps();
 
-	status = dcerpc_secondary_context(epmapper_pipe, &mgmt_pipe, DCERPC_MGMT_UUID, DCERPC_MGMT_VERSION);
+	status = dcerpc_secondary_context(epmapper_pipe, &mgmt_pipe, &dcerpc_table_mgmt);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		mgmt_pipe = NULL;

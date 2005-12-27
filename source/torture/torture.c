@@ -123,9 +123,7 @@ BOOL torture_close_connection(struct smbcli_state *c)
 /* open a rpc connection to the chosen binding string */
 NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
 				struct dcerpc_pipe **p, 
-				const char *pipe_name,
-				const char *pipe_uuid, 
-				uint32_t pipe_version)
+				const struct dcerpc_interface_table *table)
 {
         NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -136,7 +134,7 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 	}
 
 	status = dcerpc_pipe_connect(parent_ctx, 
-				     p, binding, pipe_uuid, pipe_version,
+				     p, binding, table,
 				     cmdline_credentials, NULL);
  
         return status;
@@ -145,9 +143,7 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 /* open a rpc connection to a specific transport */
 NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx, 
 					  struct dcerpc_pipe **p, 
-					  const char *pipe_name,
-					  const char *pipe_uuid, 
-					  uint32_t pipe_version,
+					  const struct dcerpc_interface_table *table,
 					  enum dcerpc_transport_t transport)
 {
         NTSTATUS status;
@@ -170,7 +166,7 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
 
 	b->transport = transport;
 
-	status = dcerpc_pipe_connect_b(mem_ctx, p, b, pipe_uuid, pipe_version,
+	status = dcerpc_pipe_connect_b(mem_ctx, p, b, table,
 				       cmdline_credentials, NULL);
 					   
 	if (NT_STATUS_IS_OK(status)) {

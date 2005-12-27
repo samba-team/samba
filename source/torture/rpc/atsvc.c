@@ -142,11 +142,7 @@ BOOL torture_rpc_atsvc(void)
 
 	mem_ctx = talloc_init("torture_rpc_atsvc");
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					DCERPC_ATSVC_NAME, 
-					DCERPC_ATSVC_UUID, 
-					DCERPC_ATSVC_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_atsvc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

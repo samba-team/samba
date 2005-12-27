@@ -102,8 +102,7 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 	switch (state->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
 		ctx = dcerpc_bind_auth_none_send(state, state->samr_pipe,
-						 DCERPC_SAMR_UUID,
-						 DCERPC_SAMR_VERSION);
+										 &dcerpc_table_samr);
 		composite_continue(state->ctx, ctx,
 				   connect_samr_recv_anon_bind, state);
 		break;
@@ -115,8 +114,7 @@ static void connect_samr_recv_pipe(struct composite_context *ctx)
 		}
 		state->samr_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 		ctx = dcerpc_bind_auth_send(state, state->samr_pipe,
-					    DCERPC_SAMR_UUID,
-					    DCERPC_SAMR_VERSION,
+									&dcerpc_table_samr,
 					    state->creds, state->auth_type,
 					    NULL);
 		composite_continue(state->ctx, ctx,

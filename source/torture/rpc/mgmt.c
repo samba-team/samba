@@ -210,9 +210,7 @@ BOOL torture_rpc_mgmt(void)
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		if (b->transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(loop_ctx, b, 
-							l->table->uuid,
-							l->table->if_version, NULL);
+			status = dcerpc_epm_map_binding(loop_ctx, b, l->table, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_free(loop_ctx);
 				printf("Failed to map port for uuid %s\n", l->table->uuid);
@@ -224,11 +222,7 @@ BOOL torture_rpc_mgmt(void)
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(loop_ctx, b));
 
-		status = torture_rpc_connection(loop_ctx, 
-						&p, 
-						l->table->name,
-						DCERPC_MGMT_UUID,
-						DCERPC_MGMT_VERSION);
+		status = torture_rpc_connection(loop_ctx, &p, &dcerpc_table_mgmt);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
 			ret = False;

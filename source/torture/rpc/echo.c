@@ -470,9 +470,7 @@ BOOL torture_rpc_echo(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p, 
-					DCERPC_RPCECHO_NAME,
-					DCERPC_RPCECHO_UUID,
-					DCERPC_RPCECHO_VERSION);
+					&dcerpc_table_rpcecho);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

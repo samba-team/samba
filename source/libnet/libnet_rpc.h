@@ -36,9 +36,7 @@ struct libnet_RpcConnect {
 	struct {
 		const char *domain_name;
 		const char *binding;
-		const char *dcerpc_iface_name;
-		const char *dcerpc_iface_uuid;
-		uint32_t dcerpc_iface_version;
+		const struct dcerpc_interface_table *dcerpc_iface;
 	} in;
 	struct {
 		struct dcerpc_pipe *dcerpc_pipe;

@@ -94,8 +94,7 @@ static void reopen(TALLOC_CTX *mem_ctx,
 	talloc_free(*p);
 
 	status = torture_rpc_connection(mem_ctx, 
-					p, iface->endpoints->names[0], 
-					iface->uuid, iface->if_version);
+					p, iface);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to reopen '%s' - %s\n", iface->name, nt_errstr(status));
 		exit(1);

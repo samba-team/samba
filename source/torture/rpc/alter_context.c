@@ -32,16 +32,14 @@ BOOL torture_rpc_alter_context(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle *handle;
+	struct dcerpc_interface_table tmptbl;
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;
 
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 
 	printf("opening LSA connection\n");
-	status = torture_rpc_connection(mem_ctx, &p, 
-					DCERPC_LSARPC_NAME, 
-					DCERPC_LSARPC_UUID, 
-					DCERPC_LSARPC_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_lsarpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
@@ -52,15 +50,17 @@ BOOL torture_rpc_alter_context(void)
 	}
 
 	printf("Opening secondary DSSETUP context\n");
-	status = dcerpc_secondary_context(p, &p2, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION);
+	status = dcerpc_secondary_context(p, &p2, &dcerpc_table_dssetup);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
+	tmptbl = dcerpc_table_dssetup;
+	tmptbl.if_version += 100;
 	printf("Opening bad secondary connection\n");
-	status = dcerpc_secondary_context(p, &p2, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION+100);
+	status = dcerpc_secondary_context(p, &p2, &tmptbl);
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		printf("dcerpc_alter_context with wrong version should fail\n");

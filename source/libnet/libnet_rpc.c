@@ -51,13 +51,13 @@ static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem
 
 	/* connect to remote dcerpc pipe */
 	status = dcerpc_pipe_connect(mem_ctx, &r->out.dcerpc_pipe,
-				     binding, r->in.dcerpc_iface_uuid, r->in.dcerpc_iface_version,
+				     binding, r->in.dcerpc_iface,
 				     ctx->cred, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "dcerpc_pipe_connect to pipe %s failed with %s\n",
-						      r->in.dcerpc_iface_name, binding);
+						      r->in.dcerpc_iface->name, binding);
 		return status;
 	}
 
@@ -98,9 +98,7 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 	/* ok, pdc has been found so do attempt to rpc connect */
 	r2.level		    = LIBNET_RPC_CONNECT_SERVER;
 	r2.in.domain_name	    = talloc_strdup(mem_ctx, f.out.address[0]);
-	r2.in.dcerpc_iface_name     = r->in.dcerpc_iface_name;
-	r2.in.dcerpc_iface_uuid	    = r->in.dcerpc_iface_uuid;
-	r2.in.dcerpc_iface_version  = r->in.dcerpc_iface_version;
+	r2.in.dcerpc_iface     = r->in.dcerpc_iface;
 	
 	status = libnet_RpcConnect(ctx, mem_ctx, &r2);
 

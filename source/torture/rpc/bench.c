@@ -102,9 +102,7 @@ BOOL torture_bench_rpc(void)
 
 	status = torture_rpc_connection(mem_ctx, 
 					&p,
-					DCERPC_SRVSVC_NAME,
-					DCERPC_SRVSVC_UUID,
-					DCERPC_SRVSVC_VERSION);
+					&dcerpc_table_srvsvc);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

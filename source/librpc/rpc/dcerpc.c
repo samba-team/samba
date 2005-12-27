@@ -790,16 +790,16 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 /*
   return the rpc syntax and transfer syntax given the pipe uuid and version
 */
-NTSTATUS dcerpc_init_syntaxes(const char *uuid, uint_t version,
+NTSTATUS dcerpc_init_syntaxes(const struct dcerpc_interface_table *table,
 			      struct dcerpc_syntax_id *syntax,
 			      struct dcerpc_syntax_id *transfer_syntax)
 {
 	NTSTATUS status;
 
-	status = GUID_from_string(uuid, &syntax->uuid);
+	status = GUID_from_string(table->uuid, &syntax->uuid);
 	if (!NT_STATUS_IS_OK(status)) return status;
 
-	syntax->if_version = version;
+	syntax->if_version = table->if_version;
 
 	status = GUID_from_string(NDR_GUID, &transfer_syntax->uuid);
 	if (!NT_STATUS_IS_OK(status)) return status;
@@ -812,13 +812,13 @@ NTSTATUS dcerpc_init_syntaxes(const char *uuid, uint_t version,
 /* perform a dcerpc bind, using the uuid as the key */
 NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx,
-			    const char *uuid, uint_t version)
+			    const struct dcerpc_interface_table *table)
 {
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;
 	NTSTATUS status;
 
-	status = dcerpc_init_syntaxes(uuid, version,
+	status = dcerpc_init_syntaxes(table,
 				      &syntax, &transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Invalid uuid string in dcerpc_bind_byuuid\n"));

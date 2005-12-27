@@ -371,8 +371,7 @@ WERROR reg_open_remote(struct registry_context **ctx, struct cli_credentials *cr
 
 	status = dcerpc_pipe_connect(*ctx /* TALLOC_CTX */, 
 				     &p, location, 
-				     DCERPC_WINREG_UUID,
-				     DCERPC_WINREG_VERSION,
+					 &dcerpc_table_winreg,
 				     credentials, ev);
 	(*ctx)->backend_data = p;
 

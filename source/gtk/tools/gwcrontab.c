@@ -107,8 +107,7 @@ static void on_connect_activate(GtkMenuItem *menuitem, gpointer user_data)
 	
 	status = dcerpc_pipe_connect_b(mem_ctx, &at_pipe,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
-				       DCERPC_ATSVC_UUID,
-				       DCERPC_ATSVC_VERSION,
+					   &dcerpc_table_atsvc,
 				       credentials, NULL);
 
 	if(!NT_STATUS_IS_OK(status)) {

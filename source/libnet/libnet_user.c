@@ -44,9 +44,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	/* connect rpc service of remote server */
 	cn.level                      = LIBNET_RPC_CONNECT_SERVER;
 	cn.in.domain_name             = talloc_strdup(mem_ctx, *fp.out.address);
-	cn.in.dcerpc_iface_name       = DCERPC_SAMR_NAME;
-	cn.in.dcerpc_iface_uuid       = DCERPC_SAMR_UUID;
-	cn.in.dcerpc_iface_version    = DCERPC_SAMR_VERSION;
+	cn.in.dcerpc_iface       = &dcerpc_table_samr;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &cn);
 	if (!NT_STATUS_IS_OK(status)) {

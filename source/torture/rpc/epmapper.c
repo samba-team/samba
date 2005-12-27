@@ -281,11 +281,7 @@ BOOL torture_rpc_epmapper(void)
 
 	mem_ctx = talloc_init("torture_rpc_epmapper");
 
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					DCERPC_EPMAPPER_NAME,
-					DCERPC_EPMAPPER_UUID,
-					DCERPC_EPMAPPER_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_epmapper);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;

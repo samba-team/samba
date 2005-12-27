@@ -36,9 +36,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare connect to the SRVSVC pipe of a timeserver */
 	c.level                    = LIBNET_RPC_CONNECT_SERVER;
 	c.in.domain_name           = r->srvsvc.in.server_name;
-	c.in.dcerpc_iface_name     = DCERPC_SRVSVC_NAME;
-	c.in.dcerpc_iface_uuid     = DCERPC_SRVSVC_UUID;
-	c.in.dcerpc_iface_version  = DCERPC_SRVSVC_VERSION;
+	c.in.dcerpc_iface     	   = &dcerpc_table_srvsvc;
 
 	/* 1. connect to the SRVSVC pipe of a timeserver */
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
