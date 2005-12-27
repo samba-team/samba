@@ -594,7 +594,6 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 	size_t new_entry_length;
 	char *new_entry;
 	SMB_OFF_T offpos;
-	uint32 max_found_uid = 0;
  
 	/* Open the smbpassword file - for update. */
 	fp = startsmbfilepwent(pfile, PWF_UPDATE, &smbpasswd_state->pw_file_lock_depth);
@@ -618,11 +617,6 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 			DEBUG(0, ("add_smbfilepwd_entry: entry with name %s already exists\n", pwd->smb_name));
 			endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
 			return False;
-		}
-    
-		/* Look for a free uid for use in non-unix accounts */
-		if (pwd->smb_userid > max_found_uid) {
-			max_found_uid = pwd->smb_userid;
 		}
 	}
 
