@@ -29,6 +29,9 @@ my $section_types = {
 		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
+
+		"PUBLIC_PROTO_HEADER" => "string",
+		"PRIVATE_PROTO_HEADER" => "string"
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -71,7 +74,10 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 
-		"PUBLIC_HEADERS" => "list"
+		"PUBLIC_HEADERS" => "list",
+
+		"PUBLIC_PROTO_HEADER" => "string",
+		"PRIVATE_PROTO_HEADER" => "string"
 		}
 };
 
