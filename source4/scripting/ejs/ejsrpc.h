@@ -78,6 +78,10 @@ NTSTATUS ejs_pull_NTTIME(struct ejs_rpc *ejs,
 			struct MprVar *v, const char *name, uint64_t *r);
 NTSTATUS ejs_push_NTTIME(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r);
+NTSTATUS ejs_pull_time_t(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, time_t *r);
+NTSTATUS ejs_push_time_t(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const time_t *r);
 NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, unsigned *r);
 NTSTATUS ejs_push_enum(struct ejs_rpc *ejs, 
@@ -149,6 +153,10 @@ NTSTATUS ejs_push_winreg_String(struct ejs_rpc *ejs,
 /* some types are equivalent for ejs */
 #define ejs_pull_dom_sid2 ejs_pull_dom_sid
 #define ejs_push_dom_sid2 ejs_push_dom_sid
+#define ejs_pull_dom_sid28 ejs_pull_dom_sid
+#define ejs_push_dom_sid28 ejs_push_dom_sid
 #define ejs_pull_NTTIME_hyper ejs_pull_NTTIME
 #define ejs_push_NTTIME_hyper ejs_push_NTTIME
+#define ejs_pull_NTTIME_1sec ejs_pull_NTTIME
+#define ejs_push_NTTIME_1sec ejs_push_NTTIME
 
