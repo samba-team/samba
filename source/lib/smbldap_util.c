@@ -103,9 +103,6 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	LDAPMessage *result = NULL;
 	int num_result;
 	const char **attr_list;
-	uid_t u_low, u_high;
-	gid_t g_low, g_high;
-	uint32 rid_low, rid_high;
 
 	slprintf (filter, sizeof (filter) - 1, "(&(%s=%s)(objectclass=%s))", 
 		  get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
@@ -152,27 +149,17 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 			algorithmic_rid_base_string);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
 	
-	/* add the sambaNext[User|Group]Rid attributes if the idmap ranges are set.
-	   TODO: fix all the places where the line between idmap and normal operations
-	   needed by smbd gets fuzzy   --jerry 2003-08-11                              */
+	/* add the sambaNextUserRid attributes. */
 	
-	if ( lp_idmap_uid(&u_low, &u_high) && lp_idmap_gid(&g_low, &g_high)
-		&& get_free_rid_range(&rid_low, &rid_high) ) 
 	{
+		uint32 rid = BASE_RID;
 		fstring rid_str;
 		
-		fstr_sprintf( rid_str, "%i", rid_low|USER_RID_TYPE );
+		fstr_sprintf( rid_str, "%i", rid );
 		DEBUG(10,("setting next available user rid [%s]\n", rid_str));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
 			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
 			rid_str);
-			
-		fstr_sprintf( rid_str, "%i", rid_low|GROUP_RID_TYPE );
-		DEBUG(10,("setting next available group rid [%s]\n", rid_str));
-		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
-			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID), 
-			rid_str);
-		
         }
 
 

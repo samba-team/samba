@@ -51,21 +51,19 @@ static struct idmap_state {
 
 static NTSTATUS db_allocate_rid(uint32 *rid)
 {
-	uint32 lowrid, highrid;
 	uint32 tmp_rid;
-
-	/* cannot fail since idmap is only called winbindd */
 	
-	get_free_rid_range( &lowrid, &highrid );
+	tmp_rid = BASE_RID;	/* Default if RID_COUNTER is not set */
 	
-	tmp_rid = lowrid;
-	
-	if ( !tdb_change_uint32_atomic(idmap_tdb, "RID_COUNTER", &tmp_rid, RID_MULTIPLIER) ) {
-		DEBUG(3,("db_allocate_rid: Failed to locate next rid record in idmap db\n"));
+	if ( !tdb_change_uint32_atomic(idmap_tdb, "RID_COUNTER",
+				       &tmp_rid, 1) ) {
+		DEBUG(3,("db_allocate_rid: Failed to locate next rid record "
+			 "in idmap db\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if ( tmp_rid > highrid ) {
+	if ( tmp_rid > 0xfffffff0 ) {
+		/* Not sure this limit is right... */
 		DEBUG(0, ("db_allocate_rid: no RIDs available!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
