@@ -2158,13 +2158,10 @@ sub FunctionTable($)
 	my $count = 0;
 	my $uname = uc $interface->{NAME};
 
-	$count = $#{$interface->{FUNCTIONS}}+1;
-
-	return if ($count == 0);
+	return if ($#{$interface->{FUNCTIONS}}+1 == 0);
 	return unless defined ($interface->{PROPERTIES}->{uuid});
 
 	pidl "static const struct dcerpc_interface_call $interface->{NAME}\_calls[] = {";
-	$count = 0;
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
 		next if not defined($d->{OPNUM});
 		pidl "\t{";
@@ -2343,26 +2340,26 @@ sub RegistrationFunction($$)
 {
 	my ($idl,$basename) = @_;
 
-	pidl "NTSTATUS dcerpc_$basename\_init(void)";
-	pidl "{";
-	indent;
-	pidl "NTSTATUS status = NT_STATUS_OK;";
+	my $body = "";
+
 	foreach my $interface (@{$idl}) {
 		next if $interface->{TYPE} ne "INTERFACE";
-
-		my $count = ($#{$interface->{FUNCTIONS}}+1);
-
-		next if ($count == 0);
+		next if ($#{$interface->{FUNCTIONS}}+1 == 0);
 		next unless defined ($interface->{PROPERTIES}->{uuid});
 
-		pidl "status = dcerpc_ndr_$interface->{NAME}_init();";
-		pidl "if (NT_STATUS_IS_ERR(status)) {";
-		pidl "\treturn status;";
-		pidl "}";
-		pidl "";
+		$body .= "\tstatus = dcerpc_ndr_$interface->{NAME}_init();\n";
+		$body .= "\tif (NT_STATUS_IS_ERR(status)) {\n";
+		$body .= "\t\treturn status;\n";
+		$body .= "\t}\n";
+		$body .= "\n";
 	}
-	pidl "return status;";
-	deindent;
+
+	return unless $body;
+
+	pidl "NTSTATUS dcerpc_$basename\_init(void)";
+	pidl "{";
+	pidl "\tNTSTATUS status = NT_STATUS_OK;";
+	pidl "$body\treturn status;";
 	pidl "}";
 	pidl "";
 }
