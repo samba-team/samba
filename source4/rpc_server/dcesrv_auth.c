@@ -230,7 +230,8 @@ BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *
 
 	/* on a pure interface change there is no auth_info structure
 	   setup */
-	if (!call->conn->auth_state.auth_info) {
+	if (!call->conn->auth_state.auth_info ||
+	    dce_conn->auth_state.auth_info->credentials.length == 0) {
 		return True;
 	}
 
@@ -258,10 +259,10 @@ BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *
 		dce_conn->auth_state.auth_info->auth_pad_length = 0;
 		dce_conn->auth_state.auth_info->auth_reserved = 0;
 		return True;
-	} else {
-		DEBUG(2, ("Failed to finish dcesrv auth alter_ack: %s\n", nt_errstr(status)));
-		return True;
 	}
+
+	DEBUG(2, ("Failed to finish dcesrv auth alter_ack: %s\n", nt_errstr(status)));
+	return False;
 }
 
 /*
