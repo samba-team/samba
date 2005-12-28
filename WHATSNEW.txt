@@ -1,12 +1,33 @@
-                   ==============================
-                   Release Notes for Samba 3.0.21
-                            Dec 20, 2005
-                   ==============================
+                   ===============================
+                   Release Notes for Samba 3.0.21a
+                              Dec 30, 2005
+                   ===============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.21
+--------------------
+
+commits
+-------
+o   Volker Lendecke <vl@samba.org>
+    * BUG 3349: Deadlock caused logic error in oplock code.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==============================
+                   Release Notes for Samba 3.0.21
+                            Dec 20, 2005
+                   ==============================
 
 Common bugs fixed in 3.0.21 include:
 
