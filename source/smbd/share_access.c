@@ -111,7 +111,7 @@ static BOOL token_contains_name(TALLOC_CTX *mem_ctx,
 			if ((type != SID_NAME_DOM_GRP) &&
 			    (type != SID_NAME_ALIAS) &&
 			    (type != SID_NAME_WKN_GRP)) {
-				DEBUG(5, ("%s is a %s, expected a user\n",
+				DEBUG(5, ("%s is a %s, expected a group\n",
 					  name, sid_type_lookup(type)));
 				return False;
 			}
