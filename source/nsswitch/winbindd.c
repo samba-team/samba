@@ -938,6 +938,8 @@ int main(int argc, char **argv)
 
 	fault_setup((void (*)(void *))fault_quit );
 
+	load_case_tables();
+
 	/* Initialise for running in non-root mode */
 
 	sec_init();
