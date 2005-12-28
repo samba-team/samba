@@ -207,8 +207,15 @@ function setup_ldb(ldif, dbname, subobj)
 	}
 
 	var add_ok = ldb.add(data);
-	assert(add_ok);
-	ldb.transaction_commit();
+	if (!add_ok) {
+		message("ldb load failed: " + ldb.errstring() + "\n");
+		assert(add_ok);
+	}
+	var commit_ok = ldb.transaction_commit();
+	if (!commit_ok) {
+		message("ldb commit failed: " + ldb.errstring() + "\n");
+		assert(add_ok);
+	}
 }
 
 /*
