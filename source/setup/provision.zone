@@ -27,7 +27,7 @@ _ldap._tcp.${DEFAULTSITE}._sites.dc._msdcs	IN SRV 0 100 389 ${HOSTNAME}
 ;
 ; krb5 servers
 _kerberos._tcp		IN SRV 0 100 88		${HOSTNAME}
-_kerberos._tcp.dc._msdcs	IN SRV 0 100 389	${HOSTNAME}
+_kerberos._tcp.dc._msdcs	IN SRV 0 100 88	${HOSTNAME}
 _kerberos._tcp.${DEFAULTSITE}._sites.dc._msdcs	IN SRV 0 100 88 ${HOSTNAME}
 _kerberos._udp		IN SRV 0 100 88		${HOSTNAME}
 ;
