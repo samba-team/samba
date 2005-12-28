@@ -544,6 +544,8 @@ int main(int argc, const char **argv)
 	};
 	poptContext pc;
 
+	load_case_tables();
+
 	/* only read rcfile if it exists */
 	asprintf(&rcfile, "%s/.smbgetrc", getenv("HOME"));
 	if(access(rcfile, F_OK) == 0) 

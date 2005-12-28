@@ -203,6 +203,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 	poptContext pc;
 	
 	/* Initialise samba stuff */
+	load_case_tables();
 
 	setlinebuf(stdout);
 
