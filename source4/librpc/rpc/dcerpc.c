@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "libcli/composite/composite.h"
+#include "auth/gensec/gensec.h"
 
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 

@@ -34,4 +34,6 @@ struct net_functable {
 	int (*usage)(struct net_context *ctx, int argc, const char **argv);
 };
 
+#include "utils/net/net_proto.h"
+
 #endif /* _UTIL_NET_H */

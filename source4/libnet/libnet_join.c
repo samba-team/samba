@@ -30,6 +30,7 @@
 #include "libcli/cldap/cldap.h"
 #include "include/secrets.h"
 #include "librpc/gen_ndr/drsuapi.h"
+#include "dsdb/samdb/samdb.h"
 
 /*
  * find out Site specific stuff:

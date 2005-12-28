@@ -28,6 +28,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
 #include "system/time.h"
+#include "auth/auth.h"
 
 /*
   return the new maxVersion and save it

@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_dssetup.h"
 #include "rpc_server/common/common.h"
 #include "ldb/include/ldb.h"
+#include "dsdb/samdb/samdb.h"
 /* 
   dssetup_DsRoleGetPrimaryDomainInformation 
 */

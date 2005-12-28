@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "db_wrap.h"
 #include "lib/ldb/include/ldb.h"
+#include "dsdb/samdb/samdb.h"
 
 static struct tdb_wrap *tdb;
 

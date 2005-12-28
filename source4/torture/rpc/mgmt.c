@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
+#include "auth/gensec/gensec.h"
 
 
 /*

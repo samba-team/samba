@@ -254,4 +254,6 @@ struct ldap_message {
 	struct ldap_Control    *controls;
 };
 
+#include "libcli/ldap/ldap_proto.h"
+
 #endif

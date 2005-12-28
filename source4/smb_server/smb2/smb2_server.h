@@ -48,3 +48,5 @@ struct smb2srv_request {
 	struct smb2_request_buffer in;
 	struct smb2_request_buffer out;
 };
+
+#include "smb_server/smb2/smb2_proto.h"

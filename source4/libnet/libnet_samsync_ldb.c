@@ -28,7 +28,10 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "dlinklist.h"
+#include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 
 struct samsync_ldb_secret {
 	struct samsync_ldb_secret *prev, *next;

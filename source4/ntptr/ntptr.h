@@ -186,3 +186,4 @@ struct ntptr_critical_sizes {
 	int sizeof_ntptr_context;
 	int sizeof_ntptr_ops;
 };
+#include "ntptr/ntptr_proto.h"

@@ -33,6 +33,7 @@
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/composite/composite.h"
 #include "lib/stream/packet.h"
+#include "auth/gensec/gensec.h"
 
 
 /*

@@ -3,6 +3,7 @@
 [MODULE::ntvfs_posix]
 SUBSYSTEM = NTVFS
 INIT_FUNCTION = ntvfs_posix_init 
+PRIVATE_PROTO_HEADER = vfs_posix_proto.h
 OBJ_FILES = \
 		vfs_posix.o \
 		pvfs_util.o \
