@@ -205,13 +205,13 @@ include/proto.h: $(PROTO_OBJS:.o=.c)
 
 proto: include/proto.h
 
-pch: include/config.h \
+pch: clean_pch include/config.h \
 	include/proto.h \
 	idl \
 	include/includes.h.gch
 
 libcli/nbt/libnbt.h: libcli/nbt/nbt_proto.h
-include/includes.h: lib/basic.h libcli/nbt/libnbt.h
+include/includes.h: lib/basic.h libcli/nbt/libnbt.h librpc/ndr/libndr_proto.h librpc/rpc/dcerpc_proto.h auth/credentials/credentials_proto.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch
@@ -272,6 +272,7 @@ quicktest: all
 
 valgrindtest: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	VALGRIND="valgrind -q --num-callers=30 --log-file=st/valgrind.log" \
 	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
 bin/.dummy:
