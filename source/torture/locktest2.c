@@ -485,7 +485,6 @@ static void usage(void)
 	argv += 4;
 
 	lp_load();
-	load_interfaces();
 
 	if (getenv("USER")) {
 		fstrcpy(username,getenv("USER"));

@@ -185,8 +185,6 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
   if (workgroup == NULL)
     workgroup = lp_workgroup();
 
-  load_interfaces();
-
   do
   {
     if ((cli = smb_connect(workgroup, server, printer, username, password)) == NULL)
