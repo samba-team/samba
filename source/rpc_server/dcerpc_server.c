@@ -644,7 +644,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 
 
 /*
-  handle a bind request
+  handle a alter context request
 */
 static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
