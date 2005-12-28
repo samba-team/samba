@@ -775,6 +775,8 @@ int main (int argc, char **argv)
 		POPT_TABLEEND
 	};
 	
+	load_case_tables();
+
 	setup_logging("pdbedit", True);
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,

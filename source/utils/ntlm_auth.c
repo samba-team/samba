@@ -1752,6 +1752,7 @@ enum {
 	};
 
 	/* Samba client initialisation */
+	load_case_tables();
 
 	dbf = x_stderr;
 	

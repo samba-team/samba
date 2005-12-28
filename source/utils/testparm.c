@@ -230,6 +230,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		POPT_TABLEEND
 	};
 
+	load_case_tables();
+
 	pc = poptGetContext(NULL, argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");

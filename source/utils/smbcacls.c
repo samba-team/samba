@@ -818,6 +818,8 @@ static struct cli_state *connect_one(const char *share)
 
 	struct cli_state *cli;
 
+	load_case_tables();
+
 	ctx=talloc_init("main");
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
