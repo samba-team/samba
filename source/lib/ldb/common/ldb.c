@@ -126,13 +126,22 @@ static void ldb_reset_err_string(struct ldb_context *ldb)
 int ldb_transaction_start(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
+	int status;
 	FIRST_OP(ldb, start_transaction);
 	
 	ldb->transaction_active++;
 
 	ldb_reset_err_string(ldb);
 
-	return module->ops->start_transaction(module);
+	status = module->ops->start_transaction(module);
+	if (status != LDB_SUCCESS) {
+		if (ldb->err_string == NULL) {
+			/* no error string was setup by the backend */
+			ldb_set_errstring(ldb->modules, 
+					  talloc_asprintf(ldb, "ldb transaction start error %d", status));
+		}
+	}
+	return status;
 }
 
 /*
@@ -141,6 +150,7 @@ int ldb_transaction_start(struct ldb_context *ldb)
 int ldb_transaction_commit(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
+	int status;
 	FIRST_OP(ldb, end_transaction);
 
 	if (ldb->transaction_active > 0) {
@@ -151,7 +161,15 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 
 	ldb_reset_err_string(ldb);
 
-	return module->ops->end_transaction(module);
+	status = module->ops->end_transaction(module);
+	if (status != LDB_SUCCESS) {
+		if (ldb->err_string == NULL) {
+			/* no error string was setup by the backend */
+			ldb_set_errstring(ldb->modules, 
+					  talloc_asprintf(ldb, "ldb transaction commit error %d", status));
+		}
+	}
+	return status;
 }
 
 /*
@@ -160,6 +178,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 int ldb_transaction_cancel(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
+	int status;
 	FIRST_OP(ldb, del_transaction);
 
 	if (ldb->transaction_active > 0) {
@@ -168,7 +187,15 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return module->ops->del_transaction(module);
+	status = module->ops->del_transaction(module);
+	if (status != LDB_SUCCESS) {
+		if (ldb->err_string == NULL) {
+			/* no error string was setup by the backend */
+			ldb_set_errstring(ldb->modules, 
+					  talloc_asprintf(ldb, "ldb transaction cancel error %d", status));
+		}
+	}
+	return status;
 }
 
 /*
