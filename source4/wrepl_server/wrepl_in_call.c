@@ -407,6 +407,8 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 	}
 
 	if (!call->wreplconn->partner) {
+		DEBUG(1,("Failing WINS replication from non-partner %s\n",
+			 socket_get_peer_addr(call->wreplconn->conn->socket, call)));
 		return wreplsrv_in_stop_assoc_ctx(call);
 	}
 
