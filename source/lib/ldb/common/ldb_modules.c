@@ -260,6 +260,6 @@ void ldb_set_errstring(struct ldb_module *module, char *err_string)
 		talloc_free(module->ldb->err_string);
 	}
 
-	module->ldb->err_string = err_string;
+	module->ldb->err_string = talloc_steal(module->ldb, err_string);
 }
 
