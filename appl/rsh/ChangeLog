@@ -1,3 +1,9 @@
+2005-12-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rshd.c (doit): move creation of users ticket file to later to
+	avoid seteuid/setuid dance. this breaks DCE, so remove support for
+	it completely.
+	
 2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rshd.c: Check return value from asprintf instead of string !=
