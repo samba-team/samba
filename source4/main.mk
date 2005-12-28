@@ -210,6 +210,8 @@ pch: include/config.h \
 	idl \
 	include/includes.h.gch
 
+include/includes.h: lib/basic.h
+
 clean_pch: 
 	-rm -f include/includes.h.gch
 
