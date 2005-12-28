@@ -2149,7 +2149,6 @@ static void usage(void)
 	argv += NSERVERS;
 
 	lp_load();
-	load_interfaces();
 
 	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
 	servers[1].credentials = cli_credentials_init(talloc_autofree_context());

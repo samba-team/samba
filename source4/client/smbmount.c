@@ -915,7 +915,6 @@ static void parse_mount_smb(int argc, char **argv)
 		pstrcpy(workgroup,lp_workgroup());
 	}
 
-	load_interfaces();
 	if (!*my_netbios_name) {
 		pstrcpy(my_netbios_name, myhostname());
 	}

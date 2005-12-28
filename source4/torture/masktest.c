@@ -298,7 +298,6 @@ static void usage(void)
 	argv += 1;
 
 	lp_load();
-	load_interfaces();
 
 	credentials = cli_credentials_init(talloc_autofree_context());
 	cli_credentials_guess(credentials);
