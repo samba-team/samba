@@ -26,6 +26,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 /*
   connect to the schannel ldb

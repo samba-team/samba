@@ -32,6 +32,7 @@
 #include "nbt_server/wins/winsdb.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
+#include "auth/auth.h"
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx)
 {

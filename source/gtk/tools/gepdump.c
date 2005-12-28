@@ -25,6 +25,7 @@
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 #include "lib/cmdline/popt_common.h"
+#include "auth/gensec/gensec.h"
 #include "smb_build.h"
 
 /* 

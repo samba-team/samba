@@ -35,6 +35,7 @@ MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = NetBios over TCP/IP client library
+PRIVATE_PROTO_HEADER = nbt/nbt_proto.h
 OBJ_FILES = \
 	nbt/nbtname.o \
 	nbt/nbtsocket.o \
@@ -66,6 +67,7 @@ NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_LDAP
 
 [LIBRARY::LIBCLI_WREPL]
+PRIVATE_PROTO_HEADER = wrepl/winsrepl_proto.h
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 RELEASE_VERSION = 1
@@ -103,6 +105,7 @@ OBJ_FILES = clireadwrite.o \
 		clideltree.o
 
 [SUBSYSTEM::LIBCLI_RAW]
+PRIVATE_PROTO_HEADER = raw/raw_proto.h
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW_KRB5
 OBJ_FILES = raw/rawfile.o \
 		raw/smb_signing.o \

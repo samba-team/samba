@@ -30,6 +30,9 @@
 #include "lib/crypto/crypto.h"
 #include "lib/ldb/include/ldb.h"
 #include "ads.h"
+#include "libcli/ldap/ldap.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 
 /* 
   samr_ChangePasswordUser 

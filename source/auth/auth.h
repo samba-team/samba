@@ -180,5 +180,6 @@ struct auth_critical_sizes {
 			   const struct auth_usersupplied_info *user_info_in,
 			   const struct auth_usersupplied_info **user_info_encrypted);
 
+#include "auth/auth_proto.h"
 
 #endif /* _SMBAUTH_H_ */

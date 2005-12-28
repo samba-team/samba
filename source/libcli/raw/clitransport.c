@@ -26,6 +26,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/stream/packet.h"
+#include "libcli/nbt/libnbt.h"
 
 
 /*

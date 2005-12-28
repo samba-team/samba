@@ -340,6 +340,7 @@ struct packet_context;
 
 struct smbcli_socket;
 struct smbcli_request;
+struct smbcli_tree;
 
 struct _krb5_krb_auth_data;
 

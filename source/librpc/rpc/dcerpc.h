@@ -239,3 +239,5 @@ struct rpc_request {
 		void *private;
 	} async;
 };
+
+#include "librpc/rpc/dcerpc_proto.h"

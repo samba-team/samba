@@ -31,6 +31,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "heimdal/lib/krb5/krb5-private.h"
 #include "auth/auth.h"
+#include "dsdb/samdb/samdb.h"
 
 /* hold information about one kdc socket */
 struct kpasswd_socket {

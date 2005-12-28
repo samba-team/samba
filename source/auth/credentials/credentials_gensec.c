@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "auth/gensec/gensec.h"
 
 const struct gensec_security_ops **cli_credentials_gensec_list(struct cli_credentials *creds) 
 {

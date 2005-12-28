@@ -36,6 +36,7 @@
 #include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_out_helpers.h"
 #include "system/time.h"
+#include "libcli/nbt/libnbt.h"
 
 static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *service, TALLOC_CTX *tmp_mem)
 {

@@ -41,6 +41,7 @@
 #include "system/iconv.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "auth/auth.h"
+#include "dsdb/samdb/samdb.h"
 
 enum hdb_ldb_ent_type 
 { HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 

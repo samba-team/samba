@@ -25,6 +25,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "auth/auth.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
 	if (!(dn)) {\

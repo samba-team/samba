@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "ioctl.h"
+#include "libcli/raw/libcliraw.h"
 
 #define BASEDIR "\\rawioctl"
 

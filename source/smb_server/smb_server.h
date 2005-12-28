@@ -303,3 +303,4 @@ struct smbsrv_connection {
 };
 
 #include "smb_server/smb_server_proto.h"
+#include "smb_server/smb/smb_proto.h"

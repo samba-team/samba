@@ -57,6 +57,7 @@ OBJ_FILES = \
 ################################################
 
 [SUBSYSTEM::GENCACHE]
+PRIVATE_PROTO_HEADER = gencache.h
 OBJ_FILES = \
 		gencache.o \
 

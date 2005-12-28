@@ -30,6 +30,8 @@
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
 #include "ads.h"
+#include "dsdb/samdb/samdb.h"
+#include "libcli/ldap/ldap.h"
 
 
 /*

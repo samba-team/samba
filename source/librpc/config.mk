@@ -6,6 +6,7 @@ MINOR_VERSION = 0
 RELEASE_VERSION = 1
 DESCRIPTION = Network Data Representation Core Library
 PUBLIC_HEADERS = ndr/libndr.h
+PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 OBJ_FILES = \
 		ndr/ndr.o \
 		ndr/ndr_basic.o \

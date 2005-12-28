@@ -157,3 +157,5 @@ struct wbsrv_call {
 	/* storage for protocol specific data */
 	void *private_data;
 };
+
+#include "winbind/wb_proto.h"

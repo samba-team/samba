@@ -30,6 +30,7 @@
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
+#include "rpc_server/dcerpc_server.h"
 
 #define IPC_BASE_FNUM 0x400
 
