@@ -24,6 +24,9 @@
    Boston, MA  02111-1307, USA.   
 */
 
+/* idmap version determines auto-conversion */
+#define IDMAP_VERSION 2
+
 #define SMB_IDMAP_INTERFACE_VERSION	2
 
 

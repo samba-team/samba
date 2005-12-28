@@ -1085,10 +1085,6 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
-/* idmap version determines auto-conversion */
-#define IDMAP_VERSION 2
-
-
 /*****************************************************************************
  Convert the idmap database from an older version.
 *****************************************************************************/

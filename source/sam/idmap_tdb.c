@@ -31,9 +31,6 @@
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
-/* idmap version determines auto-conversion */
-#define IDMAP_VERSION 2
-
 /* Globals */
 static TDB_CONTEXT *idmap_tdb;
 

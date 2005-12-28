@@ -263,8 +263,15 @@ static int net_groupmap_add(int argc, const char **argv)
 	}
 	
 	if ( (rid == 0) && (string_sid[0] == '\0') ) {
-		d_printf("No rid or sid specified, choosing algorithmic mapping\n");
-		rid = pdb_gid_to_group_rid(gid);
+		d_printf("No rid or sid specified, choosing a RID\n");
+		if (pdb_rid_algorithm()) {
+			rid = pdb_gid_to_group_rid(gid);
+		} else {
+			if (!pdb_new_rid(&rid)) {
+				d_printf("Could not get new RID\n");
+			}
+		}
+		d_printf("Got RID %d\n", rid);
 	}
 
 	/* append the rid to our own domain/machine SID if we don't have a full SID */

@@ -352,35 +352,109 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 
 NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 {
-	NTSTATUS 	nt_status = NT_STATUS_NO_MEMORY;
+	NTSTATUS 	result;
 	struct passwd 	*pwd;
-	BOOL		ret;
-	uint32 rid;
-	
-	pwd = Get_Pwnam(username);
+	uint32 user_rid;
+	DOM_SID user_sid, group_sid;
+	TALLOC_CTX *mem_ctx;
+	enum SID_NAME_USE type;
 
-	if (!pwd) 
-		return NT_STATUS_NO_SUCH_USER;
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 	
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(new_sam_acct, pwd))) {
-		*new_sam_acct = NULL;
-		return nt_status;
+	pwd = Get_Pwnam_alloc(mem_ctx, username);
+
+	if (pwd == NULL) {
+		DEBUG(10, ("Could not find user %s\n", username));
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	}
 
+	result = pdb_init_sam_pw(new_sam_acct, pwd);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("pdb_init_sam_pw failed: %s\n", nt_errstr(result)));
+		goto done;
+	}
+		
 	if (pdb_rid_algorithm()) {
-		rid = algorithmic_pdb_uid_to_user_rid(pwd->pw_uid);
-	} else {
-		if (!pdb_new_rid(&rid)) {
-			DEBUG(10,("Could not generate a new RID\n"));
-			return NT_STATUS_ACCESS_DENIED;
+		if (!pdb_set_user_sid_from_rid(
+			    *new_sam_acct,
+			    algorithmic_pdb_uid_to_user_rid(pwd->pw_uid),
+			    PDB_SET)) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto done;
 		}
+		if (!pdb_set_group_sid_from_rid(
+			    *new_sam_acct, pdb_gid_to_group_rid(pwd->pw_gid),
+			    PDB_SET)) {
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+		result = NT_STATUS_OK;
+		goto done;
 	}
-	
-	/* set the new SID */
-	
-	ret = pdb_set_user_sid_from_rid( *new_sam_acct, rid, PDB_SET );
-	 
-	return (ret ? NT_STATUS_OK : NT_STATUS_NO_SUCH_USER);
+
+	/* No algorithmic mapping, meaning that we have to figure out the
+	 * primary group SID according to group mapping and the user SID must
+	 * be a newly allocated one */
+
+	if (!pdb_gid_to_sid(pwd->pw_gid, &group_sid)) {
+		DEBUG(3, ("Primary group %d of new user %s is not mapped. "
+			  "Please add the mapping.\n", pwd->pw_gid, username));
+		result = NT_STATUS_INVALID_PRIMARY_GROUP;
+		goto done;
+	}
+
+	/* Now check that it's actually a domain group and not something
+	 * else */
+
+	if (!lookup_sid(mem_ctx, &group_sid, NULL, NULL, &type)) {
+		DEBUG(3, ("Could not lookup %s's primary group sid %s\n",
+			  username, sid_string_static(&group_sid)));
+		result = NT_STATUS_INVALID_PRIMARY_GROUP;
+		goto done;
+	}
+
+	if (type != SID_NAME_DOM_GRP) {
+		DEBUG(3, ("Primary group for user %s is a %s and not a domain "
+			  "group\n", username, sid_type_lookup(type)));
+		result = NT_STATUS_INVALID_PRIMARY_GROUP;
+		goto done;
+	}
+
+	if (!pdb_set_group_sid(*new_sam_acct, &group_sid, PDB_SET)) {
+		DEBUG(3, ("Could not set group SID\n"));
+		result = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	if (!pdb_new_rid(&user_rid)) {
+		DEBUG(3, ("Could not allocate a new RID\n"));
+		result = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	sid_copy(&user_sid, get_global_sam_sid());
+	sid_append_rid(&user_sid, user_rid);
+
+	if (!pdb_set_user_sid(*new_sam_acct, &user_sid, PDB_SET)) {
+		DEBUG(3, ("pdb_set_user_sid failed\n"));
+		result = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	result = NT_STATUS_OK;
+
+ done:
+	if (!NT_STATUS_IS_OK(result) && (*new_sam_acct != NULL)) {
+		pdb_free_sam(new_sam_acct);
+	}
+
+	talloc_free(mem_ctx);
+	return result;
 }
 
 
@@ -888,9 +962,25 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		pdb_free_sam(&sam_pass);
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
-			/* Might not exist in /etc/passwd.  Use rid algorithm here */
-			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name))) {
-				slprintf(err_str, err_str_len-1, "Failed to initialise SAM_ACCOUNT for user %s. Does this user exist in the UNIX password database ?\n", user_name);
+			NTSTATUS result;
+
+			/* Might not exist in /etc/passwd. */
+
+			result = pdb_init_sam_new(&sam_pass, user_name);
+			if (NT_STATUS_EQUAL(result,
+					    NT_STATUS_INVALID_PRIMARY_GROUP)) {
+				slprintf(err_str, err_str_len-1,
+					 "Primary group of user %s is not "
+					 "mapped, please map it to a SID "
+					 "with\n'net groupmap add'\n",
+					 user_name);
+				return False;
+			}
+
+			if (!NT_STATUS_IS_OK(result)) {
+				slprintf(err_str, err_str_len-1, "Failed to "
+					 "initialize account for user %s: %s\n",
+					 user_name, nt_errstr(result));
 				return False;
 			}
 		} else {
