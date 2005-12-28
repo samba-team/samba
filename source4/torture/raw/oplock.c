@@ -42,6 +42,7 @@ static struct {
 	int fnum;
 	uint8_t level;
 	int count;
+	int failures;
 } break_info;
 
 /*
@@ -59,30 +60,43 @@ static BOOL oplock_handler_ack(struct smbcli_transport *transport, uint16_t tid,
 	return smbcli_oplock_ack(tree, fnum, level);
 }
 
+static void oplock_handler_close_recv(struct smbcli_request *req)
+{
+	NTSTATUS status;
+	status = smbcli_request_simple_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed in oplock_handler_close\n");
+		break_info.failures++;
+	}
+}
+
 /*
   a handler function for oplock break requests - close the file
 */
 static BOOL oplock_handler_close(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
-	NTSTATUS status;
 	struct smbcli_tree *tree = private;
+	struct smbcli_request *req;
 
 	break_info.fnum = fnum;
 	break_info.level = level;
 	break_info.count++;
 
+	printf("Closing in oplock handler\n");
+
 	io.close.level = RAW_CLOSE_CLOSE;
 	io.close.in.fnum = fnum;
 	io.close.in.write_time = 0;
-	status = smb_raw_close(tree, &io);
-
-	printf("Closing in oplock handler\n");
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("close failed in oplock_handler_close\n");
+	req = smb_raw_close_send(tree, &io);
+	if (req == NULL) {
+		printf("failed to send close in oplock_handler_close\n");
 		return False;
 	}
+
+	req->async.fn = oplock_handler_close_recv;
+	req->async.private = NULL;
+
 	return True;
 }
 
@@ -134,6 +148,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &unl);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli->tree, fnum);
 
@@ -159,7 +174,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(break_info.level, 1);
 	CHECK_VAL(break_info.count, 1);
-
+	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli->tree, fnum);
 
@@ -183,6 +198,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(break_info.level, 1);
 	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
 
 	printf("a self read should not cause a break\n");
 	ZERO_STRUCT(break_info);
@@ -205,7 +221,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_read(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(break_info.count, 0);
-
+	CHECK_VAL(break_info.failures, 0);
 
 	printf("a 2nd open should give a break\n");
 	ZERO_STRUCT(break_info);
@@ -229,6 +245,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(break_info.level, 1);
+	CHECK_VAL(break_info.failures, 0);
 
 	printf("a 2nd open should get an oplock when we close instead of ack\n");
 	ZERO_STRUCT(break_info);
@@ -256,6 +273,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum2);
 	CHECK_VAL(break_info.level, 1);
+	CHECK_VAL(break_info.failures, 0);
 	
 	smbcli_close(cli->tree, fnum);
 
@@ -285,6 +303,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
 	CHECK_VAL(break_info.level, 0);
+	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli->tree, fnum);
 	smbcli_close(cli->tree, fnum2);
@@ -316,6 +335,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum2 = io.ntcreatex.out.fnum;
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 	smbcli_close(cli->tree, fnum2);
 
@@ -331,6 +351,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.fnum;
 	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
 	ZERO_STRUCT(break_info);
@@ -367,6 +388,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	CHECK_VAL(break_info.count, 2);
 	CHECK_VAL(break_info.level, 0);
+	CHECK_VAL(break_info.failures, 0);
 
 	smbcli_close(cli->tree, fnum);
 	smbcli_close(cli->tree, fnum2);
@@ -386,6 +408,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = io.ntcreatex.out.fnum;
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
+	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
@@ -401,6 +424,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum2 = io.ntcreatex.out.fnum;
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.fnum, 0);
+	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
 
 	printf("write should trigger a break to none\n");
@@ -436,6 +460,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum2);
 	CHECK_VAL(break_info.level, 0);
+	CHECK_VAL(break_info.failures, 0);
 
 done:
 	smbcli_close(cli->tree, fnum);
