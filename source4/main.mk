@@ -275,6 +275,10 @@ valgrindtest: all
 	VALGRIND="valgrind -q --num-callers=30 --log-file=st/valgrind.log" \
 	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
+gdbtest: all
+	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
+	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
+
 bin/.dummy:
 	@: >> $@ || : > $@
 
