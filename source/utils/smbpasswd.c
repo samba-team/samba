@@ -569,6 +569,8 @@ int main(int argc, char **argv)
 		local_flags = LOCAL_AM_ROOT;
 	}
 
+	load_case_tables();
+
 	local_flags = process_options(argc, argv, local_flags);
 
 	setup_logging("smbpasswd", True);
