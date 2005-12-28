@@ -708,6 +708,16 @@ static void async_notify(struct smbcli_request *req)
 	}
 }
 
+static void oplock_handler_close_recv(struct smbcli_request *req)
+{
+	NTSTATUS status;
+	status = smbcli_request_simple_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed in oplock_handler\n");
+		smb_panic("close failed in oplock_handler");
+	}
+}
+
 /*
   the oplock handler will either ack the break or close the file
 */
@@ -718,6 +728,7 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	int i, j;
 	BOOL do_close;
 	struct smbcli_tree *tree = NULL;
+	struct smbcli_request *req;
 
 	srandom(current_op.seed);
 	do_close = gen_chance(50);
@@ -751,11 +762,17 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
 	io.close.level = RAW_CLOSE_CLOSE;
 	io.close.in.fnum = fnum;
 	io.close.in.write_time = 0;
-	status = smb_raw_close(tree, &io);
+	req = smb_raw_close_send(tree, &io);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("WARNING: close failed in oplock_handler_close - %s\n", nt_errstr(status));
+	if (req == NULL) {
+		printf("WARNING: close failed in oplock_handler_close - %s\n", 
+		       nt_errstr(status));
+		return False;
 	}
+
+	req->async.fn = oplock_handler_close_recv;
+	req->async.private = NULL;
+
 	return True;
 }
 
