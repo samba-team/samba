@@ -25,12 +25,6 @@
 #include "lib/netif/netif.h"
 #include "dlinklist.h"
 
-static struct iface_struct *probed_ifaces;
-static int total_probed;
-
-static struct ipv4_addr allones_ip;
-struct ipv4_addr loopback_ip;
-
 /* used for network interfaces */
 struct interface {
 	struct interface *next, *prev;
@@ -80,12 +74,12 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		return;
 	}
 
-	if (nmask.s_addr == allones_ip.addr) {
+	if (nmask.s_addr == ~0) {
 		DEBUG(3,("not adding non-broadcast interface %s\n",inet_ntoa(ip)));
 		return;
 	}
 
-	iface = malloc_p(struct interface);
+	iface = talloc(local_interfaces, struct interface);
 	if (!iface) return;
 	
 	ZERO_STRUCTPN(iface);
@@ -114,7 +108,9 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 ****************************************************************************/
-static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
+static void interpret_interface(const char *token, 
+				struct iface_struct *probed_ifaces, 
+				int total_probed)
 {
 	struct in_addr ip, nmask;
 	char *p;
@@ -143,7 +139,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 		ip.s_addr = interpret_addr2(token).addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
-			    allones_ip.addr != probed_ifaces[i].netmask.s_addr) {
+			    probed_ifaces[i].netmask.s_addr != ~0) {
 				add_interface(probed_ifaces[i].ip,
 					      probed_ifaces[i].netmask);
 				return;
@@ -184,39 +180,23 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 /****************************************************************************
 load the list of network interfaces
 ****************************************************************************/
-void load_interfaces(void)
+static void load_interfaces(void)
 {
 	const char **ptr;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
-	TALLOC_CTX *mem_ctx;
+	struct ipv4_addr loopback_ip;
+	int total_probed;
 
-	ptr = lp_interfaces();
-	mem_ctx = talloc_init("load_interfaces");
-	if (!mem_ctx) {
-		DEBUG(2,("no memory to load interfaces \n"));
+	if (local_interfaces != NULL) {
 		return;
 	}
 
-	allones_ip = interpret_addr2("255.255.255.255");
+	ptr = lp_interfaces();
 	loopback_ip = interpret_addr2("127.0.0.1");
-
-	SAFE_FREE(probed_ifaces);
-
-	/* dump the current interfaces if any */
-	while (local_interfaces) {
-		struct interface *iface = local_interfaces;
-		DLIST_REMOVE(local_interfaces, local_interfaces);
-		ZERO_STRUCTPN(iface);
-		SAFE_FREE(iface);
-	}
 
 	/* probe the kernel for interfaces */
 	total_probed = get_interfaces(ifaces, MAX_INTERFACES);
-
-	if (total_probed > 0) {
-		probed_ifaces = memdup(ifaces, sizeof(ifaces[0])*total_probed);
-	}
 
 	/* if we don't have a interfaces line then use all broadcast capable 
 	   interfaces except loopback */
@@ -225,49 +205,33 @@ void load_interfaces(void)
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 		}
 		for (i=0;i<total_probed;i++) {
-			if (probed_ifaces[i].netmask.s_addr != allones_ip.addr &&
-			    probed_ifaces[i].ip.s_addr != loopback_ip.addr) {
-				add_interface(probed_ifaces[i].ip, 
-					      probed_ifaces[i].netmask);
+			if (ifaces[i].netmask.s_addr != ~0 &&
+			    ifaces[i].ip.s_addr != loopback_ip.addr) {
+				add_interface(ifaces[i].ip, 
+					      ifaces[i].netmask);
 			}
 		}
-		goto exit;
 	}
 
-	if (ptr) {
-		while (*ptr) {
-			interpret_interface(mem_ctx, *ptr);
-			ptr++;
-		}
+	while (ptr && *ptr) {
+		interpret_interface(*ptr, ifaces, total_probed);
+		ptr++;
 	}
 
 	if (!local_interfaces) {
 		DEBUG(0,("WARNING: no network interfaces found\n"));
 	}
-	
-exit:
-	talloc_free(mem_ctx);
 }
 
 
-/****************************************************************************
-return True if the list of probed interfaces has changed
-****************************************************************************/
-BOOL interfaces_changed(void)
+/*
+  unload the interfaces list, so it can be reloaded when needed
+*/
+void unload_interfaces(void)
 {
-	int n;
-	struct iface_struct ifaces[MAX_INTERFACES];
-
-	n = get_interfaces(ifaces, MAX_INTERFACES);
-
-	if ((n > 0 )&& (n != total_probed ||
-	    memcmp(ifaces, probed_ifaces, sizeof(ifaces[0])*n))) {
-		return True;
-	}
-	
-	return False;
+	talloc_free(local_interfaces);
+	local_interfaces = NULL;
 }
-
 
 /****************************************************************************
   check if an IP is one of mine
@@ -275,6 +239,9 @@ BOOL interfaces_changed(void)
 BOOL ismyip(struct ipv4_addr ip)
 {
 	struct interface *i;
+
+	load_interfaces();
+
 	for (i=local_interfaces;i;i=i->next) {
 		if (i->ip.addr == ip.addr) return True;
 	}
@@ -289,6 +256,8 @@ int iface_count(void)
 	int ret = 0;
 	struct interface *i;
 
+	load_interfaces();
+
 	for (i=local_interfaces;i;i=i->next)
 		ret++;
 	return ret;
@@ -301,6 +270,8 @@ const char *iface_n_ip(int n)
 {
 	struct interface *i;
   
+	load_interfaces();
+
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
 
@@ -317,6 +288,8 @@ const char *iface_n_bcast(int n)
 {
 	struct interface *i;
   
+	load_interfaces();
+
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
 
@@ -333,6 +306,8 @@ const char *iface_n_netmask(int n)
 {
 	struct interface *i;
   
+	load_interfaces();
+
 	for (i=local_interfaces;i && n;i=i->next)
 		n--;
 
@@ -350,6 +325,9 @@ const char *iface_best_ip(const char *dest)
 {
 	struct interface *iface;
 	struct in_addr ip;
+
+	load_interfaces();
+
 	ip.s_addr = interpret_addr(dest);
 	iface = iface_find(ip, True);
 	if (iface) {
@@ -364,6 +342,9 @@ const char *iface_best_ip(const char *dest)
 BOOL iface_is_local(const char *dest)
 {
 	struct in_addr ip;
+
+	load_interfaces();
+
 	ip.s_addr = interpret_addr(dest);
 	if (iface_find(ip, True)) {
 		return True;

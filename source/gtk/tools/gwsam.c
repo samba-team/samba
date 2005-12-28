@@ -404,7 +404,6 @@ static GtkWidget* create_mainwindow (void)
 {
 	gwsam_init_subsystems;
 	lp_load();
-	load_interfaces();
 	setup_logging(argv[0], DEBUG_STDERR);
 
 	gtk_init(&argc, &argv);

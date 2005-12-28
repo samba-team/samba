@@ -188,7 +188,7 @@ static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 {
 	BOOL ret = lp_load();
 	if (ret) {
-		load_interfaces();
+		unload_interfaces();
 	}
 	mpr_Return(eid, mprCreateBoolVar(ret));
 	return 0;
