@@ -613,6 +613,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		POPT_TABLEEND
 	};
 
+	load_case_tables();
+
 	setup_logging(argv[0],True);
 	
 	dbf = x_stderr;

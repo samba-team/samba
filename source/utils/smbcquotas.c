@@ -421,6 +421,8 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 		{ NULL }
 	};
 
+	load_case_tables();
+
 	ZERO_STRUCT(qt);
 
 	/* set default debug level to 1 regardless of what smb.conf sets */

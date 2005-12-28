@@ -1022,6 +1022,7 @@ int main(int argc, char **argv)
 	};
 
 	/* Samba client initialisation */
+	load_case_tables();
 
 	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
 		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
