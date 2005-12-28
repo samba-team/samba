@@ -370,6 +370,14 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	if (!addresses) {
 		goto notfound;
 	}
+
+	/* if the query didn't come from loopback, then never give out
+	   loopback in the reply, as loopback means something
+	   different for the recipient than for us */
+	if (strcmp(src->addr, "127.0.0.1") != 0) {
+		str_list_remove(addresses, "127.0.0.1");
+	}
+
 found:
 	nbtd_name_query_reply(nbtsock, packet, src, name, 
 			      0, nb_flags, addresses);

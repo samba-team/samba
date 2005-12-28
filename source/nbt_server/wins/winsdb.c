@@ -350,21 +350,16 @@ size_t winsdb_addr_list_length(struct winsdb_addr **addresses)
 const char **winsdb_addr_string_list(TALLOC_CTX *mem_ctx, struct winsdb_addr **addresses)
 {
 	size_t len = winsdb_addr_list_length(addresses);
-	const char **str_list;
+	const char **str_list=NULL;
 	size_t i;
 
-	str_list = talloc_array(mem_ctx, const char *, len + 1);
-	if (!str_list) return NULL;
-
 	for (i=0; i < len; i++) {
-		str_list[i] = talloc_strdup(str_list, addresses[i]->address);
+		str_list = str_list_add(str_list, addresses[i]->address);
 		if (!str_list[i]) {
-			talloc_free(str_list);
 			return NULL;
 		}
 	}
-
-	str_list[len] = NULL;
+	talloc_steal(mem_ctx, str_list);
 	return str_list;
 }
 
