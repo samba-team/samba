@@ -166,6 +166,8 @@ int main( int argc, char *argv[] )
 
 	fstring opname;
 
+	load_case_tables();
+
 	opt_debug = 0;		/* todo set this from getopts */
 
 	lp_load( dyn_CONFIGFILE, True, False, False );
