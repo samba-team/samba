@@ -577,7 +577,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			if (msg->elements[i].num_values == 0) {
 				if (msg_delete_attribute(module, ldb, msg2, 
 							 msg->elements[i].name) != 0) {
-					err_string = talloc_strdup(module, "No such attribute");
+					err_string = talloc_asprintf(module, "No such attribute: %s", msg->elements[i].name);
 					if (err_string) ldb_set_errstring(module, err_string);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
@@ -589,7 +589,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 						       msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
-					err_string = talloc_strdup(module, "No such attribute");
+					err_string = talloc_asprintf(module, "No such attribute: %s", msg->elements[i].name);
 					if (err_string) ldb_set_errstring(module, err_string);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
@@ -600,7 +600,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			}
 			break;
 		default:
-			err_string = talloc_strdup(module, "Invalid ldb_modify flags");
+			err_string = talloc_asprintf(module, "Invalid ldb_modify flags on %s: 0x%x", 
+						     msg->elements[i].name, 
+						     msg->elements[i].flags & LDB_FLAG_MOD_MASK);
 			if (err_string) ldb_set_errstring(module, err_string);
 			ret = LDB_ERR_PROTOCOL_ERROR;
 			goto failed;
