@@ -135,11 +135,18 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	/* setup a GETDC reply */
 	ZERO_STRUCT(reply);
+	reply.command = NETLOGON_RESPONSE_FROM_PDC2;
+
+#if 0
+	/* newer testing shows that the reply command type is not
+	   changed based on whether a username is given in the
+	   reply. This was what was causing the w2k join to be so
+	   slow */
 	if (netlogon->req.pdc2.user_name[0]) {
 		reply.command = NETLOGON_RESPONSE_FROM_PDC_USER;
-	} else {
-		reply.command = NETLOGON_RESPONSE_FROM_PDC2;
 	}
+#endif
+
 	pdc = &reply.req.response2;
 
 	/* TODO: accurately depict which services we are running */
