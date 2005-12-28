@@ -781,6 +781,8 @@ static struct functable net_func[] = {
 
 	zero_ip(&opt_dest_ip);
 
+	load_case_tables();
+
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
