@@ -25,6 +25,9 @@
 #include "system/passwd.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "ads.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
+#include "libcli/ldap/ldap.h"
 
 /*
   these are used for the fallback local uid/gid to sid mapping

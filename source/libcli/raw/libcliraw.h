@@ -269,3 +269,5 @@ struct smbcli_request {
       req->status = NT_STATUS_INVALID_PARAMETER; \
       goto failed; \
 }
+
+#include "libcli/raw/raw_proto.h"

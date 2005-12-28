@@ -3,6 +3,7 @@
 #######################
 # Start SUBSYSTEM WINBIND
 [SUBSYSTEM::WINBIND]
+PRIVATE_PROTO_HEADER = wb_proto.h
 OBJ_FILES = \
 		wb_server.o \
 		wb_samba3_protocol.o \

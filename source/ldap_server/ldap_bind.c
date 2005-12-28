@@ -23,6 +23,7 @@
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"
 #include "smbd/service_stream.h"
+#include "dsdb/samdb/samdb.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {

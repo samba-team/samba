@@ -1,6 +1,7 @@
 #################################
 # Start SUBSYSTEM GENSEC
 [SUBSYSTEM::CREDENTIALS]
+PRIVATE_PROTO_HEADER = credentials_proto.h
 OBJ_FILES = credentials.o \
 		credentials_files.o \
 		credentials_krb5.o \

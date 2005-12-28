@@ -1,4 +1,5 @@
 [SUBSYSTEM::LIBCLI_SMB2]
+PRIVATE_PROTO_HEADER = smb2_proto.h
 OBJ_FILES = \
 	transport.o \
 	request.o \

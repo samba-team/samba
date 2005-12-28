@@ -85,6 +85,7 @@ struct ipv4_addr {
 };
 
 
+#define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "lib/replace/replace.h"
 
 /* Lists, trees, caching, database... */
@@ -102,7 +103,6 @@ struct ipv4_addr {
 #include "smb.h"
 #include "byteorder.h"
 #include "librpc/ndr/libndr.h"
-#include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/ndr/ndr_orpc.h"
 #include "librpc/gen_ndr/orpc.h"
@@ -110,9 +110,9 @@ struct ipv4_addr {
 #include "smb_interfaces.h"
 #include "cli_context.h"
 #include "auth/credentials/credentials.h"
+#include "libcli/nbt/libnbt.h"
 
 /***** automatically generated prototypes *****/
-#define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "include/proto.h"
 #include "basic.h"
 #undef _PRINTF_ATTRIBUTE

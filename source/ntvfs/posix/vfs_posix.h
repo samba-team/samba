@@ -204,4 +204,6 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 			 void (*fn)(void *, enum pvfs_wait_notice),
 			 void *private);
 
+#include "ntvfs/posix/vfs_posix_proto.h"
+
 #endif /* _VFS_POSIX_H_ */

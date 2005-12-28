@@ -97,3 +97,5 @@ struct cli_credentials {
 	/* A list of valid GENSEC mechanisms for use on this account */
 	const struct gensec_security_ops **gensec_list;
 };
+
+#include "auth/credentials/credentials_proto.h"

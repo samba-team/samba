@@ -28,6 +28,7 @@
 #include "ioctl.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "smb_build.h"
+#include "libcli/nbt/libnbt.h"
 
 int torture_nprocs=4;
 int torture_numops=10;

@@ -123,4 +123,4 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security;
 };
 
-
+#include "gensec_proto.h"

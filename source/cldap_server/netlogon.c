@@ -26,6 +26,8 @@
 #include "lib/socket/socket.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 
 /*
   fill in the cldap netlogon union for a given version

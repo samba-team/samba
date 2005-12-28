@@ -280,3 +280,6 @@ typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, cons
 
 extern const struct dcerpc_syntax_id ndr_transfer_syntax;
 extern const struct dcerpc_syntax_id ndr64_transfer_syntax;
+
+#include "librpc/gen_ndr/misc.h"
+#include "librpc/ndr/libndr_proto.h"

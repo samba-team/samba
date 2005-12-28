@@ -45,6 +45,7 @@ my $section_types = {
 		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
+		"PRIVATE_PROTO_HEADER" => "string"
 		},
 	"BINARY" => {
 		"OBJ_FILES"		=> "list",
@@ -56,6 +57,7 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
+		"PRIVATE_PROTO_HEADER" => "string"
 		},
 	"LIBRARY" => {
 		"MAJOR_VERSION"		=> "string",

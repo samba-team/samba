@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "libcli/raw/libcliraw.h"
 
 int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname);
 

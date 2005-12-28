@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __LIBNBT_H__
+#define __LIBNBT_H__
+
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
@@ -267,3 +270,7 @@ struct nbt_name_release {
 		uint8_t rcode;
 	} out;
 };
+
+#include "libcli/nbt/nbt_proto.h"
+
+#endif /* __LIBNBT_H__ */

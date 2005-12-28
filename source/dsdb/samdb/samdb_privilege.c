@@ -23,6 +23,9 @@
 #include "includes.h"
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
+#include "libcli/ldap/ldap.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 
 /*
   add privilege bits for one sid to a security_token

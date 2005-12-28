@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rap.h"
+#include "libcli/raw/libcliraw.h"
 
 struct rap_call {
 	uint16_t callno;

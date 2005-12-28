@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "db_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 /*
   connect to the SAM database

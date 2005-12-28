@@ -25,6 +25,8 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
+#include "dsdb/samdb/samdb.h"
+#include "libcli/ldap/ldap.h"
 
 static const char *user_attrs[] = {
 	/* requried for the krb5 kdc*/

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "libcli/smb2/smb2.h"
 
 #define BASEDIR ""
 

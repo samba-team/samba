@@ -26,6 +26,8 @@
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
 #include "lib/ldb/include/ldb.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 
 /*
   reply to a GETDC request

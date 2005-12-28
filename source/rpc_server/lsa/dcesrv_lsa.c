@@ -30,6 +30,8 @@
 #include "system/time.h"
 #include "db_wrap.h"
 #include "auth/auth.h"
+#include "dsdb/samdb/samdb.h"
+#include "libcli/ldap/ldap.h"
 
 /*
   this type allows us to distinguish handle types

@@ -154,3 +154,5 @@ struct wrepl_pull_names {
 		} *names;
 	} out;
 };
+
+#include "libcli/wrepl/winsrepl_proto.h"

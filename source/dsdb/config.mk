@@ -5,6 +5,7 @@ include samdb/ldb_modules/config.mk
 ################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
+PRIVATE_PROTO_HEADER = samdb/samdb.h
 OBJ_FILES = \
 		samdb/samdb.o \
 		samdb/samdb_privilege.o \

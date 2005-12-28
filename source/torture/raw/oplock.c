@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/raw/libcliraw.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \

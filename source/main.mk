@@ -210,7 +210,8 @@ pch: include/config.h \
 	idl \
 	include/includes.h.gch
 
-include/includes.h: lib/basic.h
+libcli/nbt/libnbt.h: libcli/nbt/nbt_proto.h
+include/includes.h: lib/basic.h libcli/nbt/libnbt.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch

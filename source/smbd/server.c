@@ -33,6 +33,7 @@
 #include "smb_build.h"
 #include "registry/registry.h"
 #include "ntvfs/ntvfs.h"
+#include "ntptr/ntptr.h"
 
 /*
   recursively delete a directory tree

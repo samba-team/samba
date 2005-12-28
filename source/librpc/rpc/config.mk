@@ -1,6 +1,7 @@
 ################################################
 # Start SUBSYSTEM RPC_RAW
 [SUBSYSTEM::RPC_RAW]
+PRIVATE_PROTO_HEADER = dcerpc_proto.h
 OBJ_FILES = \
 		dcerpc.o \
 		dcerpc_auth.o \

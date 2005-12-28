@@ -36,6 +36,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "system/time.h"
+#include "libcli/nbt/libnbt.h"
 
 enum _R_ACTION {
 	R_INVALID,

@@ -26,6 +26,7 @@
 #include "smb_server/smb_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "ntvfs/ntvfs.h"
+#include "libcli/raw/libcliraw.h"
 
 #define CHECK_MIN_BLOB_SIZE(blob, size) do { \
 	if ((blob)->length < (size)) { \

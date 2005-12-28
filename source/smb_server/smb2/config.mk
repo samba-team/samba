@@ -1,6 +1,7 @@
 #######################
 # Start SUBSYSTEM SMB2_PROTOCOL
 [SUBSYSTEM::SMB2_PROTOCOL]
+PRIVATE_PROTO_HEADER = smb2_proto.h
 OBJ_FILES = \
 		receive.o \
 		negprot.o \

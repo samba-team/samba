@@ -302,3 +302,5 @@ struct wreplsrv_service {
 		BOOL processing;	
 	} scavenging;
 };
+
+#include "wrepl_server/wrepl_server_proto.h"

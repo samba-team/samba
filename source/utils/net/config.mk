@@ -4,6 +4,7 @@
 # Start BINARY net
 [BINARY::net]
 INSTALLDIR = BINDIR
+PRIVATE_PROTO_HEADER = net_proto.h
 OBJ_FILES = \
 		net.o \
 		net_password.o \

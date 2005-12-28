@@ -6,6 +6,7 @@ MINOR_VERSION = 0
 DESCRIPTION = Generic Security Library
 RELEASE_VERSION = 1
 PUBLIC_HEADERS = gensec.h
+PRIVATE_PROTO_HEADER = gensec_proto.h
 INIT_FUNCTION = gensec_init
 OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \

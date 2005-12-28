@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_dcom.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
+#include "dsdb/samdb/samdb.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
