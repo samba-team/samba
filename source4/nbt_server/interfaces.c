@@ -251,43 +251,32 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	const char **ret = NULL;
 	struct nbtd_interface *iface2;
-	int count = 0;
 
 	if (iface->ip_address) {
-		ret = talloc_array(mem_ctx, const char *, 2);
-		if (ret == NULL) goto failed;
-
-		ret[0] = talloc_strdup(ret, iface->ip_address);
-		if (ret[0] == NULL) goto failed;
-		ret[1] = NULL;
-
-		count = 1;
+		ret = str_list_add(ret, iface->ip_address);
 	}
 
 	for (iface2=nbtsrv->interfaces;iface2;iface2=iface2->next) {
-		const char **ret2;
-
 		if (iface->ip_address &&
 		    strcmp(iface2->ip_address, iface->ip_address) == 0) {
 			continue;
 		}
 
-		ret2 = talloc_realloc(mem_ctx, ret, const char *, count+2);
-		if (ret2 == NULL) goto failed;
-		ret = ret2;
-		ret[count] = talloc_strdup(ret, iface2->ip_address);
-		if (ret[count] == NULL) goto failed;
-		count++;
+		ret = str_list_add(ret, iface2->ip_address);
 	}
 
-	if (ret == NULL) goto failed;
+	talloc_steal(mem_ctx, ret);
 
-	ret[count] = NULL;
+	/* if the query didn't come from loopback, then never give out
+	   loopback in the reply, as loopback means something
+	   different for the recipient than for us */
+	if (ret != NULL && 
+	    iface->ip_address != NULL &&
+	    strcmp(iface->ip_address, "127.0.0.1") != 0) {
+		str_list_remove(ret, "127.0.0.1");
+	}
+
 	return ret;
-
-failed:
-	talloc_free(ret);
-	return NULL;
 }
 
 
