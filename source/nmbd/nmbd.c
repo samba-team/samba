@@ -669,6 +669,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	{ NULL }
 	};
 
+	load_case_tables();
+
 	global_nmb_port = NMB_PORT;
 
 	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
