@@ -272,7 +272,7 @@ quicktest: all
 
 valgrindtest: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
-	VALGRIND="valgrind -q --num-callers=30 --log-file=st/valgrind.log" \
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
 	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
 gdbtest: all
