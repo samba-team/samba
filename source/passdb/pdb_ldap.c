@@ -3331,7 +3331,9 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods, int policy_index, uint32 value)
+static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
+						   int policy_index,
+						   uint32 value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	int rc;
@@ -3352,7 +3354,8 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods, 
 
 	policy_attr = get_account_policy_attr(policy_index);
 	if (policy_attr == NULL) {
-		DEBUG(0,("ldapsam_set_account_policy_in_ldap: invalid policy\n"));
+		DEBUG(0,("ldapsam_set_account_policy_in_ldap: invalid "
+			 "policy\n"));
 		return ntstatus;
 	}
 
@@ -3363,7 +3366,8 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods, 
 
 	smbldap_set_mod(&mods, LDAP_MOD_REPLACE, policy_attr, value_string);
 
-	rc = smbldap_modify(ldap_state->smbldap_state, ldap_state->domain_dn, mods);
+	rc = smbldap_modify(ldap_state->smbldap_state, ldap_state->domain_dn,
+			    mods);
 
 	ldap_mods_free(mods, True);
 
@@ -3372,31 +3376,37 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods, 
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_set_account_policy_in_ldap: Could not set account policy "
-			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
+		DEBUG(0, ("ldapsam_set_account_policy_in_ldap: Could not set "
+			  "account policy for %s, error: %s (%s)\n",
+			  ldap_state->domain_dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
 		return ntstatus;
 	}
 
 	if (!cache_account_policy_set(policy_index, value)) {
-		DEBUG(0,("ldapsam_set_account_policy_in_ldap: failed to update local tdb cache\n"));
+		DEBUG(0,("ldapsam_set_account_policy_in_ldap: failed to "
+			 "update local tdb cache\n"));
 		return ntstatus;
 	}
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods,
+					   int policy_index, uint32 value)
 {
 	if (!account_policy_migrated(False)) {
-		return (account_policy_set(policy_index, value)) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+		return (account_policy_set(policy_index, value)) ?
+			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 	}
 
 	return ldapsam_set_account_policy_in_ldap(methods, policy_index, value);
 }
 
-static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods, int policy_index, uint32 *value)
+static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods,
+						     int policy_index,
+						     uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	LDAPMessage *result = NULL;
@@ -3419,7 +3429,8 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 
 	policy_attr = get_account_policy_attr(policy_index);
 	if (!policy_attr) {
-		DEBUG(0,("ldapsam_get_account_policy_from_ldap: invalid policy index: %d\n", policy_index));
+		DEBUG(0,("ldapsam_get_account_policy_from_ldap: invalid "
+			 "policy index: %d\n", policy_index));
 		return ntstatus;
 	}
 
@@ -3427,31 +3438,36 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 	attrs[1] = NULL;
 
 	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
-			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, &result);
+			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0,
+			    &result);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(3, ("ldapsam_get_account_policy_from_ldap: Could not get account policy "
-			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
+		DEBUG(3, ("ldapsam_get_account_policy_from_ldap: Could not "
+			  "get account policy for %s, error: %s (%s)\n",
+			  ldap_state->domain_dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
 		return ntstatus;
 	}
 
-	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+				   result);
 	if (count < 1) {
 		goto out;
 	}
 
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 result);
 	if (entry == NULL) {
 		goto out;
 	}
 
-	vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, policy_attr);
+	vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry,
+			       policy_attr);
 	if (vals == NULL) {
 		goto out;
 	}
@@ -3470,7 +3486,8 @@ out:
 
 /* wrapper around ldapsam_get_account_policy_from_ldap(), handles tdb as cache 
 
-   - if user hasn't decided to use account policies inside LDAP just reuse the old tdb values
+   - if user hasn't decided to use account policies inside LDAP just reuse the
+     old tdb values
    
    - if there is a valid cache entry, return that
    - if there is an LDAP entry, update cache and return 
@@ -3478,32 +3495,38 @@ out:
 
    Guenther
 */
-static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
+					   int policy_index, uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 
 	if (!account_policy_migrated(False)) {
-		return (account_policy_get(policy_index, value)) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+		return (account_policy_get(policy_index, value))
+			? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (cache_account_policy_get(policy_index, value)) {
-		DEBUG(11,("ldapsam_get_account_policy: got valid value from cache\n"));
+		DEBUG(11,("ldapsam_get_account_policy: got valid value from "
+			  "cache\n"));
 		return NT_STATUS_OK;
 	}
 
-	ntstatus = ldapsam_get_account_policy_from_ldap(methods, policy_index, value);
+	ntstatus = ldapsam_get_account_policy_from_ldap(methods, policy_index,
+							value);
 	if (NT_STATUS_IS_OK(ntstatus)) {
 		goto update_cache;
 	}
 
-	DEBUG(10,("ldapsam_get_account_policy: failed to retrieve from ldap\n"));
+	DEBUG(10,("ldapsam_get_account_policy: failed to retrieve from "
+		  "ldap\n"));
 
 #if 0
 	/* should we automagically migrate old tdb value here ? */
 	if (account_policy_get(policy_index, value))
 		goto update_ldap;
 
-	DEBUG(10,("ldapsam_get_account_policy: no tdb for %d, trying default\n", policy_index));
+	DEBUG(10,("ldapsam_get_account_policy: no tdb for %d, trying "
+		  "default\n", policy_index));
 #endif
 
 	if (!account_policy_get_default(policy_index, value)) {
@@ -3520,7 +3543,8 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
  update_cache:
  
 	if (!cache_account_policy_set(policy_index, *value)) {
-		DEBUG(0,("ldapsam_get_account_policy: failed to update local tdb as a cache\n"));
+		DEBUG(0,("ldapsam_get_account_policy: failed to update local "
+			 "tdb as a cache\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -3998,7 +4022,8 @@ static BOOL ldapuser2displayentry(struct ldap_search_state *state,
 	ldap_value_free(vals);
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
-		DEBUG(0, ("sid %s does not belong to our domain\n", sid_string_static(&sid)));
+		DEBUG(0, ("sid %s does not belong to our domain\n",
+			  sid_string_static(&sid)));
 		return False;
 	}
 
@@ -4092,10 +4117,14 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 			DEBUG(5, ("\"cn\" not found\n"));
 			return False;
 		}
-		pull_utf8_talloc(mem_ctx, CONST_DISCARD(char **, &result->account_name), vals[0]);
+		pull_utf8_talloc(mem_ctx,
+				 CONST_DISCARD(char **, &result->account_name),
+				 vals[0]);
 	}
 	else {
-		pull_utf8_talloc(mem_ctx, CONST_DISCARD(char **, &result->account_name), vals[0]);
+		pull_utf8_talloc(mem_ctx,
+				 CONST_DISCARD(char **, &result->account_name),
+				 vals[0]);
 	}
 
 	ldap_value_free(vals);
@@ -4133,17 +4162,21 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_ALIAS:
 
-			if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
-				DEBUG(0, ("%s is not in our domain\n", sid_string_static(&sid)));
+			if (!sid_peek_check_rid(get_global_sam_sid(), &sid,
+						&result->rid)) {
+				DEBUG(0, ("%s is not in our domain\n",
+					  sid_string_static(&sid)));
 				return False;
 			}
 			break;
 	
 		case SID_NAME_WKN_GRP:
 
-			if (!sid_peek_check_rid(&global_sid_Builtin, &sid, &result->rid)) {
+			if (!sid_peek_check_rid(&global_sid_Builtin, &sid,
+						&result->rid)) {
 
-				DEBUG(0, ("%s is not in builtin sid\n", sid_string_static(&sid)));
+				DEBUG(0, ("%s is not in builtin sid\n",
+					  sid_string_static(&sid)));
 				return False;
 			}
 			break;
@@ -4178,7 +4211,8 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 					"(&(objectclass=sambaGroupMapping)"
 					"(sambaGroupType=%d))", type);
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
-				    "displayName", "description", "sambaGroupType", NULL);
+				    "displayName", "description",
+				    "sambaGroupType", NULL);
 	state->attrsonly = 0;
 	state->pagedresults_cookie = NULL;
 	state->entries = NULL;
