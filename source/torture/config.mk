@@ -108,8 +108,7 @@ OBJ_FILES = \
 		rpc/bind.o \
 		rpc/dssetup.o \
 		rpc/alter_context.o \
-		rpc/bench.o \
-		rpc/ndr.o
+		rpc/bench.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_ALL RPC_NDR_UNIXINFO RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
