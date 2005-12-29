@@ -1394,6 +1394,65 @@ static NTSTATUS cmd_samr_create_dom_group(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Create domain alias */
+
+static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, const char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol, alias_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *alias_name;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s aliasname [access mask]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	alias_name = argv[1];
+	
+	if (argc > 2)
+                sscanf(argv[2], "%x", &access_mask);
+
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get domain policy handle */
+
+	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					 access_mask,
+					 &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Create domain user */
+
+	result = rpccli_samr_create_dom_alias(cli, mem_ctx, &domain_pol,
+					      alias_name, &alias_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &alias_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+ done:
+	return result;
+}
+
 /* Lookup sam names */
 
 static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli, 
@@ -1790,6 +1849,7 @@ struct cmd_set samr_commands[] = {
 
 	{ "createdomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_user,       NULL, PI_SAMR, NULL,	"Create domain user",      "" },
 	{ "createdomgroup",     RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_group,      NULL, PI_SAMR, NULL,	"Create domain group",     "" },
+	{ "createdomalias",     RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_alias,      NULL, PI_SAMR, NULL,	"Create domain alias",     "" },
 	{ "samlookupnames",     RPC_RTYPE_NTSTATUS, cmd_samr_lookup_names,          NULL, PI_SAMR, NULL,	"Look up names",           "" },
 	{ "samlookuprids",      RPC_RTYPE_NTSTATUS, cmd_samr_lookup_rids,           NULL, PI_SAMR, NULL,	"Look up names",           "" },
 	{ "deletedomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_user,       NULL, PI_SAMR, NULL,	"Delete domain user",      "" },
