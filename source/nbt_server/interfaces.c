@@ -251,30 +251,28 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	const char **ret = NULL;
 	struct nbtd_interface *iface2;
+	BOOL is_loopback = False;
 
 	if (iface->ip_address) {
+		is_loopback = iface_same_net(iface->ip_address, "127.0.0.1", "255.0.0.0");
 		ret = str_list_add(ret, iface->ip_address);
 	}
 
 	for (iface2=nbtsrv->interfaces;iface2;iface2=iface2->next) {
-		if (iface->ip_address &&
-		    strcmp(iface2->ip_address, iface->ip_address) == 0) {
-			continue;
+		if (iface2 == iface) continue;
+
+		if (!iface2->ip_address) continue;
+
+		if (!is_loopback) {
+			if (iface_same_net(iface2->ip_address, "127.0.0.1", "255.0.0.0")) {
+				continue;
+			}
 		}
 
 		ret = str_list_add(ret, iface2->ip_address);
 	}
 
 	talloc_steal(mem_ctx, ret);
-
-	/* if the query didn't come from loopback, then never give out
-	   loopback in the reply, as loopback means something
-	   different for the recipient than for us */
-	if (ret != NULL && 
-	    iface->ip_address != NULL &&
-	    strcmp(iface->ip_address, "127.0.0.1") != 0) {
-		str_list_remove(ret, "127.0.0.1");
-	}
 
 	return ret;
 }
