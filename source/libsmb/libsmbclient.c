@@ -5938,6 +5938,27 @@ smbc_free_context(SMBCCTX *context,
 
 
 /*
+ * Each time the context structure is changed, we have binary backward
+ * compatibility issues.  Instead of modifying the public portions of the
+ * context structure to add new options, instead, we put them in the internal
+ * portion of the context structure and provide a set function for these new
+ * options.
+ */
+void
+smbc_option_set(SMBCCTX *context,
+                char *option_name,
+                void *option_value)
+{
+        if (strcmp(option_name, "debug_stderr") == 0) {
+                /*
+                 * Log to standard error instead of standard output.
+                 */
+                context->internal->_debug_stderr = True;
+        }
+}
+
+
+/*
  * Initialise the library etc 
  *
  * We accept a struct containing handle information.
@@ -5983,6 +6004,12 @@ smbc_init_context(SMBCCTX *context)
                 
                 load_case_tables();
                 setup_logging( "libsmbclient", True);
+
+                setup_logging("libsmbclient", True);
+                if (context->internal->_debug_stderr) {
+                        dbf = x_stderr;
+                        x_setbuf(x_stderr, NULL);
+                }
 
                 /* Here we would open the smb.conf file if needed ... */
                 
@@ -6099,7 +6126,7 @@ smbc_init_context(SMBCCTX *context)
          * FIXME: Should we check the function pointers here? 
          */
 
-        context->internal->_initialized = 1;
+        context->internal->_initialized = True;
         
         return context;
 }
