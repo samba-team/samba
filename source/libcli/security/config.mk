@@ -1,20 +1,4 @@
 #################################
-# Start SUBSYSTEM LIB_SECURITY_NDR_HELPER
-[SUBSYSTEM::LIB_SECURITY_NDR_HELPER]
-OBJ_FILES = ../../librpc/ndr/ndr_sec_helper.o
-# End SUBSYSTEM LIB_SECURITY_NDR_HELPER
-#################################
-
-#################################
-# Start SUBSYSTEM LIB_SECURITY_NDR
-[SUBSYSTEM::LIB_SECURITY_NDR]
-OBJ_FILES = ../../librpc/gen_ndr/ndr_security.o
-NOPROTO = YES
-REQUIRED_SUBSYSTEMS = LIB_SECURITY_NDR_HELPER
-# End SUBSYSTEM LIB_SECURITY_NDR
-#################################
-
-#################################
 # Start SUBSYSTEM LIB_SECURITY
 [SUBSYSTEM::LIB_SECURITY]
 OBJ_FILES = security_token.o \
@@ -22,8 +6,7 @@ OBJ_FILES = security_token.o \
 		dom_sid.o \
 		access_check.o \
 		privilege.o \
-		sddl.o \
-		../../librpc/ndr/ndr_sec.o
-REQUIRED_SUBSYSTEMS = LIB_SECURITY_NDR
+		sddl.o
+REQUIRED_SUBSYSTEMS = NDR_SECURITY
 # End SUBSYSTEM LIB_SECURITY
 #################################

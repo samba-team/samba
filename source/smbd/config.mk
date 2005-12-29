@@ -122,8 +122,9 @@ REQUIRED_SUBSYSTEMS = \
 		PROCESS_MODEL \
 		SERVER_SERVICE \
 		CONFIG \
-		LIBCMDLINE \
 		LIBBASIC \
-		PIDFILE
+		PIDFILE \
+		POPT_SAMBA \
+		LIBPOPT
 # End BINARY smbd
 #################################

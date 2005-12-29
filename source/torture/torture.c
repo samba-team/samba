@@ -2614,6 +2614,7 @@ static void max_runtime_handler(int sig)
 
 	smbtorture_init_subsystems;
 
+	dcerpc_table_init();
 
 	if (torture_seed == 0) {
 		torture_seed = time(NULL);

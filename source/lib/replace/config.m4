@@ -124,3 +124,6 @@ LIBS="$SAVE_LIBS"
 
 AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
 			   [AC_MSG_ERROR([Required function not found])])
+
+sinclude(lib/replace/readline.m4)
+sinclude(lib/replace/getpass.m4)
