@@ -1603,6 +1603,21 @@ BOOL pdb_new_rid(uint32 *rid)
 		return False;
 	}
 
+	if (pdb_rid_algorithm()) {
+		DEBUG(0, ("Trying to allocate a RID when algorithmic RIDs "
+			  "are active\n"));
+		return False;
+	}
+
+	if (algorithmic_rid_base() != BASE_RID) {
+		DEBUG(0, ("'algorithmic rid base' is set but a passdb backend "
+			  "without algorithmic RIDs is chosen.\n"));
+		DEBUGADD(0, ("Please map all used groups using 'net groupmap "
+			     "add', set the maximum used RID using\n"));
+		DEBUGADD(0, ("'net setmaxrid' and remove the parameter\n"));
+		return False;
+	}
+
 	return pdb_context->pdb_new_rid(pdb_context, rid);
 }
 
