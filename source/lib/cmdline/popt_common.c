@@ -37,7 +37,7 @@
  *		-i,--scope
  */
 
-enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL, OPT_DEBUG_STDERR, OPT_SIMPLE_BIND_DN};
+enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
 
@@ -173,89 +173,3 @@ struct poptOption popt_common_version[] = {
 	POPT_TABLEEND
 };
 
-/* Handle command line options:
- *		-U,--user
- *		-A,--authentication-file
- *		-k,--use-kerberos
- *		-N,--no-pass
- *		-S,--signing
- *      -P --machine-pass
- */
-
-
-static BOOL dont_ask;
-
-/*
-  disable asking for a password
-*/
-void popt_common_dont_ask(void)
-{
-	dont_ask = True;
-}
-
-static void popt_common_credentials_callback(poptContext con, 
-						enum poptCallbackReason reason,
-						const struct poptOption *opt,
-						const char *arg, const void *data)
-{
-	if (reason == POPT_CALLBACK_REASON_PRE) {
-		cmdline_credentials = cli_credentials_init(talloc_autofree_context());
-		return;
-	}
-	
-	if (reason == POPT_CALLBACK_REASON_POST) {
-		cli_credentials_guess(cmdline_credentials);
-
-		if (!dont_ask) {
-			cli_credentials_set_cmdline_callbacks(cmdline_credentials);
-		}
-		return;
-	}
-
-	switch(opt->val) {
-	case 'U':
-		{
-			char *lp;
-
-			cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
-			/* This breaks the abstraction, including the const above */
-			if ((lp=strchr_m(arg,'%'))) {
-				lp[0]='\0';
-				lp++;
-				memset(lp,0,strlen(lp));
-			}
-		}
-		break;
-
-	case 'A':
-		cli_credentials_parse_file(cmdline_credentials, arg, CRED_SPECIFIED);
-		break;
-
-	case 'S':
-		lp_set_cmdline("client signing", arg);
-		break;
-
-	case 'P':
-		/* Later, after this is all over, get the machine account details from the secrets.ldb */
-		cli_credentials_set_machine_account_pending(cmdline_credentials);
-		
-		/* machine accounts only work with kerberos (fall though)*/
-		break;
-	case OPT_SIMPLE_BIND_DN:
-		cli_credentials_set_bind_dn(cmdline_credentials, arg);
-		break;
-	}
-}
-
-
-
-struct poptOption popt_common_credentials[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, popt_common_credentials_callback },
-	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN\\]USERNAME[%PASSWORD]" },
-	{ "no-pass", 'N', POPT_ARG_NONE, &dont_ask, True, "Don't ask for a password" },
-	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
-	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
-	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
-	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
-	POPT_TABLEEND
-};

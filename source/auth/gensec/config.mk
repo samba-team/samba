@@ -10,7 +10,7 @@ PRIVATE_PROTO_HEADER = gensec_proto.h
 INIT_FUNCTION = gensec_init
 OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \
-		SCHANNELDB
+		SCHANNELDB CREDENTIALS
 # End SUBSYSTEM GENSEC
 #################################
 
@@ -51,7 +51,7 @@ SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
-REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
+REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB NDR_SCHANNEL
 # End MODULE gensec_schannel
 ################################################
 

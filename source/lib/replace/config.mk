@@ -7,13 +7,13 @@ NOPROTO = YES
 # End SUBSYSTEM REPLACE_READDIR
 ##############################
 
-
 ##############################
 # Start SUBSYSTEM LIBREPLACE
 [SUBSYSTEM::LIBREPLACE]
 OBJ_FILES = replace.o \
 		snprintf.o \
-		dlfcn.o
+		dlfcn.o \
+		getpass.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = REPLACE_READDIR
 # End SUBSYSTEM LIBREPLACE

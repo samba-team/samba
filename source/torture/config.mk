@@ -216,8 +216,10 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_NBT \
 		TORTURE_NET \
 		CONFIG \
-		LIBCMDLINE \
-		LIBBASIC
+		LIBBASIC \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS
 MANPAGE = man/smbtorture.1
 # End BINARY smbtorture
 #################################
@@ -232,9 +234,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
-		LIBBASIC \
-		LIBCMDLINE \
-		LIBRPC
+		LIBBASIC
 MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
@@ -248,9 +248,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
-		LIBBASIC \
-		LIBCMDLINE \
-		LIBRPC
+		LIBBASIC
 MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
@@ -265,9 +263,7 @@ OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		CONFIG \
-		LIBBASIC \
-		LIBCMDLINE \
-		LIBRPC
+		LIBBASIC
 MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################

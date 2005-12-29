@@ -38,5 +38,6 @@ OBJ_FILES = \
 		connect_multi.o \
 		connect.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = LIBCLI_RESOLVE
 # End SUBSYSTEM SOCKET
 ################################################

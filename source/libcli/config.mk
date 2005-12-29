@@ -30,6 +30,9 @@ OBJ_FILES = \
 	smb_composite/fsinfo.o 
 REQUIRED_SUBSYSTEMS = LIBCLI_COMPOSITE
 
+[SUBSYSTEM::NDR_NBT_BUF]
+OBJ_FILES = nbt/nbtname.o\
+
 [LIBRARY::LIBCLI_NBT]
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
@@ -37,14 +40,13 @@ RELEASE_VERSION = 1
 DESCRIPTION = NetBios over TCP/IP client library
 PRIVATE_PROTO_HEADER = nbt/nbt_proto.h
 OBJ_FILES = \
-	nbt/nbtname.o \
 	nbt/nbtsocket.o \
 	nbt/namequery.o \
 	nbt/nameregister.o \
 	nbt/namerefresh.o \
 	nbt/namerelease.o
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_NBT SOCKET LIBCLI_COMPOSITE LIBEVENTS \
-	LIB_SECURITY_NDR
+	NDR_SECURITY
 
 [SUBSYSTEM::LIBCLI_DGRAM]
 OBJ_FILES = \
