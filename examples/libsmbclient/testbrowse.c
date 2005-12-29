@@ -89,7 +89,7 @@ main(int argc, char * argv[])
     /* If we've been asked to log to stderr instead of stdout... */
     if (debug_stderr) {
         /* ... then set the option to do so */
-        smbc_option_set(context, "debug_stderr", NULL);
+        smbc_option_set(context, "debug_stderr");
     }
 	
     /* Initialize the context using the previously specified options */
