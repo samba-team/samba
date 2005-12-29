@@ -14,9 +14,10 @@ OBJ_FILES = \
 		net_user.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
-		LIBCMDLINE \
 		LIBBASIC \
-		LIBSMB \
-		LIBNET
+		LIBNET \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS
 # End BINARY net
 #################################

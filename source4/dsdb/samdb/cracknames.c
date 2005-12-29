@@ -24,9 +24,8 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
-#include "rpc_server/dcerpc_server.h"
-#include "rpc_server/common/common.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/kerberos.h"

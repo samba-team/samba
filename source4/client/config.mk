@@ -8,10 +8,13 @@ OBJ_FILES = \
 		client.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
-		LIBCMDLINE \
+		LIBREADLINE \
 		LIBBASIC \
 		LIBSMB \
 		RPC_NDR_SRVSVC \
-		LIBCLI_LSA
+		LIBCLI_LSA \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS
 # End BINARY smbclient
 #################################

@@ -87,14 +87,17 @@ OBJ_FILES = version.o \
 		select.o \
 		mutex.o \
 		idtree.o \
-		db_wrap.o \
-		gendb.o \
 		module.o
 REQUIRED_SUBSYSTEMS = \
-		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
+		CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
 		SOCKET_WRAPPER CONFIG
 # End SUBSYSTEM LIBBASIC
 ##############################
+
+[SUBSYSTEM::DB_WRAP]
+OBJ_FILES = db_wrap.o \
+		gendb.o
+REQUIRED_SUBSYSTEMS = LIBLDB 
 
 [SUBSYSTEM::PIDFILE]
 OBJ_FILES = pidfile.o

@@ -102,7 +102,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regdiff.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBCMDLINE REGISTRY
+		CONFIG REGISTRY LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regdiff.1
 # End BINARY regdiff
 ################################################
@@ -114,7 +114,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regpatch.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBCMDLINE REGISTRY
+		CONFIG REGISTRY LIBPOPT POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regpatch.1
 # End BINARY regpatch
 ################################################
@@ -126,7 +126,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regshell.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBCMDLINE REGISTRY
+		CONFIG LIBPOPT REGISTRY POPT_SAMBA POPT_CREDENTIALS LIBREADLINE
 MANPAGE = man/regshell.1
 # End BINARY regshell
 ################################################
@@ -138,7 +138,7 @@ INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/regtree.o
 REQUIRED_SUBSYSTEMS = \
-		CONFIG LIBCMDLINE REGISTRY
+		CONFIG LIBPOPT REGISTRY POPT_SAMBA POPT_CREDENTIALS
 MANPAGE = man/regtree.1
 # End BINARY regtree
 ################################################

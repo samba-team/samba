@@ -48,6 +48,8 @@ errno
 mkstemp (a secure one!)
 pread
 pwrite
+getpass
+readline (the library)
 
 Types:
 socklen_t
