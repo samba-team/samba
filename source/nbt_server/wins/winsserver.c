@@ -334,11 +334,29 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
 	struct winsdb_record *rec;
+	struct winsdb_record *rec_1b = NULL;
 	const char **addresses;
+	const char **addresses_1b = NULL;
 	uint16_t nb_flags = 0; /* TODO: ... */
 
 	if (name->type == NBT_NAME_MASTER) {
 		goto notfound;
+	}
+
+	/*
+	 * w2k3 returns the first address of the 0x1B record as first address
+	 * to a 0x1C query
+	 */
+	if (name->type == NBT_NAME_LOGON) {
+		struct nbt_name name_1b;
+
+		name_1b = *name;
+		name_1b.type = NBT_NAME_PDC;
+
+		status = winsdb_lookup(winssrv->wins_db, &name_1b, packet, &rec_1b);
+		if (NT_STATUS_IS_OK(status)) {
+			addresses_1b = winsdb_addr_string_list(packet, rec_1b->addresses);
+		}
 	}
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
@@ -369,6 +387,30 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	addresses = winsdb_addr_string_list(packet, rec->addresses);
 	if (!addresses) {
 		goto notfound;
+	}
+
+	/* 
+	 * if addresses_1b isn't NULL, we have a 0x1C query and need to return the
+	 * first 0x1B address as first address
+	 */
+	if (addresses_1b && addresses_1b[0]) {
+		const char **addresses_1c = addresses;
+		uint32_t i;
+
+		addresses = str_list_add(NULL, addresses_1b[0]);
+		if (!addresses) {
+			goto notfound;
+		}
+		talloc_steal(packet, addresses);
+
+		for (i=0; addresses_1c[i]; i++) {
+			if (strcmp(addresses_1b[0], addresses_1c[i]) == 0) continue;
+
+			addresses = str_list_add(addresses, addresses_1c[i]);
+			if (!addresses) {
+				goto notfound;
+			}
+		}
 	}
 
 found:
