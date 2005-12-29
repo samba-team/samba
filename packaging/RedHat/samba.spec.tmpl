@@ -95,7 +95,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-pam_smbpass \
 	--with-syslog \
 	--with-utmp \
-	--with-sambabook=%{prefix}/share/swat/using_samba \
 	--with-swatdir=%{prefix}/share/swat \
 	--with-shared-modules=idmap_rid \
 	--with-libsmbclient 
@@ -116,7 +115,7 @@ mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{help,include,using_samba}
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/help/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba
 mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
@@ -126,7 +125,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
-for i in nmblookup smbclient smbpasswd smbstatus testparm \
+for i in nmblookup smbget smbclient smbpasswd smbstatus testparm \
 	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
 	smbcacls pdbedit eventlogadm tdbbackup smbtree ntlm_auth smbcquotas
 do
@@ -215,7 +214,6 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/editreg.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/log2pcap.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbsh.1*
-rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbget.1*
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man8/mount.cifs.8*
 
 
@@ -416,6 +414,7 @@ fi
 /sbin/mount.smb
 %{prefix}/bin/mksmbpasswd.sh
 %{prefix}/bin/smbclient
+%{prefix}/bin/smbget
 %{prefix}/bin/smbspool
 %{prefix}/bin/rpcclient
 %{prefix}/bin/testparm
@@ -450,9 +449,10 @@ fi
 %{prefix}/lib/libmsrpc.a
 %{prefix}/lib/libmsrpc.so
 %{prefix}/share/swat/help/*
+%{prefix}/share/swat/images/*.gif
 %{prefix}/share/swat/include/*.html
 %{prefix}/share/swat/lang/*/help/*
-%{prefix}/share/swat/using_samba/*
+%{prefix}/share/swat/lang/*/images/*.gif
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
 %config(noreplace) /etc/samba/smbusers
