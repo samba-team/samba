@@ -13,7 +13,8 @@ OBJ_FILES = \
 		resolve.o \
 		util_strlist.o \
 		util_file.o \
-		sddl.o
+		sddl.o \
+		ndr.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		MESSAGING \

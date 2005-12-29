@@ -81,13 +81,13 @@ BOOL test_check_string_terminator(TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_rpc_ndr(void)
+BOOL torture_local_ndr(void)
 {
     NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
-	mem_ctx = talloc_init("torture_rpc_mgmt");
+	mem_ctx = talloc_init("torture_local_ndr");
 
 	ret &= test_check_string_terminator(mem_ctx);
 
