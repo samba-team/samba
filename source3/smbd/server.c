@@ -718,6 +718,8 @@ void build_options(BOOL screen);
 	{ NULL }
 	};
 
+	load_case_tables();
+
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
@@ -741,8 +743,6 @@ void build_options(BOOL screen);
 #endif
 
 	sec_init();
-
-	load_case_tables();
 
 	set_remote_machine_name("smbd", False);
 
