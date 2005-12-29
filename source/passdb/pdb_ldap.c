@@ -4258,9 +4258,120 @@ static BOOL ldapsam_rid_algorithm(struct pdb_methods *methods)
 	return False;
 }
 
+static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *ldap_state,
+				    uint32 *rid)
+{
+	struct smbldap_state *smbldap_state = ldap_state->smbldap_state;
+	LDAP *ldap_struct = smbldap_state->ldap_struct;
+
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	LDAPMod **mods = NULL;
+	NTSTATUS status;
+	char *value;
+	int rc;
+	uint32 nextRid = 0;
+
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = smbldap_search_domain_info(smbldap_state, &result,
+					    get_global_sam_name(), False);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Could not get domain info: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	talloc_autodestroy_ldapmsg(mem_ctx, result);
+
+	entry = ldap_first_entry(ldap_struct, result);
+	if (entry == NULL) {
+		DEBUG(0, ("Could not get domain info entry\n"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	/* Find the largest of the three attributes "sambaNextRid",
+	   "sambaNextGroupRid" and "sambaNextUserRid". I gave up on the
+	   concept of differentiating between user and group rids, and will
+	   use only "sambaNextRid" in the future. But for compatibility
+	   reasons I look if others have chosen different strategies -- VL */
+
+	value = smbldap_talloc_single_attribute(ldap_struct, entry,
+						"sambaNextRid", mem_ctx);
+	if (value != NULL) {
+		uint32 tmp = (uint32)strtoul(value, NULL, 10);
+		nextRid = MAX(nextRid, tmp);
+	}
+
+	value = smbldap_talloc_single_attribute(ldap_struct, entry,
+						"sambaNextUserRid", mem_ctx);
+	if (value != NULL) {
+		uint32 tmp = (uint32)strtoul(value, NULL, 10);
+		nextRid = MAX(nextRid, tmp);
+	}
+
+	value = smbldap_talloc_single_attribute(ldap_struct, entry,
+						"sambaNextGroupRid", mem_ctx);
+	if (value != NULL) {
+		uint32 tmp = (uint32)strtoul(value, NULL, 10);
+		nextRid = MAX(nextRid, tmp);
+	}
+
+	if (nextRid == 0) {
+		nextRid = BASE_RID-1;
+	}
+
+	nextRid += 1;
+
+	smbldap_make_mod(ldap_struct, entry, &mods, "sambaNextRid",
+			 talloc_asprintf(mem_ctx, "%d", nextRid));
+
+	rc = smbldap_modify(smbldap_state,
+			    smbldap_talloc_dn(mem_ctx, ldap_struct, entry),
+			    mods);
+
+	/* ACCESS_DENIED is used as a placeholder for "the modify failed,
+	 * please retry" */
+
+	status = (rc == LDAP_SUCCESS) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+
+ done:
+	if (NT_STATUS_IS_OK(status)) {
+		*rid = nextRid;
+	}
+
+	ldap_mods_free(mods, True);
+	talloc_free(mem_ctx);
+	return status;
+}
+
 static BOOL ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
 {
-	return winbind_allocate_rid(rid);
+	int i;
+
+	for (i=0; i<10; i++) {
+		NTSTATUS result = ldapsam_get_new_rid(methods->private_data,
+						      rid);
+		if (NT_STATUS_IS_OK(result)) {
+			return True;
+		}
+
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+			return False;
+		}
+
+		/* The ldap update failed (maybe a race condition), retry */
+	}
+
+	/* Tried 10 times, fail. */
+	return False;
 }
 
 /**********************************************************************

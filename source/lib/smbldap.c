@@ -321,6 +321,63 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 					    sizeof(pstring));
 }
 
+ char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+					const char *attribute,
+					TALLOC_CTX *mem_ctx)
+{
+	char **values;
+	char *result;
+
+	if (attribute == NULL) {
+		return NULL;
+	}
+
+	values = ldap_get_values(ldap_struct, entry, attribute);
+
+	if (values == NULL) {
+		DEBUG(10, ("attribute %s does not exist\n", attribute));
+		return NULL;
+	}
+
+	if (ldap_count_values(values) != 1) {
+		DEBUG(10, ("attribute %s has %d values, expected only one\n",
+			   attribute, ldap_count_values(values)));
+		ldap_value_free(values);
+		return NULL;
+	}
+
+	if (pull_utf8_talloc(mem_ctx, &result, values[0]) < 0) {
+		DEBUG(10, ("pull_utf8_talloc failed\n"));
+		ldap_value_free(values);
+		return NULL;
+	}
+
+	ldap_value_free(values);
+
+#ifdef DEBUG_PASSWORDS
+	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n",
+		     attribute, result));
+#endif	
+	return result;
+}
+
+ static int ldapmsg_destructor(void *p) {
+	LDAPMessage **result = talloc_get_type_abort(p, LDAPMessage *);
+	ldap_msgfree(*result);
+	return 0;
+}
+
+ void talloc_autodestroy_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result)
+{
+	LDAPMessage **handle;
+
+	handle = TALLOC_P(mem_ctx, LDAPMessage *);
+	SMB_ASSERT(handle != NULL);
+
+	*handle = result;
+	talloc_set_destructor(handle, ldapmsg_destructor);
+}
+
 /************************************************************************
  Routine to manage the LDAPMod structure array
  manage memory used by the array, by each struct, and values
@@ -1436,6 +1493,25 @@ char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
 	}
 	if (pull_utf8_allocate(&unix_dn, utf8_dn) == (size_t)-1) {
 		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 [%s]\n", utf8_dn));
+		return NULL;
+	}
+	ldap_memfree(utf8_dn);
+	return unix_dn;
+}
+
+ const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			       LDAPMessage *entry)
+{
+	char *utf8_dn, *unix_dn;
+
+	utf8_dn = ldap_get_dn(ld, entry);
+	if (!utf8_dn) {
+		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
+		return NULL;
+	}
+	if (pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn) == (size_t)-1) {
+		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
+			   "[%s]\n", utf8_dn));
 		return NULL;
 	}
 	ldap_memfree(utf8_dn);

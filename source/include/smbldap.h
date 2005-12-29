@@ -209,6 +209,15 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context,
                           const char *location);
 const char** get_userattr_list( int schema_ver );
 
+char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+				       const char *attribute,
+				       TALLOC_CTX *mem_ctx);
+void talloc_autodestroy_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
+const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			      LDAPMessage *entry);
+
+
+
 #endif 	/* HAVE_LDAP */
 
 #define LDAP_CONNECT_DEFAULT_TIMEOUT   15
