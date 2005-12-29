@@ -527,11 +527,6 @@ static NTSTATUS rid_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rid_idmap_allocate_rid(uint32 *rid)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS rid_idmap_allocate_id(unid_t *id, int id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -544,7 +539,6 @@ static void rid_idmap_status(void)
 
 static struct idmap_methods rid_methods = {
 	rid_idmap_init,
-	rid_idmap_allocate_rid,
 	rid_idmap_allocate_id,
 	rid_idmap_get_sid_from_id,
 	rid_idmap_get_id_from_sid,

@@ -247,30 +247,6 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 	return (result == NSS_STATUS_SUCCESS);
 }
 
-BOOL winbind_allocate_rid(uint32 *rid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Make request */
-
-	result = winbindd_request_response(WINBINDD_ALLOCATE_RID, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	/* Copy out result */
-	*rid = response.data.rid;
-
-	return True;
-}
-
 BOOL winbind_allocate_uid(uid_t *uid)
 {
 	struct winbindd_request request;
@@ -317,32 +293,6 @@ BOOL winbind_allocate_gid(gid_t *gid)
 
 	/* Copy out result */
 	*gid = response.data.gid;
-
-	return True;
-}
-
-BOOL winbind_allocate_rid_and_gid(uint32 *rid, gid_t *gid)
-{
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int result;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Make request */
-
-	result = winbindd_request_response(WINBINDD_ALLOCATE_RID_AND_GID, &request,
-				  &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	/* Copy out result */
-	*rid = response.data.rid_and_gid.rid;
-	*gid = response.data.rid_and_gid.gid;
 
 	return True;
 }

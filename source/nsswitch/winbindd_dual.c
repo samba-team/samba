@@ -360,12 +360,10 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_DUAL_NAME2GID,        winbindd_dual_name2gid,              "DUAL_NAME2GID" },
 	{ WINBINDD_DUAL_IDMAPSET,        winbindd_dual_idmapset,              "DUAL_IDMAPSET" },
 	{ WINBINDD_DUAL_USERINFO,        winbindd_dual_userinfo,              "DUAL_USERINFO" },
-	{ WINBINDD_ALLOCATE_RID,         winbindd_dual_allocate_rid,          "ALLOCATE_RID" },
 	{ WINBINDD_ALLOCATE_UID,         winbindd_dual_allocate_uid,          "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
 	{ WINBINDD_QUERY_ALIASMEM,       winbindd_dual_query_aliasmem,        "QUERY_ALIASMEM" },
 	{ WINBINDD_QUERY_GROUPMEM,       winbindd_dual_query_groupmem,        "QUERY_GROUPMEM" },
-	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_dual_allocate_rid_and_gid,  "ALLOCATE_RID_AND_GID" },
 	{ WINBINDD_GETUSERDOMGROUPS,     winbindd_dual_getuserdomgroups,      "GETUSERDOMGROUPS" },
 	{ WINBINDD_DUAL_GETSIDALIASES,   winbindd_dual_getsidaliases,         "GETSIDALIASES" },
 	/* End of list */

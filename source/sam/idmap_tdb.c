@@ -43,34 +43,6 @@ static struct idmap_state {
 } idmap_state;
 
 /**********************************************************************
- allocate a new RID; We don't care if is a user or group
-**********************************************************************/
-
-static NTSTATUS db_allocate_rid(uint32 *rid)
-{
-	uint32 tmp_rid;
-	
-	tmp_rid = BASE_RID;	/* Default if RID_COUNTER is not set */
-	
-	if ( !tdb_change_uint32_atomic(idmap_tdb, "RID_COUNTER",
-				       &tmp_rid, 1) ) {
-		DEBUG(3,("db_allocate_rid: Failed to locate next rid record "
-			 "in idmap db\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	if ( tmp_rid > 0xfffffff0 ) {
-		/* Not sure this limit is right... */
-		DEBUG(0, ("db_allocate_rid: no RIDs available!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	*rid = tmp_rid;
-
-	return NT_STATUS_OK;
-}
-
-/**********************************************************************
  Allocate either a user or group id from the pool 
 **********************************************************************/
  
@@ -650,7 +622,6 @@ TDB_CONTEXT *idmap_tdb_handle( void )
 static struct idmap_methods db_methods = {
 
 	db_idmap_init,
-	db_allocate_rid,
 	db_allocate_id,
 	db_get_sid_from_id,
 	db_get_id_from_sid,

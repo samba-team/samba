@@ -560,18 +560,6 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	return True;
 }
 
-static BOOL wbinfo_allocate_rid(void)
-{
-	uint32 rid;
-
-	if (!winbind_allocate_rid(&rid))
-		return False;
-
-	d_printf("New rid: %d\n", rid);
-
-	return True;
-}
-
 static BOOL wbinfo_allocate_uid(void)
 {
 	uid_t uid;
@@ -1137,7 +1125,6 @@ int main(int argc, char **argv)
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
-		{ "allocate-rid", 'A', POPT_ARG_NONE, 0, 'A', "Get a new RID out of idmap" },
 		{ "allocate-uid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_UID,
 		  "Get a new UID out of idmap" },
 		{ "allocate-gid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_GID,
@@ -1270,12 +1257,6 @@ int main(int argc, char **argv)
 			if (!wbinfo_sid_to_gid(string_arg)) {
 				d_fprintf(stderr, "Could not convert sid %s to gid\n",
 				       string_arg);
-				goto done;
-			}
-			break;
-		case 'A':
-			if (!wbinfo_allocate_rid()) {
-				d_fprintf(stderr, "Could not allocate a RID\n");
 				goto done;
 			}
 			break;

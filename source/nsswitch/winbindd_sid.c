@@ -506,36 +506,10 @@ static void gid2sid_idmap_set_mapping_recv(void *private_data, BOOL success)
 	request_ok(state->cli_state);
 }
 
-void winbindd_allocate_rid(struct winbindd_cli_state *state)
-{
-	if ( !state->privileged ) {
-		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
-			  "denied!\n"));
-		request_error(state);
-		return;
-	}
-
-	sendto_child(state, idmap_child());
-}
-
-enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_domain *domain,
-						struct winbindd_cli_state *state)
-{
-	/* We tell idmap to always allocate a user RID. There might be a good
-	 * reason to keep RID allocation for users to even and groups to
-	 * odd. This needs discussion I think. For now only allocate user
-	 * rids. */
-
-	if (!NT_STATUS_IS_OK(idmap_allocate_rid(&state->response.data.rid)))
-		return WINBINDD_ERROR;
-
-	return WINBINDD_OK;
-}
-
 void winbindd_allocate_uid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
-		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+		DEBUG(2, ("winbindd_allocate_uid: non-privileged access "
 			  "denied!\n"));
 		request_error(state);
 		return;
@@ -559,7 +533,7 @@ enum winbindd_result winbindd_dual_allocate_uid(struct winbindd_domain *domain,
 void winbindd_allocate_gid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
-		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+		DEBUG(2, ("winbindd_allocate_gid: non-privileged access "
 			  "denied!\n"));
 		request_error(state);
 		return;
@@ -580,41 +554,3 @@ enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-void winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)
-{
-	if ( !state->privileged ) {
-		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
-			  "denied!\n"));
-		request_error(state);
-		return;
-	}
-
-	sendto_child(state, idmap_child());
-}
-
-enum winbindd_result winbindd_dual_allocate_rid_and_gid(struct winbindd_domain *domain,
-							struct winbindd_cli_state *state)
-{
-	NTSTATUS result;
-	DOM_SID sid;
-
-	/* We tell idmap to always allocate a user RID. This is really
-	 * historic and needs to be fixed. I *think* this has to do with the
-	 * way winbind determines its free RID space. */
-
-	result = idmap_allocate_rid(&state->response.data.rid_and_gid.rid);
-
-	if (!NT_STATUS_IS_OK(result))
-		return WINBINDD_ERROR;
-
-	sid_copy(&sid, get_global_sam_sid());
-	sid_append_rid(&sid, state->response.data.rid_and_gid.rid);
-
-	result = idmap_sid_to_gid(&sid, &state->response.data.rid_and_gid.gid,
-				  0);
-
-	if (!NT_STATUS_IS_OK(result))
-		return WINBINDD_ERROR;
-
-	return WINBINDD_OK;
-}

@@ -84,8 +84,6 @@ enum winbindd_cmd {
 	WINBINDD_SID_TO_GID,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
-	WINBINDD_ALLOCATE_RID,
-	WINBINDD_ALLOCATE_RID_AND_GID,
 
 	WINBINDD_ALLOCATE_UID,
 	WINBINDD_ALLOCATE_GID,
@@ -172,7 +170,6 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_LMKEY      		0x0008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
 #define WBFLAG_QUERY_ONLY		0x0020
-#define WBFLAG_ALLOCATE_RID		0x0040
 #define WBFLAG_PAM_UNIX_NAME            0x0080
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
 #define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
@@ -360,11 +357,6 @@ struct winbindd_response {
 				fstring logon_dom;
 			} info3;
 		} auth;
-		uint32 rid;	/* create user or group or allocate rid */
-		struct {
-			uint32 rid;
-			gid_t gid;
-		} rid_and_gid;
 		struct {
 			fstring name;
 			fstring alt_name;
