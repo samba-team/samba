@@ -589,6 +589,7 @@ find_server(SMBCCTX *context,
 
 static SMBCSRV *
 smbc_server(SMBCCTX *context,
+            BOOL connect_if_not_found,
             const char *server,
             const char *share, 
             fstring workgroup,
@@ -644,13 +645,18 @@ smbc_server(SMBCCTX *context,
                         
                                 errno = smbc_errno(context, &srv->cli);
                                 cli_shutdown(&srv->cli);
-                                context->callbacks.remove_cached_srv_fn(context, srv);
+                                context->callbacks.remove_cached_srv_fn(context,
+                                                                        srv);
                                 srv = NULL;
                         }
 
-                        /* Regenerate the dev value since it's based on both server and share */
+                        /*
+                         * Regenerate the dev value since it's based on both
+                         * server and share
+                         */
                         if (srv) {
-                                srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
+                                srv->dev = (dev_t)(str_checksum(server) ^
+                                                   str_checksum(share));
                         }
                 }
         }
@@ -660,6 +666,12 @@ smbc_server(SMBCCTX *context,
 
                 /* ... then we're done here.  Give 'em what they came for. */
                 return srv;
+        }
+
+        /* If we're not asked to connect when a connection doesn't exist... */
+        if (! connect_if_not_found) {
+                /* ... then we're done here. */
+                return NULL;
         }
 
 	make_nmb_name(&calling, context->netbios_name, 0x0);
@@ -1003,7 +1015,8 @@ smbc_open_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -1646,7 +1659,8 @@ smbc_unlink_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -1779,8 +1793,8 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 
 	fstrcpy(workgroup, ocontext->workgroup);
 
-	srv = smbc_server(ocontext, server1, share1, workgroup,
-                          user1, password1);
+	srv = smbc_server(ocontext, True,
+                          server1, share1, workgroup, user1, password1);
 	if (!srv) {
 
 		return -1;
@@ -2049,7 +2063,8 @@ smbc_stat_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
@@ -2616,8 +2631,8 @@ smbc_opendir_ctx(SMBCCTX *context,
                          * workgroups/domains that it knows about.
                          */
                 
-                        srv = smbc_server(context, server,
-                                          "IPC$", workgroup, user, password);
+                        srv = smbc_server(context, True, server, "IPC$",
+                                          workgroup, user, password);
                         if (!srv) {
                                 continue;
                         }
@@ -2664,8 +2679,12 @@ smbc_opendir_ctx(SMBCCTX *context,
                          * to see if <server> is an IP address first.
                          */
 
-                        /* See if we have an existing server */
-                        srv = smbc_server(context, server, "IPC$",
+                        /*
+                         * See if we have an existing server.  Do not
+                         * establish a connection if one does not already
+                         * exist.
+                         */
+                        srv = smbc_server(context, False, server, "IPC$",
                                           workgroup, user, password);
 
                         /*
@@ -2699,7 +2718,8 @@ smbc_opendir_ctx(SMBCCTX *context,
                                  * Get a connection to IPC$ on the server if
                                  * we do not already have one
                                  */
-				srv = smbc_server(context, buserver, "IPC$",
+				srv = smbc_server(context, True,
+                                                  buserver, "IPC$",
                                                   workgroup, user, password);
 				if (!srv) {
 				        DEBUG(0, ("got no contact to IPC$\n"));
@@ -2729,8 +2749,9 @@ smbc_opendir_ctx(SMBCCTX *context,
                                 
                                 /* If we hadn't found the server, get one now */
                                 if (!srv) {
-                                        srv = smbc_server(context, server,
-                                                          "IPC$", workgroup,
+                                        srv = smbc_server(context, True,
+                                                          server, "IPC$",
+                                                          workgroup,
                                                           user, password);
                                 }
 
@@ -2787,7 +2808,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 			/* We connect to the server and list the directory */
 			dir->dir_type = SMBC_FILE_SHARE;
 
-			srv = smbc_server(context, server, share,
+			srv = smbc_server(context, True, server, share,
                                           workgroup, user, password);
 
 			if (!srv) {
@@ -3149,7 +3170,8 @@ smbc_mkdir_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -3246,7 +3268,8 @@ smbc_rmdir_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -3498,7 +3521,8 @@ smbc_chmod_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
@@ -3593,7 +3617,8 @@ smbc_utimes_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 		return -1;      /* errno set by smbc_server */
@@ -4988,7 +5013,8 @@ smbc_setxattr_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
 	}
@@ -5255,7 +5281,8 @@ smbc_getxattr_ctx(SMBCCTX *context,
 
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
         if (!srv) {
                 return -1;  /* errno set by smbc_server */
         }
@@ -5371,7 +5398,8 @@ smbc_removexattr_ctx(SMBCCTX *context,
 
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
         if (!srv) {
                 return -1;  /* errno set by smbc_server */
         }
@@ -5662,7 +5690,8 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
         
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
         if (!srv) {
 
@@ -5732,7 +5761,8 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
 
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
         if (!srv) {
 
@@ -5951,6 +5981,7 @@ smbc_init_context(SMBCCTX *context)
                 /* Set this to what the user wants */
                 DEBUGLEVEL = context->debug;
                 
+                load_case_tables();
                 setup_logging( "libsmbclient", True);
 
                 /* Here we would open the smb.conf file if needed ... */
