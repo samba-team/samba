@@ -17,6 +17,14 @@ Changes since 3.0.21
 
 commits
 -------
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * RedHat 9 packaging Fixes.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * eDirectory schema syntax fixes.
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 3349: Deadlock caused logic error in oplock code.
 
@@ -72,66 +80,6 @@ smb.conf changes
     rename user script			New
     reset on zero vc			New
     svcctl list 			Renamed from 'enable svcctl'
-
-
-Changes since 3.0.21rc2
------------------------
-
-commits
--------
-o   Jeremy Allison <jra@samba.org>
-    * Correctly handle the LDAP_UNWILLING_TO_PERFORM error from 
-      eDirectory when accessing the universal password.
-    * Fix deadlock condition in share mode locking code.
-    * Fix logic bug in unix_mask_match().
-    * Fix memory leak in SMB client code found by Mikhail Kshevetskiy.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Initialize the local group description.
-    * Disable WINS and NetLogon services in the MMC services
-      plugin when the associated smb.conf features are not enabled.
-    * Add checks for invalid characters in new share names on the 
-      srvsvc pipe.
-    * Fix SWAT installation issues with 'make install'.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Uninitialized warnings fixes.
-    * Fix return value in client spooler code.
-    * Require forced migration of account policies.  
-
-
-o   Krishna Ganugapati <krishnag@centeris.com>
-    * Use the subtree delete ldap control when running 'net ads 
-      leave'.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Fix some uninitialized variable warnings.
-    * Fix winbind_lookup_name for the local domain, 
-
-
-o   Derrell Lipman <derrell@samba.org>
-    * Libsmbclient memory & file descriptor leak fixes.
-    * Fix crash bug in libsmbclient.
-    * Add long share name support to libsmbclient when enumerating shares.
-    
-
-o   Brian Moran <bmoran@centeris.com>
-    * Fix segv in eventlogadm when not event logs are listed in 
-      smb.conf.
-
-
-o   Lars Müller <lmuelle@samba.org>
-    * Ensure setmntent() returns with != NULL in the disk_quotas() 
-      Linux version.
-    * Add configure switch to disable libmsrpc build.
-    * Add a soname to libmsrpc.
-
-
-o   John Terpstra <jht@samba.org>
-    * Add 'net idmap' usage help text.
 
 
 
@@ -207,6 +155,11 @@ o   Jeremy Allison <jra@samba.org>
     * No users or groups to return in BUILTIN domain.
     * Removed separate "builtin" search enumeration.
     * Added count_sam_aliases to return the correct alias count.
+    * Correctly handle the LDAP_UNWILLING_TO_PERFORM error from 
+      eDirectory when accessing the universal password.
+    * Fix deadlock condition in share mode locking code.
+    * Fix logic bug in unix_mask_match().
+    * Fix memory leak in SMB client code found by Mikhail Kshevetskiy.
 
 
 o   Rashid N. Achilov <shelton@granch.ru>
@@ -278,6 +231,12 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 3156: Don't use find_service() when explicitly looking 
       for a printer.
     * Fix nss_winbind_solaris.c build breakage on HP-UX.
+    * Initialize the local group description.
+    * Disable WINS and NetLogon services in the MMC services
+      plugin when the associated smb.conf features are not enabled.
+    * Add checks for invalid characters in new share names on the 
+      srvsvc pipe.
+    * Fix SWAT installation issues with 'make install'.
 
 
 o   Alex Deiter <tiamat@komi.mts.ru>
@@ -312,6 +271,9 @@ o   Guenther Deschner <gd@samba.org>
     * Support raw NTLMSSP session setups in smbspool.
     * Add rpccli_samr_chgpasswd3().
     * Add 'wbinfo --separator'.
+    * Uninitialized warnings fixes.
+    * Fix return value in client spooler code.
+    * Require forced migration of account policies.  
 
 
 o   Steve French <sfrench@us.ibm.com>
@@ -330,6 +292,11 @@ o   Deryck Hodge <deryck@samba.org>
 
 o   S Murthy Kambhampaty <smk_va@yahoo.com>
     * Patches for Fedora RPM specfile and init script
+
+
+o   Krishna Ganugapati <krishnag@centeris.com>
+    * Use the subtree delete ldap control when running 'net ads 
+      leave'.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -366,10 +333,15 @@ o   Volker Lendecke <vl@samba.org>
     * Restrict samr_open_domain() to our domain only.
     * Change local_lookup_sid() to local_lookup_rid() since it 
       is responsible for our domain only.
+    * Fix some uninitialized variable warnings.
+    * Fix winbind_lookup_name for the local domain, 
 
 
 o   Derrell Lipman <derrell@samba.org>
     * Cleanup libmsrpc version numbers.
+    * Libsmbclient memory & file descriptor leak fixes.
+    * Fix crash bug in libsmbclient.
+    * Add long share name support to libsmbclient when enumerating shares.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
@@ -401,11 +373,17 @@ o   Brian Moran <bmoran@centeris.com>
     * Fix typo when creating Eventlog source DLL registry paths.
     * Add simple script to tail syslog and write records to 
       eventlog tdb.
+    * Fix segv in eventlogadm when not event logs are listed in 
+      smb.conf.
 
 
 o   Lars Müller <lmuelle@samba.org>
     * Only install smbsh manpage if smbwrapper has been successfully
       built.
+    * Ensure setmntent() returns with != NULL in the disk_quotas() 
+      Linux version.
+    * Add configure switch to disable libmsrpc build.
+    * Add a soname to libmsrpc.
 
 
 o   Ricky Nance <ricky.nance@gmail.com>
@@ -449,6 +427,10 @@ o   Toomas Soome <Toomas.Soome@mls.ee>
 
 o   Simo Sorce <idra@samba.org>
     * Update Debian packaging.
+
+
+o   John Terpstra <jht@samba.org>
+    * Add 'net idmap' usage help text.
 
 
 o   Andrew Tridgell <tridge@samba.org>
