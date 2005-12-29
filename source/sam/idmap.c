@@ -176,6 +176,18 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	if (proxyonly)
 		return NT_STATUS_UNSUCCESSFUL;
 
+	if (sid_check_is_in_our_domain(sid)) {
+		DEBUG(3, ("Refusing to add SID %s to idmap, it's our own "
+			  "domain\n", sid_string_static(sid)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+		
+	if (sid_check_is_in_builtin(sid)) {
+		DEBUG(3, ("Refusing to add SID %s to idmap, it's our builtin "
+			  "domain\n", sid_string_static(sid)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	DEBUG(10, ("idmap_set_mapping: Set %s to %s %lu\n",
 		   sid_string_static(sid),
 		   ((id_type & ID_TYPEMASK) == ID_USERID) ? "UID" : "GID",
@@ -212,6 +224,18 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 
 	if (proxyonly)
 		return NT_STATUS_UNSUCCESSFUL;
+
+	if (sid_check_is_in_our_domain(sid)) {
+		DEBUG(9, ("sid %s is in our domain -- go look in passdb\n",
+			  sid_string_static(sid)));
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	if (sid_check_is_in_builtin(sid)) {
+		DEBUG(9, ("sid %s is in builtin domain -- go look in passdb\n",
+			  sid_string_static(sid)));
+		return NT_STATUS_NONE_MAPPED;
+	}
 
 	loc_type = *id_type;
 

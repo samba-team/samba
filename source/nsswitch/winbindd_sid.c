@@ -532,6 +532,54 @@ enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
+void winbindd_allocate_uid(struct winbindd_cli_state *state)
+{
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+			  "denied!\n"));
+		request_error(state);
+		return;
+	}
+
+	sendto_child(state, idmap_child());
+}
+
+enum winbindd_result winbindd_dual_allocate_uid(struct winbindd_domain *domain,
+						struct winbindd_cli_state *state)
+{
+	union unid_t id;
+
+	if (!NT_STATUS_IS_OK(idmap_allocate_id(&id, ID_USERID))) {
+		return WINBINDD_ERROR;
+	}
+	state->response.data.uid = id.uid;
+	return WINBINDD_OK;
+}
+
+void winbindd_allocate_gid(struct winbindd_cli_state *state)
+{
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+			  "denied!\n"));
+		request_error(state);
+		return;
+	}
+
+	sendto_child(state, idmap_child());
+}
+
+enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
+						struct winbindd_cli_state *state)
+{
+	union unid_t id;
+
+	if (!NT_STATUS_IS_OK(idmap_allocate_id(&id, ID_GROUPID))) {
+		return WINBINDD_ERROR;
+	}
+	state->response.data.gid = id.gid;
+	return WINBINDD_OK;
+}
+
 void winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {

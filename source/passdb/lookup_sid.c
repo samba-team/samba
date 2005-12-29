@@ -1005,10 +1005,10 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		goto done;
 	}
 
-	if (sid_check_is_in_our_domain(psid)) {
+	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
 		union unid_t id;
 
-		if (pdb_rid_to_id(rid, &id, &type)) {
+		if (pdb_sid_to_id(psid, &id, &type)) {
 			if (type != SID_NAME_USER) {
 				DEBUG(5, ("sid %s is a %s, expected a user\n",
 					  sid_string_static(psid),
@@ -1047,8 +1047,8 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 		goto done;
 	}
 
-	/* TODO: Here would be the place to allocate both a gid and a uid for the
-	 * SID in question */
+	/* TODO: Here would be the place to allocate both a gid and a uid for
+	 * the SID in question */
 
 	return False;
 
@@ -1087,8 +1087,8 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		goto done;
 	}
 
-	if (sid_check_is_in_our_domain(psid)) {
-		if (pdb_rid_to_id(rid, &id, &type)) {
+	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+		if (pdb_sid_to_id(psid, &id, &type)) {
 			if ((type != SID_NAME_DOM_GRP) &&
 			    (type != SID_NAME_ALIAS)) {
 				DEBUG(5, ("sid %s is a %s, expected a group\n",

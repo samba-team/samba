@@ -279,6 +279,8 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
 	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
 	  "ALLOCATE_RID_AND_GID" },
+	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
+	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_uid, "ALLOCATE_GID" },
 
 	/* Miscellaneous */
 

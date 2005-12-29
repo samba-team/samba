@@ -4359,18 +4359,26 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		
 	/******** END SeAddUsers BLOCK *********/
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("pdb_create_alias failed: %s\n",
+			   nt_errstr(result)));
 		return result;
+	}
 
 	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, r_u->rid);
 
-	if (!sid_to_gid(&info_sid, &gid))
+	if (!sid_to_gid(&info_sid, &gid)) {
+		DEBUG(10, ("Could not find alias just created\n"));
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* check if the group has been successfully created */
-	if ( getgrgid(gid) == NULL )
+	if ( getgrgid(gid) == NULL ) {
+		DEBUG(10, ("getgrgid(%d) of just created alias failed\n",
+			   gid));
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;

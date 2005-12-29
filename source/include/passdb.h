@@ -380,7 +380,7 @@ typedef struct pdb_context
 			       uid_t uid, uint32 *rid);
 	BOOL (*pdb_gid_to_sid)(struct pdb_context *context,
 			       uid_t gid, DOM_SID *sid);
-	BOOL (*pdb_rid_to_id)(struct pdb_context *context, uint32 rid,
+	BOOL (*pdb_sid_to_id)(struct pdb_context *context, const DOM_SID *sid,
 			      union unid_t *id, enum SID_NAME_USE *type);
 
 	BOOL (*pdb_rid_algorithm)(struct pdb_context *context);
@@ -520,7 +520,7 @@ typedef struct pdb_methods
 			   uint32 *rid);
 	BOOL (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
 			   DOM_SID *sid);
-	BOOL (*rid_to_id)(struct pdb_methods *methods, uint32 rid,
+	BOOL (*sid_to_id)(struct pdb_methods *methods, const DOM_SID *sid,
 			  union unid_t *id, enum SID_NAME_USE *type);
 
 	BOOL (*rid_algorithm)(struct pdb_methods *methods);

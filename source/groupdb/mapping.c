@@ -1101,9 +1101,11 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	gid_t gid;
 	BOOL exists;
 	GROUP_MAP map;
+	TALLOC_CTX *mem_ctx;
 
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DEBUG(10, ("Trying to create alias %s\n", name));
 
+	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1116,8 +1118,18 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 		return NT_STATUS_ALIAS_EXISTS;
 	}
 
-	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))
+	if (!winbind_allocate_gid(&gid)) {
+		DEBUG(3, ("Could not get a gid out of winbind\n"));
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!pdb_new_rid(&new_rid)) {
+		DEBUG(0, ("Could not allocate a RID -- wasted a gid :-(\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(10, ("Creating alias %s with gid %d and rid %d\n",
+		   name, gid, new_rid));
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, new_rid);

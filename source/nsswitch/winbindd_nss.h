@@ -34,7 +34,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 13
+#define WINBIND_INTERFACE_VERSION 14
 
 /* Socket commands */
 
@@ -86,6 +86,9 @@ enum winbindd_cmd {
 	WINBINDD_GID_TO_SID,
 	WINBINDD_ALLOCATE_RID,
 	WINBINDD_ALLOCATE_RID_AND_GID,
+
+	WINBINDD_ALLOCATE_UID,
+	WINBINDD_ALLOCATE_GID,
 
 	/* Miscellaneous other stuff */
 

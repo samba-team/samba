@@ -785,7 +785,8 @@ static BOOL context_gid_to_sid(struct pdb_context *context, gid_t gid,
 						sid);
 }
 
-static BOOL context_rid_to_id(struct pdb_context *context, uint32 rid,
+static BOOL context_sid_to_id(struct pdb_context *context,
+			      const DOM_SID *sid,
 			      union unid_t *id, enum SID_NAME_USE *type)
 {
 	if ((context == NULL) || (context->pdb_methods == NULL)) {
@@ -793,7 +794,7 @@ static BOOL context_rid_to_id(struct pdb_context *context, uint32 rid,
 		return False;
 	}
 
-	return context->pdb_methods->rid_to_id(context->pdb_methods, rid,
+	return context->pdb_methods->sid_to_id(context->pdb_methods, sid,
 					       id, type);
 }
 	
@@ -997,7 +998,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 
 	(*context)->pdb_uid_to_rid = context_uid_to_rid;
 	(*context)->pdb_gid_to_sid = context_gid_to_sid;
-	(*context)->pdb_rid_to_id = context_rid_to_id;
+	(*context)->pdb_sid_to_id = context_sid_to_id;
 
 	(*context)->pdb_rid_algorithm = context_rid_algorithm;
 	(*context)->pdb_new_rid = context_new_rid;
@@ -1573,7 +1574,8 @@ BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
 	return pdb_context->pdb_gid_to_sid(pdb_context, gid, sid);
 }
 
-BOOL pdb_rid_to_id(uint32 rid, union unid_t *id, enum SID_NAME_USE *type)
+BOOL pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
+		   enum SID_NAME_USE *type)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1581,7 +1583,7 @@ BOOL pdb_rid_to_id(uint32 rid, union unid_t *id, enum SID_NAME_USE *type)
 		return False;
 	}
 
-	return pdb_context->pdb_rid_to_id(pdb_context, rid, id, type);
+	return pdb_context->pdb_sid_to_id(pdb_context, sid, id, type);
 }
 
 BOOL pdb_rid_algorithm(void)
@@ -1762,12 +1764,14 @@ static BOOL pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	return True;
 }
 
-static BOOL pdb_default_rid_to_id(struct pdb_methods *methods, uint32 rid,
+static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
+				  const DOM_SID *sid,
 				  union unid_t *id, enum SID_NAME_USE *type)
 {
 	TALLOC_CTX *mem_ctx;
-	BOOL ret;
+	BOOL ret = False;
 	const char *name;
+	uint32 rid;
 
 	mem_ctx = talloc_new(NULL);
 
@@ -1776,7 +1780,38 @@ static BOOL pdb_default_rid_to_id(struct pdb_methods *methods, uint32 rid,
 		return False;
 	}
 
-	ret = lookup_global_sam_rid(mem_ctx, rid, &name, type, id);
+	if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
+		/* Here we might have users as well as groups and aliases */
+		ret = lookup_global_sam_rid(mem_ctx, rid, &name, type, id);
+		goto done;
+	}
+
+	if (sid_peek_check_rid(&global_sid_Builtin, sid, &rid)) {
+		/* Here we only have aliases */
+		GROUP_MAP map;
+		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
+			DEBUG(10, ("Could not find map for sid %s\n",
+				   sid_string_static(sid)));
+			goto done;
+		}
+		if ((map.sid_name_use != SID_NAME_ALIAS) &&
+		    (map.sid_name_use != SID_NAME_WKN_GRP)) {
+			DEBUG(10, ("Map for sid %s is a %s, expected an "
+				   "alias\n", sid_string_static(sid),
+				   sid_type_lookup(map.sid_name_use)));
+			goto done;
+		}
+
+		id->gid = map.gid;
+		*type = SID_NAME_ALIAS;
+		ret = True;
+		goto done;
+	}
+
+	DEBUG(5, ("Sid %s is neither ours nor builtin, don't know it\n",
+		  sid_string_static(sid)));
+
+ done:
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -2514,7 +2549,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->get_seq_num = pdb_default_get_seq_num;
 	(*methods)->uid_to_rid = pdb_default_uid_to_rid;
 	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
-	(*methods)->rid_to_id = pdb_default_rid_to_id;
+	(*methods)->sid_to_id = pdb_default_sid_to_id;
 
 	(*methods)->search_users = pdb_default_search_users;
 	(*methods)->search_groups = pdb_default_search_groups;

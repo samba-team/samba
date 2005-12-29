@@ -572,6 +572,30 @@ static BOOL wbinfo_allocate_rid(void)
 	return True;
 }
 
+static BOOL wbinfo_allocate_uid(void)
+{
+	uid_t uid;
+
+	if (!winbind_allocate_uid(&uid))
+		return False;
+
+	d_printf("New uid: %d\n", uid);
+
+	return True;
+}
+
+static BOOL wbinfo_allocate_gid(void)
+{
+	gid_t gid;
+
+	if (!winbind_allocate_gid(&gid))
+		return False;
+
+	d_printf("New gid: %d\n", gid);
+
+	return True;
+}
+
 /* Convert sid to string */
 
 static BOOL wbinfo_lookupsid(char *sid)
@@ -1082,6 +1106,8 @@ enum {
 	OPT_ALIASMEM,
 	OPT_GROUPMEM,
 	OPT_USERSIDS,
+	OPT_ALLOCATE_UID,
+	OPT_ALLOCATE_GID,
 	OPT_SEPARATOR
 };
 
@@ -1112,6 +1138,10 @@ int main(int argc, char **argv)
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
 		{ "allocate-rid", 'A', POPT_ARG_NONE, 0, 'A', "Get a new RID out of idmap" },
+		{ "allocate-uid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_UID,
+		  "Get a new UID out of idmap" },
+		{ "allocate-gid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_GID,
+		  "Get a new GID out of idmap" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
@@ -1246,6 +1276,18 @@ int main(int argc, char **argv)
 		case 'A':
 			if (!wbinfo_allocate_rid()) {
 				d_fprintf(stderr, "Could not allocate a RID\n");
+				goto done;
+			}
+			break;
+		case OPT_ALLOCATE_UID:
+			if (!wbinfo_allocate_uid()) {
+				d_fprintf(stderr, "Could not allocate a uid\n");
+				goto done;
+			}
+			break;
+		case OPT_ALLOCATE_GID:
+			if (!wbinfo_allocate_gid()) {
+				d_fprintf(stderr, "Could not allocate a gid\n");
 				goto done;
 			}
 			break;
