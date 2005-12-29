@@ -81,7 +81,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.node		= node;
 	rec.is_static		= False;
 	rec.expire_time		= time(NULL) + ttl;
-	rec.version		= 0; /* will allocated later */
+	rec.version		= 0; /* will be allocated later */
 	rec.wins_owner		= NULL; /* will be set later */
 	rec.registered_by	= src->addr;
 	rec.addresses		= winsdb_addr_list_make(packet);
@@ -369,13 +369,6 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	addresses = winsdb_addr_string_list(packet, rec->addresses);
 	if (!addresses) {
 		goto notfound;
-	}
-
-	/* if the query didn't come from loopback, then never give out
-	   loopback in the reply, as loopback means something
-	   different for the recipient than for us */
-	if (strcmp(src->addr, "127.0.0.1") != 0) {
-		str_list_remove(addresses, "127.0.0.1");
 	}
 
 found:
