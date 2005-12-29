@@ -99,7 +99,6 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	pstring filter, dn;
 	LDAPMod **mods = NULL;
 	int rc;
-	int ldap_op;
 	LDAPMessage *result = NULL;
 	int num_result;
 	const char **attr_list;
@@ -119,33 +118,45 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	num_result = ldap_count_entries(ldap_state->ldap_struct, result);
 	
 	if (num_result > 1) {
-		DEBUG (0, ("More than domain with that name exists: bailing out!\n"));
+		DEBUG (0, ("More than domain with that name exists: bailing "
+			   "out!\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	/* Check if we need to add an entry */
 	DEBUG(3,("Adding new domain\n"));
-	ldap_op = LDAP_MOD_ADD;
 
-	pstr_sprintf(dn, "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		domain_name, lp_ldap_suffix());
+	pstr_sprintf(dn, "%s=%s,%s",
+		     get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+		     domain_name, lp_ldap_suffix());
 
 	/* Free original search */
 	ldap_msgfree(result);
 
-	/* make the changes - the entry *must* not already have samba attributes */
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
-		domain_name);
+	/* make the changes - the entry *must* not already have samba
+	 * attributes */
 
-	/* If we don't have an entry, then ask secrets.tdb for what it thinks.  
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			get_attr_key2string(dominfo_attr_list,
+					    LDAP_ATTR_DOMAIN), 
+			domain_name);
+
+	/* If we don't have an entry, then ask secrets.tdb for what it thinks.
 	   It may choose to make it up */
 
 	sid_to_string(sid_string, get_global_sam_sid());
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID), sid_string);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			get_attr_key2string(dominfo_attr_list,
+					    LDAP_ATTR_DOM_SID),
+			sid_string);
 
-	slprintf(algorithmic_rid_base_string, sizeof(algorithmic_rid_base_string) - 1, "%i", algorithmic_rid_base());
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+	slprintf(algorithmic_rid_base_string,
+		 sizeof(algorithmic_rid_base_string) - 1, "%i",
+		 algorithmic_rid_base());
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			get_attr_key2string(dominfo_attr_list,
+					    LDAP_ATTR_ALGORITHMIC_RID_BASE), 
 			algorithmic_rid_base_string);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
 	
@@ -158,31 +169,21 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 		fstr_sprintf( rid_str, "%i", rid );
 		DEBUG(10,("setting next available user rid [%s]\n", rid_str));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, 
-			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
+			get_attr_key2string(dominfo_attr_list,
+					    LDAP_ATTR_NEXT_USERRID), 
 			rid_str);
         }
 
 
-	switch(ldap_op)
-	{
-	case LDAP_MOD_ADD: 
-		rc = smbldap_add(ldap_state, dn, mods);
-		break;
-	case LDAP_MOD_REPLACE: 
-		rc = smbldap_modify(ldap_state, dn, mods);
-		break;
-	default: 	
-		DEBUG(0,("Wrong LDAP operation type: %d!\n", ldap_op));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
+	rc = smbldap_add(ldap_state, dn, mods);
+
 	if (rc!=LDAP_SUCCESS) {
 		char *ld_error = NULL;
-		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
-		DEBUG(1,("failed to %s domain dn= %s with: %s\n\t%s\n",
-		       ldap_op == LDAP_MOD_ADD ? "add" : "modify",
-		       dn, ldap_err2string(rc),
-		       ld_error?ld_error:"unknown"));
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(1,("failed to add domain dn= %s with: %s\n\t%s\n",
+			 dn, ldap_err2string(rc),
+			 ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
 
 		ldap_mods_free(mods, True);
