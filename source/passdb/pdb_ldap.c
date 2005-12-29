@@ -4411,7 +4411,8 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	pstring domain_sid_string;
 	char *dn;
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location))) {
+	nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
@@ -4430,22 +4431,28 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 
 	/* Try to setup the Domain Name, Domain SID, algorithmic rid base */
 	
-	nt_status = smbldap_search_domain_info(ldap_state->smbldap_state, &result, 
+	nt_status = smbldap_search_domain_info(ldap_state->smbldap_state,
+					       &result, 
 					       ldap_state->domain_name, True);
 	
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(2, ("pdb_init_ldapsam: WARNING: Could not get domain info, nor add one to the domain\n"));
-		DEBUGADD(2, ("pdb_init_ldapsam: Continuing on regardless, will be unable to allocate new users/groups, \
-and will risk BDCs having inconsistant SIDs\n"));
+		DEBUG(2, ("pdb_init_ldapsam: WARNING: Could not get domain "
+			  "info, nor add one to the domain\n"));
+		DEBUGADD(2, ("pdb_init_ldapsam: Continuing on regardless, "
+			     "will be unable to allocate new users/groups, "
+			     "and will risk BDCs having inconsistant SIDs\n"));
 		sid_copy(&ldap_state->domain_sid, get_global_sam_sid());
 		return NT_STATUS_OK;
 	}
 
-	/* Given that the above might fail, everything below this must be optional */
+	/* Given that the above might fail, everything below this must be
+	 * optional */
 	
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 result);
 	if (!entry) {
-		DEBUG(0, ("pdb_init_ldapsam: Could not get domain info entry\n"));
+		DEBUG(0, ("pdb_init_ldapsam: Could not get domain info "
+			  "entry\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -4458,35 +4465,51 @@ and will risk BDCs having inconsistant SIDs\n"));
 	ldap_state->domain_dn = smb_xstrdup(dn);
 	ldap_memfree(dn);
 
-	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
-				 domain_sid_string)) {
+	if (smbldap_get_single_pstring(
+		    ldap_state->smbldap_state->ldap_struct,
+		    entry, 
+		    get_userattr_key2string(ldap_state->schema_ver,
+					    LDAP_ATTR_USER_SID), 
+		    domain_sid_string)) {
 		BOOL found_sid;
 		if (!string_to_sid(&ldap_domain_sid, domain_sid_string)) {
-			DEBUG(1, ("pdb_init_ldapsam: SID [%s] could not be read as a valid SID\n", domain_sid_string));
+			DEBUG(1, ("pdb_init_ldapsam: SID [%s] could not be "
+				  "read as a valid SID\n", domain_sid_string));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name, &secrets_domain_sid);
-		if (!found_sid || !sid_equal(&secrets_domain_sid, &ldap_domain_sid)) {
+		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name,
+						     &secrets_domain_sid);
+		if (!found_sid || !sid_equal(&secrets_domain_sid,
+					     &ldap_domain_sid)) {
 			fstring new_sid_str, old_sid_str;
-			DEBUG(1, ("pdb_init_ldapsam: Resetting SID for domain %s based on pdb_ldap results %s -> %s\n",
-				  ldap_state->domain_name, 
-				  sid_to_string(old_sid_str, &secrets_domain_sid),
-				  sid_to_string(new_sid_str, &ldap_domain_sid)));
+			DEBUG(1, ("pdb_init_ldapsam: Resetting SID for domain "
+				  "%s based on pdb_ldap results %s -> %s\n",
+				  ldap_state->domain_name,
+				  sid_to_string(old_sid_str,
+						&secrets_domain_sid),
+				  sid_to_string(new_sid_str,
+						&ldap_domain_sid)));
 			
 			/* reset secrets.tdb sid */
-			secrets_store_domain_sid(ldap_state->domain_name, &ldap_domain_sid);
-			DEBUG(1, ("New global sam SID: %s\n", sid_to_string(new_sid_str, get_global_sam_sid())));
+			secrets_store_domain_sid(ldap_state->domain_name,
+						 &ldap_domain_sid);
+			DEBUG(1, ("New global sam SID: %s\n",
+				  sid_to_string(new_sid_str,
+						get_global_sam_sid())));
 		}
 		sid_copy(&ldap_state->domain_sid, &ldap_domain_sid);
 	}
 
-	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-				 get_attr_key2string( dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE ),
-				 alg_rid_base_string)) {
+	if (smbldap_get_single_pstring(
+		    ldap_state->smbldap_state->ldap_struct,
+		    entry, 
+		    get_attr_key2string( dominfo_attr_list,
+					 LDAP_ATTR_ALGORITHMIC_RID_BASE ),
+		    alg_rid_base_string)) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {
-			DEBUG(0, ("The value of 'algorithmic RID base' has changed since the LDAP\n"
+			DEBUG(0, ("The value of 'algorithmic RID base' has "
+				  "changed since the LDAP\n"
 				  "database was initialised.  Aborting. \n"));
 			ldap_msgfree(result);
 			return NT_STATUS_UNSUCCESSFUL;
