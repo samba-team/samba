@@ -2225,11 +2225,6 @@ sub FunctionTable($)
 	pidl "};";
 	pidl "";
 
-	pidl "static NTSTATUS dcerpc_ndr_$interface->{NAME}_init(void)";
-	pidl "{";
-	pidl "\treturn librpc_register_interface(&dcerpc_table_$interface->{NAME});";
-	pidl "}";
-	pidl "";
 }
 
 #####################################################################
@@ -2336,34 +2331,6 @@ sub ParseInterface($$)
 	FunctionTable($interface);
 }
 
-sub RegistrationFunction($$)
-{
-	my ($idl,$basename) = @_;
-
-	my $body = "";
-
-	foreach my $interface (@{$idl}) {
-		next if $interface->{TYPE} ne "INTERFACE";
-		next if ($#{$interface->{FUNCTIONS}}+1 == 0);
-		next unless defined ($interface->{PROPERTIES}->{uuid});
-
-		$body .= "\tstatus = dcerpc_ndr_$interface->{NAME}_init();\n";
-		$body .= "\tif (NT_STATUS_IS_ERR(status)) {\n";
-		$body .= "\t\treturn status;\n";
-		$body .= "\t}\n";
-		$body .= "\n";
-	}
-
-	return unless $body;
-
-	pidl "NTSTATUS dcerpc_$basename\_init(void)";
-	pidl "{";
-	pidl "\tNTSTATUS status = NT_STATUS_OK;";
-	pidl "$body\treturn status;";
-	pidl "}";
-	pidl "";
-}
-
 #####################################################################
 # parse a parsed IDL structure back into an IDL file
 sub Parse($$)
@@ -2389,8 +2356,6 @@ sub Parse($$)
 	foreach (@{$ndr}) {
 		($_->{TYPE} eq "INTERFACE") && ParseInterface($_, \%needed);
 	}
-
-	RegistrationFunction($ndr, $basename);
 
 	return ($res_hdr, $res);
 }
