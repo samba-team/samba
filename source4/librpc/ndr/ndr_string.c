@@ -623,6 +623,8 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, uint32_t count, uint3
 
 	for (i = 0; i < element_size; i++) {
 		 if (ndr->data[ndr->offset+i] != 0) {
+			ndr_pull_restore(ndr, &save_offset);
+
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "String terminator not present or outside string boundaries");
 		 }
 	}
@@ -639,7 +641,15 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 		*var = talloc_strdup(ndr->current_mem_ctx, "");
 		return NT_STATUS_OK;
 	}
+
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
+
+	if (ndr->flags & LIBNDR_FLAG_STR_NULLTERM) {
+		/* Explicitly ignore the return value here. An array that 
+		 * is not zero-terminated is considered a warning only, not fatal */
+		ndr_check_string_terminator(ndr, length, byte_mul);
+	}
+	
 	ret = convert_string_talloc(ndr->current_mem_ctx,
 				    chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 

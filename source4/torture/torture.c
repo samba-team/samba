@@ -2305,6 +2305,7 @@ static struct {
         {"RPC-ALTERCONTEXT", torture_rpc_alter_context, 0},
         {"RPC-JOIN", torture_rpc_join, 0},
         {"RPC-DSSYNC", torture_rpc_dssync, 0},
+		{"RPC-NDR", torture_rpc_ndr, 0},
 
 	/* local (no server) testers */
 	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},
