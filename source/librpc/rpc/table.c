@@ -22,6 +22,33 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
+
+struct dcerpc_interface_list *dcerpc_pipes = NULL;
+
+/*
+  register a dcerpc client interface
+*/
+NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface)
+{
+	struct dcerpc_interface_list *l;
+
+	for (l = dcerpc_pipes; l; l = l->next) {
+		if (GUID_equal(&interface->uuid, &l->table->uuid)) {
+			DEBUG(0, ("Attempt to register interface %s which has the "
+					  "same UUID as already registered interface %s\n", 
+					  interface->name, l->table->name));
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+	}
+		
+	l = talloc(talloc_autofree_context(), struct dcerpc_interface_list);
+	l->table = interface;
+
+	DLIST_ADD(dcerpc_pipes, l);
+	
+  	return NT_STATUS_OK;
+}
 
 /*
   find the pipe name for a local IDL interface
@@ -82,7 +109,6 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const struct GUID *uuid)
 	return NULL;
 }
 
-extern struct dcerpc_interface_list *dcerpc_pipes;
 /*
   return the list of registered dcerpc_pipes
 */
