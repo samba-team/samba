@@ -31,7 +31,7 @@ SAMBA_VERSION_RELEASE=21
 # e.g. SAMBA_VERSION_REVISION=a                        #
 #  ->  "2.2.8a"                                        #
 ########################################################
-SAMBA_VERSION_REVISION=
+SAMBA_VERSION_REVISION=a
 
 ########################################################
 # For 'pre' releases the version will be               #
