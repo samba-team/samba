@@ -29,6 +29,7 @@ int
 main(int argc, char * argv[])
 {
     int                         debug = 0;
+    int                         debug_stderr = 0;
     int                         scan = 0;
     int                         iterations = -1;
     int                         again;
@@ -37,12 +38,17 @@ main(int argc, char * argv[])
     char *                      q;
     char                        buf[1024];
     poptContext                 pc;
+    SMBCCTX *                   context;
     struct poptOption           long_options[] =
         {
             POPT_AUTOHELP
             {
                 "debug", 'd', POPT_ARG_INT, &debug,
                 0, "Set debug level", "integer"
+            },
+            {
+                "stderr", 'e', POPT_ARG_NONE, &debug_stderr,
+                0, "Debug log to stderr instead of stdout", "integer"
             },
             {
                 "scan", 's', POPT_ARG_NONE, &scan,
@@ -69,14 +75,36 @@ main(int argc, char * argv[])
         }
     }
 
+    /* Allocate a new context */
+    context = smbc_new_context();
+    if (!context) {
+        printf("Could not allocate new smbc context\n");
+        return 1;
+    }
+        
+    /* Set mandatory options (is that a contradiction in terms?) */
+    context->debug = debug;
+    context->callbacks.auth_fn = (scan ? no_auth_data_fn : get_auth_data_fn);
+
+    /* If we've been asked to log to stderr instead of stdout... */
+    if (debug_stderr) {
+        /* ... then set the option to do so */
+        smbc_option_set(context, "debug_stderr", NULL);
+    }
+	
+    /* Initialize the context using the previously specified options */
+    if (!smbc_init_context(context)) {
+        smbc_free_context(context, 0);
+        printf("Could not initialize smbc context\n");
+        return 1;
+    }
+
+    /* Tell the compatibility layer to use this context */
+    smbc_set_context(context);
+
+
     if (scan)
     {
-        if (smbc_init(no_auth_data_fn, debug) != 0)
-        {
-            printf("Could not initialize smbc_ library\n");
-            return 1;
-        }
-
         for (;
              iterations == -1 || iterations > 0;
              iterations = (iterations == -1 ? iterations : --iterations))
@@ -87,12 +115,6 @@ main(int argc, char * argv[])
     }
     else
     {
-        if (smbc_init(get_auth_data_fn, debug) != 0)
-        {
-            printf("Could not initialize smbc_ library\n");
-            return 1;
-        }
-    
         for (;
              iterations == -1 || iterations > 0;
              iterations = (iterations == -1 ? iterations : --iterations))

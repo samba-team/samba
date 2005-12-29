@@ -47,11 +47,12 @@ struct _SMBCFILE {
 
 struct smbc_internal_data {
 
-	/** INTERNAL: is this handle initialized ? 
+	/*
+         * Is this handle initialized ? 
 	 */
-	int     _initialized;
+	BOOL    _initialized;
 
-        /** INTERNAL: dirent pointer location
+        /* dirent pointer location
          *
          * Leave room for any urlencoded filename and the comment field.
          *
@@ -64,13 +65,20 @@ struct smbc_internal_data {
          */
 	char    _dirent[1024];
 
-	/** INTERNAL: server connection list
+	/*
+         * server connection list
 	 */
 	SMBCSRV * _servers;
 	
-	/** INTERNAL: open file/dir list
+	/*
+         * open file/dir list
 	 */
 	SMBCFILE * _files;
+
+        /*
+         * Log to standard error instead of the more typical standard output
+         */
+        BOOL _debug_stderr;
 };	
 
 
