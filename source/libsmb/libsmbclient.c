@@ -82,11 +82,15 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 /*
  * Find an lsa pipe handle associated with a cli struct.
  */
-static struct rpc_pipe_client *find_lsa_pipe_hnd(struct cli_state *ipc_cli)
+static struct rpc_pipe_client *
+find_lsa_pipe_hnd(struct cli_state *ipc_cli)
 {
 	struct rpc_pipe_client *pipe_hnd;
 
-	for (pipe_hnd = ipc_cli->pipe_list; pipe_hnd; pipe_hnd = pipe_hnd->next) {
+	for (pipe_hnd = ipc_cli->pipe_list;
+             pipe_hnd;
+             pipe_hnd = pipe_hnd->next) {
+            
 		if (pipe_hnd->pipe_idx == PI_LSARPC) {
 			return pipe_hnd;
 		}
@@ -95,8 +99,14 @@ static struct rpc_pipe_client *find_lsa_pipe_hnd(struct cli_state *ipc_cli)
 	return NULL;
 }
 
-static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file);
-static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence);
+static int
+smbc_close_ctx(SMBCCTX *context,
+               SMBCFILE *file);
+static off_t
+smbc_lseek_ctx(SMBCCTX *context,
+               SMBCFILE *file,
+               off_t offset,
+               int whence);
 
 extern BOOL in_client;
 
@@ -315,7 +325,9 @@ smbc_parse_path(SMBCCTX *context,
 	if (*p == '/') {
 
 		strncpy(server, context->workgroup, 
-			(strlen(context->workgroup) < 16)?strlen(context->workgroup):16);
+			((strlen(context->workgroup) < 16)
+                         ? strlen(context->workgroup)
+                         : 16));
 		return 0;
 		
 	}
@@ -396,9 +408,15 @@ smbc_parse_path(SMBCCTX *context,
 /*
  * Verify that the options specified in a URL are valid
  */
-static int smbc_check_options(char *server, char *share, char *path, char *options)
+static int
+smbc_check_options(char *server,
+                   char *share,
+                   char *path,
+                   char *options)
 {
-        DEBUG(4, ("smbc_check_options(): server='%s' share='%s' path='%s' options='%s'\n", server, share, path, options));
+        DEBUG(4, ("smbc_check_options(): server='%s' share='%s' "
+                  "path='%s' options='%s'\n",
+                  server, share, path, options));
 
         /* No options at all is always ok */
         if (! *options) return 0;
@@ -410,7 +428,9 @@ static int smbc_check_options(char *server, char *share, char *path, char *optio
 /*
  * Convert an SMB error into a UNIX error ...
  */
-static int smbc_errno(SMBCCTX *context, struct cli_state *c)
+static int
+smbc_errno(SMBCCTX *context,
+           struct cli_state *c)
 {
 	int ret = cli_errno(c);
 	
@@ -441,7 +461,9 @@ static int smbc_errno(SMBCCTX *context, struct cli_state *c)
  * Also useable outside libsmbclient to enable external cache
  * to do some checks too.
  */
-int smbc_check_server(SMBCCTX * context, SMBCSRV * server) 
+static int
+smbc_check_server(SMBCCTX * context,
+                  SMBCSRV * server) 
 {
 	if ( send_keepalive(server->cli.fd) == False )
 		return 1;
@@ -456,7 +478,9 @@ int smbc_check_server(SMBCCTX * context, SMBCSRV * server)
  * 
  * Also useable outside libsmbclient
  */
-int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
+int
+smbc_remove_unused_server(SMBCCTX * context,
+                          SMBCSRV * srv)
 {
 	SMBCFILE * file;
 
@@ -469,7 +493,8 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 	for (file = context->internal->_files; file; file=file->next) {
 		if (file->srv == srv) {
 			/* Still used */
-			DEBUG(3, ("smbc_remove_usused_server: %p still used by %p.\n", 
+			DEBUG(3, ("smbc_remove_usused_server: "
+                                  "%p still used by %p.\n", 
 				  srv, file));
 			return 1;
 		}
@@ -488,12 +513,13 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 	return 0;
 }
 
-SMBCSRV *find_server(SMBCCTX *context,
-                     const char *server,
-                     const char *share,
-                     fstring workgroup,
-                     fstring username,
-                     fstring password)
+static SMBCSRV *
+find_server(SMBCCTX *context,
+            const char *server,
+            const char *share,
+            fstring workgroup,
+            fstring username,
+            fstring password)
 {
         SMBCSRV *srv;
         int auth_called = 0;
@@ -561,10 +587,14 @@ SMBCSRV *find_server(SMBCCTX *context,
  * info we need, unless the username and password were passed in.
  */
 
-SMBCSRV *smbc_server(SMBCCTX *context,
-		     const char *server, const char *share, 
-		     fstring workgroup, fstring username, 
-		     fstring password)
+static SMBCSRV *
+smbc_server(SMBCCTX *context,
+            BOOL connect_if_not_found,
+            const char *server,
+            const char *share, 
+            fstring workgroup,
+            fstring username, 
+            fstring password)
 {
 	SMBCSRV *srv=NULL;
 	struct cli_state c;
@@ -615,13 +645,18 @@ SMBCSRV *smbc_server(SMBCCTX *context,
                         
                                 errno = smbc_errno(context, &srv->cli);
                                 cli_shutdown(&srv->cli);
-                                context->callbacks.remove_cached_srv_fn(context, srv);
+                                context->callbacks.remove_cached_srv_fn(context,
+                                                                        srv);
                                 srv = NULL;
                         }
 
-                        /* Regenerate the dev value since it's based on both server and share */
+                        /*
+                         * Regenerate the dev value since it's based on both
+                         * server and share
+                         */
                         if (srv) {
-                                srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
+                                srv->dev = (dev_t)(str_checksum(server) ^
+                                                   str_checksum(share));
                         }
                 }
         }
@@ -631,6 +666,12 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 
                 /* ... then we're done here.  Give 'em what they came for. */
                 return srv;
+        }
+
+        /* If we're not asked to connect when a connection doesn't exist... */
+        if (! connect_if_not_found) {
+                /* ... then we're done here. */
+                return NULL;
         }
 
 	make_nmb_name(&calling, context->netbios_name, 0x0);
@@ -811,11 +852,14 @@ SMBCSRV *smbc_server(SMBCCTX *context,
  * Connect to a server for getting/setting attributes, possibly on an existing
  * connection.  This works similarly to smbc_server().
  */
-SMBCSRV *smbc_attr_server(SMBCCTX *context,
-                          const char *server, const char *share, 
-                          fstring workgroup,
-                          fstring username, fstring password,
-                          POLICY_HND *pol)
+static SMBCSRV *
+smbc_attr_server(SMBCCTX *context,
+                 const char *server,
+                 const char *share, 
+                 fstring workgroup,
+                 fstring username,
+                 fstring password,
+                 POLICY_HND *pol)
 {
         struct in_addr ip;
 	struct cli_state *ipc_cli;
@@ -927,11 +971,15 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
  * Routine to open() a file ...
  */
 
-static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, mode_t mode)
+static SMBCFILE *
+smbc_open_ctx(SMBCCTX *context,
+              const char *fname,
+              int flags,
+              mode_t mode)
 {
 	fstring server, share, user, password, workgroup;
 	pstring path;
-    pstring targetpath;
+        pstring targetpath;
 	struct cli_state *targetcli;
 	SMBCSRV *srv   = NULL;
 	SMBCFILE *file = NULL;
@@ -967,7 +1015,8 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -1088,7 +1137,10 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 
 static int creat_bits = O_WRONLY | O_CREAT | O_TRUNC; /* FIXME: Do we need this */
 
-static SMBCFILE *smbc_creat_ctx(SMBCCTX *context, const char *path, mode_t mode)
+static SMBCFILE *
+smbc_creat_ctx(SMBCCTX *context,
+               const char *path,
+               mode_t mode)
 {
 
 	if (!context || !context->internal ||
@@ -1106,7 +1158,11 @@ static SMBCFILE *smbc_creat_ctx(SMBCCTX *context, const char *path, mode_t mode)
  * Routine to read() a file ...
  */
 
-static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t count)
+static ssize_t
+smbc_read_ctx(SMBCCTX *context,
+              SMBCFILE *file,
+              void *buf,
+              size_t count)
 {
 	int ret;
 	fstring server, share, user, password;
@@ -1163,7 +1219,8 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
         }
 	
 	/*d_printf(">>>read: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &file->srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path("", &file->srv->cli, path,
+                              &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
@@ -1191,13 +1248,19 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
  * Routine to write() a file ...
  */
 
-static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t count)
+static ssize_t
+smbc_write_ctx(SMBCCTX *context,
+               SMBCFILE *file,
+               void *buf,
+               size_t count)
 {
 	int ret;
-        off_t offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
+        off_t offset;
 	fstring server, share, user, password;
 	pstring path, targetpath;
 	struct cli_state *targetcli;
+
+        offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1236,7 +1299,8 @@ static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_
         }
 	
 	/*d_printf(">>>write: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &file->srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path("", &file->srv->cli, path,
+                              &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
@@ -1262,7 +1326,9 @@ static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_
  * Routine to close() a file ...
  */
 
-static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
+static int
+smbc_close_ctx(SMBCCTX *context,
+               SMBCFILE *file)
 {
         SMBCSRV *srv; 
 	fstring server, share, user, password;
@@ -1304,7 +1370,8 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
         }
 	
 	/*d_printf(">>>close: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &file->srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path("", &file->srv->cli, path,
+                              &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
@@ -1339,14 +1406,21 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
  * Get info from an SMB server on a file. Use a qpathinfo call first
  * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
  */
-static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
-		 uint16 *mode, SMB_OFF_T *size, 
-		 time_t *c_time, time_t *a_time, time_t *m_time,
-		 SMB_INO_T *ino)
+static BOOL
+smbc_getatr(SMBCCTX * context,
+            SMBCSRV *srv,
+            char *path, 
+            uint16 *mode,
+            SMB_OFF_T *size, 
+            time_t *c_time,
+            time_t *a_time,
+            time_t *m_time,
+            SMB_INO_T *ino)
 {
 	pstring fixedpath;
 	pstring targetpath;
 	struct cli_state *targetcli;
+
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
  
@@ -1376,7 +1450,8 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 	{
 		pstring temppath;
 		pstrcpy(temppath, targetpath);
-		cli_dfs_make_full_path( targetpath, targetcli->desthost, targetcli->share, temppath);
+		cli_dfs_make_full_path(targetpath, targetcli->desthost,
+                                       targetcli->share, temppath);
 	}
   
 	if (!srv->no_pathinfo2 &&
@@ -1415,9 +1490,10 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
  *
  * "mode" (attributes) parameter may be set to -1 if it is not to be set.
  */
-static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
-                        time_t c_time, time_t a_time, time_t m_time,
-                        uint16 mode)
+static BOOL
+smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
+            time_t c_time, time_t a_time, time_t m_time,
+            uint16 mode)
 {
         int fd;
         int ret;
@@ -1544,7 +1620,9 @@ static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
   * Routine to unlink() a file
   */
 
- static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
+static int
+smbc_unlink_ctx(SMBCCTX *context,
+                const char *fname)
 {
 	fstring server, share, user, password, workgroup;
 	pstring path, targetpath;
@@ -1581,7 +1659,8 @@ static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -1640,12 +1719,27 @@ static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
  * Routine to rename() a file
  */
 
-static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname, 
-			   SMBCCTX *ncontext, const char *nname)
+static int
+smbc_rename_ctx(SMBCCTX *ocontext,
+                const char *oname, 
+                SMBCCTX *ncontext,
+                const char *nname)
 {
-	fstring server1, share1, server2, share2, user1, user2, password1, password2, workgroup;
-	pstring path1, path2, targetpath1, targetpath2;
-	struct cli_state *targetcli1, *targetcli2;
+	fstring server1;
+        fstring share1;
+        fstring server2;
+        fstring share2;
+        fstring user1;
+        fstring user2;
+        fstring password1;
+        fstring password2;
+        fstring workgroup;
+	pstring path1;
+        pstring path2;
+        pstring targetpath1;
+        pstring targetpath2;
+	struct cli_state *targetcli1;
+        struct cli_state *targetcli2;
 	SMBCSRV *srv = NULL;
 
 	if (!ocontext || !ncontext || 
@@ -1698,8 +1792,9 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 	}
 
 	fstrcpy(workgroup, ocontext->workgroup);
-	/* HELP !!! Which workgroup should I use ? Or are they always the same -- Tom */ 
-	srv = smbc_server(ocontext, server1, share1, workgroup, user1, password1);
+
+	srv = smbc_server(ocontext, True,
+                          server1, share1, workgroup, user1, password1);
 	if (!srv) {
 
 		return -1;
@@ -1721,7 +1816,8 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 	}
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath2);*/
 	
-	if (strcmp(targetcli1->desthost, targetcli2->desthost) || strcmp(targetcli1->share, targetcli2->share))
+	if (strcmp(targetcli1->desthost, targetcli2->desthost) ||
+            strcmp(targetcli1->share, targetcli2->share))
 	{
 		/* can't rename across file systems */
 		
@@ -1750,7 +1846,11 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
  * A routine to lseek() a file
  */
 
-static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence)
+static off_t
+smbc_lseek_ctx(SMBCCTX *context,
+               SMBCFILE *file,
+               off_t offset,
+               int whence)
 {
 	SMB_OFF_T size;
 	fstring server, share, user, password;
@@ -1791,30 +1891,32 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
 	case SEEK_END:
 		/*d_printf(">>>lseek: parsing %s\n", file->fname);*/
 		if (smbc_parse_path(context, file->fname,
-								server, sizeof(server),
-								share, sizeof(share),
-								path, sizeof(path),
-								user, sizeof(user),
-								password, sizeof(password),
-								NULL, 0)) {
+                                    server, sizeof(server),
+                                    share, sizeof(share),
+                                    path, sizeof(path),
+                                    user, sizeof(user),
+                                    password, sizeof(password),
+                                    NULL, 0)) {
+                        
 					errno = EINVAL;
 					return -1;
 			}
 		
 		/*d_printf(">>>lseek: resolving %s\n", path);*/
-		if (!cli_resolve_path( "", &file->srv->cli, path, &targetcli, targetpath))
+		if (!cli_resolve_path("", &file->srv->cli, path,
+                                      &targetcli, targetpath))
 		{
 			d_printf("Could not resolve %s\n", path);
 			return -1;
 		}
 		/*d_printf(">>>lseek: resolved path as %s\n", targetpath);*/
 		
-		if (!cli_qfileinfo(targetcli, file->cli_fd, NULL, &size, NULL, NULL,
-				   NULL, NULL, NULL)) 
+		if (!cli_qfileinfo(targetcli, file->cli_fd, NULL,
+                                   &size, NULL, NULL, NULL, NULL, NULL)) 
 		{
 		    SMB_OFF_T b_size = size;
-			if (!cli_getattrE(targetcli, file->cli_fd, NULL, &b_size, NULL, NULL,
-				      NULL)) 
+			if (!cli_getattrE(targetcli, file->cli_fd,
+                                          NULL, &b_size, NULL, NULL, NULL)) 
 		    {
 			errno = EINVAL;
 			return -1;
@@ -1838,8 +1940,9 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
  * Generate an inode number from file name for those things that need it
  */
 
-static
-ino_t smbc_inode(SMBCCTX *context, const char *name)
+static ino_t
+smbc_inode(SMBCCTX *context,
+           const char *name)
 {
 
 	if (!context || !context->internal ||
@@ -1860,9 +1963,12 @@ ino_t smbc_inode(SMBCCTX *context, const char *name)
  * fstat below.
  */
 
-static
-int smbc_setup_stat(SMBCCTX *context, struct stat *st, char *fname,
-                    SMB_OFF_T size, int mode)
+static int
+smbc_setup_stat(SMBCCTX *context,
+                struct stat *st,
+                char *fname,
+                SMB_OFF_T size,
+                int mode)
 {
 	
 	st->st_mode = 0;
@@ -1906,12 +2012,21 @@ int smbc_setup_stat(SMBCCTX *context, struct stat *st, char *fname,
  * Routine to stat a file given a name
  */
 
-static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
+static int
+smbc_stat_ctx(SMBCCTX *context,
+              const char *fname,
+              struct stat *st)
 {
 	SMBCSRV *srv;
-	fstring server, share, user, password, workgroup;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
 	pstring path;
-	time_t m_time = 0, a_time = 0, c_time = 0;
+	time_t m_time = 0;
+        time_t a_time = 0;
+        time_t c_time = 0;
 	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
@@ -1948,7 +2063,8 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
@@ -1979,13 +2095,22 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
  * Routine to stat a file given an fd
  */
 
-static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
+static int
+smbc_fstat_ctx(SMBCCTX *context,
+               SMBCFILE *file,
+               struct stat *st)
 {
-	time_t c_time, a_time, m_time;
+	time_t c_time;
+        time_t a_time;
+        time_t m_time;
 	SMB_OFF_T size;
 	uint16 mode;
-	fstring server, share, user, password;
-	pstring path, targetpath;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+	pstring path;
+        pstring targetpath;
 	struct cli_state *targetcli;
 	SMB_INO_T ino = 0;
 
@@ -2023,17 +2148,18 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
         }
 	
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	if (!cli_resolve_path( "", &file->srv->cli, path, &targetcli, targetpath))
+	if (!cli_resolve_path("", &file->srv->cli, path,
+                              &targetcli, targetpath))
 	{
 		d_printf("Could not resolve %s\n", path);
 		return -1;
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
-	if (!cli_qfileinfo(targetcli, file->cli_fd,
-			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino)) {
-	    if (!cli_getattrE(targetcli, file->cli_fd,
-			  &mode, &size, &c_time, &a_time, &m_time)) {
+	if (!cli_qfileinfo(targetcli, file->cli_fd, &mode, &size,
+                           &c_time, &a_time, &m_time, NULL, &ino)) {
+	    if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
+                              &c_time, &a_time, &m_time)) {
 
 		errno = EINVAL;
 		return -1;
@@ -2058,7 +2184,8 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
  * We accept the URL syntax explained in smbc_parse_path(), above.
  */
 
-static void smbc_remove_dir(SMBCFILE *dir)
+static void
+smbc_remove_dir(SMBCFILE *dir)
 {
 	struct smbc_dir_list *d,*f;
 
@@ -2076,7 +2203,11 @@ static void smbc_remove_dir(SMBCFILE *dir)
 
 }
 
-static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint32 type)
+static int
+add_dirent(SMBCFILE *dir,
+           const char *name,
+           const char *comment,
+           uint32 type)
 {
 	struct smbc_dirent *dirent;
 	int size;
@@ -2149,7 +2280,10 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 }
 
 static void
-list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *state)
+list_unique_wg_fn(const char *name,
+                  uint32 type,
+                  const char *comment,
+                  void *state)
 {
 	SMBCFILE *dir = (SMBCFILE *)state;
         struct smbc_dir_list *dir_list;
@@ -2190,7 +2324,10 @@ list_unique_wg_fn(const char *name, uint32 type, const char *comment, void *stat
 }
 
 static void
-list_fn(const char *name, uint32 type, const char *comment, void *state)
+list_fn(const char *name,
+        uint32 type,
+        const char *comment,
+        void *state)
 {
 	SMBCFILE *dir = (SMBCFILE *)state;
 	int dirent_type;
@@ -2246,7 +2383,10 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 }
 
 static void
-dir_list_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
+dir_list_fn(const char *mnt,
+            file_info *finfo,
+            const char *mask,
+            void *state)
 {
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "", 
@@ -2342,7 +2482,9 @@ done:
 
 
 
-static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
+static SMBCFILE *
+smbc_opendir_ctx(SMBCCTX *context,
+                 const char *fname)
 {
 	fstring server, share, user, password, options;
 	pstring workgroup;
@@ -2379,7 +2521,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 		return NULL;
 	}
 
-	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' path='%s' options='%s'\n", fname, server, share, path, options));
+	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' "
+                  "path='%s' options='%s'\n",
+                  fname, server, share, path, options));
 
         /* Ensure the options are valid */
         if (smbc_check_options(server, share, path, options)) {
@@ -2463,9 +2607,12 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                 }
 
                 for (i = 0; i < count && i < max_lmb_count; i++) {
-                        DEBUG(99, ("Found master browser %d of %d: %s\n", i+1, MAX(count, max_lmb_count), inet_ntoa(ip_list[i].ip)));
+                        DEBUG(99, ("Found master browser %d of %d: %s\n",
+                                   i+1, MAX(count, max_lmb_count),
+                                   inet_ntoa(ip_list[i].ip)));
                         
-                        cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, &u_info);
+                        cli = get_ipc_connect_master_ip(&ip_list[i],
+                                                        workgroup, &u_info);
 			/* cli == NULL is the master browser refused to talk or 
 			   could not be found */
 			if ( !cli )
@@ -2474,7 +2621,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         fstrcpy(server, cli->desthost);
                         cli_shutdown(cli);
 
-                        DEBUG(4, ("using workgroup %s %s\n", workgroup, server));
+                        DEBUG(4, ("using workgroup %s %s\n",
+                                  workgroup, server));
 
                         /*
                          * For each returned master browser IP address, get a
@@ -2483,8 +2631,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                          * workgroups/domains that it knows about.
                          */
                 
-                        srv = smbc_server(context, server,
-                                          "IPC$", workgroup, user, password);
+                        srv = smbc_server(context, True, server, "IPC$",
+                                          workgroup, user, password);
                         if (!srv) {
                                 continue;
                         }
@@ -2531,8 +2679,12 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                          * to see if <server> is an IP address first.
                          */
 
-                        /* See if we have an existing server */
-                        srv = smbc_server(context, server, "IPC$",
+                        /*
+                         * See if we have an existing server.  Do not
+                         * establish a connection if one does not already
+                         * exist.
+                         */
+                        srv = smbc_server(context, False, server, "IPC$",
                                           workgroup, user, password);
 
                         /*
@@ -2566,7 +2718,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                                  * Get a connection to IPC$ on the server if
                                  * we do not already have one
                                  */
-				srv = smbc_server(context, buserver, "IPC$",
+				srv = smbc_server(context, True,
+                                                  buserver, "IPC$",
                                                   workgroup, user, password);
 				if (!srv) {
 				        DEBUG(0, ("got no contact to IPC$\n"));
@@ -2596,8 +2749,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                                 
                                 /* If we hadn't found the server, get one now */
                                 if (!srv) {
-                                        srv = smbc_server(context, server,
-                                                          "IPC$", workgroup,
+                                        srv = smbc_server(context, True,
+                                                          server, "IPC$",
+                                                          workgroup,
                                                           user, password);
                                 }
 
@@ -2654,7 +2808,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 			/* We connect to the server and list the directory */
 			dir->dir_type = SMBC_FILE_SHARE;
 
-			srv = smbc_server(context, server, share,
+			srv = smbc_server(context, True, server, share,
                                           workgroup, user, password);
 
 			if (!srv) {
@@ -2674,14 +2828,16 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         p = path + strlen(path);
 			pstrcat(path, "\\*");
 
-			if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
+			if (!cli_resolve_path("", &srv->cli, path,
+                                              &targetcli, targetpath))
 			{
 				d_printf("Could not resolve %s\n", path);
 				return NULL;
 			}
 			
-			if (cli_list(targetcli, targetpath, aDIR | aSYSTEM | aHIDDEN, dir_list_fn,
-				     (void *)dir) < 0) {
+			if (cli_list(targetcli, targetpath,
+                                     aDIR | aSYSTEM | aHIDDEN,
+                                     dir_list_fn, (void *)dir) < 0) {
 
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -2725,7 +2881,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
  * Routine to close a directory
  */
 
-static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
+static int
+smbc_closedir_ctx(SMBCCTX *context,
+                  SMBCFILE *dir)
 {
 
         if (!context || !context->internal ||
@@ -2757,10 +2915,11 @@ static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 }
 
-static void smbc_readdir_internal(SMBCCTX * context,
-                                  struct smbc_dirent *dest,
-                                  struct smbc_dirent *src,
-                                  int max_namebuf_len)
+static void
+smbc_readdir_internal(SMBCCTX * context,
+                      struct smbc_dirent *dest,
+                      struct smbc_dirent *src,
+                      int max_namebuf_len)
 {
         if (context->options.urlencode_readdir_entries) {
 
@@ -2802,7 +2961,9 @@ static void smbc_readdir_internal(SMBCCTX * context,
  * Routine to get a directory entry
  */
 
-struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
+struct smbc_dirent *
+smbc_readdir_ctx(SMBCCTX *context,
+                 SMBCFILE *dir)
 {
         int maxlen;
 	struct smbc_dirent *dirp, *dirent;
@@ -2861,10 +3022,11 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
  * Routine to get directory entries
  */
 
-static int smbc_getdents_ctx(SMBCCTX *context,
-                             SMBCFILE *dir,
-                             struct smbc_dirent *dirp,
-                             int count)
+static int
+smbc_getdents_ctx(SMBCCTX *context,
+                  SMBCFILE *dir,
+                  struct smbc_dirent *dirp,
+                  int count)
 {
 	int rem = count;
         int reqd;
@@ -2962,10 +3124,17 @@ static int smbc_getdents_ctx(SMBCCTX *context,
  * Routine to create a directory ...
  */
 
-static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
+static int
+smbc_mkdir_ctx(SMBCCTX *context,
+               const char *fname,
+               mode_t mode)
 {
 	SMBCSRV *srv;
-	fstring server, share, user, password, workgroup;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
 	pstring path, targetpath;
 	struct cli_state *targetcli;
 
@@ -3001,7 +3170,8 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -3034,23 +3204,35 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 
 static int smbc_rmdir_dirempty = True;
 
-static void rmdir_list_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
+static void
+rmdir_list_fn(const char *mnt,
+              file_info *finfo,
+              const char *mask,
+              void *state)
 {
-
-	if (strncmp(finfo->name, ".", 1) != 0 && strncmp(finfo->name, "..", 2) != 0)
+	if (strncmp(finfo->name, ".", 1) != 0 &&
+            strncmp(finfo->name, "..", 2) != 0) {
+                
 		smbc_rmdir_dirempty = False;
-
+        }
 }
 
 /*
  * Routine to remove a directory
  */
 
-static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
+static int
+smbc_rmdir_ctx(SMBCCTX *context,
+               const char *fname)
 {
 	SMBCSRV *srv;
-	fstring server, share, user, password, workgroup;
-	pstring path, targetpath;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
+	pstring path;
+        pstring targetpath;
 	struct cli_state *targetcli;
 
 	if (!context || !context->internal || 
@@ -3086,34 +3268,14 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 
 		return -1;  /* errno set by smbc_server */
 
 	}
-
-	/* if (strncmp(srv->cli.dev, "IPC", 3) == 0) {
-
-	   mode = aDIR | aRONLY;
-
-	   }
-	   else if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
-
-	   if (strcmp(path, "\\") == 0) {
-
-	   mode = aDIR | aRONLY;
-
-	   }
-	   else {
-
-	   mode = aRONLY;
-	   smbc_stat_printjob(srv, path, &size, &m_time);
-	   c_time = a_time = m_time;
-	   
-	   }
-	   else { */
 
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
 	if (!cli_resolve_path( "", &srv->cli, path, &targetcli, targetpath))
@@ -3130,19 +3292,21 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 
 		if (errno == EACCES) {  /* Check if the dir empty or not */
 
-			pstring lpath; /* Local storage to avoid buffer overflows */
+                        /* Local storage to avoid buffer overflows */
+			pstring lpath; 
 
 			smbc_rmdir_dirempty = True;  /* Make this so ... */
 
 			pstrcpy(lpath, targetpath);
 			pstrcat(lpath, "\\*");
 
-			if (cli_list(targetcli, lpath, aDIR | aSYSTEM | aHIDDEN, rmdir_list_fn,
-				     NULL) < 0) {
+			if (cli_list(targetcli, lpath,
+                                     aDIR | aSYSTEM | aHIDDEN,
+                                     rmdir_list_fn, NULL) < 0) {
 
 				/* Fix errno to ignore latest error ... */
-
-				DEBUG(5, ("smbc_rmdir: cli_list returned an error: %d\n", 
+				DEBUG(5, ("smbc_rmdir: "
+                                          "cli_list returned an error: %d\n", 
 					  smbc_errno(context, targetcli)));
 				errno = EACCES;
 
@@ -3167,7 +3331,9 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
  * Routine to return the current directory position
  */
 
-static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
+static off_t
+smbc_telldir_ctx(SMBCCTX *context,
+                 SMBCFILE *dir)
 {
 	off_t ret_val; /* Squash warnings about cast */
 
@@ -3205,8 +3371,9 @@ static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
  * A routine to run down the list and see if the entry is OK
  */
 
-struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list, 
-					 struct smbc_dirent *dirent)
+struct smbc_dir_list *
+smbc_check_dir_ent(struct smbc_dir_list *list, 
+                   struct smbc_dirent *dirent)
 {
 
 	/* Run down the list looking for what we want */
@@ -3235,7 +3402,10 @@ struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list,
  * Routine to seek on a directory
  */
 
-static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
+static int
+smbc_lseekdir_ctx(SMBCCTX *context,
+                  SMBCFILE *dir,
+                  off_t offset)
 {
 	long int l_offset = offset;  /* Handle problems of size */
 	struct smbc_dirent *dirent = (struct smbc_dirent *)l_offset;
@@ -3285,7 +3455,10 @@ static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
  * Routine to fstat a dir
  */
 
-static int smbc_fstatdir_ctx(SMBCCTX *context, SMBCFILE *dir, struct stat *st)
+static int
+smbc_fstatdir_ctx(SMBCCTX *context,
+                  SMBCFILE *dir,
+                  struct stat *st)
 {
 
 	if (!context || !context->internal || 
@@ -3302,10 +3475,17 @@ static int smbc_fstatdir_ctx(SMBCCTX *context, SMBCFILE *dir, struct stat *st)
 
 }
 
-int smbc_chmod_ctx(SMBCCTX *context, const char *fname, mode_t newmode)
+static int
+smbc_chmod_ctx(SMBCCTX *context,
+               const char *fname,
+               mode_t newmode)
 {
         SMBCSRV *srv;
-	fstring server, share, user, password, workgroup;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
 	pstring path;
 	uint16 mode;
 
@@ -3341,7 +3521,8 @@ int smbc_chmod_ctx(SMBCCTX *context, const char *fname, mode_t newmode)
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
@@ -3362,10 +3543,17 @@ int smbc_chmod_ctx(SMBCCTX *context, const char *fname, mode_t newmode)
         return 0;
 }
 
-int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
+static int
+smbc_utimes_ctx(SMBCCTX *context,
+                const char *fname,
+                struct timeval *tbuf)
 {
         SMBCSRV *srv;
-	fstring server, share, user, password, workgroup;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
 	pstring path;
         time_t a_time;
         time_t m_time;
@@ -3429,7 +3617,8 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
 	if (!srv) {
 		return -1;      /* errno set by smbc_server */
@@ -3448,7 +3637,9 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
    computer running Windows NT 5.0" if denied ACEs do not appear before
    allowed ACEs. */
 
-static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
+static int
+ace_compare(SEC_ACE *ace1,
+            SEC_ACE *ace2)
 {
 	if (sec_ace_equal(ace1, ace2)) 
 		return 0;
@@ -3472,12 +3663,14 @@ static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 }
 
 
-static void sort_acl(SEC_ACL *the_acl)
+static void
+sort_acl(SEC_ACL *the_acl)
 {
 	uint32 i;
 	if (!the_acl) return;
 
-	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]), QSORT_CAST ace_compare);
+	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]),
+              QSORT_CAST ace_compare);
 
 	for (i=1;i<the_acl->num_aces;) {
 		if (sec_ace_equal(&the_acl->ace[i-1], &the_acl->ace[i])) {
@@ -3493,11 +3686,12 @@ static void sort_acl(SEC_ACL *the_acl)
 }
 
 /* convert a SID to a string, either numeric or username/group */
-static void convert_sid_to_string(struct cli_state *ipc_cli,
-                                  POLICY_HND *pol,
-                                  fstring str,
-                                  BOOL numeric,
-                                  DOM_SID *sid)
+static void
+convert_sid_to_string(struct cli_state *ipc_cli,
+                      POLICY_HND *pol,
+                      fstring str,
+                      BOOL numeric,
+                      DOM_SID *sid)
 {
 	char **domains = NULL;
 	char **names = NULL;
@@ -3530,11 +3724,12 @@ static void convert_sid_to_string(struct cli_state *ipc_cli,
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL convert_string_to_sid(struct cli_state *ipc_cli,
-                                  POLICY_HND *pol,
-                                  BOOL numeric,
-                                  DOM_SID *sid,
-                                  const char *str)
+static BOOL
+convert_string_to_sid(struct cli_state *ipc_cli,
+                      POLICY_HND *pol,
+                      BOOL numeric,
+                      DOM_SID *sid,
+                      const char *str)
 {
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
@@ -3569,16 +3764,19 @@ static BOOL convert_string_to_sid(struct cli_state *ipc_cli,
 
 
 /* parse an ACE in the same format as print_ace() */
-static BOOL parse_ace(struct cli_state *ipc_cli,
-                      POLICY_HND *pol,
-                      SEC_ACE *ace,
-                      BOOL numeric,
-                      char *str)
+static BOOL
+parse_ace(struct cli_state *ipc_cli,
+          POLICY_HND *pol,
+          SEC_ACE *ace,
+          BOOL numeric,
+          char *str)
 {
 	char *p;
 	const char *cp;
 	fstring tok;
-	unsigned atype, aflags, amask;
+	unsigned int atype;
+        unsigned int aflags;
+        unsigned int amask;
 	DOM_SID sid;
 	SEC_ACCESS mask;
 	const struct perm_value *v;
@@ -3689,10 +3887,14 @@ static BOOL parse_ace(struct cli_state *ipc_cli,
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
+static BOOL
+add_ace(SEC_ACL **the_acl,
+        SEC_ACE *ace,
+        TALLOC_CTX *ctx)
 {
 	SEC_ACL *newacl;
 	SEC_ACE *aces;
+
 	if (! *the_acl) {
 		(*the_acl) = make_sec_acl(ctx, 3, 1, ace);
 		return True;
@@ -3701,7 +3903,8 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
 	aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces);
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
-	newacl = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
+	newacl = make_sec_acl(ctx, (*the_acl)->revision,
+                              1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
 	(*the_acl) = newacl;
 	return True;
@@ -3709,17 +3912,19 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
 
 
 /* parse a ascii version of a security descriptor */
-static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx,
-                                struct cli_state *ipc_cli,
-                                POLICY_HND *pol,
-                                BOOL numeric,
-                                char *str)
+static SEC_DESC *
+sec_desc_parse(TALLOC_CTX *ctx,
+               struct cli_state *ipc_cli,
+               POLICY_HND *pol,
+               BOOL numeric,
+               char *str)
 {
 	const char *p = str;
 	fstring tok;
 	SEC_DESC *ret;
 	size_t sd_size;
-	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
+	DOM_SID *grp_sid=NULL;
+        DOM_SID *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
@@ -3819,10 +4024,11 @@ static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx,
 
 
 /* Obtain the current dos attributes */
-static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
-                                     TALLOC_CTX *ctx,
-                                     const char *filename,
-                                     SMBCSRV *srv)
+static DOS_ATTR_DESC *
+dos_attr_query(SMBCCTX *context,
+               TALLOC_CTX *ctx,
+               const char *filename,
+               SMBCSRV *srv)
 {
         time_t m_time = 0, a_time = 0, c_time = 0;
         SMB_OFF_T size = 0;
@@ -3859,10 +4065,11 @@ static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
 
 
 /* parse a ascii version of a security descriptor */
-static void dos_attr_parse(SMBCCTX *context,
-                           DOS_ATTR_DESC *dad,
-                           SMBCSRV *srv,
-                           char *str)
+static void
+dos_attr_parse(SMBCCTX *context,
+               DOS_ATTR_DESC *dad,
+               SMBCSRV *srv,
+               char *str)
 {
 	const char *p = str;
 	fstring tok;
@@ -3905,9 +4112,16 @@ static void dos_attr_parse(SMBCCTX *context,
  Retrieve the acls for a file.
 *******************************************************/
 
-static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
-                    struct cli_state *ipc_cli, POLICY_HND *pol,
-                    char *filename, char *attr_name, char *buf, int bufsize)
+static int
+cacl_get(SMBCCTX *context,
+         TALLOC_CTX *ctx,
+         SMBCSRV *srv,
+         struct cli_state *ipc_cli,
+         POLICY_HND *pol,
+         char *filename,
+         char *attr_name,
+         char *buf,
+         int bufsize)
 {
 	uint32 i;
         int n = 0;
@@ -3970,7 +4184,9 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
         if (all || all_nt || all_dos) {
 
                 /* Exclusions are delimited by '!' */
-                for (; pExclude != NULL; pExclude = (p == NULL ? NULL : p + 1)) {
+                for (;
+                     pExclude != NULL;
+                     pExclude = (p == NULL ? NULL : p + 1)) {
 
                 /* Find end of this exclusion name */
                 if ((p = strchr(pExclude, '!')) != NULL)
@@ -4062,7 +4278,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "REVISION:%d", sd->revision);
+                                                     "REVISION:%d",
+                                                     sd->revision);
                                 }
                         } else if (StrCaseCmp(name, "revision") == 0) {
                                 if (determine_size) {
@@ -4166,7 +4383,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         }
                                         n = strlen(p);
                                 } else {
-                                        n = snprintf(buf, bufsize, "%s", sidstr);
+                                        n = snprintf(buf, bufsize,
+                                                     "%s", sidstr);
                                 }
                         }
 
@@ -4213,9 +4431,9 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                                         ace->info.mask);
                                         }
                                 } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
-                                            StrCaseCmp(name + 3, sidstr) == 0) ||
+                                            StrCaseCmp(name+3, sidstr) == 0) ||
                                            (StrnCaseCmp(name, "acl+", 4) == 0 &&
-                                            StrCaseCmp(name + 4, sidstr) == 0)) {
+                                            StrCaseCmp(name+4, sidstr) == 0)) {
                                         if (determine_size) {
                                                 p = talloc_asprintf(
                                                         ctx, 
@@ -4320,7 +4538,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         }
                                         n = strlen(p);
                                 } else {
-                                        n = snprintf(buf, bufsize, "0x%x", mode);
+                                        n = snprintf(buf, bufsize,
+                                                     "0x%x", mode);
                                 }
                         }
         
@@ -4401,7 +4620,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         }
                                         n = strlen(p);
                                 } else {
-                                        n = snprintf(buf, bufsize, "%lu", c_time);
+                                        n = snprintf(buf, bufsize,
+                                                     "%lu", c_time);
                                 }
                         }
         
@@ -4438,7 +4658,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         }
                                         n = strlen(p);
                                 } else {
-                                        n = snprintf(buf, bufsize, "%lu", a_time);
+                                        n = snprintf(buf, bufsize,
+                                                     "%lu", a_time);
                                 }
                         }
         
@@ -4475,7 +4696,8 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
                                         }
                                         n = strlen(p);
                                 } else {
-                                        n = snprintf(buf, bufsize, "%lu", m_time);
+                                        n = snprintf(buf, bufsize,
+                                                     "%lu", m_time);
                                 }
                         }
         
@@ -4548,10 +4770,15 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
 /***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
-static int cacl_set(TALLOC_CTX *ctx, struct cli_state *cli,
-                    struct cli_state *ipc_cli, POLICY_HND *pol,
-                    const char *filename, const char *the_acl,
-                    int mode, int flags)
+static int
+cacl_set(TALLOC_CTX *ctx,
+         struct cli_state *cli,
+         struct cli_state *ipc_cli,
+         POLICY_HND *pol,
+         const char *filename,
+         const char *the_acl,
+         int mode,
+         int flags)
 {
 	int fnum;
         int err = 0;
@@ -4626,7 +4853,8 @@ static int cacl_set(TALLOC_CTX *ctx, struct cli_state *cli,
                                                   &old->dacl->ace[j])) {
 					uint32 k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
-						old->dacl->ace[k] = old->dacl->ace[k+1];
+						old->dacl->ace[k] =
+                                                        old->dacl->ace[k+1];
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
@@ -4730,18 +4958,23 @@ static int cacl_set(TALLOC_CTX *ctx, struct cli_state *cli,
 }
 
 
-int smbc_setxattr_ctx(SMBCCTX *context,
-                      const char *fname,
-                      const char *name,
-                      const void *value,
-                      size_t size,
-                      int flags)
+static int
+smbc_setxattr_ctx(SMBCCTX *context,
+                  const char *fname,
+                  const char *name,
+                  const void *value,
+                  size_t size,
+                  int flags)
 {
         int ret;
         int ret2;
         SMBCSRV *srv;
         SMBCSRV *ipc_srv;
-	fstring server, share, user, password, workgroup;
+	fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
 	pstring path;
         TALLOC_CTX *ctx;
         POLICY_HND pol;
@@ -4762,7 +4995,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
 	}
   
-	DEBUG(4, ("smbc_setxattr(%s, %s, %.*s)\n", fname, name, (int) size, (const char*)value));
+	DEBUG(4, ("smbc_setxattr(%s, %s, %.*s)\n",
+                  fname, name, (int) size, (const char*)value));
 
 	if (smbc_parse_path(context, fname,
                             server, sizeof(server),
@@ -4779,7 +5013,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
 	fstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(context, server, share, workgroup, user, password);
+	srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 	if (!srv) {
 		return -1;  /* errno set by smbc_server */
 	}
@@ -4806,7 +5041,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
             StrCaseCmp(name, "system.*+") == 0) {
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+7, (const char *) value);
+                        talloc_asprintf(ctx, "%s:%s",
+                                        name+7, (const char *) value);
                 if (! namevalue) {
                         errno = ENOMEM;
                         ret = -1;
@@ -4867,7 +5103,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+19, (const char *) value);
+                        talloc_asprintf(ctx, "%s:%s",
+                                        name+19, (const char *) value);
 
                 if (! ipc_srv) {
                         ret = -1; /* errno set by smbc_server() */
@@ -4896,7 +5133,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+19, (const char *) value);
+                        talloc_asprintf(ctx, "%s:%s",
+                                        name+19, (const char *) value);
 
                 if (! ipc_srv) {
                         
@@ -4922,7 +5160,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 char *namevalue =
-                        talloc_asprintf(ctx, "%s:%s", name+19, (const char *) value);
+                        talloc_asprintf(ctx, "%s:%s",
+                                        name+19, (const char *) value);
 
                 if (! ipc_srv) {
                         /* errno set by smbc_server() */
@@ -4953,7 +5192,8 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                 dad = dos_attr_query(context, ctx, path, srv);
                 if (dad) {
                         char *namevalue =
-                                talloc_asprintf(ctx, "%s:%s", name+16, (const char *) value);
+                                talloc_asprintf(ctx, "%s:%s",
+                                                name+16, (const char *) value);
                         if (! namevalue) {
                                 errno = ENOMEM;
                                 ret = -1;
@@ -4989,16 +5229,21 @@ int smbc_setxattr_ctx(SMBCCTX *context,
         return -1;
 }
 
-int smbc_getxattr_ctx(SMBCCTX *context,
-                      const char *fname,
-                      const char *name,
-                      const void *value,
-                      size_t size)
+static int
+smbc_getxattr_ctx(SMBCCTX *context,
+                  const char *fname,
+                  const char *name,
+                  const void *value,
+                  size_t size)
 {
         int ret;
         SMBCSRV *srv;
         SMBCSRV *ipc_srv;
-        fstring server, share, user, password, workgroup;
+        fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
         pstring path;
         TALLOC_CTX *ctx;
         POLICY_HND pol;
@@ -5036,7 +5281,8 @@ int smbc_getxattr_ctx(SMBCCTX *context,
 
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
         if (!srv) {
                 return -1;  /* errno set by smbc_server */
         }
@@ -5103,14 +5349,19 @@ int smbc_getxattr_ctx(SMBCCTX *context,
 }
 
 
-int smbc_removexattr_ctx(SMBCCTX *context,
-                      const char *fname,
-                      const char *name)
+static int
+smbc_removexattr_ctx(SMBCCTX *context,
+                     const char *fname,
+                     const char *name)
 {
         int ret;
         SMBCSRV *srv;
         SMBCSRV *ipc_srv;
-        fstring server, share, user, password, workgroup;
+        fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
         pstring path;
         TALLOC_CTX *ctx;
         POLICY_HND pol;
@@ -5147,7 +5398,8 @@ int smbc_removexattr_ctx(SMBCCTX *context,
 
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
         if (!srv) {
                 return -1;  /* errno set by smbc_server */
         }
@@ -5209,10 +5461,11 @@ int smbc_removexattr_ctx(SMBCCTX *context,
         return -1;
 }
 
-int smbc_listxattr_ctx(SMBCCTX *context,
-                       const char *fname,
-                       char *list,
-                       size_t size)
+static int
+smbc_listxattr_ctx(SMBCCTX *context,
+                   const char *fname,
+                   char *list,
+                   size_t size)
 {
         /*
          * This isn't quite what listxattr() is supposed to do.  This returns
@@ -5258,9 +5511,14 @@ int smbc_listxattr_ctx(SMBCCTX *context,
  * Open a print file to be written to by other calls
  */
 
-static SMBCFILE *smbc_open_print_job_ctx(SMBCCTX *context, const char *fname)
+static SMBCFILE *
+smbc_open_print_job_ctx(SMBCCTX *context,
+                        const char *fname)
 {
-        fstring server, share, user, password;
+        fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
         pstring path;
         
         if (!context || !context->internal ||
@@ -5304,10 +5562,17 @@ static SMBCFILE *smbc_open_print_job_ctx(SMBCCTX *context, const char *fname)
  * copy it to a print file on the share specified by printq.
  */
 
-static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_print, const char *printq)
+static int
+smbc_print_file_ctx(SMBCCTX *c_file,
+                    const char *fname,
+                    SMBCCTX *c_print,
+                    const char *printq)
 {
-        SMBCFILE *fid1, *fid2;
-        int bytes, saverr, tot_bytes = 0;
+        SMBCFILE *fid1;
+        SMBCFILE *fid2;
+        int bytes;
+        int saverr;
+        int tot_bytes = 0;
         char buf[4096];
 
         if (!c_file || !c_file->internal->_initialized || !c_print ||
@@ -5380,10 +5645,17 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
  * Routine to list print jobs on a printer share ...
  */
 
-static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_list_print_job_fn fn)
+static int
+smbc_list_print_jobs_ctx(SMBCCTX *context,
+                         const char *fname,
+                         smbc_list_print_job_fn fn)
 {
         SMBCSRV *srv;
-        fstring server, share, user, password, workgroup;
+        fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
         pstring path;
 
         if (!context || !context->internal ||
@@ -5418,7 +5690,8 @@ static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_li
         
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
         if (!srv) {
 
@@ -5426,7 +5699,8 @@ static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_li
 
         }
 
-        if (cli_print_queue(&srv->cli, (void (*)(struct print_job_info *))fn) < 0) {
+        if (cli_print_queue(&srv->cli,
+                            (void (*)(struct print_job_info *))fn) < 0) {
 
                 errno = smbc_errno(context, &srv->cli);
                 return -1;
@@ -5441,10 +5715,17 @@ static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_li
  * Delete a print job from a remote printer share
  */
 
-static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id)
+static int
+smbc_unlink_print_job_ctx(SMBCCTX *context,
+                          const char *fname,
+                          int id)
 {
         SMBCSRV *srv;
-        fstring server, share, user, password, workgroup;
+        fstring server;
+        fstring share;
+        fstring user;
+        fstring password;
+        fstring workgroup;
         pstring path;
         int err;
 
@@ -5480,7 +5761,8 @@ static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id
 
         fstrcpy(workgroup, context->workgroup);
 
-        srv = smbc_server(context, server, share, workgroup, user, password);
+        srv = smbc_server(context, True,
+                          server, share, workgroup, user, password);
 
         if (!srv) {
 
@@ -5505,9 +5787,10 @@ static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id
 /*
  * Get a new empty handle to fill in with your own info 
  */
-SMBCCTX * smbc_new_context(void)
+SMBCCTX *
+smbc_new_context(void)
 {
-        SMBCCTX * context;
+        SMBCCTX *context;
 
         context = SMB_MALLOC_P(SMBCCTX);
         if (!context) {
@@ -5579,7 +5862,9 @@ SMBCCTX * smbc_new_context(void)
  * and thus you'll be leaking memory if not handled properly.
  *
  */
-int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
+int
+smbc_free_context(SMBCCTX *context,
+                  int shutdown_ctx)
 {
         if (!context) {
                 errno = EBADF;
@@ -5601,12 +5886,15 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
                 if (context->callbacks.purge_cached_fn(context)) {
                         SMBCSRV * s;
                         SMBCSRV * next;
-                        DEBUG(1, ("Could not purge all servers, Nice way shutdown failed.\n"));
+                        DEBUG(1, ("Could not purge all servers, "
+                                  "Nice way shutdown failed.\n"));
                         s = context->internal->_servers;
                         while (s) {
-                                DEBUG(1, ("Forced shutdown: %p (fd=%d)\n", s, s->cli.fd));
+                                DEBUG(1, ("Forced shutdown: %p (fd=%d)\n",
+                                          s, s->cli.fd));
                                 cli_shutdown(&s->cli);
-                                context->callbacks.remove_cached_srv_fn(context, s);
+                                context->callbacks.remove_cached_srv_fn(context,
+                                                                        s);
                                 next = s->next;
                                 DLIST_REMOVE(context->internal->_servers, s);
                                 SAFE_FREE(s);
@@ -5618,17 +5906,20 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
         else {
                 /* This is the polite way */    
                 if (context->callbacks.purge_cached_fn(context)) {
-                        DEBUG(1, ("Could not purge all servers, free_context failed.\n"));
+                        DEBUG(1, ("Could not purge all servers, "
+                                  "free_context failed.\n"));
                         errno = EBUSY;
                         return 1;
                 }
                 if (context->internal->_servers) {
-                        DEBUG(1, ("Active servers in context, free_context failed.\n"));
+                        DEBUG(1, ("Active servers in context, "
+                                  "free_context failed.\n"));
                         errno = EBUSY;
                         return 1;
                 }
                 if (context->internal->_files) {
-                        DEBUG(1, ("Active files in context, free_context failed.\n"));
+                        DEBUG(1, ("Active files in context, "
+                                  "free_context failed.\n"));
                         errno = EBUSY;
                         return 1;
                 }               
@@ -5653,11 +5944,13 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
  * valid values for info->debug from 0 to 100,
  * and insist that info->fn must be non-null.
  */
-SMBCCTX * smbc_init_context(SMBCCTX * context)
+SMBCCTX *
+smbc_init_context(SMBCCTX *context)
 {
         pstring conf;
         int pid;
-        char *user = NULL, *home = NULL;
+        char *user = NULL;
+        char *home = NULL;
 
         if (!context || !context->internal) {
                 errno = EBADF;
@@ -5669,7 +5962,9 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
                 return 0;
         }
 
-        if (!context->callbacks.auth_fn || context->debug < 0 || context->debug > 100) {
+        if (!context->callbacks.auth_fn ||
+            context->debug < 0 ||
+            context->debug > 100) {
 
                 errno = EINVAL;
                 return NULL;
@@ -5677,12 +5972,16 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
         }
 
         if (!smbc_initialized) {
-                /* Do some library wide intialisations the first time we get called */
+                /*
+                 * Do some library-wide intializations the first time we get
+                 * called
+                 */
 		BOOL conf_loaded = False;
 
                 /* Set this to what the user wants */
                 DEBUGLEVEL = context->debug;
                 
+                load_case_tables();
                 setup_logging( "libsmbclient", True);
 
                 /* Here we would open the smb.conf file if needed ... */
@@ -5755,15 +6054,17 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 
         if (!context->netbios_name) {
                 /*
-                 * We try to get our netbios name from the config. If that fails we fall
-                 * back on constructing our netbios name from our hostname etc
+                 * We try to get our netbios name from the config. If that
+                 * fails we fall back on constructing our netbios name from
+                 * our hostname etc
                  */
                 if (global_myname()) {
                         context->netbios_name = SMB_STRDUP(global_myname());
                 }
                 else {
                         /*
-                         * Hmmm, I want to get hostname as well, but I am too lazy for the moment
+                         * Hmmm, I want to get hostname as well, but I am too
+                         * lazy for the moment
                          */
                         pid = sys_getpid();
                         context->netbios_name = SMB_MALLOC(17);
@@ -5771,7 +6072,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
                                 errno = ENOMEM;
                                 return NULL;
                         }
-                        slprintf(context->netbios_name, 16, "smbc%s%d", context->user, pid);
+                        slprintf(context->netbios_name, 16,
+                                 "smbc%s%d", context->user, pid);
                 }
         }
 
