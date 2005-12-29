@@ -5947,14 +5947,22 @@ smbc_free_context(SMBCCTX *context,
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
-                void *option_value)
+                ...)
 {
+        va_list args;
+
+        va_start(args, option_name);
+
         if (strcmp(option_name, "debug_stderr") == 0) {
                 /*
                  * Log to standard error instead of standard output.
+                 *
+                 *  optional parameters: none (it can't be turned off once on)
                  */
                 context->internal->_debug_stderr = True;
         }
+
+        va_end(args);
 }
 
 
