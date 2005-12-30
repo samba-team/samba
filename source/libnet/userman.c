@@ -192,11 +192,11 @@ NTSTATUS libnet_rpc_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ct
  * @return nt status code of execution
  */
 
-NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *pipe,
+NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_useradd *io)
 {
-	struct composite_context *c = libnet_rpc_useradd_send(pipe, io, NULL);
+	struct composite_context *c = libnet_rpc_useradd_send(p, io, NULL);
 	return libnet_rpc_useradd_recv(c, mem_ctx, io);
 }
 
@@ -444,11 +444,11 @@ NTSTATUS libnet_rpc_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ct
  * @return nt status code of execution
  */
 
-NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *pipe,
+NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_userdel *io)
 {
-	struct composite_context *c = libnet_rpc_userdel_send(pipe, io);
+	struct composite_context *c = libnet_rpc_userdel_send(p, io);
 	return libnet_rpc_userdel_recv(c, mem_ctx, io);
 }
 
@@ -839,10 +839,10 @@ NTSTATUS libnet_rpc_usermod_recv(struct composite_context *c, TALLOC_CTX *mem_ct
  * @return nt status code of execution
  */
 
-NTSTATUS libnet_rpc_usermod(struct dcerpc_pipe *pipe,
+NTSTATUS libnet_rpc_usermod(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_usermod *io)
 {
-	struct composite_context *c = libnet_rpc_usermod_send(pipe, io);
+	struct composite_context *c = libnet_rpc_usermod_send(p, io);
 	return libnet_rpc_usermod_recv(c, mem_ctx, io);
 }
