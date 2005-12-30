@@ -88,6 +88,8 @@ do { \
 			type tmp; \
 			for (tmp = (list1); tmp->next; tmp = tmp->next) ; \
 			tmp->next = (list2); \
-			(list2)->prev = tmp; \
+			if (list2) { \
+				(list2)->prev = tmp;	\
+			} \
 		} \
 } while (0)

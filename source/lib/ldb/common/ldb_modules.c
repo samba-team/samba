@@ -130,6 +130,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		{ "schema", schema_module_init },
 		{ "operational", operational_module_init },
 		{ "rdn_name", rdn_name_module_init },
+		{ "objectclass", objectclass_module_init },
 #ifdef _SAMBA_BUILD_
 		{ "objectguid", objectguid_module_init },
 		{ "samldb", samldb_module_init },
