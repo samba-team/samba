@@ -71,9 +71,15 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 		return;
 	}
 
+	/*
+	 * normally we should forward all queries with the
+	 * recursion desired flag to the wins server, but this
+	 * breaks are winsclient code, when doing mhomed registrations
+	 */
 	if (!(packet->operation & NBT_FLAG_BROADCAST) &&
 	   (packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
-	   (iname->nb_flags & NBT_NM_GROUP)) {
+	   (iname->nb_flags & NBT_NM_GROUP) &&
+	   lp_wins_support()) {
 		nbtd_winsserver_request(nbtsock, packet, src);
 		return;
 	}
