@@ -5,10 +5,11 @@
 #  Copyright (C) Jelmer Vernooij 2004
 #  Released under the GNU GPL
 
+use config;
 use strict;
 package smb_build::input;
 
-my $srcdir = ".";
+my $srcdir = $config::config{srcdir};
 
 sub strtrim($)
 {

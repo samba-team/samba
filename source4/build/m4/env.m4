@@ -7,10 +7,19 @@ dnl
 
 AC_CANONICAL_HOST
 
-SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
+AC_SUBST(srcdir)
+export srcdir;
+
+# we always set builddir to "." as that's nicer than
+# having the absolute path of the current work directory
+builddir=.
+AC_SUBST(builddir)
+export builddir;
+
+SMB_VERSION_STRING=`cat ${srcdir}/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
-SAMBA_VERSION_SVN_REVISION=`cat include/version.h | grep 'SAMBA_VERSION_SVN_REVISION' | cut -d ' ' -f3-`
+SAMBA_VERSION_SVN_REVISION=`cat ${srcdir}/include/version.h | grep 'SAMBA_VERSION_SVN_REVISION' | cut -d ' ' -f3-`
 if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
 fi
