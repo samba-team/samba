@@ -22,7 +22,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "pstring.h"
-#include "smb_build.h"
+#include "auth/gensec/gensec.h"
 
 static int numops = 1000;
 static BOOL showall;
@@ -550,7 +550,7 @@ static void usage(void)
 		servers[1] = servers[0];
 	}
 
-	locktest_init_subsystems;
+	gensec_init();
 
 	argc -= optind;
 	argv += optind;

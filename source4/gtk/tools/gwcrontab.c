@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
 #include "gtk/common/gtk-smb.h"
-#include "smb_build.h"
 
 static struct dcerpc_pipe *at_pipe = NULL;
 static GtkWidget *mainwin;
@@ -489,10 +488,9 @@ static GtkWidget*create_new_job_dialog (void)
 }
 
 
-
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
-	gwcrontab_init_subsystems;
+	dcerpc_init();
 	lp_load();
 	setup_logging(argv[0], DEBUG_STDERR);
 

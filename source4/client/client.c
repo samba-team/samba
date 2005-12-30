@@ -33,7 +33,7 @@
 #include "dlinklist.h"
 #include "system/readline.h"
 #include "pstring.h"
-#include "smb_build.h"
+#include "auth/gensec/gensec.h"
 
 static struct smbcli_state *cli;
 static int port = 0;
@@ -3402,7 +3402,7 @@ static void remember_query_host(const char *arg,
 		}
 	}
 
-	smbclient_init_subsystems;
+	gensec_init();
 
 	if(poptPeekArg(pc)) {
 		pstrcpy(service,poptGetArg(pc));  
