@@ -165,14 +165,14 @@ failed:
  "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z;"
  are valid records
 */
-static NTSTATUS winsdb_addr_decode(struct winsdb_record *rec, struct ldb_val *val,
+static NTSTATUS winsdb_addr_decode(struct winsdb_handle *h, struct winsdb_record *rec, struct ldb_val *val,
 				   TALLOC_CTX *mem_ctx, struct winsdb_addr **_addr)
 {
 	NTSTATUS status;
 	struct winsdb_addr *addr;
-	char *address;
-	char *wins_owner;
-	char *expire_time;
+	const char *address;
+	const char *wins_owner;
+	const char *expire_time;
 	char *p;
 
 	addr = talloc(mem_ctx, struct winsdb_addr);
@@ -216,6 +216,9 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_record *rec, struct ldb_val *va
 	}
 
 	*p = '\0';p++;
+	if (strcmp(wins_owner, "0.0.0.0") == 0) {
+		wins_owner = h->local_owner;
+	}
 	addr->wins_owner = talloc_strdup(addr, wins_owner);
 	if (!addr->wins_owner) {
 		status = NT_STATUS_NO_MEMORY;
@@ -393,7 +396,7 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 
 	talloc_steal(tmp_ctx, res);
 
-	status = winsdb_record(res->msgs[0], tmp_ctx, &rec);
+	status = winsdb_record(h, res->msgs[0], tmp_ctx, &rec);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* see if it has already expired */
@@ -414,7 +417,7 @@ failed:
 	return status;
 }
 
-NTSTATUS winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct winsdb_record **_rec)
+NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct winsdb_record **_rec)
 {
 	NTSTATUS status;
 	struct winsdb_record *rec;
@@ -453,12 +456,8 @@ NTSTATUS winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct wins
 	talloc_steal(rec, rec->wins_owner);
 	talloc_steal(rec, rec->registered_by);
 
-	if (!rec->wins_owner) {
-		rec->wins_owner = talloc_strdup(rec, WINSDB_OWNER_LOCAL);
-		if (rec->wins_owner == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
+	if (!rec->wins_owner || strcmp(rec->wins_owner, "0.0.0.0") == 0) {
+		rec->wins_owner = h->local_owner;
 	}
 
 	el = ldb_msg_find_element(msg, "address");
@@ -488,7 +487,7 @@ NTSTATUS winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct wins
 	}
 
 	for (i=0;i<num_values;i++) {
-		status = winsdb_addr_decode(rec, &el->values[i], rec->addresses, &rec->addresses[i]);
+		status = winsdb_addr_decode(h, rec, &el->values[i], rec->addresses, &rec->addresses[i]);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 	rec->addresses[i] = NULL;
@@ -596,7 +595,7 @@ uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t 
 		if (rec->version == 0) goto failed;
 	}
 	if (flags & WINSDB_FLAG_TAKE_OWNERSHIP) {
-		rec->wins_owner = WINSDB_OWNER_LOCAL;
+		rec->wins_owner = h->local_owner;
 	}
 
 	msg = winsdb_message(wins_db, rec, tmp_ctx);
@@ -637,7 +636,7 @@ uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32
 		if (rec->version == 0) goto failed;
 	}
 	if (flags & WINSDB_FLAG_TAKE_OWNERSHIP) {
-		rec->wins_owner = WINSDB_OWNER_LOCAL;
+		rec->wins_owner = h->local_owner;
 	}
 
 	msg = winsdb_message(wins_db, rec, tmp_ctx);
@@ -698,6 +697,7 @@ failed:
 struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
 {
 	struct winsdb_handle *h = NULL;
+	const char *owner;
 
 	h = talloc(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
@@ -705,6 +705,14 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
 	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
 				  system_session(h), NULL, 0, NULL);
 	if (!h->ldb) goto failed;
+
+	owner = lp_parm_string(-1, "winsdb", "local_owner");
+	if (!owner) {
+		owner = iface_n_ip(0);
+	}
+
+	h->local_owner = talloc_strdup(h, owner);
+	if (!h->local_owner) goto failed;
 
 	return h;
 failed:

@@ -1187,7 +1187,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	}
 
 	/* if we're the owner of the old record, we'll be the owner of the new one too */
-	if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
+	if (strcmp(rec->wins_owner, partner->service->wins_db->local_owner)==0) {
 		become_owner = True;
 	}
 
@@ -1239,7 +1239,7 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (strcmp(rec->wins_owner, WINSDB_OWNER_LOCAL)==0) {
+	if (strcmp(rec->wins_owner, partner->service->wins_db->local_owner)==0) {
 		local_vs_replica = True;
 	} else if (strcmp(rec->wins_owner, owner->address)==0) {
 		same_owner = True;

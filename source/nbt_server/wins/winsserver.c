@@ -91,7 +91,7 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 
 	rec.addresses     = winsdb_addr_list_add(rec.addresses,
 						 address,
-						 WINSDB_OWNER_LOCAL,
+						 winssrv->wins_db->local_owner,
 						 rec.expire_time);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
@@ -122,11 +122,11 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	rec->registered_by = src->addr;
 
 	if (winsdb_addr) {
-		winsdb_addr->wins_owner  = WINSDB_OWNER_LOCAL;
+		winsdb_addr->wins_owner  = winssrv->wins_db->local_owner;
 		winsdb_addr->expire_time = rec->expire_time;
 	}
 
-	if (strcmp(WINSDB_OWNER_LOCAL, rec->wins_owner) != 0) {
+	if (strcmp(winssrv->wins_db->local_owner, rec->wins_owner) != 0) {
 		modify_flags = WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
 	}
 
@@ -155,7 +155,7 @@ static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock,
 
 	rec->addresses     = winsdb_addr_list_add(rec->addresses,
 						  address,
-						  WINSDB_OWNER_LOCAL,
+						  winssrv->wins_db->local_owner,
 						  rec->expire_time);
 	if (rec->addresses == NULL) return NBT_RCODE_SVR;
 
@@ -243,7 +243,7 @@ static void wins_wack_allow(struct wack_state *s)
 			break;
 		}
 		if (found) {
-			rec->addresses[i]->wins_owner = WINSDB_OWNER_LOCAL;
+			rec->addresses[i]->wins_owner = s->winssrv->wins_db->local_owner;
 			rec->addresses[i]->expire_time = rec->expire_time;
 			continue;
 		}
@@ -253,7 +253,7 @@ static void wins_wack_allow(struct wack_state *s)
 
 	rec->addresses = winsdb_addr_list_add(rec->addresses,
 					      s->reg_address,
-					      WINSDB_OWNER_LOCAL,
+					      s->winssrv->wins_db->local_owner,
 					      rec->expire_time);
 	if (rec->addresses == NULL) goto failed;
 
@@ -597,7 +597,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 			nbtd_negative_name_query_reply(nbtsock, packet, src);
 			return;
 		}
-		addresses[0] = WINSDB_GROUP_ADDRESS;
+		addresses[0] = "255.255.255.255";
 		addresses[1] = NULL;
 		goto found;
 	}

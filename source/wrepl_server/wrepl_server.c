@@ -264,7 +264,8 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 	struct wreplsrv_owner *table = *_table;
 	struct wreplsrv_owner *cur;
 
-	if (strcmp(WINSDB_OWNER_LOCAL, wins_owner) == 0) {
+	if (strcmp(service->wins_db->local_owner, wins_owner) == 0 ||
+	    strcmp("0.0.0.0", wins_owner) == 0) {
 		return NT_STATUS_OK;
 	}
 
