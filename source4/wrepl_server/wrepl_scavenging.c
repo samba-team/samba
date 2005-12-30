@@ -51,7 +51,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	filter = talloc_asprintf(tmp_mem,
 				 "(&(winsOwner=%s)(objectClass=winsRecord)"
 				 "(expireTime<=%s)(!(isStatic=1)))",
-				 WINSDB_OWNER_LOCAL, now_timestr);
+				 service->wins_db->local_owner, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -63,7 +63,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	delete_tombstones = timeval_expired(&tombstone_extra_time);
 
 	for (i=0; i < res->count; i++) {
-		status = winsdb_record(res->msgs[i], tmp_mem, &rec);
+		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		if (rec->is_static) {
@@ -159,7 +159,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	filter = talloc_asprintf(tmp_mem,
 				 "(&(!(winsOwner=%s))(objectClass=winsRecord)"
 				 "(!(recordState=%u))(expireTime<=%s)(!(isStatic=1)))",
-				 WINSDB_OWNER_LOCAL, WREPL_STATE_ACTIVE, now_timestr);
+				 service->wins_db->local_owner, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -171,7 +171,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	delete_tombstones = timeval_expired(&tombstone_extra_time);
 
 	for (i=0; i < res->count; i++) {
-		status = winsdb_record(res->msgs[i], tmp_mem, &rec);
+		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		if (rec->is_static) {
@@ -262,14 +262,14 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	filter = talloc_asprintf(tmp_mem,
 				 "(&(!(winsOwner=%s))(objectClass=winsRecord)"
 				 "(recordState=%u)(expireTime<=%s)(!(isStatic=1)))",
-				 WINSDB_OWNER_LOCAL, WREPL_STATE_ACTIVE, now_timestr);
+				 service->wins_db->local_owner, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	talloc_steal(tmp_mem, res);
 
 	for (i=0; i < res->count; i++) {
-		status = winsdb_record(res->msgs[i], tmp_mem, &rec);
+		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		if (rec->is_static) {

@@ -138,7 +138,7 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
 	talloc_steal(mem_ctx, rec->name);
 
 	name->id		= rec->version;
-	name->unknown		= WINSDB_GROUP_ADDRESS;
+	name->unknown		= "255.255.255.255";
 
 	name->flags		= WREPL_NAME_FLAGS(rec->type, rec->state, rec->node, rec->is_static);
 
@@ -153,13 +153,8 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(ips);
 
 		for (i = 0; i < num_ips; i++) {
-			if (strcasecmp(WINSDB_OWNER_LOCAL, rec->addresses[i]->wins_owner) == 0) {
-				ips[i].owner	= talloc_strdup(ips, our_address);
-				NT_STATUS_HAVE_NO_MEMORY(ips[i].owner);
-			} else {
-				ips[i].owner	= rec->addresses[i]->wins_owner;
-				talloc_steal(ips, rec->addresses[i]->wins_owner);
-			}
+			ips[i].owner	= rec->addresses[i]->wins_owner;
+			talloc_steal(ips, rec->addresses[i]->wins_owner);
 			ips[i].ip	= rec->addresses[i]->address;
 			talloc_steal(ips, rec->addresses[i]->address);
 		}
@@ -190,7 +185,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 
 	if (strcmp(call->wreplconn->our_ip, owner_in->address) == 0) {
 		ZERO_STRUCT(local_owner);
-		local_owner.owner.address	= WINSDB_OWNER_LOCAL;
+		local_owner.owner.address	= service->wins_db->local_owner;
 		local_owner.owner.min_version	= 0;
 		local_owner.owner.max_version	= wreplsrv_local_max_version(service);
 		local_owner.owner.type		= 1;
@@ -260,7 +255,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(names);
 
 	for (i = 0; i < res->count; i++) {
-		status = winsdb_record(res->msgs[i], call, &rec);
+		status = winsdb_record(service->wins_db, res->msgs[i], call, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		status = wreplsrv_record2wins_name(names, call->wreplconn->our_ip, &names[i], rec);
