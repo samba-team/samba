@@ -50,9 +50,14 @@ struct winsdb_record {
 	const char *registered_by;
 };
 
+struct winsdb_handle {
+	/* wins server database handle */
+	struct ldb_context *ldb;
+};
+
 struct wins_server {
 	/* wins server database handle */
-	struct ldb_context *wins_db;
+	struct winsdb_handle *wins_db;
 
 	/* some configuration */
 	struct {
@@ -70,3 +75,5 @@ struct wins_server {
 		uint32_t tombstone_interval;
 	} config;
 };
+
+#include "nbt_server/wins/winsdb_proto.h"

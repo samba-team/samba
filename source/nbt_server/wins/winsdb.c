@@ -32,13 +32,14 @@
 /*
   return the new maxVersion and save it
 */
-static uint64_t winsdb_allocate_version(struct ldb_context *wins_db)
+static uint64_t winsdb_allocate_version(struct winsdb_handle *h)
 {
 	int trans;
 	int ret;
 	struct ldb_dn *dn;
 	struct ldb_result *res = NULL;
 	struct ldb_message *msg = NULL;
+	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
 	uint64_t maxVersion = 0;
 
@@ -366,7 +367,7 @@ const char **winsdb_addr_string_list(TALLOC_CTX *mem_ctx, struct winsdb_addr **a
 /*
   load a WINS entry from the database
 */
-NTSTATUS winsdb_lookup(struct ldb_context *wins_db, 
+NTSTATUS winsdb_lookup(struct winsdb_handle *h, 
 		       struct nbt_name *name,
 		       TALLOC_CTX *mem_ctx,
 		       struct winsdb_record **_rec)
@@ -375,6 +376,7 @@ NTSTATUS winsdb_lookup(struct ldb_context *wins_db,
 	struct ldb_result *res = NULL;
 	int ret;
 	struct winsdb_record *rec;
+	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	/* find the record in the WINS database */
@@ -578,9 +580,10 @@ failed:
 /*
   save a WINS record into the database
 */
-uint8_t winsdb_add(struct ldb_context *wins_db, struct winsdb_record *rec, uint32_t flags)
+uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t flags)
 {
 	struct ldb_message *msg;
+	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
 	int trans = -1;
 	int ret = 0;
@@ -589,7 +592,7 @@ uint8_t winsdb_add(struct ldb_context *wins_db, struct winsdb_record *rec, uint3
 	if (trans != LDB_SUCCESS) goto failed;
 
 	if (flags & WINSDB_FLAG_ALLOC_VERSION) {
-		rec->version = winsdb_allocate_version(wins_db);
+		rec->version = winsdb_allocate_version(h);
 		if (rec->version == 0) goto failed;
 	}
 	if (flags & WINSDB_FLAG_TAKE_OWNERSHIP) {
@@ -617,9 +620,10 @@ failed:
 /*
   modify a WINS record in the database
 */
-uint8_t winsdb_modify(struct ldb_context *wins_db, struct winsdb_record *rec, uint32_t flags)
+uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t flags)
 {
 	struct ldb_message *msg;
+	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
 	int trans;
 	int ret;
@@ -629,7 +633,7 @@ uint8_t winsdb_modify(struct ldb_context *wins_db, struct winsdb_record *rec, ui
 	if (trans != LDB_SUCCESS) goto failed;
 
 	if (flags & WINSDB_FLAG_ALLOC_VERSION) {
-		rec->version = winsdb_allocate_version(wins_db);
+		rec->version = winsdb_allocate_version(h);
 		if (rec->version == 0) goto failed;
 	}
 	if (flags & WINSDB_FLAG_TAKE_OWNERSHIP) {
@@ -662,8 +666,9 @@ failed:
 /*
   delete a WINS record from the database
 */
-uint8_t winsdb_delete(struct ldb_context *wins_db, struct winsdb_record *rec)
+uint8_t winsdb_delete(struct winsdb_handle *h, struct winsdb_record *rec)
 {
+	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
 	const struct ldb_dn *dn;
 	int trans;
@@ -690,8 +695,19 @@ failed:
 	return NBT_RCODE_SVR;
 }
 
-struct ldb_context *winsdb_connect(TALLOC_CTX *mem_ctx)
+struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, lock_path(mem_ctx, lp_wins_url()),
-				system_session(mem_ctx), NULL, 0, NULL);
+	struct winsdb_handle *h = NULL;
+
+	h = talloc(mem_ctx, struct winsdb_handle);
+	if (!h) return NULL;
+
+	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
+				  system_session(h), NULL, 0, NULL);
+	if (!h->ldb) goto failed;
+
+	return h;
+failed:
+	talloc_free(h);
+	return NULL;
 }

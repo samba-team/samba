@@ -172,7 +172,7 @@ BOOL wreplsrv_is_our_address(struct wreplsrv_service *service, const char *addre
 uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
 {
 	int ret;
-	struct ldb_context *ldb = service->wins_db;
+	struct ldb_context *ldb = service->wins_db->ldb;
 	struct ldb_dn *dn;
 	struct ldb_result *res = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
@@ -306,6 +306,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	int ret;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
+	struct ldb_context *ldb = service->wins_db->ldb;
 	int i;
 	const char *wins_owner;
 	uint64_t version;
@@ -316,7 +317,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	};
 
 	/* find the record in the WINS database */
-	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE,
 			 "(objectClass=winsRecord)", attrs, &res);
 	status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 	if (ret != LDB_SUCCESS) goto failed;
