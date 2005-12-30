@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 
 BOOL torture_rpc_countcalls(void)
