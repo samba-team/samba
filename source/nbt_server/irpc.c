@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "smbd/service_task.h"
 #include "nbt_server/nbt_server.h"
-
+#include "nbt_server/wins/winsserver.h"
 
 /*
   serve out the nbt statistics
