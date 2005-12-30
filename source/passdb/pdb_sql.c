@@ -536,13 +536,12 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 
 	if (query->update) {
 		query->part1[strlen(query->part1) - 1] = '\0';
-		query->part1 =
-			talloc_asprintf_append(query->part1,
-								   " WHERE %s = '%s'",
-								   config_value_read(location,
-													 "user sid column",
-													 CONFIG_USER_SID_DEFAULT),
-								   sid_to_string(sid_str, pdb_get_user_sid (newpwd)));
+		query->part1 = talloc_asprintf(
+			mem_ctx, "%s WHERE %s = '%s'", query->part1,
+			config_value_read(location,
+					  "user sid column",
+					  CONFIG_USER_SID_DEFAULT),
+			sid_to_string(sid_str, pdb_get_user_sid (newpwd)));
 	} else {
 		query->part2[strlen(query->part2) - 1] = ')';
 		query->part1[strlen(query->part1) - 1] = ')';
