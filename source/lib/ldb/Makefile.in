@@ -124,7 +124,8 @@ bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
 manpages: $(patsubst %.xml,%,$(wildcard man/*.xml))
 
 clean:
-	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
+	rm -f */*.o *.gcov */*.gc?? *~ */*~ man/man?/*.[13] tdbtest.ldb* \
+	$(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
 
 distclean:	clean
 	rm -rf autom4te.cache bin lib
