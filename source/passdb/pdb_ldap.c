@@ -2764,7 +2764,8 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	if (NT_STATUS_IS_OK(ldapsam_getgrgid(methods, &dummy,
 					     map->gid))) {
-		DEBUG(0, ("ldapsam_add_group_mapping_entry: Group %ld already exists in LDAP\n", (unsigned long)map->gid));
+		DEBUG(0, ("ldapsam_add_group_mapping_entry: Group %ld already "
+			  "exists in LDAP\n", (unsigned long)map->gid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2774,7 +2775,8 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+				   result);
 
 	if ( count == 0 ) {
 		/* There's no posixGroup account, let's try to find an
@@ -2806,20 +2808,23 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		}
 	}
 			   
-	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+				   result);
 	if ( count == 0 ) {
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (count > 1) {
-		DEBUG(2, ("ldapsam_add_group_mapping_entry: Group %lu must exist exactly once in LDAP\n",
+		DEBUG(2, ("ldapsam_add_group_mapping_entry: Group %lu must "
+			  "exist exactly once in LDAP\n",
 			  (unsigned long)map->gid));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 result);
 	tmp = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
 	if (!tmp) {
 		ldap_msgfree(result);
@@ -2830,7 +2835,8 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	if (!init_ldap_from_group(ldap_state->smbldap_state->ldap_struct,
 				  result, &mods, map)) {
-		DEBUG(0, ("ldapsam_add_group_mapping_entry: init_ldap_from_group failed!\n"));
+		DEBUG(0, ("ldapsam_add_group_mapping_entry: "
+			  "init_ldap_from_group failed!\n"));
 		ldap_mods_free(mods, True);
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -2843,22 +2849,27 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP );
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass",
+			LDAP_OBJ_GROUPMAP );
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 	ldap_mods_free(mods, True);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
-		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(0, ("ldapsam_add_group_mapping_entry: failed to add group %lu error: %s (%s)\n", (unsigned long)map->gid, 
-			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(0, ("ldapsam_add_group_mapping_entry: failed to add "
+			  "group %lu error: %s (%s)\n",
+			  (unsigned long)map->gid, 
+			  ld_error ? ld_error : "(unknown)",
+			  ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("ldapsam_add_group_mapping_entry: successfully modified group %lu in LDAP\n", (unsigned long)map->gid));
+	DEBUG(2, ("ldapsam_add_group_mapping_entry: successfully modified "
+		  "group %lu in LDAP\n", (unsigned long)map->gid));
 	return NT_STATUS_OK;
 }
 
@@ -2882,17 +2893,21 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
-		DEBUG(0, ("ldapsam_update_group_mapping_entry: No group to modify!\n"));
+	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
+			       result) == 0) {
+		DEBUG(0, ("ldapsam_update_group_mapping_entry: No group to "
+			  "modify!\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 result);
 
 	if (!init_ldap_from_group(ldap_state->smbldap_state->ldap_struct,
 				  result, &mods, map)) {
-		DEBUG(0, ("ldapsam_update_group_mapping_entry: init_ldap_from_group failed\n"));
+		DEBUG(0, ("ldapsam_update_group_mapping_entry: "
+			  "init_ldap_from_group failed\n"));
 		ldap_msgfree(result);
 		if (mods != NULL)
 			ldap_mods_free(mods,True);
@@ -2900,7 +2915,8 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	}
 
 	if (mods == NULL) {
-		DEBUG(4, ("ldapsam_update_group_mapping_entry: mods is empty: nothing to do\n"));
+		DEBUG(4, ("ldapsam_update_group_mapping_entry: mods is empty: "
+			  "nothing to do\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_OK;
 	}
@@ -2918,15 +2934,19 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
-		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(0, ("ldapsam_update_group_mapping_entry: failed to modify group %lu error: %s (%s)\n", (unsigned long)map->gid, 
-			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(0, ("ldapsam_update_group_mapping_entry: failed to "
+			  "modify group %lu error: %s (%s)\n",
+			  (unsigned long)map->gid, 
+			  ld_error ? ld_error : "(unknown)",
+			  ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("ldapsam_update_group_mapping_entry: successfully modified group %lu in LDAP\n", (unsigned long)map->gid));
+	DEBUG(2, ("ldapsam_update_group_mapping_entry: successfully modified "
+		  "group %lu in LDAP\n", (unsigned long)map->gid));
 	return NT_STATUS_OK;
 }
 
@@ -2936,7 +2956,8 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 						   DOM_SID sid)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
 	pstring sidstring, filter;
 	LDAPMessage *result = NULL;
 	int rc;
@@ -2955,7 +2976,8 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	}
 
 	attr_list = get_attr_list( groupmap_attr_list_to_delete );
-	ret = ldapsam_delete_entry(ldap_state, result, LDAP_OBJ_GROUPMAP, attr_list);
+	ret = ldapsam_delete_entry(ldap_state, result, LDAP_OBJ_GROUPMAP,
+				   attr_list);
 	free_attr_list ( attr_list );
 
 	ldap_msgfree(result);
@@ -2966,9 +2988,11 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 /**********************************************************************
  *********************************************************************/
 
-static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
+static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
+				    BOOL update)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)my_methods->private_data;
 	fstring filter;
 	int rc;
 	const char **attr_list;
@@ -2981,8 +3005,10 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 	free_attr_list( attr_list );
 
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("ldapsam_setsamgrent: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_setsamgrent: Query was: %s, %s\n", lp_ldap_group_suffix(), filter));
+		DEBUG(0, ("ldapsam_setsamgrent: LDAP search failed: %s\n",
+			  ldap_err2string(rc)));
+		DEBUG(3, ("ldapsam_setsamgrent: Query was: %s, %s\n",
+			  lp_ldap_group_suffix(), filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		return NT_STATUS_UNSUCCESSFUL;
@@ -2992,7 +3018,9 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 		  ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
 				     ldap_state->result)));
 
-	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
+	ldap_state->entry =
+		ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+				 ldap_state->result);
 	ldap_state->index = 0;
 
 	return NT_STATUS_OK;
@@ -3013,7 +3041,8 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 				    GROUP_MAP *map)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)my_methods->private_data;
 	BOOL bret = False;
 
 	while (!bret) {
@@ -3021,10 +3050,12 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 			return ret;
 		
 		ldap_state->index++;
-		bret = init_group_from_ldap(ldap_state, map, ldap_state->entry);
+		bret = init_group_from_ldap(ldap_state, map,
+					    ldap_state->entry);
 		
-		ldap_state->entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct,
-					    ldap_state->entry);	
+		ldap_state->entry =
+			ldap_next_entry(ldap_state->smbldap_state->ldap_struct,
+					ldap_state->entry);	
 	}
 
 	return NT_STATUS_OK;
@@ -3035,7 +3066,8 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
+					   GROUP_MAP **pp_rmap,
+					   size_t *p_num_entries,
 					   BOOL unix_only)
 {
 	GROUP_MAP map;
@@ -3046,24 +3078,28 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	*pp_rmap = NULL;
 
 	if (!NT_STATUS_IS_OK(ldapsam_setsamgrent(methods, False))) {
-		DEBUG(0, ("ldapsam_enum_group_mapping: Unable to open passdb\n"));
+		DEBUG(0, ("ldapsam_enum_group_mapping: Unable to open "
+			  "passdb\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	while (NT_STATUS_IS_OK(ldapsam_getsamgrent(methods, &map))) {
 		if (sid_name_use != SID_NAME_UNKNOWN &&
 		    sid_name_use != map.sid_name_use) {
-			DEBUG(11,("ldapsam_enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
+			DEBUG(11,("ldapsam_enum_group_mapping: group %s is "
+				  "not of the requested type\n", map.nt_name));
 			continue;
 		}
 		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
-			DEBUG(11,("ldapsam_enum_group_mapping: group %s is non mapped\n", map.nt_name));
+			DEBUG(11,("ldapsam_enum_group_mapping: group %s is "
+				  "non mapped\n", map.nt_name));
 			continue;
 		}
 
 		mapt=SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
 		if (!mapt) {
-			DEBUG(0,("ldapsam_enum_group_mapping: Unable to enlarge group map!\n"));
+			DEBUG(0,("ldapsam_enum_group_mapping: Unable to "
+				 "enlarge group map!\n"));
 			SAFE_FREE(*pp_rmap);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -3118,8 +3154,8 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_modify_aliasmem: Duplicate entries for filter %s: "
-			  "count=%d\n", filter, count));
+		DEBUG(1, ("ldapsam_modify_aliasmem: Duplicate entries for "
+			  "filter %s: count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
@@ -3182,7 +3218,8 @@ static NTSTATUS ldapsam_del_aliasmem(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
-				      const DOM_SID *alias, DOM_SID **pp_members,
+				      const DOM_SID *alias,
+				      DOM_SID **pp_members,
 				      size_t *p_num_members)
 {
 	struct ldapsam_privates *ldap_state =
@@ -3218,8 +3255,8 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_enum_aliasmem: Duplicate entries for filter %s: "
-			  "count=%d\n", filter, count));
+		DEBUG(1, ("ldapsam_enum_aliasmem: Duplicate entries for "
+			  "filter %s: count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
@@ -3401,7 +3438,8 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods,
 			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return ldapsam_set_account_policy_in_ldap(methods, policy_index, value);
+	return ldapsam_set_account_policy_in_ldap(methods, policy_index,
+						  value);
 }
 
 static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods,
