@@ -234,21 +234,6 @@ void unload_interfaces(void)
 }
 
 /****************************************************************************
-  check if an IP is one of mine
-  **************************************************************************/
-BOOL ismyip(struct ipv4_addr ip)
-{
-	struct interface *i;
-
-	load_interfaces();
-
-	for (i=local_interfaces;i;i=i->next) {
-		if (i->ip.addr == ip.addr) return True;
-	}
-	return False;
-}
-
-/****************************************************************************
   how many interfaces do we have
   **************************************************************************/
 int iface_count(void)
