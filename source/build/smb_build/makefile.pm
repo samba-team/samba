@@ -184,7 +184,7 @@ sub _prepare_std_CC_rule($$$$$$)
 # $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
-	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$< -o \$\@
+	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$\*.$src -o \$\@
 __EOD__
 );
 	if ($self->{config}->{BROKEN_CC} eq "yes") {
@@ -202,7 +202,7 @@ sub _prepare_hostcc_rule($)
 	$self->output(<< "__EOD__"
 .c.ho:
 	\@echo Compiling \$\*.c with host compiler
-	\@\$(HOSTCC) `script/cflags.sh \$\@` \$(CFLAGS) -c \$< -o \$\@
+	\@\$(HOSTCC) `script/cflags.sh \$\@` \$(CFLAGS) -c \$\*.c -o \$\@
 __EOD__
 );
 	if ($self->{config}->{BROKEN_CC} eq "yes") {
