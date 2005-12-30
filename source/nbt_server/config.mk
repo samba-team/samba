@@ -5,6 +5,7 @@
 [SUBSYSTEM::WINSDB]
 OBJ_FILES = \
 		wins/winsdb.o
+PRIVATE_PROTO_HEADER = wins/winsdb_proto.h
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB
 # End SUBSYSTEM WINSDB

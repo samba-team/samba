@@ -213,7 +213,7 @@ struct wreplsrv_service {
 	struct timeval startup_time;
 
 	/* the winsdb handle */
-	struct ldb_context *wins_db;
+	struct winsdb_handle *wins_db;
 
 	/* some configuration */
 	struct {
