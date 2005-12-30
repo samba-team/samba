@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
 

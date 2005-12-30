@@ -41,7 +41,6 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
-#include "lib/cmdline/popt_common.h"
 
 struct proxy_data {
 	struct ldb_context *upstream;

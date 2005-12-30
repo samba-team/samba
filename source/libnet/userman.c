@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/userman.h"
 #include "libnet/userinfo.h"

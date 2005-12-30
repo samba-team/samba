@@ -8,7 +8,6 @@
 #include "ldb/modules/ldb_map.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "system/passwd.h"
 
 /* 

@@ -22,9 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
-#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
-#include "lib/cmdline/popt_common.h"
 #include "auth/gensec/gensec.h"
 #include "smb_build.h"
 

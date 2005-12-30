@@ -35,7 +35,6 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
 #include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_

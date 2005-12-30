@@ -20,10 +20,8 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
-#include "libnet/composite.h"
 
 
 #define TEST_USERNAME  "libnetusertest"

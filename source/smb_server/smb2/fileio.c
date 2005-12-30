@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
-#include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb2/smb2_server.h"
 
 void smb2srv_create_recv(struct smb2srv_request *req)

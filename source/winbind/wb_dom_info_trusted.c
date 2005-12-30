@@ -22,12 +22,8 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
-#include "winbind/wb_async_helpers.h"
 #include "winbind/wb_server.h"
-#include "smbd/service_stream.h"
 #include "smbd/service_task.h"
-#include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct trusted_dom_info_state {

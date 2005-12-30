@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 
 /****************************************************************************
  lpq - async send

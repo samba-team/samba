@@ -54,7 +54,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/samba3/samba3.h"
 #include "system/iconv.h"
 

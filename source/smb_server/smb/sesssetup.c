@@ -27,7 +27,6 @@
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
-#include "libcli/nbt/libnbt.h"
 
 /*
   setup the OS, Lanman and domain portions of a session setup reply

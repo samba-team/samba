@@ -21,9 +21,7 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "system/passwd.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "ads.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"

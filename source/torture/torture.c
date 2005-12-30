@@ -19,16 +19,13 @@
 */
 
 #include "includes.h"
-#include "clilist.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
 #include "ioctl.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "smb_build.h"
-#include "libcli/nbt/libnbt.h"
 
 int torture_nprocs=4;
 int torture_numops=10;

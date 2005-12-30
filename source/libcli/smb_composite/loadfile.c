@@ -25,7 +25,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 /* the stages of this call */
 enum loadfile_stage {LOADFILE_OPEN, LOADFILE_READ, LOADFILE_CLOSE};

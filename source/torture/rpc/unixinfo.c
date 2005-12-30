@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_unixinfo.h"
 
 

@@ -21,10 +21,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
 #include "nbt_server/nbt_server.h"
-#include "smbd/service_task.h"
-#include "lib/socket/socket.h"
 
 /*
   handle incoming browse mailslot requests

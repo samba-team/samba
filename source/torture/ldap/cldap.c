@@ -23,8 +23,6 @@
 
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
-#include "libcli/ldap/ldap.h"
-#include "lib/events/events.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

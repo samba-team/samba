@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "librpc/gen_ndr/security.h"
 
 static struct {
 	const char *name;

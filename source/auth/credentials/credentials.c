@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
 
 

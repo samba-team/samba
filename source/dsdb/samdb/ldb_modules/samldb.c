@@ -36,8 +36,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
-#include "system/time.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "dsdb/samdb/samdb.h"
 
 #define SAM_ACCOUNT_NAME_BASE "$000000-000000000000"

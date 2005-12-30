@@ -23,10 +23,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
-#include "dlinklist.h"
 #include "smb_server/smb_server.h"
-#include "system/filesys.h"
 
 /* For sepecifiying event context to GSSAPI below */
 #include "heimdal/lib/gssapi/gssapi_locl.h"

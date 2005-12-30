@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
 

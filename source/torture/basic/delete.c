@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/raw/libcliraw.h"
 
 static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,

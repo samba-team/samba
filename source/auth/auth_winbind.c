@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
 #include "nsswitch/winbind_client.h"
 

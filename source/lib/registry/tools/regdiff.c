@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "smb_build.h"

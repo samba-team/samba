@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 extern int torture_failures;
 

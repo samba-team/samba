@@ -20,9 +20,7 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "lib/registry/registry.h"
-#include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 
 #define DEFAULT_IDENT_STRING "SAMBA4 REGISTRY"

@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 
 static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 {

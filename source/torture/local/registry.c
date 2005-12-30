@@ -21,8 +21,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "lib/registry/registry.h"
 
 static BOOL test_hive(TALLOC_CTX *mem_ctx, const char *backend, const char *location)

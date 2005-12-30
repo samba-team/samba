@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
-#include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 
 static BOOL try_failed_login(struct smbcli_state *cli)

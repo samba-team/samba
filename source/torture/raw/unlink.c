@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/raw/libcliraw.h"
 
 #define CHECK_STATUS(status, correct) do { \

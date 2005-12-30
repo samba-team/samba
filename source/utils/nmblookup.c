@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/iconv.h"
 #include "lib/socket/socket.h"

@@ -22,9 +22,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
 #include "lib/events/events.h"
-#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 #include "libcli/composite/composite.h"

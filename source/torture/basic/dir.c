@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 static void list_fn(struct clilist_file_info *finfo, const char *name, void *state)
 {

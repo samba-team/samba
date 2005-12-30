@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_dcom.h"
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
 
 BOOL torture_rpc_dcom(void)

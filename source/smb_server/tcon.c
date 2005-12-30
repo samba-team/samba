@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"

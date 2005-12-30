@@ -26,7 +26,6 @@
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
-#include "librpc/gen_ndr/nbt.h"
 
 #define MULTI_PORT_DELAY 2000 /* microseconds */
 

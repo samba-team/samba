@@ -21,10 +21,8 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "system/time.h"
 #include "auth/auth.h"
-#include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
 

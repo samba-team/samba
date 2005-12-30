@@ -21,8 +21,6 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
-#include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 #include "smbd/service_task.h"
@@ -30,8 +28,6 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
-#include "nbt_server/wins/winsdb.h"
-#include "ldb/include/ldb.h"
 
 void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
 {

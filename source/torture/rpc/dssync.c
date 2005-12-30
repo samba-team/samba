@@ -23,12 +23,8 @@
 
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
-#include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
-#include "librpc/gen_ndr/ndr_samr.h"
-#include "libcli/ldap/ldap.h"
 #include "libcli/cldap/cldap.h"
-#include "ads.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;

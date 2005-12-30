@@ -23,10 +23,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "system/kerberos.h"
-#include "auth/kerberos/kerberos.h"
 
 static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 					    const char *keytab_name,

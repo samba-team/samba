@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_schannel.h"
 #include "auth/auth.h"
 
 /*

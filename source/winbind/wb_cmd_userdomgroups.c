@@ -23,10 +23,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
-#include "smbd/service_stream.h"
 #include "smbd/service_task.h"
-#include "lib/events/events.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 struct cmd_userdomgroups_state {
 	struct composite_context *ctx;

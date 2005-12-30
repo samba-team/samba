@@ -22,13 +22,8 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
-#include "lib/ldb/include/ldb.h"
-#include "system/time.h"
-#include "db_wrap.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"

@@ -22,8 +22,6 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 

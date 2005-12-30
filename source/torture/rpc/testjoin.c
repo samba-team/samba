@@ -26,7 +26,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "system/time.h"
 #include "lib/crypto/crypto.h"
 #include "libnet/libnet.h"

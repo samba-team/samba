@@ -22,8 +22,6 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "libcli/nbt/libnbt.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 
 struct result_struct {
 	int num_pass;

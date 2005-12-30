@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "dsdb/samdb/samdb.h"
 
 /*

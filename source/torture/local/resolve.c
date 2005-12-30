@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "librpc/gen_ndr/nbt.h"
 
 static BOOL test_async_resolve(TALLOC_CTX *mem_ctx)
 {

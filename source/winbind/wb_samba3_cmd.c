@@ -22,18 +22,12 @@
 */
 
 #include "includes.h"
-#include "smbd/service_stream.h"
-#include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_samba3_protocol.h"
 #include "winbind/wb_async_helpers.h"
-#include "librpc/gen_ndr/nbt.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
 #include "include/version.h"
-#include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
 /* 
