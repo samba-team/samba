@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
-#include "smb_build.h"
 
 int main(int argc, char **argv)
 {
@@ -40,8 +39,6 @@ int main(int argc, char **argv)
 		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
 	};
-
-	regpatch_init_subsystems;
 
 	registry_init();
 

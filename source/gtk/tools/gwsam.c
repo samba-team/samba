@@ -23,7 +23,6 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
-#include "smb_build.h"
 
 struct policy_handle sam_handle;
 struct dcerpc_pipe *sam_pipe = NULL;
@@ -398,11 +397,8 @@ static GtkWidget* create_mainwindow (void)
 	return mainwin;
 }
 
-
-
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
-	gwsam_init_subsystems;
 	lp_load();
 	setup_logging(argv[0], DEBUG_STDERR);
 

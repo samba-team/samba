@@ -24,7 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "pstring.h"
-#include "smb_build.h"
+#include "auth/gensec/gensec.h"
 
 static struct cli_credentials *credentials;
 static BOOL showall = False;
@@ -353,7 +353,7 @@ static void usage(void)
 		}
 	}
 
-	masktest_init_subsystems;
+	gensec_init();
 
 	argc -= optind;
 	argv += optind;

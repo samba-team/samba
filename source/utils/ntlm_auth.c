@@ -27,7 +27,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
 #include "pstring.h"
-#include "smb_build.h"
 
 #define SQUID_BUFFER_SIZE 2010
 
@@ -931,8 +930,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	ntlm_auth_init_subsystems;
-
+	gensec_init();
 
 	if (opt_domain == NULL) {
 		opt_domain = lp_workgroup();

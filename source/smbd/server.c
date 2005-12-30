@@ -33,6 +33,7 @@
 #include "registry/registry.h"
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
+#include "auth/gensec/gensec.h"
 
 /*
   recursively delete a directory tree
@@ -217,7 +218,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		exit(1);
 	}
 
-	smbd_init_subsystems;
+	gensec_init();
 
 	registry_init(); /* FIXME: maybe run this in the initialization function 
 						of the winreg RPC server instead? */

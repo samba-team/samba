@@ -25,7 +25,7 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
-#include "smb_build.h"
+#include "auth/gensec/gensec.h"
 
 static EjsId eid;
 
@@ -50,7 +50,7 @@ void ejs_exception(const char *reason)
 	int exit_status, i;
 
 	fault_setup(argv[0]);
-	smbscript_init_subsystems;
+	gensec_init();
 	mprSetCtx(mem_ctx);
 
 	lp_load();

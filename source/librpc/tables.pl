@@ -82,6 +82,11 @@ print TABLEC <<EOF;
 
 NTSTATUS dcerpc_table_init(void)
 {
+	static BOOL initialized = False;
+
+	if (initialized) return NT_STATUS_OK;
+	initialized = True;
+
 $init_fns
 	
 	return NT_STATUS_OK;

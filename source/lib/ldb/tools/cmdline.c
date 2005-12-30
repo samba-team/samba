@@ -28,7 +28,6 @@
 #include "ldb/tools/cmdline.h"
 #ifdef _SAMBA_BUILD_
 #include "lib/cmdline/popt_common.h"
-#include "smb_build.h"
 #include "auth/auth.h"
 #endif
 
@@ -72,7 +71,8 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	};
 
 #ifdef _SAMBA_BUILD_
-	ldbsearch_init_subsystems;
+	gensec_init(); 
+
 	r = ldb_register_samba_handlers(ldb);
 	if (r != 0) {
 		goto failed;

@@ -92,8 +92,15 @@ WERROR com_get_class_object(struct com_context *ctx, struct GUID *clsid, struct 
 
 NTSTATUS com_init(void)
 {
-	init_module_fn static_init[] = STATIC_COM_MODULES;
-	init_module_fn *shared_init = load_samba_modules(NULL, "com");
+	static BOOL initialized = False;
+	
+	init_module_fn static_init[] = STATIC_COM_MODULES; 
+	init_module_fn *shared_init;
+
+	if (initialized) return NT_STATUS_OK;
+	initialized = True;
+
+	shared_init = load_samba_modules(NULL, "com");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

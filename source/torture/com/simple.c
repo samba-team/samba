@@ -38,6 +38,8 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	char test_data[5];
 	int i;
 
+	com_init();
+
 	com_init_ctx(&ctx, NULL);
 	dcom_client_init(ctx, cmdline_credentials);
 

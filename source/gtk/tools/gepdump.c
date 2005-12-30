@@ -24,7 +24,6 @@
 #include "librpc/gen_ndr/ndr_mgmt.h"
 #include "gtk/common/gtk-smb.h"
 #include "auth/gensec/gensec.h"
-#include "smb_build.h"
 
 /* 
  * Show: 
@@ -461,7 +460,7 @@ static GtkWidget* create_mainwindow (void)
 
 int main(int argc, char **argv)
 {
-	gepdump_init_subsystems;
+	dcerpc_init();
 	lp_load();
 	setup_logging(argv[0], DEBUG_STDERR);
 

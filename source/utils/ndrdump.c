@@ -22,7 +22,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
-#include "smb_build.h"
 
 static const struct dcerpc_interface_call *find_function(
 	const struct dcerpc_interface_table *p,

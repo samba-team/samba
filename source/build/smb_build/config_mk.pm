@@ -20,7 +20,6 @@ my $section_types = {
 		"LDFLAGS"		=> "list",
 		},
 	"SUBSYSTEM" => {
-		"INIT_FUNCTION"		=> "string",
 		"OBJ_FILES"		=> "list",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
@@ -64,7 +63,6 @@ my $section_types = {
 		"MINOR_VERSION"		=> "string",
 		"RELEASE_VERSION"	=> "string",
 
-		"INIT_FUNCTION"		=> "string",
 		"OBJ_FILES"		=> "list",
 
 		"DESCRIPTION" => "string",

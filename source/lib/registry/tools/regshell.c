@@ -23,7 +23,6 @@
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/time.h"
-#include "smb_build.h"
 
 /* 
  * ck/cd - change key
@@ -414,8 +413,6 @@ static char **reg_completion(const char *text, int start, int end)
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
-
-	regshell_init_subsystems;
 
 	registry_init();
 

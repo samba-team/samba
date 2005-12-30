@@ -29,6 +29,13 @@
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 
+NTSTATUS dcerpc_init(void)
+{
+	gensec_init();
+
+	return NT_STATUS_OK;
+}
+
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
 
 /* destroy a dcerpc connection */

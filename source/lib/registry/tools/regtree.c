@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
-#include "smb_build.h"
 
 static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 {
@@ -97,8 +96,6 @@ int main(int argc, char **argv)
 		POPT_COMMON_CREDENTIALS	
 		POPT_TABLEEND
 	};
-
-	regtree_init_subsystems;
 
 	registry_init();
 
