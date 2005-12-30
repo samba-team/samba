@@ -34,4 +34,4 @@ struct wins_challenge_io {
 	} out;
 };
 
-#include "nbt_server/wins/winswack_proto.h"
+#include "nbt_server/wins/winsserver_proto.h"

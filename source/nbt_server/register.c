@@ -27,6 +27,7 @@
 #include "smbd/service_task.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "nbt_server/wins/winsserver.h"
 
 
 static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);

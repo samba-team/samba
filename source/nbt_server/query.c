@@ -24,7 +24,7 @@
 #include "dlinklist.h"
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
-
+#include "nbt_server/wins/winsserver.h"
 
 /*
   answer a name query
@@ -54,22 +54,27 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
 
-	if (!(packet->operation & NBT_FLAG_BROADCAST) &&
-	   (packet->operation & NBT_FLAG_RECURSION_DESIRED)) {
-		nbtd_winsserver_request(nbtsock, packet, src);
-		return;
-	}
-
 	iname = nbtd_find_iname(iface, name, 0);
-
 	if (iname == NULL) {
 		/* don't send negative replies to broadcast queries */
 		if (packet->operation & NBT_FLAG_BROADCAST) {
 			return;
 		}
 
+		if (packet->operation & NBT_FLAG_RECURSION_DESIRED) {
+			nbtd_winsserver_request(nbtsock, packet, src);
+			return;
+		}
+
 		/* otherwise send a negative reply */
 		nbtd_negative_name_query_reply(nbtsock, packet, src);
+		return;
+	}
+
+	if (!(packet->operation & NBT_FLAG_BROADCAST) &&
+	   (packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
+	   (iname->nb_flags & NBT_NM_GROUP)) {
+		nbtd_winsserver_request(nbtsock, packet, src);
 		return;
 	}
 
