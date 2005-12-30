@@ -305,22 +305,31 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 			continue;
 		}
 		for (j = 0; j < el->num_values; j++) {
-			if (strcasecmp(el->name, "objectClass") == 0 &&
-			    (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "foreignSecurityPrincipalTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
-			     strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
-			     strcasecmp((char *)el->values[j].data, "secretTemplate") == 0)) {
-				continue;
-			}
-			if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
-							    NULL,
-							    (char *)el->values[j].data)) {
-				ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
-				talloc_free(res);
-				return -1;
+			if (strcasecmp(el->name, "objectClass") == 0) {
+				if (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "foreignSecurityPrincipalTemplate") == 0 ||
+				    strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
+				    strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
+				    strcasecmp((char *)el->values[j].data, "secretTemplate") == 0) {
+					continue;
+				}
+				if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
+								    (char *)el->values[j].data,
+								    (char *)el->values[j].data)) {
+					ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
+					talloc_free(res);
+					return -1;
+				}
+			} else {
+				if ( ! samldb_find_or_add_attribute(module, msg, el->name, 
+								    NULL,
+								    (char *)el->values[j].data)) {
+					ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
+					talloc_free(res);
+					return -1;
+				}
 			}
 		}
 	}
@@ -407,7 +416,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	}
 
 	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
-		if (samldb_copy_template(module, msg2, "(&(CN=TemplateServer)(objectclass=userTemplate))") != 0) {
+		if (samldb_copy_template(module, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))") != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
 			return NULL;
 		}
