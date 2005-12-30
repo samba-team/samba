@@ -29,6 +29,7 @@
 #include "scripting/ejs/ejsrpc.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 /*
   state of a irpc 'connection'

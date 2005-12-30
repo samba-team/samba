@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 
 /*

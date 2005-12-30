@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 /*
   work out how many calls there are for an interface

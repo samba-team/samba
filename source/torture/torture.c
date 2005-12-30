@@ -25,6 +25,7 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 #include "ioctl.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 int torture_nprocs=4;
 int torture_numops=10;
