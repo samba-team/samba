@@ -31,8 +31,13 @@ sub _set_config($$)
 
 	$self->{config} = $config;
 
-	$self->{config}->{srcdir} = '.';
-	$self->{config}->{builddir} = '.';
+	if (not defined($self->{config}->{srcdir})) {
+		$self->{config}->{srcdir} = '.';
+	}
+
+	if (not defined($self->{config}->{builddir})) {
+		$self->{config}->{builddir}  = '.';
+	}
 
 	if ($self->{config}->{prefix} eq "NONE") {
 		$self->{config}->{prefix} = $self->{config}->{ac_default_prefix};

@@ -199,7 +199,7 @@ include/config.h:
 
 include/proto.h: $(PROTO_OBJS:.o=.c)
 	@echo "Creating include/proto.h"
-	@$(PERL) script/mkproto.pl --public-define=_PROTO_H_ \
+	@$(PERL) $(srcdir)/script/mkproto.pl --public-define=_PROTO_H_ \
 		--public=include/proto.h --private=include/proto.h \
 		$(PROTO_OBJS)
 
