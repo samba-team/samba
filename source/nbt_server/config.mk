@@ -17,6 +17,7 @@ OBJ_FILES = \
 		wins/winsserver.o \
 		wins/winsclient.o \
 		wins/winswack.o
+PRIVATE_PROTO_HEADER = wins/winswack_proto.h
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_NBT WINSDB
 # End SUBSYSTEM NBTD_WINS
