@@ -24,12 +24,8 @@
 */
 
 #include "includes.h"
-#include "system/network.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "asn_1.h"
-#include "lib/ldb/include/ldb.h"
-#include "secrets.h"
 
 #ifdef HAVE_KRB5
 
@@ -57,10 +53,6 @@
 
 	struct keytab_container *keytab_container;
 
-	/* This whole process is far more complex than I would
-           like. We have to go through all this to allow us to store
-           the secret internally, instead of using /etc/krb5.keytab */
-
 	/*
 	 * TODO: Actually hook in the replay cache in Heimdal, then
 	 * re-add calls to setup a replay cache here, in our private
@@ -70,11 +62,13 @@
 	packet.length = enc_ticket->length;
 	packet.data = (krb5_pointer)enc_ticket->data;
 
+	/* Grab the keytab, however generated */
 	ret = cli_credentials_get_keytab(machine_account, &keytab_container);
 	if (ret) {
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
+	/* This ensures we lookup the correct entry in that keytab */
 	ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, 
 					 &server);
 	if (ret == 0) {
