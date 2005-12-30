@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "gtk/common/gtk-smb.h"
-#include "smb_build.h"
 
 static GtkTreeStore *store_keys;
 static GtkListStore *store_vals;
@@ -964,8 +963,8 @@ int main(int argc, char *argv[])
 {
 	int ret;
 
-	gregedit_init_subsystems;
 	registry_init();
+
 	lp_load();
 	setup_logging(argv[0], DEBUG_STDERR);
 

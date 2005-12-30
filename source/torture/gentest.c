@@ -24,7 +24,7 @@
 #include "request.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "smb_build.h"
+#include "auth/gensec/gensec.h"
 
 #define NSERVERS 2
 #define NINSTANCES 2
@@ -2234,7 +2234,7 @@ static void usage(void)
 		}
 	}
 
-	gentest_init_subsystems;
+	gensec_init();
 
 	if (username_count == 0) {
 		usage();

@@ -389,5 +389,6 @@ WERROR reg_open_remote(struct registry_context **ctx, struct cli_credentials *cr
 
 NTSTATUS registry_rpc_init(void)
 {
+	dcerpc_init();
 	return registry_register(&reg_backend_rpc);
 }

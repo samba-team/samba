@@ -44,7 +44,6 @@
 #include "includes.h"
 #include "utils/net/net.h"
 #include "lib/cmdline/popt_common.h"
-#include "smb_build.h"
 
 /*
   run a function from a function table. If not found then
@@ -186,7 +185,7 @@ static int binary_net(int argc, const char **argv)
 		return net_usage(ctx, argc, argv);
 	}
 
-	net_init_subsystems;
+	dcerpc_init();
 
 	mem_ctx = talloc_init("net_context");
 	ctx = talloc(mem_ctx, struct net_context);

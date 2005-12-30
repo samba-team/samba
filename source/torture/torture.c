@@ -25,7 +25,6 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 #include "ioctl.h"
-#include "smb_build.h"
 
 int torture_nprocs=4;
 int torture_numops=10;
@@ -2609,7 +2608,7 @@ static void max_runtime_handler(int sig)
 		alarm(max_runtime);
 	}
 
-	smbtorture_init_subsystems;
+	dcerpc_init();
 
 	dcerpc_table_init();
 

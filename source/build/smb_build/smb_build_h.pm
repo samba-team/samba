@@ -24,38 +24,7 @@ sub _prepare_smb_build_h($)
 {
 	my $depend = shift;
 	my @defines = ();
-	my %declared = ();
 	my $output = "";
-
-	#
-	# loop over all binaries
-	#
-	foreach my $key (values %{$depend}) {
-		next if ($key->{TYPE} ne "BINARY");
-
-		my $NAME = $key->{NAME};
-		my $DEFINE = ();
-		my $name = lc($NAME);
-
-		#
-		# Static modules
-		# 
-		$DEFINE->{COMMENT} = "BINARY $NAME INIT";
-		$DEFINE->{KEY} = $name . "_init_subsystems";
-		$DEFINE->{VAL} = "do { \\\n";
-		foreach my $subkey (@{$key->{SUBSYSTEM_INIT_FUNCTIONS}}) {
-			next if defined($declared{$subkey});
-			$output .= "NTSTATUS $subkey(void);\n";
-			$declared{$subkey} = 1;
-		}
-	
-		foreach my $subkey (@{$key->{SUBSYSTEM_INIT_FUNCTIONS}}) {
-			$DEFINE->{VAL} .= "\t\tif (NT_STATUS_IS_ERR($subkey())) exit(1); \\\n";
-		}
-		$DEFINE->{VAL} .= "\t} while(0)";
-		
-		push(@defines,$DEFINE);
-	}
 
 	foreach my $key (values %{$depend}) {
 		my $DEFINE = ();
