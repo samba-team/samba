@@ -274,7 +274,7 @@ static void usage(void)
 	printf("  -b basedn        choose baseDN\n");
 	printf("  -a               edit all records (expression 'objectclass=*')\n");
 	printf("  -e editor        choose editor (or $VISUAL or $EDITOR)\n");
-	printf("  -v               verbose mode)\n");
+	printf("  -v               verbose mode\n");
 	exit(1);
 }
 
