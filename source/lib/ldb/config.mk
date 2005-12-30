@@ -8,6 +8,15 @@ OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE libldb_objectclass
+[MODULE::libldb_objectclass]
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		modules/objectclass.o
+# End MODULE libldb_objectclass
+################################################
+
+################################################
 # Start MODULE libldb_rdn_name
 [MODULE::libldb_rdn_name]
 SUBSYSTEM = LIBLDB
