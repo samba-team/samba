@@ -22,11 +22,9 @@
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "system/time.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

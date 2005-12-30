@@ -23,19 +23,10 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "libcli/smb_composite/smb_composite.h"
 #include "winbind/wb_async_helpers.h"
-#include "winbind/wb_server.h"
-#include "smbd/service_stream.h"
 
-#include "librpc/gen_ndr/nbt.h"
-#include "librpc/gen_ndr/samr.h"
 #include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
-#include "libcli/raw/libcliraw.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "libcli/auth/credentials.h"
 
 struct finddcs_state {

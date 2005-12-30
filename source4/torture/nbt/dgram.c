@@ -21,9 +21,7 @@
 */
 
 #include "includes.h"
-#include "libcli/nbt/libnbt.h"
 #include "libcli/dgram/libdgram.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"

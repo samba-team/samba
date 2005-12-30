@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 /*

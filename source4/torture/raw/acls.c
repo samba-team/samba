@@ -21,9 +21,7 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 #define BASEDIR "\\testsd"
 

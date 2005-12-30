@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "dlinklist.h"
-#include "libcli/ldap/ldap.h"
 
 
 struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type)

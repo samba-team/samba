@@ -22,10 +22,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/socket/socket.h"
 #include "smbd/service_task.h"
-#include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"

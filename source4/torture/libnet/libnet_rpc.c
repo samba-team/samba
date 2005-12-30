@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
-#include "libnet/composite.h"
 
 
 BOOL test_lsa_connect(struct libnet_context *ctx)

@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "pstring.h"
 
 BOOL torture_utable(void)

@@ -26,7 +26,6 @@
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "db_wrap.h"
 #include "system/time.h"
 #include "auth/auth.h"
 

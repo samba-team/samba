@@ -33,9 +33,7 @@
 #include "lib/events/events.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "libcli/nbt/libnbt.h"
 
 struct host_state {
 	struct nbt_name name;

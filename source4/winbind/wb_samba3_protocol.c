@@ -21,8 +21,6 @@
 */
 
 #include "includes.h"
-#include "smbd/service_stream.h"
-#include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 #include "winbind/wb_samba3_protocol.h"

@@ -23,8 +23,6 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 
 
 /**

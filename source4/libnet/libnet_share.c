@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
 
 
 NTSTATUS libnet_ListShares(struct libnet_context *ctx, 

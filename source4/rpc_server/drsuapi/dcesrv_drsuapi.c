@@ -25,7 +25,6 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
-#include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 
 /* 

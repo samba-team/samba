@@ -22,9 +22,7 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "winbind/wb_async_helpers.h"
 #include "winbind/wb_server.h"
-#include "smbd/service_stream.h"
 #include "smbd/service_task.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 

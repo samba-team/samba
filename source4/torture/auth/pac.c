@@ -26,7 +26,6 @@
 #include "auth/auth.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 
 static BOOL torture_pac_self_check(void) 
 {

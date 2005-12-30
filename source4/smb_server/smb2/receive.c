@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "smbd/service_stream.h"
 #include "libcli/smb2/smb2.h"
 #include "smb_server/smb_server.h"
 #include "smb_server/smb2/smb2_server.h"

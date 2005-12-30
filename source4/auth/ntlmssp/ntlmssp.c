@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "lib/crypto/crypto.h"
 #include "auth/ntlmssp/ntlmssp.h"
 
 /**

@@ -26,7 +26,6 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "lib/events/events.h"
-#include "libcli/nbt/libnbt.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_RESOLVE, 

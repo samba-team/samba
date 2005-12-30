@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
-#include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "lib/messaging/irpc.h"
 #include "smbd/service_task.h"

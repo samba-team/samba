@@ -21,9 +21,6 @@
 */
 
 #include "includes.h"
-#include "system/network.h"
-#include "libcli/raw/libcliraw.h"
-#include "libcli/composite/composite.h"
 
 /*
   wins name resolution method - async send

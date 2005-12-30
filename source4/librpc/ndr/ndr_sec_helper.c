@@ -22,7 +22,6 @@
 
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   return the wire size of a dom_sid

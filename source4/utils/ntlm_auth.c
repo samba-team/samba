@@ -24,10 +24,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "pstring.h"
 #include "smb_build.h"
 

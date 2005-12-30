@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
-#include "lib/tls/tls.h"
 
 #if HAVE_LIBGNUTLS
 #include "gnutls/gnutls.h"

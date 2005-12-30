@@ -1,7 +1,5 @@
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
-#include "lib/ldb/include/ldb.h"
 
 #define TORTURE_NETBIOS_NAME "smbtorturejoin"
 

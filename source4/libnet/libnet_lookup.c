@@ -23,12 +23,9 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 #include "lib/events/events.h"
 #include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
-#include "libnet/composite.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 
 
 struct lookup_state {

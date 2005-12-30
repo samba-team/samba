@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
 #include "lib/cmdline/popt_common.h"
 
