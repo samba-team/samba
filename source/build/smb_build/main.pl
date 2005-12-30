@@ -16,7 +16,7 @@ use strict;
 
 my $INPUT = {};
 
-my $mkfile = smb_build::config_mk::run_config_mk($INPUT, "main.mk");
+my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, "main.mk");
 
 my $subsystem_output_type;
 

@@ -65,9 +65,6 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/summary.c"],
 	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
 	   AC_MSG_WARN([cannot run when cross-compiling]))
 
-builddir=`pwd`
-AC_SUBST(builddir)
-
 LIBS=`echo $LIBS | sed -e 's/ *//g'`
 if test x"$LIBS" != x""; then
 	echo "LIBS: $LIBS"
@@ -114,5 +111,8 @@ $SMB_INFO_SUBSYSTEMS
 $SMB_INFO_LIBRARIES
 CEOF
 
-AC_OUTPUT_COMMANDS([$PERL -I. -Ibuild build/smb_build/main.pl],[PERL="$PERL";export PERL])
+AC_OUTPUT_COMMANDS(
+[$PERL -I${builddir} -I${srcdir} -I${srcdir}/build ${srcdir}/build/smb_build/main.pl],[
+PERL="$PERL";export PERL;export srcdir; export builddir;
+])
 AC_OUTPUT

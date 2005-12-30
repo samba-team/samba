@@ -94,19 +94,19 @@ use vars qw(@parsed_files);
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
-sub run_config_mk($$)
+sub run_config_mk($$$)
 {
-	sub run_config_mk($$);
-	my ($input, $filename) = @_;
+	sub run_config_mk($$$);
+	my ($input, $srcdir, $filename) = @_;
 	my $result;
 	my $linenum = -1;
 	my $infragment = 0;
 	my $section = "GLOBAL";
 	my $makefile = "";
 
-	push (@parsed_files, $filename);
+	push (@parsed_files, $srcdir."/".$filename);
 	
-	open(CONFIG_MK, $filename) or die("Can't open `$filename'\n");
+	open(CONFIG_MK, $srcdir."/".$filename) or die("Can't open `$srcdir/$filename'\n");
 	my @lines = <CONFIG_MK>;
 	close(CONFIG_MK);
 
@@ -136,7 +136,7 @@ sub run_config_mk($$)
 
 		# include
 		if ($line =~ /^include (.*)$/) {
-			$makefile .= run_config_mk($input, dirname($filename)."/$1");
+			$makefile .= run_config_mk($input, $srcdir, dirname($filename)."/$1");
 			next;
 		}
 
@@ -163,7 +163,7 @@ sub run_config_mk($$)
 			next;
 		}
 
-		die("$filename:$linenum: Bad line while parsing $filename");
+		die("$srcdir."/".$filename:$linenum: Bad line while parsing $srcdir."/".$filename");
 	}
 
 	foreach my $section (keys %{$result}) {
@@ -171,18 +171,18 @@ sub run_config_mk($$)
 
 		my $sectype = $section_types->{$type};
 		if (not defined($sectype)) {
-			die($filename.":[".$section."] unknown section type \"".$type."\"!");
+			die($srcdir."/".$filename.":[".$section."] unknown section type \"".$type."\"!");
 		}
 
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
-		$input->{$name}{BASEDIR} = dirname($filename);
+		$input->{$name}{BASEDIR} = $srcdir."/".dirname($filename);
 
 		foreach my $key (values %{$result->{$section}}) {
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
 			my $vartype = $sectype->{$key->{KEY}};
 			if (not defined($vartype)) {
-				die($filename.":[".$section."]: unknown attribute type \"$key->{KEY}\"!");
+				die($srcdir."/".$filename.":[".$section."]: unknown attribute type \"$key->{KEY}\"!");
 			}
 			if ($vartype eq "string") {
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
