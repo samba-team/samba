@@ -24,22 +24,9 @@
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
+#include "nbt_server/wins/winswack.h"
 #include "system/time.h"
 #include "libcli/composite/composite.h"
-
-struct wins_challenge_io {
-	struct {
-		struct nbtd_server *nbtd_server;
-		struct event_context *event_ctx;
-		struct nbt_name *name;
-		uint32_t num_addresses;
-		const char **addresses;
-	} in;
-	struct {
-		uint32_t num_addresses;
-		const char **addresses;
-	} out;
-};
 
 struct wins_challenge_state {
 	struct wins_challenge_io *io;
@@ -78,7 +65,7 @@ static void wins_challenge_handler(struct nbt_name_request *req)
 	composite_done(ctx);
 }
 
-static NTSTATUS wins_challenge_recv(struct composite_context *ctx, TALLOC_CTX *mem_ctx, struct wins_challenge_io *io)
+NTSTATUS wins_challenge_recv(struct composite_context *ctx, TALLOC_CTX *mem_ctx, struct wins_challenge_io *io)
 {
 	NTSTATUS status = ctx->status;
 	struct wins_challenge_state *state = talloc_get_type(ctx->private_data, struct wins_challenge_state);
@@ -95,7 +82,7 @@ static NTSTATUS wins_challenge_recv(struct composite_context *ctx, TALLOC_CTX *m
 	return status;
 }
 
-static struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_challenge_io *io)
+struct composite_context *wins_challenge_send(TALLOC_CTX *mem_ctx, struct wins_challenge_io *io)
 {
 	struct composite_context *result;
 	struct wins_challenge_state *state;
@@ -254,199 +241,6 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 failed:
 	talloc_free(result);
 	return NULL;
-}
-
-struct wack_state {
-	struct wins_server *winssrv;
-	struct nbt_name_socket *nbtsock;
-	struct nbt_name_packet *request_packet;
-	struct winsdb_record *rec;
-	struct nbt_peer_socket src;
-	const char **owner_addresses;
-	const char *reg_address;
-	struct nbt_name_query query;
-};
-
-
-/*
-  deny a registration request
-*/
-static void wins_wack_deny(struct wack_state *state)
-{
-	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
-				     &state->src, NBT_RCODE_ACT);
-	DEBUG(4,("WINS: denied name registration request for %s from %s:%d\n",
-		 nbt_name_string(state, state->rec->name), state->src.addr, state->src.port));
-	talloc_free(state);
-}
-
-/*
-  allow a registration request
-*/
-static void wins_wack_allow(struct wack_state *state)
-{
-	NTSTATUS status;
-	uint32_t ttl = wins_server_ttl(state->winssrv, state->request_packet->additional[0].ttl);
-	struct winsdb_record *rec = state->rec, *rec2;
-
-	status = winsdb_lookup(state->winssrv->wins_db, rec->name, state, &rec2);
-	if (!NT_STATUS_IS_OK(status)
-	    || rec2->version != rec->version
-	    || strcmp(rec2->wins_owner, rec->wins_owner) != 0) {
-		DEBUG(1,("WINS: record %s changed during WACK - failing registration\n",
-			 nbt_name_string(state, rec->name)));
-		wins_wack_deny(state);
-		return;
-	}
-
-	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
-				     &state->src, NBT_RCODE_OK);
-
-	rec->expire_time = time(NULL) + ttl;
-	rec->registered_by = state->src.addr;
-
-	/* TODO: is it correct to only add this address? */
-	rec->addresses = winsdb_addr_list_add(rec->addresses,
-					      state->reg_address,
-					      WINSDB_OWNER_LOCAL,
-					      rec->expire_time);
-	if (rec->addresses == NULL) goto failed;
-
-	/* if we have more than one address, this becomes implicit a MHOMED record */
-	if (winsdb_addr_list_length(rec->addresses) > 1) {
-		rec->type = WREPL_TYPE_MHOMED;
-	}
-
-	winsdb_modify(state->winssrv->wins_db, rec, WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP);
-
-	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
-		 nbt_name_string(state, rec->name), state->reg_address));
-
-failed:
-	talloc_free(state);
-}
-
-/*
-  called when a name query to a current owner completes
-*/
-static void wins_wack_handler(struct nbt_name_request *req)
-{
-	struct wack_state *state = talloc_get_type(req->async.private, struct wack_state);
-	NTSTATUS status;
-	int i;
-	struct winsdb_record *rec = state->rec;
-
-	status = nbt_name_query_recv(req, state, &state->query);
-
-	/* if we timed out then try the next owner address, if any */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		state->owner_addresses++;
-		if (state->owner_addresses[0] == NULL) {
-			wins_wack_allow(state);
-			return;
-		}
-		state->query.in.dest_addr = state->owner_addresses[0];
-
-		req = nbt_name_query_send(state->nbtsock, &state->query);
-		if (req == NULL) goto failed;
-
-		req->async.fn = wins_wack_handler;
-		req->async.private = state;
-		return;
-	}
-
-	/* if the owner denies it holds the name, then allow
-	   the registration */
-	if (!NT_STATUS_IS_OK(status)) {
-		wins_wack_allow(state);
-		return;
-	}
-
-	/* if the owner still wants the name and doesn't reply
-	   with the address trying to be registered, then deny
-	   the registration */
-	if (!str_list_check(state->query.out.reply_addrs, state->reg_address)) {
-		wins_wack_deny(state);
-		return;
-	}
-
-	/* we are going to allow the registration, but first remove any addresses
-	   from the record that aren't in the reply from the client */
-	for (i=0; state->query.out.reply_addrs[i]; i++) {
-		if (!winsdb_addr_list_check(rec->addresses, state->query.out.reply_addrs[i])) {
-			winsdb_addr_list_remove(rec->addresses, state->query.out.reply_addrs[i]);
-		}
-	}
-
-	wins_wack_allow(state);
-	return;
-
-failed:
-	talloc_free(state);
-}
-
-
-/*
-  a client has asked to register a unique name that someone else owns. We
-  need to ask each of the current owners if they still want it. If they do
-  then reject the registration, otherwise allow it
-*/
-void wins_register_wack(struct nbt_name_socket *nbtsock, 
-			struct nbt_name_packet *packet, 
-			struct winsdb_record *rec,
-			const struct nbt_peer_socket *src)
-{
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						       struct nbtd_interface);
-	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	struct wack_state *state;
-	struct nbt_name_request *req;
-	uint32_t ttl;
-
-	state = talloc(nbtsock, struct wack_state);
-	if (state == NULL) goto failed;
-
-	/* package up the state variables for this wack request */
-	state->winssrv         = winssrv;
-	state->nbtsock         = nbtsock;
-	state->request_packet  = talloc_steal(state, packet);
-	state->rec             = talloc_steal(state, rec);
-	state->owner_addresses = winsdb_addr_string_list(state, rec->addresses);
-	if (state->owner_addresses == NULL) goto failed;
-	state->reg_address     = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
-	state->src.port        = src->port;
-	state->src.addr        = talloc_strdup(state, src->addr);
-	if (state->src.addr == NULL) goto failed;
-
-	/* setup a name query to the first address */
-	state->query.in.name        = *rec->name;
-	state->query.in.dest_addr   = state->owner_addresses[0];
-	state->query.in.broadcast   = False;
-	state->query.in.wins_lookup = True;
-	state->query.in.timeout     = 1;
-	state->query.in.retries     = 2;
-
-	/* the LOGON type is a nasty hack */
-	if (rec->name->type == NBT_NAME_LOGON) {
-		wins_wack_allow(state);
-		return;
-	}
-
-	/* send a WACK to the client, specifying the maximum time it could
-	   take to check with the owner, plus some slack */
-	ttl = 5 + 4 * winsdb_addr_list_length(rec->addresses);
-	nbtd_wack_reply(nbtsock, packet, src, ttl);
-
-	req = nbt_name_query_send(nbtsock, &state->query);
-	if (req == NULL) goto failed;
-
-	req->async.fn = wins_wack_handler;
-	req->async.private = state;
-	return;	
-
-failed:
-	talloc_free(state);
-	nbtd_name_registration_reply(nbtsock, packet, src, NBT_RCODE_SVR);
 }
 
 /*
