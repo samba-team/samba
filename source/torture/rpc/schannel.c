@@ -152,7 +152,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 {
 	BOOL ret = True;
 
-	void *join_ctx;
+	struct test_join *join_ctx;
 	NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding *b;
