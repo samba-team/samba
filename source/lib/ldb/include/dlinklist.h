@@ -71,6 +71,20 @@ do { \
 		} \
 } while (0)
 
+/* insert 'p' after the given element 'el' in a list. If el is NULL then
+   this is the same as a DLIST_ADD() */
+#define DLIST_ADD_AFTER(list, p, el) \
+do { \
+        if (!(list) || !(el)) { \
+		DLIST_ADD(list, p); \
+	} else { \
+		p->prev = el; \
+		p->next = el->next; \
+		el->next = p; \
+		if (p->next) p->next->prev = p; \
+	}\
+} while (0)
+
 /* demote an element to the end of the list, needs a tmp pointer */
 #define DLIST_DEMOTE(list, p, tmp) \
 do { \
