@@ -22,6 +22,7 @@ dn: CASE_INSENSITIVE
 sAMAccountName: CASE_INSENSITIVE
 objectClass: CASE_INSENSITIVE
 unicodePwd: HIDDEN
+krb5Key: HIDDEN
 ntPwdHash: HIDDEN
 ntPwdHistory: HIDDEN
 lmPwdHash: HIDDEN
@@ -69,5 +70,5 @@ isSynchronized: TRUE
 #Add modules to the list to activate them by default
 #beware often order is important
 dn: @MODULES
-@LIST: rootdse,samldb,operational,objectguid,rdn_name
+@LIST: rootdse,samldb,password_hash,operational,objectguid,rdn_name
 

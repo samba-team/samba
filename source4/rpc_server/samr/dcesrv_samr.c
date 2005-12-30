@@ -877,7 +877,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = a_state->account_dn;
+	msg->dn = ldb_dn_copy(msg, a_state->account_dn);
 
 	if (samdb_msg_add_uint(a_state->sam_ctx, mem_ctx, msg, 
 			       "userAccountControl", 
@@ -2880,6 +2880,10 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* modify the samdb record */
 	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
+		DEBUG(1,("Failed to modify record %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
+			 ldb_errstring(a_state->sam_ctx)));
+
 		/* we really need samdb.c to return NTSTATUS */
 		return NT_STATUS_UNSUCCESSFUL;
 	}
