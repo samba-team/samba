@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
+#include "nbt_server/wins/winsserver.h"
 #include "libcli/composite/composite.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
