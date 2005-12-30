@@ -37,7 +37,6 @@ static int ejs_doauth(MprVarHandle eid,
 	struct auth_context *auth_context;
 	const char *auth_types[] = { authtype, NULL };
 	NTSTATUS nt_status;
-	DATA_BLOB pw_blob;
 
 	/*
 	  darn, we need some way to get the right event_context here
@@ -49,8 +48,6 @@ static int ejs_doauth(MprVarHandle eid,
 		goto done;
 	}
 
-	pw_blob = data_blob(password, strlen(password)+1);
-	
 	user_info = talloc(tmp_ctx, struct auth_usersupplied_info);
 	if (!user_info) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
