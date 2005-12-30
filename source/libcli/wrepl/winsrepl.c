@@ -193,8 +193,8 @@ failed:
 */
 struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx, 
 				        struct event_context *event_ctx,
-					struct socket_context *socket,
-					struct packet_context *packet)
+					struct socket_context *sock,
+					struct packet_context *pack)
 {
 	struct wrepl_socket *wrepl_socket;
 
@@ -204,7 +204,7 @@ struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx,
 	wrepl_socket->event.ctx = talloc_reference(wrepl_socket, event_ctx);
 	if (wrepl_socket->event.ctx == NULL) goto failed;
 
-	wrepl_socket->sock = socket;
+	wrepl_socket->sock = sock;
 	talloc_steal(wrepl_socket, wrepl_socket->sock);
 
 
@@ -218,7 +218,7 @@ struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	wrepl_socket->packet = packet;
+	wrepl_socket->packet = pack;
 	talloc_steal(wrepl_socket, wrepl_socket->packet);
 	packet_set_private(wrepl_socket->packet, wrepl_socket);
 	packet_set_socket(wrepl_socket->packet, wrepl_socket->sock);
