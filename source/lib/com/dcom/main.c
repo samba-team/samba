@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_remact.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "lib/com/dcom/dcom.h"
+#include "librpc/rpc/dcerpc_table.h"
 
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
