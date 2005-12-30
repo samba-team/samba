@@ -20,9 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define WINSDB_OWNER_LOCAL	"0.0.0.0"
-#define WINSDB_GROUP_ADDRESS	"255.255.255.255"
-
 #define WINSDB_FLAG_ALLOC_VERSION	(1<<0)
 #define WINSDB_FLAG_TAKE_OWNERSHIP	(1<<1)
 
@@ -53,6 +50,9 @@ struct winsdb_record {
 struct winsdb_handle {
 	/* wins server database handle */
 	struct ldb_context *ldb;
+
+	/* local owner address */
+	const char *local_owner;
 };
 
 struct wins_server {
