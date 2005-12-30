@@ -25,8 +25,6 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
-#include "libcli/nbt/libnbt.h"
 #include "libcli/composite/composite.h"
 
 struct nbtlist_state {

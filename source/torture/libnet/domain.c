@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/libnet.h"
 

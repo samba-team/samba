@@ -22,8 +22,6 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
-#include "libnet/composite.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 
 
 BOOL torture_lookup(void)

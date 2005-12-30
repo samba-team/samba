@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   Test rename on files open with share delete and no share delete.

@@ -35,7 +35,6 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "dlinklist.h"
-#include "libcli/nbt/libnbt.h"
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
 

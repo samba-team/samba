@@ -22,8 +22,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "librpc/gen_ndr/ndr_samr.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 /**
  * Return a anonymous logon for anonymous users (username = "")

@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "system/network.h"
 
 /*
   pull a general string from the wire

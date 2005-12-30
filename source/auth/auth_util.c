@@ -23,9 +23,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_samr.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "auth/auth.h"
 
 /* this default function can be used by mostly all backends

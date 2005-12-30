@@ -22,14 +22,11 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "librpc/gen_ndr/ndr_samr.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/cldap/cldap.h"
 #include "include/secrets.h"
-#include "librpc/gen_ndr/drsuapi.h"
 #include "dsdb/samdb/samdb.h"
 
 /*

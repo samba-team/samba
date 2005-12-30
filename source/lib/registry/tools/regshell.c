@@ -20,11 +20,9 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/time.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "smb_build.h"
 
 /* 

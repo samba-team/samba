@@ -21,18 +21,9 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/socket/socket.h"
-#include "smbd/service_task.h"
-#include "smbd/service_stream.h"
-#include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
-#include "nbt_server/wins/winsdb.h"
-#include "ldb/include/ldb.h"
 #include "libcli/composite/composite.h"
-#include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_out_helpers.h"
 
 static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL propagate);

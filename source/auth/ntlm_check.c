@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "lib/crypto/crypto.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
 /****************************************************************************

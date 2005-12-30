@@ -22,14 +22,11 @@
 
 #include "includes.h"
 #include "lib/socket/socket.h"
-#include "system/dir.h"
-#include "system/filesys.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "nsswitch/winbind_nss_config.h"
-#include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)

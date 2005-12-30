@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"

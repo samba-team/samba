@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
-#include "librpc/gen_ndr/nbt.h"
 #include "libcli/composite/composite.h"
 
 

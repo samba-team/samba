@@ -21,8 +21,6 @@
 
 #include "includes.h"
 #include "lib/registry/registry.h"
-#include "lib/cmdline/popt_common.h"
-#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 #include "smb_build.h"
 

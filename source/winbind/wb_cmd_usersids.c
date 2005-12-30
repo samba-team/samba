@@ -23,10 +23,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
-#include "smbd/service_stream.h"
 #include "smbd/service_task.h"
-#include "lib/events/events.h"
-#include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
 /* Calculate the token in two steps: Go the user's originating domain, ask for

@@ -22,10 +22,8 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
-#include "librpc/gen_ndr/ndr_dcom.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"

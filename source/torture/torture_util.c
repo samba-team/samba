@@ -22,7 +22,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/shmem.h"
 #include "system/time.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 
 /*
