@@ -479,6 +479,10 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 			goto failed;
 		}
 	}
+	if (num_values > 25) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
 
 	rec->addresses     = talloc_array(rec, struct winsdb_addr *, num_values+1);
 	if (rec->addresses == NULL) {
