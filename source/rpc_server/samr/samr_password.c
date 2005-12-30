@@ -48,7 +48,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS status = NT_STATUS_OK;
-	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , "unicodePwd", NULL };
+	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , NULL };
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
@@ -156,14 +156,17 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
+		DEBUG(1,("Failed to modify record to change password on %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
+			 ldb_errstring(sam_ctx)));
 		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* And this confirms it in a transaction commit */
 	ret = ldb_transaction_commit(sam_ctx);
 	if (ret != 0) {
-		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
+		DEBUG(1,("Failed to commit transaction to change password on %s: %s\n",
 			 ldb_dn_linearize(mem_ctx, a_state->account_dn),
 			 ldb_errstring(sam_ctx)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -186,7 +189,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	const struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
-	const char * const attrs[] = { "objectSid", "lmPwdHash", "unicodePwd", NULL };
+	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
@@ -285,8 +288,11 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	 * makes the write to the database. */
 	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
+		DEBUG(1,("Failed to modify record to change password on %s: %s\n",
+			 ldb_dn_linearize(mem_ctx, user_dn),
+			 ldb_errstring(sam_ctx)));
 		ldb_transaction_cancel(sam_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* And this confirms it in a transaction commit */
@@ -316,7 +322,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	const struct ldb_dn *user_dn;
 	int ret;
 	struct ldb_message **res, *mod;
-	const char * const attrs[] = { "ntPwdHash", "lmPwdHash", "unicodePwd", NULL };
+	const char * const attrs[] = { "ntPwdHash", "lmPwdHash", NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo = NULL;
@@ -526,22 +532,20 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    struct samr_DomInfo1 **_dominfo)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
-					    "ntPwdHistory", "unicodePwd", 
-					    "lmPwdHash", "ntPwdHash", "badPwdCount", 
-					    "objectSid", NULL };
+					    "ntPwdHistory", 
+					    "lmPwdHash", "ntPwdHash", 
+					    "objectSid", 
+					    "pwdLastSet", NULL };
 	const char * const domain_attrs[] = { "pwdProperties", "pwdHistoryLength", 
 					      "maxPwdAge", "minPwdAge", 
-					      "minPwdLength", "pwdLastSet", NULL };
-	const char *unicodePwd;
+					      "minPwdLength", NULL };
 	NTTIME pwdLastSet;
 	int64_t minPwdAge;
 	uint_t minPwdLength, pwdProperties, pwdHistoryLength;
-	uint_t userAccountControl, badPwdCount;
-	struct samr_Password *lmPwdHistory, *ntPwdHistory, lmPwdHash, ntPwdHash;
-	struct samr_Password *new_lmPwdHistory, *new_ntPwdHistory;
+	uint_t userAccountControl;
+	struct samr_Password *lmPwdHistory, *ntPwdHistory, *lmPwdHash, *ntPwdHash;
 	struct samr_Password local_lmNewHash, local_ntNewHash;
 	int lmPwdHistory_len, ntPwdHistory_len;
-	uint_t kvno;
 	struct dom_sid *domain_sid;
 	struct ldb_message **res;
 	int count;
@@ -557,17 +561,14 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	if (count != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	unicodePwd =         samdb_result_string(res[0], "unicodePwd", NULL);
 	userAccountControl = samdb_result_uint(res[0],   "userAccountControl", 0);
-	badPwdCount =        samdb_result_uint(res[0],   "badPwdCount", 0);
 	lmPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
 						 "lmPwdHistory", &lmPwdHistory);
 	ntPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
 						 "ntPwdHistory", &ntPwdHistory);
-	lmPwdHash =          samdb_result_hash(res[0],   "lmPwdHash");
-	ntPwdHash =          samdb_result_hash(res[0],   "ntPwdHash");
+	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "lmPwdHash");
+	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "ntPwdHash");
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
-	kvno =               samdb_result_uint(res[0],   "msDS-KeyVersionNumber", 0);
 
 	if (domain_dn) {
 		/* pull the domain parameters */
@@ -663,13 +664,13 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 		/* check the immediately past password */
 		if (pwdHistoryLength > 0) {
-			if (lmNewHash && memcmp(lmNewHash->hash, lmPwdHash.hash, 16) == 0) {
+			if (lmNewHash && lmPwdHash && memcmp(lmNewHash->hash, lmPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
-			if (ntNewHash && memcmp(ntNewHash->hash, ntPwdHash.hash, 16) == 0) {
+			if (ntNewHash && ntPwdHash && memcmp(ntNewHash->hash, ntPwdHash->hash, 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
 				}
@@ -680,27 +681,6 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		/* check the password history */
 		lmPwdHistory_len = MIN(lmPwdHistory_len, pwdHistoryLength);
 		ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
-		
-		if (pwdHistoryLength > 0) {
-			if (unicodePwd && new_pass && strcmp(unicodePwd, new_pass) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-			if (lmNewHash && memcmp(lmNewHash->hash, lmPwdHash.hash, 16) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-			if (ntNewHash && memcmp(ntNewHash->hash, ntPwdHash.hash, 16) == 0) {
-				if (reject_reason) {
-					*reject_reason = SAMR_REJECT_COMPLEXITY;
-				}
-				return NT_STATUS_PASSWORD_RESTRICTION;
-			}
-		}
 		
 		for (i=0; lmNewHash && i<lmPwdHistory_len;i++) {
 			if (memcmp(lmNewHash->hash, lmPwdHistory[i].hash, 16) == 0) {
@@ -723,79 +703,30 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 #define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
 
 	/* the password is acceptable. Start forming the new fields */
-	if (lmNewHash) {
-		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
-	} else {
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHash"));
-	}
-
-	if (ntNewHash) {
-		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
-	} else {
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHash"));
-	}
-
-	if (new_pass && (pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
-	    (userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+	if (new_pass) {
+		/* if we know the cleartext, then only set it.
+		 * Modules in ldb will set all the appropriate
+		 * hashes */
 		CHECK_RET(samdb_msg_add_string(ctx, mem_ctx, mod, 
 					       "unicodePwd", new_pass));
 	} else {
+		/* We don't have the cleartext, so delete the old one
+		 * and set what we have of the hashes */
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "unicodePwd"));
+
+		if (lmNewHash) {
+			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
+		} else {
+			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHash"));
+		}
+		
+		if (ntNewHash) {
+			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
+		} else {
+			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHash"));
+		}
 	}
 
-	CHECK_RET(samdb_msg_add_uint64(ctx, mem_ctx, mod, "pwdLastSet", now_nt));
-
-	CHECK_RET(samdb_msg_add_uint(ctx, mem_ctx, mod, "msDS-KeyVersionNumber", kvno + 1));
-	
-	if (pwdHistoryLength == 0) {
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHistory"));
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHistory"));
-		return NT_STATUS_OK;
-	}
-	
-	/* store the password history */
-	new_lmPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
-					  pwdHistoryLength);
-	if (!new_lmPwdHistory) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	new_ntPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
-					  pwdHistoryLength);
-	if (!new_ntPwdHistory) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	for (i=0;i<MIN(pwdHistoryLength-1, lmPwdHistory_len);i++) {
-		new_lmPwdHistory[i+1] = lmPwdHistory[i];
-	}
-	for (i=0;i<MIN(pwdHistoryLength-1, ntPwdHistory_len);i++) {
-		new_ntPwdHistory[i+1] = ntPwdHistory[i];
-	}
-
-	/* Don't store 'long' passwords in the LM history, 
-	   but make sure to 'expire' one password off the other end */
-	if (lmNewHash) {
-		new_lmPwdHistory[0] = *lmNewHash;
-	} else {
-		ZERO_STRUCT(new_lmPwdHistory[0]);
-	}
-	lmPwdHistory_len = MIN(lmPwdHistory_len + 1, pwdHistoryLength);
-
-	if (ntNewHash) {
-		new_ntPwdHistory[0] = *ntNewHash;
-	} else {
-		ZERO_STRUCT(new_ntPwdHistory[0]);
-	}
-	ntPwdHistory_len = MIN(ntPwdHistory_len + 1, pwdHistoryLength);
-	
-	CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
-				       "lmPwdHistory", 
-				       new_lmPwdHistory, 
-				       lmPwdHistory_len));
-
-	CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
-				       "ntPwdHistory", 
-				       new_ntPwdHistory, 
-				       ntPwdHistory_len));
 	return NT_STATUS_OK;
 }
 

@@ -54,9 +54,7 @@ static const char * const krb5_attrs[] = {
 	"userPrincipalName",
 	"servicePrincipalName",
 
-	"unicodePwd",
-	"lmPwdHash",
-	"ntPwdHash",
+	"krb5Key",
 
 	"userAccountControl",
 
@@ -222,7 +220,6 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 					 struct ldb_message *realm_ref_msg,
 					 hdb_entry_ex *entry_ex)
 {
-	const char *unicodePwd;
 	unsigned int userAccountControl;
 	int i;
 	krb5_error_code ret = 0;
@@ -233,6 +230,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	struct hdb_ldb_private *private;
 	NTTIME acct_expiry;
+	struct ldb_message_element *ldb_keys;
 
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val;
@@ -382,106 +380,28 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	entry_ex->entry.generation = NULL;
 
-	/* create the keys and enctypes */
-	unicodePwd = ldb_msg_find_string(msg, "unicodePwd", NULL);
-	if (unicodePwd) {
-		/* Many, many thanks to lukeh@padl.com for this
-		 * algorithm, described in his Nov 10 2004 mail to
-		 * samba-technical@samba.org */
+	/* Get krb5Key from the db */
 
-		Principal *salt_principal;
-		const char *user_principal_name = ldb_msg_find_string(msg, "userPrincipalName", NULL);
-		if (is_computer) {
-			/* Determine a salting principal */
-			char *samAccountName = talloc_strdup(mem_ctx, ldb_msg_find_string(msg, "samAccountName", NULL));
-			char *saltbody;
-			if (!samAccountName) {
-				krb5_set_error_string(context, "LDB_message2entry: no samAccountName present");
-				ret = ENOENT;
-				goto out;
-			}
-			if (samAccountName[strlen(samAccountName)-1] == '$') {
-				samAccountName[strlen(samAccountName)-1] = '\0';
-			}
-			saltbody = talloc_asprintf(mem_ctx, "%s.%s", samAccountName, dnsdomain);
-			
-			ret = krb5_make_principal(context, &salt_principal, realm, "host", saltbody, NULL);
-		} else if (user_principal_name) {
-			char *p;
-			user_principal_name = talloc_strdup(mem_ctx, user_principal_name);
-			if (!user_principal_name) {
-				ret = ENOMEM;
-				goto out;
-			} else {
-				p = strchr(user_principal_name, '@');
-				if (p) {
-					p[0] = '\0';
-				}
-				ret = krb5_make_principal(context, &salt_principal, realm, user_principal_name, NULL);
-			} 
-		} else {
-			const char *samAccountName = ldb_msg_find_string(msg, "samAccountName", NULL);
-			ret = krb5_make_principal(context, &salt_principal, realm, samAccountName, NULL);
-		}
+	ldb_keys = ldb_msg_find_element(msg, "krb5Key");
 
-		if (ret == 0) {
-			size_t num_keys = entry_ex->entry.keys.len;
-			/*
-			 * create keys from unicodePwd
-			 */
-			ret = hdb_generate_key_set_password(context, salt_principal, 
-							    unicodePwd, 
-							    &entry_ex->entry.keys.val, &num_keys);
-			entry_ex->entry.keys.len = num_keys;
-			krb5_free_principal(context, salt_principal);
-		}
+	/* allocate space to decode into */
+	entry_ex->entry.keys.val = calloc(ldb_keys->num_values, sizeof(Key));
+	if (entry_ex->entry.keys.val == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+	entry_ex->entry.keys.len = ldb_keys->num_values;
 
-		if (ret != 0) {
-			krb5_warnx(context, "could not generate keys from unicodePwd\n");
-			entry_ex->entry.keys.val = NULL;
-			entry_ex->entry.keys.len = 0;
+	/* Decode Kerberos keys into the hdb structure */
+	for (i=0; i < entry_ex->entry.keys.len; i++) {
+		size_t decode_len;
+		ret = decode_Key(ldb_keys->values[i].data, ldb_keys->values[i].length, 
+				 &entry_ex->entry.keys.val[i], &decode_len);
+		if (ret) {
+			/* Could be bougus data in the entry, or out of memory */
 			goto out;
 		}
-	} else {
-		const struct ldb_val *val;
-		krb5_data keyvalue;
-
-		val = ldb_msg_find_ldb_val(msg, "ntPwdHash");
-		if (!val) {
-			krb5_warnx(context, "neither type of key available for this account\n");
-			entry_ex->entry.keys.val = NULL;
-			entry_ex->entry.keys.len = 0;
-		} else if (val->length < 16) {
-			entry_ex->entry.keys.val = NULL;
-			entry_ex->entry.keys.len = 0;
-			krb5_warnx(context, "ntPwdHash has invalid length: %d\n",
-				   (int)val->length);
-		} else {
-			ret = krb5_data_alloc (&keyvalue, 16);
-			if (ret) {
-				krb5_clear_error_string(context);
-				ret = ENOMEM;
-				goto out;
-			}
-
-			memcpy(keyvalue.data, val->data, 16);
-
-			entry_ex->entry.keys.val = malloc(sizeof(entry_ex->entry.keys.val[0]));
-			if (entry_ex->entry.keys.val == NULL) {
-				krb5_data_free(&keyvalue);
-				krb5_clear_error_string(context);
-				ret = ENOMEM;
-				goto out;
-			}
-			
-			memset(&entry_ex->entry.keys.val[0], 0, sizeof(Key));
-			entry_ex->entry.keys.val[0].key.keytype = ETYPE_ARCFOUR_HMAC_MD5;
-			entry_ex->entry.keys.val[0].key.keyvalue = keyvalue;
-			
-			entry_ex->entry.keys.len = 1;
-		}
-	}		
-
+	}
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
