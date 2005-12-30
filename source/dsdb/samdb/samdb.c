@@ -510,13 +510,13 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 /*
   pull a samr_Password structutre from a result set. 
 */
-struct samr_Password samdb_result_hash(struct ldb_message *msg, const char *attr)
+struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char *attr)
 {
-	struct samr_Password hash;
+	struct samr_Password *hash = NULL;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
-	ZERO_STRUCT(hash);
-	if (val) {
-		memcpy(hash.hash, val->data, MIN(val->length, sizeof(hash.hash)));
+	if (val && (val->length >= sizeof(hash->hash))) {
+		hash = talloc(mem_ctx, struct samr_Password);
+		memcpy(hash->hash, val->data, MIN(val->length, sizeof(hash->hash)));
 	}
 	return hash;
 }
@@ -555,62 +555,28 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
 				struct samr_Password **lm_pwd, struct samr_Password **nt_pwd) 
 {
-
-	const char *unicodePwd = samdb_result_string(msg, "unicodePwd", NULL);
-	
 	struct samr_Password *lmPwdHash, *ntPwdHash;
-	if (unicodePwd) {
-		if (nt_pwd) {
-			ntPwdHash = talloc(mem_ctx, struct samr_Password);
-			if (!ntPwdHash) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			
-			E_md4hash(unicodePwd, ntPwdHash->hash);
-			*nt_pwd = ntPwdHash;
+	if (nt_pwd) {
+		int num_nt;
+		num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
+		if (num_nt == 0) {
+			*nt_pwd = NULL;
+		} else if (num_nt > 1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else {
+			*nt_pwd = &ntPwdHash[0];
 		}
-
-		if (lm_pwd) {
-			BOOL lm_hash_ok;
-		
-			lmPwdHash = talloc(mem_ctx, struct samr_Password);
-			if (!lmPwdHash) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			
-			/* compute the new nt and lm hashes */
-			lm_hash_ok = E_deshash(unicodePwd, lmPwdHash->hash);
-			
-			if (lm_hash_ok) {
-				*lm_pwd = lmPwdHash;
-			} else {
-				*lm_pwd = NULL;
-			}
+	}
+	if (lm_pwd) {
+		int num_lm;
+		num_lm = samdb_result_hashes(mem_ctx, msg, "lmPwdHash", &lmPwdHash);
+		if (num_lm == 0) {
+			*lm_pwd = NULL;
+		} else if (num_lm > 1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else {
+			*lm_pwd = &lmPwdHash[0];
 		}
-	} else {
-		if (nt_pwd) {
-			int num_nt;
-			num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
-			if (num_nt == 0) {
-				*nt_pwd = NULL;
-			} else if (num_nt > 1) {
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-			} else {
-				*nt_pwd = &ntPwdHash[0];
-			}
-		}
-		if (lm_pwd) {
-			int num_lm;
-			num_lm = samdb_result_hashes(mem_ctx, msg, "lmPwdHash", &lmPwdHash);
-			if (num_lm == 0) {
-				*lm_pwd = NULL;
-			} else if (num_lm > 1) {
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-			} else {
-				*lm_pwd = &lmPwdHash[0];
-			}
-		}
-		
 	}
 	return NT_STATUS_OK;
 }
@@ -729,13 +695,9 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 int samdb_msg_add_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name)
 {
-	char *a = talloc_strdup(mem_ctx, attr_name);
-	if (a == NULL) {
-		return -1;
-	}
 	/* we use an empty replace rather than a delete, as it allows for 
 	   samdb_replace() to be used everywhere */
-	return ldb_msg_add_empty(msg, a, LDB_FLAG_MOD_REPLACE);
+	return ldb_msg_add_empty(msg, attr_name, LDB_FLAG_MOD_REPLACE);
 }
 
 /*

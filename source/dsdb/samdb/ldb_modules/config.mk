@@ -50,3 +50,15 @@ OBJ_FILES = \
 # End MODULE libldb_rootdse
 ################################################
 
+################################################
+# Start MODULE libldb_password_hash
+[MODULE::libldb_password_hash]
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		password_hash.o
+REQUIRED_SUBSYSTEMS = \
+		HEIMDAL_HDB HEIMDAL_KRB5
+#
+# End MODULE libldb_rootdse
+################################################
+
