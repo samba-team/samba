@@ -1,7 +1,4 @@
 dn: CN=Administrator,CN=Users,${BASEDN}
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
 objectClass: user
 cn: Administrator
 description: Built-in account for administering the computer/domain
@@ -22,9 +19,6 @@ unicodePwd: ${ADMINPASS}
 unixName: ${ROOT}
 
 dn: CN=Guest,CN=Users,${BASEDN}
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
 objectClass: user
 cn: Guest
 description: Built-in account for guest access to the computer/domain
@@ -83,10 +77,6 @@ privilege: SeRemoteInteractiveLogonRight
 
 
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: user
 objectClass: computer
 cn: ${NETBIOSNAME}
 uSNCreated: 1

@@ -38,11 +38,13 @@ logonCount: 0
 sAMAccountType: 0x30000000
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 
-dn: CN=TemplateServer,CN=Templates,${BASEDN}
+dn: CN=TemplateComputer,CN=Templates,${BASEDN}
 objectClass: top
+objectClass: person
+objectClass: organizationalPerson
 objectClass: Template
 objectClass: userTemplate
-cn: TemplateServer
+cn: TemplateComputer
 instanceType: 4
 userAccountControl: 0x1002
 badPwdCount: 0
