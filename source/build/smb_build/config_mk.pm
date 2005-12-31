@@ -29,8 +29,8 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 
-		"PUBLIC_PROTO_HEADER" => "string",
-		"PRIVATE_PROTO_HEADER" => "string"
+		"PUBLIC_PROTO_HEADER"	=> "string",
+		"PRIVATE_PROTO_HEADER"	=> "string"
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -44,7 +44,7 @@ my $section_types = {
 		"NOPROTO"		=> "bool",
 
 		"MANPAGE"		=> "string",
-		"PRIVATE_PROTO_HEADER" => "string"
+		"PRIVATE_PROTO_HEADER"	=> "string"
 		},
 	"BINARY" => {
 		"OBJ_FILES"		=> "list",
@@ -56,7 +56,7 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
-		"PRIVATE_PROTO_HEADER" => "string"
+		"PRIVATE_PROTO_HEADER"	=> "string"
 		},
 	"LIBRARY" => {
 		"MAJOR_VERSION"		=> "string",
@@ -65,7 +65,7 @@ my $section_types = {
 
 		"OBJ_FILES"		=> "list",
 
-		"DESCRIPTION" => "string",
+		"DESCRIPTION"		=> "string",
 
 		"REQUIRED_SUBSYSTEMS"	=> "list",
 
@@ -74,10 +74,10 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 
-		"PUBLIC_HEADERS" => "list",
+		"PUBLIC_HEADERS"	=> "list",
 
-		"PUBLIC_PROTO_HEADER" => "string",
-		"PRIVATE_PROTO_HEADER" => "string"
+		"PUBLIC_PROTO_HEADER"	=> "string",
+		"PRIVATE_PROTO_HEADER"	=> "string"
 		}
 };
 
@@ -174,7 +174,7 @@ sub run_config_mk($$$)
 
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
-		$input->{$name}{BASEDIR} = $srcdir."/".dirname($filename);
+		$input->{$name}{BASEDIR} = dirname($filename);
 
 		foreach my $key (values %{$result->{$section}}) {
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
