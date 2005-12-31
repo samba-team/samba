@@ -30,6 +30,9 @@ _kerberos._tcp		IN SRV 0 100 88		${HOSTNAME}
 _kerberos._tcp.dc._msdcs	IN SRV 0 100 88	${HOSTNAME}
 _kerberos._tcp.${DEFAULTSITE}._sites.dc._msdcs	IN SRV 0 100 88 ${HOSTNAME}
 _kerberos._udp		IN SRV 0 100 88		${HOSTNAME}
+; MIT kpasswd likes to lookup this name on password change
+_kerberos-master._tcp		IN SRV 0 100 88		${HOSTNAME}
+_kerberos-master._udp		IN SRV 0 100 88		${HOSTNAME}
 ;
 ; kpasswd
 _kpasswd._tcp		IN SRV 0 100 464	${HOSTNAME}
