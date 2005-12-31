@@ -4070,6 +4070,9 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 	vals = ldap_get_values(ld, entry, "sambaGroupType");
 	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(5, ("\"sambaGroupType\" not found\n"));
+		if (vals != NULL) {
+			ldap_value_free(vals);
+		}
 		return False;
 	}
 
@@ -4077,8 +4080,11 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 
 	if ((state->group_type != 0) &&
 	    ((state->group_type != group_type))) {
+		ldap_value_free(vals);
 		return False;
 	}
+
+	ldap_value_free(vals);
 
 	/* display name is the NT group name */
 
@@ -4119,6 +4125,9 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 	vals = ldap_get_values(ld, entry, "sambaSid");
 	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(0, ("\"objectSid\" not found\n"));
+		if (vals != NULL) {
+			ldap_value_free(vals);
+		}
 		return False;
 	}
 
