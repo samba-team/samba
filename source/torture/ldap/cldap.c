@@ -89,6 +89,12 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	printf("Trying with User=NULL\n");
+
+	search.in.user = NULL;
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 	printf("Trying with User=Administrator\n");
 
 	search.in.user = "Administrator";
