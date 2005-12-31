@@ -115,7 +115,6 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_CHARLEN		(1<<11)
 #define LIBNDR_FLAG_STR_UTF8		(1<<12)
 #define LIBNDR_FLAG_STR_FIXLEN15	(1<<13)
-#define LIBNDR_FLAG_STR_LARGE_SIZE	(1<<14)
 #define LIBNDR_STRING_FLAGS		(0x7FFC)
 
 
