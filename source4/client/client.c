@@ -34,7 +34,7 @@
 #include "system/readline.h"
 #include "pstring.h"
 #include "auth/gensec/gensec.h"
-#include "system/time.h"
+#include "system/time.h" /* needed by some systems for asctime() */
 
 static struct smbcli_state *cli;
 static int port = 0;
