@@ -643,12 +643,6 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 
-	if (ndr->flags & LIBNDR_FLAG_STR_NULLTERM) {
-		/* Explicitly ignore the return value here. An array that 
-		 * is not zero-terminated is considered a warning only, not fatal */
-		ndr_check_string_terminator(ndr, length, byte_mul);
-	}
-	
 	ret = convert_string_talloc(ndr->current_mem_ctx,
 				    chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
