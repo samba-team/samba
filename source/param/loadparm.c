@@ -675,7 +675,7 @@ static void init_globals(void)
 	do_parameter("LocalMaster", "True", NULL);
 
 	do_parameter("wins support", "False", NULL);
-	do_parameter("dns proxy", "False", NULL);
+	do_parameter("dns proxy", "True", NULL);
 
 	do_parameter("winbind separator", "\\", NULL);
 	do_parameter("winbind sealed pipes", "True", NULL);
