@@ -199,6 +199,21 @@ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRI
 	free(s);
 }
 
+static void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+{
+	va_list ap;
+	int i;
+
+	for (i=0;i<ndr->depth;i++) {
+		ndr->private = talloc_asprintf_append(ndr->private, "    ");
+	}
+
+	va_start(ap, format);
+	ndr->private = talloc_vasprintf_append(ndr->private, format, ap);
+	va_end(ap);
+	ndr->private = talloc_asprintf_append(ndr->private, "\n");
+}
+
 /*
   a useful helper function for printing idl structures via DEBUG()
 */
@@ -246,6 +261,27 @@ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int fla
 	ndr->flags = 0;
 	fn(ndr, name, flags, ptr);
 	talloc_free(ndr);
+}
+
+
+/*
+  a useful helper function for printing idl function calls to a string
+*/
+char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
+				ndr_print_function_t fn, const char *name, 
+				int flags, void *ptr)
+{
+	struct ndr_print *ndr;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_print);
+	if (!ndr) return NULL;
+	ndr->private = talloc_strdup(mem_ctx, "");
+	ndr->print = ndr_print_string_helper;
+	ndr->depth = 1;
+	ndr->flags = 0;
+	fn(ndr, name, flags, ptr);
+	talloc_free(ndr);
+	return ndr->private;
 }
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
