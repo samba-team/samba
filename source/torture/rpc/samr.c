@@ -2262,7 +2262,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	n.in.num_names = r.out.sam->count;
 	n.in.names = talloc_array(mem_ctx, struct lsa_String, r.out.sam->count);
 	for (i=0;i<r.out.sam->count;i++) {
-		n.in.names[i] = r.out.sam->entries[i].name;
+		n.in.names[i].string = r.out.sam->entries[i].name.string;
 	}
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (!NT_STATUS_IS_OK(status)) {
