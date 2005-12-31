@@ -65,7 +65,6 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
-	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_LARGE_SIZE:
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &ofs));
 		if (ofs != 0) {
@@ -94,16 +93,8 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len2 + c_len_term)*byte_mul));
 
-		if (ndr->flags & LIBNDR_FLAG_STR_LARGE_SIZE) {
-			if (len1 != 0 && len2 == 0) {
-				DEBUG(6,("len1[%u] != (len2[%u]) '%s'\n", len1, len2, as));
-			} else if (len1 != (len2 + 1)) {
-				DEBUG(6,("len1[%u] != (len2[%u]+1) '%s'\n", len1, len2, as));
-			}
-		} else {
-			if (len1 != len2) {
-				DEBUG(6,("len1[%u] != len2[%u] '%s'\n", len1, len2, as));
-			}
+		if (len1 != len2) {
+			DEBUG(6,("len1[%u] != len2[%u] '%s'\n", len1, len2, as));
 		}
 
 		/* this is a way of detecting if a string is sent with the wrong
@@ -351,7 +342,6 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 		c_len_term = 0;
-	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_LARGE_SIZE:
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len+c_len_term));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
