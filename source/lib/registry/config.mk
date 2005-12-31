@@ -16,9 +16,9 @@ REQUIRED_SUBSYSTEMS = TDR
 NOPROTO = YES
 OBJ_FILES = tdr_regf.o
 
-lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
-lib/registry/tdr_regf.c: lib/registry/regf.idl
-	@CPP="$(CPP)" $(PERL) pidl/pidl $(PIDL_ARGS) --header --outputdir=lib/registry --tdr-parser -- lib/registry/regf.idl
+$(srcdir)/lib/registry/reg_backend_nt4.c: $(builddir)/lib/registry/tdr_regf.c
+$(builddir)/lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
+	@CPP="$(CPP)" $(PERL) pidl/pidl $(PIDL_ARGS) --header --outputdir=$(builddir)/lib/registry --tdr-parser -- $(srcdir)/lib/registry/regf.idl
 
 ################################################
 # Start MODULE registry_w95
