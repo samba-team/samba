@@ -84,7 +84,6 @@ uSNChanged: 1
 objectGUID: ${HOSTGUID}
 userAccountControl: 532480
 localPolicyFlags: 0
-pwdLastSet: ${NTTIME}
 primaryGroupID: 516
 objectSid: ${DOMAINSID}-1000
 accountExpires: 9223372036854775807
@@ -101,7 +100,6 @@ servicePrincipalName: HOST/${DNSNAME}/${REALM}
 servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
 servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
 servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
-msDS-KeyVersionNumber: 1
 
 
 dn: CN=Users,CN=Builtin,${BASEDN}
@@ -264,7 +262,6 @@ uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
 userAccountControl: 514
-pwdLastSet: 127258826179466560
 objectSid: ${DOMAINSID}-502
 adminCount: 1
 accountExpires: 9223372036854775807
