@@ -583,7 +583,16 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto notfound;
+		if (!lp_wins_dns_proxy()) {
+			goto notfound;
+		}
+
+		if (name->type != NBT_NAME_CLIENT && name->type != NBT_NAME_SERVER) {
+			goto notfound;
+		}
+
+		nbtd_wins_dns_proxy_query(nbtsock, packet, src);
+		return;
 	}
 
 	/*
