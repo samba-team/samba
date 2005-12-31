@@ -28,6 +28,38 @@
 #include "libcli/composite/composite.h"
 #include "smbd/service_task.h"
 
+struct wins_dns_proxy_state {
+	struct nbt_name_socket *nbtsock;
+	struct nbt_name_packet *packet;
+	struct nbt_peer_socket src;
+};
+
+static void nbtd_wins_dns_proxy_handler(struct composite_context *creq)
+{
+	NTSTATUS status;
+	struct wins_dns_proxy_state *s = talloc_get_type(creq->async.private_data,
+							 struct wins_dns_proxy_state);
+	struct nbt_name *name = &s->packet->questions[0].name;
+	const char *address;
+	const char **addresses;
+	uint16_t nb_flags = 0; /* TODO: ... */
+
+	status = resolve_name_recv(creq, s->packet, &address);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto notfound;
+	}
+
+	addresses = str_list_add(NULL, address);
+	talloc_steal(s->packet, addresses);
+	if (!addresses) goto notfound;
+
+	nbtd_name_query_reply(s->nbtsock, s->packet, &s->src, name, 
+			      0, nb_flags, addresses);
+	return;
+notfound:
+	nbtd_negative_name_query_reply(s->nbtsock, s->packet, &s->src);
+}
+
 /*
   dns proxy query a name
 */
@@ -35,6 +67,29 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 			       struct nbt_name_packet *packet, 
 			       const struct nbt_peer_socket *src)
 {
-	/* TODO: add a real implementation here */
+	struct nbt_name *name = &packet->questions[0].name;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private,
+						       struct nbtd_interface);
+	struct wins_dns_proxy_state *s;
+	struct composite_context *creq;
+	const char *methods[] = {
+		"host",
+		NULL
+	};
+
+	s = talloc(nbtsock, struct wins_dns_proxy_state);
+	if (!s) goto failed;
+	s->nbtsock	= nbtsock;
+	s->packet	= talloc_steal(s, packet);
+	s->src		= *src;
+	talloc_steal(s, src->addr);
+
+	creq = resolve_name_send(name, iface->nbtsrv->task->event_ctx, methods);
+	if (!creq) goto failed;
+
+	creq->async.fn		= nbtd_wins_dns_proxy_handler;
+	creq->async.private_data= s;
+	return;
+failed:
 	nbtd_negative_name_query_reply(nbtsock, packet, src);
 }
