@@ -96,16 +96,34 @@ nomem:
 	return;
 }
 
-static uint32_t wreplsrv_calc_change_count(struct wreplsrv_partner *partner)
+static uint32_t wreplsrv_calc_change_count(struct wreplsrv_partner *partner, uint64_t seqnumber)
 {
-	/* TODO: add a real implementation here */
-	return (uint32_t)-1;
+	uint64_t tmp_diff = UINT32_MAX;
+
+	/* catch an overflow */
+	if (partner->push.seqnumber > seqnumber) {
+		goto done;
+	}
+
+	tmp_diff = seqnumber - partner->push.seqnumber;
+
+	if (tmp_diff > UINT32_MAX) {
+		tmp_diff = UINT32_MAX;
+		goto done;
+	}
+
+done:
+	partner->push.seqnumber = seqnumber;
+	return (uint32_t)(tmp_diff & UINT32_MAX);
 }
 
 NTSTATUS wreplsrv_out_push_run(struct wreplsrv_service *service)
 {
 	struct wreplsrv_partner *partner;
+	uint64_t seqnumber;
 	uint32_t change_count;
+
+	seqnumber = wreplsrv_local_db_seqnumber(service);
 
 	for (partner = service->partners; partner; partner = partner->next) {
 		/* if it's not a push partner, go to the next partner */
@@ -115,7 +133,7 @@ NTSTATUS wreplsrv_out_push_run(struct wreplsrv_service *service)
 		if (partner->push.change_count == 0) continue;
 
 		/* get the actual change count for the partner */
-		change_count = wreplsrv_calc_change_count(partner);
+		change_count = wreplsrv_calc_change_count(partner, seqnumber);
 
 		/* if the configured change count isn't reached, go to the next partner */
 		if (change_count < partner->push.change_count) continue;
