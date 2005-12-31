@@ -601,13 +601,11 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	 * the record is released or tombstoned
 	 */
 	if (rec->type == WREPL_TYPE_GROUP) {
-		addresses = talloc_array(packet, const char *, 2);
-		if (addresses == NULL) {
-			nbtd_negative_name_query_reply(nbtsock, packet, src);
-			return;
+		addresses = str_list_add(NULL, "255.255.255.255");
+		talloc_steal(packet, addresses);
+		if (!addresses) {
+			goto notfound;
 		}
-		addresses[0] = "255.255.255.255";
-		addresses[1] = NULL;
 		goto found;
 	}
 
