@@ -779,14 +779,14 @@ static BOOL test_CreateAccount(struct dcerpc_pipe *p,
 static BOOL test_DeleteTrustedDomain(struct dcerpc_pipe *p, 
 				     TALLOC_CTX *mem_ctx, 
 				     struct policy_handle *handle,
-				     struct lsa_String name)
+				     struct lsa_StringLarge name)
 {
 	NTSTATUS status;
 	struct lsa_OpenTrustedDomainByName r;
 	struct policy_handle trustdom_handle;
 
 	r.in.handle = handle;
-	r.in.name = name;
+	r.in.name.string = name.string;
 	r.in.access_mask = SEC_STD_DELETE;
 	r.out.trustdom_handle = &trustdom_handle;
 
@@ -1466,7 +1466,7 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 		}
 
 		trust_by_name.in.handle = handle;
-		trust_by_name.in.name = domains->domains[i].name;
+		trust_by_name.in.name.string = domains->domains[i].name.string;
 		trust_by_name.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		trust_by_name.out.trustdom_handle = &trustdom_handle;
 			
@@ -1524,7 +1524,7 @@ static BOOL test_query_each_TrustDom(struct dcerpc_pipe *p,
 			struct lsa_QueryTrustedDomainInfoByName q;
 			union lsa_TrustedDomainInfo info;
 			q.in.handle         = handle;
-			q.in.trusted_domain = domains->domains[i].name;
+			q.in.trusted_domain.string = domains->domains[i].name.string;
 			q.in.level          = levels[j];
 			q.out.info          = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, mem_ctx, &q);
