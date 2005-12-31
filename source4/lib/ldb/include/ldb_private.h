@@ -150,6 +150,7 @@ int lsqlite3_connect(struct ldb_context *ldb,
 struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[]);
+struct ldb_module *objectclass_module_init(struct ldb_context *ldb, const char *options[]);
 
 
 int ldb_match_msg(struct ldb_context *ldb,
