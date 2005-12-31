@@ -649,8 +649,7 @@ void nb_flush(int fnum, NTSTATUS status)
 
 void nb_sleep(int usec, NTSTATUS status)
 {
-	(void)status;
-	sys_usleep(usec);
+	usleep(usec);
 }
 
 void nb_deltree(const char *dname)
