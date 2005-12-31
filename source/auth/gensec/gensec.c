@@ -949,7 +949,7 @@ NTSTATUS gensec_init(void)
 	init_module_fn *shared_init = load_samba_modules(NULL, "gensec");
 
 	if (initialized) return NT_STATUS_OK;
-	initialized = False;
+	initialized = True;
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
