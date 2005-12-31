@@ -55,7 +55,8 @@ sub process_file($)
 	while (my $line = <FILE>) {
 		if ($line =~ /extern const struct dcerpc_interface_table (\w+);/) {
 			$found = 1;
-			$init_fns.="\tlibrpc_register_interface(&$1);\n";
+			$init_fns.="\tstatus = librpc_register_interface(&$1);\n";
+			$init_fns.="\tif (NT_STATUS_IS_ERR(status)) return status;\n\n";
 		}
 	}
 
@@ -81,12 +82,9 @@ process_file($_) foreach (@ARGV);
 
 print TABLEC <<EOF;
 
-NTSTATUS dcerpc_table_init(void)
+NTSTATUS dcerpc_register_builtin_interfaces(void)
 {
-	static BOOL initialized = False;
-
-	if (initialized) return NT_STATUS_OK;
-	initialized = True;
+	NTSTATUS status;
 
 $init_fns
 	

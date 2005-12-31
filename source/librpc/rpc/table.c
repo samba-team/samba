@@ -119,3 +119,16 @@ const struct dcerpc_interface_list *librpc_dcerpc_pipes(void)
 }
 
 
+NTSTATUS dcerpc_register_builtin_interfaces();
+
+NTSTATUS dcerpc_table_init(void)
+{
+	static BOOL initialized = False;
+
+	if (initialized) return NT_STATUS_OK;
+	initialized = True;
+
+	dcerpc_register_builtin_interfaces();
+
+	return NT_STATUS_OK;
+}
