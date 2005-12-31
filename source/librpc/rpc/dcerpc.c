@@ -1216,17 +1216,20 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
   bug in either the pull or push side of our code
 */
 static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
-					TALLOC_CTX *mem_ctx,
+					struct ndr_pull *pull_in,
 					void *struct_ptr,
 					size_t struct_size,
 					ndr_push_flags_fn_t ndr_push,
-					ndr_pull_flags_fn_t ndr_pull)
+					ndr_pull_flags_fn_t ndr_pull,
+					ndr_print_function_t ndr_print)
 {
 	void *st;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	NTSTATUS status;
 	DATA_BLOB blob, blob2;
+	TALLOC_CTX *mem_ctx = pull_in;
+	char *s1, *s2;
 
 	st = talloc_size(mem_ctx, struct_size);
 	if (!st) {
@@ -1283,6 +1286,16 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		return ndr_push_error(push, NDR_ERR_VALIDATE, 
 				      "failed output validation data - %s",
 				      nt_errstr(status));
+	}
+
+	/* this checks the printed forms of the two structures, which effectively
+	   tests all of the value() attributes */
+	s1 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE", 
+				       NDR_OUT, struct_ptr);
+	s2 = ndr_print_function_string(mem_ctx, ndr_print, "VALIDATE", 
+				       NDR_OUT, st);
+	if (strcmp(s1, s2) != 0) {
+		printf("VALIDATE ERROR:\nWIRE:\n%s\n GEN:\n%s\n", s1, s2);
 	}
 
 	return NT_STATUS_OK;
@@ -1415,7 +1428,8 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 
 	if (p->conn->flags & DCERPC_DEBUG_VALIDATE_OUT) {
 		status = dcerpc_ndr_validate_out(p->conn, pull, r, call->struct_size, 
-						 call->ndr_push, call->ndr_pull);
+						 call->ndr_push, call->ndr_pull, 
+						 call->ndr_print);
 		if (!NT_STATUS_IS_OK(status)) {
 			dcerpc_log_packet(table, opnum, NDR_OUT, 
 				  &response);
