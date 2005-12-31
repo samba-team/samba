@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "system/passwd.h"
+#include "system/passwd.h" /* needed by some systems for struct passwd */
 
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
