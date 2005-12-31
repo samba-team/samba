@@ -162,6 +162,9 @@ ifeq (1,0)
 test-schema:
 	@echo "STARTING SCHEMA MODULE TEST"
 	tests/test-schema.sh
+else
+test-schema:
+	@echo "SKIPPING SCHEMA MODULE TEST"
 endif
 
 test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
