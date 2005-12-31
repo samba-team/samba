@@ -140,12 +140,12 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 
 	pstr_sprintf(filter, "(objectClass=%s)", LDAP_OBJ_IDPOOL);
 
-	attr_list = get_attr_list( idpool_attr_list );
+	attr_list = get_attr_list( NULL, idpool_attr_list );
 
 	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(),
 			       LDAP_SCOPE_SUBTREE, filter,
 			       attr_list, 0, &result);
-	free_attr_list( attr_list );
+	talloc_free( attr_list );
 	 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldap_allocate_id: %s object not found\n", LDAP_OBJ_IDPOOL));
@@ -251,7 +251,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		LDAP_OBJ_IDMAP_ENTRY, type,  
 		((id_type & ID_USERID) ? (unsigned long)id.uid : (unsigned long)id.gid));
 		
-	attr_list = get_attr_list( sidmap_attr_list );
+	attr_list = get_attr_list( NULL, sidmap_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
 		filter, attr_list, 0, &result);
 
@@ -280,7 +280,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 
 	ret = NT_STATUS_OK;
 out:
-	free_attr_list( attr_list );	 
+	talloc_free( attr_list );	 
 
 	if (result)
 		ldap_msgfree(result);
@@ -323,7 +323,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 
 	/* do the search and check for errors */
 
-	attr_list = get_attr_list( sidmap_attr_list );
+	attr_list = get_attr_list( NULL, sidmap_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
 		filter, attr_list, 0, &result);
 			
@@ -397,7 +397,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	}
 	
 out:
-	free_attr_list( attr_list );
+	talloc_free( attr_list );
 	if (result)
 		ldap_msgfree(result);
 	SAFE_FREE(dn);
@@ -420,10 +420,10 @@ static NTSTATUS verify_idpool( void )
 	
 	fstr_sprintf( filter, "(objectclass=%s)", LDAP_OBJ_IDPOOL );
 	
-	attr_list = get_attr_list( idpool_attr_list );
+	attr_list = get_attr_list( NULL, idpool_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), 
 		LDAP_SCOPE_SUBTREE, filter, attr_list, 0, &result);
-	free_attr_list ( attr_list );
+	talloc_free ( attr_list );
 
 	if (rc != LDAP_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;

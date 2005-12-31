@@ -230,7 +230,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  Return the list of attribute names from a mapping table
  **********************************************************************/
 
- const char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
+ const char** get_attr_list( TALLOC_CTX *mem_ctx, ATTRIB_MAP_ENTRY table[] )
 {
 	const char **names;
 	int i = 0;
@@ -239,7 +239,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		i++;
 	i++;
 
-	names = SMB_MALLOC_ARRAY( const char*, i );
+	names = TALLOC_ARRAY( mem_ctx, const char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;
@@ -247,35 +247,12 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 
 	i = 0;
 	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		names[i] = SMB_STRDUP( table[i].name );
+		names[i] = talloc_strdup( names, table[i].name );
 		i++;
 	}
 	names[i] = NULL;
 	
 	return names;
-}
-
-/*********************************************************************
- Cleanup 
- ********************************************************************/
-
- void free_attr_list( const char **list )
-{
-	int i = 0;
-
-	if ( !list )
-		return; 
-
-	while ( list[i] ) {
-		/* SAFE_FREE generates a warning here that can't be gotten rid
-		 * of with CONST_DISCARD */
-		if (list[i] != NULL) {
-			free(CONST_DISCARD(char *, list[i]));
-		}
-		i+=1;
-	}
-
-	SAFE_FREE( list );
 }
 
 /*******************************************************************
@@ -367,15 +344,40 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return 0;
 }
 
- void talloc_autodestroy_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result)
+ void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result)
 {
 	LDAPMessage **handle;
+
+	if (result == NULL) {
+		return;
+	}
 
 	handle = TALLOC_P(mem_ctx, LDAPMessage *);
 	SMB_ASSERT(handle != NULL);
 
 	*handle = result;
 	talloc_set_destructor(handle, ldapmsg_destructor);
+}
+
+ static int ldapmod_destructor(void *p) {
+	LDAPMod ***result = talloc_get_type_abort(p, LDAPMod **);
+	ldap_mods_free(*result, True);
+	return 0;
+}
+
+ void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod)
+{
+	LDAPMod ***handle;
+
+	if (mod == NULL) {
+		return;
+	}
+
+	handle = TALLOC_P(mem_ctx, LDAPMod **);
+	SMB_ASSERT(handle != NULL);
+
+	*handle = mod;
+	talloc_set_destructor(handle, ldapmod_destructor);
 }
 
 /************************************************************************
@@ -1180,12 +1182,22 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	alarm(lp_ldap_timeout());
 	/* End setup timeout. */
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
 				       CONST_DISCARD(char **, attrs),
 				       attrsonly, sctrls, cctrls, &timeout,
 				       sizelimit, res);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed search for base: %s, error: %s "
+				  "(%s)\n", base, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 
 	SAFE_FREE(utf8_filter);
 
@@ -1314,8 +1326,18 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed to modify dn: %s, error: %s "
+				  "(%s)\n", dn, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 		
 	SAFE_FREE(utf8_dn);
 	return rc;
@@ -1336,8 +1358,18 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed to add dn: %s, error: %s "
+				  "(%s)\n", dn, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 	
 	SAFE_FREE(utf8_dn);
 	return rc;
@@ -1358,8 +1390,18 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Failed to delete dn: %s, error: %s "
+				  "(%s)\n", dn, ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
 	
 	SAFE_FREE(utf8_dn);
 	return rc;
@@ -1377,34 +1419,33 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 	if (!ldap_state)
 		return (-1);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
+	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
 					       reqdata, serverctrls,
 					       clientctrls, retoidp, retdatap);
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct,
+					LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(10,("Extended operation failed with error: %s "
+				  "(%s)\n", ldap_err2string(rc),
+				  ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+		}
+	}
+		
 	return rc;
 }
 
 /*******************************************************************
  run the search by name.
 ******************************************************************/
-int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter, 
-			   const char **search_attr, LDAPMessage ** result)
+int smbldap_search_suffix (struct smbldap_state *ldap_state,
+			   const char *filter, const char **search_attr,
+			   LDAPMessage ** result)
 {
-	int scope = LDAP_SCOPE_SUBTREE;
-	int rc;
-
-	rc = smbldap_search(ldap_state, lp_ldap_suffix(), scope, filter, search_attr, 0, result);
-
-	if (rc != LDAP_SUCCESS)	{
-		char *ld_error = NULL;
-		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(0,("smbldap_search_suffix: Problem during the LDAP search: %s (%s)\n", 
-			ld_error?ld_error:"(unknown)", ldap_err2string (rc)));
-		SAFE_FREE(ld_error);
-	}
-	
-	return rc;
+	return smbldap_search(ldap_state, lp_ldap_suffix(), LDAP_SCOPE_SUBTREE,
+			      filter, search_attr, 0, result);
 }
 
 static void smbldap_idle_fn(void **data, time_t *interval, time_t now)
