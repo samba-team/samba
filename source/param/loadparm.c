@@ -164,6 +164,7 @@ typedef struct
 	int web_port;
 	char *socket_options;
 	BOOL bWINSsupport;
+	BOOL bWINSdnsProxy;
 	BOOL bLocalMaster;
 	BOOL bPreferredMaster;
 	BOOL bEncryptPasswords;
@@ -519,6 +520,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"wins server", P_LIST, P_GLOBAL, &Globals.szWINSservers, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"dns proxy", P_BOOL, P_GLOBAL, &Globals.bWINSdnsProxy, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 
 	{"Locking Options", P_SEP, P_SEPARATOR},
 	
@@ -672,7 +674,8 @@ static void init_globals(void)
 	do_parameter("PreferredMaster", "Auto", NULL);
 	do_parameter("LocalMaster", "True", NULL);
 
-	do_parameter("WINSsupport", "False", NULL);
+	do_parameter("wins support", "False", NULL);
+	do_parameter("dns proxy", "False", NULL);
 
 	do_parameter("winbind separator", "\\", NULL);
 	do_parameter("winbind sealed pipes", "True", NULL);
@@ -847,6 +850,7 @@ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
+FN_GLOBAL_BOOL(lp_wins_dns_proxy, &Globals.bWINSdnsProxy)
 FN_GLOBAL_BOOL(lp_local_master, &Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
 FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
