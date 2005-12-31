@@ -1045,10 +1045,7 @@ char *talloc_asprintf(const void *t, const char *fmt, ...)
  * and return @p s, which may have moved.  Good for gradually
  * accumulating output into a string buffer.
  **/
-
-static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-
-static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
+char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 {	
 	struct talloc_chunk *tc;
 	int len, s_len;
