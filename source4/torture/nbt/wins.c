@@ -25,8 +25,8 @@
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
+		printf("(%s) Incorrect value %s=%d (0x%X) - should be %d (0x%X)\n", \
+		       __location__, #v, v, v, correct, correct); \
 		ret = False; \
 	}} while (0)
 
@@ -40,7 +40,7 @@
 
 #define CHECK_NAME(_name, correct) do { \
 	CHECK_STRING((_name).name, (correct).name); \
-	CHECK_VALUE((_name).type, (correct).type); \
+	CHECK_VALUE((uint8_t)(_name).type, (uint8_t)(correct).type); \
 	CHECK_STRING((_name).scope, (correct).scope); \
 } while (0)
 
@@ -293,7 +293,7 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 	uint32_t r = (uint32_t)(random() % (100000));
 
 	name.name = talloc_asprintf(mem_ctx, "_TORTURE-%5u", r);
-				    
+
 	name.type = NBT_NAME_CLIENT;
 	name.scope = NULL;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
@@ -303,11 +303,23 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
+	name.type = NBT_NAME_SERVER;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
+
 	name.type = NBT_NAME_LOGON;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
 	name.type = NBT_NAME_BROWSER;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
+
+	name.type = NBT_NAME_PDC;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
+
+	name.type = 0xBF;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
+
+	name.type = 0xBE;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	name.scope = "example";
 	name.type = 0x72;
