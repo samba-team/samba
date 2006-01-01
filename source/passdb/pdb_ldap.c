@@ -3567,31 +3567,41 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry;
 	char *allsids = NULL;
-	char *tmp;
 	int i, rc, num_mapped;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_NO_MEMORY;
+	TALLOC_CTX *mem_ctx;
+	LDAP *ld;
+	BOOL is_builtin;
 
-	if (!sid_equal(domain_sid, get_global_sam_sid())) {
-		/* TODO: Sooner or later we need to look up BUILTIN rids as
-		 * well. -- vl */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		goto done;
+	}
+
+	if (!sid_check_is_builtin(domain_sid) &&
+	    !sid_check_is_domain(domain_sid)) {
+		result = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
 
 	for (i=0; i<num_rids; i++)
 		attrs[i] = SID_NAME_UNKNOWN;
 
-	allsids = SMB_STRDUP("");
-	if (allsids == NULL) return NT_STATUS_NO_MEMORY;
+	allsids = talloc_strdup(mem_ctx, "");
+	if (allsids == NULL) {
+		goto done;
+	}
 
 	for (i=0; i<num_rids; i++) {
 		DOM_SID sid;
 		sid_copy(&sid, domain_sid);
 		sid_append_rid(&sid, rids[i]);
-		tmp = allsids;
-		asprintf(&allsids, "%s(sambaSid=%s)", allsids,
-			 sid_string_static(&sid));
-		if (allsids == NULL) return NT_STATUS_NO_MEMORY;
-		free(tmp);
+		allsids = talloc_asprintf_append(allsids, "(sambaSid=%s)",
+						 sid_string_static(&sid));
+		if (allsids == NULL) {
+			goto done;
+		}
 	}
 
 	/* First look for users */
@@ -3600,40 +3610,43 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		char *filter;
 		const char *ldap_attrs[] = { "uid", "sambaSid", NULL };
 
-		asprintf(&filter, ("(&(objectClass=sambaSamAccount)(|%s))"),
-			 allsids);
-		if (filter == NULL) return NT_STATUS_NO_MEMORY;
+		filter = talloc_asprintf(
+			mem_ctx, ("(&(objectClass=sambaSamAccount)(|%s))"),
+			allsids);
+
+		if (filter == NULL) {
+			goto done;
+		}
 
 		rc = smbldap_search(ldap_state->smbldap_state,
 				    lp_ldap_user_suffix(),
 				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
 				    &msg);
-
-		SAFE_FREE(filter);
+		talloc_autofree_ldapmsg(mem_ctx, msg);
 	}
 
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
+	ld = ldap_state->smbldap_state->ldap_struct;
 	num_mapped = 0;
 
-	for (entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, msg);
+	for (entry = ldap_first_entry(ld, msg);
 	     entry != NULL;
-	     entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, entry))
-	{
+	     entry = ldap_next_entry(ld, entry)) {
 		uint32 rid;
 		int rid_index;
-		fstring str;
+		const char *name;
 
-		if (!ldapsam_extract_rid_from_entry(ldap_state->smbldap_state->ldap_struct, entry,
-						    get_global_sam_sid(),
+		if (!ldapsam_extract_rid_from_entry(ld, entry, domain_sid,
 						    &rid)) {
 			DEBUG(2, ("Could not find sid from ldap entry\n"));
 			continue;
 		}
 
-		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-						  "uid", str, sizeof(str)-1)) {
+		name = smbldap_talloc_single_attribute(ld, entry, "uid",
+						       names);
+		if (name == NULL) {
 			DEBUG(2, ("Could not retrieve uid attribute\n"));
 			continue;
 		}
@@ -3649,9 +3662,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		}
 
 		attrs[rid_index] = SID_NAME_USER;
-		names[rid_index] = talloc_strdup(names, str);
-		if (names[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
-
+		names[rid_index] = name;
 		num_mapped += 1;
 	}
 
@@ -3665,41 +3676,79 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 
 	{
 		char *filter;
-		const char *ldap_attrs[] = { "cn", "sambaSid", NULL };
+		const char *ldap_attrs[] = { "cn", "displayName", "sambaSid",
+					     "sambaGroupType", NULL };
 
-		asprintf(&filter, ("(&(objectClass=sambaGroupMapping)(|%s))"),
-			 allsids);
-		if (filter == NULL) return NT_STATUS_NO_MEMORY;
+		filter = talloc_asprintf(
+			mem_ctx, "(&(objectClass=sambaGroupMapping)(|%s))",
+			allsids);
+		if (filter == NULL) {
+			goto done;
+		}
 
 		rc = smbldap_search(ldap_state->smbldap_state,
 				    lp_ldap_group_suffix(),
 				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
 				    &msg);
-
-		SAFE_FREE(filter);
+		talloc_autofree_ldapmsg(mem_ctx, msg);
 	}
 
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
-	for (entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, msg);
+	/* ldap_struct might have changed due to a reconnect */
+
+	ld = ldap_state->smbldap_state->ldap_struct;
+
+	/* For consistency checks, we already checked we're only domain or builtin */
+
+	is_builtin = sid_check_is_builtin(domain_sid);
+
+	for (entry = ldap_first_entry(ld, msg);
 	     entry != NULL;
-	     entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, entry))
+	     entry = ldap_next_entry(ld, entry))
 	{
 		uint32 rid;
 		int rid_index;
-		fstring str;
+		const char *attr;
+		enum SID_NAME_USE type;
+		const char *dn = smbldap_talloc_dn(mem_ctx, ld, entry);
 
-		if (!ldapsam_extract_rid_from_entry(ldap_state->smbldap_state->ldap_struct, entry,
-						    get_global_sam_sid(),
-						    &rid)) {
-			DEBUG(2, ("Could not find sid from ldap entry\n"));
+		attr = smbldap_talloc_single_attribute(ld, entry, "sambaGroupType",
+						       mem_ctx);
+		if (attr == NULL) {
+			DEBUG(2, ("Could not extract type from ldap entry %s\n",
+				  dn));
 			continue;
 		}
 
-		if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-						  "cn", str, sizeof(str)-1)) {
-			DEBUG(2, ("Could not retrieve cn attribute\n"));
+		type = atol(attr);
+
+		/* Consistency checks */
+		if ((is_builtin && (type != SID_NAME_WKN_GRP)) ||
+		    (!is_builtin && ((type != SID_NAME_ALIAS) &&
+				     (type != SID_NAME_DOM_GRP)))) {
+			DEBUG(2, ("Rejecting invalid group mapping entry %s\n", dn));
+		}
+
+		if (!ldapsam_extract_rid_from_entry(ld, entry, domain_sid,
+						    &rid)) {
+			DEBUG(2, ("Could not find sid from ldap entry %s\n", dn));
+			continue;
+		}
+
+		attr = smbldap_talloc_single_attribute(ld, entry, "cn", names);
+
+		if (attr == NULL) {
+			DEBUG(10, ("Could not retrieve 'cn' attribute from %s\n",
+				   dn));
+			attr = smbldap_talloc_single_attribute(
+				ld, entry, "displayName", names);
+		}
+
+		if (attr == NULL) {
+			DEBUG(2, ("Could not retrieve naming attribute from %s\n",
+				  dn));
 			continue;
 		}
 
@@ -3713,9 +3762,8 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 			continue;
 		}
 
-		attrs[rid_index] = SID_NAME_DOM_GRP;
-		names[rid_index] = talloc_strdup(names, str);
-		if (names[rid_index] == NULL) return NT_STATUS_NO_MEMORY;
+		attrs[rid_index] = type;
+		names[rid_index] = attr;
 		num_mapped += 1;
 	}
 
@@ -3725,11 +3773,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		result = (num_mapped == num_rids) ?
 			NT_STATUS_OK : STATUS_SOME_UNMAPPED;
  done:
-	SAFE_FREE(allsids);
-
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
+	talloc_free(mem_ctx);
 	return result;
 }
 
