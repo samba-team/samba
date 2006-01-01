@@ -4149,8 +4149,13 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
 			return False;
 		}
-		if (current_user.uid == sbuf_file.st_uid) {
-			return True;
+		/*
+		 * Patch from SATOH Fumiyasu <fumiyas@miraclelinux.com>
+		 * for bug #3348. Don't assume owning sticky bit
+		 * directory means write access allowed.
+		 */
+		if (current_user.uid != sbuf_file.st_uid) {
+			return False;
 		}
 		return False;
 	}
