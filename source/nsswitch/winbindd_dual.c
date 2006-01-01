@@ -342,7 +342,6 @@ struct winbindd_child_dispatch_table {
 static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	
 	{ WINBINDD_LOOKUPSID,            winbindd_dual_lookupsid,             "LOOKUPSID" },
-	{ WINBINDD_LOOKUPSIDS,           winbindd_dual_lookupsids,            "LOOKUPSIDS" },
 	{ WINBINDD_LOOKUPNAME,           winbindd_dual_lookupname,            "LOOKUPNAME" },
 	{ WINBINDD_LIST_TRUSTDOM,        winbindd_dual_list_trusted_domains,  "LIST_TRUSTDOM" },
 	{ WINBINDD_INIT_CONNECTION,      winbindd_dual_init_connection,       "INIT_CONNECTION" },
@@ -362,8 +361,6 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_DUAL_USERINFO,        winbindd_dual_userinfo,              "DUAL_USERINFO" },
 	{ WINBINDD_ALLOCATE_UID,         winbindd_dual_allocate_uid,          "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID,         winbindd_dual_allocate_gid,          "ALLOCATE_GID" },
-	{ WINBINDD_QUERY_ALIASMEM,       winbindd_dual_query_aliasmem,        "QUERY_ALIASMEM" },
-	{ WINBINDD_QUERY_GROUPMEM,       winbindd_dual_query_groupmem,        "QUERY_GROUPMEM" },
 	{ WINBINDD_GETUSERDOMGROUPS,     winbindd_dual_getuserdomgroups,      "GETUSERDOMGROUPS" },
 	{ WINBINDD_DUAL_GETSIDALIASES,   winbindd_dual_getsidaliases,         "GETSIDALIASES" },
 	/* End of list */

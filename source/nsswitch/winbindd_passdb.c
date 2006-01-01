@@ -287,16 +287,6 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS lookupsids(struct winbindd_domain *domain,
-			   TALLOC_CTX *mem_ctx,
-			   uint32 num_sids, const DOM_SID *sids,
-			   char ***domain_names, char ***names,
-			   enum SID_NAME_USE **types)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -338,25 +328,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	return NT_STATUS_OK;
-}
-
-static NTSTATUS query_aliasmem(struct winbindd_domain *domain,
-			       TALLOC_CTX *mem_ctx,
-			       uint32 alias_rid,
-			       uint32 *num_members,
-			       DOM_SID **members)
-{
-	/* This needs fixing! */
-	return NT_STATUS_NO_SUCH_ALIAS;
-}
-
-static NTSTATUS query_groupmem(struct winbindd_domain *domain,
-			       TALLOC_CTX *mem_ctx,
-			       uint32 group_rid,
-			       uint32 *num_members,
-			       uint32 **members)
-{
-	return NT_STATUS_NO_SUCH_GROUP;
 }
 
 /* find the sequence number for a domain */
@@ -445,13 +416,10 @@ struct winbindd_methods passdb_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
-	lookupsids,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
-	query_aliasmem,
-	query_groupmem,
 	sequence_number,
 	lockout_policy,
 	password_policy,

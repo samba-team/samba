@@ -75,7 +75,6 @@ enum winbindd_cmd {
 	/* SID conversion */
 
 	WINBINDD_LOOKUPSID,
-	WINBINDD_LOOKUPSIDS,
 	WINBINDD_LOOKUPNAME,
 
 	/* Lookup functions */
@@ -119,8 +118,6 @@ enum winbindd_cmd {
 
 	/* Various group queries */
 	WINBINDD_GETUSERDOMGROUPS,
-	WINBINDD_QUERY_ALIASMEM,
-	WINBINDD_QUERY_GROUPMEM,
 
 	/* Initialize connection in a child */
 	WINBINDD_INIT_CONNECTION,
