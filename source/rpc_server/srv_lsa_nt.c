@@ -103,9 +103,7 @@ static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->num_ref_doms_1; num++) {
-			fstring domname;
-			rpcstr_pull(domname, ref->ref_dom[num].uni_dom_name.buffer, sizeof(domname), -1, 0);
-			if (strequal(domname, dom_name))
+			if (sid_equal(dom_sid, &ref->ref_dom[num].ref_dom.sid))
 				return num;
 		}
 	} else {
