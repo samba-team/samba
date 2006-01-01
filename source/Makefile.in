@@ -835,7 +835,7 @@ MAKEDIR = || exec false; \
 # of gcc-3.4 and run 'make pch' before you do the main build. 
 pch:
 	rm -f $(srcdir)/include/includes.h.gch
-	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
+	$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
 ##
 ## Targets for 'make test'
