@@ -22,8 +22,12 @@ Introduction of LDB
 Samba now stores most of its persistent data in a LDAP-like database 
 called LDB (see ldb(7) for more info). 
 
+Built-in LDAP server
+====================
+FIXME
+
 Much improved SWAT
-===============
+==================
 SWAT has had some rather large improvements and is now more then just a 
 direct editor for smb.conf. Its layout has been improved. SWAT can now also 
 be used for editing run-time data - maintaining user information, provisioning,
@@ -37,7 +41,9 @@ Changed configuration options
 =============================
 Several configuration options have been removed in Samba4 while others have 
 been introduced. This section contains a summary of changes to smb.conf and 
-where these settings moved.
+where these settings moved. Configuration options that have disappeared may be 
+re-added later when the functionality that uses them gets reimplemented in 
+Samba 4.
 
 The 'security' parameter has been split up. It is now only used to choose 
 between the 'user' and 'share' security levels (the latter is not supported 
