@@ -54,13 +54,11 @@ sub _prepare_smb_build_h($)
 
 		my $name = $key->{NAME};
 		next if not defined($key->{INIT_FUNCTION});
-		my $func = join(' ', @{$key->{INIT_FUNCTION}});
-		next if $func eq "";
 
 		my $DEFINE = ();
 		
 		$DEFINE->{COMMENT} = "$name is built shared";
-		$DEFINE->{KEY} = $func;
+		$DEFINE->{KEY} = $key->{INIT_FUNCTION};
 		$DEFINE->{VAL} = "init_module";
 
 		push(@defines,$DEFINE);
