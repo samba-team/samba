@@ -126,11 +126,7 @@ static const struct ldb_module_ops rootdse_ops = {
 	.request	= rootdse_request
 };
 
-#ifdef HAVE_DLOPEN_DISABLED
-struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
-#else
 struct ldb_module *rootdse_module_init(struct ldb_context *ldb, const char *options[])
-#endif
 {
 	struct ldb_module *ctx;
 

@@ -291,11 +291,7 @@ static const struct ldb_module_ops objectclass_ops = {
 	.request      	   = objectclass_request,
 };
 
-#ifdef HAVE_DLOPEN_DISABLED
-struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
-#else
 struct ldb_module *objectclass_module_init(struct ldb_context *ldb, const char *options[])
-#endif
 {
 	struct ldb_module *ctx;
 

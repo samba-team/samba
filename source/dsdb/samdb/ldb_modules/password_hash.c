@@ -690,11 +690,7 @@ static const struct ldb_module_ops password_hash_ops = {
 
 
 /* the init function */
-#ifdef HAVE_DLOPEN_DISABLED
- struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
-#else
 struct ldb_module *password_hash_module_init(struct ldb_context *ldb, const char *options[])
-#endif
 {
 	struct ldb_module *ctx;
 
