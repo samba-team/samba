@@ -140,11 +140,7 @@ static const struct ldb_module_ops skel_ops = {
 	.del_transaction   = skel_del_trans,
 };
 
-#ifdef HAVE_DLOPEN_DISABLED
-struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
-#else
 struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options[])
-#endif
 {
 	struct ldb_module *ctx;
 	struct private_data *data;
