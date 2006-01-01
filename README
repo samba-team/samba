@@ -1,0 +1,20 @@
+Samba 4 is the ambitious next version of the Samba suite that is being 
+developed in parallel to the stable 3.0 series. The main emphasis in 
+this branch is full support for being a Active Directory domain controller.
+
+Samba 4 is currently not yet in a state where it is usable in production 
+environments. The STATUS file aims to document what should and should not 
+work.
+
+Those familiar with Samba 3 can find a list of user-visible changes 
+since that release series in the NEWS file. A short guide to setting up 
+Samba 4 can be found in the howto.txt file in this directory.
+
+Bugs can be filed at https://bugzilla.samba.org/. Please
+look at the STATUS file before filing a bug to see if a particular 
+is supposed to work yet.
+
+Development and general discussion about Samba 4 happens mainly on 
+the #samba-technical IRC channel (on irc.freenode.net) and 
+the samba-technical mailing list (see http://lists.samba.org/ for 
+details).
