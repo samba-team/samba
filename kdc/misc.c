@@ -47,7 +47,7 @@ _kdc_db_fetch(krb5_context context,
     krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
 
-    ent = malloc (sizeof (*ent));
+    ent = calloc (1, sizeof (*ent));
     if (ent == NULL)
 	return ENOMEM;
     ent->entry.principal = principal;
