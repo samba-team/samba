@@ -2405,11 +2405,6 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	char *tmp;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
-		return pdb_default_enum_group_members(methods, mem_ctx, group,
-						      pp_member_rids,
-						      p_num_members);
-
 	*pp_member_rids = NULL;
 	*p_num_members = 0;
 
@@ -2581,11 +2576,6 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	LDAPMessage *entry;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	size_t num_sids, num_gids;
-
-	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
-		return pdb_default_enum_group_memberships(methods, username,
-							  primary_gid, pp_sids,
-							  pp_gids, p_num_groups);
 
 	*pp_sids = NULL;
 	num_sids = 0;
@@ -3581,10 +3571,6 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	int i, rc, num_mapped;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
-		return pdb_default_lookup_rids(methods, domain_sid,
-					       num_rids, rids, names, attrs);
-
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		/* TODO: Sooner or later we need to look up BUILTIN rids as
 		 * well. -- vl */
@@ -4449,9 +4435,6 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->update_group_mapping_entry = ldapsam_update_group_mapping_entry;
 	(*pdb_method)->delete_group_mapping_entry = ldapsam_delete_group_mapping_entry;
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
-	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
-	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
-	(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
 
 	(*pdb_method)->get_account_policy = ldapsam_get_account_policy;
 	(*pdb_method)->set_account_policy = ldapsam_set_account_policy;
@@ -4555,6 +4538,13 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->search_users = ldapsam_search_users;
 	(*pdb_method)->search_groups = ldapsam_search_groups;
 	(*pdb_method)->search_aliases = ldapsam_search_aliases;
+
+	if (lp_parm_bool(-1, "ldapsam", "trusted", False)) {
+		(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
+		(*pdb_method)->enum_group_memberships =
+			ldapsam_enum_group_memberships;
+		(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
+	}
 
 	ldap_state = (*pdb_method)->private_data;
 	ldap_state->schema_ver = SCHEMAVER_SAMBASAMACCOUNT;
