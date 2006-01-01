@@ -714,7 +714,11 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	ret = True;
 
  done:
-	if (!ret) {
+	if (ret) {
+		DEBUG(10, ("Sid %s -> %s\\%s(%d)\n",
+			   sid_string_static(sid), domain->name,
+			   name->name, name->type));
+	} else {
 		DEBUG(10, ("failed to lookup sid %s\n",
 			   sid_string_static(sid)));
 	}
