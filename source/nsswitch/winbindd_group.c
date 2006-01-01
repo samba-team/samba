@@ -700,13 +700,32 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &group_gid, 0))) {
-			
-			DEBUG(1, ("could not look up gid for group %s\n", 
-				  name_list[ent->sam_entry_index].acct_name));
-			
-			ent->sam_entry_index++;
-			goto tryagain;
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid,
+                                                    &group_gid, 0))) {
+			union unid_t id;
+			enum SID_NAME_USE type;
+
+			DEBUG(10, ("SID %s not in idmap\n",
+				   sid_string_static(&group_sid)));
+
+			if (!pdb_sid_to_id(&group_sid, &id, &type)) {
+				DEBUG(1, ("could not look up gid for group "
+					  "%s\n", 
+					  name_list[ent->sam_entry_index].acct_name));
+				ent->sam_entry_index++;
+				goto tryagain;
+			}
+
+			if ((type != SID_NAME_DOM_GRP) &&
+			    (type != SID_NAME_ALIAS) &&
+			    (type != SID_NAME_WKN_GRP)) {
+				DEBUG(1, ("Group %s is a %s, not a group\n",
+					  sid_type_lookup(type),
+					  name_list[ent->sam_entry_index].acct_name));
+				ent->sam_entry_index++;
+				goto tryagain;
+			}
+			group_gid = id.gid;
 		}
 
 		DEBUG(10, ("got gid %lu for group %lu\n", (unsigned long)group_gid,

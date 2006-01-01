@@ -265,19 +265,24 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
-	struct acct_info info;
+	const char *dom, *nam;
 
 	DEBUG(10, ("Converting SID %s\n", sid_string_static(sid)));
 
-	if (!pdb_get_aliasinfo(sid, &info))
+	/* Paranoia check */
+	if (!sid_check_is_in_builtin(sid) &&
+	    !sid_check_is_in_our_domain(sid)) {
+		DEBUG(0, ("Possible deadlock: Trying to lookup SID %s with "
+			  "passdb backend\n", sid_string_static(sid)));
 		return NT_STATUS_NONE_MAPPED;
+	}
 
-	*domain_name = talloc_strdup(mem_ctx, domain->name);
-	*name = talloc_strdup(mem_ctx, info.acct_name);
-	if (sid_check_is_in_builtin(sid))
-		*type = SID_NAME_WKN_GRP;
-	else
-		*type = SID_NAME_ALIAS;
+	if (!lookup_sid(mem_ctx, sid, &dom, &nam, type)) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	*domain_name = talloc_strdup(mem_ctx, dom);
+	*name = talloc_strdup(mem_ctx, nam);
 
 	return NT_STATUS_OK;
 }
