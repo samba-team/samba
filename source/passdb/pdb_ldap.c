@@ -3638,6 +3638,10 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		goto done;
 	}
 
+	if (msg != NULL) {
+		ldap_msgfree(msg);
+	}
+
 	/* Same game for groups */
 
 	{
