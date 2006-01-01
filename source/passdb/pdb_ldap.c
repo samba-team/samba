@@ -2937,6 +2937,8 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	DEBUG(2, ("ldapsam_update_group_mapping_entry: successfully modified "
 		  "group %lu in LDAP\n", (unsigned long)map->gid));
 
+	result = NT_STATUS_OK;
+
  done:
 	talloc_free(mem_ctx);
 	return result;

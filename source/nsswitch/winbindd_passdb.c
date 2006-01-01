@@ -327,6 +327,71 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {
+	size_t i, num_members, num_mapped;
+	uint32 *rids;
+	NTSTATUS result;
+	const DOM_SID **sids;
+	struct lsa_dom_info *lsa_domains;
+	struct lsa_name_info *lsa_names;
+
+	if (!sid_check_is_in_our_domain(group_sid)) {
+		/* There's no groups, only aliases in BUILTIN */
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	result = pdb_enum_group_members(mem_ctx, group_sid, &rids,
+					&num_members);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	if (num_members == 0) {
+		*num_names = 0;
+		*sid_mem = NULL;
+		*names = NULL;
+		*name_types = NULL;
+		return NT_STATUS_OK;
+	}
+
+	*sid_mem = TALLOC_ARRAY(mem_ctx, DOM_SID, num_members);
+	*names = TALLOC_ARRAY(mem_ctx, char *, num_members);
+	*name_types = TALLOC_ARRAY(mem_ctx, uint32, num_members);
+	sids = TALLOC_ARRAY(mem_ctx, const DOM_SID *, num_members);
+
+	if (((*sid_mem) == NULL) || ((*names) == NULL) ||
+	    ((*name_types) == NULL) || (sids == NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		DOM_SID *sid = &((*sid_mem)[i]);
+		sid_copy(sid, &domain->sid);
+		sid_append_rid(sid, rids[i]);
+		sids[i] = sid;
+	}
+
+	result = lookup_sids(mem_ctx, num_members, sids,
+			     &lsa_domains, &lsa_names);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	num_mapped = 0;
+	for (i=0; i<num_members; i++) {
+		if (lsa_names[i].type != SID_NAME_USER) {
+			DEBUG(2, ("Got %s as group member -- ignoring\n",
+				  sid_type_lookup(lsa_names[i].type)));
+			continue;
+		}
+		(*names)[i] = talloc_steal((*names),
+					   lsa_names[i].name);
+		(*name_types)[i] = lsa_names[i].type;
+
+		num_mapped += 1;
+	}
+
+	*num_names = num_mapped;
+
 	return NT_STATUS_OK;
 }
 
