@@ -25,6 +25,7 @@
 #include "wrepl_server/wrepl_server.h"
 #include "libcli/composite/composite.h"
 #include "wrepl_server/wrepl_out_helpers.h"
+#include "nbt_server/wins/winsdb.h"
 
 static void wreplsrv_out_partner_push(struct wreplsrv_partner *partner, BOOL propagate);
 
@@ -123,7 +124,7 @@ NTSTATUS wreplsrv_out_push_run(struct wreplsrv_service *service)
 	uint64_t seqnumber;
 	uint32_t change_count;
 
-	seqnumber = wreplsrv_local_db_seqnumber(service);
+	seqnumber = winsdb_get_seqnumber(service->wins_db);
 
 	for (partner = service->partners; partner; partner = partner->next) {
 		/* if it's not a push partner, go to the next partner */
