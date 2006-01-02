@@ -188,7 +188,7 @@ hx509_name_to_string(const hx509_name name, char **str)
 		ss = malloc(len + 1);
 		if (ss == NULL)
 		    abort();
-		for (k = 0; k < len + 1; k++)
+		for (k = 0; k < len; k++)
 		    ss[k] = bmp[k] & 0xff;
 		ss[k] = '\0';
 		break;
