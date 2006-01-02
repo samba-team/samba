@@ -114,21 +114,28 @@ sub check_binary($$)
 	$bin->{OUTPUT_TYPE} = "BINARY";
 }
 
-sub calc_unique_deps($$)
+my $level = "";
+
+sub calc_unique_deps($$$)
 {
-	sub calc_unique_deps($$);
-	my ($deps, $udeps) = @_;
+	sub calc_unique_deps($$$);
+	my ($name, $deps, $udeps) = @_;
+
+	print "$level-> $name\n" if ($ENV{SMB_BUILD_VERBOSE});
+	$level.=" ";
 
 	foreach my $dep (@{$deps}) {
 		if (not defined($udeps->{$$dep->{NAME}})) {
       		   if (defined ($$dep->{OUTPUT_TYPE}) && (($$dep->{OUTPUT_TYPE} eq "OBJ_LIST")
 			    or ($$dep->{OUTPUT_TYPE} eq "MERGEDOBJ"))) {
    			        $udeps->{$$dep->{NAME}} = "BUSY";
-			        calc_unique_deps($$dep->{DEPENDENCIES}, $udeps);
+			        calc_unique_deps($$dep->{NAME}, $$dep->{DEPENDENCIES}, $udeps);
 		        }
 			$udeps->{$$dep->{NAME}} = $$dep;
 		}
 	}
+	
+	$level = substr($level, 1);
 }
 
 sub check($$$$$)
@@ -185,7 +192,7 @@ sub check($$$$$)
 
 	foreach my $part (values %depend) {
 		$part->{UNIQUE_DEPENDENCIES} = {};
-		calc_unique_deps($part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES});
+		calc_unique_deps($part->{NAME}, $part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES});
 	}
 
 	return \%depend;

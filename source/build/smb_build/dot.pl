@@ -22,7 +22,7 @@ sub generate($)
 }
 
 my $INPUT = {};
-smb_build::config_mk::run_config_mk($INPUT, "main.mk");
+smb_build::config_mk::run_config_mk($INPUT, '.', "main.mk");
 
 print __FILE__.": creating samba4-deps.dot\n";
 open DOTTY, ">samba4-deps.dot";
