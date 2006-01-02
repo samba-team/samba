@@ -384,24 +384,32 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	ldb_keys = ldb_msg_find_element(msg, "krb5Key");
 
-	/* allocate space to decode into */
-	entry_ex->entry.keys.val = calloc(ldb_keys->num_values, sizeof(Key));
-	if (entry_ex->entry.keys.val == NULL) {
-		ret = ENOMEM;
-		goto out;
-	}
-	entry_ex->entry.keys.len = ldb_keys->num_values;
-
-	/* Decode Kerberos keys into the hdb structure */
-	for (i=0; i < entry_ex->entry.keys.len; i++) {
-		size_t decode_len;
-		ret = decode_Key(ldb_keys->values[i].data, ldb_keys->values[i].length, 
-				 &entry_ex->entry.keys.val[i], &decode_len);
-		if (ret) {
-			/* Could be bougus data in the entry, or out of memory */
+	if (!ldb_keys) {
+		/* oh, no password.  Apparently (comment in
+		 * hdb-ldap.c) this violates the ASN.1, but this
+		 * allows an entry with no keys (yet). */
+		entry_ex->entry.keys.val = NULL;
+		entry_ex->entry.keys.len = 0;
+	} else {
+		/* allocate space to decode into */
+		entry_ex->entry.keys.val = calloc(ldb_keys->num_values, sizeof(Key));
+		if (entry_ex->entry.keys.val == NULL) {
+			ret = ENOMEM;
 			goto out;
 		}
-	}
+		entry_ex->entry.keys.len = ldb_keys->num_values;
+
+		/* Decode Kerberos keys into the hdb structure */
+		for (i=0; i < entry_ex->entry.keys.len; i++) {
+			size_t decode_len;
+			ret = decode_Key(ldb_keys->values[i].data, ldb_keys->values[i].length, 
+					 &entry_ex->entry.keys.val[i], &decode_len);
+			if (ret) {
+				/* Could be bougus data in the entry, or out of memory */
+				goto out;
+			}
+		}
+	} 
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
