@@ -194,13 +194,6 @@ command = {
 	help = "Validate content of certificates"
 }
 command = {
-	name = "pkcs11"
-	function = "pcert_pkcs11"
-	min_args="1"
-	argument="certificate ..."
-	help = "Validate content of certificates"
-}
-command = {
 	name = "query"
 	option = {
 		long = "exact"
