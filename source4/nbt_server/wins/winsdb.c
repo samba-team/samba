@@ -29,10 +29,39 @@
 #include "system/time.h"
 #include "auth/auth.h"
 
+uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
+{
+	int ret;
+	struct ldb_context *ldb = h->ldb;
+	struct ldb_dn *dn;
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	uint64_t maxVersion = 0;
+
+	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
+	if (!dn) goto failed;
+
+	/* find the record in the WINS database */
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
+			 NULL, NULL, &res);
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+	if (res->count > 1) goto failed;
+
+	if (res->count == 1) {
+		maxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
+	}
+
+failed:
+	talloc_free(tmp_ctx);
+	return maxVersion;
+}
+
 /*
-  return the new maxVersion and save it
+ if newVersion == 0 return the old maxVersion + 1 and save it
+ if newVersion > 0 return MAX(oldMaxVersion, newMaxVersion) and save it
 */
-static uint64_t winsdb_allocate_version(struct winsdb_handle *h)
+uint64_t winsdb_set_maxVersion(struct winsdb_handle *h, uint64_t newMaxVersion)
 {
 	int trans;
 	int ret;
@@ -41,7 +70,7 @@ static uint64_t winsdb_allocate_version(struct winsdb_handle *h)
 	struct ldb_message *msg = NULL;
 	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
-	uint64_t maxVersion = 0;
+	uint64_t oldMaxVersion = 0;
 
 	trans = ldb_transaction_start(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
@@ -58,9 +87,14 @@ static uint64_t winsdb_allocate_version(struct winsdb_handle *h)
 	talloc_steal(tmp_ctx, res);
 
 	if (res->count == 1) {
-		maxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
+		oldMaxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
 	}
-	maxVersion++;
+
+	if (newMaxVersion == 0) {
+		newMaxVersion = oldMaxVersion + 1;
+	} else {
+		newMaxVersion = MAX(oldMaxVersion, newMaxVersion);
+	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	if (!msg) goto failed;
@@ -73,7 +107,7 @@ static uint64_t winsdb_allocate_version(struct winsdb_handle *h)
 	if (ret != 0) goto failed;
 	ret = ldb_msg_add_empty(msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
 	if (ret != 0) goto failed;
-	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", (long long)maxVersion);
+	ret = ldb_msg_add_fmt(msg, "maxVersion", "%llu", (long long)newMaxVersion);
 	if (ret != 0) goto failed;
 
 	ret = ldb_modify(wins_db, msg);
@@ -84,12 +118,40 @@ static uint64_t winsdb_allocate_version(struct winsdb_handle *h)
 	if (trans != LDB_SUCCESS) goto failed;
 
 	talloc_free(tmp_ctx);
-	return maxVersion;
+	return newMaxVersion;
 
 failed:
 	if (trans == LDB_SUCCESS) ldb_transaction_cancel(wins_db);
 	talloc_free(tmp_ctx);
 	return 0;
+}
+
+uint64_t winsdb_get_seqnumber(struct winsdb_handle *h)
+{
+	int ret;
+	struct ldb_context *ldb = h->ldb;
+	struct ldb_dn *dn;
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	uint64_t seqnumber = 0;
+
+	dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
+	if (!dn) goto failed;
+
+	/* find the record in the WINS database */
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
+			 NULL, NULL, &res);
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+	if (res->count > 1) goto failed;
+
+	if (res->count == 1) {
+		seqnumber = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
+	}
+
+failed:
+	talloc_free(tmp_ctx);
+	return seqnumber;
 }
 
 /*
@@ -595,7 +657,8 @@ uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t 
 	if (trans != LDB_SUCCESS) goto failed;
 
 	if (flags & WINSDB_FLAG_ALLOC_VERSION) {
-		rec->version = winsdb_allocate_version(h);
+		/* passing '0' means auto-allocate a new one */
+		rec->version = winsdb_set_maxVersion(h, 0);
 		if (rec->version == 0) goto failed;
 	}
 	if (flags & WINSDB_FLAG_TAKE_OWNERSHIP) {
@@ -636,7 +699,8 @@ uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32
 	if (trans != LDB_SUCCESS) goto failed;
 
 	if (flags & WINSDB_FLAG_ALLOC_VERSION) {
-		rec->version = winsdb_allocate_version(h);
+		/* passing '0' means auto-allocate a new one */
+		rec->version = winsdb_set_maxVersion(h, 0);
 		if (rec->version == 0) goto failed;
 	}
 	if (flags & WINSDB_FLAG_TAKE_OWNERSHIP) {
