@@ -174,6 +174,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
 	struct wrepl_send_reply *reply_out = &call->rep_packet.message.replication.info.reply;
 	struct wreplsrv_owner *owner;
+	const char *owner_filter;
 	const char *filter;
 	struct ldb_result *res = NULL;
 	int ret;
@@ -232,11 +233,13 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		return NT_STATUS_OK;
 	}
 
+	owner_filter = wreplsrv_owner_filter(service, call, owner->owner.address);
+	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(call,
-				 "(&(winsOwner=%s)(objectClass=winsRecord)"
+				 "(&%s(objectClass=winsRecord)"
 				 "(|(recordState=%u)(recordState=%u))"
 				 "(versionID>=%llu)(versionID<=%llu))",
-				 owner->owner.address,
+				 owner_filter,
 				 WREPL_STATE_ACTIVE, WREPL_STATE_TOMBSTONE,
 				 (long long)owner_in->min_version, 
 				 (long long)owner_in->max_version);
@@ -244,6 +247,8 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	talloc_steal(call, res);
+	DEBUG(10,("WINSREPL: filter '%s' count %d\n", filter, res->count));
+
 	if (res->count == 0) {
 		DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
 			res->count, owner_in->address, 
