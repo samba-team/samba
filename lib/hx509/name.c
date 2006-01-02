@@ -141,6 +141,7 @@ oidtostring(const heim_oid *type)
     for (i = 0; i < type->length; i++) {
 	asprintf(&ss, "%u", type->components[i]);
 	append_string(&s, &total_len, ss, strlen(ss), 0);
+	free(ss);
 	if (i + 1 < type->length)
 	    append_string(&s, &total_len, ".", 1, 0);
     }
