@@ -171,58 +171,7 @@ BOOL wreplsrv_is_our_address(struct wreplsrv_service *service, const char *addre
 
 uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
 {
-	int ret;
-	struct ldb_context *ldb = service->wins_db->ldb;
-	struct ldb_dn *dn;
-	struct ldb_result *res = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_new(service);
-	uint64_t maxVersion = 0;
-
-	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
-	if (!dn) goto failed;
-
-	/* find the record in the WINS database */
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
-	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
-	if (res->count > 1) goto failed;
-
-	if (res->count == 1) {
-		maxVersion = ldb_msg_find_uint64(res->msgs[0], "maxVersion", 0);
-	}
-
-failed:
-	talloc_free(tmp_ctx);
-	return maxVersion;
-}
-
-uint64_t wreplsrv_local_db_seqnumber(struct wreplsrv_service *service)
-{
-	int ret;
-	struct ldb_context *ldb = service->wins_db->ldb;
-	struct ldb_dn *dn;
-	struct ldb_result *res = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_new(service);
-	uint64_t seqnumber = 0;
-
-	dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
-	if (!dn) goto failed;
-
-	/* find the record in the WINS database */
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
-			 NULL, NULL, &res);
-	if (ret != LDB_SUCCESS) goto failed;
-	talloc_steal(tmp_ctx, res);
-	if (res->count > 1) goto failed;
-
-	if (res->count == 1) {
-		seqnumber = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
-	}
-
-failed:
-	talloc_free(tmp_ctx);
-	return seqnumber;
+	return winsdb_get_maxVersion(service->wins_db);
 }
 
 NTSTATUS wreplsrv_fill_wrepl_table(struct wreplsrv_service *service,
