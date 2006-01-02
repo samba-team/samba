@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,6 +87,7 @@ hx509_certs_init(const char *name, int flags,
 	_hx509_ks_file_register();
 	_hx509_ks_pkcs12_register();
 	_hx509_ks_pkcs11_register();
+	_hx509_ks_dir_register();
     }
 
     residue = strchr(name, ':');
