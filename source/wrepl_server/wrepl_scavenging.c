@@ -28,11 +28,25 @@
 #include "ldb/include/ldb_errors.h"
 #include "system/time.h"
 
+const char *wreplsrv_owner_filter(struct wreplsrv_service *service,
+				  TALLOC_CTX *mem_ctx,
+				  const char *wins_owner)
+{
+	if (strcmp(wins_owner, service->wins_db->local_owner) == 0) {
+		return talloc_asprintf(mem_ctx, "(|(winsOwner=%s)(winsOwner=0.0.0.0))",
+				       wins_owner);
+	}
+
+	return talloc_asprintf(mem_ctx, "(&(winsOwner=%s)(!(winsOwner=0.0.0.0)))",
+			       wins_owner);
+}
+
 static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *service, TALLOC_CTX *tmp_mem)
 {
 	NTSTATUS status;
 	struct winsdb_record *rec = NULL;
 	struct ldb_result *res = NULL;
+	const char *owner_filter;
 	const char *filter;
 	uint32_t i;
 	int ret;
@@ -48,14 +62,18 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 
 	now_timestr = ldb_timestring(tmp_mem, now);
 	NT_STATUS_HAVE_NO_MEMORY(now_timestr);
+	owner_filter = wreplsrv_owner_filter(service, tmp_mem,
+					     service->wins_db->local_owner);
+	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
-				 "(&(winsOwner=%s)(objectClass=winsRecord)"
+				 "(&%s(objectClass=winsRecord)"
 				 "(expireTime<=%s)(!(isStatic=1)))",
-				 service->wins_db->local_owner, now_timestr);
+				 owner_filter, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	talloc_steal(tmp_mem, res);
+	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	tombstone_extra_time = timeval_add(&service->startup_time,
 					   service->config.tombstone_extra_timeout,
@@ -141,6 +159,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	NTSTATUS status;
 	struct winsdb_record *rec = NULL;
 	struct ldb_result *res = NULL;
+	const char *owner_filter;
 	const char *filter;
 	uint32_t i;
 	int ret;
@@ -156,14 +175,18 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 
 	now_timestr = ldb_timestring(tmp_mem, now);
 	NT_STATUS_HAVE_NO_MEMORY(now_timestr);
+	owner_filter = wreplsrv_owner_filter(service, tmp_mem,
+					     service->wins_db->local_owner);
+	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
-				 "(&(!(winsOwner=%s))(objectClass=winsRecord)"
+				 "(&(!%s)(objectClass=winsRecord)"
 				 "(!(recordState=%u))(expireTime<=%s)(!(isStatic=1)))",
-				 service->wins_db->local_owner, WREPL_STATE_ACTIVE, now_timestr);
+				 owner_filter, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	talloc_steal(tmp_mem, res);
+	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	tombstone_extra_time = timeval_add(&service->startup_time,
 					   service->config.tombstone_extra_timeout,
@@ -246,6 +269,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	NTSTATUS status;
 	struct winsdb_record *rec = NULL;
 	struct ldb_result *res = NULL;
+	const char *owner_filter;
 	const char *filter;
 	uint32_t i;
 	int ret;
@@ -259,14 +283,18 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 
 	now_timestr = ldb_timestring(tmp_mem, now);
 	NT_STATUS_HAVE_NO_MEMORY(now_timestr);
+	owner_filter = wreplsrv_owner_filter(service, tmp_mem,
+					     service->wins_db->local_owner);
+	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
-				 "(&(!(winsOwner=%s))(objectClass=winsRecord)"
+				 "(&(!%s)(objectClass=winsRecord)"
 				 "(recordState=%u)(expireTime<=%s)(!(isStatic=1)))",
-				 service->wins_db->local_owner, WREPL_STATE_ACTIVE, now_timestr);
+				 owner_filter, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != LDB_SUCCESS) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	talloc_steal(tmp_mem, res);
+	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	for (i=0; i < res->count; i++) {
 		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
