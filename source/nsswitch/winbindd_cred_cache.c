@@ -31,7 +31,7 @@ static struct WINBINDD_CCACHE_ENTRY *ccache_list;
 
 static TALLOC_CTX *mem_ctx;
 
-const char *get_ccache_name_from_list_by_username(const char *username) 
+const char *get_ccache_name_by_username(const char *username) 
 {
 	struct WINBINDD_CCACHE_ENTRY *entry;
 
@@ -43,7 +43,7 @@ const char *get_ccache_name_from_list_by_username(const char *username)
 	return NULL;
 }
 
-struct WINBINDD_CCACHE_ENTRY *get_ccache_from_list_by_name(const char *username)
+struct WINBINDD_CCACHE_ENTRY *get_ccache_by_username(const char *username)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry;
 
@@ -66,7 +66,7 @@ static int ccache_entry_count(void)
 	return i;
 }
 
-NTSTATUS remove_ccache_from_list_by_name(const char *ccname)
+NTSTATUS remove_ccache_by_ccname(const char *ccname)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry;
 

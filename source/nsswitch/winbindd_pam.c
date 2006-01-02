@@ -1745,7 +1745,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 	/* what we need here is to find the corresponding krb5 ccache name *we*
 	 * created for a given username and destroy it (as the user who created it) */
 	
-	entry = get_ccache_from_list_by_name(state->request.data.logoff.user);
+	entry = get_ccache_by_username(state->request.data.logoff.user);
 	if (entry == NULL) {
 		DEBUG(10,("winbindd_pam_logoff: could not get ccname for user %s\n", 
 			state->request.data.logoff.user));
@@ -1783,7 +1783,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 	} else {
 		DEBUG(10,("winbindd_pam_logoff: successfully destroyed ccache %s for user %s\n", 
 			entry->ccname, state->request.data.logoff.user));
-		remove_ccache_from_list_by_name(entry->ccname);
+		remove_ccache_by_ccname(entry->ccname);
 	}
 
 	result = krb5_to_nt_status(ret);
