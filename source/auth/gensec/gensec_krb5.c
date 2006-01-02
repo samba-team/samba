@@ -29,6 +29,8 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
+#include "system/network.h"
+#include "lib/socket/socket.h"
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,
@@ -85,7 +87,10 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	krb5_error_code ret;
 	struct gensec_krb5_state *gensec_krb5_state;
 	struct cli_credentials *creds;
-
+	const char *my_addr, *peer_addr;
+	int my_port, peer_port;
+	krb5_address my_krb5_addr, peer_krb5_addr;
+	
 	creds = gensec_get_credentials(gensec_security);
 	if (!creds) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -127,6 +132,70 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 				     KRB5_AUTH_CONTEXT_DO_SEQUENCE);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_auth_con_setflags failed (%s)\n", 
+			 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
+						    ret, gensec_krb5_state)));
+		talloc_free(gensec_krb5_state);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	my_addr = gensec_get_my_addr(gensec_security, &my_port);
+	if (my_addr) {
+		struct sockaddr_in sock_addr;
+		struct ipv4_addr addr;
+
+		/* TODO:  This really should be in a utility function somewhere */
+		ZERO_STRUCT(sock_addr);
+#ifdef HAVE_SOCK_SIN_LEN
+		sock_addr.sin_len		= sizeof(sock_addr);
+#endif
+		addr				= interpret_addr2(my_addr);
+		sock_addr.sin_addr.s_addr	= addr.addr;
+		sock_addr.sin_port		= htons(my_port);
+		sock_addr.sin_family	= PF_INET;
+		
+		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context, 
+					    (struct sockaddr *)&sock_addr, &my_krb5_addr);
+		if (ret) {
+			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
+				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
+							    ret, gensec_krb5_state)));
+			talloc_free(gensec_krb5_state);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	peer_addr = gensec_get_my_addr(gensec_security, &peer_port);
+	if (peer_addr) {
+		struct sockaddr_in sock_addr;
+		struct ipv4_addr addr;
+
+		/* TODO:  This really should be in a utility function somewhere */
+		ZERO_STRUCT(sock_addr);
+#ifdef HAVE_SOCK_SIN_LEN
+		sock_addr.sin_len		= sizeof(sock_addr);
+#endif
+		addr				= interpret_addr2(peer_addr);
+		sock_addr.sin_addr.s_addr	= addr.addr;
+		sock_addr.sin_port		= htons(peer_port);
+		sock_addr.sin_family	= PF_INET;
+		
+		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context, 
+					    (struct sockaddr *)&sock_addr, &peer_krb5_addr);
+		if (ret) {
+			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
+				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
+							    ret, gensec_krb5_state)));
+			talloc_free(gensec_krb5_state);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	ret = krb5_auth_con_setaddrs(gensec_krb5_state->smb_krb5_context->krb5_context, 
+				     gensec_krb5_state->auth_context,
+				     my_addr ? &my_krb5_addr : NULL, 
+				     peer_addr ? &peer_krb5_addr : NULL);
+	if (ret) {
+		DEBUG(1,("gensec_krb5_start: krb5_auth_con_setaddrs failed (%s)\n", 
 			 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
 						    ret, gensec_krb5_state)));
 		talloc_free(gensec_krb5_state);
@@ -425,11 +494,12 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		}
 		return nt_status;
 	}
+
 	case GENSEC_KRB5_DONE:
-		return NT_STATUS_OK;
+	default:
+		/* Asking too many times... */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
-	return NT_STATUS_INVALID_PARAMETER;
 }
 
 static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security, 

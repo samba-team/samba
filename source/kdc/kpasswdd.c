@@ -178,7 +178,10 @@ static BOOL kpasswdd_change_password(struct kdc_server *kdc,
 						reply);
 	}
 	
-	DEBUG(3, ("Changing password of %s\n", dom_sid_string(mem_ctx, session_info->security_token->user_sid)));
+	DEBUG(3, ("Changing password of %s\\%s (%s)\n", 
+		  session_info->server_info->domain_name,
+		  session_info->server_info->account_name,
+		  dom_sid_string(mem_ctx, session_info->security_token->user_sid)));
 
 	/* User password change */
 	status = samdb_set_password_sid(samdb, mem_ctx, 
@@ -203,14 +206,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 				    DATA_BLOB *input, 
 				    DATA_BLOB *reply)
 {
-	NTSTATUS status;
-	enum samr_RejectReason reject_reason;
-	struct samr_DomInfo1 *dominfo;
-	struct ldb_context *samdb;
 	struct auth_session_info *session_info;
-	struct ldb_message *msg = ldb_msg_new(gensec_security);
-	krb5_context context = kdc->smb_krb5_context->krb5_context;
-	int ret;
 	if (!msg) {
 		return False;
 	}
@@ -236,14 +232,22 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 	}
 	case KRB5_KPASSWD_VERS_SETPW:
 	{
-		size_t len;
+		NTSTATUS status;
+		enum samr_RejectReason reject_reason;
+		struct samr_DomInfo1 *dominfo;
+		struct ldb_context *samdb;
+		struct ldb_message *msg = ldb_msg_new(mem_ctx);
+		krb5_context context = kdc->smb_krb5_context->krb5_context;
+
 		ChangePasswdDataMS chpw;
 		char *password;
+
 		krb5_principal principal;
 		char *set_password_on_princ;
 		struct ldb_dn *set_password_on_dn;
 
-		samdb = samdb_connect(gensec_security, session_info);
+		size_t len;
+		int ret;
 
 		ret = decode_ChangePasswdDataMS(input->data, input->length,
 						&chpw, &len);
@@ -294,11 +298,22 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 		
 		krb5_free_principal(context, principal);
 		
-		status = crack_user_principal_name(samdb, mem_ctx, 
-						   set_password_on_princ, 
-						   &set_password_on_dn, NULL);
-		free(set_password_on_princ);
-		if (!NT_STATUS_IS_OK(status)) {
+		samdb = samdb_connect(mem_ctx, session_info);
+		if (!samdb) {
+			return kpasswdd_make_error_reply(kdc, mem_ctx, 
+							 KRB5_KPASSWD_HARDERROR,
+							 "Unable to open database!",
+							 reply);
+		}
+
+		DEBUG(3, ("%s\\%s (%s) is changing password of %s\n", 
+			  session_info->server_info->domain_name,
+			  session_info->server_info->account_name,
+			  dom_sid_string(mem_ctx, session_info->security_token->user_sid), 
+			  set_password_on_princ));
+		ret = ldb_transaction_start(samdb);
+		if (ret) {
+			status = NT_STATUS_TRANSACTION_ABORTED;
 			return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
 							   status,
 							   reject_reason, 
@@ -306,14 +321,61 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 							   reply);
 		}
 
-		/* Admin password set */
-		status = samdb_set_password(samdb, mem_ctx,
-					    set_password_on_dn, NULL,
-					    msg, password, NULL, NULL, 
-					    False, /* this is not a user password change */
-					    True, /* run restriction tests */
-					    &reject_reason, &dominfo);
+		status = crack_user_principal_name(samdb, mem_ctx, 
+						   set_password_on_princ, 
+						   &set_password_on_dn, NULL);
+		free(set_password_on_princ);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_transaction_cancel(samdb);
+			return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
+							   status,
+							   reject_reason, 
+							   dominfo, 
+							   reply);
+		}
 
+		msg = ldb_msg_new(mem_ctx);
+		if (msg == NULL) {
+			ldb_transaction_cancel(samdb);
+			status = NT_STATUS_NO_MEMORY;
+		} else {
+			msg->dn = ldb_dn_copy(msg, set_password_on_dn);
+			if (!msg->dn) {
+				status = NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			/* Admin password set */
+			status = samdb_set_password(samdb, mem_ctx,
+						    set_password_on_dn, NULL,
+						    msg, password, NULL, NULL, 
+						    False, /* this is not a user password change */
+						    True, /* run restriction tests */
+						    &reject_reason, &dominfo);
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			/* modify the samdb record */
+			ret = samdb_replace(samdb, mem_ctx, msg);
+			if (ret != 0) {
+				DEBUG(2,("Failed to modify record to set password on %s: %s\n",
+					 ldb_dn_linearize(mem_ctx, msg->dn),
+					 ldb_errstring(samdb)));
+				status = NT_STATUS_ACCESS_DENIED;
+			}
+		}
+		if (NT_STATUS_IS_OK(status)) {
+			ret = ldb_transaction_commit(samdb);
+			if (ret != 0) {
+				DEBUG(1,("Failed to commit transaction to set password on %s: %s\n",
+					 ldb_dn_linearize(mem_ctx, msg->dn),
+					 ldb_errstring(samdb)));
+				status = NT_STATUS_TRANSACTION_ABORTED;
+			}
+		} else {
+			ldb_transaction_cancel(samdb);
+		}
 		return kpasswd_make_pwchange_reply(kdc, mem_ctx, 
 						   status,
 						   reject_reason, 
@@ -322,11 +384,11 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 	}
 	default:
 		return kpasswdd_make_error_reply(kdc, mem_ctx, 
-						KRB5_KPASSWD_BAD_VERSION,
-						talloc_asprintf(mem_ctx, 
-								"Protocol version %u not supported", 
-								version),
-						reply);
+						 KRB5_KPASSWD_BAD_VERSION,
+						 talloc_asprintf(mem_ctx, 
+								 "Protocol version %u not supported", 
+								 version),
+						 reply);
 	}
 	return True;
 }
@@ -335,8 +397,10 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 
 		      DATA_BLOB *input, 
 		      DATA_BLOB *reply,
-		      const char *from,
-		      int src_port)
+		      const char *peer_addr,
+		      int peer_port,
+		      const char *my_addr,
+		      int my_port)
 {
 	BOOL ret;
 	const uint16_t header_len = 6;
@@ -355,6 +419,8 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		return False;
 	}
 
+	/* Be parinoid.  We need to ensure we don't just let the
+	 * caller lead us into a buffer overflow */
 	if (input->length <= header_len) {
 		talloc_free(tmp_ctx);
 		return False;
@@ -366,6 +432,9 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		return False;
 	}
 
+	/* There are two different versions of this protocol so far,
+	 * plus others in the standards pipe.  Fortunetly they all
+	 * take a very similar framing */
 	version = RSVAL(input->data, 2);
 	ap_req_len = RSVAL(input->data, 4);
 	if ((ap_req_len >= len) || (ap_req_len + header_len) >= len) {
@@ -407,7 +476,26 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		return ret;
 	}
 	
-	gensec_set_credentials(gensec_security, server_credentials);
+	nt_status = gensec_set_credentials(gensec_security, server_credentials);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return False;
+	}
+
+	/* The kerberos PRIV packets include these addresses.  MIT
+	 * clients check that they are present */
+	nt_status = gensec_set_peer_addr(gensec_security, peer_addr, peer_port);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return False;
+	}
+	nt_status = gensec_set_my_addr(gensec_security, my_addr, my_port);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return False;
+	}
+
+	/* We want the GENSEC wrap calls to generate PRIV tokens */
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
 	nt_status = gensec_start_mech_by_name(gensec_security, "krb5");
@@ -416,6 +504,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		return False;
 	}
 
+	/* Accept the AP-REQ and generate teh AP-REP we need for the reply */
 	nt_status = gensec_update(gensec_security, tmp_ctx, ap_req, &ap_rep);
 	if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		
@@ -433,6 +522,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		return ret;
 	}
 
+	/* Extract the data from the KRB-PRIV half of the message */
 	nt_status = gensec_unwrap(gensec_security, tmp_ctx, &krb_priv_req, &kpasswd_req);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx, 
@@ -449,6 +539,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		return ret;
 	}
 
+	/* Figure out something to do with it (probably changing a password...) */
 	ret = kpasswd_process_request(kdc, tmp_ctx, 
 				      gensec_security, 
 				      version, 
@@ -457,7 +548,9 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		/* Argh! */
 		return False;
 	}
-	
+
+	/* And wrap up the reply: This ensures that the error message
+	 * or success can be verified by the client */
 	nt_status = gensec_wrap(gensec_security, tmp_ctx, 
 				&kpasswd_rep, &krb_priv_rep);
 	if (!NT_STATUS_IS_OK(nt_status)) {

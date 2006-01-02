@@ -31,8 +31,12 @@ struct gensec_security;
 struct gensec_target {
 	const char *principal;
 	const char *hostname;
-	const struct sock_addr *addr;
 	const char *service;
+};
+
+struct gensec_addr {
+	const char *addr;
+	int port;
 };
 
 #define GENSEC_FEATURE_SESSION_KEY	0x00000001
@@ -114,6 +118,7 @@ struct gensec_security {
 	BOOL subcontext;
 	uint32_t want_features;
 	struct event_context *event_ctx;
+	struct gensec_addr my_addr, peer_addr;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
