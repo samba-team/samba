@@ -242,6 +242,7 @@ sub SharedLibrary($$)
 	my ($self,$ctx) = @_;
 
 	push (@{$self->{shared_libs}}, "bin/$ctx->{LIBRARY_REALNAME}");
+	push (@{$self->{shared_modules}}, "bin/$ctx->{LIBRARY_REALNAME}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "CFLAGS");
@@ -498,6 +499,7 @@ sub write($$)
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 	$self->output("PROTO_OBJS = " . array2oneperline($self->{proto_objs}) .  "\n");
 	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
+	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
 
 	$self->_prepare_mk_files();
 

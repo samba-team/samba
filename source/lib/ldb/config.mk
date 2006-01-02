@@ -2,6 +2,7 @@
 # Start MODULE libldb_operational
 [MODULE::libldb_operational]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/operational.o
 # End MODULE libldb_operational
@@ -11,6 +12,7 @@ OBJ_FILES = \
 # Start MODULE libldb_objectclass
 [MODULE::libldb_objectclass]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/objectclass.o
 # End MODULE libldb_objectclass
@@ -20,6 +22,7 @@ OBJ_FILES = \
 # Start MODULE libldb_rdn_name
 [MODULE::libldb_rdn_name]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/rdn_name.o
 # End MODULE libldb_rdn_name
@@ -29,6 +32,7 @@ OBJ_FILES = \
 # Start MODULE libldb_schema
 [MODULE::libldb_schema]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/schema.o
 # End MODULE libldb_schema
@@ -38,6 +42,7 @@ OBJ_FILES = \
 # Start MODULE libldb_ildap
 [MODULE::libldb_ildap]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		ldb_ildap/ldb_ildap.o
 REQUIRED_SUBSYSTEMS = \
@@ -50,6 +55,7 @@ NOPROTO = YES
 # Start MODULE libldb_map
 [MODULE::libldb_map]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = modules/ldb_map.o
 # End MODULE libldb_map
 ################################################
@@ -58,6 +64,7 @@ OBJ_FILES = modules/ldb_map.o
 # Start MODULE libldb_sqlite3
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
 REQUIRED_SUBSYSTEMS = \
@@ -70,6 +77,7 @@ NOPROTO = YES
 # Start MODULE libldb_tdb
 [MODULE::libldb_tdb]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		ldb_tdb/ldb_tdb.o \
 		ldb_tdb/ldb_search.o \

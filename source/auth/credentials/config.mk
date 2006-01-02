@@ -8,7 +8,7 @@ OBJ_FILES = credentials.o \
 		credentials_ntlm.o \
 		credentials_gensec.o 
 REQUIRED_SUBSYSTEMS = \
-		HEIMDAL GENSEC LIBCLI_AUTH LIBLDB
+		HEIMDAL GENSEC LIBCLI_AUTH LIBLDB SECRETS
 # End SUBSYSTEM CREDENTIALS
 #################################
 

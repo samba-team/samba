@@ -2,6 +2,7 @@
 # Start MODULE libldb_objectguid
 [MODULE::libldb_objectguid]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		objectguid.o
 REQUIRED_SUBSYSTEMS = \
@@ -13,8 +14,10 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE libldb_samldb
 [MODULE::libldb_samldb]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		samldb.o
+REQUIRED_SUBSYSTEMS = SAMDB
 #
 # End MODULE libldb_samldb
 ################################################
@@ -23,6 +26,7 @@ OBJ_FILES = \
 # Start MODULE libldb_samba3sam
 [MODULE::libldb_samba3sam]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		samba3sam.o
 #
@@ -33,6 +37,7 @@ OBJ_FILES = \
 # Start MODULE libldb_proxy
 [MODULE::libldb_proxy]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		proxy.o
 #
@@ -44,6 +49,7 @@ OBJ_FILES = \
 # Start MODULE libldb_rootdse
 [MODULE::libldb_rootdse]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		rootdse.o
 #
@@ -54,6 +60,7 @@ OBJ_FILES = \
 # Start MODULE libldb_password_hash
 [MODULE::libldb_password_hash]
 SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		password_hash.o
 REQUIRED_SUBSYSTEMS = \
