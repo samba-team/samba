@@ -276,6 +276,14 @@ struct wreplsrv_service {
 	/* all partners (pull and push) */
 	struct wreplsrv_partner *partners;
 
+	/*
+	 * this is our local wins_owner entry, this is also in the table list
+	 * but we need a pointer to it, because we need to update it on each 
+	 * query to wreplsrv_find_owner(), as the local records can be added
+	 * to the wins.ldb from external tools and the winsserver
+	 */
+	struct wreplsrv_owner *owner;
+
 	/* this is a list of each wins_owner we know about in our database */
 	struct wreplsrv_owner *table;
 
