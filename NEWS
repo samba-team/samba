@@ -35,7 +35,17 @@ etc. TLS is supported out of the box.
 
 Built-in KDC
 ============
-FIXME
+Samba4 ships with an integrated KDC (Kerberos Key Distribution
+Center).  Backed directly onto our main internal database, and
+integrated with custom code to handle the PAC, Samba4's KDC is an
+integral part of our support for AD logon protocols.
+
+Built-in LDAP Server
+====================
+Like the situation with the KDC, Samba4 ships with it's own LDAP
+server, included to provide simple, built-in LDAP services in an AD
+(rather than distinctly standards) matching manner.  The database is
+LDB, and it shares that in common with the rest of Samba.
 
 Changed configuration options
 =============================
