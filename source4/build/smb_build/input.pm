@@ -69,12 +69,12 @@ sub check_module($$$)
 	if (defined($mod->{CHOSEN_BUILD}) and $mod->{CHOSEN_BUILD} ne "DEFAULT") 
 	{
 		$mod->{OUTPUT_TYPE} = $mod->{CHOSEN_BUILD};
-	} else {
+	} elsif (not defined($mod->{OUTPUT_TYPE})) {
 		$mod->{OUTPUT_TYPE} = $default_ot;
 	}
 
 	if ($mod->{OUTPUT_TYPE} eq "SHARED_LIBRARY") {
-		$mod->{INSTALLDIR} = "LIBDIR/$mod->{SUBSYSTEM}";
+		$mod->{INSTALLDIR} = "MODULESDIR/$mod->{SUBSYSTEM}";
 		push (@{$mod->{REQUIRED_SUBSYSTEMS}}, $mod->{SUBSYSTEM});
 	} else {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});

@@ -29,9 +29,11 @@ include client/config.mk
 include libcli/config.mk
 include scripting/config.mk
 include kdc/config.mk
+include passdb/config.mk
 
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
+modules: $(SHARED_MODULES)
 headers: $(PUBLIC_HEADERS)
 manpages: $(MANPAGES)
 everything: all

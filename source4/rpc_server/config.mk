@@ -119,6 +119,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_winreg]
 INIT_FUNCTION = dcerpc_server_winreg_init
 SUBSYSTEM = DCERPC
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		winreg/rpc_winreg.o
 REQUIRED_SUBSYSTEMS = \
@@ -159,6 +160,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_spoolss]
 INIT_FUNCTION = dcerpc_server_spoolss_init
 SUBSYSTEM = DCERPC
+OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		spoolss/dcesrv_spoolss.o
 REQUIRED_SUBSYSTEMS = \
@@ -207,7 +209,8 @@ OBJ_FILES = \
 		handles.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_AUTH \
-		LIBNDR
+		LIBNDR \
+		LIBRPC
 #
 # End SUBSYSTEM DCERPC
 ################################################

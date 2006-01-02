@@ -43,6 +43,8 @@ my $section_types = {
 		"ENABLE"		=> "bool",
 		"NOPROTO"		=> "bool",
 
+		"OUTPUT_TYPE" => "string",
+
 		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string"
 		},

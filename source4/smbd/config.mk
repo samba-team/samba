@@ -14,6 +14,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE server_service_smb
 [MODULE::server_service_smb]
 INIT_FUNCTION = server_service_smb_init
+OUTPUT_TYPE = MERGEDOBJ
 SUBSYSTEM = SERVER_SERVICE
 REQUIRED_SUBSYSTEMS = \
 		SMB
@@ -25,6 +26,7 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::server_service_rpc]
 INIT_FUNCTION = server_service_rpc_init
 SUBSYSTEM = SERVER_SERVICE
+OUTPUT_TYPE = MERGEDOBJ
 REQUIRED_SUBSYSTEMS = \
 		DCERPC
 # End MODULE server_rpc

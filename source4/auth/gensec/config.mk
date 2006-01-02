@@ -9,7 +9,7 @@ PUBLIC_HEADERS = gensec.h
 PRIVATE_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o
 REQUIRED_SUBSYSTEMS = \
-		SCHANNELDB CREDENTIALS
+		CREDENTIALS
 # End SUBSYSTEM GENSEC
 #################################
 
