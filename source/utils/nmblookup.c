@@ -214,6 +214,8 @@ int main(int argc,char *argv[])
 	
   *lookup = 0;
 
+  load_case_tables();
+
   setup_logging(argv[0],True);
 
   pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
