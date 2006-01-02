@@ -48,6 +48,8 @@ static int _pam_parse(int argc, const char **argv)
 {
 	int ctrl = 0;
 
+	load_case_tables();
+
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		return -1;
 	}
