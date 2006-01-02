@@ -207,10 +207,6 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 				    DATA_BLOB *reply)
 {
 	struct auth_session_info *session_info;
-	if (!msg) {
-		return False;
-	}
-
 	if (!NT_STATUS_IS_OK(gensec_session_info(gensec_security, 
 						 &session_info))) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx, 
@@ -236,7 +232,7 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 		enum samr_RejectReason reject_reason;
 		struct samr_DomInfo1 *dominfo;
 		struct ldb_context *samdb;
-		struct ldb_message *msg = ldb_msg_new(mem_ctx);
+		struct ldb_message *msg;
 		krb5_context context = kdc->smb_krb5_context->krb5_context;
 
 		ChangePasswdDataMS chpw;
@@ -248,6 +244,11 @@ static BOOL kpasswd_process_request(struct kdc_server *kdc,
 
 		size_t len;
 		int ret;
+
+		msg = ldb_msg_new(mem_ctx);
+		if (!msg) {
+			return False;
+		}
 
 		ret = decode_ChangePasswdDataMS(input->data, input->length,
 						&chpw, &len);
