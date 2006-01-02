@@ -20,6 +20,7 @@ libhx509_la_SOURCES = \
 	hx509_err.c \
 	hx509_err.h \
 	keyset.c \
+	ks_dir.c \
 	ks_file.c \
 	ks_mem.c \
 	ks_null.c \
