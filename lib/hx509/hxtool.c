@@ -595,20 +595,6 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 }
 
 int
-pcert_pkcs11(void *opt, int argc, char **argv)
-{
-    int ret;
-
-    ret = hx509_keyset_init(argv[0], NULL);
-    if (ret) {
-	printf("hx509_keyset_init: %d\n", ret);
-	return 0;
-    }
-
-    return 0;
-}
-
-int
 query(struct query_options *opt, int argc, char **argv)
 {
     hx509_lock lock;
