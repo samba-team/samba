@@ -46,6 +46,7 @@ OBJ_FILES = \
 # Start MODULE registry_rpc
 [MODULE::registry_rpc]
 INIT_FUNCTION = registry_rpc_init
+OUTPUT_TYPE = MERGEDOBJ
 SUBSYSTEM = REGISTRY
 OBJ_FILES = \
 		reg_backend_rpc.o

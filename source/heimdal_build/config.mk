@@ -87,6 +87,7 @@ OBJ_FILES = \
 	../heimdal/lib/gssapi/get_mic.o \
 	../heimdal/lib/gssapi/import_name.o \
 	../heimdal/lib/gssapi/init.o
+REQUIRED_SUBSYSTEMS = KERBEROS HEIMDAL_KRB5
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_GSSAPI
 #######################
@@ -450,7 +451,7 @@ heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 [LIBRARY::HEIMDAL]
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = \
-		HEIMDAL_GSSAPI HEIMDAL_KRB5 \
+		HEIMDAL_GSSAPI HEIMDAL_KRB5 KERBEROS \
 		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_VERS HEIMDAL_GLUE EXT_LIB_RESOLV
 # End SUBSYSTEM HEIMDAL
 #######################
