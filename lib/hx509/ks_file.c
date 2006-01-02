@@ -102,6 +102,25 @@ parse_certificate(const char *fn, int use_pem, Certificate *t)
     return ret;
 }
 
+int
+_hx509_file_to_cert(const char *certfn, hx509_cert *cert)
+{
+    Certificate t;
+    int ret;
+    
+    ret = parse_certificate(certfn, 1, &t);
+    if (ret) {
+	ret = parse_certificate(certfn, 0, &t);
+	if (ret)
+	    return ret;
+    }
+    
+    ret = hx509_cert_init(&t, cert);
+    free_Certificate(&t);
+
+    return ret;
+}
+
 
 static int
 file_init(hx509_certs certs, void **data, int flags, 
@@ -109,6 +128,7 @@ file_init(hx509_certs certs, void **data, int flags,
 {
     char *certfn, *keyfn, *friendlyname = NULL;
     hx509_cert cert;
+    int ret;
 
     *data = NULL;
 
@@ -123,24 +143,10 @@ file_init(hx509_certs certs, void **data, int flags,
 	    *friendlyname++ = '\0';
     }
 
-    {
-	Certificate t;
-	int ret;
-
-	ret = parse_certificate(certfn, 1, &t);
-	if (ret)
-	    ret = parse_certificate(certfn, 0, &t);
-	if (ret) {
-	    free(certfn);
-	    return ret;
-	}
-
-	ret = hx509_cert_init(&t, &cert);
-	free_Certificate(&t);
-	if (ret) {
-	    free(certfn);
-	    return ret;
-	}
+    ret = _hx509_file_to_cert(certfn, &cert);
+    if (ret) {
+	free(certfn);
+	return ret;
     }
 
     if (keyfn) {
