@@ -207,19 +207,27 @@ include/proto.h: $(PROTO_OBJS:.o=.c)
 
 proto: include/proto.h
 
-pch: clean_pch include/config.h \
-	include/proto.h \
-	idl \
-	include/includes.h.gch
-
+librpc/gen_ndr/misc.h: idl
+librpc/ndr/libndr.h: librpc/ndr/libndr_proto.h librpc/gen_ndr/misc.h
+librpc/rpc/dcerpc.h: librpc/rpc/dcerpc_proto.h
+auth/credentials/credentials.h: auth/credentials/credentials_proto.h
 libcli/nbt/libnbt.h: libcli/nbt/nbt_proto.h
-include/includes.h: lib/basic.h libcli/nbt/libnbt.h librpc/ndr/libndr_proto.h librpc/rpc/dcerpc_proto.h auth/credentials/credentials_proto.h
+
+include/includes.h: \
+		include/config.h \
+		include/proto.h	\
+		librpc/ndr/libndr.h \
+		librpc/rpc/dcerpc.h \
+		auth/credentials/credentials_proto.h \
+		libcli/nbt/libnbt.h \
+		lib/basic.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch
 
-basics: include/config.h \
-	include/proto.h \
+pch: clean_pch include/includes.h.gch
+
+basics: include/includes.h \
 	$(PROTO_HEADERS) \
 	idl \
 	heimdal_basics
