@@ -54,8 +54,16 @@ parse_certificate(const char *fn, int use_pem, Certificate *t)
 	    char *p;
 
 	    i = strcspn(buf, "\n");
-	    if (buf[i] == '\n') buf[i--] = '\0';
-	    if (buf[i] == '\r') buf[i--] = '\0';
+	    if (buf[i] == '\n') {
+		buf[i] = '\0';
+		if (i > 0)
+		    i--;
+	    }
+	    if (buf[i] == '\r') {
+		buf[i] = '\0';
+		if (i > 0)
+		    i--;
+	    }
 	    
 	    if (i == 26
 		&& strcmp("-----BEGIN CERTIFICATE-----", buf) == 0)
