@@ -377,6 +377,8 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->ops = NULL;
 
 	ZERO_STRUCT((*gensec_security)->target);
+	ZERO_STRUCT((*gensec_security)->peer_addr);
+	ZERO_STRUCT((*gensec_security)->my_addr);
 
 	(*gensec_security)->subcontext = False;
 	(*gensec_security)->want_features = 0;
@@ -789,7 +791,7 @@ BOOL gensec_have_feature(struct gensec_security *gensec_security,
 }
 
 /** 
- * Associate a credentails structure with a GENSEC context - talloc_reference()s it to the context 
+ * Associate a credentials structure with a GENSEC context - talloc_reference()s it to the context 
  *
  */
 
@@ -800,7 +802,7 @@ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct 
 }
 
 /** 
- * Return the credentails structure associated with a GENSEC context
+ * Return the credentials structure associated with a GENSEC context
  *
  */
 
@@ -855,9 +857,70 @@ const char *gensec_get_target_hostname(struct gensec_security *gensec_security)
 		return gensec_security->target.hostname;
 	}
 
-	/* TODO: Add a 'set sockaddr' call, and do a reverse lookup */
+	/* We could add use the 'set sockaddr' call, and do a reverse
+	 * lookup, but this would be both insecure (compromising the
+	 * way kerberos works) and add DNS timeouts */
 	return NULL;
 }
+
+/** 
+ * Set local and peer socket addresses onto a socket context on the GENSEC context 
+ *
+ * This is so that kerberos can include these addresses in
+ * cryptographic tokens, to avoid certain attacks.
+ */
+
+NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, const char *my_addr, int port) 
+{
+	gensec_security->my_addr.addr = talloc_strdup(gensec_security, my_addr);
+	if (my_addr && !gensec_security->my_addr.addr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	gensec_security->my_addr.port = port;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, const char *peer_addr, int port) 
+{
+	gensec_security->peer_addr.addr = talloc_strdup(gensec_security, peer_addr);
+	if (peer_addr && !gensec_security->peer_addr.addr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	gensec_security->peer_addr.port = port;
+	return NT_STATUS_OK;
+}
+
+const char *gensec_get_my_addr(struct gensec_security *gensec_security, int *port) 
+{
+	if (gensec_security->my_addr.addr) {
+		if (port) {
+			*port = gensec_security->my_addr.port;
+		}
+		return gensec_security->my_addr.addr;
+	}
+
+	/* We could add a 'set sockaddr' call, and do a lookup.  This
+	 * would avoid needing to do system calls if nothing asks. */
+	return NULL;
+}
+
+const char *gensec_get_peer_addr(struct gensec_security *gensec_security, int *port) 
+{
+	if (gensec_security->peer_addr.addr) {
+		if (port) {
+			*port = gensec_security->peer_addr.port;
+		}
+		return gensec_security->peer_addr.addr;
+	}
+
+	/* We could add a 'set sockaddr' call, and do a lookup.  This
+	 * would avoid needing to do system calls if nothing asks.
+	 * However, this is not appropriate for the peer addres on
+	 * datagram sockets */
+	return NULL;
+}
+
+
 
 /** 
  * Set the target principal (assuming it it known, say from the SPNEGO reply)
