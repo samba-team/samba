@@ -1,5 +1,10 @@
 2006-01-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* name.c (hx509_name_to_string): don't cut bmpString in half.
+
+	* name.c (hx509_name_to_string): don't overwrite with 1 byte with
+	bmpString.
+
 	* ks_file.c (parse_certificate): avoid stomping before array
 
 	* name.c (oidtostring): avoid leaking memory
