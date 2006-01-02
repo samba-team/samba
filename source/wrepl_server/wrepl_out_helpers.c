@@ -552,10 +552,12 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycl
 	BOOL do_pull = False;
 
 	for (i=state->current; i < state->table_io.out.num_owners; i++) {
-		current_owner = wreplsrv_find_owner(state->io->in.partner->pull.table,
+		current_owner = wreplsrv_find_owner(state->io->in.partner->service,
+						    state->io->in.partner->pull.table,
 						    state->table_io.out.owners[i].address);
 
-		local_owner = wreplsrv_find_owner(state->io->in.partner->service->table,
+		local_owner = wreplsrv_find_owner(state->io->in.partner->service,
+						  state->io->in.partner->service->table,
 						  state->table_io.out.owners[i].address);
 		/*
 		 * this means we are ourself the current owner,
@@ -639,12 +641,6 @@ static NTSTATUS wreplsrv_pull_cycle_wait_table_reply(struct wreplsrv_pull_cycle_
 
 	/* update partner table */
 	for (i=0; i < state->table_io.out.num_owners; i++) {
-		BOOL is_our_addr;
-
-		is_our_addr = wreplsrv_is_our_address(state->io->in.partner->service,
-						      state->table_io.out.owners[i].address);
-		if (is_our_addr) continue;
-
 		status = wreplsrv_add_table(state->io->in.partner->service,
 					    state->io->in.partner, 
 					    &state->io->in.partner->pull.table,
@@ -843,7 +839,7 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	NT_STATUS_HAVE_NO_MEMORY(our_ip);
 
 	status = wreplsrv_fill_wrepl_table(service, state, table_out,
-					   our_ip, our_ip, state->full_table);
+					   our_ip, state->full_table);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* queue the request */
@@ -928,7 +924,7 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 	NT_STATUS_HAVE_NO_MEMORY(our_ip);
 
 	status = wreplsrv_fill_wrepl_table(service, state, table_out,
-					   our_ip, our_ip, state->full_table);
+					   our_ip, state->full_table);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* we won't get a reply to a inform message */

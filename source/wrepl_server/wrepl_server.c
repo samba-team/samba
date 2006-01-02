@@ -146,83 +146,66 @@ failed:
 	return NT_STATUS_FOOBAR;
 }
 
-BOOL wreplsrv_is_our_address(struct wreplsrv_service *service, const char *address)
-{
-	const char *our_address;
-
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		int num_interfaces = iface_count();
-		int i;
-		for(i = 0; i < num_interfaces; i++) {
-			our_address = iface_n_ip(i);
-			if (strcasecmp(our_address, address) == 0) {
-				return True;
-			}
-		}
-	} else {
-		our_address = lp_socket_address();
-		if (strcasecmp(our_address, address) == 0) {
-			return True;
-		}
-	}
-
-	return False;
-}
-
-uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
-{
-	return winsdb_get_maxVersion(service->wins_db);
-}
-
 NTSTATUS wreplsrv_fill_wrepl_table(struct wreplsrv_service *service,
 				   TALLOC_CTX *mem_ctx,
 				   struct wrepl_table *table_out,
-				   const char *our_ip,
 				   const char *initiator,
 				   BOOL full_table)
 {
 	struct wreplsrv_owner *cur;
-	uint64_t local_max_version;
 	uint32_t i = 0;
 
 	table_out->partner_count	= 0;
 	table_out->partners		= NULL;
 	table_out->initiator		= initiator;
 
-	local_max_version = wreplsrv_local_max_version(service);
-	if (local_max_version > 0) {
-		table_out->partner_count++;
-	}
+	for (cur = service->table; cur; cur = cur->next) {
+		if (full_table) {
+			table_out->partner_count++;
+			continue;
+		}
 
-	for (cur = service->table; full_table && cur; cur = cur->next) {
+		if (strcmp(initiator, cur->owner.address) != 0) continue;
+
 		table_out->partner_count++;
+		break;
 	}
 
 	table_out->partners = talloc_array(mem_ctx, struct wrepl_wins_owner, table_out->partner_count);
 	NT_STATUS_HAVE_NO_MEMORY(table_out->partners);
 
-	if (local_max_version > 0) {
-		table_out->partners[i].address		= our_ip;
-		table_out->partners[i].min_version	= 0;
-		table_out->partners[i].max_version	= local_max_version;
-		table_out->partners[i].type		= 1;
-		i++;
-	}
+	for (cur = service->table; cur && i < table_out->partner_count; cur = cur->next) {
+		if (full_table) {
+			table_out->partners[i] = cur->owner;
+			i++;
+			continue;
+		}
 
-	for (cur = service->table; full_table && cur; cur = cur->next) {
+		if (strcmp(initiator, cur->owner.address) != 0) continue;
+
 		table_out->partners[i] = cur->owner;
 		i++;
+		break;
 	}
 
 	return NT_STATUS_OK;
 }
 
-struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_owner *table, const char *wins_owner)
+struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_service *service,
+					   struct wreplsrv_owner *table,
+					   const char *wins_owner)
 {
 	struct wreplsrv_owner *cur;
 
 	for (cur = table; cur; cur = cur->next) {
 		if (strcmp(cur->owner.address, wins_owner) == 0) {
+			/*
+			 * if it's our local entry
+			 * update the max version
+			 */
+			if (cur == service->owner) {
+				cur->owner.max_version = winsdb_get_maxVersion(service->wins_db);
+			}
 			return cur;
 		}
 	}
@@ -241,12 +224,11 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 	struct wreplsrv_owner *table = *_table;
 	struct wreplsrv_owner *cur;
 
-	if (strcmp(service->wins_db->local_owner, wins_owner) == 0 ||
-	    strcmp("0.0.0.0", wins_owner) == 0) {
-		return NT_STATUS_OK;
+	if (!wins_owner || strcmp(wins_owner, "0.0.0.0") == 0) {
+		wins_owner = service->wins_db->local_owner;
 	}
 
-	cur = wreplsrv_find_owner(table, wins_owner);
+	cur = wreplsrv_find_owner(service, table, wins_owner);
 
 	/* if it doesn't exists yet, create one */
 	if (!cur) {
@@ -261,7 +243,7 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 
 		cur->partner		= wreplsrv_find_partner(service, wins_owner);
 
-		DLIST_ADD(table, cur);
+		DLIST_ADD_END(table, cur, struct wreplsrv_owner *);
 		*_table = table;
 	}
 
@@ -270,6 +252,16 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 	/* if the given version is higher the then current nax_version, update */
 	if (cur->owner.max_version < version) {
 		cur->owner.max_version = version;
+		/* if it's for our local db, we need to update the wins.ldb too */
+		if (cur == service->owner) {
+			uint64_t ret;
+			ret = winsdb_set_maxVersion(service->wins_db, cur->owner.max_version);
+			if (ret != cur->owner.max_version) {
+				DEBUG(0,("winsdb_set_maxVersion(%llu) failed: %llu\n",
+					cur->owner.max_version, ret));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -286,6 +278,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	struct ldb_context *ldb = service->wins_db->ldb;
 	int i;
+	struct wreplsrv_owner *local_owner;
 	const char *wins_owner;
 	uint64_t version;
 	const char * const attrs[] = {
@@ -293,6 +286,21 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 		"versionID",
 		NULL
 	};
+
+	/*
+	 * make sure we have our local entry in the list,
+	 * but we set service->owner when we're done
+	 * to avoid to many calls to wreplsrv_local_max_version()
+	 */
+	status = wreplsrv_add_table(service,
+				    service, &service->table,
+				    service->wins_db->local_owner, 0);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+	local_owner = wreplsrv_find_owner(service, service->table, service->wins_db->local_owner);
+	if (!local_owner) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto failed;
+	}
 
 	/* find the record in the WINS database */
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE,
@@ -306,17 +314,28 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 		wins_owner     = ldb_msg_find_string(res->msgs[i], "winsOwner", NULL);
 		version        = ldb_msg_find_uint64(res->msgs[i], "versionID", 0);
 
-		if (wins_owner) { 
-			status = wreplsrv_add_table(service,
-						    service, &service->table,
-						    wins_owner, version);
-			if (!NT_STATUS_IS_OK(status)) goto failed;
-		}
+		status = wreplsrv_add_table(service,
+					    service, &service->table,
+					    wins_owner, version);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
 		talloc_free(res->msgs[i]);
-
-		/* TODO: what's abut the per address owners? */
 	}
 done:
+	/*
+	 * this makes sure we call wreplsrv_local_max_version() before returning in
+	 * wreplsrv_find_owner()
+	 */
+	service->owner = local_owner;
+
+	/*
+	 * this makes sure the maxVersion in the database is updated,
+	 * with the highest version we found, if this is higher than the current stored one
+	 */
+	status = wreplsrv_add_table(service,
+				    service, &service->table,
+				    service->wins_db->local_owner, local_owner->owner.max_version);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 failed:

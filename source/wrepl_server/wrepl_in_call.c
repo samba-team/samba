@@ -115,7 +115,7 @@ static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
 	repl_out->command = WREPL_REPL_TABLE_REPLY;
 
 	return wreplsrv_fill_wrepl_table(service, call, table_out,
-					 our_ip, our_ip, True);
+					 our_ip, True);
 }
 
 static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
@@ -173,7 +173,6 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	struct wrepl_wins_owner *owner_in = &call->req_packet.message.replication.info.owner;
 	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
 	struct wrepl_send_reply *reply_out = &call->rep_packet.message.replication.info.reply;
-	struct wreplsrv_owner local_owner;
 	struct wreplsrv_owner *owner;
 	const char *filter;
 	struct ldb_result *res = NULL;
@@ -183,16 +182,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	NTSTATUS status;
 	uint32_t i;
 
-	if (strcmp(call->wreplconn->our_ip, owner_in->address) == 0) {
-		ZERO_STRUCT(local_owner);
-		local_owner.owner.address	= service->wins_db->local_owner;
-		local_owner.owner.min_version	= 0;
-		local_owner.owner.max_version	= wreplsrv_local_max_version(service);
-		local_owner.owner.type		= 1;
-		owner = &local_owner;
-	} else {
-		owner = wreplsrv_find_owner(service->table, owner_in->address);
-	}
+	owner = wreplsrv_find_owner(service, service->table, owner_in->address);
 
 	repl_out->command	= WREPL_REPL_SEND_REPLY;
 	reply_out->num_names	= 0;
@@ -203,6 +193,8 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * return an empty list.
 	 */
 	if (!owner) {
+		DEBUG(2,("WINSREPL:reply [0] records unknown owner[%s] to partner[%s]\n",
+			owner_in->address, call->wreplconn->partner->address));
 		return NT_STATUS_OK;
 	}
 
@@ -219,6 +211,11 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * return an empty list.
 	 */
 	if (owner_in->min_version > owner_in->max_version) {
+		DEBUG(2,("WINSREPL:reply [0] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
+			owner_in->address, 
+			(long long)owner_in->min_version, 
+			(long long)owner_in->max_version,
+			call->wreplconn->partner->address));
 		return NT_STATUS_OK;
 	}
 
@@ -227,6 +224,11 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * return an empty list.
 	 */
 	if (owner_in->min_version > owner->owner.max_version) {
+		DEBUG(2,("WINSREPL:reply [0] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
+			owner_in->address, 
+			(long long)owner_in->min_version, 
+			(long long)owner_in->max_version,
+			call->wreplconn->partner->address));
 		return NT_STATUS_OK;
 	}
 
