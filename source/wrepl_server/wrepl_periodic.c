@@ -30,6 +30,9 @@ static NTSTATUS wreplsrv_periodic_run(struct wreplsrv_service *service)
 {
 	NTSTATUS status;
 
+	status = wreplsrv_load_partners(service);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	status = wreplsrv_scavenging_run(service);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -92,7 +95,7 @@ NTSTATUS wreplsrv_periodic_schedule(struct wreplsrv_service *service, uint32_t n
 	NT_STATUS_HAVE_NO_MEMORY(new_te);
 
 	tmp_mem = talloc_new(service);
-	DEBUG(4,("wreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
+	DEBUG(6,("wreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
 		next_interval,
 		(service->periodic.te?"re":""),
 		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));

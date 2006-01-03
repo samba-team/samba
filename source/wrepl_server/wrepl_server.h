@@ -223,6 +223,9 @@ struct wreplsrv_service {
 		/* the wins config db handle */
 		struct ldb_context *ldb;
 
+		/* the last wins config db seqnumber we know about */
+		uint64_t seqnumber;
+
 		/* 
 		 * the interval (in secs) till an active record will be marked as RELEASED 
 		 */
