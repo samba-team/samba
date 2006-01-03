@@ -164,6 +164,10 @@ hx509_cert_free(hx509_cert cert)
 	_hx509_abort("refcount <= 0");
     if (--cert->ref > 0)
 	return;
+
+    if (cert->private_key)
+	_hx509_free_private_key(&cert->private_key);
+
     free_Certificate(cert->data);
     free(cert->data);
 
