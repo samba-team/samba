@@ -14,6 +14,7 @@ libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
 libhx509_la_SOURCES = \
 	cert.c \
 	cms.c \
+	collector.c \
 	crypto.c \
 	file.c \
 	hx509.h \
