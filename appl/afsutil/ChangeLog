@@ -1,3 +1,11 @@
+2006-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afslog.1: Document options to allow select principal or
+	credential cache when doing afslog.
+
+	* afslog.c: Add options to allow select principal or credential
+	cache when doing afslog.
+	
 2005-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: man_MANS += pagsh.1
