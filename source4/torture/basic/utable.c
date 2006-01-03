@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
+#include "libcli/libcli.h"
 #include "pstring.h"
 
 BOOL torture_utable(void)

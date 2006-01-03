@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
-#include "asn_1.h"
+#include "libcli/util/asn_1.h"
 #include "libcli/ldap/ldap.h"
 
 

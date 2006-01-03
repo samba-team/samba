@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 #include "system/shmem.h"
 #include "system/time.h"
 

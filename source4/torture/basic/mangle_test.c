@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "system/filesys.h"
 #include "lib/tdb/include/tdbutil.h"
+#include "libcli/libcli.h"
 #include "pstring.h"
 
 static TDB_CONTEXT *tdb;

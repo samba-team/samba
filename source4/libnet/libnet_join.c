@@ -26,7 +26,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/cldap/cldap.h"
-#include "include/secrets.h"
+#include "passdb/secrets.h"
 #include "dsdb/samdb/samdb.h"
 
 /*

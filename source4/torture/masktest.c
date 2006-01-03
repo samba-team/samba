@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "clilist.h"
+#include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "pstring.h"

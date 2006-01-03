@@ -41,9 +41,10 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
-#include "messages.h"
+#include "messaging/messaging.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "db_wrap.h"
+#include "smb_server/smb_server.h"
 #include "lib/messaging/irpc.h"
 
 struct odb_context {

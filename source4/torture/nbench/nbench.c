@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "libcli/libcli.h"
 #include "system/filesys.h"
 #include "pstring.h"
 

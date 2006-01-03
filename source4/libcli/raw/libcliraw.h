@@ -21,6 +21,7 @@
 */
 
 #include "request.h"
+#include "smb.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 struct smbcli_tree;  /* forward declare */

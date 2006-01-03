@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libcli/raw/libcliraw.h"
 #include "lib/crypto/crypto.h"
 

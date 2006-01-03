@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "asn_1.h"
+#include "libcli/util/asn_1.h"
 #include "auth/gensec/gensec.h"
 
 /*

@@ -24,6 +24,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "dlinklist.h"
+#include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 
 #define MAX_FILES 100

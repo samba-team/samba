@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "asn_1.h"
+#include "libcli/util/asn_1.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 enum cldap_request_state {CLDAP_REQUEST_SEND, 

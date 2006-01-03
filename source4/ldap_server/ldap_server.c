@@ -26,7 +26,7 @@
 #include "lib/events/events.h"
 #include "auth/auth.h"
 #include "dlinklist.h"
-#include "asn_1.h"
+#include "libcli/util/asn_1.h"
 #include "ldap_server/ldap_server.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
