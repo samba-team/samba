@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_initshutdown.h"
 
 static void init_initshutdown_String(TALLOC_CTX *mem_ctx, struct initshutdown_String *name, const char *s)

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "libcli/smb_composite/smb_composite.h"

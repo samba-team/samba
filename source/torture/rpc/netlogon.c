@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "lib/events/events.h"
 #include "auth/auth.h"
 #include "lib/cmdline/popt_common.h"

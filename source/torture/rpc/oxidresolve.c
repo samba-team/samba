@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
 #include "librpc/gen_ndr/ndr_remact.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"

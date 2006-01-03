@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/filesys.h"

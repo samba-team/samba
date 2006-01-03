@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_rot.h"
 
 BOOL torture_rpc_rot(void)

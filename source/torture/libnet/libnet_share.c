@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
 

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/events/events.h"
 

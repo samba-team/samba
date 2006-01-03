@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/raw/libcliraw.h"
 

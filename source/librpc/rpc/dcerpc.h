@@ -21,6 +21,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __DCERPC_H__
+#define __DCERPC_H__
+
+#include <nt_status.h>
+
 enum dcerpc_transport_t {
 	NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, NCACN_VNS_SPP, 
 	NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, NCADG_UNIX_DGRAM,
@@ -45,7 +50,7 @@ struct dcerpc_connection {
 	uint32_t call_id;
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
-	uint_t flags;
+	uint32_t flags;
 	struct dcerpc_security security_state;
 	const char *binding_string;
 	struct event_context *event_ctx;
@@ -100,7 +105,7 @@ struct dcerpc_pipe {
 	uint32_t last_fault_code;
 
 	/* timeout for individual rpc requests, in seconds */
-	uint_t request_timeout;
+	uint32_t request_timeout;
 };
 
 /* default timeout for all rpc requests, in seconds */
@@ -218,7 +223,7 @@ struct rpc_request {
 	uint32_t call_id;
 	enum rpc_request_state state;
 	DATA_BLOB payload;
-	uint_t flags;
+	uint32_t flags;
 	uint32_t fault_code;
 
 	const struct GUID *object;
@@ -241,3 +246,5 @@ struct rpc_request {
 };
 
 #include "librpc/rpc/dcerpc_proto.h"
+
+#endif /* __DCERPC_H__ */

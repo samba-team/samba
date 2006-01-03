@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "torture/rpc/drsuapi.h"
 #include "ldb/include/ldb.h"

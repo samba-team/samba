@@ -199,6 +199,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 INSTALLDIR = BINDIR
+PRIVATE_PROTO_HEADER = torture.h
 OBJ_FILES = \
 		torture.o \
 		torture_util.o

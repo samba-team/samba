@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 
 #define TEST_KEY_BASE "smbtorture test"

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "libnet/libnet.h"
 #include "libnet/composite.h"
 #include "libnet/userinfo.h"
