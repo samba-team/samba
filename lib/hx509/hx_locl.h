@@ -62,6 +62,7 @@ struct hx509_query_data;
 typedef struct hx509_query_data hx509_query;
 
 struct hx509_keyset_ops;
+struct hx509_collector;
 
 #include <hx509.h>
 #include <hx509-private.h>
