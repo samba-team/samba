@@ -104,6 +104,12 @@ _hx509_lock_get_passwords(hx509_lock lock)
     return &lock->password;
 }
 
+hx509_certs
+_hx509_lock_unlock_certs(hx509_lock lock)
+{
+    return lock->certs;
+}
+
 void
 hx509_lock_reset_passwords(hx509_lock lock)
 {
