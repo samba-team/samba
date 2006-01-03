@@ -37,6 +37,33 @@ static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx)
 				system_session(mem_ctx), NULL, 0, NULL);
 }
 
+static uint64_t wins_config_db_get_seqnumber(struct ldb_context *ldb)
+{
+	int ret;
+	struct ldb_dn *dn;
+	struct ldb_result *res = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	uint64_t seqnumber = 0;
+
+	dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
+	if (!dn) goto failed;
+
+	/* find the record in the WINS database */
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, 
+			 NULL, NULL, &res);
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+	if (res->count > 1) goto failed;
+
+	if (res->count == 1) {
+		seqnumber = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
+	}
+
+failed:
+	talloc_free(tmp_ctx);
+	return seqnumber;
+}
+
 /*
   open winsdb
 */
@@ -72,7 +99,7 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 							service->config.renew_interval/2);
 
 	/* the maximun interval to the next periodic processing event */
-	service->config.periodic_interval = lp_parm_int(-1,"wreplsrv","periodic_interval", 60);
+	service->config.periodic_interval = lp_parm_int(-1,"wreplsrv","periodic_interval", 15);
 
 	return NT_STATUS_OK;
 }
@@ -93,51 +120,85 @@ struct wreplsrv_partner *wreplsrv_find_partner(struct wreplsrv_service *service,
 /*
   load our replication partners
 */
-static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
+NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 {
+	struct wreplsrv_partner *partner;
 	struct ldb_result *res = NULL;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	int i;
+	uint64_t new_seqnumber;
+
+	new_seqnumber = wins_config_db_get_seqnumber(service->config.ldb);
+
+	/* if it's not the first run and nothing changed we're done */
+	if (service->config.seqnumber != 0 && service->config.seqnumber == new_seqnumber) {
+		return NT_STATUS_OK;
+	}
+
+	service->config.seqnumber = new_seqnumber;
 
 	/* find the record in the WINS database */
 	ret = ldb_search(service->config.ldb, ldb_dn_explode(tmp_ctx, "CN=PARTNERS"), LDB_SCOPE_SUBTREE,
 			 "(objectClass=wreplPartner)", NULL, &res);
 	if (ret != LDB_SUCCESS) goto failed;
 	talloc_steal(tmp_ctx, res);
-	if (res->count == 0) goto done;
+
+	/* first disable all existing partners */
+	for (partner=service->partners; partner; partner = partner->next) {
+		partner->type = WINSREPL_PARTNER_NONE;
+	}
 
 	for (i=0; i < res->count; i++) {
-		struct wreplsrv_partner *partner;
+		const char *address;
 
-		partner = talloc_zero(service, struct wreplsrv_partner);
-		if (partner == NULL) goto failed;
+		address	= ldb_msg_find_string(res->msgs[i], "address", NULL);
+		if (!address) {
+			goto failed;
+		}
 
-		partner->service		= service;
-		partner->address		= ldb_msg_find_string(res->msgs[i], "address", NULL);
-		if (!partner->address) goto failed;
+		partner = wreplsrv_find_partner(service, address);
+		if (partner) {
+			if (partner->name != partner->address) {
+				talloc_free(discard_const(partner->name));
+			}
+			partner->name = NULL;
+			talloc_free(discard_const(partner->our_address));
+			partner->our_address = NULL;
+
+			/* force rescheduling of pulling */
+			partner->pull.next_run = timeval_zero();
+		} else {
+			partner = talloc_zero(service, struct wreplsrv_partner);
+			if (partner == NULL) goto failed;
+
+			partner->service = service;
+			partner->address = address;
+			talloc_steal(partner, partner->address);
+
+			DLIST_ADD_END(service->partners, partner, struct wreplsrv_partner *);
+		}
+
 		partner->name			= ldb_msg_find_string(res->msgs[i], "name", partner->address);
+		talloc_steal(partner, partner->name);
+		partner->our_address		= ldb_msg_find_string(res->msgs[i], "ourAddress", NULL);
+		talloc_steal(partner, partner->our_address);
+
 		partner->type			= ldb_msg_find_uint(res->msgs[i], "type", WINSREPL_PARTNER_BOTH);
 		partner->pull.interval		= ldb_msg_find_uint(res->msgs[i], "pullInterval",
 								    WINSREPL_DEFAULT_PULL_INTERVAL);
 		partner->pull.retry_interval	= ldb_msg_find_uint(res->msgs[i], "pullRetryInterval",
 								    WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
-		partner->our_address		= ldb_msg_find_string(res->msgs[i], "ourAddress", NULL);
 		partner->push.change_count	= ldb_msg_find_uint(res->msgs[i], "pushChangeCount",
 								    WINSREPL_DEFAULT_PUSH_CHANGE_COUNT);
 		partner->push.use_inform	= ldb_msg_find_uint(res->msgs[i], "pushUseInform", False);
 
-		talloc_steal(partner, partner->address);
-		talloc_steal(partner, partner->name);
-		talloc_steal(partner, partner->our_address);
-
-		DLIST_ADD(service->partners, partner);
-
 		DEBUG(3,("wreplsrv_load_partners: found partner: %s type: 0x%X\n",
 			partner->address, partner->type));
 	}
-done:
-	DEBUG(1,("wreplsrv_load_partners: %u partners found\n", res->count));
+
+	DEBUG(2,("wreplsrv_load_partners: %u partners found: wins_config_db seqnumber %llu\n",
+		res->count, service->config.seqnumber));
 
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
@@ -308,7 +369,6 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 	status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 	if (ret != LDB_SUCCESS) goto failed;
 	talloc_steal(tmp_ctx, res);
-	if (res->count == 0) goto done;
 
 	for (i=0; i < res->count; i++) {
 		wins_owner     = ldb_msg_find_string(res->msgs[i], "winsOwner", NULL);
@@ -320,7 +380,7 @@ static NTSTATUS wreplsrv_load_table(struct wreplsrv_service *service)
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 		talloc_free(res->msgs[i]);
 	}
-done:
+
 	/*
 	 * this makes sure we call wreplsrv_local_max_version() before returning in
 	 * wreplsrv_find_owner()
