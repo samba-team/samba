@@ -53,6 +53,7 @@
  */
 
 #include "includes.h"
+#include "smb.h"
 #include "version.h"
 #include "dynconfig.h"
 #include "pstring.h"

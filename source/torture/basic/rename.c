@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/libcli.h"
 #include "torture/torture.h"
 
 /*

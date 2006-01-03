@@ -26,6 +26,7 @@
 #include "torture/torture.h"
 #include "lib/events/events.h"
 #include "auth/auth.h"
+#include "smb.h"
 #include "lib/cmdline/popt_common.h"
 
 static const char *machine_password;

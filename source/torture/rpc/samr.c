@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "smb.h"
 #include "lib/crypto/crypto.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "smb.h"
 #include "pstring.h"
 #include "lib/ldb/include/ldb.h"
 

@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/events/events.h"
+#include "libcli/libcli.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};

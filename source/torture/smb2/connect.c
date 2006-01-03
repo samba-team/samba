@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 

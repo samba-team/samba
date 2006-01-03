@@ -25,6 +25,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
+#include "libcli/libcli.h"
 
 #define BASEDIR "\\rawcontext"
 

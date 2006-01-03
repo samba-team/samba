@@ -23,6 +23,7 @@
 #include "system/time.h"
 #include "pstring.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/libcli.h"
 
 static int numops = 1000;
 static BOOL showall;

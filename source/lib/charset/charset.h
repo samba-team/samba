@@ -55,3 +55,15 @@ typedef struct {
 	void *cd_direct, *cd_pull, *cd_push;
 } *smb_iconv_t;
 
+/* string manipulation flags */
+#define STR_TERMINATE 1
+#define STR_UPPER 2
+#define STR_ASCII 4
+#define STR_UNICODE 8
+#define STR_NOALIGN 16
+#define STR_NO_RANGE_CHECK 32
+#define STR_LEN8BIT 64
+#define STR_TERMINATE_ASCII 128 /* only terminate if ascii */
+#define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
+
+#include "lib/charset/charset_proto.h"
