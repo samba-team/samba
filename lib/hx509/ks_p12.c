@@ -38,23 +38,7 @@ struct ks_pkcs12 {
     hx509_certs certs;
 };
 
-struct private_key {
-    AlgorithmIdentifier alg;
-    heim_octet_string data;
-    heim_octet_string localKeyId;
-};
-
-struct collector {
-    hx509_lock lock;
-    hx509_certs unenvelop_certs;
-    hx509_certs certs;
-    struct {
-	struct private_key **data;
-	size_t len;
-    } val;
-};
-
-typedef int (*collector_func)(struct collector *, const void *, size_t,
+typedef int (*collector_func)(struct hx509_collector *, const void *, size_t,
 			      const PKCS12_Attributes *);
 
 struct type {
@@ -63,7 +47,7 @@ struct type {
 };
 
 static void
-parse_pkcs12_type(struct collector *, const heim_oid *, 
+parse_pkcs12_type(struct hx509_collector *, const heim_oid *, 
 		  const void *, size_t, const PKCS12_Attributes *);
 
 
@@ -80,10 +64,10 @@ find_attribute(const PKCS12_Attributes *attrs, const heim_oid *oid)
 }
 
 static int
-ShroudedKeyBag_parser(struct collector *c, const void *data, size_t length,
+ShroudedKeyBag_parser(struct hx509_collector *c, 
+		      const void *data, size_t length,
 		      const PKCS12_Attributes *attrs)
 {
-    struct private_key *key;
     const PKCS12_Attribute *attr;
     PKCS8EncryptedPrivateKeyInfo pk;
     PKCS8PrivateKeyInfo ki;
@@ -100,7 +84,7 @@ ShroudedKeyBag_parser(struct collector *c, const void *data, size_t length,
     if (ret)
 	return ret;
 
-    ret = _hx509_pbe_decrypt(c->lock,
+    ret = _hx509_pbe_decrypt(_hx509_collector_get_lock(c),
 			     &pk.encryptionAlgorithm,
 			     &pk.encryptedData,
 			     &content);
@@ -114,32 +98,20 @@ ShroudedKeyBag_parser(struct collector *c, const void *data, size_t length,
     if (ret)
 	return ret;
     
-    key = malloc(sizeof(*key));
-    if (key == NULL) {
-	free_PKCS8PrivateKeyInfo(&ki);
-	return ENOMEM;
-    }
+    _hx509_collector_private_key_add(c,
+				     &ki.privateKeyAlgorithm,
+				     NULL,
+				     &ki.privateKey,
+				     &attr->attrValues);
 
-    copy_AlgorithmIdentifier(&ki.privateKeyAlgorithm, &key->alg);
-    copy_octet_string(&ki.privateKey, &key->data);
-    copy_octet_string(&attr->attrValues, &key->localKeyId);
     free_PKCS8PrivateKeyInfo(&ki);
 
-    {
-	void *d;
-	d = realloc(c->val.data, (c->val.len + 1) * sizeof(c->val.data[0]));
-	if (d == NULL) {
-	    _hx509_abort("allocation failure"); /* XXX */
-	}
-	c->val.data = d;
-	c->val.data[c->val.len] = key;
-	c->val.len++;
-    }
     return 0;
 }
 
 static int
-certBag_parser(struct collector *c, const void *data, size_t length,
+certBag_parser(struct hx509_collector *c, 
+	       const void *data, size_t length,
 	       const PKCS12_Attributes *attrs)
 {
     heim_octet_string os;
@@ -170,7 +142,7 @@ certBag_parser(struct collector *c, const void *data, size_t length,
     if (ret)
 	return ret;
 
-    ret = hx509_certs_add(c->certs, cert);
+    ret = _hx509_collector_certs_add(c, cert);
     if (ret) {
 	hx509_cert_free(cert);
 	return ret;
@@ -194,7 +166,8 @@ certBag_parser(struct collector *c, const void *data, size_t length,
 }
 
 static int
-parse_safe_content(struct collector *c, const unsigned char *p, size_t len)
+parse_safe_content(struct hx509_collector *c, 
+		   const unsigned char *p, size_t len)
 {
     PKCS12_SafeContents sc;
     int ret, i;
@@ -217,8 +190,9 @@ parse_safe_content(struct collector *c, const unsigned char *p, size_t len)
 }
 
 static int
-safeContent_parser(struct collector *c, const void *data, size_t length,
-	       const PKCS12_Attributes *attrs)
+safeContent_parser(struct hx509_collector *c, 
+		   const void *data, size_t length,
+		   const PKCS12_Attributes *attrs)
 {
     heim_octet_string os;
     int ret;
@@ -232,7 +206,8 @@ safeContent_parser(struct collector *c, const void *data, size_t length,
 };
 
 static int
-encryptedData_parser(struct collector *c, const void *data, size_t length,
+encryptedData_parser(struct hx509_collector *c,
+		     const void *data, size_t length,
 		     const PKCS12_Attributes *attrs)
 {
     heim_octet_string content;
@@ -241,7 +216,7 @@ encryptedData_parser(struct collector *c, const void *data, size_t length,
 		
     memset(&contentType, 0, sizeof(contentType));
 
-    ret = hx509_cms_decrypt_encrypted(c->lock,
+    ret = hx509_cms_decrypt_encrypted(_hx509_collector_get_lock(c),
 				      data, length,
 				      &contentType,
 				      &content);
@@ -257,16 +232,20 @@ encryptedData_parser(struct collector *c, const void *data, size_t length,
 }
 
 static int
-envelopedData_parser(struct collector *c, const void *data, size_t length,
+envelopedData_parser(struct hx509_collector *c,
+		     const void *data, size_t length,
 		     const PKCS12_Attributes *attrs)
 {
     heim_octet_string content;
     heim_oid contentType;
+    hx509_lock lock;
     int ret;
 		
     memset(&contentType, 0, sizeof(contentType));
 
-    ret = hx509_cms_unenvelope(c->unenvelop_certs,
+    lock = _hx509_collector_get_lock(c);
+
+    ret = hx509_cms_unenvelope(_hx509_lock_unlock_certs(lock),
 			       data, length,
 			       &contentType,
 			       &content);
@@ -292,7 +271,7 @@ struct type bagtypes[] = {
 };
 
 static void
-parse_pkcs12_type(struct collector *c, const heim_oid *oid, 
+parse_pkcs12_type(struct hx509_collector *c, const heim_oid *oid, 
 		  const void *data, size_t length,
 		  const PKCS12_Attributes *attrs)
 {
@@ -313,18 +292,22 @@ p12_init(hx509_certs certs, void **data, int flags,
     PKCS12_PFX pfx;
     PKCS12_AuthenticatedSafe as;
     int ret, i;
-    struct collector c;
+    struct hx509_collector *c;
 
     *data = NULL;
 
-    memset(&c, 0, sizeof(c));
-
-    p12 = calloc(1, sizeof(*p12));
-    if (p12 == NULL)
-	return ENOMEM;
-
     if (lock == NULL)
 	lock = _hx509_empty_lock;
+
+    c = _hx509_collector_alloc(lock);
+    if (c == NULL)
+	return ENOMEM;
+
+    p12 = calloc(1, sizeof(*p12));
+    if (p12 == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
 
     ret = _hx509_map_file(residue, &buf, &len);
     if (ret)
@@ -366,14 +349,8 @@ p12_init(hx509_certs certs, void **data, int flags,
 	    goto out;
     }
 
-    c.lock = lock;
-    hx509_certs_init("MEMORY:dummy", 0, NULL, &c.unenvelop_certs);
-    c.val.data = NULL;
-    c.val.len = 0;
-    hx509_certs_init("MEMORY:pkcs12-store", 0, NULL, &c.certs);
-
     for (i = 0; i < as.len; i++)
-	parse_pkcs12_type(&c,
+	parse_pkcs12_type(c,
 			  &as.val[i].contentType,
 			  as.val[i].content->data,
 			  as.val[i].content->length,
@@ -381,51 +358,19 @@ p12_init(hx509_certs certs, void **data, int flags,
 
     free_PKCS12_AuthenticatedSafe(&as);
 
-    for (i = 0; i < c.val.len; i++) {
-	hx509_cert cert;
-	hx509_query q;
+    ret = _hx509_collector_collect(c, &p12->certs);
+    if (ret == 0)
+	*data = p12;
 
-	_hx509_query_clear(&q);
-	q.match |= HX509_QUERY_MATCH_LOCAL_KEY_ID;
-
-	q.local_key_id = &c.val.data[i]->localKeyId;
-
-	ret = _hx509_certs_find(c.certs, &q, &cert);
-	if (ret == 0) {
-	    hx509_private_key key;
-
-	    ret = _hx509_parse_private_key(&c.val.data[i]->alg.algorithm,
-					   c.val.data[i]->data.data,
-					   c.val.data[i]->data.length,
-					   &key);
-	    if (ret == 0)
-		_hx509_cert_assign_key(cert, key);
-
-	    hx509_cert_free(cert);
-	}
-    }
-
-    *data = p12;
-
-    ret = 0;
 out:
+    _hx509_collector_free(c);
+
     if (ret) {
 	if (p12->certs)
 	    hx509_certs_free(&p12->certs);
 	free(p12);
     }
 
-    if (c.unenvelop_certs)
-	hx509_certs_free(&c.unenvelop_certs);
-    for (i = 0; i < c.val.len; i++) {
-	free_octet_string(&c.val.data[i]->localKeyId);
-	free_octet_string(&c.val.data[i]->data);
-	free_AlgorithmIdentifier(&c.val.data[i]->alg);
-	free(c.val.data[i]);
-    }    
-    if (c.val.data)
-	free(c.val.data);
-    
     return ret;
 }
 
