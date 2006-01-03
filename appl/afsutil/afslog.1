@@ -54,6 +54,11 @@ obtain AFS tokens
 .Oc
 .Op Fl -no-v4
 .Op Fl -no-v5
+.Oo Fl P Ar principal \*(Ba Xo
+.Fl -principal= Ns Ar principal
+.Xc
+.Oc
+.Op Fl -cache Ar cache
 .Op Fl u | Fl -unlog
 .Op Fl v | Fl -verbose
 .Op Fl -version
@@ -96,6 +101,15 @@ not try using Kerberos 4.
 This makes
 .Nm
 not try using Kerberos 5.
+.It Xo
+.Fl P Ar principal ,
+.Fl -principal Ar principal
+.Xc
+select what Kerberos 5 principal to use.
+.It Fl -cache Ar cache
+select what Kerberos 5 credential cache to use.
+.Fl -principal
+overrides this option.
 .It Xo
 .Fl u ,
 .Fl -unlog
