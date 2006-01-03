@@ -24,6 +24,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
+#include "auth/gensec/gensec.h"
 #include <time.h>
 
 /*
@@ -43,6 +44,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 {
 	struct ldb_search *s = &req->op.search;
 	struct ldb_message *msg;
+	struct cli_credentials *server_creds;
 
 	/* this is gross, and will be removed when I change ldb_result not
 	   to be so pointer crazy :-) */
@@ -61,6 +63,25 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 		}
 	}
 
+	server_creds = talloc_get_type(ldb_get_opaque(module->ldb, "server_credentials"), 
+				       struct cli_credentials);
+	if (do_attribute(s->attrs, "supportedSASLMechanisms")) {
+		const struct gensec_security_ops **ops = cli_credentials_gensec_list(server_creds);
+		int i;
+		for (i = 0; ops && ops[i]; i++) {
+			if (ops[i]->sasl_name) {
+				const char *sasl_name = talloc_strdup(msg, ops[i]->sasl_name);
+				if (!sasl_name) {
+					goto failed;
+				}
+				if (ldb_msg_add_string(msg, "supportedSASLMechanisms",
+						       sasl_name) != 0) {
+					goto failed;
+				}
+			}
+		}
+	}
+	
 	/* TODO: lots more dynamic attributes should be added here */
 
 	return 0;
