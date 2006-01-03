@@ -200,6 +200,7 @@ hx509_name_to_string(const hx509_name name, char **str)
 		break;
 	    default:
 		_hx509_abort("unknown directory type: %d", ds->element);
+		exit(1);
 	    }
 	    append_string(str, &total_len, oidname, strlen(oidname), 0);
 	    free(oidname);
