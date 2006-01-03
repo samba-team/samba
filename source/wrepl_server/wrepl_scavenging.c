@@ -360,14 +360,27 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_mem;
+	BOOL skip_first_run = False;
 
 	if (!timeval_expired(&service->scavenging.next_run)) {
 		return NT_STATUS_OK;
 	}
 
+	if (timeval_is_zero(&service->scavenging.next_run)) {
+		skip_first_run = True;
+	}
+
 	service->scavenging.next_run = timeval_current_ofs(service->config.scavenging_interval, 0);
 	status = wreplsrv_periodic_schedule(service, service->config.scavenging_interval);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	/*
+	 * if it's the first time this functions is called (startup)
+	 * the next_run is zero, in this case we should not do scavenging
+	 */
+	if (skip_first_run) {
+		return NT_STATUS_OK;
+	}
 
 	if (service->scavenging.processing) {
 		return NT_STATUS_OK;
