@@ -162,3 +162,4 @@ struct smbcli_state;
 
 struct substitute_context;
 
+struct model_ops;
