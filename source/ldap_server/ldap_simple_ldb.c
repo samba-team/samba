@@ -64,6 +64,9 @@ NTSTATUS sldb_Init(struct ldapsrv_partition *partition, struct ldapsrv_connectio
 	talloc_steal(partition, ldb);
 	partition->private = ldb;
 	talloc_free(mem_ctx);
+
+	ldb_set_opaque(ldb, "server_credentials", conn->server_credentials);
+
 	return NT_STATUS_OK;
 }
 

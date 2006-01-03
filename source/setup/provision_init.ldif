@@ -58,7 +58,6 @@ rootDomainNamingContext: ${BASEDN}
 configurationNamingContext: CN=Configuration,${BASEDN}
 schemaNamingContext: CN=Schema,CN=Configuration,${BASEDN}
 supportedLDAPVersion: 3
-supportedSASLMechanisms: GSS-SPNEGO
 dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
 serverName: CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,${BASEDN}

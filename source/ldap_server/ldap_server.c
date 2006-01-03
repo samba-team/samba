@@ -267,6 +267,8 @@ static void ldapsrv_accept(struct stream_connection *c)
 	struct ldapsrv_service *ldapsrv_service = 
 		talloc_get_type(c->private, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
+	struct cli_credentials *server_credentials;
+	NTSTATUS status;
 	int port;
 
 	conn = talloc_zero(c, struct ldapsrv_connection);
@@ -279,6 +281,24 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->packet      = NULL;
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
+
+	server_credentials 
+		= cli_credentials_init(conn);
+	if (!server_credentials) {
+		stream_terminate_connection(c, "Failed to init server credentials\n");
+		talloc_free(conn);
+		return;
+	}
+	
+	cli_credentials_set_conf(server_credentials);
+	status = cli_credentials_set_machine_account(server_credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		stream_terminate_connection(c, talloc_asprintf(conn, "Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
+		talloc_free(conn);
+		return;
+	}
+	conn->server_credentials = server_credentials;
+
 	c->private        = conn;
 
 	port = socket_get_my_port(c->socket);
