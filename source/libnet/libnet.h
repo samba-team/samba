@@ -47,4 +47,5 @@ struct libnet_context {
 #include "libnet/libnet_user.h"
 #include "libnet/libnet_share.h"
 #include "libnet/libnet_lookup.h"
+#include "libnet/composite.h"
 #include "libnet/libnet_proto.h"

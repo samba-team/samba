@@ -361,3 +361,5 @@ struct smb2_flush {
 		struct smb2_handle handle;
 	} in;
 };
+
+#include "libcli/smb2/smb2_proto.h"

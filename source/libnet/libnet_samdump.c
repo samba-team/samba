@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "dlinklist.h"
+#include "samba3/samba3.h"
 
 
 struct samdump_secret {

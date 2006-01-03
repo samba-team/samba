@@ -40,6 +40,33 @@ struct ntptr_GenericHandle {
 	void *private_data;
 };
 
+struct spoolss_OpenPrinterEx;
+struct spoolss_EnumPrinterData;
+struct spoolss_DeletePrinterData;
+struct spoolss_AddForm;
+struct spoolss_GetForm;
+struct spoolss_SetForm;
+struct spoolss_DeleteForm;
+struct spoolss_AddPrinterDriver;
+struct spoolss_DeletePrinterDriver;
+struct spoolss_GetPrinterDriverDirectory;
+struct spoolss_AddPrinter;
+struct spoolss_GetPrinter;
+struct spoolss_SetPrinter;
+struct spoolss_DeletePrinter;
+struct spoolss_GetPrinterDriver;
+struct spoolss_AddJob;
+struct spoolss_EnumJobs;
+struct spoolss_SetJob;
+struct spoolss_GetJob;
+struct spoolss_ScheduleJob;
+struct spoolss_ReadPrinter;
+struct spoolss_WritePrinter;
+struct spoolss_StartDocPrinter;
+struct spoolss_EndDocPrinter;
+struct spoolss_StartPagePrinter;
+struct spoolss_EndPagePrinter;
+
 /* the ntptr operations structure - contains function pointers to 
    the backend implementations of each operation */
 struct ntptr_ops {

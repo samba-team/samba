@@ -26,7 +26,6 @@
 #include "smbd/service_stream.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
-#include "wrepl_server/wrepl_out_helpers.h"
 #include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"

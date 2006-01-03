@@ -12,6 +12,9 @@
 #endif
 #endif
 
+struct krb5_dh_moduli;
+struct _krb5_krb_auth_data;
+
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_PKCS5_PBKDF2 (
 	krb5_context /*context*/,
