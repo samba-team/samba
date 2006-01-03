@@ -117,7 +117,7 @@ append_string(char **str, size_t *total_len, char *ss, size_t len, int quote)
 
     s = realloc(*str, len + *total_len + 1);
     if (s == NULL)
-	abort();
+	_hx509_abort("allocation failure"); /* XXX */
     memcpy(s + *total_len, qs, len);
     if (qs != ss)
 	free(qs);
@@ -184,12 +184,11 @@ hx509_name_to_string(const hx509_name name, char **str)
 		size_t len = ds->u.bmpString.length;
 		int k;
 
-		/* XXX */
 		ss = malloc(len + 1);
 		if (ss == NULL)
-		    abort();
+		    _hx509_abort("allocation failure"); /* XXX */
 		for (k = 0; k < len; k++)
-		    ss[k] = bmp[k] & 0xff;
+		    ss[k] = bmp[k] & 0xff; /* XXX */
 		ss[k] = '\0';
 		break;
 	    }
@@ -200,7 +199,7 @@ hx509_name_to_string(const hx509_name name, char **str)
 		ss = "universalString"; /* XXX */
 		break;
 	    default:
-		abort();
+		_hx509_abort("unknown directory type: %d", ds->element);
 	    }
 	    append_string(str, &total_len, oidname, strlen(oidname), 0);
 	    free(oidname);
