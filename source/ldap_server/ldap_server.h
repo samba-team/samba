@@ -29,6 +29,7 @@ struct ldapsrv_connection {
 	struct tls_context *tls;
 	struct ldapsrv_partition *default_partition;
 	struct ldapsrv_partition *partitions;
+	struct cli_credentials *server_credentials;
 
 	/* are we using gensec wrapping? */
 	BOOL enable_wrap;
