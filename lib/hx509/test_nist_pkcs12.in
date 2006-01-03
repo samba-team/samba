@@ -44,7 +44,7 @@ test -d "$nistdir" || exit 77
 
 for a in $nistdir/*.p12 ; do
 
-    echo $a
+    echo -n .
 
     if ./hxtool validate $pass PKCS12:$a > /dev/null; then
 	:
@@ -55,6 +55,6 @@ for a in $nistdir/*.p12 ; do
 
 done
 
-echo done
+echo "done!"
 
 exit 0
