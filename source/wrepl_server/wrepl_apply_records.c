@@ -26,7 +26,6 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
-#include "wrepl_server/wrepl_out_helpers.h"
 #include "nbt_server/wins/winsdb.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "system/time.h"

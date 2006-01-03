@@ -27,6 +27,8 @@
 #include "heimdal/lib/hdb/hdb.h"
 #include "kdc/pac-glue.h"
 
+struct kdc_server;
+
 NTSTATUS hdb_ldb_create(TALLOC_CTX *mem_ctx, 
 			krb5_context context, struct HDB **db, const char *arg);
 BOOL kpasswdd_process(struct kdc_server *kdc,

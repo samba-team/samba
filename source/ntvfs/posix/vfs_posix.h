@@ -23,6 +23,7 @@
 #ifndef _VFS_POSIX_H_
 #define _VFS_POSIX_H_
 
+#include "librpc/gen_ndr/ndr_xattr.h"
 #include "system/filesys.h"
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"

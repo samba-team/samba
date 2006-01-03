@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 
 #define BASEDIR ""
 

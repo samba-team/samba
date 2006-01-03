@@ -27,7 +27,6 @@
 #include "smbd/service_stream.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
-#include "wrepl_server/wrepl_out_helpers.h"
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
 

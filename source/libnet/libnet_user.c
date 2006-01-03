@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "libnet/composite.h"
 
 
 NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_CreateUser *r)

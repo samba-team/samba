@@ -245,6 +245,9 @@ struct rpc_request {
 	} async;
 };
 
+struct epm_tower;
+struct epm_floor;
+
 #include "librpc/rpc/dcerpc_proto.h"
 
 #endif /* __DCERPC_H__ */

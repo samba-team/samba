@@ -24,7 +24,6 @@
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "libcli/composite/composite.h"
-#include "wrepl_server/wrepl_out_helpers.h"
 
 static void wreplsrv_out_pull_reschedule(struct wreplsrv_partner *partner, uint32_t interval)
 {

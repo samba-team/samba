@@ -199,5 +199,3 @@ struct smb2_request {
 		return NT_STATUS_INVALID_PARAMETER; \
 	} \
 } while (0)
-
-#include "libcli/smb2/smb2_proto.h"

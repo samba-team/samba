@@ -158,4 +158,8 @@ struct wbsrv_call {
 	void *private_data;
 };
 
+struct wbsrv_samba3_call;
+struct netr_LMSessionKey;
+struct netr_UserSessionKey;
+
 #include "winbind/wb_proto.h"

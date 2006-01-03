@@ -1,21 +1,18 @@
 #!/bin/sh
 
 INSTALLPERMS=$1
-BASEDIR=$2
-LIBDIR=$3
+LIBDIR=$2
 shift
 shift
 shift
 
-for d in $BASEDIR $LIBDIR; do
-if [ ! -d $d ]; then
-mkdir $d
-if [ ! -d $d ]; then
-  echo Failed to make directory $d
+if [ ! -d $LIBDIR ]; then
+mkdir $LIBDIR
+if [ ! -d $LIBDIR ]; then
+  echo Failed to make directory $LIBDIR
   exit 1
 fi
 fi
-done
 
 for p in $*; do
  p2=`basename $p`

@@ -34,6 +34,7 @@
 struct dcesrv_connection;
 struct dcesrv_call_state;
 struct dcesrv_auth;
+struct dcesrv_connection_context;
 
 struct dcesrv_interface {
 	const char *name;

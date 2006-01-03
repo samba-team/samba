@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "libnet/composite.h"
 #include "libnet/libnet.h"
 
 static BOOL test_domainopen(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,

@@ -23,6 +23,8 @@
 #include "libcli/util/asn_1.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
+struct ldap_message;
+
 enum cldap_request_state {CLDAP_REQUEST_SEND, 
 			  CLDAP_REQUEST_WAIT, 
 			  CLDAP_REQUEST_DONE,

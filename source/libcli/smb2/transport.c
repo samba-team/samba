@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "lib/stream/packet.h"

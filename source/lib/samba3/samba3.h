@@ -210,4 +210,6 @@ struct samba3
 	struct samba3_regdb registry;
 };
 
+#include "samba3/samba3_proto.h"
+
 #endif /* _SAMBA3_H */
