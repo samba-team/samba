@@ -20,6 +20,35 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+struct wins_server {
+	/* wins server database handle */
+	struct winsdb_handle *wins_db;
+
+	/* some configuration */
+	struct {
+		/* 
+		 * the interval (in secs) till an active record will be marked as RELEASED
+		 */
+		uint32_t min_renew_interval;
+		uint32_t max_renew_interval;
+
+		/* 
+		 * the interval (in secs) a record remains in RELEASED state,
+		 * before it will be marked as TOMBSTONE
+		 * (also known as extinction interval)
+		 */
+		uint32_t tombstone_interval;
+
+		/* 
+		 * the interval (in secs) a record remains in TOMBSTONE state,
+		 * before it will be removed from the database.
+		 * See also 'tombstone_extra_timeout'.
+		 * (also known as extinction timeout)
+		 */
+		uint32_t tombstone_timeout;
+	} config;
+};
+
 struct wins_challenge_io {
 	struct {
 		struct nbtd_server *nbtd_server;

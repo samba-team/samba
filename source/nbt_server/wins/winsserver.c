@@ -731,7 +731,23 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	}
 
 	if (rec->state == WREPL_STATE_RELEASED) {
-		rec->expire_time = time(NULL) + winssrv->config.tombstone_interval;
+		/*
+		 * if we're not the owner, we need to take the owner ship
+		 * and make the record tombstone, but expire after
+		 * tombstone_interval + tombstone_timeout and not only after tombstone_timeout
+		 * like for normal tombstone records.
+		 * This is to replicate the record directly to the original owner,
+		 * where the record is still active
+		 */ 
+		if (strcmp(rec->wins_owner, winssrv->wins_db->local_owner) == 0) {
+			rec->expire_time= time(NULL) + winssrv->config.tombstone_interval;
+		} else {
+			rec->state	= WREPL_STATE_TOMBSTONE;
+			rec->expire_time= time(NULL) + 
+					  winssrv->config.tombstone_interval +
+					  winssrv->config.tombstone_timeout;
+			modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+		}
 	}
 
 	ret = winsdb_modify(winssrv->wins_db, rec, modify_flags);
@@ -783,7 +799,7 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 */
 NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 {
-	uint32_t tombstone_interval;
+	uint32_t tmp;
 
 	if (!lp_wins_support()) {
 		nbtsrv->winssrv = NULL;
@@ -795,8 +811,10 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 
 	nbtsrv->winssrv->config.max_renew_interval = lp_max_wins_ttl();
 	nbtsrv->winssrv->config.min_renew_interval = lp_min_wins_ttl();
-	tombstone_interval = lp_parm_int(-1,"wreplsrv","tombstone_interval", 6*24*60*60);
-	nbtsrv->winssrv->config.tombstone_interval = tombstone_interval;
+	tmp = lp_parm_int(-1,"wreplsrv","tombstone_interval", 6*24*60*60);
+	nbtsrv->winssrv->config.tombstone_interval = tmp;
+	tmp = lp_parm_int(-1,"wreplsrv","tombstone_timeout", 1*24*60*60);
+	nbtsrv->winssrv->config.tombstone_timeout = tmp;
 
 	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv);
 	if (!nbtsrv->winssrv->wins_db) {
