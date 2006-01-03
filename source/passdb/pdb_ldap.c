@@ -94,6 +94,15 @@ void private_data_free_fn(void **result)
 }
 
 /**********************************************************************
+ Simple helper function to make stuff better readable
+ **********************************************************************/
+
+static LDAP *priv2ld(struct ldapsam_privates *priv)
+{
+	return priv->smbldap_state->ldap_struct;
+}
+
+/**********************************************************************
  Get the attribute name given a user schame version.
  **********************************************************************/
  
@@ -395,58 +404,37 @@ static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
  object found in search_result depending on lp_ldap_delete_dn
 ******************************************************************/
 
-static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
-				     LDAPMessage *result,
-				     const char *objectclass,
-				     const char **attrs)
+static int ldapsam_delete_entry(struct ldapsam_privates *priv,
+				TALLOC_CTX *mem_ctx,
+				LDAPMessage *entry,
+				const char *objectclass,
+				const char **attrs)
 {
-	int rc;
-	LDAPMessage *entry = NULL;
 	LDAPMod **mods = NULL;
-	char *name, *dn;
+	char *name;
+	const char *dn;
 	BerElement *ptr = NULL;
 
-	rc = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
-
-	if (rc != 1) {
-		DEBUG(0, ("ldapsam_delete_entry: Entry must exist exactly once!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
-	if (!dn) {
-		return NT_STATUS_UNSUCCESSFUL;
+	dn = smbldap_talloc_dn(mem_ctx, priv2ld(priv), entry);
+	if (dn == NULL) {
+		return LDAP_NO_MEMORY;
 	}
 
 	if (lp_ldap_delete_dn()) {
-		NTSTATUS ret = NT_STATUS_OK;
-		rc = smbldap_delete(ldap_state->smbldap_state, dn);
-
-		if (rc != LDAP_SUCCESS) {
-			DEBUG(0, ("ldapsam_delete_entry: Could not delete object %s\n", dn));
-			ret = NT_STATUS_UNSUCCESSFUL;
-		}
-		SAFE_FREE(dn);
-		return ret;
+		return smbldap_delete(priv->smbldap_state, dn);
 	}
 
 	/* Ok, delete only the SAM attributes */
 	
-	for (name = ldap_first_attribute(ldap_state->smbldap_state->ldap_struct, entry, &ptr);
+	for (name = ldap_first_attribute(priv2ld(priv), entry, &ptr);
 	     name != NULL;
-	     name = ldap_next_attribute(ldap_state->smbldap_state->ldap_struct, entry, ptr)) {
+	     name = ldap_next_attribute(priv2ld(priv), entry, ptr)) {
 		const char **attrib;
 
 		/* We are only allowed to delete the attributes that
 		   really exist. */
 
 		for (attrib = attrs; *attrib != NULL; attrib++) {
-			/* Don't delete LDAP_ATTR_MOD_TIMESTAMP attribute. */
-			if (strequal(*attrib, get_userattr_key2string(ldap_state->schema_ver,
-						LDAP_ATTR_MOD_TIMESTAMP))) {
-				continue;
-			}
 			if (strequal(*attrib, name)) {
 				DEBUG(10, ("ldapsam_delete_entry: deleting "
 					   "attribute %s\n", name));
@@ -454,26 +442,17 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 						NULL);
 			}
 		}
-
 		ldap_memfree(name);
 	}
-	
+
 	if (ptr != NULL) {
 		ber_free(ptr, 0);
 	}
 	
 	smbldap_set_mod(&mods, LDAP_MOD_DELETE, "objectClass", objectclass);
-
-	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
-	ldap_mods_free(mods, True);
-
-	if (rc != LDAP_SUCCESS) {
-		SAFE_FREE(dn);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	SAFE_FREE(dn);
-	return NT_STATUS_OK;
+	talloc_autofree_ldapmod(mem_ctx, mods);
+	
+	return smbldap_modify(priv->smbldap_state, dn, mods);
 }
 		  
 /* New Interface is being implemented here */
@@ -1745,15 +1724,17 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
  Delete entry from LDAP for username.
 *********************************************************************/
 
-static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * sam_acct)
+static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
+					   SAM_ACCOUNT * sam_acct)
 {
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	struct ldapsam_privates *priv =
+		(struct ldapsam_privates *)my_methods->private_data;
 	const char *sname;
 	int rc;
-	LDAPMessage *result = NULL;
-	NTSTATUS ret;
+	LDAPMessage *msg, *entry;
+	NTSTATUS result = NT_STATUS_NO_MEMORY;
 	const char **attr_list;
-	fstring objclass;
+	TALLOC_CTX *mem_ctx;
 
 	if (!sam_acct) {
 		DEBUG(0, ("ldapsam_delete_sam_account: sam_acct was NULL!\n"));
@@ -1762,35 +1743,42 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 
 	sname = pdb_get_username(sam_acct);
 
-	DEBUG (3, ("ldapsam_delete_sam_account: Deleting user %s from LDAP.\n", sname));
+	DEBUG(3, ("ldapsam_delete_sam_account: Deleting user %s from "
+		  "LDAP.\n", sname));
 
-	attr_list= get_userattr_delete_list( NULL, ldap_state->schema_ver );
-	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result, attr_list);
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		goto done;
+	}
 
-	if (rc != LDAP_SUCCESS)  {
-		talloc_free( attr_list );
-		return NT_STATUS_NO_SUCH_USER;
+	attr_list = get_userattr_delete_list(mem_ctx, priv->schema_ver );
+	if (attr_list == NULL) {
+		goto done;
+	}
+
+	rc = ldapsam_search_suffix_by_name(priv, sname, &msg, attr_list);
+
+	if ((rc != LDAP_SUCCESS) ||
+	    (ldap_count_entries(priv2ld(priv), msg) != 1) ||
+	    ((entry = ldap_first_entry(priv2ld(priv), msg)) == NULL)) {
+		DEBUG(5, ("Could not find user %s\n", sname));
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	}
 	
-	switch ( ldap_state->schema_ver ) {
-		case SCHEMAVER_SAMBASAMACCOUNT:
-			fstrcpy( objclass, LDAP_OBJ_SAMBASAMACCOUNT );
-			break;
-			
-		case SCHEMAVER_SAMBAACCOUNT:
-			fstrcpy( objclass, LDAP_OBJ_SAMBAACCOUNT );
-			break;
-		default:
-			fstrcpy( objclass, "UNKNOWN" );
-			DEBUG(0,("ldapsam_delete_sam_account: Unknown schema version specified!\n"));
-				break;
-	}
+	rc = ldapsam_delete_entry(
+		priv, mem_ctx, entry,
+		priv->schema_ver == SCHEMAVER_SAMBASAMACCOUNT ?
+		LDAP_OBJ_SAMBASAMACCOUNT : LDAP_OBJ_SAMBAACCOUNT,
+		attr_list);
 
-	ret = ldapsam_delete_entry(ldap_state, result, objclass, attr_list );
-	ldap_msgfree(result);
-	talloc_free( attr_list );
+	result = (rc == LDAP_SUCCESS) ?
+		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 
-	return ret;
+ done:
+	talloc_free(mem_ctx);
+	return result;
 }
 
 /**********************************************************************
@@ -2950,34 +2938,78 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 						   DOM_SID sid)
 {
-	struct ldapsam_privates *ldap_state =
+	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
-	pstring sidstring, filter;
-	LDAPMessage *result = NULL;
+	LDAPMessage *msg, *entry;
 	int rc;
-	NTSTATUS ret;
-	const char **attr_list;
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	char *filter;
 
-	sid_to_string(sidstring, &sid);
-	
-	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", 
-		LDAP_OBJ_GROUPMAP, LDAP_ATTRIBUTE_SID, sidstring);
-
-	rc = ldapsam_search_one_group(ldap_state, filter, &result);
-
-	if (rc != LDAP_SUCCESS) {
-		return NT_STATUS_NO_SUCH_GROUP;
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	attr_list = get_attr_list( NULL, groupmap_attr_list_to_delete );
-	ret = ldapsam_delete_entry(ldap_state, result, LDAP_OBJ_GROUPMAP,
-				   attr_list);
-	talloc_free(attr_list);
+	filter = talloc_asprintf(mem_ctx, "(&(objectClass=%s)(%s=%s))",
+				 LDAP_OBJ_GROUPMAP, LDAP_ATTRIBUTE_SID,
+				 sid_string_static(&sid));
+	if (filter == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	rc = smbldap_search_suffix(priv->smbldap_state, filter,
+				   get_attr_list(mem_ctx, groupmap_attr_list),
+				   &msg);
+	talloc_autofree_ldapmsg(mem_ctx, msg);
 
-	ldap_msgfree(result);
+	if ((rc != LDAP_SUCCESS) ||
+	    (ldap_count_entries(priv2ld(priv), msg) != 1) ||
+	    ((entry = ldap_first_entry(priv2ld(priv), msg)) == NULL)) {
+		result = NT_STATUS_NO_SUCH_GROUP;
+		goto done;
+ 	}
 
-	return ret;
-}
+	rc = ldapsam_delete_entry(priv, mem_ctx, entry, LDAP_OBJ_GROUPMAP,
+				  get_attr_list(mem_ctx,
+						groupmap_attr_list_to_delete));
+ 
+	if ((rc == LDAP_NAMING_VIOLATION) ||
+	    (rc == LDAP_OBJECT_CLASS_VIOLATION)) {
+		const char *attrs[] = { "sambaGroupType", "description",
+					"displayName", "sambaSIDList",
+					NULL };
+
+		/* Second try. Don't delete the sambaSID attribute, this is
+		   for "old" entries that are tacked on a winbind
+		   sambaIdmapEntry. */
+
+		rc = ldapsam_delete_entry(priv, mem_ctx, entry,
+					  LDAP_OBJ_GROUPMAP, attrs);
+	}
+
+	if ((rc == LDAP_NAMING_VIOLATION) ||
+	    (rc == LDAP_OBJECT_CLASS_VIOLATION)) {
+		const char *attrs[] = { "sambaGroupType", "description",
+					"displayName", "sambaSIDList",
+					"gidNumber", NULL };
+
+		/* Third try. This is a post-3.0.21 alias (containing only
+		 * sambaSidEntry and sambaGroupMapping classes), we also have
+		 * to delete the gidNumber attribute, only the sambaSidEntry
+		 * remains */
+
+		rc = ldapsam_delete_entry(priv, mem_ctx, entry,
+					  LDAP_OBJ_GROUPMAP, attrs);
+	}
+
+	result = (rc == LDAP_SUCCESS) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+
+ done:
+	talloc_free(mem_ctx);
+	return result;
+ }
 
 /**********************************************************************
  *********************************************************************/
