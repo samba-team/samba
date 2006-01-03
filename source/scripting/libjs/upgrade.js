@@ -605,8 +605,10 @@ data: %d
 	var pdb = samba3.configuration.get_list("passdb backend");
 	if (pdb != undefined) {
 		for (var b in pdb) {
-			if (substr(pdb[b], 0, 7) == "ldapsam") {
-				ldapurl = substr(pdb[b], 8);
+			if (strlen(pdb[b]) >= 7) {
+				if (substr(pdb[b], 0, 7) == "ldapsam") {
+					ldapurl = substr(pdb[b], 8);
+				}
 			}
 		}
 	}
