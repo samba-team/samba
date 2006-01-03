@@ -871,6 +871,11 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 
+    if (key->private_key) {
+	EVP_PKEY_free(key->private_key);
+	key->private_key = NULL;
+    }
+
     pw = _hx509_lock_get_passwords(lock);
 
     for (i = 0; i < pw->len; i++) {
@@ -891,6 +896,15 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 
     return 0;
 }
+
+void
+_hx509_private_key_assign_ptr(hx509_private_key key, void *ptr)
+{
+    if (key->private_key)
+	EVP_PKEY_free(key->private_key);
+    key->private_key = ptr;
+}
+
 
 struct hx509_crypto_data {
     char *name;
