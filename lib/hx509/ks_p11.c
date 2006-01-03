@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,11 +35,12 @@
 RCSID("$Id$");
 #include <dlfcn.h>
 
+#include <openssl/ui.h>
+
 #include "pkcs11u.h"
 #include "pkcs11.h"
 
 struct p11_module {
-    hx509_certs certs;
     void *dl_handle;
     CK_FUNCTION_LIST_PTR funcs;
     CK_ULONG num_slots;
@@ -55,6 +56,7 @@ struct p11_module {
 	CK_BBOOL token;
 	char *name;
 	char *pin;
+	hx509_certs certs;
     } slot;
 };
 
@@ -68,8 +70,6 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
     CK_SLOT_INFO slot_info;
     CK_TOKEN_INFO token_info;
     int ret, i;
-
-    printf("slot = id %d\n", (int)id);
 
     slot->id = id;
 
@@ -88,14 +88,7 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
     asprintf(&slot->name, "%.*s",
 	     i, slot_info.slotDescription);
 
-    printf("description: %s\n", slot->name);
-
-    printf("manufacturer: %.*s\n",
-	   (int)sizeof(slot_info.manufacturerID),
-	   slot_info.manufacturerID);
-
     if ((slot_info.flags & CKF_TOKEN_PRESENT) == 0) {
-	printf("no token present\n");
 	return 0;
     }
 
@@ -103,26 +96,178 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
     if (ret)
 	return ret;
 
-    printf("token present\n");
-
-    printf("label: %.*s\n",
-	   (int)sizeof(token_info.label),
-	   token_info.label);
-    printf("manufacturer: %.*s\n",
-	   (int)sizeof(token_info.manufacturerID),
-	   token_info.manufacturerID);
-    printf("model: %.*s\n",
-	   (int)sizeof(token_info.model),
-	   token_info.model);
-    printf("serialNumber: %.*s\n",
-	   (int)sizeof(token_info.serialNumber),
-	   token_info.serialNumber);
-
-    printf("flags: 0x%04x\n", (unsigned int)token_info.flags);
-
-    if (token_info.flags & CKF_LOGIN_REQUIRED) {
-	printf("login required\n");
+    if (token_info.flags & CKF_LOGIN_REQUIRED)
 	slot->flags |= P11_LOGIN_REQ;
+
+    return 0;
+}
+
+static int
+p11_get_session(struct p11_module *p, struct p11_slot *slot)
+{
+    CK_RV ret;
+
+    if (slot->flags & P11_SESSION)
+	_hx509_abort("slot already in session");
+
+    ret = P11FUNC(p, OpenSession, (slot->id, 
+				   CKF_SERIAL_SESSION,
+				   NULL,
+				   NULL,
+				   &slot->session));
+    if (ret != CKR_OK)
+	return EINVAL;
+    
+    slot->flags |= P11_SESSION;
+    
+    if ((slot->flags & P11_LOGIN_REQ) && (slot->flags & P11_LOGIN_DONE) == 0) {
+	char pin[20];
+	char *prompt;
+
+	slot->flags |= P11_LOGIN_DONE;
+
+	asprintf(&prompt, "PIN code for %s: ", slot->name);
+
+	if (UI_UTIL_read_pw_string(pin, sizeof(pin), prompt, 0)) {
+	    printf("no pin");
+	    return EINVAL;
+	}
+	free(prompt);
+
+	ret = P11FUNC(p, Login, (P11SESSION(slot), CKU_USER,
+				 (unsigned char*)pin, 4));
+	if (ret != CKR_OK)
+	    printf("login failed\n");
+	else
+	    slot->pin = strdup(pin);
+    }
+
+    return 0;
+}
+
+static int
+p11_put_session(struct p11_module *p, struct p11_slot *slot)
+{
+    int ret;
+
+    if ((slot->flags & P11_SESSION) == 0)
+	_hx509_abort("slot not in session");
+    slot->flags &= ~P11_SESSION;
+
+    ret = P11FUNC(p, CloseSession, (P11SESSION(slot)));
+    if (ret != CKR_OK)
+	return EINVAL;
+
+    return 0;
+}
+
+
+static int
+iterate_entries(struct p11_module *p, struct p11_slot *slot,
+		CK_ATTRIBUTE *search_data, int num_search_data,
+		CK_ATTRIBUTE *query, int num_query,
+		int (*func)(void *, CK_ATTRIBUTE *, int), void *ptr)
+{
+    CK_OBJECT_HANDLE object;
+    CK_ULONG object_count;
+    int ret, i;
+
+    ret = P11FUNC(p, FindObjectsInit,
+		  (P11SESSION(slot), search_data, num_search_data));
+    if (ret != CKR_OK) {
+	return -1;
+    }
+    while (1) {
+	ret = P11FUNC(p, FindObjects, 
+		      (P11SESSION(slot), &object, 1, &object_count));
+	if (ret != CKR_OK) {
+	    return -1;
+	}
+	if (object_count == 0)
+	    break;
+	
+	for (i = 0; i < num_query; i++)
+	    query[i].pValue = NULL;
+
+	ret = P11FUNC(p, GetAttributeValue, 
+		      (P11SESSION(slot), object, query, num_query));
+	if (ret != CKR_OK) {
+	    return -1;
+	}
+	for (i = 0; i < num_query; i++) {
+	    query[i].pValue = malloc(query[i].ulValueLen);
+	    if (query[i].pValue == NULL) {
+		ret = ENOMEM;
+		goto out;
+	    }
+	}
+	ret = P11FUNC(p, GetAttributeValue,
+		      (P11SESSION(slot), object, query, num_query));
+	if (ret != CKR_OK) {
+	    ret = -1;
+	    goto out;
+	}
+	
+	ret = (*func)(ptr, query, num_query);
+	if (ret)
+	    goto out;
+
+	for (i = 0; i < num_query; i++) {
+	    if (query[i].pValue)
+		free(query[i].pValue);
+	    query[i].pValue = NULL;
+	}
+    }
+ out:
+
+    for (i = 0; i < num_query; i++) {
+	if (query[i].pValue)
+	    free(query[i].pValue);
+	query[i].pValue = NULL;
+    }
+
+    ret = P11FUNC(p, FindObjectsFinal, (P11SESSION(slot)));
+    if (ret != CKR_OK) {
+	return -2;
+    }
+
+
+    return 0;
+}
+		
+static int
+print_id(void *ptr, CK_ATTRIBUTE *query, int num_query)
+{
+#if 0
+    printf("id: %.*s\n", (int)query[0].ulValueLen, (char *)query[0].pValue);
+#endif
+    return 0;
+}
+
+static int
+collect_cert(void *ptr, CK_ATTRIBUTE *query, int num_query)
+{
+    struct hx509_collector *c = ptr;
+    hx509_cert cert;
+    Certificate t;
+    int ret;
+
+    ret = decode_Certificate(query[1].pValue, query[1].ulValueLen,
+			     &t, NULL);
+    if (ret) {
+	printf("decode_Certificate failed with %d\n", ret);
+	return 0;
+    }
+
+    ret = hx509_cert_init(&t, &cert);
+    free_Certificate(&t);
+    if (ret)
+	return ret;
+
+    ret = _hx509_collector_certs_add(c, cert);
+    if (ret) {
+	hx509_cert_free(cert);
+	return ret;
     }
 
     return 0;
@@ -130,15 +275,73 @@ p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
 
 
 static int
-p11_init_module(const char *fn, struct p11_module **module)
+p11_list_keys(struct p11_module *p,
+	      struct p11_slot *slot, 
+	      hx509_lock lock,
+	      hx509_certs *certs)
+{
+    CK_OBJECT_CLASS key_class;
+    CK_ATTRIBUTE search_data[] = {
+	{CKA_CLASS, &key_class, sizeof(key_class)},
+    };
+    CK_ATTRIBUTE query_data[2] = {
+	{CKA_ID, NULL, 0},
+	{CKA_VALUE, NULL, 0}
+    };
+    int ret;
+    struct hx509_collector *c;
+
+    if (lock == NULL)
+	lock = _hx509_empty_lock;
+
+    c = _hx509_collector_alloc(lock);
+    if (c == NULL)
+	return ENOMEM;
+
+
+    key_class = CKO_PRIVATE_KEY;
+    ret = iterate_entries(p, slot,
+			  search_data, 1,
+			  query_data, 1,
+			  print_id, c);
+    if (ret) {
+	return ret;
+    }
+
+    key_class = CKO_PUBLIC_KEY;
+    ret = iterate_entries(p, slot,
+			  search_data, 1,
+			  query_data, 1,
+			  print_id, c);
+    if (ret) {
+	return ret;
+    }
+
+    key_class = CKO_CERTIFICATE;
+    ret = iterate_entries(p, slot,
+			  search_data, 1,
+			  query_data, 2,
+			  collect_cert, c);
+    if (ret) {
+	return ret;
+    }
+
+    ret = _hx509_collector_collect(c, &slot->certs);
+
+    _hx509_collector_free(c);
+
+    return ret;
+}
+
+
+static int
+p11_init_module(const char *fn, hx509_lock lock, struct p11_module **module)
 {
     CK_C_GetFunctionList getFuncs;
     struct p11_module *p;
     int ret;
 
     *module = NULL;
-
-    printf("p11 init\n");
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -170,39 +373,11 @@ p11_init_module(const char *fn, struct p11_module **module)
 	goto out;
     }
 
-    {
-	CK_INFO info;
-
-	ret = P11FUNC(p, GetInfo, (&info));
-	if (ret != CKR_OK) {
-	    ret = EINVAL;
-	    goto out;
-	}
-
-	printf("module information:\n");
-	printf("version: %04x.%04x\n",
-	       (unsigned int)info.cryptokiVersion.major,
-	       (unsigned int)info.cryptokiVersion.minor);
-	printf("manufacturer: %.*s\n",
-	       (int)sizeof(info.manufacturerID) - 1,
-	       info.manufacturerID);
-	printf("flags: 0x%04x\n", (unsigned int)info.flags);
-	printf("library description: %.*s\n",
-	       (int)sizeof(info.libraryDescription) - 1,
-	       info.libraryDescription);
-	printf("version: %04x.%04x\n",
-	       (unsigned int)info.libraryVersion.major,
-	       (unsigned int)info.libraryVersion.minor);
-
-    }
-
     ret = P11FUNC(p, GetSlotList, (FALSE, NULL, &p->num_slots));
     if (ret) {
 	ret = EINVAL;
 	goto out;
     }
-
-    printf("num slots: %ld\n", (long)p->num_slots);
 
     if (p->selected_slot > p->num_slots) {
 	ret = EINVAL;
@@ -228,6 +403,10 @@ p11_init_module(const char *fn, struct p11_module **module)
 	ret = p11_init_slot(p, slot_ids[p->selected_slot], &p->slot);
 
 	free(slot_ids);
+
+	p11_get_session(p, &p->slot);
+	p11_list_keys(p, &p->slot, NULL, &p->slot.certs);
+	p11_put_session(p, &p->slot);
     }
 
     *module = p;
@@ -247,7 +426,7 @@ p11_init(hx509_certs certs, void **data, int flags,
     struct p11_module *p;
     int ret;
 
-    ret = p11_init_module(residue, &p);
+    ret = p11_init_module(residue, lock, &p);
     if (ret)
 	return ret;
 
@@ -269,22 +448,22 @@ p11_free(hx509_certs certs, void *data)
 static int 
 p11_iter_start(hx509_certs certs, void *data, void **cursor)
 {
-    *cursor = NULL;
-    return 0;
+    struct p11_module *p = data;
+    return hx509_certs_start_seq(p->slot.certs, cursor);
 }
 
 static int
 p11_iter(hx509_certs certs, void *data, void *cursor, hx509_cert *cert)
 {
-    *cert = NULL;
-    return 0;
+    struct p11_module *p = data;
+    return hx509_certs_next_cert(p->slot.certs, cursor, cert);
 }
 
 static int
 p11_iter_end(hx509_certs certs, void *data, void *cursor)
 {
-    return 0;
-
+    struct p11_module *p = data;
+    return hx509_certs_end_seq(p->slot.certs, cursor);
 }
 
 static struct hx509_keyset_ops keyset_pkcs11 = {
