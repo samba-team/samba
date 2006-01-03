@@ -322,7 +322,35 @@ static int ejs_base64decode(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	return 0;
 }
-  
+
+/* 
+   escape a DN
+   usage:
+     dataout = ldb.dn_escape(datain)
+ */
+static int ejs_dn_escape(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	char *ret;
+	struct ldb_val val;
+	
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.dn_escape invalid argument count");
+		return -1;
+	}
+
+	val.data = mprToString(argv[0]);
+	val.length = strlen((const char *)val.data);
+
+	ret = ldb_dn_escape_value(mprMemCtx(), val);
+	if (ret == NULL) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mprString(ret));
+		talloc_free(ret);
+	}
+
+	return 0;
+}
 
 /*
   perform an ldb add 
@@ -511,6 +539,7 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "errstring", ejs_ldbErrstring);
 	mprSetCFunction(ldb, "encode", ejs_base64encode);
 	mprSetCFunction(ldb, "decode", ejs_base64decode);
+	mprSetCFunction(ldb, "dn_escape", ejs_dn_escape);
 	mprSetCFunction(ldb, "close", ejs_ldbClose);
 	mprSetCFunction(ldb, "transaction_start", ejs_ldbTransactionStart);
 	mprSetCFunction(ldb, "transaction_cancel", ejs_ldbTransactionCancel);
