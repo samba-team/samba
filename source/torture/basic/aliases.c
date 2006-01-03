@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "dlinklist.h"
 #include "libcli/raw/libcliraw.h"
 

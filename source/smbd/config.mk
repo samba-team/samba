@@ -28,7 +28,7 @@ INIT_FUNCTION = server_service_rpc_init
 SUBSYSTEM = SERVER_SERVICE
 OUTPUT_TYPE = MERGEDOBJ
 REQUIRED_SUBSYSTEMS = \
-		DCERPC
+		DCERPC_SERVER
 # End MODULE server_rpc
 ################################################
 

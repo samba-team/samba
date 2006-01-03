@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "system/filesys.h"
 
 static void list_fn(struct clilist_file_info *finfo, const char *name, void *state)

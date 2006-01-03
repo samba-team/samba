@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "system/iconv.h"
 #include "system/time.h"
 

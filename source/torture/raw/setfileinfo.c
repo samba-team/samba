@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "system/time.h"
 #include "libcli/raw/libcliraw.h"
 

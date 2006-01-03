@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "auth/auth.h"
 #include "dlinklist.h"
 #include "lib/crypto/crypto.h"

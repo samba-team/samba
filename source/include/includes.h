@@ -67,23 +67,12 @@
 #define HAVE_ILDAP 1
 
 /*
- * Define VOLATILE if needed.
- */
-
-#define False (0)
-#define True (1)
-#define Auto (2)
-
-typedef int BOOL;
-
-/*
   we use struct ipv4_addr to avoid having to include all the
   system networking headers everywhere
 */
 struct ipv4_addr {
 	uint32_t addr;
 };
-
 
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "lib/replace/replace.h"
@@ -95,12 +84,13 @@ struct ipv4_addr {
 #include "structs.h"
 #include "trans2.h"
 #include "nterr.h"
+#include "core.h"
+#include "smb.h"
 #include "charset.h"
 #include "debug.h"
 #include "doserr.h"
 #include "enums.h"
 #include "smb_macros.h"
-#include "smb.h"
 #include "byteorder.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/dcerpc.h"
