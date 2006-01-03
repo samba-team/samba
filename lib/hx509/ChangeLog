@@ -1,5 +1,32 @@
 2006-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* name.c: Avoid warning from missing __attribute__((noreturn))
+
+	* lock.c (_hx509_lock_unlock_certs): return unlock certificates
+
+	* crypto.c (_hx509_private_key_assign_ptr): new function, exposes
+	EVP_PKEY
+	(_hx509_private_key_assign_key_file): remember to free private key
+	if there is one.
+
+	* cert.c (_hx509_abort): add newline to output and flush stdout
+
+	* Makefile.am: libhx509_la_SOURCES += collector.c
+
+	* hx_locl.h: forward type declaration of struct hx509_collector.
+
+	* collector.c: Support functions to collect certificates and
+	private keys and then match them.
+
+	* ks_p12.c: Use the new hx509_collector support functions.
+
+	* ks_p11.c: Add enough glue to support certificate iteration.
+
+	* test_nist_pkcs12.in: Less verbose.
+
+	* cert.c (hx509_cert_free): if there is a private key assosited
+	with this cert, free it
+
 	* print.c: Use _hx509_abort.
 
 	* ks_p12.c: Use _hx509_abort.
