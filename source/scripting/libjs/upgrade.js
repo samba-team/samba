@@ -113,6 +113,10 @@ function upgrade_sam_account(ldb,acc,domaindn,domainsid)
 
 	var pts = split(',', acc.fullname);
 	acc.fullname = pts[0];
+
+	if (acc.fullname == undefined) {
+		acc.fullname = acc.username;
+	}
 	
 	assert(acc.fullname != undefined);
 	assert(acc.nt_username != undefined);
