@@ -23,6 +23,7 @@
 #include "torture/torture.h"
 #include "ioctl.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 
 #define BASEDIR "\\rawioctl"
 

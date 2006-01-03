@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libnet/libnet.h"
 #include "lib/crypto/crypto.h"
 

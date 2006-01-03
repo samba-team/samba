@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "system/filesys.h"
-#include "messages.h"
+#include "messaging/messaging.h"
 #include "dlinklist.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_irpc.h"

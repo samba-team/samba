@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "smb.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/crypto/crypto.h"
 #include "pstring.h"

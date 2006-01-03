@@ -84,9 +84,8 @@ struct ipv4_addr {
 #include "structs.h"
 #include "trans2.h"
 #include "nterr.h"
+#include "charset/charset.h"
 #include "core.h"
-#include "smb.h"
-#include "charset.h"
 #include "debug.h"
 #include "doserr.h"
 #include "enums.h"
@@ -98,7 +97,6 @@ struct ipv4_addr {
 #include "librpc/gen_ndr/orpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "smb_interfaces.h"
-#include "cli_context.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/nbt/libnbt.h"
 

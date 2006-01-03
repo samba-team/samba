@@ -25,7 +25,7 @@
 #include "system/dir.h"
 #include "system/time.h"
 #include "dlinklist.h"
-#include "messages.h"
+#include "messaging/messaging.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
 /*

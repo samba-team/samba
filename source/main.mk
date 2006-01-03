@@ -215,6 +215,7 @@ librpc/ndr/libndr.h: librpc/ndr/libndr_proto.h librpc/gen_ndr/misc.h
 librpc/rpc/dcerpc.h: librpc/rpc/dcerpc_proto.h
 auth/credentials/credentials.h: auth/credentials/credentials_proto.h
 libcli/nbt/libnbt.h: libcli/nbt/nbt_proto.h
+lib/charset/charset.h: lib/charset/charset_proto.h
 
 include/includes.h: \
 		include/config.h \
@@ -223,7 +224,8 @@ include/includes.h: \
 		librpc/rpc/dcerpc.h \
 		auth/credentials/credentials_proto.h \
 		libcli/nbt/libnbt.h \
-		lib/basic.h
+		lib/basic.h \
+		lib/charset/charset.h
 
 clean_pch: 
 	-rm -f include/includes.h.gch

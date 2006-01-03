@@ -28,3 +28,11 @@ enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANM
 
 /* security levels */
 enum security_types {SEC_SHARE,SEC_USER};
+
+/* passed to br lock code */
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
+
+enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
+			SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
+
+

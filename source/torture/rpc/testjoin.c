@@ -31,6 +31,7 @@
 #include "lib/crypto/crypto.h"
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
+#include "smb.h"
 #include "lib/ldb/include/ldb.h"
 
 

@@ -26,7 +26,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
-#include "clilist.h"
+#include "libcli/libcli.h"
 
 #if 0
 

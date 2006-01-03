@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "clilist.h"
+#include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 
 struct search_private {

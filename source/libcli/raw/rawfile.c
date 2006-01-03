@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smb.h"
 #include "libcli/raw/libcliraw.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \

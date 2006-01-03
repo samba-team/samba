@@ -372,3 +372,6 @@ struct registry_context;
 struct nbtd_interface;
 struct nbtd_iface_name;
 struct nbtd_server;
+struct smbcli_session;
+struct smbcli_state;
+struct substitute_context;

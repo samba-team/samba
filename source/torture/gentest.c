@@ -22,6 +22,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "request.h"
+#include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "auth/gensec/gensec.h"

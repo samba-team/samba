@@ -29,9 +29,6 @@
 
 #define SMB_PORTS "445 139"
 
-enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
-			SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
-
 /* deny modes */
 #define DENY_DOS 0
 #define DENY_ALL 1
@@ -557,20 +554,6 @@ enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED,
 
 #define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
 
-/* passed to br lock code */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
-
-/* string manipulation flags - see clistr.c and srvstr.c */
-#define STR_TERMINATE 1
-#define STR_UPPER 2
-#define STR_ASCII 4
-#define STR_UNICODE 8
-#define STR_NOALIGN 16
-#define STR_NO_RANGE_CHECK 32
-#define STR_LEN8BIT 64
-#define STR_TERMINATE_ASCII 128 /* only terminate if ascii */
-#define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
-
 
 /*
   filesystem attribute bits
@@ -589,5 +572,11 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 #define FS_ATTR_OBJECT_IDS                        0x00010000
 #define FS_ATTR_ENCRYPTION                        0x00020000
 #define FS_ATTR_NAMED_STREAMS                     0x00040000
+
+#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
+#define _smb_setlen(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0x10000)>>16; \
+        (buf)[2] = ((len)&0xFF00)>>8; (buf)[3] = (len)&0xFF;} while (0)
+#define _smb_setlen2(buf,len) do {(buf)[0] = 0; (buf)[1] = ((len)&0xFF0000)>>16; \
+        (buf)[2] = ((len)&0xFF00)>>8; (buf)[3] = (len)&0xFF;} while (0)
 
 #endif /* _SMB_H */

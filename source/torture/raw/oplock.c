@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \

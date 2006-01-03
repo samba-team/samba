@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "smb.h"
+
 /* 
    smbcli_state: internal state used in libcli library for single-threaded callers, 
    i.e. a single session on a single socket. 
@@ -30,3 +32,14 @@ struct smbcli_state {
 	struct substitute_context *substitute;
 	struct smblsa_state *lsa;
 };
+
+struct clilist_file_info {
+	uint64_t size;
+	uint16_t attrib;
+	time_t mtime;
+	const char *name;
+	const char *short_name;
+};
+
+
+#include "libcli/libcli_proto.h"

@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "system/time.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 
 
 /* basic testing of all RAW_CLOSE_* calls 

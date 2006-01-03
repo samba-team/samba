@@ -19,7 +19,8 @@
 */
 
 #include "includes.h"
-#include "clilist.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/libcli.h"
 
 struct delete_state {
 	struct smbcli_tree *tree;

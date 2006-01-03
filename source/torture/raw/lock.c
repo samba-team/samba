@@ -23,6 +23,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "libcli/libcli.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
