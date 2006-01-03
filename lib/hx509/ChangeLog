@@ -1,3 +1,19 @@
+2006-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* print.c: Use _hx509_abort.
+
+	* ks_p12.c: Use _hx509_abort.
+
+	* hxtool.c: Use _hx509_abort.
+
+	* crypto.c: Use _hx509_abort.
+
+	* cms.c: Use _hx509_abort.
+
+	* cert.c: Use _hx509_abort.
+
+	* name.c: use _hx509_abort
+	
 2006-01-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* name.c (hx509_name_to_string): don't cut bmpString in half.
