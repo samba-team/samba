@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "libnet/composite.h"
 #include "libnet/userman.h"
 #include "libnet/libnet.h"
 
