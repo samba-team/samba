@@ -151,7 +151,7 @@ objectSid: %s-%d
 lmPwdHash:: %s
 ntPwdHash:: %s
 
-", acc.fullname, domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, acc.nt_username, 
+", ldb.dn_escape(acc.fullname), domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, acc.nt_username, 
 
 acc.fullname, acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
 acc.domain, acc.dir_drive, acc.munged_dial, acc.homedir, acc.logon_script, 
