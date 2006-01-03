@@ -481,11 +481,11 @@ member: %s
 }
 
 // Check whether a name is valid as a NetBIOS name. 
-// FIXME: There are probably more constraints here
+// FIXME: There are probably more constraints here. 
+// crh has a paragraph on this in his book (1.4.1.1)
 function valid_netbios_name(name)
 {
 	if (strlen(name) > 13) return false;
-	if (strstr(name, ".")) return false;
 	return true;
 }
 
