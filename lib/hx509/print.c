@@ -172,7 +172,7 @@ check_Null(hx509_validate_ctx ctx, enum critical_flag cf, const Extension *e)
 			   "\tCritical set on MUST NOT\n");
 	break;
     default:
-	abort();
+	_hx509_abort("internal check_Null state error");
     }
     return 0;
 }

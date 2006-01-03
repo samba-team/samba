@@ -772,7 +772,7 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 	if (ret)
 	    goto out;
 	if (size != buf.length)
-	    abort();
+	    _hx509_abort("internal ASN.1 encoder error");
 
 	ret = add_one_attribute(&signer_info->signedAttrs->val,
 				&signer_info->signedAttrs->len,
@@ -794,7 +794,7 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 	if (ret)
 	    goto out;
 	if (size != buf.length)
-	    abort();
+	    _hx509_abort("internal ASN.1 encoder error");
 
 	ret = add_one_attribute(&signer_info->signedAttrs->val,
 				&signer_info->signedAttrs->len,
@@ -822,8 +822,7 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 	if (ret)
 	    goto out;
 	if (size != os.length)
-	    abort();
-
+	    _hx509_abort("internal ASN.1 encoder error");
 			   
 	ret = _hx509_create_signature(_hx509_cert_private_key(cert),
 				      hx509_signature_rsa_with_sha1(),
@@ -874,7 +873,7 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
     if (ret)
 	goto out;
     if (signed_data->length != size)
-	abort();
+	_hx509_abort("internal ASN.1 encoder error");
 
  out:
     free_SignedData(&sd);

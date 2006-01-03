@@ -202,7 +202,7 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 	goto out;
     }
     if (ret > tosize)
-	abort();
+	_hx509_abort("internal rsa decryption failure: ret > tosize");
     ret = decode_DigestInfo(to, ret, &di, &size);
     free(to);
     if (ret) {
@@ -714,7 +714,7 @@ _hx509_public_encrypt(const heim_octet_string *cleartext,
 	return EINVAL;
     }
     if (ret > tosize)
-	abort();
+	_hx509_abort("internal rsa decryption failure: ret > tosize");
 
     ciphertext->length = ret;
     ciphertext->data = to;
@@ -1043,7 +1043,7 @@ hx509_crypto_get_params(hx509_crypto crypto,
     if (ret)
 	return ret;
     if (param->length != size)
-	abort();
+	_hx509_abort("internal ASN.1 encoder error");
     return 0;
 }
 

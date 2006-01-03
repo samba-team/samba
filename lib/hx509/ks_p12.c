@@ -137,7 +137,7 @@ ShroudedKeyBag_parser(struct collector *c, const void *data, size_t length,
 	void *d;
 	d = realloc(c->val.data, (c->val.len + 1) * sizeof(c->val.data[0]));
 	if (d == NULL) {
-	    abort();
+	    _hx509_abort("allocation failure"); /* XXX */
 	}
 	c->val.data = d;
 	c->val.data[c->val.len] = key;
@@ -453,7 +453,7 @@ p12_init(hx509_certs certs, void **data, int flags,
 	struct ks_pkcs12 *p12;
 	p12 = malloc(sizeof(*p12));
 	if (p12 == NULL) {
-	    abort();
+	    _hx509_abort("allocation failure"); /* XXX */
 	}
 	memset(p12, 0, sizeof(*p12));
 	p12->certs = c.certs;

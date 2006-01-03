@@ -69,7 +69,23 @@ typedef struct hx509_name_constraints {
 #define GeneralSubtrees_SET(g,var) \
 	(g)->len = (var)->len, (g)->val = (var)->val;
 
+/*
+ *
+ */
 
+void
+_hx509_abort(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    abort();
+}
+
+/*
+ *
+ */
 
 Certificate *
 _hx509_get_cert(hx509_cert cert)
@@ -145,7 +161,7 @@ hx509_cert_free(hx509_cert cert)
     int i;
 
     if (cert->ref <= 0)
-	abort();
+	_hx509_abort("refcount <= 0");
     if (--cert->ref > 0)
 	return;
     free_Certificate(cert->data);
@@ -166,10 +182,10 @@ hx509_cert
 hx509_cert_ref(hx509_cert cert)
 {
     if (cert->ref <= 0)
-	abort();
+	_hx509_abort("refcount <= 0");
     cert->ref++;
     if (cert->ref == 0)
-	abort();
+	_hx509_abort("refcount == 0");
     return cert;
 }
 

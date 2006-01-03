@@ -247,7 +247,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "encode ContentInfo");
 	if (o.length != size)
-	    abort();
+	    _hx509_abort("internal ASN.1 encoder error");
 
 	free_ContentInfo(&ci);
 
@@ -391,7 +391,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "encode ContentInfo");
 	if (o.length != size)
-	    abort();
+	    _hx509_abort("internal ASN.1 encoder error");
 
 	free_ContentInfo(&ci);
 
