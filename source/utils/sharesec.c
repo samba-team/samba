@@ -298,6 +298,8 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
+	load_case_tables();
+
 	lp_load( dyn_CONFIGFILE, False, False, False );
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
