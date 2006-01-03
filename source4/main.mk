@@ -31,10 +31,13 @@ include scripting/config.mk
 include kdc/config.mk
 include passdb/config.mk
 
+DEFAULT_HEADERS = $(srcdir)/include/nterr.h $(srcdir)/include/nt_status.h \
+				  $(srcdir)/include/smb.h
+
 binaries: $(BINARIES)
 libraries: $(STATIC_LIBS) $(SHARED_LIBS)
 modules: $(SHARED_MODULES)
-headers: $(PUBLIC_HEADERS)
+headers: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages: $(MANPAGES)
 everything: all
 
@@ -127,7 +130,7 @@ installlib: libraries installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS)
 
 installheader: headers installdirs
-	@$(SHELL) $(srcdir)/script/installheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS)
+	@$(SHELL) $(srcdir)/script/installheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)

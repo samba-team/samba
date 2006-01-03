@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "system/filesys.h"
 #include "pstring.h"
 

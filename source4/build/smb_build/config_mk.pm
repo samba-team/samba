@@ -30,7 +30,9 @@ my $section_types = {
 		"MANPAGE"		=> "string",
 
 		"PUBLIC_PROTO_HEADER"	=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string"
+		"PRIVATE_PROTO_HEADER"	=> "string",
+
+		"PUBLIC_HEADERS"	=> "list",
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -58,7 +60,8 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
-		"PRIVATE_PROTO_HEADER"	=> "string"
+		"PRIVATE_PROTO_HEADER"	=> "string",
+		"PUBLIC_HEADERS" => "string"
 		},
 	"LIBRARY" => {
 		"MAJOR_VERSION"		=> "string",

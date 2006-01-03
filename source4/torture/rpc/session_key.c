@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 
 /*
   Test rename on files open with share delete and no share delete.

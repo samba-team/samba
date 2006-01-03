@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 
 struct bitmapping {
