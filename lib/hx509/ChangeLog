@@ -1,5 +1,10 @@
 2006-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* add a hx509_context where we can store configuration
+
+	* p11.c,Makefile.am: pkcs11 is now supported by library, remove
+	old files.
+
 	* ks_p11.c: more paranoid on refcount, set refcounter ealier,
 	reset pointers after free
 
