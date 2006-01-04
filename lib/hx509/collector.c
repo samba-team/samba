@@ -38,7 +38,6 @@ RCSID("$Id$");
 struct private_key {
     AlgorithmIdentifier alg;
     hx509_private_key private_key;
-    heim_octet_string data;
     heim_octet_string localKeyId;
 };
 
@@ -90,7 +89,6 @@ free_private_key(struct private_key *key)
     free_AlgorithmIdentifier(&key->alg);
     if (key->private_key)
 	_hx509_free_private_key(&key->private_key);
-    free_octet_string(&key->data);
     free_octet_string(&key->localKeyId);
     free(key);
 }
@@ -123,7 +121,9 @@ _hx509_collector_private_key_add(struct hx509_collector *c,
     if (private_key) {
 	key->private_key = private_key;
     } else {
-	ret = copy_octet_string(key_data, &key->data);
+	ret = _hx509_parse_private_key(&alg->algorithm,
+				       key_data->data, key_data->length,
+				       &key->private_key);
 	if (ret)
 	    goto out;
     }
@@ -141,13 +141,78 @@ out:
     return ret;
 }
 
+static int
+match_localkeyid(struct private_key *value, hx509_certs certs)
+{
+    hx509_cert cert;
+    hx509_query q;
+    int ret;
+
+    _hx509_query_clear(&q);
+    q.match |= HX509_QUERY_MATCH_LOCAL_KEY_ID;
+    
+    q.local_key_id = &value->localKeyId;
+    
+    ret = _hx509_certs_find(certs, &q, &cert);
+    if (ret == 0) {
+	
+	if (value->private_key) {
+	    _hx509_cert_assign_key(cert, value->private_key);
+	    value->private_key = NULL;
+	}
+	hx509_certs_add(certs, cert);
+	hx509_cert_free(cert);
+    }
+    return ret;
+}
+
+static int
+match_keys(struct private_key *value, hx509_certs certs)
+{
+    hx509_cursor cursor;
+    hx509_cert c;
+    int ret, found = 1;
+
+    if (value->private_key == NULL)
+	return EINVAL;
+
+    ret = hx509_certs_start_seq(certs, &cursor);
+    if (ret)
+	return ret;
+
+    c = NULL;
+    while (1) {
+	ret = hx509_certs_next_cert(certs, cursor, &c);
+	if (ret)
+	    break;
+	if (c == NULL)
+	    break;
+	if (_hx509_cert_private_key(c)) {
+	    hx509_cert_free(c);
+	    continue;
+	}
+
+	ret = _hx509_match_keys(c, value->private_key);
+	if (ret) {
+	    _hx509_cert_assign_key(c, value->private_key);
+	    value->private_key = NULL;
+	    hx509_cert_free(c);
+	    found = 0;
+	    break;
+	}
+	hx509_cert_free(c);
+    }
+
+    hx509_certs_end_seq(certs, cursor);
+
+    return found;
+}
+
 int
 _hx509_collector_collect(struct hx509_collector *c, hx509_certs *ret_certs)
 {
     hx509_certs certs;
-    hx509_cert cert;
-    hx509_query q;
-    int i, ret;
+    int ret, i;
 
     *ret_certs = NULL;
 
@@ -162,31 +227,12 @@ _hx509_collector_collect(struct hx509_collector *c, hx509_certs *ret_certs)
     }
 
     for (i = 0; i < c->val.len; i++) {
-
-	_hx509_query_clear(&q);
-	q.match |= HX509_QUERY_MATCH_LOCAL_KEY_ID;
-
-	q.local_key_id = &c->val.data[i]->localKeyId;
-
-	ret = _hx509_certs_find(certs, &q, &cert);
-	if (ret == 0) {
-
-	    if (c->val.data[i]->private_key) {
-		_hx509_cert_assign_key(cert, c->val.data[i]->private_key);
-		c->val.data[i]->private_key = NULL;
-	    } else {
-		hx509_private_key key;
-
-		ret = _hx509_parse_private_key(&c->val.data[i]->alg.algorithm,
-					       c->val.data[i]->data.data,
-					       c->val.data[i]->data.length,
-					       &key);
-		if (ret == 0)
-		    _hx509_cert_assign_key(cert, key);
-	    }
-	    hx509_certs_add(certs, cert);
-	    hx509_cert_free(cert);
-	}
+	ret = match_localkeyid(c->val.data[i], certs);
+	if (ret == 0)
+	    continue;
+	ret = match_keys(c->val.data[i], certs);
+	if (ret == 0)
+	    continue;
     }
 
     *ret_certs = certs;
