@@ -1,7 +1,14 @@
 2006-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c: Rewrite to use collector and mapping support
+	function.
+
+	* ks_p11.c (rsa_pkcs1_method): constify
+
+	* ks_p11.c: drop extra wrapping of p11_init
+
 	* crypto.c (_hx509_private_key_assign_key_file): use function to
-	extra rsa key
+	extact rsa key
 
 	* cert.c: Revert previous, refcounter is unsigned, so it can never
 	be negative.
