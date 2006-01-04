@@ -1,5 +1,20 @@
 2006-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c: more paranoid on refcount, set refcounter ealier,
+	reset pointers after free
+
+	* collector.c (struct private_key): remove temporary key data
+	storage, convert directly to a key
+	(match_localkeyid): match certificate and key using localkeyid
+	(match_keys): match certificate and key using _hx509_match_keys
+	(_hx509_collector_collect): rewrite to use match_keys and
+	match_localkeyid
+
+	* crypto.c (_hx509_match_keys): function that determins if a
+	private key matches a certificate, used when there is no
+	localkeyid.
+	(*) reset free pointer
+
 	* ks_file.c: Rewrite to use collector and mapping support
 	function.
 
