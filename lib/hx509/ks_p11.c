@@ -46,6 +46,7 @@ struct p11_module {
     CK_FUNCTION_LIST_PTR funcs;
     CK_ULONG num_slots;
     CK_ULONG selected_slot;
+    int refcount;
     /* slot info */
     struct p11_slot {
 	int flags;
@@ -64,6 +65,103 @@ struct p11_module {
 #define P11SESSION(module) ((module)->session)
 #define P11FUNC(module,f,args) (*(module)->funcs->C_##f)args
 
+static int p11_get_session(struct p11_module *, struct p11_slot *);
+static int p11_put_session(struct p11_module *, struct p11_slot *);
+static void p11_release_module(struct p11_module *);
+
+
+/*
+ *
+ */
+
+struct p11_rsa {
+    struct p11_module *p;
+    struct p11_slot *slot;
+    CK_OBJECT_HANDLE private_key;
+};
+
+static int
+p11_rsa_private_encrypt(int flen, 
+			const unsigned char *from,
+			unsigned char *to,
+			RSA *rsa,
+			int padding)
+{
+    struct p11_rsa *p11rsa = RSA_get_app_data(rsa);
+    CK_OBJECT_HANDLE key = p11rsa->private_key;
+    CK_MECHANISM mechanism;
+    CK_ULONG ck_sigsize;
+    int ret;
+
+    if (padding != RSA_PKCS1_PADDING)
+	return -1;
+
+    memset(&mechanism, 0, sizeof(mechanism));
+    mechanism.mechanism = CKM_RSA_PKCS;
+
+    ck_sigsize = RSA_size(rsa);
+
+    p11_get_session(p11rsa->p, p11rsa->slot);
+
+    ret = P11FUNC(p11rsa->p, SignInit,
+		  (P11SESSION(p11rsa->slot), &mechanism, key));
+    if (ret != CKR_OK) {
+	p11_put_session(p11rsa->p, p11rsa->slot);
+	return -1;
+    }
+
+    ret = P11FUNC(p11rsa->p, Sign,
+		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, flen, to, &ck_sigsize));
+    if (ret != CKR_OK)
+	return -1;
+
+    p11_put_session(p11rsa->p, p11rsa->slot);
+
+    return ck_sigsize;
+}
+
+static int
+p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
+			RSA * rsa, int padding)
+{
+    printf("p11_rsa_private_decrypt\n");
+    return 0;
+}
+
+static int 
+p11_rsa_init(RSA *rsa)
+{
+    return 1;
+}
+
+static int
+p11_rsa_finish(RSA *rsa)
+{
+    struct p11_rsa *p11rsa = RSA_get_app_data(rsa);
+    p11_release_module(p11rsa->p);
+    free(p11rsa);
+    return 1;
+}
+
+static RSA_METHOD rsa_pkcs1_method = {
+    "hx509 PKCS11 PKCS#1 RSA",
+    NULL, /* public_encrypt */
+    NULL, /* public_decrypt */
+    p11_rsa_private_encrypt,
+    p11_rsa_private_decrypt,
+    NULL,
+    NULL,
+    p11_rsa_init,
+    p11_rsa_finish,
+    0,
+    NULL,
+    NULL,
+    NULL
+};
+
+/*
+ *
+ */
 
 static int
 p11_init_slot(struct p11_module *p, CK_SLOT_ID id, struct p11_slot *slot)
@@ -167,7 +265,9 @@ static int
 iterate_entries(struct p11_module *p, struct p11_slot *slot,
 		CK_ATTRIBUTE *search_data, int num_search_data,
 		CK_ATTRIBUTE *query, int num_query,
-		int (*func)(void *, CK_ATTRIBUTE *, int), void *ptr)
+		int (*func)(struct p11_module *, struct p11_slot *,
+			    CK_OBJECT_HANDLE object,
+			    void *, CK_ATTRIBUTE *, int), void *ptr)
 {
     CK_OBJECT_HANDLE object;
     CK_ULONG object_count;
@@ -209,7 +309,7 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
 	    goto out;
 	}
 	
-	ret = (*func)(ptr, query, num_query);
+	ret = (*func)(p, slot, object, ptr, query, num_query);
 	if (ret)
 	    goto out;
 
@@ -236,23 +336,49 @@ iterate_entries(struct p11_module *p, struct p11_slot *slot,
     return 0;
 }
 		
-static int
-print_id(void *ptr, CK_ATTRIBUTE *query, int num_query)
+static BIGNUM *
+getattr_bn(struct p11_module *p, struct p11_slot *slot,
+	   CK_OBJECT_HANDLE object, unsigned int type)
 {
-#if 0
-    printf("id: %.*s\n", (int)query[0].ulValueLen, (char *)query[0].pValue);
-#endif
-    return 0;
+    CK_ATTRIBUTE query;
+    BIGNUM *bn;
+    int ret;
+
+    query.type = type;
+    query.pValue = NULL;
+    query.ulValueLen = 0;
+
+    ret = P11FUNC(p, GetAttributeValue, 
+		  (P11SESSION(slot), object, &query, 1));
+    if (ret != CKR_OK)
+	return NULL;
+
+    query.pValue = malloc(query.ulValueLen);
+
+    ret = P11FUNC(p, GetAttributeValue, 
+		  (P11SESSION(slot), object, &query, 1));
+    if (ret != CKR_OK) {
+	free(query.pValue);
+	return NULL;
+    }
+    bn = BN_bin2bn(query.pValue, query.ulValueLen, NULL);
+    free(query.pValue);
+
+    return bn;
 }
 
 static int
-collect_private_key(void *ptr, CK_ATTRIBUTE *query, int num_query)
+collect_private_key(struct p11_module *p, struct p11_slot *slot,
+		    CK_OBJECT_HANDLE object,
+		    void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
     struct hx509_collector *c = ptr;
     AlgorithmIdentifier alg;
     hx509_private_key key;
     heim_octet_string localKeyId;
     int ret;
+    RSA *rsa;
+    struct p11_rsa *p11rsa;
 
     memset(&alg, 0, sizeof(alg));
 
@@ -262,6 +388,34 @@ collect_private_key(void *ptr, CK_ATTRIBUTE *query, int num_query)
     ret = _hx509_new_private_key(&key);
     if (ret)
 	return ret;
+
+    rsa = RSA_new();
+    if (rsa == NULL)
+	_hx509_abort("out of memory");
+
+    rsa->n = getattr_bn(p, slot, object, CKA_MODULUS);
+    if (rsa->n == NULL)
+	_hx509_abort("CKA_MODULUS missing");
+    rsa->e = getattr_bn(p, slot, object, CKA_PUBLIC_EXPONENT);
+    if (rsa->e == NULL)
+	_hx509_abort("CKA_PUBLIC_EXPONENT missing");
+
+    p11rsa = calloc(1, sizeof(*p11rsa));
+    if (p11rsa == NULL)
+	_hx509_abort("out of memory");
+
+    p11rsa->p = p;
+    p11rsa->slot = slot;
+    p11rsa->private_key = object;
+    
+    p->refcount++;
+
+    RSA_set_method(rsa, &rsa_pkcs1_method);
+    ret = RSA_set_app_data(rsa, p11rsa);
+    if (ret != 1)
+	_hx509_abort("RSA_set_app_data");
+
+    _hx509_private_key_assign_rsa(key, rsa);
 
     ret = _hx509_collector_private_key_add(c,
 					   &alg,
@@ -277,7 +431,9 @@ collect_private_key(void *ptr, CK_ATTRIBUTE *query, int num_query)
 }
 
 static int
-collect_cert(void *ptr, CK_ATTRIBUTE *query, int num_query)
+collect_cert(struct p11_module *p, struct p11_slot *slot,
+	     CK_OBJECT_HANDLE object,
+	     void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
     heim_octet_string localKeyId;
     struct hx509_collector *c = ptr;
@@ -336,36 +492,25 @@ p11_list_keys(struct p11_module *p,
     if (c == NULL)
 	return ENOMEM;
 
-
     key_class = CKO_PRIVATE_KEY;
     ret = iterate_entries(p, slot,
 			  search_data, 1,
 			  query_data, 1,
 			  collect_private_key, c);
-    if (ret) {
-	return ret;
-    }
-
-    key_class = CKO_PUBLIC_KEY;
-    ret = iterate_entries(p, slot,
-			  search_data, 1,
-			  query_data, 1,
-			  print_id, c);
-    if (ret) {
-	return ret;
-    }
+    if (ret)
+	goto out;
 
     key_class = CKO_CERTIFICATE;
     ret = iterate_entries(p, slot,
 			  search_data, 1,
 			  query_data, 2,
 			  collect_cert, c);
-    if (ret) {
-	return ret;
-    }
+    if (ret)
+	goto out;
 
     ret = _hx509_collector_collect(c, &slot->certs);
 
+out:
     _hx509_collector_free(c);
 
     return ret;
@@ -447,6 +592,7 @@ p11_init_module(const char *fn, hx509_lock lock, struct p11_module **module)
 	p11_put_session(p, &p->slot);
     }
 
+    p->refcount += 1;
     *module = p;
 
     return 0;
@@ -472,14 +618,25 @@ p11_init(hx509_certs certs, void **data, int flags,
     return 0;
 }
 
-static int
-p11_free(hx509_certs certs, void *data)
+static void
+p11_release_module(struct p11_module *p)
 {
-    struct p11_module *p = data;
+    if (p->refcount <= 0)
+	_hx509_abort("pkcs11 refcount to low");
+    if (--p->refcount > 0)
+	return;
+
+    printf("p11 free\n");
 
     if (p->dl_handle)
 	dlclose(p->dl_handle);
     free(p);
+}
+
+static int
+p11_free(hx509_certs certs, void *data)
+{
+    p11_release_module((struct p11_module *)data);
     return 0;
 }
 
