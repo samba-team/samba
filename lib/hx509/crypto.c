@@ -98,8 +98,10 @@ private_oid(private_rc2_40, 1);
 struct hx509_crypto;
 
 struct hx509_private_key {
-    EVP_PKEY *private_key;
     const heim_oid *signature_alg;
+    struct {
+	RSA *rsa;
+    } private_key2;
     /* supported key operations */
     /* context pointer to backend */
     /* function pointer to backend */
@@ -228,6 +230,85 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 }
 
 static int
+rsa_create_signature(const struct signature_alg *sig_alg,
+		     const hx509_private_key signer,
+		     const AlgorithmIdentifier *alg,
+		     const heim_octet_string *data,
+		     AlgorithmIdentifier *signatureAlgorithm,
+		     heim_octet_string *sig)
+{
+    const AlgorithmIdentifier *digest_alg;
+    heim_octet_string indata;
+    const heim_oid *sig_oid;
+    DigestInfo di;
+    size_t size;
+    int ret;
+    
+    if (alg)
+	sig_oid = &alg->algorithm;
+    else
+	sig_oid = signer->signature_alg;
+
+    if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
+	digest_alg = hx509_signature_sha1();
+    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+	digest_alg = hx509_signature_md5();
+    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+	digest_alg = hx509_signature_md5();
+    } else if (heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
+	digest_alg = hx509_signature_sha1();
+    } else
+	return HX509_ALG_NOT_SUPP;
+
+    if (signatureAlgorithm) {
+	ret = _hx509_set_digest_alg(signatureAlgorithm,
+				    sig_oid, "\x05\x00", 2);
+	if (ret)
+	    return ret;
+    }
+
+    memset(&di, 0, sizeof(di));
+
+    ret = _hx509_create_signature(NULL,
+				  digest_alg,
+				  data,
+				  &di.digestAlgorithm,
+				  &di.digest);
+    ASN1_MALLOC_ENCODE(DigestInfo,
+		       indata.data,
+		       indata.length,
+		       &di,
+		       &size,
+		       ret);
+    free_DigestInfo(&di);
+    if (ret)
+	return ret;
+    if (indata.length != size)
+	_hx509_abort("internal ASN.1 encoder error");
+
+    sig->length = RSA_size(signer->private_key2.rsa);
+    sig->data = malloc(sig->length);
+    if (sig->data == NULL)
+	return ENOMEM;
+
+    ret = RSA_private_encrypt(indata.length, indata.data, 
+			      sig->data, 
+			      signer->private_key2.rsa,
+			      RSA_PKCS1_PADDING);
+    free_octet_string(&indata);
+    if (ret <= 0)
+	return HX509_CMS_FAILED_CREATE_SIGATURE;
+    if (ret < sig->length)
+	_hx509_abort("RSA signature prelen shorter the output len");
+
+    sig->length = ret;
+    
+    return 0;
+}
+
+
+#if 0
+static int
 create_signature(const struct signature_alg *sig_alg,
 		 const hx509_private_key signer,
 		 const AlgorithmIdentifier *alg,
@@ -246,16 +327,7 @@ create_signature(const struct signature_alg *sig_alg,
     else
 	sig_oid = signer->signature_alg;
 
-    if (heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
-	mdtype = EVP_sha1();
-	digest_oid = oid_id_secsig_sha_1();
-    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
-	mdtype = EVP_md5();
-	digest_oid = oid_id_pkcs2_md5();
-    } else if (heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
-	mdtype = EVP_md5();
-	digest_oid = oid_id_pkcs2_md5();
-    } else if (heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
+    if (heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
 	mdtype = EVP_sha1();
 	digest_oid = oid_id_secsig_sha_1();
     } else
@@ -284,6 +356,7 @@ create_signature(const struct signature_alg *sig_alg,
 
     return 0;
 }
+#endif
 
 static int
 rsa_parse_private_key(const struct signature_alg *sig_alg,
@@ -291,10 +364,11 @@ rsa_parse_private_key(const struct signature_alg *sig_alg,
 		      size_t len,
 		      hx509_private_key private_key)
 {
-    unsigned char *p = rk_UNCONST(data);
+    const unsigned char *p = data;
 
-    private_key->private_key = d2i_PrivateKey(EVP_PKEY_RSA, NULL, &p, len);
-    if (private_key->private_key == NULL)
+    private_key->private_key2.rsa = 
+	d2i_RSAPrivateKey(NULL, &p, len);
+    if (private_key->private_key2.rsa == NULL)
 	return EINVAL;
     private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
 
@@ -382,6 +456,7 @@ dsa_parse_private_key(const struct signature_alg *sig_alg,
 		      size_t len,
 		      hx509_private_key private_key)
 {
+#if 0
     unsigned char *p = rk_UNCONST(data);
 
     private_key->private_key = d2i_PrivateKey(EVP_PKEY_DSA, NULL, &p, len);
@@ -391,6 +466,9 @@ dsa_parse_private_key(const struct signature_alg *sig_alg,
     private_key->signature_alg = oid_id_dsa_with_sha1();
 
     return 0;
+#else
+    return EINVAL;
+#endif
 }
 
 
@@ -505,7 +583,7 @@ static struct signature_alg pkcs1_rsa_sha1_alg = {
     NULL,
     PROVIDE_CONF,
     rsa_verify_signature,
-    create_signature,
+    rsa_create_signature,
     rsa_parse_private_key
 };
 
@@ -516,7 +594,7 @@ static struct signature_alg rsa_with_sha1_alg = {
     &id_sha1_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
-    create_signature,
+    rsa_create_signature,
     rsa_parse_private_key
 };
 
@@ -527,7 +605,7 @@ static struct signature_alg rsa_with_md5_alg = {
     &id_md5_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
-    create_signature,
+    rsa_create_signature,
     rsa_parse_private_key
 };
 
@@ -538,7 +616,7 @@ static struct signature_alg rsa_with_md2_alg = {
     &id_md2_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
-    create_signature,
+    rsa_create_signature,
     rsa_parse_private_key
 };
 
@@ -549,7 +627,7 @@ static struct signature_alg dsa_sha1_alg = {
     &id_sha1_oid,
     PROVIDE_CONF,
     dsa_verify_signature,
-    create_signature,
+    /* create_signature */ NULL,
     dsa_parse_private_key
 };
 
@@ -654,6 +732,9 @@ _hx509_create_signature(const hx509_private_key signer,
     if (signer && (md->flags & PROVIDE_CONF) == 0)
 	return HX509_CRYPTO_SIG_NO_CONF;
 
+    if (md->create_signature == NULL) /* XXX DSA */
+	return HX509_CRYPTO_SIG_NO_CONF;
+
     return (*md->create_signature)(md, signer, alg, data, 
 				   signatureAlgorithm, sig);
 }
@@ -734,34 +815,32 @@ _hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
 				   hx509_private_key p,
 				   heim_octet_string *cleartext)
 {
-    unsigned char *buf;
     int ret;
 
     cleartext->data = NULL;
     cleartext->length = 0;
 
-    if (p->private_key == NULL)
+    if (p->private_key2.rsa == NULL)
 	return EINVAL;
 
-    buf = malloc(EVP_PKEY_size(p->private_key));
-    if (buf == NULL) 
+    cleartext->length = RSA_size(p->private_key2.rsa);
+    cleartext->data = malloc(cleartext->length);
+    if (cleartext->data == NULL) 
 	return ENOMEM;
 
-    ret = EVP_PKEY_decrypt(buf,
-			   ciphertext->data,
-			   ciphertext->length,
-			   p->private_key);
+    ret = RSA_private_decrypt(ciphertext->length, ciphertext->data,
+			      cleartext->data,
+			      p->private_key2.rsa,
+			      RSA_PKCS1_PADDING);
     if (ret <= 0) {
-	free(buf);
-	return ENOMEM; /* XXX */
-    }
-
-    cleartext->data = realloc(buf, ret);
-    if (cleartext->data == NULL) {
-	free(buf);
+	free_octet_string(cleartext);
 	return ENOMEM;
     }
+    if (cleartext->length < ret)
+	_hx509_abort("internal rsa decryption failure: ret > tosize");
+
     cleartext->length = ret;
+
     return 0;
 }
 
@@ -853,9 +932,9 @@ _hx509_new_private_key(hx509_private_key *key)
 int
 _hx509_free_private_key(hx509_private_key *key)
 {
-    if ((*key)->private_key)
-	EVP_PKEY_free((*key)->private_key);
-    (*key)->private_key = NULL;
+    if ((*key)->private_key2.rsa)
+	RSA_free((*key)->private_key2.rsa);
+    (*key)->private_key2.rsa = NULL;
     free(*key);
     return 0;
 }
@@ -871,38 +950,47 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 
-    if (key->private_key) {
-	EVP_PKEY_free(key->private_key);
-	key->private_key = NULL;
+    if (key->private_key2.rsa) {
+	RSA_free(key->private_key2.rsa);
+	key->private_key2.rsa = NULL;
     }
+
 
     pw = _hx509_lock_get_passwords(lock);
 
     for (i = 0; i < pw->len; i++) {
+	EVP_PKEY *private_key;
 	FILE *f;
 
 	f = fopen(fn, "r");
 	if (f == NULL)
 	    return ENOMEM;
 	
-	key->private_key = PEM_read_PrivateKey(f, NULL, NULL, pw->val[i]);
+	private_key = PEM_read_PrivateKey(f, NULL, NULL, pw->val[i]);
 	fclose(f);
-	if (key->private_key == NULL) {
-	    printf("failed to read private key: %s\n", 
-		   ERR_error_string(ERR_get_error(), NULL));
-	    return ENOENT;
+	if (private_key == NULL)
+	    continue;
+	if (private_key->type != EVP_PKEY_RSA) {
+	    EVP_PKEY_free(private_key);
+	    return EINVAL;
 	}
+
+	key->private_key2.rsa = private_key->pkey.rsa;
+	RSA_up_ref(key->private_key2.rsa);
+	EVP_PKEY_free(private_key);
+
+	return 0;
     }
 
-    return 0;
+    return EINVAL;
 }
 
 void
-_hx509_private_key_assign_ptr(hx509_private_key key, void *ptr)
+_hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
 {
-    if (key->private_key)
-	EVP_PKEY_free(key->private_key);
-    key->private_key = ptr;
+    if (key->private_key2.rsa)
+	RSA_free(key->private_key2.rsa);
+    key->private_key2.rsa = ptr;
 }
 
 
