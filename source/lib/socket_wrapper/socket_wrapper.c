@@ -160,6 +160,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 		return -1;
 	}
 
+	in->sin_family = AF_INET;
 	in->sin_addr.s_addr = htonl((127<<24) | iface);
 	in->sin_port = htons(prt);
 
