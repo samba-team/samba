@@ -80,6 +80,27 @@ struct p11_rsa {
 };
 
 static int
+p11_rsa_public_encrypt(int flen,
+		       const unsigned char *from,
+		       unsigned char *to,
+		       RSA *rsa,
+		       int padding)
+{
+    return 0;
+}
+
+static int
+p11_rsa_public_decrypt(int flen,
+		       const unsigned char *from,
+		       unsigned char *to,
+		       RSA *rsa,
+		       int padding)
+{
+    return 0;
+}
+
+
+static int
 p11_rsa_private_encrypt(int flen, 
 			const unsigned char *from,
 			unsigned char *to,
@@ -123,8 +144,37 @@ static int
 p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 			RSA * rsa, int padding)
 {
-    printf("p11_rsa_private_decrypt\n");
-    return 0;
+    struct p11_rsa *p11rsa = RSA_get_app_data(rsa);
+    CK_OBJECT_HANDLE key = p11rsa->private_key;
+    CK_MECHANISM mechanism;
+    CK_ULONG ck_sigsize;
+    int ret;
+
+    if (padding != RSA_PKCS1_PADDING)
+	return -1;
+
+    memset(&mechanism, 0, sizeof(mechanism));
+    mechanism.mechanism = CKM_RSA_PKCS;
+
+    ck_sigsize = RSA_size(rsa);
+
+    p11_get_session(p11rsa->p, p11rsa->slot);
+
+    ret = P11FUNC(p11rsa->p, DecryptInit,
+		  (P11SESSION(p11rsa->slot), &mechanism, key));
+    if (ret != CKR_OK) {
+	p11_put_session(p11rsa->p, p11rsa->slot);
+	return -1;
+    }
+
+    ret = P11FUNC(p11rsa->p, Decrypt,
+		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, flen, to, &ck_sigsize));
+    if (ret != CKR_OK)
+	return -1;
+
+    p11_put_session(p11rsa->p, p11rsa->slot);
+
+    return ck_sigsize;
 }
 
 static int 
@@ -144,8 +194,8 @@ p11_rsa_finish(RSA *rsa)
 
 static RSA_METHOD rsa_pkcs1_method = {
     "hx509 PKCS11 PKCS#1 RSA",
-    NULL, /* public_encrypt */
-    NULL, /* public_decrypt */
+    p11_rsa_public_encrypt,
+    p11_rsa_public_decrypt,
     p11_rsa_private_encrypt,
     p11_rsa_private_decrypt,
     NULL,
