@@ -1,3 +1,20 @@
+2006-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ks_p11.c: Less printf, less memory leaks.
+
+	* ks_p11.c: Implement signing using pkcs11.
+	
+	* ks_p11.c: Partly assign private key, enough to complete
+	collection, but not any crypto functionallity.
+
+	* collector.c: Use hx509_private_key to assign private keys.
+
+	* crypto.c: Remove most of the EVP_PKEY code, and use RSA
+	directly, this temporary removes DSA support.
+
+	* hxtool.c (print_f): print if there is a friendly name and if
+	there is a private key
+	
 2006-01-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* name.c: Avoid warning from missing __attribute__((noreturn))
