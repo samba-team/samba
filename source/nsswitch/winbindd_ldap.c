@@ -34,7 +34,7 @@ struct ldap_message_queue {
 };
 
 struct rw_buffer {
-	uint8_t *data;
+	uint8 *data;
 	size_t ofs, length;
 };
 
@@ -67,7 +67,7 @@ struct pending_ldap_message {
 
 struct pending_ldap_message *pending_messages;
 
-static BOOL append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
+static BOOL append_to_buf(struct rw_buffer *buf, uint8 *data, size_t length)
 {
 	buf->data = SMB_REALLOC(buf->data, buf->length+length);
 
@@ -92,7 +92,7 @@ static BOOL read_into_buf(int fd, struct rw_buffer *buf)
 	return append_to_buf(buf, tmp_buf, len);
 }
 
-static void peek_into_buf(struct rw_buffer *buf, uint8_t **out,
+static void peek_into_buf(struct rw_buffer *buf, uint8 **out,
 			  size_t *out_length)
 {
 	*out = buf->data;
@@ -101,7 +101,7 @@ static void peek_into_buf(struct rw_buffer *buf, uint8_t **out,
 
 static void consumed_from_buf(struct rw_buffer *buf, size_t length)
 {
-	uint8_t *new = memdup(buf->data+length, buf->length-length);
+	uint8 *new = memdup(buf->data+length, buf->length-length);
 	free(buf->data);
 	buf->data = new;
 	buf->length -= length;
@@ -109,7 +109,7 @@ static void consumed_from_buf(struct rw_buffer *buf, size_t length)
 
 static BOOL write_out_of_buf(int fd, struct rw_buffer *buf)
 {
-	uint8_t *tmp;
+	uint8 *tmp;
 	size_t tmp_length, written;
 
 	peek_into_buf(buf, &tmp, &tmp_length);
@@ -176,7 +176,7 @@ static void new_ldap_client(int listen_sock)
 static struct ldap_message *get_msg_from_buf(struct rw_buffer *buffer,
 					     BOOL *error)
 {
-	uint8_t *buf;
+	uint8 *buf;
 	int buf_length, msg_length;
 	DATA_BLOB blob;
 	ASN1_DATA data;
