@@ -29,7 +29,6 @@ libhx509_la_SOURCES = \
 	ks_p12.c \
 	lock.c \
 	name.c \
-	p11.c \
 	print.c
 
 $(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h
