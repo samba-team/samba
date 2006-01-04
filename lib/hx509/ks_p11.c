@@ -168,7 +168,8 @@ p11_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
     }
 
     ret = P11FUNC(p11rsa->p, Decrypt,
-		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, flen, to, &ck_sigsize));
+		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, 
+		   flen, to, &ck_sigsize));
     if (ret != CKR_OK)
 	return -1;
 
@@ -565,13 +566,14 @@ out:
 
 
 static int
-p11_init_module(const char *fn, hx509_lock lock, struct p11_module **module)
+p11_init(hx509_certs certs, void **data, int flags, 
+	 const char *residue, hx509_lock lock)
 {
     CK_C_GetFunctionList getFuncs;
     struct p11_module *p;
     int ret;
 
-    *module = NULL;
+    *data = NULL;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -579,7 +581,7 @@ p11_init_module(const char *fn, hx509_lock lock, struct p11_module **module)
 
     p->selected_slot = 0;
 
-    p->dl_handle = dlopen(fn, RTLD_NOW);
+    p->dl_handle = dlopen(residue, RTLD_NOW);
     if (p->dl_handle == NULL) {
 	ret = EINVAL; /* XXX */
 	goto out;
@@ -640,7 +642,7 @@ p11_init_module(const char *fn, hx509_lock lock, struct p11_module **module)
     }
 
     p->refcount += 1;
-    *module = p;
+    *data = p;
 
     return 0;
  out:    
@@ -648,21 +650,6 @@ p11_init_module(const char *fn, hx509_lock lock, struct p11_module **module)
 	dlclose(p->dl_handle);
     free(p);
     return ret;
-}
-
-static int
-p11_init(hx509_certs certs, void **data, int flags, 
-	 const char *residue, hx509_lock lock)
-{
-    struct p11_module *p;
-    int ret;
-
-    ret = p11_init_module(residue, lock, &p);
-    if (ret)
-	return ret;
-
-    *data = p;
-    return 0;
 }
 
 static void
