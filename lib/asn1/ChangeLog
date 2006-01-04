@@ -1,3 +1,7 @@
+2006-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* der_copy.c (copy_heim_integer): copy the negative flag
+	
 2005-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse.y: Drop ExceptionSpec for now, its not used.
