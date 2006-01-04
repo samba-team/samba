@@ -193,7 +193,7 @@ p11_rsa_finish(RSA *rsa)
     return 1;
 }
 
-static RSA_METHOD rsa_pkcs1_method = {
+static const RSA_METHOD rsa_pkcs1_method = {
     "hx509 PKCS11 PKCS#1 RSA",
     p11_rsa_public_encrypt,
     p11_rsa_public_decrypt,
