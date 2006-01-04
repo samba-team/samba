@@ -140,7 +140,6 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 	if (ret) {
 		DEBUG(3,("could not renew tickets: %s\n", error_message(ret)));
 		/* maybe we are beyond the renewing window */
-		talloc_free(entry->event);
 		return;
 	}
 
