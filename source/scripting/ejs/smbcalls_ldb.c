@@ -338,8 +338,7 @@ static int ejs_dn_escape(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	val.data = mprToString(argv[0]);
-	val.length = strlen((const char *)val.data);
+	val = data_blob_string_const(mprToString(argv[0]));
 
 	ret = ldb_dn_escape_value(mprMemCtx(), val);
 	if (ret == NULL) {
