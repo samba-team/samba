@@ -33,11 +33,11 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
-#include <openssl/evp.h>
+#include <openssl/rsa.h>
 
 struct private_key {
     AlgorithmIdentifier alg;
-    void *private_key;
+    hx509_private_key private_key;
     heim_octet_string data;
     heim_octet_string localKeyId;
 };
@@ -89,7 +89,7 @@ free_private_key(struct private_key *key)
 {
     free_AlgorithmIdentifier(&key->alg);
     if (key->private_key)
-	EVP_PKEY_free(key->private_key);
+	_hx509_free_private_key(&key->private_key);
     free_octet_string(&key->data);
     free_octet_string(&key->localKeyId);
     free(key);
@@ -98,7 +98,7 @@ free_private_key(struct private_key *key)
 int
 _hx509_collector_private_key_add(struct hx509_collector *c, 
 				 const AlgorithmIdentifier *alg,
-				 void *private_key,
+				 hx509_private_key private_key,
 				 const heim_octet_string *key_data,
 				 const heim_octet_string *localKeyId)
 {
@@ -170,16 +170,13 @@ _hx509_collector_collect(struct hx509_collector *c, hx509_certs *ret_certs)
 
 	ret = _hx509_certs_find(certs, &q, &cert);
 	if (ret == 0) {
-	    hx509_private_key key;
 
 	    if (c->val.data[i]->private_key) {
-		ret = _hx509_new_private_key(&key);
-		if (ret == 0) {
-		    _hx509_private_key_assign_ptr(key,
-						  c->val.data[i]->private_key);
-		    c->val.data[i]->private_key = NULL;
-		}
+		_hx509_cert_assign_key(cert, c->val.data[i]->private_key);
+		c->val.data[i]->private_key = NULL;
 	    } else {
+		hx509_private_key key;
+
 		ret = _hx509_parse_private_key(&c->val.data[i]->alg.algorithm,
 					       c->val.data[i]->data.data,
 					       c->val.data[i]->data.length,
