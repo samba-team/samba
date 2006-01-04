@@ -485,7 +485,7 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 	return result;
 }
 
-BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8_t **buf, size_t *len,
+BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 		     const char *fmt, ...)
 {
 	va_list ap;
@@ -496,10 +496,10 @@ BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8_t **buf, size_t *len,
 	va_end(ap);
 
 	if (mem_ctx != NULL)
-		*buf = TALLOC_REALLOC_ARRAY(mem_ctx, *buf, uint8_t,
+		*buf = TALLOC_REALLOC_ARRAY(mem_ctx, *buf, uint8,
 					    (*len) + len1);
 	else
-		*buf = SMB_REALLOC_ARRAY(*buf, uint8_t, (*len) + len1);
+		*buf = SMB_REALLOC_ARRAY(*buf, uint8, (*len) + len1);
 
 	if (*buf == NULL)
 		return False;

@@ -252,7 +252,7 @@ int setup_oplock_select_set( fd_set *fds)
 ****************************************************************************/
 
 static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
-				   files_struct *fsp, uint8_t cmd)
+				   files_struct *fsp, uint8 cmd)
 {
 	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
 
