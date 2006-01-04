@@ -190,8 +190,8 @@ hx509_cert_ref(hx509_cert cert)
     if (cert->ref <= 0)
 	_hx509_abort("refcount <= 0");
     cert->ref++;
-    if (cert->ref == 0)
-	_hx509_abort("refcount == 0");
+    if (cert->ref <= 0)
+	_hx509_abort("refcount <= 0");
     return cert;
 }
 
