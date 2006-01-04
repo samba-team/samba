@@ -3,11 +3,8 @@
    Core Samba data types
 
    Copyright (C) Andrew Tridgell              1992-2000
-   Copyright (C) John H Terpstra              1996-2002
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
-   Copyright (C) Paul Ashton                  1998-2000
-   Copyright (C) Simo Sorce                   2001-2002
-   Copyright (C) Martin Pool		      2002
+   Copyright (C) Stefan Metzmacher			  2004
+   Copyright (C) Jelmer Vernooij			  2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
