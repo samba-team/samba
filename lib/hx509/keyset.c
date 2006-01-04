@@ -34,44 +34,43 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
-static struct hx509_keyset_ops **ks_ops;
-static int ks_num_ops;
-
 struct hx509_certs_data {
     struct hx509_keyset_ops *ops;
     void *ops_data;
 };
 
 static struct hx509_keyset_ops *
-_hx509_ks_type(const char *type)
+_hx509_ks_type(hx509_context context, const char *type)
 {
     int i;
 
-    for (i = 0; i < ks_num_ops; i++)
-	if (strcasecmp(type, ks_ops[i]->name) == 0)
-	    return ks_ops[i];
+    for (i = 0; i < context->ks_num_ops; i++)
+	if (strcasecmp(type, context->ks_ops[i]->name) == 0)
+	    return context->ks_ops[i];
 
     return NULL;
 }
 
 void
-_hx509_ks_register(struct hx509_keyset_ops *ops)
+_hx509_ks_register(hx509_context context, struct hx509_keyset_ops *ops)
 {
     struct hx509_keyset_ops **val;
 
-    if (_hx509_ks_type(ops->name))
+    if (_hx509_ks_type(context, ops->name))
 	return;
 
-    val = realloc(ks_ops, (ks_num_ops + 1) * sizeof(ks_ops[0]));
+    val = realloc(context->ks_ops, 
+		  (context->ks_num_ops + 1) * sizeof(context->ks_ops[0]));
     if (val == NULL)
 	return;
-    val[ks_num_ops] = ops;
-    ks_ops = val;
-    ks_num_ops++;
+    val[context->ks_num_ops] = ops;
+    context->ks_ops = val;
+    context->ks_num_ops++;
 }
 
 int
-hx509_certs_init(const char *name, int flags,
+hx509_certs_init(hx509_context context,
+		 const char *name, int flags,
 		 hx509_lock lock, hx509_certs *certs)
 {
     struct hx509_keyset_ops *ops;
@@ -81,14 +80,6 @@ hx509_certs_init(const char *name, int flags,
     int ret;
 
     *certs = NULL;
-
-    if (ks_ops == NULL) {
-	_hx509_ks_mem_register();
-	_hx509_ks_file_register();
-	_hx509_ks_pkcs12_register();
-	_hx509_ks_pkcs11_register();
-	_hx509_ks_dir_register();
-    }
 
     residue = strchr(name, ':');
     if (residue) {
@@ -103,7 +94,7 @@ hx509_certs_init(const char *name, int flags,
     if (type == NULL)
 	return ENOMEM;
     
-    ops = _hx509_ks_type(type);
+    ops = _hx509_ks_type(context, type);
     free(type);
     if (ops == NULL)
 	return ENOENT;
@@ -114,7 +105,7 @@ hx509_certs_init(const char *name, int flags,
 
     c->ops = ops;
 
-    ret = (*ops->init)(c, &c->ops_data, flags, residue, lock);
+    ret = (*ops->init)(context, c, &c->ops_data, flags, residue, lock);
     if (ret) {
 	free(c);
 	return ENOMEM;
@@ -134,14 +125,16 @@ hx509_certs_free(hx509_certs *certs)
 }
 
 int
-hx509_certs_start_seq(hx509_certs certs, hx509_cursor cursor)
+hx509_certs_start_seq(hx509_context context,
+		      hx509_certs certs,
+		      hx509_cursor cursor)
 {
     int ret;
 
     if (certs->ops->iter_start == NULL)
 	return ENOENT;
 
-    ret = (*certs->ops->iter_start)(certs, certs->ops_data, cursor);
+    ret = (*certs->ops->iter_start)(context, certs, certs->ops_data, cursor);
     if (ret)
 	return ret;
 
@@ -149,53 +142,60 @@ hx509_certs_start_seq(hx509_certs certs, hx509_cursor cursor)
 }
 
 int
-hx509_certs_next_cert(hx509_certs certs, hx509_cursor cursor,
+hx509_certs_next_cert(hx509_context context,
+		      hx509_certs certs,
+		      hx509_cursor cursor,
 		      hx509_cert *cert)
 {
     *cert = NULL;
-    return (*certs->ops->iter)(certs, certs->ops_data, cursor, cert);
+    return (*certs->ops->iter)(context, certs, certs->ops_data, cursor, cert);
 }
 
 int
-hx509_certs_end_seq(hx509_certs certs, hx509_cursor cursor)
+hx509_certs_end_seq(hx509_context context,
+		    hx509_certs certs,
+		    hx509_cursor cursor)
 {
-    (*certs->ops->iter_end)(certs, certs->ops_data, cursor);
+    (*certs->ops->iter_end)(context, certs, certs->ops_data, cursor);
     return 0;
 }
 
 
 int
-hx509_certs_iter(hx509_certs certs, int (*fn)(void *, hx509_cert), void *ctx)
+hx509_certs_iter(hx509_context context, 
+		 hx509_certs certs, 
+		 int (*fn)(hx509_context, void *, hx509_cert),
+		 void *ctx)
 {
     hx509_cursor cursor;
     hx509_cert c;
     int ret;
 
-    ret = hx509_certs_start_seq(certs, &cursor);
+    ret = hx509_certs_start_seq(context, certs, &cursor);
     if (ret)
 	return ret;
     
     while (1) {
-	ret = hx509_certs_next_cert(certs, cursor, &c);
+	ret = hx509_certs_next_cert(context, certs, cursor, &c);
 	if (ret)
 	    break;
 	if (c == NULL) {
 	    ret = 0;
 	    break;
 	}
-	ret = (*fn)(ctx, c);
+	ret = (*fn)(context, ctx, c);
 	hx509_cert_free(c);
 	if (ret)
 	    break;
     }
 
-    hx509_certs_end_seq(certs, cursor);
+    hx509_certs_end_seq(context, certs, cursor);
 
     return ret;
 }
 
 int
-hx509_ci_print_names(void *ctx, hx509_cert c)
+hx509_ci_print_names(hx509_context context, void *ctx, hx509_cert c)
 {
     Certificate *cert;
     hx509_name n;
@@ -212,16 +212,19 @@ hx509_ci_print_names(void *ctx, hx509_cert c)
 }
 
 int
-hx509_certs_add(hx509_certs certs, hx509_cert cert)
+hx509_certs_add(hx509_context context, hx509_certs certs, hx509_cert cert)
 {
     if (certs->ops->add == NULL)
 	return ENOENT;
 
-    return (*certs->ops->add)(certs, certs->ops_data, cert);
+    return (*certs->ops->add)(context, certs, certs->ops_data, cert);
 }
 
 int
-_hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
+_hx509_certs_find(hx509_context context,
+		  hx509_certs certs, 
+		  const hx509_query *q,
+		  hx509_cert *r)
 {
     hx509_cursor cursor;
     hx509_cert c;
@@ -230,15 +233,15 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
     *r = NULL;
 
     if (certs->ops->query)
-	return (*certs->ops->query)(certs, certs->ops_data, q, r);
+	return (*certs->ops->query)(context, certs, certs->ops_data, q, r);
 
-    ret = hx509_certs_start_seq(certs, &cursor);
+    ret = hx509_certs_start_seq(context, certs, &cursor);
     if (ret)
 	return ret;
 
     c = NULL;
     while (1) {
-	ret = hx509_certs_next_cert(certs, cursor, &c);
+	ret = hx509_certs_next_cert(context, certs, cursor, &c);
 	if (ret)
 	    break;
 	if (c == NULL)
@@ -250,7 +253,7 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
 	hx509_cert_free(c);
     }
 
-    hx509_certs_end_seq(certs, cursor);
+    hx509_certs_end_seq(context, certs, cursor);
     if (ret)
 	return ret;
     if (c == NULL)
@@ -260,27 +263,30 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
 }
 
 static int
-certs_merge_func(void *ctx, hx509_cert c)
+certs_merge_func(hx509_context context, void *ctx, hx509_cert c)
 {
-    return hx509_certs_add((hx509_certs)ctx, c);
+    return hx509_certs_add(context, (hx509_certs)ctx, c);
 }
 
 int
-hx509_certs_merge(hx509_certs to, hx509_certs from)
+hx509_certs_merge(hx509_context context, hx509_certs to, hx509_certs from)
 {
-    return hx509_certs_iter(from, certs_merge_func, to);
+    return hx509_certs_iter(context, from, certs_merge_func, to);
 }
 
 int
-hx509_certs_append(hx509_certs to, hx509_lock lock, const char *name)
+hx509_certs_append(hx509_context context,
+		   hx509_certs to,
+		   hx509_lock lock,
+		   const char *name)
 {
     hx509_certs s;
     int ret;
 
-    ret = hx509_certs_init(name, 0, lock, &s);
+    ret = hx509_certs_init(context, name, 0, lock, &s);
     if (ret)
 	return ret;
-    ret = hx509_certs_merge(to, s);
+    ret = hx509_certs_merge(context, to, s);
     hx509_certs_free(&s);
     return ret;
 }

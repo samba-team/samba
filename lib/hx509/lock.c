@@ -53,7 +53,7 @@ hx509_lock _hx509_empty_lock = &empty_lock_data;
  */
 
 int
-hx509_lock_init(hx509_lock *lock)
+hx509_lock_init(hx509_context context, hx509_lock *lock)
 {
     hx509_lock l;
     int ret;
@@ -64,7 +64,11 @@ hx509_lock_init(hx509_lock *lock)
     if (l == NULL)
 	return ENOMEM;
 
-    ret = hx509_certs_init("MEMORY:locks-internal", 0, NULL, &l->certs);
+    ret = hx509_certs_init(context, 
+			   "MEMORY:locks-internal", 
+			   0,
+			   NULL,
+			   &l->certs);
     if (ret) {
 	free(l);
 	return ret;
@@ -122,24 +126,28 @@ hx509_lock_reset_passwords(hx509_lock lock)
 }
 
 int
-hx509_lock_add_cert(hx509_lock lock, hx509_cert cert)
+hx509_lock_add_cert(hx509_context context, hx509_lock lock, hx509_cert cert)
 {
-    return hx509_certs_add(lock->certs, cert);
+    return hx509_certs_add(context, lock->certs, cert);
 }
 
 int
-hx509_lock_add_certs(hx509_lock lock, hx509_certs certs)
+hx509_lock_add_certs(hx509_context context, hx509_lock lock, hx509_certs certs)
 {
-    return hx509_certs_merge(lock->certs, certs);
+    return hx509_certs_merge(context, lock->certs, certs);
 }
 
 void
-hx509_lock_reset_certs(hx509_lock lock)
+hx509_lock_reset_certs(hx509_context context, hx509_lock lock)
 {
     hx509_certs certs = lock->certs;
     int ret;
     
-    ret = hx509_certs_init("MEMORY:locks-internal", 0, NULL, &lock->certs);
+    ret = hx509_certs_init(context, 
+			   "MEMORY:locks-internal",
+			   0,
+			   NULL,
+			   &lock->certs);
     if (ret == 0)
 	hx509_certs_free(&certs);
     else

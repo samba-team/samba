@@ -41,7 +41,8 @@ struct mem_data {
 };
 
 static int
-mem_init(hx509_certs certs, void **data, int flags,
+mem_init(hx509_context context,
+	 hx509_certs certs, void **data, int flags,
 	 const char *residue, hx509_lock lock)
 {
     struct mem_data *mem;
@@ -75,7 +76,7 @@ mem_free(hx509_certs certs, void *data)
 }
 
 static int 
-mem_add(hx509_certs certs, void *data, hx509_cert c)
+mem_add(hx509_context context, hx509_certs certs, void *data, hx509_cert c)
 {
     struct mem_data *mem = data;
     hx509_cert *val;
@@ -92,7 +93,10 @@ mem_add(hx509_certs certs, void *data, hx509_cert c)
 }
 
 static int 
-mem_iter_start(hx509_certs certs, void *data, void **cursor)
+mem_iter_start(hx509_context context,
+	       hx509_certs certs,
+	       void *data,
+	       void **cursor)
 {
     unsigned long *iter = malloc(sizeof(*iter));
 
@@ -106,7 +110,8 @@ mem_iter_start(hx509_certs certs, void *data, void **cursor)
 }
 
 static int
-mem_iter(hx509_certs certs,
+mem_iter(hx509_context contexst,
+	 hx509_certs certs,
 	 void *data, 
 	 void *cursor,
 	 hx509_cert *cert)
@@ -125,7 +130,8 @@ mem_iter(hx509_certs certs,
 }
 
 static int
-mem_iter_end(hx509_certs certs,
+mem_iter_end(hx509_context context,
+	     hx509_certs certs,
 	     void *data,
 	     void *cursor)
 {
@@ -146,7 +152,7 @@ static struct hx509_keyset_ops keyset_mem = {
 };
 
 void
-_hx509_ks_mem_register(void)
+_hx509_ks_mem_register(hx509_context context)
 {
-    _hx509_ks_register(&keyset_mem);
+    _hx509_ks_register(context, &keyset_mem);
 }

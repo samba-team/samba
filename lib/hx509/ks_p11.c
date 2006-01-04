@@ -415,12 +415,17 @@ getattr_bn(struct p11_module *p, struct p11_slot *slot,
     return bn;
 }
 
+struct p11_collector {
+    hx509_context context;
+    struct hx509_collector *c;
+};
+
 static int
 collect_private_key(struct p11_module *p, struct p11_slot *slot,
 		    CK_OBJECT_HANDLE object,
 		    void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
-    struct hx509_collector *c = ptr;
+    struct p11_collector *ctx = ptr;
     AlgorithmIdentifier alg;
     hx509_private_key key;
     heim_octet_string localKeyId;
@@ -467,7 +472,7 @@ collect_private_key(struct p11_module *p, struct p11_slot *slot,
 
     _hx509_private_key_assign_rsa(key, rsa);
 
-    ret = _hx509_collector_private_key_add(c,
+    ret = _hx509_collector_private_key_add(ctx->c,
 					   &alg,
 					   key,
 					   NULL,
@@ -486,7 +491,7 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 	     void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
     heim_octet_string localKeyId;
-    struct hx509_collector *c = ptr;
+    struct p11_collector *ctx = ptr;
     hx509_cert cert;
     Certificate t;
     int ret;
@@ -499,7 +504,7 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
     if (ret)
 	return 0;
 
-    ret = hx509_cert_init(&t, &cert);
+    ret = hx509_cert_init(ctx->context, &t, &cert);
     free_Certificate(&t);
     if (ret)
 	return ret;
@@ -508,7 +513,7 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 			      oid_id_pkcs_9_at_localKeyId(),
 			      &localKeyId);
 
-    ret = _hx509_collector_certs_add(c, cert);
+    ret = _hx509_collector_certs_add(ctx->context, ctx->c, cert);
     if (ret) {
 	hx509_cert_free(cert);
 	return ret;
@@ -519,11 +524,13 @@ collect_cert(struct p11_module *p, struct p11_slot *slot,
 
 
 static int
-p11_list_keys(struct p11_module *p,
+p11_list_keys(hx509_context context,
+	      struct p11_module *p,
 	      struct p11_slot *slot, 
 	      hx509_lock lock,
 	      hx509_certs *certs)
 {
+    struct p11_collector ctx;
     CK_OBJECT_CLASS key_class;
     CK_ATTRIBUTE search_data[] = {
 	{CKA_CLASS, &key_class, sizeof(key_class)},
@@ -533,20 +540,21 @@ p11_list_keys(struct p11_module *p,
 	{CKA_VALUE, NULL, 0}
     };
     int ret;
-    struct hx509_collector *c;
 
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    c = _hx509_collector_alloc(lock);
-    if (c == NULL)
+    ctx.context = context;
+
+    ctx.c = _hx509_collector_alloc(context, lock);
+    if (ctx.c == NULL)
 	return ENOMEM;
 
     key_class = CKO_PRIVATE_KEY;
     ret = iterate_entries(p, slot,
 			  search_data, 1,
 			  query_data, 1,
-			  collect_private_key, c);
+			  collect_private_key, &ctx);
     if (ret)
 	goto out;
 
@@ -554,21 +562,22 @@ p11_list_keys(struct p11_module *p,
     ret = iterate_entries(p, slot,
 			  search_data, 1,
 			  query_data, 2,
-			  collect_cert, c);
+			  collect_cert, &ctx);
     if (ret)
 	goto out;
 
-    ret = _hx509_collector_collect(c, &slot->certs);
+    ret = _hx509_collector_collect(context, ctx.c, &slot->certs);
 
 out:
-    _hx509_collector_free(c);
+    _hx509_collector_free(ctx.c);
 
     return ret;
 }
 
 
 static int
-p11_init(hx509_certs certs, void **data, int flags, 
+p11_init(hx509_context context,
+	 hx509_certs certs, void **data, int flags, 
 	 const char *residue, hx509_lock lock)
 {
     CK_C_GetFunctionList getFuncs;
@@ -640,7 +649,7 @@ p11_init(hx509_certs certs, void **data, int flags,
 	free(slot_ids);
 
 	p11_get_session(p, &p->slot);
-	p11_list_keys(p, &p->slot, NULL, &p->slot.certs);
+	p11_list_keys(context, p, &p->slot, NULL, &p->slot.certs);
 	p11_put_session(p, &p->slot);
     }
 
@@ -676,24 +685,27 @@ p11_free(hx509_certs certs, void *data)
 }
 
 static int 
-p11_iter_start(hx509_certs certs, void *data, void **cursor)
+p11_iter_start(hx509_context context,
+	       hx509_certs certs, void *data, void **cursor)
 {
     struct p11_module *p = data;
-    return hx509_certs_start_seq(p->slot.certs, cursor);
+    return hx509_certs_start_seq(context, p->slot.certs, cursor);
 }
 
 static int
-p11_iter(hx509_certs certs, void *data, void *cursor, hx509_cert *cert)
+p11_iter(hx509_context context,
+	 hx509_certs certs, void *data, void *cursor, hx509_cert *cert)
 {
     struct p11_module *p = data;
-    return hx509_certs_next_cert(p->slot.certs, cursor, cert);
+    return hx509_certs_next_cert(context, p->slot.certs, cursor, cert);
 }
 
 static int
-p11_iter_end(hx509_certs certs, void *data, void *cursor)
+p11_iter_end(hx509_context context,
+	     hx509_certs certs, void *data, void *cursor)
 {
     struct p11_module *p = data;
-    return hx509_certs_end_seq(p->slot.certs, cursor);
+    return hx509_certs_end_seq(context, p->slot.certs, cursor);
 }
 
 static struct hx509_keyset_ops keyset_pkcs11 = {
@@ -709,7 +721,7 @@ static struct hx509_keyset_ops keyset_pkcs11 = {
 };
 
 void
-_hx509_ks_pkcs11_register(void)
+_hx509_ks_pkcs11_register(hx509_context context)
 {
-    _hx509_ks_register(&keyset_pkcs11);
+    _hx509_ks_register(context, &keyset_pkcs11);
 }

@@ -36,7 +36,8 @@ RCSID("$Id$");
 
 
 static int
-null_init(hx509_certs certs, void **data, int flags,
+null_init(hx509_context context,
+	  hx509_certs certs, void **data, int flags,
 	  const char *residue, hx509_lock lock)
 {
     *data = NULL;
@@ -51,29 +52,30 @@ null_free(hx509_certs certs, void *data)
 }
 
 static int 
-null_iter_start(hx509_certs certs, void *data, void **cursor)
+null_iter_start(hx509_context context,
+		hx509_certs certs, void *data, void **cursor)
 {
     *cursor = NULL;
     return 0;
 }
 
 static int
-null_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
+null_iter(hx509_context context,
+	  hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 {
     *cert = NULL;
     return ENOENT;
 }
 
 static int
-null_iter_end(hx509_certs certs,
+null_iter_end(hx509_context context,
+	      hx509_certs certs,
 	      void *data,
 	      void *cursor)
 {
     assert(cursor == NULL);
     return 0;
 }
-
-
 
 
 struct hx509_keyset_ops keyset_null = {

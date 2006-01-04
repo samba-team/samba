@@ -33,16 +33,17 @@
 
 /* $Id$ */
 
-typedef struct hx509_verify_ctx_data *hx509_verify_ctx;
-typedef struct hx509_certs_data *hx509_certs;
-typedef struct hx509_cert_data *hx509_cert;
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
-typedef struct hx509_validate_ctx_data *hx509_validate_ctx;
-typedef struct hx509_name_data *hx509_name;
-typedef void * hx509_cursor;
-typedef struct hx509_lock_data *hx509_lock;
-typedef struct hx509_private_key *hx509_private_key;
+typedef struct hx509_cert_data *hx509_cert;
+typedef struct hx509_certs_data *hx509_certs;
+typedef struct hx509_context_data *hx509_context;
 typedef struct hx509_crypto_data *hx509_crypto;
+typedef struct hx509_lock_data *hx509_lock;
+typedef struct hx509_name_data *hx509_name;
+typedef struct hx509_private_key *hx509_private_key;
+typedef struct hx509_validate_ctx_data *hx509_validate_ctx;
+typedef struct hx509_verify_ctx_data *hx509_verify_ctx;
+typedef void * hx509_cursor;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 

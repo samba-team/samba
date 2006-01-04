@@ -299,7 +299,7 @@ struct {
 };
 
 int
-hx509_validate_ctx_init(hx509_validate_ctx *ctx)
+hx509_validate_ctx_init(hx509_context context, hx509_validate_ctx *ctx)
 {
     *ctx = malloc(sizeof(**ctx));
     if (*ctx == NULL)
@@ -330,7 +330,9 @@ hx509_validate_ctx_free(hx509_validate_ctx ctx)
 }
 
 int
-hx509_validate_cert(hx509_validate_ctx ctx, hx509_cert cert)
+hx509_validate_cert(hx509_context context,
+		    hx509_validate_ctx ctx,
+		    hx509_cert cert)
 {
     Certificate *c = _hx509_get_cert(cert);
     TBSCertificate *t = &c->tbsCertificate;

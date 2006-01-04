@@ -36,8 +36,9 @@ RCSID("$Id$");
 #include <dirent.h>
 
 static int
-dir_init(hx509_certs certs, void **data, int flags, 
-	  const char *residue, hx509_lock lock)
+dir_init(hx509_context context,
+	 hx509_certs certs, void **data, int flags, 
+	 const char *residue, hx509_lock lock)
 {
     *data = NULL;
 
@@ -70,7 +71,8 @@ dir_free(hx509_certs certs, void *data)
 
 
 static int 
-dir_iter_start(hx509_certs certs, void *data, void **cursor)
+dir_iter_start(hx509_context context,
+	       hx509_certs certs, void *data, void **cursor)
 {
     DIR *d;
 
@@ -85,7 +87,8 @@ dir_iter_start(hx509_certs certs, void *data, void **cursor)
 }
 
 static int
-dir_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
+dir_iter(hx509_context context,
+	 hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 {
     DIR *d = iter;
     int ret;
@@ -103,7 +106,7 @@ dir_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 	if (asprintf(&fn, "%s/%s", (char *)data, dir->d_name) == -1)
 	    return ENOMEM;
 	
-	ret = _hx509_file_to_cert(fn, cert);
+	ret = _hx509_file_to_cert(context, fn, cert);
 	free(fn);
     } while(ret != 0);
 
@@ -112,9 +115,10 @@ dir_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 
 
 static int
-dir_iter_end(hx509_certs certs,
-	      void *data,
-	      void *cursor)
+dir_iter_end(hx509_context context,
+	     hx509_certs certs,
+	     void *data,
+	     void *cursor)
 {
     DIR *d = cursor;
     closedir(d);
@@ -135,7 +139,7 @@ static struct hx509_keyset_ops keyset_dir = {
 };
 
 void
-_hx509_ks_dir_register(void)
+_hx509_ks_dir_register(hx509_context context)
 {
-    _hx509_ks_register(&keyset_dir);
+    _hx509_ks_register(context, &keyset_dir);
 }

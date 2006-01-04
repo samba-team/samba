@@ -101,10 +101,7 @@ struct hx509_private_key {
     const heim_oid *signature_alg;
     struct {
 	RSA *rsa;
-    } private_key2;
-    /* supported key operations */
-    /* context pointer to backend */
-    /* function pointer to backend */
+    } private_key;
 };
 
 /*
@@ -286,14 +283,14 @@ rsa_create_signature(const struct signature_alg *sig_alg,
     if (indata.length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
-    sig->length = RSA_size(signer->private_key2.rsa);
+    sig->length = RSA_size(signer->private_key.rsa);
     sig->data = malloc(sig->length);
     if (sig->data == NULL)
 	return ENOMEM;
 
     ret = RSA_private_encrypt(indata.length, indata.data, 
 			      sig->data, 
-			      signer->private_key2.rsa,
+			      signer->private_key.rsa,
 			      RSA_PKCS1_PADDING);
     free_octet_string(&indata);
     if (ret <= 0)
@@ -366,9 +363,9 @@ rsa_parse_private_key(const struct signature_alg *sig_alg,
 {
     const unsigned char *p = data;
 
-    private_key->private_key2.rsa = 
+    private_key->private_key.rsa = 
 	d2i_RSAPrivateKey(NULL, &p, len);
-    if (private_key->private_key2.rsa == NULL)
+    if (private_key->private_key.rsa == NULL)
 	return EINVAL;
     private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
 
@@ -820,17 +817,17 @@ _hx509_private_key_private_decrypt(const heim_octet_string *ciphertext,
     cleartext->data = NULL;
     cleartext->length = 0;
 
-    if (p->private_key2.rsa == NULL)
+    if (p->private_key.rsa == NULL)
 	return EINVAL;
 
-    cleartext->length = RSA_size(p->private_key2.rsa);
+    cleartext->length = RSA_size(p->private_key.rsa);
     cleartext->data = malloc(cleartext->length);
     if (cleartext->data == NULL) 
 	return ENOMEM;
 
     ret = RSA_private_decrypt(ciphertext->length, ciphertext->data,
 			      cleartext->data,
-			      p->private_key2.rsa,
+			      p->private_key.rsa,
 			      RSA_PKCS1_PADDING);
     if (ret <= 0) {
 	free_octet_string(cleartext);
@@ -934,9 +931,9 @@ _hx509_new_private_key(hx509_private_key *key)
 int
 _hx509_free_private_key(hx509_private_key *key)
 {
-    if ((*key)->private_key2.rsa)
-	RSA_free((*key)->private_key2.rsa);
-    (*key)->private_key2.rsa = NULL;
+    if ((*key)->private_key.rsa)
+	RSA_free((*key)->private_key.rsa);
+    (*key)->private_key.rsa = NULL;
     free(*key);
     *key = NULL;
     return 0;
@@ -953,9 +950,9 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 
-    if (key->private_key2.rsa) {
-	RSA_free(key->private_key2.rsa);
-	key->private_key2.rsa = NULL;
+    if (key->private_key.rsa) {
+	RSA_free(key->private_key.rsa);
+	key->private_key.rsa = NULL;
     }
 
 
@@ -974,9 +971,9 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 	if (private_key == NULL)
 	    continue;
 
-	key->private_key2.rsa = EVP_PKEY_get1_RSA(private_key);
+	key->private_key.rsa = EVP_PKEY_get1_RSA(private_key);
 	EVP_PKEY_free(private_key);
-	if (key->private_key2.rsa == NULL)
+	if (key->private_key.rsa == NULL)
 	    return EINVAL;
 
 	return 0;
@@ -988,9 +985,9 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 void
 _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
 {
-    if (key->private_key2.rsa)
-	RSA_free(key->private_key2.rsa);
-    key->private_key2.rsa = ptr;
+    if (key->private_key.rsa)
+	RSA_free(key->private_key.rsa);
+    key->private_key.rsa = ptr;
 }
 
 
@@ -1025,7 +1022,8 @@ find_cipher(const heim_oid *oid)
 }
 
 int
-hx509_crypto_init(const char *provider,
+hx509_crypto_init(hx509_context context,
+		  const char *provider,
 		  const heim_oid *enctype,
 		  hx509_crypto *crypto)
 {
@@ -1318,14 +1316,16 @@ hx509_crypto_decrypt(hx509_crypto crypto,
     return ret;
 }
 
-typedef int (*PBE_string2key_func)(const char *,
+typedef int (*PBE_string2key_func)(hx509_context,
+				   const char *,
 				   const heim_octet_string *,
 				   hx509_crypto *, heim_octet_string *, 
 				   heim_octet_string *,
 				   const heim_oid *, const EVP_MD *);
 
 static int
-PBE_string2key(const char *password,
+PBE_string2key(hx509_context context,
+	       const char *password,
 	       const heim_octet_string *parameters,
 	       hx509_crypto *crypto, 
 	       heim_octet_string *key, heim_octet_string *iv,
@@ -1370,7 +1370,7 @@ PBE_string2key(const char *password,
 	goto out;
     }
 
-    ret = hx509_crypto_init(NULL, enc_oid, &c);
+    ret = hx509_crypto_init(context, NULL, enc_oid, &c);
     if (ret)
 	goto out;
 
@@ -1424,7 +1424,8 @@ find_string2key(const heim_oid *oid,
 
 
 int
-_hx509_pbe_decrypt(hx509_lock lock,
+_hx509_pbe_decrypt(hx509_context context,
+		   hx509_lock lock,
 		   const AlgorithmIdentifier *ai,
 		   const heim_octet_string *econtent,
 		   heim_octet_string *content)
@@ -1464,7 +1465,7 @@ _hx509_pbe_decrypt(hx509_lock lock,
     for (i = 0; i < pw->len; i++) {
 	hx509_crypto crypto;
 
-	ret = (*s2k)(pw->val[i], ai->parameters, &crypto, 
+	ret = (*s2k)(context, pw->val[i], ai->parameters, &crypto, 
 		     &key, &iv, enc_oid, md);
 	if (ret) {
 	    goto out;
@@ -1503,10 +1504,10 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
     size_t size;
     int ret;
 
-    if (private_key->private_key2.rsa == NULL)
+    if (private_key->private_key.rsa == NULL)
 	return 0;
 
-    rsa = private_key->private_key2.rsa;
+    rsa = private_key->private_key.rsa;
     if (rsa->d == NULL || rsa->p == NULL || rsa->q == NULL)
 	return 0;
 
@@ -1529,11 +1530,12 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
 
     free_RSAPublicKey(&pk);
 
-    rsa->d = BN_dup(private_key->private_key2.rsa->d);
-    rsa->p = BN_dup(private_key->private_key2.rsa->p);
-    rsa->q = BN_dup(private_key->private_key2.rsa->q);
+    rsa->d = BN_dup(private_key->private_key.rsa->d);
+    rsa->p = BN_dup(private_key->private_key.rsa->p);
+    rsa->q = BN_dup(private_key->private_key.rsa->q);
 
-    if (rsa->n == NULL || rsa->e == NULL || rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL) {
+    if (rsa->n == NULL || rsa->e == NULL || 
+	rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL) {
 	RSA_free(rsa);
 	return 0;
     }

@@ -121,13 +121,15 @@ struct hx509_query_data {
 struct hx509_keyset_ops {
     char *name;
     int flags;
-    int (*init)(hx509_certs, void **, int, const char *, hx509_lock);
+    int (*init)(hx509_context, hx509_certs, void **, 
+		int, const char *, hx509_lock);
     int (*free)(hx509_certs, void *);
-    int (*add)(hx509_certs, void *, hx509_cert);
-    int (*query)(hx509_certs, void *, const hx509_query *, hx509_cert *);
-    int (*iter_start)(hx509_certs, void *, void **);
-    int (*iter)(hx509_certs, void *, void *, hx509_cert *);
-    int (*iter_end)(hx509_certs, void *, void *);
+    int (*add)(hx509_context, hx509_certs, void *, hx509_cert);
+    int (*query)(hx509_context, hx509_certs, void *, 
+		 const hx509_query *, hx509_cert *);
+    int (*iter_start)(hx509_context, hx509_certs, void *, void **);
+    int (*iter)(hx509_context, hx509_certs, void *, void *, hx509_cert *);
+    int (*iter_end)(hx509_context, hx509_certs, void *, void *);
 };
 
 struct _hx509_password {
@@ -136,3 +138,9 @@ struct _hx509_password {
 };
 
 extern hx509_lock _hx509_empty_lock;
+
+struct hx509_context_data {
+    struct hx509_keyset_ops **ks_ops;
+    int ks_num_ops;
+};
+

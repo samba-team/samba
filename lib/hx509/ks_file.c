@@ -123,7 +123,7 @@ parse_file_der(const char *fn, Certificate *t)
 }
 
 int
-_hx509_file_to_cert(const char *certfn, hx509_cert *cert)
+_hx509_file_to_cert(hx509_context context, const char *certfn, hx509_cert *cert)
 {
     Certificate t;
     int ret;
@@ -134,7 +134,7 @@ _hx509_file_to_cert(const char *certfn, hx509_cert *cert)
     if (ret)
 	return ret;
     
-    ret = hx509_cert_init(&t, cert);
+    ret = hx509_cert_init(context, &t, cert);
     free_Certificate(&t);
 
     return ret;
@@ -142,7 +142,8 @@ _hx509_file_to_cert(const char *certfn, hx509_cert *cert)
 
 
 static int
-file_init(hx509_certs certs, void **data, int flags, 
+file_init(hx509_context context,
+	  hx509_certs certs, void **data, int flags, 
 	  const char *residue, hx509_lock lock)
 {
     char *certfn = NULL, *keyfn, *friendlyname = NULL;
@@ -156,7 +157,7 @@ file_init(hx509_certs certs, void **data, int flags,
     if (lock == NULL)
 	lock = _hx509_empty_lock;
 
-    c = _hx509_collector_alloc(lock);
+    c = _hx509_collector_alloc(context, lock);
     if (c == NULL)
 	return ENOMEM;
 
@@ -177,11 +178,11 @@ file_init(hx509_certs certs, void **data, int flags,
 	    *friendlyname++ = '\0';
     }
 
-    ret = _hx509_file_to_cert(certfn, &cert);
+    ret = _hx509_file_to_cert(context, certfn, &cert);
     if (ret)
 	goto out;
 
-    _hx509_collector_certs_add(c, cert);
+    _hx509_collector_certs_add(context, c, cert);
 
     if (keyfn) {
 	ret = _hx509_cert_assign_private_key_file(cert, lock, keyfn);
@@ -194,7 +195,7 @@ file_init(hx509_certs certs, void **data, int flags,
 	    goto out;
     }
 
-    ret = _hx509_collector_collect(c, &f->certs);
+    ret = _hx509_collector_collect(context, c, &f->certs);
     if (ret == 0)
 	*data = f;
 out:
@@ -223,26 +224,29 @@ file_free(hx509_certs certs, void *data)
 
 
 static int 
-file_iter_start(hx509_certs certs, void *data, void **cursor)
+file_iter_start(hx509_context context,
+		hx509_certs certs, void *data, void **cursor)
 {
     struct ks_file *f = data;
-    return hx509_certs_start_seq(f->certs, cursor);
+    return hx509_certs_start_seq(context, f->certs, cursor);
 }
 
 static int
-file_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
+file_iter(hx509_context context,
+	  hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 {
     struct ks_file *f = data;
-    return hx509_certs_next_cert(f->certs, iter, cert);
+    return hx509_certs_next_cert(context, f->certs, iter, cert);
 }
 
 static int
-file_iter_end(hx509_certs certs,
+file_iter_end(hx509_context context,
+	      hx509_certs certs,
 	      void *data,
 	      void *cursor)
 {
     struct ks_file *f = data;
-    return hx509_certs_end_seq(f->certs, cursor);
+    return hx509_certs_end_seq(context, f->certs, cursor);
 }
 
 
@@ -259,7 +263,7 @@ static struct hx509_keyset_ops keyset_file = {
 };
 
 void
-_hx509_ks_file_register(void)
+_hx509_ks_file_register(hx509_context context)
 {
-    _hx509_ks_register(&keyset_file);
+    _hx509_ks_register(context, &keyset_file);
 }

@@ -53,7 +53,7 @@ struct hx509_collector {
 
 
 struct hx509_collector *
-_hx509_collector_alloc(hx509_lock lock)
+_hx509_collector_alloc(hx509_context context, hx509_lock lock)
 {
     struct hx509_collector *c;
 
@@ -62,10 +62,10 @@ _hx509_collector_alloc(hx509_lock lock)
 	return NULL;
     c->lock = lock;
 
-    hx509_certs_init("MEMORY:dummy", 0, NULL, &c->unenvelop_certs);
+    hx509_certs_init(context, "MEMORY:dummy", 0, NULL, &c->unenvelop_certs);
     c->val.data = NULL;
     c->val.len = 0;
-    hx509_certs_init("MEMORY:collector-tmp-store", 0, NULL, &c->certs);
+    hx509_certs_init(context, "MEMORY:collector-tmp-store", 0, NULL, &c->certs);
 
     return c;
 }
@@ -78,9 +78,11 @@ _hx509_collector_get_lock(struct hx509_collector *c)
 
 
 int
-_hx509_collector_certs_add(struct hx509_collector *c, hx509_cert cert)
+_hx509_collector_certs_add(hx509_context context,
+			   struct hx509_collector *c,
+			   hx509_cert cert)
 {
-    return hx509_certs_add(c->certs, cert);
+    return hx509_certs_add(context, c->certs, cert);
 }
 
 static void
@@ -142,7 +144,9 @@ out:
 }
 
 static int
-match_localkeyid(struct private_key *value, hx509_certs certs)
+match_localkeyid(hx509_context context,
+		 struct private_key *value,
+		 hx509_certs certs)
 {
     hx509_cert cert;
     hx509_query q;
@@ -153,21 +157,21 @@ match_localkeyid(struct private_key *value, hx509_certs certs)
     
     q.local_key_id = &value->localKeyId;
     
-    ret = _hx509_certs_find(certs, &q, &cert);
+    ret = _hx509_certs_find(context, certs, &q, &cert);
     if (ret == 0) {
 	
 	if (value->private_key) {
 	    _hx509_cert_assign_key(cert, value->private_key);
 	    value->private_key = NULL;
 	}
-	hx509_certs_add(certs, cert);
+	hx509_certs_add(context, certs, cert);
 	hx509_cert_free(cert);
     }
     return ret;
 }
 
 static int
-match_keys(struct private_key *value, hx509_certs certs)
+match_keys(hx509_context context, struct private_key *value, hx509_certs certs)
 {
     hx509_cursor cursor;
     hx509_cert c;
@@ -176,13 +180,13 @@ match_keys(struct private_key *value, hx509_certs certs)
     if (value->private_key == NULL)
 	return EINVAL;
 
-    ret = hx509_certs_start_seq(certs, &cursor);
+    ret = hx509_certs_start_seq(context, certs, &cursor);
     if (ret)
 	return ret;
 
     c = NULL;
     while (1) {
-	ret = hx509_certs_next_cert(certs, cursor, &c);
+	ret = hx509_certs_next_cert(context, certs, cursor, &c);
 	if (ret)
 	    break;
 	if (c == NULL)
@@ -203,34 +207,36 @@ match_keys(struct private_key *value, hx509_certs certs)
 	hx509_cert_free(c);
     }
 
-    hx509_certs_end_seq(certs, cursor);
+    hx509_certs_end_seq(context, certs, cursor);
 
     return found;
 }
 
 int
-_hx509_collector_collect(struct hx509_collector *c, hx509_certs *ret_certs)
+_hx509_collector_collect(hx509_context context, 
+			 struct hx509_collector *c,
+			 hx509_certs *ret_certs)
 {
     hx509_certs certs;
     int ret, i;
 
     *ret_certs = NULL;
 
-    ret = hx509_certs_init("MEMORY:collector-store", 0, NULL, &certs);
+    ret = hx509_certs_init(context, "MEMORY:collector-store", 0, NULL, &certs);
     if (ret)
 	return ret;
 
-    ret = hx509_certs_merge(certs, c->certs);
+    ret = hx509_certs_merge(context, certs, c->certs);
     if (ret) {
 	hx509_certs_free(&certs);
 	return ret;
     }
 
     for (i = 0; i < c->val.len; i++) {
-	ret = match_localkeyid(c->val.data[i], certs);
+	ret = match_localkeyid(context, c->val.data[i], certs);
 	if (ret == 0)
 	    continue;
-	ret = match_keys(c->val.data[i], certs);
+	ret = match_keys(context, c->val.data[i], certs);
 	if (ret == 0)
 	    continue;
     }

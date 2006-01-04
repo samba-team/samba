@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,7 +66,7 @@ fill_CMSIdentifier(const hx509_cert cert, CMSIdentifier *id)
     int ret;
 
     id->element = choice_CMSIdentifier_issuerAndSerialNumber;
-    ret = hx509_cert_issuer(cert, &name);
+    ret = hx509_cert_get_issuer(cert, &name);
     if (ret)
 	return ret;
     ret = copy_Name(&name->der_name,
@@ -75,13 +75,14 @@ fill_CMSIdentifier(const hx509_cert cert, CMSIdentifier *id)
     if (ret)
 	return ret;
 
-    ret = hx509_cert_serialnumber(cert,
+    ret = hx509_cert_get_serialnumber(cert,
 				  &id->u.issuerAndSerialNumber.serialNumber);
     return ret;
 }
 
 static int
-find_CMSIdentifier(CMSIdentifier *client,
+find_CMSIdentifier(hx509_context context,
+		   CMSIdentifier *client,
 		   hx509_certs certs,
 		   hx509_cert *signer_cert,
 		   int match)
@@ -112,7 +113,7 @@ find_CMSIdentifier(CMSIdentifier *client,
 
     q.match |= match;
 
-    ret = _hx509_certs_find(certs, &q, &cert);
+    ret = _hx509_certs_find(context, certs, &q, &cert);
     if (ret)
 	return ret;
 
@@ -122,7 +123,8 @@ find_CMSIdentifier(CMSIdentifier *client,
 }
 
 int
-hx509_cms_unenvelope(hx509_certs certs,
+hx509_cms_unenvelope(hx509_context context,
+		     hx509_certs certs,
 		     const void *data,
 		     size_t length,
 		     heim_oid *contentType,
@@ -165,7 +167,7 @@ hx509_cms_unenvelope(hx509_certs certs,
 	 * 	ki->keyEncryptionAlgorithm.algorithm);
 	 */
 
-	ret = find_CMSIdentifier(&ri->rid, certs, &cert, 
+	ret = find_CMSIdentifier(context, &ri->rid, certs, &cert, 
 				 HX509_QUERY_PRIVATE_KEY|
 				 HX509_QUERY_KU_ENCIPHERMENT);
 	if (ret) {
@@ -204,7 +206,7 @@ hx509_cms_unenvelope(hx509_certs certs,
 	hx509_crypto crypto;
 	heim_octet_string *ivec = NULL, ivec_data;
 
-	ret = hx509_crypto_init(NULL, &ai->algorithm, &crypto);
+	ret = hx509_crypto_init(context, NULL, &ai->algorithm, &crypto);
 	if (ret)
 	    goto out;
 	
@@ -238,7 +240,8 @@ hx509_cms_unenvelope(hx509_certs certs,
 }
 
 int
-hx509_cms_envelope_1(hx509_cert cert,
+hx509_cms_envelope_1(hx509_context context,
+		     hx509_cert cert,
 		     const void *data,
 		     size_t length,
 		     const heim_oid *encryption_type,
@@ -265,7 +268,7 @@ hx509_cms_envelope_1(hx509_cert cert,
     if (ret)
 	goto out;
 
-    ret = hx509_crypto_init(NULL, encryption_type, &crypto);
+    ret = hx509_crypto_init(context, NULL, encryption_type, &crypto);
     if (ret)
 	goto out;
 
@@ -354,7 +357,7 @@ hx509_cms_envelope_1(hx509_cert cert,
 }
 
 static int
-any_to_certs(const SignedData *sd, hx509_certs certs)
+any_to_certs(hx509_context context, const SignedData *sd, hx509_certs certs)
 {
     int ret, i;
     
@@ -372,11 +375,11 @@ any_to_certs(const SignedData *sd, hx509_certs certs)
 	if (ret)
 	    return ret;
 
-	ret = hx509_cert_init(&cert, &c);
+	ret = hx509_cert_init(context, &cert, &c);
 	free_Certificate(&cert);
 	if (ret)
 	    return ret;
-	ret = hx509_certs_add(certs, c);
+	ret = hx509_certs_add(context, certs, c);
 	if (ret) {
 	    hx509_cert_free(c);
 	    return ret;
@@ -397,7 +400,8 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
 }
 
 int
-hx509_cms_verify_signed(hx509_verify_ctx ctx,
+hx509_cms_verify_signed(hx509_context context,
+			hx509_verify_ctx ctx,
 			const void *data,
 			size_t length,
 			hx509_certs store,
@@ -430,23 +434,25 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	goto out;
     }
 
-    ret = hx509_certs_init("MEMORY:cms-cert-buffer", 0, NULL, &certs);
+    ret = hx509_certs_init(context, "MEMORY:cms-cert-buffer",
+			   0, NULL, &certs);
     if (ret)
 	goto out;
 
-    ret = hx509_certs_init("MEMORY:cms-signer-certs", 0, NULL, signer_certs);
+    ret = hx509_certs_init(context, "MEMORY:cms-signer-certs", 
+			   0, NULL, signer_certs);
     if (ret)
 	goto out;
 
     /* XXX Check CMS version */
 
-    ret = any_to_certs(&sd, certs);
+    ret = any_to_certs(context, &sd, certs);
     if (ret) {
 	goto out;
     }
 
     if (store) {
-	ret = hx509_certs_merge(certs, store);
+	ret = hx509_certs_merge(context, certs, store);
 	if (ret)
 	    goto out;
     }
@@ -465,7 +471,7 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	    continue;
 	}
 
-	ret = find_CMSIdentifier(&signer_info->sid, certs, &cert,
+	ret = find_CMSIdentifier(context, &signer_info->sid, certs, &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
 	if (ret)
 	    continue;
@@ -558,7 +564,8 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	    free_oid(&decode_oid);
 	
 	if (ret == 0)
-	    ret = hx509_verify_signature(cert,
+	    ret = hx509_verify_signature(context,
+					 cert,
 					 &signer_info->signatureAlgorithm,
 					 signed_data,
 					 &signer_info->signature);
@@ -572,13 +579,13 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	    continue;
 	}
 
-	ret = hx509_verify_path(ctx, cert, certs);
+	ret = hx509_verify_path(context, ctx, cert, certs);
 	if (ret) {
 	    hx509_cert_free(cert);
 	    continue;
 	}
 
-	ret = hx509_certs_add(*signer_certs, hx509_cert_ref(cert));
+	ret = hx509_certs_add(context, *signer_certs, hx509_cert_ref(cert));
 	if (ret) {
 	    hx509_cert_free(cert);
 	    continue;
@@ -683,7 +690,8 @@ add_one_attribute(Attribute **attr,
 	      
 
 int
-hx509_cms_create_signed_1(const heim_oid *eContentType,
+hx509_cms_create_signed_1(hx509_context context,
+			  const heim_oid *eContentType,
 			  const void *data, size_t length,
 			  const AlgorithmIdentifier *digest_alg,
 			  hx509_cert cert,
@@ -882,7 +890,8 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 }
 
 int
-hx509_cms_decrypt_encrypted(hx509_lock lock,
+hx509_cms_decrypt_encrypted(hx509_context context,
+			    hx509_lock lock,
 			    const void *data,
 			    size_t length,
 			    heim_oid *contentType,
@@ -915,7 +924,8 @@ hx509_cms_decrypt_encrypted(hx509_lock lock,
 	goto out;
     }
 
-    ret = _hx509_pbe_decrypt(lock,
+    ret = _hx509_pbe_decrypt(context,
+			     lock,
 			     ai,
 			     ed.encryptedContentInfo.encryptedContent,
 			     &cont);

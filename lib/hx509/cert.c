@@ -89,6 +89,39 @@ _hx509_abort(const char *fmt, ...)
  *
  */
 
+int
+hx509_context_init(hx509_context *context)
+{
+    *context = calloc(1, sizeof(**context));
+    if (*context == NULL)
+	return ENOMEM;
+
+    _hx509_ks_mem_register(*context);
+    _hx509_ks_file_register(*context);
+    _hx509_ks_pkcs12_register(*context);
+    _hx509_ks_pkcs11_register(*context);
+    _hx509_ks_dir_register(*context);
+
+    return 0;
+}
+
+void
+hx509_context_free(hx509_context *context)
+{
+    if ((*context)->ks_ops) {
+	free((*context)->ks_ops);
+	(*context)->ks_ops = NULL;
+    }
+    (*context)->ks_num_ops = 0;
+    free(*context);
+    *context = NULL;
+}
+
+
+/*
+ *
+ */
+
 Certificate *
 _hx509_get_cert(hx509_cert cert)
 {
@@ -102,7 +135,7 @@ _hx509_cert_get_version(const Certificate *t)
 }
 
 int
-hx509_cert_init(const Certificate *c, hx509_cert *cert)
+hx509_cert_init(hx509_context context, const Certificate *c, hx509_cert *cert)
 {
     int ret;
 
@@ -196,7 +229,7 @@ hx509_cert_ref(hx509_cert cert)
 }
 
 int
-hx509_verify_init_ctx(hx509_verify_ctx *ctx)
+hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
 {
     hx509_verify_ctx c;
 
@@ -506,7 +539,9 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
 }
 
 static int
-certificate_is_anchor(hx509_verify_ctx ctx, const hx509_cert cert)
+certificate_is_anchor(hx509_context context,
+		      hx509_verify_ctx ctx,
+		      const hx509_cert cert)
 {
     hx509_query q;
     hx509_cert c;
@@ -517,7 +552,7 @@ certificate_is_anchor(hx509_verify_ctx ctx, const hx509_cert cert)
     q.match = HX509_QUERY_MATCH_CERTIFICATE;
     q.certificate = _hx509_get_cert(cert);
 
-    ret = _hx509_certs_find(ctx->trust_anchors, &q, &c);
+    ret = _hx509_certs_find(context, ctx->trust_anchors, &q, &c);
     if (ret == 0)
 	hx509_cert_free(c);
     return ret == 0;
@@ -530,7 +565,8 @@ certificate_is_self_signed(const Certificate *cert)
 }
 
 static hx509_cert
-find_parent(hx509_verify_ctx ctx,
+find_parent(hx509_context context,
+	    hx509_verify_ctx ctx,
 	    hx509_path *path,
 	    hx509_certs chain, 
 	    hx509_cert current)
@@ -548,10 +584,10 @@ find_parent(hx509_verify_ctx ctx,
     q.subject = _hx509_get_cert(current);
     q.path = path;
 
-    ret = _hx509_certs_find(chain, &q, &c);
+    ret = _hx509_certs_find(context, chain, &q, &c);
     if (ret == 0)
 	return c;
-    ret = _hx509_certs_find(ctx->trust_anchors, &q, &c);
+    ret = _hx509_certs_find(context, ctx->trust_anchors, &q, &c);
     if (ret == 0)
 	return c;
     return NULL;
@@ -597,7 +633,8 @@ path_free(hx509_path *path)
  */
 
 static int
-calculate_path(hx509_verify_ctx ctx,
+calculate_path(hx509_context context,
+	       hx509_verify_ctx ctx,
 	       hx509_cert cert,
 	       hx509_certs chain,
 	       hx509_path *path)
@@ -611,9 +648,9 @@ calculate_path(hx509_verify_ctx ctx,
 
     current = hx509_cert_ref(cert);
 
-    while (!certificate_is_anchor(ctx, current)) {
+    while (!certificate_is_anchor(context, ctx, current)) {
 
-	parent = find_parent(ctx, path, chain, current);
+	parent = find_parent(context, ctx, path, chain, current);
 	hx509_cert_free(current);
 	if (parent == NULL)
 	    return HX509_ISSUER_NOT_FOUND;
@@ -675,19 +712,19 @@ hx509_cert_cmp(hx509_cert p, hx509_cert q)
 }
 
 int
-hx509_cert_issuer(hx509_cert p, hx509_name *name)
+hx509_cert_get_issuer(hx509_cert p, hx509_name *name)
 {
     return _hx509_name_from_Name(&p->data->tbsCertificate.issuer, name);
 }
 
 int
-hx509_cert_subject(hx509_cert p, hx509_name *name)
+hx509_cert_get_subject(hx509_cert p, hx509_name *name)
 {
     return _hx509_name_from_Name(&p->data->tbsCertificate.subject, name);
 }
 
 int
-hx509_cert_serialnumber(hx509_cert p, heim_integer *i)
+hx509_cert_get_serialnumber(hx509_cert p, heim_integer *i)
 {
     return copy_heim_integer(&p->data->tbsCertificate.serialNumber, i);
 }
@@ -1037,7 +1074,10 @@ free_name_constraints(hx509_name_constraints *nc)
 }
 
 int
-hx509_verify_path(hx509_verify_ctx ctx, hx509_cert cert, hx509_certs chain)
+hx509_verify_path(hx509_context context,
+		  hx509_verify_ctx ctx,
+		  hx509_cert cert,
+		  hx509_certs chain)
 {
     hx509_name_constraints nc;
     hx509_path path;
@@ -1060,7 +1100,7 @@ hx509_verify_path(hx509_verify_ctx ctx, hx509_cert cert, hx509_certs chain)
      * Calculate the path from the certificate user presented to the
      * to an anchor.
      */
-    ret = calculate_path(ctx, cert, chain, &path);
+    ret = calculate_path(context, ctx, cert, chain, &path);
     if (ret)
 	goto out;
 
@@ -1168,7 +1208,8 @@ hx509_verify_path(hx509_verify_ctx ctx, hx509_cert cert, hx509_certs chain)
 }
 
 int
-hx509_verify_signature(const hx509_cert signer,
+hx509_verify_signature(hx509_context context,
+		       const hx509_cert signer,
 		       const AlgorithmIdentifier *alg,
 		       const heim_octet_string *data,
 		       const heim_octet_string *sig)
