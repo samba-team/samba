@@ -970,14 +970,11 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 	fclose(f);
 	if (private_key == NULL)
 	    continue;
-	if (private_key->type != EVP_PKEY_RSA) {
-	    EVP_PKEY_free(private_key);
-	    return EINVAL;
-	}
 
-	key->private_key2.rsa = private_key->pkey.rsa;
-	RSA_up_ref(key->private_key2.rsa);
+	key->private_key2.rsa = EVP_PKEY_get1_RSA(private_key);
 	EVP_PKEY_free(private_key);
+	if (key->private_key2.rsa == NULL)
+	    return EINVAL;
 
 	return 0;
     }
