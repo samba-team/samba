@@ -664,7 +664,7 @@ p11_release_module(struct p11_module *p)
 	dlclose(p->dl_handle);
     if (p->slot.name)
 	free(p->slot.name);
-    memset(p, 0, sizeof(*P));
+    memset(p, 0, sizeof(*p));
     free(p);
 }
 
