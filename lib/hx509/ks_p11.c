@@ -46,7 +46,7 @@ struct p11_module {
     CK_FUNCTION_LIST_PTR funcs;
     CK_ULONG num_slots;
     CK_ULONG selected_slot;
-    int refcount;
+    unsigned int refcount;
     /* slot info */
     struct p11_slot {
 	int flags;
@@ -457,6 +457,8 @@ collect_private_key(struct p11_module *p, struct p11_slot *slot,
     p11rsa->private_key = object;
     
     p->refcount++;
+    if (p->refcount == 0)
+	_hx509_abort("pkcs11 refcount to high");
 
     RSA_set_method(rsa, &rsa_pkcs1_method);
     ret = RSA_set_app_data(rsa, p11rsa);
@@ -580,6 +582,7 @@ p11_init(hx509_certs certs, void **data, int flags,
 	return ENOMEM;
 
     p->selected_slot = 0;
+    p->refcount = 1;
 
     p->dl_handle = dlopen(residue, RTLD_NOW);
     if (p->dl_handle == NULL) {
@@ -641,29 +644,27 @@ p11_init(hx509_certs certs, void **data, int flags,
 	p11_put_session(p, &p->slot);
     }
 
-    p->refcount += 1;
     *data = p;
 
     return 0;
  out:    
-    if (p->dl_handle)
-	dlclose(p->dl_handle);
-    free(p);
+    p11_release_module(p);
     return ret;
 }
 
 static void
 p11_release_module(struct p11_module *p)
 {
-    if (p->refcount <= 0)
+    if (p->refcount == 0)
 	_hx509_abort("pkcs11 refcount to low");
     if (--p->refcount > 0)
 	return;
-    if (p->refcount <= 0)
-	_hx509_abort("pkcs11 refcount to low");
 
     if (p->dl_handle)
 	dlclose(p->dl_handle);
+    if (p->slot.name)
+	free(p->slot.name);
+    memset(p, 0, sizeof(*P));
     free(p);
 }
 
