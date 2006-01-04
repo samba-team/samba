@@ -36,6 +36,7 @@ RCSID("$Id$");
 #include <dlfcn.h>
 
 #include <openssl/ui.h>
+#include <openssl/rsa.h>
 
 #include "pkcs11u.h"
 #include "pkcs11.h"
@@ -245,24 +246,61 @@ print_id(void *ptr, CK_ATTRIBUTE *query, int num_query)
 }
 
 static int
+collect_private_key(void *ptr, CK_ATTRIBUTE *query, int num_query)
+{
+    struct hx509_collector *c = ptr;
+    AlgorithmIdentifier alg;
+    hx509_private_key key;
+    heim_octet_string localKeyId;
+    int ret;
+
+    memset(&alg, 0, sizeof(alg));
+
+    localKeyId.data = query[0].pValue;
+    localKeyId.length = query[0].ulValueLen;
+
+    ret = _hx509_new_private_key(&key);
+    if (ret)
+	return ret;
+
+    ret = _hx509_collector_private_key_add(c,
+					   &alg,
+					   key,
+					   NULL,
+					   &localKeyId);
+
+    if (ret) {
+	_hx509_free_private_key(&key);
+	return ret;
+    }
+    return 0;
+}
+
+static int
 collect_cert(void *ptr, CK_ATTRIBUTE *query, int num_query)
 {
+    heim_octet_string localKeyId;
     struct hx509_collector *c = ptr;
     hx509_cert cert;
     Certificate t;
     int ret;
 
+    localKeyId.data = query[0].pValue;
+    localKeyId.length = query[0].ulValueLen;
+
     ret = decode_Certificate(query[1].pValue, query[1].ulValueLen,
 			     &t, NULL);
-    if (ret) {
-	printf("decode_Certificate failed with %d\n", ret);
+    if (ret)
 	return 0;
-    }
 
     ret = hx509_cert_init(&t, &cert);
     free_Certificate(&t);
     if (ret)
 	return ret;
+
+    _hx509_set_cert_attribute(cert,
+			      oid_id_pkcs_9_at_localKeyId(),
+			      &localKeyId);
 
     ret = _hx509_collector_certs_add(c, cert);
     if (ret) {
@@ -303,7 +341,7 @@ p11_list_keys(struct p11_module *p,
     ret = iterate_entries(p, slot,
 			  search_data, 1,
 			  query_data, 1,
-			  print_id, c);
+			  collect_private_key, c);
     if (ret) {
 	return ret;
     }
