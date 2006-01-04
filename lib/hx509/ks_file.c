@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,8 +34,12 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
+struct ks_file {
+    hx509_certs certs;
+};
+
 static int
-parse_certificate(const char *fn, int use_pem, Certificate *t)
+parse_file_pem(const char *fn, Certificate *t)
 {
     char buf[1024];
     void *data = NULL;
@@ -49,50 +53,42 @@ parse_certificate(const char *fn, int use_pem, Certificate *t)
     if ((f = fopen(fn, "r")) == NULL)
 	return ENOENT;
 
-    if (use_pem) {
-	while (fgets(buf, sizeof(buf), f) != NULL) {
-	    char *p;
+    while (fgets(buf, sizeof(buf), f) != NULL) {
+	char *p;
 
-	    i = strcspn(buf, "\n");
-	    if (buf[i] == '\n') {
-		buf[i] = '\0';
-		if (i > 0)
-		    i--;
-	    }
-	    if (buf[i] == '\r') {
-		buf[i] = '\0';
-		if (i > 0)
-		    i--;
-	    }
+	i = strcspn(buf, "\n");
+	if (buf[i] == '\n') {
+	    buf[i] = '\0';
+	    if (i > 0)
+		i--;
+	}
+	if (buf[i] == '\r') {
+	    buf[i] = '\0';
+	    if (i > 0)
+		i--;
+	}
 	    
-	    if (i == 26
-		&& strcmp("-----BEGIN CERTIFICATE-----", buf) == 0)
-	    {
-		in_cert = 1;
-		continue;
-	    } else if (i == 24 &&
-		       strcmp("-----END CERTIFICATE-----", buf) == 0)
-	    {
-		in_cert = 0;
-		continue;
-	    }
-	    if (in_cert == 0)
-		continue;
+	if (i == 26
+	    && strcmp("-----BEGIN CERTIFICATE-----", buf) == 0)
+	{
+	    in_cert = 1;
+	    continue;
+	} else if (i == 24 &&
+		   strcmp("-----END CERTIFICATE-----", buf) == 0)
+	{
+	    in_cert = 0;
+	    continue;
+	}
+	if (in_cert == 0)
+	    continue;
 
-	    p = malloc(i);
-	    i = base64_decode(buf, p);
+	p = malloc(i);
+	i = base64_decode(buf, p);
 	    
-	    data = erealloc(data, len + i);
-	    memcpy(((char *)data) + len, p, i);
-	    free(p);
-	    len += i;
-	}
-    } else {
-	while((i = fread(buf, 1, sizeof(buf), f)) > 0) {
-	    data = erealloc(data, len + i);
-	    memcpy(((char *)data) + len, buf, i);
-	    len += i;
-	}
+	data = erealloc(data, len + i);
+	memcpy(((char *)data) + len, p, i);
+	free(p);
+	len += i;
     }
 
     fclose(f);
@@ -110,18 +106,33 @@ parse_certificate(const char *fn, int use_pem, Certificate *t)
     return ret;
 }
 
+static int
+parse_file_der(const char *fn, Certificate *t)
+{
+    size_t length, size;
+    void *data;
+    int ret;
+
+    ret = _hx509_map_file(fn, &data, &length);
+    if (ret)
+	return ret;
+
+    ret = decode_Certificate(data, length, t, &size);
+    _hx509_unmap_file(data, length);
+    return ret;
+}
+
 int
 _hx509_file_to_cert(const char *certfn, hx509_cert *cert)
 {
     Certificate t;
     int ret;
     
-    ret = parse_certificate(certfn, 1, &t);
-    if (ret) {
-	ret = parse_certificate(certfn, 0, &t);
-	if (ret)
-	    return ret;
-    }
+    ret = parse_file_pem(certfn, &t);
+    if (ret)
+	ret = parse_file_der(certfn, &t);
+    if (ret)
+	return ret;
     
     ret = hx509_cert_init(&t, cert);
     free_Certificate(&t);
@@ -134,11 +145,26 @@ static int
 file_init(hx509_certs certs, void **data, int flags, 
 	  const char *residue, hx509_lock lock)
 {
-    char *certfn, *keyfn, *friendlyname = NULL;
+    char *certfn = NULL, *keyfn, *friendlyname = NULL;
     hx509_cert cert;
     int ret;
+    struct ks_file *f;
+    struct hx509_collector *c;
 
     *data = NULL;
+
+    if (lock == NULL)
+	lock = _hx509_empty_lock;
+
+    c = _hx509_collector_alloc(lock);
+    if (c == NULL)
+	return ENOMEM;
+
+    f = calloc(1, sizeof(*f));
+    if (f == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
 
     certfn = strdup(residue);
     if (certfn == NULL)
@@ -152,39 +178,45 @@ file_init(hx509_certs certs, void **data, int flags,
     }
 
     ret = _hx509_file_to_cert(certfn, &cert);
-    if (ret) {
-	free(certfn);
-	return ret;
-    }
+    if (ret)
+	goto out;
+
+    _hx509_collector_certs_add(c, cert);
 
     if (keyfn) {
-	int ret;
 	ret = _hx509_cert_assign_private_key_file(cert, lock, keyfn);
-	if (ret) {
-	    hx509_cert_free(cert);
-	    free(certfn);
-	    return ret;
-	}
+	if (ret)
+	    goto out;
     }
     if (friendlyname) {
-	int ret;
 	ret = hx509_cert_set_friendly_name(cert, friendlyname);
-	if (ret) {
-	    hx509_cert_free(cert);
-	    free(certfn);
-	    return ret;
-	}
+	if (ret)
+	    goto out;
     }
-    free(certfn);
 
-    *data = cert;
-    return 0;
+    ret = _hx509_collector_collect(c, &f->certs);
+    if (ret == 0)
+	*data = f;
+out:
+    _hx509_collector_free(c);
+    if (certfn)
+	free(certfn);
+
+    if (ret) {
+	if (f->certs)
+	    hx509_certs_free(&f->certs);
+	free(f);
+    }
+
+    return ret;
 }
 
 static int
 file_free(hx509_certs certs, void *data)
 {
-    hx509_cert_free(data);
+    struct ks_file *f = data;
+    hx509_certs_free(&f->certs);
+    free(f);
     return 0;
 }
 
@@ -193,27 +225,15 @@ file_free(hx509_certs certs, void *data)
 static int 
 file_iter_start(hx509_certs certs, void *data, void **cursor)
 {
-    int *i;
-
-    i = malloc(sizeof(*i));
-    if (i == NULL)
-	return ENOMEM;
-    *i = 0;
-    *cursor = i;
-    return 0;
+    struct ks_file *f = data;
+    return hx509_certs_start_seq(f->certs, cursor);
 }
 
 static int
 file_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 {
-    int *i = iter;
-    if (*i != 0) {
-	*cert = NULL;
-	return 0;
-    }
-    *cert = hx509_cert_ref((hx509_cert)data);
-    (*i)++;
-    return 0;
+    struct ks_file *f = data;
+    return hx509_certs_next_cert(f->certs, iter, cert);
 }
 
 static int
@@ -221,8 +241,8 @@ file_iter_end(hx509_certs certs,
 	      void *data,
 	      void *cursor)
 {
-    free(cursor);
-    return 0;
+    struct ks_file *f = data;
+    return hx509_certs_end_seq(f->certs, cursor);
 }
 
 
