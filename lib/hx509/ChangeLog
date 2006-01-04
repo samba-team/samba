@@ -1,5 +1,16 @@
 2006-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto.c (_hx509_private_key_assign_key_file): use function to
+	extra rsa key
+
+	* cert.c: Revert previous, refcounter is unsigned, so it can never
+	be negative.
+
+	* cert.c (hx509_cert_ref): more refcount paranoia
+
+	* ks_p11.c: Implement rsa_private_decrypt and add stubs for public
+	ditto.
+
 	* ks_p11.c: Less printf, less memory leaks.
 
 	* ks_p11.c: Implement signing using pkcs11.
