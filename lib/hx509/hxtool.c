@@ -421,7 +421,16 @@ print_f(void *ctx, hx509_cert cert)
     char *str;
     int ret;
     
-    printf("cert: %d\n", s->counter++);
+    printf("cert: %d", s->counter++);
+    {
+	const char *fn = hx509_cert_get_friendly_name(cert);
+	if (fn)
+	    printf(" friendly name: %s", fn);
+	if (_hx509_cert_private_key(cert))
+	    printf(" (have private key)");
+
+    }
+    printf("\n");
 
     ret = hx509_cert_issuer(cert, &name);
     hx509_name_to_string(name, &str);
