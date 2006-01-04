@@ -723,21 +723,21 @@ int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version)
  open a connection to the ldap server (just until the bind)
  ******************************************************************/
 
-int smb_ldap_setup_full_conn(LDAP *ldap_struct, const char *uri)
+int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri)
 {
 	int rc, version;
 
-	rc = smb_ldap_setup_conn(&ldap_struct, uri);
+	rc = smb_ldap_setup_conn(ldap_struct, uri);
 	if (rc) {
 		return rc;
 	}
 
-	rc = smb_ldap_upgrade_conn(ldap_struct, &version);
+	rc = smb_ldap_upgrade_conn(*ldap_struct, &version);
 	if (rc) {
 		return rc;
 	}
 
-	rc = smb_ldap_start_tls(ldap_struct, version);
+	rc = smb_ldap_start_tls(*ldap_struct, version);
 	if (rc) {
 		return rc;
 	}

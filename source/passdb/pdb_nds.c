@@ -808,7 +808,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 		if((success != True) || (got_clear_text_pw == True)) {
 			
-			rc = smb_ldap_setup_full_conn(ld, ldap_state->location);
+			rc = smb_ldap_setup_full_conn(&ld, ldap_state->location);
 			if (rc) {
 				return NT_STATUS_INVALID_CONNECTION;
 			}
