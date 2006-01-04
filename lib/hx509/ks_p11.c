@@ -57,7 +57,6 @@ struct p11_module {
 	CK_SLOT_ID id;
 	CK_BBOOL token;
 	char *name;
-	char *pin;
 	hx509_certs certs;
     } slot;
 };
@@ -228,17 +227,15 @@ p11_get_session(struct p11_module *p, struct p11_slot *slot)
 	asprintf(&prompt, "PIN code for %s: ", slot->name);
 
 	if (UI_UTIL_read_pw_string(pin, sizeof(pin), prompt, 0)) {
-	    printf("no pin");
+	    free(prompt);
 	    return EINVAL;
 	}
 	free(prompt);
 
 	ret = P11FUNC(p, Login, (P11SESSION(slot), CKU_USER,
-				 (unsigned char*)pin, 4));
+				 (unsigned char*)pin, strlen(pin)));
 	if (ret != CKR_OK)
-	    printf("login failed\n");
-	else
-	    slot->pin = strdup(pin);
+	    return EINVAL;
     }
 
     return 0;
@@ -625,8 +622,8 @@ p11_release_module(struct p11_module *p)
 	_hx509_abort("pkcs11 refcount to low");
     if (--p->refcount > 0)
 	return;
-
-    printf("p11 free\n");
+    if (p->refcount <= 0)
+	_hx509_abort("pkcs11 refcount to low");
 
     if (p->dl_handle)
 	dlclose(p->dl_handle);
