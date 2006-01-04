@@ -106,6 +106,7 @@ copy_heim_integer (const heim_integer *from, heim_integer *to)
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
     memcpy(to->data, from->data, to->length);
+    to->negative = from->negative;
     return 0;
 }
 
