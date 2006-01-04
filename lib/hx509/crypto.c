@@ -854,6 +854,8 @@ _hx509_parse_private_key(const heim_oid *key_oid,
     const struct signature_alg *md;
     int ret;
 
+    *private_key = NULL;
+
     md = find_key_alg(key_oid);
     if (md == NULL)
 	return HX509_SIG_ALG_NO_SUPPORTED;
@@ -936,6 +938,7 @@ _hx509_free_private_key(hx509_private_key *key)
 	RSA_free((*key)->private_key2.rsa);
     (*key)->private_key2.rsa = NULL;
     free(*key);
+    *key = NULL;
     return 0;
 }
 
@@ -1483,4 +1486,60 @@ _hx509_pbe_decrypt(hx509_lock lock,
     if (iv.data)
 	free_octet_string(&iv);
     return ret;
+}
+
+/*
+ *
+ */
+
+
+int
+_hx509_match_keys(hx509_cert c, hx509_private_key private_key)
+{
+    const Certificate *cert;
+    const SubjectPublicKeyInfo *spi;
+    RSAPublicKey pk;
+    RSA *rsa;
+    size_t size;
+    int ret;
+
+    if (private_key->private_key2.rsa == NULL)
+	return 0;
+
+    rsa = private_key->private_key2.rsa;
+    if (rsa->d == NULL || rsa->p == NULL || rsa->q == NULL)
+	return 0;
+
+    cert = _hx509_get_cert(c);
+    spi = &cert->tbsCertificate.subjectPublicKeyInfo;
+
+    rsa = RSA_new();
+    if (rsa == NULL)
+	return 0;
+
+    ret = decode_RSAPublicKey(spi->subjectPublicKey.data,
+			      spi->subjectPublicKey.length / 8,
+			      &pk, &size);
+    if (ret) {
+	RSA_free(rsa);
+	return 0;
+    }
+    rsa->n = heim_int2BN(&pk.modulus);
+    rsa->e = heim_int2BN(&pk.publicExponent);
+
+    free_RSAPublicKey(&pk);
+
+    rsa->d = BN_dup(private_key->private_key2.rsa->d);
+    rsa->p = BN_dup(private_key->private_key2.rsa->p);
+    rsa->q = BN_dup(private_key->private_key2.rsa->q);
+
+    if (rsa->n == NULL || rsa->e == NULL || rsa->d == NULL || rsa->p == NULL|| rsa->q == NULL) {
+	RSA_free(rsa);
+	return 0;
+    }
+
+    ret = RSA_check_key(rsa);
+    RSA_free(rsa);
+
+    return ret == 1;
 }
