@@ -812,9 +812,9 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.type = MAP_IGNORE,
 	},
 
-	/* unicodePwd */
+	/* sambaPassword */
 	{
-		.local_name = "unicodePwd",
+		.local_name = "sambaPassword",
 		.type = MAP_IGNORE,
 	},
 
@@ -869,19 +869,6 @@ const struct ldb_map_attribute samba3_attributes[] =
 			.convert = {
 				.remote_name = "homeDirectory",
 				.convert_local = lookup_homedir,
-			},
-		},
-	},
-	
-	/* unicodePwd */
-	{
-		.local_name = "unicodePwd",
-		.type = MAP_GENERATE,
-		.u = {
-			.generate = {
-				.remote_names = { "sambaNTPassword", "sambaLMPassword", NULL },
-				.generate_local = NULL,
-				.generate_remote = generate_hashes
 			},
 		},
 	},
