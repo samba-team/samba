@@ -21,7 +21,7 @@ name: CASE_INSENSITIVE
 dn: CASE_INSENSITIVE
 sAMAccountName: CASE_INSENSITIVE
 objectClass: CASE_INSENSITIVE
-unicodePwd: HIDDEN
+sambaPassword: HIDDEN
 krb5Key: HIDDEN
 ntPwdHash: HIDDEN
 ntPwdHistory: HIDDEN

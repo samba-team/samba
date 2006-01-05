@@ -25,7 +25,7 @@
  *
  *  Component: ldb password_hash module
  *
- *  Description: correctly update hash values based on changes to unicodePwd and friends
+ *  Description: correctly update hash values based on changes to sambaPassword and friends
  *
  *  Author: Andrew Bartlett
  */
@@ -46,7 +46,7 @@
 /* If we have decided there is reason to work on this request, then
  * setup all the password hash types correctly.
  *
- * If the administrator doesn't want the unicodePwd stored (set in the
+ * If the administrator doesn't want the sambaPassword stored (set in the
  * domain and per-account policies) then we must strip that out before
  * we do the first operation.
  *
@@ -71,7 +71,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	uint_t pwdProperties, pwdHistoryLength;
 	uint_t userAccountControl;
 	const char *dnsDomain, *realm;
-	const char *unicodePwd;
+	const char *sambaPassword;
 	struct samr_Password *lmPwdHistory, *ntPwdHistory;
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 	struct samr_Password *lmOldHash = NULL, *ntOldHash = NULL;
@@ -119,10 +119,10 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 	/* Do the original action */
 	
-	/* If no part of this touches the unicodePwd, then we don't
+	/* If no part of this touches the sambaPassword, then we don't
 	 * need to make any changes.  For password changes/set there should
 	 * be a 'delete' or a 'modify' on this attribute. */
-	if ((attribute = ldb_msg_find_element(msg, "unicodePwd")) == NULL ) {
+	if ((attribute = ldb_msg_find_element(msg, "sambaPassword")) == NULL ) {
 		return ldb_next_request(module, req);
 	}
 
@@ -155,35 +155,35 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	msg2 = ldb_msg_copy_shallow(mem_ctx, msg);
 
 	/* look again, this time at the copied attribute */
-	if (!msg2 || (attribute = ldb_msg_find_element(msg2, "unicodePwd")) == NULL ) {
+	if (!msg2 || (attribute = ldb_msg_find_element(msg2, "sambaPassword")) == NULL ) {
 		/* Gah?  where did it go?  Oh well... */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* Wipe out the unicodePwd attribute set, we will handle it in
+	/* Wipe out the sambaPassword attribute set, we will handle it in
 	 * the second modify.  We might not want it written to disk */
 	
 	if (req->operation == LDB_REQ_ADD) {
 		if (attribute->num_values != 1) {
 			ldb_set_errstring(module, 
-					  talloc_asprintf(mem_ctx, "unicodePwd_handle: "
-							  "attempted set of multiple unicodePwd attributes on %s rejected",
+					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
+							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
 			return LDB_ERR_CONSTRAINT_VIOLAION;
 		}
 	
-		unicodePwd = (const char *)attribute->values[0].data;
-		ldb_msg_remove_attr(msg2, "unicodePwd");
+		sambaPassword = (const char *)attribute->values[0].data;
+		ldb_msg_remove_attr(msg2, "sambaPassword");
 	} else if (((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_ADD)
 		   || ((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_REPLACE)) {
 		if (attribute->num_values != 1) {
 			return LDB_ERR_CONSTRAINT_VIOLAION;
 		}
 		
-		unicodePwd = (const char *)attribute->values[0].data;
-		ldb_msg_remove_attr(msg2, "unicodePwd");
+		sambaPassword = (const char *)attribute->values[0].data;
+		ldb_msg_remove_attr(msg2, "sambaPassword");
 	} else {
-		unicodePwd = NULL;
+		sambaPassword = NULL;
 	}
 
 	modified_orig_request = talloc(mem_ctx, struct ldb_request);
@@ -289,11 +289,11 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	
 	if (!objectclasses || !ldb_msg_find_val(objectclasses, &person_val)) {
 		/* Not a 'person', so the rest of this doesn't make
-		 * sense.  How we got a unicodePwd this far I don't
+		 * sense.  How we got a sambaPassword this far I don't
 		 * know... */
 		ldb_set_errstring(module, 
 				  talloc_asprintf(mem_ctx, "password_hash_handle: "
-						  "attempted set of unicodePwd on non-'person' object %s rejected",
+						  "attempted set of sambaPassword on non-'person' object %s rejected",
 						  ldb_dn_linearize(mem_ctx, dn)));
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLAION;
@@ -360,7 +360,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	CHECK_RET(ldb_msg_add_empty(modify_msg, "krb5Key", LDB_FLAG_MOD_REPLACE));
 	/* Yay, we can compute new password hashes from the unicode
 	 * password */
-	if (unicodePwd) {
+	if (sambaPassword) {
 		Principal *salt_principal;
 		const char *user_principal_name = ldb_msg_find_string(res->msgs[0], "userPrincipalName", NULL);
 		
@@ -368,12 +368,12 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		size_t num_keys;
 
 		/* compute the new nt and lm hashes */
-		if (E_deshash(unicodePwd, local_lmNewHash.hash)) {
+		if (E_deshash(sambaPassword, local_lmNewHash.hash)) {
 			lmPwdHash = &local_lmNewHash;
 		} else {
 			lmPwdHash = NULL;
 		}
-		E_md4hash(unicodePwd, local_ntNewHash.hash);
+		E_md4hash(sambaPassword, local_ntNewHash.hash);
 		ntPwdHash = &local_ntNewHash;
 		CHECK_RET(ldb_msg_add_empty(modify_msg, "ntPwdHash", 
 					    LDB_FLAG_MOD_REPLACE));
@@ -449,7 +449,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 		/* TODO: We may wish to control the encryption types chosen in future */
 		krb5_ret = hdb_generate_key_set_password(smb_krb5_context->krb5_context,
-						    salt_principal, unicodePwd, &keys, &num_keys);
+						    salt_principal, sambaPassword, &keys, &num_keys);
 		krb5_free_principal(smb_krb5_context->krb5_context, salt_principal);
 
 		if (krb5_ret) {
@@ -499,14 +499,14 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	}
 
 	/* Possibly kill off the cleartext or store it */
-	CHECK_RET(ldb_msg_add_empty(modify_msg, "unicodePwd", LDB_FLAG_MOD_REPLACE));
+	CHECK_RET(ldb_msg_add_empty(modify_msg, "sambaPassword", LDB_FLAG_MOD_REPLACE));
 
-	if (unicodePwd && (pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
+	if (sambaPassword && (pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
 	    (userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
-		CHECK_RET(ldb_msg_add_string(modify_msg, "unicodePwd", unicodePwd));
+		CHECK_RET(ldb_msg_add_string(modify_msg, "sambaPassword", sambaPassword));
 	}
 	
-	/* Even if we didn't get a unicodePwd, we can still setup
+	/* Even if we didn't get a sambaPassword, we can still setup
 	 * krb5Key from the NT hash. 
 	 *
 	 * This is an append, so it works with the 'continue' in the
@@ -663,7 +663,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	return ret;
 }
 
-/* add_record: do things with the unicodePwd attribute */
+/* add_record: do things with the sambaPassword attribute */
 static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.add.message;
@@ -677,7 +677,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	return password_hash_handle(module, req, msg);
 }
 
-/* modify_record: do things with the unicodePwd attribute */
+/* modify_record: do things with the sambaPassword attribute */
 static int password_hash_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	const struct ldb_message *msg = req->op.mod.message;

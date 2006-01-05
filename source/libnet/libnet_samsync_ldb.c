@@ -285,7 +285,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	/* Passwords.  Ensure there is no plaintext stored against
 	 * this entry, as we only have hashes */
 	samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
-				"unicodePwd"); 
+				"sambaPassword"); 
 	if (user->lm_password_present) {
 		samdb_msg_add_hash(state->sam_ldb, mem_ctx, msg,  
 				   "lmPwdHash", &user->lmpassword);
