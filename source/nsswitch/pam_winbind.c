@@ -125,6 +125,7 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_INVALID_WORKSTATION", "You are not allowed to logon from this workstation"},
 	{"NT_STATUS_INVALID_LOGON_HOURS", "You are not allowed to logon at this time"},
 	{"NT_STATUS_ACCOUNT_EXPIRED", "Your account has expired. Please contact your System administrator"}, /* SCNR */
+	{"NT_STATUS_ACCOUNT_DISABLED", "Your account is disabled. Please contact your System administrator"}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_LOCKED_OUT", "Your account has been locked. Please contact your System administrator"}, /* SCNR */
 	{"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT", "Invalid Trust Account"},
 	{"NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT", "Invalid Trust Account"},
@@ -403,6 +404,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_INVALID_WORKSTATION");
 		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_INVALID_LOGON_HOURS");
 		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCOUNT_EXPIRED");
+		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCOUNT_DISABLED");
 		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCOUNT_LOCKED_OUT");
 		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
 		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
@@ -999,6 +1001,8 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		struct winbindd_response response;
 		const char *user;
 		const char *ccname = NULL;
+		struct passwd *pwd = NULL;
+
 		int retval;
 
 		ZERO_STRUCT(request);
@@ -1027,7 +1031,11 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		fstrcpy(request.data.logoff.user, user);
 		fstrcpy(request.data.logoff.krb5ccname, ccname);
 
-		request.data.logoff.uid = geteuid();
+		pwd = getpwnam(user);
+		if (pwd == NULL) {
+			return PAM_USER_UNKNOWN;
+		}
+		request.data.logoff.uid = pwd->pw_uid;
 
 		request.flags = WBFLAG_PAM_KRB5 | WBFLAG_PAM_CONTACT_TRUSTDOM;
 
