@@ -56,8 +56,8 @@ static int objectclass_handle(struct ldb_module *module, struct ldb_request *req
 {
 	TALLOC_CTX *mem_ctx;
 	int ret;
-	struct ldb_request search_request;
-	struct ldb_request modify_request;
+	struct ldb_request *search_request;
+	struct ldb_request *modify_request;
 	struct ldb_message *modify_msg;
 	struct ldb_result *res;
 	const char *attrs[] = { "objectClass", NULL };
@@ -92,23 +92,29 @@ static int objectclass_handle(struct ldb_module *module, struct ldb_request *req
 	/* Thanks to transactions: Now do a search, find the full list
 	 * of objectClasses and do the sort */
 
-	search_request.operation       = LDB_REQ_SEARCH;
-	search_request.op.search.base  = msg->dn;
-	search_request.op.search.scope = LDB_SCOPE_BASE;
-	search_request.op.search.tree  = ldb_parse_tree(module->ldb, NULL);
-	search_request.op.search.attrs = attrs;
-
-	ret = ldb_next_request(module, &search_request);
-	if (ret) {
-		return ret;
-	}
-
 	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	res = search_request.op.search.res;
+	search_request = talloc(mem_ctx, struct ldb_request);
+	if (!search_request) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	search_request->operation       = LDB_REQ_SEARCH;
+	search_request->op.search.base  = msg->dn;
+	search_request->op.search.scope = LDB_SCOPE_BASE;
+	search_request->op.search.tree  = ldb_parse_tree(module->ldb, NULL);
+	search_request->op.search.attrs = attrs;
+
+	ret = ldb_next_request(module, search_request);
+	if (ret) {
+		return ret;
+	}
+
+	res = search_request->op.search.res;
 	talloc_steal(mem_ctx, res);
 	if (res->count != 1) {
 		ldb_set_errstring(module, 
@@ -259,11 +265,17 @@ static int objectclass_handle(struct ldb_module *module, struct ldb_request *req
 		return ret;
 	}
 
-	modify_request.operation = LDB_REQ_MODIFY;
-	modify_request.op.mod.message = modify_msg;
+	modify_request = talloc(mem_ctx, struct ldb_request);
+	if (!modify_request) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	modify_request->operation = LDB_REQ_MODIFY;
+	modify_request->op.mod.message = modify_msg;
 
 	/* And now push the write into the database */
-	ret = ldb_next_request(module, &modify_request);
+	ret = ldb_next_request(module, modify_request);
 	
 	talloc_free(mem_ctx);
 	return ret;

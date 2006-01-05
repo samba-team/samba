@@ -91,9 +91,9 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	struct ldb_dn *dn = msg->dn;
 	struct ldb_message *msg2;
 
-	struct ldb_request search_request;
-	struct ldb_request modify_request;
-	struct ldb_request modified_orig_request;
+	struct ldb_request *search_request = NULL;
+	struct ldb_request *modify_request;
+	struct ldb_request *modified_orig_request;
 	struct ldb_result *res, *dom_res, *old_res;
 
 	struct ldb_message_element *objectclasses;
@@ -132,17 +132,23 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	}
 
 	if (req->operation == LDB_REQ_MODIFY) {
+		search_request = talloc(mem_ctx, struct ldb_request);
+		if (!search_request) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		/* Look up the old ntPwdHash and lmPwdHash values, so
 		 * we can later place these into the password
 		 * history */
 
-		search_request.operation = LDB_REQ_SEARCH;
-		search_request.op.search.base = dn;
-		search_request.op.search.scope = LDB_SCOPE_BASE;
-		search_request.op.search.tree = ldb_parse_tree(module->ldb, NULL);
-		search_request.op.search.attrs = old_user_attrs;
+		search_request->operation = LDB_REQ_SEARCH;
+		search_request->op.search.base = dn;
+		search_request->op.search.scope = LDB_SCOPE_BASE;
+		search_request->op.search.tree = ldb_parse_tree(module->ldb, NULL);
+		search_request->op.search.attrs = old_user_attrs;
 		
-		old_ret = ldb_next_request(module, &search_request);
+		old_ret = ldb_next_request(module, search_request);
 	}
 
 	/* we can't change things untill we copy it */
@@ -180,18 +186,24 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		unicodePwd = NULL;
 	}
 
-	modified_orig_request = *req;
-	switch (modified_orig_request.operation) {
+	modified_orig_request = talloc(mem_ctx, struct ldb_request);
+	if (!modified_orig_request) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*modified_orig_request = *req;
+	switch (modified_orig_request->operation) {
 	case LDB_REQ_ADD:
-		modified_orig_request.op.add.message = msg2;
+		modified_orig_request->op.add.message = msg2;
 		break;
 	case LDB_REQ_MODIFY:
-		modified_orig_request.op.mod.message = msg2;
+		modified_orig_request->op.mod.message = msg2;
 		break;
 	}
 
 	/* Send the (modified) request of the original caller down to the database */
-	ret = ldb_next_request(module, &modified_orig_request);
+	ret = ldb_next_request(module, modified_orig_request);
 	if (ret) {
 		return ret;
 	}
@@ -206,7 +218,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		}
 
 		/* Find out the old passwords details of the user */
-		old_res = search_request.op.search.res;
+		old_res = search_request->op.search.res;
 		
 		if (old_res->count != 1) {
 			ldb_set_errstring(module, 
@@ -230,20 +242,26 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	 * with the password. */
 
 	/* Now find out what is on the entry after the above add/modify */
-	search_request.operation       = LDB_REQ_SEARCH;
-	search_request.op.search.base  = dn;
-	search_request.op.search.scope = LDB_SCOPE_BASE;
-	search_request.op.search.tree  = ldb_parse_tree(module->ldb, NULL);
-	search_request.op.search.attrs = user_attrs;
+	search_request = talloc(mem_ctx, struct ldb_request);
+	if (!search_request) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	search_request->operation       = LDB_REQ_SEARCH;
+	search_request->op.search.base  = dn;
+	search_request->op.search.scope = LDB_SCOPE_BASE;
+	search_request->op.search.tree  = ldb_parse_tree(module->ldb, NULL);
+	search_request->op.search.attrs = user_attrs;
 	
-	ret = ldb_next_request(module, &search_request);
+	ret = ldb_next_request(module, search_request);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
 	/* Find out the full details of the user */
-	res = search_request.op.search.res;
+	res = search_request->op.search.res;
 	if (res->count != 1) {
 		ldb_set_errstring(module, 
 				  talloc_asprintf(mem_ctx, "password_hash_handle: "
@@ -630,10 +648,16 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	/* Too much code above, we should check we got it close to reasonable */
 	CHECK_RET(ldb_msg_sanity_check(modify_msg));
 
-	modify_request.operation = LDB_REQ_MODIFY;
-	modify_request.op.mod.message = modify_msg;
+	modify_request = talloc(mem_ctx, struct ldb_request);
+	if (!modify_request) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ret = ldb_next_request(module, &modify_request);
+	modify_request->operation = LDB_REQ_MODIFY;
+	modify_request->op.mod.message = modify_msg;
+
+	ret = ldb_next_request(module, modify_request);
 	
 	talloc_free(mem_ctx);
 	return ret;
