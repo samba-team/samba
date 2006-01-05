@@ -899,6 +899,8 @@ void build_options(BOOL screen);
 	if (!print_backend_init())
 		exit(1);
 
+	init_gpfs();
+
 	/* Setup the main smbd so that we can get messages. */
 	/* don't worry about general printing messages here */
 
