@@ -709,11 +709,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		 * Modules in ldb will set all the appropriate
 		 * hashes */
 		CHECK_RET(samdb_msg_add_string(ctx, mem_ctx, mod, 
-					       "unicodePwd", new_pass));
+					       "sambaPassword", new_pass));
 	} else {
 		/* We don't have the cleartext, so delete the old one
 		 * and set what we have of the hashes */
-		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "unicodePwd"));
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "sambaPassword"));
 
 		if (lmNewHash) {
 			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
