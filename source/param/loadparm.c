@@ -433,6 +433,7 @@ typedef struct
 	BOOL bProfileAcls;
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
+	BOOL bGpfs_Share;
 	BOOL bEASupport;
 	BOOL bAclCheckPermissions;
 	BOOL bAclMapFullControl;
@@ -569,6 +570,7 @@ static service sDefault = {
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
+	False,			/* bGpfs_Share */
 	False,			/* bEASupport */
 	True,			/* bAclCheckPermissions */
 	True,			/* bAclMapFullControl */
@@ -967,6 +969,7 @@ static struct parm_struct parm_table[] = {
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as,  FLAG_ADVANCED}, 
 	{"map acl inherit", P_BOOL, P_LOCAL, &sDefault.bMap_acl_inherit, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"afs share", P_BOOL, P_LOCAL, &sDefault.bAfs_Share, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL},
+	{"gpfs share", P_BOOL, P_LOCAL, &sDefault.bGpfs_Share, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, FLAG_ADVANCED}, 
 	{"max xmit", P_INTEGER, P_GLOBAL, &Globals.max_xmit, NULL, NULL, FLAG_ADVANCED}, 
 
@@ -2001,6 +2004,7 @@ FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
+FN_LOCAL_BOOL(lp_gpfs_share, bGpfs_Share)
 FN_LOCAL_BOOL(lp_acl_check_permissions, bAclCheckPermissions)
 FN_LOCAL_BOOL(lp_acl_group_control, bAclGroupControl)
 FN_LOCAL_BOOL(lp_acl_map_full_control, bAclMapFullControl)
