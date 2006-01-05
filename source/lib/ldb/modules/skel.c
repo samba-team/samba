@@ -42,35 +42,32 @@ struct private_data {
 };
 
 /* search */
-static int skel_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, struct ldb_parse_tree *tree,
-		       const char * const *attrs, struct ldb_result **res)
+static int skel_search(struct ldb_module *module, struct ldb_request *req)
 {
-	return ldb_next_search(module, base, scope, tree, attrs, res); 
+	return ldb_next_request(module, req);
 }
 
-/* add_record */
-static int skel_add_record(struct ldb_module *module, const struct ldb_message *msg)
-{
-	return ldb_next_add_record(module, msg);
+/* add */
+static int skel_add(struct ldb_module *module, struct ldb_request *req){
+	return ldb_next_request(module, req);
 }
 
-/* modify_record */
-static int skel_modify_record(struct ldb_module *module, const struct ldb_message *msg)
+/* modify */
+static int skel_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	return ldb_next_modify_record(module, msg);
+	return ldb_next_request(module, req);
 }
 
-/* delete_record */
-static int skel_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
+/* delete */
+static int skel_delete(struct ldb_module *module, struct ldb_request *req)
 {
-	return ldb_next_delete_record(module, dn);
+	return ldb_next_request(module, req);
 }
 
-/* rename_record */
-static int skel_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+/* rename */
+static int skel_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	return ldb_next_rename_record(module, olddn, newdn);
+	return ldb_next_request(module, req);
 }
 
 /* start a transaction */
@@ -105,26 +102,20 @@ static int skel_request(struct ldb_module *module, struct ldb_request *req)
 	switch (req->operation) {
 
 	case LDB_REQ_SEARCH:
-		return skel_search_bytree(module,
-					  req->op.search->base,
-					  req->op.search->scope, 
-					  req->op.search->tree, 
-					  req->op.search->attrs, 
-					  req->op.search->res);
+		return skel_search(module, req);
 
 	case LDB_REQ_ADD:
-		return skel_add(module, req->op.add->message);
+		return skel_add(module, req);
 
 	case LDB_REQ_MODIFY:
-		return skel_modify(module, req->op.mod->message);
+		return skel_modify(module, req);
 
 	case LDB_REQ_DELETE:
-		return skel_delete(module, req->op.del->dn);
+		return skel_delete(module, req);
 
 	case LDB_REQ_RENAME:
 		return skel_rename(module,
-					req->op.rename->olddn,
-					req->op.rename->newdn);
+				   req);
 
 	default:
 		return ldb_next_request(module, req);
