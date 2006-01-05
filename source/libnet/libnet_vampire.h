@@ -29,7 +29,7 @@ struct libnet_SamSync {
 			     struct netr_DELTA_ENUM *delta,
 			     char **error_string);
 	void *fn_ctx;
-	char *error_string;
+	const char *error_string;
 	struct cli_credentials *machine_account;
 };
 
@@ -40,13 +40,13 @@ enum libnet_SamDump_level {
 
 struct libnet_SamDump {
 	enum libnet_SamDump_level level;
-	char *error_string;
+	const char *error_string;
 };
 
 struct libnet_SamDump_keytab {
 	enum libnet_SamDump_level level;
-	char *keytab_name;
-	char *error_string;
+	const char *keytab_name;
+	const char *error_string;
 };
 
 enum libnet_samsync_ldb_level {
@@ -56,6 +56,6 @@ enum libnet_samsync_ldb_level {
 
 struct libnet_samsync_ldb {
 	enum libnet_samsync_ldb_level level;
-	char *error_string;
+	const char *error_string;
 };
 
