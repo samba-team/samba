@@ -101,11 +101,11 @@ static void set_capability(unsigned capability)
 }
 
 /****************************************************************************
- Call SETLEASE. If we get EACCES then we try setting up the right capability and
- try again
+ Call SETLEASE. If we get EACCES then we try setting up the right capability
+ and try again
 ****************************************************************************/
 
-static int linux_setlease(int fd, int leasetype)
+static int linux_setlease(int snum, int fd, int leasetype)
 {
 	int ret;
 
@@ -114,7 +114,17 @@ static int linux_setlease(int fd, int leasetype)
 		return -1;
 	}
 
-	ret = fcntl(fd, F_SETLEASE, leasetype);
+	if (lp_gpfs_share(snum)) {
+		ret = set_gpfs_lease(fd, leasetype);
+	} else {
+		ret = fcntl(fd, F_SETLEASE, leasetype);
+	}
+
+	if ((ret < 0) && (errno == ENOSYS)) {
+		/* This must have come from GPFS not being available */
+		ret = fcntl(fd, F_SETLEASE, leasetype);
+	}
+
 	if (ret == -1 && errno == EACCES) {
 		set_capability(CAP_LEASE);
 		ret = fcntl(fd, F_SETLEASE, leasetype);
@@ -154,7 +164,7 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
 
 static BOOL linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if (linux_setlease(fsp->fh->fd, F_WRLCK) == -1) {
+	if (linux_setlease(SNUM(fsp->conn), fsp->fh->fd, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
@@ -188,7 +198,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if (linux_setlease(fsp->fh->fd, F_UNLCK) == -1) {
+	if (linux_setlease(SNUM(fsp->conn), fsp->fh->fd, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
 			dbgtext("linux_release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. Error was %s\n",
