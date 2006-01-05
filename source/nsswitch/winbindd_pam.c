@@ -498,7 +498,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					   &renewal_until,
 					   cc, 
 					   True,
-					   2592000); /* one month (30 days) */
+					   WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 
 	if (krb5_ret) {
 		DEBUG(1,("winbindd_raw_kerberos_login: kinit failed for '%s' with: %s (%d)\n", 

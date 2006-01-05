@@ -112,7 +112,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 					      &entry->renew_until,
 					      entry->ccname,
 					      False, /* no PAC required anymore */
-					      1); /* request a renewable ticket */
+					      WINBINDD_PAM_AUTH_KRB5_RENEW_TIME);
 		seteuid(0);
 
 		if (ret) {
