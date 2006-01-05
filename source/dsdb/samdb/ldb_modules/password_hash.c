@@ -72,12 +72,12 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	uint_t userAccountControl;
 	const char *dnsDomain, *realm;
 	const char *sambaPassword;
-	struct samr_Password *lmPwdHistory, *ntPwdHistory;
+	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory;
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 	struct samr_Password *lmOldHash = NULL, *ntOldHash = NULL;
-	struct samr_Password *new_lmPwdHistory, *new_ntPwdHistory;
+	struct samr_Password *new_sambaLMPwdHistory, *new_sambaNTPwdHistory;
 	struct samr_Password local_lmNewHash, local_ntNewHash;
-	int lmPwdHistory_len, ntPwdHistory_len;
+	int sambaLMPwdHistory_len, sambaNTPwdHistory_len;
 	uint_t kvno;
 	struct dom_sid *domain_sid;
 	time_t now = time(NULL);
@@ -105,8 +105,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 	const char *domain_expression;
 	const char *old_user_attrs[] = { "lmPwdHash", "ntPwdHash", NULL };
-	const char *user_attrs[] = { "userAccountControl", "lmPwdHistory", 
-				     "ntPwdHistory", 
+	const char *user_attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
+				     "sambaNTPwdHistory", 
 				     "ntPwdHash", 
 				     "objectSid", "msDS-KeyVersionNumber", 
 				     "objectClass", "userPrincipalName",
@@ -274,10 +274,10 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	}
 
 	userAccountControl = samdb_result_uint(res->msgs[0],   "userAccountControl", 0);
-	lmPwdHistory_len   = samdb_result_hashes(mem_ctx, res->msgs[0], 
-						 "lmPwdHistory", &lmPwdHistory);
-	ntPwdHistory_len   = samdb_result_hashes(mem_ctx, res->msgs[0], 
-						 "ntPwdHistory", &ntPwdHistory);
+	sambaLMPwdHistory_len   = samdb_result_hashes(mem_ctx, res->msgs[0], 
+						 "sambaLMPwdHistory", &sambaLMPwdHistory);
+	sambaNTPwdHistory_len   = samdb_result_hashes(mem_ctx, res->msgs[0], 
+						 "sambaNTPwdHistory", &sambaNTPwdHistory);
 	ntPwdHash          = samdb_result_hash(mem_ctx, res->msgs[0],   "ntPwdHash");
 	kvno               = samdb_result_uint(res->msgs[0],   "msDS-KeyVersionNumber", 0);
 
@@ -588,61 +588,61 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		}
 	}
 
-	CHECK_RET(ldb_msg_add_empty(modify_msg, "lmPwdHistory",
+	CHECK_RET(ldb_msg_add_empty(modify_msg, "sambaLMPwdHistory",
 				    LDB_FLAG_MOD_REPLACE));
-	CHECK_RET(ldb_msg_add_empty(modify_msg, "ntPwdHistory",
+	CHECK_RET(ldb_msg_add_empty(modify_msg, "sambaNTPwdHistory",
 				    LDB_FLAG_MOD_REPLACE));
 
 	/* If we have something to put into the history, or an old
 	 * history element to expire, update the history */
 	if (pwdHistoryLength > 0 && 
-	    ((ntPwdHistory_len > 0) || (lmPwdHistory_len > 0) 
+	    ((sambaNTPwdHistory_len > 0) || (sambaLMPwdHistory_len > 0) 
 	     || lmOldHash || ntOldHash)) {
 		/* store the password history */
-		new_lmPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
+		new_sambaLMPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
 						pwdHistoryLength);
-		if (!new_lmPwdHistory) {
+		if (!new_sambaLMPwdHistory) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		new_ntPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
+		new_sambaNTPwdHistory = talloc_array(mem_ctx, struct samr_Password, 
 						pwdHistoryLength);
-		if (!new_ntPwdHistory) {
+		if (!new_sambaNTPwdHistory) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		for (i=0;i<MIN(pwdHistoryLength-1, lmPwdHistory_len);i++) {
-			new_lmPwdHistory[i+1] = lmPwdHistory[i];
+		for (i=0;i<MIN(pwdHistoryLength-1, sambaLMPwdHistory_len);i++) {
+			new_sambaLMPwdHistory[i+1] = sambaLMPwdHistory[i];
 		}
-		for (i=0;i<MIN(pwdHistoryLength-1, ntPwdHistory_len);i++) {
-			new_ntPwdHistory[i+1] = ntPwdHistory[i];
+		for (i=0;i<MIN(pwdHistoryLength-1, sambaNTPwdHistory_len);i++) {
+			new_sambaNTPwdHistory[i+1] = sambaNTPwdHistory[i];
 		}
 		
 		/* Don't store 'long' passwords in the LM history, 
 		   but make sure to 'expire' one password off the other end */
 		if (lmOldHash) {
-			new_lmPwdHistory[0] = *lmOldHash;
+			new_sambaLMPwdHistory[0] = *lmOldHash;
 		} else {
-			ZERO_STRUCT(new_lmPwdHistory[0]);
+			ZERO_STRUCT(new_sambaLMPwdHistory[0]);
 		}
-		lmPwdHistory_len = MIN(lmPwdHistory_len + 1, pwdHistoryLength);
+		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len + 1, pwdHistoryLength);
 		
 		/* Likewise, we might not have a new NT password (lm
 		 * only password change function) */
 		if (ntOldHash) {
-			new_ntPwdHistory[0] = *ntOldHash;
+			new_sambaNTPwdHistory[0] = *ntOldHash;
 		} else {
-			ZERO_STRUCT(new_ntPwdHistory[0]);
+			ZERO_STRUCT(new_sambaNTPwdHistory[0]);
 		}
-		ntPwdHistory_len = MIN(ntPwdHistory_len + 1, pwdHistoryLength);
+		sambaNTPwdHistory_len = MIN(sambaNTPwdHistory_len + 1, pwdHistoryLength);
 		
 		CHECK_RET(samdb_msg_add_hashes(module->ldb, mem_ctx, modify_msg, 
-					       "lmPwdHistory", 
-					       new_lmPwdHistory, 
-					       lmPwdHistory_len));
+					       "sambaLMPwdHistory", 
+					       new_sambaLMPwdHistory, 
+					       sambaLMPwdHistory_len));
 		
 		CHECK_RET(samdb_msg_add_hashes(module->ldb, mem_ctx, modify_msg, 
-					       "ntPwdHistory", 
-					       new_ntPwdHistory, 
-					       ntPwdHistory_len));
+					       "sambaNTPwdHistory", 
+					       new_sambaNTPwdHistory, 
+					       sambaNTPwdHistory_len));
 	}
 
 	/* Too much code above, we should check we got it close to reasonable */

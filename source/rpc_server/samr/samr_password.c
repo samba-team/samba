@@ -532,8 +532,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			    enum samr_RejectReason *reject_reason,
 			    struct samr_DomInfo1 **_dominfo)
 {
-	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
-					    "ntPwdHistory", 
+	const char * const user_attrs[] = { "userAccountControl", "sambaLMPwdHistory", 
+					    "sambaNTPwdHistory", 
 					    "lmPwdHash", "ntPwdHash", 
 					    "objectSid", 
 					    "pwdLastSet", NULL };
@@ -544,9 +544,9 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	int64_t minPwdAge;
 	uint_t minPwdLength, pwdProperties, pwdHistoryLength;
 	uint_t userAccountControl;
-	struct samr_Password *lmPwdHistory, *ntPwdHistory, *lmPwdHash, *ntPwdHash;
+	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory, *lmPwdHash, *ntPwdHash;
 	struct samr_Password local_lmNewHash, local_ntNewHash;
-	int lmPwdHistory_len, ntPwdHistory_len;
+	int sambaLMPwdHistory_len, sambaNTPwdHistory_len;
 	struct dom_sid *domain_sid;
 	struct ldb_message **res;
 	int count;
@@ -563,10 +563,10 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	userAccountControl = samdb_result_uint(res[0],   "userAccountControl", 0);
-	lmPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
-						 "lmPwdHistory", &lmPwdHistory);
-	ntPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
-						 "ntPwdHistory", &ntPwdHistory);
+	sambaLMPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
+						 "sambaLMPwdHistory", &sambaLMPwdHistory);
+	sambaNTPwdHistory_len =   samdb_result_hashes(mem_ctx, res[0], 
+						 "sambaNTPwdHistory", &sambaNTPwdHistory);
 	lmPwdHash =          samdb_result_hash(mem_ctx, res[0],   "lmPwdHash");
 	ntPwdHash =          samdb_result_hash(mem_ctx, res[0],   "ntPwdHash");
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
@@ -680,19 +680,19 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		}
 		
 		/* check the password history */
-		lmPwdHistory_len = MIN(lmPwdHistory_len, pwdHistoryLength);
-		ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
+		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len, pwdHistoryLength);
+		sambaNTPwdHistory_len = MIN(sambaNTPwdHistory_len, pwdHistoryLength);
 		
-		for (i=0; lmNewHash && i<lmPwdHistory_len;i++) {
-			if (memcmp(lmNewHash->hash, lmPwdHistory[i].hash, 16) == 0) {
+		for (i=0; lmNewHash && i<sambaLMPwdHistory_len;i++) {
+			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash, 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
-		for (i=0; ntNewHash && i<ntPwdHistory_len;i++) {
-			if (memcmp(ntNewHash->hash, ntPwdHistory[i].hash, 16) == 0) {
+		for (i=0; ntNewHash && i<sambaNTPwdHistory_len;i++) {
+			if (memcmp(ntNewHash->hash, sambaNTPwdHistory[i].hash, 16) == 0) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
 				}
