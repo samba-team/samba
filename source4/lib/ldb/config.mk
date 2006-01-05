@@ -61,6 +61,15 @@ OBJ_FILES = modules/ldb_map.o
 ################################################
 
 ################################################
+# Start MODULE libldb_skel
+[MODULE::libldb_skel]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = modules/skel.o
+# End MODULE libldb_skel
+################################################
+
+################################################
 # Start MODULE libldb_sqlite3
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
