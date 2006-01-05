@@ -87,7 +87,7 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	NTSTATUS status;
 
 	if (req->out.size > NBT_HDR_SIZE) {
-		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+		_smb2_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
 	blob = data_blob_const(req->out.buffer, req->out.size);
