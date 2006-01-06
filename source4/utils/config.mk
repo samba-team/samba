@@ -87,3 +87,18 @@ REQUIRED_SUBSYSTEMS = \
 		POPT_SAMBA
 # End BINARY nmblookup
 #################################
+
+#################################
+# Start BINARY testparm
+[BINARY::testparm]
+INSTALLDIR = BINDIR
+OBJ_FILES = \
+		testparm.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBBASIC \
+		LIBPOPT \
+		SOCKET \
+		POPT_SAMBA
+# End BINARY testparm
+#################################
