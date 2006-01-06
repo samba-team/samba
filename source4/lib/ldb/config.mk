@@ -1,4 +1,24 @@
 ################################################
+# Start MODULE libldb_sort
+[MODULE::libldb_sort]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = \
+		modules/sort.o
+# End MODULE libldb_sort
+################################################
+
+################################################
+# Start MODULE libldb_paged_results
+[MODULE::libldb_paged_results]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = \
+		modules/paged_results.o
+# End MODULE libldb_paged_results
+################################################
+
+################################################
 # Start MODULE libldb_operational
 [MODULE::libldb_operational]
 SUBSYSTEM = LIBLDB
@@ -118,7 +138,9 @@ OBJ_FILES = \
 		common/ldb_match.o \
 		common/ldb_attributes.o \
 		common/attrib_handlers.o \
-		common/ldb_dn.o
+		common/ldb_dn.o \
+		common/ldb_controls.o \
+		common/qsort.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC LDBSAMBA
 NOPROTO = YES

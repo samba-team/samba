@@ -7,7 +7,8 @@ OBJ_FILES = ldap.o \
 		ldap_bind.o \
 		ldap_msg.o \
 		ldap_ndr.o \
-		ldap_ildap.o
+		ldap_ildap.o \
+		ldap_controls.o
 REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBEVENTS GENSEC SOCKET NDR_SAMR LIBTLS \
 					  LIBPACKET
 # End SUBSYSTEM LIBCLI_LDAP

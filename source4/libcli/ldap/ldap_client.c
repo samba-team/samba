@@ -28,6 +28,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/composite/composite.h"
 #include "lib/stream/packet.h"

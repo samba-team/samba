@@ -104,7 +104,9 @@ struct ldb_context {
 };
 
 /* the modules init function */
-typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, const char *options[]);
+#define LDB_MODULES_INIT_STAGE_1 1
+#define LDB_MODULES_INIT_STAGE_2 2
+typedef struct ldb_module *(*ldb_module_init_t)(struct ldb_context *, int stage, const char **);
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -147,10 +149,12 @@ int lsqlite3_connect(struct ldb_context *ldb,
 		     const char *url, 
 		     unsigned int flags, 
 		     const char *options[]);
-struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *objectclass_module_init(struct ldb_context *ldb, const char *options[]);
+struct ldb_module *objectclass_module_init(struct ldb_context *ldb, int stage, const char *options[]);
+struct ldb_module *operational_module_init(struct ldb_context *ldb, int stage, const char *options[]);
+struct ldb_module *paged_results_module_init(struct ldb_context *ldb, int stage, const char *options[]);
+struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, int stage, const char *options[]);
+struct ldb_module *schema_module_init(struct ldb_context *ldb, int stage, const char *options[]);
+struct ldb_module *server_sort_module_init(struct ldb_context *ldb, int stage, const char *options[]);
 
 
 int ldb_match_msg(struct ldb_context *ldb,
@@ -179,4 +183,8 @@ int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
 int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 			  const struct ldb_val *v1, const struct ldb_val *v2);
 
+/* The following definitions come from lib/ldb/common/ldb_controls.c  */
+struct ldb_control *get_control_from_list(struct ldb_control **controls, const char *oid);
+int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver);
+int check_critical_controls(struct ldb_control **controls);
 #endif
