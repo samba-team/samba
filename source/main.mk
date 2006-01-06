@@ -237,7 +237,7 @@ basics: include/includes.h \
 	idl \
 	heimdal_basics
 
-clean: heimdal_clean
+clean: heimdal_clean clean_pch
 	@echo Removing headers
 	@-rm -f include/proto.h
 	@echo Removing objects
