@@ -714,46 +714,6 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	*info3 = my_info3;
 
-	my_info3->user_flgs |= LOGON_CACHED_ACCOUNT;
-
-	if (my_info3->acct_flags & ACB_AUTOLOCK) {
-		return NT_STATUS_ACCOUNT_LOCKED_OUT;
-	}
-
-	if (my_info3->acct_flags & ACB_DISABLED) {
-		return NT_STATUS_ACCOUNT_DISABLED;
-	}
-
-	if (my_info3->acct_flags & ACB_WSTRUST) {
-		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
-	}
-
-	if (my_info3->acct_flags & ACB_SVRTRUST) {
-		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
-	}
-
-	if (my_info3->acct_flags & ACB_DOMTRUST) {
-		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
-	}
-
-	if (!(my_info3->acct_flags & ACB_NORMAL)) {
-		DEBUG(10,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n", my_info3->acct_flags));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
-	kickoff_time = nt_time_to_unix(&my_info3->kickoff_time);
-	if (kickoff_time != 0 && time(NULL) > kickoff_time) {
-		return NT_STATUS_ACCOUNT_EXPIRED;
-	}
-
-	must_change_time = nt_time_to_unix(&my_info3->pass_must_change_time);
-	if (must_change_time != 0 && must_change_time < time(NULL)) {
-		return NT_STATUS_PASSWORD_EXPIRED;
-	}
-
-	/* FIXME: we possibly should handle logon hours as well (does xp when
-	 * offline?) see auth/auth_sam.c:sam_account_ok for details */
-
 	E_md4hash(state->request.data.auth.pass, new_nt_pass);
 
 	dump_data(100, (const char *)new_nt_pass, NT_HASH_LEN);
@@ -764,6 +724,47 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		/* User *DOES* know the password, update logon_time and reset
 		 * bad_pw_count */
 	
+		my_info3->user_flgs |= LOGON_CACHED_ACCOUNT;
+	
+		if (my_info3->acct_flags & ACB_AUTOLOCK) {
+			return NT_STATUS_ACCOUNT_LOCKED_OUT;
+		}
+	
+		if (my_info3->acct_flags & ACB_DISABLED) {
+			return NT_STATUS_ACCOUNT_DISABLED;
+		}
+	
+		if (my_info3->acct_flags & ACB_WSTRUST) {
+			return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+		}
+	
+		if (my_info3->acct_flags & ACB_SVRTRUST) {
+			return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
+		}
+	
+		if (my_info3->acct_flags & ACB_DOMTRUST) {
+			return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+		}
+	
+		if (!(my_info3->acct_flags & ACB_NORMAL)) {
+			DEBUG(10,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n", 
+				my_info3->acct_flags));
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	
+		kickoff_time = nt_time_to_unix(&my_info3->kickoff_time);
+		if (kickoff_time != 0 && time(NULL) > kickoff_time) {
+			return NT_STATUS_ACCOUNT_EXPIRED;
+		}
+
+		must_change_time = nt_time_to_unix(&my_info3->pass_must_change_time);
+		if (must_change_time != 0 && must_change_time < time(NULL)) {
+			return NT_STATUS_PASSWORD_EXPIRED;
+		}
+	
+		/* FIXME: we possibly should handle logon hours as well (does xp when
+		 * offline?) see auth/auth_sam.c:sam_account_ok for details */
+
 		unix_to_nt_time(&my_info3->logon_time, time(NULL));
 		my_info3->bad_pw_count = 0;
 
