@@ -1572,36 +1572,6 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	oldpass = state->request.data.chauthtok.oldpass;
 	newpass = state->request.data.chauthtok.newpass;
 
-
-	if (contact_domain->active_directory &&
-	    (state->request.flags & WBFLAG_PAM_KRB5)) {
-
-		/* the error mapping is just too hard to get correct (at least at the moment) - Guenther */
-		DEBUG(3,("winbindd_pam_chauthtok: password change over Kerberos is currently disabled;"
-			"falling back to msrpc method\n"));
-
-		goto chauthtok_rpc;
-#if 0
-		ADS_STATUS status;
-
-		status = kerberos_set_password(contact_domain->dcname, user, 
-					       oldpass, user, newpass, 
-					       0);
-
-		/* derive the resulting NT_STATUS code from the ADS_ERROR */
-		result = krb5_to_nt_status(status.err.rc);
-
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(0,("failed to set password using Kerberos: %s\n",
-				nt_errstr(result)));
-		}
-
-		goto done;
-#endif
-	}
-
-chauthtok_rpc:
-
 	/* Get sam handle */
 
 	result = cm_connect_sam(contact_domain, state->mem_ctx, &cli,
