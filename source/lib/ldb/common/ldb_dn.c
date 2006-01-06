@@ -214,8 +214,8 @@ failed:
 
 static char *seek_to_separator(char *string, const char *separators)
 {
-	char *p;
-	int ret, qs, qe;
+	char *p, *q;
+	int ret, qs, qe, escaped;
 
 	if (string == NULL || separators == NULL) return NULL;
 
@@ -242,11 +242,21 @@ static char *seek_to_separator(char *string, const char *separators)
 	}
 
 	/* no quotes found seek to separators */
-	ret = strcspn(p, separators);
-	if (ret == 0) /* no separators ?! bail out */
+	q = p;
+	do {
+		escaped = 0;
+		ret = strcspn(q, separators);
+		
+		if (q[ret - 1] == '\\') {
+			escaped = 1;
+			q = q + ret + 1;
+		}
+	} while (escaped);
+
+	if (ret == 0 && p == q) /* no separators ?! bail out */
 		return NULL;
 
-	return p + ret;
+	return q + ret;
 
 failed:
 	return NULL;
