@@ -1591,20 +1591,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	 * deny mode is compatible with all current opens.
 	 */
 
-	if (lp_gpfs_share(SNUM(fsp->conn)) &&
-	    !set_gpfs_sharemode(fsp, access_mask, share_access)) {
-
-		/* GPFS does have share mode support, so the comment above wrt
-		 * NFS being wrong is not correct here. */
-
-		set_saved_error_triple(ERRDOS, ERRbadshare,
-				       NT_STATUS_SHARING_VIOLATION);
-		talloc_free(lck);
-		fd_close(conn, fsp);
-		file_free(fsp);
-		return NULL;
-	}
-
 	/*
 	 * If requested, truncate the file.
 	 */
