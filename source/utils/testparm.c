@@ -81,17 +81,17 @@ static int do_global_checks(void)
 	static const char *term_code = "";
 /*
 	static BOOL show_all_parameters = False;
-	static char *parameter_name = NULL;
 	static char *new_local_machine = NULL;
 */
 	static const char *section_name = NULL;
+	static char *parameter_name = NULL;
 	static const char *cname;
 	static const char *caddr;
 	static int show_defaults;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"suppress-prompt", 's', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
+		{"suppress-prompt", '\0', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 /*
   We need support for smb.conf macros before this will work again 
@@ -100,11 +100,12 @@ static int do_global_checks(void)
 /*
   These are harder to do with the new code structure
 		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
-		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
 */
 		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
+		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
 		{"client-name", '\0', POPT_ARG_STRING, &cname, 0, "Client DNS name for 'hosts allow' checking (should match reverse lookup)"},
 		{"client-ip", '\0', POPT_ARG_STRING, &caddr, 0, "Client IP address for 'hosts allow' checking"},
+		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -196,7 +197,7 @@ static int do_global_checks(void)
 			fflush(stdout);
 			getc(stdin);
 		}
-		if (section_name) {
+		if (section_name || parameter_name) {
 			BOOL isGlobal = False;
 			if (!section_name) {
 				section_name = GLOBAL_NAME;
@@ -207,10 +208,14 @@ static int do_global_checks(void)
 						section_name);
 					return(1);
 			}
-			if (isGlobal == True) {
-				lp_dump(stdout, show_defaults, 0);
+			if (!parameter_name) {
+				if (isGlobal == True) {
+					lp_dump(stdout, show_defaults, 0);
+				} else {
+					lp_dump_one(stdout, show_defaults, s);
+				}
 			} else {
-				lp_dump_one(stdout, show_defaults, s);
+				ret = lp_dump_a_parameter(s, parameter_name, stdout, isGlobal);
 			}
 		} else {
 			lp_dump(stdout, show_defaults, lp_numservices());
