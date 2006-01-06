@@ -143,7 +143,9 @@ struct winbindd_child {
 	struct winbindd_domain *domain;
 	pstring logfilename;
 
+	TALLOC_CTX *mem_ctx;
 	struct fd_event event;
+	struct timed_event *timed_event;
 	struct winbindd_async_request *requests;
 };
 

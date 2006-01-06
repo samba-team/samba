@@ -235,6 +235,8 @@ static void schedule_async_request(struct winbindd_child *child)
 	setup_async_write(&child->event, request->request,
 			  sizeof(*request->request),
 			  async_main_request_sent, request);
+
+	talloc_destroy(child->mem_ctx);
 	return;
 }
 
@@ -447,6 +449,37 @@ void winbind_child_died(pid_t pid)
 	schedule_async_request(child);
 }
 
+static void account_lockout_policy_handler(struct timed_event *te,
+					   const struct timeval *now,
+					   void *private_data)
+{
+	struct winbindd_child *child = private_data;
+
+	struct winbindd_methods *methods;
+	SAM_UNK_INFO_12 lockout_policy;
+	NTSTATUS result;
+
+	DEBUG(10,("account_lockout_policy_handler called\n"));
+
+	if (child->timed_event) {
+		talloc_free(child->timed_event);
+	}
+
+	methods = child->domain->methods;
+
+	result = methods->lockout_policy(child->domain, child->mem_ctx, &lockout_policy);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("account_lockout_policy_handler: failed to call lockout_policy\n"));
+		return;
+	}
+
+	child->timed_event = add_timed_event(child->mem_ctx, 
+					     timeval_current_ofs(3600, 0),
+					     "account_lockout_policy_handler",
+					     account_lockout_policy_handler,
+					     child);
+}
+
 static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -498,7 +531,18 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		lp_set_logfile(child->logfilename);
 		reopen_logs();
 	}
-	
+
+	child->mem_ctx = talloc_init("child_mem_ctx");
+	if (child->mem_ctx == NULL) {
+		return False;
+	}
+
+	child->timed_event = add_timed_event(child->mem_ctx,
+					     timeval_zero(),
+					     "account_lockout_policy_handler",
+					     account_lockout_policy_handler,
+					     child);
+
 	while (1) {
 
 		int ret;
