@@ -43,6 +43,7 @@ struct ldb_cmdline {
 	const char *sasl_mechanism;
 	const char *input;
 	const char *output;
+	char **controls;
 };
 
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,

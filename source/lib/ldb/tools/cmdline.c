@@ -62,6 +62,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		{ "input", 'I', POPT_ARG_STRING, &options.input, 0, "Input File", "Input" },
 		{ "output", 'O', POPT_ARG_STRING, &options.output, 0, "Output File", "Output" },
 		{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
+		{ "controls", 0, POPT_ARG_STRING, NULL, 'c', "controls", NULL },
 #ifdef _SAMBA_BUILD_
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
@@ -137,7 +138,35 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 			options.options[num_options+1] = NULL;
 			num_options++;
 			break;
-			
+
+		case 'c': {
+			const char *cs = poptGetOptArg(pc);
+			const char *p;
+			int cc;
+
+			for (p = cs, cc = 1; p = strchr(p, ','); cc++) ;
+
+			options.controls = talloc_array(ret, char *, cc + 1);
+			if (options.controls == NULL) {
+				ldb_oom(ldb);
+				goto failed;
+			}
+			for (p = cs, cc = 0; p != NULL; cc++) {
+				const char *t;
+
+				t = strchr(p, ',');
+				if (t == NULL) {
+					options.controls[cc] = talloc_strdup(options.controls, p);
+					p = NULL;
+				} else {
+					options.controls[cc] = talloc_strndup(options.controls, p, t-p);
+			        	p = t + 1;
+				}
+			}
+			options.controls[cc + 1] = NULL;
+
+			break;	  
+		}
 		default:
 			fprintf(stderr, "Invalid option %s: %s\n", 
 				poptBadOption(pc, 0), poptStrerror(opt));
