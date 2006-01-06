@@ -227,30 +227,33 @@ static int server_sort(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int server_sort_init_2(struct ldb_module *module)
+{
+	struct ldb_request request;
+	int ret;
+
+	request.operation = LDB_REQ_REGISTER;
+	request.op.reg.oid = LDB_CONTROL_SERVER_SORT_OID;
+	request.controls = NULL;
+
+	ret = ldb_request(module->ldb, &request);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "server_sort: Unable to register control with rootdse!\n");
+		return LDB_ERR_OTHER;
+	}
+
+	return ldb_next_second_stage_init(module);
+}
+
 static const struct ldb_module_ops server_sort_ops = {
 	.name		   = "server_sort",
 	.request      	   = server_sort,
+	.second_stage_init = server_sort_init_2
 };
 
-struct ldb_module *server_sort_module_init(struct ldb_context *ldb, int stage, const char *options[])
+struct ldb_module *server_sort_module_init(struct ldb_context *ldb, const char *options[])
 {
 	struct ldb_module *ctx;
-
-	if (stage == LDB_MODULES_INIT_STAGE_2) {
-		struct ldb_request request;
-		int ret;
-
-		request.operation = LDB_REQ_REGISTER;
-		request.op.reg.oid = LDB_CONTROL_SERVER_SORT_OID;
-		request.controls = NULL;
-
-		ret = ldb_request(ldb, &request);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "server_sort: Unable to register control with rootdse!\n");
-		}
-
-		return NULL;
-	}
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)

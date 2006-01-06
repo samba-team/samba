@@ -123,24 +123,26 @@ static int skel_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int skel_init_2(struct ldb_module *module)
+{
+	/* second stage init stuff */
+	/* see control modules as example */
+	return ldb_next_second_stage_init(module);
+}
+
 static const struct ldb_module_ops skel_ops = {
 	.name		   = "skel",
 	.request      	   = skel_request,
 	.start_transaction = skel_start_trans,
 	.end_transaction   = skel_end_trans,
 	.del_transaction   = skel_del_trans,
+	.second_stage_init = skel_init_2
 };
 
-struct ldb_module *skel_module_init(struct ldb_context *ldb, int stage, const char *options[])
+struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options[])
 {
 	struct ldb_module *ctx;
 	struct private_data *data;
-
-	if (stage == LDB_MODULES_INIT_STAGE_2) {
-		/* second stage init stuff */
-		/* see control modules as example */
-		return NULL;
-	}
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)

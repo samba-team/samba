@@ -248,31 +248,34 @@ static int paged_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int paged_request_init_2(struct ldb_module *module)
+{
+	struct ldb_request request;
+	int ret;
+
+	request.operation = LDB_REQ_REGISTER;
+	request.op.reg.oid = LDB_CONTROL_PAGED_RESULTS_OID;
+	request.controls = NULL;
+
+	ret = ldb_request(module->ldb, &request);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "paged_request: Unable to register control with rootdse!\n");
+		return LDB_ERR_OTHER;
+	}
+
+	return ldb_next_second_stage_init(module);
+}
+
 static const struct ldb_module_ops paged_ops = {
 	.name		   = "paged_results",
 	.request      	   = paged_request,
+	.second_stage_init = paged_request_init_2
 };
 
-struct ldb_module *paged_results_module_init(struct ldb_context *ldb, int stage, const char *options[])
+struct ldb_module *paged_results_module_init(struct ldb_context *ldb, const char *options[])
 {
 	struct ldb_module *ctx;
 	struct private_data *data;
-
-	if (stage == LDB_MODULES_INIT_STAGE_2) {
-		struct ldb_request request;
-		int ret;
-
-		request.operation = LDB_REQ_REGISTER;
-		request.op.reg.oid = LDB_CONTROL_PAGED_RESULTS_OID;
-		request.controls = NULL;
-
-		ret = ldb_request(ldb, &request);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "paged_request: Unable to register control with rootdse!\n");
-		}
-
-		return NULL;
-	}
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)

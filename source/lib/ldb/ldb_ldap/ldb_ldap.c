@@ -514,12 +514,18 @@ static int lldb_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int lldb_init_2(struct ldb_module *module)
+{
+	return LDB_SUCCESS;
+}
+
 static const struct ldb_module_ops lldb_ops = {
 	.name              = "ldap",
 	.request           = lldb_request,
 	.start_transaction = lldb_start_trans,
 	.end_transaction   = lldb_end_trans,
-	.del_transaction   = lldb_del_trans
+	.del_transaction   = lldb_del_trans,
+	.second_stage_init = lldb_init_2
 };
 
 
