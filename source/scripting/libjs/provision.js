@@ -16,6 +16,7 @@ function install_ok()
 {
 	var lp = loadparm_init();
 	var ldb = ldb_init();
+	ldb.credentials = credentials_cmdline();
 	if (lp.get("realm") == "") {
 		return false;
 	}
@@ -174,19 +175,21 @@ function ldb_erase(ldb)
 /*
   setup a ldb in the private dir
  */
-function setup_ldb(ldif, dbname, subobj)
+function setup_ldb(ldif, session_info, credentials, dbname, subobj)
 {
 	var erase = true;
 	var extra = "";
 	var ldb = ldb_init();
 	var lp = loadparm_init();
+	ldb.session_info = session_info;
+	ldb.credentials = credentials;
 
-	if (arguments.length >= 4) {
-		extra = arguments[3];
+	if (arguments.length >= 6) {
+		extra = arguments[5];
 	}
 
-	if (arguments.length == 5) {
-	        erase = arguments[4];
+	if (arguments.length == 7) {
+	        erase = arguments[6];
         }
 
 	var src = lp.get("setup directory") + "/" + ldif;
@@ -257,12 +260,12 @@ function provision_default_paths(subobj)
 /*
   provision samba4 - caution, this wipes all existing data!
 */
-function provision(subobj, message, blank, paths)
+function provision(subobj, message, blank, paths, session_info, credentials)
 {
 	var data = "";
 	var lp = loadparm_init();
 	var sys = sys_init();
-	
+
 	/*
 	  some options need to be upper/lower case
 	*/
@@ -291,7 +294,7 @@ function provision(subobj, message, blank, paths)
 		lp.reload();
 	}
 	message("Setting up secrets.ldb\n");
-	setup_ldb("secrets.ldif", paths.secrets, subobj);
+	setup_ldb("secrets.ldif", session_info, credentials, paths.secrets, subobj);
 	message("Setting up DNS zone file\n");
 	setup_file("provision.zone", 
 		   paths.dns, 
@@ -300,20 +303,20 @@ function provision(subobj, message, blank, paths)
 	var keytab_ok = credentials_update_all_keytabs();
 	assert(keytab_ok);
 	message("Setting up hklm.ldb\n");
-	setup_ldb("hklm.ldif", paths.hklm, subobj);
+	setup_ldb("hklm.ldif", session_info, credentials, paths.hklm, subobj);
 	message("Setting up sam.ldb attributes\n");
-	setup_ldb("provision_init.ldif", paths.samdb, subobj);
+	setup_ldb("provision_init.ldif", session_info, credentials, paths.samdb, subobj);
 	message("Setting up sam.ldb schema\n");
-	setup_ldb("schema.ldif", paths.samdb, subobj, NULL, false);
+	setup_ldb("schema.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
 	message("Setting up display specifiers\n");
-	setup_ldb("display_specifiers.ldif", paths.samdb, subobj, NULL, false);
+	setup_ldb("display_specifiers.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb templates\n");
-	setup_ldb("provision_templates.ldif", paths.samdb, subobj, NULL, false);
+	setup_ldb("provision_templates.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb data\n");
-	setup_ldb("provision.ldif", paths.samdb, subobj, NULL, false);
+	setup_ldb("provision.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
 	if (blank == false) {
 		message("Setting up sam.ldb users and groups\n");
-		setup_ldb("provision_users.ldif", paths.samdb, subobj, data, false);
+		setup_ldb("provision_users.ldif", session_info, credentials, paths.samdb, subobj, data, false);
 	}
 }
 
@@ -403,12 +406,14 @@ userAccountControl: %u
 /*
   add a new user record
 */
-function newuser(username, unixname, password, message)
+function newuser(username, unixname, password, message, subobj, session_info, credentials)
 {
 	var lp = loadparm_init();
 	var samdb = lp.get("sam database");
 	var ldb = ldb_init();
 	random_init(local);
+	ldb.session_info = session_info;
+	ldb.credentials = credentials;
 
 	/* connect to the sam */
 	var ok = ldb.connect(samdb);
