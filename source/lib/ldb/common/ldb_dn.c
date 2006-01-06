@@ -417,6 +417,39 @@ failed:
 	return NULL;
 }
 
+struct ldb_dn *ldb_dn_explode_or_special(void *mem_ctx, const char *dn)
+{
+	struct ldb_dn *edn; /* the exploded dn */
+
+	if (dn == NULL) return NULL;
+
+	if (strncasecmp(dn, "<GUID=", 6) == 0) {
+		/* this is special DN returned when the
+		 * exploded_dn control is used
+		 */
+
+		/* Allocate a structure to hold the exploded DN */
+		edn = ldb_dn_new(mem_ctx);
+
+		edn->comp_num = 1;
+		edn->components = talloc(edn, struct ldb_dn_component);
+		if (edn->components == NULL) goto failed;
+		edn->components[0].name = talloc_strdup(edn->components, LDB_SPECIAL);
+		if (edn->components[0].name == NULL) goto failed;
+		edn->components[0].value.data = (uint8_t *)talloc_strdup(edn->components, dn);
+		if (edn->components[0].value.data== NULL) goto failed;
+		edn->components[0].value.length = strlen(dn);
+		return edn;
+
+	}
+	
+	return ldb_dn_explode(mem_ctx, dn);
+
+failed:
+	talloc_free(edn);
+	return NULL;
+}
+
 char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn)
 {
 	char *dn, *value;

@@ -484,9 +484,11 @@ static const struct ldb_module_ops schema_ops = {
 	.request           = schema_request
 };
 
-struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *schema_module_init(struct ldb_context *ldb, int stage, const char *options[])
 {
 	struct ldb_module *ctx;
+
+	if (stage != LDB_MODULES_INIT_STAGE_1) return NULL;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx) {

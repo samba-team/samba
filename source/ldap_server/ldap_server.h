@@ -53,14 +53,14 @@ struct ldapsrv_partition_ops {
 	const char *name;
 	NTSTATUS (*Init)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
 	NTSTATUS (*Bind)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
-	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_SearchRequest *r);
-	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyRequest *r);
-	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AddRequest *r);
-	NTSTATUS (*Del)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_DelRequest *r);
-	NTSTATUS (*ModifyDN)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r);
-	NTSTATUS (*Compare)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_CompareRequest *r);
-	NTSTATUS (*Abandon)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AbandonRequest *r);
-	NTSTATUS (*Extended)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ExtendedRequest *r);
+	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*Del)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*ModifyDN)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*Compare)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*Abandon)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
+	NTSTATUS (*Extended)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
 };
 
 struct ldapsrv_partition {

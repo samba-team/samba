@@ -243,15 +243,14 @@ union ldap_Request {
 struct ldap_Control {
 	const char *oid;
 	BOOL        critical;
-	DATA_BLOB   value;
+	void       *value;
 };
 
 struct ldap_message {
-	uint32_t                messageid;
+	int                     messageid;
 	enum ldap_request_tag   type;
 	union ldap_Request      r;
-	int			num_controls;
-	struct ldap_Control    *controls;
+	struct ldap_Control    **controls;
 };
 
 #include "libcli/ldap/ldap_proto.h"
