@@ -1161,7 +1161,7 @@ Added user "LoginID"
 <screen>
 &rootprompt; mkdir -p /data
 &rootprompt; chown alan /data
-&rootprompt; for i in james suzy ursula peter dale eric jeannie russell
+&rootprompt; for i in james suzy ujen peter dale eric jeannie russ
 > do
 > 	mkdir -p /data/$i
 > 	chown $i /data/$i
@@ -1259,7 +1259,7 @@ application/octet-stream
 			Make certain to check the ownership and permissions on all files. If in doubt, execute the following:
 <screen>
 &rootprompt; chown alan /data
-&rootprompt; for i in james suzy ursula peter dale eric jeannie russell
+&rootprompt; for i in james suzy ujen peter dale eric jeannie russ
 > do
 > 	chown $i /data/$i
 > done

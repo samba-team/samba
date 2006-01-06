@@ -1077,12 +1077,12 @@ Added user <parameter>username</parameter>.
 		<indexterm><primary>file system</primary><secondary>permissions</secondary></indexterm>
                 Create the top-level file storage directories for data and applications as follows:
 <screen>
-&rootprompt; mkdir -p /data/{accounts,finsvcs}
+&rootprompt; mkdir -p /data/{accounts,finsrvcs}
 &rootprompt; mkdir -p /apps
 &rootprompt; chown -R root:root /data
 &rootprompt; chown -R root:root /apps
-&rootprompt; chown -R bjordan:accounts /data/accounts
-&rootprompt; chown -R bjordan:finsvcs /data/finsvcs
+&rootprompt; chown -R bjordan:acctsdep /data/accounts
+&rootprompt; chown -R bjordan:finsrvcs /data/finsrvcs
 &rootprompt; chmod -R ug+rwxs,o-rwx /data
 &rootprompt; chmod -R ug+rwx,o+rx-w /apps
 </screen>
@@ -1106,6 +1106,8 @@ Added user <parameter>username</parameter>.
 &rootprompt; chown -R root:root /var/spool/samba
 &rootprompt; chown -R root:root /var/lib/samba
 &rootprompt; chmod a+rwxt /var/spool/samba
+&rootprompt; chmod 2775 /var/lib/samba/profiles
+&rootprompt; chgrp users /var/lib/samba/profiles
 </screen>
 		For each user account that is created on the system, the following commands should be
 		executed:
@@ -1578,10 +1580,10 @@ hosts:      files dns wins
 		requests only when configured to do so. Ensure that your print queues are
 		set to accept incoming jobs by executing the following commands:
 <screen>
-&rootprompt; /usr/bin/accept qmsa
-&rootprompt; /usr/bin/accept hplj6a
-&rootprompt; /usr/bin/accept qmsf
-&rootprompt; /usr/bin/accept hplj6f
+&rootprompt; /usr/sbin/accept qmsa
+&rootprompt; /usr/sbin/accept hplj6a
+&rootprompt; /usr/sbin/accept qmsf
+&rootprompt; /usr/sbin/accept hplj6f
 </screen>
 		</para></step>
 
@@ -1656,7 +1658,7 @@ application/octet-stream
                 automatically at every system reboot. For example,
                 <indexterm><primary>chkconfig</primary></indexterm>
 <screen>
-&rootprompt; chkconfig dhpc on
+&rootprompt; chkconfig dhpcd on
 &rootprompt; chkconfig named on
 &rootprompt; chkconfig cups on
 &rootprompt; chkconfig smb on
@@ -1671,7 +1673,7 @@ application/octet-stream
 		Execute each of the following in the sequence shown:
 
 <screen>
-&rootprompt; /etc/rc.d/init.d/dhcp restart
+&rootprompt; /etc/rc.d/init.d/dhcpd restart
 &rootprompt; /etc/rc.d/init.d/named restart
 &rootprompt; /etc/rc.d/init.d/cups restart
 &rootprompt; /etc/rc.d/init.d/smb restart
