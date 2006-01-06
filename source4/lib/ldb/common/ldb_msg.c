@@ -623,11 +623,13 @@ int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *rep
 void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
-	int n = (el - msg->elements);
-	if (n != msg->num_elements-1) {
-		memmove(el, el+1, ((msg->num_elements-1) - n)*sizeof(*el));
+	if (el) {
+		int n = (el - msg->elements);
+		if (n != msg->num_elements-1) {
+			memmove(el, el+1, ((msg->num_elements-1) - n)*sizeof(*el));
+		}
+		msg->num_elements--;
 	}
-	msg->num_elements--;
 }
 
 /*
