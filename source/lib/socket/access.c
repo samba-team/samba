@@ -249,9 +249,9 @@ static BOOL allow_access_internal(TALLOC_CTX *mem_ctx,
 }
 
 /* return true if access should be allowed */
-static BOOL allow_access(TALLOC_CTX *mem_ctx,
-			 const char **deny_list, const char **allow_list,
-			 const char *cname, const char *caddr)
+BOOL allow_access(TALLOC_CTX *mem_ctx,
+		  const char **deny_list, const char **allow_list,
+		  const char *cname, const char *caddr)
 {
 	BOOL ret;
 	char *nc_cname = talloc_strdup(mem_ctx, cname);
