@@ -82,9 +82,9 @@ static int do_global_checks(void)
 /*
 	static BOOL show_all_parameters = False;
 	static char *parameter_name = NULL;
-	static const char *section_name = NULL;
 	static char *new_local_machine = NULL;
 */
+	static const char *section_name = NULL;
 	static const char *cname;
 	static const char *caddr;
 	static int show_defaults;
@@ -101,8 +101,8 @@ static int do_global_checks(void)
   These are harder to do with the new code structure
 		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
 		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
-		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
 */
+		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
 		{"client-name", '\0', POPT_ARG_STRING, &cname, 0, "Client DNS name for 'hosts allow' checking (should match reverse lookup)"},
 		{"client-ip", '\0', POPT_ARG_STRING, &caddr, 0, "Client IP address for 'hosts allow' checking"},
 		POPT_COMMON_VERSION
@@ -196,7 +196,26 @@ static int do_global_checks(void)
 			fflush(stdout);
 			getc(stdin);
 		}
-		lp_dump(stdout, show_defaults, lp_numservices());
+		if (section_name) {
+			BOOL isGlobal = False;
+			if (!section_name) {
+				section_name = GLOBAL_NAME;
+				isGlobal = True;
+			} else if ((isGlobal=!strwicmp(section_name, GLOBAL_NAME)) == 0 &&
+				 (s=lp_servicenumber(section_name)) == -1) {
+					fprintf(stderr,"Unknown section %s\n",
+						section_name);
+					return(1);
+			}
+			if (isGlobal == True) {
+				lp_dump(stdout, show_defaults, 0);
+			} else {
+				lp_dump_one(stdout, show_defaults, s);
+			}
+		} else {
+			lp_dump(stdout, show_defaults, lp_numservices());
+		}
+		return(ret);
 	}
 
 	if(cname && caddr){

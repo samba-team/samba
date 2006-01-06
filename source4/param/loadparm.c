@@ -66,18 +66,6 @@
 
 static BOOL bLoaded = False;
 
-#ifndef GLOBAL_NAME
-#define GLOBAL_NAME "global"
-#endif
-
-#ifndef PRINTERS_NAME
-#define PRINTERS_NAME "printers"
-#endif
-
-#ifndef HOMES_NAME
-#define HOMES_NAME "homes"
-#endif
-
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
 #define VALID(i) ServicePtrs[i]->valid
@@ -706,6 +694,12 @@ static void init_globals(void)
 	do_parameter("tls cafile", "tls/ca.pem", NULL);
 	do_parameter_var("js include", "%s/js", dyn_LIBDIR);
 	do_parameter_var("setup directory", "%s/setup", dyn_LIBDIR);
+
+	for (i = 0; parm_table[i].label; i++) {
+		if (!(parm_table[i].flags & FLAG_CMDLINE)) {
+			parm_table[i].flags |= FLAG_DEFAULT;
+		}
+	}
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1886,6 +1880,17 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 	}
 
+	if (parm_table[parmnum].flags & FLAG_DEFAULT) {
+		parm_table[parmnum].flags &= ~FLAG_DEFAULT;
+		/* we have to also unset FLAG_DEFAULT on aliases */
+		for (i=parmnum-1;i>=0 && parm_table[i].ptr == parm_table[parmnum].ptr;i--) {
+			parm_table[i].flags &= ~FLAG_DEFAULT;
+		}
+		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].ptr == parm_table[parmnum].ptr;i++) {
+			parm_table[i].flags &= ~FLAG_DEFAULT;
+		}
+	}
+
 	return (True);
 }
 
@@ -2151,7 +2156,7 @@ static BOOL is_default(int i)
 Display the contents of the global structure.
 ***************************************************************************/
 
-static void dump_globals(FILE *f)
+static void dump_globals(FILE *f, BOOL show_defaults)
 {
 	int i;
 	struct param_opt *data;
@@ -2162,7 +2167,7 @@ static void dump_globals(FILE *f)
 		if (parm_table[i].class == P_GLOBAL &&
 		    parm_table[i].ptr &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
-			if (defaults_saved && is_default(i))
+			if (!show_defaults && (parm_table[i].flags & FLAG_DEFAULT)) 
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i], parm_table[i].ptr, f);
@@ -2441,7 +2446,7 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 	if (show_defaults)
 		defaults_saved = False;
 
-	dump_globals(f);
+	dump_globals(f, show_defaults);
 
 	dump_a_service(&sDefault, f);
 
