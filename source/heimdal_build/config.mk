@@ -442,6 +442,7 @@ heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 	@-rm -f heimdal/lib/krb5/heim_err.{c,h}
 	@-rm -f heimdal/lib/krb5/k524_err.{c,h}
 	@-rm -f heimdal/lib/krb5/krb5_err.{c,h}
+	@-rm -f bin/compile_et bin/asn1_compile
 
 #######################
 # Start SUBSYSTEM HEIMDAL
