@@ -10,6 +10,7 @@ options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
 		'realm=s',
 		'domain=s',
 		'domain-guid=s',
@@ -112,9 +113,11 @@ if (!provision_validate(subobj, message)) {
 	return -1;
 }
 
+var creds = options.get_credentials();
 
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
-provision(subobj, message, blank, provision_default_paths(subobj));
+message("Credentials: %s\n", creds);
+provision(subobj, message, blank, provision_default_paths(subobj), NULL, creds);
 message("All OK\n");
 return 0;
