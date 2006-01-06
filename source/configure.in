@@ -1159,19 +1159,6 @@ AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
 AC_CHECK_HEADERS(libexc.h)
 AC_CHECK_LIB(exc, trace_back_stack)
 
-echo -n "checking for GPFS 2.4 libs... "
-save_LIBS="$LIBS"
-LIBS="$LIBS -lgpfs"
-AC_TRY_LINK([#include <gpfs.h>],
-	    [gpfs_set_share(0,GPFS_SHARE_READ,GPFS_DENY_NONE)],
-	    samba_cv_HAVE_GPFS_SET_SHARE=yes,
-	    samba_cv_HAVE_GPFS_SET_SHARE=no)
-echo $samba_cv_HAVE_GPFS_SET_SHARE
-if test x"$samba_cv_HAVE_GPFS_SET_SHARE" = x"yes"; then
-    AC_DEFINE(HAVE_GPFS_SET_SHARE,1,[Whether GPFS 2.4 libs are available])
-fi
-LIBS="$save_LIBS"
-
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
 
