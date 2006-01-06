@@ -2231,40 +2231,31 @@ static void dump_a_service(service * pService, FILE * f)
 BOOL lp_dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
 	service * pService = ServicePtrs[snum];
-	int i, result = False;
 	parm_class p_class;
 	unsigned flag = 0;
-
+	struct parm_struct *parm;
+	void *ptr;
 	if (isGlobal) {
 		p_class = P_GLOBAL;
 		flag = FLAG_GLOBAL;
 	} else
 		p_class = P_LOCAL;
 	
-	for (i = 0; parm_table[i].label; i++) {
-		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
-		    (parm_table[i].class == p_class || parm_table[i].flags & flag) &&
-		    parm_table[i].ptr &&
-		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
-		{
-			void *ptr;
-
-			if (isGlobal)
-				ptr = parm_table[i].ptr;
-			else
-				ptr = ((char *)pService) +
-					PTR_DIFF(parm_table[i].ptr, &sDefault);
-
-			print_parameter(&parm_table[i],
-					ptr, f);
-			fprintf(f, "\n");
-			result = True;
-			break;
-		}
+	parm = lp_parm_struct(parm_name);
+	if (!parm) {
+		return False;
 	}
-
-	return result;
+	
+	if (isGlobal)
+		ptr = parm->ptr;
+	else
+		ptr = ((char *)pService) +
+			PTR_DIFF(parm->ptr, &sDefault);
+	
+	print_parameter(parm,
+			ptr, f);
+	fprintf(f, "\n");
+	return True;
 }
 
 /***************************************************************************

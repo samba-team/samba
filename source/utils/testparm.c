@@ -215,7 +215,7 @@ static int do_global_checks(void)
 					lp_dump_one(stdout, show_defaults, s);
 				}
 			} else {
-				ret = lp_dump_a_parameter(s, parameter_name, stdout, isGlobal);
+				ret = !lp_dump_a_parameter(s, parameter_name, stdout, isGlobal);
 			}
 		} else {
 			lp_dump(stdout, show_defaults, lp_numservices());
