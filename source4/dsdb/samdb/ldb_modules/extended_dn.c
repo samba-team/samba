@@ -266,34 +266,33 @@ static int extended_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int extended_init_2(struct ldb_module *module)
+{
+	struct ldb_request request;
+	int ret;
+
+	request.operation = LDB_REQ_REGISTER;
+	request.op.reg.oid = LDB_CONTROL_EXTENDED_DN_OID;
+	request.controls = NULL;
+
+	ret = ldb_request(module->ldb, &request);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "extended_dn: Unable to register control with rootdse!\n");
+		return LDB_ERR_OTHER;
+	}
+
+	return ldb_next_second_stage_init(module);
+}
+
 static const struct ldb_module_ops extended_dn_ops = {
 	.name		   = "extended_dn",
 	.request      	   = extended_request,
+	.second_stage_init = extended_init_2
 };
 
-#ifdef HAVE_DLOPEN_DISABLED
-struct ldb_module *init_module(struct ldb_context *ldb, int stage, const char *options[])
-#else
-struct ldb_module *extended_dn_module_init(struct ldb_context *ldb, int stage, const char *options[])
-#endif
+struct ldb_module *extended_dn_module_init(struct ldb_context *ldb, const char *options[])
 {
 	struct ldb_module *ctx;
-
-	if (stage == LDB_MODULES_INIT_STAGE_2) {
-		struct ldb_request request;
-		int ret;
-
-		request.operation = LDB_REQ_REGISTER;
-		request.op.reg.oid = LDB_CONTROL_EXTENDED_DN_OID;
-		request.controls = NULL;
-
-		ret = ldb_request(ldb, &request);
-		if (ret != LDB_SUCCESS) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "extended_dn: Unable to register control with rootdse!\n");
-		}
-
-		return NULL;
-	}
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)

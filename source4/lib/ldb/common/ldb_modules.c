@@ -201,7 +201,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		int m;
 		for (m=0;well_known_modules[m].name;m++) {
 			if (strcmp(modules[i], well_known_modules[m].name) == 0) {
-				current = well_known_modules[m].init(ldb, LDB_MODULES_INIT_STAGE_1, options);
+				current = well_known_modules[m].init(ldb, options);
 				if (current == NULL) {
 					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
 					return -1;
@@ -217,14 +217,9 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	}
 
 	/* second stage init */
-	for (i = 0; modules[i] != NULL; i++) {
-		int m;
-		for (m = 0; well_known_modules[m].name; m++) {
-			if (strcmp(modules[i], well_known_modules[m].name) == 0) {
-				well_known_modules[m].init(ldb, LDB_MODULES_INIT_STAGE_2, options);
-				break;
-			}
-		}
+	if (ldb_second_stage_init(ldb) != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ERROR: Second stage init failed!\n");
+		return -1;
 	}
 
 	talloc_free(modules);
@@ -239,7 +234,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 #define FIND_OP(module, op) do { \
 	module = module->next; \
 	while (module && module->ops->op == NULL) module = module->next; \
-	if (module == NULL) return -1; \
+	if (module == NULL) return LDB_ERR_OTHER; \
 } while (0)
 
 
@@ -250,6 +245,12 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 {
 	FIND_OP(module, request);
 	return module->ops->request(module, request);
+}
+
+int ldb_next_second_stage_init(struct ldb_module *module)
+{
+	FIND_OP(module, second_stage_init);
+	return module->ops->second_stage_init(module);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)
