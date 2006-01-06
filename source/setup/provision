@@ -114,10 +114,10 @@ if (!provision_validate(subobj, message)) {
 }
 
 var creds = options.get_credentials();
+var system_session = system_session();
 
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
-message("Credentials: %s\n", creds);
-provision(subobj, message, blank, provision_default_paths(subobj), NULL, creds);
+provision(subobj, message, blank, provision_default_paths(subobj), system_session, creds);
 message("All OK\n");
 return 0;

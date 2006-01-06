@@ -158,9 +158,26 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  initialise credentials ejs object
+*/
+static int ejs_system_session(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar *obj = mprInitObject(eid, "session_info", argc, argv);
+	struct auth_session_info *session_info = system_session(mprMemCtx());
+
+	if (session_info == NULL) {
+		return -1;
+	}
+
+	mprSetPtrChild(obj, "session_info", session_info);
+	return 0;
+}
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_auth(void)
 {
 	ejsDefineCFunction(-1, "userAuth", ejs_userAuth, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "system_session", ejs_system_session, NULL, MPR_VAR_SCRIPT_HANDLE);
 }

@@ -385,9 +385,9 @@ static int ejs_ldbModify(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 {
 	struct ldb_context *ldb;
-	struct auth_session_info *session_info;
+	struct auth_session_info *session_info = NULL;
 	struct cli_credentials *creds = NULL;
-	struct MprVar *credentials;
+	struct MprVar *credentials, *session;
 	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
 
 	const char *dbfile;
@@ -397,11 +397,14 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	session_info = mprGetThisPtr(eid, "session_info");
-
 	credentials = mprGetProperty(this, "credentials", NULL);
 	if (credentials) {
 		creds = mprGetPtr(credentials, "creds");
+	}
+
+	session = mprGetProperty(this, "session_info", NULL);
+	if (session) {
+		session_info = mprGetPtr(session, "session_info");
 	}
 
 	dbfile = argv[0];

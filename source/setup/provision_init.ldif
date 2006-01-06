@@ -69,5 +69,5 @@ isSynchronized: TRUE
 #Add modules to the list to activate them by default
 #beware often order is important
 dn: @MODULES
-@LIST: rootdse,paged_results,server_sort,extended_dn,samldb,password_hash,operational,objectguid,rdn_name,objectclass
+@LIST: rootdse,kludge_acl,paged_results,server_sort,extended_dn,samldb,password_hash,operational,objectguid,rdn_name,objectclass
 
