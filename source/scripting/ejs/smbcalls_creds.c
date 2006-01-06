@@ -237,6 +237,9 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 int ejs_credentials_cmdline(int eid, int argc, struct MprVar **argv)
 {
 	struct MprVar *obj = mprInitObject(eid, "credentials", argc, argv);
+	if (talloc_reference(mprMemCtx(), cmdline_credentials) == NULL) {
+		return -1;
+	}
 	return ejs_credentials_obj(obj, cmdline_credentials);
 }
 
