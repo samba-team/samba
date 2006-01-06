@@ -437,9 +437,6 @@ heimdal_basics: \
 
 heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
-	@-rm -f heimdal/lib/hdb/hdb_asn1.h
-	@-rm -f heimdal/lib/gssapi/spnego_asn1.h
-	@-rm -f heimdal/lib/asn1/krb5_asn1.h
 	@-rm -f heimdal/lib/asn1/asn1_err.{c,h}
 	@-rm -f heimdal/lib/hdb/hdb_err.{c,h}
 	@-rm -f heimdal/lib/krb5/heim_err.{c,h}
