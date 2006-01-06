@@ -78,7 +78,6 @@ static int do_global_checks(void)
 	static BOOL silent_mode = False;
 	int ret = 0;
 	poptContext pc;
-	static const char *term_code = "";
 /*
 	static BOOL show_all_parameters = False;
 	static char *new_local_machine = NULL;
@@ -96,7 +95,7 @@ static int do_global_checks(void)
 /*
   We need support for smb.conf macros before this will work again 
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
-*/		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
+*/
 /*
   These are harder to do with the new code structure
 		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
