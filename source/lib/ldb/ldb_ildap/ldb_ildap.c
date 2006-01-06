@@ -148,11 +148,14 @@ static void ildb_rootdse(struct ldb_module *module);
 */
 static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_result **res)
+			      const char * const *attrs,
+			      struct ldb_control **control_req,
+			      struct ldb_result **res)
 {
 	struct ildb_private *ildb = module->private_data;
 	int count, i;
 	struct ldap_message **ldapres, *msg;
+	struct ldap_Control **controls = NULL;
 	char *search_base;
 	NTSTATUS status;
 
@@ -189,9 +192,12 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	}
 	(*res)->count = 0;
 	(*res)->msgs = NULL;
+	(*res)->controls = NULL;
 
-	status = ildap_search_bytree(ildb->ldap, search_base, scope, tree, attrs, 
-					    0, &ldapres);
+	status = ildap_search_bytree(ildb->ldap, search_base, scope, tree, attrs, 0,
+				     (struct ldap_Control **)control_req,
+				     &controls,
+				     &ldapres);
 	talloc_free(search_base);
 	if (!NT_STATUS_IS_OK(status)) {
 		ildb_map_error(ildb, status);
@@ -230,7 +236,7 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 		}
 		(*res)->msgs[i+1] = NULL;
 
-		(*res)->msgs[i]->dn = ldb_dn_explode((*res)->msgs[i], search->dn);
+		(*res)->msgs[i]->dn = ldb_dn_explode_or_special((*res)->msgs[i], search->dn);
 		if ((*res)->msgs[i]->dn == NULL) {
 			goto failed;
 		}
@@ -242,6 +248,11 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	talloc_free(ldapres);
 
 	(*res)->count = count;
+
+	if (controls) {
+		(*res)->controls = (struct ldb_control **)talloc_steal(*res, controls);
+	}
+
 	return LDB_SUCCESS;
 
 failed:
@@ -407,6 +418,7 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 					  req->op.search.scope, 
 					  req->op.search.tree, 
 					  req->op.search.attrs, 
+					  req->controls,
 					  &req->op.search.res);
 
 	case LDB_REQ_ADD:
@@ -449,7 +461,7 @@ static void ildb_rootdse(struct ldb_module *module)
 	int ret;
 	ret = ildb_search_bytree(module, empty_dn, LDB_SCOPE_BASE, 
 				 ldb_parse_tree(empty_dn, "dn=dc=rootDSE"), 
-				 NULL, &res);
+				 NULL, NULL, &res);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		ildb->rootDSE = talloc_steal(ildb, res->msgs[0]);
 	}

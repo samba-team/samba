@@ -288,6 +288,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	newreq.op.search.scope = req->op.search.scope;
 	newreq.op.search.attrs = req->op.search.attrs;
 	newreq.op.search.res = req->op.search.res;
+	newreq.controls = req->controls;
 	ret = ldb_request(proxy->upstream, &newreq);
 	if (ret != LDB_SUCCESS) {
 		ldb_set_errstring(module, talloc_strdup(module, ldb_errstring(proxy->upstream)));
@@ -332,9 +333,11 @@ static const struct ldb_module_ops proxy_ops = {
 	.request	= proxy_request
 };
 
-struct ldb_module *proxy_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *proxy_module_init(struct ldb_context *ldb, int stage, const char *options[])
 {
 	struct ldb_module *ctx;
+
+	if (stage != LDB_MODULES_INIT_STAGE_1) return NULL;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)

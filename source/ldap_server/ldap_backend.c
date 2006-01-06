@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "dlinklist.h"
+#include "libcli/ldap/ldap.h"
 
 
 struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type)
@@ -39,6 +40,7 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type
 
 	reply->msg->messageid = call->request->messageid;
 	reply->msg->type = type;
+	reply->msg->controls = NULL;
 
 	return reply;
 }
@@ -108,7 +110,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		return NT_STATUS_OK;
 	}
 
-	return part->ops->Search(part, call, req);
+	return part->ops->Search(part, call);
 }
 
 static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
@@ -125,7 +127,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 		return ldapsrv_unwilling(call, 53);
 	}
 
-	return part->ops->Modify(part, call, req);
+	return part->ops->Modify(part, call);
 }
 
 static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
@@ -142,7 +144,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 		return ldapsrv_unwilling(call, 53);
 	}
 
-	return part->ops->Add(part, call, req);
+	return part->ops->Add(part, call);
 }
 
 static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
@@ -159,7 +161,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 		return ldapsrv_unwilling(call, 53);
 	}
 
-	return part->ops->Del(part, call, req);
+	return part->ops->Del(part, call);
 }
 
 static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
@@ -177,7 +179,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		return ldapsrv_unwilling(call, 53);
 	}
 
-	return part->ops->ModifyDN(part, call, req);
+	return part->ops->ModifyDN(part, call);
 }
 
 static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
@@ -194,7 +196,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 		return ldapsrv_unwilling(call, 53);
 	}
 
-	return part->ops->Compare(part, call, req);
+	return part->ops->Compare(part, call);
 }
 
 static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)

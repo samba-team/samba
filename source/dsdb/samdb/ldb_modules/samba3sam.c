@@ -878,7 +878,9 @@ const struct ldb_map_attribute samba3_attributes[] =
 };
 
 	/* the init function */
-struct ldb_module *ldb_samba3sam_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *ldb_samba3sam_module_init(struct ldb_context *ldb, int stage, const char *options[])
 {
+	if (stage != LDB_MODULES_INIT_STAGE_1) return NULL;
+
 	return ldb_map_init(ldb, samba3_attributes, samba3_objectclasses, "samba3sam");
 }

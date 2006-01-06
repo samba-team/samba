@@ -737,6 +737,12 @@ static int ltdb_del_trans(struct ldb_module *module)
 
 static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 {
+	/* check for oustanding critical controls and return an error if found */
+
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
+	
 	switch (req->operation) {
 
 	case LDB_REQ_SEARCH:

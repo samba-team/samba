@@ -131,10 +131,16 @@ static const struct ldb_module_ops skel_ops = {
 	.del_transaction   = skel_del_trans,
 };
 
-struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *skel_module_init(struct ldb_context *ldb, int stage, const char *options[])
 {
 	struct ldb_module *ctx;
 	struct private_data *data;
+
+	if (stage == LDB_MODULES_INIT_STAGE_2) {
+		/* second stage init stuff */
+		/* see control modules as example */
+		return NULL;
+	}
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)

@@ -141,12 +141,6 @@ struct ldb_context;
 typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *);
 
 
-struct ldb_module;
-
-/* module initialisation function */
-typedef struct ldb_module *(*ldb_module_init_t)(struct ldb_context *, const char **);
-
-
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
 		      LDB_DEBUG_WARNING, LDB_DEBUG_TRACE};
@@ -253,7 +247,41 @@ struct ldb_attrib_handler {
 #define LDB_SYNTAX_UTC_TIME             "1.3.6.1.4.1.1466.115.121.1.53"
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
-struct ldb_controls;
+/* sorting helpers */
+typedef int (*ldb_qsort_cmp_fn_t) (const void *, const void *, const void *);
+
+#define LDB_CONTROL_PAGED_RESULTS_OID	"1.2.840.113556.1.4.319"
+#define LDB_CONTROL_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
+#define LDB_CONTROL_SERVER_SORT_OID	"1.2.840.113556.1.4.473"
+#define LDB_CONTROL_SORT_RESP_OID	"1.2.840.113556.1.4.474"
+
+struct ldb_paged_control {
+	int size;
+	int cookie_len;
+	char *cookie;
+};
+
+struct ldb_extended_dn_control {
+	int type;
+};
+
+struct ldb_server_sort_control {
+	char *attributeName;
+	char *orderingRule;
+	int reverse;
+};
+
+struct ldb_sort_resp_control {
+	int result;
+	char *attr_desc;
+};
+
+struct ldb_control {
+	const char *oid;
+	int critical;
+	void *data;
+};
+
 struct ldb_credentials;
 
 enum ldb_request_type {
@@ -261,12 +289,14 @@ enum ldb_request_type {
 	LDB_REQ_ADD,
 	LDB_REQ_MODIFY,
 	LDB_REQ_DELETE,
-	LDB_REQ_RENAME
+	LDB_REQ_RENAME,
+	LDB_REQ_REGISTER
 };
 
 struct ldb_result {
 	unsigned int count;
 	struct ldb_message **msgs;
+	struct ldb_control **controls;
 };
 
 struct ldb_search {
@@ -294,6 +324,10 @@ struct ldb_rename {
 	const struct ldb_dn *newdn;
 };
 
+struct ldb_register_control {
+	const char *oid;
+};
+
 struct ldb_request {
 
 	int operation;
@@ -304,9 +338,10 @@ struct ldb_request {
 		struct ldb_modify mod;
 		struct ldb_delete del;
 		struct ldb_rename rename;
+		struct ldb_register_control reg;
 	} op;
 
-	struct ldb_controls *controls;
+	struct ldb_control **controls;
 	struct ldb_credentials *creds;
 }; 
 
@@ -427,6 +462,7 @@ int ldb_dn_check_special(const struct ldb_dn *dn, const char *check);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
 struct ldb_dn *ldb_dn_new(void *mem_ctx);
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+struct ldb_dn *ldb_dn_explode_or_special(void *mem_ctx, const char *dn);
 char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn);
 char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *edn);
 int ldb_dn_compare_base(struct ldb_context *ldb, const struct ldb_dn *base, const struct ldb_dn *dn);
@@ -565,4 +601,7 @@ time_t ldb_string_to_time(const char *s);
 
 char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);
 char *ldb_dn_canonical_ex_string(void *mem_ctx, const struct ldb_dn *dn);
+
+
+void ldb_qsort (void *const pbase, size_t total_elems, size_t size, void *opaque, ldb_qsort_cmp_fn_t cmp);
 #endif

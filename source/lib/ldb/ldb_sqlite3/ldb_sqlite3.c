@@ -984,6 +984,7 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 
 	(*res)->msgs = talloc_steal(*res, msgs.msgs);
 	(*res)->count = msgs.count;
+	(*res)->controls = NULL;
 
 	talloc_free(local_ctx);
 	return LDB_SUCCESS;
@@ -1783,6 +1784,11 @@ destructor(void *p)
 
 static int lsqlite3_request(struct ldb_module *module, struct ldb_request *req)
 {
+	/* check for oustanding critical controls and return an error if found */
+	if (check_critical_controls(req->controls)) {
+		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+	}
+	
 	switch (req->operation) {
 
 	case LDB_REQ_SEARCH:
@@ -1791,7 +1797,7 @@ static int lsqlite3_request(struct ldb_module *module, struct ldb_request *req)
 					  req->op.search.scope, 
 					  req->op.search.tree, 
 					  req->op.search.attrs, 
-					  req->op.search.res);
+					  &req->op.search.res);
 
 	case LDB_REQ_ADD:
 		return lsqlite3_add(module, req->op.add.message);

@@ -4,6 +4,7 @@
    rootDSE ldb module
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Simo Sorce 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +28,11 @@
 #include "auth/gensec/gensec.h"
 #include <time.h>
 
+struct private_data {
+	int num_controls;
+	char **controls;
+};
+
 /*
   return 1 if a specific attribute has been requested
 */
@@ -42,6 +48,7 @@ static int do_attribute(const char * const *attrs, const char *name)
 */
 static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *req)
 {
+	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
 	struct ldb_search *s = &req->op.search;
 	struct ldb_message *msg;
 	struct cli_credentials *server_creds;
@@ -62,6 +69,16 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 			goto failed;
 		}
 	}
+
+	if (do_attribute(s->attrs, "supportedControl")) {
+ 		int i;
+		for (i = 0; i < priv->num_controls; i++) {
+			if (ldb_msg_add_string(msg, "supportedControl",
+						priv->controls[i]) != 0) {
+				goto failed;
+ 			}
+ 		}
+ 	}
 
 	server_creds = talloc_get_type(ldb_get_opaque(module->ldb, "server_credentials"), 
 				       struct cli_credentials);
@@ -130,12 +147,35 @@ static int rootdse_search_bytree(struct ldb_module *module, struct ldb_request *
 	return ret;
 }
 
+static int rootdse_register_control(struct ldb_module *module, struct ldb_request *req)
+{
+	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
+	char **list;
+
+	list = talloc_realloc(priv, priv->controls, char *, priv->num_controls + 1);
+	if (!list) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	list[priv->num_controls] = talloc_strdup(list, req->op.reg.oid);
+	if (!list[priv->num_controls]) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	priv->num_controls += 1;
+	priv->controls = list;
+
+	return LDB_SUCCESS;
+}
+ 
 
 static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
 	case LDB_REQ_SEARCH:
 		return rootdse_search_bytree(module, req);
+	case LDB_REQ_REGISTER:
+		return rootdse_register_control(module, req);
 	default:
 		break;
 	}
@@ -147,18 +187,30 @@ static const struct ldb_module_ops rootdse_ops = {
 	.request	= rootdse_request
 };
 
-struct ldb_module *rootdse_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *rootdse_module_init(struct ldb_context *ldb, int stage, const char *options[])
 {
 	struct ldb_module *ctx;
+	struct private_data *data;
+
+	if (stage != LDB_MODULES_INIT_STAGE_1) return NULL;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
+	data = talloc(ctx, struct private_data);
+	if (data == NULL) {
+		talloc_free(ctx);
+		return NULL;
+	}
+
+	data->num_controls = 0;
+	data->controls = NULL;
+	ctx->private_data = data;
+
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &rootdse_ops;
-	ctx->private_data = NULL;
 
 	return ctx;
 }

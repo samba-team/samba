@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "auth/auth.h"
 
@@ -41,6 +42,7 @@ static struct ldap_message *new_ldap_simple_bind_msg(struct ldap_connection *con
 	res->r.BindRequest.dn = talloc_strdup(res, dn);
 	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
 	res->r.BindRequest.creds.password = talloc_strdup(res, pw);
+	res->controls = NULL;
 
 	return res;
 }
@@ -128,6 +130,7 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
 	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SASL;
 	res->r.BindRequest.creds.SASL.mechanism = talloc_strdup(res, sasl_mechanism);
 	res->r.BindRequest.creds.SASL.secblob = *secblob;
+	res->controls = NULL;
 
 	return res;
 }
@@ -186,7 +189,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	}
 
 	status = ildap_search(conn, "", LDAP_SEARCH_SCOPE_BASE, "", supported_sasl_mech_attrs, 
-			      False, &sasl_mechs_msgs);
+			      False, NULL, NULL, &sasl_mechs_msgs);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: %s\n", 
 			  nt_errstr(status)));

@@ -69,3 +69,14 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE libldb_rootdse
 ################################################
 
+################################################
+# Start MODULE libldb_extended_dn
+[MODULE::libldb_extended_dn]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = \
+		extended_dn.o
+#
+# End MODULE libldb_extended_dn
+################################################
+

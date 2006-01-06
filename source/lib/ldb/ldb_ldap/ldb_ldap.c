@@ -219,6 +219,7 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	}
 	(*res)->count = 0;
 	(*res)->msgs = NULL;
+	(*res)->controls = NULL;
 
 	lldb->last_rc = ldap_search_s(lldb->ldap, search_base, ldap_scope, 
 				      expression, 
@@ -272,7 +273,7 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 			goto failed;
 		}
 
-		(*res)->msgs[msg_count]->dn = ldb_dn_explode((*res)->msgs[msg_count], dn);
+		(*res)->msgs[msg_count]->dn = ldb_dn_explode_or_special((*res)->msgs[msg_count], dn);
 		ldap_memfree(dn);
 		if (!(*res)->msgs[msg_count]->dn) {
 			goto failed;

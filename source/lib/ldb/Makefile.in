@@ -57,10 +57,11 @@ COMMON_OBJ=common/ldb.o common/ldb_ldif.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
 	   common/ldb_debug.o common/ldb_modules.o \
 	   common/ldb_dn.o common/ldb_match.o common/ldb_attributes.o \
-	   common/attrib_handlers.o
+	   common/attrib_handlers.o common/ldb_controls.o common/qsort.o
 
 MODULES_OBJ=modules/operational.o modules/schema.o modules/rdn_name.o \
-	   modules/objectclass.o modules/ldb_map.o	 
+	   modules/objectclass.o modules/ldb_map.o \
+	   modules/paged_results.o modules/sort.o
 
 OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ)
 

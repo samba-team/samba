@@ -319,7 +319,6 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	if (msg == NULL) goto failed;
 	msg->messageid       = req->message_id;
 	msg->type            = LDAP_TAG_SearchRequest;
-	msg->num_controls    = 0;
 	msg->controls        = NULL;
 	search = &msg->r.SearchRequest;
 
@@ -380,7 +379,6 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	msg = talloc(req, struct ldap_message);
 	if (msg == NULL) goto failed;
 	msg->messageid       = io->messageid;
-	msg->num_controls    = 0;
 	msg->controls        = NULL;
 	
 	if (io->response) {

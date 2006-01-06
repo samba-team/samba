@@ -307,6 +307,7 @@ int ldb_search(struct ldb_context *ldb,
 	request.op.search.scope = scope;
 	request.op.search.tree = tree;
 	request.op.search.attrs = attrs;
+	request.controls = NULL;
 
 	ret = ldb_request(ldb, &request);
 
@@ -332,6 +333,7 @@ int ldb_add(struct ldb_context *ldb,
 
 	request.operation = LDB_REQ_ADD;
 	request.op.add.message = message;
+	request.controls = NULL;
 
 	return ldb_request(ldb, &request);
 }
@@ -350,6 +352,7 @@ int ldb_modify(struct ldb_context *ldb,
 
 	request.operation = LDB_REQ_MODIFY;
 	request.op.mod.message = message;
+	request.controls = NULL;
 
 	return ldb_request(ldb, &request);
 }
@@ -364,6 +367,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 
 	request.operation = LDB_REQ_DELETE;
 	request.op.del.dn = dn;
+	request.controls = NULL;
 
 	return ldb_request(ldb, &request);
 }
@@ -378,6 +382,7 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 	request.operation = LDB_REQ_RENAME;
 	request.op.rename.olddn = olddn;
 	request.op.rename.newdn = newdn;
+	request.controls = NULL;
 
 	return ldb_request(ldb, &request);
 }

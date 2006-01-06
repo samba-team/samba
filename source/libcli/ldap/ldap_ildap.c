@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 
 /*
@@ -156,6 +157,8 @@ int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
 NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
 			     int scope, struct ldb_parse_tree *tree,
 			     const char * const *attrs, BOOL attributesonly, 
+			     struct ldap_Control **control_req,
+			     struct ldap_Control ***control_res,
 			     struct ldap_message ***results)
 {
 	struct ldap_message *msg;
@@ -163,6 +166,8 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 	NTSTATUS status;
 	struct ldap_request *req;
 
+	if (control_res)
+		*control_res = NULL;
 	*results = NULL;
 
 	msg = new_ldap_message(conn);
@@ -180,6 +185,7 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 	msg->r.SearchRequest.tree = tree;
 	msg->r.SearchRequest.num_attributes = n;
 	msg->r.SearchRequest.attributes = discard_const(attrs);
+	msg->controls = control_req;
 
 	req = ldap_request_send(conn, msg);
 	talloc_steal(msg, req);
@@ -191,6 +197,9 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 
 		if (res->type == LDAP_TAG_SearchResultDone) {
 			status = ldap_check_response(conn, &res->r.GeneralResult);
+			if (control_res) {
+				*control_res = talloc_steal(conn, res->controls);
+			}
 			break;
 		}
 
@@ -219,12 +228,15 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
 		      int scope, const char *expression, 
 		      const char * const *attrs, BOOL attributesonly, 
+		      struct ldap_Control **control_req,
+		      struct ldap_Control ***control_res,
 		      struct ldap_message ***results)
 {
 	struct ldb_parse_tree *tree = ldb_parse_tree(conn, expression);
 	NTSTATUS status;
 	status = ildap_search_bytree(conn, basedn, scope, tree, attrs,
-				     attributesonly, results);
+				     attributesonly, control_req,
+				     control_res, results);
 	talloc_free(tree);
 	return status;
 }

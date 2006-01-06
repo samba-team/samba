@@ -131,12 +131,15 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		{ "operational", operational_module_init },
 		{ "rdn_name", rdn_name_module_init },
 		{ "objectclass", objectclass_module_init },
+		{ "paged_results", paged_results_module_init },
+		{ "server_sort", server_sort_module_init },
 #ifdef _SAMBA_BUILD_
 		{ "objectguid", objectguid_module_init },
 		{ "samldb", samldb_module_init },
 		{ "samba3sam", ldb_samba3sam_module_init },
 		{ "proxy", proxy_module_init },
 		{ "rootdse", rootdse_module_init },
+		{ "extended_dn", extended_dn_module_init },
 		{ "password_hash", password_hash_module_init },
 #endif
 		{ NULL, NULL }
@@ -198,7 +201,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		int m;
 		for (m=0;well_known_modules[m].name;m++) {
 			if (strcmp(modules[i], well_known_modules[m].name) == 0) {
-				current = well_known_modules[m].init(ldb, options);
+				current = well_known_modules[m].init(ldb, LDB_MODULES_INIT_STAGE_1, options);
 				if (current == NULL) {
 					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
 					return -1;
@@ -210,6 +213,17 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		if (well_known_modules[m].name == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
 				  modules[i]);
+		}
+	}
+
+	/* second stage init */
+	for (i = 0; modules[i] != NULL; i++) {
+		int m;
+		for (m = 0; well_known_modules[m].name; m++) {
+			if (strcmp(modules[i], well_known_modules[m].name) == 0) {
+				well_known_modules[m].init(ldb, LDB_MODULES_INIT_STAGE_2, options);
+				break;
+			}
 		}
 	}
 

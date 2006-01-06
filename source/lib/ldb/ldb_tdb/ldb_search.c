@@ -441,6 +441,7 @@ static int ltdb_search_full(struct ldb_module *module,
 		return -1;
 	}
 
+	result->controls = NULL;
 	result->msgs = talloc_steal(result, sinfo->msgs);
 	result->count = sinfo->count;
 	*res = result;

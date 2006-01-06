@@ -455,6 +455,18 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		return False;
 	}
 
+	if (msg->controls != NULL) {
+		asn1_push_tag(&data, ASN1_CONTEXT(0));
+		
+		for (i = 0; msg->controls[i] != NULL; i++) {
+			if (!ldap_encode_control(mem_ctx, &data, msg->controls[i])) {
+				return False;
+			}
+		}
+
+		asn1_pop_tag(&data);
+	}
+
 	asn1_pop_tag(&data);
 
 	if (data.has_error) {
@@ -1243,42 +1255,35 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		return False;
 	}
 
-	msg->num_controls = 0;
 	msg->controls = NULL;
 
 	if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
 		int i;
-		struct ldap_Control *ctrl = NULL;
+		struct ldap_Control **ctrl = NULL;
 
 		asn1_start_tag(data, ASN1_CONTEXT(0));
 
 		for (i=0; asn1_peek_tag(data, ASN1_SEQUENCE(0)); i++) {
 			asn1_start_tag(data, ASN1_SEQUENCE(0));
 
-			ctrl = talloc_realloc(msg, ctrl, struct ldap_Control, i+1);
+			ctrl = talloc_realloc(msg, ctrl, struct ldap_Control *, i+2);
 			if (!ctrl) {
 				return False;
 			}
-			ctrl[i].oid = NULL;
-			ctrl[i].critical = False;
-			ctrl[i].value = data_blob(NULL, 0);
 
-			asn1_read_OctetString_talloc(ctrl, data, &ctrl[i].oid);
-
-			if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
-				asn1_read_BOOLEAN(data, &ctrl[i].critical);
+			ctrl[i] = talloc(ctrl, struct ldap_Control);
+			if (!ctrl[i]) {
+				return False;
 			}
 
-			if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
-				asn1_read_OctetString(data, &ctrl[i].value);
-				if (ctrl[i].value.data) {
-					talloc_steal(msg, ctrl[i].value.data);
-				}
+			if (!ldap_decode_control(ctrl, data, ctrl[i])) {
+				return False;
 			}
 
-			asn1_end_tag(data);
 		}
-		msg->num_controls = i;
+
+		ctrl[i] = NULL;
+
 		msg->controls = ctrl;
 
 		asn1_end_tag(data);

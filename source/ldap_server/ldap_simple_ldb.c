@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
+#include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -47,6 +48,41 @@ static int sldb_map_error(struct ldapsrv_partition *partition, int ldb_ret,
 
 	/* its 1:1 for now */
 	return ldb_ret;
+}
+
+static int sldb_get_ldb_controls(void *mem_ctx, struct ldap_Control **controls, struct ldb_control ***lcontrols)
+{
+	struct ldb_control **lctrl;
+	int i, l;
+
+	if (controls == NULL || controls[0] == NULL) {
+		*lcontrols = NULL;
+		return LDB_SUCCESS;
+	}
+
+	l = 0;
+	lctrl = NULL;
+	*lcontrols = NULL;
+	
+	for (i = 0; controls[i] != NULL; i++) {
+		lctrl = talloc_realloc(mem_ctx, lctrl, struct ldb_control *, l + 2);
+		if (lctrl == NULL) {
+			return LDB_ERR_OTHER;
+		}
+		lctrl[l] = talloc(lctrl, struct ldb_control);
+		if (lctrl[l] == NULL) {
+			return LDB_ERR_OTHER;
+		}
+		lctrl[l]->oid = controls[i]->oid;
+		lctrl[l]->critical = controls[i]->critical;
+		lctrl[l]->data = controls[i]->value;
+		l++;
+	}	
+	lctrl[l] = NULL;
+
+	*lcontrols = lctrl;
+
+	return LDB_SUCCESS;
 }
 
 /*
@@ -86,9 +122,9 @@ NTSTATUS sldb_Bind(struct ldapsrv_partition *partition, struct ldapsrv_connectio
 	return status;
 }
 
-static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-			    struct ldap_SearchRequest *r)
+static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call)
 {
+	struct ldap_SearchRequest *r = &call->request->r.SearchRequest;
 	void *local_ctx;
 	struct ldb_dn *basedn;
 	struct ldap_Result *done;
@@ -153,6 +189,14 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	lreq.op.search.scope = scope;
 	lreq.op.search.tree = r->tree;
 	lreq.op.search.attrs = attrs;
+	ret = sldb_get_ldb_controls(local_ctx, call->request->controls, &lreq.controls);
+
+	if (ret != LDB_SUCCESS) {
+		/* get_ldb_controls fails only on a critical internal error or when
+		 * a control is defined as critical but it is not supported
+		 */
+		goto reply;
+	}
 
 	ret = ldb_request(samdb, &lreq);
 
@@ -199,6 +243,10 @@ reply:
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
+	done = &done_r->msg->r.SearchResultDone;
+	done->dn = NULL;
+	done->referral = NULL;
+
 	if (ret == LDB_SUCCESS) {
 		if (res->count >= success_limit) {
 			DEBUG(10,("sldb_Search: results: [%d]\n", res->count));
@@ -209,17 +257,17 @@ reply:
 			result = LDAP_NO_SUCH_OBJECT;
 			errstr = ldb_errstring(samdb);
 		}
+		if (res->controls) {
+			done_r->msg->controls = (struct ldap_Control **)(res->controls);
+		}
 	} else {
 		DEBUG(10,("sldb_Search: error\n"));
 		result = ret;
 		errstr = ldb_errstring(samdb);
 	}
 
-	done = &done_r->msg->r.SearchResultDone;
-	done->dn = NULL;
 	done->resultcode = result;
 	done->errormessage = (errstr?talloc_strdup(done_r, errstr):NULL);
-	done->referral = NULL;
 
 	talloc_free(local_ctx);
 
@@ -227,9 +275,9 @@ reply:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-			 struct ldap_AddRequest *r)
+static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call)
 {
+	struct ldap_AddRequest *r = &call->request->r.AddRequest;
 	void *local_ctx;
 	struct ldb_dn *dn;
 	struct ldap_Result *add_result;
@@ -317,9 +365,9 @@ reply:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_DelRequest *r)
+static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call)
 {
+	struct ldap_DelRequest *r = &call->request->r.DelRequest;
 	void *local_ctx;
 	struct ldb_dn *dn;
 	struct ldap_Result *del_result;
@@ -360,9 +408,9 @@ reply:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_ModifyRequest *r)
+static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call)
 {
+	struct ldap_ModifyRequest *r = &call->request->r.ModifyRequest;
 	void *local_ctx;
 	struct ldb_dn *dn;
 	struct ldap_Result *modify_result;
@@ -461,9 +509,9 @@ reply:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_CompareRequest *r)
+static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call)
 {
+	struct ldap_CompareRequest *r = &call->request->r.CompareRequest;
 	void *local_ctx;
 	struct ldb_dn *dn;
 	struct ldap_Result *compare;
@@ -531,8 +579,9 @@ reply:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
+static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call)
 {
+	struct ldap_ModifyDNRequest *r = &call->request->r.ModifyDNRequest;
 	void *local_ctx;
 	struct ldb_dn *olddn, *newdn, *newrdn;
 	struct ldb_dn *parentdn = NULL;

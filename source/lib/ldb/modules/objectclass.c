@@ -108,6 +108,7 @@ static int objectclass_handle(struct ldb_module *module, struct ldb_request *req
 	search_request->op.search.scope = LDB_SCOPE_BASE;
 	search_request->op.search.tree  = ldb_parse_tree(module->ldb, NULL);
 	search_request->op.search.attrs = attrs;
+	search_request->controls = NULL;
 
 	ret = ldb_next_request(module, search_request);
 	if (ret) {
@@ -273,6 +274,7 @@ static int objectclass_handle(struct ldb_module *module, struct ldb_request *req
 
 	modify_request->operation = LDB_REQ_MODIFY;
 	modify_request->op.mod.message = modify_msg;
+	modify_request->controls = NULL;
 
 	/* And now push the write into the database */
 	ret = ldb_next_request(module, modify_request);
@@ -303,9 +305,11 @@ static const struct ldb_module_ops objectclass_ops = {
 	.request      	   = objectclass_request,
 };
 
-struct ldb_module *objectclass_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *objectclass_module_init(struct ldb_context *ldb, int stage, const char *options[])
 {
 	struct ldb_module *ctx;
+
+	if (stage != LDB_MODULES_INIT_STAGE_1) return NULL;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
