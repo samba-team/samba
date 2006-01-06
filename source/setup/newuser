@@ -10,6 +10,7 @@ options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
 		'username=s',
 		'unixname=s',
 		'password=s',
@@ -70,6 +71,10 @@ if (nss.getpwnam(options.unixname) == undefined) {
 	exit(1);
 }
 
-newuser(options.username, options.unixname, options.password, message);
+var creds = options.get_credentials();
+var system_session = system_session();
+
+
+newuser(options.username, options.unixname, options.password, message, system_session, creds);
 
 return 0;

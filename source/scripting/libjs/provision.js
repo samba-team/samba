@@ -406,7 +406,7 @@ userAccountControl: %u
 /*
   add a new user record
 */
-function newuser(username, unixname, password, message, subobj, session_info, credentials)
+function newuser(username, unixname, password, message, session_info, credentials)
 {
 	var lp = loadparm_init();
 	var samdb = lp.get("sam database");
@@ -437,15 +437,13 @@ function newuser(username, unixname, password, message, subobj, session_info, cr
 	var ldif = sprintf("
 dn: %s
 sAMAccountName: %s
-name: %s
 memberOf: %s
 unixName: %s
-objectGUID: %s
-unicodePwd: %s
+sambaPassword: %s
 objectClass: user
 ",
-			   user_dn, username, username, dom_users,
-			   unixname, randguid(), password);
+			   user_dn, username, dom_users,
+			   unixname, password);
 	/*
 	  add the user to the users group as well
 	*/
