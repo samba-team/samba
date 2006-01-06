@@ -70,6 +70,19 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start MODULE libldb_cludge_acl
+[MODULE::libldb_kludge_acl]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = \
+		kludge_acl.o
+REQUIRED_SUBSYSTEMS = \
+		LIB_SECURITY
+#
+# End MODULE libldb_rootdse
+################################################
+
+################################################
 # Start MODULE libldb_extended_dn
 [MODULE::libldb_extended_dn]
 SUBSYSTEM = LIBLDB
