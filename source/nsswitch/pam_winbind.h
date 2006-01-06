@@ -106,9 +106,6 @@ do {                             \
 
 #define DAYS_TO_WARN_BEFORE_PWD_EXPIRES 5
 
-#define REJECT_REASON_TOO_SHORT		0x00000001
-#define REJECT_REASON_IN_HISTORY	0x00000002
-
 #include "winbind_client.h"
 
 #define PAM_WB_REMARK_DIRECT(h,x)\
