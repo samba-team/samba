@@ -1819,6 +1819,10 @@ static int lsqlite3_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int lsqlite3_init_2(struct ldb_module *module)
+{
+	return LDB_SUCCESS;
+}
 
 /*
  * Table of operations for the sqlite3 backend
@@ -1828,7 +1832,8 @@ static const struct ldb_module_ops lsqlite3_ops = {
 	.request           = lsqlite3_request,
 	.start_transaction = lsqlite3_start_trans,
 	.end_transaction   = lsqlite3_end_trans,
-	.del_transaction   = lsqlite3_del_trans
+	.del_transaction   = lsqlite3_del_trans,
+	.second_stage_init = lsqlite3_init_2
 };
 
 /*
