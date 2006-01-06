@@ -50,4 +50,6 @@ foreach $c_file (@c_files) {
 foreach $x_file (@x_files) {
     print "\n\t\@rm -f $x_file";
 }
+print "\n\t\@rm -f $dirname/$prefix\_files";
+print "\n\t\@rm -f $dirname/$prefix\.h";
 print "\n\n";
