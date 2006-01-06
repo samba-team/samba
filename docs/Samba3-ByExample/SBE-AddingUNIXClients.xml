@@ -1035,7 +1035,6 @@ Joined domain MEGANET2.
 <smbconfoption name="add user script">/usr/sbin/useradd -m '%u'</smbconfoption>
 <smbconfoption name="add machine script">/usr/sbin/useradd -M '%u'</smbconfoption>
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
-<smbconfoption name="winbind enable local accounts">Yes</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">0</smbconfoption>
 <smbconfoption name="smb ports">139</smbconfoption>
@@ -2622,79 +2621,6 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 		From experience, it is my recommendation to keep general system-level logins to a
 		practical minimum and to eliminate them if possible. This should not be taken as a
 		hard rule, though. The better question is, what works best for the site?
-		</para>
-
-	</answer>
-	</qandaentry>
-
-	<qandaentry>
-	<question>
-
-	    <para><indexterm>
-		<primary>winbind enable local accounts</primary>
-	      </indexterm><indexterm>
-		<primary>/etc/passwd</primary>
-	      </indexterm><indexterm>
-		<primary>options list</primary>
-	      </indexterm><indexterm>
-		<primary>ACL</primary>
-	      </indexterm><indexterm>
-		<primary>share</primary>
-	      </indexterm>
-		In my &smb.conf; file, I enabled the parameter <parameter>winbind enable local accounts
-		</parameter> on all domain member servers, but it does not work. The accounts I put in 
-		<filename>/etc/passwd</filename> do not show up in the options list when I try to set an
-		ACL on a share. What have I done wrong?
-		</para>
-
-	</question>
-	<answer>
-
-	    <para><indexterm>
-		<primary>local users</primary>
-	      </indexterm><indexterm>
-		<primary>local groups</primary>
-	      </indexterm><indexterm>
-		<primary>UNIX account</primary>
-	      </indexterm><indexterm>
-		<primary>getpwnam()</primary>
-	      </indexterm><indexterm>
-		<primary>getgrgid()</primary>
-	      </indexterm><indexterm>
-		<primary>Identity resolution</primary>
-	      </indexterm><indexterm>
-		<primary>failure</primary>
-	      </indexterm><indexterm>
-		<primary>Domain</primary>
-	      </indexterm>
-		The manual page for this &smb.conf; file parameter clearly says, <quote>This parameter 
-		controls whether or not winbindd will act as a stand-in replacement for the various 
-		account management hooks in smb.conf (for example, add user script). If enabled, winbindd 
-		will support the creation of local users and groups as another source of UNIX account 
-		information available via getpwnam() or getgrgid(), etc....</quote> By default this
-		parameter is already enabled; therefore, the action you are seeing is a result of a failure
-		of identity resolution in the domain.
-		</para>
-
-	    <para><indexterm>
-		<primary>Domain logons</primary>
-	      </indexterm><indexterm>
-		<primary>Identity resolution</primary>
-	      </indexterm><indexterm>
-		<primary>Domain</primary>
-		<secondary>user</secondary>
-	      </indexterm><indexterm>
-		<primary>Domain</primary>
-		<secondary>group</secondary>
-	      </indexterm><indexterm>
-		<primary>UID</primary>
-	      </indexterm><indexterm>
-		<primary>GID</primary>
-	      </indexterm>
-		These are the accounts that are available for Windows network domain logons. Providing 
-		identity resolution has been correctly configured on the domain controllers as well as 
-		on domain member servers. The domain user and group identities automatically map 
-		to a valid local UID and GID pair.
 		</para>
 
 	</answer>
