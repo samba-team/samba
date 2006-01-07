@@ -296,9 +296,9 @@ OBJ_FILES = gen_ndr/ndr_winsrepl.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = LIBNDR NDR_NBT
 
-librpc/gen_ndr/tables.c: librpc/gen_ndr/ndr_*.h
-	@$(PERL) librpc/tables.pl --output=librpc/gen_ndr/tables.c \
-									librpc/gen_ndr/ndr_*.h
+librpc/gen_ndr/tables.c: $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.h,$(IDL_FILES))
+	@$(PERL) librpc/tables.pl --output=librpc/gen_ndr/tables.c $^
+
 
 [SUBSYSTEM::NDR_IFACE_TABLE]
 OBJ_FILES = gen_ndr/tables.o
