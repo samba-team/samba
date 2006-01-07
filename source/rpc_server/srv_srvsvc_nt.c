@@ -316,7 +316,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, BOOL all_shares)
 {
 	int num_entries = 0;
-	int num_services = lp_numservices();
+	int num_services = 0;
 	int snum;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
@@ -326,6 +326,11 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	ctr->info_level = ctr->switch_value = info_level;
 	*resume_hnd = 0;
+
+	/* Ensure all the usershares are loaded. */
+	become_root();
+	num_services = load_usershare_shares();
+	unbecome_root();
 
 	/* Count the number of entries. */
 	for (snum = 0; snum < num_services; snum++) {

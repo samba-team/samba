@@ -1623,7 +1623,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
 	int uLevel = SVAL(p,0);
 	int buf_len = SVAL(p,2);
 	char *p2;
-	int count=lp_numservices();
+	int count = 0;
 	int total=0,counted=0;
 	BOOL missed = False;
 	int i;
@@ -1637,6 +1637,11 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
 		return False;
 	}
   
+	/* Ensure all the usershares are loaded. */
+	become_root();
+	count = load_usershare_shares();
+	unbecome_root();
+
 	data_len = fixed_len = string_len = 0;
 	for (i=0;i<count;i++) {
 		fstring servicename_dos;

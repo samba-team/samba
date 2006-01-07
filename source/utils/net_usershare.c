@@ -105,7 +105,7 @@ static int net_usershare_add(int argc, const char **argv)
 	TALLOC_CTX *ctx = NULL;
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_STAT lsbuf;
-	const char *sharename;
+	char *sharename;
 	pstring full_path;
 	pstring full_path_tmp;
 	const char *us_path;
@@ -128,16 +128,16 @@ static int net_usershare_add(int argc, const char **argv)
 		default:
 			return net_usershare_add_usage(argc, argv);
 		case 2:
-			sharename = argv[0];
+			sharename = strdup_lower(argv[0]);
 			us_path = argv[1];
 			break;
 		case 3:
-			sharename = argv[0];
+			sharename = strdup_lower(argv[0]);
 			us_path = argv[1];
 			us_comment = argv[2];
 			break;
 		case 4:
-			sharename = argv[0];
+			sharename = strdup_lower(argv[0]);
 			us_path = argv[1];
 			us_comment = argv[2];
 			arg_acl = argv[3];
@@ -148,6 +148,7 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: share name %s contains "
                         "invalid characters (any of %s)\n",
                         sharename, INVALID_SHARENAME_CHARS);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -155,6 +156,7 @@ static int net_usershare_add(int argc, const char **argv)
 	if (getpwnam(sharename)) {
 		d_printf("net usershare add: share name %s is already a valid system user name\n",
 			sharename );
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -170,12 +172,14 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: cannot stat path %s to ensure "
 			"this is a directory. Error was %s\n",
 			us_path, strerror(errno) );
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
 	if (!S_ISDIR(sbuf.st_mode)) {
 		d_printf("net usershare add: path %s is not a directory.\n",
 			us_path );
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -203,6 +207,7 @@ static int net_usershare_add(int argc, const char **argv)
 			d_printf("net usershare add: malformed acl %s (missing ':').\n",
 				pacl );
 			talloc_destroy(ctx);
+			SAFE_FREE(sharename);
 			return -1;
 		}
 
@@ -218,6 +223,7 @@ static int net_usershare_add(int argc, const char **argv)
 					"(access control must be 'r', 'f', or 'd')\n",
 					pacl );
 				talloc_destroy(ctx);
+				SAFE_FREE(sharename);
 				return -1;
 		}
 
@@ -225,6 +231,7 @@ static int net_usershare_add(int argc, const char **argv)
 			d_printf("net usershare add: malformed terminating character for acl %s\n",
 				pacl );
 			talloc_destroy(ctx);
+			SAFE_FREE(sharename);
 			return -1;
 		}
 
@@ -236,10 +243,16 @@ static int net_usershare_add(int argc, const char **argv)
 				d_printf("net usershare add: cannot convert name %s to a SID.\n",
 					name );
 				talloc_destroy(ctx);
+				SAFE_FREE(sharename);
 				return -1;
 			}
 		}
 		us_acl = talloc_asprintf_append(us_acl, "%s:%c,", sid_string_static(&sid), pcolon[1]);
+
+		/* Move to the next ACL entry. */
+		if (pcolon[2] == ',') {
+			pacl = &pcolon[3];
+		}
 	}
 
 	/* Remove the last ',' */
@@ -252,6 +265,7 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: cannot create tmp file %s\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -260,6 +274,7 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: cannot lstat tmp file %s\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -268,6 +283,7 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: cannot fstat tmp file %s\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -275,6 +291,7 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: tmp file %s is not a regular file ?\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 	
@@ -282,6 +299,7 @@ static int net_usershare_add(int argc, const char **argv)
 		d_printf("net usershare add: failed to fchmod tmp file %s to 0644n",
 				full_path_tmp );
 		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -297,6 +315,7 @@ static int net_usershare_add(int argc, const char **argv)
 			(unsigned int)to_write, full_path_tmp, strerror(errno));
 		unlink(full_path_tmp);
 		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -307,11 +326,13 @@ static int net_usershare_add(int argc, const char **argv)
 			sharename, strerror(errno));
 		talloc_destroy(ctx);
 		close(tmpfd);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
 	close(tmpfd);
 	talloc_destroy(ctx);
+	SAFE_FREE(sharename);
 	return 0;
 }
 
@@ -322,15 +343,19 @@ static int net_usershare_add(int argc, const char **argv)
 static int net_usershare_delete(int argc, const char **argv)
 {
 	pstring us_path;
+	char *sharename;
 
 	if (argc != 1) {
 		return net_usershare_delete_usage(argc, argv);
 	}
 
-	if (!validate_net_name(argv[0], INVALID_SHARENAME_CHARS, strlen(argv[0]))) {
+	sharename = strdup_lower(argv[0]);
+
+	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
 		d_printf("net usershare delete: share name %s contains "
                         "invalid characters (any of %s)\n",
-                        argv[0], INVALID_SHARENAME_CHARS);
+                        sharename, INVALID_SHARENAME_CHARS);
+		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -342,8 +367,10 @@ static int net_usershare_delete(int argc, const char **argv)
 		d_printf("net usershare delete: unable to remove usershare %s. "
 			"Error was %s\n",
                         us_path, strerror(errno));
+		SAFE_FREE(sharename);
 		return -1;
 	}
+	SAFE_FREE(sharename);
 	return 0;
 }
 
@@ -590,6 +617,8 @@ static int net_usershare_info(int argc, const char **argv)
 			return net_usershare_info_usage(argc, argv);
 	}
 
+	strlower_m(wcard);
+
 	ctx = talloc_init("share_info");
 	ret = get_share_list(ctx, wcard, only_ours);
 	if (ret) {
@@ -636,6 +665,8 @@ static int net_usershare_list(int argc, const char **argv)
 		default:
 			return net_usershare_list_usage(argc, argv);
 	}
+
+	strlower_m(wcard);
 
 	ctx = talloc_init("share_list");
 	ret = get_share_list(ctx, wcard, only_ours);

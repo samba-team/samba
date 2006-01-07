@@ -299,6 +299,13 @@ int find_service(fstring service)
 		}
 	}
 
+	/* Is it a usershare service ? */
+	if (iService < 0 && *lp_usershare_path()) {
+		/* Ensure the name is canonicalized. */
+		strlower_m(service);
+		iService = load_usershare_service(service);
+	}
+
 	if (iService >= 0) {
 		if (!VALID_SNUM(iService)) {
 			DEBUG(0,("Invalid snum %d for %s\n",iService, service));
