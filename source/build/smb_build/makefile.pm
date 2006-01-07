@@ -509,6 +509,7 @@ sub write($$)
 IDL_FILES = \$(wildcard librpc/idl/*.idl)
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,\$(IDL_FILES)) \\
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_\%_c.c,\$(IDL_FILES)) \\
+\$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_\%_ejs.c,\$(IDL_FILES)) \\
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.h,\$(IDL_FILES)): idl
 __EOD__
 );
