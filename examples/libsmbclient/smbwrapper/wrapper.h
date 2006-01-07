@@ -32,6 +32,10 @@
 #include <signal.h>
 #include <stdio.h>
 
+#ifndef __FD_SETSIZE
+#  define __FD_SETSIZE  256
+#endif
+
 extern int smbw_fd_map[__FD_SETSIZE];
 extern int smbw_ref_count[__FD_SETSIZE];
 extern char smbw_cwd[PATH_MAX];

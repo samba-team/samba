@@ -26,6 +26,13 @@
 #include <stdarg.h>
 #include <assert.h>
 #include "smbw.h"
+#include "bsd-strlfunc.h"
+
+typedef enum StartupType
+{
+        StartupType_Fake,
+        StartupType_Real
+} StartupType;
 
 int smbw_fd_map[__FD_SETSIZE];
 int smbw_ref_count[__FD_SETSIZE];
@@ -44,6 +51,9 @@ static SMBCCTX *smbw_ctx;
 extern int smbw_debug;
 
 
+/*****************************************************
+smbw_ref -- manipulate reference counts
+******************************************************/
 int smbw_ref(int client_fd, Ref_Count_Type type, ...)
 {
         va_list ap;
@@ -100,9 +110,9 @@ static void get_envvar_auth_data(const char *srv,
 	p = getenv("PASSWORD");
 	if (p == NULL) p = "";
 
-        strncpy(wg, w, wglen);
-        strncpy(un, u, unlen);
-        strncpy(pw, p, pwlen);
+        smbw_strlcpy(wg, w, wglen);
+        smbw_strlcpy(un, u, unlen);
+        smbw_strlcpy(pw, p, pwlen);
 }
 
 static smbc_get_auth_data_fn get_auth_data_fn = get_envvar_auth_data;
@@ -130,7 +140,7 @@ static void do_shutdown(void)
 /***************************************************** 
 initialise structures
 *******************************************************/
-static void do_init(int is_real_startup)
+static void do_init(StartupType startupType)
 {
         int i;
         char *p;
@@ -147,7 +157,7 @@ static void do_init(int is_real_startup)
 
         /* See if we've been told to start in a particular directory */
         if ((p=getenv("SMBW_DIR")) != NULL) {
-                strncpy(smbw_cwd, p, PATH_MAX);
+                smbw_strlcpy(smbw_cwd, p, PATH_MAX);
 
                 /* we don't want the old directory to be busy */
                 (* smbw_libc.chdir)("/");
@@ -161,6 +171,7 @@ static void do_init(int is_real_startup)
 	}
 
         if ((smbw_ctx = smbc_new_context()) == NULL) {
+                fprintf(stderr, "Could not create a context.\n");
                 exit(1);
         }
         
@@ -169,16 +180,16 @@ static void do_init(int is_real_startup)
         smbw_ctx->options.browse_max_lmb_count = 0;
         smbw_ctx->options.urlencode_readdir_entries = 1;
         smbw_ctx->options.one_share_per_server = 1;
-//        smbw_cache_functions(smbw_ctx);
         
         if (smbc_init_context(smbw_ctx) == NULL) {
+                fprintf(stderr, "Could not initialize context.\n");
                 exit(1);
         }
                 
         smbc_set_context(smbw_ctx);
 
         /* if not real startup, exit handler has already been established */
-        if (is_real_startup) {
+        if (startupType == StartupType_Real) {
             atexit(do_shutdown);
         }
 }
@@ -188,7 +199,7 @@ initialise structures, real start up vs a fork()
 *******************************************************/
 void smbw_init(void)
 {
-    do_init(1);
+    do_init(StartupType_Real);
 }
 
 
@@ -407,6 +418,10 @@ ssize_t smbw_pread(int smbw_fd, void *buf, size_t count, SMBW_OFF_T ofs)
         int saved_errno;
         SMBW_OFF_T old_ofs;
         
+        if (count == 0) {
+                return 0;
+        }
+
         client_fd = smbw_fd_map[smbw_fd];
 
         if ((old_ofs = smbc_lseek(client_fd, 0, SEEK_CUR)) < 0 ||
@@ -460,6 +475,10 @@ ssize_t smbw_pwrite(int smbw_fd, void *buf, size_t count, SMBW_OFF_T ofs)
 	ssize_t ret;
         SMBW_OFF_T old_ofs;
         
+        if (count == 0) {
+                return 0;
+        }
+
         client_fd = smbw_fd_map[smbw_fd];
 
         if ((old_ofs = smbc_lseek(client_fd, 0, SEEK_CUR)) < 0 ||
@@ -731,7 +750,7 @@ int smbw_fork(void)
         }
 
         /* Re-initialize this library for the child */
-        do_init(0);
+        do_init(StartupType_Fake);
 
 	/* and continue in the child */
 	return 0;
