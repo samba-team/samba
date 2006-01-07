@@ -318,10 +318,14 @@ static int ldb_msg_add_winsdb_addr(struct ldb_message *msg,
 {
 	struct ldb_val val;
 	const char *str;
+	char *expire_time;
 
+	expire_time = ldb_timestring(msg, addr->expire_time);
+	if (!expire_time) return -1;
 	str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s;",
 			      addr->address, addr->wins_owner,
-			      ldb_timestring(msg, addr->expire_time));
+			      expire_time);
+	talloc_free(expire_time);
 	if (!str) return -1;
 
 	val.data = discard_const_p(uint8_t, str);
@@ -588,8 +592,9 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 {
 	int i, ret=0;
 	size_t addr_count;
+	const char *expire_time;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) goto failed;
+	if (msg == NULL) goto failed;	
 
 	if (rec->is_static) {
 		rec->state = WREPL_STATE_ACTIVE;
@@ -608,6 +613,11 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 		rec->type = WREPL_TYPE_MHOMED;
 	}
 
+	expire_time = ldb_timestring(msg, rec->expire_time);
+	if (!expire_time) {
+		goto failed;
+	}
+
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
 	ret |= ldb_msg_add_fmt(msg, "type", "0x%02X", rec->name->type);
@@ -622,8 +632,7 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	ret |= ldb_msg_add_fmt(msg, "recordState", "%u", rec->state);
 	ret |= ldb_msg_add_fmt(msg, "nodeType", "%u", rec->node);
 	ret |= ldb_msg_add_fmt(msg, "isStatic", "%u", rec->is_static);
-	ret |= ldb_msg_add_string(msg, "expireTime", 
-				  ldb_timestring(msg, rec->expire_time));
+	ret |= ldb_msg_add_string(msg, "expireTime", expire_time);
 	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", (long long)rec->version);
 	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
 	ret |= ldb_msg_add_empty(msg, "address", 0);
