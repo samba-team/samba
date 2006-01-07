@@ -232,6 +232,11 @@ static void insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 {
 	TDB_DATA key, dbuf;
 
+	if ((keyname == NULL) || (keylen == 0)) {
+		terror("need key");
+		return;
+	}
+
 	key.dptr = keyname;
 	key.dsize = keylen;
 	dbuf.dptr = data;
@@ -245,6 +250,16 @@ static void insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 {
 	TDB_DATA key, dbuf;
+
+	if ((keyname == NULL) || (keylen == 0)) {
+		terror("need key");
+		return;
+	}
+
+	if ((data == NULL) || (datalen == 0)) {
+		terror("need data");
+		return;
+	}
 
 	key.dptr = keyname;
 	key.dsize = keylen;
@@ -262,6 +277,11 @@ static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 static void show_tdb(char *keyname, size_t keylen)
 {
 	TDB_DATA key, dbuf;
+
+	if ((keyname == NULL) || (keylen == 0)) {
+		terror("need key");
+		return;
+	}
 
 	key.dptr = keyname;
 	key.dsize = keylen;
@@ -283,6 +303,11 @@ static void delete_tdb(char *keyname, size_t keylen)
 {
 	TDB_DATA key;
 
+	if ((keyname == NULL) || (keylen == 0)) {
+		terror("need key");
+		return;
+	}
+
 	key.dptr = keyname;
 	key.dsize = keylen;
 
@@ -295,6 +320,11 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 {
 	TDB_DATA key, dbuf;
 	TDB_CONTEXT *dst_tdb;
+
+	if ((keyname == NULL) || (keylen == 0)) {
+		terror("need key");
+		return;
+	}
 
 	if ( !tdbname ) {
 		terror("need destination tdb name");
