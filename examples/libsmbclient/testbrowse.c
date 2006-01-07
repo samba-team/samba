@@ -30,6 +30,7 @@ main(int argc, char * argv[])
 {
     int                         debug = 0;
     int                         debug_stderr = 0;
+    int                         no_auth = 0;
     int                         scan = 0;
     int                         iterations = -1;
     int                         again;
@@ -59,6 +60,10 @@ main(int argc, char * argv[])
                 0, "Iterations", "integer"
             },
             {
+                "noauth", 'A', POPT_ARG_NONE, &no_auth,
+                0, "Do not request authentication data", "integer"
+            },
+            {
                 NULL
             }
         };
@@ -82,9 +87,14 @@ main(int argc, char * argv[])
         return 1;
     }
         
+    /* If we're scanning, do no requests for authentication data */
+    if (scan) {
+        no_auth = 1;
+    }
+
     /* Set mandatory options (is that a contradiction in terms?) */
     context->debug = debug;
-    context->callbacks.auth_fn = (scan ? no_auth_data_fn : get_auth_data_fn);
+    context->callbacks.auth_fn = (no_auth ? no_auth_data_fn : get_auth_data_fn);
 
     /* If we've been asked to log to stderr instead of stdout... */
     if (debug_stderr) {
@@ -101,7 +111,6 @@ main(int argc, char * argv[])
 
     /* Tell the compatibility layer to use this context */
     smbc_set_context(context);
-
 
     if (scan)
     {
