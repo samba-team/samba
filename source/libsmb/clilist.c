@@ -169,11 +169,7 @@ static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,f
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
-#if 1
-	int max_matches = 1366; /* Match W2k - was 512. */
-#else
-	int max_matches = 512;
-#endif
+        int max_matches = 1366;
 	int info_level;
 	char *p, *p2;
 	pstring mask;
