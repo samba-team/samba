@@ -44,6 +44,10 @@
  * we use the INT32_MAX here as on 64 bit systems,
  * gmtime() fails with INT64_MAX
  */
+#ifndef INT32_MAX
+#define INT32_MAX _TYPE_MAXIMUM(int32_t)
+#endif
+
 #define TIME_T_MAX MIN(INT32_MAX,_TYPE_MAXIMUM(time_t))
 #endif
 
