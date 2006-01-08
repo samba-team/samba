@@ -2,7 +2,7 @@
 
 	* dh.c: Add DH_new_method, add ENGINE refcounting.
 
-	* engine.c: Add ENGINE_set_default_DH and ENGINE_get_default_DH
+	* engine.[ch]: Add ENGINE_set_default_DH and ENGINE_get_default_DH
 
 	* test_engine_dso.c: Add test for RSA encryption.
 	
