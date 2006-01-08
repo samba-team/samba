@@ -152,6 +152,7 @@ sub run_config_mk($$$)
 
 		# global stuff is considered part of the makefile
 		if ($section eq "GLOBAL") {
+			if (!$infragment) { $makefile.="\n"; }
 			$makefile .= $line;
 			$infragment = 1;
 			next;
