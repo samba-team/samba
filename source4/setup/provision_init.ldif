@@ -46,6 +46,15 @@ user: computer
 template: userTemplate
 template: groupTemplate
 
+dn: @KLUDGEACL
+passwordAttribute: sambaPassword
+passwordAttribute: ntPwdHash
+passwordAttribute: sambaNTPwdHistory
+passwordAttribute: lmPwdHash
+passwordAttribute: sambaLMPwdHistory
+passwordAttribute: krb5key
+
+
 # the rootDSE module looks in this record for its base data
 dn: cn=ROOTDSE
 subschemaSubentry: CN=Aggregate,CN=Schema,CN=Configuration,${BASEDN}
