@@ -154,26 +154,30 @@ ENGINE_get_DH(const ENGINE *engine)
  *
  */
 
-static ENGINE *RSA_engine;
-
-int
-ENGINE_set_default_RSA(ENGINE *engine)
-{
-    if (RSA_engine)
-	ENGINE_finish(RSA_engine);
-    RSA_engine = engine;
-    if (RSA_engine)
-	ENGINE_up_ref(RSA_engine);
-    return 1;
+#define SG_default_engine(type)			\
+static ENGINE *type##_engine;			\
+int						\
+ENGINE_set_default_##type(ENGINE *engine)	\
+{						\
+    if (type##_engine)				\
+	ENGINE_finish(type##_engine);		\
+    type##_engine = engine;			\
+    if (type##_engine)				\
+	ENGINE_up_ref(type##_engine);		\
+    return 1;					\
+}						\
+ENGINE *					\
+ENGINE_get_default_##type(void)			\
+{						\
+    if (type##_engine)				\
+	ENGINE_up_ref(type##_engine);		\
+    return type##_engine;			\
 }
 
-ENGINE *
-ENGINE_get_default_RSA(void)
-{
-    if (RSA_engine)
-	ENGINE_up_ref(RSA_engine);
-    return RSA_engine;
-}
+SG_default_engine(RSA);
+SG_default_engine(DH);
+
+#undef SG_default_engine
 
 /*
  *

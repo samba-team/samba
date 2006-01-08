@@ -88,5 +88,8 @@ const DH_METHOD *	ENGINE_get_DH(const ENGINE *);
 
 int		ENGINE_set_default_RSA(ENGINE *);
 ENGINE *	ENGINE_get_default_RSA(void);
+int		ENGINE_set_default_DH(ENGINE *);
+ENGINE *	ENGINE_get_default_DH(void);
+
 
 #endif /* _HEIM_ENGINE_H */
