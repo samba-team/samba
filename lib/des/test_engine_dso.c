@@ -134,6 +134,10 @@ main(int argc, char **argv)
 	
 	RSA_set_method(rsa, ENGINE_get_RSA(engine));
 
+	/* 
+	 * try rsa signing
+	 */
+
 	memcpy(buf, "hejsan", 7);
 	keylen = RSA_private_encrypt(7, buf, buf, rsa, RSA_PKCS1_PADDING);
 	if (keylen <= 0)
@@ -142,6 +146,25 @@ main(int argc, char **argv)
 	keylen = RSA_public_decrypt(keylen, buf, buf, rsa, RSA_PKCS1_PADDING);
 	if (keylen <= 0)
 	    errx(1, "failed to public decrypt");
+
+	if (keylen != 7)
+	    errx(1, "output buffer not same length");
+
+	if (memcmp(buf, "hejsan", 7) != 0)
+	    errx(1, "string not the same after decryption");
+
+	/* 
+	 * try rsa encryption 
+	 */
+
+	memcpy(buf, "hejsan", 7);
+	keylen = RSA_public_encrypt(7, buf, buf, rsa, RSA_PKCS1_PADDING);
+	if (keylen <= 0)
+	    errx(1, "failed to public encrypt");
+
+	keylen = RSA_private_decrypt(keylen, buf, buf, rsa, RSA_PKCS1_PADDING);
+	if (keylen <= 0)
+	    errx(1, "failed to private decrypt");
 
 	if (keylen != 7)
 	    errx(1, "output buffer not same length");
