@@ -7,7 +7,7 @@ libhx509_la_LDFLAGS = -version-info 1:0:0
 
 BUILT_SOURCES = hx509_err.c hx509_err.h
 
-libhx509_la_LIBADD = ../asn1/libasn1.la
+libhx509_la_LIBADD = $(LIB_des) ../asn1/libasn1.la
 
 libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_des)
 
