@@ -44,9 +44,6 @@
  *
  */
 
-const char *password_attribs[] = {
-};
-
 enum user_is {
 	ANONYMOUS,
 	USER,
