@@ -108,7 +108,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 	return dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 }
 
-const char *sid_type_lookup(enum lsa_SidType r)
+static const char *sid_type_lookup(enum lsa_SidType r)
 {
 	switch (r) {
 		case SID_NAME_USE_NONE: return "SID_NAME_USE_NONE"; break;
