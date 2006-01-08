@@ -786,6 +786,8 @@ int main(int argc, const char **argv)
 		POPT_TABLEEND
 	};
 
+	load_case_tables();
+
 	setup_logging(argv[0],True);
 	
 	/* Parse command line arguments using popt */
