@@ -139,4 +139,8 @@ typedef int BOOL;
 #define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
 #endif
 
+#ifndef HAVE_SOCKLEN_T_TYPE
+typedef int socklen_t;
+#endif
+
 #endif
