@@ -34,6 +34,7 @@ enum _R_ACTION {
 	R_INVALID,
 	R_DO_REPLACE,
 	R_NOT_REPLACE,
+	R_DO_PROPAGATE,
 	R_DO_CHALLENGE,
 	R_DO_RELEASE_DEMAND,
 	R_DO_SGROUP_MERGE
@@ -45,6 +46,7 @@ static const char *_R_ACTION_enum_string(enum _R_ACTION action)
 	case R_INVALID:			return "INVALID";
 	case R_DO_REPLACE:		return "REPLACE";
 	case R_NOT_REPLACE:		return "NOT_REPLACE";
+	case R_DO_PROPAGATE:		return "PROPAGATE";
 	case R_DO_CHALLENGE:		return "CHALLEGNE";
 	case R_DO_RELEASE_DEMAND:	return "RELEASE_DEMAND";
 	case R_DO_SGROUP_MERGE:		return "SGROUP_MERGE";
@@ -737,6 +739,33 @@ static NTSTATUS r_not_replace(struct wreplsrv_partner *partner,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS r_do_propagate(struct wreplsrv_partner *partner,
+			       TALLOC_CTX *mem_ctx,
+			       struct winsdb_record *rec,
+			       struct wrepl_wins_owner *owner,
+			       struct wrepl_name *replica)
+{
+	uint8_t ret;
+	uint32_t modify_flags;
+
+	/*
+	 * allocate a new version id for the record to that it'll be replicated
+	 */
+	modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+
+	ret = winsdb_modify(partner->service->wins_db, rec, modify_flags);
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(0,("Failed to replace record %s: %u\n",
+			nbt_name_string(mem_ctx, &replica->name), ret));
+		return NT_STATUS_FOOBAR;
+	}
+
+	DEBUG(4,("propagated record %s\n",
+		 nbt_name_string(mem_ctx, &replica->name)));
+
+	return NT_STATUS_OK;
+}
+
 /* 
 Test Replica vs. owned active: some more MHOMED combinations
 _MA_MA_SP_U<00>: C:MHOMED vs. B:ALL => B:ALL => REPLACE
@@ -1247,8 +1276,22 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 	}
 
 	if (rec->is_static && !same_owner) {
-		/* TODO: this is just assumed and needs to be tested more */
 		action = R_NOT_REPLACE;
+
+		/*
+		 * if we own the local record, then propagate it back to
+		 * the other wins servers.
+		 * to prevent ping-pong with other servers, we don't do this
+		 * if the replica is static too.
+		 *
+		 * It seems that w2k3 doesn't do this, but I thing that's a bug
+		 * and doing propagation helps to have consistent data on all servers
+		 */
+		if (local_vs_replica && !replica->is_static) {
+			action = R_DO_PROPAGATE;
+		}
+	} else if (replica->is_static && !rec->is_static && !same_owner) {
+		action = R_DO_REPLACE;
 	} else if (same_owner) {
 		action = replace_same_owner(rec, replica);
 	} else if (replica_vs_replica) {
@@ -1281,6 +1324,15 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 			action = replace_mhomed_owned_vs_X_replica(rec, replica);
 			break;
 		}
+
+		/*
+		 * if we own the local record, and it should not be replaced
+		 * then propagate the conflict result back to the other
+		 * wins servers
+		 */
+		if (action == R_NOT_REPLACE) {
+			action = R_DO_PROPAGATE;
+		}
 	}
 
 	DEBUG(4,("apply record %s: %s\n",
@@ -1292,6 +1344,8 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 		return r_do_replace(partner, mem_ctx, rec, owner, replica);
 	case R_NOT_REPLACE:
 		return r_not_replace(partner, mem_ctx, rec, owner, replica);
+	case R_DO_PROPAGATE:
+		return r_do_propagate(partner, mem_ctx, rec, owner, replica);
 	case R_DO_CHALLENGE:
 		return r_do_challenge(partner, mem_ctx, rec, owner, replica);
 	case R_DO_RELEASE_DEMAND:
