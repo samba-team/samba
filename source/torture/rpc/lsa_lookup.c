@@ -162,7 +162,58 @@ static BOOL test_lookupsids(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
 	return ret;
 }
 
-#define NUM_SIDS 6
+static BOOL get_downleveltrust(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
+			       struct policy_handle *handle,
+			       struct dom_sid **sid)
+{
+	struct lsa_EnumTrustDom r;
+	uint32_t resume_handle = 0;
+	struct lsa_DomainList domains;
+	NTSTATUS status;
+	int i;
+
+	r.in.handle = handle;
+	r.in.resume_handle = &resume_handle;
+	r.in.max_size = 1000;
+	r.out.domains = &domains;
+	r.out.resume_handle = &resume_handle;
+
+	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		printf("no trusts\n");
+		return False;
+	}
+
+	if (domains.count == 0) {
+		printf("no trusts\n");
+		return False;
+	}
+
+	for (i=0; i<domains.count; i++) {
+		struct lsa_QueryTrustedDomainInfoBySid q;
+
+		if (domains.domains[i].sid == NULL)
+			continue;
+
+		q.in.handle = handle;
+		q.in.dom_sid = domains.domains[i].sid;
+		q.in.level = 6;
+		status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, mem_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) continue;
+
+		if ((q.out.info->info_ex.trust_direction & 2) &&
+		    (q.out.info->info_ex.trust_type == 1)) {
+			*sid = domains.domains[i].sid;
+			return True;
+		}
+	}
+
+	printf("I need a AD DC with an outgoing trust to NT4\n");
+	return False;
+}
+
+#define NUM_SIDS 8
 
 BOOL torture_rpc_lsa_lookup(void)
 {
@@ -172,6 +223,7 @@ BOOL torture_rpc_lsa_lookup(void)
 	BOOL ret = True;
 	struct policy_handle *handle;
 	struct dom_sid *dom_sid;
+	struct dom_sid *trusted_sid;
 	struct dom_sid *sids[NUM_SIDS];
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
@@ -188,6 +240,9 @@ BOOL torture_rpc_lsa_lookup(void)
 	ret &= get_domainsid(mem_ctx, p, handle, &dom_sid);
 	if (!ret) goto done;
 
+	ret &= get_downleveltrust(mem_ctx, p, handle, &trusted_sid);
+	if (!ret) goto done;
+
 	printf("domain sid: %s\n", dom_sid_string(mem_ctx, dom_sid));
 
 	sids[0] = dom_sid_parse_talloc(mem_ctx, "S-1-1-0");
@@ -196,6 +251,8 @@ BOOL torture_rpc_lsa_lookup(void)
 	sids[3] = dom_sid_parse_talloc(mem_ctx, "S-1-5-32-545");
 	sids[4] = dom_sid_dup(mem_ctx, dom_sid);
 	sids[5] = dom_sid_add_rid(mem_ctx, dom_sid, 512);
+	sids[6] = dom_sid_dup(mem_ctx, trusted_sid);
+	sids[7] = dom_sid_add_rid(mem_ctx, trusted_sid, 512);
 
 	ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 0,
 			       NT_STATUS_INVALID_PARAMETER, NULL);
@@ -203,7 +260,8 @@ BOOL torture_rpc_lsa_lookup(void)
 	{
 		enum lsa_SidType types[NUM_SIDS] =
 			{ SID_NAME_WKN_GRP, SID_NAME_WKN_GRP, SID_NAME_DOMAIN,
-			  SID_NAME_ALIAS, SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
+			  SID_NAME_ALIAS, SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
+			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
 
 		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 1,
 				       NT_STATUS_OK, types);
@@ -213,6 +271,7 @@ BOOL torture_rpc_lsa_lookup(void)
 		enum lsa_SidType types[NUM_SIDS] =
 			{ SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
+			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
 			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
 		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 2,
 				       STATUS_SOME_UNMAPPED, types);
@@ -222,7 +281,8 @@ BOOL torture_rpc_lsa_lookup(void)
 		enum lsa_SidType types[NUM_SIDS] =
 			{ SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
-			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
+			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
+			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN };
 		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 3,
 				       STATUS_SOME_UNMAPPED, types);
 	}
@@ -231,7 +291,8 @@ BOOL torture_rpc_lsa_lookup(void)
 		enum lsa_SidType types[NUM_SIDS] =
 			{ SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
-			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
+			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
+			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN };
 		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 4,
 				       STATUS_SOME_UNMAPPED, types);
 	}
@@ -243,7 +304,8 @@ BOOL torture_rpc_lsa_lookup(void)
 		enum lsa_SidType types[NUM_SIDS] =
 			{ SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
 			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN,
-			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP };
+			  SID_NAME_DOMAIN, SID_NAME_DOM_GRP,
+			  SID_NAME_UNKNOWN, SID_NAME_UNKNOWN };
 		ret &= test_lookupsids(mem_ctx, p, handle, sids, NUM_SIDS, 6,
 				       STATUS_SOME_UNMAPPED, types);
 	}
