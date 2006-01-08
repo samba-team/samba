@@ -33,6 +33,7 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
+#include "crypto_headers.h"
 
 
 struct hx509_verify_ctx_data {
@@ -101,6 +102,8 @@ hx509_context_init(hx509_context *context)
     _hx509_ks_pkcs12_register(*context);
     _hx509_ks_pkcs11_register(*context);
     _hx509_ks_dir_register(*context);
+
+    ENGINE_add_conf_module();
 
     return 0;
 }
