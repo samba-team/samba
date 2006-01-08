@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
-#include <openssl/ui.h>
+#include "crypto_headers.h"
 
 struct hx509_lock_data {
     struct _hx509_password password;
