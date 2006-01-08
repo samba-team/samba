@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,19 +34,7 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
-#include <openssl/rsa.h>
-#include <openssl/dsa.h>
-#include <openssl/err.h>
-#include <openssl/sha.h>
-#include <openssl/md5.h>
-#include <openssl/md2.h>
-#include <openssl/pem.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/asn1.h>
-#include <openssl/asn1t.h>
-#include <openssl/ui.h>
-#include <openssl/pkcs12.h>
+#include "crypto_headers.h"
 
 
 #define pkcs1(name, number) \
@@ -142,7 +130,7 @@ heim_int2BN(const heim_integer *i)
     BIGNUM *bn;
 
     bn = BN_bin2bn(i->data, i->length, NULL);
-    bn->neg = i->negative;
+    BN_set_negative(bn, i->negative);
     return bn;
 }
 
@@ -947,8 +935,10 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
     const struct _hx509_password *pw;
     int i;
 
+#ifdef HAVE_OPENSSL
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
+#endif
 
     if (key->private_key.rsa) {
 	RSA_free(key->private_key.rsa);
@@ -959,6 +949,7 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
     pw = _hx509_lock_get_passwords(lock);
 
     for (i = 0; i < pw->len; i++) {
+#if HAVE_OPENSSL
 	EVP_PKEY *private_key;
 	FILE *f;
 
@@ -977,6 +968,7 @@ _hx509_private_key_assign_key_file(hx509_private_key key,
 	    return EINVAL;
 
 	return 0;
+#endif
     }
 
     return EINVAL;
@@ -1175,7 +1167,9 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 	goto out;
     }
 
-    if (EVP_CipherInit(&evp,crypto->c,crypto->key.data,ivec->data, 1) != 1) {
+    ret = EVP_CipherInit_ex(&evp, crypto->c, NULL,
+			    crypto->key.data, ivec->data, 1);
+    if (ret != 1) {
 	EVP_CIPHER_CTX_cleanup(&evp);
 	ret = HX509_CRYPTO_INTERNAL_ERROR;
 	goto out;
@@ -1262,7 +1256,9 @@ hx509_crypto_decrypt(hx509_crypto crypto,
 
     EVP_CIPHER_CTX_init(&evp);
 
-    if (EVP_CipherInit(&evp, crypto->c, crypto->key.data, idata, 0) != 1) {
+    ret = EVP_CipherInit_ex(&evp, crypto->c, NULL,
+			    crypto->key.data, idata, 0);
+    if (ret != 1) {
 	EVP_CIPHER_CTX_cleanup(&evp);
 	return HX509_CRYPTO_INTERNAL_ERROR;
     }
@@ -1332,6 +1328,7 @@ PBE_string2key(hx509_context context,
 	       const heim_oid *enc_oid,
 	       const EVP_MD *md)
 {
+#ifdef HAVE_OPENSSL
     PKCS12_PBEParams p12params;
     int passwordlen = strlen(password);
     hx509_crypto c;
@@ -1384,6 +1381,9 @@ PBE_string2key(hx509_context context,
 out:
     free_PKCS12_PBEParams(&p12params);
     return ret;
+#else
+    return HX509_CRYPTO_INTERNAL_ERROR;
+#endif
 }
 
 static const heim_oid *
