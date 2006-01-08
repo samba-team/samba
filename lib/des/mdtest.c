@@ -44,9 +44,11 @@ RCSID("$Id$");
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
+#include <md2.h>
 #include <md4.h>
 #include <md5.h>
 #include <sha.h>
+#include <evp.h>
 
 #define ONE_MILLION_A "one million a's"
 
@@ -57,27 +59,39 @@ struct hash_foo {
     void (*init)(void*);
     void (*update)(void*, const void*, size_t);
     void (*final)(void*, void*);
-} md4 = {
+    const EVP_MD * (*evp)(void);
+} md2 = {
+    "MD2",
+    sizeof(MD2_CTX),
+    16,
+    (void (*)(void*))MD2_Init,
+    (void (*)(void*,const void*, size_t))MD2_Update,
+    (void (*)(void*, void*))MD2_Final,
+    EVP_md2
+}, md4 = {
     "MD4",
     sizeof(MD4_CTX),
     16,
     (void (*)(void*))MD4_Init,
     (void (*)(void*,const void*, size_t))MD4_Update,
-    (void (*)(void*, void*))MD4_Final
+    (void (*)(void*, void*))MD4_Final,
+    EVP_md4
 }, md5 = {
     "MD5",
     sizeof(MD5_CTX),
     16,
     (void (*)(void*))MD5_Init,
     (void (*)(void*,const void*, size_t))MD5_Update,
-    (void (*)(void*, void*))MD5_Final
+    (void (*)(void*, void*))MD5_Final,
+    EVP_md5
 }, sha1 = {
     "SHA-1",
     sizeof(struct sha),
     20,
     (void (*)(void*))SHA1_Init,
     (void (*)(void*,const void*, size_t))SHA1_Update,
-    (void (*)(void*, void*))SHA1_Final
+    (void (*)(void*, void*))SHA1_Final,
+    EVP_sha1
 };
 #ifdef HAVE_SHA256
 struct hash_foo sha256 = {
@@ -113,6 +127,24 @@ struct hash_foo sha512 = {
 struct test {
     char *str;
     unsigned char hash[64];
+};
+
+struct test md2_tests[] = {
+    {"",
+     "\x83\x50\xe5\xa3\xe2\x4c\x15\x3d\xf2\x27\x5c\x9f\x80\x69\x27\x73" },
+    {"a",
+     "\x32\xec\x01\xec\x4a\x6d\xac\x72\xc0\xab\x96\xfb\x34\xc0\xb5\xd1" },
+    {"abc",
+     "\xda\x85\x3b\x0d\x3f\x88\xd9\x9b\x30\x28\x3a\x69\xe6\xde\xd6\xbb" },
+    {"message digest",
+     "\xab\x4f\x49\x6b\xfb\x2a\x53\x0b\x21\x9f\xf3\x30\x31\xfe\x06\xb0" },
+    {"abcdefghijklmnopqrstuvwxyz",
+     "\x4e\x8d\xdf\xf3\x65\x02\x92\xab\x5a\x41\x08\xc3\xaa\x47\x94\x0b" },
+    {"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+     "\xda\x33\xde\xf2\xa4\x2d\xf1\x39\x75\x35\x28\x46\xc3\x03\x38\xcd" },
+    {"12345678901234567890123456789012345678901234567890123456789012345678901234567890",
+     "\xd5\x97\x6f\x79\xd8\x3d\x3a\x0d\xc9\x80\x6c\x3c\x66\xf3\xef\xd8" },
+    {NULL }
 };
 
 struct test md4_tests[] = {
@@ -244,6 +276,8 @@ static int
 hash_test (struct hash_foo *hash, struct test *tests)
 {
     struct test *t;
+    EVP_MD_CTX ectx;
+    unsigned int esize;
     void *ctx = malloc(hash->psize);
     unsigned char *res = malloc(hash->hsize);
 
@@ -251,14 +285,22 @@ hash_test (struct hash_foo *hash, struct test *tests)
     for (t = tests; t->str; ++t) {
 	char buf[1000];
 
+	EVP_MD_CTX_init(&ectx);
+	EVP_DigestInit_ex(&ectx, hash->evp(), NULL);
+	    
 	(*hash->init)(ctx);
 	if(strcmp(t->str, ONE_MILLION_A) == 0) {
 	    int i;
 	    memset(buf, 'a', sizeof(buf));
-	    for(i = 0; i < 1000; i++)
+	    for(i = 0; i < 1000; i++) {
 		(*hash->update)(ctx, buf, sizeof(buf));
-	} else
+		EVP_DigestUpdate(&ectx, buf, sizeof(buf));
+	    }
+	} else {
 	    (*hash->update)(ctx, (unsigned char *)t->str, strlen(t->str));
+	    EVP_DigestUpdate(&ectx, t->str, strlen(t->str));
+	}
+
 	(*hash->final) (res, ctx);
 	if (memcmp (res, t->hash, hash->hsize) != 0) {
 	    int i;
@@ -279,6 +321,20 @@ hash_test (struct hash_foo *hash, struct test *tests)
 	    printf("\n");
 	    return 1;
 	}
+	
+	EVP_DigestFinal_ex(&ectx, res, &esize);
+	EVP_MD_CTX_cleanup(&ectx);
+
+	if (hash->hsize != esize) {
+	    printf("EVP %s returned wrong hash size\n", hash->name);
+	    return 1;
+	}
+	
+	if (memcmp (res, t->hash, hash->hsize) != 0) {
+	    printf("EVP %s failed here old function where successful!\n",
+		   hash->name);
+	    return 1;
+	}
     }
     printf ("success\n");
     return 0;
@@ -287,7 +343,9 @@ hash_test (struct hash_foo *hash, struct test *tests)
 int
 main (void)
 {
-    return hash_test(&md4, md4_tests) +
+    return 
+	hash_test(&md2, md2_tests) +
+	hash_test(&md4, md4_tests) +
 	hash_test(&md5, md5_tests) +
 	hash_test(&sha1, sha1_tests)
 #ifdef HAVE_SHA256

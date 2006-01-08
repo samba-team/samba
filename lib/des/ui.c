@@ -43,7 +43,7 @@ RCSID("$Id$");
 #include <termios.h>
 #include <roken.h>
 
-#include <des.h>
+#include <ui.h>
 
 static sig_atomic_t intr_flag;
 

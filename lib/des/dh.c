@@ -1,0 +1,213 @@
+/*
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+RCSID("$Id$");
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <dh.h>
+
+#include <roken.h>
+
+/*
+ *
+ */
+
+DH *
+DH_new(void)
+{
+    DH *dh;
+
+    dh = calloc(1, sizeof(*dh));
+    if (dh == NULL)
+	return NULL;
+    dh->meth = rk_UNCONST(DH_get_default_method());
+    dh->references = 1;
+    return dh;
+}
+
+void
+DH_free(DH *dh)
+{
+    if (dh->references <= 0)
+	abort();
+
+    if (--dh->references > 0)
+	return;
+
+    (*dh->meth->finish)(dh);
+
+#define free_if(f) if (f) { BN_free(f); }
+    free_if(dh->p);
+    free_if(dh->g);
+    free_if(dh->pub_key);
+    free_if(dh->priv_key);
+    free_if(dh->q);
+    free_if(dh->j);
+    free_if(dh->counter);
+#undef free_if
+
+    memset(dh, 0, sizeof(*dh));
+    free(dh);
+}    
+
+int
+DH_up_ref(DH *dh)
+{
+    return ++dh->references;
+}
+
+int
+DH_size(const DH *dh)
+{
+    return BN_num_bytes(dh->p);
+}
+
+int
+DH_set_ex_data(DH *dh, int idx, void *data)
+{
+    dh->ex_data.sk = data;
+    return 1;
+}
+
+void *
+DH_get_ex_data(DH *dh, int idx)
+{
+    return dh->ex_data.sk;
+}
+
+int
+DH_generate_parameters_ex(DH *dh, int prime_len, int generator, BN_GENCB *cb)
+{
+    if (dh->meth->generate_params)
+	return dh->meth->generate_params(dh, prime_len, generator, cb);
+    return 0;
+}
+
+int
+DH_check(const DH *dh, int *num)
+{
+    return 1; /* XXX */
+}
+
+int
+DH_generate_key(DH *dh)
+{
+    return dh->meth->generate_key(dh);
+}
+
+int
+DH_compute_key(unsigned char *shared_key,
+	       const BIGNUM *peer_pub_key, DH *dh)
+{
+    return dh->meth->compute_key(shared_key, peer_pub_key, dh);
+}
+
+int
+DH_set_method(DH *dh, const DH_METHOD *method)
+{
+    (*dh->meth->finish)(dh);
+    dh->meth = method;
+    (*dh->meth->init)(dh);
+    return 1;
+}
+
+/*
+ *
+ */
+
+static int
+dh_null_generate_key(DH *dh)
+{
+    return 0;
+}
+
+static int
+dh_null_compute_key(unsigned char *shared,const BIGNUM *pub, DH *dh)
+{
+    return 0;
+}
+
+static int
+dh_null_init(DH *dh)
+{
+    return 1;
+}
+
+static int
+dh_null_finish(DH *dh)
+{
+    return 1;
+}
+
+static int
+dh_null_generate_params(DH *dh, int prime_num, int len, BN_GENCB *cb)
+{
+    return 0;
+}
+
+static const DH_METHOD dh_null_method = {
+    "hx509 null DH",
+    dh_null_generate_key,
+    dh_null_compute_key,
+    NULL,
+    dh_null_init,
+    dh_null_finish,
+    0,
+    NULL,
+    dh_null_generate_params
+};
+
+static const DH_METHOD *dh_default_method = &dh_null_method;
+
+const DH_METHOD *DH_null_method(void)
+{
+    return &dh_null_method;
+}
+
+void
+DH_set_default_method(const DH_METHOD *meth)
+{
+    dh_default_method = meth;
+}
+
+const DH_METHOD *
+DH_get_default_method(void)
+{
+    return dh_default_method;
+}
+

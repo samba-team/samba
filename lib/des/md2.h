@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -33,39 +33,31 @@
 
 /* $Id$ */
 
-#ifndef HEIM_AES_H
-#define HEIM_AES_H 1
+#ifndef HEIM_MD2_H
+#define HEIM_MD2_H 1
 
 /* symbol renaming */
-#define AES_set_encrypt_key hc_AES_set_encrypt_key
-#define AES_set_decrypt_key hc_AES_decrypt_key
-#define AES_encrypt hc_AES_encrypt
-#define AES_decrypt hc_AES_decrypt
-#define AES_cbc_encrypt hc_AES_cbc_encrypt
+#define MD2_Init hc_MD2_Init
+#define MD2_Update hc_MD2_Update
+#define MD2_Final hc_MD2_Final
 
 /*
  *
  */
 
-#define AES_BLOCK_SIZE 16
-#define AES_MAXNR 14
+#define MD2_DIGEST_LENGTH 16
 
-#define AES_ENCRYPT 1
-#define AES_DECRYPT 0
+struct md2 {
+    size_t len;
+    unsigned char data[16]; /* stored unalligned data between Update's */
+    unsigned char checksum[16];
+    unsigned char state[16]; /* lower 16 bytes of X */
+};
 
-typedef struct aes_key {
-    u_int32_t key[(AES_MAXNR+1)*4];
-    int rounds;
-} AES_KEY;
+typedef struct md2 MD2_CTX;
 
-int AES_set_encrypt_key(const unsigned char *, const int, AES_KEY *);
-int AES_set_decrypt_key(const unsigned char *, const int, AES_KEY *);
+void MD2_Init (struct md2 *m);
+void MD2_Update (struct md2 *m, const void *p, size_t len);
+void MD2_Final (void *res, struct md2 *m);
 
-void AES_encrypt(const unsigned char *, unsigned char *, const AES_KEY *);
-void AES_decrypt(const unsigned char *, unsigned char *, const AES_KEY *);
-
-void AES_cbc_encrypt(const unsigned char *, unsigned char *,
-		     const unsigned long, const AES_KEY *,
-		     unsigned char *, int);
-
-#endif /* HEIM_AES_H */
+#endif /* HEIM_MD2_H */

@@ -36,6 +36,17 @@
 #ifndef HEIM_MD4_H
 #define HEIM_MD4_H 1
 
+/* symbol renaming */
+#define MD4_Init hc_MD4_Init
+#define MD4_Update hc_MD4_Update
+#define MD4_Final hc_MD4_Final
+
+/*
+ *
+ */
+
+#define MD4_DIGEST_LENGTH 16
+
 struct md4 {
   unsigned int sz[2];
   u_int32_t counter[4];

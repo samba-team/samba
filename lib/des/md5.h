@@ -36,6 +36,17 @@
 #ifndef HEIM_MD5_H
 #define HEIM_MD5_H 1
 
+/* symbol renaming */
+#define MD5_Init hc_MD5_Init
+#define MD5_Update hc_MD5_Update
+#define MD5_Final hc_MD5_Final
+
+/*
+ *
+ */
+
+#define MD5_DIGEST_LENGTH 16
+
 struct md5 {
   unsigned int sz[2];
   u_int32_t counter[4];

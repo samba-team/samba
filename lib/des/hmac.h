@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -33,39 +33,55 @@
 
 /* $Id$ */
 
-#ifndef HEIM_AES_H
-#define HEIM_AES_H 1
+#ifndef HEIM_HMAC_H
+#define HEIM_HMAC_H 1
+
+#include <evp.h>
 
 /* symbol renaming */
-#define AES_set_encrypt_key hc_AES_set_encrypt_key
-#define AES_set_decrypt_key hc_AES_decrypt_key
-#define AES_encrypt hc_AES_encrypt
-#define AES_decrypt hc_AES_decrypt
-#define AES_cbc_encrypt hc_AES_cbc_encrypt
+#define HMAC_CTX_create hc_HMAC_CTX_create
+#define HMAC_CTX_destroy hc_HMAC_CTX_destroy
+#define HMAC_CTX_init hc_HMAC_CTX_init
+#define HMAC_CTX_cleanup hc_HMAC_CTX_cleanup
+#define HMAC_size hc_HMAC_size
+#define HMAC_Init_ex hc_HMAC_Init_ex
+#define HMAC_Update hc_HMAC_Update
+#define HMAC_Final hc_HMAC_Final
+#define HMAC hc_HMAC
 
 /*
  *
  */
 
-#define AES_BLOCK_SIZE 16
-#define AES_MAXNR 14
+#define HMAC_MAX_MD_CBLOCK	64
 
-#define AES_ENCRYPT 1
-#define AES_DECRYPT 0
+typedef struct hc_HMAC_CTX HMAC_CTX;
 
-typedef struct aes_key {
-    u_int32_t key[(AES_MAXNR+1)*4];
-    int rounds;
-} AES_KEY;
+struct hc_HMAC_CTX {
+    const EVP_MD *md;
+    ENGINE *engine;
+    EVP_MD_CTX *ctx;
+    size_t key_length;
+    void *opad;
+    void *ipad;
+    void *buf;
+};
 
-int AES_set_encrypt_key(const unsigned char *, const int, AES_KEY *);
-int AES_set_decrypt_key(const unsigned char *, const int, AES_KEY *);
 
-void AES_encrypt(const unsigned char *, unsigned char *, const AES_KEY *);
-void AES_decrypt(const unsigned char *, unsigned char *, const AES_KEY *);
+HMAC_CTX *
+	HMAC_CTX_create(void);
+void	HMAC_CTX_destroy(HMAC_CTX *);
+void	HMAC_CTX_init(HMAC_CTX *);
+void	HMAC_CTX_cleanup(HMAC_CTX *ctx);
 
-void AES_cbc_encrypt(const unsigned char *, unsigned char *,
-		     const unsigned long, const AES_KEY *,
-		     unsigned char *, int);
+size_t	HMAC_size(const HMAC_CTX *ctx);
 
-#endif /* HEIM_AES_H */
+void	HMAC_Init_ex(HMAC_CTX *, const void *, size_t,
+		     const EVP_MD *, ENGINE *);
+void	HMAC_Update(HMAC_CTX *ctx, const void *data, size_t len);
+void	HMAC_Final(HMAC_CTX *ctx, void *md, unsigned int *len);
+
+void *	HMAC(const EVP_MD *evp_md, const void *key, size_t key_len,
+	     const void *data, size_t n, void *md, unsigned int *md_len);
+
+#endif /* HEIM_HMAC_H */

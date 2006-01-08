@@ -33,6 +33,10 @@
 
 /* $Id$ */
 
+/* symbol renaming */
+#define RC4_set_key hc_RC4_set_key
+#define RC4 hc_RC4
+
 typedef struct rc4_key {
     unsigned int x, y;
     unsigned int state[256];

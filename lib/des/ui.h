@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -33,39 +33,13 @@
 
 /* $Id$ */
 
-#ifndef HEIM_AES_H
-#define HEIM_AES_H 1
+#ifndef _HEIM_UI_H
+#define _HEIM_UI_H 1
 
 /* symbol renaming */
-#define AES_set_encrypt_key hc_AES_set_encrypt_key
-#define AES_set_decrypt_key hc_AES_decrypt_key
-#define AES_encrypt hc_AES_encrypt
-#define AES_decrypt hc_AES_decrypt
-#define AES_cbc_encrypt hc_AES_cbc_encrypt
+#define UI_UTIL_read_pw_string hc_UI_UTIL_read_pw_string
 
-/*
- *
- */
+int	UI_UTIL_read_pw_string(char *, int, const char *, int); /* XXX */
 
-#define AES_BLOCK_SIZE 16
-#define AES_MAXNR 14
+#endif /* _HEIM_UI_H */
 
-#define AES_ENCRYPT 1
-#define AES_DECRYPT 0
-
-typedef struct aes_key {
-    u_int32_t key[(AES_MAXNR+1)*4];
-    int rounds;
-} AES_KEY;
-
-int AES_set_encrypt_key(const unsigned char *, const int, AES_KEY *);
-int AES_set_decrypt_key(const unsigned char *, const int, AES_KEY *);
-
-void AES_encrypt(const unsigned char *, unsigned char *, const AES_KEY *);
-void AES_decrypt(const unsigned char *, unsigned char *, const AES_KEY *);
-
-void AES_cbc_encrypt(const unsigned char *, unsigned char *,
-		     const unsigned long, const AES_KEY *,
-		     unsigned char *, int);
-
-#endif /* HEIM_AES_H */

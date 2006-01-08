@@ -54,6 +54,7 @@ RCSID("$Id$");
 #include <krb5-types.h>
 
 #include "des.h"
+#include "ui.h"
 
 static void desx(uint32_t [2], DES_key_schedule *, int);
 static void IP(uint32_t [2]);

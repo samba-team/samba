@@ -36,6 +36,17 @@
 #ifndef HEIM_SHA_H
 #define HEIM_SHA_H 1
 
+/* symbol renaming */
+#define SHA1_Init hc_SHA1_Init
+#define SHA1_Update hc_SHA1_Update
+#define SHA1_Final hc_SHA1_Final
+
+/*
+ *
+ */
+
+#define SHA_DIGEST_LENGTH 20
+
 struct sha {
   unsigned int sz[2];
   u_int32_t counter[5];

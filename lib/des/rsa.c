@@ -1,0 +1,337 @@
+/*
+ * Copyright (c) 2006 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+RCSID("$Id$");
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <krb5-types.h>
+#include <heim_asn1.h>
+#include <rfc2459_asn1.h>
+
+#include <rsa.h>
+
+#include <roken.h>
+
+RSA *
+RSA_new(void)
+{
+    return RSA_new_method(NULL);
+}
+
+RSA *
+RSA_new_method(ENGINE *engine)
+{
+    RSA *rsa;
+
+    rsa = calloc(1, sizeof(*rsa));
+    if (rsa == NULL)
+	return NULL;
+
+    rsa->references = 1;
+
+    if (engine) {
+	ENGINE_up_ref(engine);
+	rsa->engine = engine;
+    } else {
+	rsa->engine = ENGINE_get_default_RSA();
+    }
+
+    if (rsa->engine) {
+	rsa->meth = ENGINE_get_RSA(rsa->engine);
+	if (rsa->meth == NULL) {
+	    ENGINE_finish(engine);
+	    free(rsa);
+	    return 0;
+	}
+    }
+
+    if (rsa->meth == NULL)
+	rsa->meth = rk_UNCONST(RSA_get_default_method());
+
+    (*rsa->meth->init)(rsa);
+
+    return rsa;
+}
+
+
+void
+RSA_free(RSA *rsa)
+{
+    if (rsa->references <= 0)
+	abort();
+
+    if (--rsa->references > 0)
+	return;
+
+    if (rsa->engine)
+	ENGINE_finish(rsa->engine);
+
+    (*rsa->meth->finish)(rsa);
+
+#define free_if(f) if (f) { BN_free(f); }
+    free_if(rsa->n);
+    free_if(rsa->e);
+    free_if(rsa->d);
+    free_if(rsa->p);
+    free_if(rsa->q);
+#undef free_if
+
+    memset(rsa, 0, sizeof(*rsa));
+    free(rsa);
+}
+
+int
+RSA_up_ref(RSA *rsa)
+{
+    return ++rsa->references;
+}
+
+const RSA_METHOD *
+RSA_get_method(const RSA *rsa)
+{
+    return rsa->meth;
+}
+
+int
+RSA_set_method(RSA *rsa, const RSA_METHOD *method)
+{
+    (*rsa->meth->finish)(rsa);
+
+    if (rsa->engine) {
+	ENGINE_finish(rsa->engine);
+	rsa->engine = NULL;
+    }
+
+    rsa->meth = method;
+    (*rsa->meth->init)(rsa);
+    return 1;
+}
+
+int
+RSA_set_app_data(RSA *rsa, void *arg)
+{
+    rsa->ex_data.sk = arg;
+    return 1;
+}
+
+void *
+RSA_get_app_data(RSA *rsa)
+{
+    return rsa->ex_data.sk;
+}
+
+int
+RSA_check_key(const RSA *key)
+{
+    static const unsigned char inbuf[] = "hello, world!";
+    RSA *rsa = rk_UNCONST(key);
+    void *buffer;
+    int ret;
+
+    /* 
+     * XXX I have no clue how to implement this w/o a bignum library.
+     * Well, when we have a RSA key pair, we can try to encrypt/sign
+     * and then decrypt/verify.
+     */
+
+    buffer = malloc(RSA_size(rsa));
+    if (buffer == NULL)
+	return 0;
+    
+    ret = RSA_public_encrypt(sizeof(inbuf), inbuf, buffer, 
+			     rsa, RSA_PKCS1_PADDING);
+    if (ret == -1) {
+	free(buffer);
+	return 0;
+    }
+
+    ret = RSA_private_decrypt(ret, buffer, buffer,
+			      rsa, RSA_PKCS1_PADDING);
+    if (ret == -1) {
+	free(buffer);
+	return 0;
+    }
+
+    if (ret == sizeof(inbuf) && memcmp(buffer, inbuf, sizeof(inbuf)) == 0) {
+	free(buffer);
+	return 1;
+    }
+    free(buffer);
+    return 0; 
+}
+
+int
+RSA_size(const RSA *rsa)
+{
+    return BN_num_bytes(rsa->n);
+}
+
+#define RSAFUNC(name, body) \
+int \
+name(int flen,const unsigned char* f, unsigned char* t, RSA* r, int p){\
+    return body; \
+}
+
+RSAFUNC(RSA_public_encrypt, (r)->meth->rsa_pub_enc(flen, f, t, r, p));
+RSAFUNC(RSA_public_decrypt, (r)->meth->rsa_pub_dec(flen, f, t, r, p));
+RSAFUNC(RSA_private_encrypt, (r)->meth->rsa_priv_enc(flen, f, t, r, p));
+RSAFUNC(RSA_private_decrypt, (r)->meth->rsa_priv_dec(flen, f, t, r, p));
+
+/* XXX */
+int
+RSA_sign(int type, const unsigned char *from, unsigned int flen,
+	 unsigned char *to, unsigned int *tlen, RSA *rsa)
+{
+    return -1;
+}
+
+int
+RSA_verify(int type, const unsigned char *from, unsigned int flen,
+	   unsigned char *to, unsigned int tlen, RSA *rsa)
+{
+    return -1;
+}
+
+
+/*
+ * A NULL RSA_METHOD that returns failure for all operations. This is
+ * used as the default RSA method is we don't have any native
+ * support.
+ */
+
+static RSAFUNC(null_rsa_public_encrypt, -1);
+static RSAFUNC(null_rsa_public_decrypt, -1);
+static RSAFUNC(null_rsa_private_encrypt, -1);
+static RSAFUNC(null_rsa_private_decrypt, -1);
+
+static int 
+null_rsa_init(RSA *rsa)
+{
+    return 1;
+}
+
+static int
+null_rsa_finish(RSA *rsa)
+{
+    return 1;
+}
+
+static const RSA_METHOD rsa_null_method = {
+    "hx509 null RSA",
+    null_rsa_public_encrypt,
+    null_rsa_public_decrypt,
+    null_rsa_private_encrypt,
+    null_rsa_private_decrypt,
+    NULL,
+    NULL,
+    null_rsa_init,
+    null_rsa_finish,
+    0,
+    NULL,
+    NULL,
+    NULL
+};
+
+const RSA_METHOD *
+RSA_null_method(void)
+{
+    return &rsa_null_method;
+}
+
+static const RSA_METHOD *default_rsa_method = &rsa_null_method;
+
+const RSA_METHOD *
+RSA_get_default_method(void)
+{
+    return default_rsa_method;
+}
+
+void
+RSA_set_default_method(const RSA_METHOD *meth)
+{
+    default_rsa_method = meth;
+}
+
+/*
+ *
+ */
+
+static BIGNUM *
+heim_int2BN(const heim_integer *i)
+{
+    BIGNUM *bn;
+
+    bn = BN_bin2bn(i->data, i->length, NULL);
+    BN_set_negative(bn, i->negative);
+    return bn;
+}
+
+
+RSA *
+d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
+{
+    RSAPrivateKey data;
+    RSA *k = rsa;
+    size_t size;
+    int ret;
+
+    ret = decode_RSAPrivateKey(*pp, len, &data, &size);
+    if (ret)
+	return 0;
+    
+    *pp += size;
+
+    if (k == NULL) {
+	k = RSA_new();
+	if (k == NULL) {
+	    free_RSAPrivateKey(&data);
+	    return NULL;
+	}
+    }
+
+    k->n = heim_int2BN(&data.modulus);
+    k->e = heim_int2BN(&data.publicExponent);
+    k->d = heim_int2BN(&data.privateExponent);
+    k->p = heim_int2BN(&data.prime1);
+    k->q = heim_int2BN(&data.prime2);
+    k->dmp1 = heim_int2BN(&data.exponent1);
+    k->dmq1 = heim_int2BN(&data.exponent2);
+
+    free_RSAPrivateKey(&data);
+    return k;
+}
