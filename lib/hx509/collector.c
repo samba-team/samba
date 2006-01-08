@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
-#include <openssl/rsa.h>
+#include "crypto_headers.h"
 
 struct private_key {
     AlgorithmIdentifier alg;
