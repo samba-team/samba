@@ -1,3 +1,12 @@
+2006-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* implement enough glue to support OpenSSLs EVP, RSA, DSA, DH,
+	HMAC, RAND and ENGINE interfaces for use in hx509. rename all
+	symbols to start with hc_ to avoid clobbering namespaces. contains
+	no RSA/DH/DSA code, just glue to support using dynamic
+	ENGINE. hx509 supports this via pkcs11 and there is a gmp ENGINE
+	module supporting RSA. Also contains a MD2 digest for completion.
+
 2005-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* des.c,des.h,rnd_keys.c: change unsigned char * to void *
