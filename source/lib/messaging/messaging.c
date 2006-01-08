@@ -117,6 +117,10 @@ static char *messaging_path(struct messaging_context *msg, uint32_t server_id)
 
 /*
   dispatch a fully received message
+
+  note that this deliberately can match more than one message handler
+  per message. That allows a single messasging context to register
+  (for example) a debug handler for more than one piece of code
 */
 static void messaging_dispatch(struct messaging_context *msg, struct messaging_rec *rec)
 {
