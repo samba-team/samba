@@ -471,13 +471,70 @@ done:
 	return ret;
 }
 
+static BOOL test_bug3349(struct smbcli_state *cli,
+			 struct smbcli_state *cli2,
+			 TALLOC_CTX *mem_ctx)
+{
+	const char *fname = "\\test_oplock.dat";
+	NTSTATUS status;
+	BOOL ret = True;
+	union smb_open io;
+	struct smb_unlink unl;
+	uint16_t fnum=0, fnum2=0;
+
+	/* cleanup */
+	smbcli_unlink(cli->tree, fname);
+
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	printf("if we close on break then the unlink can succeed\n");
+	ZERO_STRUCT(break_info);
+	smbcli_oplock_handler(cli->transport, oplock_handler_close, cli->tree);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	unl.in.pattern = fname;
+	unl.in.attrib = 0;
+	ZERO_STRUCT(break_info);
+	status = smb_raw_unlink(cli2->tree, &unl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(break_info.fnum, fnum);
+	CHECK_VAL(break_info.level, 1);
+	CHECK_VAL(break_info.count, 1);
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum2);
+	smbcli_unlink(cli->tree, fname);
+	return ret;
+}
 
 /* 
    basic testing of oplocks
 */
 BOOL torture_raw_oplock(void)
 {
-	struct smbcli_state *cli1;
+	struct smbcli_state *cli1, *cli2;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
@@ -487,9 +544,37 @@ BOOL torture_raw_oplock(void)
 
 	mem_ctx = talloc_init("torture_raw_oplock");
 
+	{
+		struct cli_credentials *creds;
+		NTSTATUS status;
+
+		creds = cli_credentials_init(mem_ctx);
+		cli_credentials_set_conf(creds);
+		cli_credentials_parse_string(creds, "user1000%asdf",
+					     CRED_SPECIFIED);
+		status = smbcli_full_connection(
+			mem_ctx, &cli2, lp_parm_string(-1, "torture", "host"),
+			lp_parm_string(-1, "torture", "share"), "????",
+			creds, cli1->transport->socket->event.ctx);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("opening 2nd connection failed: %s\n",
+			       nt_errstr(status));
+			return False;
+		}
+	}
+
+	if (!test_bug3349(cli1, cli2, mem_ctx)) {
+		ret = False;
+	}
+
+	goto done;
+
 	if (!test_oplock(cli1, mem_ctx)) {
 		ret = False;
 	}
+
+ done:
 
 	torture_close_connection(cli1);
 	talloc_free(mem_ctx);
