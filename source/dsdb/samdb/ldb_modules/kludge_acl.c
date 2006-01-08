@@ -91,7 +91,9 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	struct kludge_private_data *data = talloc_get_type(module->private_data, struct kludge_private_data);
 	int i, j;
 
-	if (ret != LDB_SUCCESS) {
+	/* We may not be fully initialised yet, or we might have just
+	 * got an error */
+	if (ret != LDB_SUCCESS || !data->password_attrs) {
 		return ret;
 	}
 
