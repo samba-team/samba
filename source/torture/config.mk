@@ -75,6 +75,7 @@ REQUIRED_SUBSYSTEMS = \
 OBJ_FILES = \
 		rpc/join.o \
 		rpc/lsa.o \
+		rpc/lsa_lookup.o \
 		rpc/session_key.o \
 		rpc/echo.o \
 		rpc/dcom.o \
