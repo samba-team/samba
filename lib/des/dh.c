@@ -50,13 +50,41 @@ RCSID("$Id$");
 DH *
 DH_new(void)
 {
+    return DH_new_method(NULL);
+}
+
+DH *
+DH_new_method(ENGINE *engine)
+{
     DH *dh;
 
     dh = calloc(1, sizeof(*dh));
     if (dh == NULL)
 	return NULL;
-    dh->meth = rk_UNCONST(DH_get_default_method());
+
     dh->references = 1;
+
+    if (engine) {
+	ENGINE_up_ref(engine);
+	dh->engine = engine;
+    } else {
+	dh->engine = ENGINE_get_default_DH();
+    }
+
+    if (dh->engine) {
+	dh->meth = ENGINE_get_DH(dh->engine);
+	if (dh->meth == NULL) {
+	    ENGINE_finish(engine);
+	    free(dh);
+	    return 0;
+	}
+    }
+
+    if (dh->meth == NULL)
+	dh->meth = DH_get_default_method();
+
+    (*dh->meth->init)(dh);
+
     return dh;
 }
 
@@ -70,6 +98,9 @@ DH_free(DH *dh)
 	return;
 
     (*dh->meth->finish)(dh);
+
+    if (dh->engine)
+	ENGINE_finish(dh->engine);
 
 #define free_if(f) if (f) { BN_free(f); }
     free_if(dh->p);
@@ -141,6 +172,10 @@ int
 DH_set_method(DH *dh, const DH_METHOD *method)
 {
     (*dh->meth->finish)(dh);
+    if (dh->engine) {
+	ENGINE_finish(dh->engine);
+	dh->engine = NULL;
+    }
     dh->meth = method;
     (*dh->meth->init)(dh);
     return 1;
