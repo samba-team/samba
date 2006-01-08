@@ -690,7 +690,7 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(lookup_sids(mem_ctx, 1, &sid,
+	if (!NT_STATUS_IS_OK(lookup_sids(tmp_ctx, 1, &sid,
 					 &domain, &name))) {
 		goto done;
 	}
