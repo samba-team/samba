@@ -46,13 +46,16 @@ RCSID("$Id$");
 
 #include <engine.h>
 
-static int version_flag = 0;
-static int help_flag	= 0;
-static char *id_flag	= 0;
+static int version_flag;
+static int help_flag;
+static char *id_flag;
+static char *rsa_flag;
 
 static struct getargs args[] = {
     { "id",		0,	arg_string,	&id_flag,
       "id", 	NULL },
+    { "rsa",		0,	arg_string,	&rsa_flag,
+      "rsa-der-file", 	NULL },
     { "version",	0,	arg_flag,	&version_flag,
       "print version", NULL },
     { "help",		0,	arg_flag,	&help_flag,
@@ -74,6 +77,7 @@ main(int argc, char **argv)
 {
     ENGINE *engine;
     int idx = 0;
+    int have_rsa;
 
     setprogname(argv[0]);
 
@@ -100,8 +104,56 @@ main(int argc, char **argv)
 
     printf("name: %s\n", ENGINE_get_name(engine));
     printf("id: %s\n", ENGINE_get_id(engine));
-    printf("RSA: %s\n", ENGINE_get_RSA(engine) ? "yes" : "no");
+    have_rsa = ENGINE_get_RSA(engine) != NULL;
+    printf("RSA: %s\n", have_rsa ? "yes" : "no");
     printf("DH: %s\n", ENGINE_get_DH(engine) ? "yes" : "no");
+
+    if (rsa_flag && have_rsa) {
+	unsigned char buf[1024 * 4];
+	const unsigned char *p;
+	size_t size;
+	int keylen;
+	RSA *rsa;
+	FILE *f;
+	
+	f = fopen(rsa_flag, "r");
+	if (f == NULL)
+	    err(1, "could not open file %s", rsa_flag);
+	
+	size = fread(buf, 1, sizeof(buf), f);
+	if (size == 0)
+	    err(1, "failed to read file %s", rsa_flag);
+	if (size == sizeof(buf))
+	    err(1, "key too long in file %s!", rsa_flag);
+	fclose(f);
+	
+	p = buf;
+	rsa = d2i_RSAPrivateKey(NULL, &p, size);
+	if (rsa == NULL)
+	    err(1, "failed to parse key in file %s", rsa_flag);
+	
+	RSA_set_method(rsa, ENGINE_get_RSA(engine));
+
+	memcpy(buf, "hejsan", 7);
+	keylen = RSA_private_encrypt(7, buf, buf, rsa, RSA_PKCS1_PADDING);
+	if (keylen <= 0)
+	    errx(1, "failed to private encrypt");
+
+	keylen = RSA_public_decrypt(keylen, buf, buf, rsa, RSA_PKCS1_PADDING);
+	if (keylen <= 0)
+	    errx(1, "failed to public decrypt");
+
+	if (keylen != 7)
+	    errx(1, "output buffer not same length");
+
+	if (memcmp(buf, "hejsan", 7) != 0)
+	    errx(1, "string not the same after decryption");
+
+	RSA_free(rsa);
+
+	printf("rsa test passed\n");
+
+    }
 
     ENGINE_finish(engine);
 
