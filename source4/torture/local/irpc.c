@@ -225,7 +225,17 @@ BOOL torture_local_irpc(void)
 
 	ev = event_context_init(mem_ctx);
 	msg_ctx1 = messaging_init(mem_ctx, MSG_ID1, ev);
+	if (!msg_ctx1) {
+		printf("Failed to init first messaging context\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
 	msg_ctx2 = messaging_init(mem_ctx, MSG_ID2, ev);
+	if (!msg_ctx2) {
+		printf("Failed to init second messaging context\n");
+		talloc_free(mem_ctx);
+		return False;
+	}
 
 	/* register the server side function */
 	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
