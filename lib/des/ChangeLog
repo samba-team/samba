@@ -1,5 +1,9 @@
-2006-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_engine_dso.c: Add test for RSA encryption.
+	
+2006-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* test_engine_dso.c: Add test for RSA.
 
 	* implement enough glue to support OpenSSLs EVP, RSA, DSA, DH,
