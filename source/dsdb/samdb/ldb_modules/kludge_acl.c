@@ -85,11 +85,13 @@ static enum user_is what_is_user(struct ldb_module *module)
 /* search */
 static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 {
-	enum user_is user_type;
-	int ret = ldb_next_request(module, req);
-	struct ldb_message *msg;
 	struct kludge_private_data *data = talloc_get_type(module->private_data, struct kludge_private_data);
-	int i, j;
+	struct ldb_message *msg;
+	enum user_is user_type;
+	int i, j, ret;
+
+	/* go down the path and wait for reply to filter out stuff if needed */
+	ret = ldb_next_request(module, req);
 
 	/* We may not be fully initialised yet, or we might have just
 	 * got an error */
