@@ -45,12 +45,6 @@
  */
 
 const char *password_attribs[] = {
-	"sambaPassword",
-	"ntPwdHash",
-	"sambaNTPwdHistory",
-	"lmPwdHash", 
-	"sambaLMPwdHistory",
-	"krb5key"
 };
 
 enum user_is {
@@ -60,9 +54,8 @@ enum user_is {
 	SYSTEM
 };
 
-struct private_data {
-
-	char *some_private_data;
+struct kludge_private_data {
+	const char **password_attrs;
 };
 
 static enum user_is what_is_user(struct ldb_module *module) 
@@ -78,7 +71,7 @@ static enum user_is what_is_user(struct ldb_module *module)
 	}
 
 	if (is_administrator_token(session_info->security_token)) {
-		return SYSTEM;
+		return ADMINISTRATOR;
 	}
 	if (is_authenticated_token(session_info->security_token)) {
 		return USER;
@@ -95,6 +88,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	enum user_is user_type;
 	int ret = ldb_next_request(module, req);
 	struct ldb_message *msg;
+	struct kludge_private_data *data = talloc_get_type(module->private_data, struct kludge_private_data);
 	int i, j;
 
 	if (ret != LDB_SUCCESS) {
@@ -110,8 +104,8 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 		/* For every message, remove password attributes */
 		for (i=0; i < req->op.search.res->count; i++) {
 			msg = req->op.search.res->msgs[i];
-			for (j=0; j < ARRAY_SIZE(password_attribs); j++) {
-				ldb_msg_remove_attr(msg, password_attribs[j]);
+			for (j=0; data->password_attrs[j]; j++) {
+				ldb_msg_remove_attr(msg, data->password_attrs[j]);
 			}
 		}
 	}
@@ -151,15 +145,6 @@ static int kludge_acl_del_trans(struct ldb_module *module)
 	return ldb_next_del_trans(module);
 }
 
-static int kludge_acl_destructor(void *module_ctx)
-{
-	struct ldb_module *ctx = talloc_get_type(module_ctx, struct ldb_module);
-	struct private_data *data = talloc_get_type(ctx->private_data, struct private_data);
-	/* put your clean-up functions here */
-	if (data->some_private_data) talloc_free(data->some_private_data);
-	return 0;
-}
-
 static int kludge_acl_request(struct ldb_module *module, struct ldb_request *req)
 {
 	switch (req->operation) {
@@ -174,37 +159,88 @@ static int kludge_acl_request(struct ldb_module *module, struct ldb_request *req
 	}
 }
 
+static int kludge_acl_init_2(struct ldb_module *module)
+{
+	int ret, i;
+	TALLOC_CTX *mem_ctx = talloc_new(module);
+	const char *attrs[] = { "attribute", NULL };
+	struct ldb_result *res;
+	struct ldb_message *msg;
+	struct ldb_message_element *password_attributes;
+
+	struct kludge_private_data *data = talloc_get_type(module->private_data, struct kludge_private_data);
+	data->password_attrs = NULL;
+
+	if (!mem_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_search(module->ldb, ldb_dn_explode(mem_ctx, "@KLUDGEACL"),
+			 LDB_SCOPE_BASE,
+			 NULL, attrs,
+			 &res);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+	if (res->count == 0) {
+		talloc_free(mem_ctx);
+		data->password_attrs = NULL;
+		return LDB_SUCCESS;
+	}
+
+	if (res->count > 1) {
+		return LDB_ERR_CONSTRAINT_VIOLAION;
+	}
+
+	msg = res->msgs[0];
+
+	password_attributes = ldb_msg_find_element(msg, "passwordAttribute");
+	if (!password_attributes) {
+		return LDB_SUCCESS;
+	}
+	data->password_attrs = talloc_array(data, const char *, password_attributes->num_values + 1);
+	if (!data->password_attrs) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	for (i=0; i < password_attributes->num_values; i++) {
+		data->password_attrs[i] = (const char *)password_attributes->values[i].data;	
+		talloc_steal(data->password_attrs, password_attributes->values[i].data);
+	}
+	data->password_attrs[i] = NULL;
+	return LDB_SUCCESS;
+}
+
 static const struct ldb_module_ops kludge_acl_ops = {
 	.name		   = "kludge_acl",
 	.request      	   = kludge_acl_request,
 	.start_transaction = kludge_acl_start_trans,
 	.end_transaction   = kludge_acl_end_trans,
 	.del_transaction   = kludge_acl_del_trans,
+	.second_stage_init = kludge_acl_init_2
 };
 
 struct ldb_module *kludge_acl_module_init(struct ldb_context *ldb, const char *options[])
 {
 	struct ldb_module *ctx;
-	struct private_data *data;
+	struct kludge_private_data *data;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
-	data = talloc(ctx, struct private_data);
+	data = talloc(ctx, struct kludge_private_data);
 	if (data == NULL) {
 		talloc_free(ctx);
 		return NULL;
 	}
 
-	data->some_private_data = NULL;
+	data->password_attrs = NULL;
 	ctx->private_data = data;
 
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &kludge_acl_ops;
-
-	talloc_set_destructor (ctx, kludge_acl_destructor);
 
 	return ctx;
 }
