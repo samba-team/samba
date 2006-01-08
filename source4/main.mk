@@ -181,6 +181,23 @@ pidl/Makefile: pidl/Makefile.PL
 installpidl: pidl/Makefile
 	cd pidl && $(MAKE) install
 
+IDL_FILES = $(wildcard librpc/idl/*.idl)
+IDL_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/%.h,$(IDL_FILES))
+IDL_NDR_HEADER_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.h,$(IDL_FILES))
+IDL_NDR_PARSE_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,$(IDL_FILES))
+IDL_NDR_CLIENT_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_c.c,$(IDL_FILES))
+IDL_NDR_SERVER_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_s.c,$(IDL_FILES))
+IDL_NDR_EJS_C_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.c,$(IDL_FILES))
+IDL_NDR_EJS_H_FILES = $(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%_ejs.h,$(IDL_FILES))
+
+$(IDL_HEADER_FILES): idl
+$(IDL_NDR_HEADER_FILES): idl
+$(IDL_NDR_PARSE_C_FILES): idl
+$(IDL_NDR_CLIENT_C_FILES): idl
+$(IDL_NDR_SERVER_C_FILES): idl
+$(IDL_NDR_EJS_C_FILES): idl
+$(IDL_NDR_EJS_H_FILES): idl
+
 idl_full: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL $(PIDL_ARGS)
 
