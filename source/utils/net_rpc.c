@@ -5011,7 +5011,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
-	smb_ucs2_t *uni_domain_name;
 	
 	char* domain_name;
 	char* domain_name_pol;
@@ -5119,13 +5118,6 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) == (size_t)-1) {
-		DEBUG(0, ("Could not convert domain name %s to unicode\n",
-			  domain_name_pol));
-		cli_shutdown(cli);
-		return -1;
-	}
-
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
 			
@@ -5134,10 +5126,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 */
 
 	if (!secrets_store_trusted_domain_password(domain_name,
-						   uni_domain_name,
-						   strlen_w(uni_domain_name)+1,
 						   opt_password,
-						   *domain_sid)) {
+						   domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
 		return -1;
@@ -5253,7 +5243,6 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	LSA_TRUSTED_DOMAIN_INFO *info;
 	char *cleartextpwd = NULL;
 	DATA_BLOB data;
-	smb_ucs2_t *uni_dom_name;
 
 	nt_status = rpccli_lsa_query_trusted_domain_info_by_sid(pipe_hnd, mem_ctx, pol, 4, &dom_sid, &info);
 	
@@ -5276,18 +5265,9 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 	
-	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) == (size_t)-1) {
-		DEBUG(0, ("Could not convert domain name %s to unicode\n",
-			  trusted_dom_name));
-		nt_status = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
 	if (!secrets_store_trusted_domain_password(trusted_dom_name,
-						   uni_dom_name,
-						   strlen_w(uni_dom_name)+1,
 						   cleartextpwd,
-						   dom_sid)) {
+						   &dom_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto done;

@@ -370,7 +370,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		sids[i] = sid;
 	}
 
-	result = lookup_sids(mem_ctx, num_members, sids,
+	result = lookup_sids(mem_ctx, num_members, sids, 1,
 			     &lsa_domains, &lsa_names);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -436,41 +436,35 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DOM_SID **dom_sids)
 {
 	NTSTATUS nt_status;
-	int enum_ctx = 0;
-	int num_sec_domains;
-	TRUSTDOM **domains;
+	struct trustdom_info **domains;
+	int i;
+
 	*num_domains = 0;
 	*names = NULL;
 	*alt_names = NULL;
 	*dom_sids = NULL;
-	do {
-		int i;
-		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, 1,
-							&num_sec_domains,
-							&domains);
-		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names, char *,
-					num_sec_domains + *num_domains);
-		*alt_names = TALLOC_REALLOC_ARRAY(mem_ctx, *alt_names, char *,
-					    num_sec_domains + *num_domains);
-		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids, DOM_SID,
-					   num_sec_domains + *num_domains);
 
-		for (i=0; i< num_sec_domains; i++) {
-			if (pull_ucs2_talloc(mem_ctx, &(*names)[*num_domains],
-					     domains[i]->name) == -1) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			(*alt_names)[*num_domains] = NULL;
-			(*dom_sids)[*num_domains] = domains[i]->sid;
-			(*num_domains)++;
-		}
-
-	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
-
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
-		return NT_STATUS_OK;
+	nt_status = secrets_trusted_domains(mem_ctx, num_domains,
+					    &domains);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
-	return nt_status;
+
+	*names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+	*alt_names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+	*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
+
+	if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<*num_domains; i++) {
+		(*alt_names)[i] = NULL;
+		(*names)[i] = talloc_steal((*names), domains[i]->name);
+		sid_copy(&(*dom_sids)[i], &domains[i]->sid);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /* the rpc backend methods are exposed via this structure */

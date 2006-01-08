@@ -75,10 +75,10 @@ typedef struct trusted_dom_pass {
  * trusted domain entry/entries returned by secrets_get_trusted_domains
  * (used in _lsa_enum_trust_dom call)
  */
-typedef struct trustdom {
-	smb_ucs2_t *name;
+struct trustdom_info {
+	char *name;
 	DOM_SID sid;
-} TRUSTDOM;
+};
 
 /*
  * Format of an OpenAFS keyfile

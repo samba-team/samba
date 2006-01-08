@@ -508,8 +508,9 @@ BOOL lsa_io_q_enum_trust_dom(const char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
  Inits an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out, uint32 enum_context,
-			   uint32 req_num_domains, uint32 num_domains, TRUSTDOM **td)
+void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out,
+			   uint32 enum_context, uint32 num_domains,
+			   struct trustdom_info **td)
 {
 	unsigned int i;
 
@@ -523,7 +524,8 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out, uint32 en
 		/* allocate container memory */
 		
 		out->domlist = TALLOC_P( ctx, DOMAIN_LIST );
-		out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO, out->count );
+		out->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO,
+						      out->count );
 		
 		if ( !out->domlist || !out->domlist->domains ) {
 			out->status = NT_STATUS_NO_MEMORY;
@@ -535,13 +537,21 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *out, uint32 en
 		/* initialize the list of domains and their sid */
 		
 		for (i = 0; i < num_domains; i++) {	
-			if ( !(out->domlist->domains[i].sid = TALLOC_P(ctx, DOM_SID2)) ) {
+			smb_ucs2_t *name;
+			if ( !(out->domlist->domains[i].sid =
+			       TALLOC_P(ctx, DOM_SID2)) ) {
 				out->status = NT_STATUS_NO_MEMORY;
 				return;
 			}
 				
-			init_dom_sid2(out->domlist->domains[i].sid, &(td[i])->sid);
-			init_unistr4_w(ctx, &out->domlist->domains[i].name, (td[i])->name);	
+			init_dom_sid2(out->domlist->domains[i].sid,
+				      &(td[i])->sid);
+			if (push_ucs2_talloc(ctx, &name, (td[i])->name) < 0){
+				out->status = NT_STATUS_NO_MEMORY;
+				return;
+			}
+			init_unistr4_w(ctx, &out->domlist->domains[i].name,
+				       name);
 		}
 	}
 

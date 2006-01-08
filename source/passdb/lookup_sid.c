@@ -462,16 +462,89 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 		return True;
 	}
 
-	if ((sid->num_auths == 4) &&
-	    winbind_lookup_sid(mem_ctx, sid, &tmp, NULL, &type) &&
+	if (sid->num_auths != 4) {
+		/* This can't be a domain */
+		return False;
+	}
+
+	if (IS_DC) {
+		uint32 i, num_domains;
+		struct trustdom_info **domains;
+
+		/* This is relatively expensive, but it happens only on DCs
+		 * and for SIDs that have 4 sub-authorities and thus look like
+		 * domains */
+
+		if (!NT_STATUS_IS_OK(secrets_trusted_domains(mem_ctx,
+							     &num_domains,
+							     &domains))) {
+			return False;
+		}
+
+		for (i=0; i<num_domains; i++) {
+			if (sid_equal(sid, &domains[i]->sid)) {
+				*name = talloc_strdup(mem_ctx,
+						      domains[i]->name);
+				return True;
+			}
+		}
+		return False;
+	}
+
+	if (winbind_lookup_sid(mem_ctx, sid, &tmp, NULL, &type) &&
 	    (type == SID_NAME_DOMAIN)) {
 		*name = tmp;
 		return True;
 	}
 
-	/* TODO: As a DC, see if we trust SID */
-
 	return False;
+}
+
+/*
+ * This tries to implement the rather weird rules for the lsa_lookup level
+ * parameter.
+ *
+ * This is as close as we can get to what W2k3 does. With this we survive the
+ * RPC-LSALOOKUP samba4 test as of 2006-01-08. NT4 as a PDC is a bit more
+ * different, but I assume that's just being too liberal. For example, W2k3
+ * replies to everything else but the levels 1-6 with INVALID_PARAMETER
+ * whereas NT4 does the same as level 1 (I think). I did not fully test that
+ * with NT4, this is what w2k3 does.
+ *
+ * Level 1: Ask everywhere
+ * Level 2: Ask domain and trusted domains, no builtin and wkn
+ * Level 3: Only ask domain
+ * Level 4: W2k3ad: Only ask AD trusts
+ * Level 5: Don't lookup anything
+ * Level 6: Like 4
+ */
+
+static BOOL check_dom_sid_to_level(const DOM_SID *sid, int level)
+{
+	int ret = False;
+
+	switch(level) {
+	case 1:
+		ret = True;
+		break;
+	case 2:
+		ret = (!sid_check_is_builtin(sid) &&
+		       !sid_check_is_wellknown_domain(sid, NULL));
+		break;
+	case 3:
+	case 4:
+	case 6:
+		ret = sid_check_is_domain(sid);
+		break;
+	case 5:
+		ret = False;
+		break;
+	}
+
+	DEBUG(10, ("%s SID %s in level %d\n",
+		   ret ? "Accepting" : "Rejecting",
+		   sid_string_static(sid), level));
+	return ret;
 }
 
 /*
@@ -487,7 +560,7 @@ static BOOL lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
-		     const DOM_SID **sids,
+		     const DOM_SID **sids, int level,
 		     struct lsa_dom_info **ret_domains,
 		     struct lsa_name_info **ret_names)
 {
@@ -567,6 +640,13 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 				result = NT_STATUS_INVALID_PARAMETER;
 				goto done;
 			}
+		}
+
+		if (!check_dom_sid_to_level(&sid, level)) {
+			name_infos[i].rid = 0;
+			name_infos[i].type = SID_NAME_UNKNOWN;
+			name_infos[i].name = NULL;
+			continue;
 		}
 
 		for (j=0; j<MAX_REF_DOMAINS; j++) {
@@ -690,7 +770,7 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(lookup_sids(tmp_ctx, 1, &sid,
+	if (!NT_STATUS_IS_OK(lookup_sids(tmp_ctx, 1, &sid, 1,
 					 &domain, &name))) {
 		goto done;
 	}
