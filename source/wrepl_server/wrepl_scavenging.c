@@ -27,6 +27,9 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
 #include "system/time.h"
+#include "smbd/service_task.h"
+#include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 
 const char *wreplsrv_owner_filter(struct wreplsrv_service *service,
 				  TALLOC_CTX *mem_ctx,
@@ -266,6 +269,91 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	return NT_STATUS_OK;
 }
 
+struct verify_state {
+	struct messaging_context *msg_ctx;
+	struct wreplsrv_service *service;
+	struct winsdb_record *rec;
+	struct nbtd_proxy_wins_challenge r;
+};
+
+static void verify_handler(struct irpc_request *ireq)
+{
+	struct verify_state *s = talloc_get_type(ireq->async.private,
+				 struct verify_state);
+	struct winsdb_record *rec = s->rec;
+	const char *action;
+	const char *old_state = "active";
+	BOOL modify_record = False;
+	BOOL delete_record = False;
+	BOOL different = False;
+	int ret;
+	NTSTATUS status;
+	uint32_t i, j;
+
+	/*
+	 * - if the name isn't present anymore remove our record
+	 * - if the name is found and not a normal group check if the addresses match,
+	 *   - if they don't match remove the record
+	 *   - if they match do nothing
+	 * - if an error happens do nothing
+	 */
+	status = irpc_call_recv(ireq);
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		delete_record = True;
+	} else if (NT_STATUS_IS_OK(status) && rec->type != WREPL_TYPE_GROUP) {
+		for (i=0; i < s->r.out.num_addrs; i++) {
+			BOOL found = False;
+			for (j=0; rec->addresses[j]; j++) {
+				if (strcmp(s->r.out.addrs[i].addr, rec->addresses[j]->address) == 0) {
+					found = True;
+					break;
+				}
+			}
+			if (!found) {
+				different = True;
+				break;
+			}
+		}
+	} else if (NT_STATUS_IS_OK(status) && rec->type == WREPL_TYPE_GROUP) {
+		if (s->r.out.num_addrs != 1 || strcmp(s->r.out.addrs[i].addr, "255.255.255.255") != 0) {
+			different = True;
+		}
+	}
+
+	if (different) {
+		DEBUG(0,("WINS scavenging: replica %s verify got different addresses from winsserver: %s: deleting record\n",
+			nbt_name_string(rec, rec->name), rec->wins_owner));
+		delete_record = True;
+	} else if (NT_STATUS_IS_OK(status)) {
+		rec->expire_time = time(NULL) + s->service->config.verify_interval;
+		for (i=0; rec->addresses[i]; i++) {
+			rec->addresses[i]->expire_time = rec->expire_time;
+		}
+		modify_record = True;
+	}
+
+	if (modify_record) {
+		action = "modify";
+		ret = winsdb_modify(s->service->wins_db, rec, 0);
+	} else if (delete_record) {
+		action = "delete";
+		ret = winsdb_delete(s->service->wins_db, rec);
+	} else {
+		action = "skip";
+		ret = NBT_RCODE_OK;
+	}
+
+	if (ret != NBT_RCODE_OK) {
+		DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s): error:%u\n",
+			action, nbt_name_string(rec, rec->name), old_state, ret));
+	} else {
+		DEBUG(4,("WINS scavenging: %s name: %s (replica:%s): %s: %s\n",
+			action, nbt_name_string(rec, rec->name), old_state, rec->wins_owner, nt_errstr(status)));
+	}
+
+	talloc_free(s);
+}
+
 static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_service *service, TALLOC_CTX *tmp_mem)
 {
 	NTSTATUS status;
@@ -277,11 +365,14 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	int ret;
 	time_t now = time(NULL);
 	const char *now_timestr;
-	const char *action;
-	const char *old_state;
-	BOOL modify_flags;
-	BOOL modify_record;
-	BOOL delete_record;
+	struct irpc_request *ireq;
+	struct verify_state *s;
+	uint32_t *nbt_servers;
+
+	nbt_servers = irpc_servers_byname(service->task->msg_ctx, "nbt_server");
+	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	now_timestr = ldb_timestring(tmp_mem, now);
 	NT_STATUS_HAVE_NO_MEMORY(now_timestr);
@@ -321,39 +412,40 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		old_state = "active";
-
-		modify_flags	= 0;
-		modify_record	= False;
-		delete_record	= False;
-
 		/* 
-		 * TODO: ask the owning wins server if the record still exists,
-		 *       if not delete the record
+		 * ask the owning wins server if the record still exists,
+		 * if not delete the record
+		 *
+		 * TODO: NOTE: this is a simpliefied version, to verify that
+		 *             a record still exist, I assume that w2k3 uses
+		 *             DCERPC calls or some WINSREPL packets for this,
+		 *             but we use a wins name query
 		 */
-		DEBUG(0,("TODO: ask wins server '%s' if '%s' with version_id:%llu still exists\n",
+		DEBUG(0,("ask wins server '%s' if '%s' with version_id:%llu still exists\n",
 			rec->wins_owner, nbt_name_string(rec, rec->name), rec->version));
 
-		if (modify_record) {
-			action = "modify";
-			ret = winsdb_modify(service->wins_db, rec, modify_flags);
-		} else if (delete_record) {
-			action = "delete";
-			ret = winsdb_delete(service->wins_db, rec);
-		} else {
-			action = "skip";
-			ret = NBT_RCODE_OK;
-		}
+		s = talloc_zero(tmp_mem, struct verify_state);
+		NT_STATUS_HAVE_NO_MEMORY(s);
+		s->msg_ctx	= service->task->msg_ctx;
+		s->service	= service;
+		s->rec		= talloc_steal(s, rec);
 
-		if (ret != NBT_RCODE_OK) {
-			DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s): error:%u\n",
-				action, nbt_name_string(rec, rec->name), old_state, ret));
-		} else {
-			DEBUG(4,("WINS scavenging: %s name: %s (replica:%s)\n",
-				action, nbt_name_string(rec, rec->name), old_state));
-		}
+		s->r.in.name		= *rec->name;
+		s->r.in.num_addrs	= 1;
+		s->r.in.addrs		= talloc_array(s, struct nbtd_proxy_wins_addr, s->r.in.num_addrs);
+		NT_STATUS_HAVE_NO_MEMORY(s->r.in.addrs);
+		/* TODO: fix pidl to handle inline ipv4address arrays */
+		s->r.in.addrs[0].addr	= rec->wins_owner;
 
-		talloc_free(rec);
+		ireq = IRPC_CALL_SEND(s->msg_ctx, nbt_servers[0],
+				      irpc, NBTD_PROXY_WINS_CHALLENGE,
+				      &s->r, s);
+		NT_STATUS_HAVE_NO_MEMORY(ireq);
+
+		ireq->async.fn		= verify_handler;
+		ireq->async.private	= s;
+
+		talloc_steal(service, s);
 	}
 
 	return NT_STATUS_OK;
