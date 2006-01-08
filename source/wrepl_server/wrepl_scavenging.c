@@ -83,6 +83,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	for (i=0; i < res->count; i++) {
 		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
+		talloc_free(res->msgs[i]);
 
 		if (rec->is_static) {
 			DEBUG(0,("%s: corrupted record: %s\n",
@@ -196,6 +197,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	for (i=0; i < res->count; i++) {
 		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
+		talloc_free(res->msgs[i]);
 
 		if (rec->is_static) {
 			DEBUG(0,("%s: corrupted record: %s\n",
@@ -299,6 +301,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	for (i=0; i < res->count; i++) {
 		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
+		talloc_free(res->msgs[i]);
 
 		if (rec->is_static) {
 			DEBUG(0,("%s: corrupted record: %s\n",
