@@ -27,14 +27,26 @@
 #define CHAR_BIT 8
 #endif
 
+/* The extra casts work around common compiler bugs.  */
+#define _TYPE_SIGNED(t) (! ((t) 0 < (t) -1))
+/* The outer cast is needed to work around a bug in Cray C 5.0.3.0.
+   It is necessary at least when t == time_t.  */
+#define _TYPE_MINIMUM(t) ((t) (_TYPE_SIGNED (t) \
+  			      ? ~ (t) 0 << (sizeof (t) * CHAR_BIT - 1) : (t) 0))
+#define _TYPE_MAXIMUM(t) ((t) (~ (t) 0 - _TYPE_MINIMUM (t)))
+			      
 #ifndef TIME_T_MIN
-#define TIME_T_MIN ((time_t)0 < (time_t) -1 ? (time_t) 0 \
-		    : ~ (time_t) 0 << (sizeof (time_t) * CHAR_BIT - 1))
+/* we use 0 here, because (time_t)-1 means error */
+#define TIME_T_MIN 0
 #endif
 #ifndef TIME_T_MAX
-#define TIME_T_MAX MIN(INT32_MAX,(~ (time_t) 0 - TIME_T_MIN))
+/*
+ * we use the INT32_MAX here as on 64 bit systems,
+ * gmtime() fails with INT64_MAX
+ */
+#define TIME_T_MAX MIN(INT32_MAX,_TYPE_MAXIMUM(time_t))
 #endif
-			      
+
 /*******************************************************************
  External access to time_t_min and time_t_max.
 ********************************************************************/
