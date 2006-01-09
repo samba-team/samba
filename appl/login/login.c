@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -739,7 +739,7 @@ main(int argc, char **argv)
     }
 #endif
 
-    openlog("login", LOG_ODELAY, LOG_AUTH);
+    openlog("login", LOG_ODELAY | LOG_PID, LOG_AUTH);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optidx))
@@ -872,6 +872,13 @@ main(int argc, char **argv)
 		syslog(LOG_NOTICE, "%s LOGIN REFUSED ON %s",
 		       pwd->pw_name, tty);
 	    exit (1);
+	} else {
+	    if (remote_host)
+		syslog(LOG_NOTICE, "%s LOGIN ACCEPTED FROM %s ppid=%d",
+		       pwd->pw_name, remote_host, (int) getppid());
+	    else
+		syslog(LOG_NOTICE, "%s LOGIN ACCEPTED ON %s ppid=%d",
+		       pwd->pw_name, tty, (int) getppid());
 	}
         alarm(0);
 	do_login(pwd, tty, ttyn);
