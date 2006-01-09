@@ -104,7 +104,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
 	if (!call->conn->gensec) {
-		struct cli_credentials *server_credentials;
 		call->conn->session_info = NULL;
 
 		status = gensec_server_start(call->conn, &call->conn->gensec,
