@@ -405,9 +405,10 @@ static uint32_t thread_get_task_id(void)
 
 static void thread_log_task_id(int fd)
 {
-	char *s;
+	char *s= NULL;
 	
 	asprintf(&s, "thread %u: ", (uint32_t)pthread_self());
+	if (!s) return;
 	write(fd, s, strlen(s));
 	free(s);
 }
