@@ -81,41 +81,52 @@ static NTSTATUS ipv6_tcp_connect_complete(struct socket_context *sock, uint32_t 
 }
 
 static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
-				 const char *my_address, int my_port,
-				 const char *srv_address, int srv_port,
+				 const struct socket_address *my_address,
+				 const struct socket_address *srv_address,
 				 uint32_t flags)
 {
-	struct sockaddr_in6 srv_addr;
-	struct in6_addr my_ip;
-	struct in6_addr srv_ip;
 	int ret;
 
-	my_ip = interpret_addr6(my_address);
-
-	if (memcmp(&my_ip, &in6addr_any, sizeof(my_ip)) || my_port != 0) {
-		struct sockaddr_in6 my_addr;
-		ZERO_STRUCT(my_addr);
-		my_addr.sin6_addr	= my_ip;
-		my_addr.sin6_port	= htons(my_port);
-		my_addr.sin6_family	= PF_INET6;
-		
-		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	if (my_address && my_address->sockaddr) {
+		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
+	} else if (my_address) {
+		struct in6_addr my_ip;
+		my_ip = interpret_addr6(my_address->addr);
+
+		if (memcmp(&my_ip, &in6addr_any, sizeof(my_ip)) || my_address->port != 0) {
+			struct sockaddr_in6 my_addr;
+			ZERO_STRUCT(my_addr);
+			my_addr.sin6_addr	= my_ip;
+			my_addr.sin6_port	= htons(my_address->port);
+			my_addr.sin6_family	= PF_INET6;
+			
+			ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+			if (ret == -1) {
+				return map_nt_error_from_unix(errno);
+			}
+		}
 	}
 
-	srv_ip = interpret_addr6(srv_address);
-	if (memcmp(&srv_ip, &in6addr_any, sizeof(srv_ip)) == 0) {
-		return NT_STATUS_BAD_NETWORK_NAME;
+	if (srv_address->sockaddr) {
+		ret = connect(sock->fd, srv_address->sockaddr, srv_address->sockaddrlen);
+	} else {
+		struct in6_addr srv_ip;
+		struct sockaddr_in6 srv_addr;
+		srv_ip = interpret_addr6(srv_address->addr);
+		if (memcmp(&srv_ip, &in6addr_any, sizeof(srv_ip)) == 0) {
+			return NT_STATUS_BAD_NETWORK_NAME;
+		}
+		
+		ZERO_STRUCT(srv_addr);
+		srv_addr.sin6_addr	= srv_ip;
+		srv_addr.sin6_port	= htons(srv_address->port);
+		srv_addr.sin6_family	= PF_INET6;
+		
+		ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
-
-	ZERO_STRUCT(srv_addr);
-	srv_addr.sin6_addr	= srv_ip;
-	srv_addr.sin6_port	= htons(srv_port);
-	srv_addr.sin6_family	= PF_INET6;
-
-	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -124,8 +135,8 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 }
 
 static NTSTATUS ipv6_tcp_listen(struct socket_context *sock,
-					const char *my_address, int port,
-					int queue_size, uint32_t flags)
+				const struct socket_address *my_address,
+				int queue_size, uint32_t flags)
 {
 	struct sockaddr_in6 my_addr;
 	struct in6_addr ip_addr;
@@ -133,14 +144,19 @@ static NTSTATUS ipv6_tcp_listen(struct socket_context *sock,
 
 	socket_set_option(sock, "SO_REUSEADDR=1", NULL);
 
-	ip_addr = interpret_addr6(my_address);
+	if (my_address->sockaddr) {
+		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
+	} else {
+		ip_addr = interpret_addr6(my_address->addr);
+		
+		ZERO_STRUCT(my_addr);
+		my_addr.sin6_addr	= ip_addr;
+		my_addr.sin6_port	= htons(my_address->port);
+		my_addr.sin6_family	= PF_INET6;
+		
+		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	}
 
-	ZERO_STRUCT(my_addr);
-	my_addr.sin6_addr	= ip_addr;
-	my_addr.sin6_port	= htons(port);
-	my_addr.sin6_family	= PF_INET6;
-
-	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -280,73 +296,98 @@ static char *ipv6_tcp_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem
 	return talloc_strdup(mem_ctx, he->h_name);
 }
 
-static char *ipv6_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static struct socket_address *ipv6_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	struct sockaddr_in6 peer_addr;
-	socklen_t len = sizeof(peer_addr);
+	struct sockaddr_in6 *peer_addr;
+	socklen_t len = sizeof(*peer_addr);
+	struct socket_address *peer;
 	int ret;
 	struct hostent *he;
-
-	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
-	if (ret == -1) {
-		return NULL;
-	}
-
-	he = gethostbyaddr((char *)&peer_addr.sin6_addr, sizeof(peer_addr.sin6_addr), AF_INET6);
-
-	if (!he || !he->h_name) {
+	
+	peer = talloc(mem_ctx, struct socket_address);
+	if (!peer) {
 		return NULL;
 	}
 	
-	return talloc_strdup(mem_ctx, he->h_name);
-}
-
-static int ipv6_tcp_get_peer_port(struct socket_context *sock)
-{
-	struct sockaddr_in6 peer_addr;
-	socklen_t len = sizeof(peer_addr);
-	int ret;
-
-	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
-	if (ret == -1) {
-		return -1;
+	peer->family = sock->backend_name;
+	peer_addr = talloc(peer, struct sockaddr_in6);
+	if (!peer_addr) {
+		talloc_free(peer);
+		return NULL;
 	}
 
-	return ntohs(peer_addr.sin6_port);
+	peer->sockaddr = (struct sockaddr *)peer_addr;
+
+	ret = getpeername(sock->fd, peer->sockaddr, &len);
+	if (ret == -1) {
+		talloc_free(peer);
+		return NULL;
+	}
+
+	peer->sockaddrlen = len;
+
+	he = gethostbyaddr((char *)&peer_addr->sin6_addr, len, AF_INET6);
+
+	if (!he || !he->h_name) {
+		talloc_free(peer);
+		return NULL;
+	}
+	
+	peer->addr = talloc_strdup(mem_ctx, he->h_name);
+	if (!peer->addr) {
+		talloc_free(peer);
+		return NULL;
+	}
+	peer->port = ntohs(peer_addr->sin6_port);
+
+	return peer;
 }
 
-static char *ipv6_tcp_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static struct socket_address *ipv6_tcp_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	struct sockaddr_in6 my_addr;
-	socklen_t len = sizeof(my_addr);
+	struct sockaddr_in6 *local_addr;
+	socklen_t len = sizeof(*local_addr);
+	struct socket_address *local;
 	int ret;
 	struct hostent *he;
-
-	ret = getsockname(sock->fd, (struct sockaddr *)&my_addr, &len);
-	if (ret == -1) {
+	
+	local = talloc(mem_ctx, struct socket_address);
+	if (!local) {
+		return NULL;
+	}
+	
+	local->family = sock->backend_name;
+	local_addr = talloc(local, struct sockaddr_in6);
+	if (!local_addr) {
+		talloc_free(local);
 		return NULL;
 	}
 
-	he = gethostbyaddr((char *)&my_addr.sin6_addr, sizeof(my_addr.sin6_addr), AF_INET6);
-	if (he == NULL) {
+	local->sockaddr = (struct sockaddr *)local_addr;
+
+	ret = getsockname(sock->fd, local->sockaddr, &len);
+	if (ret == -1) {
+		talloc_free(local);
 		return NULL;
 	}
 
-	return talloc_strdup(mem_ctx, he->h_name);
-}
+	local->sockaddrlen = len;
 
-static int ipv6_tcp_get_my_port(struct socket_context *sock)
-{
-	struct sockaddr_in6 my_addr;
-	socklen_t len = sizeof(my_addr);
-	int ret;
+	he = gethostbyaddr((char *)&local_addr->sin6_addr, len, AF_INET6);
 
-	ret = getsockname(sock->fd, (struct sockaddr *)&my_addr, &len);
-	if (ret == -1) {
-		return -1;
+	if (!he || !he->h_name) {
+		talloc_free(local);
+		return NULL;
 	}
+	
+	local->addr = talloc_strdup(mem_ctx, he->h_name);
+	if (!local->addr) {
+		talloc_free(local);
+		return NULL;
+	}
+	local->port = ntohs(local_addr->sin6_port);
 
-	return ntohs(my_addr.sin6_port);
+	return local;
 }
 
 static int ipv6_tcp_get_fd(struct socket_context *sock)
@@ -369,9 +410,7 @@ static const struct socket_ops ipv6_tcp_ops = {
 
 	.fn_get_peer_name	= ipv6_tcp_get_peer_name,
 	.fn_get_peer_addr	= ipv6_tcp_get_peer_addr,
-	.fn_get_peer_port	= ipv6_tcp_get_peer_port,
 	.fn_get_my_addr		= ipv6_tcp_get_my_addr,
-	.fn_get_my_port		= ipv6_tcp_get_my_port,
 
 	.fn_get_fd		= ipv6_tcp_get_fd
 };

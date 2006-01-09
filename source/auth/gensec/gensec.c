@@ -864,39 +864,34 @@ const char *gensec_get_target_hostname(struct gensec_security *gensec_security)
 }
 
 /** 
- * Set local and peer socket addresses onto a socket context on the GENSEC context 
+ * Set (and talloc_reference) local and peer socket addresses onto a socket context on the GENSEC context 
  *
  * This is so that kerberos can include these addresses in
  * cryptographic tokens, to avoid certain attacks.
  */
 
-NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, const char *my_addr, int port) 
+NTSTATUS gensec_set_my_addr(struct gensec_security *gensec_security, struct socket_address *my_addr) 
 {
-	gensec_security->my_addr.addr = talloc_strdup(gensec_security, my_addr);
-	if (my_addr && !gensec_security->my_addr.addr) {
+	gensec_security->my_addr = my_addr;
+	if (my_addr && !talloc_reference(gensec_security, my_addr)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	gensec_security->my_addr.port = port;
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, const char *peer_addr, int port) 
+NTSTATUS gensec_set_peer_addr(struct gensec_security *gensec_security, struct socket_address *peer_addr) 
 {
-	gensec_security->peer_addr.addr = talloc_strdup(gensec_security, peer_addr);
-	if (peer_addr && !gensec_security->peer_addr.addr) {
+	gensec_security->peer_addr = peer_addr;
+	if (peer_addr && !talloc_reference(gensec_security, peer_addr)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	gensec_security->peer_addr.port = port;
 	return NT_STATUS_OK;
 }
 
-const char *gensec_get_my_addr(struct gensec_security *gensec_security, int *port) 
+struct socket_address *gensec_get_my_addr(struct gensec_security *gensec_security) 
 {
-	if (gensec_security->my_addr.addr) {
-		if (port) {
-			*port = gensec_security->my_addr.port;
-		}
-		return gensec_security->my_addr.addr;
+	if (gensec_security->my_addr) {
+		return gensec_security->my_addr;
 	}
 
 	/* We could add a 'set sockaddr' call, and do a lookup.  This
@@ -904,13 +899,10 @@ const char *gensec_get_my_addr(struct gensec_security *gensec_security, int *por
 	return NULL;
 }
 
-const char *gensec_get_peer_addr(struct gensec_security *gensec_security, int *port) 
+struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security) 
 {
-	if (gensec_security->peer_addr.addr) {
-		if (port) {
-			*port = gensec_security->peer_addr.port;
-		}
-		return gensec_security->peer_addr.addr;
+	if (gensec_security->peer_addr) {
+		return gensec_security->peer_addr;
 	}
 
 	/* We could add a 'set sockaddr' call, and do a lookup.  This

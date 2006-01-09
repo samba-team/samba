@@ -268,6 +268,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		talloc_get_type(c->private, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
 	struct cli_credentials *server_credentials;
+	struct socket_address *socket_address;
 	NTSTATUS status;
 	int port;
 
@@ -301,7 +302,13 @@ static void ldapsrv_accept(struct stream_connection *c)
 
 	c->private        = conn;
 
-	port = socket_get_my_port(c->socket);
+	socket_address = socket_get_my_addr(c->socket, conn);
+	if (!socket_address) {
+		ldapsrv_terminate_connection(conn, "ldapsrv_accept: failed to obtain local socket address!");
+		return;
+	}
+	port = socket_address->port;
+	talloc_free(socket_address);
 
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
 				    c->event.fde, NULL, port != 389);

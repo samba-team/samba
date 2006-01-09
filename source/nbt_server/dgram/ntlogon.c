@@ -22,14 +22,14 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
-
+#include "lib/socket/socket.h"
 
 /*
   reply to a SAM LOGON request
  */
 static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot, 
 				   struct nbt_dgram_packet *packet,
-				   const struct nbt_peer_socket *src,
+				   const struct socket_address *src,
 				   struct nbt_ntlogon_packet *ntlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
@@ -66,7 +66,7 @@ static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot,
 */
 void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 				   struct nbt_dgram_packet *packet, 
-				   const struct nbt_peer_socket *src)
+				   struct socket_address *src)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 

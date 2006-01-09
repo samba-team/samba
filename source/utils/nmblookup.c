@@ -178,6 +178,7 @@ static BOOL process_one(const char *name)
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
 	char *node_name, *p;
+	struct socket_address *all_zero_addr;
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status = NT_STATUS_OK;
 	BOOL ret = True;
@@ -203,9 +204,17 @@ static BOOL process_one(const char *name)
 	}
 
 	nbtsock = nbt_name_socket_init(tmp_ctx, NULL);
-
+	
 	if (options.root_port) {
-		status = socket_listen(nbtsock->sock, "0.0.0.0", NBT_NAME_SERVICE_PORT, 0, 0);
+		all_zero_addr = socket_address_from_strings(tmp_ctx, nbtsock->sock->backend_name, 
+							    "0.0.0.0", NBT_NAME_SERVICE_PORT);
+		
+		if (!all_zero_addr) {
+			talloc_free(tmp_ctx);
+			return False;
+		}
+
+		status = socket_listen(nbtsock->sock, all_zero_addr, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to bind to local port 137 - %s\n", nt_errstr(status));
 			talloc_free(tmp_ctx);

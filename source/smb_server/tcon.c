@@ -94,8 +94,10 @@ static int smbsrv_tcon_destructor(void *ptr)
 	struct smbsrv_tcon *tcon = talloc_get_type(ptr, struct smbsrv_tcon);
 	struct smbsrv_tcons_context *tcons_ctx;
 
+	struct socket_address *client_addr;
+	client_addr = socket_get_peer_addr(tcon->smb_conn->connection->socket, ptr);
 	DEBUG(3,("%s closed connection to service %s\n",
-		 socket_get_peer_addr(tcon->smb_conn->connection->socket, tcon),
+		 client_addr ? client_addr->addr : "(unknown)",
 		 lp_servicename(tcon->service)));
 
 	/* tell the ntvfs backend that we are disconnecting */

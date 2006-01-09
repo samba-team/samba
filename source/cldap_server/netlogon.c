@@ -193,7 +193,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 void cldapd_netlogon_request(struct cldap_socket *cldap, 
 			     uint32_t message_id,
 			     struct ldb_parse_tree *tree,
-			     const char *src_address, int src_port)
+			     struct socket_address *src)
 {
 	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private, struct cldapd_server);
 	int i;
@@ -266,13 +266,13 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		 domain, host, user, version, domain_guid));
 
 	status = cldapd_netlogon_fill(cldapd, tmp_ctx, domain, domain_guid, 
-				      user, src_address, 
+				      user, src->addr, 
 				      version, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
-	status = cldap_netlogon_reply(cldap, message_id, src_address, src_port, version,
+	status = cldap_netlogon_reply(cldap, message_id, src, version,
 				      &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
@@ -285,5 +285,5 @@ failed:
 	DEBUG(2,("cldap netlogon query failed domain=%s host=%s version=%d - %s\n",
 		 domain, host, version, nt_errstr(status)));
 	talloc_free(tmp_ctx);
-	cldap_empty_reply(cldap, message_id, src_address, src_port);	
+	cldap_empty_reply(cldap, message_id, src);	
 }

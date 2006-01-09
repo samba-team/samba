@@ -338,8 +338,8 @@ struct test_wrepl_conflict_conn {
 
 	struct wrepl_wins_owner a, b, c, x;
 
-	const char *myaddr;
-	const char *myaddr2;
+	struct socket_address *myaddr;
+	struct socket_address *myaddr2;
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_socket *nbtsock2;
 
@@ -551,6 +551,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 	struct test_wrepl_conflict_conn *ctx;
 	struct wrepl_associate associate;
 	struct wrepl_pull_table pull_table;
+	struct socket_address *nbt_srv_addr;
 	NTSTATUS status;
 	uint32_t i;
 
@@ -615,27 +616,34 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 
 	talloc_free(pull_table.out.partners);
 
-	ctx->myaddr = talloc_strdup(mem_ctx, iface_best_ip(address));
+	ctx->nbtsock = nbt_name_socket_init(ctx, NULL);
+	if (!ctx->nbtsock) return NULL;
+
+	ctx->myaddr = socket_address_from_strings(mem_ctx, ctx->nbtsock->sock->backend_name, iface_best_ip(address), 0);
 	if (!ctx->myaddr) return NULL;
 
 	for (i = 0; i < iface_count(); i++) {
-		if (strcmp(ctx->myaddr, iface_n_ip(i)) == 0) continue;
-		ctx->myaddr2 = talloc_strdup(mem_ctx, iface_n_ip(i));
+		if (strcmp(ctx->myaddr->addr, iface_n_ip(i)) == 0) continue;
+		ctx->myaddr2 = socket_address_from_strings(mem_ctx, ctx->nbtsock->sock->backend_name, iface_n_ip(i), 0);
 		if (!ctx->myaddr2) return NULL;
 		break;
 	}
 
-	ctx->nbtsock = nbt_name_socket_init(ctx, NULL);
-	if (!ctx->nbtsock) return NULL;
-
-	status = socket_listen(ctx->nbtsock->sock, ctx->myaddr, 0, 0, 0);
+	status = socket_listen(ctx->nbtsock->sock, ctx->myaddr, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) return NULL;
 
 	ctx->nbtsock_srv = nbt_name_socket_init(ctx, NULL);
 	if (!ctx->nbtsock_srv) return NULL;
 
-	status = socket_listen(ctx->nbtsock_srv->sock, ctx->myaddr, lp_nbt_port(), 0, 0);
+	/* Make a port 137 version of ctx->myaddr */
+	nbt_srv_addr = socket_address_from_strings(mem_ctx, ctx->nbtsock_srv->sock->backend_name, ctx->myaddr->addr, lp_nbt_port());
+	if (!nbt_srv_addr) return NULL;
+
+	/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
+	status = socket_listen(ctx->nbtsock_srv->sock, nbt_srv_addr, 0, 0);
+	talloc_free(nbt_srv_addr);
 	if (!NT_STATUS_IS_OK(status)) {
+		/* this isn't fatal */
 		talloc_free(ctx->nbtsock_srv);
 		ctx->nbtsock_srv = NULL;
 	}
@@ -644,14 +652,23 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		ctx->nbtsock2 = nbt_name_socket_init(ctx, NULL);
 		if (!ctx->nbtsock2) return NULL;
 
-		status = socket_listen(ctx->nbtsock2->sock, ctx->myaddr2, 0, 0, 0);
+		status = socket_listen(ctx->nbtsock2->sock, ctx->myaddr2, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) return NULL;
 
 		ctx->nbtsock_srv2 = nbt_name_socket_init(ctx, ctx->nbtsock_srv->event_ctx);
 		if (!ctx->nbtsock_srv2) return NULL;
 
-		status = socket_listen(ctx->nbtsock_srv2->sock, ctx->myaddr2, lp_nbt_port(), 0, 0);
+		/* Make a port 137 version of ctx->myaddr2 */
+		nbt_srv_addr = socket_address_from_strings(mem_ctx, 
+							   ctx->nbtsock_srv->sock->backend_name, 
+							   ctx->myaddr2->addr, lp_nbt_port());
+		if (!nbt_srv_addr) return NULL;
+
+		/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
+		status = socket_listen(ctx->nbtsock_srv2->sock, ctx->myaddr2, 0, 0);
+		talloc_free(nbt_srv_addr);
 		if (!NT_STATUS_IS_OK(status)) {
+			/* this isn't fatal */
 			talloc_free(ctx->nbtsock_srv2);
 			ctx->nbtsock_srv2 = NULL;
 		}
@@ -661,7 +678,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 	ctx->addresses_best = talloc_array(ctx, struct wrepl_ip, ctx->addresses_best_num);
 	if (!ctx->addresses_best) return NULL;
 	ctx->addresses_best[0].owner	= ctx->b.address;
-	ctx->addresses_best[0].ip	= ctx->myaddr;
+	ctx->addresses_best[0].ip	= ctx->myaddr->addr;
 
 	ctx->addresses_all_num = iface_count();
 	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, ctx->addresses_all_num);
@@ -677,15 +694,15 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(TALLOC_CTX *mem
 		ctx->addresses_best2 = talloc_array(ctx, struct wrepl_ip, ctx->addresses_best2_num);
 		if (!ctx->addresses_best2) return NULL;
 		ctx->addresses_best2[0].owner	= ctx->b.address;
-		ctx->addresses_best2[0].ip	= ctx->myaddr2;
+		ctx->addresses_best2[0].ip	= ctx->myaddr2->addr;
 
 		ctx->addresses_mhomed_num = 2;
 		ctx->addresses_mhomed = talloc_array(ctx, struct wrepl_ip, ctx->addresses_mhomed_num);
 		if (!ctx->addresses_mhomed) return NULL;
 		ctx->addresses_mhomed[0].owner	= ctx->b.address;
-		ctx->addresses_mhomed[0].ip	= ctx->myaddr;
+		ctx->addresses_mhomed[0].ip	= ctx->myaddr->addr;
 		ctx->addresses_mhomed[1].owner	= ctx->b.address;
-		ctx->addresses_mhomed[1].ip	= ctx->myaddr2;
+		ctx->addresses_mhomed[1].ip	= ctx->myaddr2->addr;
 	}
 
 	return ctx;
@@ -6545,7 +6562,7 @@ struct test_conflict_owned_active_vs_replica_struct {
 
 static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock, 
 							  struct nbt_name_packet *req_packet, 
-							  const struct nbt_peer_socket *src);
+							  struct socket_address *src);
 
 static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_conn *ctx)
 {
@@ -9220,7 +9237,7 @@ static BOOL test_conflict_owned_active_vs_replica(struct test_wrepl_conflict_con
 			for (j=0; j < count; j++) {
 				struct nbt_name_socket *nbtsock = ctx->nbtsock;
 
-				if (ctx->myaddr2 && strcmp(records[i].wins.ips[j].ip, ctx->myaddr2) == 0) {
+				if (ctx->myaddr2 && strcmp(records[i].wins.ips[j].ip, ctx->myaddr2->addr) == 0) {
 					nbtsock = ctx->nbtsock2;
 				}
 
@@ -9312,7 +9329,7 @@ done:
 
 static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_socket *nbtsock, 
 								struct nbt_name_packet *req_packet, 
-								const struct nbt_peer_socket *src)
+								struct socket_address *src)
 {
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
@@ -9407,7 +9424,7 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 
 static void test_conflict_owned_active_vs_replica_handler_release(struct nbt_name_socket *nbtsock, 
 								  struct nbt_name_packet *req_packet, 
-								  const struct nbt_peer_socket *src)
+								  struct socket_address *src)
 {
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
@@ -9460,7 +9477,7 @@ static void test_conflict_owned_active_vs_replica_handler_release(struct nbt_nam
 
 static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock, 
 							  struct nbt_name_packet *req_packet, 
-							  const struct nbt_peer_socket *src)
+							  struct socket_address *src)
 {
 	struct test_conflict_owned_active_vs_replica_struct *rec = nbtsock->incoming.private;
 

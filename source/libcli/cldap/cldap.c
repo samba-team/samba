@@ -62,8 +62,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 	NTSTATUS status;
-	const char *src_addr;
-	int src_port;
+	struct socket_address *src;
 	DATA_BLOB blob;
 	size_t nread, dsize;
 	struct asn1_data asn1;
@@ -83,16 +82,15 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	}
 
 	status = socket_recvfrom(cldap->sock, blob.data, blob.length, &nread, 0,
-				 &src_addr, &src_port);
+				 tmp_ctx, &src);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return;
 	}
-	talloc_steal(tmp_ctx, src_addr);
 	blob.length = nread;
 
 	DEBUG(2,("Received cldap packet of length %d from %s:%d\n", 
-		 (int)blob.length, src_addr, src_port));
+		 (int)blob.length, src->addr, src->port));
 
 	if (!asn1_load(&asn1, blob)) {
 		DEBUG(2,("Failed to setup for asn.1 decode\n"));
@@ -118,10 +116,10 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	req = idr_find(cldap->idr, ldap_msg->messageid);
 	if (req == NULL) {
 		if (cldap->incoming.handler) {
-			cldap->incoming.handler(cldap, ldap_msg, src_addr, src_port);
+			cldap->incoming.handler(cldap, ldap_msg, src);
 		} else {
 			DEBUG(2,("Mismatched cldap reply %u from %s:%d\n",
-				 ldap_msg->messageid, src_addr, src_port));
+				 ldap_msg->messageid, src->addr, src->port));
 		}
 		talloc_free(tmp_ctx);
 		return;
@@ -157,7 +155,7 @@ static void cldap_request_timeout(struct event_context *event_ctx,
 		req->num_retries--;
 
 		socket_sendto(req->cldap->sock, &req->encoded, &len, 0, 
-			      req->dest_addr, req->dest_port);
+			      req->dest);
 
 		req->te = event_add_timed(req->cldap->event_ctx, req, 
 					  timeval_current_ofs(req->timeout, 0),
@@ -184,10 +182,10 @@ static void cldap_socket_send(struct cldap_socket *cldap)
 		
 		len = req->encoded.length;
 		status = socket_sendto(cldap->sock, &req->encoded, &len, 0, 
-				       req->dest_addr, req->dest_port);
+				       req->dest);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("Failed to send cldap request of length %u to %s:%d\n",
-				 (unsigned)req->encoded.length, req->dest_addr, req->dest_port));
+				 (unsigned)req->encoded.length, req->dest->addr, req->dest->port));
 			DLIST_REMOVE(cldap->send_queue, req);
 			talloc_free(req);
 			continue;
@@ -278,7 +276,7 @@ failed:
 */
 NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 				  void (*handler)(struct cldap_socket *, struct ldap_message *, 
-						  const char *, int ),
+						  struct socket_address *),
 				  void *private)
 {
 	cldap->incoming.handler = handler;
@@ -306,9 +304,9 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	req->num_retries = io->in.retries;
 	req->is_reply    = False;
 
-	req->dest_addr = talloc_strdup(req, io->in.dest_address);
-	if (req->dest_addr == NULL) goto failed;
-	req->dest_port = lp_cldap_port();
+	req->dest = socket_address_from_strings(req, cldap->sock->backend_name,
+						io->in.dest_address, lp_cldap_port());
+	if (!req->dest) goto failed;
 
 	req->message_id = idr_get_new_random(cldap->idr, req, UINT16_MAX);
 	if (req->message_id == -1) goto failed;
@@ -337,7 +335,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 
 	if (!ldap_encode(msg, &req->encoded, req)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
-			 req->dest_addr, req->dest_port));
+			 req->dest->addr, req->dest->port));
 		goto failed;
 	}
 
@@ -370,9 +368,8 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	req->state       = CLDAP_REQUEST_SEND;
 	req->is_reply    = True;
 
-	req->dest_addr = talloc_strdup(req, io->dest_address);
-	if (req->dest_addr == NULL) goto failed;
-	req->dest_port = io->dest_port;
+	req->dest        = io->dest;
+	if (talloc_reference(req, io->dest) == NULL) goto failed;
 
 	talloc_set_destructor(req, cldap_request_destructor);
 
@@ -387,7 +384,7 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 
 		if (!ldap_encode(msg, &blob1, req)) {
 			DEBUG(0,("Failed to encode cldap message to %s:%d\n",
-				 req->dest_addr, req->dest_port));
+				 req->dest->addr, req->dest->port));
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto failed;
 		}
@@ -400,7 +397,7 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 
 	if (!ldap_encode(msg, &blob2, req)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
-			 req->dest_addr, req->dest_port));
+			 req->dest->addr, req->dest->port));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto failed;
 	}
@@ -620,15 +617,14 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 */
 NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
 			   uint32_t message_id,
-			   const char *src_address, int src_port)
+			   struct socket_address *src)
 {
 	NTSTATUS status;
 	struct cldap_reply reply;
 	struct ldap_Result result;
 
 	reply.messageid    = message_id;
-	reply.dest_address = src_address;
-	reply.dest_port    = src_port;
+	reply.dest         = src;
 	reply.response     = NULL;
 	reply.result       = &result;
 
@@ -645,7 +641,7 @@ NTSTATUS cldap_empty_reply(struct cldap_socket *cldap,
 */
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap, 
 			      uint32_t message_id,
-			      const char *src_address, int src_port,
+			      struct socket_address *src,
 			      uint32_t version,
 			      union nbt_cldap_netlogon *netlogon)
 {
@@ -664,8 +660,7 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 	}
 
 	reply.messageid    = message_id;
-	reply.dest_address = src_address;
-	reply.dest_port    = src_port;
+	reply.dest         = src;
 	reply.response     = &response;
 	reply.result       = &result;
 

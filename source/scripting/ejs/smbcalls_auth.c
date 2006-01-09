@@ -28,7 +28,7 @@
 
 static int ejs_doauth(MprVarHandle eid,
 		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
-		      const char *password, const char *domain, const char *remote_host,
+		      const char *password, const char *domain, const char *workstation,
 		      const char *authtype)
 {
 	struct auth_usersupplied_info *user_info = NULL;
@@ -61,9 +61,9 @@ static int ejs_doauth(MprVarHandle eid,
 	user_info->client.domain_name = domain;
 	user_info->mapped.domain_name = domain;
 
-	user_info->workstation_name = remote_host;
+	user_info->workstation_name = workstation;
 
-	user_info->remote_host = remote_host;
+	user_info->remote_host = NULL;
 
 	user_info->password_state = AUTH_PASSWORD_PLAIN;
 	user_info->password.plaintext = talloc_strdup(user_info, password);
@@ -101,13 +101,6 @@ done:
 /*
   perform user authentication, returning an array of results
 
-  syntax:
-    var authinfo = new Object();
-    authinfo.username = myname;
-    authinfo.password = mypass;
-    authinfo.domain = mydom;
-    authinfo.rhost = request['REMOTE_HOST'];
-    auth = userAuth(authinfo);
 */
 static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 {
@@ -115,7 +108,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	const char *username;
 	const char *password;
 	const char *domain;
-	const char *remote_host;
+	const char *workstation;
 	struct MprVar auth;
 	struct cli_credentials *creds;
 
@@ -136,7 +129,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	username    = cli_credentials_get_username(creds);
 	password    = cli_credentials_get_password(creds);
 	domain      = cli_credentials_get_domain(creds);
-	remote_host = cli_credentials_get_workstation(creds);
+	workstation = cli_credentials_get_workstation(creds);
 
 	if (username == NULL || password == NULL || domain == NULL) {
 		mpr_Return(eid, mprCreateUndefinedVar());
@@ -147,9 +140,9 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	auth = mprObject("auth");
 
 	if (domain && (strcmp("System User", domain) == 0)) {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, remote_host, "unix");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, "unix");
 	} else {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, remote_host, "sam");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, "sam");
 	}
 
 	mpr_Return(eid, auth);

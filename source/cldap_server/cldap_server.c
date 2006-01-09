@@ -32,12 +32,12 @@
 */
 static void cldapd_request_handler(struct cldap_socket *cldap, 
 				   struct ldap_message *ldap_msg, 
-				   const char *src_address, int src_port)
+				   struct socket_address *src)
 {
 	struct ldap_SearchRequest *search;
 	if (ldap_msg->type != LDAP_TAG_SearchRequest) {
 		DEBUG(0,("Invalid CLDAP request type %d from %s:%d\n", 
-			 ldap_msg->type, src_address, src_port));
+			 ldap_msg->type, src->addr, src->port));
 		return;
 	}
 
@@ -46,12 +46,12 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 	if (search->num_attributes == 1 &&
 	    strcasecmp(search->attributes[0], "netlogon") == 0) {
 		cldapd_netlogon_request(cldap, ldap_msg->messageid,
-					search->tree, src_address, src_port);
+					search->tree, src);
 	} else {
 		DEBUG(0,("Unknown CLDAP search for '%s'\n", 
 			 ldb_filter_from_tree(ldap_msg, 
 					      ldap_msg->r.SearchRequest.tree)));
-		cldap_empty_reply(cldap, ldap_msg->messageid, src_address, src_port);
+		cldap_empty_reply(cldap, ldap_msg->messageid, src);
 	}
 }
 
@@ -62,19 +62,29 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, const char *address)
 {
 	struct cldap_socket *cldapsock;
+	struct socket_address *socket_address;
 	NTSTATUS status;
 
 	/* listen for unicasts on the CLDAP port (389) */
 	cldapsock = cldap_socket_init(cldapd, cldapd->task->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(cldapsock);
 
-	status = socket_listen(cldapsock->sock, address, lp_cldap_port(), 0, 0);
+	socket_address = socket_address_from_strings(cldapsock, cldapsock->sock->backend_name, 
+						     address, lp_cldap_port());
+	if (!socket_address) {
+		talloc_free(cldapsock);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = socket_listen(cldapsock->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 address, lp_cldap_port(), nt_errstr(status)));
 		talloc_free(cldapsock);
 		return status;
 	}
+
+	talloc_free(socket_address);
 
 	cldap_set_incoming_handler(cldapsock, cldapd_request_handler, cldapd);
 

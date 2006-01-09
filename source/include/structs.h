@@ -144,6 +144,7 @@ struct ldb_map_objectclass;
 
 struct param_context;
 
+struct socket_address;
 struct smbcli_request;
 struct smbcli_tree;
 

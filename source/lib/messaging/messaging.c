@@ -147,10 +147,20 @@ static NTSTATUS try_send(struct messaging_rec *rec)
 	size_t nsent;
 	void *priv;
 	NTSTATUS status;
+	struct socket_address *path;
+
+	/* rec->path is the path of the *other* socket, where we want
+	 * this to end up */
+	path = socket_address_from_strings(msg, msg->sock->backend_name, 
+					   rec->path, 0);
+	if (!path) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* we send with privileges so messages work from any context */
 	priv = root_privileges();
-	status = socket_sendto(msg->sock, &rec->packet, &nsent, 0, rec->path, 0);
+	status = socket_sendto(msg->sock, &rec->packet, &nsent, 0, path);
+	talloc_free(path);
 	talloc_free(priv);
 
 	return status;
@@ -382,7 +392,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 {
 	struct messaging_context *msg;
 	NTSTATUS status;
-	char *path;
+	struct socket_address *path;
+	char *dir;
 
 	msg = talloc(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
@@ -394,9 +405,9 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	}
 
 	/* create the messaging directory if needed */
-	path = smbd_tmp_path(msg, "messaging");
-	mkdir(path, 0700);
-	talloc_free(path);
+	dir = smbd_tmp_path(msg, "messaging");
+	mkdir(dir, 0700);
+	talloc_free(dir);
 
 	msg->base_path  = smbd_tmp_path(msg, "messaging");
 	msg->path       = messaging_path(msg, server_id);
@@ -418,7 +429,14 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	   deleted) on exit */
 	talloc_steal(msg, msg->sock);
 
-	status = socket_listen(msg->sock, msg->path, 0, 50, 0);
+	path = socket_address_from_strings(msg, msg->sock->backend_name, 
+					   msg->path, 0);
+	if (!path) {
+		talloc_free(msg);
+		return NULL;
+	}
+
+	status = socket_listen(msg->sock, path, 50, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to setup messaging listener for '%s':%s\n", msg->path, nt_errstr(status)));
 		talloc_free(msg);

@@ -235,11 +235,10 @@ static krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 {
 	krb5_error_code ret;
 	NTSTATUS status;
-	char *remote_addr;
+	struct socket_address *remote_addr;
 	const char *name;
 	struct addrinfo *ai, *a;
 	struct smb_krb5_socket *smb_krb5;
-	int port;
 
 	struct event_context *ev = talloc_get_type(data, struct event_context);
 
@@ -292,31 +291,13 @@ static krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 
 		talloc_steal(smb_krb5, smb_krb5->sock);
 		
-		switch (a->ai_family) {
-		case PF_INET:
-			remote_addr = talloc_strdup(smb_krb5, inet_ntoa(((struct sockaddr_in *)a->ai_addr)->sin_addr));
-			port = ntohs(((struct sockaddr_in *)a->ai_addr)->sin_port);
-			break;
-		case PF_INET6:
-		{
-			char addr[128];
-			const char *ret_addr;
-			ret_addr = inet_ntop(AF_INET6, &((struct sockaddr_in6 *)a->ai_addr)->sin6_addr, addr, sizeof(addr));
-			if (ret_addr == NULL) {
-				talloc_free(smb_krb5);
-				return EINVAL;
-			}
-	
-			remote_addr = talloc_strdup(smb_krb5, ret_addr);
-			port = ntohs(((struct sockaddr_in6 *)a->ai_addr)->sin6_port);
-			break;
-		}
-		default:
+		remote_addr = socket_address_from_sockaddr(smb_krb5, a->ai_addr, a->ai_addrlen); 
+		if (!remote_addr) {
 			talloc_free(smb_krb5);
-			return EINVAL;
+			continue;
 		}
-		
-		status = socket_connect_ev(smb_krb5->sock, NULL, 0, remote_addr, port, 0, ev); 
+
+		status = socket_connect_ev(smb_krb5->sock, NULL, remote_addr, 0, ev); 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(smb_krb5);
 			continue;

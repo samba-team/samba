@@ -34,12 +34,6 @@ enum nbt_request_state {NBT_REQUEST_SEND,
 			NBT_REQUEST_TIMEOUT,
 			NBT_REQUEST_ERROR};
 
-/* where to send the request/replies */
-struct nbt_peer_socket {
-	const char *addr;
-	int port;
-};
-
 /*
   a nbt name request
 */
@@ -54,7 +48,7 @@ struct nbt_name_request {
 	struct nbt_name_socket *nbtsock;
 
 	/* where to send the request */
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
 
 	/* timeout between retries */
 	int timeout;
@@ -83,7 +77,7 @@ struct nbt_name_request {
 	uint_t num_replies;
 	struct nbt_name_reply {
 		struct nbt_name_packet *packet;
-		struct nbt_peer_socket dest;
+		struct socket_address *dest;
 	} *replies;
 
 	/* information on what to do on completion */
@@ -117,14 +111,14 @@ struct nbt_name_socket {
 	/* what to do with incoming request packets */
 	struct {
 		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
-				const struct nbt_peer_socket *);
+				struct socket_address *);
 		void *private;
 	} incoming;
 
 	/* what to do with unexpected replies */
 	struct {
 		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
-				const struct nbt_peer_socket *);
+				struct socket_address *);
 		void *private;
 	} unexpected;
 };

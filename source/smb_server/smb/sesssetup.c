@@ -1,3 +1,4 @@
+
 /* 
    Unix SMB/CIFS implementation.
    handle SMBsessionsetup
@@ -50,6 +51,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
+	struct socket_address *remote_address;
 	const char *remote_machine = NULL;
 
 	sess->old.out.vuid = 0;
@@ -63,8 +65,11 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 	
+	remote_address = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+	NT_STATUS_HAVE_NO_MEMORY(remote_address);
+
 	if (!remote_machine) {
-		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+		remote_machine = remote_address->addr;
 	}
 
 	user_info = talloc(req, struct auth_usersupplied_info);
@@ -76,7 +81,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	user_info->client.account_name = sess->old.in.user;
 	user_info->client.domain_name = sess->old.in.domain;
 	user_info->workstation_name = remote_machine;
-	user_info->remote_host = socket_get_peer_addr(req->smb_conn->connection->socket, user_info);
+	user_info->remote_host = talloc_steal(user_info, remote_address);
 	
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = sess->old.in.password;
@@ -133,6 +138,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
+	struct socket_address *remote_address;
 	const char *remote_machine = NULL;
 	
 	sess->nt1.out.vuid = 0;
@@ -163,10 +169,13 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		remote_machine = req->smb_conn->negotiate.calling_name->name;
 	}
 
+	remote_address = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+	NT_STATUS_HAVE_NO_MEMORY(remote_address);
+
 	if (!remote_machine) {
-		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, req);
+		remote_machine = remote_address->addr;
 	}
-	
+
 	user_info = talloc(req, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 	
@@ -176,7 +185,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	user_info->client.account_name = sess->nt1.in.user;
 	user_info->client.domain_name = sess->nt1.in.domain;
 	user_info->workstation_name = remote_machine;
-	user_info->remote_host = socket_get_peer_addr(req->smb_conn->connection->socket, user_info);
+	user_info->remote_host = talloc_steal(user_info, remote_address);
 	
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = sess->nt1.in.password1;

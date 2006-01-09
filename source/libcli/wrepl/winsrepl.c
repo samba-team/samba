@@ -311,6 +311,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 {
 	struct composite_context *result;
 	struct wrepl_connect_state *state;
+	struct socket_address *peer, *us;
 
 	result = talloc_zero(wrepl_socket, struct composite_context);
 	if (!result) return NULL;
@@ -328,8 +329,15 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 		our_ip = iface_best_ip(peer_ip);
 	}
 
-	state->creq = socket_connect_send(wrepl_socket->sock, our_ip, 0,
-					  peer_ip, WINS_REPLICATION_PORT,
+	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 
+					 our_ip, 0);
+	if (composite_nomem(us, result)) return result;
+
+	peer = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 
+					   peer_ip, WINS_REPLICATION_PORT);
+	if (composite_nomem(peer, result)) return result;
+
+	state->creq = socket_connect_send(wrepl_socket->sock, us, peer,
 					  0, wrepl_socket->event.ctx);
 	composite_continue(result, state->creq, wrepl_connect_handler, state);
 	return result;

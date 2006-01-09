@@ -95,22 +95,26 @@ static NTSTATUS unixdom_connect_complete(struct socket_context *sock, uint32_t f
 }
 
 static NTSTATUS unixdom_connect(struct socket_context *sock,
-				const char *my_address, int my_port,
-				const char *srv_address, int srv_port,
+				const struct socket_address *my_address, 
+				const struct socket_address *srv_address, 
 				uint32_t flags)
 {
-	struct sockaddr_un srv_addr;
 	int ret;
 
-	if (strlen(srv_address)+1 > sizeof(srv_addr.sun_path)) {
-		return NT_STATUS_OBJECT_PATH_INVALID;
+	if (srv_address->sockaddr) {
+		ret = connect(sock->fd, srv_address->sockaddr, srv_address->sockaddrlen);
+	} else {
+		struct sockaddr_un srv_addr;
+		if (strlen(srv_address->addr)+1 > sizeof(srv_addr.sun_path)) {
+			return NT_STATUS_OBJECT_PATH_INVALID;
+		}
+		
+		ZERO_STRUCT(srv_addr);
+		srv_addr.sun_family = AF_UNIX;
+		strncpy(srv_addr.sun_path, srv_address->addr, sizeof(srv_addr.sun_path));
+
+		ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
-
-	ZERO_STRUCT(srv_addr);
-	srv_addr.sun_family = AF_UNIX;
-	strncpy(srv_addr.sun_path, srv_address, sizeof(srv_addr.sun_path));
-
-	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	if (ret == -1) {
 		return unixdom_error(errno);
 	}
@@ -119,24 +123,32 @@ static NTSTATUS unixdom_connect(struct socket_context *sock,
 }
 
 static NTSTATUS unixdom_listen(struct socket_context *sock,
-			       const char *my_address, int port,
+			       const struct socket_address *my_address, 
 			       int queue_size, uint32_t flags)
 {
 	struct sockaddr_un my_addr;
 	int ret;
 
-	if (strlen(my_address)+1 > sizeof(my_addr.sun_path)) {
-		return NT_STATUS_OBJECT_PATH_INVALID;
+	/* delete if it already exists */
+	if (my_address->addr) {
+		unlink(my_address->addr);
 	}
 
-	/* delete if it already exists */
-	unlink(my_address);
-
-	ZERO_STRUCT(my_addr);
-	my_addr.sun_family = AF_UNIX;
-	strncpy(my_addr.sun_path, my_address, sizeof(my_addr.sun_path));
-
-	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	if (my_address && my_address->sockaddr) {
+		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	} else {
+		
+		if (strlen(my_address->addr)+1 > sizeof(my_addr.sun_path)) {
+			return NT_STATUS_OBJECT_PATH_INVALID;
+		}
+		
+		
+		ZERO_STRUCT(my_addr);
+		my_addr.sun_family = AF_UNIX;
+		strncpy(my_addr.sun_path, my_address->addr, sizeof(my_addr.sun_path));
+		
+		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	}
 	if (ret == -1) {
 		return unixdom_error(errno);
 	}
@@ -156,7 +168,7 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 	}
 
 	sock->state = SOCKET_STATE_SERVER_LISTEN;
-	sock->private_data = (void *)talloc_strdup(sock, my_address);
+	sock->private_data = (void *)talloc_strdup(sock, my_address->addr);
 
 	return NT_STATUS_OK;
 }
@@ -255,24 +267,29 @@ static NTSTATUS unixdom_send(struct socket_context *sock,
 
 static NTSTATUS unixdom_sendto(struct socket_context *sock, 
 			       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
-			       const char *dest_addr, int dest_port)
+			       const struct socket_address *dest)
 {
 	ssize_t len;
 	int flgs = 0;
-	struct sockaddr_un srv_addr;
-
-	if (strlen(dest_addr)+1 > sizeof(srv_addr.sun_path)) {
-		return NT_STATUS_OBJECT_PATH_INVALID;
-	}
-
-	ZERO_STRUCT(srv_addr);
-	srv_addr.sun_family = AF_UNIX;
-	strncpy(srv_addr.sun_path, dest_addr, sizeof(srv_addr.sun_path));
-
 	*sendlen = 0;
-
-	len = sendto(sock->fd, blob->data, blob->length, flgs, 
-		     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+		
+	if (dest->sockaddr) {
+		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+			     dest->sockaddr, dest->sockaddrlen);
+	} else {
+		struct sockaddr_un srv_addr;
+		
+		if (strlen(dest->addr)+1 > sizeof(srv_addr.sun_path)) {
+			return NT_STATUS_OBJECT_PATH_INVALID;
+		}
+		
+		ZERO_STRUCT(srv_addr);
+		srv_addr.sun_family = AF_UNIX;
+		strncpy(srv_addr.sun_path, dest->addr, sizeof(srv_addr.sun_path));
+		
+		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+	}
 	if (len == -1) {
 		return map_nt_error_from_unix(errno);
 	}	
@@ -294,24 +311,82 @@ static char *unixdom_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_
 	return talloc_strdup(mem_ctx, "LOCAL/unixdom");
 }
 
-static char *unixdom_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static struct socket_address *unixdom_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	return talloc_strdup(mem_ctx, "LOCAL/unixdom");
+	struct sockaddr_in *peer_addr;
+	socklen_t len = sizeof(*peer_addr);
+	struct socket_address *peer;
+	int ret;
+
+	peer = talloc(mem_ctx, struct socket_address);
+	if (!peer) {
+		return NULL;
+	}
+	
+	peer->family = sock->backend_name;
+	peer_addr = talloc(peer, struct sockaddr_in);
+	if (!peer_addr) {
+		talloc_free(peer);
+		return NULL;
+	}
+
+	peer->sockaddr = (struct sockaddr *)peer_addr;
+
+	ret = getpeername(sock->fd, peer->sockaddr, &len);
+	if (ret == -1) {
+		talloc_free(peer);
+		return NULL;
+	}
+
+	peer->sockaddrlen = len;
+
+	peer->port = 0;
+	peer->addr = talloc_strdup(peer, "LOCAL/unixdom");
+	if (!peer->addr) {
+		talloc_free(peer);
+		return NULL;
+	}
+
+	return peer;
 }
 
-static int unixdom_get_peer_port(struct socket_context *sock)
+static struct socket_address *unixdom_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	return 0;
-}
+	struct sockaddr_in *local_addr;
+	socklen_t len = sizeof(*local_addr);
+	struct socket_address *local;
+	int ret;
+	
+	local = talloc(mem_ctx, struct socket_address);
+	if (!local) {
+		return NULL;
+	}
+	
+	local->family = sock->backend_name;
+	local_addr = talloc(local, struct sockaddr_in);
+	if (!local_addr) {
+		talloc_free(local);
+		return NULL;
+	}
 
-static char *unixdom_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
-{
-	return talloc_strdup(mem_ctx, "LOCAL/unixdom");
-}
+	local->sockaddr = (struct sockaddr *)local_addr;
 
-static int unixdom_get_my_port(struct socket_context *sock)
-{
-	return 0;
+	ret = getsockname(sock->fd, local->sockaddr, &len);
+	if (ret == -1) {
+		talloc_free(local);
+		return NULL;
+	}
+
+	local->sockaddrlen = len;
+
+	local->port = 0;
+	local->addr = talloc_strdup(local, "LOCAL/unixdom");
+	if (!local->addr) {
+		talloc_free(local);
+		return NULL;
+	}
+
+	return local;
 }
 
 static int unixdom_get_fd(struct socket_context *sock)
@@ -346,9 +421,7 @@ static const struct socket_ops unixdom_ops = {
 
 	.fn_get_peer_name	= unixdom_get_peer_name,
 	.fn_get_peer_addr	= unixdom_get_peer_addr,
-	.fn_get_peer_port	= unixdom_get_peer_port,
 	.fn_get_my_addr		= unixdom_get_my_addr,
-	.fn_get_my_port		= unixdom_get_my_port,
 
 	.fn_get_fd		= unixdom_get_fd
 };

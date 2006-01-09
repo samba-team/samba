@@ -36,8 +36,7 @@
 /* hold all the info needed to send a reply */
 struct kdc_reply {
 	struct kdc_reply *next, *prev;
-	const char *dest_address;
-	int dest_port;
+	struct socket_address *dest;
 	DATA_BLOB packet;
 };
 
@@ -45,8 +44,8 @@ typedef BOOL (*kdc_process_fn_t)(struct kdc_server *kdc,
 				 TALLOC_CTX *mem_ctx, 
 				 DATA_BLOB *input, 
 				 DATA_BLOB *reply,
-				 const char *peer_address, int peer_port,
-				 const char *my_address, int my_port);
+				 struct socket_address *peer_addr, 
+				 struct socket_address *my_addr);
 
 /* hold information about one kdc socket */
 struct kdc_socket {
@@ -85,7 +84,7 @@ static void kdc_send_handler(struct kdc_socket *kdc_socket)
 		size_t sendlen;
 
 		status = socket_sendto(kdc_socket->sock, &rep->packet, &sendlen, 0,
-				       rep->dest_address, rep->dest_port);
+				       rep->dest);
 		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 			break;
 		}
@@ -114,10 +113,8 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	struct kdc_reply *rep;
 	DATA_BLOB reply;
 	size_t nread, dsize;
-	const char *src_addr;
-	int src_port;
-	const char *my_addr;
-	int my_port;
+	struct socket_address *src;
+	struct socket_address *my_addr;
 	int ret;
 
 	status = socket_pending(kdc_socket->sock, &dsize);
@@ -134,23 +131,21 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	}
 
 	status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread, 0,
-				 &src_addr, &src_port);
+				 tmp_ctx, &src);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return;
 	}
-	talloc_steal(tmp_ctx, src_addr);
 	blob.length = nread;
 	
 	DEBUG(10,("Received krb5 UDP packet of length %lu from %s:%u\n", 
-		 (long)blob.length, src_addr, (uint16_t)src_port));
+		 (long)blob.length, src->addr, (uint16_t)src->port));
 	
 	my_addr = socket_get_my_addr(kdc_socket->sock, tmp_ctx);
 	if (!my_addr) {
 		talloc_free(tmp_ctx);
 		return;
 	}
-	my_port = socket_get_my_port(kdc_socket->sock);
 
 
 	/* Call krb5 */
@@ -158,8 +153,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 				  tmp_ctx, 
 				  &blob,  
 				  &reply,
-				  src_addr, src_port,
-				  my_addr, my_port);
+				  src, my_addr);
 	if (!ret) {
 		talloc_free(tmp_ctx);
 		return;
@@ -171,8 +165,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 		talloc_free(tmp_ctx);
 		return;
 	}
-	rep->dest_address = talloc_steal(rep, src_addr);
-	rep->dest_port    = src_port;
+	rep->dest         = talloc_steal(rep, src);
 	rep->packet       = reply;
 	talloc_steal(rep, reply.data);
 
@@ -218,10 +211,8 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
 	int ret;
 	DATA_BLOB input, reply;
-	const char *src_addr;
-	int src_port;
-	const char *my_addr;
-	int my_port;
+	struct socket_address *src_addr;
+	struct socket_address *my_addr;
 
 	talloc_steal(tmp_ctx, blob.data);
 
@@ -230,14 +221,12 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	src_port = socket_get_my_port(kdcconn->conn->socket);
 
 	my_addr = socket_get_my_addr(kdcconn->conn->socket, tmp_ctx);
 	if (!my_addr) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	my_port = socket_get_my_port(kdcconn->conn->socket);
 
 	/* Call krb5 */
 	input = data_blob_const(blob.data + 4, blob.length - 4); 
@@ -246,8 +235,8 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 			       tmp_ctx,
 			       &input,
 			       &reply,
-			       src_addr, src_port,
-			       my_addr, my_port);
+			       src_addr,
+			       my_addr);
 	if (!ret) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
@@ -312,35 +301,21 @@ static BOOL kdc_process(struct kdc_server *kdc,
 			TALLOC_CTX *mem_ctx, 
 			DATA_BLOB *input, 
 			DATA_BLOB *reply,
-			const char *peer_addr,
-			int peer_port,
-			const char *my_addr,
-			int my_port)
+			struct socket_address *peer_addr, 
+			struct socket_address *my_addr)
 {
 	int ret;	
 	krb5_data k5_reply;
-	struct ipv4_addr addr;
-	struct sockaddr_in peer_sock_addr;
 
-	/* TODO:  This really should be in a utility function somewhere */
-	ZERO_STRUCT(peer_sock_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-	peer_sock_addr.sin_len		= sizeof(peer_sock_addr);
-#endif
-	addr				= interpret_addr2(peer_addr);
-	peer_sock_addr.sin_addr.s_addr	= addr.addr;
-	peer_sock_addr.sin_port		= htons(peer_port);
-	peer_sock_addr.sin_family	= PF_INET;
-
-	DEBUG(10,("Received KDC packet of length %lu from %s\n", 
-		 (long)input->length - 4, peer_addr));
+	DEBUG(10,("Received KDC packet of length %lu from %s:%d\n", 
+		  (long)input->length - 4, peer_addr->addr, peer_addr->port));
 
 	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context, 
 					    kdc->config,
 					    input->data, input->length,
 					    &k5_reply,
-					    peer_addr,
-					    (struct sockaddr *)&peer_sock_addr);
+					    peer_addr->addr,
+					    peer_addr->sockaddr);
 	if (ret == -1) {
 		*reply = data_blob(NULL, 0);
 		return False;
@@ -415,6 +390,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 	const struct model_ops *model_ops;
  	struct kdc_socket *kdc_socket;
  	struct kdc_socket *kpasswd_socket;
+	struct socket_address *kdc_address, *kpasswd_address;
 	NTSTATUS status;
 	uint16_t kdc_port = lp_krb5_port();
 	uint16_t kpasswd_port = lp_kpasswd_port();
@@ -447,7 +423,11 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 				       socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
 				       kdc_socket_handler, kdc_socket);
 
-	status = socket_listen(kdc_socket->sock, address, kdc_port, 0, 0);
+	kdc_address = socket_address_from_strings(kdc_socket, kdc_socket->sock->backend_name, 
+						  address, kdc_port);
+	NT_STATUS_HAVE_NO_MEMORY(kdc_address);
+
+	status = socket_listen(kdc_socket->sock, kdc_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d UDP for kdc - %s\n", 
 			 address, kdc_port, nt_errstr(status)));
@@ -465,7 +445,11 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 					   socket_get_fd(kpasswd_socket->sock), EVENT_FD_READ,
 					   kdc_socket_handler, kpasswd_socket);
 	
-	status = socket_listen(kpasswd_socket->sock, address, kpasswd_port, 0, 0);
+	kpasswd_address = socket_address_from_strings(kpasswd_socket, kpasswd_socket->sock->backend_name, 
+						      address, kpasswd_port);
+	NT_STATUS_HAVE_NO_MEMORY(kpasswd_address);
+
+	status = socket_listen(kpasswd_socket->sock, kpasswd_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d UDP for kpasswd - %s\n", 
 			 address, kpasswd_port, nt_errstr(status)));

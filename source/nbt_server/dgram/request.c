@@ -44,7 +44,7 @@ static const struct {
 */
 void dgram_request_handler(struct nbt_dgram_socket *dgmsock, 
 			   struct nbt_dgram_packet *packet,
-			   const struct nbt_peer_socket *src)
+			   struct socket_address *src)
 {
 	DEBUG(0,("General datagram request from %s:%d\n", src->addr, src->port));
 	NDR_PRINT_DEBUG(nbt_dgram_packet, packet);
@@ -58,36 +58,61 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 {
 	struct nbt_dgram_socket *bcast_dgmsock;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
+	struct socket_address *bcast_addr, *bind_addr;
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(iface);
 	/* the list of mailslots that we are interested in */
 	int i;
 
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* listen for broadcasts on port 138 */
 	bcast_dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(bcast_dgmsock);
+	if (!bcast_dgmsock) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	
-	status = socket_listen(bcast_dgmsock->sock, iface->bcast_address, 
-			       lp_dgram_port(), 0, 0);
+	bcast_addr = socket_address_from_strings(tmp_ctx, bcast_dgmsock->sock->backend_name, 
+						 iface->bcast_address, 
+						 lp_dgram_port());
+
+	status = socket_listen(bcast_dgmsock->sock, bcast_addr, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 iface->bcast_address, lp_dgram_port(), nt_errstr(status)));
 		return status;
 	}
+	talloc_free(bcast_addr);
 	
 	dgram_set_incoming_handler(bcast_dgmsock, dgram_request_handler, iface);
 
+	bind_addr = socket_address_from_strings(tmp_ctx, bcast_dgmsock->sock->backend_name, 
+						bind_address, 
+						lp_dgram_port());
+
 	/* listen for unicasts on port 138 */
 	iface->dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(iface->dgmsock);
+	if (!iface->dgmsock) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	status = socket_listen(iface->dgmsock->sock, bind_address, 
-			       lp_dgram_port(), 0, 0);
+	status = socket_listen(iface->dgmsock->sock, bind_addr, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 bind_address, lp_dgram_port(), nt_errstr(status)));
 		return status;
 	}
+	talloc_free(bind_addr);
+
 	dgram_set_incoming_handler(iface->dgmsock, dgram_request_handler, iface);
+
+	talloc_free(tmp_ctx);
 
 
 	for (i=0;i<ARRAY_SIZE(mailslot_handlers);i++) {

@@ -32,7 +32,7 @@
  */
 static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot, 
 				struct nbt_dgram_packet *packet, 
-				const struct nbt_peer_socket *src,
+				const struct socket_address *src,
 				struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
@@ -90,7 +90,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
  */
 static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot, 
 				 struct nbt_dgram_packet *packet, 
-				 const struct nbt_peer_socket *src,
+				 const struct socket_address *src,
 				 struct nbt_netlogon_packet *netlogon)
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
@@ -102,6 +102,11 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	struct ldb_message **ref_res, **dom_res;
 	int ret;
 	const char **services = lp_server_services();
+	struct socket_address *my_ip = socket_get_my_addr(dgmslot->dgmsock->sock, packet);
+	if (!my_ip) {
+		DEBUG(0, ("Could not obtain own IP address for datagram socket\n"));
+		return;
+	}
 
 	/* only answer getdc requests on the PDC or LOGON names */
 	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
@@ -181,7 +186,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	pdc->site_name2       = "Default-First-Site-Name";
 	pdc->unknown          = 0x10; /* what is this? */
 	pdc->unknown2         = 2; /* and this ... */
-	pdc->pdc_ip           = socket_get_my_addr(dgmslot->dgmsock->sock, packet);
+	pdc->pdc_ip           = my_ip->addr;
 	pdc->nt_version       = 13;
 	pdc->lmnt_token       = 0xFFFF;
 	pdc->lm20_token       = 0xFFFF;
@@ -200,7 +205,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 */
 void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 				    struct nbt_dgram_packet *packet, 
-				    const struct nbt_peer_socket *src)
+				    struct socket_address *src)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 

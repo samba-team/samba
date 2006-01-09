@@ -48,8 +48,19 @@ static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
 	const char *myaddress = iface_best_ip(address);
+	struct socket_address *socket_address;
 
-	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
+	socket_address = socket_address_from_strings(mem_ctx, nbtsock->sock->backend_name,
+						     myaddress, 0);
+	if (!socket_address) {
+		return False;
+	}
+
+	status = socket_listen(nbtsock->sock, socket_address, 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("socket_listen for nbt_register_own failed: %s\n", nt_errstr(status));
+		return False;
+	}
 
 	printf("Testing name defense to name registration\n");
 
@@ -85,11 +96,11 @@ static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 
 	status = nbt_name_register(nbtsock, mem_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		printf("No response from %s for name register\n", address);
+		printf("No response from %s for name register demand\n", address);
 		return False;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Bad response from %s for name register - %s\n",
+		printf("Bad response from %s for name register demand - %s\n",
 		       address, nt_errstr(status));
 		return False;
 	}
@@ -113,8 +124,19 @@ static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
 	const char *myaddress = iface_best_ip(address);
+	struct socket_address *socket_address;
 
-	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
+	socket_address = socket_address_from_strings(mem_ctx, nbtsock->sock->backend_name,
+						     myaddress, 0);
+	if (!socket_address) {
+		return False;
+	}
+
+	status = socket_listen(nbtsock->sock, socket_address, 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("socket_listen for nbt_referesh_own failed: %s\n", nt_errstr(status));
+		return False;
+	}
 
 	printf("Testing name defense to name refresh\n");
 

@@ -25,13 +25,14 @@
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
+#include "lib/socket/socket.h"
 
 /*
   answer a name query
 */
 void nbtd_request_query(struct nbt_name_socket *nbtsock, 
 			struct nbt_name_packet *packet, 
-			const struct nbt_peer_socket *src)
+			struct socket_address *src)
 {
 	struct nbtd_iface_name *iname;
 	struct nbt_name *name;

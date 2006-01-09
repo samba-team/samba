@@ -151,28 +151,39 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 			     enum dgram_msg_type msg_type,
 			     const char *mailslot_name,
 			     struct nbt_name *dest_name,
-			     const struct nbt_peer_socket *_dest,
+			     struct socket_address *_dest,
 			     struct nbt_name *src_name,
 			     DATA_BLOB *request)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_dgram_packet packet;
-	struct nbt_peer_socket dest = *_dest;
+	struct socket_address *dest;
 	struct dgram_message *msg;
 	struct dgram_smb_packet *smb;
 	struct smb_trans_body *trans;
+	struct socket_address *src;
 	NTSTATUS status;
 
-	if (dest.port == 0) {
-		dest.port = lp_dgram_port();
+	if (_dest->port == 0) {
+		dest = socket_address_from_strings(tmp_ctx, _dest->family, 
+						   _dest->addr, lp_dgram_port());
+	} else {
+		dest = _dest;
+	}
+	if (!dest) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCT(packet);
 	packet.msg_type = msg_type;
 	packet.flags = DGRAM_FLAG_FIRST | DGRAM_NODE_NBDD;
 	packet.dgram_id = generate_random() % UINT16_MAX;
-	packet.src_addr = socket_get_my_addr(dgmsock->sock, tmp_ctx);
-	packet.src_port = socket_get_my_port(dgmsock->sock);
+	src = socket_get_my_addr(dgmsock->sock, tmp_ctx);
+	if (!src) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	packet.src_addr = src->addr;
+	packet.src_port = src->port;
 
 	msg = &packet.data.msg;
 	/* this length calculation is very crude - it should be based on gensize
@@ -198,7 +209,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	trans->mailslot_name = mailslot_name;
 	trans->data = *request;
 
-	status = nbt_dgram_send(dgmsock, &packet, &dest);
+	status = nbt_dgram_send(dgmsock, &packet, dest);
 
 	talloc_free(tmp_ctx);
 
