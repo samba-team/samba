@@ -1,3 +1,7 @@
+2006-01-09  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* login.c: log successful logins
+	
 2005-08-08  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* login.c (do_login): only do krb4_get_afs_tokens if we have done
