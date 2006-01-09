@@ -27,6 +27,7 @@
 #include "smbd/service_stream.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
+#include "nbt_server/wins/winsdb.h"
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
 
@@ -825,7 +826,6 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 	struct socket_context *sock;
 	struct packet_context *packet;
 	uint16_t fde_flags;
-	const char *our_ip;
 
 	/* prepare the outgoing request */
 	req->opcode	= WREPL_OPCODE_BITS;
@@ -834,11 +834,8 @@ static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *s
 
 	repl_out->command = state->command;
 
-	our_ip = socket_get_my_addr(state->wreplconn->sock->sock, state);
-	NT_STATUS_HAVE_NO_MEMORY(our_ip);
-
 	status = wreplsrv_fill_wrepl_table(service, state, table_out,
-					   our_ip, state->full_table);
+					   service->wins_db->local_owner, state->full_table);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* queue the request */
@@ -911,7 +908,6 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 	struct wrepl_replication *repl_out = &state->req_packet.message.replication;
 	struct wrepl_table *table_out = &state->req_packet.message.replication.info.table;
 	NTSTATUS status;
-	const char *our_ip;
 
 	req->opcode	= WREPL_OPCODE_BITS;
 	req->assoc_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
@@ -919,11 +915,8 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 
 	repl_out->command = state->command;
 
-	our_ip = socket_get_my_addr(state->wreplconn->sock->sock, state);
-	NT_STATUS_HAVE_NO_MEMORY(our_ip);
-
 	status = wreplsrv_fill_wrepl_table(service, state, table_out,
-					   our_ip, state->full_table);
+					   service->wins_db->local_owner, state->full_table);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* we won't get a reply to a inform message */
