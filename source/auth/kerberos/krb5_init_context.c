@@ -27,7 +27,6 @@
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
-#include "heimdal_build/roken.h"
 
 /*
   context structure for operations on cldap packets
