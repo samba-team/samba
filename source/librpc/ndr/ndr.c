@@ -272,6 +272,7 @@ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 				int flags, void *ptr)
 {
 	struct ndr_print *ndr;
+	char *ret;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_print);
 	if (!ndr) return NULL;
@@ -280,8 +281,9 @@ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 	ndr->depth = 1;
 	ndr->flags = 0;
 	fn(ndr, name, flags, ptr);
+	ret = ndr->private;
 	talloc_free(ndr);
-	return ndr->private;
+	return ret;
 }
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
