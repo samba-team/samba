@@ -84,7 +84,6 @@ BOOL test_check_string_terminator(TALLOC_CTX *mem_ctx)
 
 BOOL torture_local_ndr(void)
 {
-    NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
