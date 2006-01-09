@@ -99,7 +99,7 @@ void continue_smb_connect(struct composite_context *ctx)
   Initiate async open of a rpc connection to a rpc pipe on SMB using
   the binding structure to determine the endpoint and options
 */
-struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_ctx, 
+struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_ctx, 
 								struct dcerpc_pipe_connect *io)
 {
 	struct composite_context *c;
@@ -108,7 +108,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	struct smb_composite_connect *conn;
 
 	/* composite context allocation and setup */
-	c = talloc_zero(tmp_ctx, struct composite_context);
+	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct pipe_np_smb_state);
@@ -128,7 +128,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	   remote rpc server */
 	conn->in.dest_host              = s->io.binding->host;
 	conn->in.port                   = 0;
-	conn->in.called_name            = strupper_talloc(tmp_ctx, s->io.binding->host);
+	conn->in.called_name            = strupper_talloc(mem_ctx, s->io.binding->host);
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
 	conn->in.fallback_to_anonymous  = False;
@@ -141,7 +141,7 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *tmp_
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
 		struct cli_credentials *anon_creds;
 
-		anon_creds = cli_credentials_init(tmp_ctx);
+		anon_creds = cli_credentials_init(mem_ctx);
 		if (!anon_creds) {
 			composite_error(c, NT_STATUS_NO_MEMORY);
 			goto done;
@@ -185,11 +185,11 @@ NTSTATUS dcerpc_pipe_connect_ncacn_np_smb_recv(struct composite_context *c)
 /*
   Sync version of a rpc connection to a rpc pipe on SMB
 */
-NTSTATUS dcerpc_pipe_connect_ncacn_np_smb(TALLOC_CTX *tmp_ctx,
+NTSTATUS dcerpc_pipe_connect_ncacn_np_smb(TALLOC_CTX *mem_ctx,
 					  struct dcerpc_pipe_connect *io)
 {
 	struct composite_context *c;
-	c = dcerpc_pipe_connect_ncacn_np_smb_send(tmp_ctx, io);
+	c = dcerpc_pipe_connect_ncacn_np_smb_send(mem_ctx, io);
 	return dcerpc_pipe_connect_ncacn_np_smb_recv(c);
 }
 
