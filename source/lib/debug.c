@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/time.h"
 #include "dynconfig.h"
 
 /* this global variable determines what messages are printed */
@@ -44,6 +45,16 @@ static struct {
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
+void do_debug_header(int level)
+{
+	log_timestring(level);
+	log_task_id();
+}
+
+/*
+  the backend for debug messages. Note that the DEBUG() macro has already
+  ensured that the log level has been met before this is called
+*/
 void do_debug(const char *format, ...)
 {
 	va_list ap;
@@ -59,8 +70,6 @@ void do_debug(const char *format, ...)
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	log_task_id();
-	
 	write(state.fd, s, strlen(s));
 	free(s);
 }
@@ -153,6 +162,24 @@ void print_suspicious_usage(const char* from, const char* info)
 	}
 }
 
+void log_timestring(int level)
+{
+	char *t = NULL;
+	char *s = NULL;
+
+	if (state.logtype != DEBUG_FILE) return;
+
+	t = timestring(NULL, time(NULL));
+	if (!t) return;
+
+	asprintf(&s, "[%s, %d]\n", t, level);
+	talloc_free(t);
+	if (!s) return;
+
+	write(state.fd, s, strlen(s));
+	free(s);
+}
+
 uint32_t get_task_id(void)
 {
 	if (debug_handlers.ops.get_task_id) {
@@ -167,6 +194,7 @@ void log_task_id(void)
 		debug_handlers.ops.log_task_id(state.fd);
 	}
 }
+
 /*
   register a set of debug handlers. 
 */

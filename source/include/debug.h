@@ -35,15 +35,24 @@ struct debug_ops {
 	void (*log_task_id)(int fd);
 };
 
+void do_debug_header(int level);
 void do_debug(const char *, ...) PRINTF_ATTRIBUTE(1,2);
 
 extern int DEBUGLEVEL;
 
 #define DEBUGLVL(level) ((level) <= DEBUGLEVEL)
-#define DEBUG(level, body) do { if (DEBUGLVL(level)) do_debug body; } while (0)
-#define DEBUGADD(level, body) DEBUG(level, body)
+#define _DEBUG(level, body, header) do { \
+	if (DEBUGLVL(level)) { \
+		if (header) { \
+			do_debug_header(level); \
+		} \
+		do_debug body; \
+	} \
+} while (0)
+#define DEBUG(level, body) _DEBUG(level, body, True)
+#define DEBUGADD(level, body) _DEBUG(level, body, False)
 #define DEBUGC(class, level, body) DEBUG(level, body)
-#define DEBUGADDC(class, level, body) DEBUG(level, body)
+#define DEBUGADDC(class, level, body) DEBUGADD(level, body)
 #define DEBUGTAB(n) do_debug_tab(n)
 
 enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
