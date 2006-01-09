@@ -189,8 +189,8 @@ case "$host_os" in
 		;;
 	*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 		BLDSHARED="true"
-		LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
-		DYNEXP="-Wl,-brtl,-bexpall"
+		LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
+		DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
 		PICFLAG="-O2"
 		if test "${GCC}" != "yes"; then
 			## for funky AIX compiler using strncpy()
