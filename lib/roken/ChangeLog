@@ -1,4 +1,12 @@
-2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hex.c (hex_decode): support decoding odd number of characters,
+	in the odd len case, the character ends up in the first byte in
+	the lower nibble.
+
+	* hex-test.c: Check that we can decode single character hex chars.
+
+2005-12-12  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* getifaddrs.c: Try handle HP/UX 11.nn, its diffrent from Solaris
 	large SIOCGIFCONF.
