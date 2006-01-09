@@ -77,6 +77,8 @@ enum ntlmssp_message_type
 
 struct gensec_ntlmssp_state
 {
+	struct gensec_security *gensec_security;
+
 	enum ntlmssp_role role;
 	enum samr_Role server_role;
 	uint32_t expected_state;
