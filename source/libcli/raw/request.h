@@ -21,7 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "signing.h"
+#include "libcli/raw/signing.h"
 
 /*
   Shared state structure between client and server, representing the basic packet.

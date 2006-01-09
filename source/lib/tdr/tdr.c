@@ -41,11 +41,9 @@
 #define TDR_CVAL(tdr, ofs) CVAL(tdr->data.data,ofs)
 #define TDR_SVAL(tdr, ofs) (TDR_BE(tdr)?RSVAL(tdr->data.data,ofs):SVAL(tdr->data.data,ofs))
 #define TDR_IVAL(tdr, ofs) (TDR_BE(tdr)?RIVAL(tdr->data.data,ofs):IVAL(tdr->data.data,ofs))
-#define TDR_IVALS(tdr, ofs) (TDR_BE(tdr)?RIVALS(tdr->data.data,ofs):IVALS(tdr->data.data,ofs))
 #define TDR_SCVAL(tdr, ofs, v) SCVAL(tdr->data.data,ofs,v)
 #define TDR_SSVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSSVAL(tdr->data.data,ofs,v); } else SSVAL(tdr->data.data,ofs,v); } while (0)
 #define TDR_SIVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVAL(tdr->data.data,ofs,v); } else SIVAL(tdr->data.data,ofs,v); } while (0)
-#define TDR_SIVALS(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVALS(tdr->data.data,ofs,v); } else SIVALS(tdr->data.data,ofs,v); } while (0)
 
 /*
   expand the available space in the buffer to 'size'

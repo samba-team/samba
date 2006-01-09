@@ -21,7 +21,7 @@
 */
 
 #include "smb.h"
-#include "request.h"
+#include "libcli/raw/request.h"
 #include "smbd/process_model.h"
 
 /*

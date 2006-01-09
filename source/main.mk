@@ -274,7 +274,6 @@ clean: heimdal_clean clean_pch
 	@-rm -f $(PROTO_HEADERS)
 
 distclean: clean
-	-rm -f bin/.dummy 
 	-rm -f include/config.h include/smb_build.h
 	-rm -f Makefile 
 	-rm -f config.status
@@ -311,8 +310,8 @@ gdbtest: all
 	SMBD_VALGRIND="xterm -n smbd -e gdb --args " \
 	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
-bin/.dummy:
-	@: >> $@ || : > $@
+unused_macros:
+	./script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
 ###############################################################################
 # File types

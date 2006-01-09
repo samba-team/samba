@@ -21,35 +21,6 @@
 #ifndef _SECRETS_H
 #define _SECRETS_H
 
-/* the first one is for the hashed password (NT4 style) the latter
-   for plaintext (ADS)
-*/
-#define SECRETS_MACHINE_ACCT_PASS "SECRETS/$MACHINE.ACC"
-#define SECRETS_MACHINE_PASSWORD "SECRETS/MACHINE_PASSWORD"
-
-/* this one is for storing trusted domain account password */
-#define SECRETS_DOMTRUST_ACCT_PASS "SECRETS/$DOMTRUST.ACC"
-
-/* Store the principal name used for Kerberos DES key salt under this key name. */
-#define SECRETS_SALTING_PRINCIPAL "SECRETS/SALTING_PRINCIPAL"
-
-/* The domain sid and our sid are stored here even though they aren't
-   really secret. */
-#define SECRETS_DOMAIN_SID    "SECRETS/SID"
-#define SECRETS_SAM_SID       "SAM/SID"
-
-/* The domain GUID and server GUID (NOT the same) are also not secret */
-#define SECRETS_DOMAIN_GUID   "SECRETS/DOMGUID"
-#define SECRETS_SERVER_GUID   "SECRETS/GUID"
-
-#define SECRETS_LDAP_BIND_PW "SECRETS/LDAP_BIND_PW"
-
-/* Authenticated user info is stored in secrets.tdb under these keys */
-
-#define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"
-#define SECRETS_AUTH_DOMAIN      "SECRETS/AUTH_DOMAIN"
-#define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
-
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {
