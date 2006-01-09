@@ -95,8 +95,8 @@ NTSTATUS socket_create(const char *name, enum socket_type type,
 }
 
 NTSTATUS socket_connect(struct socket_context *sock,
-			const char *my_address, int my_port,
-			const char *server_address, int server_port,
+			const struct socket_address *my_address, 
+			const struct socket_address *server_address,
 			uint32_t flags)
 {
 	if (sock == NULL) {
@@ -110,7 +110,7 @@ NTSTATUS socket_connect(struct socket_context *sock,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->fn_connect(sock, my_address, my_port, server_address, server_port, flags);
+	return sock->ops->fn_connect(sock, my_address, server_address, flags);
 }
 
 NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
@@ -121,7 +121,9 @@ NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
 	return sock->ops->fn_connect_complete(sock, flags);
 }
 
-NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int port, int queue_size, uint32_t flags)
+NTSTATUS socket_listen(struct socket_context *sock, 
+		       const struct socket_address *my_address, 
+		       int queue_size, uint32_t flags)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -134,7 +136,7 @@ NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int 
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->fn_listen(sock, my_address, port, queue_size, flags);
+	return sock->ops->fn_listen(sock, my_address, queue_size, flags);
 }
 
 NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock)
@@ -194,7 +196,7 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 
 NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
 			 size_t wantlen, size_t *nread, uint32_t flags,
-			 const char **src_addr, int *src_port)
+			 TALLOC_CTX *mem_ctx, struct socket_address **src_addr)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -208,7 +210,7 @@ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf,
 	}
 
 	return sock->ops->fn_recvfrom(sock, buf, wantlen, nread, flags, 
-				      src_addr, src_port);
+				      mem_ctx, src_addr);
 }
 
 NTSTATUS socket_send(struct socket_context *sock, 
@@ -242,7 +244,7 @@ NTSTATUS socket_send(struct socket_context *sock,
 
 NTSTATUS socket_sendto(struct socket_context *sock, 
 		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
-		       const char *dest_addr, int dest_port)
+		       const struct socket_address *dest_addr)
 {
 	if (sock == NULL) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -260,7 +262,7 @@ NTSTATUS socket_sendto(struct socket_context *sock,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->fn_sendto(sock, blob, sendlen, flags, dest_addr, dest_port);
+	return sock->ops->fn_sendto(sock, blob, sendlen, flags, dest_addr);
 }
 
 
@@ -300,7 +302,7 @@ char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 	return sock->ops->fn_get_peer_name(sock, mem_ctx);
 }
 
-char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+struct socket_address *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->fn_get_peer_addr) {
 		return NULL;
@@ -309,31 +311,13 @@ char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 	return sock->ops->fn_get_peer_addr(sock, mem_ctx);
 }
 
-int socket_get_peer_port(struct socket_context *sock)
-{
-	if (!sock->ops->fn_get_peer_port) {
-		return -1;
-	}
-
-	return sock->ops->fn_get_peer_port(sock);
-}
-
-char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+struct socket_address *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->fn_get_my_addr) {
 		return NULL;
 	}
 
 	return sock->ops->fn_get_my_addr(sock, mem_ctx);
-}
-
-int socket_get_my_port(struct socket_context *sock)
-{
-	if (!sock->ops->fn_get_my_port) {
-		return -1;
-	}
-
-	return sock->ops->fn_get_my_port(sock);
 }
 
 int socket_get_fd(struct socket_context *sock)
@@ -367,19 +351,70 @@ NTSTATUS socket_dup(struct socket_context *sock)
 	
 }
 
-const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type)
+/* Create a new socket_address.  The type must match the socket type.
+ * The host parameter may be an IP or a hostname 
+ */
+
+struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
+						   const char *family,
+						   const char *host,
+						   int port)
+{
+	struct socket_address *addr = talloc(mem_ctx, struct socket_address);
+	if (!addr) {
+		return NULL;
+	}
+
+	addr->family = family;
+	addr->addr = talloc_strdup(addr, host);
+	if (!addr->addr) {
+		talloc_free(addr);
+		return NULL;
+	}
+	addr->port = port;
+	addr->sockaddr = NULL;
+	addr->sockaddrlen = 0;
+
+	return addr;
+}
+
+/* Create a new socket_address.  Copy the struct sockaddr into the new
+ * structure.  Used for hooks in the kerberos libraries, where they
+ * supply only a struct sockaddr */
+
+struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx, 
+						    struct sockaddr *sockaddr, 
+						    size_t sockaddrlen)
+{
+	struct socket_address *addr = talloc(mem_ctx, struct socket_address);
+	if (!addr) {
+		return NULL;
+	}
+	addr->family = NULL; 
+	addr->addr = NULL;
+	addr->port = 0;
+	addr->sockaddr = talloc_memdup(addr, sockaddr, sockaddrlen);
+	if (!addr->sockaddr) {
+		talloc_free(addr);
+		return NULL;
+	}
+	addr->sockaddrlen = sockaddrlen;
+	return addr;
+}
+
+const struct socket_ops *socket_getops_byname(const char *family, enum socket_type type)
 {
 	extern const struct socket_ops *socket_ipv4_ops(enum socket_type );
 	extern const struct socket_ops *socket_ipv6_ops(enum socket_type );
 	extern const struct socket_ops *socket_unixdom_ops(enum socket_type );
 
-	if (strcmp("ip", name) == 0 || 
-	    strcmp("ipv4", name) == 0) {
+	if (strcmp("ip", family) == 0 || 
+	    strcmp("ipv4", family) == 0) {
 		return socket_ipv4_ops(type);
 	}
 
 #if HAVE_SOCKET_IPV6
-	if (strcmp("ipv6", name) == 0) {
+	if (strcmp("ipv6", family) == 0) {
 		if (lp_parm_bool(-1, "socket", "noipv6", False)) {
 			DEBUG(3, ("IPv6 support was disabled in smb.conf"));
 			return NULL;
@@ -388,7 +423,7 @@ const struct socket_ops *socket_getops_byname(const char *name, enum socket_type
 	}
 #endif
 
-	if (strcmp("unix", name) == 0) {
+	if (strcmp("unix", family) == 0) {
 		return socket_unixdom_ops(type);
 	}
 

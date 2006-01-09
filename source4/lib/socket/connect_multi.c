@@ -49,7 +49,7 @@ struct connect_multi_state {
 struct connect_one_state {
 	struct composite_context *result;
 	struct socket_context *sock;
-	uint16_t port;
+	struct socket_address *addr;
 };
 
 static void continue_resolve_name(struct composite_context *creq);
@@ -144,15 +144,18 @@ static void connect_multi_next_socket(struct composite_context *result)
 	if (composite_nomem(state, result)) return;
 
 	state->result = result;
-	state->port = multi->ports[next];
-
 	result->status = socket_create("ipv4", SOCKET_TYPE_STREAM, &state->sock, 0);
 	if (!composite_is_ok(result)) return;
 
+	/* Form up the particular address we are interested in */
+	state->addr = socket_address_from_strings(state, state->sock->backend_name, 
+						  multi->server_address, multi->ports[next]);
+	if (composite_nomem(state->addr, result)) return;
+
 	talloc_steal(state, state->sock);
 
-	creq = socket_connect_send(state->sock, NULL, 0, 
-				   multi->server_address, state->port, 0, result->event_ctx);
+	creq = socket_connect_send(state->sock, NULL, 
+				   state->addr, 0, result->event_ctx);
 	if (composite_nomem(creq, result)) return;
 	talloc_steal(state, creq);
 
@@ -220,7 +223,7 @@ static void continue_one(struct composite_context *creq)
 
 	if (NT_STATUS_IS_OK(status)) {
 		multi->sock = talloc_steal(multi, state->sock);
-		multi->result_port = state->port;
+		multi->result_port = state->addr->port;
 	}
 
 	talloc_free(state);

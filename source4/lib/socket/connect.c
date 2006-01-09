@@ -30,10 +30,8 @@
 
 struct connect_state {
 	struct socket_context *sock;
-	const char *my_address;
-	int my_port;
-	const char *server_address;
-	int server_port;
+	const struct socket_address *my_address;
+	const struct socket_address *server_address;
 	uint32_t flags;
 };
 
@@ -62,9 +60,7 @@ static void socket_send_connect(struct composite_context *result)
 
 	result->status = socket_connect(state->sock,
 					state->my_address,
-					state->my_port, 
 					state->server_address,
-					state->server_port,
 					state->flags);
 	if (NT_STATUS_IS_ERR(result->status) && 
 	    !NT_STATUS_EQUAL(result->status,
@@ -85,10 +81,8 @@ static void socket_send_connect(struct composite_context *result)
   send a socket connect, potentially doing some name resolution first
 */
 struct composite_context *socket_connect_send(struct socket_context *sock,
-					      const char *my_address,
-					      int my_port,
-					      const char *server_address,
-					      int server_port,
+					      struct socket_address *my_address,
+					      struct socket_address *server_address, 
 					      uint32_t flags,
 					      struct event_context *event_ctx)
 {
@@ -101,43 +95,45 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 	result->event_ctx = event_ctx;
 
 	state = talloc_zero(result, struct connect_state);
-	if (composite_nomem(state, result)) goto failed;
+	if (composite_nomem(state, result)) return result;
 	result->private_data = state;
 
 	state->sock = talloc_reference(state, sock);
-	if (composite_nomem(state->sock, result)) goto failed;
+	if (composite_nomem(state->sock, result)) return result;
 
 	if (my_address) {
-		state->my_address = talloc_strdup(state, my_address);
-		if (composite_nomem(state->my_address, result)) goto failed;
+		void *ref = talloc_reference(state, my_address);
+		if (composite_nomem(ref, result)) {
+			return result;
+		}
+		state->my_address = my_address;
 	}
-	state->my_port = my_port;
 
-	state->server_address = talloc_strdup(state, server_address);
-	if (composite_nomem(state->server_address, result)) goto failed;
+	{
+		void *ref = talloc_reference(state, server_address);
+		if (composite_nomem(ref, result)) {
+			return result;
+		}
+		state->server_address = server_address;
+	}
 
-	state->server_port = server_port;
 	state->flags = flags;
 
 	set_blocking(socket_get_fd(sock), False);
 
-	if (strcmp(sock->backend_name, "ipv4") == 0) {
+	if (server_address->addr && strcmp(sock->backend_name, "ipv4") == 0) {
 		struct nbt_name name;
 		struct composite_context *creq;
-		make_nbt_name_client(&name, server_address);
+		make_nbt_name_client(&name, server_address->addr);
 		creq = resolve_name_send(&name, result->event_ctx,
 					 lp_name_resolve_order());
-		if (composite_nomem(creq, result)) goto failed;
+		if (composite_nomem(creq, result)) return result;
 		composite_continue(result, creq, continue_resolve_name, result);
 		return result;
 	}
 
 	socket_send_connect(result);
 
-	return result;
-
-failed:
-	composite_error(result, result->status);
 	return result;
 }
 
@@ -172,7 +168,9 @@ static void continue_resolve_name(struct composite_context *creq)
 	result->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(result)) return;
 
-	state->server_address = addr;
+	state->server_address = socket_address_from_strings(state, state->sock->backend_name,
+							    addr, state->server_address->port);
+	if (composite_nomem(state->server_address, result)) return;
 
 	socket_send_connect(result);
 }
@@ -205,12 +203,12 @@ NTSTATUS socket_connect_recv(struct composite_context *result)
   like socket_connect() but takes an event context, doing a semi-async connect
 */
 NTSTATUS socket_connect_ev(struct socket_context *sock,
-			   const char *my_address, int my_port,
-			   const char *server_address, int server_port,
+			   struct socket_address *my_address,
+			   struct socket_address *server_address, 
 			   uint32_t flags, struct event_context *ev)
 {
 	struct composite_context *ctx;
-	ctx = socket_connect_send(sock, my_address, my_port,
-				  server_address, server_port, flags, ev);
+	ctx = socket_connect_send(sock, my_address, 
+				  server_address, flags, ev);
 	return socket_connect_recv(ctx);
 }

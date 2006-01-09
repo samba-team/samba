@@ -223,6 +223,7 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 	struct wins_state *state;
 	extern int torture_entries;
+	struct socket_address *my_ip;
 
 	state = talloc_zero(nbtsock, struct wins_state);
 
@@ -232,7 +233,10 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
 	state->my_ip = talloc_strdup(mem_ctx, iface_best_ip(address));
 	state->ttl = timelimit;
 
-	socket_listen(nbtsock->sock, state->my_ip, 0, 0, 0);
+	my_ip = socket_address_from_strings(nbtsock, nbtsock->sock->backend_name, 
+					    state->my_ip, 0);
+
+	socket_listen(nbtsock->sock, my_ip, 0, 0);
 
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {

@@ -24,13 +24,14 @@
 #include "dlinklist.h"
 #include "system/network.h"
 #include "nbt_server/nbt_server.h"
+#include "lib/socket/socket.h"
 
 /*
   send a name status reply
 */
 static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock, 
 				   struct nbt_name_packet *request_packet, 
-				   const struct nbt_peer_socket *src,
+				   struct socket_address *src,
 				   struct nbt_name *name, 
 				   struct nbtd_interface *iface)
 {
@@ -99,7 +100,7 @@ failed:
 */
 void nbtd_query_status(struct nbt_name_socket *nbtsock, 
 		       struct nbt_name_packet *packet, 
-		       const struct nbt_peer_socket *src)
+		       struct socket_address *src)
 {
 	struct nbt_name *name;
 	struct nbtd_iface_name *iname;

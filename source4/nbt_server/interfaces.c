@@ -33,7 +33,7 @@
 */
 static void nbtd_request_handler(struct nbt_name_socket *nbtsock, 
 				 struct nbt_name_packet *packet, 
-				 const struct nbt_peer_socket *src)
+				 struct socket_address *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -102,6 +102,8 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 {
 	struct nbtd_interface *iface;
 	NTSTATUS status;
+	struct socket_address *bcast_address;
+	struct socket_address *unicast_address;
 
 	/*
 	  we actually create two sockets. One listens on the broadcast address
@@ -125,30 +127,49 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 
 		/* listen for broadcasts on port 137 */
 		bcast_nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
-		NT_STATUS_HAVE_NO_MEMORY(bcast_nbtsock);
+		if (!bcast_nbtsock) {
+			talloc_free(iface);
+			return NT_STATUS_NO_MEMORY;
+		}
 
-		status = socket_listen(bcast_nbtsock->sock, bcast, lp_nbt_port(), 0, 0);
+		bcast_address = socket_address_from_strings(bcast_nbtsock, bcast_nbtsock->sock->backend_name, 
+							    bcast, lp_nbt_port());
+		if (!bcast_address) {
+			talloc_free(iface);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = socket_listen(bcast_nbtsock->sock, bcast_address, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 				 bcast, lp_nbt_port(), nt_errstr(status)));
 			talloc_free(iface);
 			return status;
 		}
+		talloc_free(bcast_address);
 
 		nbt_set_incoming_handler(bcast_nbtsock, nbtd_request_handler, iface);
 	}
 
 	/* listen for unicasts on port 137 */
 	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(iface->nbtsock);
+	if (!iface->nbtsock) {
+		talloc_free(iface);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	status = socket_listen(iface->nbtsock->sock, bind_address, lp_nbt_port(), 0, 0);
+	unicast_address = socket_address_from_strings(iface->nbtsock, iface->nbtsock->sock->backend_name, 
+						      bind_address, lp_nbt_port());
+
+	status = socket_listen(iface->nbtsock->sock, unicast_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 bind_address, lp_nbt_port(), nt_errstr(status)));
 		talloc_free(iface);
 		return status;
 	}
+	talloc_free(unicast_address);
+
 	nbt_set_incoming_handler(iface->nbtsock, nbtd_request_handler, iface);
 
 	/* also setup the datagram listeners */

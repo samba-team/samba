@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
+#include "lib/socket/socket.h"
 
 /*
   send a nbt name release request
@@ -31,7 +32,7 @@ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_request *req;
 	struct nbt_name_packet *packet;
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return NULL;
@@ -65,9 +66,10 @@ struct nbt_name_request *nbt_name_release_send(struct nbt_name_socket *nbtsock,
 	packet->additional[0].rdata.netbios.addresses[0].ipaddr = 
 		talloc_strdup(packet->additional, io->in.address);
 
-	dest.port = lp_nbt_port();
-	dest.addr = io->in.dest_addr;
-	req = nbt_name_request_send(nbtsock, &dest, packet,
+	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name, 
+					   io->in.dest_addr, lp_nbt_port());
+	if (dest == NULL) goto failed;
+	req = nbt_name_request_send(nbtsock, dest, packet,
 				    io->in.timeout, io->in.retries, False);
 	if (req == NULL) goto failed;
 
@@ -96,7 +98,7 @@ NTSTATUS nbt_name_release_recv(struct nbt_name_request *req,
 	}
 	
 	packet = req->replies[0].packet;
-	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest.addr);
+	io->out.reply_from = talloc_steal(mem_ctx, req->replies[0].dest->addr);
 
 	if (packet->ancount != 1 ||
 	    packet->answers[0].rr_type != NBT_QTYPE_NETBIOS ||

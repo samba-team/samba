@@ -56,8 +56,8 @@ static void exit_message(struct messaging_context *msg, void *private,
 static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *ev;
-	struct messaging_context *msg_ctx;
-	struct messaging_context *msg_ctx2;
+	struct messaging_context *msg_client_ctx;
+	struct messaging_context *msg_server_ctx;
 	int ping_count = 0;
 	int pong_count = 0;
 	BOOL ret = True;
@@ -68,23 +68,25 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	ev = event_context_init(mem_ctx);
 
-	msg_ctx2 = messaging_init(mem_ctx, 1, ev);
+	msg_server_ctx = messaging_init(mem_ctx, 1, ev);
 	
-	if (!msg_ctx2) {
-		exit(1);
+	if (!msg_server_ctx) {
+		printf("Failed to init ping messaging context\n");
+		talloc_free(mem_ctx);
+		return False;
 	}
 		
-	messaging_register(msg_ctx2, NULL, MY_PING, ping_message);
-	messaging_register(msg_ctx2, mem_ctx, MY_EXIT, exit_message);
+	messaging_register(msg_server_ctx, NULL, MY_PING, ping_message);
+	messaging_register(msg_server_ctx, mem_ctx, MY_EXIT, exit_message);
 
-	msg_ctx = messaging_init(mem_ctx, 2, ev);
+	msg_client_ctx = messaging_init(mem_ctx, 2, ev);
 
-	if (!msg_ctx) {
-		printf("messaging_init() failed\n");
+	if (!msg_client_ctx) {
+		printf("msg_client_ctx messaging_init() failed\n");
 		return False;
 	}
 
-	messaging_register(msg_ctx, &pong_count, MY_PONG, pong_message);
+	messaging_register(msg_client_ctx, &pong_count, MY_PONG, pong_message);
 
 	tv = timeval_current();
 
@@ -96,8 +98,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		data.data = discard_const_p(uint8_t, "testing");
 		data.length = strlen((const char *)data.data);
 
-		status1 = messaging_send(msg_ctx, 1, MY_PING, &data);
-		status2 = messaging_send(msg_ctx, 1, MY_PING, NULL);
+		status1 = messaging_send(msg_client_ctx, 1, MY_PING, &data);
+		status2 = messaging_send(msg_client_ctx, 1, MY_PING, NULL);
 
 		if (!NT_STATUS_IS_OK(status1)) {
 			printf("msg1 failed - %s\n", nt_errstr(status1));
@@ -123,7 +125,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	}
 
 	printf("sending exit\n");
-	messaging_send(msg_ctx, 1, MY_EXIT, NULL);
+	messaging_send(msg_client_ctx, 1, MY_EXIT, NULL);
 
 	if (ping_count != pong_count) {
 		printf("ping test failed! received %d, sent %d\n", 
@@ -134,7 +136,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	printf("ping rate of %.0f messages/sec\n", 
 	       (ping_count+pong_count)/timeval_elapsed(&tv));
 
-	talloc_free(msg_ctx);
+	talloc_free(msg_client_ctx);
+	talloc_free(msg_server_ctx);
 
 	talloc_free(ev);
 

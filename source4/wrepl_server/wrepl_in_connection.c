@@ -143,7 +143,7 @@ static void wreplsrv_accept(struct stream_connection *conn)
 {
 	struct wreplsrv_service *service = talloc_get_type(conn->private, struct wreplsrv_service);
 	struct wreplsrv_in_connection *wreplconn;
-	const char *peer_ip;
+	struct socket_address *peer_ip;
 
 	wreplconn = talloc_zero(conn, struct wreplsrv_in_connection);
 	if (!wreplconn) {
@@ -170,11 +170,11 @@ static void wreplsrv_accept(struct stream_connection *conn)
 
 	peer_ip	= socket_get_peer_addr(conn->socket, wreplconn);
 	if (!peer_ip) {
-		wreplsrv_terminate_in_connection(wreplconn, "wreplsrv_accept: out of memory");
+		wreplsrv_terminate_in_connection(wreplconn, "wreplsrv_accept: could not obtain peer IP from kernel");
 		return;
 	}
 
-	wreplconn->partner	= wreplsrv_find_partner(service, peer_ip);
+	wreplconn->partner	= wreplsrv_find_partner(service, peer_ip->addr);
 
 	conn->private = wreplconn;
 

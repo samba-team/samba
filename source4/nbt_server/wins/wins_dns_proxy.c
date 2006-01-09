@@ -31,7 +31,7 @@
 struct wins_dns_proxy_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_packet *packet;
-	struct nbt_peer_socket src;
+	struct socket_address *src;
 };
 
 static void nbtd_wins_dns_proxy_handler(struct composite_context *creq)
@@ -53,11 +53,11 @@ static void nbtd_wins_dns_proxy_handler(struct composite_context *creq)
 	talloc_steal(s->packet, addresses);
 	if (!addresses) goto notfound;
 
-	nbtd_name_query_reply(s->nbtsock, s->packet, &s->src, name, 
+	nbtd_name_query_reply(s->nbtsock, s->packet, s->src, name, 
 			      0, nb_flags, addresses);
 	return;
 notfound:
-	nbtd_negative_name_query_reply(s->nbtsock, s->packet, &s->src);
+	nbtd_negative_name_query_reply(s->nbtsock, s->packet, s->src);
 }
 
 /*
@@ -65,7 +65,7 @@ notfound:
 */
 void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock, 
 			       struct nbt_name_packet *packet, 
-			       const struct nbt_peer_socket *src)
+			       struct socket_address *src)
 {
 	struct nbt_name *name = &packet->questions[0].name;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private,
@@ -81,8 +81,10 @@ void nbtd_wins_dns_proxy_query(struct nbt_name_socket *nbtsock,
 	if (!s) goto failed;
 	s->nbtsock	= nbtsock;
 	s->packet	= talloc_steal(s, packet);
-	s->src		= *src;
-	talloc_steal(s, src->addr);
+	s->src		= src;
+	if (!talloc_reference(s, src)) {
+		goto failed;
+	}
 
 	creq = resolve_name_send(name, iface->nbtsrv->task->event_ctx, methods);
 	if (!creq) goto failed;

@@ -85,49 +85,63 @@ static NTSTATUS ipv4_connect_complete(struct socket_context *sock, uint32_t flag
 
 
 static NTSTATUS ipv4_connect(struct socket_context *sock,
-				 const char *my_address, int my_port,
-				 const char *srv_address, int srv_port,
-				 uint32_t flags)
+			     const struct socket_address *my_address, 
+			     const struct socket_address *srv_address,
+			     uint32_t flags)
 {
 	struct sockaddr_in srv_addr;
 	struct ipv4_addr my_ip;
 	struct ipv4_addr srv_ip;
 	int ret;
 
-	my_ip = interpret_addr2(my_address);
-
-	if (my_ip.addr != 0 || my_port != 0) {
-		struct sockaddr_in my_addr;
-		ZERO_STRUCT(my_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-		my_addr.sin_len		= sizeof(my_addr);
-#endif
-		my_addr.sin_addr.s_addr	= my_ip.addr;
-		my_addr.sin_port	= htons(my_port);
-		my_addr.sin_family	= PF_INET;
-		
-		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	if (my_address && my_address->sockaddr) {
+		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
-	}
-
-	srv_ip = interpret_addr2(srv_address);
-	if (!srv_ip.addr) {
-		return NT_STATUS_BAD_NETWORK_NAME;
-	}
-
-	ZERO_STRUCT(srv_addr);
+	} else if (my_address) {
+		my_ip = interpret_addr2(my_address->addr);
+		
+		if (my_ip.addr != 0 || my_address->port != 0) {
+			struct sockaddr_in my_addr;
+			ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
-	srv_addr.sin_len	= sizeof(srv_addr);
+			my_addr.sin_len		= sizeof(my_addr);
 #endif
-	srv_addr.sin_addr.s_addr= srv_ip.addr;
-	srv_addr.sin_port	= htons(srv_port);
-	srv_addr.sin_family	= PF_INET;
+			my_addr.sin_addr.s_addr	= my_ip.addr;
+			my_addr.sin_port	= htons(my_address->port);
+			my_addr.sin_family	= PF_INET;
+			
+			ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+			if (ret == -1) {
+				return map_nt_error_from_unix(errno);
+			}
+		}
+	}
 
-	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+	if (srv_address->sockaddr) {
+		ret = connect(sock->fd, srv_address->sockaddr, srv_address->sockaddrlen);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	} else {
+		srv_ip = interpret_addr2(srv_address->addr);
+		if (!srv_ip.addr) {
+			return NT_STATUS_BAD_NETWORK_NAME;
+		}
+		
+		ZERO_STRUCT(srv_addr);
+#ifdef HAVE_SOCK_SIN_LEN
+		srv_addr.sin_len	= sizeof(srv_addr);
+#endif
+		srv_addr.sin_addr.s_addr= srv_ip.addr;
+		srv_addr.sin_port	= htons(srv_address->port);
+		srv_addr.sin_family	= PF_INET;
+
+		ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
 	}
 
 	return ipv4_connect_complete(sock, flags);
@@ -139,7 +153,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
   use for DGRAM sockets, but in reality only a bind() is done
 */
 static NTSTATUS ipv4_listen(struct socket_context *sock,
-			    const char *my_address, int port,
+			    const struct socket_address *my_address, 
 			    int queue_size, uint32_t flags)
 {
 	struct sockaddr_in my_addr;
@@ -148,17 +162,22 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 
 	socket_set_option(sock, "SO_REUSEADDR=1", NULL);
 
-	ip_addr = interpret_addr2(my_address);
-
-	ZERO_STRUCT(my_addr);
+	if (my_address->sockaddr) {
+		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
+	} else {
+		ip_addr = interpret_addr2(my_address->addr);
+		
+		ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
-	my_addr.sin_len		= sizeof(my_addr);
+		my_addr.sin_len		= sizeof(my_addr);
 #endif
-	my_addr.sin_addr.s_addr	= ip_addr.addr;
-	my_addr.sin_port	= htons(port);
-	my_addr.sin_family	= PF_INET;
+		my_addr.sin_addr.s_addr	= ip_addr.addr;
+		my_addr.sin_port	= htons(my_address->port);
+		my_addr.sin_family	= PF_INET;
+		
+		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+	}
 
-	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -263,14 +282,29 @@ static NTSTATUS ipv4_recv(struct socket_context *sock, void *buf,
 
 static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf, 
 			      size_t wantlen, size_t *nread, uint32_t flags,
-			      const char **src_addr, int *src_port)
+			      TALLOC_CTX *addr_ctx, struct socket_address **_src)
 {
 	ssize_t gotlen;
 	int flgs = 0;
-	struct sockaddr_in from_addr;
-	socklen_t from_len = sizeof(from_addr);
+	struct sockaddr_in *from_addr;
+	socklen_t from_len = sizeof(*from_addr);
+	struct socket_address *src;
 	const char *addr;
+	
+	src = talloc(addr_ctx, struct socket_address);
+	if (!src) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	src->family = sock->backend_name;
 
+	from_addr = talloc(src, struct sockaddr_in);
+	if (!from_addr) {
+		talloc_free(src);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	src->sockaddr = (struct sockaddr *)from_addr;
 	if (flags & SOCKET_FLAG_PEEK) {
 		flgs |= MSG_PEEK;
 	}
@@ -282,23 +316,31 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 	*nread = 0;
 
 	gotlen = recvfrom(sock->fd, buf, wantlen, flgs, 
-			  (struct sockaddr *)&from_addr, &from_len);
+			  src->sockaddr, &from_len);
 	if (gotlen == 0) {
+		talloc_free(src);
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
+		talloc_free(src);
 		return map_nt_error_from_unix(errno);
 	}
 
-	addr = inet_ntoa(from_addr.sin_addr);
+	src->sockaddrlen = from_len;
+
+	addr = inet_ntoa(from_addr->sin_addr);
 	if (addr == NULL) {
+		talloc_free(src);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	*src_addr = talloc_strdup(sock, addr);
-	NT_STATUS_HAVE_NO_MEMORY(*src_addr);
-	*src_port = ntohs(from_addr.sin_port);
+	src->addr = talloc_strdup(src, addr);
+	if (src->addr == NULL) {
+		talloc_free(src);
+		return NT_STATUS_NO_MEMORY;
+	}
+	src->port = ntohs(from_addr->sin_port);
 
-	*nread = gotlen;
-
+	*nread	= gotlen;
+	*_src	= src;
 	return NT_STATUS_OK;
 }
 
@@ -322,26 +364,32 @@ static NTSTATUS ipv4_send(struct socket_context *sock,
 
 static NTSTATUS ipv4_sendto(struct socket_context *sock, 
 			    const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
-			    const char *dest_addr, int dest_port)
+			    const struct socket_address *dest_addr)
 {
 	ssize_t len;
 	int flgs = 0;
-	struct sockaddr_in srv_addr;
-	struct ipv4_addr addr;
 
-	ZERO_STRUCT(srv_addr);
+	if (dest_addr->sockaddr) {
+		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+			     dest_addr->sockaddr, dest_addr->sockaddrlen);
+	} else {
+		struct sockaddr_in srv_addr;
+		struct ipv4_addr addr;
+		
+		ZERO_STRUCT(srv_addr);
 #ifdef HAVE_SOCK_SIN_LEN
-	srv_addr.sin_len         = sizeof(srv_addr);
+		srv_addr.sin_len         = sizeof(srv_addr);
 #endif
-	addr                     = interpret_addr2(dest_addr);
-	srv_addr.sin_addr.s_addr = addr.addr;
-	srv_addr.sin_port        = htons(dest_port);
-	srv_addr.sin_family      = PF_INET;
-
-	*sendlen = 0;
-
-	len = sendto(sock->fd, blob->data, blob->length, flgs, 
-		   (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+		addr                     = interpret_addr2(dest_addr->addr);
+		srv_addr.sin_addr.s_addr = addr.addr;
+		srv_addr.sin_port        = htons(dest_addr->port);
+		srv_addr.sin_family      = PF_INET;
+		
+		*sendlen = 0;
+		
+		len = sendto(sock->fd, blob->data, blob->length, flgs, 
+			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+	}
 	if (len == -1) {
 		return map_nt_error_from_unix(errno);
 	}	
@@ -377,62 +425,95 @@ static char *ipv4_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx
 	return talloc_strdup(mem_ctx, he->h_name);
 }
 
-static char *ipv4_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static struct socket_address *ipv4_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	struct sockaddr_in peer_addr;
-	socklen_t len = sizeof(peer_addr);
+	struct sockaddr_in *peer_addr;
+	socklen_t len = sizeof(*peer_addr);
+	const char *addr;
+	struct socket_address *peer;
 	int ret;
-
-	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
-	if (ret == -1) {
+	
+	peer = talloc(mem_ctx, struct socket_address);
+	if (!peer) {
+		return NULL;
+	}
+	
+	peer->family = sock->backend_name;
+	peer_addr = talloc(peer, struct sockaddr_in);
+	if (!peer_addr) {
+		talloc_free(peer);
 		return NULL;
 	}
 
-	return talloc_strdup(mem_ctx, inet_ntoa(peer_addr.sin_addr));
-}
+	peer->sockaddr = (struct sockaddr *)peer_addr;
 
-static int ipv4_get_peer_port(struct socket_context *sock)
-{
-	struct sockaddr_in peer_addr;
-	socklen_t len = sizeof(peer_addr);
-	int ret;
-
-	ret = getpeername(sock->fd, (struct sockaddr *)&peer_addr, &len);
+	ret = getpeername(sock->fd, peer->sockaddr, &len);
 	if (ret == -1) {
-		return -1;
-	}
-
-	return ntohs(peer_addr.sin_port);
-}
-
-static char *ipv4_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
-{
-	struct sockaddr_in my_addr;
-	socklen_t len = sizeof(my_addr);
-	int ret;
-
-	ret = getsockname(sock->fd, (struct sockaddr *)&my_addr, &len);
-	if (ret == -1) {
+		talloc_free(peer);
 		return NULL;
 	}
 
-	return talloc_strdup(mem_ctx, inet_ntoa(my_addr.sin_addr));
+	peer->sockaddrlen = len;
+
+	addr = inet_ntoa(peer_addr->sin_addr);
+	if (addr == NULL) {
+		talloc_free(peer);
+		return NULL;
+	}
+	peer->addr = talloc_strdup(peer, addr);
+	if (!peer->addr) {
+		talloc_free(peer);
+		return NULL;
+	}
+	peer->port = ntohs(peer_addr->sin_port);
+
+	return peer;
 }
 
-static int ipv4_get_my_port(struct socket_context *sock)
+static struct socket_address *ipv4_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
-	struct sockaddr_in my_addr;
-	socklen_t len = sizeof(my_addr);
+	struct sockaddr_in *local_addr;
+	socklen_t len = sizeof(*local_addr);
+	const char *addr;
+	struct socket_address *local;
 	int ret;
-
-	ret = getsockname(sock->fd, (struct sockaddr *)&my_addr, &len);
-	if (ret == -1) {
-		return -1;
+	
+	local = talloc(mem_ctx, struct socket_address);
+	if (!local) {
+		return NULL;
+	}
+	
+	local->family = sock->backend_name;
+	local_addr = talloc(local, struct sockaddr_in);
+	if (!local_addr) {
+		talloc_free(local);
+		return NULL;
 	}
 
-	return ntohs(my_addr.sin_port);
-}
+	local->sockaddr = (struct sockaddr *)local_addr;
 
+	ret = getsockname(sock->fd, local->sockaddr, &len);
+	if (ret == -1) {
+		talloc_free(local);
+		return NULL;
+	}
+
+	local->sockaddrlen = len;
+
+	addr = inet_ntoa(local_addr->sin_addr);
+	if (addr == NULL) {
+		talloc_free(local);
+		return NULL;
+	}
+	local->addr = talloc_strdup(local, addr);
+	if (!local->addr) {
+		talloc_free(local);
+		return NULL;
+	}
+	local->port = ntohs(local_addr->sin_port);
+
+	return local;
+}
 static int ipv4_get_fd(struct socket_context *sock)
 {
 	return sock->fd;
@@ -466,10 +547,7 @@ static const struct socket_ops ipv4_ops = {
 
 	.fn_get_peer_name	= ipv4_get_peer_name,
 	.fn_get_peer_addr	= ipv4_get_peer_addr,
-	.fn_get_peer_port	= ipv4_get_peer_port,
 	.fn_get_my_addr		= ipv4_get_my_addr,
-	.fn_get_my_port		= ipv4_get_my_port,
-
 	.fn_get_fd		= ipv4_get_fd
 };
 

@@ -87,8 +87,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	krb5_error_code ret;
 	struct gensec_krb5_state *gensec_krb5_state;
 	struct cli_credentials *creds;
-	const char *my_addr, *peer_addr;
-	int my_port, peer_port;
+	const struct socket_address *my_addr, *peer_addr;
 	krb5_address my_krb5_addr, peer_krb5_addr;
 	
 	creds = gensec_get_credentials(gensec_security);
@@ -138,23 +137,10 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	my_addr = gensec_get_my_addr(gensec_security, &my_port);
-	if (my_addr) {
-		struct sockaddr_in sock_addr;
-		struct ipv4_addr addr;
-
-		/* TODO:  This really should be in a utility function somewhere */
-		ZERO_STRUCT(sock_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-		sock_addr.sin_len		= sizeof(sock_addr);
-#endif
-		addr				= interpret_addr2(my_addr);
-		sock_addr.sin_addr.s_addr	= addr.addr;
-		sock_addr.sin_port		= htons(my_port);
-		sock_addr.sin_family	= PF_INET;
-		
+	my_addr = gensec_get_my_addr(gensec_security);
+	if (my_addr && my_addr->sockaddr) {
 		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					    (struct sockaddr *)&sock_addr, &my_krb5_addr);
+					    my_addr->sockaddr, &my_krb5_addr);
 		if (ret) {
 			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
 				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
@@ -164,23 +150,10 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 		}
 	}
 
-	peer_addr = gensec_get_my_addr(gensec_security, &peer_port);
-	if (peer_addr) {
-		struct sockaddr_in sock_addr;
-		struct ipv4_addr addr;
-
-		/* TODO:  This really should be in a utility function somewhere */
-		ZERO_STRUCT(sock_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-		sock_addr.sin_len		= sizeof(sock_addr);
-#endif
-		addr				= interpret_addr2(peer_addr);
-		sock_addr.sin_addr.s_addr	= addr.addr;
-		sock_addr.sin_port		= htons(peer_port);
-		sock_addr.sin_family	= PF_INET;
-		
+	peer_addr = gensec_get_my_addr(gensec_security);
+	if (peer_addr && peer_addr->sockaddr) {
 		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					    (struct sockaddr *)&sock_addr, &peer_krb5_addr);
+					    peer_addr->sockaddr, &peer_krb5_addr);
 		if (ret) {
 			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
 				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
