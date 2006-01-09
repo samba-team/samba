@@ -50,12 +50,15 @@ static int version_flag;
 static int help_flag;
 static char *id_flag;
 static char *rsa_flag;
+static int dh_flag;
 
 static struct getargs args[] = {
     { "id",		0,	arg_string,	&id_flag,
-      "id", 	NULL },
+      "selects the engine id", 	"engine-id" },
     { "rsa",		0,	arg_string,	&rsa_flag,
-      "rsa-der-file", 	NULL },
+      "tests RSA modes", 	"private-rsa-der-file" },
+    { "dh",		0,	arg_flag,	&dh_flag,
+      "test dh", NULL },
     { "version",	0,	arg_flag,	&version_flag,
       "print version", NULL },
     { "help",		0,	arg_flag,	&help_flag,
@@ -77,7 +80,7 @@ main(int argc, char **argv)
 {
     ENGINE *engine;
     int idx = 0;
-    int have_rsa;
+    int have_rsa, have_dh;
 
     setprogname(argv[0]);
 
@@ -105,8 +108,9 @@ main(int argc, char **argv)
     printf("name: %s\n", ENGINE_get_name(engine));
     printf("id: %s\n", ENGINE_get_id(engine));
     have_rsa = ENGINE_get_RSA(engine) != NULL;
+    have_dh = ENGINE_get_DH(engine) != NULL;
     printf("RSA: %s\n", have_rsa ? "yes" : "no");
-    printf("DH: %s\n", ENGINE_get_DH(engine) ? "yes" : "no");
+    printf("DH: %s\n", have_dh ? "yes" : "no");
 
     if (rsa_flag && have_rsa) {
 	unsigned char buf[1024 * 4];
@@ -176,6 +180,58 @@ main(int argc, char **argv)
 
 	printf("rsa test passed\n");
 
+    }
+
+    if (dh_flag) {
+	DH *server, *client;
+	void *skey, *ckey;
+	int ssize, csize;
+
+	/* RFC2412-MODP-group2 */
+	const char *p = 
+	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
+	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
+	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
+	    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
+	    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
+	    "FFFFFFFF" "FFFFFFFF";
+	const char *g = "02";
+
+	server = DH_new_method(engine);
+	client = DH_new_method(engine);
+
+	BN_hex2bn(&server->p, p);
+	BN_hex2bn(&client->p, p);
+	BN_hex2bn(&server->g, g);
+	BN_hex2bn(&client->g, g);
+
+	if (!DH_generate_key(server))
+	    errx(1, "DH_generate_key failed for server");
+	if (!DH_generate_key(client))
+	    errx(1, "DH_generate_key failed for client");
+
+	skey = emalloc(DH_size(server));
+	ckey = emalloc(DH_size(client));
+
+	ssize = DH_compute_key(skey, client->pub_key, server);
+	if (ssize == -1)
+	    errx(1, "DH_compute_key failed for server");
+	csize = DH_compute_key(ckey, server->pub_key, client);
+	if (csize == -1)
+	    errx(1, "DH_compute_key failed for client");
+
+	if (ssize != csize)
+	    errx(1, "DH_compute_key size mismatch");
+	    
+	if (memcmp(skey, ckey, csize) != 0)
+	    errx(1, "DH_compute_key key mismatch");
+
+	free(skey);
+	free(ckey);
+	DH_free(server);
+	DH_free(client);
+
+	printf("dh test passed\n");
     }
 
     ENGINE_finish(engine);
