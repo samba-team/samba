@@ -514,7 +514,7 @@
 #include <langinfo.h>
 #endif
 
-#ifdef HAVE_AIO_H
+#if defined(HAVE_AIO_H) && defined(WITH_AIO)
 #include <aio.h>
 #endif
 
