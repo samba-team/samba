@@ -343,6 +343,7 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	gensec_ntlmssp_state->gensec_security = gensec_security;
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
 
