@@ -35,7 +35,7 @@ struct debug_ops {
 	void (*log_task_id)(int fd);
 };
 
-void do_debug_header(int level);
+void do_debug_header(int level, const char *location, const char *func);
 void do_debug(const char *, ...) PRINTF_ATTRIBUTE(1,2);
 
 extern int DEBUGLEVEL;
@@ -44,7 +44,7 @@ extern int DEBUGLEVEL;
 #define _DEBUG(level, body, header) do { \
 	if (DEBUGLVL(level)) { \
 		if (header) { \
-			do_debug_header(level); \
+			do_debug_header(level, __location__, __FUNCTION__); \
 		} \
 		do_debug body; \
 	} \

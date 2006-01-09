@@ -45,9 +45,9 @@ static struct {
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
-void do_debug_header(int level)
+void do_debug_header(int level, const char *location, const char *func)
 {
-	log_timestring(level);
+	log_timestring(level, location, func);
 	log_task_id();
 }
 
@@ -162,7 +162,7 @@ void print_suspicious_usage(const char* from, const char* info)
 	}
 }
 
-void log_timestring(int level)
+void log_timestring(int level, const char *location, const char *func)
 {
 	char *t = NULL;
 	char *s = NULL;
@@ -172,7 +172,7 @@ void log_timestring(int level)
 	t = timestring(NULL, time(NULL));
 	if (!t) return;
 
-	asprintf(&s, "[%s, %d]\n", t, level);
+	asprintf(&s, "[%s, %d %s:%s()]\n", t, level, location, func);
 	talloc_free(t);
 	if (!s) return;
 
