@@ -56,13 +56,6 @@ struct wreplsrv_in_connection {
 	 */
 	struct wreplsrv_partner *partner;
 
-	/*
-	 * we need to take care of our own ip address,
-	 * as this is the WINS-Owner ID the peer expect
-	 * from us.
-	 */
-	const char *our_ip;
-
 	/* keep track of the assoc_ctx's */
 	struct {
 		BOOL stopped;

@@ -109,12 +109,11 @@ static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
 	struct wreplsrv_service *service = call->wreplconn->service;
 	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
 	struct wrepl_table *table_out = &call->rep_packet.message.replication.info.table;
-	const char *our_ip = call->wreplconn->our_ip;
 
 	repl_out->command = WREPL_REPL_TABLE_REPLY;
 
 	return wreplsrv_fill_wrepl_table(service, call, table_out,
-					 our_ip, True);
+					 service->wins_db->local_owner, True);
 }
 
 static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
@@ -126,7 +125,6 @@ static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
 }
 
 static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
-					  const char *our_address,
 					  struct wrepl_wins_name *name,
 					  struct winsdb_record *rec)
 {
@@ -264,7 +262,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		status = winsdb_record(service->wins_db, res->msgs[i], call, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		status = wreplsrv_record2wins_name(names, call->wreplconn->our_ip, &names[i], rec);
+		status = wreplsrv_record2wins_name(names, &names[i], rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(rec);
 		talloc_free(res->msgs[i]);

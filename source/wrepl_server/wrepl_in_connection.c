@@ -167,11 +167,6 @@ static void wreplsrv_accept(struct stream_connection *conn)
 
 	wreplconn->conn		= conn;
 	wreplconn->service	= service;
-	wreplconn->our_ip	= socket_get_my_addr(conn->socket, wreplconn);
-	if (!wreplconn->our_ip) {
-		wreplsrv_terminate_in_connection(wreplconn, "wreplsrv_accept: out of memory");
-		return;
-	}
 
 	peer_ip	= socket_get_peer_addr(conn->socket, wreplconn);
 	if (!peer_ip) {
@@ -221,8 +216,6 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 
 	wrepl_in->service	= service;
 	wrepl_in->partner	= partner;
-	wrepl_in->our_ip	= socket_get_my_addr(sock, wrepl_in);
-	NT_STATUS_HAVE_NO_MEMORY(wrepl_in->our_ip);
 
 	status = stream_new_connection_merge(service->task->event_ctx, model_ops,
 					     sock, &wreplsrv_stream_ops, service->task->msg_ctx,
