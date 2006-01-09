@@ -1411,7 +1411,7 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 
 	r->out.rights->count = el->num_values;
 	r->out.rights->names = talloc_array(r->out.rights, 
-					      struct lsa_String, r->out.rights->count);
+					    struct lsa_StringLarge, r->out.rights->count);
 	if (r->out.rights->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1534,7 +1534,7 @@ static NTSTATUS lsa_AddPrivilegesToAccount(struct dcesrv_call_state *dce_call, T
 	astate = h->data;
 
 	rights.count = r->in.privs->count;
-	rights.names = talloc_array(mem_ctx, struct lsa_String, rights.count);
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge, rights.count);
 	if (rights.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1596,7 +1596,7 @@ static NTSTATUS lsa_RemovePrivilegesFromAccount(struct dcesrv_call_state *dce_ca
 	}
 
 	rights->count = r->in.privs->count;
-	rights->names = talloc_array(mem_ctx, struct lsa_String, rights->count);
+	rights->names = talloc_array(mem_ctx, struct lsa_StringLarge, rights->count);
 	if (rights->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2228,7 +2228,7 @@ static NTSTATUS lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	r->out.name = talloc(mem_ctx, struct lsa_String);
+	r->out.name = talloc(mem_ctx, struct lsa_StringLarge);
 	if (r->out.name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2258,7 +2258,7 @@ static NTSTATUS lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 	
-	r->out.disp_name = talloc(mem_ctx, struct lsa_String);
+	r->out.disp_name = talloc(mem_ctx, struct lsa_StringLarge);
 	if (r->out.disp_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
