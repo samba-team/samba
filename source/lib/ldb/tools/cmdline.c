@@ -144,7 +144,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 			const char *p;
 			int cc;
 
-			for (p = cs, cc = 1; p = strchr(p, ','); cc++) ;
+			for (p = cs, cc = 1; (p = strchr(p, ',')); cc++) ;
 
 			options.controls = talloc_array(ret, char *, cc + 1);
 			if (options.controls == NULL) {
