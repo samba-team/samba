@@ -44,31 +44,6 @@ struct cache_entry {
 
 static struct winbind_cache *wcache;
 
-/* flush the cache */
-void wcache_flush_cache(void)
-{
-	extern BOOL opt_nocache;
-
-	if (!wcache)
-		return;
-	if (wcache->tdb) {
-		tdb_close(wcache->tdb);
-		wcache->tdb = NULL;
-	}
-	if (opt_nocache)
-		return;
-
-	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
-
-	if (!wcache->tdb) {
-		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
-	}
-
-	DEBUG(10,("wcache_flush_cache success\n"));
-}
-
 void winbindd_check_cache_size(time_t t)
 {
 	static time_t last_check_time;
@@ -488,6 +463,38 @@ static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, s
 	return True;
 }
 
+static struct cache_entry *wcache_fetch_raw(char *kstr)
+{
+	TDB_DATA data;
+	struct cache_entry *centry;
+	TDB_DATA key;
+
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+	data = tdb_fetch(wcache->tdb, key);
+	if (!data.dptr) {
+		/* a cache miss */
+		return NULL;
+	}
+
+	centry = SMB_XMALLOC_P(struct cache_entry);
+	centry->data = (unsigned char *)data.dptr;
+	centry->len = data.dsize;
+	centry->ofs = 0;
+
+	if (centry->len < 8) {
+		/* huh? corrupt cache? */
+		DEBUG(10,("wcache_fetch_raw: Corrupt cache for key %s (len < 8) ?\n", kstr));
+		centry_free(centry);
+		return NULL;
+	}
+	
+	centry->status = NT_STATUS(centry_uint32(centry));
+	centry->sequence_number = centry_uint32(centry);
+
+	return centry;
+}
+
 /*
   fetch an entry from the cache, with a varargs key. auto-fetch the sequence
   number and return status
@@ -501,41 +508,19 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 {
 	va_list ap;
 	char *kstr;
-	TDB_DATA data;
 	struct cache_entry *centry;
-	TDB_DATA key;
 
 	refresh_sequence_number(domain, False);
 
 	va_start(ap, format);
 	smb_xvasprintf(&kstr, format, ap);
 	va_end(ap);
-	
-	key.dptr = kstr;
-	key.dsize = strlen(kstr);
-	data = tdb_fetch(wcache->tdb, key);
-	if (!data.dptr) {
-		/* a cache miss */
+
+	centry = wcache_fetch_raw(kstr);
+	if (centry == NULL) {
 		free(kstr);
 		return NULL;
 	}
-
-	centry = SMB_XMALLOC_P(struct cache_entry);
-	centry->data = (unsigned char *)data.dptr;
-	centry->len = data.dsize;
-	centry->ofs = 0;
-
-	if (centry->len < 8) {
-		/* huh? corrupt cache? */
-		DEBUG(10,("wcache_fetch: Corrupt cache for key %s domain %s (len < 8) ?\n",
-			kstr, domain->name ));
-		centry_free(centry);
-		free(kstr);
-		return NULL;
-	}
-	
-	centry->status = NT_STATUS(centry_uint32(centry));
-	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, kstr, centry)) {
 
@@ -2048,6 +2033,58 @@ void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
 {
 	wcache_save_sid_to_name(domain, NT_STATUS_OK, sid, domain_name,
 				name, type);
+}
+
+/* delete all centries that don't have NT_STATUS_OK set */
+static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, 
+			       TDB_DATA dbuf, void *state)
+{
+	struct cache_entry *centry;
+	char buf[1024];
+
+	if (!snprintf(buf, kbuf.dsize + 1, "%s", kbuf.dptr)) {
+		return 1;
+	}
+
+	centry = wcache_fetch_raw(buf);
+	if (!centry) {
+		return 0;
+	}
+
+	if (!NT_STATUS_IS_OK(centry->status)) {
+		DEBUG(10,("deleting centry %s\n", buf));
+		tdb_delete(the_tdb, kbuf);
+	}
+
+	centry_free(centry);
+	return 0;
+}
+
+/* flush the cache */
+void wcache_flush_cache(void)
+{
+	extern BOOL opt_nocache;
+
+	if (!wcache)
+		return;
+	if (wcache->tdb) {
+		tdb_close(wcache->tdb);
+		wcache->tdb = NULL;
+	}
+	if (opt_nocache)
+		return;
+
+	/* when working offline we must not clear the cache on restart */
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
+				   TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
+
+	if (!wcache->tdb) {
+		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+	}
+
+	tdb_traverse(wcache->tdb, traverse_fn_cleanup, NULL);
+
+	DEBUG(10,("wcache_flush_cache success\n"));
 }
 
 /* Count cached creds */
