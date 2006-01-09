@@ -198,7 +198,7 @@ kerberos5_send(char *name, Authenticator *ap)
     krb5_ccache ccache;
     int ap_opts;
     krb5_data cksum_data;
-    char foo[2];
+    char ap_msg[2];
     
     if (!UserNameRequested) {
 	if (auth_debug_mode) {
@@ -246,11 +246,11 @@ kerberos5_send(char *name, Authenticator *ap)
 
     krb5_auth_con_setkeytype (context, auth_context, KEYTYPE_DES);
 
-    foo[0] = ap->type;
-    foo[1] = ap->way;
+    ap_msg[0] = ap->type;
+    ap_msg[1] = ap->way;
 
-    cksum_data.length = sizeof(foo);
-    cksum_data.data   = foo;
+    cksum_data.length = sizeof(ap_msg);
+    cksum_data.data   = ap_msg;
 
 
     {
@@ -420,15 +420,15 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	}
 	
 	{
-	    char foo[2];
+	    char ap_msg[2];
 	    
-	    foo[0] = ap->type;
-	    foo[1] = ap->way;
+	    ap_msg[0] = ap->type;
+	    ap_msg[1] = ap->way;
 	    
 	    ret = krb5_verify_authenticator_checksum(context,
 						     auth_context,
-						     foo, 
-						     sizeof(foo));
+						     ap_msg, 
+						     sizeof(ap_msg));
 
 	    if (ret) {
 		const char *errbuf2 = "Bad checksum";
