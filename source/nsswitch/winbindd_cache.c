@@ -1204,9 +1204,7 @@ do_query:
 	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
 
 	/* and save it */
-	if (NT_STATUS_IS_OK(status)) {
-		wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
-	}
+	wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
 
 	/* We can't save the sid to name mapping as we don't know the
 	   correct case of the name without looking it up */
