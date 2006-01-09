@@ -538,7 +538,7 @@ static int info_fn(struct file_list *fl, void *private)
 	}
 
 	/* Ensure it's well formed. */
-	if (!parse_usershare_file(ctx, &sbuf, -1, lines, numlines,
+	if (!parse_usershare_file(ctx, &sbuf, fl->pathname, -1, lines, numlines,
 				sharepath,
 				comment,
 				&psd)) {

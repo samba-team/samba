@@ -191,6 +191,8 @@ typedef struct {
 	char **szServicesList;
 	char *szUsersharePath;
 	char *szUsershareTemplateShare;
+	char **szUsersharePrefixAllowList;
+	char **szUsersharePrefixDenyList;
 	int mangle_prefix;
 	int max_log_size;
 	char *szLogLevel;
@@ -1223,6 +1225,8 @@ static struct parm_struct parm_table[] = {
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
 	{"usershare path", P_STRING, P_GLOBAL, &Globals.szUsersharePath, NULL, NULL, FLAG_ADVANCED},
 	{"usershare template share", P_STRING, P_GLOBAL, &Globals.szUsershareTemplateShare, NULL, NULL, FLAG_ADVANCED},
+	{"usershare prefix allow list", P_LIST, P_GLOBAL, &Globals.szUsersharePrefixAllowList, NULL, NULL, FLAG_ADVANCED}, 
+	{"usershare prefix deny list", P_LIST, P_GLOBAL, &Globals.szUsersharePrefixDenyList, NULL, NULL, FLAG_ADVANCED}, 
 	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE }, 
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1829,6 +1833,8 @@ FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 FN_GLOBAL_STRING(lp_usershare_path, &Globals.szUsersharePath)
+FN_GLOBAL_LIST(lp_usershare_prefix_allow_list, &Globals.szUsersharePrefixAllowList)
+FN_GLOBAL_LIST(lp_usershare_prefix_deny_list, &Globals.szUsersharePrefixDenyList)
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
@@ -4255,6 +4261,7 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
 
 BOOL parse_usershare_file(TALLOC_CTX *ctx, 
 			SMB_STRUCT_STAT *psbuf,
+			const char *servicename,
 			int snum,
 			char **lines,
 			int numlines,
@@ -4262,6 +4269,8 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 			pstring comment,
 			SEC_DESC **ppsd)
 {
+	const char **prefixallowlist = lp_usershare_prefix_allow_list();
+	const char **prefixdenylist = lp_usershare_prefix_deny_list();
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
 
@@ -4303,17 +4312,53 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 
 	/* The path *must* be absolute. */
 	if (sharepath[0] != '/') {
-		DEBUG(0,("parse_usershare_file: path %s is not an absolute path.\n",
-			sharepath));
+		DEBUG(2,("parse_usershare_file: share %s: path %s is not an absolute path.\n",
+			servicename, sharepath));
 		return False;
 	}
+
+	/* If there is a usershare prefix deny list ensure one of these paths
+	   doesn't match the start of the user given path. */
+	if (prefixdenylist) {
+		int i;
+		for ( i=0; prefixdenylist[i]; i++ ) {
+			DEBUG(10,("parse_usershare_file: share %s : checking prefixdenylist[%d]='%s' against %s\n",
+				servicename, i, prefixdenylist[i], sharepath ));
+			if (memcmp( sharepath, prefixdenylist[i], strlen(prefixdenylist[i])) == 0) {
+				DEBUG(2,("parse_usershare_file: share %s path %s starts with one of the "
+					"usershare prefix deny list entries.\n",
+					servicename, sharepath));
+				return False;
+			}
+		}
+	}
+
+	/* If there is a usershare prefix allow list ensure one of these paths
+	   does match the start of the user given path. */
+
+	if (prefixallowlist) {
+		int i;
+		for ( i=0; prefixallowlist[i]; i++ ) {
+			DEBUG(10,("parse_usershare_file: share %s checking prefixallowlist[%d]='%s' against %s\n",
+				servicename, i, prefixallowlist[i], sharepath ));
+			if (memcmp( sharepath, prefixallowlist[i], strlen(prefixallowlist[i])) == 0) {
+				break;
+			}
+		}
+		if (prefixallowlist[i] == NULL) {
+			DEBUG(2,("parse_usershare_file: share %s path %s doesn't start with one of the "
+				"usershare prefix allow list entries.\n",
+				servicename, sharepath));
+			return False;
+		}
+        }
 
 	/* Ensure this is pointing to a directory. */
 	dp = sys_opendir(sharepath);
 
 	if (!dp) {
-		DEBUG(0,("parse_usershare_file: path %s is not a directory.\n",
-			sharepath));
+		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
+			servicename, sharepath));
 		return False;
 	}
 
@@ -4321,27 +4366,27 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 	   this directory. */
 
 	if (sys_stat(sharepath, &sbuf) == -1) {
-		DEBUG(0,("parse_usershare_file: stat failed on path %s. %s\n",
-			sharepath, strerror(errno) ));
+		DEBUG(2,("parse_usershare_file: share %s : stat failed on path %s. %s\n",
+			servicename, sharepath, strerror(errno) ));
 		sys_closedir(dp);
 		return False;
 	}
 
 	if (!S_ISDIR(sbuf.st_mode)) {
-		DEBUG(0,("parse_usershare_file: %s is not a directory.\n",
-			sharepath ));
+		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
+			servicename, sharepath ));
 		sys_closedir(dp);
 		return False;
 	}
 
+#if 0
 	/* Owner can always share. */
 	if (sbuf.st_uid == psbuf->st_uid) {
 		sys_closedir(dp);
 		return True;
 	}
 
-#if 0
-	/* We have to check if the user requesting the share is in the
+	/* We could check if the user requesting the share is in the
 	   owning group of the directory. */
 
 	username = uidtoname(psbuf->st_uid);
@@ -4472,7 +4517,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return 1;
 	}
 
-	if (!parse_usershare_file(ctx, &sbuf, iService, lines, numlines, sharepath, comment, &psd)) {
+	if (!parse_usershare_file(ctx, &sbuf, service_name, iService, lines, numlines, sharepath, comment, &psd)) {
 		talloc_destroy(ctx);
 		SAFE_FREE(lines);
 		return -1;
