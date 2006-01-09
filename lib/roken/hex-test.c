@@ -86,5 +86,25 @@ main(int argc, char **argv)
 	numtest++;
     }
 
+    {
+	unsigned char buf[2] = { 0, 0xff } ;
+	int len;
+
+	len = hex_decode("A", buf, 1);
+	if (len != 1) {
+	    fprintf(stderr, "len != 1");
+	    numerr++;
+	}
+	if (buf[0] != 10) {
+	    fprintf(stderr, "buf != 10");
+	    numerr++;
+	}
+	if (buf[1] != 0xff) {
+	    fprintf(stderr, "buf != 0xff");
+	    numerr++;
+	}
+
+    }
+
     return numerr;
 }
