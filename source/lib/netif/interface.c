@@ -31,6 +31,9 @@ struct interface {
 	struct ipv4_addr ip;
 	struct ipv4_addr bcast;
 	struct ipv4_addr nmask;
+	const char *ip_s;
+	const char *bcast_s;
+	const char *nmask_s;
 };
 
 static struct interface *local_interfaces;
@@ -88,11 +91,16 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 	iface->nmask = tov4(nmask);
 	iface->bcast.addr = MKBCADDR(iface->ip.addr, iface->nmask.addr);
 
+	/* keep string versions too, to avoid people tripping over the implied
+	   static in sys_inet_ntoa() */
+	iface->ip_s = talloc_strdup(iface, sys_inet_ntoa(iface->ip));
+	iface->bcast_s = talloc_strdup(iface, sys_inet_ntoa(iface->bcast));
+	iface->nmask_s = talloc_strdup(iface, sys_inet_ntoa(iface->nmask));
+
 	DLIST_ADD_END(local_interfaces, iface, struct interface *);
 
-	DEBUG(2,("added interface ip=%s ",sys_inet_ntoa(iface->ip)));
-	DEBUG(2,("bcast=%s ",sys_inet_ntoa(iface->bcast)));
-	DEBUG(2,("nmask=%s\n",sys_inet_ntoa(iface->nmask)));	     
+	DEBUG(2,("added interface ip=%s bcast=%s nmask=%s\n", 
+		 iface->ip_s, iface->bcast_s, iface->nmask_s));
 }
 
 
@@ -261,7 +269,7 @@ const char *iface_n_ip(int n)
 		n--;
 
 	if (i) {
-		return sys_inet_ntoa(i->ip);
+		return i->ip_s;
 	}
 	return NULL;
 }
@@ -279,7 +287,7 @@ const char *iface_n_bcast(int n)
 		n--;
 
 	if (i) {
-		return sys_inet_ntoa(i->bcast);
+		return i->bcast_s;
 	}
 	return NULL;
 }
@@ -297,7 +305,7 @@ const char *iface_n_netmask(int n)
 		n--;
 
 	if (i) {
-		return sys_inet_ntoa(i->nmask);
+		return i->nmask_s;
 	}
 	return NULL;
 }
@@ -316,7 +324,7 @@ const char *iface_best_ip(const char *dest)
 	ip.s_addr = interpret_addr(dest);
 	iface = iface_find(ip, True);
 	if (iface) {
-		return sys_inet_ntoa(iface->ip);
+		return iface->ip_s;
 	}
 	return iface_n_ip(0);
 }
