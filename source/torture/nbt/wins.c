@@ -59,10 +59,23 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
 	const char *myaddress = talloc_strdup(mem_ctx, iface_best_ip(address));
+	struct socket_address *socket_address;
+
+	socket_address = socket_address_from_strings(mem_ctx, 
+						     nbtsock->sock->backend_name,
+						     myaddress, 0);
+	if (!socket_address) {
+		return False;
+	}
 
 	/* we do the listen here to ensure the WINS server receives the packets from
 	   the right IP */
-	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
+	status = socket_listen(nbtsock->sock, socket_address, 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("socket_listen for WINS failed: %s\n", nt_errstr(status));
+		return False;
+	}
+	talloc_free(socket_address);
 
 	printf("Testing name registration to WINS with name %s at %s nb_flags=0x%x\n", 
 	       nbt_name_string(mem_ctx, name), myaddress, nb_flags);

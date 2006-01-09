@@ -41,8 +41,7 @@ struct cldap_request {
 	enum cldap_request_state state;
 
 	/* where to send the request */
-	const char *dest_addr;
-	int dest_port;
+	struct socket_address *dest;
 
 	/* timeout between retries (seconds) */
 	int timeout;
@@ -87,7 +86,7 @@ struct cldap_socket {
 	/* what to do with incoming request packets */
 	struct {
 		void (*handler)(struct cldap_socket *, struct ldap_message *, 
-				const char *, int );
+				struct socket_address *);
 		void *private;
 	} incoming;
 };
@@ -114,7 +113,7 @@ struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx,
 				       struct event_context *event_ctx);
 NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 				    void (*handler)(struct cldap_socket *, struct ldap_message *, 
-						    const char *, int ),
+						    struct socket_address *),
 				    void *private);
 struct cldap_request *cldap_search_send(struct cldap_socket *cldap, 
 					struct cldap_search *io);
@@ -129,8 +128,7 @@ NTSTATUS cldap_search(struct cldap_socket *cldap, TALLOC_CTX *mem_ctx,
 */
 struct cldap_reply {
 	uint32_t messageid;
-	const char *dest_address;
-	int dest_port;
+	struct socket_address *dest;
 	struct ldap_SearchResEntry *response;
 	struct ldap_Result         *result;
 };
@@ -167,9 +165,9 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 
 NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
 			   uint32_t message_id,
-			   const char *src_address, int src_port);
+			   struct socket_address *src);
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap, 
 			      uint32_t message_id,
-			      const char *src_address, int src_port,
+			      struct socket_address *src,
 			      uint32_t version,
 			      union nbt_cldap_netlogon *netlogon);

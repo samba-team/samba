@@ -33,7 +33,7 @@
 */
 static void netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 			     struct nbt_dgram_packet *packet, 
-			     const struct nbt_peer_socket *src)
+			     struct socket_address *src)
 {
 	NTSTATUS status;
 	struct nbt_netlogon_packet netlogon;
@@ -60,7 +60,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
@@ -68,13 +68,28 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	struct timeval tv = timeval_current();
 	int replies = 0;
 
+	struct socket_address *socket_address;
+
+	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
+						     myaddress, lp_dgram_port());
+	if (!socket_address) {
+		return False;
+	}
+
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
 	   back to listening on any port, which means replies from
 	   some windows versions won't be seen */
-	status = socket_listen(dgmsock->sock, myaddress, lp_dgram_port(), 0, 0);
+	status = socket_listen(dgmsock->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
+		talloc_free(socket_address);
+		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
+							     myaddress, 0);
+		if (!socket_address) {
+			return False;
+		}
+
+		socket_listen(dgmsock->sock, socket_address, 0, 0);
 	}
 
 	/* setup a temporary mailslot listener for replies */
@@ -92,9 +107,13 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	dest.port = 0;
-	dest.addr = address;
-	status = dgram_mailslot_netlogon_send(dgmsock, &name, &dest,
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, 0);
+	if (!dest) {
+		return False;
+	}
+
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
 					      &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
@@ -120,7 +139,7 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
@@ -128,13 +147,28 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 	struct timeval tv = timeval_current();
 	int replies = 0;
 
+	struct socket_address *socket_address;
+
+	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
+						     myaddress, lp_dgram_port());
+	if (!socket_address) {
+		return False;
+	}
+
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
 	   back to listening on any port, which means replies from
 	   some windows versions won't be seen */
-	status = socket_listen(dgmsock->sock, myaddress, lp_dgram_port(), 0, 0);
+	status = socket_listen(dgmsock->sock, socket_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
+		talloc_free(socket_address);
+		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
+							     myaddress, 0);
+		if (!socket_address) {
+			return False;
+		}
+
+		socket_listen(dgmsock->sock, socket_address, 0, 0);
 	}
 
 	/* setup a temporary mailslot listener for replies */
@@ -154,9 +188,12 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	dest.port = 0;
-	dest.addr = address;
-	status = dgram_mailslot_netlogon_send(dgmsock, &name, &dest,
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, 0);
+	if (!dest) {
+		goto failed;
+	}
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, dest,
 					      &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
@@ -182,7 +219,7 @@ failed:
 */
 static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
 			     struct nbt_dgram_packet *packet, 
-			     const struct nbt_peer_socket *src)
+			     struct socket_address *src)
 {
 	NTSTATUS status;
 	struct nbt_ntlogon_packet ntlogon;
@@ -209,16 +246,41 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
+	struct test_join *join_ctx;
+	struct cli_credentials *machine_credentials;
+	const char *dom_sid;
+
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_ntlogon_packet logon;
 	struct nbt_name myname;
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
 	int replies = 0;
-	struct test_join *join_ctx;
-	struct cli_credentials *machine_credentials;
-	const char *dom_sid;
+
+	struct socket_address *socket_address;
+
+	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
+						     myaddress, lp_dgram_port());
+	if (!socket_address) {
+		return False;
+	}
+
+	/* try receiving replies on port 138 first, which will only
+	   work if we are root and smbd/nmbd are not running - fall
+	   back to listening on any port, which means replies from
+	   some windows versions won't be seen */
+	status = socket_listen(dgmsock->sock, socket_address, 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(socket_address);
+		socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
+							     myaddress, 0);
+		if (!socket_address) {
+			return False;
+		}
+
+		socket_listen(dgmsock->sock, socket_address, 0, 0);
+	}
 
 	join_ctx = torture_join_domain(TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
@@ -229,15 +291,6 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	}
 
 	dom_sid = torture_join_sid(join_ctx);
-
-	/* try receiving replies on port 138 first, which will only
-	   work if we are root and smbd/nmbd are not running - fall
-	   back to listening on any port, which means replies from
-	   some windows versions won't be seen */
-	status = socket_listen(dgmsock->sock, myaddress, lp_dgram_port(), 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
-	}
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
@@ -258,10 +311,13 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	dest.port = 0;
-	dest.addr = address;
+	dest = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name, 
+					   address, 0);
+	if (!dest) {
+		goto failed;
+	}
 	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
-					     &name, &dest, &myname, &logon);
+					     &name, dest, &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send ntlogon request - %s\n", nt_errstr(status));
 		goto failed;

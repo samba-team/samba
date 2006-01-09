@@ -40,8 +40,7 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 {
 	struct socket_context *sock1, *sock2;
 	NTSTATUS status;
-	int srv_port, from_port;
-	const char *srv_addr, *from_addr;
+	struct socket_address *srv_addr, *from_addr, *localhost;
 	size_t size = 100 + (random() % 100);
 	DATA_BLOB blob, blob2;
 	size_t sent, nread;
@@ -57,33 +56,38 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	talloc_steal(mem_ctx, sock2);
 
-	status = socket_listen(sock1, iface_best_ip("127.0.0.1"), 0, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	srv_addr = socket_get_my_addr(sock1, mem_ctx);
-	if (srv_addr == NULL || strcmp(srv_addr, iface_best_ip("127.0.0.1")) != 0) {
-		printf("Expected server address of %s but got %s\n",
-			iface_best_ip("127.0.0.1"), srv_addr);
+	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
+						iface_best_ip("127.0.0.1"), 0);
+	if (!localhost) {
 		return False;
 	}
 
-	srv_port = socket_get_my_port(sock1);
-	printf("server port is %d\n", srv_port);
+	status = socket_listen(sock1, localhost, 0, 0);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	srv_addr = socket_get_my_addr(sock1, mem_ctx);
+	if (srv_addr == NULL || strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) != 0) {
+		printf("Expected server address of %s but got %s\n",
+		       iface_best_ip("127.0.0.1"), srv_addr ? srv_addr->addr : NULL);
+		return False;
+	}
+
+	printf("server port is %d\n", srv_addr->port);
 
 	blob  = data_blob_talloc(mem_ctx, NULL, size);
 	blob2 = data_blob_talloc(mem_ctx, NULL, size);
 	generate_random_buffer(blob.data, blob.length);
 
 	sent = size;
-	status = socket_sendto(sock2, &blob, &sent, 0, srv_addr, srv_port);
+	status = socket_sendto(sock2, &blob, &sent, 0, srv_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = socket_recvfrom(sock1, blob2.data, size, &nread, 0, 
-				 &from_addr, &from_port);
+				 sock1, &from_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (strcmp(from_addr, srv_addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr);
+	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
+		printf("Unexpected recvfrom addr %s\n", from_addr->addr);
 		ret = False;
 	}
 	if (nread != size) {
@@ -97,23 +101,23 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 	}
 
 	generate_random_buffer(blob.data, blob.length);
-	status = socket_sendto(sock1, &blob, &sent, 0, from_addr, from_port);
+	status = socket_sendto(sock1, &blob, &sent, 0, from_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = socket_recvfrom(sock2, blob2.data, size, &nread, 0, 
-				 &from_addr, &from_port);
+				 sock2, &from_addr);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	if (strcmp(from_addr, srv_addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr);
+	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
+		printf("Unexpected recvfrom addr %s\n", from_addr->addr);
 		ret = False;
 	}
 	if (nread != size) {
 		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
 		ret = False;
 	}
-	if (from_port != srv_port) {
+	if (from_addr->port != srv_addr->port) {
 		printf("Unexpected recvfrom port %d should be %d\n", 
-		       from_port, srv_port);
+		       from_addr->port, srv_addr->port);
 		ret = False;
 	}
 	if (memcmp(blob2.data, blob.data, size) != 0) {
@@ -135,8 +139,7 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 {
 	struct socket_context *sock1, *sock2, *sock3;
 	NTSTATUS status;
-	int srv_port, from_port;
-	const char *srv_addr, *from_addr;
+	struct socket_address *srv_addr, *from_addr, *localhost;
 	size_t size = 100 + (random() % 100);
 	DATA_BLOB blob, blob2;
 	size_t sent, nread;
@@ -153,20 +156,30 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	talloc_steal(mem_ctx, sock2);
 
-	status = socket_listen(sock1, iface_best_ip("127.0.0.1"), 0, 0, 0);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	srv_addr = socket_get_my_addr(sock1, mem_ctx);
-	if (srv_addr == NULL || strcmp(srv_addr, iface_best_ip("127.0.0.1")) != 0) {
-		printf("Expected server address of %s but got %s\n",
-			iface_best_ip("127.0.0.1"), srv_addr);
+	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
+						iface_best_ip("127.0.0.1"), 0);
+	if (!localhost) {
 		return False;
 	}
 
-	srv_port = socket_get_my_port(sock1);
-	printf("server port is %d\n", srv_port);
+	status = socket_listen(sock1, localhost, 0, 0);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = socket_connect_ev(sock2, NULL, 0, srv_addr, srv_port, 0, ev);
+	srv_addr = socket_get_my_addr(sock1, mem_ctx);
+	if (srv_addr == NULL || !srv_addr->addr) {
+		printf("Unexpected socket_get_my_addr NULL\n");
+		return False;
+	}
+
+	if (strcmp(srv_addr->addr, iface_best_ip("127.0.0.1")) != 0) {
+		printf("Expected server address of %s but got %s\n",
+		       iface_best_ip("127.0.0.1"), srv_addr ? srv_addr->addr : NULL);
+		return False;
+	}
+
+	printf("server port is %d\n", srv_addr->port);
+
+	status = socket_connect_ev(sock2, NULL, srv_addr, 0, ev);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = socket_accept(sock1, &sock3);
@@ -186,10 +199,13 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	from_addr = socket_get_peer_addr(sock3, mem_ctx);
-	from_port = socket_get_peer_port(sock3);
 
-	if (strcmp(from_addr, srv_addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr);
+	if (!from_addr || !from_addr->addr) {
+		printf("Unexpected recvfrom addr NULL\n");
+		return False;
+	}
+	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
+		printf("Unexpected recvfrom addr %s\n", from_addr ? from_addr->addr : NULL);
 		ret = False;
 	}
 	if (nread != size) {
@@ -210,19 +226,22 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	from_addr = socket_get_peer_addr(sock2, mem_ctx);
-	from_port = socket_get_peer_port(sock2);
 
-	if (strcmp(from_addr, srv_addr) != 0) {
-		printf("Unexpected recvfrom addr %s\n", from_addr);
+	if (!from_addr || !from_addr->addr) {
+		printf("Unexpected recvfrom addr NULL\n");
+		return False;
+	}
+	if (strcmp(from_addr->addr, srv_addr->addr) != 0) {
+		printf("Unexpected recvfrom addr %s\n", from_addr ? from_addr->addr : NULL);
 		ret = False;
 	}
 	if (nread != size) {
 		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
 		ret = False;
 	}
-	if (from_port != srv_port) {
+	if (from_addr->port != srv_addr->port) {
 		printf("Unexpected recvfrom port %d should be %d\n", 
-		       from_port, srv_port);
+		       from_addr->port, srv_addr->port);
 		ret = False;
 	}
 	if (memcmp(blob2.data, blob.data, size) != 0) {

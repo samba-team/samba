@@ -25,6 +25,7 @@
 #include "smbd/service_task.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsserver.h"
+#include "lib/socket/socket.h"
 
 /*
   serve out the nbt statistics
@@ -57,7 +58,7 @@ struct getdc_state {
 
 static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot, 
 				     struct nbt_dgram_packet *packet, 
-				     const struct nbt_peer_socket *src)
+				     struct socket_address *src)
 {
 	struct getdc_state *s =
 		talloc_get_type(dgmslot->private, struct getdc_state);
@@ -120,7 +121,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 	struct nbt_ntlogon_packet p;
 	struct nbt_ntlogon_sam_logon *r;
 	struct nbt_name src, dst;
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
 	struct dgram_mailslot_handler *handler;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
@@ -152,10 +153,12 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 	make_nbt_name_client(&src, req->in.my_computername);
 	make_nbt_name(&dst, req->in.domainname, 0x1c);
 
-	dest.addr = req->in.ip_address;
-	dest.port = 138;
+	dest = socket_address_from_strings(msg, iface->dgmsock->sock->backend_name, 
+					   req->in.ip_address, 138);
+	NT_STATUS_HAVE_NO_MEMORY(dest);
+
 	status = dgram_mailslot_ntlogon_send(iface->dgmsock, DGRAM_DIRECT_GROUP,
-					     &dst, &dest,
+					     &dst, dest,
 					     &src, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("dgram_mailslot_ntlogon_send failed: %s\n",

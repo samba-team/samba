@@ -22,12 +22,13 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
+#include "lib/socket/socket.h"
 
 /*
   we received a badly formed packet - log it
 */
 void nbtd_bad_packet(struct nbt_name_packet *packet, 
-		     const struct nbt_peer_socket *src, const char *reason)
+		     const struct socket_address *src, const char *reason)
 {
 	DEBUG(2,("nbtd: bad packet '%s' from %s:%d\n", reason, src->addr, src->port));
 	if (DEBUGLVL(5)) {
@@ -42,7 +43,7 @@ void nbtd_bad_packet(struct nbt_name_packet *packet,
 */
 BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock, 
 		      struct nbt_name_packet *packet, 
-		      const struct nbt_peer_socket *src)
+		      const struct socket_address *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -82,7 +83,7 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 */
 void nbtd_name_query_reply(struct nbt_name_socket *nbtsock, 
 			   struct nbt_name_packet *request_packet, 
-			   const struct nbt_peer_socket *src,
+			   struct socket_address *src,
 			   struct nbt_name *name, uint32_t ttl,
 			   uint16_t nb_flags, const char **addresses)
 {
@@ -146,7 +147,7 @@ failed:
 */
 void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock, 
 				    struct nbt_name_packet *request_packet, 
-				    const struct nbt_peer_socket *src)
+				    struct socket_address *src)
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
@@ -189,7 +190,7 @@ failed:
 */
 void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *request_packet, 
-				  const struct nbt_peer_socket *src,
+				  struct socket_address *src,
 				  uint8_t rcode)
 {
 	struct nbt_name_packet *packet;
@@ -237,7 +238,7 @@ failed:
 */
 void nbtd_name_release_reply(struct nbt_name_socket *nbtsock, 
 			     struct nbt_name_packet *request_packet, 
-			     const struct nbt_peer_socket *src,
+			     struct socket_address *src,
 			     uint8_t rcode)
 {
 	struct nbt_name_packet *packet;
@@ -283,7 +284,7 @@ failed:
 */
 void nbtd_wack_reply(struct nbt_name_socket *nbtsock, 
 		     struct nbt_name_packet *request_packet, 
-		     const struct nbt_peer_socket *src,
+		     struct socket_address *src,
 		     uint32_t ttl)
 {
 	struct nbt_name_packet *packet;

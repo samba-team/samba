@@ -144,7 +144,7 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 					const char *server_name)
 {
 	BOOL ret;
-	char *str;
+	struct socket_address *myaddr;
 
 	/* NULL is ok */
 	if (!server_name) return WERR_OK;
@@ -173,6 +173,8 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 	 * TODO: we need to check if aliases are also ok
 	 */
 	if (lp_realm()) {
+		char *str;
+
 		str = talloc_asprintf(mem_ctx, "%s.%s",
 						lp_netbios_name(),
 						lp_realm());
@@ -183,11 +185,11 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 		if (ret) return WERR_OK;
 	}
 
-	str = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(str);
+	myaddr = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(myaddr);
 
-	ret = strequal(str, server_name);
-	talloc_free(str);
+	ret = strequal(myaddr->addr, server_name);
+	talloc_free(myaddr);
 	if (ret) return WERR_OK;
 
 	return WERR_INVALID_PRINTER_NAME;

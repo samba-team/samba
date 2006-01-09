@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "libcli/composite/composite.h"
 #include "smbd/service_task.h"
+#include "lib/socket/socket.h"
 
 /*
   work out the ttl we will use given a client requested ttl
@@ -59,7 +60,7 @@ static enum wrepl_name_type wrepl_type(uint16_t nb_flags, struct nbt_name *name,
 */
 static uint8_t wins_register_new(struct nbt_name_socket *nbtsock, 
 				 struct nbt_name_packet *packet, 
-				 const struct nbt_peer_socket *src,
+				 const struct socket_address *src,
 				 enum wrepl_name_type type)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
@@ -109,7 +110,7 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 			       struct nbt_name_packet *packet, 
 			       struct winsdb_record *rec,
 			       struct winsdb_addr *winsdb_addr,
-			       const struct nbt_peer_socket *src)
+			       const struct socket_address *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -143,7 +144,7 @@ static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_packet *packet, 
 			         struct winsdb_record *rec,
 			         const char *address,
-			         const struct nbt_peer_socket *src)
+			         const struct socket_address *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
@@ -170,7 +171,7 @@ struct wack_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_packet *request_packet;
 	struct winsdb_record *rec;
-	struct nbt_peer_socket src;
+	struct socket_address *src;
 	const char *reg_address;
 	enum wrepl_name_type new_type;
 	struct wins_challenge_io io;
@@ -183,9 +184,9 @@ struct wack_state {
 static void wins_wack_deny(struct wack_state *s)
 {
 	nbtd_name_registration_reply(s->nbtsock, s->request_packet, 
-				     &s->src, NBT_RCODE_ACT);
+				     s->src, NBT_RCODE_ACT);
 	DEBUG(4,("WINS: denied name registration request for %s from %s:%d\n",
-		 nbt_name_string(s, s->rec->name), s->src.addr, s->src.port));
+		 nbt_name_string(s, s->rec->name), s->src->addr, s->src->port));
 	talloc_free(s);
 }
 
@@ -217,7 +218,7 @@ static void wins_wack_allow(struct wack_state *s)
 		uint8_t rcode;
 
 		winsdb_delete(s->winssrv->wins_db, rec);
-		rcode = wins_register_new(s->nbtsock, s->request_packet, &s->src, s->new_type);
+		rcode = wins_register_new(s->nbtsock, s->request_packet, s->src, s->new_type);
 		if (rcode != NBT_RCODE_OK) {
 			DEBUG(1,("WINS: record %s failed to register as new during WACK\n",
 				 nbt_name_string(s, rec->name)));
@@ -228,7 +229,7 @@ static void wins_wack_allow(struct wack_state *s)
 	}
 
 	rec->expire_time = time(NULL) + ttl;
-	rec->registered_by = s->src.addr;
+	rec->registered_by = s->src->addr;
 
 	/*
 	 * now remove all addresses that're the client doesn't hold anymore
@@ -269,7 +270,7 @@ static void wins_wack_allow(struct wack_state *s)
 
 done:
 	nbtd_name_registration_reply(s->nbtsock, s->request_packet, 
-				     &s->src, NBT_RCODE_OK);
+				     s->src, NBT_RCODE_OK);
 failed:
 	talloc_free(s);
 }
@@ -332,7 +333,7 @@ static void wack_wins_challenge_handler(struct composite_context *c_req)
 static void wins_register_wack(struct nbt_name_socket *nbtsock, 
 			       struct nbt_name_packet *packet, 
 			       struct winsdb_record *rec,
-			       const struct nbt_peer_socket *src,
+			       struct socket_address *src,
 			       enum wrepl_name_type new_type)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
@@ -352,9 +353,8 @@ static void wins_register_wack(struct nbt_name_socket *nbtsock,
 	s->rec			= talloc_steal(s, rec);
 	s->reg_address		= packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 	s->new_type		= new_type;
-	s->src.port		= src->port;
-	s->src.addr		= talloc_strdup(s, src->addr);
-	if (s->src.addr == NULL) goto failed;
+	s->src		        = src;
+	if (talloc_reference(s, src) == NULL) goto failed;
 
 	s->io.in.nbtd_server	= iface->nbtsrv;
 	s->io.in.event_ctx	= iface->nbtsrv->task->event_ctx;
@@ -390,7 +390,7 @@ failed:
 */
 static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock, 
 				     struct nbt_name_packet *packet, 
-				     const struct nbt_peer_socket *src)
+				     struct socket_address *src)
 {
 	NTSTATUS status;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
@@ -548,7 +548,7 @@ done:
 */
 static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *packet, 
-				  const struct nbt_peer_socket *src)
+				  struct socket_address *src)
 {
 	NTSTATUS status;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
@@ -656,7 +656,7 @@ notfound:
 */
 static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock, 
 				    struct nbt_name_packet *packet, 
-				    const struct nbt_peer_socket *src)
+				    struct socket_address *src)
 {
 	NTSTATUS status;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
@@ -699,6 +699,12 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	 * silently ignored
 	 */
 	if (!winsdb_addr_list_check(rec->addresses, src->addr)) {
+		int i;
+		DEBUG(4,("WINS: silently ignoring attempted name release on %s from %s\n", nbt_name_string(rec, rec->name), src->addr));
+		DEBUGADD(4, ("Registered Addressss: \n"));
+		for (i=0; rec->addresses && rec->addresses[i]; i++) {
+			DEBUGADD(4, ("%s\n", rec->addresses[i]->address));
+		}
 		goto done;
 	}
 
@@ -766,7 +772,7 @@ done:
 */
 void nbtd_winsserver_request(struct nbt_name_socket *nbtsock, 
 			     struct nbt_name_packet *packet, 
-			     const struct nbt_peer_socket *src)
+			     struct socket_address *src)
 {
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);

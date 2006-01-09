@@ -310,7 +310,8 @@ BOOL socket_check_access(struct socket_context *sock,
 			 const char **allow_list, const char **deny_list)
 {
 	BOOL ret;
-	const char *name="", *addr;
+	const char *name="";
+	struct socket_address *addr;
 	TALLOC_CTX *mem_ctx;
 
 	if ((!deny_list  || *deny_list==0) && 
@@ -324,13 +325,18 @@ BOOL socket_check_access(struct socket_context *sock,
 	}
 
 	addr = socket_get_peer_addr(sock, mem_ctx);
+	if (!addr) {
+		DEBUG(0,("socket_check_access: Denied connection from unknown host: could not get peer address from kernel\n"));
+		talloc_free(mem_ctx);
+		return False;
+	}
 
 	/* bypass gethostbyaddr() calls if the lists only contain IP addrs */
 	if (!only_ipaddrs_in_list(allow_list) || 
 	    !only_ipaddrs_in_list(deny_list)) {
 		name = socket_get_peer_name(sock, mem_ctx);
 		if (!name) {
-			name = addr;
+			name = addr->addr;
 		}
 	}
 
@@ -340,14 +346,14 @@ BOOL socket_check_access(struct socket_context *sock,
 		return False;
 	}
 
-	ret = allow_access(mem_ctx, deny_list, allow_list, name, addr);
+	ret = allow_access(mem_ctx, deny_list, allow_list, name, addr->addr);
 	
 	if (ret) {
 		DEBUG(2,("socket_check_access: Allowed connection to '%s' from %s (%s)\n", 
-			 service_name, name, addr));
+			 service_name, name, addr->addr));
 	} else {
 		DEBUG(0,("socket_check_access: Denied connection to '%s' from %s (%s)\n", 
-			 service_name, name, addr));
+			 service_name, name, addr->addr));
 	}
 
 	talloc_free(mem_ctx);

@@ -398,10 +398,8 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 
 		      DATA_BLOB *input, 
 		      DATA_BLOB *reply,
-		      const char *peer_addr,
-		      int peer_port,
-		      const char *my_addr,
-		      int my_port)
+		      struct socket_address *peer_addr,
+		      struct socket_address *my_addr)
 {
 	BOOL ret;
 	const uint16_t header_len = 6;
@@ -485,12 +483,12 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 
 	/* The kerberos PRIV packets include these addresses.  MIT
 	 * clients check that they are present */
-	nt_status = gensec_set_peer_addr(gensec_security, peer_addr, peer_port);
+	nt_status = gensec_set_peer_addr(gensec_security, peer_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return False;
 	}
-	nt_status = gensec_set_my_addr(gensec_security, my_addr, my_port);
+	nt_status = gensec_set_my_addr(gensec_security, my_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return False;

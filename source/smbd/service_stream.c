@@ -210,6 +210,7 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 {
 	NTSTATUS status;
 	struct stream_socket *stream_socket;
+	struct socket_address *socket_address;
 	int i;
 
 	stream_socket = talloc_zero(event_context, struct stream_socket);
@@ -231,15 +232,25 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 
 	if (*port == 0) {
 		for (i=SERVER_TCP_LOW_PORT;i<= SERVER_TCP_HIGH_PORT;i++) {
-			status = socket_listen(stream_socket->sock, sock_addr, i, 
+			socket_address = socket_address_from_strings(stream_socket, 
+								     stream_socket->sock->backend_name,
+								     sock_addr, i);
+			NT_STATUS_HAVE_NO_MEMORY(socket_address);
+			status = socket_listen(stream_socket->sock, socket_address, 
 					       SERVER_LISTEN_BACKLOG, 0);
+			talloc_free(socket_address);
 			if (NT_STATUS_IS_OK(status)) {
 				*port = i;
 				break;
 			}
 		}
 	} else {
-		status = socket_listen(stream_socket->sock, sock_addr, *port, SERVER_LISTEN_BACKLOG, 0);
+		socket_address = socket_address_from_strings(stream_socket, 
+							     stream_socket->sock->backend_name,
+							     sock_addr, *port);
+		NT_STATUS_HAVE_NO_MEMORY(socket_address);
+		status = socket_listen(stream_socket->sock, socket_address, SERVER_LISTEN_BACKLOG, 0);
+		talloc_free(socket_address);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

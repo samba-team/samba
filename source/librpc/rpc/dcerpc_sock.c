@@ -194,8 +194,7 @@ struct pipe_open_socket_state {
 	struct dcerpc_connection *conn;
 	struct socket_context *socket_ctx;
 	struct sock_private *sock;
-	const char *server;
-	uint32_t port;
+	struct socket_address *server;
 	enum dcerpc_transport_t transport;
 };
 
@@ -215,7 +214,8 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	c->status = socket_connect_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
-		DEBUG(0, ("Failed to connect host %s on port %d - %s\n", s->server, s->port,
+		DEBUG(0, ("Failed to connect host %s on port %d - %s\n", 
+			  s->server->addr, s->server->port,
 			  nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return;
@@ -236,7 +236,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	sock->sock          = s->socket_ctx;
 	sock->pending_reads = 0;
-	sock->server_name   = strupper_talloc(sock, s->server);
+	sock->server_name   = strupper_talloc(sock, s->server->addr);
 
 	sock->fde = event_add_fd(conn->event_ctx, sock->sock, socket_get_fd(sock->sock),
 				 0, sock_io_handler, conn);
@@ -270,9 +270,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 						       struct dcerpc_connection *cn,
-						       const char *server,
-						       uint32_t port, 
-						       const char *type,
+						       struct socket_address *server,
 						       enum dcerpc_transport_t transport)
 {
 	NTSTATUS status;
@@ -295,8 +293,7 @@ struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 
 	s->conn      = cn;
 	s->transport = transport;
-	s->port      = port;
-	s->server    = talloc_strdup(c, server);
+	s->server    = talloc_reference(c, server);
 	if (s->server == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		goto done;
@@ -308,7 +305,7 @@ struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = socket_create(type, SOCKET_TYPE_STREAM, &s->socket_ctx, 0);
+	status = socket_create(server->family, SOCKET_TYPE_STREAM, &s->socket_ctx, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		composite_error(c, status);
 		talloc_free(s->sock);
@@ -316,7 +313,7 @@ struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 	}
 	talloc_steal(s->sock, s->socket_ctx);
 
-	conn_req = socket_connect_send(s->socket_ctx, NULL, 0, s->server, s->port, 0, c->event_ctx);
+	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, c->event_ctx);
 	if (conn_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		goto done;
@@ -341,15 +338,12 @@ NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c)
    open a rpc connection using the generic socket library
 */
 NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *conn,
-				 const char *server,
-				 uint32_t port, 
-				 const char *type,
+				 struct socket_address *server,
 				 enum dcerpc_transport_t transport)
 {
 	struct composite_context *c;
 	
-	c = dcerpc_pipe_open_socket_send(conn, conn, server, port,
-					 type, transport);
+	c = dcerpc_pipe_open_socket_send(conn, conn, server, transport);
 	return dcerpc_pipe_open_socket_recv(c);
 }
 
@@ -360,14 +354,26 @@ NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *conn,
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_connection *c, const char *server, uint32_t port)
 {
 	NTSTATUS status;
+	struct socket_address *srvaddr;
+
+	srvaddr = socket_address_from_strings(c, "ipv6", server, port);
+	if (!srvaddr) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	/* Try IPv6 first */
-	status = dcerpc_pipe_open_socket(c, server, port, "ipv6", NCACN_IP_TCP);
+	status = dcerpc_pipe_open_socket(c, srvaddr, NCACN_IP_TCP);
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	talloc_free(srvaddr);
+	srvaddr = socket_address_from_strings(c, "ipv4", server, port);
+	if (!srvaddr) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
-	return dcerpc_pipe_open_socket(c, server, port, "ipv4", NCACN_IP_TCP);
+	return dcerpc_pipe_open_socket(c, srvaddr, NCACN_IP_TCP);
 }
 
 /* 
@@ -375,7 +381,14 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_connection *c, const char *server, u
 */
 NTSTATUS dcerpc_pipe_open_unix_stream(struct dcerpc_connection *c, const char *path)
 {
-	return dcerpc_pipe_open_socket(c, path, 0, "unix", NCACN_UNIX_STREAM);
+	struct socket_address *srvaddr;
+
+	srvaddr = socket_address_from_strings(c, "unix", path, 0);
+	if (!srvaddr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return dcerpc_pipe_open_socket(c, srvaddr, NCALRPC);
 }
 
 /* 
@@ -385,13 +398,19 @@ NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_connection *c, const char *identifi
 {
 	NTSTATUS status;
 	char *canon, *full_path;
+	struct socket_address *srvaddr;
 
 	canon = talloc_strdup(NULL, identifier);
 
 	string_replace(canon, '/', '\\');
 	full_path = talloc_asprintf(canon, "%s/%s", lp_ncalrpc_dir(), canon);
 
-	status = dcerpc_pipe_open_socket(c, full_path, 0, "unix", NCALRPC);
+	srvaddr = socket_address_from_strings(c, "unix", full_path, 0);
+	if (!srvaddr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_pipe_open_socket(c, srvaddr, NCALRPC);
 	talloc_free(canon);
 
 	return status;

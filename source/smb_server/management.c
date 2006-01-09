@@ -48,10 +48,19 @@ static NTSTATUS smbsrv_session_information(struct irpc_message *msg,
 
 	for (sess=smb_conn->sessions.list; sess; sess=sess->next) {
 		struct smbsrv_session_info *info = &r->out.info.sessions.sessions[i];
+		struct socket_address *client_addr;
+		client_addr = socket_get_peer_addr(smb_conn->connection->socket, r);
+		
+		if (client_addr) {
+			info->client_ip = client_addr->addr;
+		} else {
+			info->client_ip = NULL;
+		}
+
 		info->vuid         = sess->vuid;
 		info->account_name = sess->session_info->server_info->account_name;
 		info->domain_name  = sess->session_info->server_info->domain_name;
-		info->client_ip    = socket_get_peer_addr(smb_conn->connection->socket, r);
+		
 		info->connect_time = timeval_to_nttime(&sess->statistics.connect_time);
 		info->auth_time    = timeval_to_nttime(&sess->statistics.auth_time);
 		i++;
@@ -81,10 +90,18 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 
 	for (tcon=smb_conn->smb_tcons.list; tcon; tcon=tcon->next) {
 		struct smbsrv_tcon_info *info = &r->out.info.tcons.tcons[i];
+		struct socket_address *client_addr;
+		client_addr = socket_get_peer_addr(smb_conn->connection->socket, r);
+		
+		if (client_addr) {
+			info->client_ip = client_addr->addr;
+		} else {
+			info->client_ip = NULL;
+		}
+
 		info->tid          = tcon->tid;
 		info->share_name   = lp_servicename(tcon->service);
 		info->connect_time = timeval_to_nttime(&tcon->statistics.connect_time);
-		info->client_ip    = socket_get_peer_addr(smb_conn->connection->socket, r);
 		i++;
 	}
 

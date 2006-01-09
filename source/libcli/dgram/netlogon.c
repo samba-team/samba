@@ -22,13 +22,14 @@
 
 #include "includes.h"
 #include "libcli/dgram/libdgram.h"
+#include "lib/socket/socket.h"
 
 /* 
    send a netlogon mailslot request 
 */
 NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      struct nbt_name *dest_name,
-				      const struct nbt_peer_socket *dest,
+				      struct socket_address *dest,
 				      struct nbt_name *src_name,
 				      struct nbt_netlogon_packet *request)
 {
@@ -65,7 +66,7 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 	struct nbt_name myname;
-	struct nbt_peer_socket dest;
+	struct socket_address *dest;
 
 	status = ndr_push_struct_blob(&blob, tmp_ctx, reply, 
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
@@ -76,12 +77,17 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 
 	make_nbt_name_client(&myname, lp_netbios_name());
 
-	dest.port = request->src_port;
-	dest.addr = request->src_addr;
+	dest = socket_address_from_strings(tmp_ctx, dgmsock->sock->backend_name, 
+					   request->src_addr, request->src_port);
+	if (!dest) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
 				     mailslot_name,
 				     &request->data.msg.source_name,
-				     &dest,
+				     dest,
 				     &myname, &blob);
 	talloc_free(tmp_ctx);
 	return status;
