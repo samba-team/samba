@@ -141,10 +141,10 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 
 		case 'c': {
 			const char *cs = poptGetOptArg(pc);
-			const char *p;
+			const char *p, *q;
 			int cc;
 
-			for (p = cs, cc = 1; (p = strchr(p, ',')); cc++) ;
+			for (p = cs, cc = 1; (q = strchr(p, ',')); cc++, p = q + 1) ;
 
 			options.controls = talloc_array(ret, char *, cc + 1);
 			if (options.controls == NULL) {
@@ -163,7 +163,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 			        	p = t + 1;
 				}
 			}
-			options.controls[cc + 1] = NULL;
+			options.controls[cc] = NULL;
 
 			break;	  
 		}
