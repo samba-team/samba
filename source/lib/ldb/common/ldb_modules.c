@@ -113,7 +113,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	char **modules = NULL;
 	int i;
-	struct {
+	const struct {
 		const char *name;
 		ldb_module_init_t init;
 	} well_known_modules[] = {
