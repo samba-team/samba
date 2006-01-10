@@ -253,7 +253,7 @@ NTSTATUS samba3_read_secrets(const char *fname, TALLOC_CTX *ctx, struct samba3_s
 		}
 
 		if (!secrets_handlers[i].prefix) {
-			DEBUG(0, ("Unable to find handler for string %s", kbuf.dptr));
+			DEBUG(0, ("Unable to find handler for string %s\n", kbuf.dptr));
 		}
 	}
 	
