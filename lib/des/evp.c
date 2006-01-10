@@ -291,9 +291,10 @@ EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *c)
 {
     if (c->cipher && c->cipher->cleanup)
 	c->cipher->cleanup(c);
-    if (c->cipher_data)
+    if (c->cipher_data) {
 	free(c->cipher_data);
-    memset(c, 0, sizeof(*c));
+	c->cipher_data = NULL;
+    }
     return 1;
 }
 
