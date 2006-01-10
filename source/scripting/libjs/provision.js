@@ -12,11 +12,12 @@ sys = sys_init();
 /*
   return true if the current install seems to be OK
 */
-function install_ok()
+function install_ok(session_info, credentials)
 {
 	var lp = loadparm_init();
 	var ldb = ldb_init();
-	ldb.credentials = credentials_cmdline();
+	ldb.session_info = session_info;
+	ldb.credentials = credentials;
 	if (lp.get("realm") == "") {
 		return false;
 	}
@@ -24,7 +25,7 @@ function install_ok()
 	if (!ok) {
 		return false;
 	}
-	var res = ldb.search("(name=Administrator)");
+	var res = ldb.search("(cn=Administrator)");
 	if (res.length != 1) {
 		return false;
 	}
@@ -175,28 +176,28 @@ function ldb_erase(ldb)
 /*
   setup a ldb in the private dir
  */
-function setup_ldb(ldif, session_info, credentials, dbname, subobj)
+function setup_ldb(ldif, info, dbname)
 {
 	var erase = true;
 	var extra = "";
 	var ldb = ldb_init();
 	var lp = loadparm_init();
-	ldb.session_info = session_info;
-	ldb.credentials = credentials;
+	ldb.session_info = info.session_info;
+	ldb.credentials = info.credentials;
 
-	if (arguments.length >= 6) {
-		extra = arguments[5];
+	if (arguments.length >= 4) {
+		extra = arguments[3];
 	}
 
-	if (arguments.length == 7) {
-	        erase = arguments[6];
+	if (arguments.length == 5) {
+	        erase = arguments[4];
         }
 
 	var src = lp.get("setup directory") + "/" + ldif;
 
 	var data = sys.file_load(src);
 	data = data + extra;
-	data = substitute_var(data, subobj);
+	data = substitute_var(data, info.subobj);
 
 	ldb.filename = dbname;
 
@@ -211,12 +212,12 @@ function setup_ldb(ldif, session_info, credentials, dbname, subobj)
 
 	var add_ok = ldb.add(data);
 	if (!add_ok) {
-		message("ldb load failed: " + ldb.errstring() + "\n");
+		info.message("ldb load failed: " + ldb.errstring() + "\n");
 		assert(add_ok);
 	}
 	var commit_ok = ldb.transaction_commit();
 	if (!commit_ok) {
-		message("ldb commit failed: " + ldb.errstring() + "\n");
+		info.message("ldb commit failed: " + ldb.errstring() + "\n");
 		assert(add_ok);
 	}
 }
@@ -265,6 +266,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	var data = "";
 	var lp = loadparm_init();
 	var sys = sys_init();
+	var info = new Object();
 
 	/*
 	  some options need to be upper/lower case
@@ -286,6 +288,11 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 
 	provision_next_usn = 1;
 
+	info.subobj = subobj;
+	info.message = message;
+	info.credentials = credentials;
+	info.session_info = session_info;
+
 	/* only install a new smb.conf if there isn't one there already */
 	var st = sys.stat(paths.smbconf);
 	if (st == undefined) {
@@ -294,7 +301,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 		lp.reload();
 	}
 	message("Setting up secrets.ldb\n");
-	setup_ldb("secrets.ldif", session_info, credentials, paths.secrets, subobj);
+	setup_ldb("secrets.ldif", info, paths.secrets);
 	message("Setting up DNS zone file\n");
 	setup_file("provision.zone", 
 		   paths.dns, 
@@ -303,20 +310,22 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	var keytab_ok = credentials_update_all_keytabs();
 	assert(keytab_ok);
 	message("Setting up hklm.ldb\n");
-	setup_ldb("hklm.ldif", session_info, credentials, paths.hklm, subobj);
+	setup_ldb("hklm.ldif", info, paths.hklm);
+
+
 	message("Setting up sam.ldb attributes\n");
-	setup_ldb("provision_init.ldif", session_info, credentials, paths.samdb, subobj);
+	setup_ldb("provision_init.ldif", info, paths.samdb);
 	message("Setting up sam.ldb schema\n");
-	setup_ldb("schema.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
+	setup_ldb("schema.ldif", info, paths.samdb, NULL, false);
 	message("Setting up display specifiers\n");
-	setup_ldb("display_specifiers.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
+	setup_ldb("display_specifiers.ldif", info, paths.samdb, NULL, false);
 	message("Setting up sam.ldb templates\n");
-	setup_ldb("provision_templates.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
+	setup_ldb("provision_templates.ldif", info, paths.samdb, NULL, false);
 	message("Setting up sam.ldb data\n");
-	setup_ldb("provision.ldif", session_info, credentials, paths.samdb, subobj, NULL, false);
+	setup_ldb("provision.ldif", info, paths.samdb, NULL, false);
 	if (blank == false) {
 		message("Setting up sam.ldb users and groups\n");
-		setup_ldb("provision_users.ldif", session_info, credentials, paths.samdb, subobj, data, false);
+		setup_ldb("provision_users.ldif", info, paths.samdb, data, false);
 	}
 }
 

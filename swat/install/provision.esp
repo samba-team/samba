@@ -61,7 +61,8 @@ if (form['submit'] == "Provision") {
 	} else if (!provision_validate(subobj, writefln)) {
 		f.display();
 	} else {
-		provision(subobj, writefln, false, provision_default_paths(subobj), NULL, NULL);
+		provision(subobj, writefln, false, provision_default_paths(subobj),
+			  session.authinfo.session_info, session.authinfo.credentials);
 	}
 } else {
 	f.display();

@@ -35,6 +35,7 @@ static int ejs_doauth(MprVarHandle eid,
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct auth_context *auth_context;
+	struct MprVar *session_info_obj;
 	const char *auth_types[] = { authtype, NULL };
 	NTSTATUS nt_status;
 
@@ -89,9 +90,12 @@ static int ejs_doauth(MprVarHandle eid,
 		goto done;
 	}
 
-	talloc_steal(mprMemCtx(), session_info);
-	mprSetThisPtr(eid, "session_info", session_info);
+	session_info_obj = mprInitObject(eid, "session_info", 0, NULL);
 
+	mprSetPtrChild(session_info_obj, "session_info", session_info);
+	talloc_steal(mprMemCtx(), session_info);
+
+	mprSetProperty(auth, "session_info", session_info_obj);
 	mprSetPropertyValue(auth, "result", mprCreateBoolVar(server_info->authenticated));
 	mprSetPropertyValue(auth, "username", mprString(server_info->account_name));
 	mprSetPropertyValue(auth, "domain", mprString(server_info->domain_name));
