@@ -36,6 +36,7 @@
 #include "mutex.h"
 
 /* For sepecifiying event context to GSSAPI below */
+#include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
 
 struct new_conn_state {

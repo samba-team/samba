@@ -28,6 +28,7 @@
 #include "smb_server/smb_server.h"
 
 /* For sepecifiying event context to GSSAPI below */
+#include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
 
 /*
