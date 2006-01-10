@@ -79,6 +79,20 @@ static enum user_is what_is_user(struct ldb_module *module)
 	return ANONYMOUS;
 }
 
+static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module) 
+{
+	struct auth_session_info *session_info
+		= ldb_get_opaque(module->ldb, "sessionInfo");
+	if (!session_info) {
+		return "UNKNOWN (NULL)";
+	}
+	
+	return talloc_asprintf(mem_ctx, "%s\\%s",
+			       session_info->server_info->domain_name,
+			       session_info->server_info->account_name);
+	return ANONYMOUS;
+}
+
 /* search */
 static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 {
@@ -123,7 +137,8 @@ static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 	default:
 		ldb_set_errstring(module, 
 				  talloc_asprintf(req, "kludge_acl_change: "
-						  "attempted database modify not permitted. User is not SYSTEM or an administrator"));
+						  "attempted database modify not permitted. User %s is not SYSTEM or an administrator",
+						  user_name(req, module)));
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 }
