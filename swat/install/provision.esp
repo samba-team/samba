@@ -28,7 +28,6 @@ f.add("ADMINPASS", "Administrator Password", "password");
 f.add("CONFIRM", "Confirm Password", "password");
 f.add("DOMAINSID", "Domain SID");
 f.add("HOSTGUID", "Host GUID");
-f.add("BASEDN", "Base DN");
 f.add("HOSTIP", "Host IP");
 f.add("DEFAULTSITE", "Default Site");
 f.submit[0] = "Provision";
