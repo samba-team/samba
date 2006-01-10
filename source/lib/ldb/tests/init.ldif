@@ -29,3 +29,12 @@ ou: People
 ou: Ldb Test
 uidNumber: 0
 gidNumber: 0
+
+dn: ou=LdbTspace,ou=People,o=University of Michigan,c=TEST
+objectclass: organizationalUnit
+objectclass: extensibleObject
+ou: People
+ou: LdbTspace
+description: test white space removal in comparisons
+uidNumber: 0
+gidNumber: 0
