@@ -739,7 +739,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 		strlower(pwcopy);
 		nt_status = password_check(username, pwcopy, crypted, salt);
 		if NT_STATUS_IS_OK(nt_status) {
-			*ret_passwd = pwd;
+			*ret_passwd = pws;
 			return nt_status;
 		}
 	}
