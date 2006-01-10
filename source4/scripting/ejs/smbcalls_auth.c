@@ -29,7 +29,7 @@
 static int ejs_doauth(MprVarHandle eid,
 		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
 		      const char *password, const char *domain, const char *workstation,
-		      const char *authtype)
+		      struct socket_address *remote_host, const char *authtype)
 {
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -63,7 +63,7 @@ static int ejs_doauth(MprVarHandle eid,
 
 	user_info->workstation_name = workstation;
 
-	user_info->remote_host = NULL;
+	user_info->remote_host = remote_host;
 
 	user_info->password_state = AUTH_PASSWORD_PLAIN;
 	user_info->password.plaintext = talloc_strdup(user_info, password);
@@ -75,7 +75,9 @@ static int ejs_doauth(MprVarHandle eid,
 
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		mprSetPropertyValue(auth, "report", mprString("Login Failed"));
+		mprSetPropertyValue(auth, "report", 
+				    mprString(talloc_asprintf(mprMemCtx(), "Login Failed: %s", 
+							      get_friendly_nt_error_msg(nt_status))));
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		goto done;
 	}
@@ -111,8 +113,9 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	const char *workstation;
 	struct MprVar auth;
 	struct cli_credentials *creds;
+	struct socket_address *remote_host;
 
-	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
+	if (argc != 2 || argv[0]->type != MPR_TYPE_OBJECT || argv[1]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "userAuth invalid arguments, this function requires an object.");
 		return -1;
 	}
@@ -120,7 +123,13 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	/* get credential values from credentials object */
 	creds = mprGetPtr(argv[0], "creds");
 	if (creds == NULL) {
-		ejsSetErrorMsg(eid, "userAuth requires a 'creds' element");
+		ejsSetErrorMsg(eid, "userAuth requires a 'creds' first parameter");
+		return -1;
+	}
+
+	remote_host = mprGetPtr(argv[1], "socket_address");
+	if (remote_host == NULL) {
+		ejsSetErrorMsg(eid, "userAuth requires a socket address second parameter");
 		return -1;
 	}
 
@@ -139,10 +148,10 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	auth = mprObject("auth");
 
-	if (domain && (strcmp("System User", domain) == 0)) {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, "unix");
+	if (domain && (strcmp("SYSTEM USER", domain) == 0)) {
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, "unix");
 	} else {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, "sam");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, "sam");
 	}
 
 	mpr_Return(eid, auth);
