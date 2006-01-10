@@ -125,6 +125,8 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 			char rule[128];
 			int crit, rev, ret;
 
+			attr[0] = '\0';
+			rule[0] = '\0';
 			p = &(control_strings[i][12]);
 			ret = sscanf(p, "%d:%d:%255[^:]:%127[^:]", &crit, &rev, attr, rule);
 			if ((ret < 3) || (crit < 0) || (crit > 1) || (rev < 0 ) || (rev > 1) ||attr[0] == '\0') {
@@ -137,7 +139,10 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 			control = talloc_array(ctrl[i], struct ldb_server_sort_control *, 2);
 			control[0] = talloc(control, struct ldb_server_sort_control);
 			control[0]->attributeName = talloc_strdup(control, attr);
-			control[0]->orderingRule = talloc_strdup(control, rule);
+			if (rule[0])
+				control[0]->orderingRule = talloc_strdup(control, rule);
+			else
+				control[0]->orderingRule = NULL;
 			control[0]->reverse = rev;
 			control[1] = NULL;
 			ctrl[i]->data = control;
@@ -150,10 +155,89 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 		return NULL;
 	}
 
-	ctrl[i + 1] = NULL;
+	ctrl[i] = NULL;
 
 	return ctrl;
 }
+
+/* this function check controls reply and determines if more
+ * processing is needed setting up the request controls correctly
+ *
+ * returns:
+ * 	-1 error
+ * 	0 all ok
+ * 	1 all ok, more processing required
+ */
+static int handle_controls_reply(struct ldb_control **reply, struct ldb_control **request)
+{
+	int i, j;
+       	int ret = 0;
+
+	if (reply == NULL || request == NULL) return -1;
+	
+	for (i = 0; reply[i]; i++) {
+		if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, reply[i]->oid) == 0) {
+			struct ldb_paged_control *rep_control, *req_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_paged_control);
+			if (rep_control->cookie_len == 0) /* we are done */
+				break;
+
+			/* more processing required */
+			/* let's fill in the request control with the new cookie */
+
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, request[j]->oid) == 0)
+					break;
+			}
+			/* if there's a reply control we must find a request
+			 * control matching it */
+			if (! request[j]) return -1;
+
+			req_control = talloc_get_type(request[j]->data, struct ldb_paged_control);
+
+			if (req_control->cookie)
+				talloc_free(req_control->cookie);
+			req_control->cookie = talloc_memdup(req_control,
+							    rep_control->cookie,
+							    rep_control->cookie_len);
+			req_control->cookie_len = rep_control->cookie_len;
+
+			ret = 1;
+
+			continue;
+		}
+
+		if (strcmp(LDB_CONTROL_SORT_RESP_OID, reply[i]->oid) == 0) {
+			struct ldb_sort_resp_control *rep_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_sort_resp_control);
+
+			/* check we have a matching control in the request */
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_SERVER_SORT_OID, request[j]->oid) == 0)
+					break;
+			}
+			if (! request[j]) {
+				fprintf(stderr, "Warning Server Sort reply received but no request found\n");
+				continue;
+			}
+
+			/* check the result */
+			if (rep_control->result != 0) {
+				fprintf(stderr, "Warning: Sorting not performed with error: %d\n", rep_control->result);
+			}
+
+			continue;
+		}
+
+		/* no controls matched, throw a warning */
+		fprintf(stderr, "Unknown reply control oid: %s\n", reply[i]->oid);
+	}
+
+	return ret;
+}
+
 
 static int do_search(struct ldb_context *ldb,
 		     const struct ldb_dn *basedn,
@@ -162,6 +246,8 @@ static int do_search(struct ldb_context *ldb,
 		     const char * const *attrs)
 {
 	int ret, i;
+	int loop = 0;
+	int total = 0;
 	struct ldb_request req;
 	struct ldb_result *result = NULL;
 
@@ -175,46 +261,58 @@ static int do_search(struct ldb_context *ldb,
 	if (options->controls != NULL && req.controls == NULL) return -1;
 	req.creds = NULL;
 
-	ret = ldb_request(ldb, &req);
-	if (ret != LDB_SUCCESS) {
-		printf("search failed - %s\n", ldb_errstring(ldb));
-		return -1;
-	}
+	do {
+		loop = 0;
 
-	result = req.op.search.res;
-	printf("# returned %d records\n", ret);
-
-	if (options->sorted) {
-		ldb_qsort(result->msgs, ret, sizeof(struct ldb_message *),
-			  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
-	}
-
-	for (i = 0; i < result->count; i++) {
-		struct ldb_ldif ldif;
-		printf("# record %d\n", i+1);
-
-		ldif.changetype = LDB_CHANGETYPE_NONE;
-		ldif.msg = result->msgs[i];
-
-                if (options->sorted) {
-                        /*
-                         * Ensure attributes are always returned in the same
-                         * order.  For testing, this makes comparison of old
-                         * vs. new much easier.
-                         */
-                        ldb_msg_sort_elements(ldif.msg);
-                }
-                
-		ldb_ldif_write_file(ldb, stdout, &ldif);
-	}
-
-	if (result) {
-		ret = talloc_free(result);
-		if (ret == -1) {
-			fprintf(stderr, "talloc_free failed\n");
-			exit(1);
+		ret = ldb_request(ldb, &req);
+		if (ret != LDB_SUCCESS) {
+			printf("search failed - %s\n", ldb_errstring(ldb));
+			return -1;
 		}
-	}
+
+		result = req.op.search.res;
+		printf("# returned %d records\n", result->count);
+
+		if (options->sorted) {
+			ldb_qsort(result->msgs, ret, sizeof(struct ldb_message *),
+				  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
+		}
+
+		for (i = 0; i < result->count; i++, total++) {
+			struct ldb_ldif ldif;
+			printf("# record %d\n", total + 1);
+
+			ldif.changetype = LDB_CHANGETYPE_NONE;
+			ldif.msg = result->msgs[i];
+
+	                if (options->sorted) {
+        	                /*
+                	         * Ensure attributes are always returned in the same
+                        	 * order.  For testing, this makes comparison of old
+	                         * vs. new much easier.
+        	                 */
+                	        ldb_msg_sort_elements(ldif.msg);
+	                }
+	
+			ldb_ldif_write_file(ldb, stdout, &ldif);
+		}
+
+		if (result->controls) {
+			if (handle_controls_reply(result->controls, req.controls) == 1)
+				loop = 1;
+		}
+
+		if (result) {
+			ret = talloc_free(result);
+			if (ret == -1) {
+				fprintf(stderr, "talloc_free failed\n");
+				exit(1);
+			}
+		}
+
+		req.op.search.res = NULL;
+		
+	} while(loop);
 
 	return 0;
 }
