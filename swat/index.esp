@@ -3,7 +3,7 @@
   libinclude("management.js");
   libinclude("provision.js");
 
-  if (install_ok() == false) {
+  if (install_ok(session.authinfo.session_info, session.authinfo.credentials) == false) {
 	  redirect("/install/");
   }
 
