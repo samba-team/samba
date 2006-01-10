@@ -136,8 +136,15 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		}
 		s1++; s2++;
 	}
-	while (*s1 == ' ') s1++;
-	while (*s2 == ' ') s2++;
+	if (! (*s1 && *s2)) {
+		/* remove trailing spaces only if one of the pointers
+		 * has reached the end of the strings otherwise we
+		 * can mistakenly match.
+		 * ex. "domain users" <-> "domainUpdates"
+		 */
+		while (*s1 == ' ') s1++;
+		while (*s2 == ' ') s2++;
+	}
 	return (int)(toupper(*s1)) - (int)(toupper(*s2));
 }
 
