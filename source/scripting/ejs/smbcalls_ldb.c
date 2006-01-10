@@ -399,12 +399,12 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 
 	credentials = mprGetProperty(this, "credentials", NULL);
 	if (credentials) {
-		creds = mprGetPtr(credentials, "creds");
+		creds = talloc_get_type(mprGetPtr(credentials, "creds"), struct cli_credentials);
 	}
 
 	session = mprGetProperty(this, "session_info", NULL);
 	if (session) {
-		session_info = mprGetPtr(session, "session_info");
+		session_info = talloc_get_type(mprGetPtr(session, "session_info"), struct auth_session_info);
 	}
 
 	dbfile = argv[0];
