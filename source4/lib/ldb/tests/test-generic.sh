@@ -99,4 +99,4 @@ checkcount 0 'one' '' '(uid=uham)'
 
 checkcount 1 'base' 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' '(uid=uham)'
 checkcount 1 'one' 'ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' '(uid=uham)'
-
+checkcount 1 'one' 'ou=People,o=University of Michigan,c=TEST' '(ou=ldb  test)'
