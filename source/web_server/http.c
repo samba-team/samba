@@ -401,7 +401,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
 	struct EspRequest *req = esp->req;
 	struct socket_address *socket_address = socket_get_my_addr(web->conn->socket, esp);
-	struct socket_address *peer_address = socket_get_my_addr(web->conn->socket, esp);
+	struct socket_address *peer_address = socket_get_peer_addr(web->conn->socket, esp);
 	char *p;
 
 #define SETVAR(type, name, value) do { \
@@ -418,6 +418,10 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_NAME", p+1);
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
 	if (peer_address) {
+		struct MprVar mpv = mprObject("socket_address");
+		mprSetPtrChild(&mpv, "socket_address", peer_address);
+		espSetVar(req, ESP_REQUEST_OBJ, "REMOTE_SOCKET_ADDRESS", mpv);
+
 		SETVAR(ESP_REQUEST_OBJ, "REMOTE_ADDR", peer_address->addr);
 	}
 	p = socket_get_peer_name(web->conn->socket, esp);
