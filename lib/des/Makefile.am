@@ -36,7 +36,8 @@ check_PROGRAMS = \
 	mdtest \
 	rc2test  \
 	rctest \
-	test_bn
+	test_bn \
+	test_hmac
 
 # md5crypt_test 
 
