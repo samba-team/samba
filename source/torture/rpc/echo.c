@@ -123,8 +123,15 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	int i;
 	NTSTATUS status;
-	int len = 200000 + (random() % 5000);
+	int len;
 	struct echo_SourceData r;
+
+	if (lp_parm_bool(-1, "torture", "quick", False) &&
+	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
+		len = 100 + (random() % 5000);
+	} else {
+		len = 200000 + (random() % 5000);
+	}
 
 	printf("\nTesting SourceData\n");
 
@@ -155,8 +162,15 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	uint8_t *data_in;
-	int len = 200000 + (random() % 5000);
+	int len;
 	struct echo_SinkData r;
+
+	if (lp_parm_bool(-1, "torture", "quick", False) &&
+	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
+		len = 100 + (random() % 5000);
+	} else {
+		len = 200000 + (random() % 5000);
+	}
 
 	printf("\nTesting SinkData\n");
 
