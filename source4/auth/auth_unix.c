@@ -702,7 +702,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 		}
 		if (password == NULL) {
 			DEBUG(3, ("Allowing access to %s with null password\n", username));
-			*ret_passwd = pwd;
+			*ret_passwd = pws;
 			return NT_STATUS_OK;
 		}
 	}
@@ -710,7 +710,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	/* try it as it came to us */
 	nt_status = password_check(username, password, crypted, salt);
         if (NT_STATUS_IS_OK(nt_status)) {
-		*ret_passwd = pwd;
+		*ret_passwd = pws;
 		return nt_status;
 	}
 	else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -754,7 +754,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 
 #if 0
         if (NT_STATUS_IS_OK(nt_status = string_combinations(pwcopy, password_check, level))) {
-		*ret_passwd = pwd;
+		*ret_passwd = pws;
 		return nt_status;
 	}
 #endif   
