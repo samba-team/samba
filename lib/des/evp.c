@@ -153,7 +153,7 @@ EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize,
 
 static const struct hc_evp_md sha1 = {
     20,
-    1,
+    64,
     sizeof(SHA_CTX),
     (void *)SHA1_Init,
     (void *)SHA1_Update,
@@ -178,7 +178,7 @@ EVP_md5(void)
 {
     static const struct hc_evp_md md5 = {
 	16,
-	1,
+	64,
 	sizeof(MD5_CTX),
 	(void *)MD5_Init,
 	(void *)MD5_Update,
@@ -193,7 +193,7 @@ EVP_md4(void)
 {
     static const struct hc_evp_md md4 = {
 	16,
-	1,
+	64,
 	sizeof(MD4_CTX),
 	(void *)MD4_Init,
 	(void *)MD4_Update,
@@ -208,7 +208,7 @@ EVP_md2(void)
 {
     static const struct hc_evp_md md2 = {
 	16,
-	1,
+	16,
 	sizeof(MD2_CTX),
 	(void *)MD2_Init,
 	(void *)MD2_Update,
