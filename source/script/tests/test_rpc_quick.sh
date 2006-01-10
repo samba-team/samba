@@ -2,16 +2,9 @@
 
 # add tests to this list as they start passing, so we test
 # that they stay passing
-ncacn_np_tests="RPC-ALTERCONTEXT RPC-JOIN"
-ncalrpc_tests="RPC-ALTERCONTEXT RPC-JOIN"
-ncacn_ip_tcp_tests="RPC-ALTERCONTEXT RPC-JOIN"
-
-# if we're not running under valgrind test some more tests
-if [ -z "$VALGRIND" ]; then
-	ncacn_np_tests="$ncacn_np_tests RPC-ECHO"
-	ncalrpc_tests="$ncalrpc_tests RPC-ECHO"
-	ncacn_ip_tcp_tests="$ncacn_ip_tcp_tests RPC-ECHO"
-fi
+ncacn_np_tests="RPC-ALTERCONTEXT RPC-JOIN RPC-ECHO"
+ncalrpc_tests="RPC-ALTERCONTEXT RPC-JOIN RPC-ECHO"
+ncacn_ip_tcp_tests="RPC-ALTERCONTEXT RPC-JOIN RPC-ECHO"
 
 if [ $# -lt 4 ]; then
 cat <<EOF

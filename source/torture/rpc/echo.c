@@ -77,8 +77,15 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	uint8_t *data_in, *data_out;
-	int len = 1 + (random() % 5000);
+	int len;
 	struct echo_EchoData r;
+
+	if (lp_parm_bool(-1, "torture", "quick", False) &&
+	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
+		len = 1 + (random() % 500);
+	} else {
+		len = 1 + (random() % 5000);
+	}
 
 	printf("\nTesting EchoData\n");
 
@@ -128,7 +135,7 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	if (lp_parm_bool(-1, "torture", "quick", False) &&
 	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
-		len = 100 + (random() % 5000);
+		len = 100 + (random() % 500);
 	} else {
 		len = 200000 + (random() % 5000);
 	}
