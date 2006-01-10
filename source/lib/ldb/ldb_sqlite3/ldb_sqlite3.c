@@ -33,11 +33,9 @@
  *  Author: Derrell Lipman (based on Andrew Tridgell's LDAP backend)
  */
 
-#include <stdarg.h>
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
+
 #include "ldb/ldb_sqlite3/ldb_sqlite3.h"
 
 /*
@@ -818,7 +816,7 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 	char *norm_basedn;
 	char *sqlfilter;
 	char *errmsg;
-	char *query;
+	char *query = NULL;
         int ret, i;
 
 	/* create a local ctx */

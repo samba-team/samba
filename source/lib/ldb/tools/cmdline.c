@@ -23,9 +23,9 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
+
 #ifdef _SAMBA_BUILD_
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"

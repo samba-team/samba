@@ -34,9 +34,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
-
+#include "ldb/include/includes.h"
 
 /*
   check if the scope matches in a search result

@@ -26,11 +26,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
+#include "ldb/include/includes.h"
 
 /* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)						      \
@@ -62,6 +58,9 @@ typedef struct
    log(MAX_THRESH)).  Since total_elements has type size_t, we get as
    upper bound for log (total_elements):
    bits per byte (CHAR_BIT) * sizeof(size_t).  */
+#ifndef CHAR_BIT
+#define CHAR_BIT 8
+#endif
 #define STACK_SIZE	(CHAR_BIT * sizeof(size_t))
 #define PUSH(low, high)	((void) ((top->lo = (low)), (top->hi = (high)), ++top))
 #define	POP(low, high)	((void) (--top, (low = top->lo), (high = top->hi)))

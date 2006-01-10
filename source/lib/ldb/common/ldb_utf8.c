@@ -33,9 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
-#include <ctype.h>
+#include "ldb/include/includes.h"
 
 /*
   TODO:

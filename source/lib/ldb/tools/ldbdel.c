@@ -33,14 +33,8 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
-
-#ifdef _SAMBA_BUILD_
-#include "system/filesys.h"
-#endif
 
 static int ldb_delete_recursive(struct ldb_context *ldb, const struct ldb_dn *dn)
 {

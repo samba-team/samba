@@ -33,9 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 
 /* check if a control with the specified "oid" exist and return it */
 /* returns NULL if not found */

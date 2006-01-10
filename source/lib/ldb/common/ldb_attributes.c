@@ -30,8 +30,7 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 
 /*
   add to the list of ldif handlers for this ldb context

@@ -33,9 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 
 #define SCHEMA_FLAG_RESET	0
 #define SCHEMA_FLAG_MOD_MASK	0x003
