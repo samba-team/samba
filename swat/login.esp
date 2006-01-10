@@ -28,7 +28,7 @@ f.display();
 		creds.set_domain(form.Domain);
 		creds.set_workstation(request['REMOTE_HOST']);
 
-		auth = userAuth(creds);
+		auth = userAuth(creds, request['REMOTE_SOCKET_ADDRESS']);
 		if (auth == undefined) {
 			write("<b>Invalid login - please try again<br /></b>\n");
 		} else if (auth.result) {
@@ -38,6 +38,7 @@ f.display();
 			session.authinfo.username = auth.username;
 			session.authinfo.domain = auth.domain;
 			session.authinfo.credentials = creds;
+			session.authinfo.session_info = auth.session_info;
 			
 			/* if the user was asking for the login page, then now
 			   redirect them to the main page. Otherwise just
@@ -48,8 +49,10 @@ f.display();
 			} else {
 			   redirect(session_uri(request.REQUEST_URI));
 			}
-		} else {
+		} else if (auth.report == undefined) {
 			write("<b>Login failed - please try again<br /></b>\n");
+		} else {
+			write("<b>Login failed: " + auth.report + " - please try again<br /></b>\n");
 		}
 	}
 %>
