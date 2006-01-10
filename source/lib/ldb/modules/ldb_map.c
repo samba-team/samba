@@ -23,9 +23,8 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
+
 #include "ldb/modules/ldb_map.h"
 
 /*

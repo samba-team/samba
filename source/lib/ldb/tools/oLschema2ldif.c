@@ -33,15 +33,8 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
-
-#include <stdio.h>
-
-#ifdef _SAMBA_BUILD_
-#include "system/filesys.h"
-#endif
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1

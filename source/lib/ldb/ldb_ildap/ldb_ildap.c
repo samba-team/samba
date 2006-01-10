@@ -30,9 +30,8 @@
 
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
-#include "ldb/include/ldb_errors.h"
+#include "ldb/include/includes.h"
+
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"

@@ -1,6 +1,16 @@
+#ifndef _LDB_PRIVATE_INCLUDES_H_
+#define _LDB_PRIVATE_INCLUDES_H_
 /*
   a temporary includes file until I work on the ldb build system
 */
+
+#ifdef _SAMBA_BUILD_
+
+#include "system/filesys.h"
+#include "system/iconv.h"
+#include "system/time.h"
+
+#else /*_SAMBA_BUILD_*/
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -22,9 +32,16 @@
 #include <stdint.h>
 #endif
 
-#include "ldb.h"
-#include "ldb_private.h"
-#include "talloc.h"
-
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+
+#include "talloc.h"
+
+#endif /*_SAMBA_BUILD_*/
+
+#include "ldb.h"
+#include "ldb_errors.h"
+#include "ldb_private.h"
+#include "dlinklist.h"
+
+#endif /*_LDB_PRIVATE_INCLUDES_H_*/

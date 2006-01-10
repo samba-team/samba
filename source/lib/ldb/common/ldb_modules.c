@@ -34,17 +34,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
-#include "dlinklist.h"
-#include <sys/types.h> 
-#include <sys/stat.h> 
-#include <unistd.h> 
-
-#ifdef HAVE_DLOPEN_DISABLED
-#include <dlfcn.h>
-#endif
+#include "ldb/include/includes.h"
 
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8

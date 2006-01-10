@@ -33,8 +33,8 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
+
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)

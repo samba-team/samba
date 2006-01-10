@@ -73,12 +73,8 @@
   modifiersName: not supported by w2k3?
 */
 
-
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
-#include <time.h>
+#include "ldb/include/includes.h"
 
 /*
   construct a canonical name from a message
