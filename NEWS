@@ -22,10 +22,6 @@ Introduction of LDB
 Samba now stores most of its persistent data in a LDAP-like database 
 called LDB (see ldb(7) for more info). 
 
-Built-in LDAP server
-====================
-FIXME
-
 Much improved SWAT
 ==================
 SWAT has had some rather large improvements and is now more then just a 
