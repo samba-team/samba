@@ -1,4 +1,16 @@
-2006-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am (check_PROGRAMS): add test_hmac
+
+	* test_hmac.c: Simple regression test for HMAC.
+
+	* hmac.c: Make hmac work.
+
+	* evp.c: return the right blocksize for digests.
+	
+2006-01-09  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* test_engine_dso.c: Add test for DH.
 
 	* dh.c: Add DH_new_method, add ENGINE refcounting.
 
