@@ -33,10 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
-#include <time.h>
+#include "ldb/include/includes.h"
 
 /*
   create a new ldb_message in a given memory context (NULL for top level)

@@ -33,10 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/dlinklist.h"
+#include "ldb/include/includes.h"
 
 /* It turns out the MMC assumes that the last objectClass in the list
  * is the most specific subclass.  As such, we must sort the list,

@@ -33,15 +33,8 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
-
-#ifdef _SAMBA_BUILD_
-#include "system/filesys.h"
-#include "system/time.h"
-#endif
 
 static struct timeval tp1,tp2;
 static struct ldb_cmdline *options;

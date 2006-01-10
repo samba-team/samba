@@ -33,9 +33,8 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/includes.h"
+
 #include "ldb/ldb_ldap/ldb_ldap.h"
 
 /*
@@ -492,7 +491,7 @@ static int lldb_request(struct ldb_module *module, struct ldb_request *req)
 					  req->op.search.scope, 
 					  req->op.search.tree, 
 					  req->op.search.attrs, 
-					  req->op.search.res);
+					  &req->op.search.res);
 
 	case LDB_REQ_ADD:
 		return lldb_add(module, req->op.add.message);
