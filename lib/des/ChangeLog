@@ -1,5 +1,7 @@
 2006-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* evp.c (EVP_CIPHER_CTX_cleanup): clean up less aggressively
+
 	* Makefile.am (check_PROGRAMS): add test_hmac
 
 	* test_hmac.c: Simple regression test for HMAC.
