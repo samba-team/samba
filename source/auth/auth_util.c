@@ -491,7 +491,7 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied
 
 	server_info->acct_flags = ACB_NORMAL;
 
-	server_info->authenticated = False;
+	server_info->authenticated = True;
 
 	*_server_info = server_info;
 

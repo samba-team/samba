@@ -23,37 +23,53 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "system/passwd.h" /* needed by some systems for struct passwd */
+#include "lib/socket/socket.h" 
 
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
  */
 static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
 					  const struct auth_usersupplied_info *user_info,
+					  struct passwd *pwd,
 					  struct auth_serversupplied_info **_server_info)
 {
 	struct auth_serversupplied_info *server_info;
+	NTSTATUS status;
 
-	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
-	NT_STATUS_HAVE_NO_MEMORY(server_info);
+	/* This is a real, real hack */
+	if (pwd->pw_uid == 0) {
+		status = auth_system_server_info(mem_ctx, &server_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
-	server_info->authenticated = True;
+		server_info->account_name = talloc_steal(server_info, pwd->pw_name);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+		
+		server_info->domain_name = talloc_strdup(server_info, "unix");
+		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+	} else {
+		server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+		NT_STATUS_HAVE_NO_MEMORY(server_info);
+		
+		server_info->authenticated = True;
+		
+		server_info->account_name = talloc_steal(server_info, pwd->pw_name);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+		
+		server_info->domain_name = talloc_strdup(server_info, "unix");
+		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
 
-	server_info->account_name = talloc_strdup(server_info, talloc_strdup(mem_ctx, user_info->mapped.account_name));
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
-
-	server_info->domain_name = talloc_strdup(server_info, talloc_strdup(mem_ctx, "unix"));
-	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
-
-
-	/* is this correct? */
-	server_info->account_sid = NULL;
-	server_info->primary_group_sid = NULL;
-	server_info->n_domain_groups = 0;
-	server_info->domain_groups = NULL;
+		/* This isn't in any way correct.. */
+		server_info->account_sid = NULL;
+		server_info->primary_group_sid = NULL;
+		server_info->n_domain_groups = 0;
+		server_info->domain_groups = NULL;
+	}
 	server_info->user_session_key = data_blob(NULL,0);
 	server_info->lm_session_key = data_blob(NULL,0);
 
-	server_info->full_name = talloc_strdup(server_info, "");
+	server_info->full_name = talloc_steal(server_info, pwd->pw_gecos);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->full_name);
 	server_info->logon_script = talloc_strdup(server_info, "");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
@@ -78,6 +94,44 @@ static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+static NTSTATUS talloc_getpwnam(TALLOC_CTX *ctx, const char *username, struct passwd **pws)
+{
+        struct passwd *ret;
+	struct passwd *from;
+
+	*pws = NULL;
+
+	ret = talloc(ctx, struct passwd);
+	NT_STATUS_HAVE_NO_MEMORY(ret);
+
+	from = getpwnam(username);
+	if (!from) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+        ret->pw_name = talloc_strdup(ctx, from->pw_name);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_name);
+
+        ret->pw_passwd = talloc_strdup(ctx, from->pw_passwd);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_passwd);
+
+        ret->pw_uid = from->pw_uid;
+        ret->pw_gid = from->pw_gid;
+        ret->pw_gecos = talloc_strdup(ctx, from->pw_gecos);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_gecos);
+
+        ret->pw_dir = talloc_strdup(ctx, from->pw_dir);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_dir);
+
+        ret->pw_shell = talloc_strdup(ctx, from->pw_shell);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_shell);
+
+	*pws = ret;
+
+	return NT_STATUS_OK;
+}
+
 
 #ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
@@ -367,7 +421,7 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, const char * user)
 	return pam_to_nt_status(pam_error);
 }
 
-static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info)
+static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info, struct passwd **pws)
 {
 	struct smb_pam_user_info *info;
 	struct pam_conv *pamconv;
@@ -395,9 +449,8 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	 * if true set up a crack name routine.
 	 */
 
-	nt_status = smb_pam_start(&pamh, user_info->mapped.account_name, user_info->remote_host, pamconv);
+	nt_status = smb_pam_start(&pamh, user_info->mapped.account_name, user_info->remote_host ? user_info->remote_host->addr : NULL, pamconv);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		smb_pam_end(pamh);
 		return nt_status;
 	}
 
@@ -423,48 +476,16 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	}
 
 	smb_pam_end(pamh);
+
+	nt_status = talloc_getpwnam(ctx, user_info->mapped.account_name, pws);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	return NT_STATUS_OK;	
 }
 
 #else
-
-static NTSTATUS talloc_getpwnam(TALLOC_CTX *ctx, char *username, struct passwd **pws)
-{
-        struct passwd *ret;
-	struct passwd *from;
-
-	*pws = NULL;
-
-	ret = talloc(ctx, struct passwd);
-	NT_STATUS_HAVE_NO_MEMORY(ret);
-
-	from = getpwnam(username);
-	if (!from) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-        ret->pw_name = talloc_strdup(ctx, from->pw_name);
-	NT_STATUS_HAVE_NO_MEMORY(ret->pw_name);
-
-        ret->pw_passwd = talloc_strdup(ctx, from->pw_passwd);
-	NT_STATUS_HAVE_NO_MEMORY(ret->pw_passwd);
-
-        ret->pw_uid = from->pw_uid;
-        ret->pw_gid = from->pw_gid;
-        ret->pw_gecos = talloc_strdup(ctx, from->pw_gecos);
-	NT_STATUS_HAVE_NO_MEMORY(ret->pw_gecos);
-
-        ret->pw_dir = talloc_strdup(ctx, from->pw_dir);
-	NT_STATUS_HAVE_NO_MEMORY(ret->pw_dir);
-
-        ret->pw_shell = talloc_strdup(ctx, from->pw_shell);
-	NT_STATUS_HAVE_NO_MEMORY(ret->pw_shell);
-
-	*pws = ret;
-
-	return NT_STATUS_OK;
-}
-
 
 /****************************************************************************
 core of password checking routine
@@ -563,7 +584,7 @@ static NTSTATUS password_check(const char *username, const char *password,
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
 
-static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info)
+static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info, struct passwd **ret_passwd)
 {
 	char *username;
 	char *password;
@@ -573,6 +594,8 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	struct passwd *pws;
 	NTSTATUS nt_status;
 	int level = lp_passwordlevel();
+
+	*ret_passwd = NULL;
 
 	username = talloc_strdup(ctx, user_info->mapped.account_name);
 	password = talloc_strdup(ctx, user_info->password.plaintext);
@@ -679,13 +702,15 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 		}
 		if (password == NULL) {
 			DEBUG(3, ("Allowing access to %s with null password\n", username));
+			*ret_passwd = pwd;
 			return NT_STATUS_OK;
 		}
 	}
 
 	/* try it as it came to us */
 	nt_status = password_check(username, password, crypted, salt);
-        if NT_STATUS_IS_OK(nt_status) {
+        if (NT_STATUS_IS_OK(nt_status)) {
+		*ret_passwd = pwd;
 		return nt_status;
 	}
 	else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -714,6 +739,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 		strlower(pwcopy);
 		nt_status = password_check(username, pwcopy, crypted, salt);
 		if NT_STATUS_IS_OK(nt_status) {
+			*ret_passwd = pwd;
 			return nt_status;
 		}
 	}
@@ -728,6 +754,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 
 #if 0
         if (NT_STATUS_IS_OK(nt_status = string_combinations(pwcopy, password_check, level))) {
+		*ret_passwd = pwd;
 		return nt_status;
 	}
 #endif   
@@ -747,6 +774,7 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 {
 	TALLOC_CTX *check_ctx;
 	NTSTATUS nt_status;
+	struct passwd *pwd;
 
 	if (! user_info->mapped.account_name || ! *user_info->mapped.account_name) {
 		/* 'not for me' */
@@ -762,13 +790,13 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = check_unix_password(check_ctx, user_info);
+	nt_status = check_unix_password(check_ctx, user_info, &pwd);
 	if ( ! NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;
 	}
 
-	nt_status = authunix_make_server_info(mem_ctx, user_info, server_info);
+	nt_status = authunix_make_server_info(mem_ctx, user_info, pwd, server_info);
 	if ( ! NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;
