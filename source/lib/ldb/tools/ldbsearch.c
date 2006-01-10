@@ -79,42 +79,81 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 	for (i = 0; control_strings[i]; i++) {
 		if (strncmp(control_strings[i], "extended_dn:", 12) == 0) {
 			struct ldb_extended_dn_control *control;
+			const char *p;
+			int crit, type, ret;
+
+			p = &(control_strings[i][12]);
+			ret = sscanf(p, "%d:%d", &crit, &type);
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (type < 0) || (type > 1)) {
+				fprintf(stderr, "invalid extended_dn control syntax\n");
+				return NULL;
+			}
 
 			ctrl[i] = talloc(ctrl, struct ldb_control);
 			ctrl[i]->oid = LDB_CONTROL_EXTENDED_DN_OID;
-			ctrl[i]->critical = control_strings[i][12]=='1'?1:0;
+			ctrl[i]->critical = crit;
 			control = talloc(ctrl[i], struct ldb_extended_dn_control);
-			control->type = atoi(&control_strings[i][14]);
+			control->type = type;
 			ctrl[i]->data = control;
+
+			continue;
 		}
 
 		if (strncmp(control_strings[i], "paged_results:", 14) == 0) {
 			struct ldb_paged_control *control;
+			const char *p;
+			int crit, size, ret;
+		       
+			p = &(control_strings[i][14]);
+			ret = sscanf(p, "%d:%d", &crit, &size);
+
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (size < 0)) {
+				fprintf(stderr, "invalid paged_results control syntax\n");
+				return NULL;
+			}
 
 			ctrl[i] = talloc(ctrl, struct ldb_control);
 			ctrl[i]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
-			ctrl[i]->critical = control_strings[i][14]=='1'?1:0;
+			ctrl[i]->critical = crit;
 			control = talloc(ctrl[i], struct ldb_paged_control);
-			control->size = atoi(&control_strings[i][16]);
+			control->size = size;
 			control->cookie = NULL;
 			control->cookie_len = 0;
 			ctrl[i]->data = control;
+
+			continue;
 		}
 
 		if (strncmp(control_strings[i], "server_sort:", 12) == 0) {
 			struct ldb_server_sort_control **control;
+			const char *p;
+			char attr[256];
+			char rule[128];
+			int crit, rev, ret;
 
+			p = &(control_strings[i][12]);
+			ret = sscanf(p, "%d:%d:%255[^:]:%127[^:]", &crit, &rev, attr, rule);
+			if ((ret < 3) || (crit < 0) || (crit > 1) || (rev < 0 ) || (rev > 1) ||attr[0] == '\0') {
+				fprintf(stderr, "invalid server_sort control syntax\n");
+				return NULL;
+			}
 			ctrl[i] = talloc(ctrl, struct ldb_control);
 			ctrl[i]->oid = LDB_CONTROL_SERVER_SORT_OID;
-			ctrl[i]->critical = control_strings[i][12]=='1'?1:0;
+			ctrl[i]->critical = crit;
 			control = talloc_array(ctrl[i], struct ldb_server_sort_control *, 2);
 			control[0] = talloc(control, struct ldb_server_sort_control);
-			control[0]->attributeName = talloc_strdup(control, &control_strings[i][16]);
-			control[0]->orderingRule = NULL;
-			control[0]->reverse = control_strings[i][14]=='1'?1:0;
+			control[0]->attributeName = talloc_strdup(control, attr);
+			control[0]->orderingRule = talloc_strdup(control, rule);
+			control[0]->reverse = rev;
 			control[1] = NULL;
 			ctrl[i]->data = control;
+
+			continue;
 		}
+
+		/* no controls matched, throw an error */
+		fprintf(stderr, "Invalid control name\n");
+		return NULL;
 	}
 
 	ctrl[i + 1] = NULL;
@@ -139,6 +178,7 @@ static int do_search(struct ldb_context *ldb,
 	req.op.search.attrs = attrs;
 	req.op.search.res = NULL;
 	req.controls = parse_controls(ldb, options->controls);
+	if (options->controls != NULL && req.controls == NULL) return -1;
 	req.creds = NULL;
 
 	ret = ldb_request(ldb, &req);
