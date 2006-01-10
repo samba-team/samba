@@ -120,6 +120,7 @@ sub process_file($$$)
 
 	while (my $line = <FH>) {	      
 		my $target = $private_file;
+		my $is_public = 0;
 
 		# these are ordered for maximum speed
 		next if ($line =~ /^\s/);
@@ -128,11 +129,12 @@ sub process_file($$$)
 
 		next if ($line =~ /^\/|[;]/);
 
-		if ($line =~ s/^_PUBLIC_[\t ]//) {
+		if ($line =~ s/^_PUBLIC_[\t ]/extern /) {
 			$target = $public_file;
+			$is_public = 1;
 		}
 
-		next unless ( $line =~ /
+		next unless ( $is_public || $line =~ /
 			      ^void|^BOOL|^int|^struct|^char|^const|^\w+_[tT]\s|^uint|^unsigned|^long|
 			      ^NTSTATUS|^ADS_STATUS|^enum\s.*\(|^DATA_BLOB|^WERROR|^XFILE|^FILE|^DIR|
 			      ^double|^TDB_CONTEXT|^TDB_DATA|^TALLOC_CTX|^NTTIME|^FN_|^init_module|
