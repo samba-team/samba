@@ -278,7 +278,7 @@ static void usage(void)
 	struct ldb_result *result = NULL;
 	struct ldb_dn *basedn = NULL;
 	int ret;
-	const char *expression = "(|(objectclass=*)(distinguishedName=*))";
+	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
 	const char * const * attrs = NULL;
 
 	ldb = ldb_init(NULL);
