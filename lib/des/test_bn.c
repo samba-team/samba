@@ -193,6 +193,75 @@ test_BN_import_export(void)
     return ret;
 }
 
+static int
+test_bn_uadd(void)
+{
+    BIGNUM *a, *b, *c;
+    char *p;
+
+    a = BN_new();
+    b = BN_new();
+    c = BN_new();
+
+    BN_set_word(a, 1);
+    BN_set_word(b, 2);
+
+    BN_uadd(c, a, b);
+
+    if (BN_get_word(c) != 3)
+	return 1;
+
+    BN_uadd(c, b, a);
+
+    if (BN_get_word(c) != 3)
+	return 1;
+
+    BN_set_word(b, 0xff);
+
+    BN_uadd(c, a, b);
+    if (BN_get_word(c) != 0x100)
+	return 1;
+
+    BN_uadd(c, b, a);
+    if (BN_get_word(c) != 0x100)
+	return 1;
+
+    BN_set_word(a, 0xff);
+
+    BN_uadd(c, a, b);
+    if (BN_get_word(c) != 0x1fe)
+	return 1;
+
+    BN_uadd(c, b, a);
+    if (BN_get_word(c) != 0x1fe)
+	return 1;
+
+
+    BN_free(a);
+    BN_free(b);
+
+    BN_hex2bn(&a, "50212A3B611D46642C825A16A354CE0FD4D85DD2");
+    BN_hex2bn(&b, "84B6C7E8D28ACA1614954DA");
+
+    BN_uadd(c, b, a);
+    p = BN_bn2hex(c);
+    if (strcmp(p, "50212A3B611D466434CDC695307D7AB13621B2AC") != 0) {
+	free(p);
+	return 1;
+    }
+
+    BN_uadd(c, a, b);
+    p = BN_bn2hex(c);
+    if (strcmp(p, "50212A3B611D466434CDC695307D7AB13621B2AC") != 0) {
+	free(p);
+	return 1;
+    }
+
+    free(p);
+
+
+    return 0;
+}
 
 int
 main(int argc, char **argv)
@@ -202,6 +271,7 @@ main(int argc, char **argv)
     ret += test_BN_set_get();
     ret += test_BN_bit();
     ret += test_BN_import_export();
+    ret += test_bn_uadd();
 
     return ret;
 }
