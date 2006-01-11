@@ -604,15 +604,12 @@ NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	creds_client_step(cli->dc, &clnt_creds);
 
-	prs_set_session_key(&qbuf, (const char *)cli->dc->sess_key);
-	prs_set_session_key(&rbuf, (const char *)cli->dc->sess_key);
-
 	init_net_q_sam_sync(&q, cli->dc->remote_machine, global_myname(),
                             &clnt_creds, &ret_creds, database_id, next_rid);
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SAM_SYNC,
+	CLI_DO_RPC_COPY_SESS_KEY(cli, mem_ctx, PI_NETLOGON, NET_SAM_SYNC,
 		q, r,
 		qbuf, rbuf,
 		net_io_q_sam_sync,
