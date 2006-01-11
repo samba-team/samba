@@ -338,6 +338,14 @@ BN_rand(BIGNUM *bn, int bits, int top, int bottom)
 
     RAND_bytes(i->data, i->length);
 
+    {
+	size_t i = len * 8;
+	while(i > bits) {
+	    BN_clear_bit(bn, i -1);
+	    i--;
+	}
+    }
+
     if (top == -1) {
 	;
     } else if (top == 0 && bits > 0) {
@@ -353,6 +361,62 @@ BN_rand(BIGNUM *bn, int bits, int top, int bottom)
 
     return 1;
 }
+
+/*
+ *
+ */
+
+int
+BN_uadd(BIGNUM *res, const BIGNUM *a, const BIGNUM *b)
+{
+    const heim_integer *ai = (const heim_integer *)a;
+    const heim_integer *bi = (const heim_integer *)b;
+    const unsigned char *ap, *bp;
+    unsigned char *cp;
+    heim_integer ci;
+    int carry = 0;
+    ssize_t len;
+
+    if (ai->negative && bi->negative)
+	return 0;
+    if (ai->length < bi->length) {
+	const heim_integer *si = bi;
+	bi = ai; ai = si;
+    }
+    
+    ci.negative = 0;
+    ci.length = ai->length + 1;
+    ci.data = malloc(ci.length);
+    if (ci.data == NULL)
+	return 0;
+
+    ap = &((const unsigned char *)ai->data)[ai->length - 1];
+    bp = &((const unsigned char *)bi->data)[bi->length - 1];
+    cp = &((unsigned char *)ci.data)[ci.length - 1];
+
+    for (len = bi->length; len > 0; len--) {
+	carry = *ap + *bp + carry;
+	*cp = carry & 0xff;
+	carry = (carry & ~0xff) ? 1 : 0;
+	ap--; bp--; cp--;
+    }
+    for (len = ai->length - bi->length; len > 0; len--) {
+	carry = *ap + carry;
+	*cp = carry & 0xff;
+	carry = (carry & ~0xff) ? 1 : 0;
+	ap--; cp--;
+    }
+    if (!carry)
+	memmove(cp, cp + 1, --ci.length);
+    else
+	*cp = carry;
+    
+    BN_clear(res);
+    *((heim_integer *)res) = ci;
+
+    return 1;
+}
+
 
 /*
  * Callback when doing slow generation of numbers, like primes.
