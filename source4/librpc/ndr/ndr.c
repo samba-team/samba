@@ -272,16 +272,20 @@ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 				int flags, void *ptr)
 {
 	struct ndr_print *ndr;
-	char *ret;
+	char *ret = NULL;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_print);
 	if (!ndr) return NULL;
-	ndr->private = talloc_strdup(mem_ctx, "");
+	ndr->private = talloc_strdup(ndr, "");
+	if (!ndr->private) {
+		goto failed;
+	}
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
 	fn(ndr, name, flags, ptr);
-	ret = ndr->private;
+	ret = talloc_steal(mem_ctx, ndr->private);
+failed:
 	talloc_free(ndr);
 	return ret;
 }
