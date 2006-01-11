@@ -795,7 +795,7 @@ AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h sys/proplist.h)
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
 
 AC_CHECK_HEADERS(netinet/ip.h,,,[[
@@ -1345,12 +1345,23 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 
 ############################################
 # Check if we have libattr
-AC_SEARCH_LIBS(getxattr, [attr])
-AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
-AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
-AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
-AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
-AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+case "$host_os" in
+  *osf*)
+	AC_SEARCH_LIBS(getproplist, [proplist])
+	AC_CHECK_FUNCS(getproplist fgetproplist setproplist fsetproplist)
+	AC_CHECK_FUNCS(delproplist fdelproplist add_proplist_entry get_proplist_entry)
+	AC_CHECK_FUNCS(sizeof_proplist_entry)
+  ;;
+  *)
+	AC_SEARCH_LIBS(getxattr, [attr])
+	AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
+	AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
+	AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
+	AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
+	AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+  ;;
+esac
+
 # Check if we have extattr
 case "$host_os" in
   *freebsd4* | *dragonfly* )
@@ -4478,9 +4489,10 @@ AC_ARG_WITH(aio-support,
 	case "$host_os" in
 	*)
 		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
+		AC_CHECK_LIB(aio,aio_read,[AIO_LIBS="$ACL_LIBS -laio"])
 		AC_CACHE_CHECK([for asynchronous io support],samba_cv_HAVE_AIO,[
 		aio_LIBS=$LIBS
-		LIBS="$LIBS -lrt"
+		LIBS=$AIO_LIBS
 		AC_TRY_LINK([#include <sys/types.h>
 #include <aio.h>],
 [ struct aiocb a; return aio_read(&a);],
@@ -4488,7 +4500,7 @@ samba_cv_HAVE_AIO=yes,samba_cv_HAVE_AIO=no)
 		LIBS=$aio_LIBS])
 		AC_CACHE_CHECK([for 64-bit asynchronous io support],samba_cv_HAVE_AIO64,[
 		aio_LIBS=$LIBS
-		LIBS="$LIBS -lrt"
+		LIBS=$AIO_LIBS
 		AC_TRY_LINK([#include <sys/types.h>
 #include <aio.h>],
 [ struct aiocb64 a; return aio_read64(&a);],
@@ -4497,10 +4509,10 @@ samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
 		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
 			AC_DEFINE(HAVE_AIOCB64,1,[Whether 64 bit aio is available])
 			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
-			LIBS="$LIBS -lrt"
+			LIBS=$AIO_LIBS
 		elif test x"$samba_cv_HAVE_AIO" = x"yes"; then
 			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
-			LIBS="$LIBS -lrt"
+			LIBS=$AIO_LIBS
 		fi
 
 		if test x"$samba_cv_HAVE_AIO" = x"yes"; then
