@@ -61,6 +61,7 @@
 #define BN_set_bit hc_BN_set_bit
 #define BN_set_negative hc_BN_set_negative
 #define BN_set_word hc_BN_set_word
+#define BN_uadd hc_BN_uadd
 
 /*
  *
@@ -109,6 +110,8 @@ BIGNUM *BN_bin2bn(const void *,int len,BIGNUM *);
 int	BN_bn2bin(const BIGNUM *, void *);
 int 	BN_hex2bn(BIGNUM **, const char *);
 char *	BN_bn2hex(const BIGNUM *);
+
+int	BN_uadd(BIGNUM *, const BIGNUM *, const BIGNUM *);
 
 int	BN_rand(BIGNUM *, int, int, int);
 
