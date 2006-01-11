@@ -73,7 +73,9 @@ LIBS = $(LDB_LIB)($(OBJS))
 
 DIRS = lib bin
 
-all: $(DIRS) $(BINS) $(LIBS) manpages
+MANPAGES = $(patsubst %.xml,%,$(wildcard man/*.xml))
+
+all: $(DIRS) $(BINS) $(LIBS) $(EXAMPLES) $(MANPAGES)
 
 .c.o:
 	@echo Compiling $*.c
@@ -111,7 +113,7 @@ bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
 bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o $(LIB_FLAGS)
 
-.SUFFIXES: .1 .2 .3 .yo
+.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
 
 %.3: %.3.xml
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
@@ -125,13 +127,17 @@ bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
 manpages: $(patsubst %.xml,%,$(wildcard man/*.xml))
 
 clean:
-	rm -f */*.o *.gcov */*.gc?? *~ */*~ man/man?/*.[13] tdbtest.ldb* \
-	$(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
+	rm -f */*.o *.gcov */*.gc?? tdbtest.ldb* \
+	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
+	rm -f $(MANPAGES)
 
-distclean:	clean
+distclean: clean
+	rm -f *~ */*~
 	rm -rf autom4te.cache bin lib
-	rm -f configure config.log config.status ldb.pc \
-	    Makefile.ldb include/config.h include/config.h.in
+	rm -f configure \
+		config.log config.status \
+		include/config.h include/config.h.in \
+	rm -f ldb.pc
 	rm -f Makefile
 
 etags:
