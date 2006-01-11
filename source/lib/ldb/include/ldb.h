@@ -35,8 +35,17 @@
  *  Author: Stefan Metzmacher
  */
 
+/**
+   \file ldb.h Samba's ldb database
+
+   This header file provides the main API for ldb.
+*/
+
 #ifndef _LDB_H_
+
+/*! \cond DOXYGEN_IGNORE */
 #define _LDB_H_ 1
+/*! \endcond */
 
 /*
   major restrictions as compared to normal LDAP:
@@ -53,45 +62,85 @@
 
 */
 
-/*
-  an individual lump of data in a result comes in this format. The
-  pointer will usually be to a UTF-8 string if the application is
-  sensible, but it can be to anything you like, including binary data
-  blobs of arbitrary size.
-*/
 #ifndef ldb_val
+/**
+   Result value
+
+   An individual lump of data in a result comes in this format. The
+   pointer will usually be to a UTF-8 string if the application is
+   sensible, but it can be to anything you like, including binary data
+   blobs of arbitrary size.
+
+   \note the data is null (0x00) terminated, but the length does not
+   include the terminator. 
+*/
 struct ldb_val {
-	uint8_t *data;
-	size_t length;
+	uint8_t *data; /*!< result data */
+	size_t length; /*!< length of data */
 };
 #endif
 
-/* internal ldb exploded dn structures */
+/**
+   internal ldb exploded dn structures
+*/
 struct ldb_dn_component {
-	char *name;
+	char *name;  
 	struct ldb_val value;
 };
+
 struct ldb_dn {
 	int comp_num;
 	struct ldb_dn_component *components;
 };
 
-/* these flags are used in ldb_message_element.flags fields. The
-   LDA_FLAGS_MOD_* flags are used in ldap_modify() calls to specify
-   whether attributes are being added, deleted or modified */
+/**
+ There are a number of flags that are used with ldap_modify() in
+ ldb_message_element.flags fields. The LDA_FLAGS_MOD_ADD,
+ LDA_FLAGS_MOD_DELETE and LDA_FLAGS_MOD_REPLACE flags are used in
+ ldap_modify() calls to specify whether attributes are being added,
+ deleted or modified respectively.
+*/
 #define LDB_FLAG_MOD_MASK  0x3
+
+/**
+   Flag value used in ldap_modify() to indicate that attributes are
+   being added.
+
+   \sa LDB_FLAG_MOD_MASK
+*/
 #define LDB_FLAG_MOD_ADD     1
+
+/**
+   Flag value used in ldap_modify() to indicate that attributes are
+   being replaced.
+
+   \sa LDB_FLAG_MOD_MASK
+*/
 #define LDB_FLAG_MOD_REPLACE 2
+
+/**
+   Flag value used in ldap_modify() to indicate that attributes are
+   being deleted.
+
+   \sa LDB_FLAG_MOD_MASK
+*/
 #define LDB_FLAG_MOD_DELETE  3
 
+/**
+  OID for logic AND comaprison.
 
-/*
-  well known object IDs
+  This is the well known object ID for a logical AND comparitor.
 */
 #define LDB_OID_COMPARATOR_AND  "1.2.840.113556.1.4.803"
+
+/**
+  OID for logic OR comparison.
+
+  This is the well known object ID for a logical OR comparitor.
+*/
 #define LDB_OID_COMPARATOR_OR   "1.2.840.113556.1.4.804"
 
-/*
+/**
   results are given back as arrays of ldb_message_element
 */
 struct ldb_message_element {
@@ -102,7 +151,7 @@ struct ldb_message_element {
 };
 
 
-/*
+/**
   a ldb_message represents all or part of a record. It can contain an arbitrary
   number of elements. 
 */
@@ -120,12 +169,15 @@ enum ldb_changetype {
 	LDB_CHANGETYPE_MODIFY
 };
 
-/*
-  a ldif record - from ldif_read
+/**
+  LDIF record
+
+  This structure contains a LDIF record, as returned from ldif_read()
+  and equivalent functions.
 */
 struct ldb_ldif {
-	enum ldb_changetype changetype;
-	struct ldb_message *msg;
+	enum ldb_changetype changetype; /*!< The type of change */
+	struct ldb_message *msg;  /*!< The changes */
 };
 
 enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
@@ -145,7 +197,7 @@ typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *)
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
 		      LDB_DEBUG_WARNING, LDB_DEBUG_TRACE};
 
-/*
+/**
   the user can optionally supply a debug function. The function
   is based on the vfprintf() style of interface, but with the addition
   of a severity level
@@ -156,14 +208,31 @@ struct ldb_debug_ops {
 	void *context;
 };
 
+/**
+   Flag value for database connection mode.
+
+   If LDB_FLG_RDONLY is used in ldb_connect, then the database will be
+   opened read-only, if possible.
+*/
 #define LDB_FLG_RDONLY 1
+
+/**
+   Flag value for database connection mode.
+
+   If LDB_FLG_NOSYNC is used in ldb_connect, then the database will be
+   opened without synchronous operations, if possible.
+*/
 #define LDB_FLG_NOSYNC 2
 
+/*! \cond DOXYGEN_IGNORE */
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a,b)
 #endif
+/*! \endcond */
 
-/* structures for ldb_parse_tree handling code */
+/*
+   structures for ldb_parse_tree handling code
+*/
 enum ldb_parse_op { LDB_OP_AND=1, LDB_OP_OR=2, LDB_OP_NOT=3,
 		    LDB_OP_EQUALITY=4, LDB_OP_SUBSTRING=5,
 		    LDB_OP_GREATER=6, LDB_OP_LESS=7, LDB_OP_PRESENT=8,
@@ -235,24 +304,106 @@ struct ldb_attrib_handler {
 	ldb_attr_comparison_t comparison_fn;
 };
 
-#define LDB_ATTR_FLAG_HIDDEN       (1<<0) /* the attribute is not returned by default */
-#define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) /* the attribute is constructed from other attributes */
+/**
+   The attribute is not returned by default
+*/
+#define LDB_ATTR_FLAG_HIDDEN       (1<<0) 
 
+/**
+   The attribute is constructed from other attributes
+*/
+#define LDB_ATTR_FLAG_CONSTRUCTED  (1<<1) 
 
-/* well-known ldap attribute syntaxes - see rfc2252 section 4.3.2 */
+/**
+  LDAP attribute syntax for a DN
+
+  This is the well-known LDAP attribute syntax for a DN.
+
+  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+*/
 #define LDB_SYNTAX_DN                   "1.3.6.1.4.1.1466.115.121.1.12"
+
+/**
+  LDAP attribute syntax for a Directory String
+
+  This is the well-known LDAP attribute syntax for a Directory String.
+
+  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+*/
 #define LDB_SYNTAX_DIRECTORY_STRING     "1.3.6.1.4.1.1466.115.121.1.15"
+
+/**
+  LDAP attribute syntax for an integer
+
+  This is the well-known LDAP attribute syntax for an integer.
+
+  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+*/
 #define LDB_SYNTAX_INTEGER              "1.3.6.1.4.1.1466.115.121.1.27"
+
+/**
+  LDAP attribute syntax for an octet string
+
+  This is the well-known LDAP attribute syntax for an octet string.
+
+  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+*/
 #define LDB_SYNTAX_OCTET_STRING         "1.3.6.1.4.1.1466.115.121.1.40"
+
+/**
+  LDAP attribute syntax for UTC time.
+
+  This is the well-known LDAP attribute syntax for a UTC time.
+
+  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+*/
 #define LDB_SYNTAX_UTC_TIME             "1.3.6.1.4.1.1466.115.121.1.53"
+
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
 /* sorting helpers */
 typedef int (*ldb_qsort_cmp_fn_t) (const void *, const void *, const void *);
 
+/**
+   OID for the paged results control. This control is included in the
+   searchRequest and searchResultDone messages as part of the controls
+   field of the LDAPMessage, as defined in Section 4.1.12 of
+   LDAP v3. 
+
+   \sa <a href="http://www.ietf.org/rfc/rfc2696.txt">RFC 2696</a>.
+*/
 #define LDB_CONTROL_PAGED_RESULTS_OID	"1.2.840.113556.1.4.319"
+
+/**
+   OID for extended DN
+
+   \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_extended_dn_oid.asp">Microsoft documentation of this OID</a>
+*/
 #define LDB_CONTROL_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
+
+/**
+   OID for LDAP server sort result extension.
+
+   This control is included in the searchRequest message as part of
+   the controls field of the LDAPMessage, as defined in Section 4.1.12
+   of LDAP v3. The controlType is set to
+   "1.2.840.113556.1.4.473". The criticality MAY be either TRUE or
+   FALSE (where absent is also equivalent to FALSE) at the client's
+   option.
+
+   \sa <a href="http://www.ietf.org/rfc/rfc2891.txt">RFC 2891</a>.
+*/
 #define LDB_CONTROL_SERVER_SORT_OID	"1.2.840.113556.1.4.473"
+
+/**
+   OID for LDAP server sort result response extension.
+
+   This control is included in the searchResultDone message as part of
+   the controls field of the LDAPMessage, as defined in Section 4.1.12 of
+   LDAP v3.
+
+   \sa <a href="http://www.ietf.org/rfc/rfc2891.txt">RFC 2891</a>.
+*/
 #define LDB_CONTROL_SORT_RESP_OID	"1.2.840.113556.1.4.474"
 
 struct ldb_paged_control {
@@ -347,29 +498,60 @@ struct ldb_request {
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
 
-/*
-  initialise a ldb context
+/**
+  Initialise an ldb context
+
+  This is required before any other LDB call.
+
+  \param mem_ctx pointer to a talloc memory context. Pass NULL if there is
+  no suitable context available.
+
+  \return pointer to ldb_context that should be free'd (using talloc_free())
+  at the end of the program.
 */
 struct ldb_context *ldb_init(void *mem_ctx);
 
-/* 
- connect to a database. The URL can either be one of the following forms
-   ldb://path
-   ldapi://path
+/**
+   Connect to a database.
 
-   flags is made up of LDB_FLG_*
+   This is typically called soon after ldb_init(), and is required prior to
+   any search or database modification operations.
 
-   the options are passed uninterpreted to the backend, and are
-   backend specific
+   The URL can be one of the following forms:
+    - tdb://path
+    - ldapi://path
+    - ldap://host
+    - sqlite3://path
+
+   \param ldb the context associated with the database (from ldb_init())
+   \param url the URL of the database to connect to, as noted above
+   \param flags a combination of LDB_FLG_* to modify the connection behaviour
+   \param options backend specific options - passed uninterpreted to the backend
+
+   \return result code (LDB_SUCCESS on success, or a failure code)
+
+   \note It is an error to connect to a database that does not exist in readonly mode
+   (that is, with LDB_FLG_RDONLY). However in read-write mode, the database will be
+   created if it does not exist.
 */
 int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
-/*
-  search the database given a LDAP-like search expression
+/**
+  Search the database
 
-  return the number of records found, or -1 on error
+  This function searches the database, and returns 
+  records that match an LDAP-like search expression
 
-  use talloc_free to free the ldb_message returned
+  \param ldb the context associated with the database (from ldb_init())
+  \param base the Base Distinguished Name for the query (pass NULL for root DN)
+  \param scope the search scope for the query
+  \param expression the search expression to use for this query
+  \param attrs the search attributes for the query (pass NULL if none required)
+  \param res the return result
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+
+  \note use talloc_free() to free the ldb_result returned
 */
 int ldb_search(struct ldb_context *ldb, 
 	       const struct ldb_dn *base,
@@ -386,71 +568,263 @@ int ldb_search_bytree(struct ldb_context *ldb,
 		      struct ldb_parse_tree *tree,
 		      const char * const *attrs, struct ldb_result **res);
 
-/*
-  add a record to the database. Will fail if a record with the given class and key
-  already exists
+/**
+  Add a record to the database.
+
+  This function adds a record to the database. This function will fail
+  if a record with the specified class and key already exists in the
+  database. 
+
+  \param ldb the context associated with the database (from
+  ldb_init())
+  \param message the message containing the record to add.
+
+  \return result code (LDB_SUCCESS if the record was added, otherwise
+  a failure code)
 */
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message);
 
-/*
-  modify the specified attributes of a record
+/**
+  Modify the specified attributes of a record
+
+  This function modifies a record that is in the database.
+
+  \param ldb the context associated with the database (from
+  ldb_init())
+  \param message the message containing the changes required.
+
+  \return result code (LDB_SUCCESS if the record was modified as
+  requested, otherwise a failure code)
 */
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message);
 
-/*
-  rename a record in the database
+/**
+  Rename a record in the database
+
+  This function renames a record in the database.
+
+  \param ldb the context associated with the database (from
+  ldb_init())
+  \param olddn the DN for the record to be renamed.
+  \param newdn the new DN 
+
+  \return result code (LDB_SUCCESS if the record was renamed as
+  requested, otherwise a failure code)
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
 
-/*
-  delete a record from the database
+/**
+  Delete a record from the database
+
+  This function deletes a record from the database.
+
+  \param ldb the context associated with the database (from
+  ldb_init())
+  \param dn the DN for the record to be deleted.
+
+  \return result code (LDB_SUCCESS if the record was deleted,
+  otherwise a failure code)
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
 
-/*
+/**
   start a transaction
 */
 int ldb_transaction_start(struct ldb_context *ldb);
 
-/*
+/**
   commit a transaction
 */
 int ldb_transaction_commit(struct ldb_context *ldb);
 
-/*
+/**
   cancel a transaction
 */
 int ldb_transaction_cancel(struct ldb_context *ldb);
 
 
-/*
+/**
   return extended error information from the last call
 */
 const char *ldb_errstring(struct ldb_context *ldb);
 
-/*
-  casefold a string (should be UTF8, but at the moment it isn't)
+/**
+   Casefold a string
+
+   \param mem_ctx the memory context to allocate the result string
+   memory from. 
+   \param s the string that is to be folded
+   \return a copy of the string, converted to upper case
+
+   \todo This function should be UTF8 aware, but currently is not.
 */
 char *ldb_casefold(void *mem_ctx, const char *s);
+
+/**
+   Compare two strings, without regard to case. 
+
+   \param s1 the first string to compare
+   \param s2 the second string to compare
+
+   \return 0 if the strings are the same, non-zero if there are any
+   differences except for case.
+
+   \note This function is not UTF8 aware.
+*/
 int ldb_caseless_cmp(const char *s1, const char *s2);
 
 /*
   ldif manipulation functions
 */
+/**
+   Write an LDIF message
+
+   This function writes an LDIF message using a caller supplied  write
+   function.
+
+   \param ldb the ldb context (from ldb_init())
+   \param fprintf_fn a function pointer for the write function. This must take
+   a private data pointer, followed by a format string, and then a variable argument
+   list. 
+   \param private_data pointer that will be provided back to the write
+   function. This is useful for maintaining state or context.
+   \param ldif the message to write out
+
+   \return the total number of bytes written, or an error code as returned
+   from the write function.
+
+   \sa ldb_ldif_write_file for a more convenient way to write to a
+   file stream.
+
+   \sa ldb_ldif_read for the reader equivalent to this function.
+*/
 int ldb_ldif_write(struct ldb_context *ldb,
 		   int (*fprintf_fn)(void *, const char *, ...), 
 		   void *private_data,
 		   const struct ldb_ldif *ldif);
-void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *);
+
+/**
+   Clean up an LDIF message
+
+   This function cleans up a LDIF message read using ldb_ldif_read()
+   or related functions (such as ldb_ldif_read_string() and
+   ldb_ldif_read_file().
+
+   \param ldb the ldb context (from ldb_init())
+   \param msg the message to clean up and free
+
+*/
+void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *msg);
+
+/**
+   Read an LDIF message
+
+   This function creates an LDIF message using a caller supplied read
+   function. 
+
+   \param ldb the ldb context (from ldb_init())
+   \param fgetc_fn a function pointer for the read function. This must
+   take a private data pointer, and must return a pointer to an
+   integer corresponding to the next byte read (or EOF if there is no
+   more data to be read).
+   \param private_data pointer that will be provided back to the read
+   function. This is udeful for maintaining state or context.
+
+   \return the LDIF message that has been read in
+
+   \note You must free the LDIF message when no longer required, using
+   ldb_ldif_read_free().
+
+   \sa ldb_ldif_read_file for a more convenient way to read from a
+   file stream.
+
+   \sa ldb_ldif_read_string for a more convenient way to read from a
+   string (char array).
+
+   \sa ldb_ldif_write for the writer equivalent to this function.
+*/
 struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb, 
 			       int (*fgetc_fn)(void *), void *private_data);
+
+/**
+   Read an LDIF message from a file
+
+   This function reads the next LDIF message from the contents of a
+   file stream. If you want to get all of the LDIF messages, you will
+   need to repeatedly call this function, until it returns NULL.
+
+   \param ldb the ldb context (from ldb_init())
+   \param f the file stream to read from (typically from fdopen())
+
+   \sa ldb_ldif_read_string for an equivalent function that will read
+   from a string (char array).
+
+   \sa ldb_ldif_write_file for the writer equivalent to this function.
+
+*/
 struct ldb_ldif *ldb_ldif_read_file(struct ldb_context *ldb, FILE *f);
+
+/**
+   Read an LDIF message from a string
+
+   This function reads the next LDIF message from the contents of a char
+   array. If you want to get all of the LDIF messages, you will need
+   to repeatedly call this function, until it returns NULL.
+
+   \param ldb the ldb context (from ldb_init())
+   \param s pointer to the char array to read from
+
+   \sa ldb_ldif_read_file for an equivalent function that will read
+   from a file stream.
+
+   \sa ldb_ldif_write for a more general (arbitrary read function)
+   version of this function.
+*/
 struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char **s);
+
+/**
+   Write an LDIF message to a file
+
+   \param ldb the ldb context (from ldb_init())
+   \param f the file stream to write to (typically from fdopen())
+   \param msg the message to write out
+
+   \return the total number of bytes written, or a negative error code
+
+   \sa ldb_ldif_read_file for the reader equivalent to this function.
+*/
 int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
+
+/**
+   Base64 encode a buffer
+
+   \param mem_ctx the memory context that the result is allocated
+   from. 
+   \param buf pointer to the array that is to be encoded
+   \param len the number of elements in the array to be encoded
+
+   \return pointer to an array containing the encoded data
+
+   \note The caller is responsible for freeing the result
+*/
 char *ldb_base64_encode(void *mem_ctx, const char *buf, int len);
+
+/**
+   Base64 decode a buffer
+
+   This function decodes a base64 encoded string in place.
+
+   \param s the string to decode.
+
+   \return the length of the returned (decoded) string.
+
+   \note the string is null terminated, but the null terminator is not
+   included in the length.
+*/
 int ldb_base64_decode(char *s);
+
 int ldb_attrib_add_handlers(struct ldb_context *ldb, 
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers);
@@ -486,28 +860,67 @@ struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
 
 /* useful functions for ldb_message structure manipulation */
 int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
+
+/**
+   Compare two attributes
+
+   This function compares to attribute names. Note that this is a
+   case-insensitive comparison.
+
+   \param attr1 the first attribute name to compare
+   \param attr2 the second attribute name to compare
+
+   \return 0 if the attribute names are the same, or only differ in
+   case; non-zero if there are any differences
+*/
 int ldb_attr_cmp(const char *attr1, const char *attr2);
 int ldb_attr_dn(const char *attr);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
 
-/* create an empty message */
+/**
+   Create an empty message
+
+   \param mem_ctx the memory context to create in. You can pass NULL
+   to get the top level context, however the ldb context (from
+   ldb_init()) may be a better choice
+*/
 struct ldb_message *ldb_msg_new(void *mem_ctx);
 
-/* find an element within an message */
+/**
+   Find an element within an message
+*/
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
 						 const char *attr_name);
 
-/* compare two ldb_val values - return 0 on match */
+/**
+   Compare two ldb_val values
+
+   \param v1 first ldb_val structure to be tested
+   \param v2 second ldb_val structure to be tested
+
+   \return 1 for a match, 0 if there is any difference
+*/
 int ldb_val_equal_exact(const struct ldb_val *v1, const struct ldb_val *v2);
 
-/* find a value within an ldb_message_element */
+/**
+   find a value within an ldb_message_element
+
+   \param el the element to search
+   \param val the value to search for
+
+   \note This search is case sensitive
+*/
 struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el, 
 				 struct ldb_val *val);
 
-/* add a new empty element to a ldb_message */
+/**
+   add a new empty element to a ldb_message
+*/
 int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags);
 
-/* add a element to a ldb_message */
+/**
+   add a element to a ldb_message
+*/
 int ldb_msg_add(struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags);
@@ -519,13 +932,19 @@ int ldb_msg_add_string(struct ldb_message *msg,
 int ldb_msg_add_fmt(struct ldb_message *msg, 
 		    const char *attr_name, const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
-/* compare two message elements - return 0 on match */
+/**
+   compare two message elements - return 0 on match
+*/
 int ldb_msg_element_compare(struct ldb_message_element *el1, 
 			    struct ldb_message_element *el2);
 
-/* find elements in a message and convert to a specific type, with
+/**
+   Find elements in a message.
+
+   This function finds elements and converts to a specific type, with
    a give default value if not found. Assumes that elements are
-   single valued */
+   single valued.
+*/
 const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const char *attr_name);
 int ldb_msg_find_int(const struct ldb_message *msg, 
 		     const char *attr_name,
@@ -561,11 +980,35 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 				 struct ldb_message *msg1,
 				 struct ldb_message *msg2);
 
+/**
+   Integrity check an ldb_message
+
+   This function performs basic sanity / integrity checks on an
+   ldb_message.
+
+   \param msg the message to check
+
+   \return LDB_SUCCESS if the message is OK, or a non-zero error code
+   (one of LDB_ERR_INVALID_DN_SYNTAX, LDB_ERR_ENTRY_ALREADY_EXISTS or
+   LDB_ERR_INVALID_ATTRIBUTE_SYNTAX) if there is a problem with a
+   message.
+*/
 int ldb_msg_sanity_check(const struct ldb_message *msg);
 
+/**
+   Duplicate an ldb_val structure
+
+   This function copies an ldb value structure. 
+
+   \param mem_ctx the memory context that the duplicated value will be
+   allocated from
+   \param v the ldb_val to be duplicated.
+
+   \return the duplicated ldb_val structure.
+*/
 struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
 
-/*
+/**
   this allows the user to set a debug function for error reporting
 */
 int ldb_set_debug(struct ldb_context *ldb,
@@ -573,7 +1016,9 @@ int ldb_set_debug(struct ldb_context *ldb,
 				const char *fmt, va_list ap),
 		  void *context);
 
-/* this sets up debug to print messages on stderr */
+/**
+   this sets up debug to print messages on stderr
+*/
 int ldb_set_debug_stderr(struct ldb_context *ldb);
 
 /* control backend specific opaque values */
@@ -596,7 +1041,30 @@ int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *r
 int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace);
 void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
 
+/**
+   Convert a time structure to a string
+
+   This function converts a time_t structure to an LDAP formatted time
+   string.
+
+   \param mem_ctx the memory context to allocate the return string in
+   \param t the time structure to convert
+
+   \return the formatted string, or NULL if the time structure could
+   not be converted
+*/
 char *ldb_timestring(void *mem_ctx, time_t t);
+
+/**
+   Convert a string to a time structure
+
+   This function converts an LDAP formatted time string to a time_t
+   structure.
+
+   \param s the string to convert
+
+   \return the time structure, or 0 if the string cannot be converted
+*/
 time_t ldb_string_to_time(const char *s);
 
 char *ldb_dn_canonical_string(void *mem_ctx, const struct ldb_dn *dn);

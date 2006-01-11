@@ -1,6 +1,7 @@
 CC = @CC@
 GCOV = @GCOV@
 XSLTPROC = @XSLTPROC@
+DOXYGEN = @DOXYGEN@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 includedir = @includedir@
@@ -76,7 +77,7 @@ MANPAGES = $(patsubst %.xml,%,$(wildcard man/*.xml))
 
 EXAMPLES = examples/ldbreader examples/ldifreader
 
-all: $(DIRS) $(BINS) $(LIBS) $(EXAMPLES) $(MANPAGES)
+all: $(DIRS) $(BINS) $(LIBS) $(EXAMPLES) $(MANPAGES) doxygen
 
 .c.o:
 	@echo Compiling $*.c
@@ -131,11 +132,15 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 %.html: %.xml
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
+doxygen:
+	test -z "$(DOXYGEN)" || $(DOXYGEN)
+
 clean:
 	rm -f */*.o *.gcov */*.gc?? tdbtest.ldb* \
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
 	rm -f $(MANPAGES)
 	rm -f $(EXAMPLES)
+	rm -rf apidocs/
 
 distclean: clean
 	rm -f *~ */*~
