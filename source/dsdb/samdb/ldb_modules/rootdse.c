@@ -26,7 +26,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "auth/gensec/gensec.h"
-#include <time.h>
+#include "system/time.h"
 
 struct private_data {
 	int num_controls;
