@@ -62,7 +62,14 @@
 #include <dirent.h>
 #include <signal.h>
 #include <stdarg.h>
+#ifdef __USE_GNU
+# define SMBW_USE_GNU
+#endif
+#define __USE_GNU             /* need this to have RTLD_NEXT defined */
 #include <dlfcn.h>
+#ifndef SMBW_USE_GNU
+# undef __USE_GNU
+#endif
 #include <errno.h>
 #include "libsmbclient.h"
 #include "bsd-strlfunc.h"
@@ -131,7 +138,6 @@ void smbw_initialize(void)
 
 static void initialize(void)
 {
-        void *lib = NULL;
         int saved_errno;
 #if SMBW_DEBUG & 0x1
         char *error;
@@ -144,26 +150,18 @@ static void initialize(void)
         }
         initialized = 1;
         
-        if ((lib = dlopen("/lib/libc.so.6", RTLD_NOW | RTLD_GLOBAL)) == NULL) {
-#ifdef RTLD_NEXT
-                lib = RTLD_NEXT;
-#else
-                exit(1);
-#endif
-        }
-        
 #if SMBW_DEBUG & 0x1
-# define GETSYM(symname, symstring)                                     \
-        if ((smbw_libc.symname = dlsym(lib, symstring)) == NULL) {      \
-                if (smbw_libc.write != NULL &&                          \
-                    (error = dlerror()) != NULL) {                      \
-                        (* smbw_libc.write)(1, error, strlen(error));   \
-                        (* smbw_libc.write)(1, "\n", 1);                \
-                }                                                       \
+# define GETSYM(symname, symstring)                                      \
+        if ((smbw_libc.symname = dlsym(RTLD_NEXT, symstring)) == NULL) { \
+                if (smbw_libc.write != NULL &&                           \
+                    (error = dlerror()) != NULL) {                       \
+                        (* smbw_libc.write)(1, error, strlen(error));    \
+                        (* smbw_libc.write)(1, "\n", 1);                 \
+                }                                                        \
         }
 #else
 # define GETSYM(symname, symstring)                     \
-        smbw_libc.symname = dlsym(lib, symstring);
+        smbw_libc.symname = dlsym(RTLD_NEXT, symstring);
 #endif
         
         /*
@@ -264,19 +262,6 @@ static void initialize(void)
         GETSYM(select, "select");
         GETSYM(_select, "_select");
         GETSYM(__select, "__select");
-        
-#ifdef RTLD_NEXT
-        if (lib != RTLD_NEXT) {
-                dlclose(lib);
-        }
-#else
-        dlclose(lib);
-#endif
-        
-        /* Ensure that the C library is immediately available */
-        if ((lib = dlopen("/lib/libc.so.6", RTLD_NOW | RTLD_GLOBAL)) == NULL) {
-                exit(1);
-        }
         
 #if SMBW_DEBUG & 4
         {
