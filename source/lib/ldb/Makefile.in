@@ -52,7 +52,6 @@ LDB_TDB_OBJ=ldb_tdb/ldb_tdb.o \
 	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
 	ldb_tdb/ldb_cache.o ldb_tdb/ldb_tdb_wrap.o
 
-
 COMMON_OBJ=common/ldb.o common/ldb_ldif.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
 	   common/ldb_debug.o common/ldb_modules.o \
@@ -74,6 +73,8 @@ LIBS = $(LDB_LIB)($(OBJS))
 DIRS = lib bin
 
 MANPAGES = $(patsubst %.xml,%,$(wildcard man/*.xml))
+
+EXAMPLES = examples/ldbreader examples/ldifreader
 
 all: $(DIRS) $(BINS) $(LIBS) $(EXAMPLES) $(MANPAGES)
 
@@ -113,6 +114,12 @@ bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
 bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o $(LIB_FLAGS)
 
+examples/ldbreader: examples/ldbreader.o $(LIBS)
+	$(CC) -o examples/ldbreader examples/ldbreader.o $(LIB_FLAGS)
+ 
+examples/ldifreader: examples/ldifreader.o $(LIBS)
+	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
+
 .SUFFIXES: .1 .1.xml .3 .3.xml .xml .html
 
 %.3: %.3.xml
@@ -124,12 +131,11 @@ bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
 %.html: %.xml
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
-manpages: $(patsubst %.xml,%,$(wildcard man/*.xml))
-
 clean:
 	rm -f */*.o *.gcov */*.gc?? tdbtest.ldb* \
 	rm -f $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB)
 	rm -f $(MANPAGES)
+	rm -f $(EXAMPLES)
 
 distclean: clean
 	rm -f *~ */*~
