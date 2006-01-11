@@ -96,40 +96,7 @@ p11_rsa_public_decrypt(int flen,
 		       RSA *rsa,
 		       int padding)
 {
-    struct p11_rsa *p11rsa = RSA_get_app_data(rsa);
-    CK_OBJECT_HANDLE key = p11rsa->public_key;
-    CK_MECHANISM mechanism;
-    CK_ULONG ck_sigsize;
-    int ret;
-
-    if (key == 0) /* XXX */
-	return -1;
-
-    if (padding != RSA_PKCS1_PADDING)
-	return -1;
-
-    memset(&mechanism, 0, sizeof(mechanism));
-    mechanism.mechanism = CKM_RSA_PKCS;
-
-    ck_sigsize = RSA_size(rsa);
-
-    p11_get_session(p11rsa->p, p11rsa->slot);
-
-    ret = P11FUNC(p11rsa->p, VerifyInit,
-		  (P11SESSION(p11rsa->slot), &mechanism, key));
-    if (ret != CKR_OK) {
-	p11_put_session(p11rsa->p, p11rsa->slot);
-	return -1;
-    }
-
-    ret = P11FUNC(p11rsa->p, Verify,
-		  (P11SESSION(p11rsa->slot), (CK_BYTE *)from, flen, to, ck_sigsize));
-    if (ret != CKR_OK)
-	return -1;
-
-    p11_put_session(p11rsa->p, p11rsa->slot);
-
-    return ck_sigsize;
+    return -1;
 }
 
 
