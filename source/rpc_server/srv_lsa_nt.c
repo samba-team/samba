@@ -429,7 +429,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
 	 */
 	uint32 max_num_domains =
 		q_u->preferred_len < 5 ? q_u->preferred_len : 10;
-	int num_domains;
+	uint32 num_domains;
 	NTSTATUS nt_status;
 	uint32 num_thistime;
 
