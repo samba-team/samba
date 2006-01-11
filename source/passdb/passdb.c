@@ -866,15 +866,7 @@ BOOL lookup_global_sam_name(const char *c_user, int flags, uint32_t *rid,
 		}
 
 		sid_peek_rid(user_sid, rid);
-
-		if (pdb_get_acct_ctrl(sam_account) &
-		    (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST)) {
-			/* We have to filter them out in lsa_lookupnames,
-			 * indicate that this is not a real user.  */
-			*type = SID_NAME_COMPUTER;
-		} else {
-			*type = SID_NAME_USER;
-		}
+		*type = SID_NAME_USER;
 		pdb_free_sam(&sam_account);
 		return True;
 	}
