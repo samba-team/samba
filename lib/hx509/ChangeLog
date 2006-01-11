@@ -1,5 +1,31 @@
-2006-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_p11.c (p11_rsa_public_decrypt): since is wrong, don't provide
+	it. PKCS11 can't do public_decrypt, it support verify though. All
+	this doesn't matter, since the code never go though this path.
+
+	* crypto_headers.h: Provide glue to compile with less warnings
+	with OpenSSL
+	
+2006-01-08 Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* Makefile.am: Depend on LIB_des
+
+	* lock.c: Use "crypto_headers.h".
+
+	* crypto_headers.h: Include the two diffrent implementation of
+	crypto headers.
+
+	* cert.c: Use "crypto-headers.h". Load ENGINE configuration.
+
+	* crypto.c: Make compile with both OpenSSL and heimdal libdes.
+
+	* ks_p11.c: Add code for public key decryption (not supported yet)
+	and use "crypto-headers.h".
+	
+
+2006-01-04 Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* add a hx509_context where we can store configuration
 
 	* p11.c,Makefile.am: pkcs11 is now supported by library, remove
