@@ -259,6 +259,9 @@ test_bn_uadd(void)
 
     free(p);
 
+    BN_free(a);
+    BN_free(b);
+    BN_free(c);
 
     return 0;
 }
