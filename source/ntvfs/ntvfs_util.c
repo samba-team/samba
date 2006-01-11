@@ -27,10 +27,10 @@
 #include "ntvfs/ntvfs.h"
 
 
-NTSTATUS ntvfs_async_state_push(struct smbsrv_request *req,
-				void *private_data,
-				void (*send_fn)(struct smbsrv_request *),
-				struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_async_state_push(struct smbsrv_request *req,
+					 void *private_data,
+					 void (*send_fn)(struct smbsrv_request *),
+					 struct ntvfs_module_context *ntvfs)
 {
 	struct ntvfs_async_state *async;
 
@@ -51,7 +51,7 @@ NTSTATUS ntvfs_async_state_push(struct smbsrv_request *req,
 	return NT_STATUS_OK;
 }
 
-void ntvfs_async_state_pop(struct smbsrv_request *req)
+_PUBLIC_ void ntvfs_async_state_pop(struct smbsrv_request *req)
 {
 	struct ntvfs_async_state *async;
 

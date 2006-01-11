@@ -346,8 +346,8 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 /* 
    NTVFS open generic to any mapper
 */
-NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io, 
-			struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_open(struct smbsrv_request *req, union smb_open *io, 
+				 struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_open *io2;
@@ -480,8 +480,8 @@ done:
 /* 
    NTVFS fsinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs, 
-			  struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs, 
+				   struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_fsinfo *fs2;
@@ -609,8 +609,8 @@ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs,
 /* 
    NTVFS fileinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-			    union smb_fileinfo *info2)
+_PUBLIC_ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
+				     union smb_fileinfo *info2)
 {
 	int i;
 	/* and convert it to the required level using results in info2 */
@@ -835,8 +835,8 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 /* 
    NTVFS fileinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-			     struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
+				      struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_fileinfo *info2;
@@ -864,8 +864,8 @@ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *inf
 /* 
    NTVFS pathinfo generic to any mapper
 */
-NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
-			     struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info, 
+				      struct ntvfs_module_context *ntvfs)
 {
 	NTSTATUS status;
 	union smb_fileinfo *info2;
@@ -897,8 +897,8 @@ NTSTATUS ntvfs_map_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *inf
 /* 
    NTVFS lock generic to any mapper
 */
-NTSTATUS ntvfs_map_lock(struct smbsrv_request *req, union smb_lock *lck, 
-			struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_lock(struct smbsrv_request *req, union smb_lock *lck, 
+				 struct ntvfs_module_context *ntvfs)
 {
 	union smb_lock *lck2;
 	struct smb_lock_entry *locks;
@@ -1020,8 +1020,8 @@ static NTSTATUS ntvfs_map_write_finish(struct smbsrv_request *req,
 /* 
    NTVFS write generic to any mapper
 */
-NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr, 
-			 struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr, 
+				  struct ntvfs_module_context *ntvfs)
 {
 	union smb_write *wr2;
 	NTSTATUS status;
@@ -1118,8 +1118,8 @@ static NTSTATUS ntvfs_map_read_finish(struct smbsrv_request *req,
 /* 
    NTVFS read* to readx mapper
 */
-NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd, 
-			 struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_read(struct smbsrv_request *req, union smb_read *rd, 
+				 struct ntvfs_module_context *ntvfs)
 {
 	union smb_read *rd2;
 	union smb_lock *lck;
@@ -1202,8 +1202,8 @@ done:
 /* 
    NTVFS close generic to any mapper
 */
-NTSTATUS ntvfs_map_close(struct smbsrv_request *req, union smb_close *cl, 
-			 struct ntvfs_module_context *ntvfs)
+_PUBLIC_ NTSTATUS ntvfs_map_close(struct smbsrv_request *req, union smb_close *cl, 
+				  struct ntvfs_module_context *ntvfs)
 {
 	union smb_close *cl2;
 
