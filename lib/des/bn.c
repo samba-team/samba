@@ -332,7 +332,7 @@ BN_rand(BIGNUM *bn, int bits, int top, int bottom)
 
     i->negative = 0;
     i->data = malloc(len);
-    if (i->data == NULL)
+    if (i->data == NULL && len != 0)
 	return 0;
     i->length = len;
 
@@ -353,8 +353,10 @@ BN_rand(BIGNUM *bn, int bits, int top, int bottom)
     } else if (top == 1 && bits > 1) {
 	BN_set_bit(bn, bits - 1);
 	BN_set_bit(bn, bits - 2);
-    } else
+    } else {
+	BN_clear(bn);
 	return 0;
+    }
 
     if (bottom && bits > 0)
 	BN_set_bit(bn, 0);
