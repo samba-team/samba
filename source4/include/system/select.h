@@ -28,3 +28,11 @@
 #define SELECT_CAST
 #endif
 
+/* use epoll if it is available */
+#if defined(HAVE_EPOLL_CREATE) && defined(HAVE_SYS_EPOLL_H)
+#define WITH_EPOLL 1
+#endif
+
+#if WITH_EPOLL
+#include <sys/epoll.h>
+#endif
