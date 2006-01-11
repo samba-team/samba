@@ -45,7 +45,7 @@ static int num_backends;
 
   The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-NTSTATUS ntvfs_register(const void *_ops)
+_PUBLIC_ NTSTATUS ntvfs_register(const void *_ops)
 {
 	const struct ntvfs_ops *ops = _ops;
 	struct ntvfs_ops *new_ops;
@@ -79,7 +79,7 @@ NTSTATUS ntvfs_register(const void *_ops)
 /*
   return the operations structure for a named backend of the specified type
 */
-const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
+_PUBLIC_ const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type type)
 {
 	int i;
 
@@ -99,7 +99,7 @@ const struct ntvfs_ops *ntvfs_backend_byname(const char *name, enum ntvfs_type t
   This can be used by backends to either detect compilation errors, or provide
   multiple implementations for different smbd compilation options in one module
 */
-const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
+_PUBLIC_ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 {
 	static const struct ntvfs_critical_sizes critical_sizes = {
 		NTVFS_INTERFACE_VERSION,
