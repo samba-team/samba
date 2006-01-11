@@ -92,7 +92,7 @@ static int process_options(int argc, char **argv, int local_flags)
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehminjr:sw:R:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehminjr:sw:R:D:U:LW")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_flags |= LOCAL_AM_ROOT;
@@ -152,6 +152,10 @@ static int process_options(int argc, char **argv, int local_flags)
 		case 'U': {
 			got_username = True;
 			fstrcpy(user_name, optarg);
+			break;
+		case 'W':
+			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
+			*ldap_secret = '\0';
 			break;
 		}
 		case 'h':
@@ -325,6 +329,10 @@ static int process_root(int local_flags)
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW) {
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
 			lp_ldap_admin_dn());
+		if ( ! *ldap_secret ) {
+			new_passwd = prompt_for_new_password(stdin_passwd_get);
+			fstrcpy(ldap_secret, new_passwd);
+		}
 		if (!store_ldap_admin_pw(ldap_secret))
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
 		goto done;
