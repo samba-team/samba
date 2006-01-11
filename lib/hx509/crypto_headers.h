@@ -17,6 +17,11 @@
 #include <openssl/asn1t.h>
 #include <openssl/ui.h>
 #include <openssl/pkcs12.h>
+#include <openssl/engine.h>
+
+#ifndef BN_is_negative
+#define BN_set_negative(bn, flag) ((bn)->neg = (flag) ? 1 : 0)
+#endif
 
 #else
 
