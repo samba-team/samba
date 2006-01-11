@@ -170,7 +170,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
 							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
-			return LDB_ERR_CONSTRAINT_VIOLAION;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	
 		sambaPassword = (const char *)attribute->values[0].data;
@@ -178,7 +178,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	} else if (((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_ADD)
 		   || ((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_REPLACE)) {
 		if (attribute->num_values != 1) {
-			return LDB_ERR_CONSTRAINT_VIOLAION;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		
 		sambaPassword = (const char *)attribute->values[0].data;
@@ -298,7 +298,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 						  "attempted set of sambaPassword on non-'person' object %s rejected",
 						  ldb_dn_linearize(mem_ctx, dn)));
 		talloc_free(mem_ctx);
-		return LDB_ERR_CONSTRAINT_VIOLAION;
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	computer_val = data_blob_string_const("computer");

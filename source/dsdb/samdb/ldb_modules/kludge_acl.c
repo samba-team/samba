@@ -206,7 +206,7 @@ static int kludge_acl_init_2(struct ldb_module *module)
 	}
 
 	if (res->count > 1) {
-		return LDB_ERR_CONSTRAINT_VIOLAION;
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	msg = res->msgs[0];
