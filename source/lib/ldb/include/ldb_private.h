@@ -29,7 +29,7 @@
  *
  *  Component: ldb private header
  *
- *  Description: defines internal ldb structures used by th esubsystem and modules
+ *  Description: defines internal ldb structures used by the subsystem and modules
  *
  *  Author: Andrew Tridgell
  *  Author: Stefan Metzmacher
