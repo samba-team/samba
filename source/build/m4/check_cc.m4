@@ -117,6 +117,25 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 	    AC_MSG_WARN([cannot run when cross-compiling]))
 
 #
+# Check if the compiler support ELF visibility for symbols
+#
+if test x"$GCC" = x"yes" ; then
+    AX_CFLAGS_GCC_OPTION([-fvisibility=hidden], VISIBILITY_CFLAGS)
+fi
+if test -n "$VISIBILITY_CFLAGS"; then
+	OLD_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} ${VISIBILITY_CFLAGS} -D_PUBLIC_=__attribute__((visibility(\"default\")))"
+	VISIBILITY_CFLAGS="${VISIBILITY_CFLAGS} -D_PUBLIC_=\"__attribute__((visibility(\\\"default\\\")))\""
+	AC_MSG_CHECKING([that the C compiler can use the VISIBILITY_CFLAGS])
+	AC_TRY_RUN([
+		_PUBLIC_ void vis_foo1(void) {}
+		__attribute__((visibility("default"))) void vis_foo2(void) {}
+		#include "${srcdir-.}/build/tests/trivial.c"
+		], AC_MSG_RESULT(yes), [AC_MSG_RESULT(no);VISIBILITY_CFLAGS=""])
+	CFLAGS="${OLD_CFLAGS}"
+fi
+
+#
 # Check if the compiler can handle the options we selected by
 # --enable-*developer
 #

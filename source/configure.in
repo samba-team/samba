@@ -53,8 +53,8 @@ if test "${ac_cv_prog_CC}" = "insure"; then
 fi
 
 #################################################
-# add DEVELOPER_CFLAGS only for the real build
-CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+# add *_CFLAGS only for the real build
+CFLAGS="${CFLAGS} ${VISIBILITY_CFLAGS} ${DEVELOPER_CFLAGS}"
 
 #################################################
 # final configure stuff
