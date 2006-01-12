@@ -214,7 +214,16 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req)
 	if (!composite_is_ok(state->ctx)) return;
 
 	if (state->node_status.out.status.num_names > 0) {
-		state->dcs[0].name = talloc_steal(state->dcs, state->node_status.out.status.names[0].name);
+		int i;
+		char *name = talloc_strndup(state->dcs, state->node_status.out.status.names[0].name, 15);
+		/* Strip space padding */
+		if (name) {
+			i = MIN(strlen(name), 15);
+			for (; i > 0 && name[i - 1] == ' '; i--) {
+				name[i - 1] = '\0';
+			}
+		}
+		state->dcs[0].name = name;
 		composite_done(state->ctx);
 		return;
 	}
