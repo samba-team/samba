@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -476,7 +476,7 @@ main(int argc, char **argv)
 #endif
     {
 	char *tty = ttyname (STDERR_FILENO);
-	syslog (LOG_NOTICE | LOG_AUTH, tty ? "%s to %s" : "%s to %s on %s",
+	syslog (LOG_NOTICE | LOG_AUTH, tty ? "%s to %s on %s" : "%s to %s",
 		login_info->pw_name, su_info->pw_name, tty);
     }
 
