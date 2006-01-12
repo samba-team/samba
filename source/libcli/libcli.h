@@ -41,5 +41,9 @@ struct clilist_file_info {
 	const char *short_name;
 };
 
+struct nbt_dc_name {
+	const char *address;
+	const char *name;
+};
 
 #include "libcli/libcli_proto.h"

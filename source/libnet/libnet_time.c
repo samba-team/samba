@@ -33,9 +33,9 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	struct tm tm;
 
 	/* prepare connect to the SRVSVC pipe of a timeserver */
-	c.level                    = LIBNET_RPC_CONNECT_SERVER;
-	c.in.domain_name           = r->srvsvc.in.server_name;
-	c.in.dcerpc_iface     	   = &dcerpc_table_srvsvc;
+	c.level             = LIBNET_RPC_CONNECT_SERVER;
+	c.in.name           = r->srvsvc.in.server_name;
+	c.in.dcerpc_iface   = &dcerpc_table_srvsvc;
 
 	/* 1. connect to the SRVSVC pipe of a timeserver */
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
@@ -47,7 +47,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* prepare srvsvc_NetrRemoteTOD */
-	tod.in.server_unc = talloc_asprintf(mem_ctx, "\\%s", c.in.domain_name);
+	tod.in.server_unc = talloc_asprintf(mem_ctx, "\\%s", c.in.name);
 
 	/* 2. try srvsvc_NetRemoteTOD */
 	status = dcerpc_srvsvc_NetRemoteTOD(c.out.dcerpc_pipe, mem_ctx, &tod);

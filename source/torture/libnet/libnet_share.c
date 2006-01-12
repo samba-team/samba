@@ -148,7 +148,7 @@ BOOL torture_listshares(void)
 
 		status = libnet_ListShares(libnetctx, mem_ctx, &share);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("libnet_ListShare level %u failed - %s\n", share.in.level, nt_errstr(status));
+			printf("libnet_ListShare level %u failed - %s\n", share.in.level, share.out.error_string);
 			ret = False;
 			goto done;
 		}
