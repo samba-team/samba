@@ -58,9 +58,6 @@ in Samba 4 yet). The other values of this option and the 'domain master' and
 that can be either 'bdc', 'pdc', 'member server' or 'standalone'. Note that 
 member server support does not work yet.
 
-'password server' now takes a DCE/RPC binding string (see prog_guide.txt) 
-rather then simply a NetBIOS name.
-
 The following parameters have been removed:
 - passdb backend: accounts are now stored in a LDB-based SAM database, 
 	see 'sam database' below.
