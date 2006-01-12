@@ -22,11 +22,6 @@
 
 #include "librpc/gen_ndr/lsa.h"
 
-struct nbt_dc_name {
-	const char *address;
-	const char *name;
-};
-
 struct wb_sid_object {
 	enum lsa_SidType type;
 	struct dom_sid *sid;
