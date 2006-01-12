@@ -1,3 +1,7 @@
+2006-01-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c (pass): remove unused variable in the !OTP case
+	
 2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ls.c: Check return value from asprintf instead of string !=
