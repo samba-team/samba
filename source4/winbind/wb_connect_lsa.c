@@ -95,24 +95,32 @@ static void init_lsa_recv_pipe(struct composite_context *ctx)
 	switch (state->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
 		ctx = dcerpc_bind_auth_none_send(state, state->lsa_pipe,
-										 &dcerpc_table_lsarpc);
+						 &dcerpc_table_lsarpc);
 		composite_continue(state->ctx, ctx, init_lsa_recv_anon_bind,
 				   state);
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
+	{
+		uint8_t auth_type;
+		if (lp_winbind_sealed_pipes()) {
+			auth_type = DCERPC_AUTH_LEVEL_PRIVACY;
+		} else {
+			auth_type = DCERPC_AUTH_LEVEL_INTEGRITY;
+		}
 		if (state->creds == NULL) {
 			composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
 			return;
 		}
-		state->lsa_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 		ctx = dcerpc_bind_auth_send(state, state->lsa_pipe,
-									&dcerpc_table_lsarpc,
+					    &dcerpc_table_lsarpc,
 					    state->creds, state->auth_type,
+					    auth_type,
 					    NULL);
 		composite_continue(state->ctx, ctx, init_lsa_recv_auth_bind,
 				   state);
 		break;
+	}
 	default:
 		composite_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
 	}

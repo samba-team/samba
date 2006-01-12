@@ -57,8 +57,8 @@ static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem
 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "dcerpc_pipe_connect to pipe %s failed with %s\n",
-						      r->in.dcerpc_iface->name, binding);
+						      "dcerpc_pipe_connect to pipe %s[%s] failed with %s\n",
+						      r->in.dcerpc_iface->name, binding, nt_errstr(status));
 		return status;
 	}
 

@@ -150,24 +150,15 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	struct creds_CredentialState *creds;
 	struct netr_DatabaseSync dbsync;
 	struct cli_credentials *machine_account;
-	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p;
+	struct libnet_context *machine_net_ctx;
+	struct libnet_RpcConnect *c;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
 
-	/* TODO: This is bogus */
-	const char **bindings = lp_passwordserver();
-	const char *binding;
-
-	if (bindings && bindings[0]) {
-		binding = bindings[0];
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	samsync_ctx = talloc_named(mem_ctx, 0, "SamSync top context");
 
-	if (!r->machine_account) { 
+	if (!r->in.machine_account) { 
 		machine_account = cli_credentials_init(samsync_ctx);
 		if (!machine_account) {
 			talloc_free(samsync_ctx);
@@ -176,16 +167,17 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		cli_credentials_set_conf(machine_account);
 		nt_status = cli_credentials_set_machine_account(machine_account);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			r->error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");
+			r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");
 			talloc_free(samsync_ctx);
 			return nt_status;
 		}
 	} else {
-		machine_account = r->machine_account;
+		machine_account = r->in.machine_account;
 	}
 
+	/* We cannot do this unless we are a BDC.  Check, before we get odd errors later */
 	if (cli_credentials_get_secure_channel_type(machine_account) != SEC_CHAN_BDC) {
-		r->error_string
+		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Our join to domain %s is not as a BDC (%d), please rejoin as a BDC",
 					  
@@ -195,25 +187,67 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	/* Connect to DC (take a binding string for now) */
-
-	nt_status = dcerpc_parse_binding(samsync_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->error_string = talloc_asprintf(mem_ctx, "Bad binding string %s\n", binding);
+	c = talloc(samsync_ctx, struct libnet_RpcConnect);
+	if (!c) {
+		r->out.error_string = NULL;
 		talloc_free(samsync_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* We like schannel */
-	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SEAL /* | DCERPC_SCHANNEL_128 */;
+	if (r->in.binding_string) {
+		c->level      = LIBNET_RPC_CONNECT_BINDING;
+		c->in.binding = r->in.binding_string;
+	} else {
+		/* prepare connect to the NETLOGON pipe of PDC */
+		c->level      = LIBNET_RPC_CONNECT_PDC;
+		c->in.name    = cli_credentials_get_domain(machine_account);
+	}
+	c->in.dcerpc_iface      = &dcerpc_table_netlogon;
 
-	/* Setup schannel */
-	nt_status = dcerpc_pipe_connect_b(samsync_ctx, &p, b, 
-					  &dcerpc_table_netlogon,
-					  machine_account, ctx->event_ctx);
+	/* We must do this as the machine, not as any command-line
+	 * user.  So we override the credentials in the
+	 * libnet_context */
+	machine_net_ctx = talloc(samsync_ctx, struct libnet_context);
+	if (!machine_net_ctx) {
+		r->out.error_string = NULL;
+		talloc_free(samsync_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	*machine_net_ctx = *ctx;
+	machine_net_ctx->cred = machine_account;
+
+	/* connect to the NETLOGON pipe of the PDC */
+	nt_status = libnet_RpcConnect(machine_net_ctx, c, c);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Connection to NETLOGON pipe of DC failed: %s",
+						      c->out.error_string);
+		talloc_free(samsync_ctx);
+		return nt_status;
+	}
+
+	/* This makes a new pipe, on which we can do schannel.  We
+	 * should do this in the RpcConnect code, but the abstaction
+	 * layers do not suit yet */
+
+	nt_status = dcerpc_secondary_connection(c->out.dcerpc_pipe, &p,
+						c->out.dcerpc_pipe->binding);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Secondary connection to NETLOGON pipe of DC %s failed: %s",
+						      dcerpc_server_name(p), nt_errstr(nt_status));
+		talloc_free(samsync_ctx);
+		return nt_status;
+	}
+
+	nt_status = dcerpc_bind_auth_schannel(samsync_ctx, p, &dcerpc_table_netlogon,
+					      machine_account, DCERPC_AUTH_LEVEL_PRIVACY);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "SCHANNEL authentication to NETLOGON pipe of DC %s failed: %s",
+						      dcerpc_server_name(p), nt_errstr(nt_status));
 		talloc_free(samsync_ctx);
 		return nt_status;
 	}
@@ -222,11 +256,12 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 
 	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, samsync_ctx, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from DCERPC/GENSEC layer");
+		r->out.error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from DCERPC/GENSEC layer");
 		talloc_free(samsync_ctx);
 		return nt_status;
 	}
 
+	/* Setup details for the syncronisation */
 	dbsync.in.logon_server = talloc_asprintf(samsync_ctx, "\\\\%s", dcerpc_server_name(p));
 	dbsync.in.computername = cli_credentials_get_workstation(machine_account);
 	dbsync.in.preferredmaximumlength = (uint32_t)-1;
@@ -244,40 +279,47 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 			dbsync_nt_status = dcerpc_netr_DatabaseSync(p, loop_ctx, &dbsync);
 			if (!NT_STATUS_IS_OK(dbsync_nt_status) &&
 			    !NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES)) {
-				r->error_string = talloc_asprintf(samsync_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
+				r->out.error_string = talloc_asprintf(samsync_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
 				talloc_free(samsync_ctx);
 				return nt_status;
 			}
 			
 			if (!creds_client_check(creds, &dbsync.out.return_authenticator.cred)) {
-				r->error_string = talloc_strdup(samsync_ctx, "Credential chaining failed");
+				r->out.error_string = talloc_strdup(samsync_ctx, "Credential chaining failed");
 				talloc_free(samsync_ctx);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			
 			dbsync.in.sync_context = dbsync.out.sync_context;
 			
+			/* For every single remote 'delta' entry: */
 			for (d=0; d < dbsync.out.delta_enum_array->num_deltas; d++) {
 				char *error_string = NULL;
 				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
+				/* 'Fix' elements, by decrypting and
+				 * de-obfustiating the data */
 				nt_status = fix_delta(delta_ctx, 
 						      creds, 
 						      dbsync.in.database_id,
 						      &dbsync.out.delta_enum_array->delta_enum[d], 
 						      &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->error_string = talloc_steal(samsync_ctx, error_string);
+					r->out.error_string = talloc_steal(samsync_ctx, error_string);
 					talloc_free(samsync_ctx);
 					return nt_status;
 				}
-				nt_status = r->delta_fn(delta_ctx, 
-								 r->fn_ctx,
-								 creds,
-								 dbsync.in.database_id,
-								 &dbsync.out.delta_enum_array->delta_enum[d], 
-								 &error_string);
+
+				/* Now call the callback.  This will
+				 * do something like print the data or
+				 * write to an ldb */
+				nt_status = r->in.delta_fn(delta_ctx, 
+							   r->in.fn_ctx,
+							   creds,
+							   dbsync.in.database_id,
+							   &dbsync.out.delta_enum_array->delta_enum[d], 
+							   &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->error_string = talloc_steal(samsync_ctx, error_string);
+					r->out.error_string = talloc_steal(samsync_ctx, error_string);
 					talloc_free(samsync_ctx);
 					return nt_status;
 				}

@@ -94,48 +94,22 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-static NTSTATUS libnet_SamDump_keytab_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump_keytab *r)
+NTSTATUS libnet_SamDump_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump_keytab *r)
 {
 	NTSTATUS nt_status;
 	struct libnet_SamSync r2;
 
-	r2.error_string = NULL;
-	r2.delta_fn = libnet_samdump_keytab_fn;
-	r2.fn_ctx = r->keytab_name;
-	r2.machine_account = NULL; /* TODO:  Create a machine account, fill this in, and the delete it */
-	nt_status = libnet_SamSync_netlogon(ctx, mem_ctx, &r2);
-	r->error_string = r2.error_string;
+	r2.out.error_string            = NULL;
+	r2.in.binding_string           = r->in.binding_string;
+	r2.in.delta_fn                 = libnet_samdump_keytab_fn;
+	r2.in.fn_ctx                   = discard_const(r->in.keytab_name);
+	r2.in.machine_account          = r->in.machine_account;
+	nt_status                      = libnet_SamSync_netlogon(ctx, mem_ctx, &r2);
+	r->out.error_string            = r2.out.error_string;
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
 	return nt_status;
-}
-
-
-
-static NTSTATUS libnet_SamDump_keytab_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump_keytab *r)
-{
-	NTSTATUS nt_status;
-	struct libnet_SamDump_keytab r2;
-	r2.level = LIBNET_SAMDUMP_NETLOGON;
-	r2.error_string = NULL;
-	r2.keytab_name = r->keytab_name;
-	nt_status = libnet_SamDump_keytab(ctx, mem_ctx, &r2);
-	r->error_string = r2.error_string;
-	
-	return nt_status;
-}
-
-NTSTATUS libnet_SamDump_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump_keytab *r)
-{
-	switch (r->level) {
-	case LIBNET_SAMDUMP_GENERIC:
-		return libnet_SamDump_keytab_generic(ctx, mem_ctx, r);
-	case LIBNET_SAMDUMP_NETLOGON:
-		return libnet_SamDump_keytab_netlogon(ctx, mem_ctx, r);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }
