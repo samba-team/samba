@@ -247,10 +247,6 @@ the kerberos libraries
 
  - DCE_STYLE
 
- - gsskrb5_get_initiator_subkey() (return the exact key that Samba3
-   has always asked for.  gsskrb5_get_subkey() might do what we need
-   anyway)
-
  - gsskrb5_acquire_creds() (takes keytab and/or ccache as input
    parameters, see keytab and state machine discussion)
 
