@@ -46,28 +46,6 @@
 /* In Samba4 but not in Samba3:
 */
 
-static void generate_hashes (struct ldb_module *module, const char *local_attr,	const struct ldb_message *local, struct ldb_message *remote_mp,	struct ldb_message *remote_fb)
-{
-	const char *upwd = ldb_msg_find_string(local, local_attr, NULL);
-	struct ldb_val val;
-
-	if (!upwd)
-		return;
-
-	ldb_msg_add_string(remote_fb, local_attr, upwd);
-
-	val.length = 16;
-	val.data = talloc_zero_size(module, val.length);
-
-	E_md4hash(upwd, val.data);
-	ldb_msg_add_value(remote_mp, "sambaNTPassword", &val);
-			
-	val.data = talloc_zero_size(module, val.length);
-	E_deshash(upwd, val.data);
-	ldb_msg_add_value(remote_mp, "sambaLMPassword", &val);
-}
-
-
 static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *module, TALLOC_CTX *ctx, const char *attr, const struct ldb_message *remote)
 {
 	struct ldb_message_element *el;
