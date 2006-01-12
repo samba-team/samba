@@ -42,6 +42,7 @@ BOOL torture_lookup(void)
 
 	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
 	lookup.in.type     = NBT_NAME_CLIENT;
+	lookup.in.methods  = NULL;
 	lookup.out.address = &address;
 
 	status = libnet_Lookup(ctx, mem_ctx, &lookup);
@@ -77,6 +78,7 @@ BOOL torture_lookup_host(void)
 	address = talloc_array(mem_ctx, const char, 16);
 
 	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
+	lookup.in.methods  = NULL;
 	lookup.out.address = &address;
 
 	status = libnet_LookupHost(ctx, mem_ctx, &lookup);
