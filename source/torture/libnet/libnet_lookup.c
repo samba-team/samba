@@ -40,8 +40,7 @@ BOOL torture_lookup(void)
 
 	address = talloc_array(ctx, const char, 16);
 
-	lookup.in.hostname = lp_netbios_name();
-	lookup.in.methods  = lp_name_resolve_order();
+	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
 	lookup.in.type     = NBT_NAME_CLIENT;
 	lookup.out.address = &address;
 
@@ -77,8 +76,7 @@ BOOL torture_lookup_host(void)
 
 	address = talloc_array(mem_ctx, const char, 16);
 
-	lookup.in.hostname = lp_netbios_name();
-	lookup.in.methods  = lp_name_resolve_order();
+	lookup.in.hostname = lp_parm_string(-1, "torture", "host");
 	lookup.out.address = &address;
 
 	status = libnet_LookupHost(ctx, mem_ctx, &lookup);
@@ -103,24 +101,28 @@ BOOL torture_lookup_pdc(void)
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
-	struct libnet_Lookup lookup;
-	const char *address;
+	struct libnet_LookupDCs *lookup;
 
 	mem_ctx = talloc_init("test_lookup_pdc");
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	address = talloc_array(mem_ctx, const char, 16);
+	talloc_steal(ctx, mem_ctx);
 
-	lookup.in.hostname = lp_workgroup();
-	lookup.in.methods  = lp_name_resolve_order();
-	lookup.out.address = &address;
+	lookup = talloc(mem_ctx, struct libnet_LookupDCs);
+	if (!lookup) {
+		ret = False;
+		goto done;
+	}
 
-	status = libnet_LookupPdc(ctx, mem_ctx, &lookup);
+	lookup->in.domain_name = lp_workgroup();
+	lookup->in.name_type   = NBT_NAME_PDC;
+
+	status = libnet_LookupDCs(ctx, mem_ctx, lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't lookup pdc %s: %s\n", lookup.in.hostname, nt_errstr(status));
+		printf("Couldn't lookup pdc %s: %s\n", lookup->in.domain_name, nt_errstr(status));
 		ret = False;
 		goto done;
 	}

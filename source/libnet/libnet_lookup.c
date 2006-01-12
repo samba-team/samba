@@ -26,7 +26,8 @@
 #include "lib/events/events.h"
 #include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
-
+#include "lib/messaging/messaging.h"
+#include "lib/messaging/irpc.h"
 
 struct lookup_state {
 	struct composite_context *resolve_ctx;
@@ -162,20 +163,49 @@ NTSTATUS libnet_LookupHost(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 /**
  * Sends asynchronous LookupPdc request
  */
-struct composite_context* libnet_LookupPdc_send(struct libnet_context *ctx,
-						struct libnet_Lookup *io)
+struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
+						TALLOC_CTX *mem_ctx,
+						struct libnet_LookupDCs *io)
 {
-	io->in.type = NBT_NAME_PDC;
-	return libnet_Lookup_send(ctx, io);
+	struct messaging_context *msg_ctx = messaging_init(mem_ctx, random() % 0x10000000, ctx->event_ctx);
+	struct composite_context *c;
+	if (!msg_ctx) {
+		return NULL;
+	}
+	c = finddcs_send(mem_ctx,
+			 io->in.domain_name, 
+			 NBT_NAME_PDC,
+			 NULL, ctx->name_res_methods,
+			 ctx->event_ctx, msg_ctx);
+	return c;
 }
 
+/**
+ * Waits for and receives results of asynchronous Lookup call
+ *
+ * @param c composite context returned by asynchronous Lookup call
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
+
+NTSTATUS libnet_LookupDCs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+			       struct libnet_LookupDCs *io)
+{
+	NTSTATUS status;
+	status = finddcs_recv(c, mem_ctx, &io->out.num_dcs, &io->out.dcs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return status;
+}
 
 /**
  * Synchronous version of LookupPdc
  */
-NTSTATUS libnet_LookupPdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
-			  struct libnet_Lookup *io)
+NTSTATUS libnet_LookupDCs(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			  struct libnet_LookupDCs *io)
 {
-	struct composite_context *c = libnet_LookupPdc_send(ctx, io);
-	return libnet_Lookup_recv(c, mem_ctx, io);
+	struct composite_context *c = libnet_LookupDCs_send(ctx, mem_ctx, io);
+	return libnet_LookupDCs_recv(c, mem_ctx, io);
 }

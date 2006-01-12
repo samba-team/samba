@@ -29,3 +29,15 @@ struct libnet_Lookup {
 		const char **address;
 	} out;
 };
+
+struct libnet_LookupDCs {
+	struct {
+		const char *domain_name;
+		int name_type;
+	} in;
+	struct {
+		int num_dcs;
+		struct nbt_dc_name *dcs;
+	} out;
+};
+

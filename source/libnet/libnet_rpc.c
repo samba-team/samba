@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-
+#include "libcli/libcli.h"
 
 /**
  * Connects rpc pipe on remote server
@@ -39,9 +39,10 @@ static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem
 
 	/* prepare binding string */
 	switch (r->level) {
+	case LIBNET_RPC_CONNECT_DC:
 	case LIBNET_RPC_CONNECT_PDC:
 	case LIBNET_RPC_CONNECT_SERVER:
-		binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", r->in.domain_name);
+		binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", r->in.name);
 		break;
 
 	case LIBNET_RPC_CONNECT_BINDING:
@@ -81,24 +82,45 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 {
 	NTSTATUS status;
 	struct libnet_RpcConnect r2;
-	struct libnet_Lookup f;
+	struct libnet_LookupDCs f;
+	const char *connect_name;
 
-	f.in.hostname  = r->in.domain_name;
-	f.in.methods   = NULL;
-	f.out.address  = NULL;
+	f.in.domain_name  = r->in.name;
+	switch (r->level) {
+	case LIBNET_RPC_CONNECT_PDC:
+		f.in.name_type = NBT_NAME_PDC;
+		break;
+	case LIBNET_RPC_CONNECT_DC:
+		f.in.name_type = NBT_NAME_LOGON;
+		break;
+	default:
+		break;
+	}
+	f.out.num_dcs = 0;
+	f.out.dcs  = NULL;
 
 	/* find the domain pdc first */
-	status = libnet_LookupPdc(ctx, mem_ctx, &f);
+	status = libnet_LookupDCs(ctx, mem_ctx, &f);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx, "libnet_LookupPdc failed: %s",
+		r->out.error_string = talloc_asprintf(mem_ctx, "libnet_LookupDCs failed: %s",
 						      nt_errstr(status));
 		return status;
 	}
 
+	/* we might not have got back a name.  Fall back to the IP */
+	if (f.out.dcs[0].name) {
+		connect_name = f.out.dcs[0].name;
+	} else {
+		connect_name = f.out.dcs[0].address;
+	}
+
 	/* ok, pdc has been found so do attempt to rpc connect */
-	r2.level		    = LIBNET_RPC_CONNECT_SERVER;
-	r2.in.domain_name	    = talloc_strdup(mem_ctx, f.out.address[0]);
-	r2.in.dcerpc_iface     = r->in.dcerpc_iface;
+	r2.level	    = LIBNET_RPC_CONNECT_SERVER;
+
+	/* This will cause yet another name resolution, but at least
+	 * we pass the right name down the stack now */
+	r2.in.name	    = talloc_strdup(mem_ctx, connect_name);
+	r2.in.dcerpc_iface  = r->in.dcerpc_iface;
 	
 	status = libnet_RpcConnect(ctx, mem_ctx, &r2);
 
@@ -130,6 +152,7 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
 
 		case LIBNET_RPC_CONNECT_PDC:
+		case LIBNET_RPC_CONNECT_DC:
 			return libnet_RpcConnectPdc(ctx, mem_ctx, r);
 	}
 

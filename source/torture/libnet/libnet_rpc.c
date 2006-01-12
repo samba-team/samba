@@ -24,20 +24,19 @@
 #include "libnet/libnet.h"
 
 
-BOOL test_lsa_np_connect(struct libnet_context *ctx)
+static BOOL test_lsa_connect(struct libnet_context *ctx)
 {
 	NTSTATUS status;
 	struct libnet_RpcConnect connect;
 	connect.level            = LIBNET_RPC_CONNECT_BINDING;
-	connect.in.domain_name   = lp_workgroup();
-	connect.in.binding       = talloc_asprintf(ctx, "ncacn_np:%s", lp_workgroup());
+	connect.in.binding       = lp_parm_string(-1, "torture", "binding");
 	connect.in.dcerpc_iface  = &dcerpc_table_lsarpc;
 
 	status = libnet_RpcConnect(ctx, ctx, &connect);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't connect to rpc service %s on %s: %s\n",
-		       connect.in.dcerpc_iface->name, connect.in.domain_name,
+		       connect.in.dcerpc_iface->name, connect.in.binding,
 		       nt_errstr(status));
 
 		return False;
@@ -47,20 +46,19 @@ BOOL test_lsa_np_connect(struct libnet_context *ctx)
 }
 
 
-BOOL test_samr_np_connect(struct libnet_context *ctx)
+static BOOL test_samr_connect(struct libnet_context *ctx)
 {
 	NTSTATUS status;
 	struct libnet_RpcConnect connect;
 	connect.level            = LIBNET_RPC_CONNECT_BINDING;
-	connect.in.domain_name   = lp_workgroup();
-	connect.in.binding       = talloc_asprintf(ctx, "ncacn_np:%s", lp_workgroup());
+	connect.in.binding       = lp_parm_string(-1, "torture", "binding");
 	connect.in.dcerpc_iface  = &dcerpc_table_samr;
 
 	status = libnet_RpcConnect(ctx, ctx, &connect);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't connect to rpc service %s on %s: %s\n",
-		       connect.in.dcerpc_iface->name, connect.in.domain_name,
+		       connect.in.dcerpc_iface->name, connect.in.binding,
 		       nt_errstr(status));
 
 		return False;
@@ -68,53 +66,6 @@ BOOL test_samr_np_connect(struct libnet_context *ctx)
 
 	return True;
 }
-
-
-BOOL test_lsa_tcpip_connect(struct libnet_context *ctx)
-{
-	NTSTATUS status;
-	struct libnet_RpcConnect connect;
-	connect.level            = LIBNET_RPC_CONNECT_BINDING;
-	connect.in.domain_name   = lp_workgroup();
-	connect.in.binding       = talloc_asprintf(ctx, "ncacn_ip_tcp:%s", lp_netbios_name());
-	connect.in.dcerpc_iface  = &dcerpc_table_lsarpc;
-
-	status = libnet_RpcConnect(ctx, ctx, &connect);
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't connect to rpc service %s on %s: %s\n",
-		       connect.in.dcerpc_iface->name, connect.in.domain_name,
-		       nt_errstr(status));
-
-		return False;
-	}
-
-	return True;
-}
-
-
-BOOL test_samr_tcpip_connect(struct libnet_context *ctx)
-{
-	NTSTATUS status;
-	struct libnet_RpcConnect connect;
-	connect.level            = LIBNET_RPC_CONNECT_BINDING;
-	connect.in.domain_name   = lp_workgroup();
-	connect.in.binding       = talloc_asprintf(ctx, "ncacn_ip_tcp:%s", lp_netbios_name());
-	connect.in.dcerpc_iface  = &dcerpc_table_samr;
-
-	status = libnet_RpcConnect(ctx, ctx, &connect);
-	
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Couldn't connect to rpc service %s on %s: %s\n",
-		       connect.in.dcerpc_iface->name, connect.in.domain_name,
-		       nt_errstr(status));
-
-		return False;
-	}
-
-	return True;
-}
-
 
 BOOL torture_rpc_connect(void)
 {
@@ -123,27 +74,15 @@ BOOL torture_rpc_connect(void)
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
-	printf("Testing connection to lsarpc interface via named pipe\n");
-	if (!test_lsa_np_connect(ctx)) {
-		printf("failed to connect lsarpc interface via named pipe\n");
+	printf("Testing connection to lsarpc interface\n");
+	if (!test_lsa_connect(ctx)) {
+		printf("failed to connect lsarpc interface\n");
 		return False;
 	}
 
-	printf("Testing connection to SAMR service via named pipe\n");
-	if (!test_samr_np_connect(ctx)) {
-		printf("failed to connect samr interface via named pipe\n");
-		return False;
-	}
-
-	printf("Testing connection to LSA service via tcp/ip\n");
-	if (!test_lsa_tcpip_connect(ctx)) {
-		printf("failed to connect lsarpc interface via tcp/ip\n");
-		return False;
-	}
-
-	printf("Testing connection to SAMR service via tcp/ip\n");
-	if (!test_samr_tcpip_connect(ctx)) {
-		printf("failed to connect samr interface via tcp/ip\n");
+	printf("Testing connection to SAMR service\n");
+	if (!test_samr_connect(ctx)) {
+		printf("failed to connect samr interface\n");
 		return False;
 	}
 

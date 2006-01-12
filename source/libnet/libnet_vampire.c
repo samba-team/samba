@@ -210,7 +210,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 
 	/* Setup schannel */
 	nt_status = dcerpc_pipe_connect_b(samsync_ctx, &p, b, 
-									  &dcerpc_table_netlogon,
+					  &dcerpc_table_netlogon,
 					  machine_account, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

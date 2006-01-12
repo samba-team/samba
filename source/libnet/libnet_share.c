@@ -30,10 +30,16 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	struct srvsvc_NetShareEnumAll s;
 	uint32_t resume_handle;
 	struct srvsvc_NetShareCtr0 ctr0;
+	struct srvsvc_NetShareCtr1 ctr1;
+	struct srvsvc_NetShareCtr2 ctr2;
+	struct srvsvc_NetShareCtr501 ctr501;
+	struct srvsvc_NetShareCtr502 ctr502;
 
-	c.level                      = LIBNET_RPC_CONNECT_SERVER;
-	c.in.domain_name             = r->in.server_name;
-	c.in.dcerpc_iface       	 = &dcerpc_table_srvsvc;
+	c.level               = LIBNET_RPC_CONNECT_SERVER;
+	c.in.name             = r->in.server_name;
+	c.in.dcerpc_iface     = &dcerpc_table_srvsvc;
+
+	s.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", c.in.name);
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -46,11 +52,36 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	}
 
 	s.in.level = r->in.level;
-	s.in.ctr.ctr0 = &ctr0;
+	switch (s.in.level) {
+	case 0:
+		s.in.ctr.ctr0 = &ctr0;
+		ZERO_STRUCT(ctr0);
+		break;
+	case 1:
+		s.in.ctr.ctr1 = &ctr1;
+		ZERO_STRUCT(ctr1);
+		break;
+	case 2:
+		s.in.ctr.ctr2 = &ctr2;
+		ZERO_STRUCT(ctr2);
+		break;
+	case 501:
+		s.in.ctr.ctr501 = &ctr501;
+		ZERO_STRUCT(ctr501);
+		break;
+	case 502:
+		s.in.ctr.ctr502 = &ctr502;
+		ZERO_STRUCT(ctr502);
+		break;
+	default:
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "libnet_ListShares: Invalid info level requested: %d\n",
+						      s.in.level);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	s.in.max_buffer = ~0;
 	s.in.resume_handle = &resume_handle;
 
-	ZERO_STRUCT(ctr0);
 
 	status = dcerpc_srvsvc_NetShareEnumAll(c.out.dcerpc_pipe, mem_ctx, &s);
 	
@@ -63,6 +94,9 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	}
 
 	if (!W_ERROR_IS_OK(s.out.result) && !W_ERROR_EQUAL(s.out.result, WERR_MORE_DATA)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "srvsvc_NetShareEnumAll on server '%s' failed: %s",
+						      r->in.server_name, win_errstr(s.out.result));
 		goto disconnect;
 	}
 
@@ -82,9 +116,9 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareAdd s;
 
-	c.level                     = LIBNET_RPC_CONNECT_SERVER;
-	c.in.domain_name            = r->in.server_name;
-	c.in.dcerpc_iface      		= &dcerpc_table_srvsvc;
+	c.level              = LIBNET_RPC_CONNECT_SERVER;
+	c.in.name            = r->in.server_name;
+	c.in.dcerpc_iface    = &dcerpc_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -121,9 +155,9 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareDel s;
 
-	c.level                      = LIBNET_RPC_CONNECT_SERVER;
-	c.in.domain_name             = r->in.server_name;
-	c.in.dcerpc_iface       	 = &dcerpc_table_srvsvc;
+	c.level               = LIBNET_RPC_CONNECT_SERVER;
+	c.in.name             = r->in.server_name;
+	c.in.dcerpc_iface     = &dcerpc_table_srvsvc;
 
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
