@@ -28,7 +28,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	NTSTATUS status;
 	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareEnumAll s;
-	uint32_t resume_handle;
+	uint32_t resume_handle = 0;
 	struct srvsvc_NetShareCtr0 ctr0;
 	struct srvsvc_NetShareCtr1 ctr1;
 	struct srvsvc_NetShareCtr2 ctr2;
