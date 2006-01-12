@@ -210,6 +210,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_bind_auth(p_netlogon, &dcerpc_table_netlogon,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+				  dcerpc_auth_level(p->conn),
 				  NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -242,6 +243,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_bind_auth(p_lsa, &dcerpc_table_lsarpc,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+				  dcerpc_auth_level(p->conn),
 				  NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

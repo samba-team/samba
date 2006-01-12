@@ -1404,7 +1404,6 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p2;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -1425,13 +1424,7 @@ static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("Torturing GetDCName\n");
 
-	status = dcerpc_parse_binding(mem_ctx, p->conn->binding_string, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to parse dcerpc binding '%s'\n", p->conn->binding_string);
-		return False;
-	}
-
-	status = dcerpc_secondary_connection(p, &p2, b);
+	status = dcerpc_secondary_connection(p, &p2, p->binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to create secondary connection\n");
 		return False;

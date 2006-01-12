@@ -745,14 +745,11 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	*/
 
 	/* Find the original binding string */
-	status = dcerpc_parse_binding(tmp_ctx, lsa_pipe->conn->binding_string, &samr_binding);	
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"Failed to parse lsa binding '%s'",
-						lsa_pipe->conn->binding_string);
-		talloc_free(tmp_ctx);
-		return status;
+	samr_binding = talloc(tmp_ctx, struct dcerpc_binding);
+	if (!samr_binding) {
+		return NT_STATUS_NO_MEMORY;
 	}
+	*samr_binding = *lsa_pipe->binding;
 
 	/* Make binding string for samr, not the other pipe */
 	status = dcerpc_epm_map_binding(tmp_ctx, samr_binding, 					

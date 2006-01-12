@@ -889,9 +889,10 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		/* If we don't already have netlogon credentials for
 		 * the schannel bind, then we have to get these
 		 * first */
-		status = dcerpc_bind_auth_schannel(tmp_ctx, p, table, credentials);
+		status = dcerpc_bind_auth_schannel(tmp_ctx, p, table, credentials,
+						   dcerpc_auth_level(p->conn));
 	} else if (!cli_credentials_is_anonymous(credentials) &&
-		!(binding->transport == NCACN_NP &&
+		!(p->conn->transport.transport == NCACN_NP &&
 		  !(binding->flags & DCERPC_SIGN) &&
 		  !(binding->flags & DCERPC_SEAL))) { 	
 	
@@ -925,7 +926,9 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		}
 
 		status = dcerpc_bind_auth(p, table,
-					  credentials, auth_type, table->authservices->names[0]);
+					  credentials, auth_type, 
+					  dcerpc_auth_level(p->conn),
+					  table->authservices->names[0]);
 	} else {
 		status = dcerpc_bind_auth_none(p, table);
 	}
@@ -1099,6 +1102,11 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 		return status;
 	}
 
+	p->binding = binding;
+	if (!talloc_reference(p, binding)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	status = dcerpc_pipe_auth(p, binding, table, credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(p);
@@ -1195,6 +1203,10 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 	}
 
 	(*p2)->conn->flags = p->conn->flags;
+	(*p2)->binding = b;
+	if (!talloc_reference(*p2, b)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }

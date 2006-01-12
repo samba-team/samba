@@ -131,29 +131,19 @@ struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_
 	conn->in.called_name            = strupper_talloc(mem_ctx, s->io.binding->host);
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
-	conn->in.fallback_to_anonymous  = False;
 	conn->in.workgroup              = lp_workgroup();
 
 	/*
-	 * provide proper credentials - user supplied or anonymous in case this is
-	 * schannel connection
+	 * provide proper credentials - user supplied, but allow a
+	 * fallback to anonymous if this is an schannel connection
+	 * (might be NT4 not allowing machine logins at session
+	 * setup).
 	 */
+	s->conn.in.credentials = s->io.creds;
 	if (s->io.binding->flags & DCERPC_SCHANNEL) {
-		struct cli_credentials *anon_creds;
-
-		anon_creds = cli_credentials_init(mem_ctx);
-		if (!anon_creds) {
-			composite_error(c, NT_STATUS_NO_MEMORY);
-			goto done;
-		}
-
-		cli_credentials_set_anonymous(anon_creds);
-		cli_credentials_guess(anon_creds);
-
-		s->conn.in.credentials = anon_creds;
-
+		conn->in.fallback_to_anonymous  = True;
 	} else {
-		s->conn.in.credentials = s->io.creds;
+		conn->in.fallback_to_anonymous  = False;
 	}
 
 	/* send smb connect request */

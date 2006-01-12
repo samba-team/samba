@@ -1053,7 +1053,7 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-static NTSTATUS libnet_samsync_ldb_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_samsync_ldb *r)
+NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_samsync_ldb *r)
 {
 	NTSTATUS nt_status;
 	struct libnet_SamSync r2;
@@ -1063,17 +1063,18 @@ static NTSTATUS libnet_samsync_ldb_netlogon(struct libnet_context *ctx, TALLOC_C
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	state->secrets = NULL;
+	state->secrets         = NULL;
 	state->trusted_domains = NULL;
 
-	state->sam_ldb = samdb_connect(state, system_session(state));
+	state->sam_ldb         = samdb_connect(state, system_session(state));
 
-	r2.error_string = NULL;
-	r2.delta_fn = libnet_samsync_ldb_fn;
-	r2.fn_ctx = state;
-	r2.machine_account = NULL; /* TODO:  Create a machine account, fill this in, and the delete it */
-	nt_status = libnet_SamSync_netlogon(ctx, state, &r2);
-	r->error_string = r2.error_string;
+	r2.out.error_string    = NULL;
+	r2.in.binding_string   = r->in.binding_string;
+	r2.in.delta_fn         = libnet_samsync_ldb_fn;
+	r2.in.fn_ctx           = state;
+	r2.in.machine_account  = NULL; /* TODO:  Create a machine account, fill this in, and the delete it */
+	nt_status              = libnet_SamSync_netlogon(ctx, state, &r2);
+	r->out.error_string    = r2.out.error_string;
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(state);
@@ -1081,30 +1082,4 @@ static NTSTATUS libnet_samsync_ldb_netlogon(struct libnet_context *ctx, TALLOC_C
 	}
 	talloc_free(state);
 	return nt_status;
-}
-
-
-
-static NTSTATUS libnet_samsync_ldb_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_samsync_ldb *r)
-{
-	NTSTATUS nt_status;
-	struct libnet_samsync_ldb r2;
-	r2.level = LIBNET_SAMSYNC_LDB_NETLOGON;
-	r2.error_string = NULL;
-	nt_status = libnet_samsync_ldb(ctx, mem_ctx, &r2);
-	r->error_string = r2.error_string;
-	
-	return nt_status;
-}
-
-NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_samsync_ldb *r)
-{
-	switch (r->level) {
-	case LIBNET_SAMSYNC_LDB_GENERIC:
-		return libnet_samsync_ldb_generic(ctx, mem_ctx, r);
-	case LIBNET_SAMSYNC_LDB_NETLOGON:
-		return libnet_samsync_ldb_netlogon(ctx, mem_ctx, r);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }

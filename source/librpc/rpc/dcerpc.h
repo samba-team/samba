@@ -100,6 +100,7 @@ struct dcerpc_pipe {
 	struct dcerpc_syntax_id transfer_syntax;
 
 	struct dcerpc_connection *conn;
+	struct dcerpc_binding *binding;
 
 	/* the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;

@@ -1742,6 +1742,8 @@ BOOL torture_rpc_samlogon(void)
 		 * session key encryption) */
 
 		for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
+			/* TODO:  Somehow we lost setting up the different credential flags here! */
+
 			if (!test_InteractiveLogon(p, mem_ctx, creds,
 						   usercreds[0].comment,
 						   TEST_MACHINE_NAME,

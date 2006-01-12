@@ -151,7 +151,7 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-static NTSTATUS libnet_SamDump_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump *r)
+NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump *r)
 {
 	NTSTATUS nt_status;
 	struct libnet_SamSync r2;
@@ -164,15 +164,16 @@ static NTSTATUS libnet_SamDump_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdump_state->secrets = NULL;
+	samdump_state->secrets         = NULL;
 	samdump_state->trusted_domains = NULL;
 
-	r2.error_string = NULL;
-	r2.delta_fn = libnet_samdump_fn;
-	r2.fn_ctx = samdump_state;
-	r2.machine_account = NULL; /* TODO:  Create a machine account, fill this in, and the delete it */
-	nt_status = libnet_SamSync_netlogon(ctx, samdump_state, &r2);
-	r->error_string = r2.error_string;
+	r2.out.error_string            = NULL;
+	r2.in.binding_string           = r->in.binding_string;
+	r2.in.delta_fn                 = libnet_samdump_fn;
+	r2.in.fn_ctx                   = samdump_state;
+	r2.in.machine_account          = r->in.machine_account;
+	nt_status                      = libnet_SamSync_netlogon(ctx, samdump_state, &r2);
+	r->out.error_string            = r2.out.error_string;
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(samdump_state);
@@ -183,49 +184,25 @@ static NTSTATUS libnet_SamDump_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 	for (t=samdump_state->trusted_domains; t; t=t->next) {
 		char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
 		for (s=samdump_state->secrets; s; s=s->next) {
-			if (strcasecmp_m(s->name, secret_name) == 0) {
-				char *secret_string;
-				if (convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-							  s->secret.data, s->secret.length, 
-							  (void **)&secret_string) == -1) {
-					r->error_string = talloc_asprintf(mem_ctx, 
-									  "Could not convert secret for domain %s to a string\n",
-									  t->name);
-					talloc_free(samdump_state);
-					return NT_STATUS_INVALID_PARAMETER;
-				}
-				printf("%s\t%s\t%s\n", 
-				       t->name, dom_sid_string(mem_ctx, t->sid), 
-				       secret_string);
+			char *secret_string;
+			if (strcasecmp_m(s->name, secret_name) != 0) {
+				continue;
 			}
+			if (convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
+						  s->secret.data, s->secret.length, 
+						  (void **)&secret_string) == -1) {
+				r->out.error_string = talloc_asprintf(mem_ctx, 
+								      "Could not convert secret for domain %s to a string\n",
+								      t->name);
+				talloc_free(samdump_state);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			printf("%s\t%s\t%s\n", 
+			       t->name, dom_sid_string(mem_ctx, t->sid), 
+			       secret_string);
 		}
 	}
 	talloc_free(samdump_state);
 	return nt_status;
 }
 
-
-
-static NTSTATUS libnet_SamDump_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump *r)
-{
-	NTSTATUS nt_status;
-	struct libnet_SamDump r2;
-	r2.level = LIBNET_SAMDUMP_NETLOGON;
-	r2.error_string = NULL;
-	nt_status = libnet_SamDump(ctx, mem_ctx, &r2);
-	r->error_string = r2.error_string;
-	
-	return nt_status;
-}
-
-NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamDump *r)
-{
-	switch (r->level) {
-	case LIBNET_SAMDUMP_GENERIC:
-		return libnet_SamDump_generic(ctx, mem_ctx, r);
-	case LIBNET_SAMDUMP_NETLOGON:
-		return libnet_SamDump_netlogon(ctx, mem_ctx, r);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
-}

@@ -48,7 +48,7 @@ static int net_samdump_keytab(struct net_context *ctx, int argc, const char **ar
 		return net_samdump_keytab_usage(ctx, argc, argv);
 		break;
 	case 1:
-		r.keytab_name = argv[0];
+		r.in.keytab_name = argv[0];
 		break;
 	}
 
@@ -58,14 +58,15 @@ static int net_samdump_keytab(struct net_context *ctx, int argc, const char **ar
 	}
 	libnetctx->cred = ctx->credentials;
 
-	r.level	       = LIBNET_SAMDUMP_GENERIC;
-	r.error_string = NULL;
+	r.out.error_string = NULL;
+	r.in.machine_account = NULL;
+	r.in.binding_string = NULL;
 
 	status = libnet_SamDump_keytab(libnetctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_SamDump returned %s: %s\n",
 			 nt_errstr(status),
-			 r.error_string));
+			 r.out.error_string));
 		return -1;
 	}
 
@@ -103,14 +104,15 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 	}
 	libnetctx->cred = ctx->credentials;
 
-	r.level	       = LIBNET_SAMDUMP_GENERIC;
-	r.error_string = NULL;
+	r.out.error_string = NULL;
+	r.in.machine_account = NULL;
+	r.in.binding_string = NULL;
 
 	status = libnet_SamDump(libnetctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_SamDump returned %s: %s\n",
 			 nt_errstr(status),
-			 r.error_string));
+			 r.out.error_string));
 		return -1;
 	}
 
@@ -144,14 +146,15 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 	}
 	libnetctx->cred = ctx->credentials;
 
-	r.level	       = LIBNET_SAMSYNC_LDB_GENERIC;
-	r.error_string = NULL;
+	r.out.error_string = NULL;
+	r.in.machine_account = NULL;
+	r.in.binding_string = NULL;
 
 	status = libnet_samsync_ldb(libnetctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_samsync_ldb returned %s: %s\n",
 			 nt_errstr(status),
-			 r.error_string));
+			 r.out.error_string));
 		return -1;
 	}
 
