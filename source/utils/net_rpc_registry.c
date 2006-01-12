@@ -124,7 +124,6 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 			return werror_to_ntstatus(result);
 		}
 	}
-		memcpy( &pol_key, &pol_hive, sizeof(POLICY_HND) );
 	
 	/* get the subkeys */
 	
