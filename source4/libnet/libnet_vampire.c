@@ -219,9 +219,15 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	/* connect to the NETLOGON pipe of the PDC */
 	nt_status = libnet_RpcConnect(machine_net_ctx, c, c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						      "Connection to NETLOGON pipe of DC failed: %s",
-						      c->out.error_string);
+		if (r->in.binding_string) {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "Connection to NETLOGON pipe of DC %s failed: %s",
+							      r->in.binding_string, c->out.error_string);
+		} else {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "Connection to NETLOGON pipe of DC for %s failed: %s",
+							      c->in.name, c->out.error_string);
+		}
 		talloc_free(samsync_ctx);
 		return nt_status;
 	}
