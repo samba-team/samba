@@ -344,8 +344,29 @@ krb_start_session(void)
 }
 #endif
 
+#define GROUP_MEMBER		0
+#define GROUP_MISSING		1
+#define GROUP_EMPTY		2
+#define GROUP_NOT_MEMBER	3
+
 static int
-verify_unix(struct passwd *su)
+group_member(const char *group, const char *user)
+{
+    struct group *g;
+    int i;
+    g = getgrnam(group);
+    if(g == NULL)
+	return GROUP_MISSING;
+    if(g->gr_mem[0] == NULL)
+	return GROUP_EMPTY;
+    for(i = 0; g->gr_mem[i] != NULL; i++)
+	if(strcmp(user, g->gr_mem[i]) == 0)
+	    return GROUP_MEMBER;
+    return GROUP_NOT_MEMBER;
+}
+
+static int
+verify_unix(struct passwd *login, struct passwd *su)
 {
     char prompt[128];
     char pw_buf[1024];
@@ -358,8 +379,26 @@ verify_unix(struct passwd *su)
 	    exit(0);
 	pw = crypt(pw_buf, su->pw_passwd);
 	memset(pw_buf, 0, sizeof(pw_buf));
-	if(strcmp(pw, su->pw_passwd) != 0)
+	if(strcmp(pw, su->pw_passwd) != 0) {
+	    syslog (LOG_ERR | LOG_AUTH, "%s to %s: incorrect password",
+		    login->pw_name, su->pw_name);
 	    return 1;
+	}
+    }
+    /* if su:ing to root, check membership of group wheel or root; if
+       that group doesn't exist, or is empty, allow anyone to su
+       root */
+    if(su->pw_uid == 0) {
+#ifndef ROOT_GROUP
+#define ROOT_GROUP "wheel"
+#endif
+	int gs = group_member(ROOT_GROUP, login->pw_name);
+	if(gs == GROUP_NOT_MEMBER) {
+	    syslog (LOG_ERR | LOG_AUTH, "%s to %s: not in group %s",
+		    login->pw_name, su->pw_name, ROOT_GROUP);
+	    return 1;
+	}
+	return 0;
     }
     return 0;
 }
@@ -437,7 +476,7 @@ main(int argc, char **argv)
 	ok = 4;
 #endif
 
-    if(ok == 0 && login_info->pw_uid && verify_unix(su_info) != 0) {
+    if(ok == 0 && login_info->pw_uid && verify_unix(login_info, su_info) != 0) {
 	printf("Sorry!\n");
 	exit(1);
     }
