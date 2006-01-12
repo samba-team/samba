@@ -37,7 +37,7 @@ typedef char winbind_string[256];
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 12
+#define WINBIND_INTERFACE_VERSION 11
 
 /* Socket commands */
 
@@ -243,9 +243,6 @@ struct winbindd_request {
 			gid_t gid;
 			winbind_string sid;
 		} dual_idmapset;
-		struct {
-			winbind_string cache_key;
-		} dual_sidaliases;
 	} data;
 	char *extra_data;
 	size_t extra_len;
