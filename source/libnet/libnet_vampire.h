@@ -22,40 +22,50 @@
 
 /* struct and enum for doing a remote domain vampire dump */
 struct libnet_SamSync {
-	NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
-			     void *private, 			
-			     struct creds_CredentialState *creds,
-			     enum netr_SamDatabaseID database,
-			     struct netr_DELTA_ENUM *delta,
-			     char **error_string);
-	void *fn_ctx;
-	const char *error_string;
-	struct cli_credentials *machine_account;
-};
-
-enum libnet_SamDump_level {
-	LIBNET_SAMDUMP_GENERIC,
-	LIBNET_SAMDUMP_NETLOGON,
+	struct {
+		const char *binding_string;
+		NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
+				     void *private, 			
+				     struct creds_CredentialState *creds,
+				     enum netr_SamDatabaseID database,
+				     struct netr_DELTA_ENUM *delta,
+				     char **error_string);
+		void *fn_ctx;
+		struct cli_credentials *machine_account;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
 };
 
 struct libnet_SamDump {
-	enum libnet_SamDump_level level;
-	const char *error_string;
+	struct {
+		const char *binding_string;
+		struct cli_credentials *machine_account;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
 };
 
 struct libnet_SamDump_keytab {
-	enum libnet_SamDump_level level;
-	const char *keytab_name;
-	const char *error_string;
-};
-
-enum libnet_samsync_ldb_level {
-	LIBNET_SAMSYNC_LDB_GENERIC,
-	LIBNET_SAMSYNC_LDB_NETLOGON,
+	struct {
+		const char *binding_string;
+		const char *keytab_name;
+		struct cli_credentials *machine_account;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
 };
 
 struct libnet_samsync_ldb {
-	enum libnet_samsync_ldb_level level;
-	const char *error_string;
+	struct {
+		const char *binding_string;
+		struct cli_credentials *machine_account;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
 };
 
