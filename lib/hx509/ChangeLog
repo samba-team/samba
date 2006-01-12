@@ -1,5 +1,9 @@
-2006-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* crypto_headers.h: Need BN_is_negative too.
+	
+2006-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ks_p11.c (p11_rsa_public_decrypt): since is wrong, don't provide
 	it. PKCS11 can't do public_decrypt, it support verify though. All
 	this doesn't matter, since the code never go though this path.
@@ -7,7 +11,7 @@
 	* crypto_headers.h: Provide glue to compile with less warnings
 	with OpenSSL
 	
-2006-01-08 Love Hörnquist Åstrand <lha@it.su.se>
+2006-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* Makefile.am: Depend on LIB_des
 
