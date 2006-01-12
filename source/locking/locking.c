@@ -662,10 +662,10 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 			const char *servicepath,
 			const char *newname)
 {
-	struct file_renamed_message *frm = NULL;
 	size_t sp_len;
 	size_t fn_len;
 	size_t msg_len;
+	char *frm = NULL;
 	int i;
 
 	if (!lck) {
@@ -694,20 +694,21 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 	sp_len = strlen(lck->servicepath);
 	fn_len = strlen(lck->filename);
 
-	msg_len = sizeof(*frm) + sp_len + 1 + fn_len + 1;
+	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + fn_len + 1;
 
 	/* Set up the name changed message. */
 	frm = TALLOC(lck, msg_len);
 	if (!frm) {
 		return False;
 	}
-	frm->dev = lck->dev;
-	frm->inode = lck->ino;
+
+	SDEV_T_VAL(frm,0,lck->dev);
+	SINO_T_VAL(frm,8,lck->ino);
 
 	DEBUG(10,("rename_share_filename: msg_len = %d\n", msg_len ));
 
-	safe_strcpy(&frm->names[0], lck->servicepath, sp_len);
-	safe_strcpy(&frm->names[sp_len + 1], lck->filename, fn_len);
+	safe_strcpy(&frm[16], lck->servicepath, sp_len);
+	safe_strcpy(&frm[16 + sp_len + 1], lck->filename, fn_len);
 
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {
@@ -723,11 +724,13 @@ BOOL rename_share_filename(struct share_mode_lock *lck,
 		DEBUG(10,("rename_share_filename: sending rename message to pid %u "
 			"dev %x, inode  %.0f sharepath %s newname %s\n",
 			(unsigned int)procid_to_pid(&se->pid),
-			(unsigned int)frm->dev, (double)frm->inode,
+			(unsigned int)lck->dev, (double)lck->ino,
 			lck->servicepath, lck->filename ));
 
+		become_root();
 		message_send_pid(se->pid, MSG_SMB_FILE_RENAME,
 				frm, msg_len, True);
+		unbecome_root();
 	}
 
 	return True;

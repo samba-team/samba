@@ -631,6 +631,25 @@ struct share_mode_entry {
 	unsigned long share_file_id;
 };
 
+/* oplock break message definition - linearization of share_mode_entry.
+
+Offset  Data			length.
+0	struct process_id pid	4
+4	uint16 op_mid		2
+6	uint16 op_type		2
+8	uint32 access_mask	4
+12	uint32 share_access	4
+16	uint32 private_options	4
+20	uint32 time sec		4
+24	uint32 time usec	4
+28	SMB_DEV_T dev		8 bytes.
+36	SMB_INO_T inode		8 bytes
+44	unsigned long file_id	4 bytes
+48
+
+*/
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 48
+
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */
 	const char *filename;
@@ -1456,17 +1475,40 @@ struct inform_level2_message {
 	unsigned long source_file_id;
 };
 
+/* kernel_oplock_message definition.
+
 struct kernel_oplock_message {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	unsigned long file_id;
 };
 
+Offset  Data                  length.
+0     SMB_DEV_T dev           8 bytes.
+8     SMB_INO_T inode         8 bytes
+16    unsigned long file_id   4 bytes
+20
+
+*/
+#define MSG_SMB_KERNEL_BREAK_SIZE 20
+
+/* file_renamed_message definition.
+
 struct file_renamed_message {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
-	char names[1]; /* A variable area containing sharepath and filename. */
+	char names[1]; A variable area containing sharepath and filename.
 };
+
+Offset  Data			length.
+0	SMB_DEV_T dev		8 bytes.
+8	SMB_INO_T inode		8 bytes
+16	char [] name		zero terminated namelen bytes
+minimum length == 18.
+
+*/
+
+#define MSG_FILE_RENAMED_MIN_SIZE 16
 
 /*
  * On the wire return values for oplock types.
