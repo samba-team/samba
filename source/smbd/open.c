@@ -684,12 +684,17 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 
 	if (delay_it) {
 		BOOL ret;
+		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+
 		DEBUG(10, ("Sending break request to PID %s\n",
 			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
+
+		share_mode_entry_to_message(msg, exclusive);
+
 		become_root();
 		ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
-				       exclusive, sizeof(*exclusive), True);
+				       msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
 		unbecome_root();
 		if (!ret) {
 			DEBUG(3, ("Could not send oplock break message\n"));
@@ -2047,25 +2052,30 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 void msg_file_was_renamed(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	files_struct *fsp;
-	struct file_renamed_message *frm = (struct file_renamed_message *)buf;
+	char *frm = (char *)buf;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
 	const char *sharepath;
 	const char *newname;
 	size_t sp_len;
 
-	if (buf == NULL || len < sizeof(*frm)) {
+	if (buf == NULL || len < MSG_FILE_RENAMED_MIN_SIZE + 2) {
                 DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n", (int)len));
                 return;
         }
 
-	sharepath = &frm->names[0];
+	/* Unpack the message. */
+	dev = DEV_T_VAL(frm,0);
+	inode = INO_T_VAL(frm,8);
+	sharepath = &frm[16];
 	newname = sharepath + strlen(sharepath) + 1;
 	sp_len = strlen(sharepath);
 
 	DEBUG(10,("msg_file_was_renamed: Got rename message for sharepath %s, new name %s, "
 		"dev %x, inode  %.0f\n",
-		sharepath, newname, (unsigned int)frm->dev, (double)frm->inode ));
+		sharepath, newname, (unsigned int)dev, (double)inode ));
 
-	for(fsp = file_find_di_first(frm->dev, frm->inode); fsp; fsp = file_find_di_next(fsp)) {
+	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
 		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
 	                DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
 				fsp->fnum, fsp->fsp_name, newname ));
