@@ -21,6 +21,7 @@
 
 #ifndef BN_is_negative
 #define BN_set_negative(bn, flag) ((bn)->neg = (flag) ? 1 : 0)
+#define BN_is_negative(bn) ((bn)->neg != 0)
 #endif
 
 #else
