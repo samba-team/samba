@@ -1,3 +1,7 @@
+2006-01-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* su.c: fix reversed logic when deciding to print tty or not
+	
 2005-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* su.c: Check return value from asprintf instead of string != NULL
