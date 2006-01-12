@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "nsswitch/winbindd_nss.h"
 #include "winbind/wb_server.h"
-#include "winbind/wb_samba3_protocol.h"
 #include "winbind/wb_async_helpers.h"
 #include "libcli/composite/composite.h"
 #include "include/version.h"
