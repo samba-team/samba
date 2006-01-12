@@ -169,9 +169,6 @@ struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
 {
 	struct messaging_context *msg_ctx = messaging_init(mem_ctx, random() % 0x10000000, ctx->event_ctx);
 	struct composite_context *c;
-	if (!msg_ctx) {
-		return NULL;
-	}
 	c = finddcs_send(mem_ctx,
 			 io->in.domain_name, 
 			 NBT_NAME_PDC,

@@ -131,9 +131,15 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 
 	state->dcs[0].address = talloc_steal(state->dcs, address);
 
-	/* Try and find the nbt server.  We are not going to fail if
-	 * we can't get the name, it will just be a disapointment.
-	 * The nbt server just might not be running */
+	/* Try and find the nbt server.  Fallback to a node status
+	 * request if we can't make this happen The nbt server just
+	 * might not be running, or we may not have a messaging
+	 * context (not root etc) */
+	if (!state->msg_ctx) {
+		fallback_node_status(state);
+		return;
+	}
+
 	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
 		fallback_node_status(state);
