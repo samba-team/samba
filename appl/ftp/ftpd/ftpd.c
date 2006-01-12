@@ -933,9 +933,8 @@ pass(char *passwd)
 		    if (rval)
 			rval = unix_verify_user(pw->pw_name, passwd);
 		} else {
-		    char *s;
-		    
 #ifdef OTP
+		    char *s;
 		    if ((s = otp_error(&otp_ctx)) != NULL)
 			lreply(530, "OTP: %s", s);
 #endif
