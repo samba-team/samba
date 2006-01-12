@@ -51,11 +51,7 @@ static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 	resp->data.auth.pam_error = nt_status_to_pam(status);
 	resp->data.auth.nt_status = NT_STATUS_V(status);
 
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-	}
+	wbsrv_samba3_send_reply(s3call);
 }
 
 /* 
@@ -72,11 +68,7 @@ static void wbsrv_samba3_async_epilogue(NTSTATUS status,
 		resp->result = WINBINDD_ERROR;
 	}
 
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-	}
+	wbsrv_samba3_send_reply(s3call);
 }
 
 /* 
@@ -177,7 +169,7 @@ NTSTATUS wbsrv_samba3_getdcname(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
+		s3call->wbconn->listen_socket->service;
 
 	DEBUG(5, ("wbsrv_samba3_getdcname called\n"));
 
@@ -187,7 +179,7 @@ NTSTATUS wbsrv_samba3_getdcname(struct wbsrv_samba3_call *s3call)
 
 	ctx->async.fn = getdcname_recv_dc;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -230,12 +222,12 @@ NTSTATUS wbsrv_samba3_userdomgroups(struct wbsrv_samba3_call *s3call)
 	}
 
 	ctx = wb_cmd_userdomgroups_send(
-		s3call, s3call->call->wbconn->listen_socket->service, sid);
+		s3call, s3call->wbconn->listen_socket->service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = userdomgroups_recv_groups;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -297,12 +289,12 @@ NTSTATUS wbsrv_samba3_usersids(struct wbsrv_samba3_call *s3call)
 	}
 
 	ctx = wb_cmd_usersids_send(
-		s3call, s3call->call->wbconn->listen_socket->service, sid);
+		s3call, s3call->wbconn->listen_socket->service, sid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = usersids_recv_sids;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -363,7 +355,7 @@ NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
+		s3call->wbconn->listen_socket->service;
 
 	DEBUG(5, ("wbsrv_samba3_lookupname called\n"));
 
@@ -375,7 +367,7 @@ NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 	/* setup the callbacks */
 	ctx->async.fn = lookupname_recv_sid;
 	ctx->async.private_data	= s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -409,7 +401,7 @@ NTSTATUS wbsrv_samba3_lookupsid(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
+		s3call->wbconn->listen_socket->service;
 	struct dom_sid *sid;
 
 	DEBUG(5, ("wbsrv_samba3_lookupsid called\n"));
@@ -427,7 +419,7 @@ NTSTATUS wbsrv_samba3_lookupsid(struct wbsrv_samba3_call *s3call)
 	/* setup the callbacks */
 	ctx->async.fn = lookupsid_recv_name;
 	ctx->async.private_data	= s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -468,7 +460,7 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
+		s3call->wbconn->listen_socket->service;
 	DATA_BLOB chal, nt_resp, lm_resp;
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
@@ -491,7 +483,7 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 
 	ctx->async.fn = pam_auth_crap_recv;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -570,7 +562,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
+		s3call->wbconn->listen_socket->service;
 	char *user, *domain;
 
 	if (!samba3_parse_domuser(s3call, 
@@ -585,7 +577,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 
 	ctx->async.fn = pam_auth_recv;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 
@@ -614,7 +606,7 @@ NTSTATUS wbsrv_samba3_list_trustdom(struct wbsrv_samba3_call *s3call)
 {
 	struct composite_context *ctx;
 	struct wbsrv_service *service =
-		s3call->call->wbconn->listen_socket->service;
+		s3call->wbconn->listen_socket->service;
 
 	DEBUG(5, ("wbsrv_samba3_list_trustdom called\n"));
 
@@ -623,7 +615,7 @@ NTSTATUS wbsrv_samba3_list_trustdom(struct wbsrv_samba3_call *s3call)
 
 	ctx->async.fn = list_trustdom_recv_doms;
 	ctx->async.private_data = s3call;
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
 	return NT_STATUS_OK;
 }
 

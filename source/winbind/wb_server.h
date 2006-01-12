@@ -20,6 +20,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "nsswitch/winbindd_nss.h"
+
 #define WINBINDD_DIR "/tmp/.winbindd/"
 #define WINBINDD_SOCKET WINBINDD_DIR"socket"
 /* the privileged socket is in smbd_tmp_dir() */
@@ -74,20 +76,6 @@ struct wbsrv_domain {
 	struct cli_credentials *schannel_creds;
 };
 
-/* 
-  this is an abstraction for the actual protocol being used,
-  so that we can listen on different sockets with different protocols
-  e.g. the old samba3 protocol on one socket and a new protocol on another socket
-*/
-struct wbsrv_protocol_ops {
-	const char *name;
-	BOOL allow_pending_calls;
-	uint32_t (*packet_length)(DATA_BLOB blob);
-	NTSTATUS (*pull_request)(DATA_BLOB blob, TALLOC_CTX *mem_ctx, struct wbsrv_call **call);
-	NTSTATUS (*handle_call)(struct wbsrv_call *call);
-	NTSTATUS (*push_reply)(struct wbsrv_call *call, TALLOC_CTX *mem_ctx, DATA_BLOB *blob);
-};
-
 /*
   state of a listen socket and it's protocol information
 */
@@ -95,7 +83,6 @@ struct wbsrv_listen_socket {
 	const char *socket_path;
 	struct wbsrv_service *service;
 	BOOL privileged;
-	const struct wbsrv_protocol_ops *ops;
 };
 
 /*
@@ -111,20 +98,15 @@ struct wbsrv_connection {
 	/* storage for protocol specific data */
 	void *protocol_private_data;
 
-	/* the partial data we've receiced yet */
-	DATA_BLOB partial;
-
-	/* the amount that we used yet from the partial buffer */
-	uint32_t partial_read;
-
-	/* prevent loops when we use half async code, while processing a requuest */
-	BOOL processing;
-
 	/* how many calls are pending */
 	uint32_t pending_calls;
 
-	struct data_blob_list_item *send_queue;
+	struct packet_context *packet;
 };
+
+#define WBSRV_SAMBA3_SET_STRING(dest, src) do { \
+	strncpy(dest, src, sizeof(dest)-1);\
+} while(0)
 
 /*
   state of one request
@@ -144,21 +126,26 @@ struct wbsrv_connection {
      return;
 
 */
-struct wbsrv_call {
+struct wbsrv_samba3_call {
 #define WBSRV_CALL_FLAGS_REPLY_ASYNC 0x00000001
 	uint32_t flags;
-
-	/* the backend should use this event context */
-	struct event_context *event_ctx;
 
 	/* the connection the call belongs to */
 	struct wbsrv_connection *wbconn;
 
-	/* storage for protocol specific data */
+	/* the backend should use this event context */
+	struct event_context *event_ctx;
+
+	/* here the backend can store stuff like composite_context's ... */
 	void *private_data;
+
+	/* the request structure of the samba3 protocol */
+	struct winbindd_request request;
+	
+	/* the response structure of the samba3 protocol*/
+	struct winbindd_response response;
 };
 
-struct wbsrv_samba3_call;
 struct netr_LMSessionKey;
 struct netr_UserSessionKey;
 
