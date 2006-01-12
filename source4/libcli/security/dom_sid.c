@@ -157,6 +157,11 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 {
 	struct dom_sid *ret;
 	int i;
+	
+	if (!dom_sid) {
+		return NULL;
+	}
+
 	ret = talloc(mem_ctx, struct dom_sid);
 	if (!ret) {
 		return NULL;

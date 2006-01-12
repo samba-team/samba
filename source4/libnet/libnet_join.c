@@ -272,7 +272,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	status = dcerpc_pipe_connect_b(tmp_ctx, 
 				       &drsuapi_pipe,
 				       drsuapi_binding,
-					   &dcerpc_table_drsuapi,
+				       &dcerpc_table_drsuapi,
 				       ctx->cred, 
 				       ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -635,8 +635,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	
 	/* prepare connect to the LSA pipe of PDC */
 	if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
-		c->level             = LIBNET_RPC_CONNECT_PDC;
-		c->in.domain_name    = r->in.domain_name;
+		c->level      = LIBNET_RPC_CONNECT_PDC;
+		c->in.name    = r->in.domain_name;
 	} else {
 		c->level             = LIBNET_RPC_CONNECT_BINDING;
 		c->in.binding        = r->in.binding;
@@ -998,7 +998,9 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			/* We created a new user, but they didn't come out the right type?!? */
 			r->out.error_string
 				= talloc_asprintf(mem_ctx,
-						  "We asked to create a new machine account (%s) of type %s, but we got an account of type %s.  This is unexpected.  Perhaps delete the account and try again.\n",
+						  "We asked to create a new machine account (%s) of type %s, "
+						  "but we got an account of type %s.  This is unexpected.  "
+						  "Perhaps delete the account and try again.\n",
 						  r->in.account_name, new_account_type, old_account_type);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1008,7 +1010,9 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			/* TODO: We should allow a --force option to override, and redo this from the top setting r.in.recreate_account */
 			r->out.error_string
 				= talloc_asprintf(mem_ctx,
-						  "The machine account (%s) already exists in the domain %s, but is a %s.  You asked to join as a %s.  Please delete the account and try again.\n",
+						  "The machine account (%s) already exists in the domain %s, "
+						  "but is a %s.  You asked to join as a %s.  Please delete "
+						  "the account and try again.\n",
 						  r->in.account_name, domain_name, old_account_type, new_account_type);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_USER_EXISTS;
@@ -1045,7 +1049,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	}
 
 	/* reset flags (if required) */
-	if (acct_flags != qui.out.info->info16.acct_flags) {	
+	if (acct_flags != qui.out.info->info16.acct_flags) {
 		ZERO_STRUCT(u_info);
 		u_info.info16.acct_flags = acct_flags;
 
@@ -1160,7 +1164,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	if ((r->in.netbios_name != NULL) && (r->in.level != LIBNET_JOIN_AUTOMATIC)) {
 		netbios_name = r->in.netbios_name;
 	} else {
-		netbios_name = talloc_asprintf(tmp_mem, "%s", lp_netbios_name());
+		netbios_name = talloc_reference(tmp_mem, lp_netbios_name());
 		if (!netbios_name) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);
@@ -1437,8 +1441,8 @@ NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct lib
 	}
 
 	r->out.error_string = talloc_asprintf(mem_ctx,
-				"Invalid secure channel type specified (%08X) attempting to join domain %s",
-				r->in.secure_channel_type, r->in.domain_name);
+					      "Invalid secure channel type specified (%08X) attempting to join domain %s",
+					      r->in.secure_channel_type, r->in.domain_name);
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
