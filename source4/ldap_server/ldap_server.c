@@ -34,6 +34,8 @@
 #include "lib/tls/tls.h"
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 
 /*
   close the socket and shutdown a server_context
@@ -272,6 +274,101 @@ static void ldapsrv_conn_init_timeout(struct event_context *ev,
 	ldapsrv_terminate_connection(conn, "Timeout. No requests after initial connection");
 }
 
+static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *attrs[] = { "configurationNamingContext", NULL };
+	const char *attrs2[] = { "lDAPAdminLimits", NULL };
+	const char *conf_dn_s;
+	struct ldb_message_element *el;
+	struct ldb_result *res = NULL;
+	struct ldb_dn *basedn;
+	struct ldb_dn *conf_dn;
+	struct ldb_dn *policy_dn;
+	int i,ret;
+
+	/* set defaults limits in case of failure */
+	conn->limits.initial_timeout = 120;
+	conn->limits.conn_idle_time = 900;
+	conn->limits.max_page_size = 1000;
+	conn->limits.search_timeout = 120;
+
+
+	tmp_ctx = talloc_new(conn);
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	basedn = ldb_dn_explode(tmp_ctx, "");
+	if (basedn == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(conn->ldb, basedn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	talloc_steal(tmp_ctx, res);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		goto failed;
+	}
+
+	conf_dn_s = ldb_msg_find_string(res->msgs[0], "configurationNamingContext", NULL);
+	if (conf_dn_s == NULL) {
+		goto failed;
+	}
+	conf_dn = ldb_dn_explode(tmp_ctx, conf_dn_s);
+	if (conf_dn == NULL) {
+		goto failed;
+	}
+
+	policy_dn = ldb_dn_string_compose(tmp_ctx, conf_dn, "CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services");
+	if (policy_dn == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(conn->ldb, policy_dn, LDB_SCOPE_BASE, NULL, attrs2, &res);
+	talloc_steal(tmp_ctx, res);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		goto failed;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "lDAPAdminLimits");
+	if (el == NULL) {
+		goto failed;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		char policy_name[256];
+		int policy_value, s;
+
+		s = sscanf(el->values[i].data, "%255[^=]=%d", policy_name, &policy_value);
+		if (ret != 2 || policy_value == 0)
+			continue;
+		
+		if (strcasecmp("InitRecvTimeout", policy_name) == 0) {
+			conn->limits.initial_timeout = policy_value;
+			continue;
+		}
+		if (strcasecmp("MaxConnIdleTime", policy_name) == 0) {
+			conn->limits.conn_idle_time = policy_value;
+			continue;
+		}
+		if (strcasecmp("MaxPageSize", policy_name) == 0) {
+			conn->limits.max_page_size = policy_value;
+			continue;
+		}
+		if (strcasecmp("MaxQueryDuration", policy_name) == 0) {
+			conn->limits.search_timeout = policy_value;
+			continue;
+		}
+	}
+
+	return 0;
+
+failed:
+	DEBUG(0, ("Failed to load ldap server query policies\n"));
+	talloc_free(tmp_ctx);
+	return -1;
+}
+
 /*
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
@@ -356,13 +453,8 @@ static void ldapsrv_accept(struct stream_connection *c)
 		return;
 	}
 
-	/* TODO: load limits from the conf partition */
-	
-	conn->limits.initial_timeout = 10;
-	conn->limits.conn_idle_time = 60;
-	conn->limits.max_page_size = 100;
-	conn->limits.search_timeout = 10;
-
+	/* load limits from the conf partition */
+	ldapsrv_load_limits(conn); /* should we fail on error ? */
 
 	/* register the server */	
 	irpc_add_name(c->msg_ctx, "ldap_server");
