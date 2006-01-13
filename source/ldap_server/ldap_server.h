@@ -27,14 +27,22 @@ struct ldapsrv_connection {
 	struct auth_session_info *session_info;
 	struct ldapsrv_service *service;
 	struct tls_context *tls;
-	struct ldapsrv_partition *default_partition;
-	struct ldapsrv_partition *partitions;
 	struct cli_credentials *server_credentials;
+	struct ldb_context *ldb;
 
 	/* are we using gensec wrapping? */
 	BOOL enable_wrap;
 
 	struct packet_context *packet;
+
+	struct {
+		int initial_timeout;
+		int conn_idle_time;
+		int max_page_size;
+		int search_timeout;
+		
+		struct timed_event *ite;
+	} limits;
 };
 
 struct ldapsrv_call {
@@ -47,30 +55,6 @@ struct ldapsrv_call {
 };
 
 struct ldapsrv_service;
-struct ldapsrv_partition;
-
-struct ldapsrv_partition_ops {
-	const char *name;
-	NTSTATUS (*Init)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
-	NTSTATUS (*Bind)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
-	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*Del)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*ModifyDN)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*Compare)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*Abandon)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-	NTSTATUS (*Extended)(struct ldapsrv_partition *partition, struct ldapsrv_call *call);
-};
-
-struct ldapsrv_partition {
-	struct ldapsrv_partition *prev,*next;
-
-	void *private;
-	const struct ldapsrv_partition_ops *ops;
-
-	const char *base_dn;
-};
 
 struct ldapsrv_service {
 	struct tls_params *tls_params;

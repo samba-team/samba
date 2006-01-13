@@ -23,6 +23,8 @@
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"
 #include "smbd/service_stream.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
@@ -55,21 +57,20 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct ldapsrv_partition *part;
 		result = LDAP_SUCCESS;
 		errstr = NULL;
 
 		talloc_free(call->conn->session_info);
 		call->conn->session_info = session_info;
-		for (part = call->conn->partitions; part; part = part->next) {
-			if (!part->ops->Bind) {
-				continue;
-			}
-			status = part->ops->Bind(part, call->conn);
-			if (!NT_STATUS_IS_OK(status)) {
-				result = LDAP_OPERATIONS_ERROR;
-				errstr = talloc_asprintf(reply, "Simple Bind: Failed to advise partition %s of new credentials: %s", part->base_dn, nt_errstr(status));
-			}
+
+		/* don't leak the old LDB */
+		talloc_free(call->conn->ldb);
+
+		status = ldapsrv_backend_Init(call->conn);		
+		
+		if (!NT_STATUS_IS_OK(status)) {
+			result = LDAP_OPERATIONS_ERROR;
+			errstr = talloc_asprintf(reply, "Simple Bind: Failed to advise ldb new credentials: %s", nt_errstr(status));
 		}
 	} else {
 		status = auth_nt_status_squash(status);
@@ -145,7 +146,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
-		struct ldapsrv_partition *part;
 		struct auth_session_info *old_session_info;
 
 		result = LDAP_SUCCESS;
@@ -163,15 +163,15 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to get session info: %s", req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
 			talloc_free(old_session_info);
-			for (part = call->conn->partitions; part; part = part->next) {
-				if (!part->ops->Bind) {
-					continue;
-				}
-				status = part->ops->Bind(part, conn);
-				if (!NT_STATUS_IS_OK(status)) {
-					result = LDAP_OPERATIONS_ERROR;
-					errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to advise partition %s of new credentials: %s", req->creds.SASL.mechanism, part->base_dn, nt_errstr(status));
-				}
+
+			/* don't leak the old LDB */
+			talloc_free(call->conn->ldb);
+
+			status = ldapsrv_backend_Init(call->conn);		
+			
+			if (!NT_STATUS_IS_OK(status)) {
+				result = LDAP_OPERATIONS_ERROR;
+				errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to advise samdb of new credentials: %s", req->creds.SASL.mechanism, nt_errstr(status));
 			}
 		}
 	} else {
