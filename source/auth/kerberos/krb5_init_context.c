@@ -23,10 +23,11 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "system/network.h"
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
+
+#include "heimdal_build/roken.h" /* needed on AIX for 'struct addrinfo' */
 
 /*
   context structure for operations on cldap packets
