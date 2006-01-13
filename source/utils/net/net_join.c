@@ -68,7 +68,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 	/* prepare parameters for the join */
 	r->in.netbios_name		= lp_netbios_name();
 	r->in.domain_name		= domain_name;
-	r->in.secure_channel_type	= secure_channel_type;
+	r->in.join_type           	= secure_channel_type;
 	r->in.level			= LIBNET_JOIN_AUTOMATIC;
 	r->out.error_string		= NULL;
 
