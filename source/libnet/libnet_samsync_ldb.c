@@ -53,7 +53,8 @@ struct samsync_ldb_state {
 static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 							 struct samsync_ldb_state *state,
 							 struct dom_sid *sid,
-							 struct ldb_dn **fsp_dn)
+							 struct ldb_dn **fsp_dn,
+							 char **error_string)
 {
 	const char *sidstr = dom_sid_string(mem_ctx, sid);
 	/* We assume that ForeignSecurityPrincipals are under the BASEDN of the main domain */
@@ -68,8 +69,10 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (basedn == NULL) {
-		DEBUG(0, ("Failed to find DN for "
-			  "ForeignSecurityPrincipal container\n"));
+		*error_string = talloc_asprintf(mem_ctx, 
+						"Failed to find DN for "
+						"ForeignSecurityPrincipal container under %s",
+						ldb_dn_linearize(mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN]));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
@@ -92,10 +95,10 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 	/* create the alias */
 	ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to create foreignSecurityPrincipal "
-			 "record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
-			 ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to create foreignSecurityPrincipal "
+						"record %s: %s",
+						ldb_dn_linearize(mem_ctx, msg->dn),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	return NT_STATUS_OK;
@@ -105,7 +108,8 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 					  struct samsync_ldb_state *state,
 					  struct creds_CredentialState *creds,
 					  enum netr_SamDatabaseID database,
-					  struct netr_DELTA_ENUM *delta) 
+					  struct netr_DELTA_ENUM *delta,
+					  char **error_string) 
 {
 	struct netr_DELTA_DOMAIN *domain = delta->delta_union.domain;
 	const char *domain_name = domain->domain_name.string;
@@ -121,10 +125,13 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 					  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 					  domain_name);
 		if (ret_domain == -1) {
+			*error_string = talloc_asprintf(mem_ctx, "gendb_search for domain failed: %s", ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		
 		if (ret_domain != 1) {
+			*error_string = talloc_asprintf(mem_ctx, "Failed to find existing domain record for %s: %d results", domain_name,
+							ret_domain);
 			return NT_STATUS_NO_SUCH_DOMAIN;		
 		}
 
@@ -159,19 +166,19 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 			     msg, "oEMInformation", domain->comment.string);
 
 	samdb_msg_add_int64(state->sam_ldb, mem_ctx, 
-			     msg, "forceLogoff", domain->force_logoff_time);
+			    msg, "forceLogoff", domain->force_logoff_time);
 
 	samdb_msg_add_uint(state->sam_ldb, mem_ctx, 
-			  msg, "minPwdLen", domain->min_password_length);
+			   msg, "minPwdLen", domain->min_password_length);
 
 	samdb_msg_add_int64(state->sam_ldb, mem_ctx, 
-			  msg, "maxPwdAge", domain->max_password_age);
+			    msg, "maxPwdAge", domain->max_password_age);
 
 	samdb_msg_add_int64(state->sam_ldb, mem_ctx, 
-			  msg, "minPwdAge", domain->min_password_age);
+			    msg, "minPwdAge", domain->min_password_age);
 
 	samdb_msg_add_uint(state->sam_ldb, mem_ctx, 
-			  msg, "pwdHistoryLength", domain->password_history_length);
+			   msg, "pwdHistoryLength", domain->password_history_length);
 
 	samdb_msg_add_uint64(state->sam_ldb, mem_ctx, 
 			     msg, "modifiedCount", 
@@ -194,7 +201,8 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 					struct samsync_ldb_state *state,
 					struct creds_CredentialState *creds,
 					enum netr_SamDatabaseID database,
-					struct netr_DELTA_ENUM *delta) 
+					struct netr_DELTA_ENUM *delta,
+					char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_USER *user = delta->delta_union.user;
@@ -224,11 +232,11 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one user with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one user with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -239,14 +247,14 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(cn_name);
 	cn_name_len = strlen(cn_name);
 
-#define ADD_OR_DEL(type, attrib, field) do {\
-	if (user->field) { \
-		samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
-				     attrib, user->field); \
-	} else if (!add) { \
-		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  \
-				     attrib); \
-	} \
+#define ADD_OR_DEL(type, attrib, field) do {				\
+		if (user->field) {					\
+			samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
+					       attrib, user->field);	\
+		} else if (!add) {					\
+			samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg, \
+					     attrib);			\
+		}							\
         } while (0);
 
         ADD_OR_DEL(string, "samAccountName", account_name.string);
@@ -285,7 +293,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	/* Passwords.  Ensure there is no plaintext stored against
 	 * this entry, as we only have hashes */
 	samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
-				"sambaPassword"); 
+			     "sambaPassword"); 
 	if (user->lm_password_present) {
 		samdb_msg_add_hash(state->sam_ldb, mem_ctx, msg,  
 				   "lmPwdHash", &user->lmpassword);
@@ -338,15 +346,15 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			DEBUG(0,("Failed to create user record %s\n",
-				 ldb_dn_linearize(mem_ctx, msg->dn)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to create user record %s",
+							ldb_dn_linearize(mem_ctx, msg->dn));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else {
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			DEBUG(0,("Failed to modify user record %s\n",
-				 ldb_dn_linearize(mem_ctx, msg->dn)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to modify user record %s",
+							ldb_dn_linearize(mem_ctx, msg->dn));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
@@ -358,7 +366,8 @@ static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 					struct samsync_ldb_state *state,
 					struct creds_CredentialState *creds,
 					enum netr_SamDatabaseID database,
-					struct netr_DELTA_ENUM *delta) 
+					struct netr_DELTA_ENUM *delta,
+					char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct ldb_message **msgs;
@@ -371,24 +380,24 @@ static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one user with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one user with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
-		DEBUG(0,("Failed to delete user record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msgs[0]->dn),
-			 ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to delete user record %s: %s",
+						ldb_dn_linearize(mem_ctx, msgs[0]->dn),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -399,7 +408,8 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
 					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
-					 struct netr_DELTA_ENUM *delta) 
+					 struct netr_DELTA_ENUM *delta,
+					 char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_GROUP *group = delta->delta_union.group;
@@ -423,16 +433,16 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one group/alias with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -440,14 +450,14 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 
 	cn_name   = group->group_name.string;
 
-#define ADD_OR_DEL(type, attrib, field) do {\
-	if (group->field) { \
-		samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
-				     attrib, group->field); \
-	} else if (!add) { \
-		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  \
-				     attrib); \
-	} \
+#define ADD_OR_DEL(type, attrib, field) do {				\
+		if (group->field) {					\
+			samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
+					       attrib, group->field);	\
+		} else if (!add) {					\
+			samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg, \
+					     attrib);			\
+		}							\
         } while (0);
 
         ADD_OR_DEL(string, "samAccountName", group_name.string);
@@ -475,17 +485,17 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			DEBUG(0,("Failed to create group record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
-			 ldb_errstring(state->sam_ldb)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to create group record %s: %s",
+							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else {
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			DEBUG(0,("Failed to modify group record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
-			 ldb_errstring(state->sam_ldb)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
+							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
@@ -494,10 +504,11 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
-					struct samsync_ldb_state *state,
-					struct creds_CredentialState *creds,
-					enum netr_SamDatabaseID database,
-					struct netr_DELTA_ENUM *delta) 
+					 struct samsync_ldb_state *state,
+					 struct creds_CredentialState *creds,
+					 enum netr_SamDatabaseID database,
+					 struct netr_DELTA_ENUM *delta,
+					 char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct ldb_message **msgs;
@@ -510,24 +521,24 @@ static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one group/alias with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
-		DEBUG(0,("Failed to delete group record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msgs[0]->dn),
-			 ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to delete group record %s: %s",
+						ldb_dn_linearize(mem_ctx, msgs[0]->dn),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -538,7 +549,8 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 						struct samsync_ldb_state *state,
 						struct creds_CredentialState *creds,
 						enum netr_SamDatabaseID database,
-						struct netr_DELTA_ENUM *delta) 
+						struct netr_DELTA_ENUM *delta,
+						char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_GROUP_MEMBER *group_member = delta->delta_union.group_member;
@@ -559,16 +571,16 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one group/alias with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -581,9 +593,9 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
 				   "(&(objectClass=user)(objectSid=%s))", 
 				   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], group_member->rids[i]))); 
-
+		
 		if (ret == -1) {
-			DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+			*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else if (ret == 0) {
 			return NT_STATUS_NO_SUCH_USER;
@@ -592,15 +604,15 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 		} else {
 			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_linearize(mem_ctx, msgs[0]->dn));
 		}
-	
+		
 		talloc_free(msgs);
 	}
-
+	
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to modify group record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
-			 ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
+						ldb_dn_linearize(mem_ctx, msg->dn),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -611,7 +623,8 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
 					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
-					 struct netr_DELTA_ENUM *delta) 
+					 struct netr_DELTA_ENUM *delta,
+					 char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_ALIAS *alias = delta->delta_union.alias;
@@ -635,16 +648,16 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one group/alias with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(mem_ctx, msgs[0]->dn);
@@ -652,17 +665,17 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 
 	cn_name   = alias->alias_name.string;
 
-#define ADD_OR_DEL(type, attrib, field) do {\
-	if (alias->field) { \
-		samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
-				     attrib, alias->field); \
-	} else if (!add) { \
-		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  \
-				     attrib); \
-	} \
-        } while (0);
+#define ADD_OR_DEL(type, attrib, field) do {				\
+		if (alias->field) {					\
+			samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
+					       attrib, alias->field);	\
+		} else if (!add) {					\
+			samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg, \
+					     attrib);			\
+		}							\
+	} while (0);
 
-        ADD_OR_DEL(string, "samAccountName", alias_name.string);
+	ADD_OR_DEL(string, "samAccountName", alias_name.string);
 
 	if (samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, msg, 
 				  "objectSid", dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))) {
@@ -689,17 +702,17 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			DEBUG(0,("Failed to create alias record %s: %s\n",
-				 ldb_dn_linearize(mem_ctx, msg->dn),
-				 ldb_errstring(state->sam_ldb)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to create alias record %s: %s",
+							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else {
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			DEBUG(0,("Failed to modify alias record %s: %s\n",
-				 ldb_dn_linearize(mem_ctx, msg->dn),
-				 ldb_errstring(state->sam_ldb)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to modify alias record %s: %s",
+							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
@@ -708,10 +721,11 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
-					struct samsync_ldb_state *state,
-					struct creds_CredentialState *creds,
-					enum netr_SamDatabaseID database,
-					struct netr_DELTA_ENUM *delta) 
+					 struct samsync_ldb_state *state,
+					 struct creds_CredentialState *creds,
+					 enum netr_SamDatabaseID database,
+					 struct netr_DELTA_ENUM *delta,
+					 char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct ldb_message **msgs;
@@ -724,7 +738,7 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -734,9 +748,9 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
-		DEBUG(0,("Failed to delete alias record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msgs[0]->dn),
-			 ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to delete alias record %s: %s",
+						ldb_dn_linearize(mem_ctx, msgs[0]->dn),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -747,7 +761,8 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 						struct samsync_ldb_state *state,
 						struct creds_CredentialState *creds,
 						enum netr_SamDatabaseID database,
-						struct netr_DELTA_ENUM *delta) 
+						struct netr_DELTA_ENUM *delta,
+						char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_ALIAS_MEMBER *alias_member = delta->delta_union.alias_member;
@@ -766,18 +781,18 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
 			   "(&(objectClass=group)(objectSid=%s))", 
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
-
+		
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one group/alias with SID: %s\n", 
-			  dom_sid_string(mem_ctx, 
-					 dom_sid_add_rid(mem_ctx, 
-							 state->dom_sid[database], 
-							 rid))));
+		*error_string = talloc_asprintf(mem_ctx, "More than one group/alias with SID: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -793,17 +808,18 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 				   ldap_encode_ndr_dom_sid(mem_ctx, alias_member->sids.sids[i].sid)); 
 
 		if (ret == -1) {
-			DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+			*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else if (ret == 0) {
 			NTSTATUS nt_status;
 			nt_status = samsync_ldb_add_foreignSecurityPrincipal(mem_ctx, state,
 									     alias_member->sids.sids[i].sid, 
-									     &alias_member_dn);
+									     &alias_member_dn, 
+									     error_string);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				return nt_status;
 			}
- 		} else if (ret > 1) {
+		} else if (ret > 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else {
 			alias_member_dn = msgs[0]->dn;
@@ -815,9 +831,9 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to modify group record %s: %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn),
-			 ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
+						ldb_dn_linearize(mem_ctx, msg->dn),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -825,10 +841,11 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
-					struct samsync_ldb_state *state,
-					struct creds_CredentialState *creds,
-					enum netr_SamDatabaseID database,
-					struct netr_DELTA_ENUM *delta) 
+					   struct samsync_ldb_state *state,
+					   struct creds_CredentialState *creds,
+					   enum netr_SamDatabaseID database,
+					   struct netr_DELTA_ENUM *delta,
+					   char **error_string) 
 {
 	struct dom_sid *sid = delta->delta_id_union.sid;
 	struct netr_DELTA_ACCOUNT *account = delta->delta_union.account;
@@ -850,20 +867,21 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 			   "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		NTSTATUS nt_status;
 		nt_status = samsync_ldb_add_foreignSecurityPrincipal(mem_ctx, state,
 								     sid,
-								     &privilege_dn);
+								     &privilege_dn,
+								     error_string);
 		privilege_dn = talloc_steal(msg, privilege_dn);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one account with SID: %s\n", 
-			  dom_sid_string(mem_ctx, sid)));
+		*error_string = talloc_asprintf(mem_ctx, "More than one account with SID: %s", 
+						dom_sid_string(mem_ctx, sid));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		privilege_dn = talloc_steal(msg, msgs[0]->dn);
@@ -878,8 +896,8 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to modify privilege record %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
+						ldb_dn_linearize(mem_ctx, msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -887,10 +905,11 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
-					struct samsync_ldb_state *state,
-					struct creds_CredentialState *creds,
-					enum netr_SamDatabaseID database,
-					struct netr_DELTA_ENUM *delta) 
+					   struct samsync_ldb_state *state,
+					   struct creds_CredentialState *creds,
+					   enum netr_SamDatabaseID database,
+					   struct netr_DELTA_ENUM *delta,
+					   char **error_string) 
 {
 	struct dom_sid *sid = delta->delta_id_union.sid;
 
@@ -910,13 +929,13 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
 
 	if (ret == -1) {
-		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (ret > 1) {
-		DEBUG(0, ("More than one account with SID: %s\n", 
-			  dom_sid_string(mem_ctx, sid)));
+		*error_string = talloc_asprintf(mem_ctx, "More than one account with SID: %s", 
+						dom_sid_string(mem_ctx, sid));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -927,8 +946,8 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to modify privilege record %s\n",
-			 ldb_dn_linearize(mem_ctx, msg->dn)));
+		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
+						ldb_dn_linearize(mem_ctx, msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -936,11 +955,11 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx, 		
-				  void *private, 			
-				  struct creds_CredentialState *creds,
-				  enum netr_SamDatabaseID database,
-				  struct netr_DELTA_ENUM *delta,
-				  char **error_string)
+				      void *private, 			
+				      struct creds_CredentialState *creds,
+				      enum netr_SamDatabaseID database,
+				      struct netr_DELTA_ENUM *delta,
+				      char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
 	struct samsync_ldb_state *state = private;
@@ -953,7 +972,8 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						      state,
 						      creds,
 						      database,
-						      delta);
+						      delta,
+						      error_string);
 		break;
 	}
 	case NETR_DELTA_USER:
@@ -962,7 +982,8 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						    state,
 						    creds,
 						    database,
-						    delta);
+						    delta,
+						    error_string);
 		break;
 	}
 	case NETR_DELTA_DELETE_USER:
@@ -971,7 +992,8 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						    state,
 						    creds,
 						    database,
-						    delta);
+						    delta,
+						    error_string);
 		break;
 	}
 	case NETR_DELTA_GROUP:
@@ -980,16 +1002,18 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						     state,
 						     creds,
 						     database,
-						     delta);
+						     delta,
+						     error_string);
 		break;
 	}
 	case NETR_DELTA_DELETE_GROUP:
 	{
 		nt_status = samsync_ldb_delete_group(mem_ctx, 
-						    state,
-						    creds,
-						    database,
-						    delta);
+						     state,
+						     creds,
+						     database,
+						     delta,
+						     error_string);
 		break;
 	}
 	case NETR_DELTA_GROUP_MEMBER:
@@ -998,7 +1022,8 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 							    state,
 							    creds,
 							    database,
-							    delta);
+							    delta,
+							    error_string);
 		break;
 	}
 	case NETR_DELTA_ALIAS:
@@ -1007,16 +1032,18 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						     state,
 						     creds,
 						     database,
-						     delta);
+						     delta,
+						     error_string);
 		break;
 	}
 	case NETR_DELTA_DELETE_ALIAS:
 	{
 		nt_status = samsync_ldb_delete_alias(mem_ctx, 
-						    state,
-						    creds,
-						    database,
-						    delta);
+						     state,
+						     creds,
+						     database,
+						     delta,
+						     error_string);
 		break;
 	}
 	case NETR_DELTA_ALIAS_MEMBER:
@@ -1025,30 +1052,36 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 							    state,
 							    creds,
 							    database,
-							    delta);
+							    delta,
+							    error_string);
 		break;
 	}
 	case NETR_DELTA_ACCOUNT:
 	{
 		nt_status = samsync_ldb_handle_account(mem_ctx, 
-						     state,
-						     creds,
-						     database,
-						     delta);
+						       state,
+						       creds,
+						       database,
+						       delta,
+						       error_string);
 		break;
 	}
 	case NETR_DELTA_DELETE_ACCOUNT:
 	{
 		nt_status = samsync_ldb_delete_account(mem_ctx, 
-						    state,
-						    creds,
-						    database,
-						    delta);
+						       state,
+						       creds,
+						       database,
+						       delta,
+						       error_string);
 		break;
 	}
 	default:
 		/* Can't dump them all right now */
 		break;
+	}
+	if (!NT_STATUS_IS_OK(nt_status) && !*error_string) {
+		*error_string = talloc_asprintf(mem_ctx, "Failed to handle samsync delta: %s", nt_errstr(nt_status));
 	}
 	return nt_status;
 }
