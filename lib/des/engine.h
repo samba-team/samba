@@ -62,6 +62,7 @@
 typedef struct hc_engine ENGINE;
 
 #include <rsa.h>
+#include <dsa.h>
 #include <dh.h>
 
 #define OPENSSL_DYNAMIC_VERSION		(unsigned long)0x00020000
