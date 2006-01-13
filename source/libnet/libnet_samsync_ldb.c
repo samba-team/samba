@@ -228,6 +228,12 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		*error_string = talloc_asprintf(mem_ctx, "gendb_search for user %s failed: %s", 
+						dom_sid_string(mem_ctx, 
+							       dom_sid_add_rid(mem_ctx, 
+									       state->dom_sid[database], 
+									       rid)),
+						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = True;
@@ -346,15 +352,17 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			*error_string = talloc_asprintf(mem_ctx, "Failed to create user record %s",
-							ldb_dn_linearize(mem_ctx, msg->dn));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to create user record %s: %s",
+							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else {
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			*error_string = talloc_asprintf(mem_ctx, "Failed to modify user record %s",
-							ldb_dn_linearize(mem_ctx, msg->dn));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to modify user record %s: %s",
+							ldb_dn_linearize(mem_ctx, msg->dn),
+							ldb_errstring(state->sam_ldb));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
