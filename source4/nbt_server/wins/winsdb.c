@@ -27,7 +27,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "system/time.h"
-#include "auth/auth.h"
 
 uint64_t winsdb_get_maxVersion(struct winsdb_handle *h)
 {
@@ -771,11 +770,78 @@ failed:
 	return NBT_RCODE_SVR;
 }
 
-struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
+static BOOL winsdb_check_or_add_module_list(struct winsdb_handle *h)
+{
+	int trans;
+	int ret;
+	struct ldb_dn *dn;
+	struct ldb_result *res = NULL;
+	struct ldb_message *msg = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(h);
+	unsigned int flags = 0;
+
+	trans = ldb_transaction_start(h->ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
+	/* check if we have a special @MODULES record already */
+	dn = ldb_dn_explode(tmp_ctx, "@MODULES");
+	if (!dn) goto failed;
+
+	/* find the record in the WINS database */
+	ret = ldb_search(h->ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
+
+	if (res->count > 0) goto skip;
+
+	/* if there's no record, add one */
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) goto failed;
+	msg->dn = dn;
+
+	ret = ldb_msg_add_string(msg, "@LIST", "wins_ldb");
+	if (ret != 0) goto failed;
+
+	ret = ldb_add(h->ldb, msg);
+	if (ret != 0) goto failed;
+
+	trans = ldb_transaction_commit(h->ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
+	/* close and reopen the database, with the modules */
+	trans = LDB_ERR_OTHER;
+	talloc_free(h->ldb);
+	h->ldb = NULL;
+
+	if (lp_parm_bool(-1,"winsdb", "nosync", False)) {
+		flags |= LDB_FLG_NOSYNC;
+	}
+
+	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
+				  NULL, NULL, flags, NULL);
+	if (!h->ldb) goto failed;
+
+	talloc_free(tmp_ctx);
+	return True;
+
+skip:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(h->ldb);
+	talloc_free(tmp_ctx);
+	return True;
+
+failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(h->ldb);
+	talloc_free(tmp_ctx);
+	return False;
+}
+
+struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, enum winsdb_handle_caller caller)
 {
 	struct winsdb_handle *h = NULL;
 	const char *owner;
 	unsigned int flags = 0;
+	BOOL ret;
+	int ldb_err;
 
 	h = talloc(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
@@ -785,8 +851,10 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
 	}
 
 	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
-				  system_session(h), NULL, flags, NULL);
-	if (!h->ldb) goto failed;
+				  NULL, NULL, flags, NULL);
+	if (!h->ldb) goto failed;	
+
+	h->caller = caller;
 
 	owner = lp_parm_string(-1, "winsdb", "local_owner");
 	if (!owner) {
@@ -795,6 +863,13 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
 
 	h->local_owner = talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;
+
+	/* make sure the module list is available and used */
+	ret = winsdb_check_or_add_module_list(h);
+	if (!ret) goto failed;
+
+	ldb_err = ldb_set_opaque(h->ldb, "winsdb_handle", h);
+	if (ldb_err != LDB_SUCCESS) goto failed;
 
 	return h;
 failed:

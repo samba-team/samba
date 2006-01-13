@@ -13,6 +13,16 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 #######################
+# Start MODULE libldb_wins_ldb
+[MODULE::libldb_wins_ldb]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = \
+		wins/wins_ldb.o
+# End MODULE libldb_wins_ldb
+#######################
+
+#######################
 # Start SUBSYSTEM NBTD_WINS
 [SUBSYSTEM::NBTD_WINS]
 OBJ_FILES = \

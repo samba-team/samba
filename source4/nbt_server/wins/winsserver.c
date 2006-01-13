@@ -829,7 +829,7 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	tmp = lp_parm_int(-1,"wreplsrv","tombstone_timeout", 1*24*60*60);
 	nbtsrv->winssrv->config.tombstone_timeout = tmp;
 
-	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv);
+	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, WINSDB_HANDLE_CALLER_NBTD);
 	if (!nbtsrv->winssrv->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
