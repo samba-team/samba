@@ -1239,12 +1239,12 @@ bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.@PICSUFFIX@
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/idmap_rid.@SHLIBEXT@: sam/idmap_rid.@PICSUFFIX@
+bin/rid.@SHLIBEXT@: sam/idmap_rid.@PICSUFFIX@
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_rid.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/idmap_ad.@SHLIBEXT@: sam/idmap_ad.@PICSUFFIX@
+bin/ad.@SHLIBEXT@: sam/idmap_ad.@PICSUFFIX@
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_ad.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
