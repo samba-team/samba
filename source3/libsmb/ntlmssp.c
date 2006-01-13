@@ -384,6 +384,11 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 void ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state)
 {
+	/* Nothing to weaken.  We certainly don't want to 'extend' the length... */
+	if (!ntlmssp_state->session_key.length < 8) {
+		return;
+	}
+
 	/* Key weakening not performed on the master key for NTLM2
 	   and does not occour for NTLM1.  Therefore we only need
 	   to do this for the LM_KEY.
