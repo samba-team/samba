@@ -75,3 +75,54 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	return status;
 }
+
+NTSTATUS libnet_DeleteUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_DeleteUser *r)
+{
+	NTSTATUS status;
+	struct libnet_RpcConnect cn;
+	struct libnet_rpc_domain_open dom_io;
+	struct libnet_rpc_userdel user_io;
+	
+	/* connect rpc service of remote DC */
+	cn.level               = LIBNET_RPC_CONNECT_PDC;
+	cn.in.name             = talloc_strdup(mem_ctx, r->in.domain_name);
+	cn.in.dcerpc_iface     = &dcerpc_table_samr;
+
+	status = libnet_RpcConnect(ctx, mem_ctx, &cn);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Connection to SAMR pipe domain '%s' PDC failed: %s\n",
+						      r->in.domain_name, nt_errstr(status));
+		return status;
+	}
+
+	ctx->pipe = cn.out.dcerpc_pipe;
+
+	/* open connected domain */
+	dom_io.in.domain_name   = r->in.domain_name;
+	dom_io.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
+	
+	status = libnet_rpc_domain_open(ctx->pipe, mem_ctx, &dom_io);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Opening domain to delete user account failed: %s\n",
+						      nt_errstr(status));
+		return status;
+	}
+
+	ctx->domain_handle = dom_io.out.domain_handle;
+
+	/* create user */
+	user_io.in.username       = r->in.user_name;
+	user_io.in.domain_handle  = dom_io.out.domain_handle;
+
+	status = libnet_rpc_userdel(ctx->pipe, mem_ctx, &user_io);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Deleting user account failed: %s\n",
+						      nt_errstr(status));
+		return status;
+	}
+
+	return status;
+}

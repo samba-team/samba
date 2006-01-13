@@ -1,15 +1,38 @@
 #!/usr/bin/env smbscript
 
-var ctx = NetContext("Administrator", "admin");
-var usr_ctx = ctx.UserMgr("BUILTIN");
+var options = GetOptions(ARGV, 
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_CREDENTIALS");
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+if (options.ARGV.length != 2) {
+   println("Usage: ejsnet.js <DOMAIN> <NEW USER NAME>");
+   return -1;
+}
+
+/* use command line creds if available */
+var creds = options.get_credentials();
+
+var ctx = NetContext(creds);
+var usr_ctx = ctx.UserMgr(options.ARGV[0]);
 if (usr_ctx == undefined) {
-	print("Couln't get user management context.\n");
+	println("Couln't get user management context.");
 	return -1;
 }
 
-var status = usr_ctx.Create("noname");
+var status = usr_ctx.Create(options.ARGV[1]);
 if (status.is_ok != true) {
-	print("Failed to create user account: " + status.errstr + "\n");
+	println("Failed to create user account " + options.ARGV[1] + ": " + status.errstr);
+	return -1;
+}
+
+var status = usr_ctx.Delete(options.ARGV[1]);
+if (status.is_ok != true) {
+	println("Failed to delete user account " + options.ARGV[1] + ": " + status.errstr);
 	return -1;
 }
 

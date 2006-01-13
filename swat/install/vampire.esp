@@ -1,0 +1,91 @@
+<% page_header("columns", "Windows to Samba Migration", "install"); 
+
+  include("/scripting/forms.js");
+  libinclude("base.js");
+  libinclude("provision.js");
+
+  var misc = misc_init();
+%>
+
+<h1>Windows to Samba4 domain migration</h1>
+
+<%
+var f = FormObj("Provisioning", 0, 2);
+var i;
+var lp = loadparm_init();
+
+if (lp.get("realm") == "") {
+	lp.set("realm", lp.get("workgroup") + ".example.com");
+}
+
+
+var subobj = provision_guess();
+/* Don't supply default password for web interface */
+subobj.ADMINPASS = "";
+
+f.add("REALM", "Realm");
+f.add("DOMAIN", "Domain Name");
+f.add("ADMIN", "Administrator Username");
+f.add("ADMINPASS", "Administrator Password", "password");
+f.add("HOSTNAME", "My Hostname");
+f.add("HOSTGUID", "Host GUID");
+f.add("HOSTIP", "Host IP");
+f.add("DEFAULTSITE", "Default Site");
+f.submit[0] = "Migrate";
+f.submit[1] = "Cancel";
+
+if (form['submit'] == "Cancel") {
+	redirect("/");
+}
+
+if (form['submit'] == "Migrate") {
+	for (r in form) {
+		subobj[r] = form[r];
+	}
+}
+
+for (i=0;i<f.element.length;i++) {
+	f.element[i].value = subobj[f.element[i].name];
+}
+
+if (form['submit'] == "Migrate") {
+	lp.set("realm", subobj.REALM);
+	if (subobj.ADMINPASS == "") {
+		write("<h3>We need the administrator password for the " + subobj.DOMAIN + " domain to proceed.  Please try again.</h3>");
+		f.display();
+	} else if (!provision_validate(subobj, writefln)) {
+		f.display();
+	} else {
+		var creds = credentials_init();
+		creds.set_username(form.ADMIN);
+		creds.set_password(form.ADMINPASS);
+		creds.set_domain(form.DOMAIN);
+		creds.set_realm(form.REALM);
+
+		/* Setup a basic database structure, but don't setup any users */
+		if (!provision(subobj, writefln, true, provision_default_paths(subobj),
+			      session.authinfo.session_info, session.authinfo.credentials)) {
+			writefln("Provision failed!");
+
+		/* Join domain */
+		} else if (!join_domain(form.DOMAIN, form.HOSTNAME, misc.SEC_CHAN_BDC, creds, writefln)) {
+			writefln("Domain Join failed!");
+			
+		} else {
+			/* Vampire */
+			var machine_creds = credentials_init();
+			machine_creds.set_domain(form.DOMAIN);
+			if (!machine_creds.set_machine_account()) {
+				writefln("Failed to access newly setup domain join!");
+			} else if (!vampire(machine_creds, writefln)) {
+				writefln("Failed to syncronsise remote domain into local database!");
+			}
+		}
+	}
+} else {
+	f.display();
+}
+%>
+
+
+<% page_footer(); %>

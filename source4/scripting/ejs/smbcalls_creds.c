@@ -181,6 +181,25 @@ static int ejs_creds_get_workstation(MprVarHandle eid, int argc, struct MprVar *
 	return 0;
 }
 
+/*
+  set machine account 
+*/
+static int ejs_creds_set_machine_account(MprVarHandle eid, int argc, char **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	if (argc != 0) {
+		ejsSetErrorMsg(eid, "bad arguments to set_machine_account");
+		return -1;
+	}
+	
+	if (NT_STATUS_IS_OK(cli_credentials_set_machine_account(creds))) {
+		mpr_Return(eid, mprCreateBoolVar(True));
+	} else {
+		mpr_Return(eid, mprCreateBoolVar(False));
+	}
+	return 0;
+}
+
 
 /*
   initialise credentials ejs object
@@ -200,6 +219,7 @@ static int ejs_credentials_obj(struct MprVar *obj, struct cli_credentials *creds
 	mprSetStringCFunction(obj, "set_realm", ejs_creds_set_realm);
 	mprSetCFunction(obj, "get_workstation", ejs_creds_get_workstation);
 	mprSetStringCFunction(obj, "set_workstation", ejs_creds_set_workstation);
+	mprSetCFunction(obj, "set_machine_account", ejs_creds_set_machine_account);
 
 	return 0;
 }
@@ -227,6 +247,8 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 	if (creds == NULL) {
 		return -1;
 	}
+
+	cli_credentials_set_conf(creds);
 
 	return ejs_credentials_obj(obj, creds);
 }
