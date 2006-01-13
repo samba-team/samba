@@ -47,9 +47,22 @@ struct winsdb_record {
 	const char *registered_by;
 };
 
+enum winsdb_handle_caller {
+	WINSDB_HANDLE_CALLER_ADMIN	= 0,
+	WINSDB_HANDLE_CALLER_NBTD	= 1,
+	WINSDB_HANDLE_CALLER_WREPL	= 2
+};
+
 struct winsdb_handle {
 	/* wins server database handle */
 	struct ldb_context *ldb;
+
+	/*
+	 * the type of the caller, as we pass this to the
+	 * 'wins_ldb' ldb module can decide if it needs to verify the 
+	 * the records before they're written to disk
+	 */
+	enum winsdb_handle_caller caller;
 
 	/* local owner address */
 	const char *local_owner;

@@ -132,6 +132,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		{ "extended_dn", extended_dn_module_init },
 		{ "password_hash", password_hash_module_init },
 		{ "kludge_acl", kludge_acl_module_init },
+		{ "wins_ldb", wins_ldb_module_init },
 #endif
 		{ NULL, NULL }
 	};

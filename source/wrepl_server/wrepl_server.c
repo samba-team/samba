@@ -69,7 +69,7 @@ failed:
 */
 static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service)
 {
-	service->wins_db     = winsdb_connect(service);
+	service->wins_db     = winsdb_connect(service, WINSDB_HANDLE_CALLER_WREPL);
 	if (!service->wins_db) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
