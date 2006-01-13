@@ -18,17 +18,22 @@ fi
 # it.
 AC_CHECK_FUNCS(connect)
 if test x"$ac_cv_func_connect" = x"no"; then
-    AC_CHECK_LIB(nsl_s, printf)
-    AC_CHECK_LIB(nsl, printf)
-    AC_CHECK_LIB(socket, connect)
-    AC_CHECK_LIB_EXT(inet, connect)
+    AC_CHECK_LIB(nsl_s, SOCKET_LIBS, printf)
+    AC_CHECK_LIB(nsl, SOCKET_LIBS, printf)
+    AC_CHECK_LIB(socket, SOCKET_LIBS, connect)
+    AC_CHECK_LIB(inet, SOCKET_LIBS, connect)
+    SMB_EXT_LIB_ENABLE(SOCKET,YES)
     dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
     dnl has been cached.
     if test x"$ac_cv_lib_ext_socket_connect" = x"yes" ||
        test x"$ac_cv_lib_ext_inet_connect" = x"yes"; then
         AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
+    else
+	AC_MSG_ERROR([no connect() function available!])
     fi
 fi
+
+SMB_EXT_LIB(SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],[${SOCKET_LDFLAGS}])
 
 ############################################
 # check for unix domain sockets

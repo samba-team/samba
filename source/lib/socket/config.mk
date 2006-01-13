@@ -7,6 +7,7 @@ OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv4.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_ipv4
 ################################################
 
@@ -18,6 +19,7 @@ OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_ipv6.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_ipv6
 ################################################
 
@@ -29,6 +31,7 @@ OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		socket_unix.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_unix
 ################################################
 
