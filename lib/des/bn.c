@@ -232,7 +232,7 @@ BN_set_negative(BIGNUM *bn, int flag)
 }
 
 int
-BN_get_negative(BIGNUM *bn)
+BN_is_negative(BIGNUM *bn)
 {
     return ((heim_integer *)bn)->negative ? 1 : 0;
 }
