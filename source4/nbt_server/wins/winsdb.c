@@ -769,12 +769,17 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx)
 {
 	struct winsdb_handle *h = NULL;
 	const char *owner;
+	unsigned int flags = 0;
 
 	h = talloc(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
 
+	if (lp_parm_bool(-1,"winsdb", "nosync", False)) {
+		flags |= LDB_FLG_NOSYNC;
+	}
+
 	h->ldb = ldb_wrap_connect(h, lock_path(h, lp_wins_url()),
-				  system_session(h), NULL, 0, NULL);
+				  system_session(h), NULL, flags, NULL);
 	if (!h->ldb) goto failed;
 
 	owner = lp_parm_string(-1, "winsdb", "local_owner");
