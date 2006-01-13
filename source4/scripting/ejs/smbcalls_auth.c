@@ -75,6 +75,11 @@ static int ejs_doauth(MprVarHandle eid,
 	user_info->logon_parameters = 0;
 
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
+
+	/* Don't give the game away (any difference between no such
+	 * user and wrong password) */
+	nt_status = auth_nt_status_squash(nt_status);
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", 
 				    mprString(talloc_asprintf(mprMemCtx(), "Login Failed: %s", 
