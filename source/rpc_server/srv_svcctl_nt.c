@@ -828,6 +828,11 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM))  )
 		return WERR_BADFID;
 
+	/* can't set the security de4scriptor on the ServiceControlManager */
+
+	if ( info->type == SVC_HANDLE_IS_SCM )
+		return WERR_ACCESS_DENIED;	
+
 	/* check the access on the open handle */
 	
 	switch ( q_u->security_flags ) {
