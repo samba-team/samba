@@ -33,7 +33,7 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
-#include "crypto_headers.h"
+#include "crypto-headers.h"
 
 
 struct hx509_verify_ctx_data {

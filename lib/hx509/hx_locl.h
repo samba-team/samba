@@ -58,6 +58,8 @@
 
 #include <der.h>
 
+#include "crypto-headers.h"
+
 struct hx509_query_data;
 typedef struct hx509_query_data hx509_query;
 

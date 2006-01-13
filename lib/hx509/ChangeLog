@@ -1,5 +1,7 @@
 2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* delete crypto_headers.h, use global file instead.
+
 	* crypto.c (PBE_string2key): libdes now supports PKCS12_key_gen
 	
 2006-01-12  Love Hörnquist Åstrand  <lha@it.su.se>

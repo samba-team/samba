@@ -35,8 +35,6 @@
 RCSID("$Id$");
 #include <dlfcn.h>
 
-#include "crypto_headers.h"
-
 #include "pkcs11u.h"
 #include "pkcs11.h"
 

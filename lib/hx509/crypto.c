@@ -34,9 +34,6 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
-#include "crypto_headers.h"
-
-
 #define pkcs1(name, number) \
 static unsigned name##_oid_data[] = { 1, 2, 840, 113549, 1, 1, number }; \
 static heim_oid name##_oid = { 7, name##_oid_data }
