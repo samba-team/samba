@@ -433,7 +433,7 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	SRV_FILE_INFO_CTR ctr;
 	WERROR result;
 	ENUM_HND hnd;
-	uint32 preferred_len = 0;
+	uint32 preferred_len = 0xffff;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
