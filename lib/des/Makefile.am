@@ -102,3 +102,11 @@ libhcrypto_la_SOURCES =	\
 	sha.h		\
 	ui.c		\
 	ui.h
+
+$(libhcrypto_la_OBJECTS): hcrypto-link
+
+hcrypto-link:
+	$(LN_S) $(srcdir)/../des hcrypto
+	touch hcrypto-link
+
+CLEANFILES = hcrypto hcrypto-link
