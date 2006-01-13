@@ -1,4 +1,43 @@
-2006-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hmac.h: Drop HMAC_CTX_create and HMAC_CTX_destroy.
+
+	* engine.c (ENGINE_add_conf_module): Also load DH
+
+	* dh.h: Reorder includes to avoid compile errors, provide
+	DH_new_method().
+
+	* dh.c: Indent.
+
+	* bn.c: BN_get_negative was really named BN_is_negative, a comment
+	confused me.
+
+	* bn.h: BN_get_negative was really named BN_is_negative, a comment
+	confused me.
+
+	* pkcs12.h: Add PKCS12_key_gen().
+
+	* pkcs12.c: Add PKCS12_key_gen().
+
+	* Makefile.am: Add test_cipher, test_pkcs12, add pkcs12.[ch].
+
+	* evp.c: Rename rc2_40_cbc internal variable to something better.
+	Unbreak des-ede3-cbc.
+	
+2006-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_bn.c: Test BN_uadd.
+
+	* bn.c (BN_rand): don't leak memory on failure, catch malloc(0)
+	case
+	
+	* bn.c (BN_rand): clear the bits above the bits that user
+	requested.
+	(BN_uadd): new function.
+	
+	* bn.h (BN_uadd): new function.
+	
+2006-01-10  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* evp.c (EVP_CIPHER_CTX_cleanup): clean up less aggressively
 
