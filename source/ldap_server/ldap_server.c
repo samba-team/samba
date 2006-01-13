@@ -228,7 +228,12 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private, struct ldapsrv_connection);
-	
+
+	if (conn->limits.ite) {
+		talloc_free(conn->limits.ite);
+		conn->limits.ite = NULL;
+	}
+
 	packet_recv(conn->packet);
 }
 
@@ -257,13 +262,22 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 	packet_queue_run(conn->packet);
 }
 
+static void ldapsrv_conn_init_timeout(struct event_context *ev,
+				      struct timed_event *te,
+				      struct timeval t,
+				      void *private)
+{
+	struct ldapsrv_connection *conn = talloc_get_type(private, struct ldapsrv_connection);
+
+	ldapsrv_terminate_connection(conn, "Timeout. No requests after initial connection");
+}
+
 /*
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
 static void ldapsrv_accept(struct stream_connection *c)
 {
-	struct ldapsrv_partition *part;
 	struct ldapsrv_service *ldapsrv_service = 
 		talloc_get_type(c->private, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
@@ -337,23 +351,26 @@ static void ldapsrv_accept(struct stream_connection *c)
 		return;
 	}
 
-	part = talloc(conn, struct ldapsrv_partition);
-	if (part == NULL) {
-		ldapsrv_terminate_connection(conn, "talloc failed");
+	if (!NT_STATUS_IS_OK(ldapsrv_backend_Init(conn))) {
+		ldapsrv_terminate_connection(conn, "backend Init failed");
 		return;
 	}
 
-	part->base_dn = "*"; /* default partition */
-	part->ops = ldapsrv_get_sldb_partition_ops();
-	if (!NT_STATUS_IS_OK(part->ops->Init(part, conn))) {
-		ldapsrv_terminate_connection(conn, "default partition Init failed");
-		return;
-	}
+	/* TODO: load limits from the conf partition */
+	
+	conn->limits.initial_timeout = 10;
+	conn->limits.conn_idle_time = 60;
+	conn->limits.max_page_size = 100;
+	conn->limits.search_timeout = 10;
 
-	conn->default_partition = part;
-	DLIST_ADD_END(conn->partitions, part, struct ldapsrv_partition *);
 
+	/* register the server */	
 	irpc_add_name(c->msg_ctx, "ldap_server");
+
+	/* set connections limits */
+	conn->limits.ite = event_add_timed(c->event.ctx, conn, 
+					   timeval_current_ofs(conn->limits.initial_timeout, 0),
+					   ldapsrv_conn_init_timeout, conn);
 }
 
 static const struct stream_server_ops ldap_stream_ops = {
