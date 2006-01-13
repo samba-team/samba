@@ -42,6 +42,9 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 
 #include <sys/types.h>
 #include <stdarg.h>
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 #include "lib/replace/replace.h"
 #endif
 
