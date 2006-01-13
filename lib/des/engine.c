@@ -305,11 +305,19 @@ ENGINE_add_conf_module(void)
      */
 
     engine = ENGINE_by_dso("/usr/heimdal/lib/hc-modules/hc-gmp.so", NULL);
-    if (engine) {
-	const RSA_METHOD *rsamethod = ENGINE_get_RSA(engine);
-	if (rsamethod)
-	    RSA_set_default_method(rsamethod);
+    if (engine == NULL)
+	return;
+    {
+	const RSA_METHOD *method = ENGINE_get_RSA(engine);
+	if (method)
+	    RSA_set_default_method(method);
     }
+    {
+	const DH_METHOD *method = ENGINE_get_DH(engine);
+	if (method)
+	    DH_set_default_method(method);
+    }
+
 }
 
 
