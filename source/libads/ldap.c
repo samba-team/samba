@@ -1860,8 +1860,9 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	char *hostnameDN, *host; 
 	int rc;
 	LDAPControl ldap_control;
-	LDAPControl  * pldap_control[] = {&ldap_control, 0};
+	LDAPControl  * pldap_control[2] = {NULL, NULL};
 
+	pldap_control[0] = &ldap_control;
 	memset(&ldap_control, 0, sizeof(LDAPControl));
 	ldap_control.ldctl_oid = (char *)LDAP_SERVER_TREE_DELETE_OID;
 
