@@ -14,12 +14,13 @@ include_HEADERS =	\
 	des.h		\
 	dh.h		\
 	dsa.h		\
-	evp.h		\
 	engine.h	\
+	evp.h		\
 	hmac.h		\
 	md2.h		\
 	md4.h		\
 	md5.h		\
+	pkcs12.h	\
 	rand.h		\
 	rc2.h		\
 	rc4.h		\
@@ -37,6 +38,8 @@ check_PROGRAMS = \
 	rc2test  \
 	rctest \
 	test_bn \
+	test_cipher \
+	test_pkcs12 \
 	test_hmac
 
 # md5crypt_test 
@@ -58,8 +61,8 @@ libdes_la_SOURCES =	\
 	dsa.h		\
 	evp.c		\
 	evp.h		\
-	engine.h	\
 	engine.c	\
+	engine.h	\
 	hmac.c		\
 	hmac.h		\
 	md2.c		\
@@ -68,17 +71,18 @@ libdes_la_SOURCES =	\
 	md4.h		\
 	md5.c		\
 	md5.h		\
-	rand.h		\
+	pkcs12.c	\
 	rand.c		\
+	rand.h		\
 	rc2.c		\
 	rc2.h		\
 	rc4.c		\
 	rc4.h		\
-	rsa.c		\
-	rsa.h		\
 	rijndael-alg-fst.c \
 	rijndael-alg-fst.h \
 	rnd_keys.c	\
+	rsa.c		\
+	rsa.h		\
 	sha.c		\
 	sha.h		\
 	ui.c		\
