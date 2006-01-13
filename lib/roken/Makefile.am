@@ -107,10 +107,6 @@ EXTRA_libroken_la_SOURCES =	\
 EXTRA_DIST = roken.awk roken.h.in
 
 libroken_la_LIBADD = @LTLIBOBJS@
-if have_cgetent
-else
-libroken_la_LIBADD += $(DBLIB)
-endif
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h $(XHEADERS)
 
