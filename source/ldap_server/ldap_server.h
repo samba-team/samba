@@ -42,6 +42,7 @@ struct ldapsrv_connection {
 		int search_timeout;
 		
 		struct timed_event *ite;
+		struct timed_event *te;
 	} limits;
 };
 
