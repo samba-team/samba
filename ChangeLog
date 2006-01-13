@@ -1,5 +1,10 @@
-2006-01-02  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* include/make_crypto.c: Include more crypto headerfiles. Remove
+	support for old hash names.
+	
+2006-01-02  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* kdc/misc.c (_kdc_db_fetch): use calloc to allocate the entry,
 	from Andrew Bartlet.
 	
