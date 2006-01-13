@@ -4157,7 +4157,6 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		if (current_user.uid != sbuf_file.st_uid) {
 			return False;
 		}
-		return False;
 	}
 #endif
 
