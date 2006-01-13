@@ -271,6 +271,7 @@ int main(int argc, const char *argv[])
 	int snum;
 	poptContext pc;
 	TALLOC_CTX *ctx;
+	BOOL initialize_sid = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 #if 0
@@ -279,7 +280,8 @@ int main(int argc, const char *argv[])
 		{ "add", 'a', POPT_ARG_STRING, NULL, 'a', "Add an ACE", "ACL" },
 #endif
 		{ "replace", 'R', POPT_ARG_STRING, NULL, 'R', "Set share mission ACL", "ACLS" },
-		{ "view", 'v', POPT_ARG_NONE, NULL, 'v', "View current share permissions", "ACLS" },
+		{ "view", 'v', POPT_ARG_NONE, NULL, 'v', "View current share permissions" },
+		{ "machine-sid", 'M', POPT_ARG_NONE, NULL, 'M', "Initialize the machine SID" },
 		{ "force", 'F', POPT_ARG_NONE, NULL, 'F', "Force storing the ACL", "ACLS" },
 		POPT_COMMON_SAMBA
 		{ NULL }
@@ -336,7 +338,25 @@ int main(int argc, const char *argv[])
 		case 'F':
 			force_acl = True;
 			break;
+			
+		case 'M':
+			initialize_sid = True;
+			break;
 		}
+	}
+	
+	/* check for initializing secrets.tdb first */
+	
+	if ( initialize_sid ) {
+		DOM_SID *sid = get_global_sam_sid();
+		
+		if ( !sid ) {
+			fprintf( stderr, "Failed to retrieve Machine SID!\n");
+			return 3;
+		}
+		
+		printf ("%s\n", sid_string_static( sid ) );
+		return 0;
 	}
 
 	if ( mode == SMB_ACL_VIEW && force_acl ) {
