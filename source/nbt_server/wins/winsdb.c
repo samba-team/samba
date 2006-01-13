@@ -676,6 +676,8 @@ uint8_t winsdb_add(struct winsdb_handle *h, struct winsdb_record *rec, uint32_t 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
+	wins_hook(h, rec, WINS_HOOK_ADD);
+
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
 
@@ -723,6 +725,8 @@ uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
 
+	wins_hook(h, rec, WINS_HOOK_MODIFY);
+
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
 
@@ -755,6 +759,8 @@ uint8_t winsdb_delete(struct winsdb_handle *h, struct winsdb_record *rec)
 
 	trans = ldb_transaction_commit(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
+
+	wins_hook(h, rec, WINS_HOOK_DELETE);
 
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;

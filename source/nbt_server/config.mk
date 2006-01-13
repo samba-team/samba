@@ -4,7 +4,8 @@
 # Start SUBSYSTEM WINSDB
 [SUBSYSTEM::WINSDB]
 OBJ_FILES = \
-		wins/winsdb.o
+		wins/winsdb.o \
+		wins/wins_hook.o
 PRIVATE_PROTO_HEADER = wins/winsdb_proto.h
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB

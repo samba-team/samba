@@ -55,4 +55,11 @@ struct winsdb_handle {
 	const char *local_owner;
 };
 
+enum wins_hook_action {
+	WINS_HOOK_ADD		= 0,
+	WINS_HOOK_MODIFY	= 1,
+	WINS_HOOK_DELETE	= 2
+};
+
+
 #include "nbt_server/wins/winsdb_proto.h"
