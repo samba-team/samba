@@ -337,6 +337,39 @@ showInAdvancedViewOnly: TRUE
 objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
 sPNMappings: host=ldap,dns,cifs,http
 
+dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Query-Policies
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: queryPolicy
+cn: Default Query Policy
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Query-Policy,CN=Schema,CN=Configuration,${BASEDN}
+lDAPAdminLimits: MaxValRange=1500
+lDAPAdminLimits: MaxReceiveBuffer=10485760
+lDAPAdminLimits: MaxDatagramRecv=4096
+lDAPAdminLimits: MaxPoolThreads=4
+lDAPAdminLimits: MaxResultSetSize=262144
+lDAPAdminLimits: MaxTempTableSize=10000
+lDAPAdminLimits: MaxQueryDuration=120
+lDAPAdminLimits: MaxPageSize=1000
+lDAPAdminLimits: MaxNotificationPerConn=5
+lDAPAdminLimits: MaxActiveQueries=20
+lDAPAdminLimits: MaxConnIdleTime=900
+lDAPAdminLimits: InitRecvTimeout=120
+lDAPAdminLimits: MaxConnections=5000
+
 
 ###############################
 # Schema Naming Context
