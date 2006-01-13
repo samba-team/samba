@@ -46,7 +46,6 @@ struct samdump_state {
 };
 
 static NTSTATUS vampire_samdump_handle_user(TALLOC_CTX *mem_ctx,
-					    struct creds_CredentialState *creds,
 					    struct netr_DELTA_ENUM *delta) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
@@ -72,7 +71,6 @@ static NTSTATUS vampire_samdump_handle_user(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS vampire_samdump_handle_secret(TALLOC_CTX *mem_ctx,
 					      struct samdump_state *samdump_state,
-					      struct creds_CredentialState *creds,
 					      struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
@@ -90,7 +88,6 @@ static NTSTATUS vampire_samdump_handle_secret(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
 					      struct samdump_state *samdump_state,
-					      struct creds_CredentialState *creds,
 					      struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
@@ -108,7 +105,6 @@ static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx, 		
 				  void *private, 			
-				  struct creds_CredentialState *creds,
 				  enum netr_SamDatabaseID database,
 				  struct netr_DELTA_ENUM *delta,
 				  char **error_string)
@@ -123,7 +119,6 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 		/* not interested in builtin users */
 		if (database == SAM_DATABASE_DOMAIN) {
 			nt_status = vampire_samdump_handle_user(mem_ctx, 
-								creds,
 								delta);
 			break;
 		}
@@ -132,7 +127,6 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = vampire_samdump_handle_secret(mem_ctx,
 							  samdump_state,
-							  creds,
 							  delta);
 		break;
 	}
@@ -140,7 +134,6 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = vampire_samdump_handle_trusted_domain(mem_ctx,
 								  samdump_state,
-								  creds,
 								  delta);
 		break;
 	}
@@ -169,11 +162,13 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct 
 
 	r2.out.error_string            = NULL;
 	r2.in.binding_string           = r->in.binding_string;
+	r2.in.init_fn                  = NULL;
 	r2.in.delta_fn                 = libnet_samdump_fn;
 	r2.in.fn_ctx                   = samdump_state;
 	r2.in.machine_account          = r->in.machine_account;
 	nt_status                      = libnet_SamSync_netlogon(ctx, samdump_state, &r2);
 	r->out.error_string            = r2.out.error_string;
+	talloc_steal(mem_ctx, r->out.error_string);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(samdump_state);

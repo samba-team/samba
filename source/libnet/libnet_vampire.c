@@ -152,7 +152,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	struct cli_credentials *machine_account;
 	struct dcerpc_pipe *p;
 	struct libnet_context *machine_net_ctx;
-	struct libnet_RpcConnect *c;
+	struct libnet_RpcConnectDCInfo *c;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
 
@@ -187,7 +187,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	c = talloc(samsync_ctx, struct libnet_RpcConnect);
+	c = talloc(samsync_ctx, struct libnet_RpcConnectDCInfo);
 	if (!c) {
 		r->out.error_string = NULL;
 		talloc_free(samsync_ctx);
@@ -217,7 +217,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	machine_net_ctx->cred = machine_account;
 
 	/* connect to the NETLOGON pipe of the PDC */
-	nt_status = libnet_RpcConnect(machine_net_ctx, c, c);
+	nt_status = libnet_RpcConnectDCInfo(machine_net_ctx, c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (r->in.binding_string) {
 			r->out.error_string = talloc_asprintf(mem_ctx,
@@ -258,6 +258,26 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return nt_status;
 	}
 
+	/* initialise the callback layer.  It may wish to contact the
+	 * server with ldap, now we know the name */
+	
+	if (r->in.init_fn) {
+		char *error_string;
+		nt_status = r->in.init_fn(samsync_ctx, 
+					  r->in.fn_ctx,
+					  machine_net_ctx, 
+					  p,
+					  c->out.domain_name,
+					  c->out.domain_sid, 
+					  c->out.realm,
+					  &error_string); 
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			r->out.error_string = talloc_steal(mem_ctx, error_string);
+			talloc_free(samsync_ctx);
+			return nt_status;
+		}
+	}
+
 	/* get NETLOGON credentails */
 
 	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, samsync_ctx, &creds);
@@ -285,13 +305,13 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 			dbsync_nt_status = dcerpc_netr_DatabaseSync(p, loop_ctx, &dbsync);
 			if (!NT_STATUS_IS_OK(dbsync_nt_status) &&
 			    !NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES)) {
-				r->out.error_string = talloc_asprintf(samsync_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
+				r->out.error_string = talloc_asprintf(mem_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
 				talloc_free(samsync_ctx);
 				return nt_status;
 			}
 			
 			if (!creds_client_check(creds, &dbsync.out.return_authenticator.cred)) {
-				r->out.error_string = talloc_strdup(samsync_ctx, "Credential chaining failed");
+				r->out.error_string = talloc_strdup(mem_ctx, "Credential chaining on incoming DatabaseSync failed");
 				talloc_free(samsync_ctx);
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -310,7 +330,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 						      &dbsync.out.delta_enum_array->delta_enum[d], 
 						      &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->out.error_string = talloc_steal(samsync_ctx, error_string);
+					r->out.error_string = talloc_steal(mem_ctx, error_string);
 					talloc_free(samsync_ctx);
 					return nt_status;
 				}
@@ -320,12 +340,11 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 				 * write to an ldb */
 				nt_status = r->in.delta_fn(delta_ctx, 
 							   r->in.fn_ctx,
-							   creds,
 							   dbsync.in.database_id,
 							   &dbsync.out.delta_enum_array->delta_enum[d], 
 							   &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->out.error_string = talloc_steal(samsync_ctx, error_string);
+					r->out.error_string = talloc_steal(mem_ctx, error_string);
 					talloc_free(samsync_ctx);
 					return nt_status;
 				}
@@ -333,7 +352,13 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 			}
 			talloc_free(loop_ctx);
 		} while (NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES));
-		nt_status = dbsync_nt_status;
+		
+		if (!NT_STATUS_IS_OK(dbsync_nt_status)) {
+			r->out.error_string = talloc_asprintf(mem_ctx, "libnet_SamSync_netlogon failed: unexpected inconsistancy. Should not get error %s here", nt_errstr(nt_status));
+			talloc_free(samsync_ctx);
+			return dbsync_nt_status;
+		}
+		nt_status = NT_STATUS_OK;
 	}
 	talloc_free(samsync_ctx);
 	return nt_status;
