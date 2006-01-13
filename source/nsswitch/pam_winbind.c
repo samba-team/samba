@@ -57,6 +57,11 @@ static int _pam_parse(int argc, const char **argv)
 	return ctrl;
 }
 
+static void _pam_winbind_cleanup_func(pam_handle_t *pamh, void *data, int error_status)
+{
+	SAFE_FREE(data);
+}
+
 /* --- authentication management functions --- */
 
 /* Attempt a conversation */
@@ -508,7 +513,22 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      }
 
      /* Now use the username to look up password */
-     return winbind_auth_request(username, password, member, ctrl);
+     retval = winbind_auth_request(username, password, member, ctrl);
+     if (retval == PAM_NEW_AUTHTOK_REQD ||
+	 retval == PAM_AUTHTOK_EXPIRED) {
+	
+	char *buf;
+	                
+	if (!asprintf(&buf, "%d", retval)) {
+		return PAM_BUF_ERR;
+	}
+
+	pam_set_data( pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, (void *)buf, _pam_winbind_cleanup_func);
+
+	return PAM_SUCCESS;
+     }
+     
+     return retval;
 }
 
 PAM_EXTERN
@@ -527,6 +547,8 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 		   int argc, const char **argv)
 {
     const char *username;
+    void *tmp = NULL;
+
     int retval = PAM_USER_UNKNOWN;
 
     /* parse arguments */
@@ -555,6 +577,26 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 		return PAM_IGNORE;
 	    return PAM_USER_UNKNOWN;
 	case 0:
+	    pam_get_data( pamh, PAM_WINBIND_NEW_AUTHTOK_REQD, (const void **)&tmp);
+
+	    if (tmp != NULL) {
+		retval = atoi(tmp);
+		switch (retval) {
+		case PAM_AUTHTOK_EXPIRED:
+		     /* fall through, since new token is required in this case */
+		case PAM_NEW_AUTHTOK_REQD:
+		     _pam_log(LOG_WARNING, "pam_sm_acct_mgmt success but %s is set",
+		              PAM_WINBIND_NEW_AUTHTOK_REQD);
+		     _pam_log(LOG_NOTICE, "user '%s' needs new password", username);
+		     /* PAM_AUTHTOKEN_REQD does not exist, but is documented in the manpage */
+		     return PAM_NEW_AUTHTOK_REQD;
+		default:
+		     _pam_log(LOG_WARNING, "pam_sm_acct_mgmt success");
+		     _pam_log(LOG_NOTICE, "user '%s' granted access", username);
+		     return PAM_SUCCESS;
+		}
+	    }
+
 	    /* Otherwise, the authentication looked good */
 	    _pam_log(LOG_NOTICE, "user '%s' granted access", username);
 	    return PAM_SUCCESS;
