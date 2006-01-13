@@ -229,7 +229,8 @@ static const DH_METHOD dh_null_method = {
 
 static const DH_METHOD *dh_default_method = &dh_null_method;
 
-const DH_METHOD *DH_null_method(void)
+const DH_METHOD *
+DH_null_method(void)
 {
     return &dh_null_method;
 }
