@@ -53,7 +53,6 @@ struct libnet_JoinDomain {
 		const char *account_dn_str;
 		const char *server_dn_str;
 		uint32_t kvno; /* msDS-KeyVersionNumber */
-		struct dcerpc_pipe *lsa_pipe;
 		struct dcerpc_pipe *samr_pipe;
 		struct dcerpc_binding *samr_binding;
 		struct policy_handle *user_handle;
