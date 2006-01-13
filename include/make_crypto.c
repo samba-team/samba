@@ -66,41 +66,38 @@ main(int argc, char **argv)
     fputs("#include <openssl/des.h>\n", f);
     fputs("#include <openssl/rc4.h>\n", f);
     fputs("#include <openssl/rc2.h>\n", f);
+    fputs("#include <openssl/md2.h>\n", f);
     fputs("#include <openssl/md4.h>\n", f);
     fputs("#include <openssl/md5.h>\n", f);
     fputs("#include <openssl/sha.h>\n", f);
     fputs("#include <openssl/aes.h>\n", f);
     fputs("#include <openssl/ui.h>\n", f);
+    fputs("#include <openssl/evp.h>\n", f);
+    fputs("#include <openssl/rand.h>\n", f);
+    fputs("#include <openssl/engine.h>\n", f);
+    fputs("#include <openssl/pkcs12.h>\n", f);
+    fputs("#include <openssl/pem.h>\n", f);
+    fputs("#ifndef BN_is_negative\n", f);
+    fputs("#define BN_set_negative(bn, flag) ((bn)->neg=(flag)?1:0)\n", f);
+    fputs("#define BN_is_negative(bn) ((bn)->neg != 0)\n", f);
+    fputs("#endif\n", f);
 #else
     fputs("#ifdef KRB5\n", f);
     fputs("#include <krb5-types.h>\n", f);
-    fputs("#elif defined(KRB4)\n", f);
-    fputs("#include <ktypes.h>\n", f);
     fputs("#endif\n", f);
     fputs("#include <des.h>\n", f);
+    fputs("#include <md2.h>\n", f);
     fputs("#include <md4.h>\n", f);
     fputs("#include <md5.h>\n", f);
     fputs("#include <sha.h>\n", f);
     fputs("#include <rc4.h>\n", f);
     fputs("#include <rc2.h>\n", f);
     fputs("#include <aes.h>\n", f);
-#ifdef HAVE_OLD_HASH_NAMES
-    fputs("\n", f);
-    fputs("    typedef struct md4 MD4_CTX;\n", f);
-    fputs("#define MD4_Init md4_init\n", f);
-    fputs("#define MD4_Update md4_update\n", f);
-    fputs("#define MD4_Final(D, C) md4_finito((C), (D))\n", f);
-    fputs("\n", f);
-    fputs("    typedef struct md5 MD5_CTX;\n", f);
-    fputs("#define MD5_Init md5_init\n", f);
-    fputs("#define MD5_Update md5_update\n", f);
-    fputs("#define MD5_Final(D, C) md5_finito((C), (D))\n", f);
-    fputs("\n", f);
-    fputs("    typedef struct sha SHA_CTX;\n", f);
-    fputs("#define SHA1_Init sha_init\n", f);
-    fputs("#define SHA1_Update sha_update\n", f);
-    fputs("#define SHA1_Final(D, C) sha_finito((C), (D))\n", f);
-#endif
+    fputs("#include <ui.h>\n", f);
+    fputs("#include <evp.h>\n", f);
+    fputs("#include <rand.h>\n", f);
+    fputs("#include <engine.h>\n", f);
+    fputs("#include <pkcs12.h>\n", f);
 #endif
     fprintf(f, "#endif /* __%s__ */\n", argv[1]);
     fclose(f);
