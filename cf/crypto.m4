@@ -143,10 +143,10 @@ fi
 if test "$crypto_lib" = "unknown"; then
 
   DIR_des='des'
-  LIB_des='$(top_builddir)/lib/des/libdes.la'
-  LIB_des_a='$(top_builddir)/lib/des/.libs/libdes.a'
-  LIB_des_so='$(top_builddir)/lib/des/.libs/libdes.so'
-  LIB_des_appl="-ldes"
+  LIB_des='$(top_builddir)/lib/des/libhcrypto.la'
+  LIB_des_a='$(top_builddir)/lib/des/.libs/libhcrypto.a'
+  LIB_des_so='$(top_builddir)/lib/des/.libs/libhcrypto.so'
+  LIB_des_appl="-lhcrypto"
 
   AC_MSG_RESULT([included libdes])
 
