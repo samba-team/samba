@@ -1,5 +1,10 @@
 2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* engine.h: Expose dsa symbols
+
+	* Makefile.am: Rename library to hcrypto and install headerfiles
+	in hcrypto/.
+
 	* test_pkcs12.c: Test for PKCS12_key_gen.
 
 	* hmac.h: Drop HMAC_CTX_create and HMAC_CTX_destroy.
