@@ -520,6 +520,53 @@ SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 }
 
 /********************************************************************
+ Wrapper to make storing a Service sd easier
+********************************************************************/
+
+BOOL svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token )
+{
+	REGISTRY_KEY *key;
+	WERROR wresult;
+	pstring path;
+	REGVAL_CTR *values;
+	prs_struct ps;
+	BOOL ret = False;
+	
+	/* now add the security descriptor */
+
+	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return False;
+	}
+
+	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
+		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		regkey_close_internal( key );
+		return False;
+	}
+	
+	/* stream the printer security descriptor */
+	
+	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, key, MARSHALL);
+	
+	if ( sec_io_desc("sec_desc", &sec_desc, &ps, 0 ) ) {
+		uint32 offset = prs_offset( &ps );
+		regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&ps), offset );
+		ret = store_reg_values( key, values );
+	}
+	
+	/* cleanup */
+	
+	prs_mem_free( &ps );
+	regkey_close_internal( key);
+
+	return ret;
+}
+
+/********************************************************************
 ********************************************************************/
 
 char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )

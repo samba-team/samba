@@ -27,8 +27,8 @@
 #define SVCCTL_CLOSE_SERVICE			0x00
 #define SVCCTL_CONTROL_SERVICE			0x01
 #define SVCCTL_LOCK_SERVICE_DB			0x03
-#define SVCCTL_QUERY_SERVICE_SEC		0x04	/* not impmenented */
-#define SVCCTL_SET_SEVICE_SEC			0x05	/* not implemented */
+#define SVCCTL_QUERY_SERVICE_SEC		0x04
+#define SVCCTL_SET_SERVICE_SEC			0x05
 #define SVCCTL_QUERY_STATUS			0x06
 #define SVCCTL_UNLOCK_SERVICE_DB		0x08
 #define SVCCTL_ENUM_DEPENDENT_SERVICES_W	0x0d
@@ -384,6 +384,35 @@ typedef struct {
 typedef struct {
 	WERROR status;
 } SVCCTL_R_UNLOCK_SERVICE_DB;
+
+
+/**************************/
+
+typedef struct {
+	POLICY_HND handle;
+	uint32 security_flags;
+	uint32 buffer_size;	
+} SVCCTL_Q_QUERY_SERVICE_SEC;
+
+typedef struct {
+	RPC_BUFFER buffer;
+	uint32 needed;
+	WERROR status;
+} SVCCTL_R_QUERY_SERVICE_SEC;
+
+/**************************/
+
+typedef struct {
+	POLICY_HND handle; 
+	uint32 security_flags;        
+	RPC_BUFFER buffer;
+	uint32 buffer_size;
+} SVCCTL_Q_SET_SERVICE_SEC;
+
+typedef struct {
+	WERROR status;
+} SVCCTL_R_SET_SERVICE_SEC;
+
 
 #endif /* _RPC_SVCCTL_H */
 
