@@ -771,3 +771,95 @@ WERROR _svcctl_unlock_service_db( pipes_struct *p, SVCCTL_Q_UNLOCK_SERVICE_DB *q
 		
 	return close_policy_hnd( p, &q_u->h_lock) ? WERR_OK : WERR_BADFID;
 }
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_query_service_sec( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_SEC *q_u, SVCCTL_R_QUERY_SERVICE_SEC *r_u )
+{
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SEC_DESC *sec_desc;
+
+
+	/* only support the SCM and individual services */
+
+	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM)) )
+		return WERR_BADFID;	
+
+	/* check access reights (according to MSDN) */
+
+	if ( !(info->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
+		return WERR_ACCESS_DENIED;
+
+	/* TODO: handle something besides DACL_SECURITY_INFORMATION */
+
+	if ( (q_u->security_flags & DACL_SECURITY_INFORMATION) != DACL_SECURITY_INFORMATION )
+		return WERR_INVALID_PARAM;
+
+	/* lookup the security descriptor and marshall it up for a reply */
+
+	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
+                return WERR_NOMEM;
+
+	r_u->needed = sec_desc_size( sec_desc );
+
+	if ( r_u->needed > q_u->buffer_size ) {
+		ZERO_STRUCTP( &r_u->buffer );
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
+
+	if ( !sec_io_desc("", &sec_desc, &r_u->buffer.prs, 0 ) )
+		return WERR_NOMEM;
+		
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, SVCCTL_R_SET_SERVICE_SEC *r_u )
+{
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SEC_DESC *sec_desc = NULL;
+	uint32 required_access;
+
+	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM))  )
+		return WERR_BADFID;
+
+	/* check the access on the open handle */
+	
+	switch ( q_u->security_flags ) {
+		case DACL_SECURITY_INFORMATION:
+			required_access = STD_RIGHT_WRITE_DAC_ACCESS;
+			break;
+			
+		case OWNER_SECURITY_INFORMATION:
+		case GROUP_SECURITY_INFORMATION:
+			required_access = STD_RIGHT_WRITE_OWNER_ACCESS;
+			break;
+			
+		case SACL_SECURITY_INFORMATION:
+			return WERR_INVALID_PARAM;
+		default:
+			return WERR_INVALID_PARAM;
+	}
+	
+	if ( !(info->access_granted & required_access) )
+		return WERR_ACCESS_DENIED;
+	
+	/* read the security descfriptor */
+		
+	if ( !sec_io_desc("", &sec_desc, &q_u->buffer.prs, 0 ) )
+		return WERR_NOMEM;
+		
+	/* store the new SD */
+
+	if ( !svcctl_set_secdesc( p->mem_ctx, info->name, sec_desc, p->pipe_user.nt_user_token ) ) 
+		return WERR_ACCESS_DENIED;
+
+	return WERR_OK;
+}
+
+

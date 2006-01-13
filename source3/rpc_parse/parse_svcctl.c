@@ -1029,6 +1029,109 @@ BOOL svcctl_io_r_unlock_service_db(const char *desc, SVCCTL_R_UNLOCK_SERVICE_DB 
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_query_service_sec(const char *desc, SVCCTL_Q_QUERY_SERVICE_SEC *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_query_service_sec");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("handle", &q_u->handle, ps, depth))
+		return False;
+	if(!prs_uint32("security_flags", ps, depth, &q_u->security_flags))
+		return False;
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_query_service_sec(const char *desc, SVCCTL_R_QUERY_SERVICE_SEC *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_sec");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!prs_rpcbuffer("buffer", ps, depth, &r_u->buffer))
+		return False;
+
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_set_service_sec(const char *desc, SVCCTL_Q_SET_SERVICE_SEC *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_set_service_sec");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("handle", &q_u->handle, ps, depth))
+		return False;
+	if(!prs_uint32("security_flags", ps, depth, &q_u->security_flags))
+		return False;
+
+	if (!prs_rpcbuffer("buffer", ps, depth, &q_u->buffer))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_set_service_sec(const char *desc, SVCCTL_R_SET_SERVICE_SEC *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_set_service_sec");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
 
 
 
