@@ -45,3 +45,22 @@ struct libnet_RpcConnect {
 		const char *error_string;
 	} out;
 };
+
+struct libnet_RpcConnectDCInfo {
+	enum libnet_RpcConnect_level level;
+
+	struct {
+		const char *name;
+		const char *binding;
+		const struct dcerpc_interface_table *dcerpc_iface;
+	} in;
+	struct {
+		struct dcerpc_pipe *dcerpc_pipe;
+		struct dom_sid *domain_sid;
+		const char *domain_name;
+
+		/* This parameter only present if the remote server is known to be AD */
+		const char *realm;
+		const char *error_string;
+	} out;
+};

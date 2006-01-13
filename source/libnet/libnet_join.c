@@ -544,21 +544,23 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 /*
  * do a domain join using DCERPC/SAMR calls
- * 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation)
- *    is it correct to contact the the pdc of the domain of the user who's password should be set?
- * 2. do a samr_Connect to get a policy handle
- * 3. do a samr_LookupDomain to get the domain sid
- * 4. do a samr_OpenDomain to get a domain handle
- * 5. do a samr_CreateAccount to try and get a new account 
+ * - connect to the LSA pipe, to try and find out information about the domain
+ * - create a secondary connection to SAMR pipe
+ * - do a samr_Connect to get a policy handle
+ * - do a samr_LookupDomain to get the domain sid
+ * - do a samr_OpenDomain to get a domain handle
+ * - do a samr_CreateAccount to try and get a new account 
  * 
  * If that fails, do:
- * 5.1. do a samr_LookupNames to get the users rid
- * 5.2. do a samr_OpenUser to get a user handle
+ * - do a samr_LookupNames to get the users rid
+ * - do a samr_OpenUser to get a user handle
+ * - potentially delete and recreate the user
+ * - assert the account is of the right type with samrQueryUserInfo
  * 
- * 6. call libnet_SetPassword_samr_handle to set the password
+ * - call libnet_SetPassword_samr_handle to set the password
  *
- * 7. do a samrSetUserInfo to set the account flags
- * 8. do some ADS specific things when we join as Domain Controller,
+ * - do a samrSetUserInfo to set the account flags
+ * - do some ADS specific things when we join as Domain Controller,
  *    look at libnet_joinADSDomain() for the details
  */
 NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *r)
@@ -566,17 +568,10 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	TALLOC_CTX *tmp_ctx;
 
 	NTSTATUS status, cu_status;
-	struct libnet_RpcConnect *c;
-	struct lsa_ObjectAttribute attr;
-	struct lsa_QosInfo qos;
-	struct lsa_OpenPolicy2 lsa_open_policy;
-	struct policy_handle lsa_p_handle;
-	struct lsa_QueryInfoPolicy2 lsa_query_info2;
-	struct lsa_QueryInfoPolicy lsa_query_info;
 
-	struct dcerpc_binding *samr_binding;
+	struct libnet_RpcConnectDCInfo *connect_with_info;
 	struct dcerpc_pipe *samr_pipe;
-	struct dcerpc_pipe *lsa_pipe;
+
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_OpenDomain od;
@@ -596,9 +591,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
 
-	struct dom_sid *domain_sid = NULL;
 	struct dom_sid *account_sid = NULL;
-	const char *domain_name = NULL;
 	const char *password_str = NULL;
 	const char *realm = NULL; /* Also flag for remote being AD */
 	
@@ -619,162 +612,47 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	samr_pipe = talloc(tmp_ctx, struct dcerpc_pipe);
-	if (!samr_pipe) {
+	connect_with_info = talloc(tmp_ctx, struct libnet_RpcConnectDCInfo);
+	if (!connect_with_info) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	c = talloc(tmp_ctx, struct libnet_RpcConnect);
-	if (!c) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	
+
 	/* prepare connect to the LSA pipe of PDC */
 	if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
-		c->level      = LIBNET_RPC_CONNECT_PDC;
-		c->in.name    = r->in.domain_name;
+		connect_with_info->level      = LIBNET_RPC_CONNECT_PDC;
+		connect_with_info->in.name    = r->in.domain_name;
 	} else {
-		c->level             = LIBNET_RPC_CONNECT_BINDING;
-		c->in.binding        = r->in.binding;
-	}
-	c->in.dcerpc_iface      = &dcerpc_table_lsarpc;
-	
-	/* connect to the LSA pipe of the PDC */
-
-	status = libnet_RpcConnect(ctx, c, c);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-							      "Connection to LSA pipe of PDC of domain '%s' failed: %s",
-							      r->in.domain_name, nt_errstr(status));
-		} else {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-							      "Connection to LSA pipe with binding '%s' failed: %s",
-							      r->in.binding, nt_errstr(status));
-		}
-		talloc_free(tmp_ctx);
-		return status;
-	}			
-	lsa_pipe = c->out.dcerpc_pipe;
-	
-	/* Get an LSA policy handle */
-
-	ZERO_STRUCT(lsa_p_handle);
-	qos.len = 0;
-	qos.impersonation_level = 2;
-	qos.context_mode = 1;
-	qos.effective_only = 0;
-
-	attr.len = 0;
-	attr.root_dir = NULL;
-	attr.object_name = NULL;
-	attr.attributes = 0;
-	attr.sec_desc = NULL;
-	attr.sec_qos = &qos;
-
-	lsa_open_policy.in.attr = &attr;
-	
-	lsa_open_policy.in.system_name = talloc_asprintf(tmp_ctx, "\\"); 
-	if (!lsa_open_policy.in.system_name) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		connect_with_info->level      = LIBNET_RPC_CONNECT_BINDING;
+		connect_with_info->in.binding = r->in.binding;
 	}
 
-	lsa_open_policy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	lsa_open_policy.out.handle = &lsa_p_handle;
-
-	status = dcerpc_lsa_OpenPolicy2(lsa_pipe, tmp_ctx, &lsa_open_policy); 
-
-	/* This now fails on ncacn_ip_tcp against Win2k3 SP1 */
-	if (NT_STATUS_IS_OK(status)) {
-		/* Look to see if this is ADS (a fault indicates NT4 or Samba 3.0) */
-		
-		lsa_query_info2.in.handle = &lsa_p_handle;
-		lsa_query_info2.in.level = LSA_POLICY_INFO_DNS;
-		
-		status = dcerpc_lsa_QueryInfoPolicy2(lsa_pipe, tmp_ctx, 		
-						     &lsa_query_info2);
-		
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			if (!NT_STATUS_IS_OK(status)) {
-				r->out.error_string = talloc_asprintf(mem_ctx,
-								      "lsa_QueryInfoPolicy2 failed: %s",
-								      nt_errstr(status));
-				talloc_free(tmp_ctx);
-				return status;
-			}
-			realm = lsa_query_info2.out.info->dns.dns_domain.string;
-		}
-		
-		/* Grab the domain SID (regardless of the result of the previous call */
-		
-		lsa_query_info.in.handle = &lsa_p_handle;
-		lsa_query_info.in.level = LSA_POLICY_INFO_DOMAIN;
-		
-		status = dcerpc_lsa_QueryInfoPolicy(lsa_pipe, tmp_ctx, 
-						    &lsa_query_info);
-		
-		if (!NT_STATUS_IS_OK(status)) {
-			r->out.error_string = talloc_asprintf(mem_ctx,
-							      "lsa_QueryInfoPolicy2 failed: %s",
-							      nt_errstr(status));
-			talloc_free(tmp_ctx);
-			return status;
-		}
-		
-		domain_sid = lsa_query_info.out.info->domain.sid;
-		domain_name = lsa_query_info.out.info->domain.name.string;
-	} else {
-		/* Cause the code further down to try this with just SAMR */
-		domain_sid = NULL;
-		if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
-			domain_name = talloc_strdup(tmp_ctx, r->in.domain_name);
-		} else {
-			/* Bugger, we just lost our way to automaticly find the domain name */
-			domain_name = talloc_strdup(tmp_ctx, lp_workgroup());
-		}
-	}
-
+	connect_with_info->in.dcerpc_iface    = &dcerpc_table_samr;
 	/*
 	  establish a SAMR connection, on the same CIFS transport
 	*/
-
-	/* Find the original binding string */
-	samr_binding = talloc(tmp_ctx, struct dcerpc_binding);
-	if (!samr_binding) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*samr_binding = *lsa_pipe->binding;
-
-	/* Make binding string for samr, not the other pipe */
-	status = dcerpc_epm_map_binding(tmp_ctx, samr_binding, 					
-					&dcerpc_table_samr,
-					lsa_pipe->conn->event_ctx);
+	
+	status = libnet_RpcConnectDCInfo(ctx, connect_with_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s",
-						DCERPC_NETLOGON_UUID,
-						nt_errstr(status));
+		if (r->in.binding) {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "Connection to SAMR pipe of DC %s failed: %s",
+							      r->in.binding, connect_with_info->out.error_string);
+		} else {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "Connection to SAMR pipe of PDC for %s failed: %s",
+							      r->in.domain_name, connect_with_info->out.error_string);
+		}
 		talloc_free(tmp_ctx);
 		return status;
 	}
 
-	/* Setup a SAMR connection */
-	status = dcerpc_secondary_connection(lsa_pipe, &samr_pipe, samr_binding);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"SAMR secondary connection failed: %s",
-						nt_errstr(status));
-		talloc_free(tmp_ctx);
-		return status;
-	}
+	samr_pipe = connect_with_info->out.dcerpc_pipe, 
 
-	status = dcerpc_pipe_auth(samr_pipe, samr_binding, &dcerpc_table_samr, ctx->cred);
+	status = dcerpc_pipe_auth(samr_pipe,
+				  connect_with_info->out.dcerpc_pipe->binding, 
+				  &dcerpc_table_samr, ctx->cred);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						"SAMR bind failed: %s",
@@ -799,11 +677,21 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
+	/* If this is a connection on ncacn_ip_tcp to Win2k3 SP1, we don't get back this useful info */
+	if (!connect_with_info->out.domain_name) {
+		if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
+			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, r->in.domain_name);
+		} else {
+			/* Bugger, we just lost our way to automaticly find the domain name */
+			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup());
+		}
+	}
+
 	/* Perhaps we didn't get a SID above, because we are against ncacn_ip_tcp */
-	if (!domain_sid) {
+	if (!connect_with_info->out.domain_sid) {
 		struct lsa_String name;
 		struct samr_LookupDomain l;
-		name.string = domain_name;
+		name.string = connect_with_info->out.domain_name;
 		l.in.connect_handle = &p_handle;
 		l.in.domain_name = &name;
 		
@@ -815,23 +703,23 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			talloc_free(tmp_ctx);
 			return status;
 		}
-		domain_sid = l.out.sid;
+		connect_with_info->out.domain_sid = l.out.sid;
 	}
 
 	/* prepare samr_OpenDomain */
 	ZERO_STRUCT(d_handle);
 	od.in.connect_handle = &p_handle;
 	od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	od.in.sid = domain_sid;
+	od.in.sid = connect_with_info->out.domain_sid;
 	od.out.domain_handle = &d_handle;
 
 	/* do a samr_OpenDomain to get a domain handle */
 	status = dcerpc_samr_OpenDomain(samr_pipe, tmp_ctx, &od);			
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
-					"samr_OpenDomain for [%s] failed: %s",
-					r->in.domain_name,
-					nt_errstr(status));
+						      "samr_OpenDomain for [%s] failed: %s",
+						      dom_sid_string(tmp_ctx, connect_with_info->out.domain_sid),
+						      nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return status;
 	}
@@ -1010,7 +898,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 						  "The machine account (%s) already exists in the domain %s, "
 						  "but is a %s.  You asked to join as a %s.  Please delete "
 						  "the account and try again.\n",
-						  r->in.account_name, domain_name, old_account_type, new_account_type);
+						  r->in.account_name, connect_with_info->out.domain_name, old_account_type, new_account_type);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_USER_EXISTS;
 		}
@@ -1065,7 +953,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		}
 	}
 
-	account_sid = dom_sid_add_rid(mem_ctx, domain_sid, rid);
+	account_sid = dom_sid_add_rid(mem_ctx, connect_with_info->out.domain_sid, rid);
 	if (!account_sid) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -1074,24 +962,22 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* Finish out by pushing various bits of status data out for the caller to use */
 	r->out.join_password = password_str;
-	talloc_steal(mem_ctx, password_str);
+	talloc_steal(mem_ctx, r->out.join_password);
 
-	r->out.domain_sid = domain_sid;
-	talloc_steal(mem_ctx, domain_sid);
+	r->out.domain_sid = connect_with_info->out.domain_sid;
+	talloc_steal(mem_ctx, r->out.domain_sid);
 
 	r->out.account_sid = account_sid;
-	talloc_steal(mem_ctx, account_sid);
+	talloc_steal(mem_ctx, r->out.account_sid);
 
-	r->out.domain_name = domain_name;
-	talloc_steal(mem_ctx, domain_name);
-	r->out.realm = realm;
-	talloc_steal(mem_ctx, realm);
-	r->out.lsa_pipe = lsa_pipe;
-	talloc_steal(mem_ctx, lsa_pipe);
+	r->out.domain_name = connect_with_info->out.domain_name;
+	talloc_steal(mem_ctx, r->out.domain_name);
+	r->out.realm = connect_with_info->out.realm;
+	talloc_steal(mem_ctx, r->out.realm);
 	r->out.samr_pipe = samr_pipe;
 	talloc_steal(mem_ctx, samr_pipe);
-	r->out.samr_binding = samr_binding;
-	talloc_steal(mem_ctx, samr_binding);
+	r->out.samr_binding = samr_pipe->binding;
+	talloc_steal(mem_ctx, r->out.samr_binding);
 	r->out.user_handle = u_handle;
 	talloc_steal(mem_ctx, u_handle);
 	r->out.error_string = r2.samr_handle.out.error_string;

@@ -24,9 +24,16 @@
 struct libnet_SamSync {
 	struct {
 		const char *binding_string;
+		NTSTATUS (*init_fn)(TALLOC_CTX *mem_ctx, 		
+				    void *private,
+				    struct libnet_context *machine_net_ctx,
+				    struct dcerpc_pipe *p,
+				    const char *domain_name,
+				    const struct dom_sid *domain_sid,
+				    const char *realm,
+				    char **error_string);
 		NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
 				     void *private, 			
-				     struct creds_CredentialState *creds,
 				     enum netr_SamDatabaseID database,
 				     struct netr_DELTA_ENUM *delta,
 				     char **error_string);

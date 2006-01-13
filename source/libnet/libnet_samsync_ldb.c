@@ -43,8 +43,13 @@ struct samsync_ldb_trusted_domain {
 };
 
 struct samsync_ldb_state {
+	/* Values from the LSA lookup */
+	const char *domain_name;
+	const struct dom_sid *domain_sid;
+	const char *realm;
+
 	struct dom_sid *dom_sid[3];
-	struct ldb_context *sam_ldb;
+	struct ldb_context *sam_ldb, *remote_ldb;
 	struct ldb_dn *base_dn[3];
 	struct samsync_ldb_secret *secrets;
 	struct samsync_ldb_trusted_domain *trusted_domains;
@@ -106,7 +111,6 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 					  struct samsync_ldb_state *state,
-					  struct creds_CredentialState *creds,
 					  enum netr_SamDatabaseID database,
 					  struct netr_DELTA_ENUM *delta,
 					  char **error_string) 
@@ -137,9 +141,13 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 
 		state->base_dn[database] = samdb_result_dn(state, msgs_domain[0], "nCName", NULL);
 
-		state->dom_sid[database] = samdb_search_dom_sid(state->sam_ldb, state,
-								state->base_dn[database], 
-								"objectSid", NULL);
+		if (state->domain_sid) {
+			state->dom_sid[database] = dom_sid_dup(state, state->domain_sid);
+		} else {
+			state->dom_sid[database] = samdb_search_dom_sid(state->sam_ldb, state,
+									state->base_dn[database], 
+									"objectSid", NULL);
+		}
 	} else if (database == SAM_DATABASE_BUILTIN) {
 		/* work out the builtin_dn - useful for so many calls its worth
 		   fetching here */
@@ -187,6 +195,10 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	samdb_msg_add_uint64(state->sam_ldb, mem_ctx, 
 			     msg, "creationTime", domain->domain_create_time);
 
+	/* Update the domain sid with the incoming domain */
+	samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, 
+				 msg, "objectSid", state->dom_sid[database]);
+
 	/* TODO: Account lockout, password properties */
 	
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
@@ -199,7 +211,6 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 					struct samsync_ldb_state *state,
-					struct creds_CredentialState *creds,
 					enum netr_SamDatabaseID database,
 					struct netr_DELTA_ENUM *delta,
 					char **error_string) 
@@ -209,13 +220,22 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	const char *container, *obj_class;
 	char *cn_name;
 	int cn_name_len;
-
+	const struct dom_sid *user_sid;
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
-	int ret;
+	struct ldb_message **remote_msgs;
+	int ret, i;
 	uint32_t acb;
 	BOOL add = False;
 	const char *attrs[] = { NULL };
+	/* we may change this to a global search, then fill in only the things not in ldap later */
+	const char *remote_attrs[] = { "userPrincipalName", "servicePrincipalName", 
+				       "msDS-KeyVersionNumber", NULL};
+
+	user_sid = dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid);
+	if (!user_sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
@@ -225,29 +245,49 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	/* search for the user, by rid */
 	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database],
 			   &msgs, attrs, "(&(objectClass=user)(objectSid=%s))", 
-			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+			   ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
 
 	if (ret == -1) {
-		*error_string = talloc_asprintf(mem_ctx, "gendb_search for user %s failed: %s", 
-						dom_sid_string(mem_ctx, 
-							       dom_sid_add_rid(mem_ctx, 
-									       state->dom_sid[database], 
-									       rid)),
+		*error_string = talloc_asprintf(mem_ctx, "LDB for user %s failed: %s", 
+						dom_sid_string(mem_ctx, user_sid),
 						ldb_errstring(state->sam_ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
-		*error_string = talloc_asprintf(mem_ctx, "More than one user with SID: %s", 
-						dom_sid_string(mem_ctx, 
-							       dom_sid_add_rid(mem_ctx, 
-									       state->dom_sid[database], 
-									       rid)));
+		*error_string = talloc_asprintf(mem_ctx, "More than one user with SID: %s in local LDB", 
+						dom_sid_string(mem_ctx, user_sid));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
-		msg->dn = talloc_steal(msg, msgs[0]->dn);
+		msg->dn = msgs[0]->dn;
+		talloc_steal(msg, msgs[0]->dn);
 	}
 
+	/* and do the same on the remote database */
+	ret = gendb_search(state->remote_ldb, mem_ctx, state->base_dn[database],
+			   &remote_msgs, remote_attrs, "(&(objectClass=user)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
+
+	if (ret == -1) {
+		*error_string = talloc_asprintf(mem_ctx, "remote LDAP for user %s failed: %s", 
+						dom_sid_string(mem_ctx, user_sid),
+						ldb_errstring(state->remote_ldb));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		*error_string = talloc_asprintf(mem_ctx, "User exists in samsync but not in remote LDAP domain! (base: %s, SID: %s)", 
+						ldb_dn_linearize(mem_ctx, state->base_dn[database]),
+						dom_sid_string(mem_ctx, user_sid));
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (ret > 1) {
+		*error_string = talloc_asprintf(mem_ctx, "More than one user in remote LDAP domain with SID: %s", 
+						dom_sid_string(mem_ctx, user_sid));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+		/* Try to put things in the same location as the remote server */
+	} else if (add) {
+		msg->dn = remote_msgs[0]->dn;
+		talloc_steal(msg, remote_msgs[0]->dn);
+	}
 
 	cn_name   = talloc_strdup(mem_ctx, user->account_name.string);
 	NT_STATUS_HAVE_NO_MEMORY(cn_name);
@@ -324,6 +364,16 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 
 #undef ADD_OR_DEL
 
+	for (i=0; remote_attrs[i]; i++) {
+		struct ldb_message_element *el = ldb_msg_find_element(remote_msgs[0], remote_attrs[i]);
+		if (!el) {
+			samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
+					     remote_attrs[i]); 
+		} else {
+			ldb_msg_add(msg, el, LDB_FLAG_MOD_REPLACE);
+		}
+	}
+
 	acb = user->acct_flags;
 	if (acb & (ACB_WSTRUST)) {
 		cn_name[cn_name_len - 1] = '\0';
@@ -352,10 +402,17 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
 		if (ret != 0) {
-			*error_string = talloc_asprintf(mem_ctx, "Failed to create user record %s: %s",
-							ldb_dn_linearize(mem_ctx, msg->dn),
-							ldb_errstring(state->sam_ldb));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			struct ldb_dn *first_try_dn = msg->dn;
+			/* Try again with the default DN */
+			msg->dn = talloc_steal(msg, msgs[0]->dn);
+			ret = samdb_add(state->sam_ldb, mem_ctx, msg);
+			if (ret != 0) {
+				*error_string = talloc_asprintf(mem_ctx, "Failed to create user record.  Tried both %s and %s: %s",
+								ldb_dn_linearize(mem_ctx, first_try_dn),
+								ldb_dn_linearize(mem_ctx, msg->dn),
+								ldb_errstring(state->sam_ldb));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
 		}
 	} else {
 		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
@@ -372,7 +429,6 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 					struct samsync_ldb_state *state,
-					struct creds_CredentialState *creds,
 					enum netr_SamDatabaseID database,
 					struct netr_DELTA_ENUM *delta,
 					char **error_string) 
@@ -414,7 +470,6 @@ static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
-					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
 					 struct netr_DELTA_ENUM *delta,
 					 char **error_string) 
@@ -513,7 +568,6 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
-					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
 					 struct netr_DELTA_ENUM *delta,
 					 char **error_string) 
@@ -555,7 +609,6 @@ static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 						struct samsync_ldb_state *state,
-						struct creds_CredentialState *creds,
 						enum netr_SamDatabaseID database,
 						struct netr_DELTA_ENUM *delta,
 						char **error_string) 
@@ -629,7 +682,6 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
-					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
 					 struct netr_DELTA_ENUM *delta,
 					 char **error_string) 
@@ -730,7 +782,6 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
-					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
 					 struct netr_DELTA_ENUM *delta,
 					 char **error_string) 
@@ -767,7 +818,6 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 						struct samsync_ldb_state *state,
-						struct creds_CredentialState *creds,
 						enum netr_SamDatabaseID database,
 						struct netr_DELTA_ENUM *delta,
 						char **error_string) 
@@ -850,7 +900,6 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 					   struct samsync_ldb_state *state,
-					   struct creds_CredentialState *creds,
 					   enum netr_SamDatabaseID database,
 					   struct netr_DELTA_ENUM *delta,
 					   char **error_string) 
@@ -914,7 +963,6 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 					   struct samsync_ldb_state *state,
-					   struct creds_CredentialState *creds,
 					   enum netr_SamDatabaseID database,
 					   struct netr_DELTA_ENUM *delta,
 					   char **error_string) 
@@ -964,13 +1012,12 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx, 		
 				      void *private, 			
-				      struct creds_CredentialState *creds,
 				      enum netr_SamDatabaseID database,
 				      struct netr_DELTA_ENUM *delta,
 				      char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct samsync_ldb_state *state = private;
+	struct samsync_ldb_state *state = talloc_get_type(private, struct samsync_ldb_state);
 
 	*error_string = NULL;
 	switch (delta->delta_type) {
@@ -978,7 +1025,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_domain(mem_ctx, 
 						      state,
-						      creds,
 						      database,
 						      delta,
 						      error_string);
@@ -988,7 +1034,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_user(mem_ctx, 
 						    state,
-						    creds,
 						    database,
 						    delta,
 						    error_string);
@@ -998,7 +1043,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_delete_user(mem_ctx, 
 						    state,
-						    creds,
 						    database,
 						    delta,
 						    error_string);
@@ -1008,7 +1052,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_group(mem_ctx, 
 						     state,
-						     creds,
 						     database,
 						     delta,
 						     error_string);
@@ -1018,7 +1061,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_delete_group(mem_ctx, 
 						     state,
-						     creds,
 						     database,
 						     delta,
 						     error_string);
@@ -1028,7 +1070,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_group_member(mem_ctx, 
 							    state,
-							    creds,
 							    database,
 							    delta,
 							    error_string);
@@ -1038,7 +1079,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_alias(mem_ctx, 
 						     state,
-						     creds,
 						     database,
 						     delta,
 						     error_string);
@@ -1048,7 +1088,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_delete_alias(mem_ctx, 
 						     state,
-						     creds,
 						     database,
 						     delta,
 						     error_string);
@@ -1058,7 +1097,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_alias_member(mem_ctx, 
 							    state,
-							    creds,
 							    database,
 							    delta,
 							    error_string);
@@ -1068,7 +1106,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_handle_account(mem_ctx, 
 						       state,
-						       creds,
 						       database,
 						       delta,
 						       error_string);
@@ -1078,7 +1115,6 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	{
 		nt_status = samsync_ldb_delete_account(mem_ctx, 
 						       state,
-						       creds,
 						       database,
 						       delta,
 						       error_string);
@@ -1092,6 +1128,40 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 		*error_string = talloc_asprintf(mem_ctx, "Failed to handle samsync delta: %s", nt_errstr(nt_status));
 	}
 	return nt_status;
+}
+
+static NTSTATUS libnet_samsync_ldb_init(TALLOC_CTX *mem_ctx, 		
+					void *private,
+					struct libnet_context *machine_net_ctx,
+					struct dcerpc_pipe *p,
+					const char *domain_name,
+					const struct dom_sid *domain_sid,
+					const char *realm,
+					char **error_string)
+{
+	struct samsync_ldb_state *state = talloc_get_type(private, struct samsync_ldb_state);
+	const char *server = dcerpc_server_name(p);
+	char *ldap_url;
+
+	state->domain_name = domain_name;
+	state->domain_sid  = domain_sid;
+	state->realm       = realm;
+
+	if (realm) {
+		if (!server || !*server) {
+			/* huh?  how do we not have a server name?  */
+			*error_string = talloc_strdup(mem_ctx, "No DCE/RPC server name available.  How did we connect?");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		ldap_url = talloc_asprintf(state, "ldap://%s", dcerpc_server_name(p));
+		
+		state->remote_ldb = ldb_wrap_connect(mem_ctx, ldap_url, 
+						     NULL, machine_net_ctx->cred,
+						     0, NULL);
+		/* TODO: Make inquires to see if this is AD, then decide that
+		 * the ldap connection is critical */
+	}
+	return NT_STATUS_OK;
 }
 
 NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_samsync_ldb *r)
@@ -1111,11 +1181,13 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 
 	r2.out.error_string    = NULL;
 	r2.in.binding_string   = r->in.binding_string;
+	r2.in.init_fn          = libnet_samsync_ldb_init;
 	r2.in.delta_fn         = libnet_samsync_ldb_fn;
 	r2.in.fn_ctx           = state;
 	r2.in.machine_account  = NULL; /* TODO:  Create a machine account, fill this in, and the delete it */
 	nt_status              = libnet_SamSync_netlogon(ctx, state, &r2);
 	r->out.error_string    = r2.out.error_string;
+	talloc_steal(mem_ctx, r->out.error_string);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(state);

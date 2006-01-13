@@ -27,7 +27,6 @@
 
 static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 					    const char *keytab_name,
-					    struct creds_CredentialState *creds,
 					    struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_USER *user = delta->delta_union.user;
@@ -66,7 +65,6 @@ static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx, 		
 					 void *private, 			
-					 struct creds_CredentialState *creds,
 					 enum netr_SamDatabaseID database,
 					 struct netr_DELTA_ENUM *delta,
 					 char **error_string)
@@ -82,7 +80,6 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 		if (database == SAM_DATABASE_DOMAIN) {
 			nt_status = samdump_keytab_handle_user(mem_ctx, 
 							       keytab_name,
-							       creds,
 							       delta);
 			break;
 		}
@@ -101,11 +98,13 @@ NTSTATUS libnet_SamDump_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 
 	r2.out.error_string            = NULL;
 	r2.in.binding_string           = r->in.binding_string;
+	r2.in.init_fn                  = NULL;
 	r2.in.delta_fn                 = libnet_samdump_keytab_fn;
 	r2.in.fn_ctx                   = discard_const(r->in.keytab_name);
 	r2.in.machine_account          = r->in.machine_account;
 	nt_status                      = libnet_SamSync_netlogon(ctx, mem_ctx, &r2);
 	r->out.error_string            = r2.out.error_string;
+	talloc_steal(mem_ctx, r->out.error_string);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
