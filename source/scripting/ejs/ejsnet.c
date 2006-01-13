@@ -27,69 +27,159 @@
 #include "libnet/libnet.h"
 
 
+static int ejs_net_userman(MprVarHandle, int, struct MprVar**);
+static int ejs_net_createuser(MprVarHandle, int, char**);
+static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv);
+static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv);
+static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv);
+
+/* Usage:
+   net = NetContext(credentials);
+*/
+
 static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct cli_credentials *creds;
 	struct libnet_context *ctx;
-	struct MprVar *obj;
+	struct MprVar obj;
 
+	/* TODO:  Need to get the right event context in here */
 	ctx = libnet_context_init(NULL);
-	creds = talloc(ctx, struct cli_credentials);
-	ctx->cred = creds;
-
-	ctx->name_res_methods = str_list_copy(ctx, lp_name_resolve_order());
 
 	if (argc == 0) {
+		creds = cli_credentials_init(ctx);
+		if (creds == NULL) {
+			ejsSetErrorMsg(eid, "cli_credential_init() failed");
+			talloc_free(ctx);
+			return -1;
+		}
+		cli_credentials_set_conf(creds);
 		cli_credentials_set_anonymous(creds);
-
-	} else if (argc == 2 || argc == 4 ) {
-	  
-		cli_credentials_set_workstation(creds, lp_netbios_name(), CRED_SPECIFIED);
-
-		if (!mprVarIsString(argv[0]->type)) {
-			ejsSetErrorMsg(eid, "argument 1 must be a string");
-			goto done;
+	} else if (argc == 1 && argv[0]->type == MPR_TYPE_OBJECT) {
+		/* get credential values from credentials object */
+		creds = mprGetPtr(argv[0], "creds");
+		if (creds == NULL) {
+			ejsSetErrorMsg(eid, "userAuth requires a 'creds' first parameter");
+			talloc_free(ctx);
+			return -1;
 		}
-		cli_credentials_set_username(creds, argv[0]->string, CRED_SPECIFIED);
-
-		if (!mprVarIsString(argv[1]->type)) {
-			ejsSetErrorMsg(eid, "argument 2 must be a string");
-			goto done;
-		}
-		cli_credentials_set_password(creds, argv[1]->string, CRED_SPECIFIED);
-
 	} else {
-		ejsSetErrorMsg(eid, "invalid number of arguments");
-		goto done;
+		ejsSetErrorMsg(eid, "NetContext invalid arguments, this function requires an object.");
+		talloc_free(ctx);
+		return -1;
 	}
+	ctx->cred = creds;
 
-		
-	if (argc == 4) {
-
-		if (!mprVarIsString(argv[2]->type)) {
-			ejsSetErrorMsg(eid, "argument 3 must be a string");
-			goto done;
-		}
-		cli_credentials_set_domain(creds, argv[2]->string, CRED_SPECIFIED);
-		
-		if (!mprVarIsString(argv[3]->type)) {
-			ejsSetErrorMsg(eid, "argument 4 must be a string");
-			goto done;
-		}
-		cli_credentials_set_realm(creds, argv[3]->string, CRED_SPECIFIED);
-	}
-
-	obj = mprInitObject(eid, "NetCtx", argc, argv);
-	mprSetPtrChild(obj, "ctx", ctx);
-
-	mprSetCFunction(obj, "UserMgr", ejs_net_userman);
+	obj = mprObject("NetCtx");
+	mprSetPtrChild(&obj, "ctx", ctx);
+	
+	mprSetCFunction(&obj, "UserMgr", ejs_net_userman);
+	mprSetCFunction(&obj, "JoinDomain", ejs_net_join_domain);
+	mprSetCFunction(&obj, "SamSyncLdb", ejs_net_samsync_ldb);
+	mpr_Return(eid, obj);
 
 	return 0;
-done:
-	talloc_free(ctx);
-	return -1;
 }
 
+static int ejs_net_join_domain(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	struct libnet_Join *join;
+	NTSTATUS status;
+	ctx = mprGetThisPtr(eid, "ctx");
+	mem_ctx = talloc_new(mprMemCtx());
+
+	join = talloc(mem_ctx, struct libnet_Join);
+	if (!join) {
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	/* prepare parameters for the join */
+	join->in.netbios_name  = NULL;
+	join->in.join_type     = SEC_CHAN_WKSTA;
+	join->in.domain_name   = cli_credentials_get_domain(ctx->cred);
+	join->in.level         = LIBNET_JOINDOMAIN_AUTOMATIC;
+	join->out.error_string = NULL;
+
+	if (argc == 1 && argv[0]->type == MPR_TYPE_OBJECT) {
+		MprVar *netbios_name = mprGetProperty(argv[0], "netbios_name", NULL);
+		MprVar *domain_name = mprGetProperty(argv[0], "domain_name", NULL);
+		MprVar *join_type = mprGetProperty(argv[0], "join_type", NULL);
+		if (netbios_name) {
+			join->in.netbios_name = mprToString(netbios_name);
+		}
+		if (domain_name) {
+			join->in.domain_name = mprToString(domain_name);
+		}
+		if (join_type) {
+			join->in.join_type = mprToInt(join_type);
+		}
+	}
+
+	if (!join->in.domain_name) {
+		ejsSetErrorMsg(eid, "a domain must be specified for to join");
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	/* do the domain join */
+	status = libnet_Join(ctx, join, join);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		MprVar error_string = mprString(join->out.error_string);
+		
+		mprSetPropertyValue(argv[0], "error_string", error_string);
+		mpr_Return(eid, mprCreateBoolVar(False));
+	} else {
+		mpr_Return(eid, mprCreateBoolVar(True));
+	}
+	talloc_free(mem_ctx);
+	return 0;
+}
+
+static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	struct libnet_samsync_ldb *samsync;
+	NTSTATUS status;
+	ctx = mprGetThisPtr(eid, "ctx");
+	mem_ctx = talloc_new(mprMemCtx());
+
+	samsync = talloc(mem_ctx, struct libnet_samsync_ldb);
+	if (!samsync) {
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	/* prepare parameters for the samsync */
+	samsync->in.machine_account = NULL;
+	samsync->in.binding_string = NULL;
+	samsync->out.error_string = NULL;
+
+	if (argc == 1 && argv[0]->type == MPR_TYPE_OBJECT) {
+		MprVar *credentials = mprGetProperty(argv[0], "machine_account", NULL);
+		if (credentials) {
+			samsync->in.machine_account = talloc_get_type(mprGetPtr(credentials, "creds"), struct cli_credentials);
+		}
+	}
+
+	/* do the domain samsync */
+	status = libnet_samsync_ldb(ctx, samsync, samsync);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		MprVar error_string = mprString(samsync->out.error_string);
+		
+		mprSetPropertyValue(argv[0], "error_string", error_string);
+		mpr_Return(eid, mprCreateBoolVar(False));
+	} else {
+		mpr_Return(eid, mprCreateBoolVar(True));
+	}
+	talloc_free(mem_ctx);
+	return 0;
+}
 
 static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 {
@@ -99,7 +189,7 @@ static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct MprVar *obj = NULL;
 
 	ctx = mprGetThisPtr(eid, "ctx");
-	mem_ctx = talloc_init(NULL);
+	mem_ctx = talloc_new(mprMemCtx());
 
 	if (argc == 0) {
 		userman_domain = cli_credentials_get_domain(ctx->cred);
@@ -122,6 +212,7 @@ static int ejs_net_userman(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetPtrChild(obj, "domain", userman_domain);
 
 	mprSetStringCFunction(obj, "Create", ejs_net_createuser);
+	mprSetStringCFunction(obj, "Delete", ejs_net_deleteuser);
 
 	return 0;
 done:
@@ -140,22 +231,22 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 
 	if (argc != 1) {
 		ejsSetErrorMsg(eid, "argument 1 must be a string");
-		goto done;
+		return -1;
 	}
 
 	ctx = mprGetThisPtr(eid, "ctx");
 	if (!ctx) {
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
-		goto done;
+		return -1;
 	}
 
 	userman_domain = mprGetThisPtr(eid, "domain");
 	if (!userman_domain) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
-		goto done;
+		return -1;
 	}
 	
-	mem_ctx = talloc_init(NULL);
+	mem_ctx = talloc_new(mprMemCtx());
 
     	req.in.domain_name = userman_domain;
 	req.in.user_name   = argv[0];
@@ -168,10 +259,46 @@ static int ejs_net_createuser(MprVarHandle eid, int argc, char **argv)
 	talloc_free(mem_ctx);
 	mpr_Return(eid, mprNTSTATUS(status));
 	return 0;
+}
 
-done:
+static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
+	const char *userman_domain = NULL;
+	struct libnet_DeleteUser req;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "argument 1 must be a string");
+		return -1;
+	}
+
+	ctx = mprGetThisPtr(eid, "ctx");
+	if (!ctx) {
+		ejsSetErrorMsg(eid, "ctx property returns null pointer");
+		return -1;
+	}
+
+	userman_domain = mprGetThisPtr(eid, "domain");
+	if (!userman_domain) {
+		ejsSetErrorMsg(eid, "domain property returns null pointer");
+		return -1;
+	}
+	
+	mem_ctx = talloc_new(mprMemCtx());
+
+    	req.in.domain_name = userman_domain;
+	req.in.user_name   = argv[0];
+
+	status = libnet_DeleteUser(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "error when creating user: %s", nt_errstr(status));
+	}
+
 	talloc_free(mem_ctx);
-	return -1;
+	mpr_Return(eid, mprNTSTATUS(status));
+	return 0;
 }
 
 

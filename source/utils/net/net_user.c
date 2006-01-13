@@ -64,9 +64,51 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 	return 0;
 }
 
+static int net_user_delete(struct net_context *ctx, int argc, const char **argv)
+{
+	NTSTATUS status;
+	struct libnet_context *lnet_ctx;
+	struct libnet_DeleteUser r;
+	char *user_name;
+
+	/* command line argument preparation */
+	switch (argc) {
+	case 0:
+		return net_user_usage(ctx, argc, argv);
+		break;
+	case 1:
+		user_name = talloc_strdup(ctx->mem_ctx, argv[0]);
+		break;
+	default:
+		return net_user_usage(ctx, argc, argv);
+	}
+
+	/* libnet context init and its params */
+	lnet_ctx = libnet_context_init(NULL);
+	if (!lnet_ctx) return -1;
+
+	lnet_ctx->cred = ctx->credentials;
+
+	/* calling DeleteUser function */
+	r.level              = LIBNET_DELETE_USER_GENERIC;
+	r.in.user_name       = user_name;
+	r.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
+
+	status = libnet_DeleteUser(lnet_ctx, ctx->mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to delete user account: %s\n",
+			  r.out.error_string));
+		return -1;
+	}
+	
+	talloc_free(lnet_ctx);
+	return 0;
+}
+
 
 static const struct net_functable net_user_functable[] = {
 	{ "add", "create new user account\n", net_user_add, net_user_usage },
+	{ "delete", "delete an existing user account\n", net_user_delete, net_user_usage },
 	{ NULL, NULL }
 };
 

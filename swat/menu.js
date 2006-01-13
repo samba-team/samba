@@ -40,7 +40,8 @@ swat_menus.install = simple_menu(
 	"Installation",
 	"Provisioning",       session_uri("/install/provision.esp"),
 	"New User",           session_uri("/install/newuser.esp"),
-	"Import from Samba3", session_uri("/install/samba3.esp"));
+	"Import from Samba3", session_uri("/install/samba3.esp"),
+	"Import from Windows", session_uri("/install/vampire.esp"));
 
 
 swat_menus.nbt_server = simple_menu(

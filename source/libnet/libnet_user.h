@@ -36,3 +36,21 @@ struct libnet_CreateUser {
 		const char *error_string;
 	} out;
 };
+
+enum libnet_DeleteUser_level {
+	LIBNET_DELETE_USER_GENERIC,
+	LIBNET_DELETE_USER_SAMR,
+};
+
+
+struct libnet_DeleteUser {
+	enum libnet_DeleteUser_level level;
+
+	struct {
+		const char *user_name;
+		const char *domain_name;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
+};
