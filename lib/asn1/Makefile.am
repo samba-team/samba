@@ -172,6 +172,7 @@ gen_files_rfc2459 =					\
 	asn1_OtherName.x				\
 	asn1_RDNSequence.x				\
 	asn1_RSAPublicKey.x				\
+	asn1_RSAPrivateKey.x				\
 	asn1_RelativeDistinguishedName.x		\
 	asn1_SubjectKeyIdentifier.x			\
 	asn1_SubjectPublicKeyInfo.x			\
