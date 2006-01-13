@@ -1,5 +1,12 @@
 2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* include/Makefile.am: Don't clean crypto headers, they now live
+	in hcrypto/.  Add hcrypto to SUBDIRS.
+
+	* include/hcrypto/Makefile.am: clean installed headers
+
+	* include/make_crypto.c: include crypto headers from hcrypto/
+
 	* include/make_crypto.c: Include more crypto headerfiles. Remove
 	support for old hash names.
 	
