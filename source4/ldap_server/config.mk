@@ -6,8 +6,7 @@
 OBJ_FILES = \
 		ldap_server.o \
 		ldap_backend.o \
-		ldap_bind.o \
-		ldap_simple_ldb.o 
+		ldap_bind.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_LDAP SAMDB
 # End SUBSYSTEM SMB
