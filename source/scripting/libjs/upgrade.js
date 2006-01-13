@@ -128,7 +128,6 @@ objectClass: user
 lastLogon: %d
 lastLogoff: %d
 unixName: %s
-name: %s
 sAMAccountName: %s
 cn: %s
 description: %s
@@ -153,7 +152,7 @@ ntPwdHash:: %s
 
 ", ldb.dn_escape(acc.fullname), domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, acc.nt_username, 
 
-acc.fullname, acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
+acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
 acc.domain, acc.dir_drive, acc.munged_dial, acc.homedir, acc.logon_script, 
 acc.profile_path, acc.workstations, acc.kickoff_time, acc.bad_password_time, 
 acc.pass_last_set_time, acc.pass_can_change_time, acc.pass_must_change_time, domainsid, acc.user_rid,
