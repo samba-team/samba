@@ -71,7 +71,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	uint_t pwdProperties, pwdHistoryLength;
 	uint_t userAccountControl;
 	const char *dnsDomain, *realm;
-	const char *sambaPassword;
+	const char *sambaPassword = NULL;
 	struct samr_Password *sambaLMPwdHistory, *sambaNTPwdHistory;
 	struct samr_Password *lmPwdHash, *ntPwdHash;
 	struct samr_Password *lmOldHash = NULL, *ntOldHash = NULL;
@@ -165,26 +165,32 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	 * the second modify.  We might not want it written to disk */
 	
 	if (req->operation == LDB_REQ_ADD) {
-		if (attribute->num_values != 1) {
+		if (attribute->num_values > 1) {
 			ldb_set_errstring(module, 
 					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
 							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-	
-		sambaPassword = (const char *)attribute->values[0].data;
-		ldb_msg_remove_attr(msg2, "sambaPassword");
+
+		if (attribute->num_values == 1) {
+			sambaPassword = (const char *)attribute->values[0].data;
+			ldb_msg_remove_attr(msg2, "sambaPassword");
+		}
 	} else if (((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_ADD)
 		   || ((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_REPLACE)) {
-		if (attribute->num_values != 1) {
+		if (attribute->num_values > 1) {
+			ldb_set_errstring(module, 
+					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
+							  "attempted set of multiple sambaPassword attributes on %s rejected",
+							  ldb_dn_linearize(mem_ctx, dn)));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		
-		sambaPassword = (const char *)attribute->values[0].data;
-		ldb_msg_remove_attr(msg2, "sambaPassword");
-	} else {
-		sambaPassword = NULL;
+		if (attribute->num_values == 1) {
+			sambaPassword = (const char *)attribute->values[0].data;
+			ldb_msg_remove_attr(msg2, "sambaPassword");
+		}
 	}
 
 	modified_orig_request = talloc(mem_ctx, struct ldb_request);
