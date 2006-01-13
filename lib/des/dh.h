@@ -38,11 +38,10 @@
 #ifndef _HEIM_DH_H
 #define _HEIM_DH_H 1
 
-#include <bn.h>
-
 /* symbol renaming */
 #define DH_null_method hc_DH_null_method
 #define DH_new hc_DH_new
+#define DH_new_method hc_DH_new_method
 #define DH_free hc_DH_free
 #define DH_up_ref hc_DH_up_ref
 #define DH_size hc_DH_size
@@ -63,6 +62,9 @@
 
 typedef struct DH DH;
 typedef struct DH_METHOD DH_METHOD;
+
+#include <bn.h>
+#include <engine.h>
 
 struct DH_METHOD {
     const char *name;
@@ -99,7 +101,7 @@ struct DH {
 	int dummy;
     } ex_data;
     const DH_METHOD *meth;
-    void *engine;
+    ENGINE *engine;
 };
 
 /*
@@ -109,6 +111,7 @@ struct DH {
 const DH_METHOD *DH_null_method(void);
 
 DH *	DH_new(void);
+DH *	DH_new_method(ENGINE *);
 void	DH_free(DH *);
 int	DH_up_ref(DH *);
 
