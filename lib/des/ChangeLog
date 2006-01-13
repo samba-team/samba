@@ -1,5 +1,7 @@
 2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_pkcs12.c: Test for PKCS12_key_gen.
+
 	* hmac.h: Drop HMAC_CTX_create and HMAC_CTX_destroy.
 
 	* engine.c (ENGINE_add_conf_module): Also load DH
