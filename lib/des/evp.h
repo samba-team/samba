@@ -36,8 +36,7 @@
 #ifndef HEIM_EVP_H
 #define HEIM_EVP_H 1
 
-#include <sys/types.h>
-#include <engine.h>
+#include <hcrypto/engine.h>
 
 /* symbol renaming */
 #define EVP_CIPHER_CTX_block_size hc_EVP_CIPHER_CTX_block_size

@@ -36,7 +36,7 @@
 #ifndef HEIM_HMAC_H
 #define HEIM_HMAC_H 1
 
-#include <evp.h>
+#include <hcrypto/evp.h>
 
 /* symbol renaming */
 #define HMAC_CTX_init hc_HMAC_CTX_init

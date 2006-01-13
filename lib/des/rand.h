@@ -38,7 +38,7 @@
 #ifndef _HEIM_RAND_H
 #define _HEIM_RAND_H 1
 
-#include <bn.h>
+#include <hcrypto/bn.h>
 
 /* symbol renaming */
 #define RAND_bytes hc_RAND_bytes
