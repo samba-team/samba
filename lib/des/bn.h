@@ -50,7 +50,7 @@
 #define BN_cmp hc_BN_cmp
 #define BN_dup hc_BN_dup
 #define BN_free hc_BN_free
-#define BN_get_negative hc_BN_get_negative
+#define BN_is_negative hc_BN_is_negative
 #define BN_get_word hc_BN_get_word
 #define BN_hex2bn hc_BN_hex2bn
 #define BN_is_bit_set hc_BN_is_bit_set
@@ -97,7 +97,7 @@ int	BN_num_bytes(const BIGNUM *);
 int	BN_cmp(const BIGNUM *, const BIGNUM *);
 
 void	BN_set_negative(BIGNUM *, int);
-int	BN_get_negative(BIGNUM *);
+int	BN_is_negative(BIGNUM *);
 
 int	BN_is_bit_set(const BIGNUM *, int);
 int	BN_set_bit(BIGNUM *, int);
