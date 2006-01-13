@@ -19,6 +19,9 @@ m4_define([test_headers], [
 		#include <openssl/aes.h>
 		#include <openssl/ui.h>
 		#include <openssl/rand.h>
+		#include <openssl/evp.h>
+		#include <openssl/hmac.h>
+		#include <openssl/pkcs12.h>
 		#else
 		#include <md4.h>
 		#include <md5.h>
@@ -26,20 +29,9 @@ m4_define([test_headers], [
 		#include <des.h>
 		#include <rc4.h>
 		#include <aes.h>
-		#endif
-		#ifdef OLD_HASH_NAMES
-		typedef struct md4 MD4_CTX;
-		#define MD4_Init(C) md4_init((C))
-		#define MD4_Update(C, D, L) md4_update((C), (D), (L))
-		#define MD4_Final(D, C) md4_finito((C), (D))
-		typedef struct md5 MD5_CTX;
-		#define MD5_Init(C) md5_init((C))
-		#define MD5_Update(C, D, L) md5_update((C), (D), (L))
-		#define MD5_Final(D, C) md5_finito((C), (D))
-		typedef struct sha SHA_CTX;
-		#define SHA1_Init(C) sha_init((C))
-		#define SHA1_Update(C, D, L) sha_update((C), (D), (L))
-		#define SHA1_Final(D, C) sha_finito((C), (D))
+		#include <evp.h>
+		#include <hmac.h>
+		#include <pkcs12.h>
 		#endif
 		])
 m4_define([test_body], [
@@ -70,7 +62,6 @@ DIR_des=
 AC_MSG_CHECKING([for crypto library])
 
 openssl=no
-old_hash=no
 
 if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 	save_CPPFLAGS="$CPPFLAGS"
@@ -96,14 +87,6 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 			done
 		done
 		CFLAGS="$i $save_CFLAGS"
-		for j in $cdirs; do
-			for k in $clibs; do
-				LIBS="$j $k $save_LIBS"
-				AC_LINK_IFELSE([AC_LANG_PROGRAM([test_headers],[test_body])],
-					[openssl=no ires="$i" lres="$j $k"; break 3])
-			done
-		done
-		CFLAGS="-DHAVE_OLD_HASH_NAMES $i $save_CFLAGS"
 		for j in $cdirs; do
 			for k in $clibs; do
 				LIBS="$j $k $save_LIBS"
@@ -177,10 +160,6 @@ fi
 
 if test "$openssl" = "yes"; then
   AC_DEFINE([HAVE_OPENSSL], 1, [define to use openssl's libcrypto])
-fi
-if test "$old_hash" = yes; then
-  AC_DEFINE([HAVE_OLD_HASH_NAMES], 1,
-		[define if you have hash functions like md4_finito()])
 fi
 AM_CONDITIONAL(HAVE_OPENSSL, test "$openssl" = yes)dnl
 
