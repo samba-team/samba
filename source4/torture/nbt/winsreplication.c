@@ -9524,6 +9524,8 @@ BOOL torture_nbt_winsreplication(void)
 
 	ret &= test_wins_replication(mem_ctx, address);
 
+	if (lp_parm_bool(-1, "torture", "quick", False)) goto done;
+
 	ctx = test_create_conflict_ctx(mem_ctx, address);
 	if (!ctx) return False;
 
@@ -9532,6 +9534,7 @@ BOOL torture_nbt_winsreplication(void)
 	ret &= test_conflict_owned_released_vs_replica(ctx);
 	ret &= test_conflict_owned_active_vs_replica(ctx);
 
+done:
 	talloc_free(mem_ctx);
 
 	return ret;
