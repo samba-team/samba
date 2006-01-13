@@ -1148,9 +1148,9 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (r->in.secure_channel_type == SEC_CHAN_BDC) {
+	if (r->in.join_type == SEC_CHAN_BDC) {
 		acct_type = ACB_SVRTRUST;
-	} else if (r->in.secure_channel_type == SEC_CHAN_WKSTA) {
+	} else if (r->in.join_type == SEC_CHAN_WKSTA) {
 		acct_type = ACB_WSTRUST;
 	} else {
 		r->out.error_string = NULL;
@@ -1209,7 +1209,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	/*
 	 * now prepare the record for secrets.ldb
 	 */
-	sct = talloc_asprintf(tmp_mem, "%d", r->in.secure_channel_type); 
+	sct = talloc_asprintf(tmp_mem, "%d", r->in.join_type); 
 	if (!sct) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
@@ -1428,7 +1428,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 
 NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_Join *r)
 {
-	switch (r->in.secure_channel_type) {
+	switch (r->in.join_type) {
 		case SEC_CHAN_WKSTA:
 			return libnet_Join_primary_domain(ctx, mem_ctx, r);
 		case SEC_CHAN_BDC:
@@ -1438,7 +1438,7 @@ NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct lib
 	}
 
 	r->out.error_string = talloc_asprintf(mem_ctx,
-					      "Invalid secure channel type specified (%08X) attempting to join domain %s",
-					      r->in.secure_channel_type, r->in.domain_name);
+					      "Invalid join type specified (%08X) attempting to join domain %s",
+					      r->in.join_type, r->in.domain_name);
 	return NT_STATUS_INVALID_PARAMETER;
 }

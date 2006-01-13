@@ -65,7 +65,7 @@ struct libnet_Join {
 	struct {
 		const char *domain_name;
 		const char *netbios_name;
-		enum netr_SchannelType secure_channel_type;
+		enum netr_SchannelType join_type;
 		enum libnet_Join_level level;
 	} in;
 	
