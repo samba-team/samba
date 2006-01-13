@@ -190,7 +190,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 /****************************************************************************
  Become the user of a connection number without changing the security context
- stack, but modify the currnet_user entries.
+ stack, but modify the current_user entries.
 ****************************************************************************/
 
 BOOL change_to_user(connection_struct *conn, uint16 vuid)
