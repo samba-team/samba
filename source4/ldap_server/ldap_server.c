@@ -224,6 +224,19 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 }
 
 /*
+ Idle timeout handler
+*/
+static void ldapsrv_conn_idle_timeout(struct event_context *ev,
+				      struct timed_event *te,
+				      struct timeval t,
+				      void *private)
+{
+	struct ldapsrv_connection *conn = talloc_get_type(private, struct ldapsrv_connection);
+
+	ldapsrv_terminate_connection(conn, "Timeout. No requests after bind");
+}
+
+/*
   called when a LDAP socket becomes readable
 */
 static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
@@ -231,12 +244,22 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private, struct ldapsrv_connection);
 
-	if (conn->limits.ite) {
+	if (conn->limits.ite) { /* clean initial timeout if any */
 		talloc_free(conn->limits.ite);
 		conn->limits.ite = NULL;
 	}
 
+	if (conn->limits.te) { /* clean idle timeout if any */
+		talloc_free(conn->limits.te);
+		conn->limits.te = NULL;
+	}
+
 	packet_recv(conn->packet);
+
+	/* set idle timeout */
+	conn->limits.te = event_add_timed(c->event.ctx, conn, 
+					   timeval_current_ofs(conn->limits.conn_idle_time, 0),
+					   ldapsrv_conn_idle_timeout, conn);
 }
 
 /*

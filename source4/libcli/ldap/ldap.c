@@ -1264,7 +1264,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		asn1_start_tag(data, ASN1_CONTEXT(0));
 
 		for (i=0; asn1_peek_tag(data, ASN1_SEQUENCE(0)); i++) {
-			asn1_start_tag(data, ASN1_SEQUENCE(0));
+			/* asn1_start_tag(data, ASN1_SEQUENCE(0)); */
 
 			ctrl = talloc_realloc(msg, ctrl, struct ldap_Control *, i+2);
 			if (!ctrl) {
