@@ -1328,7 +1328,6 @@ PBE_string2key(hx509_context context,
 	       const heim_oid *enc_oid,
 	       const EVP_MD *md)
 {
-#ifdef HAVE_OPENSSL
     PKCS12_PBEParams p12params;
     int passwordlen = strlen(password);
     hx509_crypto c;
@@ -1381,9 +1380,6 @@ PBE_string2key(hx509_context context,
 out:
     free_PKCS12_PBEParams(&p12params);
     return ret;
-#else
-    return HX509_CRYPTO_INTERNAL_ERROR;
-#endif
 }
 
 static const heim_oid *
@@ -1481,7 +1477,7 @@ _hx509_pbe_decrypt(hx509_context context,
 	    goto out;
 				   
     }
- out:
+out:
     if (key.data)
 	free_octet_string(&key);
     if (iv.data)
