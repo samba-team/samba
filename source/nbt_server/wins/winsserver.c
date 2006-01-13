@@ -559,7 +559,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	struct winsdb_record *rec_1b = NULL;
 	const char **addresses;
 	const char **addresses_1b = NULL;
-	uint16_t nb_flags = 0; /* TODO: ... */
+	uint16_t nb_flags = 0;
 
 	if (name->type == NBT_NAME_MASTER) {
 		goto notfound;
@@ -606,6 +606,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 		if (!addresses) {
 			goto notfound;
 		}
+		nb_flags |= NBT_NM_GROUP;
 		goto found;
 	}
 
@@ -640,6 +641,12 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 				goto notfound;
 			}
 		}
+	}
+
+	if (rec->type == WREPL_TYPE_SGROUP) {
+		nb_flags |= NBT_NM_GROUP;
+	} else {
+		nb_flags |= (rec->node <<13);		
 	}
 
 found:
