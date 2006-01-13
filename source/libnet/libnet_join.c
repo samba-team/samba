@@ -1158,7 +1158,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((r->in.netbios_name != NULL) && (r->in.level != LIBNET_JOIN_AUTOMATIC)) {
+	if (r->in.netbios_name != NULL)
 		netbios_name = r->in.netbios_name;
 	} else {
 		netbios_name = talloc_reference(tmp_mem, lp_netbios_name());
