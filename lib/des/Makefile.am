@@ -2,33 +2,48 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-lib_LTLIBRARIES = libdes.la
-libdes_la_LDFLAGS = -version-info 3:1:0
-libdes_la_LIBADD = \
+lib_LTLIBRARIES = libhcrypto.la
+libhcrypto_la_LDFLAGS = -version-info 3:1:0
+libhcrypto_la_LIBADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
-include_HEADERS =	\
-	aes.h		\
-	bn.h		\
-	des.h		\
-	dh.h		\
-	dsa.h		\
-	engine.h	\
-	evp.h		\
-	hmac.h		\
-	md2.h		\
-	md4.h		\
-	md5.h		\
-	pkcs12.h	\
-	rand.h		\
-	rc2.h		\
-	rc4.h		\
-	rsa.h		\
-	sha.h		\
+hcryptoincludedir = $(includedir)/hcrypto
+buildhcryptoinclude = $(buildinclude)/hcrypto
+
+hcryptoinclude_HEADERS =	\
+	aes.h			\
+	bn.h			\
+	des.h			\
+	dh.h			\
+	dsa.h			\
+	engine.h		\
+	evp.h			\
+	hmac.h			\
+	md2.h			\
+	md4.h			\
+	md5.h			\
+	pkcs12.h		\
+	rand.h			\
+	rc2.h			\
+	rc4.h			\
+	rsa.h			\
+	sha.h			\
 	ui.h
 
-build_HEADERZ = $(include_HEADERS)
+install-build-headers:: $(hcryptoinclude_HEADERS)
+	@foo='$(hcryptoinclude_HEADERS)'; \
+	for f in $$foo; do \
+		f=`basename $$f`; \
+		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
+		else file="$$f"; fi; \
+		if cmp -s  $$file $(buildhcryptoinclude)/$$f 2> /dev/null ; then \
+		: ; else \
+			echo "cp $$file $(buildhcryptoinclude)/$$f";\
+			cp $$file $(buildhcryptoinclude)/$$f; \
+		fi ; \
+	done
+
 
 noinst_PROGRAMS = test_engine_dso
 
@@ -48,7 +63,7 @@ TESTS = $(check_PROGRAMS)
 
 LDADD = $(lib_LTLIBRARIES) $(LIB_roken)
 
-libdes_la_SOURCES =	\
+libhcrypto_la_SOURCES =	\
 	aes.c		\
 	aes.h		\
 	bn.c		\
