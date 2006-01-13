@@ -69,8 +69,13 @@ static size_t	 topreclen;	/* toprec length */
 static char	*toprec;	/* Additional record specified by cgetset() */
 static int	 gottoprec;	/* Flag indicating retrieval of toprecord */
 
+#if 0 /*
+       * Don't use db support unless its build into libc but we dont
+       * check for that now, so just disable the code.
+       */
 #if defined(HAVE_DBOPEN) && defined(HAVE_DB_H)
 #define USE_DB
+#endif
 #endif
 
 #ifdef USE_DB
