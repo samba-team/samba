@@ -358,6 +358,54 @@ static BOOL api_svcctl_unlock_service_db(pipes_struct *p)
 	return True;
 }
 
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_query_security_sec(pipes_struct *p)
+{
+	SVCCTL_Q_QUERY_SERVICE_SEC q_u;
+	SVCCTL_R_QUERY_SERVICE_SEC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_query_service_sec("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_query_service_sec(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_query_service_sec("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_set_security_sec(pipes_struct *p)
+{
+	SVCCTL_Q_SET_SERVICE_SEC q_u;
+	SVCCTL_R_SET_SERVICE_SEC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_set_service_sec("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_set_service_sec(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_set_service_sec("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
 
 /*******************************************************************
  \PIPE\svcctl commands
@@ -378,7 +426,9 @@ static struct api_struct api_svcctl_cmds[] =
       { "SVCCTL_CONTROL_SERVICE"            , SVCCTL_CONTROL_SERVICE            , api_svcctl_control_service },
       { "SVCCTL_QUERY_SERVICE_STATUSEX_W"   , SVCCTL_QUERY_SERVICE_STATUSEX_W   , api_svcctl_query_service_status_ex },
       { "SVCCTL_LOCK_SERVICE_DB"            , SVCCTL_LOCK_SERVICE_DB            , api_svcctl_lock_service_db },
-      { "SVCCTL_UNLOCK_SERVICE_DB"          , SVCCTL_UNLOCK_SERVICE_DB          , api_svcctl_unlock_service_db }
+      { "SVCCTL_UNLOCK_SERVICE_DB"          , SVCCTL_UNLOCK_SERVICE_DB          , api_svcctl_unlock_service_db },
+      { "SVCCTL_QUERY_SERVICE_SEC"          , SVCCTL_QUERY_SERVICE_SEC          , api_svcctl_query_security_sec },
+      { "SVCCTL_SET_SERVICE_SEC"            , SVCCTL_SET_SERVICE_SEC            , api_svcctl_set_security_sec }
 };
 
 
