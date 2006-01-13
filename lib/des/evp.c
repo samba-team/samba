@@ -525,8 +525,7 @@ EVP_rc2_cbc(void)
 const EVP_CIPHER *
 EVP_rc2_40_cbc(void)
 {
-    /* XXX */
-    static const EVP_CIPHER rc2_cbc = {
+    static const EVP_CIPHER rc2_40_cbc = {
 	0,
 	RC2_BLOCK_SIZE,
 	5,
@@ -541,7 +540,7 @@ EVP_rc2_40_cbc(void)
 	NULL,
 	NULL
     };
-    return &rc2_cbc;
+    return &rc2_40_cbc;
 }
 
 /*
@@ -580,18 +579,18 @@ des_ede3_cbc_init(EVP_CIPHER_CTX *ctx,
 {
     struct des_ede3_cbc *k = ctx->cipher_data;
 
-    DES_key_sched((DES_cblock *)key, &k->ks[0]);
-    DES_key_sched((DES_cblock *)key + 8, &k->ks[1]);
-    DES_key_sched((DES_cblock *)key + 16, &k->ks[2]);
+    DES_key_sched((DES_cblock *)(key), &k->ks[0]);
+    DES_key_sched((DES_cblock *)(key + 8), &k->ks[1]);
+    DES_key_sched((DES_cblock *)(key + 16), &k->ks[2]);
 
     return 1;
 }
 
 static int
 des_ede3_cbc_do_cipher(EVP_CIPHER_CTX *ctx,
-	      unsigned char *out,
-	      const unsigned char *in,
-	      unsigned int size)
+		       unsigned char *out,
+		       const unsigned char *in,
+		       unsigned int size)
 {
     struct des_ede3_cbc *k = ctx->cipher_data;
     DES_ede3_cbc_encrypt(in, out, size,
