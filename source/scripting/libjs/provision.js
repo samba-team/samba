@@ -327,6 +327,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 		message("Setting up sam.ldb users and groups\n");
 		setup_ldb("provision_users.ldif", info, paths.samdb, data, false);
 	}
+	return true;
 }
 
 /*
@@ -516,5 +517,30 @@ function provision_validate(subobj, message)
 	return true;
 }
 
+function join_domain(domain, netbios_name, join_type, creds, writefln) 
+{
+	ctx = NetContext(creds);
+	join = new Object();
+	join.domain = domain;
+	join.join_type = join_type;
+	join.netbios_name = netbios_name;
+	if (!ctx.JoinDomain(join)) {
+		writefln("Domain Join failed: " + join.error_string);
+		return false;
+	}
+	return true;
+}
+
+function vampire(machine_creds, writefln) 
+{
+	var ctx = NetContext();
+	vampire = new Object();
+	vampire.machine_creds = machine_creds;
+	if (!ctx.SamSyncLdb(vampire)) {
+		writefln("Migration of remote domain to Samba failed: " + vampire.error_string);
+		return false;
+	}
+	return true;
+}
 
 return 0;
