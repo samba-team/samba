@@ -39,8 +39,6 @@
 #include <evp.h>
 
 /* symbol renaming */
-#define HMAC_CTX_create hc_HMAC_CTX_create
-#define HMAC_CTX_destroy hc_HMAC_CTX_destroy
 #define HMAC_CTX_init hc_HMAC_CTX_init
 #define HMAC_CTX_cleanup hc_HMAC_CTX_cleanup
 #define HMAC_size hc_HMAC_size
@@ -68,9 +66,6 @@ struct hc_HMAC_CTX {
 };
 
 
-HMAC_CTX *
-	HMAC_CTX_create(void);
-void	HMAC_CTX_destroy(HMAC_CTX *);
 void	HMAC_CTX_init(HMAC_CTX *);
 void	HMAC_CTX_cleanup(HMAC_CTX *ctx);
 
