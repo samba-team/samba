@@ -83,10 +83,13 @@ BOOL gencache_init(void)
  
 BOOL gencache_shutdown(void)
 {
+	int ret;
 	/* tdb_close routine returns -1 on error */
 	if (!cache) return False;
 	DEBUG(5, ("Closing cache file\n"));
-	return tdb_close(cache) != -1;
+	ret = tdb_close(cache);
+	cache = NULL;
+	return ret != -1;
 }
 
 
