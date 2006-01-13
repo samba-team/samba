@@ -1158,7 +1158,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (r->in.netbios_name != NULL)
+	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
 	} else {
 		netbios_name = talloc_reference(tmp_mem, lp_netbios_name());
@@ -1442,5 +1442,3 @@ NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct lib
 					      r->in.secure_channel_type, r->in.domain_name);
 	return NT_STATUS_INVALID_PARAMETER;
 }
-
-
