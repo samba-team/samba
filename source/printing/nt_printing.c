@@ -3283,6 +3283,8 @@ WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key )
 	
 		TALLOC_FREE( data );
 
+		p2->data = NULL;
+
 		DEBUG(8,("delete_all_printer_data: Removed all Printer Data from printer [%s]\n",
 			p2->printername ));
 	
