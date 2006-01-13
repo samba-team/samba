@@ -2118,11 +2118,7 @@ WERROR _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 
 	switch ( q_u->type ) {
 	case 0x9:
-		/* Run the name through alpha_strcpy() to remove any unsafe 
-		   shell characters.  Compare the copied string with the original
-		   and fail if the strings don't match */
-
-		unistr2_to_ascii(sharename, &q_u->uni_name, sizeof(sharename));
+		rpcstr_pull(sharename, q_u->uni_name.buffer, sizeof(sharename), q_u->uni_name.uni_str_len*2, 0);
 		if ( !validate_net_name( sharename, INVALID_SHARENAME_CHARS, sizeof(sharename) ) ) {
 			DEBUG(5,("_srv_net_name_validate: Bad sharename \"%s\"\n", sharename));
 			return WERR_INVALID_NAME;
