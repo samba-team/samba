@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS = kadm5
+SUBDIRS = kadm5 hcrypto
 
 noinst_PROGRAMS = bits make_crypto
 CHECK_LOCAL =
@@ -26,7 +26,6 @@ CLEANFILES =		\
 	com_right.h	\
 	crypto-headers.h\
 	der.h		\
-	des.h		\
 	editline.h	\
 	err.h		\
 	getarg.h	\
@@ -42,15 +41,11 @@ CLEANFILES =		\
 	krb5-types.h	\
 	krb5.h		\
 	krb5_err.h	\
-	md4.h		\
-	md5.h		\
-	rc4.h		\
 	otp.h		\
 	parse_time.h	\
 	parse_units.h	\
 	resolve.h	\
 	roken-common.h	\
 	roken.h		\
-	sha.h		\
 	sl.h		\
 	xdbm.h
