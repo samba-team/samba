@@ -189,7 +189,7 @@ static BOOL process_one(const char *name)
 	
 	if (options.find_master) {
 		node_type = NBT_NAME_MASTER;
-		if (*name == '-') {
+		if (*name == '-' || *name == '_') {
 			name = "\01\02__MSBROWSE__\02";
 			node_type = NBT_NAME_MS;
 		}
