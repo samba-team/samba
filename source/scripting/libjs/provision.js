@@ -559,17 +559,17 @@ function join_domain(domain, netbios_name, join_type, creds, message)
 
 function vampire(domain, session_info, credentials, message) {
 	var ctx = NetContext(credentials);
-	vampire = new Object();
+	var vampire_ctx = new Object();
 	var machine_creds = credentials_init();
 	machine_creds.set_domain(form.DOMAIN);
 	if (!machine_creds.set_machine_account()) {
 		message("Failed to access domain join information!");
 		return false;
 	}
-	vampire.machine_creds = machine_creds;
-	vampire.session_info = session_info;
-	if (!ctx.SamSyncLdb(vampire)) {
-		message("Migration of remote domain to Samba failed: " + vampire.error_string);
+	vampire_ctx.machine_creds = machine_creds;
+	vampire_ctx.session_info = session_info;
+	if (!ctx.SamSyncLdb(vampire_ctx)) {
+		message("Migration of remote domain to Samba failed: " + vampire_ctx.error_string);
 		return false;
 	}
 	return true;
