@@ -406,6 +406,15 @@ typedef int (*ldb_qsort_cmp_fn_t) (const void *, const void *, const void *);
 */
 #define LDB_CONTROL_SORT_RESP_OID	"1.2.840.113556.1.4.474"
 
+/**
+   OID for LDAP Attribute Scoped Query extension.
+
+   This control is include in SearchRequest or SearchResponse
+   messages as part of the controls field of the LDAPMessage.
+*/
+#define LDB_CONTROL_ASQ_OID		"1.2.840.113556.1.4.1504"
+
+
 struct ldb_paged_control {
 	int size;
 	int cookie_len;
@@ -425,6 +434,13 @@ struct ldb_server_sort_control {
 struct ldb_sort_resp_control {
 	int result;
 	char *attr_desc;
+};
+
+struct ldb_asq_control {
+	int request;
+	char *source_attribute;
+	int src_attr_len;
+	int result;
 };
 
 struct ldb_control {

@@ -71,6 +71,32 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 	ctrl = talloc_array(mem_ctx, struct ldb_control *, i + 1);
 
 	for (i = 0; control_strings[i]; i++) {
+		if (strncmp(control_strings[i], "asq:", 4) == 0) {
+			struct ldb_asq_control *control;
+			const char *p;
+			char attr[256];
+			int crit, ret;
+
+			attr[0] = '\0';
+			p = &(control_strings[i][4]);
+			ret = sscanf(p, "%d:%255[^$]", &crit, attr);
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (attr[0] == '\0')) {
+				fprintf(stderr, "invalid asq control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_ASQ_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_asq_control);
+			control->request = 1;
+			control->source_attribute = talloc_strdup(control, attr);
+			control->src_attr_len = strlen(attr);
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
 		if (strncmp(control_strings[i], "extended_dn:", 12) == 0) {
 			struct ldb_extended_dn_control *control;
 			const char *p;
@@ -176,6 +202,18 @@ static int handle_controls_reply(struct ldb_control **reply, struct ldb_control 
 	if (reply == NULL || request == NULL) return -1;
 	
 	for (i = 0; reply[i]; i++) {
+		if (strcmp(LDB_CONTROL_ASQ_OID, reply[i]->oid) == 0) {
+			struct ldb_asq_control *rep_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_asq_control);
+
+			/* check the result */
+			if (rep_control->result != 0) {
+				fprintf(stderr, "Warning: ASQ not performed with error: %d\n", rep_control->result);
+			}
+
+			continue;
+		}
 		if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, reply[i]->oid) == 0) {
 			struct ldb_paged_control *rep_control, *req_control;
 
