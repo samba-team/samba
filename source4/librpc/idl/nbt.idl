@@ -8,7 +8,8 @@
    encoding if it doesn't work out
 */
 
-[ depends(security)
+[
+  depends(security,svcctl)
 ] interface nbt
 {
 	const int NBT_NAME_SERVICE_PORT  = 137;
@@ -574,82 +575,112 @@
 	} nbt_ntlogon_packet;
 
 	/*******************************************/
-	/* \MAILSLOT\BROWSE mailslot requests */
+	/* \MAILSLOT\BROWSE mailslot requests 
+	/* for details see http://ubiqx.org/cifs/Browsing.html
+	/*******************************************/
+	declare bitmap svcctl_ServerType;
 
-	typedef enum { 
-		HostAnnouncement 			= 1,
-		AnnouncementRequest 		= 2,
-		Election					= 8,
-		GetBackupListReq			= 9,
-		GetBackupListResp			= 10,
-		BecomeBackup				= 11,
-		DomainAnnouncement			= 12,
-		MasterAnnouncement			= 13,
-		ResetBrowserState			= 14,
-		LocalMasterAnnouncement		= 15
+	typedef [enum8bit] enum { 
+		HostAnnouncement 	= 1,
+		AnnouncementRequest	= 2,
+		Election		= 8,
+		GetBackupListReq	= 9,
+		GetBackupListResp	= 10,
+		BecomeBackup		= 11,
+		DomainAnnouncement	= 12,
+		MasterAnnouncement	= 13,
+		ResetBrowserState	= 14,
+		LocalMasterAnnouncement	= 15
 	} nbt_browse_opcode;
 
 	typedef struct {
-		uint8 update_count;
-		uint32 ttl;
-		uint8 name[16];
-		uint8 os_major;
-		uint8 os_minor;
-		uint32 server_type;
-		astring comment;
+		uint8 UpdateCount;
+		uint32 Periodicity;
+		[string,charset(DOS)] uint8 ServerName[16];
+		uint8 OSMajor;
+		uint8 OSMinor;
+		svcctl_ServerType ServerType;
+		uint8 BroMajorVer;
+		uint8 BroMinorVer;
+		uint16 Signature;
+		astring Comment;
 	} nbt_browse_host_announcement;
 
 	typedef struct {
-		uint8 unknown;
-		astring ResponseComputerName; 
-	} nbt_browse_request_announcement;
+		uint8 Unused;
+		astring ResponseName; 
+	} nbt_browse_announcement_request;
 
 	typedef struct {
-		uint8 count;
-		uint32 token;
-	} nbt_browse_backup_list_request;
-
-	typedef struct {
-		uint8 count;
-		uint32 token;
-		nbt_name BackupServerList[count];
-	} nbt_browse_backup_list_response;
-
-	typedef struct {
-		astring BrowserToPromote;
-	} nbt_browse_become_backup;
-
-	typedef struct {
-		uint8 version;
-		uint32 criteria;
-		uint32 time_up; /* In milliseconds */
-		uint32 reserved; /* Must be zero */
+		uint8 Version;
+		uint32 Criteria;
+		uint32 UpTime; /* In milliseconds */
+		uint32 Reserved; /* Must be zero */
 		astring ServerName; 
 	} nbt_browse_election_request;
 
 	typedef struct {
-		uint8 options;
+		uint8 ReqCount;
+		uint32 Token;
+	} nbt_browse_backup_list_request;
+
+	typedef struct {
+		uint8 BackupCount;
+		uint32 Token;
+		nbt_name BackupServerList[BackupCount];/* TODO: this is wrong */
+	} nbt_browse_backup_list_response;
+
+	typedef struct {
+		astring BrowserName;
+	} nbt_browse_become_backup;
+
+	typedef struct {
+		uint8 UpdateCount;
+		uint32 Periodicity;
+		[string,charset(DOS)] uint8 ServerName[16];
+		uint8 OSMajor;
+		uint8 OSMinor;
+		svcctl_ServerType ServerType;
+		uint32 MysteriousField;
+		astring Comment;
+	} nbt_browse_domain_announcement;
+
+	typedef struct {
+		astring ServerName;
+	} nbt_browse_master_announcement;
+
+	typedef struct {
+		uint8 Command;
 	} nbt_browse_reset_state;
 
 	typedef struct {
-		astring MasterBrowserServerName; 
-	} nbt_browse_master_announcement;
+		uint8 UpdateCount;
+		uint32 Periodicity;
+		[string,charset(DOS)] uint8 ServerName[16];
+		uint8 OSMajor;
+		uint8 OSMinor;
+		svcctl_ServerType ServerType;
+		uint8 BroMajorVer;
+		uint8 BroMinorVer;
+		uint16 Signature;
+		astring Comment;
+	} nbt_browse_local_master_announcement;
 
 	typedef [nodiscriminant] union {
 		[case(HostAnnouncement)] nbt_browse_host_announcement host_annoucement;
-		[case(AnnouncementRequest)] nbt_browse_request_announcement announcement_request;
+		[case(AnnouncementRequest)] nbt_browse_announcement_request announcement_request;
 		[case(Election)] nbt_browse_election_request election_request;
 		[case(GetBackupListReq)] nbt_browse_backup_list_request backup_list_request;
 		[case(GetBackupListResp)] nbt_browse_backup_list_response backup_list_response;
 		[case(BecomeBackup)] nbt_browse_become_backup become_backup;
-		[case(DomainAnnouncement)] nbt_browse_master_announcement domain_announcement;
+		[case(DomainAnnouncement)] nbt_browse_domain_announcement domain_announcement;
 		[case(MasterAnnouncement)] nbt_browse_master_announcement master_announcement;
 		[case(ResetBrowserState)] nbt_browse_reset_state reset_browser_state;
-		[case(LocalMasterAnnouncement)] nbt_browse_master_announcement local_master_announcement;
+		[case(LocalMasterAnnouncement)] nbt_browse_local_master_announcement local_master_announcement;
 	} nbt_browse_payload;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		nbt_browse_opcode opcode;
-		nbt_browse_payload payload;	
+		[switch_is(opcode)] nbt_browse_payload payload;	
 	} nbt_browse_packet;
 }
