@@ -225,6 +225,67 @@ static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 	return True;
 }
 
+/* seem that this controls has 2 forms one in case it is used with
+ * a Search Request and another when used ina Search Response
+ */
+static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	DATA_BLOB source_attribute;
+	struct asn1_data data;
+	struct ldb_asq_control *lac;
+
+	if (!asn1_load(&data, in)) {
+		return False;
+	}
+
+	lac = talloc(mem_ctx, struct ldb_asq_control);
+	if (!lac) {
+		return False;
+	}
+
+	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
+
+		if (!asn1_read_OctetString(&data, &source_attribute)) {
+			return False;
+		}
+		lac->src_attr_len = source_attribute.length;
+		if (lac->src_attr_len) {
+			lac->source_attribute = talloc_memdup(lac, source_attribute.data, source_attribute.length);
+
+			if (!(lac->source_attribute)) {
+				return False;
+			}
+		} else {
+			lac->source_attribute = NULL;
+		}
+
+		lac->request = 1;
+
+	} else if (asn1_peek_tag(&data, ASN1_ENUMERATED)) {
+
+		if (!asn1_read_enumerated(&data, &(lac->result))) {
+			return False;
+		}
+
+		lac->request = 0;
+
+	} else {
+		return False;
+	}
+
+	if (!asn1_end_tag(&data)) {
+		return False;
+	}
+
+	*out = lac;
+
+	return True;
+}
+
 static BOOL encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_sort_resp_control *lsrc = talloc_get_type(in, struct ldb_sort_resp_control);
@@ -366,11 +427,49 @@ static BOOL encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out
 	return True;
 }
 
+/* seem that this controls has 2 forms one in case it is used with
+ * a Search Request and another when used ina Search Response
+ */
+static BOOL encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	struct ldb_asq_control *lac = talloc_get_type(in, struct ldb_asq_control);
+	struct asn1_data data;
+
+	ZERO_STRUCT(data);
+
+	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (lac->request) {
+
+		if (!asn1_write_OctetString(&data, lac->source_attribute, lac->src_attr_len)) {
+			return False;
+		}
+	} else {
+		if (!asn1_write_enumerated(&data, lac->result)) {
+			return False;
+		}
+	}
+
+	if (!asn1_pop_tag(&data)) {
+		return False;
+	}
+
+	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	if (out->data == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
 struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
 	{ "1.2.840.113556.1.4.473", decode_server_sort_request, encode_server_sort_request },
 	{ "1.2.840.113556.1.4.474", decode_server_sort_response, encode_server_sort_response },
+	{ "1.2.840.113556.1.4.1504", decode_asq_control, encode_asq_control },
 	{ NULL, NULL, NULL }
 };
 
