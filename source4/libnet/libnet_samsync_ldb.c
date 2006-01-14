@@ -1199,7 +1199,8 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 	state->secrets         = NULL;
 	state->trusted_domains = NULL;
 
-	state->sam_ldb         = samdb_connect(state, system_session(state));
+	state->sam_ldb         = ldb_wrap_connect(mem_ctx, lp_sam_url(), r->in.session_info,
+						  ctx->cred, 0, NULL);
 
 	r2.out.error_string    = NULL;
 	r2.in.binding_string   = r->in.binding_string;
