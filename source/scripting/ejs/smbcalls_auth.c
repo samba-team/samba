@@ -82,8 +82,7 @@ static int ejs_doauth(MprVarHandle eid,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", 
-				    mprString(talloc_asprintf(mprMemCtx(), "Login Failed: %s", 
-							      get_friendly_nt_error_msg(nt_status))));
+				    mprString(talloc_strdup(mprMemCtx(), get_friendly_nt_error_msg(nt_status))));
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		goto done;
 	}
