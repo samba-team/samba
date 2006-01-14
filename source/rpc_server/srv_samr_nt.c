@@ -1672,6 +1672,41 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
 
 	return NT_STATUS_OK;
 }
+
+/*************************************************************************
+ get_user_info_9. Only gives out primary group SID.
+ *************************************************************************/
+static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_SID *user_sid)
+{
+	SAM_ACCOUNT *smbpass=NULL;
+	BOOL ret;
+	NTSTATUS nt_status;
+
+	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(smbpass, user_sid);
+	unbecome_root();
+
+	if (ret==False) {
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
+
+	ZERO_STRUCTP(id9);
+	init_sam_user_info9(id9, pdb_get_group_rid(smbpass) );
+
+	pdb_free_sam(&smbpass);
+
+	return NT_STATUS_OK;
+}
+
 /*************************************************************************
  get_user_info_16. Safe. Only gives out acb bits.
  *************************************************************************/
@@ -1864,6 +1899,8 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	ctr->switch_value = q_u->switch_value;
 
+	DEBUG(5,("_samr_query_userinfo: user info level: %d\n", q_u->switch_value));
+
 	switch (q_u->switch_value) {
 	case 7:
 		ctr->info.id7 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_7);
@@ -1871,6 +1908,14 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 			return NT_STATUS_NO_MEMORY;
 
 		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_7(p->mem_ctx, ctr->info.id7, &info->sid)))
+			return r_u->status;
+		break;
+	case 9:
+		ctr->info.id9 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_9);
+		if (ctr->info.id9 == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_9(p->mem_ctx, ctr->info.id9, &info->sid)))
 			return r_u->status;
 		break;
 	case 16:
@@ -2677,8 +2722,12 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 
 	ZERO_STRUCT(sid);
 
-	if (!secrets_fetch_domain_sid(domain_name, &sid)) {
-		r_u->status = NT_STATUS_NO_SUCH_DOMAIN;
+	if (strequal(domain_name, builtin_domain_name())) {
+		sid_copy(&sid, &global_sid_Builtin);
+	} else {
+		if (!secrets_fetch_domain_sid(domain_name, &sid)) {
+			r_u->status = NT_STATUS_NO_SUCH_DOMAIN;
+		}
 	}
 
 	DEBUG(2,("Returning domain sid for domain %s -> %s\n", domain_name, sid_string_static(&sid)));
