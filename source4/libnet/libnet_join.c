@@ -593,8 +593,6 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	struct dom_sid *account_sid = NULL;
 	const char *password_str = NULL;
-	const char *realm = NULL; /* Also flag for remote being AD */
-	
 	
 	r->out.error_string = NULL;
 	r2.samr_handle.out.error_string = NULL;
@@ -988,7 +986,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* Now, if it was AD, then we want to start looking changing a
 	 * few more things.  Otherwise, we are done. */
-	if (realm) {
+	if (r->out.realm) {
 		status = libnet_JoinADSDomain(ctx, r);
 		return status;
 	}
