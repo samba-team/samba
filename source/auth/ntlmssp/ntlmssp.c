@@ -280,7 +280,7 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 void ntlmssp_weaken_keys(struct gensec_ntlmssp_state *gensec_ntlmssp_state) 
 {
 	/* Nothing to weaken.  We certainly don't want to 'extend' the length... */
-	if (!gensec_ntlmssp_state->session_key.length < 8) {
+	if (gensec_ntlmssp_state->session_key.length < 8) {
 		return;
 	}
 
