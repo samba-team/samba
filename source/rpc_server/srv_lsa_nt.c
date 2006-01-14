@@ -461,7 +461,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
 	} else {
 		num_thistime = 0;
 		next_idx = 0xffffffff;
-		r_u->status = NT_STATUS_OK;
+		r_u->status = NT_STATUS_NO_MORE_ENTRIES;
 	}
 		
 	/* set up the lsa_enum_trust_dom response */
