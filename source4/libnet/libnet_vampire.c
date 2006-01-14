@@ -153,6 +153,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	struct dcerpc_pipe *p;
 	struct libnet_context *machine_net_ctx;
 	struct libnet_RpcConnectDCInfo *c;
+	struct libnet_SamSync_state *state;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
 
@@ -258,6 +259,20 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return nt_status;
 	}
 
+	state = talloc(samsync_ctx, struct libnet_SamSync_state);
+	if (!state) {
+		r->out.error_string = NULL;
+		talloc_free(samsync_ctx);
+		return nt_status;
+	}		
+
+	state->domain_name     = c->out.domain_name;
+	state->domain_sid      = c->out.domain_sid;
+	state->realm           = c->out.realm;
+	state->domain_guid     = c->out.guid;
+	state->machine_net_ctx = machine_net_ctx;
+	state->netlogon_pipe   = p;
+
 	/* initialise the callback layer.  It may wish to contact the
 	 * server with ldap, now we know the name */
 	
@@ -265,11 +280,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		char *error_string;
 		nt_status = r->in.init_fn(samsync_ctx, 
 					  r->in.fn_ctx,
-					  machine_net_ctx, 
-					  p,
-					  c->out.domain_name,
-					  c->out.domain_sid, 
-					  c->out.realm,
+					  state, 
 					  &error_string); 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			r->out.error_string = talloc_steal(mem_ctx, error_string);

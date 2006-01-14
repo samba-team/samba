@@ -20,17 +20,22 @@
 
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
+struct libnet_SamSync_state {
+	struct libnet_context *machine_net_ctx;
+	struct dcerpc_pipe *netlogon_pipe;
+	const char *domain_name;
+	const struct dom_sid *domain_sid;
+	const char *realm;
+	struct GUID *domain_guid;
+};
+
 /* struct and enum for doing a remote domain vampire dump */
 struct libnet_SamSync {
 	struct {
 		const char *binding_string;
 		NTSTATUS (*init_fn)(TALLOC_CTX *mem_ctx, 		
 				    void *private,
-				    struct libnet_context *machine_net_ctx,
-				    struct dcerpc_pipe *p,
-				    const char *domain_name,
-				    const struct dom_sid *domain_sid,
-				    const char *realm,
+				    struct libnet_SamSync_state *samsync_state,
 				    char **error_string);
 		NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
 				     void *private, 			
