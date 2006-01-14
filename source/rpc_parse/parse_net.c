@@ -1396,7 +1396,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 			 uint32 user_flgs, uchar user_session_key[16],
 			 uchar lm_session_key[16],
  			 const char *logon_srv, const char *logon_dom,
-			 const DOM_SID *dom_sid, const char *other_sids)
+			 const DOM_SID *dom_sid)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
@@ -1454,7 +1454,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 		memcpy(usr->lm_sess_key, lm_session_key, sizeof(usr->lm_sess_key));
 	}
 
-	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
+	num_other_sids = init_dom_sid2s(ctx, NULL, &usr->other_sids);
 
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 

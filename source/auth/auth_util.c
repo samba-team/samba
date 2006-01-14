@@ -5,6 +5,7 @@
    Copyright (C) Andrew Bartlett 2001
    Copyright (C) Jeremy Allison 2000-2001
    Copyright (C) Rafal Szczesniak 2002
+   Copyright (C) Volker Lendecke 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -730,148 +731,42 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	return NT_STATUS_IS_OK(result) ? token : NULL;
 }
 
-/******************************************************************************
- * this function returns the groups (SIDs) of the local SAM the user is in.
- * If this samba server is a DC of the domain the user belongs to, it returns 
- * both domain groups and local / builtin groups. If the user is in a trusted
- * domain, or samba is a member server of a domain, then this function returns
- * local and builtin groups the user is a member of.
- *
- * currently this is a hack, as there is no sam implementation that is capable
- * of groups.
- *
- * NOTE!! This function will fail if you pass in a winbind user without 
- * the domain   --jerry
- ******************************************************************************/
-
-static NTSTATUS get_user_groups(const char *username, gid_t gid,
-                                size_t *n_groups, DOM_SID **groups,
-				gid_t **unix_groups)
+static int server_info_dtor(void *p)
 {
-	int		n_unix_groups;
-	int		i;
+	auth_serversupplied_info *server_info =
+		talloc_get_type_abort(p, auth_serversupplied_info);
 
-	*n_groups = 0;
-	*groups   = NULL;
-
-	if (strchr(username, *lp_winbind_separator()) == NULL) {
-		NTSTATUS result;
-
-		become_root();
-		result = pdb_enum_group_memberships(username, gid, groups,
-						    unix_groups, n_groups);
-		unbecome_root();
-		return result;
+	if (server_info->sam_account != NULL) {
+		pdb_free_sam(&server_info->sam_account);
 	}
 
-	/* We have the separator, this must be winbind */
-	
-	n_unix_groups = winbind_getgroups( username, unix_groups );
-
-	DEBUG(10,("get_user_groups: winbind_getgroups(%s): result = %s\n",
-		  username,  n_unix_groups == -1 ? "FAIL" : "SUCCESS"));
-			  
-	if ( n_unix_groups == -1 )
-		return NT_STATUS_NO_SUCH_USER; /* what should this return
-						* value be? */	
-
-	/* now setup the space for storing the SIDS */
-	
-	if (n_unix_groups > 0) {
-	
-		*groups   = SMB_MALLOC_ARRAY(DOM_SID, n_unix_groups);
-		
-		if (!*groups) {
-			DEBUG(0, ("get_user_group: malloc() failed for "
-				  "DOM_SID list!\n"));
-			SAFE_FREE(*unix_groups);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	*n_groups = n_unix_groups;
-
-	for (i = 0; i < *n_groups; i++) {
-		gid_to_sid(&(*groups)[i], (*unix_groups)[i]);
-	}
-		     
-	return NT_STATUS_OK;
+	ZERO_STRUCTP(server_info);
+	return 0;
 }
 
 /***************************************************************************
- Make a user_info struct
+ Make a server_info struct. Free with talloc_free().
 ***************************************************************************/
 
-static NTSTATUS make_server_info(auth_serversupplied_info **server_info)
+static auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 {
-	*server_info = SMB_MALLOC_P(auth_serversupplied_info);
-	if (!*server_info) {
-		DEBUG(0,("make_server_info: malloc failed!\n"));
-		return NT_STATUS_NO_MEMORY;
+	struct auth_serversupplied_info *result;
+
+	result = TALLOC_ZERO_P(mem_ctx, auth_serversupplied_info);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
 	}
-	ZERO_STRUCTP(*server_info);
+
+	talloc_set_destructor(result, server_info_dtor);
 
 	/* Initialise the uid and gid values to something non-zero
 	   which may save us from giving away root access if there
 	   is a bug in allocating these fields. */
 
-	(*server_info)->uid = -1;
-	(*server_info)->gid = -1;
-
-	return NT_STATUS_OK;
-}
-
-/***************************************************************************
-Fill a server_info struct from a SAM_ACCOUNT with their groups
-***************************************************************************/
-
-static NTSTATUS add_user_groups(auth_serversupplied_info **server_info, 
-				const char * unix_username,
-				SAM_ACCOUNT *sampass,
-				uid_t uid, gid_t gid)
-{
-	NTSTATUS status;
-	const DOM_SID *user_sid = pdb_get_user_sid(sampass);
-	const DOM_SID *group_sid = pdb_get_group_sid(sampass);
-	size_t       n_groupSIDs = 0;
-	DOM_SID  *groupSIDs   = NULL;
-	gid_t    *unix_groups = NULL;
-	NT_USER_TOKEN *token;
-	BOOL is_guest;
-	uint32 rid;
-
-	status = get_user_groups(unix_username, gid, 
-				 &n_groupSIDs, &groupSIDs, &unix_groups);
-		
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
-		return status;
-	}
-	
-	debug_unix_user_token(DBGC_CLASS, 5, uid, gid,
-			      n_groupSIDs, unix_groups);
-	
-	is_guest = (sid_peek_rid(user_sid, &rid) &&
-		    rid == DOMAIN_USER_RID_GUEST);
-
-	status = create_nt_user_token(user_sid, group_sid,
-				      n_groupSIDs, groupSIDs, is_guest, 
-				      &token);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(4,("create_nt_user_token failed\n"));
-		SAFE_FREE(groupSIDs);
-		SAFE_FREE(unix_groups);
-		return status;
-	}
-	
-	SAFE_FREE(groupSIDs);
-
-	(*server_info)->n_groups = n_groupSIDs;
-	(*server_info)->groups = unix_groups;
-	(*server_info)->ptok = token;
-
-	return status;
+	result->uid = -1;
+	result->gid = -1;
+	return result;
 }
 
 /***************************************************************************
@@ -883,42 +778,259 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 {
 	NTSTATUS status;
 	struct passwd *pwd;
-
-	status = make_server_info(server_info);
-
-	if (!NT_STATUS_IS_OK(status))
-		return status;
-
-	(*server_info)->sam_account    = sampass;
+	gid_t *gids;
+	auth_serversupplied_info *result;
 
 	pwd = getpwnam_alloc(NULL, pdb_get_username(sampass));
-
 	if ( pwd == NULL )  {
 		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
 			  pdb_get_username(sampass)));
-		free_server_info(server_info);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	(*server_info)->unix_name = smb_xstrdup(pwd->pw_name);
-	(*server_info)->gid = pwd->pw_gid;
-	(*server_info)->uid = pwd->pw_uid;
+	result = make_server_info(NULL);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->sam_account = sampass;
+	result->unix_name = talloc_strdup(result, pwd->pw_name);
+	result->gid = pwd->pw_gid;
+	result->uid = pwd->pw_uid;
 	
 	talloc_free(pwd);
 
-	status = add_user_groups(server_info, pdb_get_username(sampass), 
-				 sampass, (*server_info)->uid, 
-				 (*server_info)->gid);
+	status = pdb_enum_group_memberships(result,
+					    result->unix_name, result->gid,
+					    &result->sids, &gids,
+					    &result->num_sids);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		free_server_info(server_info);
+		DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
+			   nt_errstr(status)));
+		talloc_free(result);
 		return status;
 	}
 
+	/* For now we throw away the gids and convert via sid_to_gid
+	 * later. This needs fixing, but I'd like to get the code straight and
+	 * simple first. */
+	talloc_free(gids);
+
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
-		 pdb_get_username(sampass), (*server_info)->unix_name));
+		 pdb_get_username(sampass), result->unix_name));
+
+	*server_info = result;
 
 	return NT_STATUS_OK;
+}
+
+/*
+ * Add alias SIDs from memberships within the partially created token SID list
+ */
+
+static NTSTATUS add_aliases(TALLOC_CTX *tmp_ctx, const DOM_SID *domain_sid,
+			    struct nt_user_token *token)
+{
+	uint32 *aliases;
+	size_t i, num_aliases;
+	NTSTATUS status;
+
+	status = pdb_enum_alias_memberships(tmp_ctx, domain_sid,
+					    token->user_sids,
+					    token->num_sids,
+					    &aliases, &num_aliases);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_enum_alias_memberships failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+
+	for (i=0; i<num_aliases; i++) {
+		DOM_SID alias_sid;
+		sid_compose(&alias_sid, domain_sid, aliases[i]);
+		add_sid_to_array_unique(token, &alias_sid,
+					&token->user_sids,
+					&token->num_sids);
+		if (token->user_sids == NULL) {
+			DEBUG(0, ("add_sid_to_array failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS log_nt_token(TALLOC_CTX *tmp_ctx, NT_USER_TOKEN *token)
+{
+	char *command;
+	char *group_sidstr;
+	size_t i;
+
+	if ((lp_log_nt_token_command() == NULL) ||
+	    (strlen(lp_log_nt_token_command()) == 0)) {
+		return NT_STATUS_OK;
+	}
+
+	group_sidstr = talloc_strdup(tmp_ctx, "");
+	for (i=1; i<token->num_sids; i++) {
+		group_sidstr = talloc_asprintf(
+			tmp_ctx, "%s %s", group_sidstr,
+			sid_string_static(&token->user_sids[i]));
+	}
+
+	command = talloc_string_sub(
+		tmp_ctx, lp_log_nt_token_command(),
+		"%s", sid_string_static(&token->user_sids[0]));
+	command = talloc_string_sub(tmp_ctx, command, "%t", group_sidstr);
+
+	if (command == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(8, ("running command: [%s]\n", command));
+	if (smbrun(command, NULL) != 0) {
+		DEBUG(0, ("Could not log NT token\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Create a NT token for the user, expanding local aliases
+ */
+
+static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
+						   struct sam_passwd *sam_acct,
+						   BOOL is_guest,
+						   int num_groupsids,
+						   DOM_SID *groupsids)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct nt_user_token *result = NULL;
+	int i;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NULL;
+	}
+
+	result = TALLOC_ZERO_P(tmp_ctx, NT_USER_TOKEN);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		goto done;
+	}
+
+	/* First create the default SIDs */
+
+	add_sid_to_array(result, pdb_get_user_sid(sam_acct),
+			 &result->user_sids, &result->num_sids);
+	add_sid_to_array(result, pdb_get_group_sid(sam_acct),
+			 &result->user_sids, &result->num_sids);
+	add_sid_to_array(result, &global_sid_World,
+			 &result->user_sids, &result->num_sids);
+	add_sid_to_array(result, &global_sid_Network,
+			 &result->user_sids, &result->num_sids);
+
+	if (is_guest) {
+		add_sid_to_array(result, &global_sid_Builtin_Guests,
+				 &result->user_sids, &result->num_sids);
+	} else {
+		add_sid_to_array(result, &global_sid_Authenticated_Users,
+				 &result->user_sids, &result->num_sids);
+	}
+
+	/* Now the SIDs we got from authentication. These are the ones from
+	 * the info3 struct or from the pdb_enum_group_memberships, depending
+	 * on who authenticated the user. */
+
+	for (i=0; i<num_groupsids; i++) {
+		add_sid_to_array_unique(result, &groupsids[i],
+					&result->user_sids, &result->num_sids);
+	}
+
+	/* Now add the aliases. First the one from our local SAM */
+
+	status = add_aliases(tmp_ctx, get_global_sam_sid(), result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		result = NULL;
+		goto done;
+	}
+
+	/* Finally the builtin ones */
+
+	status = add_aliases(tmp_ctx, &global_sid_Builtin, result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		result = NULL;
+		goto done;
+	}
+
+	get_privileges_for_sids(&result->privileges, result->user_sids,
+				result->num_sids);
+
+	talloc_steal(mem_ctx, result);
+
+ done:
+	talloc_free(tmp_ctx);
+	return result;
+}
+
+/*
+ * Create the token to use from server_info->sam_account and
+ * server_info->sids (the info3/sam groups). Find the unix gids.
+ */
+
+NTSTATUS create_local_token(auth_serversupplied_info *server_info)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	size_t i;
+	
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	server_info->ptok = create_local_nt_token(server_info,
+						  server_info->sam_account,
+						  server_info->guest,
+						  server_info->num_sids,
+						  server_info->sids);
+	
+	/* Convert the SIDs to gids. */
+
+	server_info->n_groups = 0;
+	server_info->groups = NULL;
+
+	/* Start at index 1, where the groups start. */
+
+	for (i=1; i<server_info->ptok->num_sids; i++) {
+		gid_t gid;
+		DOM_SID *sid = &server_info->ptok->user_sids[i];
+
+		if (!sid_to_gid(sid, &gid)) {
+			DEBUG(10, ("Could not convert SID %s to gid, "
+				   "ignoring it\n", sid_string_static(sid)));
+			continue;
+		}
+		add_gid_to_array_unique(server_info, gid, &server_info->groups,
+					&server_info->n_groups);
+	}
+	
+	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
+
+	status = log_nt_token(mem_ctx, server_info->ptok);
+
+	talloc_free(mem_ctx);
+	return status;
 }
 
 /***************************************************************************
@@ -935,6 +1047,7 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 	SAM_ACCOUNT *sampass = NULL;
 	DOM_SID user_sid, group_sid;
 	fstring dom_name;
+	auth_serversupplied_info *result;
 
 	status = pdb_init_sam_pw(&sampass, pwd);
 
@@ -942,10 +1055,10 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 		return status;
 	}
 
-	status = make_server_info(server_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	result = make_server_info(NULL);
+	if (result == NULL) {
+		pdb_free_sam(&sampass);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* only copy user_sid, group_sid and domain name out of the PAC for
@@ -964,20 +1077,16 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 
 	pdb_set_logon_count(sampass, logon_info->info3.logon_count, PDB_SET);
 
-	(*server_info)->sam_account    = sampass;
+	result->sam_account = sampass;
+	result->unix_name = talloc_strdup(result, unix_username);
+	result->uid = pwd->pw_uid;
+	result->gid = pwd->pw_gid;
 
-	status = add_user_groups(server_info, unix_username,
-				 sampass, pwd->pw_uid, pwd->pw_gid);
+	/* TODO: Add groups from pac */
+	result->sids = NULL;
+	result->num_sids = 0;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		free_server_info(server_info);
-		return status;
-	}
-
-	(*server_info)->unix_name = smb_xstrdup(unix_username);
-
-	(*server_info)->uid = pwd->pw_uid;
-	(*server_info)->gid = pwd->pw_gid;
+	*server_info = result;
 
 	return NT_STATUS_OK;
 }
@@ -994,7 +1103,8 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 {
 	NTSTATUS status;
 	SAM_ACCOUNT *sampass = NULL;
-
+	gid_t *gids;
+	auth_serversupplied_info *result;
 	
 	status = pdb_init_sam_pw(&sampass, pwd);
 
@@ -1002,26 +1112,36 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 		return status;
 	}
 
-	status = make_server_info(server_info);
+	result = make_server_info(NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		pdb_free_sam(&sampass);
 		return status;
 	}
 
-	(*server_info)->sam_account = sampass;
+	result->sam_account = sampass;
+	result->unix_name = talloc_strdup(result, unix_username);
+	result->uid = pwd->pw_uid;
+	result->gid = pwd->pw_gid;
 
-	status = add_user_groups(server_info, unix_username,
-				 sampass, pwd->pw_uid, pwd->pw_gid);
+	status = pdb_enum_group_memberships(result,
+					    result->unix_name, result->gid,
+					    &result->sids, &gids,
+					    &result->num_sids);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		free_server_info(server_info);
+		DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
+			   nt_errstr(status)));
+		talloc_free(result);
 		return status;
 	}
 
-	(*server_info)->unix_name = smb_xstrdup(unix_username);
+	/* For now we throw away the gids and convert via sid_to_gid
+	 * later. This needs fixing, but I'd like to get the code straight and
+	 * simple first. */
+	talloc_free(gids);
 
-	(*server_info)->uid = pwd->pw_uid;
-	(*server_info)->gid = pwd->pw_gid;
+	*server_info = result;
 
 	return NT_STATUS_OK;
 }
@@ -1063,6 +1183,13 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	}
 	
 	(*server_info)->guest = True;
+
+	status = create_local_token(*server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("create_local_token failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
 		
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
@@ -1076,25 +1203,28 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 {
 	auth_serversupplied_info *dst;
 
-	if (!NT_STATUS_IS_OK(make_server_info(&dst)))
+	dst = make_server_info(NULL);
+	if (dst == NULL) {
 		return NULL;
+	}
 
 	dst->guest = src->guest;
 	dst->uid = src->uid;
 	dst->gid = src->gid;
 	dst->n_groups = src->n_groups;
 	if (src->n_groups != 0)
-		dst->groups = memdup(src->groups, sizeof(gid_t)*dst->n_groups);
+		dst->groups = talloc_memdup(dst, src->groups,
+					    sizeof(gid_t)*dst->n_groups);
 	else
 		dst->groups = NULL;
-	dst->ptok = dup_nt_token(src->ptok);
+	dst->ptok = dup_nt_token(dst, src->ptok);
 	dst->user_session_key = data_blob(src->user_session_key.data,
 					  src->user_session_key.length);
 	dst->lm_session_key = data_blob(src->lm_session_key.data,
 					  src->lm_session_key.length);
 	pdb_copy_sam_account(src->sam_account, &dst->sam_account);
 	dst->pam_handle = NULL;
-	dst->unix_name = smb_xstrdup(src->unix_name);
+	dst->unix_name = talloc_strdup(dst, src->unix_name);
 
 	return dst;
 }
@@ -1273,14 +1403,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	uid_t uid;
 	gid_t gid;
 
-	size_t n_lgroupSIDs;
-	DOM_SID *lgroupSIDs   = NULL;
-
-	gid_t *unix_groups = NULL;
-	NT_USER_TOKEN *token;
-
-	DOM_SID *all_group_SIDs;
 	size_t i;
+
+	auth_serversupplied_info *result;
 
 	/* 
 	   Here is where we should check the list of
@@ -1409,74 +1534,42 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info))) {
+	result = make_server_info(NULL);
+	if (result == NULL) {
 		DEBUG(4, ("make_server_info failed!\n"));
 		pdb_free_sam(&sam_account);
-		return nt_status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* save this here to _net_sam_logon() doesn't fail (it assumes a 
 	   valid SAM_ACCOUNT) */
 		   
-	(*server_info)->sam_account = sam_account;
-
-	(*server_info)->unix_name = smb_xstrdup(found_username);
+	result->sam_account = sam_account;
+	result->unix_name = talloc_strdup(result, found_username);
 
 	/* Fill in the unix info we found on the way */
 
-	(*server_info)->uid = uid;
-	(*server_info)->gid = gid;
+	result->uid = uid;
+	result->gid = gid;
 
-	/* Store the user group information in the server_info 
-	   returned to the caller. */
-	
-	nt_status = get_user_groups((*server_info)->unix_name, gid,
-				    &n_lgroupSIDs, &lgroupSIDs, &unix_groups);
-		
-	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(4,("get_user_groups failed\n"));
-		return nt_status;
-	}
-
-	debug_unix_user_token(DBGC_CLASS, 5, uid, gid,
-			      n_lgroupSIDs, unix_groups);
-	
-	(*server_info)->groups = unix_groups;
-	(*server_info)->n_groups = n_lgroupSIDs;
-	
 	/* Create a 'combined' list of all SIDs we might want in the SD */
-	
-	all_group_SIDs = SMB_MALLOC_ARRAY(
-		DOM_SID,
-		info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs);
-	
-	if (!all_group_SIDs) {
-		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
-		SAFE_FREE(lgroupSIDs);
-		free_server_info(server_info);
-		return NT_STATUS_NO_MEMORY;
-	}
+
+	result->num_sids = 0;
+	result->sids = NULL;
 
 	/* and create (by appending rids) the 'domain' sids */
 	
 	for (i = 0; i < info3->num_groups2; i++) {
-	
-		sid_copy(&all_group_SIDs[i], &(info3->dom_sid.sid));
-		
-		if (!sid_append_rid(&all_group_SIDs[i],
-				    info3->gids[i].g_rid)) {
-		
-			nt_status = NT_STATUS_INVALID_PARAMETER;
-			
+		DOM_SID sid;
+		if (!sid_compose(&sid, &info3->dom_sid.sid,
+				 info3->gids[i].g_rid)) {
 			DEBUG(3,("could not append additional group rid "
-				 "0x%x\n", info3->gids[i].g_rid));				
-			SAFE_FREE(lgroupSIDs);
-			SAFE_FREE(all_group_SIDs);
-			free_server_info(server_info);
-			
-			return nt_status;
-			
+				 "0x%x\n", info3->gids[i].g_rid));
+			talloc_free(result);
+			return NT_STATUS_INVALID_PARAMETER;
 		}
+		add_sid_to_array(result, &sid, &result->sids,
+				 &result->num_sids);
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
@@ -1486,57 +1579,33 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->num_other_sids; i++) {
-		sid_copy(&all_group_SIDs[info3->num_groups2 + i],
-			 &info3->other_sids[i].sid);
+		add_sid_to_array(result, &info3->other_sids[i].sid,
+				 &result->sids,
+				 &result->num_sids);
 	}
 
-
-	/* add local alias sids */ 
-
-	for (i = 0; i < n_lgroupSIDs; i++) {
-		sid_copy(&all_group_SIDs[info3->num_groups2 +
-					 info3->num_other_sids + i],
-			 &lgroupSIDs[i]);
-	}
-	
-	/* Where are the 'global' sids... */
-
-	/* can the user be guest? if yes, where is it stored? */
-	
-	nt_status = create_nt_user_token(&user_sid, &group_sid,
-		info3->num_groups2 + info3->num_other_sids + n_lgroupSIDs,
-		all_group_SIDs, False, &token);
-		
-	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(4,("create_nt_user_token failed\n"));
-		SAFE_FREE(lgroupSIDs);
-		SAFE_FREE(all_group_SIDs);
-		free_server_info(server_info);
-		return nt_status;
-	}
-
-	(*server_info)->login_server = unistr2_tdup(mem_ctx, 
-						    &(info3->uni_logon_srv));
-
-	(*server_info)->ptok = token; 
-
-	SAFE_FREE(lgroupSIDs);
-	SAFE_FREE(all_group_SIDs);
+	result->login_server = unistr2_tdup(result, 
+					    &(info3->uni_logon_srv));
 
 	/* ensure we are never given NULL session keys */
 	
 	if (memcmp(info3->user_sess_key, zeros, sizeof(zeros)) == 0) {
-		(*server_info)->user_session_key = data_blob(NULL, 0);
+		result->user_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->user_session_key = data_blob(info3->user_sess_key, sizeof(info3->user_sess_key));
+		result->user_session_key = data_blob_talloc(
+			result, info3->user_sess_key,
+			sizeof(info3->user_sess_key));
 	}
 
 	if (memcmp(info3->lm_sess_key, zeros, 8) == 0) {
-		(*server_info)->lm_session_key = data_blob(NULL, 0);
+		result->lm_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->lm_session_key = data_blob(info3->lm_sess_key,
-							   sizeof(info3->lm_sess_key));
-	} 
+		result->lm_session_key = data_blob_talloc(
+			result, info3->lm_sess_key,
+			sizeof(info3->lm_sess_key));
+	}
+
+	*server_info = result;
 
 	return NT_STATUS_OK;
 }
@@ -1569,27 +1638,6 @@ void free_user_info(auth_usersupplied_info **user_info)
 }
 
 /***************************************************************************
- Clear out a server_info struct that has been allocated
-***************************************************************************/
-
-void free_server_info(auth_serversupplied_info **server_info)
-{
-	DEBUG(5,("attempting to free (and zero) a server_info structure\n"));
-	if (*server_info != NULL) {
-		pdb_free_sam(&(*server_info)->sam_account);
-
-		/* call pam_end here, unless we know we are keeping it */
-		delete_nt_token( &(*server_info)->ptok );
-		SAFE_FREE((*server_info)->groups);
-		SAFE_FREE((*server_info)->unix_name);
-		data_blob_free(&(*server_info)->lm_session_key);
-		data_blob_free(&(*server_info)->user_session_key);
-		ZERO_STRUCT(**server_info);
-	}
-	SAFE_FREE(*server_info);
-}
-
-/***************************************************************************
  Make an auth_methods struct
 ***************************************************************************/
 
@@ -1616,41 +1664,28 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 }
 
 /****************************************************************************
- Delete a SID token.
-****************************************************************************/
-
-void delete_nt_token(NT_USER_TOKEN **pptoken)
-{
-	if (*pptoken) {
-		NT_USER_TOKEN *ptoken = *pptoken;
-
-		SAFE_FREE( ptoken->user_sids );
-		ZERO_STRUCTP(ptoken);
-	}
-	SAFE_FREE(*pptoken);
-}
-
-/****************************************************************************
  Duplicate a SID token.
 ****************************************************************************/
 
-NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
+NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, NT_USER_TOKEN *ptoken)
 {
 	NT_USER_TOKEN *token;
 
 	if (!ptoken)
 		return NULL;
 
-	if ((token = SMB_MALLOC_P(NT_USER_TOKEN)) == NULL)
+	token = TALLOC_P(mem_ctx, NT_USER_TOKEN);
+	if (token == NULL) {
+		DEBUG(0, ("talloc failed\n"));
 		return NULL;
+	}
 
-	ZERO_STRUCTP(token);
-	
-	token->user_sids = (DOM_SID *)memdup(
-		ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
-	
-	if ( !token ) {
-		SAFE_FREE(token);
+	token->user_sids = talloc_memdup(token, ptoken->user_sids,
+					 sizeof(DOM_SID) * ptoken->num_sids );
+
+	if ((ptoken->user_sids != NULL) && (token->user_sids == NULL)) {
+		DEBUG(0, ("talloc_memdup failed\n"));
+		talloc_free(token);
 		return NULL;
 	}
 

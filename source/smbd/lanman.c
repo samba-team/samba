@@ -1974,7 +1974,8 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	sids = NULL;
 	num_groups = 0;
 
-	result = pdb_enum_group_memberships(pdb_get_username(sampw),
+	result = pdb_enum_group_memberships(sampw->mem_ctx,
+					    pdb_get_username(sampw),
 					    passwd->pw_gid,
 					    &sids, &gids, &num_groups);
 
@@ -1993,8 +1994,6 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 		}
 	}
 
-	SAFE_FREE(sids);
-	
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	SSVAL(*rparam,4,count);	/* is this right?? */
@@ -2199,7 +2198,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 			}
 			unbecome_root();
 
-			free_server_info(&server_info);
+			talloc_free(server_info);
 		}
 		data_blob_clear_free(&password);
 	}

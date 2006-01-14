@@ -335,8 +335,15 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	(*server_info)->user_session_key = user_sess_key;
-	(*server_info)->lm_session_key = lm_sess_key;
+	(*server_info)->user_session_key =
+		data_blob_talloc(*server_info, user_sess_key.data,
+				 user_sess_key.length);
+	data_blob_free(&user_sess_key);
+
+	(*server_info)->lm_session_key =
+		data_blob_talloc(*server_info, lm_sess_key.data,
+				 lm_sess_key.length);
+	data_blob_free(&lm_sess_key);
 
 	return nt_status;
 }

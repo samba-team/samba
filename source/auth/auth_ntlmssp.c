@@ -115,6 +115,14 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
+
+	nt_status = create_local_token(auth_ntlmssp_state->server_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("create_local_token failed\n"));
+		return nt_status;
+	}
+
 	if (auth_ntlmssp_state->server_info->user_session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n",
 			(unsigned int)auth_ntlmssp_state->server_info->user_session_key.length));
@@ -179,7 +187,7 @@ void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 		((*auth_ntlmssp_state)->auth_context->free)(&(*auth_ntlmssp_state)->auth_context);
 	}
 	if ((*auth_ntlmssp_state)->server_info) {
-		free_server_info(&(*auth_ntlmssp_state)->server_info);
+		talloc_free((*auth_ntlmssp_state)->server_info);
 	}
 	talloc_destroy(mem_ctx);
 	*auth_ntlmssp_state = NULL;

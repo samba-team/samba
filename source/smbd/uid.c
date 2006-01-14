@@ -259,7 +259,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if (must_free_token)
-		delete_nt_token(&token);
+		talloc_free(token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;

@@ -43,6 +43,10 @@ typedef struct auth_usersupplied_info {
 typedef struct auth_serversupplied_info {
 	BOOL guest;
 
+	DOM_SID *sids; 	/* These SIDs are preliminary between
+			   check_ntlm_password and the token creation. */
+	size_t num_sids;
+
 	uid_t uid;
 	gid_t gid;
 	

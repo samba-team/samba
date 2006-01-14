@@ -255,14 +255,15 @@ BOOL push_sec_ctx(void)
  	DEBUG(3, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
  		  (unsigned int)ctx_p->uid, (unsigned int)ctx_p->gid, sec_ctx_stack_ndx ));
 
-	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
+	ctx_p->token = dup_nt_token(NULL,
+				    sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 
 	ctx_p->ngroups = sys_getgroups(0, NULL);
 
 	if (ctx_p->ngroups != 0) {
 		if (!(ctx_p->groups = SMB_MALLOC_ARRAY(gid_t, ctx_p->ngroups))) {
 			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
-			delete_nt_token(&ctx_p->token);
+			talloc_free(ctx_p->token);
 			return False;
 		}
 
@@ -302,10 +303,10 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
 
-	delete_nt_token(&ctx_p->token);
+	talloc_free(ctx_p->token);
 	
 	ctx_p->groups = memdup(groups, sizeof(gid_t) * ngroups);
-	ctx_p->token = dup_nt_token(token);
+	ctx_p->token = dup_nt_token(NULL, token);
 
 	become_id(uid, gid);
 
@@ -358,7 +359,7 @@ BOOL pop_sec_ctx(void)
 	SAFE_FREE(ctx_p->groups);
 	ctx_p->ngroups = 0;
 
-	delete_nt_token(&ctx_p->token);
+	talloc_free(ctx_p->token);
 
 	/* Pop back previous user */
 

@@ -2031,7 +2031,8 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	sids = NULL;
 
 	become_root();
-	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
+	result = pdb_enum_group_memberships(p->mem_ctx,
+					    pdb_get_username(sam_pass),
 					    passwd->pw_gid,
 					    &sids, &unix_gids, &num_groups);
 	unbecome_root();
@@ -2040,8 +2041,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		pdb_free_sam(&sam_pass);
 		return result;
 	}
-
-	SAFE_FREE(unix_gids);
 
 	gids = NULL;
 	num_gids = 0;
@@ -2083,7 +2082,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 		ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
 	}
-	SAFE_FREE(sids);
 	
 	/* construct the response.  lkclXXXX: gids are not copied! */
 	init_samr_r_query_usergroups(r_u, num_gids, gids, r_u->status);
@@ -3506,7 +3504,6 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	NTSTATUS ntstatus2;
 
 	DOM_SID *members;
-	BOOL res;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -3542,13 +3539,14 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	num_alias_rids = 0;
 
 	become_root();
-	res = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
-					 q_u->num_sids1,
-					 &alias_rids, &num_alias_rids);
+	ntstatus1 = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
+					       q_u->num_sids1,
+					       &alias_rids, &num_alias_rids);
 	unbecome_root();
 
-	if (!res)
-		return NT_STATUS_UNSUCCESSFUL;
+	if (!NT_STATUS_IS_OK(ntstatus1)) {
+		return ntstatus1;
+	}
 
 	init_samr_r_query_useraliases(r_u, num_alias_rids, alias_rids,
 				      NT_STATUS_OK);

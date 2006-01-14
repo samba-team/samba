@@ -529,6 +529,7 @@ static NTSTATUS context_enum_group_members(struct pdb_context *context,
 }
 
 static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
+					       TALLOC_CTX *mem_ctx,
 					       const char *username,
 					       gid_t primary_gid,
 					       DOM_SID **pp_sids, gid_t **pp_gids,
@@ -542,7 +543,7 @@ static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->
-		enum_group_memberships(context->pdb_methods, username,
+		enum_group_memberships(context->pdb_methods, mem_ctx, username,
 				       primary_gid, pp_sids, pp_gids, p_num_groups);
 }
 
@@ -1353,7 +1354,8 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 						   pp_member_rids, p_num_members);
 }
 
-NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
+NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx,
+				    const char *username, gid_t primary_gid,
 				    DOM_SID **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups)
 {
@@ -1363,9 +1365,9 @@ NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_enum_group_memberships(pdb_context, username,
-						       primary_gid, pp_sids, pp_gids,
-						       p_num_groups);
+	return pdb_context->pdb_enum_group_memberships(
+		pdb_context, mem_ctx, username, primary_gid,
+		pp_sids, pp_gids, p_num_groups);
 }
 
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
@@ -1466,22 +1468,23 @@ BOOL pdb_enum_aliasmem(const DOM_SID *alias,
 						 pp_members, p_num_members));
 }
 
-BOOL pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
-				const DOM_SID *members, size_t num_members,
-				uint32 **pp_alias_rids, size_t *p_num_alias_rids)
+NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,
+				    const DOM_SID *domain_sid,
+				    const DOM_SID *members, size_t num_members,
+				    uint32 **pp_alias_rids,
+				    size_t *p_num_alias_rids)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_enum_alias_memberships(pdb_context, mem_ctx,
-							  domain_sid,
-							  members, num_members,
-							  pp_alias_rids,
-							  p_num_alias_rids));
+	return pdb_context->pdb_enum_alias_memberships(pdb_context, mem_ctx,
+						       domain_sid,
+						       members, num_members,
+						       pp_alias_rids,
+						       p_num_alias_rids);
 }
 
 NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,

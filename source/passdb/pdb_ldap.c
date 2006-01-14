@@ -3157,14 +3157,28 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 	int count;
 	LDAPMod **mods = NULL;
 	int rc;
+	enum SID_NAME_USE type = SID_NAME_USE_NONE;
 
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%s))",
-		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
-		     get_attr_key2string(groupmap_attr_list,
-					 LDAP_ATTR_GROUP_SID),
-		     sid_string_static(alias));
+	if (sid_check_is_in_builtin(alias)) {
+		type = SID_NAME_WKN_GRP;
+	}
+
+	if (sid_check_is_in_our_domain(alias)) {
+		type = SID_NAME_ALIAS;
+	}
+
+	if (type == SID_NAME_USE_NONE) {
+		DEBUG(5, ("SID %s is neither in builtin nor in our domain!\n",
+			  sid_string_static(alias)));
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	pstr_sprintf(filter,
+		     "(&(objectClass=%s)(sambaSid=%s)(sambaGroupType=%d))",
+		     LDAP_OBJ_GROUPMAP, sid_string_static(alias),
+		     type);
 
 	if (ldapsam_search_one_group(ldap_state, filter,
 				     &result) != LDAP_SUCCESS)
@@ -3249,15 +3263,29 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	int i;
 	pstring filter;
 	size_t num_members = 0;
+	enum SID_NAME_USE type = SID_NAME_USE_NONE;
 
 	*pp_members = NULL;
 	*p_num_members = 0;
 
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%s))",
-		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
-		     get_attr_key2string(groupmap_attr_list,
-					 LDAP_ATTR_GROUP_SID),
-		     sid_string_static(alias));
+	if (sid_check_is_in_builtin(alias)) {
+		type = SID_NAME_WKN_GRP;
+	}
+
+	if (sid_check_is_in_our_domain(alias)) {
+		type = SID_NAME_ALIAS;
+	}
+
+	if (type == SID_NAME_USE_NONE) {
+		DEBUG(5, ("SID %s is neither in builtin nor in our domain!\n",
+			  sid_string_static(alias)));
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	pstr_sprintf(filter,
+		     "(&(objectClass=%s)(sambaSid=%s)(sambaGroupType=%d))",
+		     LDAP_OBJ_GROUPMAP, sid_string_static(alias),
+		     type);
 
 	if (ldapsam_search_one_group(ldap_state, filter,
 				     &result) != LDAP_SUCCESS)
@@ -3334,14 +3362,25 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	int i;
 	int rc;
 	char *filter;
+	enum SID_NAME_USE type = SID_NAME_USE_NONE;
 
-	/* This query could be further optimized by adding a
-	   (&(sambaSID=<domain-sid>*)) so that only those aliases that are
-	   asked for in the getuseraliases are returned. */	   
+	if (sid_check_is_builtin(domain_sid)) {
+		type = SID_NAME_WKN_GRP;
+	}
+
+	if (sid_check_is_domain(domain_sid)) {
+		type = SID_NAME_ALIAS;
+	}
+
+	if (type == SID_NAME_USE_NONE) {
+		DEBUG(5, ("SID %s is neither builtin nor domain!\n",
+			  sid_string_static(domain_sid)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	filter = talloc_asprintf(mem_ctx,
-				 "(&(|(objectclass=%s)(objectclass=%s))(|",
-				 LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY);
+				 "(&(|(objectclass=%s)(sambaGroupType=%d))(|",
+				 LDAP_OBJ_GROUPMAP, type);
 
 	for (i=0; i<num_members; i++)
 		filter = talloc_asprintf(mem_ctx, "%s(sambaSIDList=%s)",

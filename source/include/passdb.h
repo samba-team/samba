@@ -304,6 +304,7 @@ typedef struct pdb_context
 					   size_t *p_num_members);
 
 	NTSTATUS (*pdb_enum_group_memberships)(struct pdb_context *context,
+					       TALLOC_CTX *mem_ctx,
 					       const char *username,
 					       gid_t primary_gid,
 					       DOM_SID **pp_sids, gid_t **pp_gids,
@@ -448,6 +449,7 @@ typedef struct pdb_methods
 				       size_t *p_num_members);
 
 	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
+					   TALLOC_CTX *mem_ctx,
 					   const char *username,
 					   gid_t primary_gid,
 					   DOM_SID **pp_sids, gid_t **pp_gids,

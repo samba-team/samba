@@ -310,14 +310,14 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   uint32 num_sids, const DOM_SID *sids,
 				   uint32 *p_num_aliases, uint32 **rids)
 {
-	BOOL result;
+	NTSTATUS result;
 	size_t num_aliases = 0;
 
 	result = pdb_enum_alias_memberships(mem_ctx, &domain->sid,
 					    sids, num_sids, rids, &num_aliases);
 
 	*p_num_aliases = num_aliases;
-	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return result;
 }
 
 /* Lookup group membership given a rid.   */

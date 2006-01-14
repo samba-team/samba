@@ -718,8 +718,9 @@ static BOOL print_alias_memberships(TALLOC_CTX *mem_ctx,
 	alias_rids = NULL;
 	num_alias_rids = 0;
 
-	if (!pdb_enum_alias_memberships(mem_ctx, domain_sid, member, 1,
-					&alias_rids, &num_alias_rids)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_alias_memberships(
+				     mem_ctx, domain_sid, member, 1,
+				     &alias_rids, &num_alias_rids))) {
 		d_printf("Could not list memberships for sid %s\n",
 			 sid_string_static(member));
 		return False;

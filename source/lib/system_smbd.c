@@ -147,7 +147,8 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	return retval;
 }
 
-static BOOL getgroups_user(const char *user, gid_t primary_gid,
+static BOOL getgroups_user(TALLOC_CTX *mem_ctx, const char *user,
+			   gid_t primary_gid,
 			   gid_t **ret_groups, size_t *p_ngroups)
 {
 	size_t ngrp;
@@ -186,10 +187,11 @@ static BOOL getgroups_user(const char *user, gid_t primary_gid,
 	groups = NULL;
 
 	/* Add in primary group first */
-	add_gid_to_array_unique(NULL, primary_gid, &groups, &ngrp);
+	add_gid_to_array_unique(mem_ctx, primary_gid, &groups, &ngrp);
 
 	for (i=0; i<max_grp; i++)
-		add_gid_to_array_unique(NULL, temp_groups[i], &groups, &ngrp);
+		add_gid_to_array_unique(mem_ctx, temp_groups[i],
+					&groups, &ngrp);
 
 	*p_ngroups = ngrp;
 	*ret_groups = groups;
@@ -198,6 +200,7 @@ static BOOL getgroups_user(const char *user, gid_t primary_gid,
 }
 
 NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
+					    TALLOC_CTX *mem_ctx,
 					    const char *username,
 					    gid_t primary_gid,
 					    DOM_SID **pp_sids,
@@ -206,7 +209,8 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 {
 	size_t i;
 
-	if (!getgroups_user(username, primary_gid, pp_gids, p_num_groups)) {
+	if (!getgroups_user(mem_ctx, username, primary_gid,
+			    pp_gids, p_num_groups)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -214,10 +218,10 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 		smb_panic("primary group missing");
 	}
 
-	*pp_sids = SMB_MALLOC_ARRAY(DOM_SID, *p_num_groups);
+	*pp_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *p_num_groups);
 
 	if (*pp_sids == NULL) {
-		SAFE_FREE(pp_gids);
+		talloc_free(*pp_gids);
 		return NT_STATUS_NO_MEMORY;
 	}
 
