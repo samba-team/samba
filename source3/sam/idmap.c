@@ -128,6 +128,12 @@ BOOL idmap_init(const char **remote_backend)
 			pparams++;
 			fstrcpy( params, pparams );
 		}
+
+		/* strip any leading idmap_ prefix of */
+		if ( strncmp( rem_backend, "idmap_", 6) == 0 ) {
+			rem_backend += 6;
+			DEBUG(0, ("idmap_init: idmap backend uses deprecated 'idmap_' prefix.  Please replace 'idmap_%s' by '%s' in %s\n", rem_backend, rem_backend, dyn_CONFIGFILE));
+		}
 		
 		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", rem_backend));
 		
