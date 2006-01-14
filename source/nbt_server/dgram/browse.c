@@ -24,6 +24,26 @@
 #include "nbt_server/nbt_server.h"
 #include "lib/socket/socket.h"
 
+static const char *nbt_browse_opcode_string(enum nbt_browse_opcode r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case HostAnnouncement: val = "HostAnnouncement"; break;
+		case AnnouncementRequest: val = "AnnouncementRequest"; break;
+		case Election: val = "Election"; break;
+		case GetBackupListReq: val = "GetBackupListReq"; break;
+		case GetBackupListResp: val = "GetBackupListResp"; break;
+		case BecomeBackup: val = "BecomeBackup"; break;
+		case DomainAnnouncement: val = "DomainAnnouncement"; break;
+		case MasterAnnouncement: val = "MasterAnnouncement"; break;
+		case ResetBrowserState: val = "ResetBrowserState"; break;
+		case LocalMasterAnnouncement: val = "LocalMasterAnnouncement"; break;
+	}
+
+	return val;
+}
+
 /*
   handle incoming browse mailslot requests
 */
@@ -31,6 +51,30 @@ void nbtd_mailslot_browse_handler(struct dgram_mailslot_handler *dgmslot,
 				  struct nbt_dgram_packet *packet, 
 				  struct socket_address *src)
 {
-	DEBUG(2,("Browse request on '%s' from %s:%d\n", 
-		  dgmslot->mailslot_name, src->addr, src->port));
+	struct nbt_browse_packet *browse = talloc(dgmslot, struct nbt_browse_packet);
+	struct nbt_name *name = &packet->data.msg.dest_name;
+	NTSTATUS status;
+
+	if (browse == NULL) goto failed;
+
+	status = dgram_mailslot_browse_parse(dgmslot, browse, packet, browse);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	DEBUG(2,("Browse %s (Op %d) on '%s' '%s' from %s:%d\n", 
+		nbt_browse_opcode_string(browse->opcode), browse->opcode,
+		nbt_name_string(browse, name), dgmslot->mailslot_name,
+		src->addr, src->port));
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(nbt_browse_packet, browse);
+	}
+
+	talloc_free(browse);
+	return;
+
+failed:
+	DEBUG(2,("nbtd browse handler failed from %s:%d - %s\n",
+		 src->addr, src->port, nt_errstr(status)));
+	talloc_free(browse);
+
 }
