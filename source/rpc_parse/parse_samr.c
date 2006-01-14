@@ -5183,6 +5183,39 @@ static BOOL sam_io_user_info7(const char *desc, SAM_USER_INFO_7 * usr,
 }
 
 /*******************************************************************
+inits a SAM_USER_INFO_9 structure.
+********************************************************************/
+
+void init_sam_user_info9(SAM_USER_INFO_9 * usr, uint32 rid_group)
+{
+	DEBUG(5, ("init_sam_user_info9\n"));
+
+	usr->rid_group = rid_group;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_user_info9(const char *desc, SAM_USER_INFO_9 * usr,
+			prs_struct *ps, int depth)
+{
+	if (usr == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_user_info9");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("rid_group", ps, depth, &usr->rid_group))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 inits a SAM_USER_INFO_16 structure.
 ********************************************************************/
 
@@ -6353,6 +6386,15 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 			return False;
 		}
 		ret = sam_io_user_info7("", ctr->info.id7, ps, depth);
+		break;
+	case 9:
+		if (UNMARSHALLING(ps))
+			ctr->info.id9 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_9,1);
+		if (ctr->info.id9 == NULL) {
+			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+			return False;
+		}
+		ret = sam_io_user_info9("", ctr->info.id9, ps, depth);
 		break;
 	case 16:
 		if (UNMARSHALLING(ps))
