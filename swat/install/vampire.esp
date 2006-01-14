@@ -23,13 +23,12 @@ var subobj = provision_guess();
 /* Don't supply default password for web interface */
 subobj.ADMINPASS = "";
 
-f.add("REALM", "Realm");
-f.add("DOMAIN", "Domain Name");
+f.add("REALM", "DNS Domain Name");
+f.add("DOMAIN", "NetBIOS Domain Name");
 f.add("ADMIN", "Administrator Username");
 f.add("ADMINPASS", "Administrator Password", "password");
 f.add("HOSTNAME", "My Hostname");
-f.add("HOSTGUID", "Host GUID");
-f.add("HOSTIP", "Host IP");
+f.add("HOSTIP", "My Host's IP");
 f.add("DEFAULTSITE", "Default Site");
 f.submit[0] = "Migrate";
 f.submit[1] = "Cancel";
@@ -62,24 +61,26 @@ if (form['submit'] == "Migrate") {
 		creds.set_domain(form.DOMAIN);
 		creds.set_realm(form.REALM);
 
+		var paths = provision_default_paths(subobj);
+
 		/* Setup a basic database structure, but don't setup any users */
-		if (!provision(subobj, writefln, true, provision_default_paths(subobj),
-			      session.authinfo.session_info, session.authinfo.credentials)) {
+		if (!provision(subobj, writefln, true, paths,
+			       session.authinfo.session_info, session.authinfo.credentials)) {
 			writefln("Provision failed!");
 
 		/* Join domain */
 		} else if (!join_domain(form.DOMAIN, form.HOSTNAME, misc.SEC_CHAN_BDC, creds, writefln)) {
 			writefln("Domain Join failed!");
 			
+                /* Vampire */
+		} else if (!vampire(form.DOMAIN, session.authinfo.session_info, 
+					    session.authinfo.credentials, writefln)) {
+			writefln("Failed to syncronsise remote domain into local database!");
+		} else if (!provision_dns(subobj, writefln, paths,
+					  session.authinfo.session_info, session.authinfo.credentials)) {
+			writefln("DNS Provision failed!");
 		} else {
-			/* Vampire */
-			var machine_creds = credentials_init();
-			machine_creds.set_domain(form.DOMAIN);
-			if (!machine_creds.set_machine_account()) {
-				writefln("Failed to access newly setup domain join!");
-			} else if (!vampire(machine_creds, writefln)) {
-				writefln("Failed to syncronsise remote domain into local database!");
-			}
+			writefln("Migration Complete!");
 		}
 	}
 } else {

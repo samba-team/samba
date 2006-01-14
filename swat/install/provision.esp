@@ -21,13 +21,12 @@ var subobj = provision_guess();
 /* Don't supply default password for web interface */
 subobj.ADMINPASS = "";
 
-f.add("REALM", "Realm");
-f.add("DOMAIN", "Domain Name");
+f.add("REALM", "DNS Domain Name");
+f.add("DOMAIN", "NetBIOS Domain Name");
 f.add("HOSTNAME", "Hostname");
 f.add("ADMINPASS", "Administrator Password", "password");
 f.add("CONFIRM", "Confirm Password", "password");
 f.add("DOMAINSID", "Domain SID");
-f.add("HOSTGUID", "Host GUID");
 f.add("HOSTIP", "Host IP");
 f.add("DEFAULTSITE", "Default Site");
 f.submit[0] = "Provision";
@@ -60,8 +59,16 @@ if (form['submit'] == "Provision") {
 	} else if (!provision_validate(subobj, writefln)) {
 		f.display();
 	} else {
-		provision(subobj, writefln, false, provision_default_paths(subobj),
-			  session.authinfo.session_info, session.authinfo.credentials);
+		var paths = provision_default_paths(subobj);
+		if (!provision(subobj, writefln, false, paths, 
+			       session.authinfo.session_info, session.authinfo.credentials)) {
+			writefln("Provision failed!");
+		} else if (!provision_dns(subobj, writefln, paths,
+					  session.authinfo.session_info, session.authinfo.credentials)) {
+			writefln("DNS Provision failed!");
+		} else {
+			writefln("Provision Complete!");
+		}
 	}
 } else {
 	f.display();
