@@ -46,7 +46,7 @@ static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 	/* TODO:  Need to get the right event context in here */
 	ctx = libnet_context_init(NULL);
 
-	if (argc == 0) {
+	if (argc == 0 || (argc == 1 && argv[0]->type == MPR_TYPE_NULL)) {
 		creds = cli_credentials_init(ctx);
 		if (creds == NULL) {
 			ejsSetErrorMsg(eid, "cli_credential_init() failed");
@@ -156,13 +156,18 @@ static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	/* prepare parameters for the samsync */
 	samsync->in.machine_account = NULL;
+	samsync->in.session_info = NULL;
 	samsync->in.binding_string = NULL;
 	samsync->out.error_string = NULL;
 
 	if (argc == 1 && argv[0]->type == MPR_TYPE_OBJECT) {
 		MprVar *credentials = mprGetProperty(argv[0], "machine_account", NULL);
+		MprVar *session_info = mprGetProperty(argv[0], "session_info", NULL);
 		if (credentials) {
 			samsync->in.machine_account = talloc_get_type(mprGetPtr(credentials, "creds"), struct cli_credentials);
+		}
+		if (session_info) {
+			samsync->in.session_info = talloc_get_type(mprGetPtr(session_info, "session_info"), struct auth_session_info);
 		}
 	}
 

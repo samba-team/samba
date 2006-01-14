@@ -302,10 +302,6 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	}
 	message("Setting up secrets.ldb\n");
 	setup_ldb("secrets.ldif", info, paths.secrets);
-	message("Setting up DNS zone file\n");
-	setup_file("provision.zone", 
-		   paths.dns, 
-		   subobj);
 	message("Setting up keytabs\n");
 	var keytab_ok = credentials_update_all_keytabs();
 	assert(keytab_ok);
@@ -328,6 +324,32 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 		setup_ldb("provision_users.ldif", info, paths.samdb, data, false);
 	}
 	return true;
+}
+
+/* Write out a DNS zone file, from the info in the current database */
+function provision_dns(subobj, message, paths, session_info, credentials)
+{
+	message("Setting up DNS zone: " + subobj.DNSDOMAIN + " \n");
+	var ldb = ldb_init();
+	ldb.session_info = session_info;
+	ldb.credentials = credentials;
+
+	/* connect to the sam */
+	var ok = ldb.connect(paths.samdb);
+	assert(ok);
+
+	/* These values may have changed, due to an incoming SamSync, so fetch them from the database */
+	subobj.DOMAINGUID = searchone(ldb, "(&(objectClass=domainDNS)(dnsDomain=" + subobj.DNSDOMAIN + "))", "objectGUID");
+	assert(subobj.DOMAINGUID != undefined);
+
+	subobj.HOSTGUID = searchone(ldb, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
+	assert(subobj.HOSTGUID != undefined);
+
+	setup_file("provision.zone", 
+		   paths.dns, 
+		   subobj);
+
+	message("Please install the zone located in " + paths.dns + " into your DNS server\n");
 }
 
 /*
@@ -517,27 +539,37 @@ function provision_validate(subobj, message)
 	return true;
 }
 
-function join_domain(domain, netbios_name, join_type, creds, writefln) 
+function join_domain(domain, netbios_name, join_type, creds, message) 
 {
-	ctx = NetContext(creds);
-	join = new Object();
-	join.domain = domain;
-	join.join_type = join_type;
-	join.netbios_name = netbios_name;
-	if (!ctx.JoinDomain(join)) {
-		writefln("Domain Join failed: " + join.error_string);
+	var ctx = NetContext(creds);
+	var joindom = new Object();
+	joindom.domain = domain;
+	joindom.join_type = join_type;
+	joindom.netbios_name = netbios_name;
+	if (!ctx.JoinDomain(joindom)) {
+		message("Domain Join failed: " + join.error_string);
 		return false;
 	}
 	return true;
 }
 
-function vampire(machine_creds, writefln) 
-{
-	var ctx = NetContext();
+/* Vampire a remote domain.  Session info and credentials are required for for
+ * access to our local database (might be remote ldap)
+ */ 
+
+function vampire(domain, session_info, credentials, message) {
+	var ctx = NetContext(credentials);
 	vampire = new Object();
+	var machine_creds = credentials_init();
+	machine_creds.set_domain(form.DOMAIN);
+	if (!machine_creds.set_machine_account()) {
+		message("Failed to access domain join information!");
+		return false;
+	}
 	vampire.machine_creds = machine_creds;
+	vampire.session_info = session_info;
 	if (!ctx.SamSyncLdb(vampire)) {
-		writefln("Migration of remote domain to Samba failed: " + vampire.error_string);
+		message("Migration of remote domain to Samba failed: " + vampire.error_string);
 		return false;
 	}
 	return true;
