@@ -59,8 +59,10 @@ struct libnet_RpcConnectDCInfo {
 		struct dom_sid *domain_sid;
 		const char *domain_name;
 
-		/* This parameter only present if the remote server is known to be AD */
+		/* These parameters only present if the remote server is known to be AD */
 		const char *realm;
+		struct GUID *guid;
+
 		const char *error_string;
 	} out;
 };
