@@ -408,6 +408,7 @@ typedef struct sam_user_info_16
 
 } SAM_USER_INFO_16;
 
+
 /* SAM_USER_INFO_7 */
 typedef struct sam_user_info_7
 {
@@ -415,6 +416,13 @@ typedef struct sam_user_info_7
 	UNISTR2 uni_name; /* unicode string for name */
 
 } SAM_USER_INFO_7;
+
+
+/* SAM_USER_INFO_9 */
+typedef struct sam_user_info_9
+{
+	uint32 rid_group;     /* Primary Group RID */
+} SAM_USER_INFO_9;
 
 
 /* SAMR_Q_CLOSE_HND - probably a policy handle close */
@@ -1255,6 +1263,7 @@ typedef struct sam_userinfo_ctr_info
 	union
 	{
 		SAM_USER_INFO_7  *id7;
+		SAM_USER_INFO_9  *id9;
 		SAM_USER_INFO_16 *id16;
 		SAM_USER_INFO_17 *id17;
 		SAM_USER_INFO_18 *id18;

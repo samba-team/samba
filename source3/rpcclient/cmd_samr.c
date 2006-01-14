@@ -39,6 +39,14 @@ static void display_sam_user_info_7(SAM_USER_INFO_7 *usr)
 }
 
 /****************************************************************************
+ display sam_user_info_9 structure
+ ****************************************************************************/
+static void display_sam_user_info_9(SAM_USER_INFO_9 *usr)
+{
+	printf("\tPrimary group RID   :\tox%x\n", usr->rid_group);
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -397,6 +405,9 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		break;
 	case 7:
 		display_sam_user_info_7(user_ctr->info.id7);
+		break;
+	case 9:
+		display_sam_user_info_9(user_ctr->info.id9);
 		break;
 	default:
 		printf("Unsupported infolevel: %d\n", info_level);
