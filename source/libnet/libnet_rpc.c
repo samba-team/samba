@@ -274,8 +274,15 @@ NTSTATUS libnet_RpcConnectDCInfo(struct libnet_context *ctx,
 				return status;
 			}
 			r->out.realm = lsa_query_info2.out.info->dns.dns_domain.string;
+			r->out.guid = talloc(r, struct GUID);
+			if (!r->out.guid) {
+				r->out.error_string = NULL;
+				return NT_STATUS_NO_MEMORY;
+			}
+			*r->out.guid = lsa_query_info2.out.info->dns.domain_guid;
 		} else {
 			r->out.realm = NULL;
+			r->out.guid = NULL;
 		}
 		
 		/* Grab the domain SID (regardless of the result of the previous call */

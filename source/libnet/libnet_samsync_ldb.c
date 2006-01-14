@@ -28,6 +28,7 @@
 #include "libcli/ldap/ldap.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 struct samsync_ldb_secret {
 	struct samsync_ldb_secret *prev, *next;
@@ -44,9 +45,7 @@ struct samsync_ldb_trusted_domain {
 
 struct samsync_ldb_state {
 	/* Values from the LSA lookup */
-	const char *domain_name;
-	const struct dom_sid *domain_sid;
-	const char *realm;
+	const struct libnet_SamSync_state *samsync_state;
 
 	struct dom_sid *dom_sid[3];
 	struct ldb_context *sam_ldb, *remote_ldb;
@@ -120,6 +119,11 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	int ret;
 	
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (database == SAM_DATABASE_DOMAIN) {
 		const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
 		struct ldb_message **msgs_domain;
@@ -141,12 +145,30 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 
 		state->base_dn[database] = samdb_result_dn(state, msgs_domain[0], "nCName", NULL);
 
-		if (state->domain_sid) {
-			state->dom_sid[database] = dom_sid_dup(state, state->domain_sid);
+		if (state->dom_sid[database]) {
+			/* Update the domain sid with the incoming
+			 * domain (found on LSA pipe, database sid may
+			 * be random) */
+			samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, 
+					      msg, "objectSid", state->dom_sid[database]);
 		} else {
+			/* Well, we will have to use the one from the database */
 			state->dom_sid[database] = samdb_search_dom_sid(state->sam_ldb, state,
 									state->base_dn[database], 
 									"objectSid", NULL);
+		}
+
+		if (state->samsync_state->domain_guid) {
+			NTSTATUS nt_status;
+			struct ldb_val v;
+			nt_status = ndr_push_struct_blob(&v, msg, state->samsync_state->domain_guid,
+							 (ndr_push_flags_fn_t)ndr_push_GUID);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				*error_string = talloc_asprintf(mem_ctx, "ndr_push of domain GUID failed!");
+				return nt_status;
+			}
+			
+			ldb_msg_add_value(msg, "objectGUID", &v);
 		}
 	} else if (database == SAM_DATABASE_BUILTIN) {
 		/* work out the builtin_dn - useful for so many calls its worth
@@ -154,15 +176,9 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 		const char *dnstring = samdb_search_string(state->sam_ldb, mem_ctx, NULL,
 							   "distinguishedName", "objectClass=builtinDomain");
 		state->base_dn[database] = ldb_dn_explode(state, dnstring);
-		state->dom_sid[database] = dom_sid_parse_talloc(state, SID_BUILTIN);
 	} else {
 		/* PRIVs DB */
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	msg->dn = talloc_reference(mem_ctx, state->base_dn[database]);
@@ -195,10 +211,6 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	samdb_msg_add_uint64(state->sam_ldb, mem_ctx, 
 			     msg, "creationTime", domain->domain_create_time);
 
-	/* Update the domain sid with the incoming domain */
-	samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, 
-				 msg, "objectSid", state->dom_sid[database]);
-
 	/* TODO: Account lockout, password properties */
 	
 	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
@@ -230,7 +242,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { NULL };
 	/* we may change this to a global search, then fill in only the things not in ldap later */
 	const char *remote_attrs[] = { "userPrincipalName", "servicePrincipalName", 
-				       "msDS-KeyVersionNumber", NULL};
+				       "msDS-KeyVersionNumber", "objectGUID", NULL};
 
 	user_sid = dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid);
 	if (!user_sid) {
@@ -242,6 +254,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	msg->dn = NULL;
 	/* search for the user, by rid */
 	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database],
 			   &msgs, attrs, "(&(objectClass=user)(objectSid=%s))", 
@@ -264,29 +277,31 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	}
 
 	/* and do the same on the remote database */
-	ret = gendb_search(state->remote_ldb, mem_ctx, state->base_dn[database],
-			   &remote_msgs, remote_attrs, "(&(objectClass=user)(objectSid=%s))", 
-			   ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
-
-	if (ret == -1) {
-		*error_string = talloc_asprintf(mem_ctx, "remote LDAP for user %s failed: %s", 
-						dom_sid_string(mem_ctx, user_sid),
-						ldb_errstring(state->remote_ldb));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else if (ret == 0) {
-		*error_string = talloc_asprintf(mem_ctx, "User exists in samsync but not in remote LDAP domain! (base: %s, SID: %s)", 
-						ldb_dn_linearize(mem_ctx, state->base_dn[database]),
-						dom_sid_string(mem_ctx, user_sid));
-		return NT_STATUS_NO_SUCH_USER;
-	} else if (ret > 1) {
-		*error_string = talloc_asprintf(mem_ctx, "More than one user in remote LDAP domain with SID: %s", 
-						dom_sid_string(mem_ctx, user_sid));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-
-		/* Try to put things in the same location as the remote server */
-	} else if (add) {
-		msg->dn = remote_msgs[0]->dn;
-		talloc_steal(msg, remote_msgs[0]->dn);
+	if (state->remote_ldb) {
+		ret = gendb_search(state->remote_ldb, mem_ctx, state->base_dn[database],
+				   &remote_msgs, remote_attrs, "(&(objectClass=user)(objectSid=%s))", 
+				   ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
+		
+		if (ret == -1) {
+			*error_string = talloc_asprintf(mem_ctx, "remote LDAP for user %s failed: %s", 
+							dom_sid_string(mem_ctx, user_sid),
+							ldb_errstring(state->remote_ldb));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else if (ret == 0) {
+			*error_string = talloc_asprintf(mem_ctx, "User exists in samsync but not in remote LDAP domain! (base: %s, SID: %s)", 
+							ldb_dn_linearize(mem_ctx, state->base_dn[database]),
+							dom_sid_string(mem_ctx, user_sid));
+			return NT_STATUS_NO_SUCH_USER;
+		} else if (ret > 1) {
+			*error_string = talloc_asprintf(mem_ctx, "More than one user in remote LDAP domain with SID: %s", 
+							dom_sid_string(mem_ctx, user_sid));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			
+			/* Try to put things in the same location as the remote server */
+		} else if (add) {
+			msg->dn = remote_msgs[0]->dn;
+			talloc_steal(msg, remote_msgs[0]->dn);
+		}
 	}
 
 	cn_name   = talloc_strdup(mem_ctx, user->account_name.string);
@@ -394,10 +409,12 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	if (add) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
-		msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
-						"CN=%s, CN=%s", cn_name, container);
 		if (!msg->dn) {
-			return NT_STATUS_NO_MEMORY;		
+			msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
+							"CN=%s, CN=%s", cn_name, container);
+			if (!msg->dn) {
+				return NT_STATUS_NO_MEMORY;		
+			}
 		}
 
 		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
@@ -1132,34 +1149,39 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS libnet_samsync_ldb_init(TALLOC_CTX *mem_ctx, 		
 					void *private,
-					struct libnet_context *machine_net_ctx,
-					struct dcerpc_pipe *p,
-					const char *domain_name,
-					const struct dom_sid *domain_sid,
-					const char *realm,
+					struct libnet_SamSync_state *samsync_state,
 					char **error_string)
 {
 	struct samsync_ldb_state *state = talloc_get_type(private, struct samsync_ldb_state);
-	const char *server = dcerpc_server_name(p);
+	const char *server = dcerpc_server_name(samsync_state->netlogon_pipe);
 	char *ldap_url;
 
-	state->domain_name = domain_name;
-	state->domain_sid  = domain_sid;
-	state->realm       = realm;
+	state->samsync_state = samsync_state;
 
-	if (realm) {
+	ZERO_STRUCT(state->dom_sid);
+	if (state->samsync_state->domain_sid) {
+		state->dom_sid[SAM_DATABASE_DOMAIN] = dom_sid_dup(state, state->samsync_state->domain_sid);
+	}
+
+	state->dom_sid[SAM_DATABASE_BUILTIN] = dom_sid_parse_talloc(state, SID_BUILTIN);
+
+	if (state->samsync_state->realm) {
 		if (!server || !*server) {
 			/* huh?  how do we not have a server name?  */
 			*error_string = talloc_strdup(mem_ctx, "No DCE/RPC server name available.  How did we connect?");
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ldap_url = talloc_asprintf(state, "ldap://%s", dcerpc_server_name(p));
+		ldap_url = talloc_asprintf(state, "ldap://%s", server);
 		
 		state->remote_ldb = ldb_wrap_connect(mem_ctx, ldap_url, 
-						     NULL, machine_net_ctx->cred,
+						     NULL, state->samsync_state->machine_net_ctx->cred,
 						     0, NULL);
-		/* TODO: Make inquires to see if this is AD, then decide that
-		 * the ldap connection is critical */
+		if (!state->remote_ldb) {
+			*error_string = talloc_asprintf(mem_ctx, "Failed to connect to remote LDAP server at %s (used to extract additional data in SamSync replication)", ldap_url);
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
+	} else {
+		state->remote_ldb = NULL;
 	}
 	return NT_STATUS_OK;
 }
