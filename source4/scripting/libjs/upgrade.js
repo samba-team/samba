@@ -513,13 +513,18 @@ function upgrade_smbconf(oldconf,mark)
 	return newconf;
 }
 
-function upgrade(subobj, samba3, message, paths)
+function upgrade(subobj, samba3, message, paths, session_info, credentials)
 {
 	var ret = 0;
 	var lp = loadparm_init();
 	var samdb = ldb_init();
+	samdb.session_info = session_info;
+	samdb.credentials = credentials;
 	var ok = samdb.connect(paths.samdb);
-	assert(ok);
+	if (!ok) {
+		info.message("samdb connect failed: " + samdb.errstring() + "\n");
+		assert(ok);
+	}
 
 	message("Writing configuration\n");
 	var newconf = upgrade_smbconf(samba3.configuration,true);
@@ -528,11 +533,17 @@ function upgrade(subobj, samba3, message, paths)
 	message("Importing account policies\n");
 	var ldif = upgrade_sam_policy(samba3,subobj.BASEDN);
 	ok = samdb.modify(ldif);
-	assert(ok);
-
+	if (!ok) {
+		message("samdb load failed: " + samdb.errstring() + "\n");
+		assert(ok);
+	}
 	var regdb = ldb_init();
 	ok = regdb.connect(paths.hklm);
-	assert(ok);
+	if (!ok) {
+		message("registry connect: " + regdb.errstring() + "\n");
+		assert(ok);
+	}
+
 	ok = regdb.modify(sprintf("
 dn: value=RefusePasswordChange,key=Parameters,key=Netlogon,key=Services,key=CurrentControlSet,key=System,HIVE=NONE
 replace: type
@@ -540,7 +551,10 @@ type: 4
 replace: data
 data: %d
 ", samba3.policy.refuse_machine_password_change));
-	assert(ok);
+	if (!ok) {
+		message("registry load failed: " + regdb.errstring() + "\n");
+		assert(ok);
+	}
 
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {

@@ -90,12 +90,13 @@ var creds = options.get_credentials();
 var system_session = system_session();
 var paths = provision_default_paths(subobj);
 provision(subobj, message, options.blank, paths, system_session, creds);
-provision_dns(subobj, message, paths, system_session, creds);
 
-var ret = upgrade(subobj,samba3,message,paths);
+var ret = upgrade(subobj,samba3,message,paths, system_session, creds);
 if (ret > 0) {
 	message("Failed to import %d entries\n", ret);
 } else {
+	provision_dns(subobj, message, paths, system_session, creds);
+
 	message("All OK\n");
 }
 
