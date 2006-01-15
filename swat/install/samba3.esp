@@ -69,13 +69,26 @@ if (form['submit'] == "Import") {
 		confirm_form();
 	} else {
 		var paths = provision_default_paths(subobj);
-
-		provision(subobj, writefln, true, paths);
-		upgrade(subobj, samba3, writefln, paths);
-
-		writefln("Reloading smb.conf\n");
-		var lp = loadparm_init();
-		lp.reload();
+		if (!provision(subobj, writefln, true, paths, 
+			       session.authinfo.session_info, session.authinfo.credentials)) {
+			writefln("Provision failed!");
+		} else { 
+			var ret = upgrade(subobj,samba3,message,paths,
+					  session.authinfo.session_info, session.authinfo.credentials);
+			if (ret > 0) {
+				writefln("Failed to import %d entries\n", ret);
+			} else {
+				if (!provision_dns(subobj, writefln, paths,
+						   session.authinfo.session_info, session.authinfo.credentials)) {
+					writefln("DNS Provision failed!");
+				} else {
+					writefln("Reloading smb.conf\n");
+					var lp = loadparm_init();
+					lp.reload();
+					writefln("Upgrade Complete!");
+				}
+			}
+		}
 	}
 } else {
 	var f = FormObj("Import from Samba3", 0, 2);
