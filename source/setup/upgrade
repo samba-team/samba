@@ -10,6 +10,7 @@ options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
 		'verify',
 		'targetdir=s',
 		'quiet', 'blank');
@@ -85,7 +86,11 @@ if (options.targetdir != undefined) {
 	paths = provision_default_paths(subobj);;
 }
 
-provision(subobj, message, options.blank,paths);
+var creds = options.get_credentials();
+var system_session = system_session();
+var paths = provision_default_paths(subobj);
+provision(subobj, message, options.blank, paths, system_session, creds);
+provision_dns(subobj, message, paths, system_session, creds);
 
 var ret = upgrade(subobj,samba3,message,paths);
 if (ret > 0) {
