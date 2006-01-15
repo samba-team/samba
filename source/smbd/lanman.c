@@ -1926,8 +1926,10 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	gid_t *gids;
 	size_t num_groups;
 	size_t i;
-	struct passwd *passwd;
 	NTSTATUS result;
+	DOM_SID user_sid;
+	enum SID_NAME_USE type;
+	TALLOC_CTX *mem_ctx;
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
@@ -1956,38 +1958,58 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	p = *rdata;
 
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
 	/* Lookup the user information; This should only be one of 
 	   our accounts (not remote domains) */
 
-	passwd = getpwnam_alloc(NULL, UserName);
-
-	if (passwd == NULL)
-		return False;
-	   
-	pdb_init_sam( &sampw );
-	
 	become_root();					/* ROOT BLOCK */
 
-	if ( !pdb_getsampwnam(sampw, UserName) )
-		goto out;
+	if (!lookup_name(mem_ctx, UserName, LOOKUP_NAME_ALL,
+			 NULL, NULL, &user_sid, &type)) {
+		DEBUG(10, ("lookup_name(%s) failed\n", UserName));
+		goto done;
+	}
 
+	if (type != SID_NAME_USER) {
+		DEBUG(10, ("%s is a %s, not a user\n", UserName,
+			   sid_type_lookup(type)));
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(pdb_init_sam_talloc(mem_ctx, &sampw))) {
+		DEBUG(10, ("pdb_init_sam_talloc failed\n"));
+		goto done;
+	}
+
+	if ( !pdb_getsampwsid(sampw, &user_sid) ) {
+		DEBUG(10, ("pdb_getsampwsid(%s) failed for user %s\n",
+			   sid_string_static(&user_sid), UserName));
+		goto done;
+	}
+
+	gids = NULL;
 	sids = NULL;
 	num_groups = 0;
 
-	result = pdb_enum_group_memberships(sampw->mem_ctx,
-					    pdb_get_username(sampw),
-					    passwd->pw_gid,
+	result = pdb_enum_group_memberships(mem_ctx, sampw,
 					    &sids, &gids, &num_groups);
 
-	if (!NT_STATUS_IS_OK(result))
-		goto out;
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("pdb_enum_group_memberships failed for %s\n",
+			   UserName));
+		goto done;
+	}
 
 	for (i=0; i<num_groups; i++) {
 
 		const char *grp_name;
 	
-		if ( lookup_sid(sampw->mem_ctx, &sids[i], NULL, &grp_name,
-				NULL) ) {
+		if ( lookup_sid(mem_ctx, &sids[i], NULL, &grp_name, NULL) ) {
 			pstrcpy(p, grp_name);
 			p += 21; 
 			count++;
@@ -2001,11 +2023,10 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	ret = True;
 
-out:
+done:
 	unbecome_root();				/* END ROOT BLOCK */
 
-	pdb_free_sam( &sampw );
-	talloc_free(passwd);
+	talloc_free(mem_ctx);
 
 	return ret;
 }

@@ -537,11 +537,14 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		return False;
 	}
 
-	child->timed_event = add_timed_event(child->mem_ctx,
-					     timeval_zero(),
-					     "account_lockout_policy_handler",
-					     account_lockout_policy_handler,
-					     child);
+	if (child->domain != NULL) {
+		/* We might be in the idmap child...*/
+		child->timed_event = add_timed_event(
+			child->mem_ctx, timeval_zero(),
+			"account_lockout_policy_handler",
+			account_lockout_policy_handler,
+			child);
+	}
 
 	while (1) {
 

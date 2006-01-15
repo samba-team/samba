@@ -84,16 +84,6 @@
 #include "smbldap.h"
 
 /**********************************************************************
- Free a LDAPMessage (one is stored on the SAM_ACCOUNT).
- **********************************************************************/
- 
-void private_data_free_fn(void **result) 
-{
-	ldap_msgfree(*result);
-	*result = NULL;
-}
-
-/**********************************************************************
  Simple helper function to make stuff better readable
  **********************************************************************/
 
@@ -1473,9 +1463,9 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 			ldap_msgfree(result);
 			return NT_STATUS_NO_SUCH_USER;
 		}
-		pdb_set_backend_private_data(user, result, 
-					     private_data_free_fn, 
+		pdb_set_backend_private_data(user, result, NULL,
 					     my_methods, PDB_CHANGED);
+		talloc_autofree_ldapmsg(user->mem_ctx, result);
 		ret = NT_STATUS_OK;
 	} else {
 		ldap_msgfree(result);
@@ -1573,9 +1563,9 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	pdb_set_backend_private_data(user, result, 
-				     private_data_free_fn, 
+	pdb_set_backend_private_data(user, result, NULL,
 				     my_methods, PDB_CHANGED);
+	talloc_autofree_ldapmsg(user->mem_ctx, result);
 	return NT_STATUS_OK;
 }	
 
@@ -1815,7 +1805,9 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		if (rc != LDAP_SUCCESS) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		pdb_set_backend_private_data(newpwd, result, private_data_free_fn, my_methods, PDB_CHANGED);
+		pdb_set_backend_private_data(newpwd, result, NULL,
+					     my_methods, PDB_CHANGED);
+		talloc_autofree_ldapmsg(newpwd->mem_ctx, result);
 	}
 
 	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
@@ -2548,9 +2540,10 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
-					       const char *username,
-					       gid_t primary_gid,
-					       DOM_SID **pp_sids, gid_t **pp_gids,
+					       TALLOC_CTX *mem_ctx,
+					       SAM_ACCOUNT *user,
+					       DOM_SID **pp_sids,
+					       gid_t **pp_gids,
 					       size_t *p_num_groups)
 {
 	struct ldapsam_privates *ldap_state =
@@ -2564,18 +2557,24 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	LDAPMessage *entry;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	size_t num_sids, num_gids;
+	gid_t primary_gid;
 
 	*pp_sids = NULL;
 	num_sids = 0;
 
-	escape_name = escape_ldap_string_alloc(username);
+	if (!sid_to_gid(pdb_get_group_sid(user), &primary_gid)) {
+		DEBUG(1, ("sid_to_gid failed for user's primary group\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	escape_name = escape_ldap_string_alloc(pdb_get_username(user));
 
 	if (escape_name == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	pstr_sprintf(filter, "(&(objectClass=posixGroup)"
 		     "(|(memberUid=%s)(gidNumber=%d)))",
-		     username, primary_gid);
+		     escape_name, primary_gid);
 
 	rc = smbldap_search(conn, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &msg);
@@ -2591,11 +2590,11 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	/* We need to add the primary group as the first gid/sid */
 
-	add_gid_to_array_unique(NULL, primary_gid, pp_gids, &num_gids);
+	add_gid_to_array_unique(mem_ctx, primary_gid, pp_gids, &num_gids);
 
 	/* This sid will be replaced later */
 
-	add_sid_to_array_unique(NULL, &global_sid_NULL, pp_sids, &num_sids);
+	add_sid_to_array_unique(mem_ctx, &global_sid_NULL, pp_sids, &num_sids);
 
 	for (entry = ldap_first_entry(conn->ldap_struct, msg);
 	     entry != NULL;
@@ -2627,13 +2626,16 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (gid == primary_gid) {
 			sid_copy(&(*pp_sids)[0], &sid);
 		} else {
-			add_gid_to_array_unique(NULL, gid, pp_gids, &num_gids);
-			add_sid_to_array_unique(NULL, &sid, pp_sids, &num_sids);
+			add_gid_to_array_unique(mem_ctx, gid, pp_gids,
+						&num_gids);
+			add_sid_to_array_unique(mem_ctx, &sid, pp_sids,
+						&num_sids);
 		}
 	}
 
 	if (sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
-		DEBUG(3, ("primary group of [%s] not found\n", username));
+		DEBUG(3, ("primary group of [%s] not found\n",
+			  pdb_get_username(user)));
 		goto done;
 	}
 

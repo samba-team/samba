@@ -212,7 +212,13 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if((group_c = *lp_force_group(snum))) {
-		BOOL is_guest = False;
+
+		token = dup_nt_token(NULL, token);
+		if (token == NULL) {
+			DEBUG(0, ("dup_nt_token failed\n"));
+			return False;
+		}
+		must_free_token = True;
 
 		if(group_c == '+') {
 
@@ -227,28 +233,14 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 			for (i = 0; i < current_user.ngroups; i++) {
 				if (current_user.groups[i] == conn->gid) {
 					gid = conn->gid;
+					gid_to_sid(&token->user_sids[1], gid);
 					break;
 				}
 			}
 		} else {
 			gid = conn->gid;
+			gid_to_sid(&token->user_sids[1], gid);
 		}
-
-		/*
-		 * We've changed the group list in the token - we must
-		 * re-create it.
-		 */
-
-		if (vuser && vuser->guest)
-			is_guest = True;
-
-		token = create_nt_token(uid, gid, current_user.ngroups,
-					current_user.groups, is_guest);
-		if (!token) {
-			DEBUG(1,("change_to_user: create_nt_token failed!\n"));
-			return False;
-		}
-		must_free_token = True;
 	}
 	
 	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups,

@@ -530,9 +530,9 @@ static NTSTATUS context_enum_group_members(struct pdb_context *context,
 
 static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
 					       TALLOC_CTX *mem_ctx,
-					       const char *username,
-					       gid_t primary_gid,
-					       DOM_SID **pp_sids, gid_t **pp_gids,
+					       SAM_ACCOUNT *user,
+					       DOM_SID **pp_sids,
+					       gid_t **pp_gids,
 					       size_t *p_num_groups)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -543,8 +543,8 @@ static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->
-		enum_group_memberships(context->pdb_methods, mem_ctx, username,
-				       primary_gid, pp_sids, pp_gids, p_num_groups);
+		enum_group_memberships(context->pdb_methods, mem_ctx, user,
+				       pp_sids, pp_gids, p_num_groups);
 }
 
 static NTSTATUS context_find_alias(struct pdb_context *context,
@@ -1354,8 +1354,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 						   pp_member_rids, p_num_members);
 }
 
-NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx,
-				    const char *username, gid_t primary_gid,
+NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user,
 				    DOM_SID **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups)
 {
@@ -1366,7 +1365,7 @@ NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx,
 	}
 
 	return pdb_context->pdb_enum_group_memberships(
-		pdb_context, mem_ctx, username, primary_gid,
+		pdb_context, mem_ctx, user,
 		pp_sids, pp_gids, p_num_groups);
 }
 
@@ -2009,65 +2008,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 		return True;
 	}
 
-	if (rid == DOMAIN_USER_RID_ADMIN) {
-		*psid_name_use = SID_NAME_USER;
-		*name = talloc_strdup(mem_ctx, "Administrator");
-		return True;
-	}
-
-	if (algorithmic_pdb_rid_is_user(rid)) {
-		uid_t uid;
-		struct passwd *pw = NULL;
-
-		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));
-
-       		uid = algorithmic_pdb_user_rid_to_uid(rid);
-		pw = sys_getpwuid( uid );
-		
-		DEBUG(5,("lookup_global_sam_rid: looking up uid %u %s\n",
-			 (unsigned int)uid, pw ? "succeeded" : "failed" ));
-			 
-		if ( !pw ) {
-			*name  = talloc_asprintf(mem_ctx, "unix_user.%u",
-						 (unsigned int)uid);
-		} else {
-			*name = talloc_strdup(mem_ctx, pw->pw_name );
-		}
-			
-		DEBUG(5,("lookup_global_sam_rid: found user %s for rid %u\n",
-			 *name, (unsigned int)rid ));
-			 
-		*psid_name_use = SID_NAME_USER;
-		
-		return ( pw != NULL );
-	} else {
-		gid_t gid;
-		struct group *gr; 
-			
-		DEBUG(5, ("assuming RID %u is a group\n", (unsigned)rid));
-
-		gid = pdb_group_rid_to_gid(rid);
-		gr = getgrgid(gid);
-			
-		DEBUG(5,("lookup_global_sam_rid: looking up gid %u %s\n",
-			 (unsigned int)gid, gr ? "succeeded" : "failed" ));
-			
-		if( !gr ) {
-			*name = talloc_asprintf(mem_ctx, "unix_group.%u",
-					       (unsigned int)gid);
-		} else {
-			*name = talloc_strdup(mem_ctx, gr->gr_name);
-		}
-			
-		DEBUG(5,("lookup_global_sam_rid: found group %s for rid %u\n",
-			 *name, (unsigned int)rid ));
-		
-		/* assume algorithmic groups are domain global groups */
-		
-		*psid_name_use = SID_NAME_DOM_GRP;
-		
-		return ( gr != NULL );
-	}
+	return False;
 }
 
 NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,

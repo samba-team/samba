@@ -132,7 +132,7 @@ static void gain_root(void)
  Get the list of current groups.
 ****************************************************************************/
 
-int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
+static int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i;
 	gid_t grp;
@@ -180,51 +180,6 @@ fail:
 	SAFE_FREE(groups);
 	restore_re_gid();
 	return -1;
-}
-
-/****************************************************************************
- Initialize the groups a user belongs to.
-****************************************************************************/
-
-BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
-{
-	struct sec_ctx *prev_ctx_p;
-	BOOL result = True;
-
-	if (non_root_mode()) {
-		return True;
-	}
-
-	become_root();
-
-	/* Call initgroups() to get user groups */
-
-	if (winbind_initgroups(user,gid) == -1) {
-		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
-		if (getuid() == 0) {
-			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
-				DEBUG(0,("This is probably a problem with the account %s\n", user));
-			}
-		}
-		result = False;
-		goto done;
-	}
-
-	/* Store groups in previous user's security context.  This will
-	   always work as the become_root() call increments the stack
-	   pointer. */
-
-	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx - 1];
-
-	SAFE_FREE(prev_ctx_p->groups);
-	prev_ctx_p->ngroups = 0;
-
-	get_current_groups(gid, &prev_ctx_p->ngroups, &prev_ctx_p->groups);
-
- done:
-	unbecome_root();
-
-	return result;
 }
 
 /****************************************************************************

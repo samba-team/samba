@@ -1971,7 +1971,6 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
-	struct passwd *passwd;
 	DOM_SID  sid;
 	DOM_SID *sids;
 	DOM_GID dom_gid;
@@ -2011,34 +2010,28 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	if (!sid_check_is_in_our_domain(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	pdb_init_sam(&sam_pass);
+	pdb_init_sam_talloc(p->mem_ctx, &sam_pass);
 	
 	become_root();
 	ret = pdb_getsampwsid(sam_pass, &sid);
 	unbecome_root();
 
-	if (ret == False) {
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	passwd = getpwnam_alloc(p->mem_ctx, pdb_get_username(sam_pass));
-	if (passwd == NULL) {
-		pdb_free_sam(&sam_pass);
+	if (!ret) {
+		DEBUG(10, ("pdb_getsampwsid failed for %s\n",
+			   sid_string_static(&sid)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	sids = NULL;
 
 	become_root();
-	result = pdb_enum_group_memberships(p->mem_ctx,
-					    pdb_get_username(sam_pass),
-					    passwd->pw_gid,
+	result = pdb_enum_group_memberships(p->mem_ctx, sam_pass,
 					    &sids, &unix_gids, &num_groups);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(result)) {
-		pdb_free_sam(&sam_pass);
+		DEBUG(10, ("pdb_enum_group_memberships failed for %s\n",
+			   sid_string_static(&sid)));
 		return result;
 	}
 
@@ -2057,8 +2050,6 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	pdb_free_sam(&sam_pass);
 
 	dom_gid.g_rid = primary_group_rid;
 

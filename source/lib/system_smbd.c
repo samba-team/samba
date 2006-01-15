@@ -147,9 +147,9 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	return retval;
 }
 
-static BOOL getgroups_user(TALLOC_CTX *mem_ctx, const char *user,
-			   gid_t primary_gid,
-			   gid_t **ret_groups, size_t *p_ngroups)
+BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
+			 gid_t primary_gid,
+			 gid_t **ret_groups, size_t *p_ngroups)
 {
 	size_t ngrp;
 	int max_grp;
@@ -201,16 +201,21 @@ static BOOL getgroups_user(TALLOC_CTX *mem_ctx, const char *user,
 
 NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 					    TALLOC_CTX *mem_ctx,
-					    const char *username,
-					    gid_t primary_gid,
+					    SAM_ACCOUNT *user,
 					    DOM_SID **pp_sids,
 					    gid_t **pp_gids,
 					    size_t *p_num_groups)
 {
 	size_t i;
+	gid_t gid;
 
-	if (!getgroups_user(mem_ctx, username, primary_gid,
-			    pp_gids, p_num_groups)) {
+	if (!sid_to_gid(pdb_get_group_sid(user), &gid)) {
+		DEBUG(10, ("sid_to_gid failed\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (!getgroups_unix_user(mem_ctx, pdb_get_username(user), gid,
+				 pp_gids, p_num_groups)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
