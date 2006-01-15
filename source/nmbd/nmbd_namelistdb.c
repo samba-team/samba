@@ -82,9 +82,11 @@ void remove_name_from_namelist(struct subnet_record *subrec,
 {
 	if (subrec == wins_server_subnet) {
 		remove_name_from_wins_namelist(namerec);
-	} else {
-		subrec->namelist_changed = True;
-	}
+		return;
+	} 
+
+	subrec->namelist_changed = True;
+
 	DLIST_REMOVE(subrec->namelist, namerec);
 	SAFE_FREE(namerec->data.ip);
 	ZERO_STRUCTP(namerec);
