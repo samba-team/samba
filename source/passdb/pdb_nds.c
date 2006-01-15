@@ -779,7 +779,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			pdb_set_backend_private_data(sam_acct, result, NULL,
-						     PDB_CHANGED);
+						     methods, PDB_CHANGED);
 			talloc_autofree_ldapmsg(sam_acct->mem_ctx, result);
 		}
 
