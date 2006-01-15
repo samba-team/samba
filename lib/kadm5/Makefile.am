@@ -12,7 +12,7 @@ check_PROGRAMS = default_keys
 noinst_PROGRAMS = test_pw_quality
 
 libkadm5srv_la_LIBADD = ../krb5/libkrb5.la ../hdb/libhdb.la ../roken/libroken.la
-libkadm5clnt_la_LIBADD = ../krb5/libkrb5.la ../hdb/libhdb.la ../roken/libroken.la
+libkadm5clnt_la_LIBADD = ../krb5/libkrb5.la ../roken/libroken.la
 
 libexec_PROGRAMS = ipropd-master ipropd-slave
 
