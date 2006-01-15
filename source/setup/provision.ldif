@@ -19,7 +19,7 @@ maxPwdAge: -37108517437440
 minPwdAge: 0
 minPwdLength: 7
 modifiedCountAtLastProm: 0
-nextRid: 1001
+nextRid: 1000
 pwdProperties: 1
 pwdHistoryLength: 24
 objectSid: ${DOMAINSID}

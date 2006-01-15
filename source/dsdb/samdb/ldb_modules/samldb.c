@@ -116,8 +116,6 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 		return 1;
 	}
 
-	(*id)++;
-
 	return 0;
 }
 

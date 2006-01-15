@@ -85,7 +85,6 @@ objectGUID: ${HOSTGUID}
 userAccountControl: 532480
 localPolicyFlags: 0
 primaryGroupID: 516
-objectSid: ${DOMAINSID}-1000
 accountExpires: 9223372036854775807
 sAMAccountName: ${NETBIOSNAME}$
 sAMAccountType: 805306369
