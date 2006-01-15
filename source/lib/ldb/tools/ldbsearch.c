@@ -305,6 +305,10 @@ static int do_search(struct ldb_context *ldb,
 		ret = ldb_request(ldb, &req);
 		if (ret != LDB_SUCCESS) {
 			printf("search failed - %s\n", ldb_errstring(ldb));
+			if (req.op.search.res && req.op.search.res->controls) {
+				/* TODO: handle_control	*/
+				;	
+			}
 			return -1;
 		}
 
