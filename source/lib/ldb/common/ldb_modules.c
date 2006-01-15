@@ -123,6 +123,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		{ "objectclass", objectclass_module_init },
 		{ "paged_results", paged_results_module_init },
 		{ "server_sort", server_sort_module_init },
+		{ "asq", asq_module_init },
 #ifdef _SAMBA_BUILD_
 		{ "objectguid", objectguid_module_init },
 		{ "samldb", samldb_module_init },

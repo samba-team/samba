@@ -1,4 +1,14 @@
 ################################################
+# Start MODULE libldb_asq
+[MODULE::libldb_asq]
+SUBSYSTEM = LIBLDB
+OUTPUT_TYPE = MERGEDOBJ
+OBJ_FILES = \
+		modules/asq.o
+# End MODULE libldb_asq
+################################################
+
+################################################
 # Start MODULE libldb_sort
 [MODULE::libldb_sort]
 SUBSYSTEM = LIBLDB
