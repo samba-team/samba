@@ -526,6 +526,8 @@ function valid_netbios_name(name)
 
 function provision_validate(subobj, message)
 {
+	var lp = loadparm_init();
+
 	if (!valid_netbios_name(subobj.DOMAIN)) {
 		message("Invalid NetBIOS name for domain\n");
 		return false;
@@ -533,6 +535,19 @@ function provision_validate(subobj, message)
 
 	if (!valid_netbios_name(subobj.NETBIOSNAME)) {
 		message("Invalid NetBIOS name for host\n");
+		return false;
+	}
+
+
+	if (lp.get("workgroup") != subobj.DOMAIN) {
+		message("workgroup '%s' in smb.conf must match chosen domain '%s'\n",
+			lp.get("workgroup"), subobj.DOMAIN);
+		return false;
+	}
+
+	if (lp.get("realm") != subobj.REALM) {
+		message("realm '%s' in smb.conf must match chosen realm '%s'\n",
+			lp.get("realm"), subobj.REALM);
 		return false;
 	}
 
@@ -547,7 +562,7 @@ function join_domain(domain, netbios_name, join_type, creds, message)
 	joindom.join_type = join_type;
 	joindom.netbios_name = netbios_name;
 	if (!ctx.JoinDomain(joindom)) {
-		message("Domain Join failed: " + join.error_string);
+		message("Domain Join failed: " + joindom.error_string);
 		return false;
 	}
 	return true;
