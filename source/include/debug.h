@@ -43,6 +43,12 @@ int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 BOOL dbghdr( int level, const char *file, const char *func, int line );
 
+#if defined(sgi) && (_COMPILER_VERSION >= 730)
+#pragma mips_frequency_hint NEVER Debug1
+#pragma mips_frequency_hint NEVER dbgtext
+#pragma mips_frequency_hint NEVER dbghdr
+#endif
+
 extern XFILE *dbf;
 extern pstring debugf;
 
