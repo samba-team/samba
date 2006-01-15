@@ -181,6 +181,9 @@ static const smb_socket_option socket_options[] = {
 #ifdef SO_RCVTIMEO
   {"SO_RCVTIMEO",       SOL_SOCKET,    SO_RCVTIMEO,     0,                 OPT_INT},
 #endif
+#ifdef TCP_FASTACK
+  {"TCP_FASTACK",       IPPROTO_TCP,   TCP_FASTACK,     0,                 OPT_INT},
+#endif
   {NULL,0,0,0,0}};
 
 /****************************************************************************
