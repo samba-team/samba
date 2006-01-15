@@ -1,6 +1,11 @@
+2006-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am (libkadm5clnt.la) doesn't depend on libhdb, remove
+	dependency
+	
 2005-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* get_s.c (kadm5_s_get_principal): memset hdb_entry_ex before use
+	* memset hdb_entry_ex before use
 	
 2005-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 	

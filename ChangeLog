@@ -1,3 +1,8 @@
+2006-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* tools/krb5-config.in: Move depenency on @LIB_dbopen@ to
+	kadm-server, kerberos library doesn't depend on db-library.
+	
 2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* include/Makefile.am: Don't clean crypto headers, they now live
