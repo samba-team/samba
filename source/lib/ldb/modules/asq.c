@@ -144,7 +144,7 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 		if (exp_req == NULL)
 			return LDB_ERR_OPERATIONS_ERROR;
 		exp_req->operation = LDB_REQ_SEARCH;
-		exp_req->op.search.base = ldb_dn_explode(exp_req, el->values[i].data);
+		exp_req->op.search.base = ldb_dn_explode(exp_req, (const char *)el->values[i].data);
 		if (exp_req->op.search.base == NULL) {
 			return build_response(res, ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX);
 		}
