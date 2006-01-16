@@ -1888,7 +1888,19 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 		return NT_STATUS_OBJECT_NAME_INVALID;
 #endif /* JRATEST */
 
-	if (!lp_delete_readonly(SNUM(conn))) {
+	/* Fix for bug #3035 from SATOH Fumiyasu <fumiyas@miraclelinux.com>
+
+	  On a Windows share, a file with read-only dosmode can be opened with
+	  DELETE_ACCESS. But on a Samba share (delete readonly = no), it
+	  fails with NT_STATUS_CANNOT_DELETE error.
+
+	  This semantic causes a problem that a user can not
+	  rename a file with read-only dosmode on a Samba share
+	  from a Windows command prompt (i.e. cmd.exe, but can rename
+	  from Windows Explorer).
+	*/
+
+	if (!check_is_at_open && !lp_delete_readonly(SNUM(conn))) {
 		if (fattr & aRONLY) {
 			return NT_STATUS_CANNOT_DELETE;
 		}
