@@ -176,7 +176,7 @@ BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_us
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
 
-	return pdb_add_group_mapping_entry(&map);
+	return NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map));
 }
 
 /****************************************************************************
@@ -1009,6 +1009,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	BOOL exists;
 	GROUP_MAP map;
 	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
 
 	DEBUG(10, ("Trying to create alias %s\n", name));
 
@@ -1047,10 +1048,12 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, "");
 
-	if (!pdb_add_group_mapping_entry(&map)) {
-		DEBUG(0, ("Could not add group mapping entry for alias %s\n",
-			  name));
-		return NT_STATUS_ACCESS_DENIED;
+	status = pdb_add_group_mapping_entry(&map);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not add group mapping entry for alias %s "
+			  "(%s)\n", name, nt_errstr(status)));
+		return status;
 	}
 
 	*rid = new_rid;

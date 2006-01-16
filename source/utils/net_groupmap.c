@@ -565,7 +565,7 @@ static int net_groupmap_set(int argc, const char **argv)
 		fstrcpy(map.nt_name, ntgroup);
 		fstrcpy(map.comment, "");
 
-		if (!pdb_add_group_mapping_entry(&map)) {
+		if (!NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map))) {
 			d_printf("Could not add mapping entry for %s\n",
 				 ntgroup);
 			return -1;

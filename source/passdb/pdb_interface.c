@@ -1289,16 +1289,15 @@ BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
 			       pdb_getgrnam(pdb_context, map, name));
 }
 
-BOOL pdb_add_group_mapping_entry(GROUP_MAP *map)
+NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_add_group_mapping_entry(pdb_context, map));
+	return pdb_context->pdb_add_group_mapping_entry(pdb_context, map);
 }
 
 BOOL pdb_update_group_mapping_entry(GROUP_MAP *map)

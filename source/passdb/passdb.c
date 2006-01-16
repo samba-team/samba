@@ -402,8 +402,21 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 	 * be a newly allocated one */
 
 	if (!pdb_gid_to_sid(pwd->pw_gid, &group_sid)) {
-		DEBUG(3, ("Primary group %d of new user %s is not mapped. "
-			  "Please add the mapping.\n", pwd->pw_gid, username));
+		struct group *grp;
+
+		grp = getgrgid(pwd->pw_gid);
+		if (grp == NULL) {
+			DEBUG(1, ("Primary group %d of user %s does not "
+				  "exist.\n", pwd->pw_gid, username));
+			result = NT_STATUS_INVALID_PRIMARY_GROUP;
+			goto done;
+		}
+
+		DEBUG(1, ("\nPrimary group %s of user %s is not mapped to "
+			  "a domain group\n"
+			  "Please add a mapping with\n\n"
+			  "net sam mapunixgroup %s\n\n",
+			  grp->gr_name, username, grp->gr_name));
 		result = NT_STATUS_INVALID_PRIMARY_GROUP;
 		goto done;
 	}
@@ -955,17 +968,15 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			NTSTATUS result;
+			int tmp_debug = DEBUGLEVEL;
 
 			/* Might not exist in /etc/passwd. */
 
+			DEBUGLEVEL = 1;
 			result = pdb_init_sam_new(&sam_pass, user_name);
+			DEBUGLEVEL = tmp_debug;
 			if (NT_STATUS_EQUAL(result,
 					    NT_STATUS_INVALID_PRIMARY_GROUP)) {
-				slprintf(err_str, err_str_len-1,
-					 "Primary group of user %s is not "
-					 "mapped, please map it to a SID "
-					 "with\n'net groupmap add'\n",
-					 user_name);
 				return False;
 			}
 
