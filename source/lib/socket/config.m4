@@ -18,14 +18,16 @@ fi
 # it.
 AC_CHECK_FUNCS(connect)
 if test x"$ac_cv_func_connect" = x"no"; then
-    AC_CHECK_LIB(nsl_s, SOCKET_LIBS, printf)
-    AC_CHECK_LIB(nsl, SOCKET_LIBS, printf)
-    AC_CHECK_LIB(socket, SOCKET_LIBS, connect)
-    AC_CHECK_LIB(inet, SOCKET_LIBS, connect)
+    AC_CHECK_LIB_EXT(nsl_s, SOCKET_LIBS, connect)
+    AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, connect)
+    AC_CHECK_LIB_EXT(socket, SOCKET_LIBS, connect)
+    AC_CHECK_LIB_EXT(inet, SOCKET_LIBS, connect)
     SMB_EXT_LIB_ENABLE(SOCKET,YES)
     dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
     dnl has been cached.
-    if test x"$ac_cv_lib_ext_socket_connect" = x"yes" ||
+    if test x"$ac_cv_lib_ext_nsl_s_connect" = x"yes" ||
+       test x"$ac_cv_lib_ext_nsl_connect" = x"yes" ||
+       test x"$ac_cv_lib_ext_socket_connect" = x"yes" ||
        test x"$ac_cv_lib_ext_inet_connect" = x"yes"; then
         AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
     else
