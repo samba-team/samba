@@ -22,6 +22,10 @@
 #include "includes.h"
 #include "utils/net.h"
 
+/*
+ * Set a user's data
+ */
+
 static int net_sam_userset(int argc, const char **argv, const char *field,
 			   BOOL (*fn)(SAM_ACCOUNT *, const char *,
 				      enum pdb_value_state))
@@ -71,6 +75,8 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
+	pdb_free_sam(&sam_acct);
+
 	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
 	return 0;
 }
@@ -115,6 +121,181 @@ static int net_sam_set_workstations(int argc, const char **argv)
 {
 	return net_sam_userset(argc, argv, "workstations",
 			       pdb_set_workstations);
+}
+
+/*
+ * Set account flags
+ */
+
+static int net_sam_set_userflag(int argc, const char **argv, const char *field,
+				uint16 flag)
+{
+	SAM_ACCOUNT *sam_acct = NULL;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	const char *dom, *name;
+	NTSTATUS status;
+	uint16 acct_flags;
+
+	if ((argc != 2) || (!strequal(argv[1], "yes") &&
+			    !strequal(argv[1], "no"))) {
+		d_printf("usage: net sam set %s <user> [yes|no]\n", field);
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_printf("Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	if (type != SID_NAME_USER) {
+		d_printf("%s is a %s, not a user\n", argv[0],
+			 sid_type_lookup(type));
+		return -1;
+	}
+
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+		d_printf("Internal error\n");
+		return -1;
+	}
+
+	if (!pdb_getsampwsid(sam_acct, &sid)) {
+		d_printf("Loading user %s failed\n", argv[0]);
+		return -1;
+	}
+
+	acct_flags = pdb_get_acct_ctrl(sam_acct);
+
+	if (strequal(argv[1], "yes")) {
+		acct_flags |= flag;
+	} else {
+		acct_flags &= ~flag;
+	}
+
+	pdb_set_acct_ctrl(sam_acct, acct_flags, PDB_CHANGED);
+
+	status = pdb_update_sam_account(sam_acct);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Updating sam account %s failed with %s\n",
+			 argv[0], nt_errstr(status));
+		return -1;
+	}
+
+	pdb_free_sam(&sam_acct);
+
+	d_printf("Updated flag %s for %s\\%s to %s\n", field, dom, name,
+		 argv[1]);
+	return 0;
+}
+
+static int net_sam_set_disabled(int argc, const char **argv)
+{
+	return net_sam_set_userflag(argc, argv, "disabled", ACB_DISABLED);
+}
+
+static int net_sam_set_pwnotreq(int argc, const char **argv)
+{
+	return net_sam_set_userflag(argc, argv, "pwnotreq", ACB_PWNOTREQ);
+}
+
+static int net_sam_set_autolock(int argc, const char **argv)
+{
+	return net_sam_set_userflag(argc, argv, "autolock", ACB_AUTOLOCK);
+}
+
+static int net_sam_set_pwnoexp(int argc, const char **argv)
+{
+	return net_sam_set_userflag(argc, argv, "pwnoexp", ACB_PWNOEXP);
+}
+
+/*
+ * Set a user's time field
+ */
+
+static int net_sam_set_time(int argc, const char **argv, const char *field,
+			    BOOL (*fn)(SAM_ACCOUNT *, time_t,
+				       enum pdb_value_state))
+{
+	SAM_ACCOUNT *sam_acct = NULL;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	const char *dom, *name;
+	NTSTATUS status;
+	time_t new_time;
+
+	if (argc != 2) {
+		d_printf("usage: net sam set %s <user> [now|YYYY-MM-DD HH:MM]\n",
+			 field);
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_printf("Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	if (type != SID_NAME_USER) {
+		d_printf("%s is a %s, not a user\n", argv[0],
+			 sid_type_lookup(type));
+		return -1;
+	}
+
+	if (strequal(argv[1], "now")) {
+		new_time = time(NULL);
+	} else {
+		struct tm tm;
+		char *end;
+		ZERO_STRUCT(tm);
+		end = strptime(argv[1], "%Y-%m-%d %H:%M", &tm);
+		new_time = mktime(&tm);
+		if ((end == NULL) || (*end != '\0') || (new_time == -1)) {
+			d_printf("Could not parse time string %s\n",
+				 argv[1]);
+			return -1;
+		}
+	}
+
+
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+		d_printf("Internal error\n");
+		return -1;
+	}
+
+	if (!pdb_getsampwsid(sam_acct, &sid)) {
+		d_printf("Loading user %s failed\n", argv[0]);
+		return -1;
+	}
+
+	if (!fn(sam_acct, new_time, PDB_CHANGED)) {
+		d_printf("Internal error\n");
+		return -1;
+	}
+
+	status = pdb_update_sam_account(sam_acct);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Updating sam account %s failed with %s\n",
+			 argv[0], nt_errstr(status));
+		return -1;
+	}
+
+	pdb_free_sam(&sam_acct);
+
+	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
+	return 0;
+}
+
+static int net_sam_set_pwdmustchange(int argc, const char **argv)
+{
+	return net_sam_set_time(argc, argv, "pwdmustchange",
+				pdb_set_pass_must_change_time);
+}
+
+static int net_sam_set_pwdcanchange(int argc, const char **argv)
+{
+	return net_sam_set_time(argc, argv, "pwdcanchange",
+				pdb_set_pass_can_change_time);
 }
 
 /*
@@ -178,14 +359,26 @@ static int net_help_sam_set(int argc, const char **argv)
 		 "  Change a user's profile path\n");
 	d_printf("net sam set description\n"
 		 "  Change a user's description\n");
-	d_printf("net sam set groupcomment\n"
-		 "  Change a group's comment\n");
 	d_printf("net sam set logonscript\n"
 		 "  Change a user's logon script\n");
 	d_printf("net sam set homedrive\n"
 		 "  Change a user's homedrive\n");
 	d_printf("net sam set workstations\n"
 		 "  Change a user's allowed workstations\n");
+	d_printf("net sam set disabled\n"
+		 "  Disable/Enable a user\n");
+	d_printf("net sam set pwnotreq\n"
+		 "  Disable/Enable the password not required flag\n");
+	d_printf("net sam set autolock\n"
+		 "  Disable/Enable a user's autolock flag\n");
+	d_printf("net sam set pwnoexp\n"
+		 "  Disable/Enable whether a user's pw does not expire\n");
+	d_printf("net sam set pwdmustchange\n"
+		 "  Set a users password must change time\n");
+	d_printf("net sam set pwdcanchange\n"
+		 "  Set a users password can change time\n");
+	d_printf("net sam set groupcomment\n"
+		 "  Change a group's comment\n");
 
 	return -1;
 }
@@ -201,6 +394,12 @@ static int net_sam_set(int argc, const char **argv)
 		{"logonscript", net_sam_set_logonscript},
 		{"homedrive", net_sam_set_homedrive},
 		{"workstations", net_sam_set_workstations},
+		{"disabled", net_sam_set_disabled},
+		{"pwnotreq", net_sam_set_pwnotreq},
+		{"autolock", net_sam_set_autolock},
+		{"pwnoexp", net_sam_set_pwnoexp},
+		{"pwdmustchange", net_sam_set_pwdmustchange},
+		{"pwdcanchange", net_sam_set_pwdcanchange},
 		{NULL, NULL}
 	};
 
