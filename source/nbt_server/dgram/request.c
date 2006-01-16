@@ -56,7 +56,7 @@ void dgram_request_handler(struct nbt_dgram_socket *dgmsock,
 */
 NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address)
 {
-	struct nbt_dgram_socket *bcast_dgmsock;
+	struct nbt_dgram_socket *bcast_dgmsock = NULL;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	struct socket_address *bcast_addr, *bind_addr;
 	NTSTATUS status;
@@ -68,35 +68,42 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* listen for broadcasts on port 138 */
-	bcast_dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
-	if (!bcast_dgmsock) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
+	if (strcmp("0.0.0.0", iface->netmask) != 0) {
+		/* listen for broadcasts on port 138 */
+		bcast_dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
+		if (!bcast_dgmsock) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	
-	bcast_addr = socket_address_from_strings(tmp_ctx, bcast_dgmsock->sock->backend_name, 
-						 iface->bcast_address, 
-						 lp_dgram_port());
+		bcast_addr = socket_address_from_strings(tmp_ctx, bcast_dgmsock->sock->backend_name, 
+							 iface->bcast_address, lp_dgram_port());
+		if (!bcast_addr) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
-	status = socket_listen(bcast_dgmsock->sock, bcast_addr, 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 iface->bcast_address, lp_dgram_port(), nt_errstr(status)));
-		return status;
-	}
-	talloc_free(bcast_addr);
+		status = socket_listen(bcast_dgmsock->sock, bcast_addr, 0, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			DEBUG(0,("Failed to bind to %s:%d - %s\n", 
+				 iface->bcast_address, lp_dgram_port(), nt_errstr(status)));
+			return status;
+		}
 	
-	dgram_set_incoming_handler(bcast_dgmsock, dgram_request_handler, iface);
-
-	bind_addr = socket_address_from_strings(tmp_ctx, bcast_dgmsock->sock->backend_name, 
-						bind_address, 
-						lp_dgram_port());
+		dgram_set_incoming_handler(bcast_dgmsock, dgram_request_handler, iface);
+	}
 
 	/* listen for unicasts on port 138 */
 	iface->dgmsock = nbt_dgram_socket_init(iface, nbtsrv->task->event_ctx);
 	if (!iface->dgmsock) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	bind_addr = socket_address_from_strings(tmp_ctx, iface->dgmsock->sock->backend_name, 
+						bind_address, lp_dgram_port());
+	if (!bind_addr) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -108,12 +115,10 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 			 bind_address, lp_dgram_port(), nt_errstr(status)));
 		return status;
 	}
-	talloc_free(bind_addr);
 
 	dgram_set_incoming_handler(iface->dgmsock, dgram_request_handler, iface);
 
 	talloc_free(tmp_ctx);
-
 
 	for (i=0;i<ARRAY_SIZE(mailslot_handlers);i++) {
 		/* note that we don't need to keep the pointer
@@ -121,10 +126,12 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 		   we need */
 		struct dgram_mailslot_handler *dgmslot;
 
-		dgmslot = dgram_mailslot_listen(bcast_dgmsock, 
+		if (bcast_dgmsock) {
+			dgmslot = dgram_mailslot_listen(bcast_dgmsock, 
 						mailslot_handlers[i].mailslot_name,
 						mailslot_handlers[i].handler, iface);
-		NT_STATUS_HAVE_NO_MEMORY(dgmslot);
+			NT_STATUS_HAVE_NO_MEMORY(dgmslot);
+		}
 
 		dgmslot = dgram_mailslot_listen(iface->dgmsock, 
 						mailslot_handlers[i].mailslot_name,
