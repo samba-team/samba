@@ -43,10 +43,15 @@ OM_uint32 gss_delete_sec_context
 {
     GSSAPI_KRB5_INIT ();
 
+    *minor_status = 0;
+
     if (output_token) {
 	output_token->length = 0;
 	output_token->value  = NULL;
     }
+
+    if (*context_handle == GSS_C_NO_CONTEXT)
+	return GSS_S_COMPLETE;
 
     HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
 
@@ -69,6 +74,5 @@ OM_uint32 gss_delete_sec_context
     memset(*context_handle, 0, sizeof(**context_handle));
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
-    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
