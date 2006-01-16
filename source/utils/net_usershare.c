@@ -145,7 +145,7 @@ static int net_usershare_add(int argc, const char **argv)
 	}
 
 	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
-		d_printf("net usershare add: share name %s contains "
+		d_fprintf(stderr, "net usershare add: share name %s contains "
                         "invalid characters (any of %s)\n",
                         sharename, INVALID_SHARENAME_CHARS);
 		SAFE_FREE(sharename);
@@ -154,7 +154,7 @@ static int net_usershare_add(int argc, const char **argv)
 
 	/* Disallow shares the same as users. */
 	if (getpwnam(sharename)) {
-		d_printf("net usershare add: share name %s is already a valid system user name\n",
+		d_fprintf(stderr, "net usershare add: share name %s is already a valid system user name\n",
 			sharename );
 		SAFE_FREE(sharename);
 		return -1;
@@ -169,7 +169,7 @@ static int net_usershare_add(int argc, const char **argv)
 
 	/* Check the directory to be shared exists. */
 	if (sys_stat(us_path, &sbuf) != 0) {
-		d_printf("net usershare add: cannot stat path %s to ensure "
+		d_fprintf(stderr, "net usershare add: cannot stat path %s to ensure "
 			"this is a directory. Error was %s\n",
 			us_path, strerror(errno) );
 		SAFE_FREE(sharename);
@@ -177,7 +177,7 @@ static int net_usershare_add(int argc, const char **argv)
 	}
 
 	if (!S_ISDIR(sbuf.st_mode)) {
-		d_printf("net usershare add: path %s is not a directory.\n",
+		d_fprintf(stderr, "net usershare add: path %s is not a directory.\n",
 			us_path );
 		SAFE_FREE(sharename);
 		return -1;
@@ -204,7 +204,7 @@ static int net_usershare_add(int argc, const char **argv)
 		const char *name;
 
 		if (pcolon == NULL) {
-			d_printf("net usershare add: malformed acl %s (missing ':').\n",
+			d_fprintf(stderr, "net usershare add: malformed acl %s (missing ':').\n",
 				pacl );
 			talloc_destroy(ctx);
 			SAFE_FREE(sharename);
@@ -219,7 +219,7 @@ static int net_usershare_add(int argc, const char **argv)
 			case 'R':
 				break;
 			default:
-				d_printf("net usershare add: malformed acl %s "
+				d_fprintf(stderr, "net usershare add: malformed acl %s "
 					"(access control must be 'r', 'f', or 'd')\n",
 					pacl );
 				talloc_destroy(ctx);
@@ -228,7 +228,7 @@ static int net_usershare_add(int argc, const char **argv)
 		}
 
 		if (pcolon[2] != ',' && pcolon[2] != '\0') {
-			d_printf("net usershare add: malformed terminating character for acl %s\n",
+			d_fprintf(stderr, "net usershare add: malformed terminating character for acl %s\n",
 				pacl );
 			talloc_destroy(ctx);
 			SAFE_FREE(sharename);
@@ -240,7 +240,7 @@ static int net_usershare_add(int argc, const char **argv)
 		if (!string_to_sid(&sid, name)) {
 			/* Convert to a SID */
 			if (!net_lookup_sid_from_name(ctx, name, &sid)) {
-				d_printf("net usershare add: cannot convert name %s to a SID.\n",
+				d_fprintf(stderr, "net usershare add: cannot convert name %s to a SID.\n",
 					name );
 				talloc_destroy(ctx);
 				SAFE_FREE(sharename);
@@ -262,7 +262,7 @@ static int net_usershare_add(int argc, const char **argv)
 	tmpfd = smb_mkstemp(full_path_tmp);
 
 	if (tmpfd == -1) {
-		d_printf("net usershare add: cannot create tmp file %s\n",
+		d_fprintf(stderr, "net usershare add: cannot create tmp file %s\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
 		SAFE_FREE(sharename);
@@ -271,7 +271,7 @@ static int net_usershare_add(int argc, const char **argv)
 
 	/* Ensure we opened the file we thought we did. */
 	if (sys_lstat(full_path_tmp, &lsbuf) != 0) {
-		d_printf("net usershare add: cannot lstat tmp file %s\n",
+		d_fprintf(stderr, "net usershare add: cannot lstat tmp file %s\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
 		SAFE_FREE(sharename);
@@ -280,7 +280,7 @@ static int net_usershare_add(int argc, const char **argv)
 
 	/* Check this is the same as the file we opened. */
 	if (sys_fstat(tmpfd, &sbuf) != 0) {
-		d_printf("net usershare add: cannot fstat tmp file %s\n",
+		d_fprintf(stderr, "net usershare add: cannot fstat tmp file %s\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
 		SAFE_FREE(sharename);
@@ -288,7 +288,7 @@ static int net_usershare_add(int argc, const char **argv)
 	}
 
 	if (!S_ISREG(sbuf.st_mode) || sbuf.st_dev != lsbuf.st_dev || sbuf.st_ino != lsbuf.st_ino) {
-		d_printf("net usershare add: tmp file %s is not a regular file ?\n",
+		d_fprintf(stderr, "net usershare add: tmp file %s is not a regular file ?\n",
 				full_path_tmp );
 		talloc_destroy(ctx);
 		SAFE_FREE(sharename);
@@ -296,7 +296,7 @@ static int net_usershare_add(int argc, const char **argv)
 	}
 	
 	if (fchmod(tmpfd, 0644) == -1) {
-		d_printf("net usershare add: failed to fchmod tmp file %s to 0644n",
+		d_fprintf(stderr, "net usershare add: failed to fchmod tmp file %s to 0644n",
 				full_path_tmp );
 		talloc_destroy(ctx);
 		SAFE_FREE(sharename);
@@ -311,7 +311,7 @@ static int net_usershare_add(int argc, const char **argv)
 	to_write = strlen(file_img);
 
 	if (write(tmpfd, file_img, to_write) != to_write) {
-		d_printf("net usershare add: failed to write %u bytes to file %s. Error was %s\n",
+		d_fprintf(stderr, "net usershare add: failed to write %u bytes to file %s. Error was %s\n",
 			(unsigned int)to_write, full_path_tmp, strerror(errno));
 		unlink(full_path_tmp);
 		talloc_destroy(ctx);
@@ -322,7 +322,7 @@ static int net_usershare_add(int argc, const char **argv)
 	/* Attempt to replace any existing share by this name. */
 	if (rename(full_path_tmp, full_path) != 0) {
 		unlink(full_path_tmp);
-		d_printf("net usershare add: failed to add share %s. Error was %s\n",
+		d_fprintf(stderr, "net usershare add: failed to add share %s. Error was %s\n",
 			sharename, strerror(errno));
 		talloc_destroy(ctx);
 		close(tmpfd);
@@ -352,7 +352,7 @@ static int net_usershare_delete(int argc, const char **argv)
 	sharename = strdup_lower(argv[0]);
 
 	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
-		d_printf("net usershare delete: share name %s contains "
+		d_fprintf(stderr, "net usershare delete: share name %s contains "
                         "invalid characters (any of %s)\n",
                         sharename, INVALID_SHARENAME_CHARS);
 		SAFE_FREE(sharename);
@@ -364,7 +364,7 @@ static int net_usershare_delete(int argc, const char **argv)
 	pstrcat(us_path, argv[0]);
 
 	if (unlink(us_path) != 0) {
-		d_printf("net usershare delete: unable to remove usershare %s. "
+		d_fprintf(stderr, "net usershare delete: unable to remove usershare %s. "
 			"Error was %s\n",
                         us_path, strerror(errno));
 		SAFE_FREE(sharename);
@@ -399,7 +399,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
 	get_basepath(basepath);
 	dp = sys_opendir(basepath);
 	if (!dp) {
-		d_printf("get_share_list: cannot open usershare directory %s. Error %s\n",
+		d_fprintf(stderr, "get_share_list: cannot open usershare directory %s. Error %s\n",
 			basepath, strerror(errno) );
 		return -1;
 	}
@@ -417,7 +417,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
 		}
 
 		if (!validate_net_name(n, INVALID_SHARENAME_CHARS, strlen(n))) {
-			d_printf("get_share_list: ignoring bad share name %s\n",n);
+			d_fprintf(stderr, "get_share_list: ignoring bad share name %s\n",n);
 			continue;
 		}
 		pstrcpy(path, basepath);
@@ -425,13 +425,13 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
 		pstrcat(path, n);
 
 		if (sys_lstat(path, &sbuf) != 0) {
-			d_printf("get_share_list: can't lstat file %s. Error was %s\n",
+			d_fprintf(stderr, "get_share_list: can't lstat file %s. Error was %s\n",
 				path, strerror(errno) );
 			continue;
 		}
 
 		if (!S_ISREG(sbuf.st_mode)) {
-			d_printf("get_share_list: file %s is not a regular file. Ignoring.\n",
+			d_fprintf(stderr, "get_share_list: file %s is not a regular file. Ignoring.\n",
 				path );
 			continue;
 		}
@@ -510,21 +510,21 @@ static int info_fn(struct file_list *fl, void *private)
 #endif
 
 	if (fd == -1) {
-		d_printf("info_fn: unable to open %s. %s\n",
+		d_fprintf(stderr, "info_fn: unable to open %s. %s\n",
                         basepath, strerror(errno) );
                 return -1;
         }
 
 	/* Paranoia... */
 	if (sys_fstat(fd, &sbuf) != 0) {
-		d_printf("info_fn: can't fstat file %s. Error was %s\n",
+		d_fprintf(stderr, "info_fn: can't fstat file %s. Error was %s\n",
 			basepath, strerror(errno) );
 		close(fd);
 		return -1;
 	}
 
 	if (!S_ISREG(sbuf.st_mode)) {
-		d_printf("info_fn: file %s is not a regular file. Ignoring.\n",
+		d_fprintf(stderr, "info_fn: file %s is not a regular file. Ignoring.\n",
 			basepath );
 		close(fd);
 		return -1;
@@ -542,7 +542,7 @@ static int info_fn(struct file_list *fl, void *private)
 				sharepath,
 				comment,
 				&psd)) {
-		d_printf("info_fn: file %s is not a well formed usershare file.\n",
+		d_fprintf(stderr, "info_fn: file %s is not a well formed usershare file.\n",
 			basepath );
 		return -1;
 	}
@@ -712,13 +712,13 @@ int net_usershare(int argc, const char **argv)
 	};
 	
 	if (lp_usershare_max_shares() == 0) {
-		d_printf("net usershare: usershares are currently disabled\n");
+		d_fprintf(stderr, "net usershare: usershares are currently disabled\n");
 		return -1;
 	}
 
 	dp = sys_opendir(lp_usershare_path());
 	if (!dp) {
-		d_printf("net usershare: cannot open usershare directory %s. Error %s\n",
+		d_fprintf(stderr, "net usershare: cannot open usershare directory %s. Error %s\n",
 			lp_usershare_path(), strerror(errno) );
 		return -1;
 	}
