@@ -1,5 +1,19 @@
-2006-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: check that der_parse_hex_heim_integer() handles odd
+	length numbers.
+
+	* der_format.c (der_parse_hex_heim_integer): make more resiliant
+	to errors, handle odd length numbers.
+
+2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* Makefile.am: Add RSAPrivateKey
+	
+	* rfc2459.asn1: Add RSAPrivateKey.
+	
+2006-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* der_copy.c (copy_heim_integer): copy the negative flag
 	
 2005-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
