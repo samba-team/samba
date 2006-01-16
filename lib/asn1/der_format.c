@@ -51,17 +51,26 @@ der_parse_hex_heim_integer (const char *p, heim_integer *data)
     }
 
     len = strlen(p);
-    if (len < 0)
+    if (len < 0) {
+	data->data = NULL;
+	data->length = 0;
 	return EINVAL;
+    }
     
-    data->length = len / 2;
+    data->length = (len / 2) + 1;
     data->data = malloc(data->length);
-    if (data->data == NULL)
+    if (data->data == NULL) {
+	data->length = 0;
 	return ENOMEM;
+    }
 
     len = hex_decode(p, data->data, data->length);
-    if (len < 0)
+    if (len < 0) {
+	free(data->data);
+	data->data = NULL;
+	data->length = 0;
 	return EINVAL;
+    }
 
     {
 	unsigned char *p = data->data;
