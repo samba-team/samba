@@ -972,7 +972,10 @@ BOOL local_password_change(const char *user_name, int local_flags,
 
 			/* Might not exist in /etc/passwd. */
 
-			DEBUGLEVEL = 1;
+			if (tmp_debug < 1) {
+				DEBUGLEVEL = 1;
+			}
+
 			result = pdb_init_sam_new(&sam_pass, user_name);
 			DEBUGLEVEL = tmp_debug;
 			if (NT_STATUS_EQUAL(result,
