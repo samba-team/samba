@@ -651,6 +651,7 @@ test_heim_int_format(void)
     ret += check_heim_integer_same("-10", "-10", &i2);
     ret += check_heim_integer_same("-00000010", "-10", &i2);
     ret += check_heim_integer_same("01", "01", &i3);
+    ret += check_heim_integer_same("1", "01", &i3);
 
     return ret;
 }
