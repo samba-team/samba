@@ -130,6 +130,7 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT", "Invalid Trust Account"},
 	{"NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT", "Invalid Trust Account"},
 	{"NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT", "Invalid Trust Account"},
+	{"NT_STATUS_ACCESS_DENIED", "Access is denied"},
 	{NULL, NULL}
 };
 
@@ -500,6 +501,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 	}
 
 	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_BACKUP_CONTROLLER");
+	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCESS_DENIED");
 
 	/* TODO: tell the min pwd length ? */
 	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PWD_TOO_SHORT");
