@@ -1429,42 +1429,39 @@ BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 							      info));
 }
 
-BOOL pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_add_aliasmem(pdb_context, alias, member));
+	return pdb_context->pdb_add_aliasmem(pdb_context, alias, member);
 }
 
-BOOL pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_del_aliasmem(pdb_context, alias, member));
+	return pdb_context->pdb_del_aliasmem(pdb_context, alias, member);
 }
 
-BOOL pdb_enum_aliasmem(const DOM_SID *alias,
-		       DOM_SID **pp_members, size_t *p_num_members)
+NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias,
+			   DOM_SID **pp_members, size_t *p_num_members)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_enum_aliasmem(pdb_context, alias,
-						 pp_members, p_num_members));
+	return pdb_context->pdb_enum_aliasmem(pdb_context, alias,
+					      pp_members, p_num_members);
 }
 
 NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,

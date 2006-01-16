@@ -3550,6 +3550,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 
 NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
 {
+	NTSTATUS status;
 	size_t i;
 	size_t num_sids = 0;
 	DOM_SID2 *sid;
@@ -3570,8 +3571,11 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
 
-	if (!pdb_enum_aliasmem(&alias_sid, &sids, &num_sids))
-		return NT_STATUS_NO_SUCH_ALIAS;
+	status = pdb_enum_aliasmem(&alias_sid, &sids, &num_sids);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_sids);	
 	if (num_sids!=0 && sid == NULL) {
@@ -3720,7 +3724,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	BOOL ret;
+	NTSTATUS ret;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -3748,11 +3752,11 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return ret;
 }
 
 /*********************************************************************
@@ -3765,7 +3769,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	BOOL ret;
+	NTSTATUS ret;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -3794,11 +3798,11 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return ret;
 }
 
 /*********************************************************************

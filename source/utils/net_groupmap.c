@@ -650,7 +650,7 @@ static int net_groupmap_addmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_add_aliasmem(&alias, &member)) {
+	if (NT_STATUS_IS_OK(pdb_add_aliasmem(&alias, &member))) {
 		d_printf("Could not add sid %s to alias %s\n",
 			 argv[1], argv[0]);
 		return -1;
@@ -670,7 +670,7 @@ static int net_groupmap_delmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_del_aliasmem(&alias, &member)) {
+	if (!NT_STATUS_IS_OK(pdb_del_aliasmem(&alias, &member))) {
 		d_printf("Could not delete sid %s from alias %s\n",
 			 argv[1], argv[0]);
 		return -1;
@@ -694,7 +694,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	members = NULL;
 	num = 0;
 
-	if (!pdb_enum_aliasmem(&alias, &members, &num)) {
+	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(&alias, &members, &num))) {
 		d_printf("Could not list members for sid %s\n", argv[0]);
 		return -1;
 	}

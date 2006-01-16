@@ -705,6 +705,7 @@ static struct functable net_func[] = {
 	{"USER", net_user},
 	{"GROUP", net_group},
 	{"GROUPMAP", net_groupmap},
+	{"SAM", net_sam},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},

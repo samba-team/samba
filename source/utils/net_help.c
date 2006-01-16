@@ -61,7 +61,7 @@ static int help_usage(int argc, const char **argv)
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
 "  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n"\
-"  CHANGESCRETPW\n");
+"  CHANGESCRETPW LOOKUP SAM\n");
 	return -1;
 }
 
@@ -223,6 +223,8 @@ static int net_usage(int argc, const char **argv)
 		 "  net lookup\t\tto lookup host name or ip address\n"\
 		 "  net user\t\tto manage users\n"\
 		 "  net group\t\tto manage groups\n"\
+		 "  net sam\t\tto edit the local user database directly\n"\
+		 "  net lookup\t\tto look up various things\n"\
 		 "  net groupmap\t\tto manage group mappings\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "  net cache\t\tto operate on cache tdb file\n"\
@@ -262,6 +264,7 @@ int net_help(int argc, const char **argv)
 		{"USER", net_help_user},
 		{"GROUP", net_help_group},
 		{"GROUPMAP", net_help_groupmap},
+		{"SAM", net_help_sam},
 		{"JOIN", net_help_join},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},

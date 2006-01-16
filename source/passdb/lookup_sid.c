@@ -880,7 +880,7 @@ static BOOL fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
  Store uid to SID mapping in cache.
 *****************************************************************/  
 
-static void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
+void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
 {
 	struct uid_sid_cache *pc;
 
@@ -952,7 +952,7 @@ static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
  Store gid to SID mapping in cache.
 *****************************************************************/  
 
-static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
+void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 {
 	struct gid_sid_cache *pc;
 
@@ -1079,9 +1079,14 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	enum SID_NAME_USE type;
 	uint32 rid;
+	gid_t gid;
 
 	if (fetch_uid_from_cache(puid, psid))
 		return True;
+
+	if (fetch_gid_from_cache(&gid, psid)) {
+		return False;
+	}
 
 	if (sid_peek_check_rid(&global_sid_Unix_Users, psid, &rid)) {
 		uid_t uid = rid;
@@ -1155,10 +1160,13 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	GROUP_MAP map;
 	union unid_t id;
 	enum SID_NAME_USE type;
-	
+	uid_t uid;
 
 	if (fetch_gid_from_cache(pgid, psid))
 		return True;
+
+	if (fetch_uid_from_cache(&uid, psid))
+		return False;
 
 	if (sid_peek_check_rid(&global_sid_Unix_Groups, psid, &rid)) {
 		gid_t gid = rid;
@@ -1195,7 +1203,7 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	}
 	
 	if (!winbind_lookup_sid(NULL, psid, NULL, NULL, &type)) {
-		DEBUG(10,("sid_to_gid: no one knows the SID %s (tried local, "
+		DEBUG(11,("sid_to_gid: no one knows the SID %s (tried local, "
 			  "then winbind)\n", sid_string_static(psid)));
 		
 		return False;
