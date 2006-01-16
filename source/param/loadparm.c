@@ -1663,6 +1663,19 @@ void lp_talloc_free(void)
 	lp_talloc = NULL;
 }
 
+TALLOC_CTX *tmp_talloc_ctx(void)
+{
+	if (lp_talloc == NULL) {
+		lp_talloc = talloc_init(NULL);
+	}
+
+	if (lp_talloc == NULL) {
+		smb_panic("Could not create temporary talloc context\n");
+	}
+
+	return lp_talloc;
+}
+
 /*******************************************************************
  Convenience routine to grab string parameters into temporary memory
  and run standard_sub_basic on them. The buffers can be written to by
