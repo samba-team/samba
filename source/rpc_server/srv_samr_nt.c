@@ -2955,7 +2955,7 @@ static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, SAM_ACCOUNT *pwd)
 		return False;
 	}
 
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2991,7 +2991,7 @@ static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, SAM_ACCOUNT *pwd)
 		return False; 
 	}
  
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3049,7 +3049,7 @@ static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, SAM_ACCOUNT *pwd)
 	copy_id20_to_sam_passwd(pwd, id20);
 
 	/* write the change out */
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3083,7 +3083,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, SAM_ACCOUNT *pwd)
 		set_unix_primary_group(pwd);
 
 	/* write the change out */
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3150,7 +3150,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID))
 		set_unix_primary_group(pwd);
 
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -3212,7 +3212,7 @@ static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
  
 	/* update the SAMBA password */
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -4511,7 +4511,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	GROUP_MAP map;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	BOOL ret;
+	NTSTATUS ret;
 	BOOL can_mod_accounts;
 	DISP_INFO *disp_info = NULL;
 
@@ -4552,11 +4552,11 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 
 	/******** End SeAddUsers BLOCK *********/
 
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return ret;
 }
 
 /*********************************************************************

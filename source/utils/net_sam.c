@@ -22,6 +22,195 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static int net_sam_userset(int argc, const char **argv, const char *field,
+			   BOOL (*fn)(SAM_ACCOUNT *, const char *,
+				      enum pdb_value_state))
+{
+	SAM_ACCOUNT *sam_acct = NULL;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	const char *dom, *name;
+	NTSTATUS status;
+
+	if (argc != 2) {
+		d_printf("usage: net sam set %s <user> <value>\n", field);
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_printf("Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	if (type != SID_NAME_USER) {
+		d_printf("%s is a %s, not a user\n", argv[0],
+			 sid_type_lookup(type));
+		return -1;
+	}
+
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+		d_printf("Internal error\n");
+		return -1;
+	}
+
+	if (!pdb_getsampwsid(sam_acct, &sid)) {
+		d_printf("Loading user %s failed\n", argv[0]);
+		return -1;
+	}
+
+	if (!fn(sam_acct, argv[1], PDB_CHANGED)) {
+		d_printf("Internal error\n");
+		return -1;
+	}
+
+	status = pdb_update_sam_account(sam_acct);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Updating sam account %s failed with %s\n",
+			 argv[0], nt_errstr(status));
+		return -1;
+	}
+
+	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
+	return 0;
+}
+
+static int net_sam_set_fullname(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "fullname",
+			       pdb_set_fullname);
+}
+
+static int net_sam_set_logonscript(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "logonscript",
+			       pdb_set_logon_script);
+}
+
+static int net_sam_set_profilepath(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "profilepath",
+			       pdb_set_profile_path);
+}
+
+static int net_sam_set_homedrive(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "homedrive",
+			       pdb_set_dir_drive);
+}
+
+static int net_sam_set_homedir(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "homedir",
+			       pdb_set_homedir);
+}
+
+static int net_sam_set_description(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "description",
+			       pdb_set_acct_desc);
+}
+
+static int net_sam_set_workstations(int argc, const char **argv)
+{
+	return net_sam_userset(argc, argv, "workstations",
+			       pdb_set_workstations);
+}
+
+/*
+ * Set a group's comment
+ */
+
+static int net_sam_set_groupcomment(int argc, const char **argv)
+{
+	GROUP_MAP map;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	const char *dom, *name;
+	NTSTATUS status;
+
+	if (argc != 2) {
+		d_printf("usage: net sam set groupcomment <group> "
+			 "<comment>\n");
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_printf("Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+	    (type != SID_NAME_WKN_GRP)) {
+		d_printf("%s is a %s, not a group\n", argv[0],
+			 sid_type_lookup(type));
+		return -1;
+	}
+
+	if (!pdb_getgrsid(&map, sid)) {
+		d_printf("Could not load group %s\n", argv[0]);
+		return -1;
+	}
+
+	fstrcpy(map.comment, argv[1]);
+
+	status = pdb_update_group_mapping_entry(&map);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Updating group mapping entry failed with %s\n",
+			 nt_errstr(status));
+		return -1;
+	}
+
+	d_printf("Updated comment of %s\\%s to %s\n", dom, name, argv[1]);
+
+	return 0;
+}
+
+static int net_help_sam_set(int argc, const char **argv)
+{
+	d_printf("net sam set homedir\n"
+		 "  Change a user's homedir\n");
+	d_printf("net sam set fullname\n"
+		 "  Change a user's fullname\n");
+	d_printf("net sam set profilepath\n"
+		 "  Change a user's profile path\n");
+	d_printf("net sam set description\n"
+		 "  Change a user's description\n");
+	d_printf("net sam set groupcomment\n"
+		 "  Change a group's comment\n");
+	d_printf("net sam set logonscript\n"
+		 "  Change a user's logon script\n");
+	d_printf("net sam set homedrive\n"
+		 "  Change a user's homedrive\n");
+	d_printf("net sam set workstations\n"
+		 "  Change a user's allowed workstations\n");
+
+	return -1;
+}
+
+static int net_sam_set(int argc, const char **argv)
+{
+	struct functable func[] = {
+		{"homedir", net_sam_set_homedir},
+		{"profilepath", net_sam_set_profilepath},
+		{"groupcomment", net_sam_set_groupcomment},
+		{"description", net_sam_set_description},
+		{"fullname", net_sam_set_fullname},
+		{"logonscript", net_sam_set_logonscript},
+		{"homedrive", net_sam_set_homedrive},
+		{"workstations", net_sam_set_workstations},
+		{NULL, NULL}
+	};
+
+	if (argc != 0) {
+		return net_run_function(argc, argv, func, net_help_sam_set);
+	}
+
+	return net_help_sam_set(argc, argv);
+}
+
 /*
  * Map a unix group to a domain group
  */
@@ -329,6 +518,7 @@ int net_sam(int argc, const char **argv)
 		{"addmem", net_sam_addmem},
 		{"delmem", net_sam_delmem},
 		{"listmem", net_sam_listmem},
+		{"set", net_sam_set},
 		{"help", net_help_sam},
 		{NULL, NULL}
 	};
@@ -340,7 +530,7 @@ int net_sam(int argc, const char **argv)
 	}
 	
 	if ( argc )
-		return net_run_function(argc, argv, func, net_help_groupmap);
+		return net_run_function(argc, argv, func, net_help_sam);
 
 	return net_help_sam( argc, argv );
 }

@@ -1194,12 +1194,12 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
 }
 
-BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
+NTSTATUS pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (sam_account_cache != NULL) {
@@ -1207,7 +1207,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 		sam_account_cache = NULL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));
+	return pdb_context->pdb_update_sam_account(pdb_context, sam_acct);
 }
 
 BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
@@ -1300,16 +1300,15 @@ NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map)
 	return pdb_context->pdb_add_group_mapping_entry(pdb_context, map);
 }
 
-BOOL pdb_update_group_mapping_entry(GROUP_MAP *map)
+NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
 	if (!pdb_context) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_update_group_mapping_entry(pdb_context, map));
+	return pdb_context->pdb_update_group_mapping_entry(pdb_context, map);
 }
 
 BOOL pdb_delete_group_mapping_entry(DOM_SID sid)

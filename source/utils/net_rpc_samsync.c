@@ -559,7 +559,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		sam_account_from_delta(sam_account, delta);
 		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n", 
 			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
-		if (!pdb_update_sam_account(sam_account)) {
+		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
 			pdb_free_sam(&sam_account);

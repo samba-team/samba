@@ -295,7 +295,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		}
 		if (updated_autolock || updated_badpw){
 			become_root();
-			if(!pdb_update_sam_account(sampass))
+			if(!NT_STATUS_IS_OK(pdb_update_sam_account(sampass)))
 				DEBUG(1, ("Failed to modify entry.\n"));
 			unbecome_root();
 		}
@@ -314,7 +314,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	if (updated_autolock || updated_badpw){
 		become_root();
-		if(!pdb_update_sam_account(sampass))
+		if(!NT_STATUS_IS_OK(pdb_update_sam_account(sampass)))
 			DEBUG(1, ("Failed to modify entry.\n"));
 		unbecome_root();
  	}

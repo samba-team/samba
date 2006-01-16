@@ -542,11 +542,8 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		}
 		
 		become_root();
-		ret = pdb_update_sam_account (sampass);
+		r_u->status = pdb_update_sam_account (sampass);
 		unbecome_root();
-	}
-	if (ret) {
-		status = NT_STATUS_OK;
 	}
 
 	/* set up the LSA Server Password Set response */

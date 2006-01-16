@@ -1186,10 +1186,7 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	if(!pdb_update_group_mapping_entry(&map))
-		return NT_STATUS_NO_SUCH_GROUP;
-
-	return r_u->status;
+	return pdb_update_group_mapping_entry(&map);
 }
 
 /***************************************************************************

@@ -1102,10 +1102,7 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 
 	fstrcpy(map.comment, info->acct_desc);
 
-	if (!pdb_update_group_mapping_entry(&map))
-		return NT_STATUS_ACCESS_DENIED;
-
-	return NT_STATUS_OK;
+	return pdb_update_group_mapping_entry(&map);
 }
 
 NTSTATUS pdb_default_add_aliasmem(struct pdb_methods *methods,
@@ -1245,7 +1242,7 @@ BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
 	fstrcpy(map.nt_name, info->acct_name);
 	fstrcpy(map.comment, info->acct_desc);
 
-	return pdb_update_group_mapping_entry(&map);
+	return NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map));
 }
 
 

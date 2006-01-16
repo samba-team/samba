@@ -62,7 +62,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 	/* Now write it into the file. */
 	become_root();
 
-	ret = pdb_update_sam_account (sampass);
+	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
 
 	unbecome_root();
 

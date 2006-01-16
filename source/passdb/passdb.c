@@ -1094,7 +1094,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
 	} else {
-		if(!pdb_update_sam_account(sam_pass)) {
+		if(!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pass))) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;

@@ -440,7 +440,7 @@ static int net_groupmap_modify(int argc, const char **argv)
 		map.gid = gid;
 	}
 
-	if ( !pdb_update_group_mapping_entry(&map) ) {
+	if ( !NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map)) ) {
 		d_printf("Could not update group database\n");
 		return -1;
 	}
@@ -599,7 +599,7 @@ static int net_groupmap_set(int argc, const char **argv)
 	if (grp != NULL)
 		map.gid = grp->gr_gid;
 
-	if (!pdb_update_group_mapping_entry(&map)) {
+	if (!NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map))) {
 		d_printf("Could not update group mapping for %s\n", ntgroup);
 		return -1;
 	}

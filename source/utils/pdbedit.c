@@ -337,7 +337,7 @@ static int fix_users_list (struct pdb_context *in)
 	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
 		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
 	
-		if (!pdb_update_sam_account(sam_pwent)) {
+		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
 			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
 		pdb_free_sam(&sam_pwent);
