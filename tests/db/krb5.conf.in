@@ -1,3 +1,5 @@
+[libdefaults]
+	default_realm = EXAMPLE.ORG
 
 [realms]
 	EXAMPLE.ORG = {
