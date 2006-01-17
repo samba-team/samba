@@ -350,7 +350,7 @@ krb_start_session(void)
 #define GROUP_NOT_MEMBER	3
 
 static int
-group_member(const char *group, const char *user)
+group_member_p(const char *group, const char *user)
 {
     struct group *g;
     int i;
@@ -392,7 +392,7 @@ verify_unix(struct passwd *login, struct passwd *su)
 #ifndef ROOT_GROUP
 #define ROOT_GROUP "wheel"
 #endif
-	int gs = group_member(ROOT_GROUP, login->pw_name);
+	int gs = group_member_p(ROOT_GROUP, login->pw_name);
 	if(gs == GROUP_NOT_MEMBER) {
 	    syslog (LOG_ERR | LOG_AUTH, "%s to %s: not in group %s",
 		    login->pw_name, su->pw_name, ROOT_GROUP);
