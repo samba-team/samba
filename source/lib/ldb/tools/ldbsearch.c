@@ -82,9 +82,16 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 			ret = sscanf(p, "%d:%d:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
 			if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
-				fprintf(stderr, "invalid paged_results control syntax\n");
+				fprintf(stderr, "invalid dirsync control syntax\n");
 				return NULL;
 			}
+
+			/* w2k3 seems to ignore the parameter,
+			 * but w2k sends a wrong cookie when this value is to small
+			 * this would cause looping forever, while getting
+			 * the same data and same cookie forever
+			 */
+			if (max_attrs == 0) max_attrs = 0x0FFFFFFF;
 
 			ctrl[i] = talloc(ctrl, struct ldb_control);
 			ctrl[i]->oid = LDB_CONTROL_DIRSYNC_OID;
@@ -93,9 +100,8 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 			control->flags = flags;
 			control->max_attributes = max_attrs;
 			if (*cookie) {
-				ldb_base64_decode(cookie);
-				control->cookie = talloc_strdup(control, cookie);
-				control->cookie_len = strlen(cookie);
+				control->cookie_len = ldb_base64_decode(cookie);
+				control->cookie = talloc_memdup(control, cookie, control->cookie_len);
 			} else {
 				control->cookie = NULL;
 				control->cookie_len = 0;
@@ -332,7 +338,7 @@ static int handle_controls_reply(struct ldb_control **reply, struct ldb_control 
 			req_control->cookie_len = rep_control->cookie_len;
 
 			cookie = ldb_base64_encode(req_control, rep_control->cookie, rep_control->cookie_len);
-			fprintf(stderr, "Debug: The cookie returned was: %s\n", cookie);
+			printf("# DIRSYNC cookie returned was:\n# %s\n", cookie);
 
 			ret = 1;
 
