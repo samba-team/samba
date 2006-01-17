@@ -37,41 +37,42 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 	NTSTATUS status;
 
 	if (argc != 2) {
-		d_printf("usage: net sam set %s <user> <value>\n", field);
+		d_fprintf(stderr, "usage: net sam set %s <user> <value>\n",
+			  field);
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
-		d_printf("Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_USER) {
-		d_printf("%s is a %s, not a user\n", argv[0],
-			 sid_type_lookup(type));
+		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
-		d_printf("Internal error\n");
+		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
 
 	if (!pdb_getsampwsid(sam_acct, &sid)) {
-		d_printf("Loading user %s failed\n", argv[0]);
+		d_fprintf(stderr, "Loading user %s failed\n", argv[0]);
 		return -1;
 	}
 
 	if (!fn(sam_acct, argv[1], PDB_CHANGED)) {
-		d_printf("Internal error\n");
+		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
 
 	status = pdb_update_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Updating sam account %s failed with %s\n",
-			 argv[0], nt_errstr(status));
+		d_fprintf(stderr, "Updating sam account %s failed with %s\n",
+			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
@@ -139,29 +140,30 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 
 	if ((argc != 2) || (!strequal(argv[1], "yes") &&
 			    !strequal(argv[1], "no"))) {
-		d_printf("usage: net sam set %s <user> [yes|no]\n", field);
+		d_fprintf(stderr, "usage: net sam set %s <user> [yes|no]\n",
+			  field);
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
-		d_printf("Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_USER) {
-		d_printf("%s is a %s, not a user\n", argv[0],
-			 sid_type_lookup(type));
+		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
-		d_printf("Internal error\n");
+		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
 
 	if (!pdb_getsampwsid(sam_acct, &sid)) {
-		d_printf("Loading user %s failed\n", argv[0]);
+		d_fprintf(stderr, "Loading user %s failed\n", argv[0]);
 		return -1;
 	}
 
@@ -177,15 +179,15 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 
 	status = pdb_update_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Updating sam account %s failed with %s\n",
-			 argv[0], nt_errstr(status));
+		d_fprintf(stderr, "Updating sam account %s failed with %s\n",
+			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
 	pdb_free_sam(&sam_acct);
 
-	d_printf("Updated flag %s for %s\\%s to %s\n", field, dom, name,
-		 argv[1]);
+	d_fprintf(stderr, "Updated flag %s for %s\\%s to %s\n", field, dom,
+		  name, argv[1]);
 	return 0;
 }
 
@@ -225,20 +227,20 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 	time_t new_time;
 
 	if (argc != 2) {
-		d_printf("usage: net sam set %s <user> [now|YYYY-MM-DD HH:MM]\n",
-			 field);
+		d_fprintf(stderr, "usage: net sam set %s <user> "
+			  "[now|YYYY-MM-DD HH:MM]\n", field);
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
-		d_printf("Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
 	}
 
 	if (type != SID_NAME_USER) {
-		d_printf("%s is a %s, not a user\n", argv[0],
-			 sid_type_lookup(type));
+		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+			  sid_type_lookup(type));
 		return -1;
 	}
 
@@ -251,32 +253,32 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 		end = strptime(argv[1], "%Y-%m-%d %H:%M", &tm);
 		new_time = mktime(&tm);
 		if ((end == NULL) || (*end != '\0') || (new_time == -1)) {
-			d_printf("Could not parse time string %s\n",
-				 argv[1]);
+			d_fprintf(stderr, "Could not parse time string %s\n",
+				  argv[1]);
 			return -1;
 		}
 	}
 
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
-		d_printf("Internal error\n");
+		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
 
 	if (!pdb_getsampwsid(sam_acct, &sid)) {
-		d_printf("Loading user %s failed\n", argv[0]);
+		d_fprintf(stderr, "Loading user %s failed\n", argv[0]);
 		return -1;
 	}
 
 	if (!fn(sam_acct, new_time, PDB_CHANGED)) {
-		d_printf("Internal error\n");
+		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
 
 	status = pdb_update_sam_account(sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Updating sam account %s failed with %s\n",
-			 argv[0], nt_errstr(status));
+		d_fprintf(stderr, "Updating sam account %s failed with %s\n",
+			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
@@ -311,26 +313,26 @@ static int net_sam_set_groupcomment(int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2) {
-		d_printf("usage: net sam set groupcomment <group> "
-			 "<comment>\n");
+		d_fprintf(stderr, "usage: net sam set groupcomment <group> "
+			  "<comment>\n");
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &dom, &name, &sid, &type)) {
-		d_printf("Could not find name %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
 	}
 
 	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
 	    (type != SID_NAME_WKN_GRP)) {
-		d_printf("%s is a %s, not a group\n", argv[0],
-			 sid_type_lookup(type));
+		d_fprintf(stderr, "%s is a %s, not a group\n", argv[0],
+			  sid_type_lookup(type));
 		return -1;
 	}
 
 	if (!pdb_getgrsid(&map, sid)) {
-		d_printf("Could not load group %s\n", argv[0]);
+		d_fprintf(stderr, "Could not load group %s\n", argv[0]);
 		return -1;
 	}
 
@@ -339,8 +341,8 @@ static int net_sam_set_groupcomment(int argc, const char **argv)
 	status = pdb_update_group_mapping_entry(&map);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Updating group mapping entry failed with %s\n",
-			 nt_errstr(status));
+		d_fprintf(stderr, "Updating group mapping entry failed with "
+			  "%s\n", nt_errstr(status));
 		return -1;
 	}
 
@@ -423,20 +425,20 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 	uint32 rid;
 
 	if (argc != 1) {
-		d_printf("usage: net sam mapunixgroup <name>\n");
+		d_fprintf(stderr, "usage: net sam mapunixgroup <name>\n");
 		return -1;
 	}
 
 	grp = getgrnam(argv[0]);
 	if (grp == NULL) {
-		d_printf("Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
 	}
 
 	if (pdb_getgrgid(&map, grp->gr_gid)) {
-		d_printf("%s already mapped to %s (%s)\n",
-			 argv[0], map.nt_name,
-			 sid_string_static(&map.sid));
+		d_fprintf(stderr, "%s already mapped to %s (%s)\n",
+			  argv[0], map.nt_name,
+			  sid_string_static(&map.sid));
 		return -1;
 	}
 
@@ -450,21 +452,21 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 		const char *tmp = talloc_asprintf(
 			tmp_talloc_ctx(), "Unix Group %s", argv[0]);
 
-		d_printf("%s exists as %s\\%s, retrying as \"%s\"\n",
-			 grpname, dom, name, tmp);
+		d_fprintf(stderr, "%s exists as %s\\%s, retrying as \"%s\"\n",
+			  grpname, dom, name, tmp);
 		grpname = tmp;
 	}
 
 	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
 			NULL, NULL, NULL, NULL)) {
-		d_printf("\"%s\" exists, can't map it\n", argv[0]);
+		d_fprintf(stderr, "\"%s\" exists, can't map it\n", argv[0]);
 		return -1;
 	}
 
 	fstrcpy(map.nt_name, grpname);
 
 	if (!pdb_new_rid(&rid)) {
-		d_printf("Could not get a new rid\n");
+		d_fprintf(stderr, "Could not get a new rid\n");
 		return -1;
 	}
 
@@ -476,8 +478,8 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 	status = pdb_add_group_mapping_entry(&map);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Mapping group %s failed with %s\n",
-			 argv[0], nt_errstr(status));
+		d_fprintf(stderr, "Mapping group %s failed with %s\n",
+			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
@@ -497,21 +499,21 @@ static int net_sam_createlocalgroup(int argc, const char **argv)
 	uint32 rid;
 
 	if (argc != 1) {
-		d_printf("usage: net sam createlocalgroup <name>\n");
+		d_fprintf(stderr, "usage: net sam createlocalgroup <name>\n");
 		return -1;
 	}
 
 	if (!winbind_ping()) {
-		d_printf("winbind seems not to run. createlocalgroup only "
-			 "works when winbind runs.\n");
+		d_fprintf(stderr, "winbind seems not to run. createlocalgroup "
+			  "only works when winbind runs.\n");
 		return -1;
 	}
 
 	status = pdb_create_alias(argv[0], &rid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Creating %s failed with %s\n",
-			 argv[0], nt_errstr(status));
+		d_fprintf(stderr, "Creating %s failed with %s\n",
+			  argv[0], nt_errstr(status));
 		return -1;
 	}
 
@@ -532,41 +534,42 @@ static int net_sam_addmem(int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2) {
-		d_printf("usage: net sam addmem <group> <member>\n");
+		d_fprintf(stderr, "usage: net sam addmem <group> <member>\n");
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &groupdomain, &groupname, &group, &grouptype)) {
-		d_printf("Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
 			 &memberdomain, &membername, &member, &membertype)) {
-		d_printf("Could not find member %s\n", argv[1]);
+		d_fprintf(stderr, "Could not find member %s\n", argv[1]);
 		return -1;
 	}
 
 	if ((grouptype == SID_NAME_ALIAS) || (grouptype == SID_NAME_WKN_GRP)) {
 		if ((membertype != SID_NAME_USER) &&
 		    (membertype != SID_NAME_DOM_GRP)) {
-			d_printf("%s is a local group, only users and domain "
-				 "groups can be added.\n%s is a %s\n",
-				 argv[0], argv[1],
-				 sid_type_lookup(membertype));
+			d_fprintf(stderr, "%s is a local group, only users "
+				  "and domain groups can be added.\n"
+				  "%s is a %s\n", argv[0], argv[1],
+				  sid_type_lookup(membertype));
 			return -1;
 		}
 		status = pdb_add_aliasmem(&group, &member);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("Adding local group member failed with %s\n",
-				 nt_errstr(status));
+			d_fprintf(stderr, "Adding local group member failed "
+				  "with %s\n", nt_errstr(status));
 			return -1;
 		}
 	} else {
-		d_printf("Can only add members to local groups so far, %s is "
-			 "a %s\n", argv[0], sid_type_lookup(grouptype));
+		d_fprintf(stderr, "Can only add members to local groups so "
+			  "far, %s is a %s\n", argv[0],
+			  sid_type_lookup(grouptype));
 		return -1;
 	}
 
@@ -590,20 +593,21 @@ static int net_sam_delmem(int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2) {
-		d_printf("usage: net sam delmem <group> <member>\n");
+		d_fprintf(stderr, "usage: net sam delmem <group> <member>\n");
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &groupdomain, &groupname, &group, &grouptype)) {
-		d_printf("Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[1], LOOKUP_NAME_ISOLATED,
 			 &memberdomain, &membername, &member, NULL)) {
 		if (!string_to_sid(&member, argv[1])) {
-			d_printf("Could not find member %s\n", argv[1]);
+			d_fprintf(stderr, "Could not find member %s\n",
+				  argv[1]);
 			return -1;
 		}
 	}
@@ -613,13 +617,14 @@ static int net_sam_delmem(int argc, const char **argv)
 		status = pdb_del_aliasmem(&group, &member);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("Deleting local group member failed with "
-				 "%s\n", nt_errstr(status));
+			d_fprintf(stderr, "Deleting local group member failed "
+				  "with %s\n", nt_errstr(status));
 			return -1;
 		}
 	} else {
-		d_printf("Can only delete members from local groups so far, "
-			 "%s is a %s\n", argv[0], sid_type_lookup(grouptype));
+		d_fprintf(stderr, "Can only delete members from local groups "
+			  "so far, %s is a %s\n", argv[0],
+			  sid_type_lookup(grouptype));
 		return -1;
 	}
 
@@ -646,13 +651,13 @@ static int net_sam_listmem(int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 1) {
-		d_printf("usage: net sam listmem <group>\n");
+		d_fprintf(stderr, "usage: net sam listmem <group>\n");
 		return -1;
 	}
 
 	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
 			 &groupdomain, &groupname, &group, &grouptype)) {
-		d_printf("Could not find group %s\n", argv[0]);
+		d_fprintf(stderr, "Could not find group %s\n", argv[0]);
 		return -1;
 	}
 
@@ -664,8 +669,8 @@ static int net_sam_listmem(int argc, const char **argv)
 		status = pdb_enum_aliasmem(&group, &members, &num_members);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("Listing group members failed with %s\n",
-				 nt_errstr(status));
+			d_fprintf(stderr, "Listing group members failed with "
+				  "%s\n", nt_errstr(status));
 			return -1;
 		}
 
@@ -682,8 +687,8 @@ static int net_sam_listmem(int argc, const char **argv)
 			}
 		}
 	} else {
-		d_printf("Can only list local group members so far.\n"
-			 "%s is a %s\n", argv[0], sid_type_lookup(grouptype));
+		d_fprintf(stderr, "Can only list local group members so far.\n"
+			  "%s is a %s\n", argv[0], sid_type_lookup(grouptype));
 		return -1;
 	}
 
@@ -724,7 +729,8 @@ int net_sam(int argc, const char **argv)
 
 	/* we shouldn't have silly checks like this */
 	if (getuid() != 0) {
-		d_printf("You must be root to edit the SAM directly.\n");
+		d_fprintf(stderr, "You must be root to edit the SAM "
+			  "directly.\n");
 		return -1;
 	}
 	
