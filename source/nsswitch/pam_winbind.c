@@ -514,6 +514,26 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 
 	if (strequal(response.data.auth.nt_status_string, "NT_STATUS_PASSWORD_RESTRICTION")) {
 
+		/* FIXME: avoid to send multiple PAM messages after another */
+		switch (response.data.auth.reject_reason) {
+			case 0:
+				break;
+			case REJECT_REASON_TOO_SHORT:
+				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_TOO_SHORT");
+				break;
+			case REJECT_REASON_IN_HISTORY:
+				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_HISTORY_CONFLICT");
+				break;
+			case REJECT_REASON_NOT_COMPLEX:
+				_make_remark_format(pamh, PAM_ERROR_MSG, "Password does not meet complexity requirements");
+				break;
+			default:
+				_pam_log_debug(ctrl, LOG_DEBUG,
+					       "unknown password change reject reason: %d", 
+					       response.data.auth.reject_reason);
+				break;
+		}
+
 		_make_remark_format(pamh, PAM_ERROR_MSG,  
 			"Your password must be at least %d characters; "
 			"cannot repeat any of the your previous %d passwords"
@@ -526,15 +546,6 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 				"; must contain capitals, numerals or punctuation; and cannot contain your account or full name" : 
 				"");
 
-		/* FIXME: avoid to send multiple PAM messages after another */
-		if (response.data.auth.reject_reason) {
-			if (response.data.auth.reject_reason & REJECT_REASON_TOO_SHORT) {
-				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_TOO_SHORT");
-			}
-			if (response.data.auth.reject_reason & REJECT_REASON_IN_HISTORY) {
-				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_HISTORY_CONFLICT");
-			}
-		}
 	}
 
 	return ret;
@@ -907,7 +918,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 		return PAM_SUCCESS;
 	default:
 		/* we don't know anything about this return value */
-		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s'", 
+		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s')", 
 			 retval, username);
 		return PAM_SERVICE_ERR;
 	}
