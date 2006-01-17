@@ -414,6 +414,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (const void *, const void *, const void *);
 */
 #define LDB_CONTROL_ASQ_OID		"1.2.840.113556.1.4.1504"
 
+/**
+   OID for LDAPrectory Sync extension. 
+
+   This control is include in SearchRequest or SearchResponse
+   messages as part of the controls field of the LDAPMessage.
+*/
+#define LDB_CONTROL_DIRSYNC_OID		"1.2.840.113556.1.4.841"
+
 
 struct ldb_paged_control {
 	int size;
@@ -441,6 +449,13 @@ struct ldb_asq_control {
 	char *source_attribute;
 	int src_attr_len;
 	int result;
+};
+
+struct ldb_dirsync_control {
+	int flags;
+	int max_attributes;
+	int cookie_len;
+	char *cookie;
 };
 
 struct ldb_control {

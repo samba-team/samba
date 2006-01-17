@@ -71,6 +71,40 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 	ctrl = talloc_array(mem_ctx, struct ldb_control *, i + 1);
 
 	for (i = 0; control_strings[i]; i++) {
+		if (strncmp(control_strings[i], "dirsync:", 8) == 0) {
+			struct ldb_dirsync_control *control;
+			const char *p;
+			char cookie[1024];
+			int crit, flags, max_attrs, ret;
+		       
+			cookie[0] = '\0';
+			p = &(control_strings[i][8]);
+			ret = sscanf(p, "%d:%d:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
+
+			if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
+				fprintf(stderr, "invalid paged_results control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_DIRSYNC_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_dirsync_control);
+			control->flags = flags;
+			control->max_attributes = max_attrs;
+			if (*cookie) {
+				ldb_base64_decode(cookie);
+				control->cookie = talloc_strdup(control, cookie);
+				control->cookie_len = strlen(cookie);
+			} else {
+				control->cookie = NULL;
+				control->cookie_len = 0;
+			}
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
 		if (strncmp(control_strings[i], "asq:", 4) == 0) {
 			struct ldb_asq_control *control;
 			const char *p;
@@ -269,6 +303,42 @@ static int handle_controls_reply(struct ldb_control **reply, struct ldb_control 
 			continue;
 		}
 
+		if (strcmp(LDB_CONTROL_DIRSYNC_OID, reply[i]->oid) == 0) {
+			struct ldb_dirsync_control *rep_control, *req_control;
+			char *cookie;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_dirsync_control);
+			if (rep_control->cookie_len == 0) /* we are done */
+				break;
+
+			/* more processing required */
+			/* let's fill in the request control with the new cookie */
+
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_DIRSYNC_OID, request[j]->oid) == 0)
+					break;
+			}
+			/* if there's a reply control we must find a request
+			 * control matching it */
+			if (! request[j]) return -1;
+
+			req_control = talloc_get_type(request[j]->data, struct ldb_dirsync_control);
+
+			if (req_control->cookie)
+				talloc_free(req_control->cookie);
+			req_control->cookie = talloc_memdup(req_control, 
+							    rep_control->cookie,
+							    rep_control->cookie_len);
+			req_control->cookie_len = rep_control->cookie_len;
+
+			cookie = ldb_base64_encode(req_control, rep_control->cookie, rep_control->cookie_len);
+			fprintf(stderr, "Debug: The cookie returned was: %s\n", cookie);
+
+			ret = 1;
+
+			continue;
+		}
+
 		/* no controls matched, throw a warning */
 		fprintf(stderr, "Unknown reply control oid: %s\n", reply[i]->oid);
 	}
@@ -306,8 +376,8 @@ static int do_search(struct ldb_context *ldb,
 		if (ret != LDB_SUCCESS) {
 			printf("search failed - %s\n", ldb_errstring(ldb));
 			if (req.op.search.res && req.op.search.res->controls) {
-				/* TODO: handle_control	*/
-				;	
+				
+			/*	TODO: handle_control */
 			}
 			return -1;
 		}
