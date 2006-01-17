@@ -335,15 +335,15 @@ static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
 			
 			if ( !NT_STATUS_IS_OK(result) ) {
 				if ( NT_STATUS_EQUAL( result, NT_STATUS_NO_SUCH_PRIVILEGE ) ) 
-					d_printf("No such privilege exists: %s.\n", privname);
+					d_fprintf(stderr, "No such privilege exists: %s.\n", privname);
 				else
-					d_printf("Error resolving privilege display name [%s].\n", nt_errstr(result));
+					d_fprintf(stderr, "Error resolving privilege display name [%s].\n", nt_errstr(result));
 				continue;
 			}
 			
 			result = enum_accounts_for_privilege(pipe_hnd, mem_ctx, &pol, privname);
 			if (!NT_STATUS_IS_OK(result)) {
-				d_printf("Error enumerating accounts for privilege %s [%s].\n", 
+				d_fprintf(stderr, "Error enumerating accounts for privilege %s [%s].\n", 
 					privname, nt_errstr(result));
 				continue;
 			}
@@ -437,7 +437,7 @@ static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
 
  done:
 	if ( !NT_STATUS_IS_OK(result) ) {
-		d_printf("Failed to grant privileges for %s (%s)\n", 
+		d_fprintf(stderr, "Failed to grant privileges for %s (%s)\n", 
 			argv[0], nt_errstr(result));
 	}
 		
@@ -488,7 +488,7 @@ static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
 
 done:
 	if ( !NT_STATUS_IS_OK(result) ) {
-		d_printf("Failed to revoke privileges for %s (%s)", 
+		d_fprintf(stderr, "Failed to revoke privileges for %s (%s)", 
 			argv[0], nt_errstr(result));
 	}
 	

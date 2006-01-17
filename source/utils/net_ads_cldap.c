@@ -93,7 +93,7 @@ static unsigned pull_netlogon_string(char *ret, const char *ptr,
 			uint8 len = (uint8)*(ptr++);
 
 			if ((pret - ret + len + 1) >= MAX_DNS_LABEL) {
-				d_printf("DC returning too long DNS name\n");
+				d_fprintf(stderr, "DC returning too long DNS name\n");
 				return 0;
 			}
 
@@ -178,13 +178,13 @@ static int send_cldap_netlogon(int sock, const char *domain,
 	asn1_pop_tag(&data);
 
 	if (data.has_error) {
-		d_printf("Failed to build cldap netlogon at offset %d\n", (int)data.ofs);
+		d_fprintf(stderr, "Failed to build cldap netlogon at offset %d\n", (int)data.ofs);
 		asn1_free(&data);
 		return -1;
 	}
 
 	if (write(sock, data.data, data.length) != (ssize_t)data.length) {
-		d_printf("failed to send cldap query (%s)\n", strerror(errno));
+		d_fprintf(stderr, "failed to send cldap query (%s)\n", strerror(errno));
 	}
 
 	asn1_free(&data);
@@ -210,7 +210,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	ret = read(sock, blob.data, blob.length);
 
 	if (ret <= 0) {
-		d_printf("no reply received to cldap netlogon\n");
+		d_fprintf(stderr, "no reply received to cldap netlogon\n");
 		return -1;
 	}
 	blob.length = ret;
@@ -232,7 +232,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	asn1_end_tag(&data);
 
 	if (data.has_error) {
-		d_printf("Failed to parse cldap reply\n");
+		d_fprintf(stderr, "Failed to parse cldap reply\n");
 		return -1;
 	}
 
@@ -284,7 +284,7 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 
 	sock = open_udp_socket(target, ads->ldap_port);
 	if (sock == -1) {
-		d_printf("Failed to open udp socket to %s:%u\n", 
+		d_fprintf(stderr, "Failed to open udp socket to %s:%u\n", 
 			 inet_ntoa(ads->ldap_ip), 
 			 ads->ldap_port);
 		return -1;

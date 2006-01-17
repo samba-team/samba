@@ -74,7 +74,7 @@ static int net_status_sessions(int argc, const char **argv)
 			   TDB_DEFAULT, O_RDONLY, 0);
 
 	if (tdb == NULL) {
-		d_printf("%s not initialised\n", lock_path("sessionid.tdb"));
+		d_fprintf(stderr, "%s not initialised\n", lock_path("sessionid.tdb"));
 		return -1;
 	}
 
@@ -186,7 +186,7 @@ static int net_status_shares_parseable(int argc, const char **argv)
 			   TDB_DEFAULT, O_RDONLY, 0);
 
 	if (tdb == NULL) {
-		d_printf("%s not initialised\n", lock_path("sessionid.tdb"));
+		d_fprintf(stderr, "%s not initialised\n", lock_path("sessionid.tdb"));
 		return -1;
 	}
 
@@ -197,9 +197,9 @@ static int net_status_shares_parseable(int argc, const char **argv)
 			   TDB_DEFAULT, O_RDONLY, 0);
 
 	if (tdb == NULL) {
-		d_printf("%s not initialised\n", lock_path("connections.tdb"));
-		d_printf("This is normal if no SMB client has ever connected "
-			 "to your server.\n");
+		d_fprintf(stderr, "%s not initialised\n", lock_path("connections.tdb"));
+		d_fprintf(stderr, "This is normal if no SMB client has ever "
+			 "connected to your server.\n");
 		return -1;
 	}
 
@@ -226,10 +226,10 @@ static int net_status_shares(int argc, const char **argv)
 				   TDB_DEFAULT, O_RDONLY, 0);
 
 		if (tdb == NULL) {
-			d_printf("%s not initialised\n",
+			d_fprintf(stderr, "%s not initialised\n",
 				 lock_path("connections.tdb"));
-			d_printf("This is normal if no SMB client has ever "
-				 "connected to your server.\n");
+			d_fprintf(stderr, "This is normal if no SMB client has "
+				 "ever connected to your server.\n");
 			return -1;
 		}
 

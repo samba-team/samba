@@ -536,7 +536,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		
 		/* try and find the possible unix account again */
 		if ( !(passwd = Get_Pwnam(account)) ) {
-			d_printf("Could not create posix account info for '%s'\n", account);
+			d_fprintf(stderr, "Could not create posix account info for '%s'\n", account);
 			nt_ret = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
@@ -1847,7 +1847,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	const char *add_ldif = "/tmp/add.ldif", *mod_ldif = "/tmp/mod.ldif";
 	FILE *add_fd, *mod_fd, *ldif_fd;
 	char sys_cmd[1024];
-	int num_alloced = 0, g_index = 0, a_index = 0;
+	int num_alloced = 0, g_index = 0, a_index = 0, sys_cmd_result;
 
 	/* Set up array for mapping accounts to groups */
 	/* Array element is the group rid */
@@ -2068,7 +2068,12 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		fflush(ldif_fd);
 	}
 	pstr_sprintf(sys_cmd, "cat %s >> %s", add_ldif, ldif_file);
-	system(sys_cmd);
+	sys_cmd_result = system(sys_cmd);
+	if (sys_cmd_result) {
+		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
+			sys_cmd, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 	if (db_type == SAM_DATABASE_DOMAIN) {
 		fprintf(ldif_fd,
 			"# SAM_DATABASE_DOMAIN: MODIFY ENTITIES\n");
@@ -2083,11 +2088,21 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		fflush(ldif_fd);
 	}
 	pstr_sprintf(sys_cmd, "cat %s >> %s", mod_ldif, ldif_file);
-	system(sys_cmd);
+	sys_cmd_result = system(sys_cmd);
+	if (sys_cmd_result) {
+		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
+			sys_cmd, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Delete the temporary ldif files */
 	pstr_sprintf(sys_cmd, "rm -f %s %s", add_ldif, mod_ldif);
-	system(sys_cmd);
+	sys_cmd_result = system(sys_cmd);
+	if (sys_cmd_result) {
+		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
+			sys_cmd, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Close the ldif file */
 	fclose(ldif_fd);
@@ -2154,11 +2169,11 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to fetch domain database: %s\n",
+		d_fprintf(stderr, "Failed to fetch domain database: %s\n",
 			 nt_errstr(result));
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED))
-			d_printf("Perhaps %s is a Windows 2000 native mode "
-				 "domain?\n", domain_name);
+			d_fprintf(stderr, "Perhaps %s is a Windows 2000 native "
+				 "mode domain?\n", domain_name);
 		goto fail;
 	}
 
@@ -2170,7 +2185,7 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to fetch builtin database: %s\n",
+		d_fprintf(stderr, "Failed to fetch builtin database: %s\n",
 			 nt_errstr(result));
 		goto fail;
 	}

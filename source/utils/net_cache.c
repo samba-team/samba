@@ -64,7 +64,7 @@ static void delete_cache_entry(const char* keystr, const char* datastr,
                                const time_t timeout, void* dptr)
 {
 	if (!gencache_del(keystr))
-		d_printf("Couldn't delete entry! key = %s\n", keystr);
+		d_fprintf(stderr, "Couldn't delete entry! key = %s\n", keystr);
 }
 
 
@@ -147,7 +147,7 @@ static int net_cache_add(int argc, const char **argv)
 	/* parse timeout given in command line */
 	timeout = parse_timeout(timeout_str);
 	if (!timeout) {
-		d_printf("Invalid timeout argument.\n");
+		d_fprintf(stderr, "Invalid timeout argument.\n");
 		return -1;
 	}
 	
@@ -157,7 +157,7 @@ static int net_cache_add(int argc, const char **argv)
 		return 0;
 	}
 	
-	d_printf("Entry couldn't be added. Perhaps there's already such a key.\n");
+	d_fprintf(stderr, "Entry couldn't be added. Perhaps there's already such a key.\n");
 	gencache_shutdown();
 	return -1;
 }
@@ -187,7 +187,7 @@ static int net_cache_set(int argc, const char **argv)
 	/* parse timeout given in command line */
 	timeout = parse_timeout(timeout_str);
 	if (!timeout) {
-		d_printf("Invalid timeout argument.\n");
+		d_fprintf(stderr, "Invalid timeout argument.\n");
 		return -1;
 	}
 	
@@ -197,7 +197,7 @@ static int net_cache_set(int argc, const char **argv)
 		return 0;
 	}
 
-	d_printf("Entry couldn't be set. Perhaps there's no such a key.\n");
+	d_fprintf(stderr, "Entry couldn't be set. Perhaps there's no such a key.\n");
 	gencache_shutdown();
 	return -1;
 }
@@ -223,7 +223,7 @@ static int net_cache_del(int argc, const char **argv)
 		return 0;
 	}
 
-	d_printf("Couldn't delete specified entry\n");
+	d_fprintf(stderr, "Couldn't delete specified entry\n");
 	return -1;
 }
 
@@ -250,7 +250,7 @@ static int net_cache_get(int argc, const char **argv)
 		return 0;
 	}
 
-	d_printf("Failed to find entry\n");
+	d_fprintf(stderr, "Failed to find entry\n");
 	return -1;
 }
 
