@@ -221,7 +221,7 @@ static krb5_error_code setpw_result_code_string(krb5_context context,
         return (0);
 }
 
-krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code) 
+ krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code) 
 {
 	switch(res_code) {
 		case KRB5_KPASSWD_ACCESSDENIED:

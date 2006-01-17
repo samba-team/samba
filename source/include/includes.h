@@ -1514,6 +1514,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts, const char *ccname);
 PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *new_start_time);
+krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
 #endif /* HAVE_KRB5 */
 
 
