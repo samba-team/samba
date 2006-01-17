@@ -4908,7 +4908,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
 	/* if bWINSsupport is true and we are in the client            */
 	if (in_client && Globals.bWINSsupport) {
-		lp_do_parameter(GLOBAL_SECTION_SNUM, "wins server", "126.0.0.1");
+		lp_do_parameter(GLOBAL_SECTION_SNUM, "wins server", "127.0.0.1");
 	}
 
 	init_iconv();
