@@ -1,3 +1,8 @@
+2006-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* su.c (group_member_p): rename from group_member to avoid name
+	pollution from glibc headers. Fixed based on report from David Love.
+
 2006-01-12  Johan Danielsson  <joda@pdc.kth.se>
 
 	* su.c: fix reversed logic when deciding to print tty or not
