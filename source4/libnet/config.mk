@@ -7,14 +7,16 @@ RELEASE_VERSION = 1
 DESCRIPTION = User-friendly access to Samba interfaces
 PRIVATE_PROTO_HEADER = libnet_proto.h
 PUBLIC_HEADERS = libnet.h libnet_join.h libnet_lookup.h libnet_passwd.h \
-				 libnet_rpc.h libnet_share.h libnet_time.h libnet_user.h \
-				 libnet_vampire.h userinfo.h userman.h
+				 libnet_rpc.h libnet_share.h libnet_time.h \
+				 libnet_user.h libnet_site.h libnet_vampire.h \
+				 userinfo.h userman.h
 OBJ_FILES = \
 		libnet.o \
 		libnet_passwd.o \
 		libnet_time.o \
 		libnet_rpc.o \
 		libnet_join.o \
+		libnet_site.o \
 		libnet_vampire.o \
 		libnet_samdump.o \
 		libnet_samdump_keytab.o \
