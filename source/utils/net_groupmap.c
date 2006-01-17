@@ -650,7 +650,7 @@ static int net_groupmap_addmem(int argc, const char **argv)
 		return -1;
 	}
 
-	if (NT_STATUS_IS_OK(pdb_add_aliasmem(&alias, &member))) {
+	if (!NT_STATUS_IS_OK(pdb_add_aliasmem(&alias, &member))) {
 		d_printf("Could not add sid %s to alias %s\n",
 			 argv[1], argv[0]);
 		return -1;
