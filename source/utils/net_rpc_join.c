@@ -202,14 +202,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
-		d_printf("Creation of workstation account failed\n");
+		d_fprintf(stderr, "Creation of workstation account failed\n");
 
 		/* If NT_STATUS_ACCESS_DENIED then we have a valid
 		   username/password combo but the user does not have
 		   administrator access. */
 
 		if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED))
-			d_printf("User specified does not have administrator privileges\n");
+			d_fprintf(stderr, "User specified does not have administrator privileges\n");
 
 		goto done;
 	}
@@ -317,7 +317,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
 		     (sec_channel_type == SEC_CHAN_BDC) ) {
-			d_printf("Please make sure that no computer account\n"
+			d_fprintf(stderr, "Please make sure that no computer account\n"
 				 "named like this machine (%s) exists in the domain\n",
 				 global_myname());
 		}
@@ -338,7 +338,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
 		     (sec_channel_type == SEC_CHAN_BDC) ) {
-			d_printf("Please make sure that no computer account\n"
+			d_fprintf(stderr, "Please make sure that no computer account\n"
 				 "named like this machine (%s) exists in the domain\n",
 				 global_myname());
 		}

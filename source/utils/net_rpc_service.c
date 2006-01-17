@@ -40,7 +40,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 		service, SC_RIGHT_SVC_QUERY_STATUS );
 
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
 		return result;
 	}
 
@@ -110,7 +110,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 		service, (SC_RIGHT_SVC_STOP|SC_RIGHT_SVC_PAUSE_CONTINUE) );
 
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -120,7 +120,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 		control, &service_status  );
 		
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Control service request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Control service request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -162,7 +162,7 @@ static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
 
 	result = rpccli_svcctl_open_scm(pipe_hnd, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
@@ -170,7 +170,7 @@ static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
 		SVCCTL_STATE_ALL, &num_services, &services );
 	
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to enumerate services.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to enumerate services.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -219,7 +219,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_svcctl_open_scm(pipe_hnd, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
@@ -229,7 +229,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 		(SC_RIGHT_SVC_QUERY_STATUS|SC_RIGHT_SVC_QUERY_CONFIG) );
 
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -237,7 +237,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 
 	result = rpccli_svcctl_query_status(pipe_hnd, mem_ctx, &hService, &service_status  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Query status request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Query status request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -247,7 +247,7 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 
 	result = rpccli_svcctl_query_config(pipe_hnd, mem_ctx, &hService, &config  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Query config request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Query config request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 
@@ -318,7 +318,7 @@ static NTSTATUS rpc_service_stop_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_svcctl_open_scm(pipe_hnd, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
@@ -356,7 +356,7 @@ static NTSTATUS rpc_service_pause_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_svcctl_open_scm(pipe_hnd, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
@@ -394,7 +394,7 @@ static NTSTATUS rpc_service_resume_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_svcctl_open_scm(pipe_hnd, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
@@ -433,7 +433,7 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_svcctl_open_scm( pipe_hnd, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 	
@@ -443,7 +443,7 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 		servicename, SC_RIGHT_SVC_START );
 
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -451,7 +451,7 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 
 	result = rpccli_svcctl_start_service(pipe_hnd, mem_ctx, &hService, NULL, 0 );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Query status request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Query status request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
 	
@@ -460,7 +460,7 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 	if ( W_ERROR_IS_OK(result) && (state == SVCCTL_RUNNING) )
 		d_printf("Successfully started service: %s\n", servicename );
 	else
-		d_printf("Failed to start service: %s [%s]\n", servicename, dos_errstr(result) );
+		d_fprintf(stderr, "Failed to start service: %s [%s]\n", servicename, dos_errstr(result) );
 	
 done:	
 	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService  );

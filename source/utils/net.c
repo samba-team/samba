@@ -128,7 +128,7 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
 			return table[i].fn(argc-1, argv+1);
 	}
-	d_printf("No command: %s\n", argv[0]);
+	d_fprintf(stderr, "No command: %s\n", argv[0]);
 	return usage_fn(argc, argv);
 }
 
@@ -158,21 +158,21 @@ NTSTATUS connect_to_service(struct cli_state **c, struct in_addr *server_ip,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	} else {
-		d_printf("Could not connect to server %s\n", server_name);
+		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
 
 		/* Display a nicer message depending on the result */
 
 		if (NT_STATUS_V(nt_status) == 
 		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
-			d_printf("The username or password was not correct.\n");
+			d_fprintf(stderr, "The username or password was not correct.\n");
 
 		if (NT_STATUS_V(nt_status) == 
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
-			d_printf("The account was locked out.\n");
+			d_fprintf(stderr, "The account was locked out.\n");
 
 		if (NT_STATUS_V(nt_status) == 
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
-			d_printf("The account was disabled.\n");
+			d_fprintf(stderr, "The account was disabled.\n");
 
 		return nt_status;
 	}
@@ -257,7 +257,7 @@ int net_use_machine_password(void)
 	char *user_name = NULL;
 
 	if (!secrets_init()) {
-		d_printf("ERROR: Unable to open secrets database\n");
+		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
 		exit(1);
 	}
 
@@ -362,7 +362,7 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	NTSTATUS nt_status;
 
 	if (!net_find_server(flags, &server_ip, &server_name)) {
-		d_printf("\nUnable to find a suitable server\n");
+		d_fprintf(stderr, "\nUnable to find a suitable server\n");
 		return NULL;
 	}
 
@@ -409,7 +409,7 @@ static int net_join(int argc, const char **argv)
 		if (net_ads_join(argc, argv) == 0)
 			return 0;
 		else
-			d_printf("ADS join did not work, falling back to RPC...\n");
+			d_fprintf(stderr, "ADS join did not work, falling back to RPC...\n");
 	}
 	return net_rpc_join(argc, argv);
 }
@@ -431,7 +431,7 @@ static int net_changesecretpw(int argc, const char **argv)
 		trust_pw = getpass("Enter machine password: ");
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
-			    d_printf("Unable to write the machine account password in the secrets database");
+			    d_fprintf(stderr, "Unable to write the machine account password in the secrets database");
 			    return 1;
 		}
 		else {
@@ -486,7 +486,7 @@ static int net_getlocalsid(int argc, const char **argv)
 	   panic when we can't. */
 
 	if (!secrets_init()) {
-		d_printf("Unable to open secrets.tdb.  Can't fetch domain SID for name: %s\n", name);
+		d_fprintf(stderr, "Unable to open secrets.tdb.  Can't fetch domain SID for name: %s\n", name);
 		return 1;
 	}
 
@@ -536,14 +536,14 @@ static int net_getdomainsid(int argc, const char **argv)
 	get_global_sam_sid();
 
 	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
-		d_printf("Could not fetch local SID\n");
+		d_fprintf(stderr, "Could not fetch local SID\n");
 		return 1;
 	}
 	sid_to_string(sid_str, &domain_sid);
 	d_printf("SID for domain %s is: %s\n", global_myname(), sid_str);
 
 	if (!secrets_fetch_domain_sid(opt_workgroup, &domain_sid)) {
-		d_printf("Could not fetch domain SID\n");
+		d_fprintf(stderr, "Could not fetch domain SID\n");
 		return 1;
 	}
 
@@ -575,22 +575,22 @@ static int net_afs_key(int argc, const char **argv)
 	}
 
 	if (!secrets_init()) {
-		d_printf("Could not open secrets.tdb\n");
+		d_fprintf(stderr, "Could not open secrets.tdb\n");
 		return -1;
 	}
 
 	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
-		d_printf("Could not open %s\n", argv[0]);
+		d_fprintf(stderr, "Could not open %s\n", argv[0]);
 		return -1;
 	}
 
 	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
-		d_printf("Could not read keyfile\n");
+		d_fprintf(stderr, "Could not read keyfile\n");
 		return -1;
 	}
 
 	if (!secrets_store_afs_keyfile(argv[1], &keyfile)) {
-		d_printf("Could not write keyfile to secrets.tdb\n");
+		d_fprintf(stderr, "Could not write keyfile to secrets.tdb\n");
 		return -1;
 	}
 
@@ -642,7 +642,7 @@ static BOOL search_maxrid(struct pdb_search *search, const char *type,
 	uint32 i, num_entries;
 
 	if (search == NULL) {
-		d_printf("get_maxrid: Could not search %s\n", type);
+		d_fprintf(stderr, "get_maxrid: Could not search %s\n", type);
 		return False;
 	}
 
@@ -801,7 +801,7 @@ static struct functable net_func[] = {
 		case 'I':
 			opt_dest_ip = *interpret_addr2(poptGetOptArg(pc));
 			if (is_zero_ip(opt_dest_ip))
-				d_printf("\nInvalid ip address specified\n");
+				d_fprintf(stderr, "\nInvalid ip address specified\n");
 			else
 				opt_have_ip = True;
 			break;
@@ -815,7 +815,7 @@ static struct functable net_func[] = {
 			}
 			break;
 		default:
-			d_printf("\nInvalid option %s: %s\n", 
+			d_fprintf(stderr, "\nInvalid option %s: %s\n", 
 				 poptBadOption(pc, 0), poptStrerror(opt));
 			net_help(argc, argv);
 			exit(1);
