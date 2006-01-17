@@ -119,21 +119,35 @@ interface drsblobs {
 		[in] repsFromToBlob blob
 		);
 
-	typedef [public,gensize] struct {
-		[value(ndr_size_ldapControlDirSyncBlob(r, ndr->flags))] uint32 blobsize; /* just a guess! --metze */ 
-		uint32 u1;
+	typedef struct {
+		hyper h4;
+		replUpToDateVectorCtr1 uptodateness_vector;
+	} ldapControlDirSyncExtraData;
+
+	typedef [nodiscriminant,gensize] union {
+		[case(0)];
+		[default] ldapControlDirSyncExtraData data;
+	} ldapControlDirSyncExtra;
+
+	typedef struct {
+		[value(3)] uint32 u1;
 		NTTIME time;
 		uint32 u2;
 		uint32 u3;
-		uint32 u4;
+		[value(ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.data.uptodateness_vector.count, 0))] 
+			uint32 extra_length;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID guid1;
-		hyper h4;
-		replUpToDateVectorCtr1 uptodateness_vector;
+		[switch_is(extra_length)] ldapControlDirSyncExtra extra;
 	} ldapControlDirSyncBlob;
 
+	typedef [public,relative_base] struct {
+		[string,charset(DOS),value("MSDS")] uint8 msds[4];
+		[subcontext(0)] ldapControlDirSyncBlob blob;
+	} ldapControlDirSyncCookie;
+
 	void decode_ldapControlDirSync(
-		[in] ldapControlDirSyncBlob blob
+		[in] ldapControlDirSyncCookie cookie
 		);
 
 	typedef [public] struct {
