@@ -225,6 +225,56 @@ static BOOL decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 	return True;
 }
 
+static BOOL decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	DATA_BLOB cookie;
+	struct asn1_data data;
+	struct ldb_dirsync_control *ldc;
+
+	if (!asn1_load(&data, in)) {
+		return False;
+	}
+
+	ldc = talloc(mem_ctx, struct ldb_dirsync_control);
+	if (!ldc) {
+		return False;
+	}
+
+	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_read_Integer(&data, &(ldc->flags))) {
+		return False;
+	}
+	
+	if (!asn1_read_Integer(&data, &(ldc->max_attributes))) {
+		return False;
+	}
+	
+	if (!asn1_read_OctetString(&data, &cookie)) {
+		return False;
+	}
+	ldc->cookie_len = cookie.length;
+	if (ldc->cookie_len) {
+		ldc->cookie = talloc_memdup(ldc, cookie.data, cookie.length);
+
+		if (!(ldc->cookie)) {
+			return False;
+		}
+	} else {
+		ldc->cookie = NULL;
+	}
+
+	if (!asn1_end_tag(&data)) {
+		return False;
+	}
+
+	*out = ldc;
+
+	return True;
+}
+
 /* seem that this controls has 2 forms one in case it is used with
  * a Search Request and another when used ina Search Response
  */
@@ -464,12 +514,48 @@ static BOOL encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 	return True;
 }
 
+static BOOL encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	struct ldb_dirsync_control *ldc = talloc_get_type(in, struct ldb_dirsync_control);
+	struct asn1_data data;
+
+	ZERO_STRUCT(data);
+
+	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, ldc->flags)) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, ldc->max_attributes)) {
+		return False;
+	}
+
+	if (!asn1_write_OctetString(&data, ldc->cookie, ldc->cookie_len)) {
+		return False;
+	}	
+
+	if (!asn1_pop_tag(&data)) {
+		return False;
+	}
+
+	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	if (out->data == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
 struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
 	{ "1.2.840.113556.1.4.473", decode_server_sort_request, encode_server_sort_request },
 	{ "1.2.840.113556.1.4.474", decode_server_sort_response, encode_server_sort_response },
 	{ "1.2.840.113556.1.4.1504", decode_asq_control, encode_asq_control },
+	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
 	{ NULL, NULL, NULL }
 };
 
