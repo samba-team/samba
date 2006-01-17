@@ -59,7 +59,7 @@ static int net_idmap_dump(int argc, const char **argv)
 	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
 
 	if (idmap_tdb == NULL) {
-		d_printf("Could not open idmap: %s\n", argv[0]);
+		d_fprintf(stderr, "Could not open idmap: %s\n", argv[0]);
 		return -1;
 	}
 
@@ -102,7 +102,7 @@ static int net_idmap_find_max_id(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
 	}
 
 	if (idptr == NULL) {
-		d_printf("Illegal idmap entry: [%s]->[%s]\n",
+		d_fprintf(stderr, "Illegal idmap entry: [%s]->[%s]\n",
 			 key.dptr, data.dptr);
 		hwms->ok = False;
 		return -1;
@@ -132,7 +132,7 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 
 	if (!lp_idmap_uid(&hwms.user_hwm, &highest.user_hwm) ||
 	    !lp_idmap_gid(&hwms.group_hwm, &highest.group_hwm)) {
-		d_printf("idmap range missing\n");
+		d_fprintf(stderr, "idmap range missing\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -145,7 +145,7 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 	idmap_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0);
 
 	if (idmap_tdb == NULL) {
-		d_printf("Could not open idmap: %s\n", tdbfile);
+		d_fprintf(stderr, "Could not open idmap: %s\n", tdbfile);
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
@@ -161,18 +161,18 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 		 hwms.user_hwm, hwms.group_hwm);
 
 	if (hwms.user_hwm >= highest.user_hwm) {
-		d_printf("Highest UID out of uid range\n");
+		d_fprintf(stderr, "Highest UID out of uid range\n");
 		goto done;
 	}
 
 	if (hwms.group_hwm >= highest.group_hwm) {
-		d_printf("Highest GID out of gid range\n");
+		d_fprintf(stderr, "Highest GID out of gid range\n");
 		goto done;
 	}
 
 	if ((tdb_store_int32(idmap_tdb, "USER HWM", (int32)hwms.user_hwm) != 0) ||
 	    (tdb_store_int32(idmap_tdb, "GROUP HWM", (int32)hwms.group_hwm) != 0)) {
-		d_printf("Could not store HWMs\n");
+		d_fprintf(stderr, "Could not store HWMs\n");
 		goto done;
 	}
 
@@ -188,7 +188,7 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 static int net_idmap_restore(int argc, const char **argv)
 {
 	if (!idmap_init(lp_idmap_backend())) {
-		d_printf("Could not init idmap\n");
+		d_fprintf(stderr, "Could not init idmap\n");
 		return -1;
 	}
 
@@ -230,7 +230,7 @@ static int net_idmap_restore(int argc, const char **argv)
 		}
 
 		if (!NT_STATUS_IS_OK(idmap_set_mapping(&sid, id, type))) {
-			d_printf("Could not set mapping of %s %lu to sid %s\n",
+			d_fprintf(stderr, "Could not set mapping of %s %lu to sid %s\n",
 				 (type == ID_GROUPID) ? "GID" : "UID",
 				 (type == ID_GROUPID) ? (unsigned long)id.gid:
 				 (unsigned long)id.uid, 
@@ -260,14 +260,14 @@ static int net_idmap_delete(int argc, const char **argv)
 	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDWR, 0);
 
 	if (idmap_tdb == NULL) {
-		d_printf("Could not open idmap: %s\n", argv[0]);
+		d_fprintf(stderr, "Could not open idmap: %s\n", argv[0]);
 		return -1;
 	}
 
 	fstrcpy(sid, argv[1]);
 
 	if (strncmp(sid, "S-1-5-", strlen("S-1-5-")) != 0) {
-		d_printf("Can only delete SIDs, %s is does not start with "
+		d_fprintf(stderr, "Can only delete SIDs, %s is does not start with "
 			 "S-1-5-\n", sid);
 		return -1;
 	}
@@ -278,17 +278,17 @@ static int net_idmap_delete(int argc, const char **argv)
 	data = tdb_fetch(idmap_tdb, key);
 
 	if (data.dptr == NULL) {
-		d_printf("Could not find sid %s\n", argv[1]);
+		d_fprintf(stderr, "Could not find sid %s\n", argv[1]);
 		return -1;
 	}
 
 	if (tdb_delete(idmap_tdb, key) != 0) {
-		d_printf("Could not delete key %s\n", argv[1]);
+		d_fprintf(stderr, "Could not delete key %s\n", argv[1]);
 		return -1;
 	}
 
 	if (tdb_delete(idmap_tdb, data) != 0) {
-		d_printf("Could not delete key %s\n", data.dptr);
+		d_fprintf(stderr, "Could not delete key %s\n", data.dptr);
 		return -1;
 	}
 

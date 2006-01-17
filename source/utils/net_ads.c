@@ -78,7 +78,7 @@ static int net_ads_lookup(int argc, const char **argv)
 	ads_connect(ads);
 
 	if (!ads) {
-		d_printf("Didn't find the cldap server!\n");
+		d_fprintf(stderr, "Didn't find the cldap server!\n");
 		return -1;
 	} if (!ads->config.realm) {
 		ads->config.realm = CONST_DISCARD(char *, opt_target_workgroup);
@@ -108,7 +108,7 @@ static int net_ads_info(int argc, const char **argv)
 	ads_connect(ads);
 
 	if (!ads || !ads->config.realm) {
-		d_printf("Didn't find the ldap server!\n");
+		d_fprintf(stderr, "Didn't find the ldap server!\n");
 		return -1;
 	}
 
@@ -229,7 +229,7 @@ static int net_ads_workgroup(int argc, const char **argv)
 	}
 
 	if (!ADS_ERR_OK(ads_workgroup_name(ads, ctx, &workgroup))) {
-		d_printf("Failed to find workgroup for realm '%s'\n", 
+		d_fprintf(stderr, "Failed to find workgroup for realm '%s'\n", 
 			 ads->config.realm);
 		talloc_destroy(ctx);
 		ads_destroy(&ads);
@@ -295,12 +295,12 @@ static int ads_user_add(int argc, const char **argv)
 	status = ads_find_user_acct(ads, &res, argv[0]);
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("ads_user_add: %s\n", ads_errstr(status));
+		d_fprintf(stderr, "ads_user_add: %s\n", ads_errstr(status));
 		goto done;
 	}
 	
 	if (ads_count_replies(ads, res)) {
-		d_printf("ads_user_add: User %s already exists\n", argv[0]);
+		d_fprintf(stderr, "ads_user_add: User %s already exists\n", argv[0]);
 		goto done;
 	}
 
@@ -311,7 +311,7 @@ static int ads_user_add(int argc, const char **argv)
 	status = ads_add_user_acct(ads, argv[0], opt_container, opt_comment);
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("Could not add user %s: %s\n", argv[0],
+		d_fprintf(stderr, "Could not add user %s: %s\n", argv[0],
 			 ads_errstr(status));
 		goto done;
 	}
@@ -335,7 +335,7 @@ static int ads_user_add(int argc, const char **argv)
 	}
 
 	/* password didn't set, delete account */
-	d_printf("Could not add user %s.  Error setting password %s\n",
+	d_fprintf(stderr, "Could not add user %s.  Error setting password %s\n",
 		 argv[0], ads_errstr(status));
 	ads_msgfree(ads, res);
 	status=ads_find_user_acct(ads, &res, argv[0]);
@@ -373,7 +373,7 @@ static int ads_user_info(int argc, const char **argv)
 	}
 
 	if (!escaped_user) {
-		d_printf("ads_user_info: failed to escape user %s\n", argv[0]);
+		d_fprintf(stderr, "ads_user_info: failed to escape user %s\n", argv[0]);
 		ads_destroy(&ads);
 	 	return -1;
 	}
@@ -383,7 +383,7 @@ static int ads_user_info(int argc, const char **argv)
 	safe_free(searchstring);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_search: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -436,7 +436,7 @@ static int ads_user_delete(int argc, const char **argv)
 		ads_destroy(&ads);
 		return 0;
 	}
-	d_printf("Error deleting user %s: %s\n", argv[0], 
+	d_fprintf(stderr, "Error deleting user %s: %s\n", argv[0], 
 		 ads_errstr(rc));
 	ads_destroy(&ads);
 	return -1;
@@ -501,12 +501,12 @@ static int ads_group_add(int argc, const char **argv)
 	status = ads_find_user_acct(ads, &res, argv[0]);
 
 	if (!ADS_ERR_OK(status)) {
-		d_printf("ads_group_add: %s\n", ads_errstr(status));
+		d_fprintf(stderr, "ads_group_add: %s\n", ads_errstr(status));
 		goto done;
 	}
 	
 	if (ads_count_replies(ads, res)) {
-		d_printf("ads_group_add: Group %s already exists\n", argv[0]);
+		d_fprintf(stderr, "ads_group_add: Group %s already exists\n", argv[0]);
 		ads_msgfree(ads, res);
 		goto done;
 	}
@@ -521,7 +521,7 @@ static int ads_group_add(int argc, const char **argv)
 		d_printf("Group %s added\n", argv[0]);
 		rc = 0;
 	} else {
-		d_printf("Could not add group %s: %s\n", argv[0],
+		d_fprintf(stderr, "Could not add group %s: %s\n", argv[0],
 			 ads_errstr(status));
 	}
 
@@ -562,7 +562,7 @@ static int ads_group_delete(int argc, const char **argv)
 		ads_destroy(&ads);
 		return 0;
 	}
-	d_printf("Error deleting group %s: %s\n", argv[0], 
+	d_fprintf(stderr, "Error deleting group %s: %s\n", argv[0], 
 		 ads_errstr(rc));
 	ads_destroy(&ads);
 	return -1;
@@ -614,13 +614,13 @@ static int net_ads_status(int argc, const char **argv)
 
 	rc = ads_find_machine_acct(ads, &res, global_myname());
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_find_machine_acct: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_find_machine_acct: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_printf("No machine account for '%s' found\n", global_myname());
+		d_fprintf(stderr, "No machine account for '%s' found\n", global_myname());
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -650,7 +650,7 @@ static int net_ads_leave(int argc, const char **argv)
 
 	rc = ads_leave_realm(ads, global_myname());
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("Failed to delete host '%s' from the '%s' realm.\n", 
+		d_fprintf(stderr, "Failed to delete host '%s' from the '%s' realm.\n", 
 			global_myname(), ads->config.realm);
 		ads_destroy(&ads);
 		return -1;
@@ -734,13 +734,13 @@ int net_ads_join(int argc, const char **argv)
 	}
 
 	if (!*lp_realm()) {
-		d_printf("realm must be set in in smb.conf for ADS join to succeed.\n");
+		d_fprintf(stderr, "realm must be set in in smb.conf for ADS join to succeed.\n");
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (strcmp(ads->config.realm, lp_realm()) != 0) {
-		d_printf("realm of remote server (%s) and realm in smb.conf (%s) DO NOT match.  Aborting join\n", ads->config.realm, lp_realm());
+		d_fprintf(stderr, "realm of remote server (%s) and realm in smb.conf (%s) DO NOT match.  Aborting join\n", ads->config.realm, lp_realm());
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -753,7 +753,7 @@ int net_ads_join(int argc, const char **argv)
 	ads_msgfree(ads, res);
 
 	if (rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_NO_SUCH_OBJECT) {
-		d_printf("ads_join_realm: organizational unit %s does not exist (dn:%s)\n", 
+		d_fprintf(stderr, "ads_join_realm: organizational unit %s does not exist (dn:%s)\n", 
 			 org_unit, dn);
 		ads_destroy(&ads);
 		return -1;
@@ -761,34 +761,34 @@ int net_ads_join(int argc, const char **argv)
 	free(dn);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_join_realm: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}	
 
 	rc = ads_join_realm(ads, global_myname(), account_type, org_unit);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_join_realm: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	rc = ads_domain_sid(ads, &dom_sid);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));	
+		d_fprintf(stderr, "ads_domain_sid: %s\n", ads_errstr(rc));	
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
-		d_printf("asprintf failed\n");
+		d_fprintf(stderr, "asprintf failed\n");
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	rc = ads_set_machine_password(ads, machine_account, password);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_set_machine_password: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -796,7 +796,7 @@ int net_ads_join(int argc, const char **argv)
 	/* make sure we get the right workgroup */
 	
 	if ( !(ctx = talloc_init("net ads join")) ) {
-		d_printf("talloc_init() failed!\n");
+		d_fprintf(stderr, "talloc_init() failed!\n");
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -904,14 +904,14 @@ static int net_ads_printer_search(int argc, const char **argv)
 	rc = ads_find_printers(ads, &res);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_find_printer: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_find_printer: %s\n", ads_errstr(rc));
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 	 	return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_printf("No results found\n");
+		d_fprintf(stderr, "No results found\n");
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
@@ -949,14 +949,14 @@ static int net_ads_printer_info(int argc, const char **argv)
 	rc = ads_find_printer_on_server(ads, &res, printername, servername);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_find_printer_on_server: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_find_printer_on_server: %s\n", ads_errstr(rc));
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_printf("Printer '%s' not found\n", printername);
+		d_fprintf(stderr, "Printer '%s' not found\n", printername);
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
@@ -1018,7 +1018,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 					Undefined, NULL);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
-		d_printf("Unable to open a connnection to %s to obtain data "
+		d_fprintf(stderr, "Unable to open a connnection to %s to obtain data "
 			 "for %s\n", servername, printername);
 		ads_destroy(&ads);
 		return -1;
@@ -1029,7 +1029,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	ads_find_machine_acct(ads, &res, servername);
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_printf("Could not find machine account for server %s\n", 
+		d_fprintf(stderr, "Could not find machine account for server %s\n", 
 			 servername);
 		ads_destroy(&ads);
 		return -1;
@@ -1046,7 +1046,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {
-                d_printf("ads_publish_printer: %s\n", ads_errstr(rc));
+                d_fprintf(stderr, "ads_publish_printer: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
                 return -1;
         }
@@ -1082,14 +1082,14 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	rc = ads_find_printer_on_server(ads, &res, argv[0], servername);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_find_printer_on_server: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_find_printer_on_server: %s\n", ads_errstr(rc));
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_printf("Printer '%s' not found\n", argv[1]);
+		d_fprintf(stderr, "Printer '%s' not found\n", argv[1]);
 		ads_msgfree(ads, res);
 		ads_destroy(&ads);
 		return -1;
@@ -1101,7 +1101,7 @@ static int net_ads_printer_remove(int argc, const char **argv)
 	ads_memfree(ads, prt_dn);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_del_dn: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "ads_del_dn: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -1136,12 +1136,12 @@ static int net_ads_password(int argc, const char **argv)
 	ADS_STATUS ret;
 
 	if (opt_user_name == NULL || opt_password == NULL) {
-		d_printf("You must supply an administrator username/password\n");
+		d_fprintf(stderr, "You must supply an administrator username/password\n");
 		return -1;
 	}
 
 	if (argc < 1) {
-		d_printf("ERROR: You must say which username to change password for\n");
+		d_fprintf(stderr, "ERROR: You must say which username to change password for\n");
 		return -1;
 	}
 
@@ -1170,7 +1170,7 @@ static int net_ads_password(int argc, const char **argv)
 	ads_connect(ads);
     
 	if (!ads || !ads->config.realm) {
-		d_printf("Didn't find the kerberos server!\n");
+		d_fprintf(stderr, "Didn't find the kerberos server!\n");
 		return -1;
 	}
 
@@ -1185,7 +1185,7 @@ static int net_ads_password(int argc, const char **argv)
 	ret = kerberos_set_password(ads->auth.kdc_server, auth_principal, 
 				auth_password, user, new_password, ads->auth.time_offset);
 	if (!ADS_ERR_OK(ret)) {
-		d_printf("Password change failed :-( ...\n");
+		d_fprintf(stderr, "Password change failed :-( ...\n");
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -1224,7 +1224,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
 	ret = ads_change_trust_account_password(ads, host_principal);
 
 	if (!ADS_ERR_OK(ret)) {
-		d_printf("Password change failed :-( ...\n");
+		d_fprintf(stderr, "Password change failed :-( ...\n");
 		ads_destroy(&ads);
 		SAFE_FREE(host_principal);
 		return -1;
@@ -1288,7 +1288,7 @@ static int net_ads_search(int argc, const char **argv)
 			       LDAP_SCOPE_SUBTREE,
 			       ldap_exp, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("search failed: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "search failed: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}	
@@ -1348,7 +1348,7 @@ static int net_ads_dn(int argc, const char **argv)
 			       LDAP_SCOPE_BASE,
 			       "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("search failed: %s\n", ads_errstr(rc));
+		d_fprintf(stderr, "search failed: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}	
@@ -1495,7 +1495,7 @@ int net_ads(int argc, const char **argv)
 
 static int net_ads_noads(void)
 {
-	d_printf("ADS support not compiled in\n");
+	d_fprintf(stderr, "ADS support not compiled in\n");
 	return -1;
 }
 
