@@ -375,6 +375,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (const void *, const void *, const void *);
 #define LDB_CONTROL_PAGED_RESULTS_OID	"1.2.840.113556.1.4.319"
 
 /**
+   OID for notification
+
+   \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_notification_oid.asp">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_NOTIFICATION_OID	"1.2.840.113556.1.4.528"
+
+/**
    OID for extended DN
 
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_extended_dn_oid.asp">Microsoft documentation of this OID</a>

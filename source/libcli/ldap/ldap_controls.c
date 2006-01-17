@@ -60,7 +60,7 @@ static BOOL decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 		if (!asn1_read_OctetString(&data, &attr)) {
 			return False;
 		}
-		lsrc->attr_desc = talloc_strndup(lsrc, attr.data, attr.length);
+		lsrc->attr_desc = talloc_strndup(lsrc, (const char *)attr.data, attr.length);
 		if (!lsrc->attr_desc) {
 			return False;
 		}
@@ -111,7 +111,7 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 			return False;
 		}
 
-		lssc[num]->attributeName = talloc_strndup(lssc[num], attr.data, attr.length);
+		lssc[num]->attributeName = talloc_strndup(lssc[num], (const char *)attr.data, attr.length);
 		if (!lssc [num]->attributeName) {
 			return False;
 		}
@@ -120,7 +120,7 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 			if (!asn1_read_OctetString(&data, &rule)) {
 				return False;
 			}
-			lssc[num]->orderingRule = talloc_strndup(lssc[num], rule.data, rule.length);
+			lssc[num]->orderingRule = talloc_strndup(lssc[num], (const char *)rule.data, rule.length);
 			if (!lssc[num]->orderingRule) {
 				return False;
 			}
@@ -332,6 +332,15 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 	}
 
 	*out = lac;
+
+	return True;
+}
+
+static BOOL decode_notification_request(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	if (in.length != 0) {
+		return False;
+	}
 
 	return True;
 }
@@ -549,6 +558,16 @@ static BOOL encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return True;
 }
 
+static BOOL encode_notification_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	if (in) {
+		return False;
+	}
+
+	*out = data_blob(NULL, 0);
+	return True;
+}
+
 struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
@@ -556,6 +575,7 @@ struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.474", decode_server_sort_response, encode_server_sort_response },
 	{ "1.2.840.113556.1.4.1504", decode_asq_control, encode_asq_control },
 	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
+	{ "1.2.840.113556.1.4.528", decode_notification_request, encode_notification_request },
 	{ NULL, NULL, NULL }
 };
 

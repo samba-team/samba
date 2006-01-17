@@ -216,6 +216,25 @@ static struct ldb_control **parse_controls(void *mem_ctx, char **control_strings
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "notification:", 13) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][13]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				fprintf(stderr, "invalid notification control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_NOTIFICATION_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
 		/* no controls matched, throw an error */
 		fprintf(stderr, "Invalid control name\n");
 		return NULL;
