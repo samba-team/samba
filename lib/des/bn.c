@@ -40,6 +40,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <krb5-types.h>
 #include <heim_asn1.h>
