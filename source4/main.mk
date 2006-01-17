@@ -42,28 +42,28 @@ manpages: $(MANPAGES)
 everything: all
 
 showlayout: 
-	@echo "Samba will be installed into:"
-	@echo "  basedir: $(BASEDIR)"
-	@echo "  bindir:  $(BINDIR)"
-	@echo "  sbindir: $(SBINDIR)"
-	@echo "  libdir:  $(LIBDIR)"
-	@echo "  modulesdir:  $(MODULESDIR)"
-	@echo "  includedir:  $(INCLUDEDIR)"
-	@echo "  vardir:  $(VARDIR)"
-	@echo "  privatedir:  $(PRIVATEDIR)"
-	@echo "  piddir:   $(PIDDIR)"
-	@echo "  lockdir:  $(LOCKDIR)"
-	@echo "  logfilebase:  $(LOGFILEBASE)"
-	@echo "  swatdir:  $(SWATDIR)"
-	@echo "  mandir:   $(MANDIR)"
+	@echo 'Samba will be installed into:'
+	@echo '  basedir: $(BASEDIR)'
+	@echo '  bindir:  $(BINDIR)'
+	@echo '  sbindir: $(SBINDIR)'
+	@echo '  libdir:  $(LIBDIR)'
+	@echo '  modulesdir:  $(MODULESDIR)'
+	@echo '  includedir:  $(INCLUDEDIR)'
+	@echo '  vardir:  $(VARDIR)'
+	@echo '  privatedir:  $(PRIVATEDIR)'
+	@echo '  piddir:   $(PIDDIR)'
+	@echo '  lockdir:  $(LOCKDIR)'
+	@echo '  logfilebase:  $(LOGFILEBASE)'
+	@echo '  swatdir:  $(SWATDIR)'
+	@echo '  mandir:   $(MANDIR)'
 
 showflags:
-	@echo "Samba will be compiled with flags:"
-	@echo "  CFLAGS = $(CFLAGS)"
-	@echo "  LDFLAGS = $(LDFLAGS)"
-	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
-	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
-	@echo "  LIBS = $(LIBS)"
+	@echo 'Samba will be compiled with flags:'
+	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  LDFLAGS = $(LDFLAGS)'
+	@echo '  STLD_FLAGS = $(STLD_FLAGS)'
+	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
+	@echo '  LIBS = $(LIBS)'
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
