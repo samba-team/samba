@@ -1,3 +1,7 @@
+2006-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* db/krb5.conf.in: Set [libdefaults] default_realm = EXAMPLE.ORG.
+	
 2005-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* db/loaddump-db.in: Specifify explicitly that the database is in
