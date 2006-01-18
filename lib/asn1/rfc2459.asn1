@@ -251,15 +251,12 @@ id-x509-ce-subjectDirectoryAttributes OBJECT IDENTIFIER ::=  { id-x509-ce 9 }
 id-x509-ce-policyConstraints OBJECT IDENTIFIER ::=  { id-x509-ce 36 }
 id-x509-ce-extKeyUsage OBJECT IDENTIFIER ::= { id-x509-ce 37}
 id-x509-ce-cRLDistributionPoints OBJECT IDENTIFIER ::=  { id-x509-ce 31 }
-id-x509-ce-cRLNumber OBJECT IDENTIFIER ::= { id-x509-ce 20 }
 id-x509-ce-deltaCRLIndicator OBJECT IDENTIFIER ::= { id-x509-ce 27 }
 id-x509-ce-issuingDistributionPoint OBJECT IDENTIFIER ::= { id-x509-ce 28 }
-id-x509-ce-cRLReasons OBJECT IDENTIFIER ::= { id-x509-ce 21 }
 id-x509-ce-holdInstructionCode OBJECT IDENTIFIER ::= { id-x509-ce 23 }
 id-x509-ce-invalidityDate OBJECT IDENTIFIER ::= { id-x509-ce 24 }
 id-x509-ce-certificateIssuer   OBJECT IDENTIFIER ::= { id-x509-ce 29 }
 id-x509-ce-inhibitAnyPolicy OBJECT IDENTIFIER ::=  { id-x509-ce 54 }
-id-x509-ce-freshestCRL OBJECT IDENTIFIER ::=  { id-x509-ce 46 }
 
 -- rfc3279
 
@@ -315,5 +312,50 @@ DigestInfo ::= SEQUENCE {
 --	templateMajorVersion TemplateVersion,
 --	templateMinorVersion TemplateVersion OPTIONAL
 -- }
+
+
+--
+-- CRL
+-- 
+
+TBSCRLCertList ::=  SEQUENCE  {
+	version			Version OPTIONAL, -- if present, MUST be v2
+	signature		AlgorithmIdentifier,
+	issuer			Name,
+	thisUpdate		Time,
+	nextUpdate		Time OPTIONAL,
+	revokedCertificates     SEQUENCE OF SEQUENCE  {
+		userCertificate         CertificateSerialNumber,
+		revocationDate          Time,
+		crlEntryExtensions      Extensions OPTIONAL
+						-- if present, MUST be v2
+	} OPTIONAL,
+	crlExtensions		[0] EXPLICIT Extensions OPTIONAL
+						-- if present, MUST be v2
+}
+
+
+CRLCertificateList ::=  SEQUENCE  {
+	tbsCertList          TBSCRLCertList,
+	signatureAlgorithm   AlgorithmIdentifier,
+	signatureValue       BIT STRING
+}
+
+id-x509-ce-cRLNumber OBJECT IDENTIFIER ::= { id-x509-ce 20 }
+id-x509-ce-freshestCRL OBJECT IDENTIFIER ::=  { id-x509-ce 46 }
+id-x509-ce-cRLReason OBJECT IDENTIFIER ::= { id-x509-ce 21 }
+
+CRLReason ::= ENUMERATED {
+	unspecified             (0),
+	keyCompromise           (1),
+	cACompromise            (2),
+	affiliationChanged      (3),
+	superseded              (4),
+	cessationOfOperation    (5),
+	certificateHold         (6),
+	removeFromCRL           (8),
+	privilegeWithdrawn      (9),
+	aACompromise           (10)
+}
 
 END
