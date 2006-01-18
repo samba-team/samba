@@ -119,7 +119,7 @@ const struct dcerpc_interface_list *librpc_dcerpc_pipes(void)
 }
 
 
-NTSTATUS dcerpc_register_builtin_interfaces();
+NTSTATUS dcerpc_register_builtin_interfaces(void);
 
 NTSTATUS dcerpc_table_init(void)
 {
