@@ -104,6 +104,10 @@ struct DH {
     ENGINE *engine;
 };
 
+/* DH_check_pubkey return codes in `codes' argument. */
+#define DH_CHECK_PUBKEY_TOO_SMALL 1
+#define DH_CHECK_PUBKEY_TOO_LARGE 2
+
 /*
  *
  */
@@ -127,7 +131,7 @@ int	DH_set_ex_data(DH *, int, void *);
 void *	DH_get_ex_data(DH *, int);
 
 int	DH_generate_parameters_ex(DH *, int, int, BN_GENCB *);
-int	DH_check(const DH *,int *);
+int	DH_check_pubkey(const DH *, const BIGNUM *, int *);
 int	DH_generate_key(DH *);
 int	DH_compute_key(unsigned char *,const BIGNUM *,DH *);
 
