@@ -367,61 +367,6 @@ test_Name (void)
 			 cmp_Name);
 }
 
-
-#if 0
-
-#include <openssl/bn.h>
-
-static int
-check_heim_integer(void)
-{
-    heim_integer h;
-    BIGNUM *bn = BN_new();
-    unsigned char buf[10];
-    unsigned char buf2[10];
-    size_t len = sizeof(buf), size;
-    size_t len2 = sizeof(buf), size2;
-    int i, ret;
-
-    memset(buf, 0, sizeof(buf));
-    memset(buf2, 0, sizeof(buf2));
-
-    i = -123123;
-
-    BN_zero(bn);
-    if (i < 0)
-	BN_sub_word(bn, -i);
-    else
-	BN_add_word(bn, i);
-
-    h.negative = bn->neg;
-    h.length = BN_num_bytes(bn);
-    h.data = emalloc(h.length);
-    BN_bn2bin(bn, h.data);
-    
-    printf("length = %d\n", h.length);
-
-    ret = der_put_heim_integer(buf + len - 1, len, &h, &size);
-    if (ret)
-	errx(1, "der_put_heim_integer: %d", ret);
-
-    ret = der_put_integer(buf2 + len - 1, len2, &i, &size2);
-    if (ret)
-	errx(1, "der_put_heim_integer: %d", ret);
-
-    if (size != size2)
-	errx(1, "size %lu != size2 %lu", 
-	     (unsigned long)size, (unsigned long)size2);
-
-    if (memcmp(buf + len - 1 - size, 
-	       buf2 + len - 1 - size, 
-	       size) != 0)
-	errx(1, "data not the same");
-
-    return 0;
-}
-#endif
-
 static int
 cmp_KeyUsage (void *a, void *b)
 {
@@ -661,6 +606,68 @@ test_implicit (void)
 }
 
 static int
+cmp_TESTAlloc (void *a, void *b)
+{
+    TESTAlloc *aa = a;
+    TESTAlloc *ab = b;
+
+    IF_OPT_COMPARE(aa,ab,tagless) {
+	COMPARE_INTEGER(aa,ab,tagless->ai);
+    }
+    return 0;
+}
+
+/*
+UNIV CONS Sequence 12
+  UNIV CONS Sequence 5
+    CONTEXT CONS 0 3
+      UNIV PRIM Integer 1 01
+  CONTEXT CONS 1 3
+    UNIV PRIM Integer 1 03
+
+UNIV CONS Sequence 5
+  CONTEXT CONS 1 3
+    UNIV PRIM Integer 1 03
+*/
+
+static int
+test_taglessalloc (void)
+{
+    struct test_case tests[] = {
+	{ NULL,  14,  
+	  "\x30\x0c\x30\x05\xa0\x03\x02\x01\x01\xa1\x03\x02\x01\x03", 
+	  "alloc 1" },
+	{ NULL,  7,  
+	  "\x30\x05\xa1\x03\x02\x01\x03", 
+	  "alloc 2" }
+    };
+
+    int ret = 0, ntests = sizeof(tests) / sizeof(*tests);
+    TESTAlloc c1, c2;
+
+    memset(&c1, 0, sizeof(c1));
+    c1.tagless = ecalloc(1, sizeof(*c1.tagless));
+    c1.tagless->ai = 1;
+    c1.three = 3;
+    tests[0].val = &c1;
+
+    memset(&c2, 0, sizeof(c2));
+    c2.tagless = NULL;
+    c2.three = 3;
+    tests[1].val = &c2;
+
+    ret += generic_test (tests, ntests, sizeof(TESTAlloc),
+			 (generic_encode)encode_TESTAlloc,
+			 (generic_length)length_TESTAlloc,
+			 (generic_decode)decode_TESTAlloc,
+			 (generic_free)free_TESTAlloc,
+			 cmp_TESTAlloc);
+
+    return ret;
+}
+
+
+static int
 check_fail_largetag(void)
 {
     struct test_case tests[] = {
@@ -747,9 +754,6 @@ main(int argc, char **argv)
     ret += test_authenticator();
     ret += test_krb_error();
     ret += test_Name();
-#if 0
-    ret += check_heim_integer();
-#endif
     ret += test_bit_string();
 
     ret += check_tag_length();
@@ -757,6 +761,7 @@ main(int argc, char **argv)
     ret += test_choice();
 
     ret += test_implicit();
+    ret += test_taglessalloc();
 
     ret += check_fail_largetag();
     ret += check_fail_sequence();

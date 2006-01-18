@@ -45,6 +45,16 @@ TESTImplicit2 ::= SEQUENCE {
 	ti3[2] IMPLICIT TESTInteger3
 }
 
+TESTAllocInner ::= SEQUENCE {
+	ai[0] TESTInteger
+}
+
+TESTAlloc ::= SEQUENCE {
+	  tagless TESTAllocInner OPTIONAL,
+	  three [1] INTEGER (-2147483648..2147483647)
+}
+
+
 TESTCONTAINING ::= OCTET STRING ( CONTAINING INTEGER )
 TESTENCODEDBY ::= OCTET STRING ( ENCODED BY 
   { joint-iso-itu-t(2) asn(1) ber-derived(2) distinguished-encoding(1) }
