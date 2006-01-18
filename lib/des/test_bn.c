@@ -194,7 +194,7 @@ test_BN_import_export(void)
 }
 
 static int
-test_bn_uadd(void)
+test_BN_uadd(void)
 {
     BIGNUM *a, *b, *c;
     char *p;
@@ -266,6 +266,63 @@ test_bn_uadd(void)
     return 0;
 }
 
+static int
+test_BN_cmp(void)
+{
+    BIGNUM *a, *b;
+
+    a = BN_new();
+    b = BN_new();
+
+    if (!BN_set_word(a, 1))
+	return 1;
+    if (!BN_set_word(b, 1))
+	return 1;
+
+    if (BN_cmp(a, b) != 0)
+	return 1;
+    if (BN_cmp(b, a) != 0)
+	return 1;
+
+    if (!BN_set_word(b, 2))
+	return 1;
+
+    if (BN_cmp(a, b) >= 0)
+	return 1;
+    if (BN_cmp(b, a) <= 0)
+	return 1;
+
+    BN_set_negative(b, 1);
+
+    if (BN_cmp(a, b) <= 0)
+	return 1;
+    if (BN_cmp(b, a) >= 0)
+	return 1;
+
+    BN_free(a);
+    BN_free(b);
+
+    BN_hex2bn(&a, "50212A3B611D46642C825A16A354CE0FD4D85DD1");
+    BN_hex2bn(&b, "50212A3B611D46642C825A16A354CE0FD4D85DD2");
+
+    if (BN_cmp(a, b) >= 0)
+	return 1;
+    if (BN_cmp(b, a) <= 0)
+	return 1;
+
+    BN_set_negative(b, 1);
+
+    if (BN_cmp(a, b) <= 0)
+	return 1;
+    if (BN_cmp(b, a) >= 0)
+	return 1;
+
+    BN_free(a);
+    BN_free(b);
+    return 0;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -274,7 +331,8 @@ main(int argc, char **argv)
     ret += test_BN_set_get();
     ret += test_BN_bit();
     ret += test_BN_import_export();
-    ret += test_bn_uadd();
+    ret += test_BN_uadd();
+    ret += test_BN_cmp();
 
     return ret;
 }
