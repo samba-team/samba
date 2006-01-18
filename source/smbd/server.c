@@ -826,8 +826,10 @@ void build_options(BOOL screen);
 
 	init_structs();
 
-	if (!init_guest_info())
+	if (!init_guest_info()) {
+		DEBUG(0,("ERROR: failed to setup guest info.\n"));
 		return -1;
+	}
 
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
