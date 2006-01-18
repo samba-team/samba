@@ -440,10 +440,3 @@ BN_GENCB_call(BN_GENCB *cb, int a, int b)
 	return 1;
     return cb->cb.cb_2(a, b, cb);
 }
-
-/*
- *
- */
-
-#if 0
-#endif
