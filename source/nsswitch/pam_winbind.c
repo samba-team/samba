@@ -3,7 +3,7 @@
    Copyright Andrew Tridgell <tridge@samba.org> 2000
    Copyright Tim Potter <tpot@samba.org> 2000
    Copyright Andrew Bartlett <abartlet@samba.org> 2002
-   Copyright Guenther Deschner <gd@samba.org> 2005
+   Copyright Guenther Deschner <gd@samba.org> 2005-2006
 
    largely based on pam_userdb by Cristian Gafton <gafton@redhat.com> 
    also contains large slabs of code from pam_unix by Elliot Lee <sopwith@redhat.com>
@@ -849,6 +849,18 @@ PAM_EXTERN
 int pam_sm_setcred(pam_handle_t *pamh, int flags,
 		   int argc, const char **argv)
 {
+	/* parse arguments */
+	int ctrl = _pam_parse(argc, argv);
+	if (ctrl == -1) {
+		return PAM_SYSTEM_ERR;
+	}
+
+	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_setcred");
+
+	if (flags & PAM_DELETE_CRED) {
+		return pam_sm_close_session(pamh, flags, argc, argv);
+	}
+
 	return PAM_SUCCESS;
 }
 
@@ -1236,7 +1248,7 @@ struct pam_module _pam_winbind_modstruct = {
  * Copyright (c) Andrew Tridgell  <tridge@samba.org>   2000
  * Copyright (c) Tim Potter       <tpot@samba.org>     2000
  * Copyright (c) Andrew Bartlettt <abartlet@samba.org> 2002
- * Copyright (c) Guenther Deschner <gd@samba.org>      2005
+ * Copyright (c) Guenther Deschner <gd@samba.org>      2005-2006
  * Copyright (c) Jan Rêkorajski 1999.
  * Copyright (c) Andrew G. Morgan 1996-8.
  * Copyright (c) Alex O. Yuriev, 1996.
