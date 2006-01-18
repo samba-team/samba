@@ -44,6 +44,7 @@ struct hx509_verify_ctx_data {
     time_t time_now;
     int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
+    hx509_revoke_ctx revoke_ctx;
 };
 
 struct _hx509_cert_attrs {
@@ -250,15 +251,29 @@ hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
 void
 hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 {
+    if (ctx->trust_anchors)
+	hx509_certs_free(&ctx->trust_anchors);
+    if (ctx->revoke_ctx)
+	hx509_revoke_free(&ctx->revoke_ctx);
+
     memset(ctx, 0, sizeof(*ctx));
     free(ctx);
 }
 
-int
+void
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
+    if (ctx->trust_anchors)
+	hx509_certs_free(&ctx->trust_anchors);
     ctx->trust_anchors = set;
-    return 0;
+}
+
+void
+hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke)
+{
+    if (ctx->revoke_ctx)
+	hx509_revoke_free(&ctx->revoke_ctx);
+    ctx->revoke_ctx = revoke;
 }
 
 void
@@ -1118,11 +1133,12 @@ hx509_verify_path(hx509_context context,
 
     for (ret = 0, i = path.len - 1; i >= 0; i--) {
 	Certificate *c;
-	c = path.val[i]->data;
+
+	c = _hx509_get_cert(path.val[i]);
 
 #if 0
 	/* check that algorithm and parameters is the same */
-	/* XXX this is probably wrong */
+	/* XXX this is wrong */
 	ret = alg_cmp(&c->tbsCertificate.signature, alg_id);
 	if (ret) {
 	    ret = HX509_PATH_ALGORITHM_CHANGED;
@@ -1171,10 +1187,24 @@ hx509_verify_path(hx509_context context,
 	    goto out;
 
 	/* XXX verify all other silly constraints */
+
     }
 
     /*
-     * Verify constraints, do this backward so public key working
+     * Verify no certificates has been revoked.
+     */
+
+    if (ctx->revoke_ctx) {
+	for (i = path.len - 1; i >= 0; i--) {
+	    ret = hx509_revoke_verify(context,  ctx->revoke_ctx, ctx->time_now,
+				      path.val[i]);
+	    if (ret)
+		goto out;
+	}
+    }
+
+    /*
+     * Verify signatures, do this backward so public key working
      * parameter is passed up from the anchor up though the chain.
      */
 
@@ -1182,7 +1212,7 @@ hx509_verify_path(hx509_context context,
 	Certificate *signer, *c;
 	heim_octet_string os;
 
-	c = path.val[i]->data;
+	c = _hx509_get_cert(path.val[i]);
 	/* is last in chain and thus the self-signed */
 	signer = path.val[i == path.len - 1 ? i : i + 1]->data;
 
