@@ -716,7 +716,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			}
 			dom_sid->num_auths--;
 			ldb_ret = gendb_search(sam_ctx, mem_ctx, NULL, &domain_res, attrs,
-					       "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+					       "(&(objectSid=%s)(objectClass=domain))", ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 			if (ldb_ret != 1) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
