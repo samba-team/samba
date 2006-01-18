@@ -34,7 +34,7 @@ stop_smbd()
 
 	## check to see if smbd is already running
 	check_smbd_running
-	if test $? == 0; then
+	if test $? = 0; then
 		echo "Unable to stop smbd!"
 		exit 2
 	fi
@@ -74,7 +74,7 @@ stop_nmbd()
 
 	## check to see if smbd is already running
 	kill -0 $nmbd_pid 2> /dev/null
-	if test $? == 0; then
+	if test $? = 0; then
 		echo "Unable to stop nmbd!"
 		exit 2
 	fi
