@@ -1,5 +1,16 @@
 2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* canthandle.asn1: "Allocation is done on CONTEXT tags" works just
+	fine.
+
+	* rfc2459.asn1: Add CRL structures and OIDs.
+
+	* Makefile.am: Add CRL and TESTAlloc structures and OIDs.
+
+	* check-gen.c: Check OPTIONAL context-tagless elements.
+
+	* test.asn1: Check OPTIONAL context-tagless elements.
+
 	* der_cmp.c (heim_integer_cmp): make it work with negative
 	numbers.
 	
