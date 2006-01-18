@@ -280,7 +280,7 @@ struct {
     { ext(issuerAltName, issuerAltName), S_N_C },
     { ext(basicConstraints, basicConstraints), M_C },
     { ext(cRLNumber, Null), M_N_C },
-    { ext(cRLReasons, Null), M_N_C },
+    { ext(cRLReason, Null), M_N_C },
     { ext(holdInstructionCode, Null), M_N_C },
     { ext(invalidityDate, Null), M_N_C },
     { ext(deltaCRLIndicator, Null), M_C },
