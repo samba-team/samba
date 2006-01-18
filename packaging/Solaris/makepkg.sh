@@ -128,15 +128,16 @@ echo "Install directory:  $INSTALL_BASE"
 
 cd $DISTR_BASE/source
 
-if [ "x$1" != "xnobuild" ]; then
+if test "x$1" = "xbuild" ]; then
 	./configure --prefix=$INSTALL_BASE \
-		--with-acl-support \
-		--with-included-popt \
 		--localstatedir=/var/lib/samba \
 		--with-piddir=/var/run \
 		--with-logfilebase=/var/log/samba \
 		--with-privatedir=/etc/samba/private \
 		--with-configdir=/etc/samba \
+		--with-lockdir=/var/lib/samba \
+		--with-pam --with-acl-support \
+		--with-quotas --with-included-popt \
 	&& make
 
 	if [ $? -ne 0 ]; then
