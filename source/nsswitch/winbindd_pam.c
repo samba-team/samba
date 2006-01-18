@@ -1105,7 +1105,8 @@ sam_logon:
 
 cached_logon:
 	/* Check for Cached logons */
-	if (!domain->online && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN)) {
+	if (!domain->online && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN) && 
+	    lp_winbind_offline_logon()) {
 	
 		result = winbindd_dual_pam_auth_cached(domain, state, &info3);
 
@@ -1152,7 +1153,8 @@ process_result:
 
 		}
 
-		if (state->request.flags & WBFLAG_PAM_CACHED_LOGIN) {
+		if ((state->request.flags & WBFLAG_PAM_CACHED_LOGIN) &&
+		    lp_winbind_offline_logon()) {
 
 			result = winbindd_store_creds(domain,
 						      state->mem_ctx,
@@ -1614,7 +1616,8 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	}
 
 done: 
-	if (NT_STATUS_IS_OK(result) && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN)) {
+	if (NT_STATUS_IS_OK(result) && (state->request.flags & WBFLAG_PAM_CACHED_LOGIN) &&
+	    lp_winbind_offline_logon()) {
 
 		NTSTATUS cred_ret;
 		
