@@ -1644,7 +1644,9 @@ static void init_globals(void)
 	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
 
 	/* User defined shares. */
-	string_set(&Globals.szUsersharePath, "");
+	pstrcpy(s, dyn_LOCKDIR);
+	pstrcat(s, "/usershares");
+	string_set(&Globals.szUsersharePath, s);
 	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.iUsershareMaxShares = 0;
 }
