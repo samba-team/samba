@@ -400,16 +400,16 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	}
 
 	if (ret) {
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PASSWORD_EXPIRED");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PASSWORD_MUST_CHANGE");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_INVALID_WORKSTATION");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_INVALID_LOGON_HOURS");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCOUNT_EXPIRED");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCOUNT_DISABLED");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCOUNT_LOCKED_OUT");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
-		PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PASSWORD_EXPIRED");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PASSWORD_MUST_CHANGE");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_INVALID_WORKSTATION");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_INVALID_LOGON_HOURS");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCOUNT_EXPIRED");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCOUNT_DISABLED");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCOUNT_LOCKED_OUT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT");
+		PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT");
 	}
 
 	/* handle the case where the auth was ok, but the password must expire right now */
@@ -425,7 +425,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 			       response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire,
 			       time(NULL));
 
-		PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PASSWORD_EXPIRED");
+		PAM_WB_REMARK_DIRECT_RET(pamh, "NT_STATUS_PASSWORD_EXPIRED");
 
 	}
 
@@ -500,17 +500,17 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 		return ret;
 	}
 
-	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_BACKUP_CONTROLLER");
-	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_ACCESS_DENIED");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_BACKUP_CONTROLLER");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_ACCESS_DENIED");
 
 	/* TODO: tell the min pwd length ? */
-	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PWD_TOO_SHORT");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PWD_TOO_SHORT");
 
 	/* TODO: tell the minage ? */
-	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PWD_TOO_RECENT");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PWD_TOO_RECENT");
 
 	/* TODO: tell the history length ? */
-	PAM_WB_REMARK_CHECK_RESPONSE(pamh, response, "NT_STATUS_PWD_HISTORY_CONFLICT");
+	PAM_WB_REMARK_CHECK_RESPONSE_RET(pamh, response, "NT_STATUS_PWD_HISTORY_CONFLICT");
 
 	if (strequal(response.data.auth.nt_status_string, "NT_STATUS_PASSWORD_RESTRICTION")) {
 
@@ -525,7 +525,7 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 				PAM_WB_REMARK_DIRECT(pamh, "NT_STATUS_PWD_HISTORY_CONFLICT");
 				break;
 			case REJECT_REASON_NOT_COMPLEX:
-				_make_remark_format(pamh, PAM_ERROR_MSG, "Password does not meet complexity requirements");
+				_make_remark(pamh, PAM_ERROR_MSG, "Password does not meet complexity requirements");
 				break;
 			default:
 				_pam_log_debug(ctrl, LOG_DEBUG,

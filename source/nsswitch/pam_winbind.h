@@ -114,13 +114,24 @@ do {                             \
 	error_string = _get_ntstatus_error_string(x);\
 	if (error_string != NULL) {\
 		_make_remark(h, PAM_ERROR_MSG, error_string);\
+	} else {\
+		_make_remark(h, PAM_ERROR_MSG, x);\
+	};\
+};
+
+#define PAM_WB_REMARK_DIRECT_RET(h,x)\
+{\
+	const char *error_string = NULL; \
+	error_string = _get_ntstatus_error_string(x);\
+	if (error_string != NULL) {\
+		_make_remark(h, PAM_ERROR_MSG, error_string);\
 		return ret;\
 	};\
 	_make_remark(h, PAM_ERROR_MSG, x);\
 	return ret;\
 };
 	
-#define PAM_WB_REMARK_CHECK_RESPONSE(h,x,y)\
+#define PAM_WB_REMARK_CHECK_RESPONSE_RET(h,x,y)\
 {\
 	const char *ntstatus = x.data.auth.nt_status_string; \
 	const char *error_string = NULL; \
