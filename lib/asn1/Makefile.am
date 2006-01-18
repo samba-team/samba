@@ -149,6 +149,8 @@ gen_files_rfc2459 =					\
 	asn1_AuthorityKeyIdentifier.x			\
 	asn1_BaseDistance.x				\
 	asn1_BasicConstraints.x				\
+	asn1_CRLCertificateList.x			\
+	asn1_CRLReason.x				\
 	asn1_Certificate.x				\
 	asn1_CertificateSerialNumber.x			\
 	asn1_Certificates.x				\
@@ -171,11 +173,12 @@ gen_files_rfc2459 =					\
 	asn1_NameConstraints.x				\
 	asn1_OtherName.x				\
 	asn1_RDNSequence.x				\
-	asn1_RSAPublicKey.x				\
 	asn1_RSAPrivateKey.x				\
+	asn1_RSAPublicKey.x				\
 	asn1_RelativeDistinguishedName.x		\
 	asn1_SubjectKeyIdentifier.x			\
 	asn1_SubjectPublicKeyInfo.x			\
+	asn1_TBSCRLCertList.x				\
 	asn1_TBSCertificate.x				\
 	asn1_TeletexStringx.x				\
 	asn1_Time.x					\
@@ -312,6 +315,8 @@ gen_files_pkcs9 =					\
 	asn1_PKCS9_friendlyName.x
 
 gen_files_test =					\
+	asn1_TESTAlloc.x				\
+	asn1_TESTAllocInner.x				\
 	asn1_TESTChoice1.x				\
 	asn1_TESTChoice2.x				\
 	asn1_TESTImplicit.x				\
@@ -415,7 +420,7 @@ $(gen_files_cms) cms_asn1.h: cms_asn1_files
 $(gen_files_test) test_asn1.h: test_asn1_files
 
 rfc2459_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/rfc2459.asn1
-	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=Name $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
 
 cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
