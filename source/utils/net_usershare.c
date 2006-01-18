@@ -62,7 +62,7 @@ static int net_usershare_add_usage(int argc, const char **argv)
 {
 	char c = *lp_winbind_separator();
 	d_printf(
-		"net usershare add <sharename> <path> [<comment>] [<acl>]\n"
+		"net usershare add [-l|--long] <sharename> <path> [<comment>] [<acl>]\n"
 		"\tAdds the specified share name for this user.\n"
 		"\t<sharename> is the new share name.\n"
 		"\t<path> is the path on the filesystem to export.\n"
@@ -72,7 +72,8 @@ static int net_usershare_add_usage(int argc, const char **argv)
 		"\t\twhere \"f\" means full control, \"r\" means read-only, \"d\" means deny access.\n"
 		"\t\tname may be a domain user or group. For local users use the local server name "
 		"instead of \"DOMAIN\"\n"
-		"\t\tThe default acl is \"Everyone:r\" which allows everyone read-only access.\n",
+		"\t\tThe default acl is \"Everyone:r\" which allows everyone read-only access.\n"
+		"\tAdd -l or --long to print the info on the newly added share.\n",
 		c, c );
 	return -1;
 }
@@ -132,254 +133,6 @@ static void get_basepath(pstring basepath)
 }
 
 /***************************************************************************
- Add a single userlevel share.
-***************************************************************************/
-
-static int net_usershare_add(int argc, const char **argv)
-{
-	TALLOC_CTX *ctx = NULL;
-	SMB_STRUCT_STAT sbuf;
-	SMB_STRUCT_STAT lsbuf;
-	char *sharename;
-	pstring full_path;
-	pstring full_path_tmp;
-	const char *us_path;
-	const char *us_comment;
-	const char *arg_acl;
-	char *us_acl;
-	char *file_img;
-	int num_aces = 0;
-	int i;
-	int tmpfd;
-	const char *pacl;
-	size_t to_write;
-
-	us_comment = "";
-	arg_acl = "S-1-1-0:R";
-
-	switch (argc) {
-		case 0:
-		case 1:
-		default:
-			return net_usershare_add_usage(argc, argv);
-		case 2:
-			sharename = strdup_lower(argv[0]);
-			us_path = argv[1];
-			break;
-		case 3:
-			sharename = strdup_lower(argv[0]);
-			us_path = argv[1];
-			us_comment = argv[2];
-			break;
-		case 4:
-			sharename = strdup_lower(argv[0]);
-			us_path = argv[1];
-			us_comment = argv[2];
-			arg_acl = argv[3];
-			break;
-	}
-
-	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
-		d_fprintf(stderr, "net usershare add: share name %s contains "
-                        "invalid characters (any of %s)\n",
-                        sharename, INVALID_SHARENAME_CHARS);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Disallow shares the same as users. */
-	if (getpwnam(sharename)) {
-		d_fprintf(stderr, "net usershare add: share name %s is already a valid system user name\n",
-			sharename );
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Construct the full path for the usershare file. */
-	get_basepath(full_path);
-	pstrcat(full_path, "/");
-	pstrcpy(full_path_tmp, full_path);
-	pstrcat(full_path, sharename);
-	pstrcat(full_path_tmp, ":tmpXXXXXX");
-
-	/* The path *must* be absolute. */
-	if (us_path[0] != '/') {
-		d_fprintf(stderr,"net usershare add: path %s is not an absolute path.\n",
-			us_path);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Check the directory to be shared exists. */
-	if (sys_stat(us_path, &sbuf) != 0) {
-		d_fprintf(stderr, "net usershare add: cannot stat path %s to ensure "
-			"this is a directory. Error was %s\n",
-			us_path, strerror(errno) );
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	if (!S_ISDIR(sbuf.st_mode)) {
-		d_fprintf(stderr, "net usershare add: path %s is not a directory.\n",
-			us_path );
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* No validation needed on comment. Now go through and validate the
-	   acl string. Convert names to SID's as needed. Then run it through
-	   parse_usershare_acl to ensure it's valid. */
-
-	ctx = talloc_init("share_info");
-
-	/* Start off the string we'll append to. */
-	us_acl = talloc_strdup(ctx, "");
-
-	pacl = arg_acl;
-	num_aces = 1;
-
-	/* Add the number of ',' characters to get the number of aces. */
-	num_aces += count_chars(pacl,',');
-
-	for (i = 0; i < num_aces; i++) {
-		DOM_SID sid;
-		const char *pcolon = strchr_m(pacl, ':');
-		const char *name;
-
-		if (pcolon == NULL) {
-			d_fprintf(stderr, "net usershare add: malformed acl %s (missing ':').\n",
-				pacl );
-			talloc_destroy(ctx);
-			SAFE_FREE(sharename);
-			return -1;
-		}
-
-		switch(pcolon[1]) {
-			case 'f':
-			case 'F':
-			case 'd':
-			case 'r':
-			case 'R':
-				break;
-			default:
-				d_fprintf(stderr, "net usershare add: malformed acl %s "
-					"(access control must be 'r', 'f', or 'd')\n",
-					pacl );
-				talloc_destroy(ctx);
-				SAFE_FREE(sharename);
-				return -1;
-		}
-
-		if (pcolon[2] != ',' && pcolon[2] != '\0') {
-			d_fprintf(stderr, "net usershare add: malformed terminating character for acl %s\n",
-				pacl );
-			talloc_destroy(ctx);
-			SAFE_FREE(sharename);
-			return -1;
-		}
-
-		/* Get the name */
-		name = talloc_strndup(ctx, pacl, pcolon - pacl);
-		if (!string_to_sid(&sid, name)) {
-			/* Convert to a SID */
-			if (!net_lookup_sid_from_name(ctx, name, &sid)) {
-				d_fprintf(stderr, "net usershare add: cannot convert name %s to a SID.\n",
-					name );
-				talloc_destroy(ctx);
-				SAFE_FREE(sharename);
-				return -1;
-			}
-		}
-		us_acl = talloc_asprintf_append(us_acl, "%s:%c,", sid_string_static(&sid), pcolon[1]);
-
-		/* Move to the next ACL entry. */
-		if (pcolon[2] == ',') {
-			pacl = &pcolon[3];
-		}
-	}
-
-	/* Remove the last ',' */
-	us_acl[strlen(us_acl)-1] = '\0';
-
-	/* Create a temporary filename for this share. */
-	tmpfd = smb_mkstemp(full_path_tmp);
-
-	if (tmpfd == -1) {
-		d_fprintf(stderr, "net usershare add: cannot create tmp file %s\n",
-				full_path_tmp );
-		talloc_destroy(ctx);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Ensure we opened the file we thought we did. */
-	if (sys_lstat(full_path_tmp, &lsbuf) != 0) {
-		d_fprintf(stderr, "net usershare add: cannot lstat tmp file %s\n",
-				full_path_tmp );
-		talloc_destroy(ctx);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Check this is the same as the file we opened. */
-	if (sys_fstat(tmpfd, &sbuf) != 0) {
-		d_fprintf(stderr, "net usershare add: cannot fstat tmp file %s\n",
-				full_path_tmp );
-		talloc_destroy(ctx);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	if (!S_ISREG(sbuf.st_mode) || sbuf.st_dev != lsbuf.st_dev || sbuf.st_ino != lsbuf.st_ino) {
-		d_fprintf(stderr, "net usershare add: tmp file %s is not a regular file ?\n",
-				full_path_tmp );
-		talloc_destroy(ctx);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-	
-	if (fchmod(tmpfd, 0644) == -1) {
-		d_fprintf(stderr, "net usershare add: failed to fchmod tmp file %s to 0644n",
-				full_path_tmp );
-		talloc_destroy(ctx);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Create the in-memory image of the file. */
-	file_img = talloc_strdup(ctx, "#VERSION 1\npath=");
-	file_img = talloc_asprintf_append(file_img, "%s\ncomment=%s\nusershare_acl=%s\n",
-			us_path, us_comment, us_acl );
-
-	to_write = strlen(file_img);
-
-	if (write(tmpfd, file_img, to_write) != to_write) {
-		d_fprintf(stderr, "net usershare add: failed to write %u bytes to file %s. Error was %s\n",
-			(unsigned int)to_write, full_path_tmp, strerror(errno));
-		unlink(full_path_tmp);
-		talloc_destroy(ctx);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	/* Attempt to replace any existing share by this name. */
-	if (rename(full_path_tmp, full_path) != 0) {
-		unlink(full_path_tmp);
-		d_fprintf(stderr, "net usershare add: failed to add share %s. Error was %s\n",
-			sharename, strerror(errno));
-		talloc_destroy(ctx);
-		close(tmpfd);
-		SAFE_FREE(sharename);
-		return -1;
-	}
-
-	close(tmpfd);
-	talloc_destroy(ctx);
-	SAFE_FREE(sharename);
-	return 0;
-}
-
-/***************************************************************************
  Delete a single userlevel share.
 ***************************************************************************/
 
@@ -404,7 +157,7 @@ static int net_usershare_delete(int argc, const char **argv)
 
 	pstrcpy(us_path, lp_usershare_path());
 	pstrcat(us_path, "/");
-	pstrcat(us_path, argv[0]);
+	pstrcat(us_path, sharename);
 
 	if (unlink(us_path) != 0) {
 		d_fprintf(stderr, "net usershare delete: unable to remove usershare %s. "
@@ -692,6 +445,262 @@ static int net_usershare_info(int argc, const char **argv)
 	ret = process_share_list(info_fn, &pi);
 	talloc_destroy(ctx);
 	return ret;
+}
+
+/***************************************************************************
+ Add a single userlevel share.
+***************************************************************************/
+
+static int net_usershare_add(int argc, const char **argv)
+{
+	TALLOC_CTX *ctx = NULL;
+	SMB_STRUCT_STAT sbuf;
+	SMB_STRUCT_STAT lsbuf;
+	char *sharename;
+	pstring full_path;
+	pstring full_path_tmp;
+	const char *us_path;
+	const char *us_comment;
+	const char *arg_acl;
+	char *us_acl;
+	char *file_img;
+	int num_aces = 0;
+	int i;
+	int tmpfd;
+	const char *pacl;
+	size_t to_write;
+
+	us_comment = "";
+	arg_acl = "S-1-1-0:R";
+
+	switch (argc) {
+		case 0:
+		case 1:
+		default:
+			return net_usershare_add_usage(argc, argv);
+		case 2:
+			sharename = strdup_lower(argv[0]);
+			us_path = argv[1];
+			break;
+		case 3:
+			sharename = strdup_lower(argv[0]);
+			us_path = argv[1];
+			us_comment = argv[2];
+			break;
+		case 4:
+			sharename = strdup_lower(argv[0]);
+			us_path = argv[1];
+			us_comment = argv[2];
+			arg_acl = argv[3];
+			break;
+	}
+
+	if (!validate_net_name(sharename, INVALID_SHARENAME_CHARS, strlen(sharename))) {
+		d_fprintf(stderr, "net usershare add: share name %s contains "
+                        "invalid characters (any of %s)\n",
+                        sharename, INVALID_SHARENAME_CHARS);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Disallow shares the same as users. */
+	if (getpwnam(sharename)) {
+		d_fprintf(stderr, "net usershare add: share name %s is already a valid system user name\n",
+			sharename );
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Construct the full path for the usershare file. */
+	get_basepath(full_path);
+	pstrcat(full_path, "/");
+	pstrcpy(full_path_tmp, full_path);
+	pstrcat(full_path, sharename);
+	pstrcat(full_path_tmp, ":tmpXXXXXX");
+
+	/* The path *must* be absolute. */
+	if (us_path[0] != '/') {
+		d_fprintf(stderr,"net usershare add: path %s is not an absolute path.\n",
+			us_path);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Check the directory to be shared exists. */
+	if (sys_stat(us_path, &sbuf) != 0) {
+		d_fprintf(stderr, "net usershare add: cannot stat path %s to ensure "
+			"this is a directory. Error was %s\n",
+			us_path, strerror(errno) );
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	if (!S_ISDIR(sbuf.st_mode)) {
+		d_fprintf(stderr, "net usershare add: path %s is not a directory.\n",
+			us_path );
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* No validation needed on comment. Now go through and validate the
+	   acl string. Convert names to SID's as needed. Then run it through
+	   parse_usershare_acl to ensure it's valid. */
+
+	ctx = talloc_init("share_info");
+
+	/* Start off the string we'll append to. */
+	us_acl = talloc_strdup(ctx, "");
+
+	pacl = arg_acl;
+	num_aces = 1;
+
+	/* Add the number of ',' characters to get the number of aces. */
+	num_aces += count_chars(pacl,',');
+
+	for (i = 0; i < num_aces; i++) {
+		DOM_SID sid;
+		const char *pcolon = strchr_m(pacl, ':');
+		const char *name;
+
+		if (pcolon == NULL) {
+			d_fprintf(stderr, "net usershare add: malformed acl %s (missing ':').\n",
+				pacl );
+			talloc_destroy(ctx);
+			SAFE_FREE(sharename);
+			return -1;
+		}
+
+		switch(pcolon[1]) {
+			case 'f':
+			case 'F':
+			case 'd':
+			case 'r':
+			case 'R':
+				break;
+			default:
+				d_fprintf(stderr, "net usershare add: malformed acl %s "
+					"(access control must be 'r', 'f', or 'd')\n",
+					pacl );
+				talloc_destroy(ctx);
+				SAFE_FREE(sharename);
+				return -1;
+		}
+
+		if (pcolon[2] != ',' && pcolon[2] != '\0') {
+			d_fprintf(stderr, "net usershare add: malformed terminating character for acl %s\n",
+				pacl );
+			talloc_destroy(ctx);
+			SAFE_FREE(sharename);
+			return -1;
+		}
+
+		/* Get the name */
+		name = talloc_strndup(ctx, pacl, pcolon - pacl);
+		if (!string_to_sid(&sid, name)) {
+			/* Convert to a SID */
+			if (!net_lookup_sid_from_name(ctx, name, &sid)) {
+				d_fprintf(stderr, "net usershare add: cannot convert name %s to a SID.\n",
+					name );
+				talloc_destroy(ctx);
+				SAFE_FREE(sharename);
+				return -1;
+			}
+		}
+		us_acl = talloc_asprintf_append(us_acl, "%s:%c,", sid_string_static(&sid), pcolon[1]);
+
+		/* Move to the next ACL entry. */
+		if (pcolon[2] == ',') {
+			pacl = &pcolon[3];
+		}
+	}
+
+	/* Remove the last ',' */
+	us_acl[strlen(us_acl)-1] = '\0';
+
+	/* Create a temporary filename for this share. */
+	tmpfd = smb_mkstemp(full_path_tmp);
+
+	if (tmpfd == -1) {
+		d_fprintf(stderr, "net usershare add: cannot create tmp file %s\n",
+				full_path_tmp );
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Ensure we opened the file we thought we did. */
+	if (sys_lstat(full_path_tmp, &lsbuf) != 0) {
+		d_fprintf(stderr, "net usershare add: cannot lstat tmp file %s\n",
+				full_path_tmp );
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Check this is the same as the file we opened. */
+	if (sys_fstat(tmpfd, &sbuf) != 0) {
+		d_fprintf(stderr, "net usershare add: cannot fstat tmp file %s\n",
+				full_path_tmp );
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	if (!S_ISREG(sbuf.st_mode) || sbuf.st_dev != lsbuf.st_dev || sbuf.st_ino != lsbuf.st_ino) {
+		d_fprintf(stderr, "net usershare add: tmp file %s is not a regular file ?\n",
+				full_path_tmp );
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+	
+	if (fchmod(tmpfd, 0644) == -1) {
+		d_fprintf(stderr, "net usershare add: failed to fchmod tmp file %s to 0644n",
+				full_path_tmp );
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Create the in-memory image of the file. */
+	file_img = talloc_strdup(ctx, "#VERSION 1\npath=");
+	file_img = talloc_asprintf_append(file_img, "%s\ncomment=%s\nusershare_acl=%s\n",
+			us_path, us_comment, us_acl );
+
+	to_write = strlen(file_img);
+
+	if (write(tmpfd, file_img, to_write) != to_write) {
+		d_fprintf(stderr, "net usershare add: failed to write %u bytes to file %s. Error was %s\n",
+			(unsigned int)to_write, full_path_tmp, strerror(errno));
+		unlink(full_path_tmp);
+		talloc_destroy(ctx);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* Attempt to replace any existing share by this name. */
+	if (rename(full_path_tmp, full_path) != 0) {
+		unlink(full_path_tmp);
+		d_fprintf(stderr, "net usershare add: failed to add share %s. Error was %s\n",
+			sharename, strerror(errno));
+		talloc_destroy(ctx);
+		close(tmpfd);
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	close(tmpfd);
+	talloc_destroy(ctx);
+
+	if (opt_long_list_entries) {
+		const char *my_argv[2];
+		my_argv[0] = sharename;
+		my_argv[1] = NULL;
+		net_usershare_info(1, argv);
+	}
+
+	SAFE_FREE(sharename);
+	return 0;
 }
 
 #if 0
