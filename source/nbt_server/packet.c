@@ -41,6 +41,33 @@ void nbtd_bad_packet(struct nbt_name_packet *packet,
   see if an incoming packet is a broadcast packet from one of our own
   interfaces
 */
+BOOL nbtd_self_packet_and_bcast(struct nbt_name_socket *nbtsock, 
+				struct nbt_name_packet *packet, 
+				const struct socket_address *src)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+
+	/* if its not a broadcast then its not considered a self packet */
+	if (!(packet->operation & NBT_FLAG_BROADCAST)) {
+		return False;
+	}
+
+	/* 
+	 * this uses the fact that iface->nbtsock is the unicast listen address
+	 * if the interface isn't the global bcast interface
+	 *
+	 * so if the request was directed to the unicast address it isn't a broadcast
+	 * message
+	 */
+	if (iface->nbtsock == nbtsock &&
+	    iface != iface->nbtsrv->bcast_interface) {
+		return False;
+	}
+
+	return nbtd_self_packet(nbtsock, packet, src);
+}
+
 BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock, 
 		      struct nbt_name_packet *packet, 
 		      const struct socket_address *src)
@@ -49,20 +76,8 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 						       struct nbtd_interface);
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	
-	/* if its not a broadcast then its not considered a self packet */
-	if (!(packet->operation & NBT_FLAG_BROADCAST)) {
-		return False;
-	}
-
 	/* if its not from the nbt port, then it wasn't a broadcast from us */
 	if (src->port != lp_nbt_port()) {
-		return False;
-	}
-
-	/* this uses the fact that iface->nbtsock is our non-broadcast
-	   listen address */
-	if (iface->nbtsock == nbtsock &&
-	    iface != iface->nbtsrv->bcast_interface) {
 		return False;
 	}
 
