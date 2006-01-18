@@ -150,7 +150,6 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     hx509_verify_destroy_ctx(ctx);
 
-    hx509_certs_free(&anchors);
     hx509_certs_free(&signers);
 
     hx509_lock_free(lock);
@@ -552,6 +551,7 @@ int
 pcert_verify(struct verify_options *opt, int argc, char **argv)
 {
     hx509_certs anchors, chain, certs;
+    hx509_revoke_ctx revoke;
     hx509_verify_ctx ctx;
     struct verify v;
     int ret;
@@ -560,6 +560,10 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     ret = hx509_certs_init(context, "MEMORY:anchors", 0, NULL, &anchors);
     ret = hx509_certs_init(context, "MEMORY:chain", 0, NULL, &chain);
     ret = hx509_certs_init(context, "MEMORY:certs", 0, NULL, &certs);
+
+    ret = hx509_revoke_init(context, &revoke);
+    if (ret)
+	errx(1, "hx509_revoke_init: %d", ret);
 
     while(argc--) {
 	char *s = *argv++;
@@ -585,12 +589,20 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 	    if (ret)
 		errx(1, "hx509_certs_append: certs: %s: %d", s, ret);
 
+	} else if (strncmp(s, "crl:", 4) == 0) {
+	    s += 4;
+
+	    ret = hx509_revoke_add_crl(context, revoke, s);
+	    if (ret)
+		errx(1, "hx509_revoke_add_crl: %s: %d", s, ret);
+
 	} else {
 	    errx(1, "unknown option to verify: `%s'\n", s);
 	}
     }
 
     hx509_verify_attach_anchors(ctx, anchors);
+    hx509_verify_attach_revoke(ctx, revoke);
 
     v.ctx = ctx;
     v.chain = chain;
@@ -599,7 +611,6 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
     hx509_verify_destroy_ctx(ctx);
 
-    hx509_certs_free(&anchors);
     hx509_certs_free(&certs);
     hx509_certs_free(&chain);
 
