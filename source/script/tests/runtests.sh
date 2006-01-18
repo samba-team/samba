@@ -1,11 +1,11 @@
 #!/bin/sh
 
-if [ "x$1" == "x" ]; then
+if [ "x$1" = "x" ]; then
 	echo "$0 <directory>"
 	exit 1
 fi
 
-if [ $# == 2 ]; then
+if [ $# = 2 ]; then
 	testnum=$2
 fi
 
@@ -49,7 +49,7 @@ export USERNAME PASSWORD
 ## verify that we were built with --enable-socket-wrapper
 ##
 
-if test "x`smbd -b | grep SOCKET_WRAPPER`" == "x"; then
+if test "x`smbd -b | grep SOCKET_WRAPPER`" = "x"; then
 	echo "***"
 	echo "*** You must include --enable-socket-wrapper when compiling Samba"
 	echo "*** in order to execute 'make test'.  Exiting...."
