@@ -25,7 +25,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "scripting/ejs/ejsnet.h"
 #include "libnet/libnet.h"
-
+#include "events/events.h"
 
 static int ejs_net_userman(MprVarHandle, int, struct MprVar**);
 static int ejs_net_createuser(MprVarHandle, int, char**);
@@ -39,12 +39,22 @@ static int ejs_net_samsync_ldb(MprVarHandle eid, int argc, struct MprVar **argv)
 
 static int ejs_net_context(MprVarHandle eid, int argc, struct MprVar **argv)
 {
+	TALLOC_CTX *event_mem_ctx = talloc_new(mprMemCtx());
 	struct cli_credentials *creds;
 	struct libnet_context *ctx;
 	struct MprVar obj;
+	struct event_context *ev;
 
-	/* TODO:  Need to get the right event context in here */
-	ctx = libnet_context_init(NULL);
+	if (!event_mem_ctx) {
+		ejsSetErrorMsg(eid, "talloc_new() failed");
+		return -1;
+	}
+	ev = event_context_find(event_mem_ctx);
+	ctx = libnet_context_init(ev);
+	/* IF we generated a new event context, it will be under here,
+	 * and we need it to last as long as the libnet context, so
+	 * make it a child */
+	talloc_steal(ctx, event_mem_ctx);
 
 	if (argc == 0 || (argc == 1 && argv[0]->type == MPR_TYPE_NULL)) {
 		creds = cli_credentials_init(ctx);

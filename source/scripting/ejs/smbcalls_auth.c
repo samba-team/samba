@@ -25,24 +25,24 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "auth/auth.h"
 #include "scripting/ejs/smbcalls.h"
+#include "lib/events/events.h"
 
 static int ejs_doauth(MprVarHandle eid,
 		      TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
 		      const char *password, const char *domain, const char *workstation,
-		      struct socket_address *remote_host, const char *authtype)
+		      struct socket_address *remote_host, const char **auth_types)
 {
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct auth_context *auth_context;
 	struct MprVar *session_info_obj;
-	const char *auth_types[] = { authtype, NULL };
 	NTSTATUS nt_status;
 
-	/*
-	  darn, we need some way to get the right event_context here
-	*/
-	nt_status = auth_context_create(tmp_ctx, auth_types, &auth_context, NULL);
+	/* Hope we can find the event context somewhere up there... */
+	struct event_context *ev = event_context_find(tmp_ctx);
+
+	nt_status = auth_context_create(tmp_ctx, auth_types, &auth_context, ev);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));
@@ -122,6 +122,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct MprVar auth;
 	struct cli_credentials *creds;
 	struct socket_address *remote_host;
+	const char *auth_types_unix[] = { "unix", NULL };
 
 	if (argc != 2 || argv[0]->type != MPR_TYPE_OBJECT || argv[1]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "userAuth invalid arguments, this function requires an object.");
@@ -157,9 +158,9 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	auth = mprObject("auth");
 
 	if (domain && (strcmp("SYSTEM USER", domain) == 0)) {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, "unix");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, auth_types_unix);
 	} else {
-		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, "sam");
+		ejs_doauth(eid, tmp_ctx, &auth, username, password, domain, workstation, remote_host, lp_auth_methods());
 	}
 
 	mpr_Return(eid, auth);
