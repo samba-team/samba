@@ -439,7 +439,7 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
-	ret_blob.length = strhex_to_str(ret_blob.data, 	
+	ret_blob.length = strhex_to_str((char *)ret_blob.data, 	
 					strlen(strhex), 
 					strhex);
 
@@ -951,7 +951,7 @@ void rfc1738_unescape(char *buf)
 DATA_BLOB base64_decode_data_blob(TALLOC_CTX *mem_ctx, const char *s)
 {
 	DATA_BLOB ret = data_blob_talloc(mem_ctx, s, strlen(s)+1);
-	ret.length = ldb_base64_decode(ret.data);
+	ret.length = ldb_base64_decode((char *)ret.data);
 	return ret;
 }
 
@@ -968,7 +968,7 @@ void base64_decode_inplace(char *s)
  **/
 char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 {
-	return ldb_base64_encode(mem_ctx, data.data, data.length);
+	return ldb_base64_encode(mem_ctx, (const char *)data.data, data.length);
 }
 
 #ifdef VALGRIND
