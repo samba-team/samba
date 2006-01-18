@@ -150,9 +150,43 @@ DH_generate_parameters_ex(DH *dh, int prime_len, int generator, BN_GENCB *cb)
 }
 
 int
-DH_check(const DH *dh, int *num)
+DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
 {
-    return 1; /* XXX */
+    BIGNUM *bn = NULL, *sum = NULL;
+    int ret = 0;
+
+    *codes = 0;
+
+    bn = BN_new();
+    if (bn == NULL)
+	goto out;
+
+    if (!BN_set_word(bn, 1))
+	goto out;
+
+    if (BN_cmp(bn, pub_key) >= 0)
+	*codes |= DH_CHECK_PUBKEY_TOO_SMALL;
+
+    if (!BN_set_word(bn, 2))
+	goto out;
+
+    sum = BN_new();
+    if (sum == NULL)
+	goto out;
+
+    BN_uadd(sum, pub_key, bn);
+
+    if (BN_cmp(sum, dh->p) >= 0)
+	*codes |= DH_CHECK_PUBKEY_TOO_LARGE;
+
+    ret = 1;
+out:
+    if (bn)
+	BN_free(bn);
+    if (sum)
+	BN_free(sum);
+
+    return ret;
 }
 
 int
