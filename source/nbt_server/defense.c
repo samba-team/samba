@@ -41,6 +41,15 @@ void nbtd_request_defense(struct nbt_name_socket *nbtsock,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 
+	/*
+	 * if the packet comes from one of our interfaces
+	 * it must be our winsclient trying to reach the winsserver
+	 */
+	if (nbtd_self_packet(nbtsock, packet, src)) {
+		nbtd_winsserver_request(nbtsock, packet, src);
+		return;
+	}
+
 	NBTD_ASSERT_PACKET(packet, src, packet->qdcount == 1);
 	NBTD_ASSERT_PACKET(packet, src, packet->arcount == 1);
 	NBTD_ASSERT_PACKET(packet, src, 

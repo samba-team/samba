@@ -42,8 +42,8 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 	nbtsrv->stats.total_received++;
 
 	/* see if its from one of our own interfaces - if so, then ignore it */
-	if (nbtd_self_packet(nbtsock, packet, src)) {
-		DEBUG(10,("Ignoring self packet from %s:%d\n", src->addr, src->port));
+	if (nbtd_self_packet_and_bcast(nbtsock, packet, src)) {
+		DEBUG(10,("Ignoring bcast self packet from %s:%d\n", src->addr, src->port));
 		return;
 	}
 
