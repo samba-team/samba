@@ -1,12 +1,12 @@
 # $Id$
-# validate verify cert chain1 chain2
+# validate verify cert hxtool-verify-arguments...
 # s(kip) p(ass) f(ail)
 p s TrustAnchorRootCertificate.crt
-p p AllCertificatesNoPoliciesTest2EE.crt NoPoliciesCACert.crt
-p p AllCertificatesSamePoliciesTest10EE.crt PoliciesP12CACert.crt
-p p AllCertificatesSamePoliciesTest13EE.crt PoliciesP123CACert.crt
-p p AllCertificatesanyPolicyTest11EE.crt anyPolicyCACert.crt
-p p AnyPolicyTest14EE.crt anyPolicyCACert.crt
+p p AllCertificatesNoPoliciesTest2EE.crt chain:FILE:basedir/certs/NoPoliciesCACert.crt
+p p AllCertificatesSamePoliciesTest10EE.crt chain:FILE:basedir/certs/PoliciesP12CACert.crt
+p p AllCertificatesSamePoliciesTest13EE.crt chain:FILE:basedir/certs/PoliciesP123CACert.crt
+p p AllCertificatesanyPolicyTest11EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt
+p p AnyPolicyTest14EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt
 p s BadCRLIssuerNameCACert.crt
 p s BadCRLSignatureCACert.crt
 p f BadSignedCACert.crt

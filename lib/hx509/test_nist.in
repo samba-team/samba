@@ -35,19 +35,19 @@
 #
 
 srcdir="@srcdir@"
-nistdir=/sources/pki/nist/PKITS_data/certs
+nistdir=/sources/pki/nist/PKITS_data
 
 echo "nist tests"
 
 test -d "$nistdir" || exit 77
 
-while read validate verify cert chain1 chain2 ; do
+while read validate verify cert arg1 arg2 arg3 arg4 arg5 ; do
     expr "$validate" : "#" > /dev/null && continue
     
     test "$validate" = "end" && break
     echo -n .
 
-    if ./hxtool validate $nistdir/$cert > /dev/null; then
+    if ./hxtool validate $nistdir/certs/$cert > /dev/null; then
 	if test "$validate" = "f"; then
 	    echo "validate passed on fail: $cert"
 	    exit 1
@@ -63,15 +63,15 @@ while read validate verify cert chain1 chain2 ; do
 	continue
     fi
 
-    args="anchor:FILE:$nistdir/TrustAnchorRootCertificate.crt"
-    if test "X$chain1" != "X"; then
-	args="chain:FILE:$nistdir/$chain1 $args"
-    fi
-    if test "X$chain2" != "X"; then
-	args="chain:FILE:$nistdir/$chain2 $args"
-    fi
+    args="anchor:FILE:$nistdir/certs/TrustAnchorRootCertificate.crt"
 
-    if ./hxtool verify cert:FILE:$nistdir/$cert $args > /dev/null ; then
+    a=$(echo $arg1 | sed "s@basedir@$nistdir@") ; args="$args $a"
+    a=$(echo $arg2 | sed "s@basedir@$nistdir@") ; args="$args $a"
+    a=$(echo $arg3 | sed "s@basedir@$nistdir@") ; args="$args $a"
+    a=$(echo $arg4 | sed "s@basedir@$nistdir@") ; args="$args $a"
+    a=$(echo $arg5 | sed "s@basedir@$nistdir@") ; args="$args $a"
+
+    if ./hxtool verify cert:FILE:$nistdir/certs/$cert $args > /dev/null ; then
 	if test "$verify" = "f"; then
 	    echo "validate passed on fail: $cert"
 	    exit 1
