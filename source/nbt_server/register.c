@@ -45,9 +45,9 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 
 	status = nbt_name_refresh_recv(req, tmp_ctx, &io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		DEBUG(4,("Refreshed name %s on %s\n", 
-			 nbt_name_string(tmp_ctx, &iname->name), 
-			 iname->iface->ip_address));
+		DEBUG(4,("Refreshed name %s with %s on interface %s\n", 
+			 nbt_name_string(tmp_ctx, &iname->name),
+			 iname->iface->ip_address, iname->iface->bcast_address));
 		iname->registration_time = timeval_current();
 		nbtd_start_refresh_timer(iname);
 		talloc_free(tmp_ctx);
@@ -58,14 +58,14 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 	iname->nb_flags &= ~NBT_NM_ACTIVE;
 
 	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("Name conflict from %s refreshing name %s on %s - %s\n", 
+		DEBUG(1,("Name conflict from %s refreshing name %s with %s on interface %s - %s\n", 
 			 io.out.reply_addr, nbt_name_string(tmp_ctx, &iname->name),
-			 iname->iface->ip_address, 
+			 iname->iface->ip_address, iname->iface->bcast_address,
 			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
 	} else {
-		DEBUG(1,("Error refreshing name %s on %s - %s\n", 
+		DEBUG(1,("Error refreshing name %s with %s on interface %s - %s\n", 
 			 nbt_name_string(tmp_ctx, &iname->name), 
-			 iname->iface->ip_address,
+			 iname->iface->ip_address, iname->iface->bcast_address,
 			 nt_errstr(status)));
 	}
 
@@ -141,9 +141,9 @@ static void nbtd_register_handler(struct composite_context *creq)
 	if (NT_STATUS_IS_OK(status)) {
 		/* good - nobody complained about our registration */
 		iname->nb_flags |= NBT_NM_ACTIVE;
-		DEBUG(3,("Registered %s on interface %s\n",
+		DEBUG(3,("Registered %s with %s on interface %s\n",
 			 nbt_name_string(tmp_ctx, &iname->name), 
-			 iname->iface->bcast_address));
+			 iname->iface->ip_address, iname->iface->bcast_address));
 		iname->registration_time = timeval_current();
 		talloc_free(tmp_ctx);
 		nbtd_start_refresh_timer(iname);
@@ -153,8 +153,9 @@ static void nbtd_register_handler(struct composite_context *creq)
 	/* someone must have replied with an objection! */
 	iname->nb_flags |= NBT_NM_CONFLICT;
 
-	DEBUG(1,("Error registering %s on interface %s - %s\n",
-		 nbt_name_string(tmp_ctx, &iname->name), iname->iface->bcast_address,
+	DEBUG(1,("Error registering %s with %s on interface %s - %s\n",
+		 nbt_name_string(tmp_ctx, &iname->name),
+		 iname->iface->ip_address, iname->iface->bcast_address,
 		 nt_errstr(status)));
 	talloc_free(tmp_ctx);
 }
