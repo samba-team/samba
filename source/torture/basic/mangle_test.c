@@ -90,7 +90,7 @@ static BOOL test_one(struct smbcli_state *cli, const char *name)
 	data = tdb_fetch_bystring(tdb, shortname);
 	if (data.dptr) {
 		/* maybe its a duplicate long name? */
-		if (strcasecmp(name, data.dptr) != 0) {
+		if (strcasecmp(name, (const char *)data.dptr) != 0) {
 			/* we have a collision */
 			collisions++;
 			printf("Collision between %s and %s   ->  %s "
@@ -101,7 +101,7 @@ static BOOL test_one(struct smbcli_state *cli, const char *name)
 	} else {
 		TDB_DATA namedata;
 		/* store it for later */
-		namedata.dptr = discard_const_p(char, name);
+		namedata.dptr = discard_const_p(uint8_t, name);
 		namedata.dsize = strlen(name)+1;
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}

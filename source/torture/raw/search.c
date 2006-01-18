@@ -1286,14 +1286,14 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STRING(result.list[1].ea_list.name.s, "file2.txt");
 	CHECK_STRING(result.list[1].ea_list.eas.eas[0].name.s, "SECOND EA");
 	CHECK_VALUE(result.list[1].ea_list.eas.eas[0].value.length, 9);
-	CHECK_STRING(result.list[1].ea_list.eas.eas[0].value.data, "Value Two");
+	CHECK_STRING((const char *)result.list[1].ea_list.eas.eas[0].value.data, "Value Two");
 	CHECK_STRING(result.list[1].ea_list.eas.eas[1].name.s, "THIRD EA");
 	CHECK_VALUE(result.list[1].ea_list.eas.eas[1].value.length, 0);
 
 	CHECK_STRING(result.list[2].ea_list.name.s, "file3.txt");
 	CHECK_STRING(result.list[2].ea_list.eas.eas[0].name.s, "SECOND EA");
 	CHECK_VALUE(result.list[2].ea_list.eas.eas[0].value.length, 9);
-	CHECK_STRING(result.list[2].ea_list.eas.eas[0].value.data, "Value Two");
+	CHECK_STRING((const char *)result.list[2].ea_list.eas.eas[0].value.data, "Value Two");
 	CHECK_STRING(result.list[2].ea_list.eas.eas[1].name.s, "THIRD EA");
 	CHECK_VALUE(result.list[2].ea_list.eas.eas[1].value.length, 0);
 

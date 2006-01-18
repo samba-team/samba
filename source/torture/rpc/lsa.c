@@ -1401,9 +1401,9 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 	}
 
 	for (i = 0; i< privs1.count; i++) {
-		test_LookupPrivDisplayName(p, mem_ctx, handle, &privs1.privs[i].name);
-		test_LookupPrivValue(p, mem_ctx, handle, &privs1.privs[i].name);
-		if (!test_EnumAccountsWithUserRight(p, mem_ctx, handle, &privs1.privs[i].name)) {
+		test_LookupPrivDisplayName(p, mem_ctx, handle, (struct lsa_String *)&privs1.privs[i].name);
+		test_LookupPrivValue(p, mem_ctx, handle, (struct lsa_String *)&privs1.privs[i].name);
+		if (!test_EnumAccountsWithUserRight(p, mem_ctx, handle, (struct lsa_String *)&privs1.privs[i].name)) {
 			ret = False;
 		}
 	}
@@ -1606,7 +1606,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		domsid[i] = dom_sid_parse_talloc(mem_ctx, trust_sid);
 
 		trustinfo.sid = domsid[i];
-		init_lsa_String(&trustinfo.name, trust_name);
+		init_lsa_String((struct lsa_String *)&trustinfo.name, trust_name);
 
 		r.in.handle = handle;
 		r.in.info = &trustinfo;
