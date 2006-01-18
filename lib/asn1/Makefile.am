@@ -215,7 +215,7 @@ gen_files_rfc2459 =					\
 	asn1_id_x509_ce_basicConstraints.x		\
 	asn1_id_x509_ce_cRLDistributionPoints.x		\
 	asn1_id_x509_ce_cRLNumber.x			\
-	asn1_id_x509_ce_cRLReasons.x			\
+	asn1_id_x509_ce_cRLReason.x			\
 	asn1_id_x509_ce_certificateIssuer.x		\
 	asn1_id_x509_ce_certificatePolicies.x		\
 	asn1_id_x509_ce_deltaCRLIndicator.x		\
