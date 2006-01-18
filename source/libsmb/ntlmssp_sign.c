@@ -139,7 +139,7 @@ NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
 {
 	NTSTATUS nt_status;
 
-	if (!ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+	if (!(ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
 		DEBUG(3, ("NTLMSSP Signing not negotiated - cannot sign packet!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -238,7 +238,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 {	
 	NTSTATUS nt_status;
 
-	if (!ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+	if (!(ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 		DEBUG(3, ("NTLMSSP Sealing not negotiated - cannot seal packet!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
