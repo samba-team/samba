@@ -27,6 +27,7 @@
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 
+static void nbtd_wins_refresh_handler(struct composite_context *c);
 
 /* we send WINS client requests using our primary network interface 
 */
@@ -50,6 +51,21 @@ static void nbtd_wins_register_retry(struct event_context *ev, struct timed_even
 	nbtd_winsclient_register(iname);
 }
 
+/*
+  start a timer to refresh this name
+*/
+static void nbtd_wins_start_refresh_timer(struct nbtd_iface_name *iname)
+{
+	uint32_t refresh_time;
+	uint32_t max_refresh_time = lp_parm_int(-1, "nbtd", "max_refresh_time", 7200);
+
+	refresh_time = MIN(max_refresh_time, iname->ttl/2);
+	
+	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
+			iname, 
+			timeval_add(&iname->registration_time, refresh_time, 0),
+			nbtd_wins_refresh, iname);
+}
 
 /*
   called when a wins name refresh has completed
@@ -99,11 +115,7 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
 	iname->wins_server = talloc_steal(iname, io.out.wins_server);
 
 	iname->registration_time = timeval_current();
-	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
-			iname,
-			timeval_add(&iname->registration_time, iname->ttl/2, 0),
-			nbtd_wins_refresh,
-			iname);
+	nbtd_wins_start_refresh_timer(iname);
 
 	talloc_free(tmp_ctx);
 }
@@ -196,11 +208,7 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 	iname->wins_server = talloc_steal(iname, io.out.wins_server);
 
 	iname->registration_time = timeval_current();
-	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
-			iname,
-			timeval_add(&iname->registration_time, iname->ttl/2, 0),
-			nbtd_wins_refresh,
-			iname);
+	nbtd_wins_start_refresh_timer(iname);
 
 	DEBUG(3,("Registered %s with WINS server %s\n",
 		 nbt_name_string(tmp_ctx, &iname->name), iname->wins_server));
