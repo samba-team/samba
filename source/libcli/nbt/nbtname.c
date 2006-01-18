@@ -77,7 +77,7 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 		if (*offset + len + 2 > ndr->data_size) {
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
-		*component = (uint8_t*)talloc_strndup(ndr, &ndr->data[1 + *offset], len);
+		*component = (uint8_t*)talloc_strndup(ndr, (const char *)&ndr->data[1 + *offset], len);
 		NT_STATUS_HAVE_NO_MEMORY(*component);
 		*offset += len + 1;
 		*max_offset = MAX(*max_offset, *offset);
@@ -115,7 +115,7 @@ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s
 			name = talloc_asprintf_append(name, ".%s", component);
 			NT_STATUS_HAVE_NO_MEMORY(name);
 		} else {
-			name = component;
+			name = (char *)component;
 		}
 	}
 	if (num_components == MAX_COMPONENTS) {
@@ -244,7 +244,7 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 	int i;
 	uint8_t pad_char;
 
-	if (strlen(name) > 15) {
+	if (strlen((const char *)name) > 15) {
 		return NULL;
 	}
 
@@ -255,7 +255,7 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 		cname[2*i]   = 'A' + (name[i]>>4);
 		cname[1+2*i] = 'A' + (name[i]&0xF);
 	}
-	if (strcmp(name, "*") == 0) {
+	if (strcmp((const char *)name, "*") == 0) {
 		pad_char = 0;
 	} else {
 		pad_char = ' ';
@@ -291,10 +291,10 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	status = ndr_pull_nbt_string(ndr, ndr_flags, &s);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	scope = strchr(s, '.');
+	scope = (uint8_t *)strchr(s, '.');
 	if (scope) {
 		*scope = 0;
-		r->scope = talloc_strdup(ndr->current_mem_ctx, scope+1);
+		r->scope = talloc_strdup(ndr->current_mem_ctx, (const char *)&scope[1]);
 		NT_STATUS_HAVE_NO_MEMORY(r->scope);
 	} else {
 		r->scope = NULL;
@@ -332,18 +332,18 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt
 		return NT_STATUS_OK;
 	}
 
-	cname = compress_name(ndr, r->name, r->type);
+	cname = compress_name(ndr, (const uint8_t *)r->name, r->type);
 	NT_STATUS_HAVE_NO_MEMORY(cname);
 
 	if (r->scope) {
-		fullname = talloc_asprintf(ndr, "%s.%s", cname, r->scope);
+		fullname = (uint8_t *)talloc_asprintf(ndr, "%s.%s", cname, r->scope);
 		NT_STATUS_HAVE_NO_MEMORY(fullname);
 		talloc_free(cname);
 	} else {
 		fullname = cname;
 	}
 	
-	status = ndr_push_nbt_string(ndr, ndr_flags, fullname);
+	status = ndr_push_nbt_string(ndr, ndr_flags, (const char *)fullname);
 
 	return status;
 }
