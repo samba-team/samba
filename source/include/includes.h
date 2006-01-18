@@ -112,11 +112,12 @@ struct ipv4_addr {
 #include "auth/credentials/credentials.h"
 #include "libcli/nbt/libnbt.h"
 
-/***** automatically generated prototypes *****/
-#include "include/proto.h"
-#include "basic.h"
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
+
+/***** automatically generated prototypes *****/
+#include "basic.h"
+#include "include/proto.h"
 
 /* String routines */
 
