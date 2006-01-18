@@ -184,7 +184,7 @@ static int ejs_creds_get_workstation(MprVarHandle eid, int argc, struct MprVar *
 /*
   set machine account 
 */
-static int ejs_creds_set_machine_account(MprVarHandle eid, int argc, char **argv)
+static int ejs_creds_set_machine_account(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
 	if (argc != 0) {
