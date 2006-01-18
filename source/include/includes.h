@@ -1021,6 +1021,11 @@ struct functable {
 	int (*fn)(int argc, const char **argv);
 };
 
+struct functable2 {
+	const char *funcname;
+	int (*fn)(int argc, const char **argv);
+	const char *helptext;
+};
 
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1

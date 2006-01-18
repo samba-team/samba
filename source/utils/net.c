@@ -132,6 +132,35 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 	return usage_fn(argc, argv);
 }
 
+/*
+ * run a function from a function table.
+ */
+int net_run_function2(int argc, const char **argv, const char *whoami,
+		      struct functable2 *table)
+{
+	int i;
+
+	if (argc != 0) {
+		for (i=0; table[i].funcname; i++) {
+			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+				return table[i].fn(argc-1, argv+1);
+		}
+	}
+
+	for (i=0; table[i].funcname != NULL; i++) {
+		size_t j, namelen = strlen(table[i].funcname);
+		
+		d_printf("%s %s ", whoami, table[i].funcname);
+
+		for (j=15; j>namelen; j--) {
+			d_printf(" ");
+		}
+		d_printf("%s\n", table[i].helptext);
+	}
+
+	return -1;
+}
+
 /****************************************************************************
 connect to \\server\service 
 ****************************************************************************/

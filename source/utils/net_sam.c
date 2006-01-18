@@ -112,12 +112,6 @@ static int net_sam_set_homedir(int argc, const char **argv)
 			       pdb_set_homedir);
 }
 
-static int net_sam_set_description(int argc, const char **argv)
-{
-	return net_sam_userset(argc, argv, "description",
-			       pdb_set_acct_desc);
-}
-
 static int net_sam_set_workstations(int argc, const char **argv)
 {
 	return net_sam_userset(argc, argv, "workstations",
@@ -301,10 +295,10 @@ static int net_sam_set_pwdcanchange(int argc, const char **argv)
 }
 
 /*
- * Set a group's comment
+ * Set a user's or a group's comment
  */
 
-static int net_sam_set_groupcomment(int argc, const char **argv)
+static int net_sam_set_comment(int argc, const char **argv)
 {
 	GROUP_MAP map;
 	DOM_SID sid;
@@ -313,7 +307,7 @@ static int net_sam_set_groupcomment(int argc, const char **argv)
 	NTSTATUS status;
 
 	if (argc != 2) {
-		d_fprintf(stderr, "usage: net sam set groupcomment <group> "
+		d_fprintf(stderr, "usage: net sam set comment <name> "
 			  "<comment>\n");
 		return -1;
 	}
@@ -322,6 +316,11 @@ static int net_sam_set_groupcomment(int argc, const char **argv)
 			 &dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
+	}
+
+	if (type == SID_NAME_USER) {
+		return net_sam_userset(argc, argv, "comment",
+				       pdb_set_acct_desc);
 	}
 
 	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
@@ -346,70 +345,45 @@ static int net_sam_set_groupcomment(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Updated comment of %s\\%s to %s\n", dom, name, argv[1]);
+	d_printf("Updated comment of group %s\\%s to %s\n", dom, name,
+		 argv[1]);
 
 	return 0;
 }
 
-static int net_help_sam_set(int argc, const char **argv)
-{
-	d_printf("net sam set homedir\n"
-		 "  Change a user's homedir\n");
-	d_printf("net sam set fullname\n"
-		 "  Change a user's fullname\n");
-	d_printf("net sam set profilepath\n"
-		 "  Change a user's profile path\n");
-	d_printf("net sam set description\n"
-		 "  Change a user's description\n");
-	d_printf("net sam set logonscript\n"
-		 "  Change a user's logon script\n");
-	d_printf("net sam set homedrive\n"
-		 "  Change a user's homedrive\n");
-	d_printf("net sam set workstations\n"
-		 "  Change a user's allowed workstations\n");
-	d_printf("net sam set disabled\n"
-		 "  Disable/Enable a user\n");
-	d_printf("net sam set pwnotreq\n"
-		 "  Disable/Enable the password not required flag\n");
-	d_printf("net sam set autolock\n"
-		 "  Disable/Enable a user's autolock flag\n");
-	d_printf("net sam set pwnoexp\n"
-		 "  Disable/Enable whether a user's pw does not expire\n");
-	d_printf("net sam set pwdmustchange\n"
-		 "  Set a users password must change time\n");
-	d_printf("net sam set pwdcanchange\n"
-		 "  Set a users password can change time\n");
-	d_printf("net sam set groupcomment\n"
-		 "  Change a group's comment\n");
-
-	return -1;
-}
-
 static int net_sam_set(int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"homedir", net_sam_set_homedir},
-		{"profilepath", net_sam_set_profilepath},
-		{"groupcomment", net_sam_set_groupcomment},
-		{"description", net_sam_set_description},
-		{"fullname", net_sam_set_fullname},
-		{"logonscript", net_sam_set_logonscript},
-		{"homedrive", net_sam_set_homedrive},
-		{"workstations", net_sam_set_workstations},
-		{"disabled", net_sam_set_disabled},
-		{"pwnotreq", net_sam_set_pwnotreq},
-		{"autolock", net_sam_set_autolock},
-		{"pwnoexp", net_sam_set_pwnoexp},
-		{"pwdmustchange", net_sam_set_pwdmustchange},
-		{"pwdcanchange", net_sam_set_pwdcanchange},
+	struct functable2 func[] = {
+		{ "homedir", net_sam_set_homedir,
+		  "Change a user's home directory" },
+		{ "profilepath", net_sam_set_profilepath,
+		  "Change a user's profile path" },
+		{ "comment", net_sam_set_comment,
+		  "Change a users or groups description" },
+		{ "fullname", net_sam_set_fullname,
+		  "Change a user's full name" },
+		{ "logonscript", net_sam_set_logonscript,
+		  "Change a user's logon script" },
+		{ "homedrive", net_sam_set_homedrive,
+		  "Change a user's home drive" },
+		{ "workstations", net_sam_set_workstations,
+		  "Change a user's allowed workstations" },
+		{ "disabled", net_sam_set_disabled,
+		  "Disable/Enable a user" },
+		{ "pwnotreq", net_sam_set_pwnotreq,
+		  "Disable/Enable the password not required flag" },
+		{ "autolock", net_sam_set_autolock,
+		  "Disable/Enable a user's lockout flag" },
+		{ "pwnoexp", net_sam_set_pwnoexp,
+		  "Disable/Enable whether a user's pw does not expire" },
+		{ "pwdmustchange", net_sam_set_pwdmustchange,
+		  "Set a users password must change time" },
+		{ "pwdcanchange", net_sam_set_pwdcanchange,
+		  "Set a users password can change time" },
 		{NULL, NULL}
 	};
 
-	if (argc != 0) {
-		return net_run_function(argc, argv, func, net_help_sam_set);
-	}
-
-	return net_help_sam_set(argc, argv);
+	return net_run_function2(argc, argv, "net sam set", func);
 }
 
 /*
@@ -695,20 +669,124 @@ static int net_sam_listmem(int argc, const char **argv)
 	return 0;
 }
 
-int net_help_sam(int argc, const char **argv)
+/*
+ * Do the listing
+ */
+static int net_sam_do_list(int argc, const char **argv,
+			   struct pdb_search *search, const char *what)
 {
-	d_printf("net sam mapunixgroup\n"
-		 "  Map a unix group to a domain group\n");
-	d_printf("net sam createlocalgroup\n"
-		 "  Create a new local group\n");
-	d_printf("net sam addmem\n"
-		 "  Add a member to a group\n");
-	d_printf("net sam delmem\n"
-		 "  Delete a member from a group\n");
-	d_printf("net sam listmem\n"
-		 "  List group members\n");
-	
-	return -1;
+	BOOL verbose = (argc == 1);
+
+	if ((argc > 1) ||
+	    ((argc == 1) && !strequal(argv[0], "verbose"))) {
+		d_fprintf(stderr, "usage: net sam list %s [verbose]\n", what);
+		return -1;
+	}
+
+	if (search == NULL) {
+		d_fprintf(stderr, "Could not start search\n");
+		return -1;
+	}
+
+	while (True) {
+		struct samr_displayentry entry;
+		if (!search->next_entry(search, &entry)) {
+			break;
+		}
+		if (verbose) {
+			d_printf("%s:%d:%s\n",
+				 entry.account_name,
+				 entry.rid,
+				 entry.description);
+		} else {
+			d_printf("%s\n", entry.account_name);
+		}
+	}
+
+	search->search_end(search);
+	return 0;
+}
+
+static int net_sam_list_users(int argc, const char **argv)
+{
+	return net_sam_do_list(argc, argv, pdb_search_users(ACB_NORMAL),
+			       "users");
+}
+
+static int net_sam_list_groups(int argc, const char **argv)
+{
+	return net_sam_do_list(argc, argv, pdb_search_groups(), "groups");
+}
+
+static int net_sam_list_localgroups(int argc, const char **argv)
+{
+	return net_sam_do_list(argc, argv,
+			       pdb_search_aliases(get_global_sam_sid()),
+			       "localgroups");
+}
+
+static int net_sam_list_builtin(int argc, const char **argv)
+{
+	return net_sam_do_list(argc, argv,
+			       pdb_search_aliases(&global_sid_Builtin),
+			       "builtin");
+}
+
+static int net_sam_list_workstations(int argc, const char **argv)
+{
+	return net_sam_do_list(argc, argv,
+			       pdb_search_users(ACB_WSTRUST),
+			       "workstations");
+}
+
+/*
+ * List stuff
+ */
+
+static int net_sam_list(int argc, const char **argv)
+{
+	struct functable2 func[] = {
+		{ "users", net_sam_list_users,
+		  "List SAM users" },
+		{ "groups", net_sam_list_groups,
+		  "List SAM groups" },
+		{ "localgroups", net_sam_list_localgroups,
+		  "List SAM local groups" },
+		{ "builtin", net_sam_list_builtin,
+		  "List builtin groups" },
+		{ "workstations", net_sam_list_workstations,
+		  "List domain member workstations" },
+		{NULL, NULL}
+	};
+
+	return net_run_function2(argc, argv, "net sam list", func);
+}
+
+/*
+ * Show details of SAM entries
+ */
+
+static int net_sam_show(int argc, const char **argv)
+{
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	const char *dom, *name;
+
+	if (argc != 1) {
+		d_fprintf(stderr, "usage: net sam show <name>\n");
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ISOLATED,
+			 &dom, &name, &sid, &type)) {
+		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
+		return -1;
+	}
+
+	d_printf("%s\\%s is a %s with SID %s\n", dom, name,
+		 sid_type_lookup(type), sid_string_static(&sid));
+
+	return 0;
 }
 
 /***********************************************************
@@ -716,15 +794,24 @@ int net_help_sam(int argc, const char **argv)
  **********************************************************/
 int net_sam(int argc, const char **argv)
 {
-	struct functable func[] = {
-		{"createlocalgroup", net_sam_createlocalgroup},
-		{"mapunixgroup", net_sam_mapunixgroup},
-		{"addmem", net_sam_addmem},
-		{"delmem", net_sam_delmem},
-		{"listmem", net_sam_listmem},
-		{"set", net_sam_set},
-		{"help", net_help_sam},
-		{NULL, NULL}
+	struct functable2 func[] = {
+		{ "createlocalgroup", net_sam_createlocalgroup,
+		  "Create a new local group" },
+		{ "mapunixgroup", net_sam_mapunixgroup,
+		  "Map a unix group to a domain group" },
+		{ "addmem", net_sam_addmem,
+		  "Add a member to a group" },
+		{ "delmem", net_sam_delmem,
+		  "Delete a member from a group" },
+		{ "listmem", net_sam_listmem,
+		  "List group members" },
+		{ "list", net_sam_list,
+		  "List users, groups and local groups" },
+		{ "show", net_sam_show,
+		  "Show details of a SAM entry" },
+		{ "set", net_sam_set,
+		  "Set details of a SAM account" },
+		{ NULL, NULL, NULL }
 	};
 
 	/* we shouldn't have silly checks like this */
@@ -734,9 +821,6 @@ int net_sam(int argc, const char **argv)
 		return -1;
 	}
 	
-	if ( argc )
-		return net_run_function(argc, argv, func, net_help_sam);
-
-	return net_help_sam( argc, argv );
+	return net_run_function2(argc, argv, "net sam", func);
 }
 
