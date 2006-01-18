@@ -2164,7 +2164,7 @@ static int cmd_addprivileges(const char **cmd_ptr)
 	ZERO_STRUCT(rights);
 	while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		rights.names = talloc_realloc(mem_ctx, rights.names, 
-						struct lsa_String, rights.count+1);
+					      struct lsa_StringLarge, rights.count+1);
 		rights.names[rights.count].string = talloc_strdup(mem_ctx, buf);
 		rights.count++;
 	}
@@ -2214,7 +2214,7 @@ static int cmd_delprivileges(const char **cmd_ptr)
 	ZERO_STRUCT(rights);
 	while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		rights.names = talloc_realloc(mem_ctx, rights.names, 
-						struct lsa_String, rights.count+1);
+					      struct lsa_StringLarge, rights.count+1);
 		rights.names[rights.count].string = talloc_strdup(mem_ctx, buf);
 		rights.count++;
 	}
