@@ -48,7 +48,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct smb_composite_savefile io1;
 	struct smb_composite_loadfile io2;
 	struct composite_context **c;
-	char *data;
+	uint8_t *data;
 	size_t len = random() % 100000;
 	const int num_ops = 50;
 	int i;
@@ -124,7 +124,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct smb_composite_savefile io1;
 	struct smb_composite_fetchfile io2;
 	struct composite_context **c;
-	char *data;
+	uint8_t *data;
 	int i;
 	size_t len = random() % 10000;
 	extern int torture_numops;

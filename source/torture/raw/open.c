@@ -1247,7 +1247,7 @@ static BOOL test_chained(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openxreadx.in.mincnt = sizeof(buf);
 	io.openxreadx.in.maxcnt = sizeof(buf);
 	io.openxreadx.in.remaining = 0;
-	io.openxreadx.out.data = buf2;
+	io.openxreadx.out.data = (uint8_t *)buf2;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);

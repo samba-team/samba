@@ -366,7 +366,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
-		wr.write.in.data = "x";
+		wr.write.in.data = (const uint8_t *)"x";
 		status = smb_raw_write(cli->tree, &wr);
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
@@ -383,7 +383,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
-		wr.write.in.data = "x";
+		wr.write.in.data = (const uint8_t *)"x";
 		status = smb_raw_write(cli->tree, &wr);
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
@@ -437,7 +437,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
-		wr.write.in.data = "x";
+		wr.write.in.data = (const uint8_t *)"x";
 		status = smb_raw_write(cli->tree, &wr);
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
@@ -454,7 +454,7 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		wr.write.in.count = 1;
 		wr.write.in.offset = 0;
 		wr.write.in.remaining = 0;
-		wr.write.in.data = "x";
+		wr.write.in.data = (const uint8_t *)"x";
 		status = smb_raw_write(cli->tree, &wr);
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
