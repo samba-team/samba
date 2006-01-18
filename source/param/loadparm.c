@@ -4274,7 +4274,7 @@ static BOOL check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
  Parse the contents of a usershare file.
 ***************************************************************************/
 
-BOOL parse_usershare_file(TALLOC_CTX *ctx, 
+enum usershare_err parse_usershare_file(TALLOC_CTX *ctx, 
 			SMB_STRUCT_STAT *psbuf,
 			const char *servicename,
 			int snum,
@@ -4290,22 +4290,22 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 	SMB_STRUCT_STAT sbuf;
 
 	if (numlines < 4) {
-		return False;
+		return USERSHARE_MALFORMED_FILE;
 	}
 
 	if (!strequal(lines[0], "#VERSION 1")) {
-		return False;
+		return USERSHARE_BAD_VERSION;
 	}
 
 	if (!strnequal(lines[1], "path=", 5)) {
-		return False;
+		return USERSHARE_MALFORMED_PATH;
 	}
 
 	pstrcpy(sharepath, &lines[1][5]);
 	trim_string(sharepath, " ", " ");
 
 	if (!strnequal(lines[2], "comment=", 8)) {
-		return False;
+		return USERSHARE_MALFORMED_COMMENT_DEF;
 	}
 
 	pstrcpy(comment, &lines[2][8]);
@@ -4313,23 +4313,23 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 	trim_char(comment, '"', '"');
 
 	if (!strnequal(lines[3], "usershare_acl=", 14)) {
-		return False;
+		return USERSHARE_MALFORMED_ACL_DEF;
 	}
 
 	if (!parse_usershare_acl(ctx, &lines[3][14], ppsd)) {
-		return False;
+		return USERSHARE_ACL_ERR;
 	}
 
 	if (snum != -1 && strequal(sharepath, ServicePtrs[snum]->szPath)) {
 		/* Path didn't change, no checks needed. */
-		return True;
+		return USERSHARE_OK;
 	}
 
 	/* The path *must* be absolute. */
 	if (sharepath[0] != '/') {
 		DEBUG(2,("parse_usershare_file: share %s: path %s is not an absolute path.\n",
 			servicename, sharepath));
-		return False;
+		return USERSHARE_PATH_NOT_ABSOLUTE;
 	}
 
 	/* If there is a usershare prefix deny list ensure one of these paths
@@ -4343,7 +4343,7 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 				DEBUG(2,("parse_usershare_file: share %s path %s starts with one of the "
 					"usershare prefix deny list entries.\n",
 					servicename, sharepath));
-				return False;
+				return USERSHARE_PATH_IS_DENIED;
 			}
 		}
 	}
@@ -4364,7 +4364,7 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 			DEBUG(2,("parse_usershare_file: share %s path %s doesn't start with one of the "
 				"usershare prefix allow list entries.\n",
 				servicename, sharepath));
-			return False;
+			return USERSHARE_PATH_NOT_ALLOWED;
 		}
         }
 
@@ -4374,7 +4374,7 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 	if (!dp) {
 		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
 			servicename, sharepath));
-		return False;
+		return USERSHARE_PATH_NOT_DIRECTORY;
 	}
 
 	/* Ensure the owner of the usershare file has permission to share
@@ -4384,14 +4384,14 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 		DEBUG(2,("parse_usershare_file: share %s : stat failed on path %s. %s\n",
 			servicename, sharepath, strerror(errno) ));
 		sys_closedir(dp);
-		return False;
+		return USERSHARE_POSIX_ERR;
 	}
 
 	if (!S_ISDIR(sbuf.st_mode)) {
 		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
 			servicename, sharepath ));
 		sys_closedir(dp);
-		return False;
+		return USERSHARE_PATH_NOT_DIRECTORY;
 	}
 
 #if 0
@@ -4414,7 +4414,7 @@ BOOL parse_usershare_file(TALLOC_CTX *ctx,
 
 	sys_closedir(dp);
 
-	return True;
+	return USERSHARE_OK;
 }
 
 /***************************************************************************
@@ -4532,7 +4532,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		return 1;
 	}
 
-	if (!parse_usershare_file(ctx, &sbuf, service_name, iService, lines, numlines, sharepath, comment, &psd)) {
+	if (parse_usershare_file(ctx, &sbuf, service_name, iService, lines, numlines, sharepath, comment, &psd) != USERSHARE_OK) {
 		talloc_destroy(ctx);
 		SAFE_FREE(lines);
 		return -1;

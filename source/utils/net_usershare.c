@@ -21,6 +21,41 @@
 #include "includes.h"
 #include "utils/net.h"
 
+struct {
+	const char *us_errstr;
+	enum usershare_err us_err;
+} us_errs [] = {
+	{"",USERSHARE_OK},
+	{"Malformed usershare file", USERSHARE_MALFORMED_FILE},
+	{"Bad version number", USERSHARE_BAD_VERSION},
+	{"Malformed path entry", USERSHARE_MALFORMED_PATH},
+	{"Malformed comment entryfile", USERSHARE_MALFORMED_COMMENT_DEF},
+	{"Malformed acl definition", USERSHARE_MALFORMED_ACL_DEF},
+	{"Acl parse error", USERSHARE_ACL_ERR},
+	{"Path not absolute", USERSHARE_PATH_NOT_ABSOLUTE},
+	{"Path is denied", USERSHARE_PATH_IS_DENIED},
+	{"Path not allowed", USERSHARE_PATH_NOT_ALLOWED},
+	{"Path is not a directory", USERSHARE_PATH_NOT_DIRECTORY},
+	{"System error", USERSHARE_POSIX_ERR},
+	{NULL,(enum usershare_err)-1}
+};
+
+static const char *get_us_error_code(enum usershare_err us_err)
+{
+	static pstring out;
+	int idx = 0;
+
+	while (us_errs[idx].us_errstr != NULL) {
+		if (us_errs[idx].us_err == us_err) {
+			return us_errs[idx].us_errstr;
+		}
+		idx++;
+	}
+
+	slprintf(out, sizeof(out), "Usershare error code (0x%x)", (unsigned int)us_err);
+	return out;
+}
+
 /* The help subsystem for the USERSHARE subcommand */
 
 static int net_usershare_add_usage(int argc, const char **argv)
@@ -166,6 +201,14 @@ static int net_usershare_add(int argc, const char **argv)
 	pstrcpy(full_path_tmp, full_path);
 	pstrcat(full_path, sharename);
 	pstrcat(full_path_tmp, ":tmpXXXXXX");
+
+	/* The path *must* be absolute. */
+	if (us_path[0] != '/') {
+		d_fprintf(stderr,"net usershare add: path %s is not an absolute path.\n",
+			us_path);
+		SAFE_FREE(sharename);
+		return -1;
+	}
 
 	/* Check the directory to be shared exists. */
 	if (sys_stat(us_path, &sbuf) != 0) {
@@ -461,6 +504,13 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, BOOL only_ours)
 	return 0;
 }
 
+enum priv_op { US_LIST_OP, US_INFO_OP};
+
+struct priv_info {
+	TALLOC_CTX *ctx;
+	enum priv_op op;
+};
+
 /***************************************************************************
  Call a function for every share on the list.
 ***************************************************************************/
@@ -485,7 +535,8 @@ static int info_fn(struct file_list *fl, void *private)
 {
 	SMB_STRUCT_STAT sbuf;
 	char **lines = NULL;
-	TALLOC_CTX *ctx = (TALLOC_CTX *)private;
+	struct priv_info *pi = (struct priv_info *)private;
+	TALLOC_CTX *ctx = pi->ctx;
 	int fd = -1;
 	int numlines = 0;
 	SEC_DESC *psd = NULL;
@@ -495,6 +546,7 @@ static int info_fn(struct file_list *fl, void *private)
 	pstring acl_str;
 	int num_aces;
 	char sep_str[2];
+	enum usershare_err us_err;
 
 	sep_str[0] = *lp_winbind_separator();
 	sep_str[1] = '\0';
@@ -538,12 +590,16 @@ static int info_fn(struct file_list *fl, void *private)
 	}
 
 	/* Ensure it's well formed. */
-	if (!parse_usershare_file(ctx, &sbuf, fl->pathname, -1, lines, numlines,
+	us_err = parse_usershare_file(ctx, &sbuf, fl->pathname, -1, lines, numlines,
 				sharepath,
 				comment,
-				&psd)) {
+				&psd);
+
+	if (us_err != USERSHARE_OK) {
 		d_fprintf(stderr, "info_fn: file %s is not a well formed usershare file.\n",
 			basepath );
+		d_fprintf(stderr, "info_fn: Error was %s.\n",
+			get_us_error_code(us_err) );
 		return -1;
 	}
 
@@ -582,10 +638,14 @@ static int info_fn(struct file_list *fl, void *private)
 
 	acl_str[strlen(acl_str)-1] = '\0';
 
-	d_printf("[%s]\n", fl->pathname );
-	d_printf("path=%s\n", sharepath );
-	d_printf("comment=%s\n", comment);
-	d_printf("%s\n\n", acl_str);
+	if (pi->op == US_INFO_OP) {
+		d_printf("[%s]\n", fl->pathname );
+		d_printf("path=%s\n", sharepath );
+		d_printf("comment=%s\n", comment);
+		d_printf("%s\n\n", acl_str);
+	} else if (pi->op == US_LIST_OP) {
+		d_printf("%s\n", fl->pathname);
+	}
 
 	return 0;
 }
@@ -599,6 +659,7 @@ static int net_usershare_info(int argc, const char **argv)
 	fstring wcard;
 	BOOL only_ours = True;
 	int ret = -1;
+	struct priv_info pi;
 	TALLOC_CTX *ctx;
 
 	fstrcpy(wcard, "*");
@@ -624,11 +685,16 @@ static int net_usershare_info(int argc, const char **argv)
 	if (ret) {
 		return ret;
 	}
-	ret = process_share_list(info_fn, ctx);
+
+	pi.ctx = ctx;
+	pi.op = US_INFO_OP;
+
+	ret = process_share_list(info_fn, &pi);
 	talloc_destroy(ctx);
 	return ret;
 }
 
+#if 0
 /***************************************************************************
  List function.
 ***************************************************************************/
@@ -638,6 +704,7 @@ static int list_fn(struct file_list *fl, void *private)
 	d_printf("%s\n", fl->pathname);
 	return 0;
 }
+#endif
 
 /***************************************************************************
  List userlevel shares.
@@ -648,6 +715,7 @@ static int net_usershare_list(int argc, const char **argv)
 	fstring wcard;
 	BOOL only_ours = True;
 	int ret = -1;
+	struct priv_info pi;
 	TALLOC_CTX *ctx;
 
 	fstrcpy(wcard, "*");
@@ -673,7 +741,11 @@ static int net_usershare_list(int argc, const char **argv)
 	if (ret) {
 		return ret;
 	}
-	ret = process_share_list(list_fn, NULL);
+
+	pi.ctx = ctx;
+	pi.op = US_LIST_OP;
+
+	ret = process_share_list(info_fn, &pi);
 	talloc_destroy(ctx);
 	return ret;
 }
