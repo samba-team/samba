@@ -219,3 +219,320 @@ failed:
 	exit(1);
 	return NULL;
 }
+
+struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
+{
+	int i;
+	struct ldb_control **ctrl;
+
+	if (control_strings == NULL || control_strings[0] == NULL)
+		return NULL;
+
+	for (i = 0; control_strings[i]; i++);
+
+	ctrl = talloc_array(mem_ctx, struct ldb_control *, i + 1);
+
+	for (i = 0; control_strings[i]; i++) {
+		if (strncmp(control_strings[i], "dirsync:", 8) == 0) {
+			struct ldb_dirsync_control *control;
+			const char *p;
+			char cookie[1024];
+			int crit, flags, max_attrs, ret;
+		       
+			cookie[0] = '\0';
+			p = &(control_strings[i][8]);
+			ret = sscanf(p, "%d:%d:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
+
+			if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
+				fprintf(stderr, "invalid dirsync control syntax\n");
+				return NULL;
+			}
+
+			/* w2k3 seems to ignore the parameter,
+			 * but w2k sends a wrong cookie when this value is to small
+			 * this would cause looping forever, while getting
+			 * the same data and same cookie forever
+			 */
+			if (max_attrs == 0) max_attrs = 0x0FFFFFFF;
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_DIRSYNC_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_dirsync_control);
+			control->flags = flags;
+			control->max_attributes = max_attrs;
+			if (*cookie) {
+				control->cookie_len = ldb_base64_decode(cookie);
+				control->cookie = talloc_memdup(control, cookie, control->cookie_len);
+			} else {
+				control->cookie = NULL;
+				control->cookie_len = 0;
+			}
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "asq:", 4) == 0) {
+			struct ldb_asq_control *control;
+			const char *p;
+			char attr[256];
+			int crit, ret;
+
+			attr[0] = '\0';
+			p = &(control_strings[i][4]);
+			ret = sscanf(p, "%d:%255[^$]", &crit, attr);
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (attr[0] == '\0')) {
+				fprintf(stderr, "invalid asq control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_ASQ_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_asq_control);
+			control->request = 1;
+			control->source_attribute = talloc_strdup(control, attr);
+			control->src_attr_len = strlen(attr);
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "extended_dn:", 12) == 0) {
+			struct ldb_extended_dn_control *control;
+			const char *p;
+			int crit, type, ret;
+
+			p = &(control_strings[i][12]);
+			ret = sscanf(p, "%d:%d", &crit, &type);
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (type < 0) || (type > 1)) {
+				fprintf(stderr, "invalid extended_dn control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_EXTENDED_DN_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_extended_dn_control);
+			control->type = type;
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "paged_results:", 14) == 0) {
+			struct ldb_paged_control *control;
+			const char *p;
+			int crit, size, ret;
+		       
+			p = &(control_strings[i][14]);
+			ret = sscanf(p, "%d:%d", &crit, &size);
+
+			if ((ret != 2) || (crit < 0) || (crit > 1) || (size < 0)) {
+				fprintf(stderr, "invalid paged_results control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_paged_control);
+			control->size = size;
+			control->cookie = NULL;
+			control->cookie_len = 0;
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "server_sort:", 12) == 0) {
+			struct ldb_server_sort_control **control;
+			const char *p;
+			char attr[256];
+			char rule[128];
+			int crit, rev, ret;
+
+			attr[0] = '\0';
+			rule[0] = '\0';
+			p = &(control_strings[i][12]);
+			ret = sscanf(p, "%d:%d:%255[^:]:%127[^:]", &crit, &rev, attr, rule);
+			if ((ret < 3) || (crit < 0) || (crit > 1) || (rev < 0 ) || (rev > 1) ||attr[0] == '\0') {
+				fprintf(stderr, "invalid server_sort control syntax\n");
+				return NULL;
+			}
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_SERVER_SORT_OID;
+			ctrl[i]->critical = crit;
+			control = talloc_array(ctrl[i], struct ldb_server_sort_control *, 2);
+			control[0] = talloc(control, struct ldb_server_sort_control);
+			control[0]->attributeName = talloc_strdup(control, attr);
+			if (rule[0])
+				control[0]->orderingRule = talloc_strdup(control, rule);
+			else
+				control[0]->orderingRule = NULL;
+			control[0]->reverse = rev;
+			control[1] = NULL;
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "notification:", 13) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][13]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				fprintf(stderr, "invalid notification control syntax\n");
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_NOTIFICATION_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
+		/* no controls matched, throw an error */
+		fprintf(stderr, "Invalid control name\n");
+		return NULL;
+	}
+
+	ctrl[i] = NULL;
+
+	return ctrl;
+}
+
+
+/* this function check controls reply and determines if more
+ * processing is needed setting up the request controls correctly
+ *
+ * returns:
+ * 	-1 error
+ * 	0 all ok
+ * 	1 all ok, more processing required
+ */
+int handle_controls_reply(struct ldb_control **reply, struct ldb_control **request)
+{
+	int i, j;
+       	int ret = 0;
+
+	if (reply == NULL || request == NULL) return -1;
+	
+	for (i = 0; reply[i]; i++) {
+		if (strcmp(LDB_CONTROL_ASQ_OID, reply[i]->oid) == 0) {
+			struct ldb_asq_control *rep_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_asq_control);
+
+			/* check the result */
+			if (rep_control->result != 0) {
+				fprintf(stderr, "Warning: ASQ not performed with error: %d\n", rep_control->result);
+			}
+
+			continue;
+		}
+		if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, reply[i]->oid) == 0) {
+			struct ldb_paged_control *rep_control, *req_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_paged_control);
+			if (rep_control->cookie_len == 0) /* we are done */
+				break;
+
+			/* more processing required */
+			/* let's fill in the request control with the new cookie */
+
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, request[j]->oid) == 0)
+					break;
+			}
+			/* if there's a reply control we must find a request
+			 * control matching it */
+			if (! request[j]) return -1;
+
+			req_control = talloc_get_type(request[j]->data, struct ldb_paged_control);
+
+			if (req_control->cookie)
+				talloc_free(req_control->cookie);
+			req_control->cookie = talloc_memdup(req_control,
+							    rep_control->cookie,
+							    rep_control->cookie_len);
+			req_control->cookie_len = rep_control->cookie_len;
+
+			ret = 1;
+
+			continue;
+		}
+
+		if (strcmp(LDB_CONTROL_SORT_RESP_OID, reply[i]->oid) == 0) {
+			struct ldb_sort_resp_control *rep_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_sort_resp_control);
+
+			/* check we have a matching control in the request */
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_SERVER_SORT_OID, request[j]->oid) == 0)
+					break;
+			}
+			if (! request[j]) {
+				fprintf(stderr, "Warning Server Sort reply received but no request found\n");
+				continue;
+			}
+
+			/* check the result */
+			if (rep_control->result != 0) {
+				fprintf(stderr, "Warning: Sorting not performed with error: %d\n", rep_control->result);
+			}
+
+			continue;
+		}
+
+		if (strcmp(LDB_CONTROL_DIRSYNC_OID, reply[i]->oid) == 0) {
+			struct ldb_dirsync_control *rep_control, *req_control;
+			char *cookie;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_dirsync_control);
+			if (rep_control->cookie_len == 0) /* we are done */
+				break;
+
+			/* more processing required */
+			/* let's fill in the request control with the new cookie */
+
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_DIRSYNC_OID, request[j]->oid) == 0)
+					break;
+			}
+			/* if there's a reply control we must find a request
+			 * control matching it */
+			if (! request[j]) return -1;
+
+			req_control = talloc_get_type(request[j]->data, struct ldb_dirsync_control);
+
+			if (req_control->cookie)
+				talloc_free(req_control->cookie);
+			req_control->cookie = talloc_memdup(req_control, 
+							    rep_control->cookie,
+							    rep_control->cookie_len);
+			req_control->cookie_len = rep_control->cookie_len;
+
+			cookie = ldb_base64_encode(req_control, rep_control->cookie, rep_control->cookie_len);
+			printf("# DIRSYNC cookie returned was:\n# %s\n", cookie);
+
+			sleep(120);
+			
+			ret = 1;
+
+			continue;
+		}
+
+		/* no controls matched, throw a warning */
+		fprintf(stderr, "Unknown reply control oid: %s\n", reply[i]->oid);
+	}
+
+	return ret;
+}
+
