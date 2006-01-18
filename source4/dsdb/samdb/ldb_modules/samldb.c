@@ -2,6 +2,7 @@
    SAM ldb module
 
    Copyright (C) Simo Sorce  2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
    * NOTICE: this module is NOT released under the GNU LGPL license as
    * other ldb code. This module is release under the GNU GPL v2 or
@@ -33,55 +34,95 @@
  */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
+#include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
 
-#define SAM_ACCOUNT_NAME_BASE "$000000-000000000000"
+
+/* if value is not null also check for attribute to have exactly that value */
+static struct ldb_message_element *samldb_find_attribute(const struct ldb_message *msg, const char *name, const char *value)
+{
+	int j;
+	struct ldb_message_element *el = ldb_msg_find_element(msg, name);
+	if (!el) {
+		return NULL;
+	}
+
+	if (!value) {
+		return el;
+	}
+
+	for (j = 0; j < el->num_values; j++) {
+		if (strcasecmp(value, 
+			       (char *)el->values[j].data) == 0) {
+			return el;
+		}
+	}
+
+	return NULL;
+}
+
+static BOOL samldb_msg_add_string(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value)
+{
+	char *aval = talloc_strdup(msg, value);
+
+	if (aval == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_msg_add_string: talloc_strdup failed!\n");
+		return False;
+	}
+
+	if (ldb_msg_add_string(msg, name, aval) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *msg, const char *name, const struct dom_sid *sid)
+{
+	struct ldb_val v;
+	NTSTATUS status;
+	status = ndr_push_struct_blob(&v, msg, sid, 
+				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return (ldb_msg_add_value(msg, name, &v) == 0);
+}
+
+static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
+{
+	if (samldb_find_attribute(msg, name, value) == NULL) {
+		return samldb_msg_add_string(module, msg, name, set_value);
+	}
+	return True;
+}
 
 /*
   allocate a new id, attempting to do it atomically
   return 0 on failure, the id on success
 */
-static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-				   const struct ldb_dn *dn, uint32_t *id)
+static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+			       const struct ldb_dn *dn, uint32_t old_id, uint32_t new_id)
 {
-	const char * const attrs[2] = { "nextRid", NULL };
-	struct ldb_result *res = NULL;
 	struct ldb_message msg;
 	int ret;
-	const char *str;
 	struct ldb_val vals[2];
 	struct ldb_message_element els[2];
 
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, "nextRid=*", attrs, &res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		if (res) talloc_free(res);
-		return -1;
-	}
-	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
-	if (str == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "attribute nextRid not found in %s\n", ldb_dn_linearize(res, dn));
-		talloc_free(res);
-		return -1;
-	}
-
-	*id = strtol(str, NULL, 0);
-	if ((*id)+1 == 0) {
+	if (new_id == 0) {
 		/* out of IDs ! */
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Are we out of valid IDs ?\n");
-		talloc_free(res);
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	talloc_free(res);
 
 	/* we do a delete and add as a single operation. That prevents
-	   a race */
+	   a race, in case we are not actually on a transaction db */
 	ZERO_STRUCT(msg);
 	msg.dn = ldb_dn_copy(mem_ctx, dn);
 	if (!msg.dn) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	msg.num_elements = 2;
 	msg.elements = els;
@@ -91,7 +132,7 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	els[0].flags = LDB_FLAG_MOD_DELETE;
 	els[0].name = talloc_strdup(mem_ctx, "nextRid");
 	if (!els[0].name) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	els[1].num_values = 1;
@@ -99,26 +140,103 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	els[1].flags = LDB_FLAG_MOD_ADD;
 	els[1].name = els[0].name;
 
-	vals[0].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", *id);
+	vals[0].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", old_id);
 	if (!vals[0].data) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	vals[0].length = strlen((char *)vals[0].data);
 
-	vals[1].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", (*id)+1);
+	vals[1].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", new_id);
 	if (!vals[1].data) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	vals[1].length = strlen((char *)vals[1].data);
 
 	ret = ldb_modify(ldb, &msg);
-	if (ret != 0) {
-		return 1;
+	return ret;
+}
+
+/*
+  allocate a new id, attempting to do it atomically
+  return 0 on failure, the id on success
+*/
+static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+				const struct ldb_dn *dn, uint32_t *old_rid)
+{
+	const char * const attrs[2] = { "nextRid", NULL };
+	struct ldb_result *res = NULL;
+	int ret;
+	const char *str;
+
+	ret = ldb_search(module->ldb, dn, LDB_SCOPE_BASE, "nextRid=*", attrs, &res);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	talloc_steal(mem_ctx, res);
+	if (res->count != 1) {
+		talloc_free(res);
+		return -1;
 	}
 
+	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
+	if (str == NULL) {
+		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "attribute nextRid not found in %s\n", ldb_dn_linearize(res, dn)));
+		talloc_free(res);
+		return -1;
+	}
+
+	*old_rid = strtol(str, NULL, 0);
+	talloc_free(res);
 	return 0;
 }
 
+static int samldb_allocate_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+				    const struct ldb_dn *dn, const struct dom_sid *dom_sid, 
+				    struct dom_sid **new_sid)
+{
+	struct dom_sid *obj_sid;
+	uint32_t old_rid;
+	int ret;
+	struct ldb_message **sid_msgs;
+	const char *sid_attrs[] = { NULL };
+	
+	do {
+		ret = samldb_find_next_rid(module, mem_ctx, dn, &old_rid);	
+		if (ret) {
+			return ret;
+		}
+		
+		/* return the new object sid */
+		obj_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid);
+		
+		ret = samldb_set_next_rid(module->ldb, mem_ctx, dn, old_rid, old_rid + 1);
+		if (ret != 0) {
+			return ret;
+		}
+
+		*new_sid = dom_sid_add_rid(mem_ctx, dom_sid, old_rid + 1);
+		if (!*new_sid) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = gendb_search(module->ldb,
+				   mem_ctx, NULL, &sid_msgs, sid_attrs,
+				   "objectSid=%s",
+				   ldap_encode_ndr_dom_sid(mem_ctx, *new_sid));
+		if (ret == 0) {
+			/* Great. There are no conflicting users/groups/etc */
+			return 0;
+		} else if (ret == -1) {
+			/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
+			return ret;
+		} else {
+                        /* gah, there are conflicting sids, lets move around the loop again... */
+		}
+	} while (1);
+	return ret;
+}
+
+/* Find a domain object in the parents of a particular DN.  */
 static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx, const struct ldb_dn *dn)
 {
 	TALLOC_CTX *local_ctx;
@@ -158,18 +276,11 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct ldb_result *res = NULL;
 	const struct ldb_dn *dom_dn;
-	uint32_t rid;
 	int ret;
 	struct dom_sid *dom_sid, *obj_sid;
 
 	/* get the domain component part of the provided dn */
 
-	/* FIXME: quick search here, I think we should use something like
-	   ldap_parse_dn here to be 100% sure we get the right domain dn */
-
-	/* FIXME: "dc=" is probably not utf8 safe either,
-	   we need a multibyte safe substring search function here */
-	
 	dom_dn = samldb_search_domain(module, mem_ctx, obj_dn);
 	if (dom_dn == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Invalid dn (%s) not child of a domain object!\n", ldb_dn_linearize(mem_ctx, obj_dn));
@@ -193,87 +304,148 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 	}
 
 	/* allocate a new Rid for the domain */
-	ret = samldb_allocate_next_rid(module->ldb, mem_ctx, dom_dn, &rid);
+	ret = samldb_allocate_next_rid(module, mem_ctx, dom_dn, dom_sid, &obj_sid);
 	if (ret != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", ldb_dn_linearize(mem_ctx, dom_dn));
 		talloc_free(res);
 		return NULL;
 	}
 
-	/* return the new object sid */
-	obj_sid = dom_sid_add_rid(mem_ctx, dom_sid, rid);
-
 	talloc_free(res);
 
 	return obj_sid;
 }
 
-static char *samldb_generate_samAccountName(const void *mem_ctx) {
-	char *name;
+/* If we are adding new users/groups, we need to update the nextRid
+ * attribute to be 'above' all incoming users RIDs.  This tries to
+ * avoid clashes in future */
 
-	name = talloc_strdup(mem_ctx, SAM_ACCOUNT_NAME_BASE);
-	/* TODO: randomize name */	
-
-	return name;
-}
-
-/* if value is not null also check for attribute to have exactly that value */
-static struct ldb_message_element *samldb_find_attribute(const struct ldb_message *msg, const char *name, const char *value)
+int samldb_notice_sid(struct ldb_module *module, 
+		      TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
-	int i, j;
+	int ret;
+	struct ldb_dn *dom_dn;
+	struct dom_sid *dom_sid;
+	const char *dom_attrs[] = { NULL };
+	struct ldb_message **dom_msgs;
+	uint32_t old_rid;
 
-	for (i = 0; i < msg->num_elements; i++) {
-		if (ldb_attr_cmp(name, msg->elements[i].name) == 0) {
-			if (!value) {
-				return &msg->elements[i];
-			}
-			for (j = 0; j < msg->elements[i].num_values; j++) {
-				if (strcasecmp(value, 
-					       (char *)msg->elements[i].values[j].data) == 0) {
-					return &msg->elements[i];
-				}
-			}
-		}
+	/* find the domain DN */
+
+	ret = gendb_search(module->ldb,
+			   mem_ctx, NULL, &dom_msgs, dom_attrs,
+			   "objectSid=%s",
+			   ldap_encode_ndr_dom_sid(mem_ctx, sid));
+	if (ret > 0) {
+		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "Attempt to add record with SID %s rejected, because this SID is already in the database", dom_sid_string(mem_ctx, sid)));
+		/* We have a duplicate SID, we must reject the add */
+		talloc_free(dom_msgs);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-
-	return NULL;
-}
-
-static BOOL samldb_msg_add_string(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value)
-{
-	char *aname = talloc_strdup(msg, name);
-	char *aval = talloc_strdup(msg, value);
-
-	if (aname == NULL || aval == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_msg_add_string: talloc_strdup failed!\n");
-		return False;
-	}
-
-	if (ldb_msg_add_string(msg, aname, aval) != 0) {
-		return False;
-	}
-
-	return True;
-}
-
-static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *msg, const char *name, const struct dom_sid *sid)
-{
-	struct ldb_val v;
-	NTSTATUS status;
-	status = ndr_push_struct_blob(&v, msg, sid, 
-				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
-	if (!NT_STATUS_IS_OK(status)) {
+	
+	if (ret == -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error searching for proposed sid!\n");
 		return -1;
 	}
-	return (ldb_msg_add_value(msg, name, &v) == 0);
+
+	dom_sid = dom_sid_dup(mem_ctx, sid);
+	if (!dom_sid) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* get the domain component part of the provided SID */
+	dom_sid->num_auths--;
+
+	/* find the domain DN */
+
+	ret = gendb_search(module->ldb,
+			   mem_ctx, NULL, &dom_msgs, dom_attrs,
+			   "(&(objectSid=%s)(objectclass=domain))",
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+	if (ret == 0) {
+		/* This isn't an operation on a domain we know about, so nothing to update */
+		return 0;
+	}
+
+	if (ret > 1) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain from sid: duplicate domains!\n");
+		talloc_free(dom_msgs);
+		return -1;
+	}
+
+	if (ret != 1) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
+		return -1;
+	}
+
+	dom_dn = dom_msgs[0]->dn;
+
+	ret = samldb_find_next_rid(module, mem_ctx, 
+				   dom_dn, &old_rid);
+	if (ret) {
+		talloc_free(dom_msgs);
+		return ret;
+	}
+
+	if (old_rid <= sid->sub_auths[sid->num_auths - 1]) {
+		ret = samldb_set_next_rid(module->ldb, mem_ctx, dom_dn, old_rid, 
+					  sid->sub_auths[sid->num_auths - 1] + 1);
+	}
+	talloc_free(dom_msgs);
+	return ret;
 }
 
-static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
+static int samldb_handle_sid(struct ldb_module *module, 
+					 TALLOC_CTX *mem_ctx, struct ldb_message *msg2)
 {
-	if (samldb_find_attribute(msg, name, value) == NULL) {
-		return samldb_msg_add_string(module, msg, name, set_value);
+	int ret;
+	
+	struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, msg2, "objectSid");
+	if (sid == NULL) { 
+		sid = samldb_get_new_sid(module, msg2, msg2->dn);
+		if (sid == NULL) {
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: internal error! Can't generate new sid\n");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
+			talloc_free(sid);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		talloc_free(sid);
+		ret = 0;
+	} else {
+		ret = samldb_notice_sid(module, msg2, sid);
 	}
-	return True;
+	return ret;
+}
+
+static char *samldb_generate_samAccountName(struct ldb_module *module, TALLOC_CTX *mem_ctx) 
+{
+	char *name;
+	const char *attrs[] = { NULL };
+	struct ldb_message **msgs;
+	int ret;
+	
+	/* Format: $000000-000000000000 */
+	
+	do {
+		name = talloc_asprintf(mem_ctx, "$%.6X-%.6X%.6X", (unsigned int)random(), (unsigned int)random(), (unsigned int)random());
+		/* TODO: Figure out exactly what this is meant to conflict with */
+		ret = gendb_search(module->ldb,
+				   mem_ctx, NULL, &msgs, attrs,
+				   "samAccountName=%s",
+				   ldb_binary_encode_string(mem_ctx, name));
+		if (ret == 0) {
+			/* Great. There are no conflicting users/groups/etc */
+			return name;
+		} else if (ret == -1) {
+			/* Bugger, there is a problem, and we don't know what it is until gendb_search improves */
+			return NULL;
+		} else {
+			talloc_free(name);
+                        /* gah, there are conflicting sids, lets move around the loop again... */
+		}
+	} while (1);
 }
 
 static int samldb_copy_template(struct ldb_module *module, struct ldb_message *msg, const char *filter)
@@ -335,185 +507,236 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 	return 0;
 }
 
-static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, const struct ldb_message *msg)
+static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_message *msg,
+						    struct ldb_message **ret_msg)
 {
+	int ret;
+	const char *name;
 	struct ldb_message *msg2;
-	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
-
-	if (samldb_find_attribute(msg, "objectclass", "group") == NULL) {
-		return NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(msg);
+	if (!mem_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_fill_group_object\n");
 
 	/* build the new msg */
-	msg2 = ldb_msg_copy(module->ldb, msg);
+	msg2 = ldb_msg_copy(mem_ctx, msg);
 	if (!msg2) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: ldb_msg_copy failed!\n");
-		return NULL;
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (samldb_copy_template(module, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))") != 0) {
+	ret = samldb_copy_template(module, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))");
+	if (ret != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_group_object: Error copying template!\n");
-		return NULL;
+		talloc_free(mem_ctx);
+		return ret;
 	}
 
-	if ((rdn = ldb_dn_get_rdn(msg2, msg2->dn)) == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad DN (%s)!\n", ldb_dn_linearize(msg2, msg2->dn));
-		return NULL;
-	}
+	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
+
 	if (strcasecmp(rdn->name, "cn") != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad RDN (%s) for group!\n", rdn->name);
-		return NULL;
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
-		struct dom_sid *sid = samldb_get_new_sid(module, msg2, msg2->dn);
-		if (sid == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: internal error! Can't generate new sid\n");
-			return NULL;
+	/* Generate a random name, if no samAccountName was supplied */
+	if (ldb_msg_find_element(msg2, "samAccountName") == NULL) {
+		name = samldb_generate_samAccountName(module, mem_ctx);
+		if (!name) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-
-		if (!samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
-			talloc_free(sid);
-			return NULL;
+		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, name)) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_free(sid);
 	}
+	
+	/* Manage SID allocation, conflicts etc */
+	ret = samldb_handle_sid(module, mem_ctx, msg2); 
 
-	if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, samldb_generate_samAccountName(msg2))) {
-		return NULL;
+	if (ret == 0) {
+		talloc_steal(msg, msg2);
+		*ret_msg = msg2;
 	}
-
-	talloc_steal(msg, msg2);
-
-	return msg2;
+	talloc_free(mem_ctx);
+	return 0;
 }
 
-static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module *module, const struct ldb_message *msg)
+static int samldb_fill_user_or_computer_object(struct ldb_module *module, const struct ldb_message *msg,
+							       struct ldb_message **ret_msg)
 {
+	int ret;
+	char *name;
 	struct ldb_message *msg2;
-	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
-
-	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) && 
-	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
-		return NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(msg);
+	if (!mem_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_fill_user_or_computer_object\n");
-
 	/* build the new msg */
-	msg2 = ldb_msg_copy(module->ldb, msg);
+	msg2 = ldb_msg_copy(mem_ctx, msg);
 	if (!msg2) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: ldb_msg_copy failed!\n");
-		return NULL;
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
-		if (samldb_copy_template(module, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))") != 0) {
+		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateComputer)(objectclass=userTemplate))");
+		if (ret) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
-			return NULL;
+			talloc_free(mem_ctx);
+			return ret;
 		}
 	} else {
-		if (samldb_copy_template(module, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))") != 0) {
+		ret = samldb_copy_template(module, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))");
+		if (ret) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying user template!\n");
-			return NULL;
+			talloc_free(mem_ctx);
+			return ret;
 		}
 	}
 
-	if ((rdn = ldb_dn_get_rdn(msg2, msg2->dn)) == NULL) {
-		return NULL;
-	}
+	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
+
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad RDN (%s) for user/computer!\n", rdn->name);
-		return NULL;
+		ldb_set_errstring(module, talloc_asprintf(module, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn->name));
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	/* if the only attribute was: "objectclass: computer", then make sure we also add "user" objectclass */
 	if ( ! samldb_find_or_add_attribute(module, msg2, "objectclass", "user", "user")) {
-		return NULL;
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
-		struct dom_sid *sid;
-		sid = samldb_get_new_sid(module, msg2, msg2->dn);
-		if (sid == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: internal error! Can't generate new sid\n");
-			return NULL;
-		}
+	/* meddle with objectclass */
 
-		if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
-			talloc_free(sid);
-			return NULL;
+	if (ldb_msg_find_element(msg2, "samAccountName") == NULL) {
+		name = samldb_generate_samAccountName(module, mem_ctx);
+		if (!name) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_free(sid);
-	}
-
-	if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, samldb_generate_samAccountName(msg2))) {
-		return NULL;
+		if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, name)) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	/*
-	  useraccountcontrol: setting value 0 gives 0x200 for users
+	  TODO: useraccountcontrol: setting value 0 gives 0x200 for users
 	*/
+
+	/* Manage SID allocation, conflicts etc */
+	ret = samldb_handle_sid(module, mem_ctx, msg2); 
 
 	/* TODO: objectCategory, userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
 
-	return msg2;
+	if (ret == 0) {
+		*ret_msg = msg2;
+		talloc_steal(msg, msg2);
+	}
+	talloc_free(mem_ctx);
+	return 0;
 }
-
-static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module, const struct ldb_message *msg)
+	
+static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module, const struct ldb_message *msg, 
+								       struct ldb_message **ret_msg)
 {
 	struct ldb_message *msg2;
-	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
+	struct dom_sid *dom_sid;
+	struct dom_sid *sid;
+	const char *dom_attrs[] = { "name", NULL };
+	struct ldb_message **dom_msgs;
+	int ret;
 
-	if (samldb_find_attribute(msg, "objectclass", "foreignSecurityPrincipal") == NULL) {
-		return NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(msg);
+	if (!mem_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_fill_foreignSecurityPrincipal_object\n");
 
 	/* build the new msg */
-	msg2 = ldb_msg_copy(module->ldb, msg);
+	msg2 = ldb_msg_copy(mem_ctx, msg);
 	if (!msg2) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincpal_object: ldb_msg_copy failed!\n");
-		return NULL;
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	talloc_steal(msg, msg2);
-
-	if (samldb_copy_template(module, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))") != 0) {
+	ret = samldb_copy_template(module, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))");
+	if (ret != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_foreignSecurityPrincipal_object: Error copying template!\n");
-		return NULL;
+		talloc_free(mem_ctx);
+		return ret;
 	}
 
-	if ((rdn = ldb_dn_get_rdn(msg2, msg2->dn)) == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: Bad DN (%s)!\n", ldb_dn_linearize(msg2, msg2->dn));
-		return NULL;
-	}
+	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
+
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: Bad RDN (%s) for foreignSecurityPrincpal!\n", rdn->name);
-		return NULL;
+		ldb_set_errstring(module, talloc_asprintf(module, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn->name));
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
-		struct dom_sid *sid = dom_sid_parse_talloc(msg2, (char *)rdn->value.data);
-		if (sid == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: internal error! Can't parse sid in CN\n");
-			return NULL;
-		}
+	/* Slightly different for the foreign sids.  We don't want
+	 * domain SIDs ending up there, it would cause all sorts of
+	 * pain */
 
-		if (!samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
-			talloc_free(sid);
-			return NULL;
-		}
+	sid = dom_sid_parse_talloc(msg2, (const char *)rdn->value.data);
+	if (!sid) {
+		ldb_set_errstring(module, talloc_asprintf(module, "No valid found SID in ForeignSecurityPrincipal CN!"));
+		talloc_free(mem_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
 		talloc_free(sid);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return msg2;
+	dom_sid = dom_sid_dup(mem_ctx, sid);
+	if (!dom_sid) {
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* get the domain component part of the provided SID */
+	dom_sid->num_auths--;
+
+	/* find the domain DN */
+
+	ret = gendb_search(module->ldb,
+			   mem_ctx, NULL, &dom_msgs, dom_attrs,
+			   "(&(objectSid=%s)(objectclass=domain))",
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+	if (ret >= 1) {
+		const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
+		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", dom_sid_string(mem_ctx, sid), name)); 
+		/* We have a duplicate SID, we must reject the add */
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	} else if (ret == -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", dom_sid_string(mem_ctx, dom_sid));
+		talloc_free(dom_msgs);
+		return -1;
+	}
+
+	/* This isn't an operation on a domain we know about, so just
+	 * check for the SID, looking for duplicates via the common
+	 * code */
+	ret = samldb_notice_sid(module, msg2, sid);
+	if (ret == 0) {
+		talloc_steal(msg, msg2);
+		*ret_msg = msg2;
+	}
+	
+	return ret;
 }
 
 /* add_record */
@@ -531,16 +754,32 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* is user or computer?  add all relevant missing objects */
-	msg2 = samldb_fill_user_or_computer_object(module, msg);
+	if ((samldb_find_attribute(msg, "objectclass", "user") != NULL) || 
+	    (samldb_find_attribute(msg, "objectclass", "computer") != NULL)) {
+		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
+		if (ret) {
+			return ret;
+		}
+	}
 
 	/* is group? add all relevant missing objects */
 	if ( ! msg2 ) {
-		msg2 = samldb_fill_group_object(module, msg);
+		if (samldb_find_attribute(msg, "objectclass", "group") != NULL) {
+			ret = samldb_fill_group_object(module, msg, &msg2);
+			if (ret) {
+				return ret;
+			}
+		}
 	}
 
 	/* perhaps a foreignSecurityPrincipal? */
 	if ( ! msg2 ) {
-		msg2 = samldb_fill_foreignSecurityPrincipal_object(module, msg);
+		if (samldb_find_attribute(msg, "objectclass", "foreignSecurityPrincipal") != NULL) {
+			ret = samldb_fill_foreignSecurityPrincipal_object(module, msg, &msg2);
+			if (ret) {
+				return ret;
+			}
+		}
 	}
 
 	if (msg2) {
