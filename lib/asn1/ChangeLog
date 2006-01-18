@@ -1,5 +1,7 @@
 2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Its cRLReason, not cRLReasons
+
 	* canthandle.asn1: "Allocation is done on CONTEXT tags" works just
 	fine.
 

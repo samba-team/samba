@@ -1,3 +1,7 @@
+2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hx509.h: Add hx509_revoke_ctx.
+	
 2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* delete crypto_headers.h, use global file instead.
