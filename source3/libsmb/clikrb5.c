@@ -456,6 +456,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_creds 		  creds;
 	krb5_data in_data;
 	BOOL creds_ready = False;
+	int i = 0, maxtries = 3;
 	
 	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
@@ -479,7 +480,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_creds;
 	}
 
-	while(!creds_ready) {
+	while (!creds_ready && (i < maxtries)) {
 		if ((retval = krb5_get_credentials(context, 0, ccache, 
 						   &creds, &credsp))) {
 			DEBUG(1,("ads_krb5_mk_req: krb5_get_credentials failed for %s (%s)\n",
@@ -497,6 +498,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 		if (!ads_cleanup_expired_creds(context, ccache, credsp))
 			creds_ready = True;
+
+		i++;
 	}
 
 	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s) is valid until: (%s - %u)\n",
