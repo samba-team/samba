@@ -4533,8 +4533,8 @@ AC_ARG_WITH(aio-support,
 	AC_MSG_RESULT(yes)
 	case "$host_os" in
 	*)
-		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
-		AC_CHECK_LIB(aio,aio_read,[AIO_LIBS="$ACL_LIBS -laio"])
+		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$AIO_LIBS -lrt"])
+		AC_CHECK_LIB(aio,aio_read,[AIO_LIBS="$AIO_LIBS -laio"])
 		AC_CACHE_CHECK([for asynchronous io support],samba_cv_HAVE_AIO,[
 		aio_LIBS=$LIBS
 		LIBS=$AIO_LIBS
