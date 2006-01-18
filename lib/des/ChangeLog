@@ -1,3 +1,13 @@
+2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* dh.h: Add DH_check_pubkey and defines it uses.
+
+	* dh.c (DH_check_pubkey): New function.
+
+	* bn.c: Remove unused fragment.
+
+	* test_bn.c: Compare numbers with BN_cmp().
+	
 2006-01-17  David Love  <fx@gnu.org>
 
 	* bn.c: Include <limits.h>.
