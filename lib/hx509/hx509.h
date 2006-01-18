@@ -43,6 +43,7 @@ typedef struct hx509_name_data *hx509_name;
 typedef struct hx509_private_key *hx509_private_key;
 typedef struct hx509_validate_ctx_data *hx509_validate_ctx;
 typedef struct hx509_verify_ctx_data *hx509_verify_ctx;
+typedef struct hx509_revoke_ctx_data *hx509_revoke_ctx;
 typedef void * hx509_cursor;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
