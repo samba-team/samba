@@ -148,14 +148,8 @@ int net_run_function2(int argc, const char **argv, const char *whoami,
 	}
 
 	for (i=0; table[i].funcname != NULL; i++) {
-		size_t j, namelen = strlen(table[i].funcname);
-		
-		d_printf("%s %s ", whoami, table[i].funcname);
-
-		for (j=15; j>namelen; j--) {
-			d_printf(" ");
-		}
-		d_printf("%s\n", table[i].helptext);
+		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+			 table[i].helptext);
 	}
 
 	return -1;

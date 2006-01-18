@@ -109,6 +109,7 @@ typedef struct {
 } SID_LIST;
 
 typedef struct {
+	TALLOC_CTX *mem_ctx;
 	SE_PRIV privilege;
 	SID_LIST sids;
 } PRIV_SID_LIST;
@@ -309,7 +310,7 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-static BOOL is_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
+BOOL is_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
 {
 	SE_PRIV p1, p2;
 
@@ -516,13 +517,14 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 		return 0;
 	}
 
-	add_sid_to_array( NULL, &sid, &priv->sids.list, &priv->sids.count );
+	add_sid_to_array( priv->mem_ctx, &sid, &priv->sids.list,
+			  &priv->sids.count );
 	
 	return 0;
 }
 
 /*********************************************************************
- Retreive list of privileged SIDs (for _lsa_enumerate_accounts()
+ Retrieve list of privileged SIDs (for _lsa_enumerate_accounts()
 *********************************************************************/
 
 NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
@@ -543,6 +545,30 @@ NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids)
 
 	return NT_STATUS_OK;
 }
+
+void privilege_enumerate_privileged(TALLOC_CTX *mem_ctx,
+				    const SE_PRIV *privilege,
+				    DOM_SID **sids, int *num_sids)
+{
+	TDB_CONTEXT *tdb = get_account_pol_tdb();
+	PRIV_SID_LIST priv;
+	
+	ZERO_STRUCT(priv);
+
+	priv.mem_ctx = mem_ctx;
+	se_priv_copy(&priv.privilege, privilege);
+
+	tdb_traverse( tdb, priv_traverse_fn, &priv);
+
+	/* give the memory away; caller will free */
+	
+	*sids      = priv.sids.list;
+	*num_sids  = priv.sids.count;
+
+	return;
+}
+
+
 
 /***************************************************************************
  Add privilege to sid
