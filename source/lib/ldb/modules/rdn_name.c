@@ -63,11 +63,6 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* Perhaps someone above us knows better */
-	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
-		return ldb_next_request(module, req);
-	}
-
 	msg2 = talloc(module, struct ldb_message);
 	if (!msg2) {
 		return -1;
@@ -87,6 +82,11 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		return -1;
 	}
 	
+	/* Perhaps someone above us tried to set this? */
+	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
+		attribute->num_values = 0;
+	}
+
 	if (ldb_msg_add_value(msg2, "name", &rdn->value) != 0) {
 		talloc_free(msg2);
 		return -1;
