@@ -199,6 +199,11 @@ int
 DH_compute_key(unsigned char *shared_key,
 	       const BIGNUM *peer_pub_key, DH *dh)
 {
+    int codes;
+
+    if (!DH_check_pubkey(dh, peer_pub_key, &codes))
+	return 0;
+
     return dh->meth->compute_key(shared_key, peer_pub_key, dh);
 }
 
