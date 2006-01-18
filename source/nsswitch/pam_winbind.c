@@ -1218,13 +1218,39 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 */
 
 		retval = winbind_chauthtok_request(pamh, ctrl, user, pass_old, pass_new);
-		_pam_overwrite(pass_new);
-		_pam_overwrite(pass_old);
-		pass_old = pass_new = NULL;
+		if (retval) {
+			_pam_overwrite(pass_new);
+			_pam_overwrite(pass_old);
+			pass_old = pass_new = NULL;
+			return retval;
+		}
+
+		/* just in case we need krb5 creds after a password change over msrpc */
+
+		if (ctrl & WBFLAG_PAM_KRB5) {
+
+			const char *member = NULL;
+			const char *cctype = NULL;
+
+			member = get_member_from_config(argc, argv, ctrl);
+			if (member != NULL) {
+				_pam_log_debug(ctrl, LOG_INFO, "got required membership: '%s'\n", member);
+			}
+
+			cctype = get_krb5_cc_type_from_config(argc, argv, ctrl);
+			if (cctype != NULL) {
+				_pam_log_debug(ctrl, LOG_INFO, "using cctype '%s' from config\n", cctype);
+			}
+
+			retval = winbind_auth_request(pamh, ctrl, user, pass_new, member, cctype, False);
+			_pam_overwrite(pass_new);
+			_pam_overwrite(pass_old);
+			pass_old = pass_new = NULL;
+		}
 	} else {
 		retval = PAM_SERVICE_ERR;
 	}
-	
+
 	return retval;
 }
 
