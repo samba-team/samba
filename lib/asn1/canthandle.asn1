@@ -31,10 +31,4 @@ Bar ::= SEQUENCE {
 
 Baz ::= SET OF INTEGER
 
--- Allocation is done on CONTEXT tags.
-
-Alloc ::= SEQUENCE {
-	a heim_any OPTIONAL
-}
-
 END
