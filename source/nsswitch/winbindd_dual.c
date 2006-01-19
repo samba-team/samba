@@ -567,6 +567,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			DEBUG(11,("select will use timeout of %d seconds\n", (int)tp->tv_sec));
 		}
 
+		/* Handle messages */
+
+		message_dispatch();
+
 		FD_ZERO(&read_fds);
 		FD_SET(state.sock, &read_fds);
 
@@ -574,6 +578,11 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 		if (ret == 0) {
 			DEBUG(10,("nothing is ready yet, continue\n"));
+			continue;
+		}
+
+		if (ret == -1 && errno == EINTR) {
+			/* We got a signal - continue. */
 			continue;
 		}
 
