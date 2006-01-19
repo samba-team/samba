@@ -265,6 +265,14 @@ SGROUP,ACTIVE vs. SGROUP,ACTIVE A:X_3_4 vs. B:A_3_4 => C:A_3_4_X_3_4 => SGROUP_M
 SGROUP,ACTIVE vs. SGROUP,ACTIVE A:A_3_4_X_3_4 vs. B:A_3_4_OWNER_B => B:A_3_4_OWNER_B_X_3_4 => SGROUP_MERGE
 SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:B_3_4_X_1_2 => C:B_3_4_X_1_2_3_4 => SGROUP_MERGE
 SGROUP,ACTIVE vs. SGROUP,ACTIVE A:B_3_4_X_3_4 vs. B:NULL => B:X_3_4 => SGROUP_MERGE
+
+ 
+this is a bit strange, incoming tombstone replicas always replace old replicas:
+
+SGROUP,ACTIVE vs. SGROUP,TOMBSTONE A:B_3_4_X_3_4 vs. B:NULL => B:NULL => REPLACE
+SGROUP,ACTIVE vs. SGROUP,TOMBSTONE A:B_3_4_X_3_4 vs. B:A_3_4 => B:A_3_4 => REPLACE
+SGROUP,ACTIVE vs. SGROUP,TOMBSTONE A:B_3_4_X_3_4 vs. B:B_3_4 => B:B_3_4 => REPLACE
+SGROUP,ACTIVE vs. SGROUP,TOMBSTONE A:B_3_4_X_3_4 vs. B:B_3_4_X_3_4 => B:B_3_4_X_3_4 => REPLACE
 */
 static enum _R_ACTION replace_sgroup_replica_vs_X_replica(struct winsdb_record *r1, struct wrepl_name *r2)
 {
@@ -273,9 +281,19 @@ static enum _R_ACTION replace_sgroup_replica_vs_X_replica(struct winsdb_record *
 		return R_DO_REPLACE;
 	}
 
-	if (!R_IS_SGROUP(r2) || !R_IS_ACTIVE(r2)) {
+	if (!R_IS_SGROUP(r2)) {
 		/* NOT REPLACE */
 		return R_NOT_REPLACE;
+	}
+
+	/*
+	 * this is strange, but correct
+	 * the incoming tombstone replace the current active
+	 * record
+	 */
+	if (!R_IS_ACTIVE(r2)) {
+		/* REPLACE */
+		return R_DO_REPLACE;
 	}
 
 	if (r2->num_addresses == 0) {
