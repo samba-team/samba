@@ -302,6 +302,7 @@ typedef struct {
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
 	BOOL bKernelChangeNotify;
+	BOOL bFamChangeNotify;
 	BOOL bUseKerberosKeytab;
 	BOOL bDeferSharingViolations;
 	BOOL bEnablePrivileges;
@@ -1003,6 +1004,7 @@ static struct parm_struct parm_table[] = {
 	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
 	{"keepalive", P_INTEGER, P_GLOBAL, &keepalive, NULL, NULL, FLAG_ADVANCED}, 
 	{"kernel change notify", P_BOOL, P_GLOBAL, &Globals.bKernelChangeNotify, NULL, NULL, FLAG_ADVANCED}, 
+	{"fam change notify", P_BOOL, P_GLOBAL, &Globals.bFamChangeNotify, NULL, NULL, FLAG_ADVANCED},
 
 	{"lpq cache time", P_INTEGER, P_GLOBAL, &Globals.lpqcachetime, NULL, NULL, FLAG_ADVANCED}, 
 	{"max smbd processes", P_INTEGER, P_GLOBAL, &Globals.iMaxSmbdProcesses, NULL, NULL, FLAG_ADVANCED}, 
@@ -1503,6 +1505,7 @@ static void init_globals(void)
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
 	Globals.change_notify_timeout = 60;	/* 1 minute default. */
 	Globals.bKernelChangeNotify = True;	/* On if we have it. */
+	Globals.bFamChangeNotify = True;	/* On if we have it. */
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
@@ -1909,6 +1912,7 @@ FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
+FN_GLOBAL_BOOL(lp_fam_change_notify, &Globals.bFamChangeNotify)
 FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)

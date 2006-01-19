@@ -2174,6 +2174,33 @@ if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY,1,[Whether kernel notifies changes])
 fi
 
+#################################################
+# Check if FAM notifications are available. For FAM info, see
+#	http://oss.sgi.com/projects/fam/
+#	http://savannah.nongnu.org/projects/fam/
+
+AC_CHECK_HEADERS(fam.h, [samba_cv_HAVE_FAM_H=yes], [samba_cv_HAVE_FAM_H=no])
+if test x"$samba_cv_HAVE_FAM_H" = x"yes"; then
+    # On IRIX, libfam requires libC, but other FAM implementations might not
+    # need it.
+    AC_CHECK_LIB(fam, FAMOpen2,
+	    [samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam"],
+	    [samba_cv_HAVE_LIBFAM=no])
+
+    if test x"$samba_cv_HAVE_LIBFAM" = x"no" ; then
+	samba_fam_xtra=-lC
+	AC_CHECK_LIB_EXT(fam, samba_fam_xtra, FAMOpen2,
+		[samba_cv_HAVE_LIBFAM=yes; samba_fam_libs="-lfam -lC"],
+		[samba_cv_HAVE_LIBFAM=no])
+	unset samba_fam_xtra
+    fi
+fi
+
+if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
+    AC_DEFINE(HAVE_FAM_CHANGE_NOTIFY, 1,
+	    [Whether FAM is file notifications are available])
+fi
+
 AC_CACHE_CHECK([for kernel share modes],samba_cv_HAVE_KERNEL_SHARE_MODES,[
 AC_TRY_RUN([
 #include <sys/types.h>
@@ -2192,8 +2219,6 @@ samba_cv_HAVE_KERNEL_SHARE_MODES=yes,samba_cv_HAVE_KERNEL_SHARE_MODES=no,samba_c
 if test x"$samba_cv_HAVE_KERNEL_SHARE_MODES" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_SHARE_MODES,1,[Whether the kernel supports share modes])
 fi
-
-
 
 
 AC_CACHE_CHECK([for IRIX kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS_IRIX,[
@@ -5259,6 +5284,10 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 
 builddir=`pwd`
 AC_SUBST(builddir)
+
+# Stuff the FAM libraries at the end of the smbd link path (if we have them).
+SMBD_LIBS="$samba_fam_libs"
+AC_SUBST(SMBD_LIBS)
 
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
