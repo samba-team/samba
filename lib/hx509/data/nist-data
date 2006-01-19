@@ -2,13 +2,23 @@
 # id validate verify cert hxtool-verify-arguments...
 # s(kip) p(ass) f(ail)
 unknown p s TrustAnchorRootCertificate.crt
+# 4.4 CRL tests
+4.4.1  p f InvalidMissingCRLTest1EE.crt chain:FILE:basedir/certs/NoCRLCACert.crt
+4.4.1i p p InvalidMissingCRLTest1EE.crt --missing-crl chain:FILE:basedir/certs/NoCRLCACert.crt
+4.4.2  p f InvalidRevokedEETest3EE.crt chain:FILE:basedir/certs/GoodCACert.crt chain:FILE:basedir/certs/InvalidRevokedCATest2EE.crt crl:FILE:basedir/crls/GoodCACRL.crl crl:FILE:basedir/crls/RevokedsubCACRL.crl
+4.4.2i p p InvalidRevokedEETest3EE.crt --missing-crl chain:FILE:basedir/certs/GoodCACert.crt chain:FILE:basedir/certs/InvalidRevokedCATest2EE.crt
+4.4.3  p f InvalidRevokedEETest3EE.crt chain:FILE:basedir/certs/GoodCACert.crt crl:FILE:basedir/crls/GoodCACRL.crl
+4.4.3i p p InvalidRevokedEETest3EE.crt --missing-crl chain:FILE:basedir/certs/GoodCACert.crt
+4.4.4  p f InvalidBadCRLSignatureTest4EE.crt chain:FILE:basedir/certs/BadCRLSignatureCACert.crt crl:FILE:basedir/crls/BadCRLSignatureCACRL.crl
+4.4.4i p p InvalidBadCRLSignatureTest4EE.crt --missing-crl chain:FILE:basedir/certs/BadCRLSignatureCACert.crt
+4.4.5  p f InvalidBadCRLIssuerNameTest5EE.crt chain:FILE:basedir/certs/BadCRLIssuerNameCACert.crt crl:FILE:basedir/crls/BadCRLIssuerNameCACRL.crl
+4.4.5i p p InvalidBadCRLIssuerNameTest5EE.crt --missing-crl chain:FILE:basedir/certs/BadCRLIssuerNameCACert.crt
+# 4.8 Certificate Policies
 incomplete4.8.2 p p AllCertificatesNoPoliciesTest2EE.crt chain:FILE:basedir/certs/NoPoliciesCACert.crt crl:FILE:basedir/crls/NoPoliciesCACRL.crl
 incomplete4.8.10 p p AllCertificatesSamePoliciesTest10EE.crt chain:FILE:basedir/certs/PoliciesP12CACert.crt crl:FILE:basedir/crls/PoliciesP12CACRL.crl
 incomplete4.8.13 p p AllCertificatesSamePoliciesTest13EE.Crt chain:FILE:basedir/certs/PoliciesP123CACert.crt crl:FILE:basedir/crls/PoliciesP123CACRL.crl
 incomplete4.8.11 p p AllCertificatesanyPolicyTest11EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
 unknown p p AnyPolicyTest14EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
-unknown p s BadCRLIssuerNameCACert.crt
-unknown p s BadCRLSignatureCACert.crt
 unknown p f BadSignedCACert.crt
 unknown p f BadnotAfterDateCACert.crt
 unknown p f BadnotBeforeDateCACert.crt
@@ -32,8 +42,6 @@ unknown p s GeneralizedTimeCRLnextUpdateCACert.crt
 unknown p s GoodCACert.crt
 unknown p s GoodsubCACert.crt
 unknown p s GoodsubCAPanyPolicyMapping1to2CACert.crt
-unknown p s InvalidBadCRLIssuerNameTest5EE.crt
-unknown p s InvalidBadCRLSignatureTest4EE.crt
 unknown p s InvalidBasicSelfIssuedCRLSigningKeyTest7EE.crt
 unknown p s InvalidBasicSelfIssuedCRLSigningKeyTest8EE.crt
 unknown p s InvalidBasicSelfIssuedNewWithOldTest5EE.crt
@@ -67,8 +75,6 @@ unknown p s InvalidIDPwithindirectCRLTest26EE.crt
 unknown p s InvalidLongSerialNumberTest18EE.crt
 unknown p s InvalidMappingFromanyPolicyTest7EE.crt
 unknown p s InvalidMappingToanyPolicyTest8EE.crt
-4.4.1 p f InvalidMissingCRLTest1EE.crt chain:FILE:basedir/certs/NoCRLCACert.crt
-4.4.1i p p InvalidMissingCRLTest1EE.crt --missing-crl chain:FILE:basedir/certs/NoCRLCACert.crt
 unknown p s InvalidMissingbasicConstraintsTest1EE.crt
 unknown p s InvalidNameChainingOrderTest2EE.crt
 unknown p s InvalidNameChainingTest1EE.crt
@@ -81,8 +87,6 @@ unknown p s InvalidRFC822nameConstraintsTest22EE.crt
 unknown p s InvalidRFC822nameConstraintsTest24EE.crt
 unknown p s InvalidRFC822nameConstraintsTest26EE.crt
 unknown p s InvalidRevokedCATest2EE.crt
-4.4.2 p f InvalidRevokedEETest3EE.crt chain:FILE:basedir/certs/GoodCACert.crt chain:FILE:basedir/certs/InvalidRevokedCATest2EE.crt crl:FILE:basedir/crls/GoodCACRL.crl crl:FILE:basedir/crls/RevokedsubCACRL.crl
-4.4.3 p f InvalidRevokedEETest3EE.crt chain:FILE:basedir/certs/GoodCACert.crt crl:FILE:basedir/crls/GoodCACRL.crl
 unknown p s InvalidSelfIssuedinhibitAnyPolicyTest10EE.crt
 unknown p s InvalidSelfIssuedinhibitAnyPolicyTest8EE.crt
 unknown p s InvalidSelfIssuedinhibitPolicyMappingTest10EE.crt
@@ -409,3 +413,7 @@ unknown p s requireExplicitPolicy7CACert.crt
 unknown p s requireExplicitPolicy7subCARE2Cert.crt
 unknown p s requireExplicitPolicy7subsubCARE2RE4Cert.crt
 unknown p s requireExplicitPolicy7subsubsubCARE2RE4Cert.crt
+# misc
+unknown p s InvalidBadCRLSignatureTest4EE.crt
+unknown p s InvalidBadCRLIssuerNameTest5EE.crt
+unknown p s BadCRLIssuerNameCACert.crt
