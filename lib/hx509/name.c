@@ -329,7 +329,7 @@ hx509_name_free(hx509_name *name)
 }
 
 int
-hx509_parse_name(const void *data, size_t length, char **str)
+hx509_unparse_der_name(const void *data, size_t length, char **str)
 {
     hx509_name name;
     int ret;
@@ -338,6 +338,21 @@ hx509_parse_name(const void *data, size_t length, char **str)
     if (ret)
 	return ret;
     
+    ret = hx509_name_to_string(name, str);
+    hx509_name_free(&name);
+    return ret;
+}
+
+int
+_hx509_unparse_Name(const Name *aname, char **str)
+{
+    hx509_name name;
+    int ret;
+
+    ret = _hx509_name_from_Name(aname, &name);
+    if (ret)
+	return ret;
+
     ret = hx509_name_to_string(name, str);
     hx509_name_free(&name);
     return ret;
