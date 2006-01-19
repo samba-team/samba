@@ -1,0 +1,112 @@
+What's new in Samba4 Technology Preview
+=======================================
+
+Samba 4 is the ambitious next version of the Samba suite that is being 
+developed in parallel to the stable 3.0 series. The main emphasis in 
+this branch is support for the AD logon protocols used by Windows 2000
+and above.
+
+Samba 4 is currently not yet in a state where it is usable in
+production environments. Note the WARNINGS below, and the STATUS file,
+which aims to document what should and should not work.
+
+With 3 years of development under our belt since tridge firs proposed
+a new VFS layer for Samba3 (a project which eventually lead to our AD
+efforts), it was felt that we should create something we could 'show
+off' to our users.  This is a Technology Preview (TP), aimed at allowing
+users, managers and developers to see how we have progressed, and to
+invite feedback and support.
+
+WARNINGS
+========
+
+Samba4 TP is currently a pre-alpha technology.  It may eat your cat, but
+is far more likely to choose to munch on your password database.  In
+particular if you are upgrading from Samba3, you should backup all
+configuration and data.
+
+We expect that format changes will require that the user database be
+rebuilt from scratch a number of times before we make a final release,
+loosing password data. 
+
+Samba4 TP includes basic ACL protection on the main user database, but
+due to time constraints, none on the registry at this stage.  We do
+not currently have ACLs on the SWAT web-based management tool.
+
+Filesystem access should occour as the logged in user, much as Samba3
+does.
+
+We strongly recommend against use in a production environment at this
+stage.
+
+NEW FEATURES
+============
+
+Samba4 supports the server-side of the AD logon environment
+used by Windows 2000 and later, as evidenced by domain join
+and domain logon operations.  
+
+Our Domain Controller (DC) implementation includes our own built-in
+LDAP server, KDC as well as the logon services provided over CIFS.  We
+correctly generate the Kerberos PAC, and include it with the kerberos
+tickets we issue.
+
+SWAT is the new user-freindly interface to Samba4 managment, and
+provides access to our setup and migration functionality.  In
+particular, we can migrate windows domains in Samba4 from this
+interface.  This allows setup of initial user databases, and upgrades
+from Samba3.
+
+The new NTFVS features in Samba4, the project that started this all,
+is concerned with providing 'exact' semantics for basic file
+operations, and is backed by an extensive client testsuite.
+
+A new scripting interface has been added to Samba4, allowing
+JavaScript programs to interface to Samba's internals.  This is also
+used for the SWAT GUI.  
+
+Samba4 is strongly based around an LDAP-like backend, which includes
+an implementation against the actual LDAP protocol.  With the addition
+of modules on directory servers and in Samba, we hope this can allow
+Samba4 to be a powerful frontend to vendor directories, much as Samba3
+is.
+
+CHANGES
+=======
+
+Those familiar with Samba 3 can find a list of user-visible changes 
+since that release series in the NEWS file. 
+
+In particular, standalone server and domain member roles are not
+currently supported.  While we have much of the infrustructure
+required, we have not collected these peices togeather.
+
+There is no printing support in the current release.
+
+KNOWN ISSUES
+============
+
+- SWAT can be painful with <TAB> and forms.  Just use the mouse, as
+  the JS layer doing this will change.
+
+- Domain logons (using Kerberos) from windows clients incorrectly
+  state that the password expires today.
+
+RUNNING Samba4
+==============
+
+A short guide to setting up Samba 4 can be found in the howto.txt file
+in root of the tarball.
+
+DEVELOPMENT and FEEDBACK
+========================
+Bugs can be filed at https://bugzilla.samba.org/. Please
+look at the STATUS file before filing a bug to see if a particular 
+is supposed to work yet.
+
+Development and general discussion about Samba 4 happens mainly on 
+the #samba-technical IRC channel (on irc.freenode.net) and 
+the samba-technical mailing list (see http://lists.samba.org/ for 
+details).
+
+
