@@ -1099,7 +1099,11 @@ sam_logon:
 			goto process_result;
 		} else {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon failed: %s\n", nt_errstr(result)));
-			goto done;
+			if (domain->online) {
+				/* We're still online - fail. */
+				goto done;
+			}
+			/* Else drop through and see if we can check offline.... */
 		}
 	}
 
