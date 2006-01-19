@@ -57,6 +57,7 @@ error_code USED_AFTER_TIME, "CRL used after it became invalid"
 error_code INVALID_FORMAT, "CRL have invalid format"
 error_code CERT_REVOKED, "Certificate is included in CRL"
 error_code MISSING, "No CRL found for certificates CA"
+error_code UNKNOWN_EXTENSION, "Unknown extension"
 
 
 end
