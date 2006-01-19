@@ -45,14 +45,17 @@ echo "create signed data"
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/test.crt \
 	sd.data sd.data.out && exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "create signed data  (content info)"
 ./hxtool cms-create-sd \
@@ -64,11 +67,11 @@ echo "create signed data  (content info)"
 
 echo "verify signed data (content info)"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	sd.data sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
-
 
 echo "create signed data"
 ./hxtool cms-create-sd \
@@ -80,37 +83,41 @@ echo "create signed data"
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data" sd.data.out || exit 1
-cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+cmp "$srcdir/data/static-file" sd.data.out || exit 1
 
 echo "verify signed data (no attr)"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data-noattr" sd.data.out || exit 1
-cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+cmp "$srcdir/data/static-file" sd.data.out || exit 1
 
 echo "verify failure signed data (no attr, no certs)"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data-noattr-nocerts" sd.data.out && exit 1
 
 echo "verify signed data (no attr, no certs)"
 ./hxtool cms-verify-sd \
+	--missing-crl \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	--certificate=FILE:$srcdir/data/test.crt \
 	--content-info \
 	"$srcdir/data/test-signed-data-noattr-nocerts" sd.data.out || exit 1
-cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+cmp "$srcdir/data/static-file" sd.data.out || exit 1
 
 echo "envelope data (content-info)"
 ./hxtool cms-envelope \
 	--certificate=FILE:$srcdir/data/test.crt \
 	--content-info \
-	"$srcdir/test_chain.in" \
+	"$srcdir/data/static-file" \
 	ev.data  || exit 1
 
 echo "unenvelope data (content-info)"
@@ -120,12 +127,12 @@ echo "unenvelope data (content-info)"
 	--content-info \
 	ev.data ev.data.out \
 	FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
-cmp "$srcdir/test_chain.in" ev.data.out || exit 1
+cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
 echo "envelope data"
 ./hxtool cms-envelope \
 	--certificate=FILE:$srcdir/data/test.crt \
-	"$srcdir/test_chain.in" \
+	"$srcdir/data/static-file" \
 	ev.data  || exit 1
 
 echo "unenvelope data"
@@ -134,7 +141,7 @@ echo "unenvelope data"
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	ev.data ev.data.out \
 	FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
-cmp "$srcdir/test_chain.in" ev.data.out || exit 1
+cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
 echo "unenvelope data (aes-128)"
 ./hxtool cms-unenvelope \
@@ -142,7 +149,7 @@ echo "unenvelope data (aes-128)"
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
 	"$srcdir/data/test-enveloped-aes-128" ev.data.out || exit 1
-cmp "$srcdir/test_chain.in" ev.data.out || exit 1
+cmp "$srcdir/data/static-file" ev.data.out || exit 1
 
 
 exit 0
