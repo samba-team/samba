@@ -619,3 +619,9 @@ void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
 	
 	return;
 }
+
+BOOL is_null_sid(const DOM_SID *sid)
+{
+	static const DOM_SID null_sid = {0};
+	return sid_equal(sid, &null_sid);
+}
