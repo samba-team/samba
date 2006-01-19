@@ -86,6 +86,11 @@ command = {
 		help = "password, prompter, or environment"
 	}
 	option = {
+		long = "missing-crl"
+		type = "flag"
+		help = "missing crl is ok"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "unwrap in-data that's in a ContentInfo"
@@ -152,6 +157,11 @@ command = {
 		type = "strings"
 		argument = "password"
 		help = "password, prompter, or environment"
+	}
+	option = {
+		long = "missing-crl"
+		type = "flag"
+		help = "missing crl is ok"
 	}
 	option = {
 		long = "verbose"
