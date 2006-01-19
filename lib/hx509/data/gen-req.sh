@@ -67,7 +67,7 @@ openssl smime \
     -sign \
     -nodetach \
     -binary \
-    -in ../test_chain.in \
+    -in static-file \
     -signer test.crt \
     -inkey test.key \
     -outform DER \
@@ -77,7 +77,7 @@ openssl smime \
     -sign \
     -nodetach \
     -binary \
-    -in ../test_chain.in \
+    -in static-file \
     -signer test.crt \
     -inkey test.key \
     -noattr \
@@ -88,7 +88,7 @@ openssl smime \
     -sign \
     -nodetach \
     -binary \
-    -in ../test_chain.in \
+    -in static-file \
     -signer test.crt \
     -inkey test.key \
     -noattr \
@@ -100,7 +100,7 @@ openssl smime \
     -encrypt \
     -nodetach \
     -binary \
-    -in ../test_chain.in \
+    -in static-file \
     -outform DER \
     -out test-enveloped-aes-128 \
     -aes128 \
