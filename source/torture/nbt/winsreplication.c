@@ -4623,6 +4623,128 @@ static BOOL test_conflict_different_owner(struct test_wrepl_conflict_conn *ctx)
 			.apply_expected	= True,
 		}
 	},
+
+	/* 
+	 * sgroup,active vs. sgroup,tombstone different no addresses, special
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:NULL => B:NULL",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= 0,
+			.ips		= NULL,
+			.apply_expected	= True,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,tombstone different addresses
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:A_3_4 => B:A_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_A_3_4),
+			.ips		= addresses_A_3_4,
+			.apply_expected	= True,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,tombstone subset addresses
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:B_3_4 => B:B_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4),
+			.ips		= addresses_B_3_4,
+			.apply_expected	= True,
+		}
+	},
+	/* 
+	 * sgroup,active vs. sgroup,active same addresses
+	 * => should be replaced
+	 */
+	{
+		.line	= __location__,
+		.name	= _NBT_NAME("_DIFF_OWNER", 0x00, NULL),
+		.comment= "A:B_3_4_X_3_4 vs. B:B_3_4_X_3_4 => B:B_3_4_X_3_4",
+		.extra	= True,
+		.r1	= {
+			.owner		= &ctx->a,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_ACTIVE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		},
+		.r2	= {
+			.owner		= &ctx->b,
+			.type		= WREPL_TYPE_SGROUP,
+			.state		= WREPL_STATE_TOMBSTONE,
+			.node		= WREPL_NODE_B,
+			.is_static	= False,
+			.num_ips	= ARRAY_SIZE(addresses_B_3_4_X_3_4),
+			.ips		= addresses_B_3_4_X_3_4,
+			.apply_expected	= True,
+		}
+	},
+
 	/* 
 	 * This should be the last record in this array,
 	 * we need to make sure the we leave a tombstoned unique entry
