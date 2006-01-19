@@ -106,7 +106,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
-	static const DOM_SID null_sid = {0};
 	
 	/* ignore alt_name if we are not in an AD domain */
 	
@@ -128,7 +127,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 			}
 		}
 		if (sid) {
-			if (sid_equal(sid, &null_sid) ) {
+			if (is_null_sid(sid)) {
 				
 			} else if (sid_equal(sid, &domain->sid)) {
 				return domain;
