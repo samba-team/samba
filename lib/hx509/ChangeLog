@@ -1,5 +1,21 @@
 2006-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_nist.in: Parse new format to handle CRL info.
+
+	* test_chain.in: Add --missing-crl.
+
+	* name.c (hx509_unparse_der_name): Rename from hx509_parse_name.
+	(_hx509_unparse_Name): Add.
+
+	* hxtool-commands.in: Add --missing-crl to verify commands.
+
+	* hx509_err.et: Add CRL errors.
+
+	* cert.c (hx509_context_set_missing_crl): new function Add CRL
+	handling.
+
+	* hx_locl.h: Add HX509_CTX_CRL_MISSING_OK.
+
 	* revoke.c: Parse and verify CRLs (simplistic).
 
 	* hxtool.c: Parse CRL info.
