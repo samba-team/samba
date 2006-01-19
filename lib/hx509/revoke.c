@@ -128,7 +128,7 @@ hx509_revoke_add_crl(hx509_context context,
 {
     size_t length, size;
     void *data;
-    int ret;
+    int ret, i;
 
     if (strncmp(path, "FILE:", 5) != 0)
 	return EINVAL;
