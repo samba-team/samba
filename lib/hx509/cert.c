@@ -110,6 +110,15 @@ hx509_context_init(hx509_context *context)
 }
 
 void
+hx509_context_set_missing_crl(hx509_context context, int flag)
+{
+    if (flag)
+	context->flags |= HX509_CTX_CRL_MISSING_OK;
+    else
+	context->flags &= ~HX509_CTX_CRL_MISSING_OK;
+}
+
+void
 hx509_context_free(hx509_context *context)
 {
     if ((*context)->ks_ops) {
@@ -251,11 +260,6 @@ hx509_verify_init_ctx(hx509_context context, hx509_verify_ctx *ctx)
 void
 hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 {
-    if (ctx->trust_anchors)
-	hx509_certs_free(&ctx->trust_anchors);
-    if (ctx->revoke_ctx)
-	hx509_revoke_free(&ctx->revoke_ctx);
-
     memset(ctx, 0, sizeof(*ctx));
     free(ctx);
 }
@@ -263,16 +267,12 @@ hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 void
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
-    if (ctx->trust_anchors)
-	hx509_certs_free(&ctx->trust_anchors);
     ctx->trust_anchors = set;
 }
 
 void
 hx509_verify_attach_revoke(hx509_verify_ctx ctx, hx509_revoke_ctx revoke)
 {
-    if (ctx->revoke_ctx)
-	hx509_revoke_free(&ctx->revoke_ctx);
     ctx->revoke_ctx = revoke;
 }
 
@@ -1191,12 +1191,22 @@ hx509_verify_path(hx509_context context,
     }
 
     /*
-     * Verify no certificates has been revoked.
+     * Verify that no certificates has been revoked.
      */
 
     if (ctx->revoke_ctx) {
-	for (i = path.len - 1; i >= 0; i--) {
-	    ret = hx509_revoke_verify(context,  ctx->revoke_ctx, ctx->time_now,
+	hx509_certs cacerts;
+
+	ret = hx509_certs_init(context, "MEMORY:cacerts", 0, NULL, &cacerts);
+
+	for (i = 0; i < path.len; i++)
+	    hx509_certs_add(context, cacerts, path.val[i]);
+
+	for (i = 0; i < path.len; i++) {
+	    ret = hx509_revoke_verify(context,
+				      ctx->revoke_ctx, 
+				      cacerts,
+				      ctx->time_now,
 				      path.val[i]);
 	    if (ret)
 		goto out;
