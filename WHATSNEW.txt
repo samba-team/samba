@@ -10,7 +10,7 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-With 3 years of development under our belt since tridge first proposed
+With 3 years of development under our belt since Tridge first proposed
 a new Virtual File System (VFS) layer for Samba3 (a project which
 eventually lead to our Active Directory efforts), it was felt that we
 should create something we could 'show off' to our users.  This is a
@@ -48,13 +48,13 @@ NEW FEATURES
 
 Samba4 supports the server-side of the Active Directory logon environment
 used by Windows 2000 and later, so we can do full domain join
-and domain logon operations.
+and domain logon operations with these clients.
 
 Our Domain Controller (DC) implementation includes our own built-in
-LDAP server and Kerberos Domain Controller as well as the standard
-logon services provided over CIFS.  We correctly generate the Kerberos
-PAC, and include it with the Kerberos tickets we issue. [AB: What does
-this mean to the user?]
+LDAP server and Kerberos Key Distribution Center (KDC) as well as the
+Samba3-like logon services provided over CIFS.  We correctly generate
+the infamous Kerberos PAC, and include it with the Kerberos tickets we
+issue.
 
 SWAT is now integrated into Samba 4 as the user-friendly interface to
 Samba server management. SWAT provides easy provides access to our
@@ -63,16 +63,20 @@ domains in Samba 4, allowing easy setup of initial user databases, and
 upgrades from Samba 3.
 
 The new VFS features in Samba 4 adapts the filesystem on the server to
-match the Windows client semantics, [what the is effect of this for
-the user?]. The VFS is backed with an extensive automated test suite.
+match the Windows client semantics, allowing Samba 4 to better match
+windows behaviour and application expectations.  This includes file
+annotation information (in streams) and NT ACLs in particular.  The
+VFS is backed with an extensive automated test suite.
 
 A new scripting interface has been added to Samba 4, allowing
 JavaScript programs to interface to Samba's internals.
 
 The Samba 4 architecture is based around an LDAP-like database that
-can use a range of modular backends. One of the backends supports
-standards compliant LDAP servers (including OpenLDAP). This will allow
-Samba 4 to be powerful frontend to large directories.
+can use a range of modular backends.  One of the backends supports
+standards compliant LDAP servers (including OpenLDAP), and we are
+working on modules to map between AD-like behaviours and this backend.
+We are aiming for Samba 4 to be powerful frontend to large
+directories.
 
 CHANGES
 =======
