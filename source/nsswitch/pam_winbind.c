@@ -440,7 +440,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	}
 
 	if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
-		_make_remark(pamh, PAM_TEXT_INFO, "Logging on using cached account. Network ressources can be unavailable");
+		_make_remark(pamh, PAM_ERROR_MSG, "Logging on using cached account. Network ressources can be unavailable");
 	}
 
 	/* save the CIFS homedir for pam_cifs / pam_mount */
