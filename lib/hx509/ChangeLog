@@ -1,4 +1,35 @@
-2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* revoke.c: Parse and verify CRLs (simplistic).
+
+	* hxtool.c: Parse CRL info.
+
+	* data/nist-data: Change format so we can deal with CRLs, also
+	note the test-id from PKITS.
+
+	* data: regenerate test
+	
+	* data/gen-req.sh: use static-file to generate tests
+	
+	* data/static-file: new file to use for commited tests
+
+	* test_cms.in: Use static file, add --missing-crl.
+	
+2006-01-18  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* print.c: Its cRLReason, not cRLReasons.
+
+	* hxtool.c: Attach revoke context to verify context.
+
+	* data/nist-data: change syntax to make match better with crl
+	checks
+
+	* cert.c: Verify no certificates has been revoked with the new
+	revoke interface.
+
+	* Makefile.am: libhx509_la_SOURCES += revoke.c
+
+	* revoke.c: Add framework for handling CRLs.
 
 	* hx509.h: Add hx509_revoke_ctx.
 	
