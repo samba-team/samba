@@ -41,20 +41,20 @@ echo "nist tests"
 
 test -d "$nistdir" || exit 77
 
-while read validate verify cert arg1 arg2 arg3 arg4 arg5 ; do
-    expr "$validate" : "#" > /dev/null && continue
+while read id validate verify cert arg1 arg2 arg3 arg4 arg5 ; do
+    expr "$id" : "#" > /dev/null && continue
     
-    test "$validate" = "end" && break
+    test "$id" = "end" && break
     echo -n .
 
     if ./hxtool validate $nistdir/certs/$cert > /dev/null; then
 	if test "$validate" = "f"; then
-	    echo "validate passed on fail: $cert"
+	    echo "validate passed on fail: $id $cert"
 	    exit 1
 	fi
     else
 	if test "$validate" = "p"; then
-	    echo "validate failed on pass: $cert"
+	    echo "validate failed on pass: $id $cert"
 	    exit 1
 	fi
     fi
@@ -63,22 +63,25 @@ while read validate verify cert arg1 arg2 arg3 arg4 arg5 ; do
 	continue
     fi
 
-    args="anchor:FILE:$nistdir/certs/TrustAnchorRootCertificate.crt"
-
+    args=""
     a=$(echo $arg1 | sed "s@basedir@$nistdir@") ; args="$args $a"
     a=$(echo $arg2 | sed "s@basedir@$nistdir@") ; args="$args $a"
     a=$(echo $arg3 | sed "s@basedir@$nistdir@") ; args="$args $a"
     a=$(echo $arg4 | sed "s@basedir@$nistdir@") ; args="$args $a"
     a=$(echo $arg5 | sed "s@basedir@$nistdir@") ; args="$args $a"
 
-    if ./hxtool verify cert:FILE:$nistdir/certs/$cert $args > /dev/null ; then
+    args="$args anchor:FILE:$nistdir/certs/TrustAnchorRootCertificate.crt"
+    args="$args crl:FILE:$nistdir/crls/TrustAnchorRootCRL.crl"
+    args="$args cert:FILE:$nistdir/certs/$cert"
+
+    if ./hxtool verify $args > /dev/null ; then
 	if test "$verify" = "f"; then
-	    echo "validate passed on fail: $cert"
+	    echo "validate passed on fail: $id $cert"
 	    exit 1
 	fi
     else
 	if test "$verify" = "p"; then
-	    echo "validate failed on pass: $cert"
+	    echo "validate failed on pass: $id $cert"
 	    exit 1
 	fi
     fi
