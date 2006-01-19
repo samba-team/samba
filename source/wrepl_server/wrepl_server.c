@@ -236,6 +236,14 @@ NTSTATUS wreplsrv_fill_wrepl_table(struct wreplsrv_service *service,
 	NT_STATUS_HAVE_NO_MEMORY(table_out->partners);
 
 	for (cur = service->table; cur && i < table_out->partner_count; cur = cur->next) {
+		/*
+		 * if it's our local entry
+		 * update the max version
+		 */
+		if (cur == service->owner) {
+			cur->owner.max_version = winsdb_get_maxVersion(service->wins_db);
+		}
+
 		if (full_table) {
 			table_out->partners[i] = cur->owner;
 			i++;
