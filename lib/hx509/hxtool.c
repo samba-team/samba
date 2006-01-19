@@ -83,6 +83,9 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     size_t sz;
     void *p;
 
+    if (opt->missing_crl_flag)
+	hx509_context_set_missing_crl(context, 1);
+
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
@@ -151,6 +154,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_verify_destroy_ctx(ctx);
 
     hx509_certs_free(&signers);
+    hx509_certs_free(&anchors);
 
     hx509_lock_free(lock);
 
@@ -556,6 +560,9 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     struct verify v;
     int ret;
 
+    if (opt->missing_crl_flag)
+	hx509_context_set_missing_crl(context, 1);
+
     ret = hx509_verify_init_ctx(context, &ctx);
     ret = hx509_certs_init(context, "MEMORY:anchors", 0, NULL, &anchors);
     ret = hx509_certs_init(context, "MEMORY:chain", 0, NULL, &chain);
@@ -613,6 +620,7 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
     hx509_certs_free(&certs);
     hx509_certs_free(&chain);
+    hx509_certs_free(&anchors);
 
 
     return ret;
