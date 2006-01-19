@@ -35,6 +35,9 @@
  * full_audit:success = open opendir
  * full_audit:failure = all
  *
+ * vfs op can be "all" which means log all operations.
+ * vfs op can be "none" which means no logging.
+ *
  * This leads to syslog entries of the form:
  * smbd_audit: nobody|192.168.234.1|opendir|ok|.
  * smbd_audit: nobody|192.168.234.1|open|fail (File not found)|r|x.txt
@@ -60,6 +63,11 @@
 extern struct current_user current_user;
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
+
+struct vfs_full_audit_private_data {
+	struct bitmap *success_ops;
+	struct bitmap *failure_ops;
+};
 
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_full_audit_debug_level
@@ -662,24 +670,33 @@ static char *audit_prefix(connection_struct *conn)
 	return prefix;
 }
 
-static struct bitmap *success_ops = NULL;
-
-static BOOL log_success(vfs_op_type op)
+static BOOL log_success(vfs_handle_struct *handle, vfs_op_type op)
 {
-	if (success_ops == NULL)
-		return True;
+	struct vfs_full_audit_private_data *pd = NULL;
 
-	return bitmap_query(success_ops, op);
+	SMB_VFS_HANDLE_GET_DATA(handle, pd,
+		struct vfs_full_audit_private_data,
+		return True);
+
+	if (pd->success_ops == NULL) {
+		return True;
+	}
+
+	return bitmap_query(pd->success_ops, op);
 }
 
-static struct bitmap *failure_ops = NULL;
-
-static BOOL log_failure(vfs_op_type op)
+static BOOL log_failure(vfs_handle_struct *handle, vfs_op_type op)
 {
-	if (failure_ops == NULL)
+	struct vfs_full_audit_private_data *pd = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, pd,
+		struct vfs_full_audit_private_data,
+		return True);
+
+	if (pd->failure_ops == NULL)
 		return True;
 
-	return bitmap_query(failure_ops, op);
+	return bitmap_query(pd->failure_ops, op);
 }
 
 static void init_bitmap(struct bitmap **bm, const char **ops)
@@ -703,6 +720,10 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 
 		if (strequal(*ops, "all")) {
 			log_all = True;
+			break;
+		}
+
+		if (strequal(*ops, "none")) {
 			break;
 		}
 
@@ -747,10 +768,10 @@ static void do_log(vfs_op_type op, BOOL success, vfs_handle_struct *handle,
 	pstring op_msg;
 	va_list ap;
 
-	if (success && (!log_success(op)))
+	if (success && (!log_success(handle, op)))
 		return;
 
-	if (!success && (!log_failure(op)))
+	if (!success && (!log_failure(handle, op)))
 		return;
 
 	if (success)
@@ -768,6 +789,22 @@ static void do_log(vfs_op_type op, BOOL success, vfs_handle_struct *handle,
 	return;
 }
 
+/* Free function for the private data. */
+
+static void free_private_data(void **p_data)
+{
+	struct vfs_full_audit_private_data *pd = *(struct vfs_full_audit_private_data **)p_data;
+
+	if (pd->success_ops) {
+		bitmap_free(pd->success_ops);
+	}
+	if (pd->failure_ops) {
+		bitmap_free(pd->failure_ops);
+	}
+	SAFE_FREE(pd);
+	*p_data = NULL;
+}
+
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
@@ -775,17 +812,28 @@ static int smb_full_audit_connect(vfs_handle_struct *handle, connection_struct *
 			 const char *svc, const char *user)
 {
 	int result;
+	struct vfs_full_audit_private_data *pd = NULL;
 	const char *none[] = { NULL };
 	const char *all [] = { "all" };
 
+	pd = SMB_MALLOC_P(struct vfs_full_audit_private_data);
+	if (!pd) {
+		return -1;
+	}
+	ZERO_STRUCTP(pd);
+
 	openlog("smbd_audit", 0, audit_syslog_facility(handle));
 
-	init_bitmap(&success_ops,
+	init_bitmap(&pd->success_ops,
 		    lp_parm_string_list(SNUM(conn), "full_audit", "success",
 					none));
-	init_bitmap(&failure_ops,
+	init_bitmap(&pd->failure_ops,
 		    lp_parm_string_list(SNUM(conn), "full_audit", "failure",
 					all));
+
+	/* Store the private data. */
+	SMB_VFS_HANDLE_SET_DATA(handle, pd, free_private_data,
+				struct vfs_full_audit_private_data, return -1);
 
 	result = SMB_VFS_NEXT_CONNECT(handle, conn, svc, user);
 
@@ -803,11 +851,8 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_DISCONNECT, True, handle,
 	       "%s", lp_servicename(SNUM(conn)));
 
-	bitmap_free(success_ops);
-	success_ops = NULL;
-
-	bitmap_free(failure_ops);
-	failure_ops = NULL;
+	/* The bitmaps will be disconnected when the private
+	   data is deleted. */
 
 	return;
 }
@@ -2003,4 +2048,3 @@ NTSTATUS vfs_full_audit_init(void)
 	
 	return ret;
 }
-
