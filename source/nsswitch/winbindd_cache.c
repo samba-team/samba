@@ -1189,7 +1189,9 @@ do_query:
 	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name, name, sid, type);
 
 	/* and save it */
-	wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
+	if (domain->online || !is_null_sid(sid)) {
+		wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		strupper_m(CONST_DISCARD(char *,domain_name));
