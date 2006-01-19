@@ -190,7 +190,7 @@ hx509_revoke_verify(hx509_context context,
 		    hx509_cert cert)
 {
     const Certificate *c = _hx509_get_cert(cert);
-    unsigned long i, j;
+    unsigned long i, j, k;
     int ret;
 
     for (i = 0; i < revoke->crls.len; i++) {
@@ -210,6 +210,11 @@ hx509_revoke_verify(hx509_context context,
 	    crl->verified = 1;
 	}
 	
+	if (crl->crl.tbsCertList.crlExtensions)
+	    for (j = 0; j < crl->crl.tbsCertList.crlExtensions->len; j++)
+		if (crl->crl.tbsCertList.crlExtensions->val[j].critical)
+		    return HX509_CRL_UNKNOWN_EXTENSION;
+
 	if (crl->crl.tbsCertList.revokedCertificates == NULL)
 	    return 0;
 
@@ -225,6 +230,11 @@ hx509_revoke_verify(hx509_context context,
 	    t = _hx509_Time2time_t(&crl->crl.tbsCertList.revokedCertificates->val[j].revocationDate);
 	    if (t > now)
 		continue;
+
+	if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions)
+	    for (k = 0; k < crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->len; k++)
+		if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
+		    return HX509_CRL_UNKNOWN_EXTENSION;
 
 	    return HX509_CRL_CERT_REVOKED;
 	}
