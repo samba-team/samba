@@ -2737,7 +2737,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
  Close an open named pipe over SMB. Free any authentication data.
  ****************************************************************************/
 
-void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
+ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
 	if (!cli_close(cli->cli, cli->fnum)) {
 		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "
