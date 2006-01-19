@@ -142,7 +142,7 @@ interface drsblobs {
 	} ldapControlDirSyncBlob;
 
 	typedef [public,relative_base] struct {
-		[string,charset(DOS),value("MSDS")] uint8 msds[4];
+		[charset(DOS),value("MSDS")] uint8 msds[4];
 		[subcontext(0)] ldapControlDirSyncBlob blob;
 	} ldapControlDirSyncCookie;
 

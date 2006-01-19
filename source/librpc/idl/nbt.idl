@@ -596,7 +596,7 @@
 	typedef struct {
 		uint8 UpdateCount;
 		uint32 Periodicity;
-		[string,charset(DOS)] uint8 ServerName[16];
+		[charset(DOS)] uint8 ServerName[16];
 		uint8 OSMajor;
 		uint8 OSMinor;
 		svcctl_ServerType ServerType;
@@ -637,7 +637,7 @@
 	typedef struct {
 		uint8 UpdateCount;
 		uint32 Periodicity;
-		[string,charset(DOS)] uint8 ServerName[16];
+		[charset(DOS)] uint8 ServerName[16];
 		uint8 OSMajor;
 		uint8 OSMinor;
 		svcctl_ServerType ServerType;
@@ -656,7 +656,7 @@
 	typedef struct {
 		uint8 UpdateCount;
 		uint32 Periodicity;
-		[string,charset(DOS)] uint8 ServerName[16];
+		[charset(DOS)] uint8 ServerName[16];
 		uint8 OSMajor;
 		uint8 OSMinor;
 		svcctl_ServerType ServerType;
