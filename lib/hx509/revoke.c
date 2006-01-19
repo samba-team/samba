@@ -69,6 +69,7 @@ hx509_revoke_free(hx509_revoke_ctx *revoke)
 	free((*revoke)->crls.val[i].path);
 	free_CRLCertificateList(&(*revoke)->crls.val[i].crl);
     }
+    free((*revoke)->crls.val);
 
     memset(*revoke, 0, sizeof(**revoke));
     free(*revoke);
@@ -128,7 +129,8 @@ hx509_revoke_add_crl(hx509_context context,
 {
     size_t length, size;
     void *data;
-    int ret, i;
+    size_t i;
+    int ret;
 
     if (strncmp(path, "FILE:", 5) != 0)
 	return EINVAL;
