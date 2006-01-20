@@ -421,6 +421,11 @@ alias|alias|alias|alias...
 		</varlistentry>
 		
 		<varlistentry>
+		<term>%w</term>
+		<listitem><para>the winbind seperator.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
 		<term>%$(<replaceable>envvar</replaceable>)</term>
 		<listitem><para>the value of the environment variable
 		<replaceable>envar</replaceable>.</para></listitem>
