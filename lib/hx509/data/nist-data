@@ -9,7 +9,9 @@
 4.1.1   p ValidCertificatePathTest1EE.crt GoodCACert.crt GoodCACRL.crl
 4.1.2   f InvalidCASignatureTest2EE.crt BadSignedCACert.crt BadSignedCACRL.crl
 4.1.3   f InvalidEESignatureTest3EE.crt GoodCACert.crt GoodCACRL.crl
-#here we skip the DSA tests
+#4.1.4	p ValidDSASignaturesTest4EE.crt DSACACert.crt DSACACRL.crl
+#4.1.5	p ValidDSAParameterInheritanceTest5EE.crl DSAParametersInheritedCACert.crt DSAParametersInheritedCACRL.crl DSACACert.crt DSACACRL.crl
+#4.1.6	f InvalidDSASignaturesTest6EE.crt DSACACert.crt DSACACRL.crl
 #
 # 4.2 Validity Periods
 #
