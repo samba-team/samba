@@ -178,7 +178,7 @@ length_heim_integer (const heim_integer *k)
     if (k->length == 0)
 	return 1;
     if (k->negative)
-	return k->length + ((((unsigned char *)k->data)[0] & 0x80) ? 0 : 1);
+	return k->length + (((~(((unsigned char *)k->data)[0])) & 0x80) ? 0 : 1);
     else
 	return k->length + ((((unsigned char *)k->data)[0] & 0x80) ? 1 : 0);
 }
