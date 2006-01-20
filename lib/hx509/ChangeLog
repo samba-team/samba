@@ -1,5 +1,14 @@
 2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add test_nist_cert.
+
+	* data/nist-data: Add some more CRL-tests.
+
+	* test_nist.in: Print $id instead of . when running the tests.
+
+	* test_nist.in: Drop verifying certifiates, its done in another
+	test now.
+
 	* data/nist-data: fixup kill-rectangle leftovers
 
 	* data/nist-data: Drop verifying certifiates, its done in another
