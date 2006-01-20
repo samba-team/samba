@@ -1,5 +1,9 @@
 2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/nist-data: Add 4.2 Validity Periods.
+
+	* test_nist.in: Make less verbose to use.
+
 	* Makefile.am: Add test_nist_cert.
 
 	* data/nist-data: Add some more CRL-tests.
