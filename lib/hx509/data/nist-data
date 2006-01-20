@@ -26,10 +26,10 @@
 #
 #
 # 4.8 Ceificate Policies
-incomple4.8.2 p p AllCertificatesNoPoliciesTest2EE.crt chain:FILE:basedir/certs/NoPoliciesCACert.crt crl:FILE:basedir/crls/NoPoliciesCACRL.crl
-incomple4.8.10 p p AllCertificatesSamePoliciesTest10EE.crt chain:FILE:basedir/certs/PoliciesP12CACert.crt crl:FILE:basedir/crls/PoliciesP12CACRL.crl
-incomple4.8.13 p p AllCertificatesSamePoliciesTest13EE.Crt chain:FILE:basedir/certs/PoliciesP123CACert.crt crl:FILE:basedir/crls/PoliciesP123CACRL.crl
-incomple4.8.11 p p AllCertificatesanyPolicyTest11EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
+incomplete4.8.2 p AllCertificatesNoPoliciesTest2EE.crt chain:FILE:basedir/certs/NoPoliciesCACert.crt crl:FILE:basedir/crls/NoPoliciesCACRL.crl
+incomplete4.8.10 p AllCertificatesSamePoliciesTest10EE.crt chain:FILE:basedir/certs/PoliciesP12CACert.crt crl:FILE:basedir/crls/PoliciesP12CACRL.crl
+incomplete4.8.13 p AllCertificatesSamePoliciesTest13EE.Crt chain:FILE:basedir/certs/PoliciesP123CACert.crt crl:FILE:basedir/crls/PoliciesP123CACRL.crl
+incomplete4.8.11 p AllCertificatesanyPolicyTest11EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
 unknown p AnyPolicyTest14EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
 unknown f BadSignedCACert.crt
 unknown f BadnotAfterDateCACert.crt
