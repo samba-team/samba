@@ -427,6 +427,51 @@ test_bit_string (void)
 			 test_cmp_bit_string);
 }
 
+static int
+test_cmp_heim_integer (void *a, void *b)
+{
+    return heim_integer_cmp((heim_integer *)a, (heim_integer *)b);
+}
+
+static int
+test_heim_integer (void)
+{
+    struct test_case tests[] = {
+	{NULL, 2, "\xfe\x01"},
+	{NULL, 2, "\xef\x01"},
+	{NULL, 3, "\xff\x00\xff"},
+	{NULL, 3, "\xff\x01\x00"},
+	{NULL, 1, "\x00"},
+	{NULL, 1, "\x01"},
+	{NULL, 2, "\x00\x80"}
+    };
+
+    heim_integer values[] = {
+	{ 2, "\x01\xff", 1 },
+	{ 2, "\x10\xff", 1 },
+	{ 2, "\xff\x01", 1 },
+	{ 2, "\xff\x00", 1 },
+	{ 0, "", 0 },
+	{ 1, "\x01", 0 },
+	{ 1, "\x80", 0 }
+    };
+    int i;
+    int ntests = sizeof(tests) / sizeof(tests[0]);
+
+    for (i = 0; i < ntests; ++i) {
+	tests[i].val = &values[i];
+	asprintf (&tests[i].name, "heim_integer %d", i);
+	if (tests[i].name == NULL)
+	    errx(1, "malloc");
+    }
+
+    return generic_test (tests, ntests, sizeof(heim_integer),
+			 (generic_encode)der_put_heim_integer,
+			 (generic_length)length_heim_integer,
+			 (generic_decode)der_get_heim_integer,
+			 (generic_free)free_heim_integer,
+			 test_cmp_heim_integer);
+}
 
 static int
 check_fail_unsigned(void)
@@ -670,6 +715,8 @@ main(int argc, char **argv)
     ret += test_generalized_time ();
     ret += test_oid ();
     ret += test_bit_string();
+    ret += test_heim_integer();
+
     ret += check_fail_unsigned();
     ret += check_fail_integer();
     ret += check_fail_length();
