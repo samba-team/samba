@@ -557,12 +557,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	ZERO_STRUCT(state);
 	state.pid = getpid();
 
-	/* Don't handle the same messages as our parent. */
-	message_deregister(MSG_SMB_CONF_UPDATED);
-	message_deregister(MSG_SHUTDOWN);
-	message_deregister(MSG_WINBIND_OFFLINE);
-	message_deregister(MSG_WINBIND_ONLINE);
-
 	child->pid = sys_fork();
 
 	if (child->pid == -1) {
@@ -583,6 +577,13 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	}
 
 	/* Child */
+
+	/* Don't handle the same messages as our parent. */
+	message_deregister(MSG_SMB_CONF_UPDATED);
+	message_deregister(MSG_SHUTDOWN);
+	message_deregister(MSG_WINBIND_OFFLINE);
+	message_deregister(MSG_WINBIND_ONLINE);
+
 
 	state.sock = fdpair[0];
 	close(fdpair[1]);
