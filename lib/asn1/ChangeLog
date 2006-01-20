@@ -1,4 +1,13 @@
-2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* der_length.c (length_heim_integer): Try handle negative length
+	of integers better.
+
+	* der_get.c (der_get_heim_integer): handle negative integers.
+	
+	* check-der.c: check heim_integer.
+	
+2006-01-18  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* Makefile.am: Its cRLReason, not cRLReasons
 
