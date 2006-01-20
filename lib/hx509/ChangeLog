@@ -1,5 +1,7 @@
 2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/nist-data: Add commited out DSA tests (they fail).
+
 	* data/nist-data: Add 4.2 Validity Periods.
 
 	* test_nist.in: Make less verbose to use.
