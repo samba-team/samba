@@ -241,4 +241,7 @@
 /* Characters we disallow in sharenames. */
 #define INVALID_SHARENAME_CHARS "%<>*?|/\\+=;:\","
 
+/* Seconds between connection attempts to a remote server. */
+#define FAILED_CONNECTION_CACHE_TIMEOUT 30
+
 #endif

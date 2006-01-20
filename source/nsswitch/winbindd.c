@@ -1062,7 +1062,11 @@ int main(int argc, char **argv)
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
 	message_register(MSG_SHUTDOWN, msg_shutdown);
-	
+
+	/* Handle online/offline messages. */
+	message_register(MSG_WINBIND_OFFLINE,winbind_msg_offline);
+	message_register(MSG_WINBIND_ONLINE,winbind_msg_online);
+
 	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */

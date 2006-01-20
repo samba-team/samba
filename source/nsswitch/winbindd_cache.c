@@ -2246,4 +2246,3 @@ struct winbindd_methods cache_methods = {
 	password_policy,
 	trusted_domains
 };
-

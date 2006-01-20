@@ -584,6 +584,28 @@ static BOOL do_drvupgrade(const struct process_id pid,
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
+static BOOL do_winbind_online(const struct process_id pid,
+			     const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol winbind online\n");
+		return False;
+	}
+
+	return send_message(pid, MSG_WINBIND_ONLINE, NULL, 0, False);
+}
+
+static BOOL do_winbind_offline(const struct process_id pid,
+			     const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol winbind offline\n");
+		return False;
+	}
+
+	return send_message(pid, MSG_WINBIND_OFFLINE, NULL, 0, False);
+}
+
 static BOOL do_reload_config(const struct process_id pid,
 			     const int argc, const char **argv)
 {
@@ -668,6 +690,8 @@ static const struct {
 	{ "drvupgrade", do_drvupgrade, "Notify a printer driver has changed" },
 	{ "reload-config", do_reload_config, "Force smbd or winbindd to reload config file"},
 	{ "nodestatus", do_nodestatus, "Ask nmbd to do a node status request"},
+	{ "online", do_winbind_online, "Ask winbind to go into online state"},
+	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
@@ -681,7 +705,7 @@ static void usage(poptContext *pc)
 	poptPrintHelp(*pc, stderr, 0);
 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\" or a "
+	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbind\" or a "
 		"process ID\n");
 
 	fprintf(stderr, "\n");
@@ -718,7 +742,9 @@ static struct process_id parse_dest(const char *dest)
 	/* Check for numeric pid number */
 
 	result = interpret_pid(dest);
-	if (procid_valid(&result)) {
+
+	/* Zero isn't valid if not smbd. */
+	if (result.pid && procid_valid(&result)) {
 		return result;
 	}
 

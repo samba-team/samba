@@ -449,6 +449,34 @@ void winbind_child_died(pid_t pid)
 	schedule_async_request(child);
 }
 
+/* Forward the online/offline messages to our children. */
+void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_offline: got offline message.\n"));
+
+	for (child = children; child != NULL; child = child->next) {
+		DEBUG(10,("winbind_msg_offline: sending message to pid %u.\n",
+			(unsigned int)child->pid ));
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_OFFLINE, NULL, 0, False);
+	}
+}
+
+/* Forward the online/offline messages to our children. */
+void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_child *child;
+
+	DEBUG(10,("winbind_msg_online: got online message.\n"));
+
+	for (child = children; child != NULL; child = child->next) {
+		DEBUG(10,("winbind_msg_online: sending message to pid %u.\n",
+			(unsigned int)child->pid ));
+		message_send_pid(pid_to_procid(child->pid), MSG_WINBIND_ONLINE, NULL, 0, False);
+	}
+}
+
 static void account_lockout_policy_handler(struct timed_event *te,
 					   const struct timeval *now,
 					   void *private_data)
@@ -480,6 +508,40 @@ static void account_lockout_policy_handler(struct timed_event *te,
 					     child);
 }
 
+/* Deal with a request to go offline. */
+
+static void child_msg_offline(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(5,("child_msg_offline received.\n"));
+
+	/* Mark all our domains as offline. */
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
+		domain->online = False;
+	}
+}
+
+/* Deal with a request to go online. */
+
+static void child_msg_online(int msg_type, struct process_id src, void *buf, size_t len)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(5,("child_msg_online received.\n"));
+
+	/* Mark everything online - delete any negative cache entries
+	   to force an immediate reconnect. */
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		DEBUG(5,("child_msg_online: marking %s online.\n", domain->name));
+		domain->online = True;
+		check_negative_conn_cache_timeout(domain->name, domain->dcname, 0);
+	}
+}
+
 static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -494,6 +556,12 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	ZERO_STRUCT(state);
 	state.pid = getpid();
+
+	/* Don't handle the same messages as our parent. */
+	message_deregister(MSG_SMB_CONF_UPDATED);
+	message_deregister(MSG_SHUTDOWN);
+	message_deregister(MSG_WINBIND_OFFLINE);
+	message_deregister(MSG_WINBIND_ONLINE);
 
 	child->pid = sys_fork();
 
@@ -545,6 +613,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			account_lockout_policy_handler,
 			child);
 	}
+
+	/* Handle online/offline messages. */
+	message_register(MSG_WINBIND_OFFLINE,child_msg_offline);
+	message_register(MSG_WINBIND_ONLINE,child_msg_online);
 
 	while (1) {
 
