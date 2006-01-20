@@ -70,7 +70,13 @@ CLEANFILES = hx509_err.c hx509_err.h $(TESTS) \
 # regression tests
 #
 
-TESTS = test_chain test_cms test_nist test_nist_pkcs12 test_query
+TESTS = 			\
+	test_chain		\
+	test_cms		\
+	test_nist		\
+	test_nist_cert		\
+	test_nist_pkcs12	\
+	test_query
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
 
@@ -88,6 +94,11 @@ test_nist: test_nist.in Makefile
 	$(do_subst) < $(srcdir)/test_nist.in > test_nist.tmp
 	chmod +x test_nist.tmp
 	mv test_nist.tmp test_nist
+
+test_nist_cert: test_nist_cert.in Makefile
+	$(do_subst) < $(srcdir)/test_nist_cert.in > test_nist_cert.tmp
+	chmod +x test_nist_cert.tmp
+	mv test_nist_cert.tmp test_nist_cert
 
 test_nist_pkcs12: test_nist_pkcs12.in Makefile
 	$(do_subst) < $(srcdir)/test_nist_pkcs12.in > test_nist_pkcs12.tmp
