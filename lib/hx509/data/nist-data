@@ -2,6 +2,8 @@
 # id verify cert hxtool-verify-arguments...
 # p(ass) f(ail)
 #
+# Those id's that end with i are invariants of the orignal test
+#
 # 4.4 CRtests
 #
 4.4.1   f InvalidMissingCRLTest1EE.crt chain:FILE:basedir/certs/NoCRLCACert.crt
@@ -22,7 +24,11 @@
 4.4.11  f InvalidOldCRLnextUpdateTest11EE.crt chain:FILE:basedir/certs/OldCRLnextUpdateCACert.crt crl:FILE:basedir/crls/OldCRLnextUpdateCACRL.crl 
 4.4.12  f Invalidpre2000CRLnextUpdateTest12EE.crt chain:FILE:basedir/certs/pre2000CRLnextUpdateCACert.crt crl:FILE:basedir/crls/pre2000CRLnextUpdateCACRL.crl
 #4.4.13-xxx s ValidGeneralizedTimeCRLnextUpdateTest13EE.crt chain:FILE:basedir/certs/GeneralizedTimeCRLnextUpdateCACert.crt crl:FILE:basedir/crls/GeneralizedTimeCRLnextUpdateCACRL.crl
-#4.4.14-xxx  f ValidNegativeSerialNumberTest14EE.crt chain:FILE:basedir/certs/NegativeSerialNumberCACert.crt crl:FILE:basedir/crls/NegativeSerialNumberCACRL.crl
+4.4.14  p ValidNegativeSerialNumberTest14EE.crt chain:FILE:basedir/certs/NegativeSerialNumberCACert.crt crl:FILE:basedir/crls/NegativeSerialNumberCACRL.crl
+4.4.15  f InvalidNegativeSerialNumberTest15EE.crt chain:FILE:basedir/certs/NegativeSerialNumberCACert.crt crl:FILE:basedir/crls/NegativeSerialNumberCACRL.crl
+4.4.16  p ValidLongSerialNumberTest16EE.crt chain:FILE:basedir/certs/LongSerialNumberCACert.crt crl:FILE:basedir/crls/LongSerialNumberCACRL.crl
+4.4.17  p ValidLongSerialNumberTest17EE.crt chain:FILE:basedir/certs/LongSerialNumberCACert.crt crl:FILE:basedir/crls/LongSerialNumberCACRL.crl
+4.4.18  f InvalidLongSerialNumberTest18EE.crt chain:FILE:basedir/certs/LongSerialNumberCACert.crt crl:FILE:basedir/crls/LongSerialNumberCACRL.crl
 #
 #
 # 4.8 Ceificate Policies
