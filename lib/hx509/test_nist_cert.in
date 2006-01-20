@@ -45,6 +45,7 @@ if ./hxtool validate DIR:$nistdir/certs > /dev/null; then
    :
 else
    echo "validate failed"
+   exit 1
 fi
 
 exit 0
