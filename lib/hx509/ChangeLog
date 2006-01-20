@@ -1,5 +1,8 @@
 2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/nist-data: Drop verifying certifiates, its done in another
+	test now.  Add more crl tests. comment out all unused tests.
+
 	* test_nist_cert.in: test parse all nist certs
 	
 2006-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
