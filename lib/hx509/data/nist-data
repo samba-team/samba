@@ -4,6 +4,11 @@
 #
 # Those id's that end with i are invariants of the orignal test
 #
+# 4.1 Signature Verification
+#
+4.1.1   p ValidCertificatePathTest1EE.crt chain:FILE:basedir/certs/GoodCACert.crt crl:FILE:basedir/crls/GoodCACRL.crl
+4.1.2   f InvalidCASignatureTest2EE.crt chain:FILE:basedir/certs/BadSignedCACert.crt crl:FILE:basedir/crls/BadSignedCACRL.crl
+#
 # 4.4 CRtests
 #
 4.4.1   f InvalidMissingCRLTest1EE.crt chain:FILE:basedir/certs/NoCRLCACert.crt
