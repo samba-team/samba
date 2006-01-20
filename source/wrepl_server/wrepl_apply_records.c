@@ -1209,7 +1209,6 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 
 		/*
 		 * add the address to the merge result, with the old owner and expire_time
-		 * TODO: check if that's correct for the expire_time
 		 */
 		merge->addresses = winsdb_addr_list_add(merge->addresses,
 							rec->addresses[i]->address,
