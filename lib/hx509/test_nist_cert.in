@@ -37,8 +37,6 @@
 srcdir="@srcdir@"
 nistdir=/sources/pki/nist/PKITS_data
 
-echo "nist tests"
-
 test -d "$nistdir" || exit 77
 
 if ./hxtool validate DIR:$nistdir/certs > /dev/null; then
