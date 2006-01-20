@@ -351,8 +351,13 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 	request.data.auth.require_membership_of_sid[0] = '\0';
 
+	if (member != NULL) {
+		strncpy(request.data.auth.require_membership_of_sid, member, 
+		        sizeof(request.data.auth.require_membership_of_sid)-1);
+	}
+
 	/* lookup name? */ 
-	if ( (member != NULL) && !(strncmp("S-", member, 2)) ) {
+	if ( (member != NULL) && (strncmp("S-", member, 2) != 0) ) {
 		
 		struct winbindd_request sid_request;
 		struct winbindd_response sid_response;
@@ -749,9 +754,12 @@ const char *get_conf_item_string(int argc,
 				goto out;
 			}
 			SAFE_FREE(parm);
+			_pam_log_debug(ctrl, LOG_INFO, "PAM config: %s '%s'\n", item, p+1);
 			return p + 1;
 		}
 	}
+
+	_pam_log_debug(ctrl, LOG_INFO, "CONFIG file: %s '%s'\n", item, parm_opt);
 out:
 	SAFE_FREE(parm);
 	return parm_opt;
@@ -764,12 +772,12 @@ const char *get_krb5_cc_type_from_config(int argc, const char **argv, int ctrl)
 
 const char *get_member_from_config(int argc, const char **argv, int ctrl)
 {
-	const char *ret;
-	ret = get_conf_item_string(argc, argv, ctrl, "require_membership_of_sid", WINBIND_REQUIRED_MEMBERSHIP);
-	if (ret) { 
-		return ret; 
+	const char *ret = NULL;
+	ret = get_conf_item_string(argc, argv, ctrl, "require_membership_of", WINBIND_REQUIRED_MEMBERSHIP);
+	if (ret) {
+		return ret;
 	}
-	return get_conf_item_string(argc, argv, ctrl, "require-membership-of-sid", WINBIND_REQUIRED_MEMBERSHIP);
+	return get_conf_item_string(argc, argv, ctrl, "require-membership-of", WINBIND_REQUIRED_MEMBERSHIP);
 }
 
 PAM_EXTERN
@@ -816,14 +824,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 #endif
 
 	member = get_member_from_config(argc, argv, ctrl);
-	if (member != NULL) {
-		_pam_log_debug(ctrl, LOG_INFO, "got required membership: '%s'\n", member);
-	}
 
 	cctype = get_krb5_cc_type_from_config(argc, argv, ctrl);
-	if (cctype != NULL) {
-		_pam_log_debug(ctrl, LOG_INFO, "using cctype '%s' from config\n", cctype);
-	}
 
 	/* Now use the username to look up password */
 	retval = winbind_auth_request(pamh, ctrl, username, password, member, cctype, True);
@@ -1019,6 +1021,10 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 
 	_pam_log_debug(ctrl, LOG_DEBUG,"pam_winbind: pam_sm_close_session handler");
 
+	if (!(flags & PAM_DELETE_CRED)) {
+		return PAM_SUCCESS;
+	}
+
 	if (ctrl & WINBIND_KRB5_AUTH) {
 
 		/* destroy the ccache here */
@@ -1135,8 +1141,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 						NULL,
 						(const char **) &pass_old);
 		if (retval != PAM_SUCCESS) {
-			_pam_log(LOG_NOTICE
-				 ,"password - (old) token not obtained");
+			_pam_log(LOG_NOTICE, "password - (old) token not obtained");
 			return retval;
 		}
 		/* verify that this is the password for this user */
@@ -1154,8 +1159,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		retval = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
 		pass_old = NULL;
 		if (retval != PAM_SUCCESS) {
-			_pam_log(LOG_CRIT, 
-				 "failed to set PAM_OLDAUTHTOK");
+			_pam_log(LOG_CRIT, "failed to set PAM_OLDAUTHTOK");
 		}
 	} else if (flags & PAM_UPDATE_AUTHTOK) {
 	
@@ -1227,20 +1231,10 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 		/* just in case we need krb5 creds after a password change over msrpc */
 
-		if (ctrl & WBFLAG_PAM_KRB5) {
+		if (ctrl & WINBIND_KRB5_AUTH) {
 
-			const char *member = NULL;
-			const char *cctype = NULL;
-
-			member = get_member_from_config(argc, argv, ctrl);
-			if (member != NULL) {
-				_pam_log_debug(ctrl, LOG_INFO, "got required membership: '%s'\n", member);
-			}
-
-			cctype = get_krb5_cc_type_from_config(argc, argv, ctrl);
-			if (cctype != NULL) {
-				_pam_log_debug(ctrl, LOG_INFO, "using cctype '%s' from config\n", cctype);
-			}
+			const char *member = get_member_from_config(argc, argv, ctrl);
+			const char *cctype = get_krb5_cc_type_from_config(argc, argv, ctrl);
 
 			retval = winbind_auth_request(pamh, ctrl, user, pass_new, member, cctype, False);
 			_pam_overwrite(pass_new);
