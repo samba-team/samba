@@ -45,7 +45,7 @@ while read id verify cert arg1 arg2 arg3 arg4 arg5 ; do
     expr "$id" : "#" > /dev/null && continue
     
     test "$id" = "end" && break
-    echo -n .
+    echo -n "$id "
 
     args=""
     a=$(echo $arg1 | sed "s@basedir@$nistdir@") ; args="$args $a"
