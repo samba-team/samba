@@ -6,432 +6,56 @@
 #
 # 4.1 Signature Verification
 #
-4.1.1   p ValidCertificatePathTest1EE.crt chain:FILE:basedir/certs/GoodCACert.crt crl:FILE:basedir/crls/GoodCACRL.crl
-4.1.2   f InvalidCASignatureTest2EE.crt chain:FILE:basedir/certs/BadSignedCACert.crt crl:FILE:basedir/crls/BadSignedCACRL.crl
+4.1.1   p ValidCertificatePathTest1EE.crt GoodCACert.crt GoodCACRL.crl
+4.1.2   f InvalidCASignatureTest2EE.crt BadSignedCACert.crt BadSignedCACRL.crl
+4.1.3   f InvalidEESignatureTest3EE.crt GoodCACert.crt GoodCACRL.crl
+#here we skip the DSA tests
+#
+# 4.2 Validity Periods
+#
+4.2.1   f InvalidCAnotBeforeDateTest1EE.crt BadnotBeforeDateCACert.crt BadnotBeforeDateCACRL.crl
+4.2.2   f InvalidEEnotBeforeDateTest2EE.crt GoodCACert.crt GoodCACRL.crl
+4.2.3   p Validpre2000UTCnotBeforeDateTest3EE.crt GoodCACert.crt GoodCACRL.crl
+4.2.4   p ValidGeneralizedTimenotBeforeDateTest4EE.crt GoodCACert.crt GoodCACRL.crl
+4.2.5   f InvalidCAnotAfterDateTest5EE.crt BadnotAfterDateCACert.crt BadnotAfterDateCACRL.crl
+4.2.6   f InvalidEEnotAfterDateTest6EE.crt GoodCACert.crt GoodCACRL.crl
+4.2.7   f Invalidpre2000UTCEEnotAfterDateTest7EE.crt GoodCACert.crt GoodCACRL.crl
+#4.2.8   p ValidGeneralizedTimenotAfterDateTest8EE.crt GoodCACert.crt GoodCACRL.crl
+end
 #
 # 4.4 CRtests
 #
-4.4.1   f InvalidMissingCRLTest1EE.crt chain:FILE:basedir/certs/NoCRLCACert.crt
-4.4.1i  p InvalidMissingCRLTest1EE.crt --missing-crl chain:FILE:basedir/certs/NoCRLCACert.crt
-4.4.2   f InvalidRevokedEETest3EE.crt chain:FILE:basedir/certs/GoodCACert.crt chain:FILE:basedir/certs/InvalidRevokedCATest2EE.crt crl:FILE:basedir/crls/GoodCACRL.crl crl:FILE:basedir/crls/RevokedsubCACRL.crl
-4.4.2i  p InvalidRevokedEETest3EE.crt --missing-crl chain:FILE:basedir/certs/GoodCACert.crt chain:FILE:basedir/certs/InvalidRevokedCATest2EE.crt
-4.4.3   f InvalidRevokedEETest3EE.crt chain:FILE:basedir/certs/GoodCACert.crt crl:FILE:basedir/crls/GoodCACRL.crl
-4.4.3i  p InvalidRevokedEETest3EE.crt --missing-crl chain:FILE:basedir/certs/GoodCACert.crt
-4.4.4   f InvalidBadCRLSignatureTest4EE.crt chain:FILE:basedir/certs/BadCRLSignatureCACert.crt crl:FILE:basedir/crls/BadCRLSignatureCACRL.crl
-4.4.4i  p InvalidBadCRLSignatureTest4EE.crt --missing-crl chain:FILE:basedir/certs/BadCRLSignatureCACert.crt
-4.4.5   f InvalidBadCRLIssuerNameTest5EE.crt chain:FILE:basedir/certs/BadCRLIssuerNameCACert.crt crl:FILE:basedir/crls/BadCRLIssuerNameCACRL.crl
-4.4.5i  p InvalidBadCRLIssuerNameTest5EE.crt --missing-crl chain:FILE:basedir/certs/BadCRLIssuerNameCACert.crt
-4.4.6   f InvalidWrongCRLTest6EE.crt chain:FILE:basedir/certs/WrongCRLCACert.crt crl:FILE:basedir/crls/WrongCRLCACRL.crl
-4.4.7   p ValidTwoCRLsTest7EE.crt chain:FILE:basedir/certs/TwoCRLsCACert.crt crl:FILE:basedir/crls/TwoCRLsCAGoodCRL.crl crl:FILE:basedir/crls/TwoCRLsCABadCRL.crl
-4.4.8   f InvalidUnknownCRLEntryExtensionTest8EE.crt chain:FILE:basedir/certs/UnknownCRLEntryExtensionCACert.crt crl:FILE:basedir/crls/UnknownCRLEntryExtensionCACRL.crl
-4.4.9   f InvalidUnknownCRLExtensionTest9EE.crt chain:FILE:basedir/certs/UnknownCRLExtensionCACert.crt crl:FILE:basedir/crls/UnknownCRLExtensionCACRL.crl
-4.4.10  f InvalidUnknownCRLExtensionTest10EE.crt chain:FILE:basedir/certs/UnknownCRLExtensionCACert.crt crl:FILE:basedir/crls/UnknownCRLExtensionCACRL.crl
-4.4.11  f InvalidOldCRLnextUpdateTest11EE.crt chain:FILE:basedir/certs/OldCRLnextUpdateCACert.crt crl:FILE:basedir/crls/OldCRLnextUpdateCACRL.crl 
-4.4.12  f Invalidpre2000CRLnextUpdateTest12EE.crt chain:FILE:basedir/certs/pre2000CRLnextUpdateCACert.crt crl:FILE:basedir/crls/pre2000CRLnextUpdateCACRL.crl
-#4.4.13-xxx s ValidGeneralizedTimeCRLnextUpdateTest13EE.crt chain:FILE:basedir/certs/GeneralizedTimeCRLnextUpdateCACert.crt crl:FILE:basedir/crls/GeneralizedTimeCRLnextUpdateCACRL.crl
-4.4.14  p ValidNegativeSerialNumberTest14EE.crt chain:FILE:basedir/certs/NegativeSerialNumberCACert.crt crl:FILE:basedir/crls/NegativeSerialNumberCACRL.crl
-4.4.15  f InvalidNegativeSerialNumberTest15EE.crt chain:FILE:basedir/certs/NegativeSerialNumberCACert.crt crl:FILE:basedir/crls/NegativeSerialNumberCACRL.crl
-4.4.16  p ValidLongSerialNumberTest16EE.crt chain:FILE:basedir/certs/LongSerialNumberCACert.crt crl:FILE:basedir/crls/LongSerialNumberCACRL.crl
-4.4.17  p ValidLongSerialNumberTest17EE.crt chain:FILE:basedir/certs/LongSerialNumberCACert.crt crl:FILE:basedir/crls/LongSerialNumberCACRL.crl
-4.4.18  f InvalidLongSerialNumberTest18EE.crt chain:FILE:basedir/certs/LongSerialNumberCACert.crt crl:FILE:basedir/crls/LongSerialNumberCACRL.crl
+4.4.1   f InvalidMissingCRLTest1EE.crt NoCRLCACert.crt
+4.4.1i  p InvalidMissingCRLTest1EE.crt --missing-crl NoCRLCACert.crt
+4.4.2   f InvalidRevokedEETest3EE.crt GoodCACert.crt InvalidRevokedCATest2EE.crt GoodCACRL.crl RevokedsubCACRL.crl
+4.4.2i  p InvalidRevokedEETest3EE.crt --missing-crl GoodCACert.crt InvalidRevokedCATest2EE.crt
+4.4.3   f InvalidRevokedEETest3EE.crt GoodCACert.crt GoodCACRL.crl
+4.4.3i  p InvalidRevokedEETest3EE.crt --missing-crl GoodCACert.crt
+4.4.4   f InvalidBadCRLSignatureTest4EE.crt BadCRLSignatureCACert.crt BadCRLSignatureCACRL.crl
+4.4.4i  p InvalidBadCRLSignatureTest4EE.crt --missing-crl BadCRLSignatureCACert.crt
+4.4.5   f InvalidBadCRLIssuerNameTest5EE.crt BadCRLIssuerNameCACert.crt BadCRLIssuerNameCACRL.crl
+4.4.5i  p InvalidBadCRLIssuerNameTest5EE.crt --missing-crl BadCRLIssuerNameCACert.crt
+4.4.6   f InvalidWrongCRLTest6EE.crt WrongCRLCACert.crt WrongCRLCACRL.crl
+4.4.7   p ValidTwoCRLsTest7EE.crt TwoCRLsCACert.crt TwoCRLsCAGoodCRL.crl TwoCRLsCABadCRL.crl
+4.4.8   f InvalidUnknownCRLEntryExtensionTest8EE.crt UnknownCRLEntryExtensionCACert.crt UnknownCRLEntryExtensionCACRL.crl
+4.4.9   f InvalidUnknownCRLExtensionTest9EE.crt UnknownCRLExtensionCACert.crt UnknownCRLExtensionCACRL.crl
+4.4.10  f InvalidUnknownCRLExtensionTest10EE.crt UnknownCRLExtensionCACert.crt UnknownCRLExtensionCACRL.crl
+4.4.11  f InvalidOldCRLnextUpdateTest11EE.crt OldCRLnextUpdateCACert.crt OldCRLnextUpdateCACRL.crl 
+4.4.12  f Invalidpre2000CRLnextUpdateTest12EE.crt pre2000CRLnextUpdateCACert.crt pre2000CRLnextUpdateCACRL.crl
+#4.4.13-xxx s ValidGeneralizedTimeCRLnextUpdateTest13EE.crt GeneralizedTimeCRLnextUpdateCACert.crt GeneralizedTimeCRLnextUpdateCACRL.crl
+4.4.14  p ValidNegativeSerialNumberTest14EE.crt NegativeSerialNumberCACert.crt NegativeSerialNumberCACRL.crl
+4.4.15  f InvalidNegativeSerialNumberTest15EE.crt NegativeSerialNumberCACert.crt NegativeSerialNumberCACRL.crl
+4.4.16  p ValidLongSerialNumberTest16EE.crt LongSerialNumberCACert.crt LongSerialNumberCACRL.crl
+4.4.17  p ValidLongSerialNumberTest17EE.crt LongSerialNumberCACert.crt LongSerialNumberCACRL.crl
+4.4.18  f InvalidLongSerialNumberTest18EE.crt LongSerialNumberCACert.crt LongSerialNumberCACRL.crl
 #
 #
 # 4.8 Ceificate Policies
-incomplete4.8.2 p AllCertificatesNoPoliciesTest2EE.crt chain:FILE:basedir/certs/NoPoliciesCACert.crt crl:FILE:basedir/crls/NoPoliciesCACRL.crl
-incomplete4.8.10 p AllCertificatesSamePoliciesTest10EE.crt chain:FILE:basedir/certs/PoliciesP12CACert.crt crl:FILE:basedir/crls/PoliciesP12CACRL.crl
-incomplete4.8.13 p AllCertificatesSamePoliciesTest13EE.Crt chain:FILE:basedir/certs/PoliciesP123CACert.crt crl:FILE:basedir/crls/PoliciesP123CACRL.crl
-incomplete4.8.11 p AllCertificatesanyPolicyTest11EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
-unknown p AnyPolicyTest14EE.crt chain:FILE:basedir/certs/anyPolicyCACert.crt crl:FILE:basedir/crls/anyPolicyCACRL.crl
+incomplete4.8.2 p AllCertificatesNoPoliciesTest2EE.crt NoPoliciesCACert.crt NoPoliciesCACRL.crl
+incomplete4.8.10 p AllCertificatesSamePoliciesTest10EE.crt PoliciesP12CACert.crt PoliciesP12CACRL.crl
+incomplete4.8.13 p AllCertificatesSamePoliciesTest13EE.Crt PoliciesP123CACert.crt PoliciesP123CACRL.crl
+incomplete4.8.11 p AllCertificatesanyPolicyTest11EE.crt anyPolicyCACert.crt anyPolicyCACRL.crl
+unknown p AnyPolicyTest14EE.crt anyPolicyCACert.crt anyPolicyCACRL.crl
 unknown f BadSignedCACert.crt
 unknown f BadnotAfterDateCACert.crt
 unknown f BadnotBeforeDateCACert.crt
-#unknown s BasicSelfIssuedCRLSigningKeyCACert.crt
-#unknown s BasicSelfIssuedCRLSigningKeyCRLCert.crt
-#unknown s BasicSelfIssuedNewKeyCACert.crt
-#unknown s BasicSelfIssuedNewKeyOldWithNewCACert.crt
-#unknown s BasicSelfIssuedOldKeyCACert.crt
-#unknown s BasicSelfIssuedOldKeyNewWithOldCACert.crt
-#unknown s CPSPointerQualifierTest20EE.crt
-#unknown p DSACACert.crt
-#unknown s DSAParametersInheritedCACert.crt DSACACert.crt
-#unknown s DifferentPoliciesTest12EE.crt
-#unknown s DifferentPoliciesTest3EE.crt
-#unknown s DifferentPoliciesTest4EE.crt
-#unknown s DifferentPoliciesTest5EE.crt
-#unknown s DifferentPoliciesTest7EE.crt
-#unknown s DifferentPoliciesTest8EE.crt
-#unknown s DifferentPoliciesTest9EE.crt
-#unknown s GeneralizedTimeCRLnextUpdateCACert.crt
-#unknown s GoodCACert.crt
-#unknown s GoodsubCACert.crt
-#unknown s GoodsubCAPanyPolicyMapping1to2CACert.crt
-#unknown s InvalidBasicSelfIssuedCRLSigningKeyTest7EE.crt
-#unknown s InvalidBasicSelfIssuedCRLSigningKeyTest8EE.crt
-#unknown s InvalidBasicSelfIssuedNewWithOldTest5EE.crt
-#unknown s InvalidBasicSelfIssuedOldWithNewTest2EE.crt
-#unknown s InvalidCASignatureTest2EE.crt
-#unknown s InvalidCAnotAfterDateTest5EE.crt
-#unknown s InvalidCAnotBeforeDateTest1EE.crt
-#unknown s InvalidDNSnameConstraintsTest31EE.crt
-#unknown s InvalidDNSnameConstraintsTest33EE.crt
-#unknown s InvalidDNSnameConstraintsTest38EE.crt
-#unknown s InvalidDNandRFC822nameConstraintsTest28EE.crt
-#unknown s InvalidDNandRFC822nameConstraintsTest29EE.crt
-#unknown s InvalidDNnameConstraintsTest10EE.crt
-#unknown s InvalidDNnameConstraintsTest12EE.crt
-#unknown s InvalidDNnameConstraintsTest13EE.crt
-#unknown s InvalidDNnameConstraintsTest15EE.crt
-#unknown s InvalidDNnameConstraintsTest16EE.crt
-#unknown s InvalidDNnameConstraintsTest17EE.crt
-#unknown s InvalidDNnameConstraintsTest20EE.crt
-#unknown s InvalidDNnameConstraintsTest2EE.crt
-#unknown s InvalidDNnameConstraintsTest3EE.crt
-#unknown s InvalidDNnameConstraintsTest7EE.crt
-#unknown s InvalidDNnameConstraintsTest8EE.crt
-#unknown s InvalidDNnameConstraintsTest9EE.crt
-#unknown s InvalidDSASignatureTest6EE.crt
-#unknown s InvalidEESignatureTest3EE.crt
-#unknown s InvalidEEnotAfterDateTest6EE.crt
-#unknown s InvalidEEnotBeforeDateTest2EE.crt
-#unknown s InvalidIDPwithindirectCRLTest23EE.crt
-#unknown s InvalidIDPwithindirectCRLTest26EE.crt
-#unknown s InvalidLongSerialNumberTest18EE.crt
-#unknown s InvalidMappingFromanyPolicyTest7EE.crt
-#unknown s InvalidMappingToanyPolicyTest8EE.crt
-#unknown s InvalidMissingbasicConstraintsTest1EE.crt
-#unknown s InvalidNameChainingOrderTest2EE.crt
-#unknown s InvalidNameChainingTest1EE.crt
-#unknown s InvalidNegativeSerialNumberTest15EE.crt
-#unknown s InvalidOldCRLnextUpdateTest11EE.crt
-#unknown s InvalidPolicyMappingTest10EE.crt
-#unknown s InvalidPolicyMappingTest2EE.crt
-#unknown s InvalidPolicyMappingTest4EE.crt
-#unknown s InvalidRFC822nameConstraintsTest22EE.crt
-#unknown s InvalidRFC822nameConstraintsTest24EE.crt
-#unknown s InvalidRFC822nameConstraintsTest26EE.crt
-#unknown s InvalidRevokedCATest2EE.crt
-#unknown s InvalidSelfIssuedinhibitAnyPolicyTest10EE.crt
-#unknown s InvalidSelfIssuedinhibitAnyPolicyTest8EE.crt
-#unknown s InvalidSelfIssuedinhibitPolicyMappingTest10EE.crt
-#unknown s InvalidSelfIssuedinhibitPolicyMappingTest11EE.crt
-#unknown s InvalidSelfIssuedinhibitPolicyMappingTest8EE.crt
-#unknown s InvalidSelfIssuedinhibitPolicyMappingTest9EE.crt
-#unknown s InvalidSelfIssuedpathLenConstraintTest16EE.crt
-#unknown s InvalidSelfIssuedrequireExplicitPolicyTest7EE.crt
-#unknown s InvalidSelfIssuedrequireExplicitPolicyTest8EE.crt
-#unknown s InvalidSeparateCertificateandCRLKeysTest20EE.crt
-#unknown s InvalidSeparateCertificateandCRLKeysTest21EE.crt
-#unknown s InvalidURInameConstraintsTest35EE.crt
-#unknown s InvalidURInameConstraintsTest37EE.crt
-#unknown s InvalidUnknownCRLEntryExtensionTest8EE.crt
-#unknown s InvalidUnknownCRLExtensionTest10EE.crt
-#unknown s InvalidUnknownCRLExtensionTest9EE.crt
-#unknown s InvalidUnknownCriticalCertificateExtensionTest2EE.crt
-#unknown s InvalidWrongCRLTest6EE.crt
-#unknown s InvalidcAFalseTest2EE.crt
-#unknown s InvalidcAFalseTest3EE.crt
-#unknown s InvalidcRLIssuerTest27EE.crt
-#unknown s InvalidcRLIssuerTest31EE.crt
-#unknown s InvalidcRLIssuerTest32EE.crt
-#unknown s InvalidcRLIssuerTest34EE.crt
-#unknown s InvalidcRLIssuerTest35EE.crt
-#unknown s InvaliddeltaCRLIndicatorNoBaseTest1EE.crt
-#unknown s InvaliddeltaCRLTest10EE.crt
-#unknown s InvaliddeltaCRLTest3EE.crt
-#unknown s InvaliddeltaCRLTest4EE.crt
-#unknown s InvaliddeltaCRLTest6EE.crt
-#unknown s InvaliddeltaCRLTest9EE.crt
-#unknown s InvaliddistributionPointTest2EE.crt
-#unknown s InvaliddistributionPointTest3EE.crt
-#unknown s InvaliddistributionPointTest6EE.crt
-#unknown s InvaliddistributionPointTest8EE.crt
-#unknown s InvaliddistributionPointTest9EE.crt
-#unknown s InvalidinhibitAnyPolicyTest1EE.crt
-#unknown s InvalidinhibitAnyPolicyTest4EE.crt
-#unknown s InvalidinhibitAnyPolicyTest5EE.crt
-#unknown s InvalidinhibitAnyPolicyTest6EE.crt
-#unknown s InvalidinhibitPolicyMappingTest1EE.crt
-#unknown s InvalidinhibitPolicyMappingTest3EE.crt
-#unknown s InvalidinhibitPolicyMappingTest5EE.crt
-#unknown s InvalidinhibitPolicyMappingTest6EE.crt
-#unknown s InvalidkeyUsageCriticalcRLSignFalseTest4EE.crt
-#unknown s InvalidkeyUsageCriticalkeyCertSignFalseTest1EE.crt
-#unknown s InvalidkeyUsageNotCriticalcRLSignFalseTest5EE.crt
-#unknown s InvalidkeyUsageNotCriticalkeyCertSignFalseTest2EE.crt
-#unknown s InvalidonlyContainsAttributeCertsTest14EE.crt
-#unknown s InvalidonlyContainsCACertsTest12EE.crt
-#unknown s InvalidonlyContainsUserCertsTest11EE.crt
-#unknown s InvalidonlySomeReasonsTest15EE.crt
-#unknown s InvalidonlySomeReasonsTest16EE.crt
-#unknown s InvalidonlySomeReasonsTest17EE.crt
-#unknown s InvalidonlySomeReasonsTest20EE.crt
-#unknown s InvalidonlySomeReasonsTest21EE.crt
-#unknown s InvalidpathLenConstraintTest10EE.crt
-#unknown s InvalidpathLenConstraintTest11EE.crt
-#unknown s InvalidpathLenConstraintTest12EE.crt
-#unknown s InvalidpathLenConstraintTest5EE.crt
-#unknown s InvalidpathLenConstraintTest6EE.crt
-#unknown s InvalidpathLenConstraintTest9EE.crt
-#unknown s Invalidpre2000CRLnextUpdateTest12EE.crt
-#unknown s Invalidpre2000UTCEEnotAfterDateTest7EE.crt
-#unknown s InvalidrequireExplicitPolicyTest3EE.crt
-#unknown s InvalidrequireExplicitPolicyTest5EE.crt
-#unknown s LongSerialNumberCACert.crt
-#unknown s Mapping1to2CACert.crt
-#unknown s MappingFromanyPolicyCACert.crt
-#unknown s MappingToanyPolicyCACert.crt
-#unknown s MissingbasicConstraintsCACert.crt
-#unknown s NameOrderingCACert.crt
-#unknown s NegativeSerialNumberCACert.crt
-#unknown s NoCRLCACert.crt
-#unknown s NoPoliciesCACert.crt
-#unknown s NoissuingDistributionPointCACert.crt
-#unknown s OldCRLnextUpdateCACert.crt
-#unknown s OverlappingPoliciesTest6EE.crt
-#unknown s P12Mapping1to3CACert.crt
-#unknown s P12Mapping1to3subCACert.crt
-#unknown s P12Mapping1to3subsubCACert.crt
-#unknown s P1Mapping1to234CACert.crt
-#unknown s P1Mapping1to234subCACert.crt
-#unknown s P1anyPolicyMapping1to2CACert.crt
-#unknown s PanyPolicyMapping1to2CACert.crt
-#unknown s PoliciesP1234CACert.crt
-#unknown s PoliciesP1234subCAP123Cert.crt
-#unknown s PoliciesP1234subsubCAP123P12Cert.crt
-#unknown s PoliciesP123CACert.crt
-#unknown s PoliciesP123subCAP12Cert.crt
-#unknown s PoliciesP123subsubCAP12P1Cert.crt
-#unknown s PoliciesP123subsubCAP12P2Cert.crt
-#unknown s PoliciesP123subsubsubCAP12P2P1Cert.crt
-#unknown s PoliciesP12CACert.crt
-#unknown s PoliciesP12subCAP1Cert.crt
-#unknown s PoliciesP12subsubCAP1P2Cert.crt
-#unknown s PoliciesP2subCA2Cert.crt
-#unknown s PoliciesP2subCACert.crt
-#unknown s PoliciesP3CACert.crt
-#unknown s RFC3280MandatoryAttributeTypesCACert.crt
-#unknown s RFC3280OptionalAttributeTypesCACert.crt
-#unknown s RevokedsubCACert.crt
-#unknown s RolloverfromPrintableStringtoUTF8StringCACert.crt
-#unknown s SeparateCertificateandCRLKeysCA2CRLSigningCert.crt
-#unknown s SeparateCertificateandCRLKeysCA2CertificateSigningCACert.crt
-#unknown s SeparateCertificateandCRLKeysCRLSigningCert.crt
-#unknown s SeparateCertificateandCRLKeysCertificateSigningCACert.crt
-#unknown s TrustAnchorRootCertificate.crt
-#unknown s TwoCRLsCACert.crt
-#unknown s UIDCACert.crt
-#unknown s UTF8StringCaseInsensitiveMatchCACert.crt
-#unknown s UTF8StringEncodedNamesCACert.crt
-#unknown s UnknownCRLEntryExtensionCACert.crt
-#unknown s UnknownCRLExtensionCACert.crt
-#unknown s UserNoticeQualifierTest15EE.crt
-#unknown s UserNoticeQualifierTest16EE.crt
-#unknown s UserNoticeQualifierTest17EE.crt
-#unknown s UserNoticeQualifierTest18EE.crt
-#unknown s UserNoticeQualifierTest19EE.crt
-#unknown s ValidBasicSelfIssuedCRLSigningKeyTest6EE.crt
-#unknown s ValidBasicSelfIssuedNewWithOldTest3EE.crt
-#unknown s ValidBasicSelfIssuedNewWithOldTest4EE.crt
-#unknown s ValidBasicSelfIssuedOldWithNewTest1EE.crt
-#unknown s ValidCertificatePathTest1EE.crt
-#unknown s ValidDNSnameConstraintsTest30EE.crt
-#unknown s ValidDNSnameConstraintsTest32EE.crt
-#unknown s ValidDNandRFC822nameConstraintsTest27EE.crt
-#unknown s ValidDNnameConstraintsTest11EE.crt
-#unknown s ValidDNnameConstraintsTest14EE.crt
-#unknown s ValidDNnameConstraintsTest18EE.crt
-#unknown s ValidDNnameConstraintsTest19EE.crt
-#unknown s ValidDNnameConstraintsTest1EE.crt
-#unknown s ValidDNnameConstraintsTest4EE.crt
-#unknown s ValidDNnameConstraintsTest5EE.crt
-#unknown s ValidDNnameConstraintsTest6EE.crt
-#unknown s ValidDSAParameterInheritanceTest5EE.crt
-#unknown s ValidDSASignaturesTest4EE.crt DSACACert.crt
-#unknown s ValidGeneralizedTimeCRLnextUpdateTest13EE.crt
-#unknown s ValidGeneralizedTimenotAfterDateTest8EE.crt
-#unknown s ValidGeneralizedTimenotBeforeDateTest4EE.crt
-#unknown s ValidIDPwithindirectCRLTest22EE.crt
-#unknown s ValidIDPwithindirectCRLTest24EE.crt
-#unknown s ValidIDPwithindirectCRLTest25EE.crt
-#unknown s ValidLongSerialNumberTest16EE.crt
-#unknown s ValidLongSerialNumberTest17EE.crt
-#unknown s ValidNameChainingCapitalizationTest5EE.crt
-#unknown s ValidNameChainingWhitespaceTest3EE.crt
-#unknown s ValidNameChainingWhitespaceTest4EE.crt
-#unknown s ValidNameUIDsTest6EE.crt
-#unknown s ValidNegativeSerialNumberTest14EE.crt
-#unknown s ValidNoissuingDistributionPointTest10EE.crt
-#unknown s ValidPolicyMappingTest11EE.crt
-#unknown s ValidPolicyMappingTest12EE.crt
-#unknown s ValidPolicyMappingTest13EE.crt
-#unknown s ValidPolicyMappingTest14EE.crt
-#unknown s ValidPolicyMappingTest1EE.crt
-#unknown s ValidPolicyMappingTest3EE.crt
-#unknown s ValidPolicyMappingTest5EE.crt
-#unknown s ValidPolicyMappingTest6EE.crt
-#unknown s ValidPolicyMappingTest9EE.crt
-#unknown s ValidRFC3280MandatoryAttributeTypesTest7EE.crt
-#unknown s ValidRFC3280OptionalAttributeTypesTest8EE.crt
-#unknown s ValidRFC822nameConstraintsTest21EE.crt
-#unknown s ValidRFC822nameConstraintsTest23EE.crt
-#unknown s ValidRFC822nameConstraintsTest25EE.crt
-#unknown s ValidRolloverfromPrintableStringtoUTF8StringTest10EE.crt
-#unknown s ValidSelfIssuedinhibitAnyPolicyTest7EE.crt
-#unknown s ValidSelfIssuedinhibitAnyPolicyTest9EE.crt
-#unknown s ValidSelfIssuedinhibitPolicyMappingTest7EE.crt
-#unknown s ValidSelfIssuedpathLenConstraintTest15EE.crt
-#unknown s ValidSelfIssuedpathLenConstraintTest17EE.crt
-#unknown s ValidSelfIssuedrequireExplicitPolicyTest6EE.crt
-#unknown s ValidSeparateCertificateandCRLKeysTest19EE.crt
-#unknown s ValidURInameConstraintsTest34EE.crt
-#unknown s ValidURInameConstraintsTest36EE.crt
-#unknown s ValidUTF8StringCaseInsensitiveMatchTest11EE.crt
-#unknown s ValidUTF8StringEncodedNamesTest9EE.crt
-#unknown s ValidUnknownNotCriticalCertificateExtensionTest1EE.crt
-#unknown s ValidbasicConstraintsNotCriticalTest4EE.crt
-#unknown s ValidcRLIssuerTest28EE.crt
-#unknown s ValidcRLIssuerTest29EE.crt
-#unknown s ValidcRLIssuerTest30EE.crt
-#unknown s ValidcRLIssuerTest33EE.crt
-#unknown s ValiddeltaCRLTest2EE.crt
-#unknown s ValiddeltaCRLTest5EE.crt
-#unknown s ValiddeltaCRLTest7EE.crt
-#unknown s ValiddeltaCRLTest8EE.crt
-#unknown s ValiddistributionPointTest1EE.crt
-#unknown s ValiddistributionPointTest4EE.crt
-#unknown s ValiddistributionPointTest5EE.crt
-#unknown s ValiddistributionPointTest7EE.crt
-#unknown s ValidinhibitAnyPolicyTest2EE.crt
-#unknown s ValidinhibitPolicyMappingTest2EE.crt
-#unknown s ValidinhibitPolicyMappingTest4EE.crt
-#unknown s ValidkeyUsageNotCriticalTest3EE.crt
-#unknown s ValidonlyContainsCACertsTest13EE.crt
-#unknown s ValidonlySomeReasonsTest18EE.crt
-#unknown s ValidonlySomeReasonsTest19EE.crt
-#unknown s ValidpathLenConstraintTest13EE.crt
-#unknown s ValidpathLenConstraintTest14EE.crt
-#unknown s ValidpathLenConstraintTest7EE.crt
-#unknown s ValidpathLenConstraintTest8EE.crt
-#unknown s Validpre2000UTCnotBeforeDateTest3EE.crt
-#unknown s ValidrequireExplicitPolicyTest1EE.crt
-#unknown s ValidrequireExplicitPolicyTest2EE.crt
-#unknown s ValidrequireExplicitPolicyTest4EE.crt
-#unknown s WrongCRLCACert.crt
-#unknown s anyPolicyCACert.crt
-#unknown s basicConstraintsCriticalcAFalseCACert.crt
-#unknown s basicConstraintsNotCriticalCACert.crt
-#unknown s basicConstraintsNotCriticalcAFalseCACert.crt
-#unknown s deltaCRLCA1Cert.crt
-#unknown s deltaCRLCA2Cert.crt
-#unknown s deltaCRLCA3Cert.crt
-#unknown s deltaCRLIndicatorNoBaseCACert.crt
-#unknown s distributionPoint1CACert.crt
-#unknown s distributionPoint2CACert.crt
-#unknown s indirectCRLCA1Cert.crt
-#unknown s indirectCRLCA2Cert.crt
-#unknown s indirectCRLCA3Cert.crt
-#unknown s indirectCRLCA3cRLIssuerCert.crt
-#unknown s indirectCRLCA4Cert.crt
-#unknown s indirectCRLCA4cRLIssuerCert.crt
-#unknown s indirectCRLCA5Cert.crt
-#unknown s indirectCRLCA6Cert.crt
-#unknown s inhibitAnyPolicy0CACert.crt
-#unknown s inhibitAnyPolicy1CACert.crt
-#unknown s inhibitAnyPolicy1SelfIssuedCACert.crt
-#unknown s inhibitAnyPolicy1SelfIssuedsubCA2Cert.crt
-#unknown s inhibitAnyPolicy1subCA1Cert.crt
-#unknown s inhibitAnyPolicy1subCA2Cert.crt
-#unknown s inhibitAnyPolicy1subCAIAP5Cert.crt
-#unknown s inhibitAnyPolicy1subsubCA2Cert.crt
-#unknown s inhibitAnyPolicy5CACert.crt
-#unknown s inhibitAnyPolicy5subCACert.crt
-#unknown s inhibitAnyPolicy5subsubCACert.crt
-#unknown s inhibitAnyPolicyTest3EE.crt
-#unknown s inhibitPolicyMapping0CACert.crt
-#unknown s inhibitPolicyMapping0subCACert.crt
-#unknown s inhibitPolicyMapping1P12CACert.crt
-#unknown s inhibitPolicyMapping1P12subCACert.crt
-#unknown s inhibitPolicyMapping1P12subCAIPM5Cert.crt
-#unknown s inhibitPolicyMapping1P12subsubCACert.crt
-#unknown s inhibitPolicyMapping1P12subsubCAIPM5Cert.crt
-#unknown s inhibitPolicyMapping1P1CACert.crt
-#unknown s inhibitPolicyMapping1P1SelfIssuedCACert.crt
-#unknown s inhibitPolicyMapping1P1SelfIssuedsubCACert.crt
-#unknown s inhibitPolicyMapping1P1subCACert.crt
-#unknown s inhibitPolicyMapping1P1subsubCACert.crt
-#unknown s inhibitPolicyMapping5CACert.crt
-#unknown s inhibitPolicyMapping5subCACert.crt
-#unknown s inhibitPolicyMapping5subsubCACert.crt
-#unknown s inhibitPolicyMapping5subsubsubCACert.crt
-#unknown s keyUsageCriticalcRLSignFalseCACert.crt
-#unknown s keyUsageCriticalkeyCertSignFalseCACert.crt
-#unknown s keyUsageNotCriticalCACert.crt
-#unknown s keyUsageNotCriticalcRLSignFalseCACert.crt
-#unknown s keyUsageNotCriticalkeyCertSignFalseCACert.crt
-#unknown s nameConstraintsDN1CACert.crt
-#unknown s nameConstraintsDN1SelfIssuedCACert.crt
-#unknown s nameConstraintsDN1subCA1Cert.crt
-#unknown s nameConstraintsDN1subCA2Cert.crt
-#unknown s nameConstraintsDN1subCA3Cert.crt
-#unknown s nameConstraintsDN2CACert.crt
-#unknown s nameConstraintsDN3CACert.crt
-#unknown s nameConstraintsDN3subCA1Cert.crt
-#unknown s nameConstraintsDN3subCA2Cert.crt
-#unknown s nameConstraintsDN4CACert.crt
-#unknown s nameConstraintsDN5CACert.crt
-#unknown s nameConstraintsDNS1CACert.crt
-#unknown s nameConstraintsDNS2CACert.crt
-#unknown s nameConstraintsRFC822CA1Cert.crt
-#unknown s nameConstraintsRFC822CA2Cert.crt
-#unknown s nameConstraintsRFC822CA3Cert.crt
-#unknown s nameConstraintsURI1CACert.crt
-#unknown s nameConstraintsURI2CACert.crt
-#unknown s onlyContainsAttributeCertsCACert.crt
-#unknown s onlyContainsCACertsCACert.crt
-#unknown s onlyContainsUserCertsCACert.crt
-#unknown s onlySomeReasonsCA1Cert.crt
-#unknown s onlySomeReasonsCA2Cert.crt
-#unknown s onlySomeReasonsCA3Cert.crt
-#unknown s onlySomeReasonsCA4Cert.crt
-#unknown s pathLenConstraint0CACert.crt
-#unknown s pathLenConstraint0SelfIssuedCACert.crt
-#unknown s pathLenConstraint0subCA2Cert.crt
-#unknown s pathLenConstraint0subCACert.crt
-#unknown s pathLenConstraint1CACert.crt
-#unknown s pathLenConstraint1SelfIssuedCACert.crt
-#unknown s pathLenConstraint1SelfIssuedsubCACert.crt
-#unknown s pathLenConstraint1subCACert.crt
-#unknown s pathLenConstraint6CACert.crt
-#unknown s pathLenConstraint6subCA0Cert.crt
-#unknown s pathLenConstraint6subCA1Cert.crt
-#unknown s pathLenConstraint6subCA4Cert.crt
-#unknown s pathLenConstraint6subsubCA00Cert.crt
-#unknown s pathLenConstraint6subsubCA11Cert.crt
-#unknown s pathLenConstraint6subsubCA41Cert.crt
-#unknown s pathLenConstraint6subsubsubCA11XCert.crt
-#unknown s pathLenConstraint6subsubsubCA41XCert.crt
-#unknown s pre2000CRLnextUpdateCACert.crt
-#unknown s requireExplicitPolicy0CACert.crt
-#unknown s requireExplicitPolicy0subCACert.crt
-#unknown s requireExplicitPolicy0subsubCACert.crt
-#unknown s requireExplicitPolicy0subsubsubCACert.crt
-#unknown s requireExplicitPolicy10CACert.crt
-#unknown s requireExplicitPolicy10subCACert.crt
-#unknown s requireExplicitPolicy10subsubCACert.crt
-#unknown s requireExplicitPolicy10subsubsubCACert.crt
-#unknown s requireExplicitPolicy2CACert.crt
-#unknown s requireExplicitPolicy2SelfIssuedCACert.crt
-#unknown s requireExplicitPolicy2SelfIssuedsubCACert.crt
-#unknown s requireExplicitPolicy2subCACert.crt
-#unknown s requireExplicitPolicy4CACert.crt
-#unknown s requireExplicitPolicy4subCACert.crt
-#unknown s requireExplicitPolicy4subsubCACert.crt
-#unknown s requireExplicitPolicy4subsubsubCACert.crt
-#unknown s requireExplicitPolicy5CACert.crt
-#unknown s requireExplicitPolicy5subCACert.crt
-#unknown s requireExplicitPolicy5subsubCACert.crt
-#unknown s requireExplicitPolicy5subsubsubCACert.crt
-#unknown s requireExplicitPolicy7CACert.crt
-#unknown s requireExplicitPolicy7subCARE2Cert.crt
-#unknown s requireExplicitPolicy7subsubCARE2RE4Cert.crt
-#unknown s requireExplicitPolicy7subsubsubCARE2RE4Cert.crt
