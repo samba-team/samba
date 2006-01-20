@@ -41,27 +41,11 @@ echo "nist tests"
 
 test -d "$nistdir" || exit 77
 
-while read id validate verify cert arg1 arg2 arg3 arg4 arg5 ; do
+while read id verify cert arg1 arg2 arg3 arg4 arg5 ; do
     expr "$id" : "#" > /dev/null && continue
     
     test "$id" = "end" && break
     echo -n .
-
-    if ./hxtool validate $nistdir/certs/$cert > /dev/null; then
-	if test "$validate" = "f"; then
-	    echo "validate passed on fail: $id $cert"
-	    exit 1
-	fi
-    else
-	if test "$validate" = "p"; then
-	    echo "validate failed on pass: $id $cert"
-	    exit 1
-	fi
-    fi
-
-    if test "$verify" = "s"; then
-	continue
-    fi
 
     args=""
     a=$(echo $arg1 | sed "s@basedir@$nistdir@") ; args="$args $a"
@@ -74,14 +58,14 @@ while read id validate verify cert arg1 arg2 arg3 arg4 arg5 ; do
     args="$args crl:FILE:$nistdir/crls/TrustAnchorRootCRL.crl"
     args="$args cert:FILE:$nistdir/certs/$cert"
 
-    if ./hxtool verify $args > /dev/null ; then
+    if ./hxtool verify $args > /dev/null; then
 	if test "$verify" = "f"; then
-	    echo "validate passed on fail: $id $cert"
+	    echo "verify passed on fail: $id $cert"
 	    exit 1
 	fi
     else
 	if test "$verify" = "p"; then
-	    echo "validate failed on pass: $id $cert"
+	    echo "verify failed on pass: $id $cert"
 	    exit 1
 	fi
     fi
