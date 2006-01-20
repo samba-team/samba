@@ -588,7 +588,7 @@ static BOOL do_winbind_online(const struct process_id pid,
 			     const int argc, const char **argv)
 {
 	if (argc != 1) {
-		fprintf(stderr, "Usage: smbcontrol winbind online\n");
+		fprintf(stderr, "Usage: smbcontrol winbindd online\n");
 		return False;
 	}
 
@@ -599,7 +599,7 @@ static BOOL do_winbind_offline(const struct process_id pid,
 			     const int argc, const char **argv)
 {
 	if (argc != 1) {
-		fprintf(stderr, "Usage: smbcontrol winbind offline\n");
+		fprintf(stderr, "Usage: smbcontrol winbindd offline\n");
 		return False;
 	}
 
@@ -705,7 +705,7 @@ static void usage(poptContext *pc)
 	poptPrintHelp(*pc, stderr, 0);
 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbind\" or a "
+	fprintf(stderr, "<destination> is one of \"nmbd\", \"smbd\", \"winbindd\" or a "
 		"process ID\n");
 
 	fprintf(stderr, "\n");
@@ -737,6 +737,11 @@ static struct process_id parse_dest(const char *dest)
 
 	if (strequal(dest, "self")) {
 		return pid_to_procid(sys_getpid());
+	}
+
+	/* Fix winbind typo. */
+	if (strequal(dest, "winbind")) {
+		dest = "winbindd";
 	}
 
 	/* Check for numeric pid number */
