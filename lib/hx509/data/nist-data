@@ -23,7 +23,6 @@
 4.2.6   f InvalidEEnotAfterDateTest6EE.crt GoodCACert.crt GoodCACRL.crl
 4.2.7   f Invalidpre2000UTCEEnotAfterDateTest7EE.crt GoodCACert.crt GoodCACRL.crl
 #4.2.8   p ValidGeneralizedTimenotAfterDateTest8EE.crt GoodCACert.crt GoodCACRL.crl
-end
 #
 # 4.4 CRtests
 #
