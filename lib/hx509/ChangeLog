@@ -1,5 +1,7 @@
 2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/nist-data: fixup kill-rectangle leftovers
+
 	* data/nist-data: Drop verifying certifiates, its done in another
 	test now.  Add more crl tests. comment out all unused tests.
 
