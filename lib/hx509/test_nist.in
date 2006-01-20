@@ -48,11 +48,31 @@ while read id verify cert arg1 arg2 arg3 arg4 arg5 ; do
     echo -n "$id "
 
     args=""
-    a=$(echo $arg1 | sed "s@basedir@$nistdir@") ; args="$args $a"
-    a=$(echo $arg2 | sed "s@basedir@$nistdir@") ; args="$args $a"
-    a=$(echo $arg3 | sed "s@basedir@$nistdir@") ; args="$args $a"
-    a=$(echo $arg4 | sed "s@basedir@$nistdir@") ; args="$args $a"
-    a=$(echo $arg5 | sed "s@basedir@$nistdir@") ; args="$args $a"
+    case "$arg1" in
+    *.crt) args="$args chain:FILE:$nistdir/certs/$arg1" ;;
+    *.crl) args="$args crl:FILE:$nistdir/crls/$arg1" ;;
+    *) args="$args $arg1" ;;
+    esac
+    case "$arg2" in
+    *.crt) args="$args chain:FILE:$nistdir/certs/$arg2" ;;
+    *.crl) args="$args crl:FILE:$nistdir/crls/$arg2" ;;
+    *) args="$args $arg2" ;;
+    esac
+    case "$arg3" in
+    *.crt) args="$args chain:FILE:$nistdir/certs/$arg3" ;;
+    *.crl) args="$args crl:FILE:$nistdir/crls/$arg3" ;;
+    *) args="$args $arg3" ;;
+    esac
+    case "$arg4" in
+    *.crt) args="$args chain:FILE:$nistdir/certs/$arg4" ;;
+    *.crl) args="$args crl:FILE:$nistdir/crls/$arg4" ;;
+    *) args="$args $arg4" ;;
+    esac
+    case "$arg5" in
+    *.crt) args="$args chain:FILE:$nistdir/certs/$arg5" ;;
+    *.crl) args="$args crl:FILE:$nistdir/crls/$arg5" ;;
+    *) args="$args $arg5" ;;
+    esac
 
     args="$args anchor:FILE:$nistdir/certs/TrustAnchorRootCertificate.crt"
     args="$args crl:FILE:$nistdir/crls/TrustAnchorRootCRL.crl"
