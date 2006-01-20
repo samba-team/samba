@@ -842,11 +842,6 @@ void build_options(BOOL screen);
 
 	init_structs();
 
-	if (!init_guest_info()) {
-		DEBUG(0,("ERROR: failed to setup guest info.\n"));
-		return -1;
-	}
-
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
@@ -913,6 +908,11 @@ void build_options(BOOL screen);
 
 	if (!print_backend_init())
 		exit(1);
+
+	if (!init_guest_info()) {
+		DEBUG(0,("ERROR: failed to setup guest info.\n"));
+		return -1;
+	}
 
 	/* Setup the main smbd so that we can get messages. */
 	/* don't worry about general printing messages here */
