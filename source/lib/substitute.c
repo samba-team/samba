@@ -448,6 +448,9 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 		case 'v' :
 			string_sub(p,"%v", SAMBA_VERSION_STRING,l);
 			break;
+		case 'w' :
+			string_sub(p,"%w", lp_winbind_separator(),l);
+			break;
 		case '$' :
 			p += expand_env_var(p,l);
 			break; /* Expand environment variables */
@@ -614,6 +617,9 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 			break;
 		case 'v' :
 			t = realloc_string_sub(t, "%v", SAMBA_VERSION_STRING);
+			break;
+		case 'w' :
+			t = realloc_string_sub(t, "%w", lp_winbind_separator());
 			break;
 		case '$' :
 			t = realloc_expand_env_var(t, p); /* Expand environment variables */
