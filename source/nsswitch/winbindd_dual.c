@@ -578,13 +578,6 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 
 	/* Child */
 
-	/* Don't handle the same messages as our parent. */
-	message_deregister(MSG_SMB_CONF_UPDATED);
-	message_deregister(MSG_SHUTDOWN);
-	message_deregister(MSG_WINBIND_OFFLINE);
-	message_deregister(MSG_WINBIND_ONLINE);
-
-
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
@@ -600,6 +593,12 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		lp_set_logfile(child->logfilename);
 		reopen_logs();
 	}
+
+	/* Don't handle the same messages as our parent. */
+	message_deregister(MSG_SMB_CONF_UPDATED);
+	message_deregister(MSG_SHUTDOWN);
+	message_deregister(MSG_WINBIND_OFFLINE);
+	message_deregister(MSG_WINBIND_ONLINE);
 
 	child->mem_ctx = talloc_init("child_mem_ctx");
 	if (child->mem_ctx == NULL) {
