@@ -84,7 +84,11 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	delete_tombstones = timeval_expired(&tombstone_extra_time);
 
 	for (i=0; i < res->count; i++) {
-		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
+		/*
+		 * we pass '0' as 'now' here,
+		 * because we want to get the raw timestamps which are in the DB
+		 */
+		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, 0, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(res->msgs[i]);
 
@@ -198,7 +202,11 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	delete_tombstones = timeval_expired(&tombstone_extra_time);
 
 	for (i=0; i < res->count; i++) {
-		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
+		/*
+		 * we pass '0' as 'now' here,
+		 * because we want to get the raw timestamps which are in the DB
+		 */
+		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, 0, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(res->msgs[i]);
 
@@ -390,7 +398,11 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	DEBUG(10,("WINS scavenging: filter '%s' count %d\n", filter, res->count));
 
 	for (i=0; i < res->count; i++) {
-		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, &rec);
+		/*
+		 * we pass '0' as 'now' here,
+		 * because we want to get the raw timestamps which are in the DB
+		 */
+		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, 0, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(res->msgs[i]);
 
