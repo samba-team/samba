@@ -695,8 +695,6 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	int i;
 	NTSTATUS status;
 
-	DEBUG(0, ("create_local_nt_token called\n"));
-
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
