@@ -492,7 +492,6 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		/* 
 		 * if the registration is for an address that is currently active, then 
 		 * just update the expiry time of the record and the address
-		 * TODO: is this correct?
 		 */
 		winsdb_addr = winsdb_addr_list_check(rec->addresses, address);
 		if (winsdb_addr) {
@@ -525,9 +524,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 
 		/* 
 		 * if the registration is for an address that is currently active, then 
-		 * just update the expiry time
 		 * just update the expiry time of the record and the address
-		 * TODO: is this correct?
 		 */
 		winsdb_addr = winsdb_addr_list_check(rec->addresses, address);
 		if (winsdb_addr) {
