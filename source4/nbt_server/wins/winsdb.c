@@ -446,6 +446,7 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 	struct winsdb_record *rec;
 	struct ldb_context *wins_db = h->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	time_t now = time(NULL);
 
 	/* find the record in the WINS database */
 	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
@@ -461,16 +462,8 @@ NTSTATUS winsdb_lookup(struct winsdb_handle *h,
 
 	talloc_steal(tmp_ctx, res);
 
-	status = winsdb_record(h, res->msgs[0], tmp_ctx, &rec);
+	status = winsdb_record(h, res->msgs[0], tmp_ctx, now, &rec);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	/* see if it has already expired */
-	if (rec->state == WREPL_STATE_ACTIVE &&
-	    rec->expire_time <= time(NULL)) {
-		DEBUG(5,("WINS: expiring name %s (expired at %s)\n", 
-			 nbt_name_string(tmp_ctx, rec->name), timestring(tmp_ctx, rec->expire_time)));
-		rec->state = WREPL_STATE_RELEASED;
-	}
 
 	talloc_steal(mem_ctx, rec);
 	talloc_free(tmp_ctx);
@@ -482,13 +475,13 @@ failed:
 	return status;
 }
 
-NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_CTX *mem_ctx, struct winsdb_record **_rec)
+NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_CTX *mem_ctx, time_t now, struct winsdb_record **_rec)
 {
 	NTSTATUS status;
 	struct winsdb_record *rec;
 	struct ldb_message_element *el;
 	struct nbt_name *name;
-	uint32_t i, num_values;
+	uint32_t i, j, num_values;
 
 	rec = talloc(mem_ctx, struct winsdb_record);
 	if (rec == NULL) {
@@ -549,22 +542,56 @@ NTSTATUS winsdb_record(struct winsdb_handle *h, struct ldb_message *msg, TALLOC_
 		goto failed;
 	}
 
+	/* see if it has already expired */
+	if (!rec->is_static &&
+	    rec->expire_time <= now &&
+	    rec->state == WREPL_STATE_ACTIVE) {
+		DEBUG(5,("WINS: expiring name %s (expired at %s)\n", 
+			 nbt_name_string(mem_ctx, rec->name), timestring(mem_ctx, rec->expire_time)));
+		rec->state = WREPL_STATE_RELEASED;
+	}
+
 	rec->addresses     = talloc_array(rec, struct winsdb_addr *, num_values+1);
 	if (rec->addresses == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
 
-	for (i=0;i<num_values;i++) {
-		status = winsdb_addr_decode(h, rec, &el->values[i], rec->addresses, &rec->addresses[i]);
+	for (i=0,j=0;i<num_values;i++) {
+		status = winsdb_addr_decode(h, rec, &el->values[i], rec->addresses, &rec->addresses[j]);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
+
+		/*
+		 * the record isn't static and is active
+		 * then don't add the address if it's expired
+		 */
+		if (!rec->is_static &&
+		    rec->addresses[j]->expire_time <= now &&
+		    rec->state == WREPL_STATE_ACTIVE) {
+			DEBUG(5,("WINS: expiring name addr %s of %s (expired at %s)\n", 
+				 rec->addresses[j]->address, nbt_name_string(rec->addresses[j], rec->name),
+				 timestring(rec->addresses[j], rec->addresses[j]->expire_time)));
+			talloc_free(rec->addresses[j]);
+			rec->addresses[j] = NULL;
+			continue;
+		}
+		j++;
 	}
-	rec->addresses[i] = NULL;
+	rec->addresses[j] = NULL;
+	num_values = j;
 
 	if (rec->is_static && rec->state == WREPL_STATE_ACTIVE) {
 		rec->expire_time = get_time_t_max();
 		for (i=0;rec->addresses[i];i++) {
 			rec->addresses[i]->expire_time = rec->expire_time;
+		}
+	}
+
+	if (rec->state == WREPL_STATE_ACTIVE) {
+		if (num_values < 1) {
+			DEBUG(5,("WINS: expiring name %s (because it has no active addresses)\n", 
+				 nbt_name_string(mem_ctx, rec->name)));
+			rec->state = WREPL_STATE_RELEASED;
 		}
 	}
 

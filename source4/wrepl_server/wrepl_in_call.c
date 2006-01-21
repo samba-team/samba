@@ -30,6 +30,7 @@
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "system/time.h"
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -178,7 +179,8 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	struct wrepl_wins_name *names;
 	struct winsdb_record *rec;
 	NTSTATUS status;
-	uint32_t i;
+	uint32_t i, j;
+	time_t now = time(NULL);
 
 	owner = wreplsrv_find_owner(service, service->table, owner_in->address);
 
@@ -258,26 +260,37 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	names = talloc_array(call, struct wrepl_wins_name, res->count);
 	NT_STATUS_HAVE_NO_MEMORY(names);
 
-	for (i = 0; i < res->count; i++) {
-		status = winsdb_record(service->wins_db, res->msgs[i], call, &rec);
+	for (i=0, j=0; i < res->count; i++) {
+		status = winsdb_record(service->wins_db, res->msgs[i], call, now, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		status = wreplsrv_record2wins_name(names, &names[i], rec);
-		NT_STATUS_NOT_OK_RETURN(status);
+		/*
+		 * it's possible that winsdb_record() made the record RELEASED
+		 * because it's expired, but in the database it's still stored
+		 * as ACTIVE...
+		 *
+		 * make sure we really only replicate ACTIVE and TOMBSTONE records
+		 */
+		if (rec->state == WREPL_STATE_ACTIVE || rec->state == WREPL_STATE_TOMBSTONE) {
+			status = wreplsrv_record2wins_name(names, &names[j], rec);
+			NT_STATUS_NOT_OK_RETURN(status);
+			j++;
+		}
+
 		talloc_free(rec);
 		talloc_free(res->msgs[i]);
 	}
 
 	/* sort the names before we send them */
-	qsort(names, res->count, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
+	qsort(names, j, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
 
 	DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
-		res->count, owner_in->address, 
+		j, owner_in->address, 
 		(long long)owner_in->min_version, 
 		(long long)owner_in->max_version,
 		call->wreplconn->partner->address));
 
-	reply_out->num_names	= res->count;
+	reply_out->num_names	= j;
 	reply_out->names	= names;
 
 	return NT_STATUS_OK;
