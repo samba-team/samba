@@ -415,8 +415,8 @@ static enum _R_ACTION replace_unique_owned_vs_X_replica(struct winsdb_record *r1
 	}
 
 	if (!R_IS_ACTIVE(r2)) {
-		/* NOT REPLACE */
-		return R_NOT_REPLACE;
+		/* NOT REPLACE, and PROPAGATE */
+		return R_DO_PROPAGATE;
 	}
 
 	if (R_IS_GROUP(r2) || R_IS_SGROUP(r2)) {
@@ -494,8 +494,8 @@ static enum _R_ACTION replace_group_owned_vs_X_replica(struct winsdb_record *r1,
 		}
 	}
 
-	/* NOT REPLACE */
-	return R_NOT_REPLACE;
+	/* NOT REPLACE, but PROPAGATE */
+	return R_DO_PROPAGATE;
 }
 
 /*
@@ -551,14 +551,17 @@ static enum _R_ACTION replace_sgroup_owned_vs_X_replica(struct winsdb_record *r1
 	}
 
 	if (!R_IS_SGROUP(r2) || !R_IS_ACTIVE(r2)) {
-		/* NOT REPLACE */
-		return R_NOT_REPLACE;
+		/* NOT REPLACE, but PROPAGATE */
+		return R_DO_PROPAGATE;
 	}
 
-	/*
-	 * TODO: should we have the same logic here like in 
-	 *       replace_sgroup_replica_vs_X_replica() ?
-	 */
+	if (r_1_is_same_as_2_address_list(r1, r2, True)) {
+		/*
+		 * as we're the old owner and the addresses and their
+		 * owners are identical
+		 */
+		return R_NOT_REPLACE;
+	}
 
 	/* not handled here: MERGE */
 	return R_DO_SGROUP_MERGE;
@@ -624,8 +627,8 @@ static enum _R_ACTION replace_mhomed_owned_vs_X_replica(struct winsdb_record *r1
 	}
 
 	if (!R_IS_ACTIVE(r2)) {
-		/* NOT REPLACE */
-		return R_NOT_REPLACE;
+		/* NOT REPLACE, but PROPAGATE */
+		return R_DO_PROPAGATE;
 	}
 
 	if (R_IS_GROUP(r2) || R_IS_SGROUP(r2)) {
@@ -1341,15 +1344,6 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 			action = replace_mhomed_owned_vs_X_replica(rec, replica);
 			break;
 		}
-
-		/*
-		 * if we own the local record, and it should not be replaced
-		 * then propagate the conflict result back to the other
-		 * wins servers
-		 */
-		if (action == R_NOT_REPLACE) {
-			action = R_DO_PROPAGATE;
-		}
 	}
 
 	DEBUG(4,("apply record %s: %s\n",
@@ -1367,7 +1361,7 @@ static NTSTATUS wreplsrv_apply_one_record(struct wreplsrv_partner *partner,
 		return r_do_challenge(partner, mem_ctx, rec, owner, replica);
 	case R_DO_RELEASE_DEMAND:
 		return r_do_release_demand(partner, mem_ctx, rec, owner, replica);
-	case R_DO_SGROUP_MERGE:	
+	case R_DO_SGROUP_MERGE:
 		return r_do_sgroup_merge(partner, mem_ctx, rec, owner, replica);
 	}
 
