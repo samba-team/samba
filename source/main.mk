@@ -342,3 +342,6 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 
 .7.xml.7:
 	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
+
+.8.xml.8:
+	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
