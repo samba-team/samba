@@ -200,3 +200,6 @@ gcov:
 	$(GCOV) -po common common/*.c 2| tee common.report.gcov
 	$(GCOV) -po modules modules/*.c 2| tee modules.report.gcov
 	$(GCOV) -po tools tools/*.c 2| tee tools.report.gcov
+
+ctags:
+	ctags `find $(srcdir) -name "*.[ch]"`
