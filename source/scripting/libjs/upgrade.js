@@ -273,7 +273,7 @@ function upgrade_wins(samba3)
 		nType = (sys.bitAND(e.nb_flags,0x60)>>5);
 
 		ldif = ldif + sprintf("
-dn: name:%s,type=0x%02X
+dn: name=%s,type=0x%02X
 type: 0x%02X
 name: %s
 objectClass: winsRecord
