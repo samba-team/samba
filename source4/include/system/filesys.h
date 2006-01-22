@@ -24,6 +24,17 @@
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_PARAM_H
+/* On (at least) IRIX and Linux, sys/param.h unconditionally defines the MAX
+ * and MIN macros. Since smb_macros.h might have already defined this, we
+ * choose to use the system versions if they are present. This avoids a MIPSPro
+ * compiler warning whenever this file is included.
+ */
+#if defined(HAVE_SYS_PARAM_H_MIN) && defined(MIN)
+#undef MIN
+#endif
+#if defined(HAVE_SYS_PARAM_H_MAX) && defined(MAX)
+#undef MAX
+#endif
 #include <sys/param.h>
 #endif
 
