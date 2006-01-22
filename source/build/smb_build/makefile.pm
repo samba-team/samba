@@ -40,7 +40,7 @@ sub new($$$)
 
 	$self->_prepare_path_vars();
 	$self->_prepare_compiler_linker();
-	$self->output(".SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .ho\n");
+	$self->output(".SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho\n");
 	$self->_prepare_hostcc_rule();
 	$self->_prepare_std_CC_rule("c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
 	$self->_prepare_std_CC_rule("h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
