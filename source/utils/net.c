@@ -399,6 +399,8 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
 	} else {
+		d_fprintf(stderr, "Connection failed: %s\n",
+			  nt_errstr(nt_status));
 		return NULL;
 	}
 }
