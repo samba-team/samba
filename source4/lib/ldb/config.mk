@@ -252,7 +252,6 @@ MANPAGE = man/ldbrename.1
 ################################################
 # Start BINARY ldbtest
 [BINARY::ldbtest]
-INSTALLDIR = BINDIR
 OBJ_FILES= \
 		tools/ldbtest.o
 REQUIRED_SUBSYSTEMS = \
