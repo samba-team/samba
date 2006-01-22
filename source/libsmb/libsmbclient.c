@@ -3750,7 +3750,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
         }
 
 	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
-						  pol, 1, &str, &sids, 
+						  pol, 1, &str, NULL, &sids, 
 						  &types))) {
 		result = False;
 		goto done;

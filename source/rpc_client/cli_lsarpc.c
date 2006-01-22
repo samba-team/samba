@@ -277,7 +277,9 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 POLICY_HND *pol, int num_names, 
-				 const char **names, DOM_SID **sids, 
+				 const char **names,
+				 const char ***dom_names,
+				 DOM_SID **sids,
 				 uint32 **types)
 {
 	prs_struct qbuf, rbuf;
@@ -331,6 +333,15 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
+	if (dom_names != NULL) {
+		*dom_names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
+		if (*dom_names == NULL) {
+			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
 	for (i = 0; i < num_names; i++) {
 		DOM_RID2 *t_rids = r.dom_rid;
 		uint32 dom_idx = t_rids[i].rid_idx;
@@ -339,19 +350,27 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 		/* Translate optimised sid through domain index array */
 
-		if (dom_idx != 0xffffffff) {
-
-			sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
-
-			if (dom_rid != 0xffffffff) {
-				sid_append_rid(sid, dom_rid);
-			}
-
-			(*types)[i] = t_rids[i].type;
-		} else {
+		if (dom_idx == 0xffffffff) {
+			/* Nothing to do, this is unknown */
 			ZERO_STRUCTP(sid);
 			(*types)[i] = SID_NAME_UNKNOWN;
+			continue;
 		}
+
+		sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+
+		if (dom_rid != 0xffffffff) {
+			sid_append_rid(sid, dom_rid);
+		}
+
+		(*types)[i] = t_rids[i].type;
+
+		if (dom_names == NULL) {
+			continue;
+		}
+
+		(*dom_names)[i] = rpcstr_pull_unistr2_talloc(
+			*dom_names, &ref.ref_dom[dom_idx].uni_dom_name);
 	}
 
  done:

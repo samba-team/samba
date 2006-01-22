@@ -46,6 +46,7 @@ struct rpc_sh_ctx {
 	char *domain_name;
 
 	const char *whoami;
+	const char *thiscmd;
 	struct rpc_sh_cmd *cmds;
 	struct rpc_sh_ctx *parent;
 };

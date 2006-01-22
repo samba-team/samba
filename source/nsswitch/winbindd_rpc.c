@@ -269,7 +269,7 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		return result;
 
 	result = rpccli_lsa_lookup_names(cli, mem_ctx, &lsa_policy, 1, 
-					 &full_name, &sids, &types);
+					 &full_name, NULL, &sids, &types);
         
 	if (!NT_STATUS_IS_OK(result))
 		return result;

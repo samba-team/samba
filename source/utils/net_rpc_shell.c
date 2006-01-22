@@ -148,6 +148,7 @@ static BOOL net_sh_process(struct rpc_sh_ctx *ctx,
 	new_ctx->cli = ctx->cli;
 	new_ctx->whoami = talloc_asprintf(new_ctx, "%s %s",
 					  ctx->whoami, c->name);
+	new_ctx->thiscmd = talloc_strdup(new_ctx, c->name);
 
 	if (c->sub != NULL) {
 		new_ctx->cmds = c->sub(new_ctx, ctx);
@@ -261,6 +262,9 @@ static struct rpc_sh_cmd sh_cmds[] = {
 
 	{ "share", net_rpc_share_cmds, 0, NULL,
 	  "List/Add/Remove etc shares" },
+
+	{ "user", net_rpc_user_cmds, 0, NULL,
+	  "List/Add/Remove user info" },
 
 	{ NULL, NULL, 0, NULL, NULL }
 };

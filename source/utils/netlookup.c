@@ -195,7 +195,7 @@ BOOL net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SID *p
 						&csp->pol,
 						1,
 						&full_name,
-						&sids,
+					        NULL, &sids,
 						&types);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

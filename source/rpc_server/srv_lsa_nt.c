@@ -158,8 +158,8 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 
 		/* Split name into domain and user component */
 
-		if (rpcstr_pull_unistr2_talloc(mem_ctx, &full_name,
-					       &name[i]) < 0) {
+		full_name = rpcstr_pull_unistr2_talloc(mem_ctx, &name[i]);
+		if (full_name == NULL) {
 			DEBUG(0, ("pull_ucs2_talloc failed\n"));
 			return 0;
 		}

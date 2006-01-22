@@ -291,24 +291,18 @@ int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
  * have been to manually talloc_strdup them in rpc_client/cli_netlogon.c.
  */
 
-size_t rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, char **dest,
-				  UNISTR2 *src)
+char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, UNISTR2 *src)
 {
 	pstring tmp;
 	size_t result;
 
 	result = pull_ucs2(NULL, tmp, src->buffer, sizeof(tmp),
 			   src->uni_str_len * 2, 0);
-	if (result < 0) {
-		return result;
+	if (result == (size_t)-1) {
+		return NULL;
 	}
 
-	*dest = talloc_strdup(mem_ctx, tmp);
-	if (*dest == NULL) {
-		return -1;
-	}
-
-	return result;
+	return talloc_strdup(mem_ctx, tmp);
 }
 
 /* Converts a string from internal samba format to unicode

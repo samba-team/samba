@@ -59,7 +59,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
 	if (!lsa_pipe) {
-		d_fprintf(stderr, "could not initialise lsa pipe\n");
+		d_fprintf(stderr, "Could not initialise lsa pipe\n");
 		return result;
 	}
 	
@@ -1220,6 +1220,380 @@ int net_rpc_user(int argc, const char **argv)
 	return net_run_function(argc, argv, func, rpc_user_usage);
 }
 
+static NTSTATUS rpc_sh_user_list(TALLOC_CTX *mem_ctx,
+				 struct rpc_sh_ctx *ctx,
+				 struct rpc_pipe_client *pipe_hnd,
+				 int argc, const char **argv)
+{
+	return rpc_user_list_internals(ctx->domain_sid, ctx->domain_name,
+				       ctx->cli, pipe_hnd, mem_ctx,
+				       argc, argv);
+}
+
+static NTSTATUS rpc_sh_user_info(TALLOC_CTX *mem_ctx,
+				 struct rpc_sh_ctx *ctx,
+				 struct rpc_pipe_client *pipe_hnd,
+				 int argc, const char **argv)
+{
+	return rpc_user_info_internals(ctx->domain_sid, ctx->domain_name,
+				       ctx->cli, pipe_hnd, mem_ctx,
+				       argc, argv);
+}
+
+static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
+				   struct rpc_sh_ctx *ctx,
+				   struct rpc_pipe_client *pipe_hnd,
+				   int argc, const char **argv,
+				   NTSTATUS (*fn)(
+					   TALLOC_CTX *mem_ctx,
+					   struct rpc_sh_ctx *ctx,
+					   struct rpc_pipe_client *pipe_hnd,
+					   const POLICY_HND *user_hnd,
+					   int argc, const char **argv))
+					   
+{
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	DOM_SID sid;
+	uint32 rid;
+	enum SID_NAME_USE type;
+
+	if (argc == 0) {
+		d_fprintf(stderr, "usage: %s <username>\n", ctx->whoami);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(connect_pol);
+	ZERO_STRUCT(domain_pol);
+	ZERO_STRUCT(user_pol);
+
+	result = net_rpc_lookup_name(mem_ctx, pipe_hnd->cli, argv[0],
+				     NULL, NULL, &sid, &type);
+	if (!NT_STATUS_IS_OK(result)) {
+		d_fprintf(stderr, "Could not lookup %s: %s\n", argv[0],
+			  nt_errstr(result));
+		goto done;
+	}
+
+	if (type != SID_NAME_USER) {
+		d_fprintf(stderr, "%s is a %s, not a user\n", argv[0],
+			  sid_type_lookup(type));
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	if (!sid_peek_check_rid(ctx->domain_sid, &sid, &rid)) {
+		d_fprintf(stderr, "%s is not in our domain\n", argv[0]);
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	result = rpccli_samr_connect(pipe_hnd, mem_ctx,
+				     MAXIMUM_ALLOWED_ACCESS, &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
+					 MAXIMUM_ALLOWED_ACCESS,
+					 ctx->domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rid, &user_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = fn(mem_ctx, ctx, pipe_hnd, &user_pol, argc-1, argv+1);
+
+ done:
+	if (is_valid_policy_hnd(&user_pol)) {
+		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	}
+	if (is_valid_policy_hnd(&domain_pol)) {
+		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+	}
+	if (is_valid_policy_hnd(&connect_pol)) {
+		rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	}
+	return result;
+}
+
+static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
+					   struct rpc_sh_ctx *ctx,
+					   struct rpc_pipe_client *pipe_hnd,
+					   const POLICY_HND *user_hnd,
+					   int argc, const char **argv)
+{
+	NTSTATUS result;
+	SAM_USERINFO_CTR *ctr;
+	SAM_USER_INFO_21 *info;
+
+	if (argc != 0) {
+		d_fprintf(stderr, "usage: %s show <username>\n", ctx->whoami);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
+					    21, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	info = ctr->info.id21;
+
+	d_printf("user rid: %d, group rid: %d\n", info->user_rid,
+		 info->group_rid);
+
+	return result;
+}
+
+static NTSTATUS rpc_sh_user_show(TALLOC_CTX *mem_ctx,
+				 struct rpc_sh_ctx *ctx,
+				 struct rpc_pipe_client *pipe_hnd,
+				 int argc, const char **argv)
+{
+	return rpc_sh_handle_user(mem_ctx, ctx, pipe_hnd, argc, argv,
+				  rpc_sh_user_show_internals);
+}
+
+#define FETCHSTR(name, rec) \
+do { if (strequal(ctx->thiscmd, name)) { \
+	oldval = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_##rec); } \
+} while (0);
+
+#define SETSTR(name, rec, flag) \
+do { if (strequal(ctx->thiscmd, name)) { \
+	init_unistr2(&usr->uni_##rec, argv[0], STR_TERMINATE); \
+	init_uni_hdr(&usr->hdr_##rec, &usr->uni_##rec); \
+	usr->fields_present |= ACCT_##flag; } \
+} while (0);
+
+static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
+					       struct rpc_sh_ctx *ctx,
+					       struct rpc_pipe_client *pipe_hnd,
+					       const POLICY_HND *user_hnd,
+					       int argc, const char **argv)
+{
+	NTSTATUS result;
+	SAM_USERINFO_CTR *ctr;
+	SAM_USER_INFO_21 *usr;
+	const char *username;
+	const char *oldval = "";
+
+	if (argc > 1) {
+		d_fprintf(stderr, "usage: %s <username> [new value|NULL]\n",
+			  ctx->whoami);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
+					    21, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	usr = ctr->info.id21;
+
+	username = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_user_name);
+
+	FETCHSTR("fullname", full_name);
+	FETCHSTR("homedir", home_dir);
+	FETCHSTR("homedrive", dir_drive);
+	FETCHSTR("logonscript", logon_script);
+	FETCHSTR("profilepath", profile_path);
+	FETCHSTR("description", acct_desc);
+
+	if (argc == 0) {
+		d_printf("%s's %s: [%s]\n", username, ctx->thiscmd, oldval);
+		goto done;
+	}
+
+	ZERO_STRUCTP(usr);
+
+	if (strcmp(argv[0], "NULL") == 0) {
+		argv[0] = "";
+	}
+
+	SETSTR("fullname", full_name, FULL_NAME);
+	SETSTR("homedir", home_dir, HOME_DIR);
+	SETSTR("homedrive", dir_drive, HOME_DRIVE);
+	SETSTR("logonscript", logon_script, LOGON_SCRIPT);
+	SETSTR("profilepath", profile_path, PROFILE);
+	SETSTR("description", acct_desc, DESCRIPTION);
+
+	result = rpccli_samr_set_userinfo2(
+		pipe_hnd, mem_ctx, user_hnd, 21,
+		&pipe_hnd->cli->user_session_key, ctr);
+
+	d_printf("Set %s's %s from [%s] to [%s]\n", username,
+		 ctx->thiscmd, oldval, argv[0]);
+
+ done:
+
+	return result;
+}
+
+#define HANDLEFLG(name, rec) \
+do { if (strequal(ctx->thiscmd, name)) { \
+	oldval = (oldflags & ACB_##rec) ? "yes" : "no"; \
+	if (newval) { \
+		newflags = oldflags | ACB_##rec; \
+	} else { \
+		newflags = oldflags & ~ACB_##rec; \
+	} } } while (0);
+
+static NTSTATUS rpc_sh_user_str_edit(TALLOC_CTX *mem_ctx,
+				     struct rpc_sh_ctx *ctx,
+				     struct rpc_pipe_client *pipe_hnd,
+				     int argc, const char **argv)
+{
+	return rpc_sh_handle_user(mem_ctx, ctx, pipe_hnd, argc, argv,
+				  rpc_sh_user_str_edit_internals);
+}
+
+static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
+						struct rpc_sh_ctx *ctx,
+						struct rpc_pipe_client *pipe_hnd,
+						const POLICY_HND *user_hnd,
+						int argc, const char **argv)
+{
+	NTSTATUS result;
+	SAM_USERINFO_CTR *ctr;
+	SAM_USER_INFO_21 *usr;
+	const char *username;
+	const char *oldval = "unknown";
+	uint32 oldflags, newflags;
+	BOOL newval;
+
+	if ((argc > 1) ||
+	    ((argc == 1) && !strequal(argv[0], "yes") &&
+	     !strequal(argv[0], "no"))) {
+		d_fprintf(stderr, "usage: %s <username> [yes|no]\n",
+			  ctx->whoami);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	newval = strequal(argv[0], "yes");
+
+	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
+					    21, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	usr = ctr->info.id21;
+
+	username = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_user_name);
+	oldflags = usr->acb_info;
+	newflags = usr->acb_info;
+
+	HANDLEFLG("disabled", DISABLED);
+	HANDLEFLG("pwnotreq", PWNOTREQ);
+	HANDLEFLG("autolock", AUTOLOCK);
+	HANDLEFLG("pwnoexp", PWNOEXP);
+
+	if (argc == 0) {
+		d_printf("%s's %s flag: %s\n", username, ctx->thiscmd, oldval);
+		goto done;
+	}
+
+	ZERO_STRUCTP(usr);
+
+	usr->acb_info = newflags;
+	usr->fields_present = ACCT_FLAGS;
+
+	result = rpccli_samr_set_userinfo2(
+		pipe_hnd, mem_ctx, user_hnd, 21,
+		&pipe_hnd->cli->user_session_key, ctr);
+
+	if (NT_STATUS_IS_OK(result)) {
+		d_printf("Set %s's %s flag from [%s] to [%s]\n", username,
+			 ctx->thiscmd, oldval, argv[0]);
+	}
+
+ done:
+
+	return result;
+}
+
+static NTSTATUS rpc_sh_user_flag_edit(TALLOC_CTX *mem_ctx,
+				      struct rpc_sh_ctx *ctx,
+				      struct rpc_pipe_client *pipe_hnd,
+				      int argc, const char **argv)
+{
+	return rpc_sh_handle_user(mem_ctx, ctx, pipe_hnd, argc, argv,
+				  rpc_sh_user_flag_edit_internals);
+}
+
+struct rpc_sh_cmd *net_rpc_user_edit_cmds(TALLOC_CTX *mem_ctx,
+					  struct rpc_sh_ctx *ctx)
+{
+	static struct rpc_sh_cmd cmds[] = {
+
+		{ "fullname", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		  "Show/Set a user's full name" },
+
+		{ "homedir", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		  "Show/Set a user's home directory" },
+
+		{ "homedrive", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		  "Show/Set a user's home drive" },
+
+		{ "logonscript", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		  "Show/Set a user's logon script" },
+
+		{ "profilepath", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		  "Show/Set a user's profile path" },
+
+		{ "description", NULL, PI_SAMR, rpc_sh_user_str_edit,
+		  "Show/Set a user's description" },
+
+		{ "disabled", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		  "Show/Set whether a user is disabled" },
+
+		{ "autolock", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		  "Show/Set whether a user locked out" },
+
+		{ "pwnotreq", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		  "Show/Set whether a user does not need a password" },
+
+		{ "pwnoexp", NULL, PI_SAMR, rpc_sh_user_flag_edit,
+		  "Show/Set whether a user's password does not expire" },
+
+		{ NULL, NULL, 0, NULL, NULL }
+	};
+
+	return cmds;
+}
+
+struct rpc_sh_cmd *net_rpc_user_cmds(TALLOC_CTX *mem_ctx,
+				     struct rpc_sh_ctx *ctx)
+{
+	static struct rpc_sh_cmd cmds[] = {
+
+		{ "list", NULL, PI_SAMR, rpc_sh_user_list,
+		  "List available users" },
+
+		{ "info", NULL, PI_SAMR, rpc_sh_user_info,
+		  "List the domain groups a user is member of" },
+
+		{ "show", NULL, PI_SAMR, rpc_sh_user_show,
+		  "Show info about a user" },
+
+		{ "edit", net_rpc_user_edit_cmds, 0, NULL, 
+		  "Show/Modify a user's fields" },
+
+		{ NULL, NULL, 0, NULL, NULL }
+	};
+
+	return cmds;
+};
+
 /****************************************************************************/
 
 /**
@@ -1581,7 +1955,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 	}
 
 	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &lsa_pol, 1,
-				      &name, &sids, &types);
+				      &name, NULL, &sids, &types);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_copy(sid, &sids[0]);
@@ -4347,7 +4721,6 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 	SRV_SHARE_INFO info;
 	SRV_SHARE_INFO_2 *info2 = &info.share.info2;
 	WERROR result;
-	char *tmp;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: %s <share>\n", ctx->whoami);
@@ -4360,21 +4733,19 @@ static NTSTATUS rpc_sh_share_info(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
-				   &info2->info_2_str.uni_netname);
-	d_printf("Name:     %s\n", tmp);
+	d_printf("Name:     %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_netname));
+	d_printf("Comment:  %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_remark));
 	
-	rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
-				   &info2->info_2_str.uni_remark);
-	d_printf("Comment:  %s\n", tmp);
-	
-	rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
-				   &info2->info_2_str.uni_path);
-	d_printf("Path:     %s\n", tmp);
-	
-	rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
-				   &info2->info_2_str.uni_passwd);
-	d_printf("Password: %s\n", tmp);
+	d_printf("Path:     %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_path));
+	d_printf("Password: %s\n",
+		 rpcstr_pull_unistr2_talloc(mem_ctx,
+					    &info2->info_2_str.uni_passwd));
 
  done:
 	return werror_to_ntstatus(result);
