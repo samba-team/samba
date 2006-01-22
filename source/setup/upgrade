@@ -13,7 +13,9 @@ options = GetOptions(ARGV,
 		"POPT_COMMON_CREDENTIALS",
 		'verify',
 		'targetdir=s',
-		'quiet', 'blank');
+		'quiet', 
+		'realm',
+		'blank');
 
 if (options == undefined) {
    println("Failed to parse options");
@@ -44,10 +46,9 @@ Samba4 import tool
 
 provision [options] <libdir> <smbconf>
  --targetdir=DIR    Output to specified directory
- --quiet			Be quiet
- --blank			do not add users or groups, just the structure
-
-You must provide at least a realm and domain
+ --quiet            Be quiet
+ --blank            Do not add users or groups, just the structure
+ --realm=REALM	    Override realm to use
 
 ");
 	exit(1);
@@ -89,6 +90,11 @@ if (options.targetdir != undefined) {
 var creds = options.get_credentials();
 var system_session = system_session();
 var paths = provision_default_paths(subobj);
+
+if (options.realm != undefined) {
+	subobj.REALM = options.realm;
+}
+
 provision(subobj, message, options.blank, paths, system_session, creds);
 
 var ret = upgrade(subobj,samba3,message,paths, system_session, creds);
