@@ -25,6 +25,8 @@
   Boston, MA 02111-1307, USA.
 */
 
+#undef DEVELOPER
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/param.h>
