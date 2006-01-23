@@ -57,6 +57,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	const char *now_timestr;
 	const char *action;
 	const char *old_state;
+	const char *new_state;
 	uint32_t modify_flags;
 	BOOL modify_record;
 	BOOL delete_record;
@@ -70,7 +71,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
 				 "(&%s(objectClass=winsRecord)"
-				 "(expireTime<=%s)(!(isStatic=1)))",
+				 "(expireTime<=%s))",
 				 owner_filter, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
@@ -92,18 +93,6 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(res->msgs[i]);
 
-		if (rec->is_static) {
-			DEBUG(0,("%s: corrupted record: %s\n",
-				__location__, nbt_name_string(rec, rec->name)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		if (rec->expire_time > now) {
-			DEBUG(0,("%s: corrupted record: %s\n",
-				__location__, nbt_name_string(rec, rec->name)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		modify_flags	= 0;
 		modify_record	= False;
 		delete_record	= False;
@@ -111,14 +100,19 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 		switch (rec->state) {
 		case WREPL_STATE_ACTIVE:
 			old_state	= "active";
-			rec->state	= WREPL_STATE_RELEASED;
-			rec->expire_time= service->config.tombstone_interval + now;
+			new_state	= "active";
+			if (!rec->is_static) {
+				new_state	= "released";
+				rec->state	= WREPL_STATE_RELEASED;
+				rec->expire_time= service->config.tombstone_interval + now;
+			}
 			modify_flags	= 0;
 			modify_record	= True;
 			break;
 
 		case WREPL_STATE_RELEASED:
 			old_state	= "released";
+			new_state	= "tombstone";
 			rec->state	= WREPL_STATE_TOMBSTONE;
 			rec->expire_time= service->config.tombstone_timeout + now;
 			modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
@@ -127,7 +121,9 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 
 		case WREPL_STATE_TOMBSTONE:
 			old_state	= "tombstone";
+			new_state	= "tombstone";
 			if (!delete_tombstones) break;
+			new_state	= "deleted";
 			delete_record = True;
 			break;
 
@@ -149,11 +145,11 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 		}
 
 		if (ret != NBT_RCODE_OK) {
-			DEBUG(1,("WINS scavenging: failed to %s name %s (owned:%s): error:%u\n",
-				action, nbt_name_string(rec, rec->name), old_state, ret));
+			DEBUG(1,("WINS scavenging: failed to %s name %s (owned:%s -> owned:%s): error:%u\n",
+				action, nbt_name_string(rec, rec->name), old_state, new_state, ret));
 		} else {
-			DEBUG(4,("WINS scavenging: %s name: %s (owned:%s)\n",
-				action, nbt_name_string(rec, rec->name), old_state));
+			DEBUG(4,("WINS scavenging: %s name: %s (owned:%s -> owned:%s)\n",
+				action, nbt_name_string(rec, rec->name), old_state, new_state));
 		}
 
 		talloc_free(rec);
@@ -175,6 +171,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	const char *now_timestr;
 	const char *action;
 	const char *old_state;
+	const char *new_state;
 	uint32_t modify_flags;
 	BOOL modify_record;
 	BOOL delete_record;
@@ -188,7 +185,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
 				 "(&(!%s)(objectClass=winsRecord)"
-				 "(!(recordState=%u))(expireTime<=%s)(!(isStatic=1)))",
+				 "(!(recordState=%u))(expireTime<=%s))",
 				 owner_filter, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
@@ -210,18 +207,6 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(res->msgs[i]);
 
-		if (rec->is_static) {
-			DEBUG(0,("%s: corrupted record: %s\n",
-				__location__, nbt_name_string(rec, rec->name)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		if (rec->expire_time > now) {
-			DEBUG(0,("%s: corrupted record: %s\n",
-				__location__, nbt_name_string(rec, rec->name)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		modify_flags	= 0;
 		modify_record	= False;
 		delete_record	= False;
@@ -234,6 +219,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 
 		case WREPL_STATE_RELEASED:
 			old_state	= "released";
+			new_state	= "tombstone";
 			rec->state	= WREPL_STATE_TOMBSTONE;
 			rec->expire_time= service->config.tombstone_timeout + now;
 			modify_flags	= 0;
@@ -242,7 +228,9 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 
 		case WREPL_STATE_TOMBSTONE:
 			old_state	= "tombstone";
+			new_state	= "tombstone";
 			if (!delete_tombstones) break;
+			new_state	= "deleted";
 			delete_record = True;
 			break;
 
@@ -264,11 +252,11 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 		}
 
 		if (ret != NBT_RCODE_OK) {
-			DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s): error:%u\n",
-				action, nbt_name_string(rec, rec->name), old_state, ret));
+			DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s -> replica:%s): error:%u\n",
+				action, nbt_name_string(rec, rec->name), old_state, new_state, ret));
 		} else {
-			DEBUG(4,("WINS scavenging: %s name: %s (replica:%s)\n",
-				action, nbt_name_string(rec, rec->name), old_state));
+			DEBUG(4,("WINS scavenging: %s name: %s (replica:%s -> replica:%s)\n",
+				action, nbt_name_string(rec, rec->name), old_state, new_state));
 		}
 
 		talloc_free(rec);
@@ -291,6 +279,9 @@ static void verify_handler(struct irpc_request *ireq)
 	struct winsdb_record *rec = s->rec;
 	const char *action;
 	const char *old_state = "active";
+	const char *new_state = "active";
+	const char *new_owner = "replica";
+	uint32_t modify_flags = 0;
 	BOOL modify_record = False;
 	BOOL delete_record = False;
 	BOOL different = False;
@@ -308,6 +299,7 @@ static void verify_handler(struct irpc_request *ireq)
 	status = irpc_call_recv(ireq);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		delete_record = True;
+		new_state = "deleted";
 	} else if (NT_STATUS_IS_OK(status) && rec->type != WREPL_TYPE_GROUP) {
 		for (i=0; i < s->r.out.num_addrs; i++) {
 			BOOL found = False;
@@ -329,20 +321,39 @@ static void verify_handler(struct irpc_request *ireq)
 	}
 
 	if (different) {
-		DEBUG(0,("WINS scavenging: replica %s verify got different addresses from winsserver: %s: deleting record\n",
+		/*
+		 * if the reply from the owning wins server has different addresses
+		 * then take the ownership of the record and make it a tombstone
+		 * this will then hopefully replicated to the original owner of the record
+		 * which will then propagate it's own record, so that the current record will
+		 * be replicated to to us
+		 */
+		DEBUG(0,("WINS scavenging: replica %s verify got different addresses from winsserver: %s: tombstoning record\n",
 			nbt_name_string(rec, rec->name), rec->wins_owner));
-		delete_record = True;
+
+		rec->state	= WREPL_STATE_TOMBSTONE;
+		rec->expire_time= time(NULL) + s->service->config.tombstone_timeout;
+		for (i=0; rec->addresses[i]; i++) {
+			rec->addresses[i]->expire_time = rec->expire_time;
+		}
+		modify_record	= True;
+		modify_flags	= WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP;
+		new_state	= "tombstone";
+		new_owner	= "owned";
 	} else if (NT_STATUS_IS_OK(status)) {
+		/* if the addresses are the same, just update the timestamps */
 		rec->expire_time = time(NULL) + s->service->config.verify_interval;
 		for (i=0; rec->addresses[i]; i++) {
 			rec->addresses[i]->expire_time = rec->expire_time;
 		}
-		modify_record = True;
+		modify_record	= True;
+		modify_flags	= 0;
+		new_state	= "active";
 	}
 
 	if (modify_record) {
 		action = "modify";
-		ret = winsdb_modify(s->service->wins_db, rec, 0);
+		ret = winsdb_modify(s->service->wins_db, rec, modify_flags);
 	} else if (delete_record) {
 		action = "delete";
 		ret = winsdb_delete(s->service->wins_db, rec);
@@ -352,11 +363,12 @@ static void verify_handler(struct irpc_request *ireq)
 	}
 
 	if (ret != NBT_RCODE_OK) {
-		DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s): error:%u\n",
-			action, nbt_name_string(rec, rec->name), old_state, ret));
+		DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s -> %s:%s): error:%u\n",
+			action, nbt_name_string(rec, rec->name), old_state, new_owner, new_state, ret));
 	} else {
-		DEBUG(4,("WINS scavenging: %s name: %s (replica:%s): %s: %s\n",
-			action, nbt_name_string(rec, rec->name), old_state, rec->wins_owner, nt_errstr(status)));
+		DEBUG(4,("WINS scavenging: %s name: %s (replica:%s -> %s:%s): %s: %s\n",
+			action, nbt_name_string(rec, rec->name), old_state, new_owner, new_state,
+			rec->wins_owner, nt_errstr(status)));
 	}
 
 	talloc_free(s);
@@ -389,7 +401,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 	NT_STATUS_HAVE_NO_MEMORY(owner_filter);
 	filter = talloc_asprintf(tmp_mem,
 				 "(&(!%s)(objectClass=winsRecord)"
-				 "(recordState=%u)(expireTime<=%s)(!(isStatic=1)))",
+				 "(recordState=%u)(expireTime<=%s))",
 				 owner_filter, WREPL_STATE_ACTIVE, now_timestr);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
@@ -405,18 +417,6 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 		status = winsdb_record(service->wins_db, res->msgs[i], tmp_mem, 0, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(res->msgs[i]);
-
-		if (rec->is_static) {
-			DEBUG(0,("%s: corrupted record: %s\n",
-				__location__, nbt_name_string(rec, rec->name)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		if (rec->expire_time > now) {
-			DEBUG(0,("%s: corrupted record: %s\n",
-				__location__, nbt_name_string(rec, rec->name)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
 
 		if (rec->state != WREPL_STATE_ACTIVE) {
 			DEBUG(0,("%s: corrupted record: %s\n",
