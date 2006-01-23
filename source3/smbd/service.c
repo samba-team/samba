@@ -592,6 +592,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 	if (conn->force_user || conn->force_group) {
+		int ngroups = 0;
 
 		/* groups stuff added by ih */
 		conn->ngroups = 0;
@@ -600,7 +601,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		/* Find all the groups this uid is in and
 		   store them. Used by change_to_user() */
 		initialise_groups(conn->user, conn->uid, conn->gid); 
-		get_current_groups(conn->gid, &conn->ngroups,&conn->groups);
+		get_current_groups(conn->gid, &ngroups, &conn->groups);
+		conn->ngroups = ngroups;
 		
 		conn->nt_user_token =
 			create_nt_token(conn->uid, conn->gid,
