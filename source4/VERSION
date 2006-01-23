@@ -34,6 +34,16 @@ SAMBA_VERSION_RELEASE=0
 SAMBA_VERSION_REVISION=
 
 ########################################################
+# For 'tp' releases the version will be                #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>tp<TP_RELEASE>              #
+#                                                      #
+# e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
+#  ->  "4.0.0tp1"                                      #
+########################################################
+SAMBA_VERSION_TP_RELEASE=
+
+########################################################
 # For 'pre' releases the version will be               #
 #                                                      #
 # <MAJOR>.<MINOR>.<RELEASE>pre<PRE_RELEASE>            #
@@ -64,6 +74,15 @@ SAMBA_VERSION_RC_RELEASE=
 #  ->  "3.0.0-SVN-build-199"                           #
 ########################################################
 SAMBA_VERSION_IS_SVN_SNAPSHOT=yes
+
+########################################################
+# This is for specifying a release nickname            #
+#                                                      #
+# e.g. SAMBA_VERSION_RELEASE_NICKNAME="Nicky Nickname" #
+#      smbd --version will then give:                  #
+#  ->  "4.0.0-tp1-VendorVersion (Nicky Nickname)"      #
+########################################################
+SAMBA_VERSION_RELEASE_NICKNAME=
 
 ########################################################
 # This can be set by vendors if they want...           #
