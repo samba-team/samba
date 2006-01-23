@@ -495,6 +495,7 @@ int main(int argc, char *argv[])
 		POPT_TABLEEND
 	};
 
+	load_case_tables();
 
 	setlinebuf(stdout);
 
