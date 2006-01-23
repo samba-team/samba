@@ -323,7 +323,7 @@ static void verify_handler(struct irpc_request *ireq)
 			}
 		}
 	} else if (NT_STATUS_IS_OK(status) && rec->type == WREPL_TYPE_GROUP) {
-		if (s->r.out.num_addrs != 1 || strcmp(s->r.out.addrs[i].addr, "255.255.255.255") != 0) {
+		if (s->r.out.num_addrs != 1 || strcmp(s->r.out.addrs[0].addr, "255.255.255.255") != 0) {
 			different = True;
 		}
 	}
