@@ -103,13 +103,13 @@ static void print_share_mode(const struct share_mode_entry *e, const char *share
 	static int count;
 	if (count==0) {
 		d_printf("Locked files:\n");
-		d_printf("Pid          DenyMode   Access      R/W        Oplock           SharePath           Name\n");
-		d_printf("----------------------------------------------------------------------------------------\n");
+		d_printf("Pid    DenyMode   Access      R/W        Oplock           SharePath           Name\n");
+		d_printf("----------------------------------------------------------------------------------\n");
 	}
 	count++;
 
 	if (Ucrit_checkPid(procid_to_pid(&e->pid))) {
-		d_printf("%-11s  ",procid_str_static(&e->pid));
+		d_printf("%s  ",procid_str_static(&e->pid));
 		switch (map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options)) {
 			case DENY_NONE: d_printf("DENY_NONE  "); break;
@@ -166,7 +166,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid,
 	}
 	count++;
 
-	d_printf("%08s   %05x:%05x    %s  %9.0f   %9.0f\n", 
+	d_printf("%s   %05x:%05x    %s  %9.0f   %9.0f\n", 
 	       procid_str_static(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)size);
