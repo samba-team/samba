@@ -80,7 +80,19 @@ if (form['submit'] == "Migrate") {
 					  session.authinfo.session_info, session.authinfo.credentials)) {
 			writefln("DNS Provision failed!");
 		} else {
-			writefln("Migration Complete!");
+			var zonepath = paths.dns;
+			%>
+<h3>Database migrated!</h3>
+
+You need to do the following to complete the process:
+
+<ul>
+<li>Install the <b>@@zonepath</b> zone file into your bind install, and restart bind
+<li>Change your smb.conf to set "server role = pdc"
+<li>Shutdown your existing PDC and any other DCs
+<li>Restart smbd
+</ul>
+			<%
 		}
 	}
 } else {
