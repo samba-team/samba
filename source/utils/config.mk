@@ -35,6 +35,7 @@ MANPAGE = man/ntlm_auth.1
 #################################
 # Start BINARY getntacl
 [BINARY::getntacl]
+MANPAGE = man/getntacl.1
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		getntacl.o
@@ -49,7 +50,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start BINARY setntacl
 [BINARY::setntacl]
-INSTALLDIR = BINDIR
+# disabled until rewritten
+#INSTALLDIR = BINDIR
 OBJ_FILES = \
 		setntacl.o
 REQUIRED_SUBSYSTEMS = \
