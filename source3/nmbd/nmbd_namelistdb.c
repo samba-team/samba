@@ -80,14 +80,13 @@ static void upcase_name( struct nmb_name *target, const struct nmb_name *source 
 void remove_name_from_namelist(struct subnet_record *subrec, 
 				struct name_record *namerec )
 {
-	if (subrec == wins_server_subnet) {
+	if (subrec == wins_server_subnet) 
 		remove_name_from_wins_namelist(namerec);
-		return;
-	} 
+	else {
+		subrec->namelist_changed = True;
+		DLIST_REMOVE(subrec->namelist, namerec);
+	}
 
-	subrec->namelist_changed = True;
-
-	DLIST_REMOVE(subrec->namelist, namerec);
 	SAFE_FREE(namerec->data.ip);
 	ZERO_STRUCTP(namerec);
 	SAFE_FREE(namerec);
