@@ -93,7 +93,7 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (ldb_comparision_objectSid_isString(v1)) {
-		if (ldb_comparision_objectSid_isString(v1)) {
+		if (ldb_comparision_objectSid_isString(v2)) {
 			return strcmp((const char *)v1->data, (const char *)v2->data);
 		} else {
 			struct ldb_val v;
