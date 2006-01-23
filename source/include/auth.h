@@ -51,7 +51,7 @@ typedef struct auth_serversupplied_info {
 	gid_t gid;
 	
 	/* This groups info is needed for when we become_user() for this uid */
-	int n_groups;
+	size_t n_groups;
 	gid_t *groups;
 	
 	/* NT group information taken from the info3 structure */

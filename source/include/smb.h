@@ -544,7 +544,7 @@ typedef struct connection_struct
 	/* following groups stuff added by ih */
 
 	/* This groups info is valid for the user that *opened* the connection */
-	int ngroups;
+	size_t ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
 	
