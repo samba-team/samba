@@ -422,7 +422,7 @@ alias|alias|alias|alias...
 		
 		<varlistentry>
 		<term>%w</term>
-		<listitem><para>the winbind seperator.</para></listitem>
+		<listitem><para>the winbind separator.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
