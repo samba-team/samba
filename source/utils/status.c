@@ -166,7 +166,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid,
 	}
 	count++;
 
-	d_printf("%08s   %05x:%05x    %s  %9.0f   %9.0f\n", 
+	d_printf("%8s   %05x:%05x    %s  %9.0f   %9.0f\n", 
 	       procid_str_static(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)size);
