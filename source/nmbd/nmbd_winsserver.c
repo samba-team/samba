@@ -290,8 +290,9 @@ BOOL remove_name_from_wins_namelist(struct name_record *namerec)
 
 	DLIST_REMOVE(wins_server_subnet->namelist, namerec);
 	SAFE_FREE(namerec->data.ip);
-	ZERO_STRUCTP(namerec);
-	SAFE_FREE(namerec);
+
+	/* namerec must be freed by the caller */
+
 	return (ret == 0) ? True : False;
 }
 
