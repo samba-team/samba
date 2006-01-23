@@ -24,21 +24,33 @@
 
 const char *samba_version_string(void)
 {
-#ifndef SAMBA_VERSION_VENDOR_SUFFIX
-	return SAMBA_VERSION_OFFICIAL_STRING;
+	const char *official_string = SAMBA_VERSION_OFFICIAL_STRING;
+#ifdef SAMBA_VERSION_RELEASE_NICKNAME
+ 	const char *release_nickname = SAMBA_VERSION_RELEASE_NICKNAME;
 #else
+ 	const char *release_nickname = NULL;
+#endif
+#ifdef SAMBA_VERSION_VENDOR_SUFFIX
+ 	const char *vendor_suffix = SAMBA_VERSION_VENDOR_SUFFIX;
+#else
+ 	const char *vendor_suffix = NULL;
+#endif
 	static char *samba_version;
 	static BOOL init_samba_version;
 
-	if (init_samba_version)
+	if (init_samba_version) {
 		return samba_version;
+	}
 
-	samba_version = talloc_asprintf(
-		talloc_autofree_context(), "%s-%s",
-		SAMBA_VERSION_OFFICIAL_STRING,
-		SAMBA_VERSION_VENDOR_SUFFIX);
+	samba_version = talloc_asprintf(talloc_autofree_context(),
+					"%s%s%s%s%s%s",
+					official_string,
+					(vendor_suffix?"-":""),
+					(vendor_suffix?vendor_suffix:""),
+					(release_nickname?" (":""),
+					(release_nickname?release_nickname:""),
+					(release_nickname?")":""));
 
 	init_samba_version = True;
 	return samba_version;
-#endif
 }
