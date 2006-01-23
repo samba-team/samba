@@ -310,22 +310,30 @@ failed:
 
 /*
  encode the winsdb_addr("address") attribute like this:
+ non-static record:
  "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z;"
+ static record:
+ "172.31.1.1"
 */
-static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, 
+static int ldb_msg_add_winsdb_addr(struct ldb_message *msg, struct winsdb_record *rec,
 				   const char *attr_name, struct winsdb_addr *addr)
 {
 	struct ldb_val val;
 	const char *str;
-	char *expire_time;
 
-	expire_time = ldb_timestring(msg, addr->expire_time);
-	if (!expire_time) return -1;
-	str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s;",
-			      addr->address, addr->wins_owner,
-			      expire_time);
-	talloc_free(expire_time);
-	if (!str) return -1;
+	if (rec->is_static) {
+		str = talloc_strdup(msg, addr->address);
+		if (!str) return -1;
+	} else {
+		char *expire_time;
+		expire_time = ldb_timestring(msg, addr->expire_time);
+		if (!expire_time) return -1;
+		str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s;",
+				      addr->address, addr->wins_owner,
+				      expire_time);
+		talloc_free(expire_time);
+		if (!str) return -1;
+	}
 
 	val.data = discard_const_p(uint8_t, str);
 	val.length = strlen(str);
@@ -617,13 +625,6 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
-	if (rec->is_static && rec->state == WREPL_STATE_ACTIVE) {
-		rec->expire_time = get_time_t_max();
-		for (i=0;rec->addresses[i];i++) {
-			rec->addresses[i]->expire_time = rec->expire_time;
-		}
-	}
-
 	/* make sure we don't put in corrupted records */
 	addr_count = winsdb_addr_list_length(rec->addresses);
 	if (rec->state == WREPL_STATE_ACTIVE && addr_count == 0) {
@@ -652,12 +653,15 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 	ret |= ldb_msg_add_fmt(msg, "recordState", "%u", rec->state);
 	ret |= ldb_msg_add_fmt(msg, "nodeType", "%u", rec->node);
 	ret |= ldb_msg_add_fmt(msg, "isStatic", "%u", rec->is_static);
-	ret |= ldb_msg_add_string(msg, "expireTime", expire_time);
+	ret |= ldb_msg_add_empty(msg, "expireTime", 0);
+	if (!(rec->is_static && rec->state == WREPL_STATE_ACTIVE)) {
+		ret |= ldb_msg_add_string(msg, "expireTime", expire_time);
+	}
 	ret |= ldb_msg_add_fmt(msg, "versionID", "%llu", (long long)rec->version);
 	ret |= ldb_msg_add_string(msg, "winsOwner", rec->wins_owner);
 	ret |= ldb_msg_add_empty(msg, "address", 0);
 	for (i=0;rec->addresses[i];i++) {
-		ret |= ldb_msg_add_winsdb_addr(msg, "address", rec->addresses[i]);
+		ret |= ldb_msg_add_winsdb_addr(msg, rec, "address", rec->addresses[i]);
 	}
 	ret |= ldb_msg_add_empty(msg, "registeredBy", 0);
 	if (rec->registered_by) {
