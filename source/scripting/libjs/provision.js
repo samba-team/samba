@@ -551,6 +551,11 @@ function provision_validate(subobj, message)
 		return false;
 	}
 
+	if (lp.get("server role") == "pdc") {
+		message("server role must not be set to 'pdc' during the install\n");
+		return false;
+	}
+
 	return true;
 }
 
