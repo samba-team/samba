@@ -263,6 +263,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start BINARY oLschema2ldif
 [BINARY::oLschema2ldif]
 INSTALLDIR = BINDIR
+MANPAGE = man/oLschema2ldif.1
 OBJ_FILES= \
 		tools/oLschema2ldif.o
 REQUIRED_SUBSYSTEMS = \
