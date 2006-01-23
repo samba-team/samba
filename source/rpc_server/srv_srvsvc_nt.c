@@ -1711,7 +1711,8 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 }
 
 /*******************************************************************
- Net share add. Call 'add_share_command "sharename" "pathname" "comment" "read only = xxx"'
+ Net share add. Call 'add_share_command "sharename" "pathname" 
+ "comment" "max connections = "
 ********************************************************************/
 
 WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
@@ -1728,6 +1729,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	BOOL is_disk_op;
+	int max_connections = 0;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
@@ -1756,6 +1758,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		unistr2_to_ascii(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
+		max_connections = (q_u->info.share.info2.info_2.max_uses == 0xffffffff) ? 0 : q_u->info.share.info2.info_2.max_uses;
 		type = q_u->info.share.info2.info_2.type;
 		break;
 	case 501:
@@ -1792,9 +1795,8 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_INVALID_NAME;
 	}
 
-	if ( strequal(share_name,"IPC$") 
-		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
-		|| strequal(share_name,"global") )
+	if ( strequal(share_name,"IPC$") || strequal(share_name,"global")
+		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") ) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -1818,8 +1820,13 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	string_replace(path, '"', ' ');
 	string_replace(comment, '"', ' ');
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-			lp_add_share_cmd(), dyn_CONFIGFILE, share_name, path, comment);
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
+			lp_add_share_cmd(), 
+			dyn_CONFIGFILE, 
+			share_name, 
+			path, 
+			comment, 
+			max_connections);
 			
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	
