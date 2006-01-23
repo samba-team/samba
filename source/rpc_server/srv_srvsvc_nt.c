@@ -2,8 +2,8 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Jeremy Allison					2001.
- *  Copyright (C) Nigel Williams					2001.
+ *  Copyright (C) Jeremy Allison               2001.
+ *  Copyright (C) Nigel Williams               2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -89,6 +89,8 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 	pstring remark;
 	pstring path;
 	pstring passwd;
+	int max_connections = lp_max_connections(snum);
+	uint32 max_uses = max_connections!=0 ? max_connections : 0xffffffff;
 
 	char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
@@ -105,7 +107,7 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 
 	pstrcpy(passwd, "");
 
-	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(snum), remark, 0, 0xffffffff, 1, path, passwd);
+	init_srv_share_info2(&sh2->info_2, net_name, get_share_type(snum), remark, 0, max_uses, 1, path, passwd);
 	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
 }
 
@@ -1345,6 +1347,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	BOOL is_disk_op = False;
+	int max_connections = 0;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
@@ -1389,6 +1392,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(comment));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(pathname));
 		type = q_u->info.share.info2.info_2.type;
+		max_connections = (q_u->info.share.info2.info_2.max_uses == 0xffffffff) ? 0 : q_u->info.share.info2.info_2.max_uses;
 		psd = NULL;
 		break;
 #if 0
@@ -1457,15 +1461,16 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* Only call modify function if something changed. */
 	
-	if (strcmp(path, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) 
+	if (strcmp(path, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) 
+		|| (lp_max_connections(snum) != max_connections) ) 
 	{
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd()) {
 			DEBUG(10,("_srv_net_share_set_info: No change share command\n"));
 			return WERR_ACCESS_DENIED;
 		}
 
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, path, comment);
+		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
+				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, path, comment, max_connections ); 
 
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 				
@@ -1757,16 +1762,17 @@ WERROR _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	TIME_OF_DAY_INFO *tod;
 	struct tm *t;
 	time_t unixdate = time(NULL);
+
 	/* We do this call first as if we do it *after* the gmtime call
 	   it overwrites the pointed-to values. JRA */
+
 	uint32 zone = get_time_zone(unixdate)/60;
 
-	tod = TALLOC_P(p->mem_ctx, TIME_OF_DAY_INFO);
-	if (!tod)
+	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
+
+	if ( !(tod = TALLOC_ZERO_P(p->mem_ctx, TIME_OF_DAY_INFO)) )
 		return WERR_NOMEM;
 
-	ZERO_STRUCTP(tod);
- 
 	r_u->tod = tod;
 	r_u->ptr_srv_tod = 0x1;
 	r_u->status = WERR_OK;
