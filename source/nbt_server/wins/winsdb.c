@@ -520,7 +520,6 @@ void winsdb_addr_list_remove(struct winsdb_addr **addresses, const char *address
 			break;
 		}
 	}
-	if (addresses[i]) talloc_free(addresses[i]);
 
 	for (; addresses[i]; i++) {
 		addresses[i] = addresses[i+1];
