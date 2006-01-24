@@ -10,7 +10,6 @@ swat_menus.main = simple_menu(
 	"Main Menu",
 	"Servers",            session_uri("/?menu=servers"),
 	"Installation",       session_uri("/install/"),
-	"Configuration",      session_uri("/config/"),
 	"ESP Tests",          session_uri("/esptest/"));
 
 swat_menus.servers = simple_menu(
