@@ -35,11 +35,6 @@ const char *samba_version_string(void)
 #else
  	const char *vendor_suffix = NULL;
 #endif
-#ifdef SAMBA_VERSION_VENDOR_PATCH
- 	const char *vendor_patch = SAMBA_VERSION_VENDOR_PATCH;
-#else
- 	const char *vendor_patch = NULL;
-#endif
 	static char *samba_version;
 	static BOOL init_samba_version;
 
@@ -48,12 +43,10 @@ const char *samba_version_string(void)
 	}
 
 	samba_version = talloc_asprintf(talloc_autofree_context(),
-					"%s%s%s%s%s%s%s%s",
+					"%s%s%s%s%s%s",
 					official_string,
 					(vendor_suffix?"-":""),
 					(vendor_suffix?vendor_suffix:""),
-					(vendor_patch?"-":""),
-					(vendor_patch?vendor_patch:""),
 					(release_nickname?" (":""),
 					(release_nickname?release_nickname:""),
 					(release_nickname?")":""));

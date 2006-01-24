@@ -96,16 +96,16 @@ nomem:
 	return;
 }
 
-static uint32_t wreplsrv_calc_change_count(struct wreplsrv_partner *partner, uint64_t maxVersionID)
+static uint32_t wreplsrv_calc_change_count(struct wreplsrv_partner *partner, uint64_t seqnumber)
 {
 	uint64_t tmp_diff = UINT32_MAX;
 
 	/* catch an overflow */
-	if (partner->push.maxVersionID > maxVersionID) {
+	if (partner->push.seqnumber > seqnumber) {
 		goto done;
 	}
 
-	tmp_diff = maxVersionID - partner->push.maxVersionID;
+	tmp_diff = seqnumber - partner->push.seqnumber;
 
 	if (tmp_diff > UINT32_MAX) {
 		tmp_diff = UINT32_MAX;
@@ -113,7 +113,7 @@ static uint32_t wreplsrv_calc_change_count(struct wreplsrv_partner *partner, uin
 	}
 
 done:
-	partner->push.maxVersionID = maxVersionID;
+	partner->push.seqnumber = seqnumber;
 	return (uint32_t)(tmp_diff & UINT32_MAX);
 }
 
@@ -123,7 +123,7 @@ NTSTATUS wreplsrv_out_push_run(struct wreplsrv_service *service)
 	uint64_t seqnumber;
 	uint32_t change_count;
 
-	seqnumber = winsdb_get_maxVersion(service->wins_db);
+	seqnumber = winsdb_get_seqnumber(service->wins_db);
 
 	for (partner = service->partners; partner; partner = partner->next) {
 		/* if it's not a push partner, go to the next partner */

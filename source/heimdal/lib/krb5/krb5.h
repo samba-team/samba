@@ -451,9 +451,6 @@ typedef struct krb5_context_data {
     int large_msg_size;
     krb5_boolean fdns;                  /* Lookup hostnames to find full name, or send as-is */
     struct send_and_recv *send_and_recv; /* Alternate functions for KDC communication */
-    void *mem_ctx;                      /* Some parts of Samba4 need a valid 
-                                           memory context (under the event 
-					   context) to use */
 } krb5_context_data;
 
 enum {

@@ -397,9 +397,9 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 		const struct samr_Password *mach_pwd;
 		mach_pwd = cli_credentials_get_nt_hash(machine_account, mem_ctx);
 		if (!mach_pwd) {
+			talloc_free(mem_ctx);
 			DEBUG(1, ("create_keytab: Domain trust informaton for account %s not available\n",
 				  cli_credentials_get_principal(machine_account, mem_ctx)));
-			talloc_free(mem_ctx);
 			return EINVAL;
 		}
 		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
@@ -410,7 +410,6 @@ static int create_keytab(TALLOC_CTX *parent_ctx,
 			DEBUG(1, ("create_keytab: krb5_keyblock_init failed: %s\n",
 				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 							     ret, mem_ctx)));
-			talloc_free(mem_ctx);
 			return ret;
 		}
 
@@ -517,7 +516,6 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 	switch (ret) {
 	case 0:
 		break;
-	case HEIM_ERR_OPNOTSUPP:
 	case ENOENT:
 	case KRB5_KT_END:
 		/* no point enumerating if there isn't anything here */

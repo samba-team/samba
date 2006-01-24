@@ -99,6 +99,14 @@ KNOWN ISSUES
 - Domain logons (using Kerberos) from windows clients incorrectly
   state that the password expires today.
 
+- When migrating a domain from Windows AD to Samba4,  clients must be rebooted before they will login
+
+- In this same migration situation, Samba4's kpasswd server will not have correct keys (preventing Samba3 joins to such a domain)
+
+- Samba4 is unable to join Samba4 as a member server (domain member operation is unsupported in general), and may fail Kerberos based, SMB signed connections from Samba4's smb clients.
+
+- Apple's MAC OSX is not a supported client
+
 RUNNING Samba4
 ==============
 

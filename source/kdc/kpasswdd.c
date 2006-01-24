@@ -457,10 +457,7 @@ BOOL kpasswdd_process(struct kdc_server *kdc,
 		DEBUG(1, ("Failed to init server credentials\n"));
 		return False;
 	}
-
-	/* We want the credentials subsystem to use the krb5 context
-	 * we already have, rather than a new context */	
-	cli_credentials_set_krb5_context(server_credentials, kdc->smb_krb5_context);
+	
 	cli_credentials_set_conf(server_credentials);
 	nt_status = cli_credentials_set_stored_principal(server_credentials, "kadmin/changepw");
 	if (!NT_STATUS_IS_OK(nt_status)) {

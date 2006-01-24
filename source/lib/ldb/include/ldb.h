@@ -362,7 +362,7 @@ struct ldb_attrib_handler {
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
 /* sorting helpers */
-typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
+typedef int (*ldb_qsort_cmp_fn_t) (const void *, const void *, const void *);
 
 /**
    OID for the paged results control. This control is included in the

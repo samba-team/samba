@@ -948,13 +948,8 @@ static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
 	return 0;
 }
 
-/* This interface is to be called by the KDC, which is expecting Samba
- * calling conventions.  It is also called by a wrapper
- * (hdb_ldb_create) from the kpasswdd -> krb5 -> keytab_hdb -> hdb
- * code */
-
-NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx, 
-			    krb5_context context, struct HDB **db, const char *arg)
+NTSTATUS hdb_ldb_create(TALLOC_CTX *mem_ctx, 
+			krb5_context context, struct HDB **db, const char *arg)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info;
@@ -1012,16 +1007,4 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_destroy = LDB_destroy;
 
 	return NT_STATUS_OK;
-}
-
-krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg)
-{
-	NTSTATUS nt_status;
-	/* Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_ldb_create(context->mem_ctx, context, db, arg);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return 0;
-	}
-	return EINVAL;
 }
