@@ -22,6 +22,12 @@ There are 2 methods of doing this:
 both methods will create a directory called "samba4" in the current
 directory. If you don't have rsync or svn then install one of them. 
 
+Since only released versions of Samba contain a pregenerated configure script, 
+you will have to generate it by hand:
+
+ $ cd samba4/source
+ $ ./autogen.sh
+
 Note that the above rsync command will give you a checked out svn
 repository. So if you also have svn you can update it to the latest
 version at some future date using:
@@ -35,13 +41,11 @@ Step 2: compile Samba4
 Run this:
 
   $ cd samba4/source
-  $ ./autogen.sh
-  $ ./configure.developer
+  $ ./configure
   $ make proto all
 
-If you have gcc 3.4 or newer, then substitue "pch" for "proto" to
+If you have gcc 3.4 or newer, then substitute "pch" for "proto" to
 greatly speed up the compile process (about 5x faster).
-
 
 Step 3: install Samba4
 ----------------------
