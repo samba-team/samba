@@ -52,20 +52,20 @@ function findnss()
 /*
    add a foreign security principle
  */
-function add_foreign(str, sid, desc)
+function add_foreign(ldb, subobj, sid, desc)
 {
-	var add = "
-dn: CN=${SID},CN=ForeignSecurityPrincipals,${BASEDN}
+	var add = sprintf("
+dn: CN=%s,CN=ForeignSecurityPrincipals,%s
 objectClass: top
 objectClass: foreignSecurityPrincipal
-description: ${DESC}
+description: %s
 uSNCreated: 1
 uSNChanged: 1
-";
-	var sub = new Object();
-	sub.SID = sid;
-	sub.DESC = desc;
-	return str + substitute_var(add, sub);
+",
+			  sid, subobj.BASEDN, desc);
+	/* deliberately ignore errors from this, as the records may
+	   already exist */
+	ldb.add(add);
 }
 
 
@@ -78,6 +78,7 @@ function setup_name_mapping(info, ldb, sid, unixname)
 	var res = ldb.search(sprintf("objectSid=%s", sid), 
 			     NULL, ldb.SCOPE_DEFAULT, attrs);
 	if (res.length != 1) {
+		info.message("Failed to find record for objectSid %s\n", sid);
 		return false;
 	}
 	var mod = sprintf("
@@ -298,6 +299,21 @@ function setup_name_mappings(info, subobj, session_info, credentials)
 	if (!ok) {
 		return false;
 	}
+	var attrs = new Array("objectSid");
+	var res = ldb.search("dnsDomain=" + subobj.REALM,
+			     NULL, ldb.SCOPE_DEFAULT, attrs);
+	if (res.length != 1) {
+		info.message("Failed to find dnsDomain %s\n", subobj.REALM);
+		return false;
+	}
+	var sid = res[0].objectSid;
+
+	/* add some foreign sids if they are not present already */
+	add_foreign(ldb, subobj, "S-1-5-7",  "Anonymous");
+	add_foreign(ldb, subobj, "S-1-1-0",  "World");
+	add_foreign(ldb, subobj, "S-1-5-2",  "Network");
+	add_foreign(ldb, subobj, "S-1-5-18", "System");
+	add_foreign(ldb, subobj, "S-1-5-11", "Authenticated Users");
 
 	/* some well known sids */
 	setup_name_mapping(info, ldb, "S-1-5-7",  subobj.NOBODY);
@@ -307,14 +323,15 @@ function setup_name_mappings(info, subobj, session_info, credentials)
 	setup_name_mapping(info, ldb, "S-1-5-11", subobj.USERS);
 	setup_name_mapping(info, ldb, "S-1-5-32-544", subobj.WHEEL);
 	setup_name_mapping(info, ldb, "S-1-5-32-546", subobj.NOGROUP);
+	setup_name_mapping(info, ldb, "S-1-5-32-551", subobj.BACKUP);
 
 	/* and some well known domain rids */
-	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-500", subobj.ROOT);
-	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-518", subobj.WHEEL);
-	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-519", subobj.WHEEL);
-	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-512", subobj.WHEEL);
-	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-513", subobj.USERS);
-	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-520", subobj.WHEEL);
+	setup_name_mapping(info, ldb, sid + "-500", subobj.ROOT);
+	setup_name_mapping(info, ldb, sid + "-518", subobj.WHEEL);
+	setup_name_mapping(info, ldb, sid + "-519", subobj.WHEEL);
+	setup_name_mapping(info, ldb, sid + "-512", subobj.WHEEL);
+	setup_name_mapping(info, ldb, sid + "-513", subobj.USERS);
+	setup_name_mapping(info, ldb, sid + "-520", subobj.WHEEL);
 
 	return true;
 }
@@ -341,12 +358,6 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	assert(valid_netbios_name(subobj.NETBIOSNAME));
 	var rdns = split(",", subobj.BASEDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
-
-	data = add_foreign(data, "S-1-5-7",  "Anonymous",           "${NOBODY}");
-	data = add_foreign(data, "S-1-1-0",  "World",               "${NOGROUP}");
-	data = add_foreign(data, "S-1-5-2",  "Network",             "${NOGROUP}");
-	data = add_foreign(data, "S-1-5-18", "System",              "${ROOT}");
-	data = add_foreign(data, "S-1-5-11", "Authenticated Users", "${USERS}");
 
 	provision_next_usn = 1;
 
@@ -381,6 +392,7 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	setup_ldb("provision_templates.ldif", info, paths.samdb, NULL, false);
 	message("Setting up sam.ldb data\n");
 	setup_ldb("provision.ldif", info, paths.samdb, NULL, false);
+
 	if (blank != false) {
 		return true;
 	}
@@ -458,6 +470,7 @@ function provision_guess()
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
 	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root", "staff");
+	subobj.BACKUP       = findnss(nss.getgrnam, "backup", "wheel", "root", "staff");
 	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other");
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
 	subobj.DNSNAME      = sprintf("%s.%s", 
@@ -656,6 +669,7 @@ function vampire(domain, session_info, credentials, message) {
 		message("Migration of remote domain to Samba failed: " + vampire_ctx.error_string);
 		return false;
 	}
+
 	return true;
 }
 
