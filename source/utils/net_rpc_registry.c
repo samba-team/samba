@@ -105,7 +105,7 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	}
 	
 	if ( !reg_split_hive( argv[0], &hive, subpath ) ) {
-		d_printf("invalid registry path\n");
+		d_fprintf(stderr, "invalid registry path\n");
 		return NT_STATUS_OK;
 	}
 	
@@ -113,18 +113,17 @@ static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Unable to connect to remote registry\n");
+		d_fprintf(stderr, "Unable to connect to remote registry\n");
 		return werror_to_ntstatus(result);
 	}
 	
 	if ( strlen( subpath ) != 0 ) {
 		result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 		if ( !W_ERROR_IS_OK(result) ) {
-			d_printf("Unable to open [%s]\n", argv[0]);
+			d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
 			return werror_to_ntstatus(result);
 		}
 	}
-		memcpy( &pol_key, &pol_hive, sizeof(POLICY_HND) );
 	
 	/* get the subkeys */
 	
@@ -224,7 +223,7 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	}
 	
 	if ( !reg_split_hive( argv[0], &hive, subpath ) ) {
-		d_printf("invalid registry path\n");
+		d_fprintf(stderr, "invalid registry path\n");
 		return NT_STATUS_OK;
 	}
 	
@@ -232,19 +231,19 @@ static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
 	
 	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Unable to connect to remote registry\n");
+		d_fprintf(stderr, "Unable to connect to remote registry\n");
 		return werror_to_ntstatus(result);
 	}
 	
 	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Unable to open [%s]\n", argv[0]);
+		d_fprintf(stderr, "Unable to open [%s]\n", argv[0]);
 		return werror_to_ntstatus(result);
 	}
 	
 	result = rpccli_reg_save_key(pipe_hnd, mem_ctx, &pol_key, argv[1] );
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_printf("Unable to save [%s] to %s:%s\n", argv[0], cli->desthost, argv[1]);
+		d_fprintf(stderr, "Unable to save [%s] to %s:%s\n", argv[0], cli->desthost, argv[1]);
 	}
 	
 	
@@ -330,7 +329,7 @@ static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *pa
 		d_printf("\n");
 		dump_registry_tree( file, key, regpath );
 	}
-	
+
 	return True;
 }
 
@@ -402,7 +401,7 @@ static int rpc_registry_dump( int argc, const char **argv )
 	
 	d_printf("Opening %s....", argv[0]);
 	if ( !(registry = regfio_open( argv[0], O_RDONLY, 0)) ) {
-		d_printf("Failed to open %s for reading\n", argv[0]);
+		d_fprintf(stderr, "Failed to open %s for reading\n", argv[0]);
 		return 1;
 	}
 	d_printf("ok\n");
@@ -433,6 +432,7 @@ static int rpc_registry_copy( int argc, const char **argv )
 {
 	REGF_FILE   *infile, *outfile;
 	REGF_NK_REC *nk;
+	int result = 1;
 	
 	if (argc != 2 ) {
 		d_printf("Usage:    net rpc copy <srcfile> <newfile>\n");
@@ -441,15 +441,15 @@ static int rpc_registry_copy( int argc, const char **argv )
 	
 	d_printf("Opening %s....", argv[0]);
 	if ( !(infile = regfio_open( argv[0], O_RDONLY, 0 )) ) {
-		d_printf("Failed to open %s for reading\n", argv[0]);
+		d_fprintf(stderr, "Failed to open %s for reading\n", argv[0]);
 		return 1;
 	}
 	d_printf("ok\n");
 
 	d_printf("Opening %s....", argv[1]);
 	if ( !(outfile = regfio_open( argv[1], (O_RDWR|O_CREAT|O_TRUNC), (S_IREAD|S_IWRITE) )) ) {
-		d_printf("Failed to open %s for writing\n", argv[1]);
-		return 1;
+		d_fprintf(stderr, "Failed to open %s for writing\n", argv[1]);
+		goto out_close_infile;
 	}
 	d_printf("ok\n");
 	
@@ -460,15 +460,18 @@ static int rpc_registry_copy( int argc, const char **argv )
 
 	write_registry_tree( infile, nk, NULL, outfile, "" );
 
+	result = 0;
+
 	d_printf("Closing %s...", argv[1]);
 	regfio_close( outfile );
 	d_printf("ok\n");
 
+out_close_infile:
 	d_printf("Closing %s...", argv[0]);
 	regfio_close( infile );
 	d_printf("ok\n");
 
-	return 0;
+	return( result);
 }
 
 /********************************************************************

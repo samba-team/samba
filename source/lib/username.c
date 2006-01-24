@@ -266,7 +266,8 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 
 	/* Try as given, if username wasn't originally lowercase */
 	if(strcmp(user, user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n", user));
+		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",
+			 user));
 		ret = getpwnam_alloc(user);
 		if(ret)
 			goto done;
@@ -275,7 +276,8 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	/* Try as uppercase, if username wasn't originally uppercase */
 	strupper_m(user2);
 	if(strcmp(user, user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n", user2));
+		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",
+			 user2));
 		ret = getpwnam_alloc(user2);
 		if(ret)
 			goto done;
@@ -283,11 +285,14 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 
 	/* Try all combinations up to usernamelevel */
 	strlower_m(user2);
-	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n", lp_usernamelevel(), user2));
-	ret = uname_string_combinations(user2, getpwnam_alloc, lp_usernamelevel());
+	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",
+		 lp_usernamelevel(), user2));
+	ret = uname_string_combinations(user2, getpwnam_alloc,
+					lp_usernamelevel());
 
 done:
-	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ? "did":"didn't", user));
+	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ?
+		 "did":"didn't", user));
 
 	return ret;
 }
@@ -402,7 +407,8 @@ static BOOL user_in_netgroup_list(const char *user, const char *ngname)
  Check if a user is in a winbind group.
 ****************************************************************************/
   
-static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL *winbind_answered)
+static BOOL user_in_winbind_group_list(const char *user, const char *gname,
+				       BOOL *winbind_answered)
 {
 	int i;
  	gid_t gid, gid_low, gid_high;
@@ -414,13 +420,14 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
  	*winbind_answered = False;
  
 	if ((gid = nametogid(gname)) == (gid_t)-1) {
- 		DEBUG(0,("user_in_winbind_group_list: nametogid for group %s failed.\n",
- 			gname ));
+ 		DEBUG(0,("user_in_winbind_group_list: nametogid for group %s "
+			 "failed.\n", gname ));
  		goto err;
  	}
 
 	if (!lp_idmap_gid(&gid_low, &gid_high)) {
-		DEBUG(4, ("winbind gid range not configured, therefore %s cannot be a winbind group\n", gname));
+		DEBUG(4, ("winbind gid range not configured, therefore %s "
+			  "cannot be a winbind group\n", gname));
  		goto err;
 	}
 
@@ -460,7 +467,8 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
 		
 	}
 	else 
-		DEBUG(10,("user_in_winbind_group_list: using cached user groups for [%s]\n", user));
+		DEBUG(10,("user_in_winbind_group_list: using cached user "
+			  "groups for [%s]\n", user));
  
  	if ( DEBUGLEVEL >= 10 ) {
 		DEBUG(10,("user_in_winbind_group_list: using groups -- "));
@@ -470,8 +478,9 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
 	}
  
 	/*
-	 * Now we have the gid list for this user - convert the gname
-	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
+	 * Now we have the gid list for this user - convert the gname to a
+	 * gid_t via either winbind or the local UNIX lookup and do the
+	 * comparison.
 	 */
  
  	for (i = 0; i < num_groups; i++) {
@@ -502,7 +511,8 @@ BOOL user_in_unix_group_list(const char *user,const char *gname)
 	struct sys_userlist *user_list;
 	struct sys_userlist *member;
 
-	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n", user, gname));
+	DEBUG(10,("user_in_unix_group_list: checking user %s in group %s\n",
+		  user, gname));
 
  	/*
  	 * We need to check the users primary group as this
@@ -511,20 +521,22 @@ BOOL user_in_unix_group_list(const char *user,const char *gname)
  
  	if (pass) {
  		if (strequal(gname,gidtoname(pass->pw_gid))) {
- 			DEBUG(10,("user_in_unix_group_list: group %s is primary group.\n", gname ));
+ 			DEBUG(10,("user_in_unix_group_list: group %s is "
+				  "primary group.\n", gname ));
  			return True;
  		}
  	}
  
 	user_list = get_users_in_group(gname);
  	if (user_list == NULL) {
- 		DEBUG(10,("user_in_unix_group_list: no such group %s\n", gname ));
+ 		DEBUG(10,("user_in_unix_group_list: no such group %s\n",
+			  gname ));
  		return False;
  	}
 
 	for (member = user_list; member; member = member->next) {
- 		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n",
-			user, member->unix_name ));
+ 		DEBUG(10,("user_in_unix_group_list: checking user %s against "
+			  "member %s\n", user, member->unix_name ));
   		if (strequal(member->unix_name,user)) {
 			free_userlist(user_list);
   			return(True);
@@ -539,7 +551,8 @@ BOOL user_in_unix_group_list(const char *user,const char *gname)
  Check if a user is in a group list. Ask winbind first, then use UNIX.
 ****************************************************************************/
 
-BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size_t n_groups)
+BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups,
+			size_t n_groups)
 {
 	BOOL winbind_answered = False;
 	BOOL ret;
@@ -566,7 +579,8 @@ BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size
 		ret = user_in_unix_group_list(user, gname);
 
 	if (ret)
-		DEBUG(10,("user_in_group_list: user |%s| is in group |%s|\n", user, gname));
+		DEBUG(10,("user_in_group_list: user |%s| is in group |%s|\n",
+			  user, gname));
 	return ret;
 }
 
@@ -575,7 +589,8 @@ BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size
  and netgroup lists.
 ****************************************************************************/
 
-BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_groups)
+BOOL user_in_list(const char *user,const char **list, gid_t *groups,
+		  size_t n_groups)
 {
 	if (!list || !*list)
 		return False;
@@ -584,7 +599,8 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 
 	while (*list) {
 
-		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n", user, *list));
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n",
+			  user, *list));
 
 		/*
 		 * Check raw username.
@@ -604,7 +620,8 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 			 */
 			if(user_in_netgroup_list(user, *list +1))
 				return True;
-			if(user_in_group_list(user, *list +1, groups, n_groups))
+			if(user_in_group_list(user, *list +1, groups,
+					      n_groups))
 				return True;
 		} else if (**list == '+') {
 
@@ -612,7 +629,8 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				/*
 				 * Search UNIX list followed by netgroup.
 				 */
-				if(user_in_group_list(user, *list +2, groups, n_groups))
+				if(user_in_group_list(user, *list +2, groups,
+						      n_groups))
 					return True;
 				if(user_in_netgroup_list(user, *list +2))
 					return True;
@@ -623,7 +641,8 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				 * Just search UNIX list.
 				 */
 
-				if(user_in_group_list(user, *list +1, groups, n_groups))
+				if(user_in_group_list(user, *list +1, groups,
+						      n_groups))
 					return True;
 			}
 
@@ -635,7 +654,8 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				 */
 				if(user_in_netgroup_list(user, *list +2))
 					return True;
-				if(user_in_group_list(user, *list +2, groups, n_groups))
+				if(user_in_group_list(user, *list +2, groups,
+						      n_groups))
 					return True;
 			} else {
 				/*
@@ -646,8 +666,8 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 			}
 		} else if (!name_is_local(*list)) {
 			/*
-			 * If user name did not match and token is not
-			 * a unix group and the token has a winbind separator in the
+			 * If user name did not match and token is not a unix
+			 * group and the token has a winbind separator in the
 			 * name then see if it is a Windows group.
 			 */
 
@@ -657,31 +677,42 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 			BOOL ret;
 			fstring groupname, domain;
 			
-			/* Parse a string of the form DOMAIN/user into a domain and a user */
+			/* Parse a string of the form DOMAIN/user into a
+			 * domain and a user */
 
 			char *p = strchr(*list,*lp_winbind_separator());
 			
-			DEBUG(10,("user_in_list: checking if user |%s| is in winbind group |%s|\n", user, *list));
+			DEBUG(10,("user_in_list: checking if user |%s| is in "
+				  "winbind group |%s|\n", user, *list));
 
 			if (p) {
 				fstrcpy(groupname, p+1);
 				fstrcpy(domain, *list);
 				domain[PTR_DIFF(p, *list)] = 0;
 
-				/* Check to see if name is a Windows group;  Win2k native mode DCs
-				   will return domain local groups; while NT4 or mixed mode 2k DCs
-				   will not */
+				/* Check to see if name is a Windows group;
+				   Win2k native mode DCs will return domain
+				   local groups; while NT4 or mixed mode 2k
+				   DCs will not */
 			
-				if ( winbind_lookup_name(domain, groupname, &g_sid, &name_type) 
+				if ( winbind_lookup_name(domain, groupname,
+							 &g_sid, &name_type) 
 					&& ( name_type==SID_NAME_DOM_GRP || 
-					   (strequal(lp_workgroup(), domain) && name_type==SID_NAME_ALIAS) ) )
+					  (strequal(lp_workgroup(), domain) &&
+					   name_type==SID_NAME_ALIAS) ) )
 				{
 					
-					/* Check if user name is in the Windows group */
-					ret = user_in_winbind_group_list(user, *list, &winbind_answered);
+					/* Check if user name is in the
+					 * Windows group */
+					ret = user_in_winbind_group_list(
+						user, *list,
+						&winbind_answered);
 					
 					if (winbind_answered && ret == True) {
-						DEBUG(10,("user_in_list: user |%s| is in winbind group |%s|\n", user, *list));
+						DEBUG(10,("user_in_list: user "
+							  "|%s| is in winbind "
+							  "group |%s|\n",
+							  user, *list));
 						return ret;
 					}
 				}

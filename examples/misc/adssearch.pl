@@ -55,6 +55,7 @@ my $realm	= "";
 
 # parse input
 my (
+	$opt_asq,
 	$opt_base, 
 	$opt_binddn,
 	$opt_debug,
@@ -77,10 +78,12 @@ my (
 	$opt_simpleauth,
 	$opt_starttls,
 	$opt_user,
+	$opt_verbose,
 	$opt_workgroup,
 );
 
 GetOptions(
+	'asq=s'		=> \$opt_asq,
 	'base|b=s'	=> \$opt_base,
 	'D|DN=s'	=> \$opt_binddn,
 	'debug=i'	=> \$opt_debug,
@@ -102,6 +105,7 @@ GetOptions(
 	'simpleauth|x'	=> \$opt_simpleauth,
 	'tls|Z'		=> \$opt_starttls,
 	'user|U=s'	=> \$opt_user,
+	'verbose|v'	=> \$opt_verbose,
 	'wknguid'	=> \$opt_dump_wknguid,
 	'workgroup|k=s'	=> \$opt_workgroup,
 	);
@@ -129,11 +133,12 @@ my ($sasl_hd, $async_ldap_hd, $sync_ldap_hd);
 my ($mesg, $usn);
 my (%entry_store);
 my $async_search;
-my (%ads_atype, %ads_gtype, %ads_uf);
+my (%ads_atype, %ads_gtype, %ads_grouptype, %ads_uf);
 
 # fixed values and vars
 my $set   	= "X";
 my $unset 	= "-";
+my $tabsize 	= "\t\t\t";
 
 # get defaults
 my $scope 	= $opt_scope 	|| "sub"; 
@@ -219,9 +224,112 @@ my %ads_instance_type = (
 );
 
 my %ads_uacc = (
-	"ACCOUNT_NEVER_EXPIRES"	=> 0x000000, # 0 
-	"ACCOUNT_OK"		=> 0x800000, # 8388608
-	"ACCOUNT_LOCKED_OUT"	=> 0x800010, # 8388624
+	"ACCOUNT_NEVER_EXPIRES"		=> 0x000000, # 0 
+	"ACCOUNT_OK"			=> 0x800000, # 8388608
+	"ACCOUNT_LOCKED_OUT"		=> 0x800010, # 8388624
+);
+
+my %ads_gpoptions = (
+	"GPOPTIONS_INHERIT"		=> 0,
+	"GPOPTIONS_BLOCK_INHERITANCE"	=> 1,
+);
+
+my %ads_gplink_opts = (
+	"GPLINK_OPT_NONE"		=> 0,
+	"GPLINK_OPT_DISABLED"		=> 1,
+	"GPLINK_OPT_ENFORCED"		=> 2,
+);
+
+my %ads_gpflags = (
+	"GPFLAGS_ALL_ENABLED"			=> 0,
+	"GPFLAGS_USER_SETTINGS_DISABLED"	=> 1,
+	"GPFLAGS_MACHINE_SETTINGS_DISABLED"	=> 2,
+	"GPFLAGS_ALL_DISABLED"			=> 3,
+);
+
+my %ads_serverstate = (
+	"SERVER_ENABLED"		=> 1,
+	"SERVER_DISABLED"		=> 2,
+);
+
+my %ads_sdeffective = (
+	"OWNER_SECURITY_INFORMATION"	=> 0x01,
+	"DACL_SECURITY_INFORMATION"	=> 0x04,
+	"SACL_SECURITY_INFORMATION"	=> 0x10,
+);
+
+my %ads_trustattrs = (
+	"TRUST_ATTRIBUTE_NON_TRANSITIVE"	=> 1,
+	"TRUST_ATTRIBUTE_TREE_PARENT"		=> 2,
+	"TRUST_ATTRIBUTE_TREE_ROOT"		=> 3,
+	"TRUST_ATTRIBUTE_UPLEVEL_ONLY"		=> 4,
+);
+
+my %ads_trustdirection = (
+	"TRUST_DIRECTION_INBOUND"		=> 1,
+	"TRUST_DIRECTION_OUTBOUND"		=> 2,
+	"TRUST_DIRECTION_BIDIRECTIONAL"		=> 3,
+);
+
+my %ads_trusttype = (
+	"TRUST_TYPE_DOWNLEVEL"			=> 1,
+	"TRUST_TYPE_UPLEVEL"			=> 2,
+	"TRUST_TYPE_KERBEROS"			=> 3,
+	"TRUST_TYPE_DCE"			=> 4,
+);
+
+my %ads_pwdproperties = (
+	"DOMAIN_PASSWORD_COMPLEX"		=> 1, 
+	"DOMAIN_PASSWORD_NO_ANON_CHANGE" 	=> 2, 
+	"DOMAIN_PASSWORD_NO_CLEAR_CHANGE"	=> 4, 
+	"DOMAIN_LOCKOUT_ADMINS"			=> 8, 
+	"DOMAIN_PASSWORD_STORE_CLEARTEXT"	=> 16, 
+	"DOMAIN_REFUSE_PASSWORD_CHANGE"		=> 32,
+);
+
+my %ads_uascompat = (
+	"LANMAN_USER_ACCOUNT_SYSTEM_NOLIMITS"	=> 0,
+	"LANMAN_USER_ACCOUNT_SYSTEM_COMPAT"	=> 1,
+);
+
+my %ads_frstypes = (
+	"REPLICA_SET_SYSVOL"		=> 2,	# unsure
+	"REPLICA_SET_DFS"		=> 1,	# unsure
+	"REPLICA_SET_OTHER"		=> 0,	# unsure
+);
+
+my %ads_gp_cse_extensions = (
+"Administrative Templates Extension"	=> "35378EAC-683F-11D2-A89A-00C04FBBCFA2",
+"Disk Quotas"				=> "3610EDA5-77EF-11D2-8DC5-00C04FA31A66",
+"EFS Recovery"				=> "B1BE8D72-6EAC-11D2-A4EA-00C04F79F83A",
+"Folder Redirection"			=> "25537BA6-77A8-11D2-9B6C-0000F8080861",
+"IP Security"				=> "E437BC1C-AA7D-11D2-A382-00C04F991E27",
+"Internet Explorer Maintenance"		=> "A2E30F80-D7DE-11d2-BBDE-00C04F86AE3B",
+"QoS Packet Scheduler"			=> "426031c0-0b47-4852-b0ca-ac3d37bfcb39",
+"Scripts"				=> "42B5FAAE-6536-11D2-AE5A-0000F87571E3",
+"Security"				=> "827D319E-6EAC-11D2-A4EA-00C04F79F83A",
+"Software Installation"			=> "C6DC5466-785A-11D2-84D0-00C04FB169F7",
+);
+
+# guess work
+my %ads_gpcextensions = (
+"Administrative Templates"		=> "0F6B957D-509E-11D1-A7CC-0000F87571E3",
+"Certificates"				=> "53D6AB1D-2488-11D1-A28C-00C04FB94F17",
+"EFS recovery policy processing"	=> "B1BE8D72-6EAC-11D2-A4EA-00C04F79F83A",
+"Folder Redirection policy processing"	=> "25537BA6-77A8-11D2-9B6C-0000F8080861",
+"Folder Redirection"			=> "88E729D6-BDC1-11D1-BD2A-00C04FB9603F",
+"Registry policy processing"		=> "35378EAC-683F-11D2-A89A-00C04FBBCFA2",
+"Remote Installation Services"		=> "3060E8CE-7020-11D2-842D-00C04FA372D4",
+"Security Settings"			=> "803E14A0-B4FB-11D0-A0D0-00A0C90F574B",
+"Security policy processing"		=> "827D319E-6EAC-11D2-A4EA-00C04F79F83A",
+"unknown"				=> "3060E8D0-7020-11D2-842D-00C04FA372D4",
+"unknown2"				=> "53D6AB1B-2488-11D1-A28C-00C04FB94F17",
+);
+
+my %ads_gpo_default_guids = (
+"Default Domain Policy"			=> "31B2F340-016D-11D2-945F-00C04FB984F9",
+"Default Domain Controllers Policy"	=> "6AC1786C-016F-11D2-945F-00C04fB984F9",
+"mist"					=> "61718096-3D3F-4398-8318-203A48976F9E",
 );
 
 my %munged_dial = (
@@ -242,7 +350,6 @@ my %munged_dial = (
 	"CtxInitialProgram"	=> \&dump_string,
 	"CtxCallbackNumber"	=> \&dump_string,
 );
-
 
 $SIG{__WARN__} = sub {
 	use Carp;
@@ -299,45 +406,67 @@ if (!$password) {
 }
 
 my %attr_handler = (
+	"Token-Groups-No-GC-Acceptable" => \&dump_sid,	#wrong name
 	"accountExpires"		=> \&dump_nttime,
 	"badPasswordTime"		=> \&dump_nttime,			
 	"creationTime"			=> \&dump_nttime,
 	"currentTime"			=> \&dump_timestr,
 	"domainControllerFunctionality" => \&dump_ds_func,
 	"domainFunctionality" 		=> \&dump_ds_func,
-	"dSCorePropagationData"		=> \&dump_timestr,
+	"fRSReplicaSetGUID"		=> \&dump_guid,
+	"fRSReplicaSetType"		=> \&dump_frstype,
+	"fRSVersionGUID"		=> \&dump_guid,
+	"flags"				=> \&dump_gpflags,	# fixme: possibly only on gpos!
 	"forceLogoff"			=> \&dump_nttime_abs,
 	"forestFunctionality" 		=> \&dump_ds_func,
+#	"gPCMachineExtensionNames"	=> \&dump_gpcextensions,
+#	"gPCUserExtensionNames"		=> \&dump_gpcextensions,
+	"gPLink"			=> \&dump_gplink,
+	"gPOptions"			=> \&dump_gpoptions,
 	"groupType"			=> \&dump_gtype,
 	"instanceType"			=> \&dump_instance_type,
 	"lastLogon"			=> \&dump_nttime,
 	"lastLogonTimestamp"		=> \&dump_nttime,
-	"lockoutTime"			=> \&dump_nttime,
-	"lockoutDuration"		=> \&dump_nttime_abs,
 	"lockOutObservationWindow"	=> \&dump_nttime_abs,
-#	"logonHours"			=> \&dump_not_yet,
+	"lockoutDuration"		=> \&dump_nttime_abs,
+	"lockoutTime"			=> \&dump_nttime,
+#	"logonHours"			=> \&dump_logonhours,
 	"maxPwdAge"			=> \&dump_nttime_abs,
 	"minPwdAge"			=> \&dump_nttime_abs,
 	"modifyTimeStamp"		=> \&dump_timestr,
+	"msDS-Behavior-Version"		=> \&dump_ds_func,	#unsure
+	"msDS-User-Account-Control-Computed" => \&dump_uacc,
 #	"msRADIUSFramedIPAddress"	=> \&dump_ipaddr,
 #	"msRASSavedFramedIPAddress" 	=> \&dump_ipaddr,
-	"ntMixedDomain"			=> \&dump_mixed_domain,
+	"nTMixedDomain"			=> \&dump_mixed_domain,
 	"nTSecurityDescriptor"		=> \&dump_secdesc,
 	"objectGUID"			=> \&dump_guid,
 	"objectSid"			=> \&dump_sid,
+	"pKT"				=> \&dump_pkt,
+	"pKTGuid"			=> \&dump_guid,
 	"pwdLastSet"			=> \&dump_nttime,
+	"pwdProperties"			=> \&dump_pwdproperties,
 	"sAMAccountType"		=> \&dump_atype,
-	"systemFlags"			=> \&dump_systemflags,
-	"supportedControl",		=> \&dump_controls,
+	"sDRightsEffective"		=> \&dump_sdeffective,
+	"securityIdentifier"		=> \&dump_sid,
+	"serverState"			=> \&dump_serverstate,
 	"supportedCapabilities",	=> \&dump_capabilities,
+	"supportedControl",		=> \&dump_controls,
 	"supportedExtension",		=> \&dump_extension,
+	"systemFlags"			=> \&dump_systemflags,
 	"tokenGroups",			=> \&dump_sid,
+	"tokenGroupsGlobalAndUniversal" => \&dump_sid,
+	"trustAttributes"		=> \&dump_trustattr,
+	"trustDirection"		=> \&dump_trustdirection,
+	"trustType"			=> \&dump_trusttype,
+	"uASCompat"			=> \&dump_uascompat,
 	"userAccountControl"		=> \&dump_uac,
-	"msDS-User-Account-Control-Computed" => \&dump_uacc,
+	"userCertificate"		=> \&dump_cert,
 	"userFlags"			=> \&dump_uf,
 	"userParameters"		=> \&dump_munged_dial,
 	"whenChanged"			=> \&dump_timestr,
 	"whenCreated"			=> \&dump_timestr,
+#	"dSCorePropagationData"		=> \&dump_timestr,
 );
 
 
@@ -347,7 +476,8 @@ my %attr_handler = (
 ################
 
 sub usage {
-	print "usage: $0 [--base|-b base] [--debug level] [--debug level] [--DN|-D binddn] [--extendeddn|-e] [--help] [--host|-h host] [--machine|-P] [--metadata|-m] [--nodiffs] [--notify|-n] [--password|-w password] [--port port] [--rawdisplay] [--realm|-R realm] [--rootdse] [--saslmech|-Y saslmech] [--schema|-c] [--scope|-s scope] [--simpleauth|-x] [--starttls|-Z] [--user|-U user] [--wknguid] [--workgroup|-k workgroup] filter [attrs]\n";
+	print "usage: $0 [--asq] [--base|-b base] [--debug level] [--debug level] [--DN|-D binddn] [--extendeddn|-e] [--help] [--host|-h host] [--machine|-P] [--metadata|-m] [--nodiffs] [--notify|-n] [--password|-w password] [--port port] [--rawdisplay] [--realm|-R realm] [--rootdse] [--saslmech|-Y saslmech] [--schema|-c] [--scope|-s scope] [--simpleauth|-x] [--starttls|-Z] [--user|-U user] [--wknguid] [--workgroup|-k workgroup] filter [attrs]\n";
+	print "\t--asq [attribute]\n\t\tAttribute to use for a attribute scoped query (LDAP_SERVER_ASQ_OID)\n";
 	print "\t--base|-b [base]\n\t\tUse base [base]\n";
 	print "\t--debug [level]\n\t\tUse debuglevel (for Net::LDAP)\n";
 	print "\t--DN|-D [binddn]\n\t\tUse binddn or principal\n";
@@ -547,6 +677,8 @@ sub prompt_user {
 }
 
 sub check_ticket {
+	return 0;
+	# works only for heimdal
 	return system("$klist -t");
 }
 
@@ -740,18 +872,32 @@ sub parse_ads_h {
 		chomp($line);
 		if ($line =~ /#define.UF.*0x/) {
 			my ($tmp, $name, $val) = split(/\s+/,$line);
-		next if ($name =~ /UNUSED/);
+			next if ($name =~ /UNUSED/);
+#			$ads_uf{$name} = sprintf("%d", hex $val);
 			$ads_uf{$name} = hex $val;
 		}
-		if ($line =~ /#define.GTYPE.*0x/) {
+		if ($line =~ /#define.GROUP_TYPE.*0x/) {
 			my ($tmp, $name, $val) = split(/\s+/,$line);
-			$ads_gtype{$name} = hex $val;
+			$ads_grouptype{$name} = hex $val;
 		}
 		if ($line =~ /#define.ATYPE.*0x/) {
 			my ($tmp, $name, $val) = split(/\s+/,$line);
 			$ads_atype{$name} = 
 				(exists $ads_atype{$val}) ? $ads_atype{$val} : hex $val;
 		}
+		if ($line =~ /#define.GTYPE.*0x/) {
+			my ($val, $i);
+			my ($tmp, $name, @val) = split(/\s+/,$line);
+			foreach my $tempval (@val) {
+				if ($tempval =~ /^0x/) {
+					$val = $tempval;
+					last;
+				}
+			}
+			next if (!$val);
+			$ads_gtype{$name} = sprintf("%d", hex $val);
+		}
+
 	}
 	close(ADSH);
 }
@@ -825,52 +971,12 @@ sub display_result_diff ($) {
 
 sub sid2string ($) {
 
+	# Fix from Michael James <michael@james.st>
 	my $binary_sid = shift;
-	my $inbuf2;
-	my $sid_rev;	# [1]
-	my $num_auths;	# [1]
-	my @id_auth;	# [6]
-	my @sub_auths;
-	my $subauth;	# [16]
-	my $sid_strout;
-	my $ia;
-
-	my $tmp_sid = unpack 'H*', $binary_sid;
-
-	# split the binary string
-	($sid_rev, $num_auths, 
-	$id_auth[0], $id_auth[1], $id_auth[2], $id_auth[3], $id_auth[4], $id_auth[5],
-	$sub_auths[0], $sub_auths[1], $sub_auths[2], $sub_auths[3], $sub_auths[4], $inbuf2) 
-		= unpack 'H2 H2 H2 H2 H2 H2 H2 H2 h8 h8 h8 h8 h8 h*',"$binary_sid";
-
-	# don't ask...
-	for ( my $i = 0; $i < $num_auths; $i++ ) {
-		$sub_auths[$i] = reverse $sub_auths[$i];
-	}
-
-	# build the identifier authority
-	if ( ($id_auth[0] != 0) || ($id_auth[1] != 0) ) {
-		$ia = 	$id_auth[0].
-			$id_auth[1].
-			$id_auth[2].
-			$id_auth[3].
-			$id_auth[4].
-			$id_auth[5];
-	} else {
-		$ia = 	($id_auth[5]) + 
-			($id_auth[4] <<  8) + 
-			($id_auth[3] << 16) + 
-			($id_auth[2] << 24);
-	}
-
-	# build the sid
-	$sid_strout = sprintf("S-%lu-%lu",hex($sid_rev),hex($ia));
-	
-	for (my $i = 0; $i < $num_auths; $i++ ) {
-		$sid_strout .= sprintf( "-%lu", hex($sub_auths[$i]) );
-	}
-
-	return $sid_strout;
+	my($sid_rev, $num_auths, $id1, $id2, @ids) = unpack("H2 H2 n N V*", $binary_sid);
+	my $sid_string = join("-", "S", hex($sid_rev), ($id1<<32)+$id2, @ids);
+	return $sid_string;
+			
 }
 
 sub string_to_guid {
@@ -959,8 +1065,9 @@ sub gen_bitmask_string_format($%) {
 	foreach my $key (sort keys %tmp) {
 		push(@list, sprintf("%s %s", $tmp{$key}, $key));
 	}
-	return join("\n$mod\t\t\t",@list);
+	return join("\n$mod$tabsize",@list);
 }
+
 
 sub nt_to_unixtime ($) {
 	# the number of 100 nanosecond intervals since jan. 1. 1601 (utc)
@@ -994,7 +1101,7 @@ sub dump_bitmask {
         my (%header) = @_;
 	my %tmp;
 	$tmp{""} = $val;
-	foreach my $key (sort keys %header) {
+	foreach my $key (sort keys %header) {	# sort by val !
 		if ($op eq "&") {
 			$tmp{$key} = ( $val & $header{$key} ) ? $set:$unset; 
 		} elsif ($op eq "==") {
@@ -1019,6 +1126,18 @@ sub dump_uac {
 	return dump_bitmask_and(@_,%ads_uf); # ads_uf ?
 }
 
+sub dump_uascompat {
+	return dump_bitmask_equal(@_,%ads_uascompat);
+}
+
+sub dump_gpoptions {
+	return dump_bitmask_equal(@_,%ads_gpoptions);
+}
+
+sub dump_gpflags {
+	return dump_bitmask_equal(@_,%ads_gpflags);
+}
+
 sub dump_uacc {
 	return dump_bitmask_equal(@_,%ads_uacc); 
 }
@@ -1028,7 +1147,10 @@ sub dump_uf {
 }
 
 sub dump_gtype {
-	return dump_bitmask_and(@_,%ads_gtype);
+	my $ret = dump_bitmask_and(@_,%ads_grouptype);
+	$ret .= "\n$tabsize\t";
+	$ret .= dump_bitmask_equal(@_,%ads_gtype);
+	return $ret;
 }
 
 sub dump_atype {
@@ -1057,6 +1179,34 @@ sub dump_instance_type {
 
 sub dump_ds_func {
 	return dump_bitmask_equal(@_,%ads_ds_func);
+}
+
+sub dump_serverstate {
+	return dump_bitmask_equal(@_,%ads_serverstate);
+}
+
+sub dump_sdeffective {
+	return dump_bitmask_and(@_,%ads_sdeffective);
+}
+
+sub dump_trustattr {
+	return dump_bitmask_equal(@_,%ads_trustattrs);
+}
+
+sub dump_trusttype {
+	return dump_bitmask_equal(@_,%ads_trusttype);
+}
+
+sub dump_trustdirection {
+	return dump_bitmask_equal(@_,%ads_trustdirection);
+}
+
+sub dump_pwdproperties {
+	return dump_bitmask_and(@_,%ads_pwdproperties);
+}
+
+sub dump_frstype {
+	return dump_bitmask_equal(@_,%ads_frstypes)
 }
 
 sub dump_mixed_domain {
@@ -1100,6 +1250,9 @@ sub dump_nttime_abs {
 
 sub dump_timestr {
 	my $time = shift;
+	if ($time eq "16010101000010.0Z") {
+		return sprintf("%s (%s)", "never", $time);
+	}
 	my ($year,$mon,$mday,$hour,$min,$sec,$zone) = 
 		unpack('a4 a2 a2 a2 a2 a2 a4', $time);
 	$mon -= 1;
@@ -1118,6 +1271,37 @@ sub dump_int {
 sub dump_munged_dial {
 	my $dial = shift;
 	return "FIXME! decode this";
+}
+
+sub dump_cert {
+ 
+	my $cert = shift;
+	open(OPENSSL, "| /usr/bin/openssl x509 -text -inform der");
+	print OPENSSL $cert;
+	close(OPENSSL);
+	return "";
+}
+
+sub dump_pkt {
+	my $pkt = shift;
+	return "not yet";
+	printf("%s: ", $pkt);
+	printf("%02X", $pkt);
+	
+}
+
+sub dump_gplink {
+
+	my $gplink = shift;
+	my $gplink_mod = $gplink;
+	my @links = split("\\]\\[", $gplink_mod);
+	foreach my $link (@links) {
+		$link =~ s/^\[|\]$//g;
+		my ($ldap_link, $opt) = split(";", $link);
+		my @array = ( "$opt", "\t" );
+		printf("%slink: %s, opt: %s\n", $tabsize, $ldap_link, dump_bitmask_and(@array, %ads_gplink_opts));
+	}
+	return $gplink;
 }
 
 sub construct_filter {
@@ -1154,10 +1338,12 @@ sub construct_attrs {
 		push(@attrs,"replPropertyMetaData");
 	}
 
-	push(@attrs,"nTSecurityDescriptor");
-	push(@attrs,"msDS-KeyVersionNumber");
-	push(@attrs,"msDS-User-Account-Control-Computed");
-	push(@attrs,"modifyTimeStamp");
+	if ($opt_verbose) {
+		push(@attrs,"nTSecurityDescriptor");
+		push(@attrs,"msDS-KeyVersionNumber");
+		push(@attrs,"msDS-User-Account-Control-Computed");
+		push(@attrs,"modifyTimeStamp");
+	}
 
 	return sort @attrs;
 }
@@ -1183,28 +1369,49 @@ sub print_header {
 
 sub gen_controls {
 
-	my $asn = Convert::ASN1->new;
-	$asn->prepare(
+	# setup attribute-scoped query control
+	my $asq_asn = Convert::ASN1->new;
+	$asq_asn->prepare(
+		q<	asq ::=	SEQUENCE {
+				sourceAttribute   OCTET_STRING
+		  	}
+		>
+	);
+	my $ctl_asq_val = $asq_asn->encode( sourceAttribute => $opt_asq);
+	my $ctl_asq = Net::LDAP::Control->new(
+		type => $ads_controls{'LDAP_SERVER_ASQ_OID'},
+		critical => 'true',
+		value => $ctl_asq_val);
+
+
+	# setup extended dn control
+	my $asn_extended_dn = Convert::ASN1->new;
+	$asn_extended_dn->prepare(
 		q<	ExtendedDn ::= SEQUENCE {
 				mode     INTEGER
 			}
 		>
 	);
 
-	my $ctl_extended_dn_val = $asn->encode( mode => '1');
+	my $ctl_extended_dn_val = $asn_extended_dn->encode( mode => '1');
 	my $ctl_extended_dn =Net::LDAP::Control->new( 
 		type => $ads_controls{'LDAP_SERVER_EXTENDED_DN_OID'},
 		critical => 'true',
 		value => $ctl_extended_dn_val);
 
+
+	# setup notify control
 	my $ctl_notification = Net::LDAP::Control->new( 
 		type => $ads_controls{'LDAP_SERVER_NOTIFICATION_OID'},
 		critical => 'true');
 
+
+	# setup paging control
 	$ctl_paged = Net::LDAP::Control->new( 
 		type => $ads_controls{'LDAP_PAGED_RESULT_OID_STRING'},
 		critical => 'true',
 		size => $page_size);
+
 
 	if ($paging) {
 		push(@ctrls, $ctl_paged);
@@ -1218,6 +1425,11 @@ sub gen_controls {
 	if ($opt_notify) {
 		push(@ctrls, $ctl_notification);
 		push(@ctrls_s, "LDAP_SERVER_NOTIFICATION_OID");
+	}
+	
+	if ($opt_asq) {
+		push(@ctrls, $ctl_asq);
+		push(@ctrls_s, "LDAP_SERVER_ASQ_OID");
 	}
 	
 	return @ctrls;
@@ -1244,7 +1456,7 @@ sub display_attr_generic ($$$) {
 	my $ref = $entry->get_value($attr, asref => 1);
 	my @values = @$ref;
 
-	foreach my $value (@values) {
+	foreach my $value ( sort @values) {
 		display_value_generic($mod,$attr,$value);
 	}
 }
@@ -1254,14 +1466,14 @@ sub display_entry_generic ($) {
 	my $entry = shift;
 	return if (!$entry);
 
-	foreach my $attr ( $entry->attributes) {
+	foreach my $attr ( sort $entry->attributes) {
 		display_attr_generic("\t",$entry,$attr);	
 	}
 }
 
 sub display_ldap_err ($) {
-	my $msg = shift;
 
+	my $msg = shift;
 	print_header();
 	my ($package, $filename, $line, $subroutine) = caller(0);
 
@@ -1342,6 +1554,11 @@ sub notify_callback {
 	while (1) {
 
 		my $async_entry = $async_search->pop_entry;
+
+		if (!$async_entry->dn) {
+			print "very weird. entry has no dn\n";
+			next;
+		}
 	
 		printf("\ngot changenotify for dn: [%s]\n%s\n", $async_entry->dn, ("-" x 80));
 
@@ -1450,7 +1667,7 @@ sub main () {
 
 		if ($opt_notify) {
 
-			print "[$base] is registered now for change-notify\n";
+			print "Base [$base] is registered now for change-notify\n";
 			print "\nWaiting for change-notify...\n";
 
 			my $sync_ldap_hd = get_ldap_hd($server,0);

@@ -403,14 +403,14 @@ NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
 	/* closing files */
 
 	if (!cli_close(cli_share_src, fnum_src)) {
-		d_printf("could not close %s on originating server: %s\n", 
+		d_fprintf(stderr, "could not close %s on originating server: %s\n", 
 			is_file?"file":"dir", cli_errstr(cli_share_src));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;
 	}
 
 	if (!cli_close(cli_share_dst, fnum_dst)) {
-		d_printf("could not close %s on destination server: %s\n", 
+		d_fprintf(stderr, "could not close %s on destination server: %s\n", 
 			is_file?"file":"dir", cli_errstr(cli_share_dst));
 		nt_status = cli_nt_error(cli_share_dst);
 		goto out;
@@ -504,7 +504,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 
 		/* allocate memory */
 		if (!(data = (char *)SMB_MALLOC(read_size))) {
-			d_printf("malloc fail for size %d\n", read_size);
+			d_fprintf(stderr, "malloc fail for size %d\n", read_size);
 			nt_status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
@@ -538,7 +538,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 			nread + start, n);
 
 		if (n != ret) {
-			d_printf("Error writing file: %s\n", 
+			d_fprintf(stderr, "Error writing file: %s\n", 
 				cli_errstr(cli_share_dst));
 			nt_status = cli_nt_error(cli_share_dst);
 			goto out;
@@ -561,7 +561,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!cli_chkpath(cli_share_dst, dst_name)) {
-			d_printf("cannot check for directory %s: %s\n",
+			d_fprintf(stderr, "cannot check for directory %s: %s\n",
 				dst_name, cli_errstr(cli_share_dst));
 			goto out;
 		}
@@ -570,14 +570,14 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 
 	/* closing files */
 	if (!cli_close(cli_share_src, fnum_src)) {
-		d_printf("could not close file on originating server: %s\n", 
+		d_fprintf(stderr, "could not close file on originating server: %s\n", 
 			cli_errstr(cli_share_src));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;
 	}
 
 	if (is_file && !cli_close(cli_share_dst, fnum_dst)) {
-		d_printf("could not close file on destination server: %s\n", 
+		d_fprintf(stderr, "could not close file on destination server: %s\n", 
 			cli_errstr(cli_share_dst));
 		nt_status = cli_nt_error(cli_share_dst);
 		goto out;
@@ -704,7 +704,7 @@ static NTSTATUS check_arch_dir(struct cli_state *cli_share, const char *short_ar
         }
 
 	if (!cli_chkpath(cli_share, dir)) {
-		d_printf("cannot check %s: %s\n", 
+		d_fprintf(stderr, "cannot check %s: %s\n", 
 			dir, cli_errstr(cli_share));
 		goto out;
 	}
@@ -859,13 +859,13 @@ static BOOL net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 
 	/* be more verbose */
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {
-		d_printf("no access to printer [%s] on [%s] for user [%s] granted\n", 
+		d_fprintf(stderr, "no access to printer [%s] on [%s] for user [%s] granted\n", 
 			printername2, servername, username);
 		return False;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
-		d_printf("cannot open printer %s on server %s: %s\n", 
+		d_fprintf(stderr, "cannot open printer %s on server %s: %s\n", 
 			printername2, servername, dos_errstr(result));
 		return False;
 	}
@@ -2134,9 +2134,9 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
 		if (W_ERROR_IS_OK(result))
 			d_printf ("printer [%s] successfully added.\n", printername);
 		else if (W_ERROR_V(result) == W_ERROR_V(WERR_PRINTER_ALREADY_EXISTS)) 
-			d_printf ("printer [%s] already exists.\n", printername);
+			d_fprintf (stderr, "printer [%s] already exists.\n", printername);
 		else {
-			printf ("could not create printer\n");
+			d_fprintf (stderr, "could not create printer [%s]\n", printername);
 			goto done;
 		}
 

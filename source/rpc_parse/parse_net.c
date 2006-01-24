@@ -3317,7 +3317,7 @@ BOOL net_io_r_dsr_getdcname(const char *desc, NET_R_DSR_GETDCNAME *r_t,
 	if (!prs_uint32("ptr_dc_address", ps, depth, &r_t->ptr_dc_address))
 		return False;
 
-	if (!prs_uint32("dc_address_type", ps, depth, &r_t->dc_address_type))
+	if (!prs_int32("dc_address_type", ps, depth, &r_t->dc_address_type))
 		return False;
 
 	if (!smb_io_uuid("domain_guid", &r_t->domain_guid, ps, depth))

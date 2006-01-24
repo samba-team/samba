@@ -1288,7 +1288,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
 						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
 			restore_case_semantics(conn, file_attributes);
-			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
 		}
 	}

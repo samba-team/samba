@@ -1,6 +1,12 @@
 ########################################################
 # SAMBA Version                                        #
 #                                                      #
+# Samba versions are as follows                        #
+# 3.0.x                New production series           #
+# 3.0.x{pre,rc}y       Preview/Testing & RC            #
+# 3.0.x[a-z]           Patch releases                  #
+# 3.0.x[a-z]-VENDOR-z  Vendor patch releases           #
+#                                                      #
 # script/mkversion.sh                                  #
 # will use this file to create                         #
 # include/version.h                                    #
@@ -31,7 +37,7 @@ SAMBA_VERSION_RELEASE=21
 # e.g. SAMBA_VERSION_REVISION=a                        #
 #  ->  "2.2.8a"                                        #
 ########################################################
-SAMBA_VERSION_REVISION=a
+SAMBA_VERSION_REVISION=b
 
 ########################################################
 # For 'pre' releases the version will be               #
@@ -91,3 +97,4 @@ SAMBA_VERSION_IS_SVN_SNAPSHOT=
 #  ->  "CVS 3.0.0rc2-VendorVersion"                    #
 ########################################################
 SAMBA_VERSION_VENDOR_SUFFIX=
+SAMBA_VENDOR_PATCH=

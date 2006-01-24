@@ -230,6 +230,8 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		POPT_TABLEEND
 	};
 
+	load_case_tables();
+
 	pc = poptGetContext(NULL, argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
@@ -348,24 +350,7 @@ print command parameter is ignored when using CUPS libraries.\n",
 
 
 	if (!silent_mode && !section_name && !parameter_name) {
-		fprintf(stderr,"Server role: ");
-		switch(lp_server_role()) {
-			case ROLE_STANDALONE:
-				fprintf(stderr,"ROLE_STANDALONE\n");
-				break;
-			case ROLE_DOMAIN_MEMBER:
-				fprintf(stderr,"ROLE_DOMAIN_MEMBER\n");
-				break;
-			case ROLE_DOMAIN_BDC:
-				fprintf(stderr,"ROLE_DOMAIN_BDC\n");
-				break;
-			case ROLE_DOMAIN_PDC:
-				fprintf(stderr,"ROLE_DOMAIN_PDC\n");
-				break;
-			default:
-				fprintf(stderr,"Unknown -- internal error?\n");
-				break;
-		}
+		fprintf(stderr,"Server role: %s\n", server_role_str(lp_server_role()));
 	}
 
 	if (!cname) {

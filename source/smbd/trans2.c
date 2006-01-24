@@ -1536,7 +1536,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,4,0);
 			p+= 8;
 
-			SINO_T(p,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
+			SINO_T_VAL(p,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
 			p+= 8;
 
 			SIVAL(p,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */
@@ -3361,7 +3361,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			SIVAL(pdata,4,0);
 			pdata += 8;
 
-			SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
+			SINO_T_VAL(pdata,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
 			pdata += 8;
 				
 			SIVAL(pdata,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */

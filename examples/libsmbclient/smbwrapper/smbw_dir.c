@@ -21,6 +21,7 @@
 */
 
 #include "smbw.h"
+#include "bsd-strlfunc.h"
 
 /***************************************************** 
 determine if a directory handle is a smb one
@@ -70,12 +71,12 @@ int smbw_getdents(unsigned int fd_smbw,
 		dirent_external->d_reclen = sizeof(struct SMBW_dirent);
                 dirent_external->d_type = dirent_internal->smbc_type;
 
-                strncpy(dirent_external->d_name,
-                        dirent_internal->name,
-                        sizeof(dirent_external->d_name) - 1);
-                strncpy(dirent_external->d_comment,
-                        dirent_internal->comment,
-                        sizeof(dirent_external->d_comment) - 1);
+                smbw_strlcpy(dirent_external->d_name,
+                             dirent_internal->name,
+                             sizeof(dirent_external->d_name) - 1);
+                smbw_strlcpy(dirent_external->d_comment,
+                             dirent_internal->comment,
+                             sizeof(dirent_external->d_comment) - 1);
 	}
 
 	return(count - remaining);
@@ -128,7 +129,7 @@ int smbw_chdir(const char *name)
             }
         }
 
-        strncpy(smbw_cwd, path, PATH_MAX);
+        smbw_strlcpy(smbw_cwd, path, PATH_MAX);
 
 	/* we don't want the old directory to be busy */
 	(* smbw_libc.chdir)("/");
@@ -196,7 +197,7 @@ char *smbw_getcwd(char *buf, size_t size)
                 }
         }
 
-        strncpy(buf, smbw_cwd, size);
+        smbw_strlcpy(buf, smbw_cwd, size);
         buf[size-1] = '\0';
 	return buf;
 }
@@ -278,12 +279,12 @@ struct SMBW_dirent *smbw_readdir(DIR *dirp)
         dirent_external.d_off = smbc_telldir(fd_client);
         dirent_external.d_reclen = sizeof(struct SMBW_dirent);
         dirent_external.d_type = dirent_internal->smbc_type;
-        strncpy(dirent_external.d_name,
-                dirent_internal->name,
-                sizeof(dirent_external.d_name) - 1);
-        strncpy(dirent_external.d_comment,
-                dirent_internal->comment,
-                sizeof(dirent_external.d_comment) - 1);
+        smbw_strlcpy(dirent_external.d_name,
+                     dirent_internal->name,
+                     sizeof(dirent_external.d_name) - 1);
+        smbw_strlcpy(dirent_external.d_comment,
+                     dirent_internal->comment,
+                     sizeof(dirent_external.d_comment) - 1);
 
 	return &dirent_external;
 }

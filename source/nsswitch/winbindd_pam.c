@@ -634,7 +634,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 							   contact_domain->dcname,
 							   name_user,
 							   name_domain, 
-							   global_myname(),
+									/* Bug #3248 - found by Stefan Burkei. */
+							   workstation, /* We carefully set this above so use it... */
 							   state->request.data.auth_crap.chal,
 							   lm_resp,
 							   nt_resp,

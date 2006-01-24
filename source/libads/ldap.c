@@ -1165,7 +1165,7 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
 		return kvno;
 	}
-	ret = ads_search(ads, (void**) &res, filter, attrs);
+	ret = ads_search(ads, (void**)(void *)&res, filter, attrs);
 	SAFE_FREE(filter);
 	if (!ADS_ERR_OK(ret) && ads_count_replies(ads, res)) {
 		DEBUG(1,("ads_get_kvno: Computer Account For %s not found.\n", machine_name));
@@ -1219,7 +1219,7 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	ADS_STATUS ret = ADS_ERROR(LDAP_SUCCESS);
 	char *dn_string = NULL;
 
-	ret = ads_find_machine_acct(ads, (void **)&res, machine_name);
+	ret = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Host Account for %s not found... skipping operation.\n", machine_name));
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Service Principals for %s have NOT been cleared.\n", machine_name));
@@ -1287,7 +1287,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	char *dn_string = NULL;
 	const char *servicePrincipalName[4] = {NULL, NULL, NULL, NULL};
 
-	ret = ads_find_machine_acct(ads, (void **)&res, machine_name);
+	ret = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
 		DEBUG(1,("ads_add_service_principal_name: WARNING: Host Account for %s not found... skipping operation.\n",
 			machine_name));
@@ -1401,7 +1401,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 
 	name_to_fqdn(my_fqdn, machine_name);
 
-	status = ads_find_machine_acct(ads, (void **)&res, machine_name);
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, machine_name);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
 		char *dn_string = ads_get_dn(ads, res);
 		if (!dn_string) {
@@ -1774,7 +1774,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 		return status;
 	}
 
-	status = ads_find_machine_acct(ads, (void **)&res, machine);
+	status = ads_find_machine_acct(ads, (void **)(void *)&res, machine);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0, ("ads_join_realm: Host account test failed for machine %s\n", machine));
 		SAFE_FREE(machine);
@@ -1800,8 +1800,9 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	char *hostnameDN, *host; 
 	int rc;
 	LDAPControl ldap_control;
-	LDAPControl  * pldap_control[] = {&ldap_control, 0};
+	LDAPControl  * pldap_control[2] = {NULL, NULL};
 
+	pldap_control[0] = &ldap_control;
 	memset(&ldap_control, 0, sizeof(LDAPControl));
 	ldap_control.ldctl_oid = (char *)LDAP_SERVER_TREE_DELETE_OID;
 

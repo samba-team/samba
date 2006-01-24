@@ -381,9 +381,14 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 
 	if (lp_invalid_users(snum)) {
 		str_list_copy(&invalid, lp_invalid_users(snum));
-		if (invalid && str_list_substitute(invalid, "%S", lp_servicename(snum))) {
-			if ( invalid && str_list_sub_basic(invalid, current_user_info.smb_name) ) {
-				ret = !user_in_list(user, (const char **)invalid, groups, n_groups);
+		if (invalid &&
+		    str_list_substitute(invalid, "%S", lp_servicename(snum))) {
+			if ( invalid &&
+			     str_list_sub_basic(invalid,
+						current_user_info.smb_name) ) {
+				ret = !user_in_list(user,
+						    (const char **)invalid,
+						    groups, n_groups);
 			}
 		}
 	}
@@ -392,9 +397,13 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 
 	if (ret && lp_valid_users(snum)) {
 		str_list_copy(&valid, lp_valid_users(snum));
-		if ( valid && str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
-			if ( valid && str_list_sub_basic(valid, current_user_info.smb_name) ) {
-				ret = user_in_list(user, (const char **)valid, groups, n_groups);
+		if ( valid &&
+		     str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
+			if ( valid &&
+			     str_list_sub_basic(valid,
+						current_user_info.smb_name) ) {
+				ret = user_in_list(user, (const char **)valid,
+						   groups, n_groups);
 			}
 		}
 	}
@@ -403,8 +412,11 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 
 	if (ret && lp_onlyuser(snum)) {
 		char **user_list = str_list_make (lp_username(snum), NULL);
-		if (user_list && str_list_substitute(user_list, "%S", lp_servicename(snum))) {
-			ret = user_in_list(user, (const char **)user_list, groups, n_groups);
+		if (user_list &&
+		    str_list_substitute(user_list, "%S",
+					lp_servicename(snum))) {
+			ret = user_in_list(user, (const char **)user_list,
+					   groups, n_groups);
 		}
 		if (user_list) str_list_free (&user_list);
 	}
@@ -509,19 +521,21 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 	BOOL ok = False;
 	
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s\n",
-		   user,password.data));
+	DEBUG(100,("authorise_login: checking authorisation on "
+		   "user=%s pass=%s\n", user,password.data));
 #endif
 
 	*guest = False;
   
 	/* there are several possibilities:
 		1) login as the given user with given password
-		2) login as a previously registered username with the given password
+		2) login as a previously registered username with the given 
+		   password
 		3) login as a session list username with the given password
 		4) login as a previously validated user/password pair
 		5) login as the "user =" user with given password
-		6) login as the "user =" user with no password (guest connection)
+		6) login as the "user =" user with no password 
+		   (guest connection)
 		7) login as guest user with no password
 
 		if the service is guest_only then steps 1 to 5 are skipped
@@ -550,11 +564,12 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 			if (password_ok(user2,password)) {
 				ok = True;
 				fstrcpy(user,user2);
-				DEBUG(3,("authorise_login: ACCEPTED: session list username (%s) \
-and given password ok\n", user));
+				DEBUG(3,("authorise_login: ACCEPTED: session "
+					 "list username (%s) and given "
+					 "password ok\n", user));
 			}
 		}
-		
+
 		SAFE_FREE(user_list);
 	}
 	
@@ -573,17 +588,21 @@ and given password ok\n", user));
 				if (auser) {
 					ok = True;
 					fstrcpy(user,auser);
-					DEBUG(3,("authorise_login: ACCEPTED: group username \
-and given password ok (%s)\n", user));
+					DEBUG(3,("authorise_login: ACCEPTED: "
+						 "group username and given "
+						 "password ok (%s)\n", user));
 				}
 			} else {
 				fstring user2;
 				fstrcpy(user2,auser);
-				if (user_ok(user2,snum, NULL, 0) && password_ok(user2,password)) {
+				if (user_ok(user2,snum, NULL, 0) &&
+				    password_ok(user2,password)) {
 					ok = True;
 					fstrcpy(user,user2);
-					DEBUG(3,("authorise_login: ACCEPTED: user list username \
-and given password ok (%s)\n", user));
+					DEBUG(3,("authorise_login: ACCEPTED: "
+						 "user list username and "
+						 "given password ok (%s)\n",
+						 user));
 				}
 			}
 		}
@@ -596,10 +615,11 @@ and given password ok (%s)\n", user));
 		if (Get_Pwnam(guestname)) {
 			fstrcpy(user,guestname);
 			ok = True;
-			DEBUG(3,("authorise_login: ACCEPTED: guest account and guest ok (%s)\n",
-					user));
+			DEBUG(3,("authorise_login: ACCEPTED: guest account "
+				 "and guest ok (%s)\n",	user));
 		} else {
-			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
+			DEBUG(0,("authorise_login: Invalid guest account "
+				 "%s??\n",guestname));
 		}
 		*guest = True;
 	}

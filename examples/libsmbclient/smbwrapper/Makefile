@@ -10,8 +10,11 @@ CFLAGS= -fpic -g -O0 $(DEFS) $(SMBINCLUDE)
 
 BIN	= .
 
-SMBWRAPPER_OBJS	= smbw.o smbw_dir.o smbw_stat.o wrapper.o select.o 
-SMBSH_OBJS	= smbsh.o
+STRFUNC = bsd-strlcat.o bsd-strlcpy.o
+
+
+SMBWRAPPER_OBJS	= smbw.o smbw_dir.o smbw_stat.o wrapper.o select.o $(STRFUNC)
+SMBSH_OBJS	= smbsh.o $(STRFUNC)
 
 all:	$(BIN)/smbwrapper.so $(BIN)/smbsh
 

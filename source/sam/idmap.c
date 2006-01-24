@@ -120,6 +120,7 @@ BOOL idmap_init(const char **remote_backend)
 		char *rem_backend = smb_xstrdup(*remote_backend);
 		fstring params = "";
 		char *pparams;
+		BOOL idmap_prefix_workaround = False;
 		
 		/* get any mode parameters passed in */
 		
@@ -127,6 +128,13 @@ BOOL idmap_init(const char **remote_backend)
 			*pparams = '\0';
 			pparams++;
 			fstrcpy( params, pparams );
+		}
+
+		/* strip any leading idmap_ prefix of */
+		if ( strncmp( rem_backend, "idmap_", 6) == 0 ) {
+			rem_backend += 6;
+			idmap_prefix_workaround = True;
+			DEBUG(0, ("idmap_init: idmap backend uses deprecated 'idmap_' prefix.  Please replace 'idmap_%s' by '%s' in %s\n", rem_backend, rem_backend, dyn_CONFIGFILE));
 		}
 		
 		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", rem_backend));
@@ -140,9 +148,13 @@ BOOL idmap_init(const char **remote_backend)
 			}
 		} else {
 			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", rem_backend));
+			if (idmap_prefix_workaround)
+				rem_backend -= 6;
 			SAFE_FREE(rem_backend);
 			return False;
 		}
+		if (idmap_prefix_workaround)
+			rem_backend -= 6;
 		SAFE_FREE(rem_backend);
 	}
 

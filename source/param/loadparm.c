@@ -2532,7 +2532,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 		string_set(&ServicePtrs[i]->comment, comment);
 	}
 
-	/* set the browseable flag from the gloabl default */
+	/* set the browseable flag from the global default */
 
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
@@ -4098,6 +4098,28 @@ static void lp_save_defaults(void)
  Set the server type we will announce as via nmbd.
 ********************************************************************/
 
+static const struct srv_role_tab {
+	uint32 role;
+	const char *role_str;
+} srv_role_tab [] = {
+	{ ROLE_STANDALONE, "ROLE_STANDALONE" },
+	{ ROLE_DOMAIN_MEMBER, "ROLE_DOMAIN_MEMBER" },
+	{ ROLE_DOMAIN_BDC, "ROLE_DOMAIN_BDC" },
+	{ ROLE_DOMAIN_PDC, "ROLE_DOMAIN_PDC" },
+	{ 0, NULL }
+};
+
+const char* server_role_str(uint32 role)
+{
+	int i = 0;
+	for (i=0; srv_role_tab[i].role_str; i++) {
+		if (role == srv_role_tab[i].role) {
+			return srv_role_tab[i].role_str;
+		}
+	}
+	return NULL;
+}
+
 static void set_server_role(void)
 {
 	server_role = ROLE_STANDALONE;
@@ -4141,22 +4163,7 @@ static void set_server_role(void)
 			break;
 	}
 
-	DEBUG(10, ("set_server_role: role = "));
-
-	switch(server_role) {
-	case ROLE_STANDALONE:
-		DEBUGADD(10, ("ROLE_STANDALONE\n"));
-		break;
-	case ROLE_DOMAIN_MEMBER:
-		DEBUGADD(10, ("ROLE_DOMAIN_MEMBER\n"));
-		break;
-	case ROLE_DOMAIN_BDC:
-		DEBUGADD(10, ("ROLE_DOMAIN_BDC\n"));
-		break;
-	case ROLE_DOMAIN_PDC:
-		DEBUGADD(10, ("ROLE_DOMAIN_PDC\n"));
-		break;
-	}
+	DEBUG(10, ("set_server_role: role = %s\n", server_role_str(server_role)));
 }
 
 /***********************************************************

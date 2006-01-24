@@ -347,7 +347,7 @@ static int net_rpc_oldjoin(int argc, const char **argv)
 	int rc = net_rpc_perform_oldjoin(argc, argv);
 
 	if (rc) {
-		d_printf("Failed to join domain\n");
+		d_fprintf(stderr, "Failed to join domain\n");
 	}
 
 	return rc;
@@ -607,7 +607,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to add user %s - %s\n", acct_name, 
+		d_fprintf(stderr, "Failed to add user %s - %s\n", acct_name, 
 			 nt_errstr(result));
 	} else {
 		d_printf("Added user %s\n", acct_name);
@@ -714,7 +714,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 	/* Display results */
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to delete user account - %s\n", nt_errstr(result));
+		d_fprintf(stderr, "Failed to delete user account - %s\n", nt_errstr(result));
 	} else {
 		d_printf("Deleted user account\n");
 	}
@@ -829,7 +829,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to rename user from %s to %s - %s\n", old_name, new_name, 
+		d_fprintf(stderr, "Failed to rename user from %s to %s - %s\n", old_name, new_name, 
 			 nt_errstr(result));
 	} else {
 		d_printf("Renamed user from %s to %s\n", old_name, new_name);
@@ -1280,7 +1280,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
                                   &connect_pol);
 
         if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Request samr_connect failed\n");
+		d_fprintf(stderr, "Request samr_connect failed\n");
         	goto done;
         }
         
@@ -1289,7 +1289,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
                                       domain_sid, &domain_pol);
         
         if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Request open_domain failed\n");
+		d_fprintf(stderr, "Request open_domain failed\n");
         	goto done;
         }
 	
@@ -1299,7 +1299,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 				       &name_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Lookup of '%s' failed\n",argv[0]);
+		d_fprintf(stderr, "Lookup of '%s' failed\n",argv[0]);
    		goto done;
 	}
 
@@ -1310,7 +1310,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 					     MAXIMUM_ALLOWED_ACCESS,
 					     group_rids[0], &group_pol);
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Request open_group failed");
+			d_fprintf(stderr, "Request open_group failed");
    			goto done;
 		}
                 
@@ -1321,7 +1321,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
                                  &group_attrs);
 		
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Unable to query group members of %s",argv[0]);
+			d_fprintf(stderr, "Unable to query group members of %s",argv[0]);
    			goto done;
 		}
 		
@@ -1338,7 +1338,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 					            group_rids[i], &user_pol);
 	
 	        	if (!NT_STATUS_IS_OK(result)) {
-				d_printf("Unable to open group member %d\n",group_rids[i]);
+				d_fprintf(stderr, "Unable to open group member %d\n",group_rids[i]);
 	           		goto done;
 	        	}
 	
@@ -1348,7 +1348,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	                                                 21, &user_ctr);
 	
 	        	if (!NT_STATUS_IS_OK(result)) {
-				d_printf("Unable to lookup userinfo for group member %d\n",group_rids[i]);
+				d_fprintf(stderr, "Unable to lookup userinfo for group member %d\n",group_rids[i]);
 	           		goto done;
 	        	}
 	
@@ -1364,8 +1364,8 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		}
                 
 		if (group_is_primary) {
-			d_printf("Unable to delete group because some of it's "
-				 "members have it as primary group\n");
+			d_fprintf(stderr, "Unable to delete group because some "
+				 "of it's members have it as primary group\n");
 			result = NT_STATUS_MEMBERS_PRIMARY_GROUP;
 			goto done;
 		}
@@ -1397,14 +1397,14 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 					     group_rids[0], &group_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Request open_alias failed\n");
+			d_fprintf(stderr, "Request open_alias failed\n");
    			goto done;
 		}
 		
 		result = rpccli_samr_delete_dom_alias(pipe_hnd, mem_ctx, &group_pol);
 		break;
 	default:
-		d_printf("%s is of type %s. This command is only for deleting local or global groups\n",
+		d_fprintf(stderr, "%s is of type %s. This command is only for deleting local or global groups\n",
 			argv[0],sid_type_lookup(name_types[0]));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -1415,7 +1415,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		if (opt_verbose)
 			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types[0]),argv[0]);
 	} else {
-		d_printf("Deleting of %s failed: %s\n",argv[0],
+		d_fprintf(stderr, "Deleting of %s failed: %s\n",argv[0],
 			get_friendly_nt_error_msg(result));
 	}
 	
@@ -1482,7 +1482,7 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5, ("add group succeeded\n"));
 	else
-		d_printf("add group failed: %s\n", nt_errstr(result));
+		d_fprintf(stderr, "add group failed: %s\n", nt_errstr(result));
 
 	return result;
 }
@@ -1538,7 +1538,7 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5, ("add alias succeeded\n"));
 	else
-		d_printf("add alias failed: %s\n", nt_errstr(result));
+		d_fprintf(stderr, "add alias failed: %s\n", nt_errstr(result));
 
 	return result;
 }
@@ -1652,7 +1652,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 				       &num_rids, &rids, &rid_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Could not lookup up group member %s\n", member);
+		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		goto done;
 	}
 
@@ -1696,7 +1696,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				   &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Could not lookup up group member %s\n", member);
+		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		return result;
 	}
 
@@ -1752,7 +1752,7 @@ static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
 
 	if (!NT_STATUS_IS_OK(get_sid_from_name(cli, mem_ctx, argv[0],
 					       &group_sid, &group_type))) {
-		d_printf("Could not lookup group name %s\n", argv[0]);
+		d_fprintf(stderr, "Could not lookup group name %s\n", argv[0]);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1761,7 +1761,7 @@ static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Could not add %s to %s: %s\n",
+			d_fprintf(stderr, "Could not add %s to %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
 		}
 		return result;
@@ -1772,14 +1772,14 @@ static NTSTATUS rpc_group_addmem_internals(const DOM_SID *domain_sid,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Could not add %s to %s: %s\n",
+			d_fprintf(stderr, "Could not add %s to %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
 		}
 		return result;
 	}
 
-	d_printf("Can only add members to global or local groups which "
-		 "%s is not\n", argv[0]);
+	d_fprintf(stderr, "Can only add members to global or local groups "
+		 "which %s is not\n", argv[0]);
 
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -1830,7 +1830,7 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 				       &num_rids, &rids, &rid_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Could not lookup up group member %s\n", member);
+		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		goto done;
 	}
 
@@ -1872,7 +1872,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				   &member_sid, &member_type);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Could not lookup up group member %s\n", member);
+		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		return result;
 	}
 
@@ -1926,7 +1926,7 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 
 	if (!NT_STATUS_IS_OK(get_sid_from_name(cli, mem_ctx, argv[0],
 					       &group_sid, &group_type))) {
-		d_printf("Could not lookup group name %s\n", argv[0]);
+		d_fprintf(stderr, "Could not lookup group name %s\n", argv[0]);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1935,7 +1935,7 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Could not del %s from %s: %s\n",
+			d_fprintf(stderr, "Could not del %s from %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
 		}
 		return result;
@@ -1946,14 +1946,14 @@ static NTSTATUS rpc_group_delmem_internals(const DOM_SID *domain_sid,
 						   &group_sid, argv[1]);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Could not del %s from %s: %s\n",
+			d_fprintf(stderr, "Could not del %s from %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
 		}
 		return result;
 	}
 
-	d_printf("Can only delete members from global or local groups which "
-		 "%s is not\n", argv[0]);
+	d_fprintf(stderr, "Can only delete members from global or local groups "
+		 "which %s is not\n", argv[0]);
 
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -2281,7 +2281,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 					 &num_members, &alias_sids);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Couldn't list alias members\n");
+		d_fprintf(stderr, "Couldn't list alias members\n");
 		return result;
 	}
 
@@ -2291,7 +2291,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 
 	lsa_pipe = cli_rpc_pipe_open_noauth(pipe_hnd->cli, PI_LSARPC, &result);
 	if (!lsa_pipe) {
-		d_printf("Couldn't open LSA pipe. Error was %s\n",
+		d_fprintf(stderr, "Couldn't open LSA pipe. Error was %s\n",
 			nt_errstr(result) );
 		return result;
 	}
@@ -2300,7 +2300,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Couldn't open LSA policy handle\n");
+		d_fprintf(stderr, "Couldn't open LSA policy handle\n");
 		cli_rpc_pipe_close(lsa_pipe);
 		return result;
 	}
@@ -2311,7 +2311,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
-		d_printf("Couldn't lookup SIDs\n");
+		d_fprintf(stderr, "Couldn't lookup SIDs\n");
 		cli_rpc_pipe_close(lsa_pipe);
 		return result;
 	}
@@ -2383,7 +2383,7 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 					      &sid_Builtin, &domain_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Couldn't find group %s\n", argv[0]);
+			d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 			return result;
 		}
 
@@ -2392,13 +2392,13 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 					       &rids, &rid_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("Couldn't find group %s\n", argv[0]);
+			d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 			return result;
 		}
 	}
 
 	if (num_rids != 1) {
-		d_printf("Couldn't find group %s\n", argv[0]);
+		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 		return result;
 	}
 
@@ -2466,12 +2466,12 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 				       1, argv, &num_rids, &rids, &rid_types);
 
 	if (num_rids != 1) {
-		d_printf("Couldn't find group %s\n", argv[0]);
+		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 		return result;
 	}
 
 	if (rid_types[0] != SID_NAME_DOM_GRP) {
-		d_printf("Can only rename domain groups\n");
+		d_fprintf(stderr, "Can only rename domain groups\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -3057,7 +3057,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 						  False);
 			break;
 		default:
-			d_printf("Unsupported mode %d\n", net_mode_share);
+			d_fprintf(stderr, "Unsupported mode %d\n", net_mode_share);
 			return;
 		}
 
@@ -3099,7 +3099,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 					  True);
 		break;
 	default:
-		d_printf("Unsupported file mode %d\n", net_mode_share);
+		d_fprintf(stderr, "Unsupported file mode %d\n", net_mode_share);
 		return;
 	}
 
@@ -3124,7 +3124,7 @@ BOOL sync_files(struct copy_clistate *cp_clistate, pstring mask)
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
 	if (cli_list(cp_clistate->cli_share_src, mask, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
-		d_printf("listing %s failed with error: %s\n", 
+		d_fprintf(stderr, "listing %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
 		return False;
 	}
@@ -3156,7 +3156,7 @@ BOOL copy_top_level_perms(struct copy_clistate *cp_clistate,
 						False);
 		break;
 	default:
-		d_printf("Unsupported mode %d\n", net_mode_share);
+		d_fprintf(stderr, "Unsupported mode %d\n", net_mode_share);
 		break;
 	}
 
@@ -3233,7 +3233,7 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 			printf("syncing");
 			break;
 		default:
-			d_printf("Unsupported mode %d\n", net_mode_share);
+			d_fprintf(stderr, "Unsupported mode %d\n", net_mode_share);
 			break;
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
@@ -3268,13 +3268,13 @@ static NTSTATUS rpc_share_migrate_files_internals(const DOM_SID *domain_sid,
 		}
 
 		if (!copy_top_level_perms(&cp_clistate, netname)) {
-			d_printf("Could not handle the top level directory permissions for the share: %s\n", netname);
+			d_fprintf(stderr, "Could not handle the top level directory permissions for the share: %s\n", netname);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 
 		if (!sync_files(&cp_clistate, mask)) {
-			d_printf("could not handle files for share: %s\n", netname);
+			d_fprintf(stderr, "could not handle files for share: %s\n", netname);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -3878,8 +3878,8 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 
 	if (lp_winbind_use_default_domain() &&
 	    (opt_target_workgroup == NULL)) {
-		d_printf("winbind use default domain = yes set, please "
-			 "specify a workgroup\n");
+		d_fprintf(stderr, "winbind use default domain = yes set, "
+			 "please specify a workgroup\n");
 		return False;
 	}
 
@@ -4681,11 +4681,11 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	if (W_ERROR_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
 	} else {
-		d_printf("\nShutdown of remote machine failed\n");
+		d_fprintf(stderr, "\nShutdown of remote machine failed\n");
 		if (W_ERROR_EQUAL(result,WERR_MACHINE_LOCKED))
-			d_printf("\nMachine locked, use -f switch to force\n");
+			d_fprintf(stderr, "\nMachine locked, use -f switch to force\n");
 		else
-			d_printf("\nresult was: %s\n", dos_errstr(result));
+			d_fprintf(stderr, "\nresult was: %s\n", dos_errstr(result));
 	}
 
 	return werror_to_ntstatus(result);
@@ -5293,8 +5293,10 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
+#ifdef DEBUG_PASSWORD
 	DEBUG(100,("sucessfully vampired trusted domain [%s], sid: [%s], password: [%s]\n",  
 		trusted_dom_name, sid_string_static(&dom_sid), cleartextpwd));
+#endif
 
 done:
 	SAFE_FREE(cleartextpwd);
@@ -5632,12 +5634,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			if (remote_cli) {			
 				/* query for domain's sid */
 				if (run_rpc_command(remote_cli, PI_LSARPC, 0, rpc_query_domain_sid, argc, argv))
-					d_printf("couldn't get domain's sid\n");
+					d_fprintf(stderr, "couldn't get domain's sid\n");
 
 				cli_shutdown(remote_cli);
 			
 			} else {
-				d_printf("domain controller is not responding\n");
+				d_fprintf(stderr, "domain controller is not responding\n");
 			};
 		};
 		

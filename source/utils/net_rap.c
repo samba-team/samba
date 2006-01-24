@@ -112,7 +112,7 @@ static int rap_file_user(int argc, const char **argv)
 	if (argc == 0)
 		return net_rap_file_usage(argc, argv);
 
-	d_printf("net rap file user not implemented yet\n");
+	d_fprintf(stderr, "net rap file user not implemented yet\n");
 	return -1;
 }
 

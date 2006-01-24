@@ -704,6 +704,8 @@ out_free:
 		POPT_TABLEEND
 	};
 
+	load_case_tables();
+
 	ZERO_STRUCT(server_ip);
 
 	setlinebuf(stdout);

@@ -24,6 +24,12 @@
 #ifndef _SMB_MACROS_H
 #define _SMB_MACROS_H
 
+/* no ops to help reduce the diff between the current 3.0 and release branch */
+
+#define toupper_ascii(x)	toupper(x)
+#define tolower_ascii(x)	tolower(x)
+
+
 /* Misc bit macros */
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)

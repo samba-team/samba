@@ -386,6 +386,9 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 		c = NULL;
 
 		if (!closed) {
+			/* close the name cache so that close_our_files() doesn't steal its FD */
+			namecache_shutdown();
+
 			/* redirect stdout & stderr since we can't know that
 			   the library functions we use are using DEBUG. */
 			if ( (fd = open("/dev/null", O_WRONLY)) < 0)

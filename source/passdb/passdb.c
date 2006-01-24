@@ -2383,13 +2383,16 @@ BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
 {
 	uint32 account_policy_lockout;
 	BOOL autolock_updated = False, badpw_updated = False;
+	BOOL ret;
 
 	if (!sampass)
 		return False;
 
 	/* Retrieve the account lockout policy */
-	if (!pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
-				&account_policy_lockout)) {
+	become_root();
+	ret = pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_lockout);
+	unbecome_root();
+	if ( !ret ) {
 		DEBUG(0, ("pdb_increment_bad_password_count: pdb_get_account_policy failed.\n"));
 		return False;
 	}

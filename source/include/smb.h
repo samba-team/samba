@@ -28,7 +28,7 @@
 #define _SMB_H
 
 /* logged when starting the various Samba daemons */
-#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2005"
+#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2006"
 
 
 #if defined(LARGE_SMB_OFF_T)
@@ -655,9 +655,9 @@ struct share_mode_entry {
 	struct process_id pid;
 	uint16 op_mid;
 	uint16 op_type;
-	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-	uint32 private_options;	/* NT Create options, but we only look at
+	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32_t share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32_t private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
 				 * smbstatus and swat */
@@ -666,6 +666,25 @@ struct share_mode_entry {
 	SMB_INO_T inode;
 	unsigned long share_file_id;
 };
+
+/* oplock break message definition - linearization of share_mode_entry.
+
+Offset  Data			length.
+0	struct process_id pid	4
+4	uint16 op_mid		2
+6	uint16 op_type		2
+8	uint32 access_mask	4
+12	uint32 share_access	4
+16	uint32 private_options	4
+20	uint32 time sec		4
+24	uint32 time usec	4
+28	SMB_DEV_T dev		8 bytes.
+36	SMB_INO_T inode		8 bytes
+44	unsigned long file_id	4 bytes
+48
+
+*/
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 48
 
 struct share_mode_lock {
 	const char *filename;
@@ -1491,11 +1510,40 @@ struct inform_level2_message {
 	unsigned long source_file_id;
 };
 
+/* kernel_oplock_message definition.
+
 struct kernel_oplock_message {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	unsigned long file_id;
 };
+
+Offset  Data                  length.
+0     SMB_DEV_T dev           8 bytes.
+8     SMB_INO_T inode         8 bytes
+16    unsigned long file_id   4 bytes
+20
+
+*/
+#define MSG_SMB_KERNEL_BREAK_SIZE 20
+
+/* file_renamed_message definition.
+
+struct file_renamed_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	char names[1]; A variable area containing sharepath and filename.
+};
+
+Offset  Data			length.
+0	SMB_DEV_T dev		8 bytes.
+8	SMB_INO_T inode		8 bytes
+16	char [] name		zero terminated namelen bytes
+minimum length == 18.
+
+*/
+
+#define MSG_FILE_RENAMED_MIN_SIZE 16
 
 /*
  * On the wire return values for oplock types.
@@ -1569,8 +1617,7 @@ struct node_status_extra {
 	/* There really is more here ... */ 
 };
 
-struct pwd_info
-{
+struct pwd_info {
 	BOOL null_pwd;
 	BOOL cleartext;
 

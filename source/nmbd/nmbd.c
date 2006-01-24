@@ -657,13 +657,14 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	pstring logfile;
 	static BOOL opt_interactive;
 	poptContext pc;
+	static char *p_lmhosts = dyn_LMHOSTSFILE;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
 	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
 	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
-	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
+	{"hosts", 'H', POPT_ARG_STRING, &p_lmhosts, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
 	POPT_COMMON_SAMBA
 	{ NULL }
@@ -773,7 +774,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	pidfile_create("nmbd");
 	message_init();
 	message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+#if 0
+	/* Until winsrepl is done. */
 	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+#endif
 	message_register(MSG_SHUTDOWN, nmbd_terminate);
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
 	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet);
@@ -798,8 +802,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	}
 
 	/* Load in any static local names. */ 
-	load_lmhosts_file(dyn_LMHOSTSFILE);
-	DEBUG(3,("Loaded hosts file %s\n", dyn_LMHOSTSFILE));
+	load_lmhosts_file(p_lmhosts);
+	DEBUG(3,("Loaded hosts file %s\n", p_lmhosts));
 
 	/* If we are acting as a WINS server, initialise data structures. */
 	if( !initialise_wins() ) {

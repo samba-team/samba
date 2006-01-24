@@ -99,6 +99,7 @@ static int net_time_set(int argc, const char **argv)
 {
 	time_t t = nettime(NULL);
 	char *cmd;
+	int result;
 
 	if (t == 0) return -1;
 	
@@ -106,10 +107,13 @@ static int net_time_set(int argc, const char **argv)
 	   roll your own. I'm putting this in as it works on a large number
 	   of systems and the user has a choice in whether its used or not */
 	asprintf(&cmd, "/bin/date %s", systime(t));
-	system(cmd);
+	result = system(cmd);
+	if (result)
+		d_fprintf(stderr, "%s failed.  Error was (%s)\n",
+			cmd, strerror(errno));
 	free(cmd);
 
-	return 0;
+	return result;
 }
 
 /* display the time on a remote box in a format ready for /bin/date */
@@ -161,7 +165,7 @@ int net_time(int argc, const char **argv)
 
 	if (!opt_host && !opt_have_ip && 
 	    !find_master_ip(opt_target_workgroup, &opt_dest_ip)) {
-		d_printf("Could not locate a time server.  Try "\
+		d_fprintf(stderr, "Could not locate a time server.  Try "\
 				 "specifying a target host.\n");
 		net_time_usage(argc,argv);
 		return -1;

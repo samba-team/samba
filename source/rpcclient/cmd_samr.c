@@ -39,6 +39,14 @@ static void display_sam_user_info_7(SAM_USER_INFO_7 *usr)
 }
 
 /****************************************************************************
+ display sam_user_info_9 structure
+ ****************************************************************************/
+static void display_sam_user_info_9(SAM_USER_INFO_9 *usr)
+{
+	printf("\tPrimary group RID   :\tox%x\n", usr->rid_group);
+}
+
+/****************************************************************************
  display sam_user_info_21 structure
  ****************************************************************************/
 static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
@@ -139,27 +147,6 @@ static const char *display_time(NTTIME nttime)
 
 	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
 	return (string);
-}
-
-static const char* server_role_str(uint32 server_role)
-{
-	switch(server_role) {
-		case ROLE_STANDALONE:
-			return SMB_STRDUP("ROLE_STANDALONE");
-			break;
-		case ROLE_DOMAIN_MEMBER:
-			return SMB_STRDUP("ROLE_DOMAIN_MEMBER");
-			break;
-		case ROLE_DOMAIN_BDC:
-			return SMB_STRDUP("ROLE_DOMAIN_BDC");
-			break;
-		case ROLE_DOMAIN_PDC:
-			return SMB_STRDUP("ROLE_DOMAIN_PDC");
-			break;
-		default:
-			return SMB_STRDUP("Unknown -- internal error?");
-			break;
-	}
 }
 
 static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
@@ -418,6 +405,9 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		break;
 	case 7:
 		display_sam_user_info_7(user_ctr->info.id7);
+		break;
+	case 9:
+		display_sam_user_info_9(user_ctr->info.id9);
 		break;
 	default:
 		printf("Unsupported infolevel: %d\n", info_level);
