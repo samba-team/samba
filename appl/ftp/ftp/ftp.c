@@ -1756,8 +1756,8 @@ abort_remote (FILE * din)
 	errx (1, "fd too large");
     FD_SET (fileno (cin), &mask);
     if (din) {
-    if (fileno (din) >= FD_SETSIZE)
-	errx (1, "fd too large");
+	if (fileno (din) >= FD_SETSIZE)
+	    errx (1, "fd too large");
 	FD_SET (fileno (din), &mask);
     }
     if ((nfnd = empty (&mask, 10)) <= 0) {
