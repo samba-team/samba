@@ -192,7 +192,7 @@ BOOL remove_oplock(files_struct *fsp)
 	struct share_mode_lock *lck;
 
 	/* Remove the oplock flag from the sharemode. */
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 	if (lck == NULL) {
 		DEBUG(0,("remove_oplock: failed to lock share entry for "
 			 "file %s\n", fsp->fsp_name ));
@@ -220,7 +220,7 @@ BOOL downgrade_oplock(files_struct *fsp)
 	BOOL ret;
 	struct share_mode_lock *lck;
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 	if (lck == NULL) {
 		DEBUG(0,("downgrade_oplock: failed to lock share entry for "
 			 "file %s\n", fsp->fsp_name ));
@@ -233,7 +233,7 @@ BOOL downgrade_oplock(files_struct *fsp)
 			 fsp->fsp_name, fsp->fnum, (unsigned int)dev,
 			 (double)inode));
 	}
-		
+
 	downgrade_file_oplock(fsp);
 	talloc_free(lck);
 	return ret;
@@ -670,7 +670,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		return;
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 	if (lck == NULL) {
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
 			 "share mode entry for file %s.\n", fsp->fsp_name ));

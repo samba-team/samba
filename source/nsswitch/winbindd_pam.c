@@ -419,16 +419,21 @@ done:
 	if ( NT_STATUS_IS_OK(result) &&
 	     (state->request.flags & WBFLAG_PAM_AFS_TOKEN) ) {
 
-		char *afsname = SMB_STRDUP(lp_afs_username_map());
+		char *afsname = talloc_strdup(state->mem_ctx,
+					      lp_afs_username_map());
 		char *cell;
 
 		if (afsname == NULL) {
 			goto no_token;
 		}
 
-		afsname = realloc_string_sub(afsname, "%D", name_domain);
-		afsname = realloc_string_sub(afsname, "%u", name_user);
-		afsname = realloc_string_sub(afsname, "%U", name_user);
+		afsname = talloc_string_sub(state->mem_ctx,
+					    lp_afs_username_map(),
+					    "%D", name_domain);
+		afsname = talloc_string_sub(state->mem_ctx, afsname,
+					    "%u", name_user);
+		afsname = talloc_string_sub(state->mem_ctx, afsname,
+					    "%U", name_user);
 
 		{
 			DOM_SID user_sid;
@@ -437,7 +442,8 @@ done:
 			sid_copy(&user_sid, &info3.dom_sid.sid);
 			sid_append_rid(&user_sid, info3.user_rid);
 			sid_to_string(sidstr, &user_sid);
-			afsname = realloc_string_sub(afsname, "%s", sidstr);
+			afsname = talloc_string_sub(state->mem_ctx, afsname,
+						    "%s", sidstr);
 		}
 
 		if (afsname == NULL) {
@@ -466,7 +472,7 @@ done:
 				strlen(state->response.extra_data)+1;
 
 	no_token:
-		SAFE_FREE(afsname);
+		talloc_free(afsname);
 	}
 		
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;

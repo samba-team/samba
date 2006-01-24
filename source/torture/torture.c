@@ -4914,6 +4914,8 @@ static void usage(void)
 	setbuffer(stdout, NULL, 0);
 #endif
 
+	load_case_tables();
+
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 

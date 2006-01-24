@@ -795,7 +795,7 @@ AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h sys/proplist.h)
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
 
 AC_CHECK_HEADERS(netinet/ip.h,,,[[
@@ -1345,12 +1345,23 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 
 ############################################
 # Check if we have libattr
-AC_SEARCH_LIBS(getxattr, [attr])
-AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
-AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
-AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
-AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
-AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+case "$host_os" in
+  *osf*)
+	AC_SEARCH_LIBS(getproplist, [proplist])
+	AC_CHECK_FUNCS(getproplist fgetproplist setproplist fsetproplist)
+	AC_CHECK_FUNCS(delproplist fdelproplist add_proplist_entry get_proplist_entry)
+	AC_CHECK_FUNCS(sizeof_proplist_entry)
+  ;;
+  *)
+	AC_SEARCH_LIBS(getxattr, [attr])
+	AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
+	AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
+	AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
+	AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
+	AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+  ;;
+esac
+
 # Check if we have extattr
 case "$host_os" in
   *freebsd4* | *dragonfly* )
@@ -1460,7 +1471,7 @@ if test "$enable_shared" = "yes"; then
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
-			DYNEXP="-Wl,-brtl,-bexpall"
+			DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
 			PICFLAGS="-O2"
 			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
@@ -1628,7 +1639,11 @@ if test x"$samba_cv_HAVE_OFF64_T" = x"yes"; then
 fi
 
 AC_CACHE_CHECK([for 64 bit ino_t],samba_cv_SIZEOF_INO_T,[
-AC_TRY_RUN([#include <stdio.h>
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
 #include <sys/stat.h>
 main() { exit((sizeof(ino_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_INO_T=yes,samba_cv_SIZEOF_INO_T=no,samba_cv_SIZEOF_INO_T=cross)])
@@ -1647,6 +1662,19 @@ main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit
 samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
 if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
     AC_DEFINE(HAVE_INO64_T,1,[Whether the 'ino64_t' type is available])
+fi
+
+AC_CACHE_CHECK([for 64 bit dev_t],samba_cv_SIZEOF_DEV_T,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
+#include <sys/stat.h>
+main() { exit((sizeof(dev_t) == 8) ? 0 : 1); }],
+samba_cv_SIZEOF_DEV_T=yes,samba_cv_SIZEOF_DEV_T=no,samba_cv_SIZEOF_DEV_T=cross)])
+if test x"$samba_cv_SIZEOF_DEV_T" = x"yes"; then
+    AC_DEFINE(SIZEOF_DEV_T,8,[The size of the 'dev_t' type])
 fi
 
 AC_CACHE_CHECK([for dev64_t],samba_cv_HAVE_DEV64_T,[
@@ -4477,10 +4505,11 @@ AC_ARG_WITH(aio-support,
 	AC_MSG_RESULT(yes)
 	case "$host_os" in
 	*)
-		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
+		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$AIO_LIBS -lrt"])
+		AC_CHECK_LIB(aio,aio_read,[AIO_LIBS="$AIO_LIBS -laio"])
 		AC_CACHE_CHECK([for asynchronous io support],samba_cv_HAVE_AIO,[
 		aio_LIBS=$LIBS
-		LIBS="$LIBS -lrt"
+		LIBS=$AIO_LIBS
 		AC_TRY_LINK([#include <sys/types.h>
 #include <aio.h>],
 [ struct aiocb a; return aio_read(&a);],
@@ -4488,7 +4517,7 @@ samba_cv_HAVE_AIO=yes,samba_cv_HAVE_AIO=no)
 		LIBS=$aio_LIBS])
 		AC_CACHE_CHECK([for 64-bit asynchronous io support],samba_cv_HAVE_AIO64,[
 		aio_LIBS=$LIBS
-		LIBS="$LIBS -lrt"
+		LIBS=$AIO_LIBS
 		AC_TRY_LINK([#include <sys/types.h>
 #include <aio.h>],
 [ struct aiocb64 a; return aio_read64(&a);],
@@ -4497,10 +4526,10 @@ samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
 		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
 			AC_DEFINE(HAVE_AIOCB64,1,[Whether 64 bit aio is available])
 			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
-			LIBS="$LIBS -lrt"
+			LIBS=$AIO_LIBS
 		elif test x"$samba_cv_HAVE_AIO" = x"yes"; then
 			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
-			LIBS="$LIBS -lrt"
+			LIBS=$AIO_LIBS
 		fi
 
 		if test x"$samba_cv_HAVE_AIO" = x"yes"; then
@@ -5131,10 +5160,10 @@ SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
-SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_rid, sam/idmap_rid.o, "bin/idmap_rid.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_ad, sam/idmap_ad.o, "bin/idmap_ad.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/ldap.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/tdb.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_rid, sam/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_ad, sam/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP,sam/idmap.o)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
@@ -5165,7 +5194,7 @@ SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
-SMB_MODULE(vfs_catia, \$(VFS_AFSACL_OBJ), "bin/catia.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_catia, \$(VFS_CATIA_OBJ), "bin/catia.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])

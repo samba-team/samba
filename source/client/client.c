@@ -3326,6 +3326,7 @@ static int do_message_op(void)
 		POPT_TABLEEND
 	};
 	
+	load_case_tables();
 
 #ifdef KANJI
 	pstrcpy(term_code, KANJI);

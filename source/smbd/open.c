@@ -683,12 +683,17 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 
 	if (delay_it) {
 		BOOL ret;
+		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+
 		DEBUG(10, ("Sending break request to PID %s\n",
 			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
+
+		share_mode_entry_to_message(msg, exclusive);
+
 		become_root();
 		ret = message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
-				       exclusive, sizeof(*exclusive), True);
+				       msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
 		unbecome_root();
 		if (!ret) {
 			DEBUG(3, ("Could not send oplock break message\n"));
@@ -1127,8 +1132,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		   spurious oplock break. */
 
 		/* Now remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(NULL, state->dev, state->inode,
-					  fname);
+		lck = get_share_mode_lock(NULL, state->dev, state->inode, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
@@ -1338,7 +1342,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
-		lck = get_share_mode_lock(NULL, dev, inode, fname);
+		lck = get_share_mode_lock(NULL, dev, inode,
+					conn->connectpath,
+					fname);
 
 		if (lck == NULL) {
 			DEBUG(0, ("Could not get share mode lock\n"));
@@ -1537,7 +1543,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		dev = fsp->dev;
 		inode = fsp->inode;
 
-		lck = get_share_mode_lock(NULL, dev, inode, fname);
+		lck = get_share_mode_lock(NULL, dev, inode,
+					conn->connectpath,
+					fname);
 
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share mode lock for %s\n", fname));
@@ -1944,7 +1952,9 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->is_stat = False;
 	string_set(&fsp->fsp_name,fname);
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fname);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode,
+				conn->connectpath,
+				fname);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));

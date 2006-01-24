@@ -1436,8 +1436,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				p +=4;
 			}
 			SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
-			SIVAL(p,0,sbuf.st_dev); p += 4;
-			SIVAL(p,0,sbuf.st_ino); p += 4;
+			SIVAL(p,0,sbuf.st_ino); p += 4; /* FileIndexLow */
+			SIVAL(p,0,sbuf.st_dev); p += 4; /* FileIndexHigh */
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q, 0, len);
 			p += len; 
@@ -1486,8 +1486,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 			p += 26;
 			SSVAL(p,0,0); p += 2; /* Reserved ? */
-			SIVAL(p,0,sbuf.st_dev); p += 4;
-			SIVAL(p,0,sbuf.st_ino); p += 4;
+			SIVAL(p,0,sbuf.st_ino); p += 4; /* FileIndexLow */
+			SIVAL(p,0,sbuf.st_dev); p += 4; /* FileIndexHigh */
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
@@ -3224,8 +3224,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			   BasicFileInformationTest. -tpot */
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
-			SIVAL(pdata,0,sbuf.st_dev);
-			SIVAL(pdata,4,sbuf.st_ino);
+			SIVAL(pdata,0,sbuf.st_ino); /* FileIndexLow */
+			SIVAL(pdata,4,sbuf.st_dev); /* FileIndexHigh */
 			data_size = 8;
 			break;
 

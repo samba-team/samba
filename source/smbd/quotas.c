@@ -206,6 +206,8 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	uid_t euser_id;
 	gid_t egrp_id;
 
+	ZERO_STRUCT(D);
+
 	euser_id = geteuid();
 	egrp_id = getegid();
 

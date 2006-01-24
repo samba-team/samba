@@ -35,34 +35,6 @@ static BOOL name_is_local(const char *name)
 	return !(strchr_m(name, *lp_winbind_separator()));
 }
 
-/*****************************************************************
- Splits passed user or group name to domain and user/group name parts
- Returns True if name was splitted and False otherwise.
-*****************************************************************/
-
-BOOL split_domain_and_name(const char *name, char *domain, char* username)
-{
-	char *p = strchr(name,*lp_winbind_separator());
-	
-	
-	/* Parse a string of the form DOMAIN/user into a domain and a user */
-	DEBUG(10,("split_domain_and_name: checking whether name |%s| local or not\n", name));
-	
-	if (p) {
-		fstrcpy(username, p+1);
-		fstrcpy(domain, name);
-		domain[PTR_DIFF(p, name)] = 0;
-	} else if (lp_winbind_use_default_domain()) {
-		fstrcpy(username, name);
-		fstrcpy(domain, lp_workgroup());
-	} else {
-		return False;
-	}
-
-	DEBUG(10,("split_domain_and_name: all is fine, domain is |%s| and name is |%s|\n", domain, username));
-	return True;
-}
-
 /****************************************************************************
  Get a users home directory.
 ****************************************************************************/
@@ -697,7 +669,7 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups,
 			
 				if ( winbind_lookup_name(domain, groupname,
 							 &g_sid, &name_type) 
-					&& ( name_type==SID_NAME_DOM_GRP || 
+				     && ( name_type==SID_NAME_DOM_GRP || 
 					  (strequal(lp_workgroup(), domain) &&
 					   name_type==SID_NAME_ALIAS) ) )
 				{
@@ -744,9 +716,9 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
 
 	for (i=offset;i<(len-(N-1));i++) {
 		char c = s[i];
-		if (!islower((int)c))
+		if (!islower_ascii((int)c))
 			continue;
-		s[i] = toupper(c);
+		s[i] = toupper_ascii(c);
 		ret = uname_string_combinations2(s,i+1,fn,N-1);
 		if(ret)
 			return(ret);

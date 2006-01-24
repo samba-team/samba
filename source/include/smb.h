@@ -172,6 +172,9 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 /* turn a 7 bit character into a ucs2 character */
 #define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
+/* return an ascii version of a ucs2 character */
+#define UCS2_TO_CHAR(c) ((c) & 0xff)
+
 /* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
 				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
@@ -550,7 +553,7 @@ typedef struct connection_struct
 	/* following groups stuff added by ih */
 
 	/* This groups info is valid for the user that *opened* the connection */
-	int ngroups;
+	size_t ngroups;
 	gid_t *groups;
 	NT_USER_TOKEN *nt_user_token;
 	
@@ -655,9 +658,9 @@ struct share_mode_entry {
 	struct process_id pid;
 	uint16 op_mid;
 	uint16 op_type;
-	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	uint32_t share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-	uint32_t private_options;	/* NT Create options, but we only look at
+	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32 private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
 				 * smbstatus and swat */
@@ -687,6 +690,7 @@ Offset  Data			length.
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 48
 
 struct share_mode_lock {
+	const char *servicepath; /* canonicalized. */
 	const char *filename;
 	SMB_DEV_T dev;
 	SMB_INO_T ino;
@@ -1625,8 +1629,7 @@ struct pwd_info {
 
 };
 
-typedef struct user_struct
-{
+typedef struct user_struct {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */
 	uid_t uid; /* uid of a validated user */

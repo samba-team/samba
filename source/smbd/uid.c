@@ -107,19 +107,24 @@ static BOOL is_share_read_only_for_user(connection_struct *conn, user_struct *vu
 	str_list_copy(&list, lp_writelist(conn->service));
 	if (list) {
 		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: write list substitution failed\n"));
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: write "
+				  "list substitution failed\n"));
 		}
 		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: write list service substitution failed\n"));
+			DEBUG(0, ("is_share_read_only_for_user: ERROR: write "
+				  "list service substitution failed\n"));
 		}
-		if (user_in_list(vuser->user.unix_name, (const char **)list, vuser->groups, vuser->n_groups)) {
+		if (user_in_list(vuser->user.unix_name, (const char **)list,
+				 vuser->groups, vuser->n_groups)) {
 			read_only_ret = False;
 		}
 		str_list_free(&list);
 	}
 
-	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user %s\n",
-		service, read_only_ret ? "read-only" : "read-write", vuser->user.unix_name ));
+	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user "
+		  "%s\n", service,
+		  read_only_ret ? "read-only" : "read-write",
+		  vuser->user.unix_name ));
 
 	return read_only_ret;
 }
@@ -182,7 +187,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 /****************************************************************************
  Become the user of a connection number without changing the security context
- stack, but modify the currnet_user entries.
+ stack, but modify the current_user entries.
 ****************************************************************************/
 
 BOOL change_to_user(connection_struct *conn, uint16 vuid)

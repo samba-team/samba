@@ -130,9 +130,13 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
  			 */
  			schedule_deferred_open_smb_message(e->op_mid);
  		} else {
+			char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+
+			share_mode_entry_to_message(msg, e);
+
 			become_root();
  			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
- 					 e, sizeof(*e), True);
+ 					 msg, MSG_SMB_SHARE_MODE_ENTRY_SIZE, True);
 			unbecome_root();
  		}
  	}
@@ -194,7 +198,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_file: Could not get share mode lock for file %s\n", fsp->fsp_name));
@@ -229,20 +233,43 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 */
 
 	if (normal_close && delete_file) {
+		SMB_STRUCT_STAT sbuf;
+
 		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 			fsp->fsp_name));
-		if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
-			/*
-			 * This call can potentially fail as another smbd may have
-			 * had the file open with delete on close set and deleted
-			 * it when its last reference to this file went away. Hence
-			 * we log this but not at debug level zero.
-			 */
 
-		DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
-with error %s\n", fsp->fsp_name, strerror(errno) ));
+		/* We can only delete the file if the name we have
+		   is still valid and hasn't been renamed. */
+
+		if(SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) != 0) {
+			DEBUG(5,("close_file: file %s. Delete on close was set "
+				"and stat failed with error %s\n",
+				fsp->fsp_name, strerror(errno) ));
+		} else {
+			if(sbuf.st_dev != fsp->dev || sbuf.st_ino != fsp->inode) {
+				DEBUG(5,("close_file: file %s. Delete on close was set and "
+					"dev and/or inode does not match\n",
+					fsp->fsp_name ));
+				DEBUG(5,("close_file: file %s. stored dev = %x, inode = %.0f "
+					"stat dev = %x, inode = %.0f\n",
+					fsp->fsp_name,
+					(unsigned int)fsp->dev, (double)fsp->inode,
+					(unsigned int)sbuf.st_dev, (double)sbuf.st_ino ));
+
+			} else if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
+				/*
+				 * This call can potentially fail as another smbd may have
+				 * had the file open with delete on close set and deleted
+				 * it when its last reference to this file went away. Hence
+				 * we log this but not at debug level zero.
+				 */
+
+				DEBUG(5,("close_file: file %s. Delete on close was set "
+					"and unlink failed with error %s\n",
+					fsp->fsp_name, strerror(errno) ));
+			}
+			process_pending_change_notify_queue((time_t)0);
 		}
-		process_pending_change_notify_queue((time_t)0);
 	}
 
 	talloc_free(lck);
@@ -307,7 +334,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));

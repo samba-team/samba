@@ -717,6 +717,8 @@ void build_options(BOOL screen);
 	{ NULL }
 	};
 
+	load_case_tables();
+
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
 #endif
@@ -740,8 +742,6 @@ void build_options(BOOL screen);
 #endif
 
 	sec_init();
-
-	load_case_tables();
 
 	set_remote_machine_name("smbd", False);
 
@@ -825,8 +825,10 @@ void build_options(BOOL screen);
 
 	init_structs();
 
-	if (!init_guest_info())
+	if (!init_guest_info()) {
+		DEBUG(0,("ERROR: failed to setup guest info.\n"));
 		return -1;
+	}
 
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {

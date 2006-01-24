@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   Copyright (C) Jean François Micouleau	1998
+   Copyright (C) Jean FranÃ§ois Micouleau	1998
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
@@ -3638,6 +3638,10 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		goto done;
 	}
 
+	if (msg != NULL) {
+		ldap_msgfree(msg);
+	}
+
 	/* Same game for groups */
 
 	{
@@ -4071,6 +4075,9 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 	vals = ldap_get_values(ld, entry, "sambaGroupType");
 	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(5, ("\"sambaGroupType\" not found\n"));
+		if (vals != NULL) {
+			ldap_value_free(vals);
+		}
 		return False;
 	}
 
@@ -4078,8 +4085,11 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 
 	if ((state->group_type != 0) &&
 	    ((state->group_type != group_type))) {
+		ldap_value_free(vals);
 		return False;
 	}
+
+	ldap_value_free(vals);
 
 	/* display name is the NT group name */
 
@@ -4120,6 +4130,9 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 	vals = ldap_get_values(ld, entry, "sambaSid");
 	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(0, ("\"objectSid\" not found\n"));
+		if (vals != NULL) {
+			ldap_value_free(vals);
+		}
 		return False;
 	}
 

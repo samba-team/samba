@@ -28,6 +28,8 @@
 
 #define toupper_ascii(x)	toupper(x)
 #define tolower_ascii(x)	tolower(x)
+#define isupper_ascii(x)	isupper(x)
+#define islower_ascii(x)	islower(x)
 
 
 /* Misc bit macros */

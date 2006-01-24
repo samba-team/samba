@@ -201,8 +201,8 @@ int StrCaseCmp(const char *s, const char *t)
 			/* not ascii anymore, do it the hard way from here on in */
 			break;
 
-		us = toupper(*ps);
-		ut = toupper(*pt);
+		us = toupper_ascii(*ps);
+		ut = toupper_ascii(*pt);
 		if (us == ut)
 			continue;
 		else if (us < ut)
@@ -309,7 +309,7 @@ int strwicmp(const char *psz1, const char *psz2)
 			psz1++;
 		while (isspace((int)*psz2))
 			psz2++;
-		if (toupper(*psz1) != toupper(*psz2) || *psz1 == '\0'
+		if (toupper_ascii(*psz1) != toupper_ascii(*psz2) || *psz1 == '\0'
 		    || *psz2 == '\0')
 			break;
 		psz1++;
@@ -680,7 +680,7 @@ char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, con
 
 	for(i = 0; i < len; i++) {
 		int val = (src[i] & 0xff);
-		if (isupper(val) || islower(val) || isdigit(val) || strchr_m(other_safe_chars, val))
+		if (isupper_ascii(val) || islower_ascii(val) || isdigit(val) || strchr_m(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = '_';
@@ -774,12 +774,12 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 			continue;
 		}
 
-		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
+		if (!(p1 = strchr_m(hexchars, toupper_ascii(strhex[i]))))
 			break;
 
 		i++; /* next hex digit */
 
-		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
+		if (!(p2 = strchr_m(hexchars, toupper_ascii(strhex[i]))))
 			break;
 
 		/* get the two nybbles */
@@ -1003,7 +1003,8 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
  as string.
 **/
 
-char *realloc_string_sub(char *string, const char *pattern, const char *insert)
+char *realloc_string_sub(char *string, const char *pattern,
+			 const char *insert)
 {
 	char *p, *in;
 	char *s;
@@ -1046,6 +1047,77 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 			char *t = SMB_REALLOC(string, ls + ld + 1);
 			if (!t) {
 				DEBUG(0, ("realloc_string_sub: out of memory!\n"));
+				SAFE_FREE(in);
+				return NULL;
+			}
+			string = t;
+			p = t + offset + (p - s);
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
+		memcpy(p, in, li);
+		s = p + li;
+		ls += ld;
+	}
+	SAFE_FREE(in);
+	return string;
+}
+
+/* Same as string_sub, but returns a talloc'ed string */
+
+char *talloc_string_sub(TALLOC_CTX *mem_ctx, const char *src,
+			const char *pattern, const char *insert)
+{
+	char *p, *in;
+	char *s;
+	char *string;
+	ssize_t ls,lp,li,ld, i;
+
+	if (!insert || !pattern || !*pattern || !src || !*src)
+		return NULL;
+
+	string = talloc_strdup(mem_ctx, src);
+	if (string == NULL) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return NULL;
+	}
+
+	s = string;
+
+	in = SMB_STRDUP(insert);
+	if (!in) {
+		DEBUG(0, ("talloc_string_sub: out of memory!\n"));
+		return NULL;
+	}
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
+	ld = li - lp;
+	for (i=0;i<li;i++) {
+		switch (in[i]) {
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
+			case '$':
+			case '%':
+			case '\r':
+			case '\n':
+				in[i] = '_';
+			default:
+				/* ok */
+				break;
+		}
+	}
+	
+	while ((p = strstr_m(s,pattern))) {
+		if (ld > 0) {
+			int offset = PTR_DIFF(s,string);
+			char *t = TALLOC_REALLOC(mem_ctx, string, ls + ld + 1);
+			if (!t) {
+				DEBUG(0, ("talloc_string_sub: out of "
+					  "memory!\n"));
 				SAFE_FREE(in);
 				return NULL;
 			}
@@ -1438,7 +1510,7 @@ void strlower_m(char *s)
 	   (ie. they match for the first 128 chars) */
 
 	while (*s && !(((unsigned char)s[0]) & 0x80)) {
-		*s = tolower((unsigned char)*s);
+		*s = tolower_ascii((unsigned char)*s);
 		s++;
 	}
 
@@ -1472,7 +1544,7 @@ void strupper_m(char *s)
 	   (ie. they match for the first 128 chars) */
 
 	while (*s && !(((unsigned char)s[0]) & 0x80)) {
-		*s = toupper((unsigned char)*s);
+		*s = toupper_ascii((unsigned char)*s);
 		s++;
 	}
 

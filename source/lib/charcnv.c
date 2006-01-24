@@ -747,7 +747,7 @@ char *strdup_upper(const char *s)
 	while (1) {
 		if (*p & 0x80)
 			break;
-		*q++ = toupper(*p);
+		*q++ = toupper_ascii(*p);
 		if (!*p)
 			break;
 		p++;
@@ -781,7 +781,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	smb_ucs2_t *buffer = NULL;
 	
 	size = convert_string_allocate(NULL, CH_UNIX, CH_UCS2, src, srclen,
-				       (void **) &buffer, True);
+				       (void **)(void *)&buffer, True);
 	if (size == (size_t)-1 || !buffer) {
 		smb_panic("failed to create UCS2 buffer");
 	}

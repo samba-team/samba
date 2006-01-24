@@ -573,7 +573,7 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 
 	/* find the connection policy handle. */
 	
-	if ( !find_policy_by_hnd(p, &q_u->pol, (void**)&info) )
+	if ( !find_policy_by_hnd(p, &q_u->pol, (void**)(void *)&info) )
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function( info->acc_granted, 
@@ -627,7 +627,7 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->user_pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->user_pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!sid_check_is_in_our_domain(&info->sid))
@@ -665,7 +665,7 @@ static BOOL get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
 	struct samr_info *info = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, pol, (void **)&info))
+	if (!find_policy_by_hnd(p, pol, (void **)(void *)&info))
 		return False;
 
 	if (!info)
@@ -803,7 +803,7 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
  	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
@@ -936,7 +936,7 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	r_u->status = access_check_samr_function(info->acc_granted,
@@ -995,7 +995,7 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	uint32 num_aliases = 0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	r_u->status = access_check_samr_function(info->acc_granted,
@@ -1061,7 +1061,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	r_u->status = NT_STATUS_UNSUCCESSFUL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/*
@@ -1686,6 +1686,41 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
 
 	return NT_STATUS_OK;
 }
+
+/*************************************************************************
+ get_user_info_9. Only gives out primary group SID.
+ *************************************************************************/
+static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_SID *user_sid)
+{
+	SAM_ACCOUNT *smbpass=NULL;
+	BOOL ret;
+	NTSTATUS nt_status;
+
+	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(smbpass, user_sid);
+	unbecome_root();
+
+	if (ret==False) {
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
+
+	ZERO_STRUCTP(id9);
+	init_sam_user_info9(id9, pdb_get_group_rid(smbpass) );
+
+	pdb_free_sam(&smbpass);
+
+	return NT_STATUS_OK;
+}
+
 /*************************************************************************
  get_user_info_16. Safe. Only gives out acb bits.
  *************************************************************************/
@@ -1857,7 +1892,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	r_u->status=NT_STATUS_OK;
 
 	/* search for the handle */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	domain_sid = info->sid;
@@ -1878,6 +1913,8 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	ctr->switch_value = q_u->switch_value;
 
+	DEBUG(5,("_samr_query_userinfo: user info level: %d\n", q_u->switch_value));
+
 	switch (q_u->switch_value) {
 	case 7:
 		ctr->info.id7 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_7);
@@ -1885,6 +1922,14 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 			return NT_STATUS_NO_MEMORY;
 
 		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_7(p->mem_ctx, ctr->info.id7, &info->sid)))
+			return r_u->status;
+		break;
+	case 9:
+		ctr->info.id9 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_9);
+		if (ctr->info.id9 == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_9(p->mem_ctx, ctr->info.id9, &info->sid)))
 			return r_u->status;
 		break;
 	case 16:
@@ -2094,7 +2139,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 	
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info)) {
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
@@ -2587,7 +2632,7 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 
 	r_u->status = NT_STATUS_OK;
 
-	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)&info))
+	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* win9x user manager likes to use SA_RIGHT_SAM_ENUM_DOMAINS here.  
@@ -2663,7 +2708,7 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 
 	r_u->status = NT_STATUS_OK;
 	
-	if (!find_policy_by_hnd(p, &q_u->pol, (void**)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void**)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 	
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, SA_RIGHT_SAM_ENUM_DOMAINS, "_samr_enum_domains"))) {
@@ -3364,7 +3409,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	DEBUG(5,("_samr_query_useraliases: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 		
 	ntstatus1 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_LOOKUP_ALIAS_BY_MEM, "_samr_query_useraliases");
@@ -4652,7 +4697,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	switch (q_u->switch_value) {

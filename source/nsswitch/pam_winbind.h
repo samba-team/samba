@@ -84,6 +84,8 @@ do {                             \
 #define WINBIND__OLD_PASSWORD (1<<5)
 #define WINBIND_REQUIRED_MEMBERSHIP (1<<6)
 
+#define PAM_WINBIND_NEW_AUTHTOK_REQD "PAM_WINBIND_NEW_AUTHTOK_REQD"
+
 /*
  * here is the string to inform the user that the new passwords they
  * typed were not the same.
