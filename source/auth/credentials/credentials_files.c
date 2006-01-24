@@ -267,17 +267,12 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		
 			cli_credentials_set_nt_hash(cred, &hash, CRED_SPECIFIED);
 		} else {
-		
-			DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
-				  cli_credentials_get_domain(cred)));
-
-			/* set anonymous as the fallback, if the machine account won't work */
-			cli_credentials_set_anonymous(cred);
-
-			talloc_free(mem_ctx);
-			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 		}
+	} else {
+		cli_credentials_set_password(cred, password, CRED_SPECIFIED);
 	}
+
 	
 	domain = ldb_msg_find_string(msgs[0], "flatname", NULL);
 	if (domain) {
@@ -290,9 +285,6 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	}
 
 	cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
-	if (password) {
-		cli_credentials_set_password(cred, password, CRED_SPECIFIED);
-	}
 
 	cli_credentials_set_kvno(cred, ldb_msg_find_int(msgs[0], "msDS-KeyVersionNumber", 0));
 
@@ -417,13 +409,14 @@ NTSTATUS cli_credentials_update_all_keytabs(TALLOC_CTX *parent_ctx)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* search for the secret record */
+	/* search for the secret record, but only of things we can
+	 * actually update */
 	ldb_ret = gendb_search(ldb,
 			       mem_ctx, NULL,
 			       &msgs, attrs,
-			       "objectClass=kerberosSecret");
+			       "(&(objectClass=kerberosSecret)(|(secret=*)(ntPwdHash=*)))");
 	if (ldb_ret == -1) {
-		DEBUG(1, ("Error looking for kerberos type secrets to push into a keytab"));
+		DEBUG(1, ("Error looking for kerberos type secrets to push into a keytab:: %s", ldb_errstring(ldb)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -442,15 +435,13 @@ NTSTATUS cli_credentials_update_all_keytabs(TALLOC_CTX *parent_ctx)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to read secrets for keytab update for %s\n", 
 				  filter));
-			talloc_free(mem_ctx);
-			return status;
+			continue;
 		} 
 		ret = cli_credentials_update_keytab(creds);
 		if (ret != 0) {
 			DEBUG(1, ("Failed to update keytab for %s\n", 
 				  filter));
-			talloc_free(mem_ctx);
-			return NT_STATUS_UNSUCCESSFUL;
+			continue;
 		}
 	}
 	return NT_STATUS_OK;
