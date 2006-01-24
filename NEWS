@@ -242,7 +242,6 @@ The following parameters have been removed:
 - domain master
 - browse list
 - enhanced browsing
-- dns proxy
 - wins proxy
 - wins hook
 - wins partners
