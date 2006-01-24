@@ -353,11 +353,134 @@ struct winsdb_addr **winsdb_addr_list_make(TALLOC_CTX *mem_ctx)
 	return addresses;
 }
 
-struct winsdb_addr **winsdb_addr_list_add(struct winsdb_addr **addresses, const char *address,
-					  const char *wins_owner, time_t expire_time)
+static int winsdb_addr_sort_list (struct winsdb_addr **p1, struct winsdb_addr **p2, void *opaque)
 {
-	size_t len = winsdb_addr_list_length(addresses);
+	struct winsdb_addr *a1 = talloc_get_type(*p1, struct winsdb_addr);
+	struct winsdb_addr *a2 = talloc_get_type(*p2, struct winsdb_addr);
+	struct winsdb_handle *h= talloc_get_type(opaque, struct winsdb_handle);
+	BOOL a1_owned = False;
+	BOOL a2_owned = False;
 
+	/*
+	 * first the owned addresses with the newest to the oldest address
+	 * then the replica addresses with the newest to the oldest address
+	 */
+	if (a2->expire_time != a1->expire_time) {
+		return a2->expire_time - a1->expire_time;
+	}
+
+	if (strcmp(a2->wins_owner, h->local_owner) == 0) {
+		a2_owned = True;
+	}
+
+	if (strcmp(a1->wins_owner, h->local_owner) == 0) {
+		a1_owned = True;
+	}
+
+	return a2_owned - a1_owned;
+}
+
+struct winsdb_addr **winsdb_addr_list_add(struct winsdb_handle *h, const struct winsdb_record *rec,
+					  struct winsdb_addr **addresses, const char *address,
+					  const char *wins_owner, time_t expire_time,
+					  BOOL is_name_registration)
+{
+	struct winsdb_addr *old_addr = NULL;
+	size_t len = 0;
+	size_t i;
+	BOOL found_old_replica = False;
+
+	/*
+	 * count the addresses and maybe
+	 * find an old entry for the new address
+	 */
+	for (i=0; addresses[i]; i++) {
+		if (old_addr) continue;
+		if (strcmp(addresses[i]->address, address) == 0) {
+			old_addr = addresses[i];
+		}
+	}
+	len = i;
+
+	/*
+	 * the address is already there
+	 * and we can replace it
+	 */
+	if (old_addr) {
+		goto remove_old_addr;
+	}
+
+	/*
+	 * if we don't have 25 addresses already,
+	 * we can just add the new address
+	 */
+	if (len < 25) {
+		goto add_new_addr;
+	}
+
+	/*
+	 * if we haven't found the address,
+	 * and we have already have 25 addresses
+	 * if so then we need to do the following:
+	 * - if it isn't a name registration, then just ignore the new address
+	 * - if it is a name registration, then first search for 
+	 *   the oldest replica and if there's no replica address
+	 *   search the oldest owned address
+	 */
+	if (!is_name_registration) {
+		return addresses;
+	}
+
+	/*
+	 * find the oldest replica address, if there's no replica
+	 * record at all, find the oldest owned address
+	 */
+	for (i=0; addresses[i]; i++) {
+		BOOL cur_is_replica = False;
+		/* find out if the current address is a replica */
+		if (strcmp(addresses[i]->wins_owner, h->local_owner) != 0) {
+			cur_is_replica = True;
+		}
+
+		/*
+		 * if we already found a replica address and the current address
+		 * is not a replica, then skip it
+		 */
+		if (found_old_replica && !cur_is_replica) continue;
+
+		/*
+		 * if we found the first replica address, reset the address
+		 * that would be replaced
+		 */
+		if (!found_old_replica && cur_is_replica) {
+			found_old_replica = True;
+			old_addr = addresses[i];
+			continue;
+		}
+
+		/*
+		 * if the first address isn't a replica, just start with 
+		 * the first one
+		 */
+		if (!old_addr) {
+			old_addr = addresses[i];
+			continue;
+		}
+
+		/*
+		 * see if we find an older address
+		 */
+		if (addresses[i]->expire_time < old_addr->expire_time) {
+			old_addr = addresses[i];
+			continue;
+		}
+	}
+
+remove_old_addr:
+	winsdb_addr_list_remove(addresses, old_addr->address);
+	len --;
+
+add_new_addr:
 	addresses = talloc_realloc(addresses, addresses, struct winsdb_addr *, len + 2);
 	if (!addresses) return NULL;
 
@@ -383,6 +506,8 @@ struct winsdb_addr **winsdb_addr_list_add(struct winsdb_addr **addresses, const 
 
 	addresses[len+1] = NULL;
 
+	ldb_qsort(addresses, len+1 , sizeof(addresses[0]), h, (ldb_qsort_cmp_fn_t)winsdb_addr_sort_list);
+
 	return addresses;
 }
 
@@ -395,7 +520,7 @@ void winsdb_addr_list_remove(struct winsdb_addr **addresses, const char *address
 			break;
 		}
 	}
-	if (!addresses[i]) return;
+	if (addresses[i]) talloc_free(addresses[i]);
 
 	for (; addresses[i]; i++) {
 		addresses[i] = addresses[i+1];

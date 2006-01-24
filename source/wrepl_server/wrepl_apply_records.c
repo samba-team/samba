@@ -686,10 +686,12 @@ static NTSTATUS r_do_add(struct wreplsrv_partner *partner,
 
 	for (i=0; i < replica->num_addresses; i++) {
 		/* TODO: find out if rec->expire_time is correct here */
-		rec->addresses = winsdb_addr_list_add(rec->addresses,
+		rec->addresses = winsdb_addr_list_add(partner->service->wins_db,
+						      rec, rec->addresses,
 						      replica->addresses[i].address,
 						      replica->addresses[i].owner,
-						      rec->expire_time);
+						      rec->expire_time,
+						      False);
 		NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
 	}
 
@@ -729,10 +731,12 @@ static NTSTATUS r_do_replace(struct wreplsrv_partner *partner,
 
 	for (i=0; i < replica->num_addresses; i++) {
 		/* TODO: find out if rec->expire_time is correct here */
-		rec->addresses = winsdb_addr_list_add(rec->addresses,
+		rec->addresses = winsdb_addr_list_add(partner->service->wins_db,
+						      rec, rec->addresses,
 						      replica->addresses[i].address,
 						      replica->addresses[i].owner,
-						      rec->expire_time);
+						      rec->expire_time,
+						      False);
 		NT_STATUS_HAVE_NO_MEMORY(rec->addresses);
 	}
 
@@ -829,11 +833,12 @@ static NTSTATUS r_do_mhomed_merge(struct wreplsrv_partner *partner,
 	merge->registered_by = NULL;
 
 	for (i=0; i < replica->num_addresses; i++) {
-		/* TODO: find out if rec->expire_time is correct here */
-		merge->addresses = winsdb_addr_list_add(merge->addresses,
+		merge->addresses = winsdb_addr_list_add(partner->service->wins_db,
+							merge, merge->addresses,
 							replica->addresses[i].address,
 							replica->addresses[i].owner,
-							merge->expire_time);
+							merge->expire_time,
+							False);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
@@ -849,11 +854,12 @@ static NTSTATUS r_do_mhomed_merge(struct wreplsrv_partner *partner,
 		}
 		if (found) continue;
 
-		/* TODO: find out if rec->expire_time is correct here */
-		merge->addresses = winsdb_addr_list_add(merge->addresses,
+		merge->addresses = winsdb_addr_list_add(partner->service->wins_db,
+							merge, merge->addresses,
 							rec->addresses[i]->address,
 							rec->addresses[i]->wins_owner,
-							merge->expire_time);
+							rec->addresses[i]->expire_time,
+							False);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
@@ -1198,34 +1204,36 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 			break;
 		}
 
-		/* if it's also in the replica, it'll added later */
-		if (found) continue;
-
 		/* 
 		 * if the address isn't in the replica and is owned by replicas owner,
 		 * it won't be added to the merged record
 		 */
-		if (strcmp(rec->addresses[i]->wins_owner, owner->address) == 0) {
+		if (!found && strcmp(rec->addresses[i]->wins_owner, owner->address) == 0) {
 			changed_old_addrs = True;
 			continue;
 		}
 
 		/*
-		 * add the address to the merge result, with the old owner and expire_time
+		 * add the address to the merge result, with the old owner and expire_time,
+		 * the owner and expire_time will be overwritten later if the address is
+		 * in the replica too
 		 */
-		merge->addresses = winsdb_addr_list_add(merge->addresses,
+		merge->addresses = winsdb_addr_list_add(partner->service->wins_db,
+							merge, merge->addresses,
 							rec->addresses[i]->address,
 							rec->addresses[i]->wins_owner,
-							rec->addresses[i]->expire_time);
+							rec->addresses[i]->expire_time,
+							False);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 
 	for (i=0; i < replica->num_addresses; i++) {
-		/* TODO: find out if rec->expire_time is correct here */
-		merge->addresses = winsdb_addr_list_add(merge->addresses,
+		merge->addresses = winsdb_addr_list_add(partner->service->wins_db,
+							merge, merge->addresses,
 							replica->addresses[i].address,
 							replica->addresses[i].owner,
-							merge->expire_time);
+							merge->expire_time,
+							False);
 		NT_STATUS_HAVE_NO_MEMORY(merge->addresses);
 	}
 

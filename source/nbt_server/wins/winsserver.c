@@ -90,10 +90,12 @@ static uint8_t wins_register_new(struct nbt_name_socket *nbtsock,
 	rec.addresses		= winsdb_addr_list_make(packet);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
-	rec.addresses     = winsdb_addr_list_add(rec.addresses,
+	rec.addresses     = winsdb_addr_list_add(winssrv->wins_db,
+						 &rec, rec.addresses,
 						 address,
 						 winssrv->wins_db->local_owner,
-						 rec.expire_time);
+						 rec.expire_time,
+						 True);
 	if (rec.addresses == NULL) return NBT_RCODE_SVR;
 
 	DEBUG(4,("WINS: accepted registration of %s with address %s\n",
@@ -123,8 +125,13 @@ static uint8_t wins_update_ttl(struct nbt_name_socket *nbtsock,
 	rec->registered_by = src->addr;
 
 	if (winsdb_addr) {
-		winsdb_addr->wins_owner  = winssrv->wins_db->local_owner;
-		winsdb_addr->expire_time = rec->expire_time;
+		rec->addresses = winsdb_addr_list_add(winssrv->wins_db,
+						      rec, rec->addresses,
+						      winsdb_addr->address,
+						      winssrv->wins_db->local_owner,
+						      rec->expire_time,
+						      True);
+		if (rec->addresses == NULL) return NBT_RCODE_SVR;
 	}
 
 	if (strcmp(winssrv->wins_db->local_owner, rec->wins_owner) != 0) {
@@ -154,10 +161,12 @@ static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock,
 	rec->expire_time   = time(NULL) + ttl;
 	rec->registered_by = src->addr;
 
-	rec->addresses     = winsdb_addr_list_add(rec->addresses,
+	rec->addresses     = winsdb_addr_list_add(winssrv->wins_db,
+						  rec, rec->addresses,
 						  address,
 						  winssrv->wins_db->local_owner,
-						  rec->expire_time);
+						  rec->expire_time,
+						  True);
 	if (rec->addresses == NULL) return NBT_RCODE_SVR;
 
 	DEBUG(5,("WINS: sgroup merge of %s at %s\n",
@@ -244,18 +253,25 @@ static void wins_wack_allow(struct wack_state *s)
 			break;
 		}
 		if (found) {
-			rec->addresses[i]->wins_owner = s->winssrv->wins_db->local_owner;
-			rec->addresses[i]->expire_time = rec->expire_time;
+			rec->addresses = winsdb_addr_list_add(s->winssrv->wins_db,
+							      rec, rec->addresses,
+							      s->reg_address,
+							      s->winssrv->wins_db->local_owner,
+							      rec->expire_time,
+							      True);
+			if (rec->addresses == NULL) goto failed;
 			continue;
 		}
 
 		winsdb_addr_list_remove(rec->addresses, rec->addresses[i]->address);
 	}
 
-	rec->addresses = winsdb_addr_list_add(rec->addresses,
+	rec->addresses = winsdb_addr_list_add(s->winssrv->wins_db,
+					      rec, rec->addresses,
 					      s->reg_address,
 					      s->winssrv->wins_db->local_owner,
-					      rec->expire_time);
+					      rec->expire_time,
+					      True);
 	if (rec->addresses == NULL) goto failed;
 
 	/* if we have more than one address, this becomes implicit a MHOMED record */
@@ -623,16 +639,24 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	if (addresses_1b && addresses_1b[0]) {
 		const char **addresses_1c = addresses;
 		uint32_t i;
+		uint32_t num_addrs;
 
 		addresses = str_list_add(NULL, addresses_1b[0]);
 		if (!addresses) {
 			goto notfound;
 		}
 		talloc_steal(packet, addresses);
+		num_addrs = 1;
 
 		for (i=0; addresses_1c[i]; i++) {
 			if (strcmp(addresses_1b[0], addresses_1c[i]) == 0) continue;
 
+			/*
+			 * stop when we already have 25 addresses
+			 */
+			if (num_addrs >= 25) break;
+
+			num_addrs++;			
 			addresses = str_list_add(addresses, addresses_1c[i]);
 			if (!addresses) {
 				goto notfound;
@@ -643,7 +667,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	if (rec->type == WREPL_TYPE_SGROUP) {
 		nb_flags |= NBT_NM_GROUP;
 	} else {
-		nb_flags |= (rec->node <<13);		
+		nb_flags |= (rec->node <<13);
 	}
 
 found:
@@ -705,7 +729,7 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 	if (!winsdb_addr_list_check(rec->addresses, src->addr)) {
 		int i;
 		DEBUG(4,("WINS: silently ignoring attempted name release on %s from %s\n", nbt_name_string(rec, rec->name), src->addr));
-		DEBUGADD(4, ("Registered Addressss: \n"));
+		DEBUGADD(4, ("Registered Addresses: \n"));
 		for (i=0; rec->addresses && rec->addresses[i]; i++) {
 			DEBUGADD(4, ("%s\n", rec->addresses[i]->address));
 		}
