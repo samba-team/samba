@@ -24,24 +24,72 @@
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
+#include "system/filesys.h"
 
 static const char *wins_hook_action_string(enum wins_hook_action action)
 {
 	switch (action) {
-	case WINS_HOOK_ADD:	return "WINS_HOOK_ADD";
-	case WINS_HOOK_MODIFY:	return "WINS_HOOK_MODIFY";
-	case WINS_HOOK_DELETE:	return "WINS_HOOK_DELETE";
+	case WINS_HOOK_ADD:	return "add";
+	case WINS_HOOK_MODIFY:	return "refresh";
+	case WINS_HOOK_DELETE:	return "delete";
 	}
 
-	return "WINS_HOOK_ACTION_UNKNOWN";
+	return "unknown";
 }
 
-void wins_hook(struct winsdb_handle *h, struct winsdb_record *rec, enum wins_hook_action action)
+void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec, enum wins_hook_action action)
 {
 	const char *script = lp_wins_hook();
+	uint32_t i, length;
+	int child;
+	char *cmd = NULL;
+	TALLOC_CTX *tmp_mem = NULL;
+
 	if (!script || !script[0]) return;
 
-	DEBUG(0,("TODO: call wins hook '%s' '%s' for name '%s'\n",
-		script, wins_hook_action_string(action),
-		nbt_name_string(rec, rec->name)));
+	tmp_mem = talloc_new(h);
+	if (!tmp_mem) goto failed;
+
+	length = winsdb_addr_list_length(rec->addresses);
+
+	if (action == WINS_HOOK_MODIFY && length < 1) {
+		action = WINS_HOOK_DELETE;
+	}
+
+	cmd = talloc_asprintf(tmp_mem,
+			      "%s %s %s %02x %ld",
+			      script,
+			      wins_hook_action_string(action),
+			      rec->name->name,
+			      rec->name->type,
+			      rec->expire_time);
+	if (!cmd) goto failed;
+
+	for (i=0; rec->addresses[i]; i++) {
+		cmd = talloc_asprintf_append(cmd, " %s", rec->addresses[i]->address);
+		if (!cmd) goto failed;
+	}
+
+	DEBUG(10,("call wins hook '%s'\n", cmd));
+
+	/* signal handling in posix really sucks - doing this in a library
+	   affects the whole app, but what else to do?? */
+	signal(SIGCHLD, SIG_IGN);
+
+	child = fork();
+	if (child == (pid_t)-1) {
+		goto failed;
+	}
+
+	if (child == 0) {
+/* TODO: close file handles */
+		execl("/bin/sh", "sh", "-c", cmd, NULL);
+		_exit(0);
+	}
+
+	talloc_free(tmp_mem);
+	return;
+failed:
+	talloc_free(tmp_mem);
+	DEBUG(0,("FAILED: calling wins hook '%s'\n", script));
 }
