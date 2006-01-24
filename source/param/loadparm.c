@@ -307,6 +307,7 @@ typedef struct {
 	BOOL bDeferSharingViolations;
 	BOOL bEnablePrivileges;
 	BOOL bASUSupport;
+	BOOL bUsershareOwnerOnly;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -1226,10 +1227,11 @@ static struct parm_struct parm_table[] = {
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"usershare max shares", P_INTEGER, P_GLOBAL, &Globals.iUsershareMaxShares, NULL, NULL, FLAG_ADVANCED},
+	{"usershare owner only", P_BOOL, P_GLOBAL, &Globals.bUsershareOwnerOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"usershare path", P_STRING, P_GLOBAL, &Globals.szUsersharePath, NULL, NULL, FLAG_ADVANCED},
-	{"usershare template share", P_STRING, P_GLOBAL, &Globals.szUsershareTemplateShare, NULL, NULL, FLAG_ADVANCED},
 	{"usershare prefix allow list", P_LIST, P_GLOBAL, &Globals.szUsersharePrefixAllowList, NULL, NULL, FLAG_ADVANCED}, 
 	{"usershare prefix deny list", P_LIST, P_GLOBAL, &Globals.szUsersharePrefixDenyList, NULL, NULL, FLAG_ADVANCED}, 
+	{"usershare template share", P_STRING, P_GLOBAL, &Globals.szUsershareTemplateShare, NULL, NULL, FLAG_ADVANCED},
 	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE }, 
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1655,6 +1657,8 @@ static void init_globals(void)
 	string_set(&Globals.szUsersharePath, s);
 	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.iUsershareMaxShares = 0;
+	/* By default disallow sharing of directories not owned by the sharer. */
+	Globals.bUsershareOwnerOnly = True;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1859,6 +1863,7 @@ FN_GLOBAL_LIST(lp_usershare_prefix_deny_list, &Globals.szUsersharePrefixDenyList
 
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
+FN_GLOBAL_BOOL(lp_usershare_owner_only, &Globals.bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_reset_on_zero_vc, &Globals.bResetOnZeroVC)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
@@ -4394,32 +4399,24 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 		return USERSHARE_POSIX_ERR;
 	}
 
+	sys_closedir(dp);
+
 	if (!S_ISDIR(sbuf.st_mode)) {
 		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
 			servicename, sharepath ));
-		sys_closedir(dp);
 		return USERSHARE_PATH_NOT_DIRECTORY;
 	}
 
-#if 0
-	/* Owner can always share. */
-	if (sbuf.st_uid == psbuf->st_uid) {
-		sys_closedir(dp);
-		return True;
+	/* Check if sharing is restricted to owner-only. */
+	/* psbuf is the stat of the usershare definition file,
+	   sbuf is the stat of the target directory to be shared. */
+
+	if (lp_usershare_owner_only()) {
+		/* root can share anything. */
+		if ((psbuf->st_uid != 0) && (sbuf.st_uid != psbuf->st_uid)) {
+			return USERSHARE_PATH_NOT_ALLOWED;
+		}
 	}
-
-	/* We could check if the user requesting the share is in the
-	   owning group of the directory. */
-
-	username = uidtoname(psbuf->st_uid);
-	owning_group_name = gidtoname(sbuf.st_gid);
-
-	getgroups_user();
-
-	user_in_group(u_name, g_name);
-#endif
-
-	sys_closedir(dp);
 
 	return USERSHARE_OK;
 }

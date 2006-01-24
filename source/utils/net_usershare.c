@@ -469,6 +469,7 @@ static int net_usershare_add(int argc, const char **argv)
 	int tmpfd;
 	const char *pacl;
 	size_t to_write;
+	uid_t myeuid = geteuid();
 
 	us_comment = "";
 	arg_acl = "S-1-1-0:R";
@@ -537,6 +538,17 @@ static int net_usershare_add(int argc, const char **argv)
 
 	if (!S_ISDIR(sbuf.st_mode)) {
 		d_fprintf(stderr, "net usershare add: path %s is not a directory.\n",
+			us_path );
+		SAFE_FREE(sharename);
+		return -1;
+	}
+
+	/* If we're not root, check if we're restricted to sharing out directories
+	   that we own only. */
+
+	if ((myeuid != 0) && lp_usershare_owner_only() && (myeuid != sbuf.st_uid)) {
+		d_fprintf(stderr, "net usershare add: cannot share path %s as "
+			"we are restricted to only sharing directories we own.\n",
 			us_path );
 		SAFE_FREE(sharename);
 		return -1;
@@ -799,8 +811,16 @@ int net_usershare(int argc, const char **argv)
 
 	dp = sys_opendir(lp_usershare_path());
 	if (!dp) {
+		int err = errno;
 		d_fprintf(stderr, "net usershare: cannot open usershare directory %s. Error %s\n",
-			lp_usershare_path(), strerror(errno) );
+			lp_usershare_path(), strerror(err) );
+		if (err == EACCES) {
+			d_fprintf(stderr, "You do not have permission to create a usershare. Ask your "
+				"administrator to grant you permissions to create a share.\n");
+		} else if (err == ENOENT) {
+			d_fprintf(stderr, "Please ask your system administrator to "
+				"enable user sharing.\n");
+		}
 		return -1;
 	}
 	sys_closedir(dp);
