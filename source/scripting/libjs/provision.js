@@ -608,13 +608,13 @@ function provision_validate(subobj, message)
 	}
 
 
-	if (lp.get("workgroup") != subobj.DOMAIN) {
+	if (strupper(lp.get("workgroup")) != strupper(subobj.DOMAIN)) {
 		message("workgroup '%s' in smb.conf must match chosen domain '%s'\n",
 			lp.get("workgroup"), subobj.DOMAIN);
 		return false;
 	}
 
-	if (lp.get("realm") != subobj.REALM) {
+	if (strupper(lp.get("realm")) != strupper(subobj.REALM)) {
 		message("realm '%s' in smb.conf must match chosen realm '%s'\n",
 			lp.get("realm"), subobj.REALM);
 		return false;
