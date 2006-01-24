@@ -16,7 +16,6 @@ accountExpires: -1
 sAMAccountName: Administrator
 isCriticalSystemObject: TRUE
 sambaPassword: ${ADMINPASS}
-unixName: ${ROOT}
 
 dn: CN=Guest,CN=Users,${BASEDN}
 objectClass: user
@@ -49,7 +48,6 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: ${WHEEL}
 privilege: SeSecurityPrivilege
 privilege: SeBackupPrivilege
 privilege: SeRestorePrivilege
@@ -133,7 +131,6 @@ systemFlags: 0x8c000000
 groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: ${NOGROUP}
 
 dn: CN=Print Operators,CN=Builtin,${BASEDN}
 objectClass: top
@@ -306,7 +303,6 @@ objectSid: ${DOMAINSID}-518
 adminCount: 1
 sAMAccountName: Schema Admins
 isCriticalSystemObject: TRUE
-unixName: ${WHEEL}
 
 dn: CN=Enterprise Admins,CN=Users,${BASEDN}
 objectClass: top
@@ -321,7 +317,6 @@ objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
 isCriticalSystemObject: TRUE
-unixName: ${WHEEL}
 
 dn: CN=Cert Publishers,CN=Users,${BASEDN}
 objectClass: top
@@ -350,7 +345,6 @@ objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
 isCriticalSystemObject: TRUE
-unixName: ${WHEEL}
 
 dn: CN=Domain Users,CN=Users,${BASEDN}
 objectClass: top
@@ -363,7 +357,6 @@ uSNChanged: 1
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
 isCriticalSystemObject: TRUE
-unixName: ${USERS}
 
 dn: CN=Domain Guests,CN=Users,${BASEDN}
 objectClass: top
@@ -389,7 +382,6 @@ objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unixName: ${WHEEL}
 
 dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
 objectClass: top

@@ -52,22 +52,48 @@ function findnss()
 /*
    add a foreign security principle
  */
-function add_foreign(str, sid, desc, unixname)
+function add_foreign(str, sid, desc)
 {
 	var add = "
 dn: CN=${SID},CN=ForeignSecurityPrincipals,${BASEDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
 description: ${DESC}
-unixName: ${UNIXNAME}
 uSNCreated: 1
 uSNChanged: 1
 ";
 	var sub = new Object();
 	sub.SID = sid;
 	sub.DESC = desc;
-	sub.UNIXNAME = unixname;
 	return str + substitute_var(add, sub);
+}
+
+
+/*
+  setup a mapping between a sam name and a unix name
+ */
+function setup_name_mapping(info, ldb, sid, unixname)
+{
+	var attrs = new Array("dn");
+	var res = ldb.search(sprintf("objectSid=%s", sid), 
+			     NULL, ldb.SCOPE_DEFAULT, attrs);
+	if (res.length != 1) {
+		return false;
+	}
+	var mod = sprintf("
+dn: %s
+changetype: modify
+replace: unixName
+unixName: %s
+",
+			  res[0].dn, unixname);
+	var ok = ldb.modify(mod);
+	if (!ok) {
+		info.message("name mapping for %s failed - %s\n",
+			     sid, ldb.errstring());
+		return false;
+	}
+	return true;
 }
 
 /*
@@ -258,6 +284,42 @@ function provision_default_paths(subobj)
 	return paths;
 }
 
+
+/*
+  setup reasonable name mappings for sam names to unix names
+*/
+function setup_name_mappings(info, subobj, session_info, credentials)
+{
+	var lp = loadparm_init();
+	var ldb = ldb_init();
+	ldb.session_info = session_info;
+	ldb.credentials = credentials;
+	var ok = ldb.connect(lp.get("sam database"));
+	if (!ok) {
+		return false;
+	}
+
+	/* some well known sids */
+	setup_name_mapping(info, ldb, "S-1-5-7",  subobj.NOBODY);
+	setup_name_mapping(info, ldb, "S-1-1-0",  subobj.NOGROUP);
+	setup_name_mapping(info, ldb, "S-1-5-2",  subobj.NOGROUP);
+	setup_name_mapping(info, ldb, "S-1-5-18", subobj.ROOT);
+	setup_name_mapping(info, ldb, "S-1-5-11", subobj.USERS);
+	setup_name_mapping(info, ldb, "S-1-5-32-544", subobj.WHEEL);
+	setup_name_mapping(info, ldb, "S-1-5-32-546", subobj.NOGROUP);
+
+	/* and some well known domain rids */
+	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-500", subobj.ROOT);
+	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-518", subobj.WHEEL);
+	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-519", subobj.WHEEL);
+	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-512", subobj.WHEEL);
+	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-513", subobj.USERS);
+	setup_name_mapping(info, ldb, subobj.DOMAINSID + "-520", subobj.WHEEL);
+
+	return true;
+}
+
+
 /*
   provision samba4 - caution, this wipes all existing data!
 */
@@ -319,10 +381,17 @@ function provision(subobj, message, blank, paths, session_info, credentials)
 	setup_ldb("provision_templates.ldif", info, paths.samdb, NULL, false);
 	message("Setting up sam.ldb data\n");
 	setup_ldb("provision.ldif", info, paths.samdb, NULL, false);
-	if (blank == false) {
-		message("Setting up sam.ldb users and groups\n");
-		setup_ldb("provision_users.ldif", info, paths.samdb, data, false);
+	if (blank != false) {
+		return true;
 	}
+
+	message("Setting up sam.ldb users and groups\n");
+	setup_ldb("provision_users.ldif", info, paths.samdb, data, false);
+
+	if (setup_name_mappings(info, subobj, session_info, credentials) == false) {
+		return false;
+	}
+
 	return true;
 }
 
