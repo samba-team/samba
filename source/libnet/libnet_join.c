@@ -844,6 +844,8 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		"secret",
 		"priorSecret",
 		"priorChanged",
+		"krb5Keytab",
+		"privateKeytab",
 		NULL
 	};
 	uint32_t acct_type = 0;
@@ -1036,6 +1038,12 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 			   "(|" SECRETS_PRIMARY_DOMAIN_FILTER "(realm=%s))",
 			   r2->out.domain_name, r2->out.realm);
 	if (ret == 0) {
+		rtn = samdb_msg_set_string(ldb, tmp_mem, msg, "secretsKeytab", "secrets.keytab");
+		if (rtn == -1) {
+			r->out.error_string = NULL;
+			talloc_free(tmp_mem);
+			return NT_STATUS_NO_MEMORY;
+		}
 	} else if (ret == -1) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
@@ -1044,6 +1052,8 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
+		const struct ldb_val *private_keytab;
+		const struct ldb_val *krb5_keytab;
 		const struct ldb_val *prior_secret;
 		const struct ldb_val *prior_modified_time;
 		int i;
@@ -1092,6 +1102,26 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);
 			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* We will want to keep the keytab names */
+		private_keytab = ldb_msg_find_ldb_val(msgs[0], "privateKeytab");
+		if (private_keytab) {
+			rtn = samdb_msg_set_value(ldb, tmp_mem, msg, "privateKeytab", private_keytab);
+			if (rtn == -1) {
+				r->out.error_string = NULL;
+				talloc_free(tmp_mem);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		krb5_keytab = ldb_msg_find_ldb_val(msgs[0], "krb5Keytab");
+		if (krb5_keytab) {
+			rtn = samdb_msg_set_value(ldb, tmp_mem, msg, "krb5Keytab", krb5_keytab);
+			if (rtn == -1) {
+				r->out.error_string = NULL;
+				talloc_free(tmp_mem);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
 
