@@ -3,6 +3,11 @@ source/lib/registry/TODO
 source/lib/tdr/TODO
 source/pidl/TODO
 
+upgrade process (from Samba3):
+ - Rename upgrade to upgrade3 (to avoid confusion with upgrades 
+   from earlier Samba4 releases in the future)
+ - Add support for reading WINS TDB files as well as WINS dat files.
+
 Configuration options
 =====================
 
