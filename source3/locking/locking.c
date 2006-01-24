@@ -626,7 +626,6 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	if (lck->fresh) {
 
 		if (fname == NULL || servicepath == NULL) {
-			DEBUG(0, ("New file, but no filename or servicepath supplied\n"));
 			talloc_free(lck);
 			return NULL;
 		}
