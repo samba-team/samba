@@ -165,8 +165,8 @@ struct wreplsrv_partner {
 		/* change count till push notification */
 		uint32_t change_count;
 
-		/* the last wins db seqnumber we know about */
-		uint64_t seqnumber;
+		/* the last wins db maxVersion have reported to the partner */
+		uint64_t maxVersionID;
 
 		/* we should use WREPL_REPL_INFORM* messages to this partner */
 		BOOL use_inform;
