@@ -209,23 +209,26 @@ static void fallback_node_status(struct finddcs_state *state)
 /* We have a node status reply (or perhaps a timeout) */
 static void fallback_node_status_replied(struct nbt_name_request *name_req) 
 {
+	int i;
 	struct finddcs_state *state = talloc_get_type(name_req->async.private, struct finddcs_state);
 	state->ctx->status = nbt_name_status_recv(name_req, state, &state->node_status);
 	if (!composite_is_ok(state->ctx)) return;
 
-	if (state->node_status.out.status.num_names > 0) {
-		int i;
-		char *name = talloc_strndup(state->dcs, state->node_status.out.status.names[0].name, 15);
-		/* Strip space padding */
-		if (name) {
-			i = MIN(strlen(name), 15);
-			for (; i > 0 && name[i - 1] == ' '; i--) {
-				name[i - 1] = '\0';
+	for (i=0; i < state->node_status.out.status.num_names; i++) {
+		int j;
+		if (state->node_status.out.status.names[i].type == NBT_NAME_SERVER) {
+			char *name = talloc_strndup(state->dcs, state->node_status.out.status.names[0].name, 15);
+			/* Strip space padding */
+			if (name) {
+				j = MIN(strlen(name), 15);
+				for (; j > 0 && name[j - 1] == ' '; j--) {
+					name[j - 1] = '\0';
+				}
 			}
+			state->dcs[0].name = name;
+			composite_done(state->ctx);
+			return;
 		}
-		state->dcs[0].name = name;
-		composite_done(state->ctx);
-		return;
 	}
 	composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
 }
