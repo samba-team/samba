@@ -23,8 +23,8 @@
 #      SAMBA_VERSION_RELEASE=0                         #
 #  ->  "3.0.0"                                         #
 ########################################################
-SAMBA_VERSION_MAJOR=3
-SAMBA_VERSION_MINOR=9
+SAMBA_VERSION_MAJOR=4
+SAMBA_VERSION_MINOR=0
 SAMBA_VERSION_RELEASE=0
 
 ########################################################
@@ -47,7 +47,7 @@ SAMBA_VERSION_REVISION=
 # e.g. SAMBA_VERSION_TP_RELEASE=1                      #
 #  ->  "4.0.0tp1"                                      #
 ########################################################
-SAMBA_VERSION_TP_RELEASE=
+SAMBA_VERSION_TP_RELEASE=2
 
 ########################################################
 # For 'pre' releases the version will be               #
