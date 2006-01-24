@@ -43,6 +43,20 @@ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 	return 0;
 }
 
+/* This needs to be called directly after the cli_credentials_init(),
+ * otherwise we might have problems with the krb5 context already
+ * being here.
+ */
+NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
+					  struct smb_krb5_context *smb_krb5_context)
+{
+	if (!talloc_reference(cred, smb_krb5_context)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	cred->smb_krb5_context = smb_krb5_context;
+	return NT_STATUS_OK;
+}
+
 int cli_credentials_set_from_ccache(struct cli_credentials *cred, 
 				    enum credentials_obtained obtained)
 {

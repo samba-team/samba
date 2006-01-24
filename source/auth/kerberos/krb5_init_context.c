@@ -448,6 +448,8 @@ static void smb_krb5_send_and_recv_close_func(krb5_context context, void *data)
 		return ret;
 	}
 
+	(*smb_krb5_context)->krb5_context->mem_ctx = *smb_krb5_context;
+
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
 

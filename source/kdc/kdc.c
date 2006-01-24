@@ -570,13 +570,18 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	status = hdb_ldb_create(kdc, kdc->smb_krb5_context->krb5_context, 
-				   &kdc->config->db[0], NULL);
+	status = kdc_hdb_ldb_create(kdc, kdc->smb_krb5_context->krb5_context, 
+				    &kdc->config->db[0], NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_ldb_create (setup KDC database) failed");
 		return; 
 	}
 
+	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to register hdb keytab");
+		return;
+	}
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc);
 	if (!NT_STATUS_IS_OK(status)) {

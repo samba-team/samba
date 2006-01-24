@@ -23,6 +23,7 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/hdb.o \
 	../heimdal/lib/hdb/ext.o \
 	../heimdal/lib/hdb/keys.o \
+	../heimdal/lib/hdb/keytab.o \
 	../heimdal/lib/hdb/mkey.o \
 	../heimdal/lib/hdb/ndbm.o \
 	../heimdal/lib/hdb/asn1_Event.o \
@@ -40,6 +41,7 @@ OBJ_FILES = \
 	../heimdal/lib/hdb/asn1_Salt.o \
 	../heimdal/lib/hdb/asn1_hdb_entry.o \
 	../heimdal/lib/hdb/hdb_err.o
+REQUIRED_SUBSYSTEMS = HDB_LDB
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_HDB
 #######################

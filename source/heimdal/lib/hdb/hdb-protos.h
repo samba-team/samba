@@ -491,6 +491,12 @@ hdb_ldapi_create (
 	const char */*arg*/);
 
 krb5_error_code
+hdb_ldb_create (
+	krb5_context /*context*/,
+	HDB ** /*db*/,
+	const char */*arg*/);
+
+krb5_error_code
 hdb_list_builtin (
 	krb5_context /*context*/,
 	char **/*list*/);

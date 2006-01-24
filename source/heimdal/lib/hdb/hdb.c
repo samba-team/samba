@@ -55,6 +55,9 @@ static struct hdb_method methods[] = {
     {"ldap:",	hdb_ldap_create},
     {"ldapi:",	hdb_ldapi_create},
 #endif
+#ifdef _SAMBA_BUILD_
+    {"ldb:",	hdb_ldb_create},
+#endif
     {NULL,	NULL}
 };
 
@@ -395,6 +398,6 @@ hdb_create(krb5_context context, HDB **db, const char *filename)
 	h = find_dynamic_method (context, filename, &residual);
 #endif
     if (h == NULL)
-	krb5_errx(context, 1, "No database support! (hdb_create)");
+	krb5_errx(context, 1, "No database support! (hdb_create(%s))", filename);
     return (*h->create)(context, db, residual);
 }
