@@ -49,8 +49,9 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv7,((size >> 16) & 1));
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
-	if (bigoffset)
-		SIVAL(cli->outbuf,smb_vwv10,(offset>>32) & 0xffffffff);
+	if (bigoffset) {
+		SIVAL(cli->outbuf,smb_vwv10,(((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+	}
 
 	return cli_send_smb(cli);
 }
@@ -302,8 +303,9 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
 
-	if (large_writex)
-		SIVAL(cli->outbuf,smb_vwv12,(offset>>32) & 0xffffffff);
+	if (large_writex) {
+		SIVAL(cli->outbuf,smb_vwv12,(((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+	}
 	
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
 	memcpy(p, buf, size);
