@@ -104,7 +104,7 @@ LIBMSRPC_MINOR=1
 
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
-LIBSMBSHAREMODES_MINOR=1
+LIBSMBSHAREMODES_MINOR=2
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -D_SAMBA_BUILD_
 FLAGS2 = 
@@ -818,7 +818,7 @@ MAKEDIR = || exec false; \
 # of gcc-3.4 and run 'make pch' before you do the main build. 
 pch:
 	rm -f $(srcdir)/include/includes.h.gch
-	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
+	$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
 ##
 ## Targets for 'make test'
@@ -1242,12 +1242,12 @@ bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.@PICSUFFIX@
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/idmap_rid.@SHLIBEXT@: sam/idmap_rid.@PICSUFFIX@
+bin/rid.@SHLIBEXT@: sam/idmap_rid.@PICSUFFIX@
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_rid.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/idmap_ad.@SHLIBEXT@: sam/idmap_ad.@PICSUFFIX@
+bin/ad.@SHLIBEXT@: sam/idmap_ad.@PICSUFFIX@
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_ad.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`

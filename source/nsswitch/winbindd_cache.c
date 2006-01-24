@@ -546,8 +546,10 @@ static void centry_put_string(struct cache_entry *centry, const char *s)
 
 	len = strlen(s);
 	/* can't handle more than 254 char strings. Truncating is probably best */
-	if (len > 254)
+	if (len > 254) {
+		DEBUG(10,("centry_put_string: truncating len (%d) to: 254\n", len));
 		len = 254;
+	}
 	centry_put_uint8(centry, len);
 	centry_expand(centry, len);
 	memcpy(centry->data + centry->ofs, s, len);
@@ -989,8 +991,11 @@ do_query:
 	/* and save it */
 	wcache_save_name_to_sid(domain, status, domain_name, name, sid, *type);
 
-	/* We can't save the sid to name mapping as we don't know the
-	   correct case of the name without looking it up */
+	if (NT_STATUS_IS_OK(status)) {
+		strupper_m(CONST_DISCARD(char *,domain_name));
+		strlower_m(CONST_DISCARD(char *,name));
+		wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
+	}
 
 	return status;
 }

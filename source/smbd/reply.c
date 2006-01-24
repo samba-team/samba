@@ -4082,7 +4082,8 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 }
 
 /****************************************************************************
- Ensure open files have their names updates.
+ Ensure open files have their names updated. Updated to notify other smbd's
+ asynchronously.
 ****************************************************************************/
 
 static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T inode, char *newname)
@@ -5437,7 +5438,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	outsize = set_message(outbuf,0,0,True);
 
 	if(!fsp || (fsp->conn != conn)) {
-		END_PROFILE(SMBgetattrE);
+		END_PROFILE(SMBsetattrE);
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
