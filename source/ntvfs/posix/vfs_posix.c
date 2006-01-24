@@ -124,7 +124,9 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	/* for simplicity of path construction, remove any trailing slash now */
 	base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
 	NT_STATUS_HAVE_NO_MEMORY(base_directory);
-	trim_string(base_directory, NULL, "/");
+	if (strcmp(base_directory, "/") != 0) {
+		trim_string(base_directory, NULL, "/");
+	}
 
 	pvfs->tcon = tcon;
 	pvfs->base_directory = base_directory;
