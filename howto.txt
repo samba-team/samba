@@ -64,6 +64,9 @@ Must be run as a user with permission to write to the install directory.
   # cd source
   # ./setup/provision --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
 
+'YOURDOM' is the NT4 style domain name. 'YOUR.REALM' is your kerberos
+realm, which is typically your DNS domain name.
+
 Step 5: Create a simple smb.conf
 --------------------------------
 
