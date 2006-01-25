@@ -4,9 +4,9 @@
 Summary: Samba SMB client and server
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
-Name: samba
-Version: PVERSION
-Release: PRELEASE
+Name:         samba
+Version:      PVERSION
+Release:      PRELEASE
 License: GNU GPL version 2
 Group: System Environment/Daemons
 URL: http://www.samba.org/
@@ -117,16 +117,14 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --with-swatdir=%{_datadir}/swat \
 	--enable-cups \
         --with-acl-support \
-	--with-ads \
         --with-automount \
         --with-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
 	--with-libsmbsharemodes \
-        --without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid \
+	--with-shared-modules=idmap_rid,idmap_ad \
 	--with-smbmount \
 	--with-syslog \
 	--with-utmp 
@@ -215,8 +213,8 @@ ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
 
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
-ln -sf %{_prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
-ln -sf %{_prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
@@ -404,12 +402,12 @@ fi
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so
 %{_libdir}/libsmbclient.so.0
-%{_prefix}/lib/*
 %{_includedir}/libmsrpc.h
 %{_libdir}/libmsrpc.a
 %{_libdir}/libmsrpc.so
+%{_libdir}/libmsrpc.so.0
 %{_libdir}/samba/charset/CP*.so
-%{_libdir}/samba/idmap/idmap*.so
+%{_libdir}/samba/idmap/*.so
 %{_libdir}/samba/auth/script.so
 %{_bindir}/testparm
 %{_bindir}/smbpasswd
