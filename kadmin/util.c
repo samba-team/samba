@@ -485,7 +485,11 @@ is_expression(const char *string)
     return 0;
 }
 
-/* loop over all principals matching exp */
+/*
+ * Loop over all principals matching exp.  If any of calls to `func'
+ * failes, the first error is returned when all principals are
+ * processed.
+ */
 int
 foreach_principal(const char *exp_str, 
 		  int (*func)(krb5_principal, void*), 
@@ -495,7 +499,7 @@ foreach_principal(const char *exp_str,
     char **princs;
     int num_princs;
     int i;
-    krb5_error_code ret = 0;
+    krb5_error_code saved_ret = 0, ret = 0;
     krb5_principal princ_ent;
     int is_expr;
 
@@ -527,12 +531,17 @@ foreach_principal(const char *exp_str,
 	    continue;
 	}
 	ret = (*func)(princ_ent, data);
-	if(ret)
+	if(ret) {
 	    krb5_warn(context, ret, "%s %s", funcname, princs[i]);
+	    if (saved_ret == 0)
+		saved_ret = ret;
+	}
 	krb5_free_principal(context, princ_ent);
     }
+    if (ret == 0 && saved_ret != 0)
+	ret = saved_ret;
     kadm5_free_name_list(kadm_handle, princs, &num_princs);
-    return 0;
+    return ret;
 }
 
 /*
