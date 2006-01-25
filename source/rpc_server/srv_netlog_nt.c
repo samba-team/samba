@@ -470,7 +470,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 	/* Step the creds chain forward. */
 	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
-		DEBUG(0,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
+		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
@@ -573,7 +573,7 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
-		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
+		DEBUG(2,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
@@ -662,7 +662,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-		DEBUG(0,("_net_sam_logon: creds_server_step failed. Rejecting auth "
+		DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
