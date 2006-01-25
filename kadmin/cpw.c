@@ -158,7 +158,7 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
     if (num > 1) {
 	fprintf (stderr, "give only one of "
 		"--random-key, --random-password, --password, --key\n");
-	return 0;
+	return 1;
     }
 	
     if (opt->key_string) {
@@ -167,7 +167,7 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 	if (parse_des_key (opt->key_string, key_data, &error)) {
 	    fprintf (stderr, "failed parsing key \"%s\": %s\n", 
 		     opt->key_string, error);
-	    return 0;
+	    return 1;
 	}
 	data.key_data = key_data;
     }
@@ -180,5 +180,5 @@ cpw_entry(struct passwd_options *opt, int argc, char **argv)
 	kadm5_free_key_data (kadm_handle, &dummy, key_data);
     }
 
-    return 0;
+    return ret != 0;
 }
