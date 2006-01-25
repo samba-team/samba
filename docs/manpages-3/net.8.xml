@@ -30,7 +30,8 @@
 		<arg choice="opt">-S server</arg>
 		<arg choice="opt">-l</arg>
 		<arg choice="opt">-P</arg>
-		<arg choice="opt">-D debuglevel</arg>
+		<arg choice="opt">-d debuglevel</arg>
+		<arg choice="opt">-V</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
