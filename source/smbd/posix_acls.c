@@ -1447,7 +1447,6 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 					free_canon_ace_list(file_ace);
 					free_canon_ace_list(dir_ace);
-					SAFE_FREE(current_ace);
 					return False;
 				}	
 
@@ -1506,7 +1505,6 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 				free_canon_ace_list(file_ace);
 				free_canon_ace_list(dir_ace);
-				SAFE_FREE(current_ace);
 				return False;
 			}	
 
