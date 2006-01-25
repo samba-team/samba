@@ -52,8 +52,10 @@ kadm5_c_chpass_principal(void *server_handle,
 	return ret;
 
     sp = krb5_storage_from_mem(buf, sizeof(buf));
-    if (sp == NULL)
+    if (sp == NULL) {
+	krb5_clear_error_string(context->context);
 	return ENOMEM;
+    }
     krb5_store_int32(sp, kadm_chpass);
     krb5_store_principal(sp, princ);
     krb5_store_string(sp, password);
@@ -64,10 +66,12 @@ kadm5_c_chpass_principal(void *server_handle,
 	return ret;
     sp = krb5_storage_from_data (&reply);
     if (sp == NULL) {
+	krb5_clear_error_string(context->context);
 	krb5_data_free (&reply);
 	return ENOMEM;
     }
     krb5_ret_int32(sp, &tmp);
+    krb5_clear_error_string(context->context);
     krb5_storage_free(sp);
     krb5_data_free (&reply);
     return tmp;
