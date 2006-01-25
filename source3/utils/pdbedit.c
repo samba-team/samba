@@ -28,7 +28,7 @@
 #define BIT_SPSTYLE	0x00000010
 #define BIT_CAN_CHANGE	0x00000020
 #define BIT_MUST_CHANGE	0x00000040
-#define BIT_RESERV_3	0x00000080
+#define BIT_USERSIDS	0x00000080
 #define BIT_FULLNAME	0x00000100
 #define BIT_HOMEDIR	0x00000200
 #define BIT_HDIRDRIVE	0x00000400
@@ -52,7 +52,7 @@
 #define BIT_LOGONHOURS	0x10000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x00405F60
+#define MASK_USER_GOOD		0x00405FE0
 
 /*********************************************************
  Add all currently available users to another db
@@ -819,6 +819,8 @@ int main (int argc, char **argv)
 			(user_name ? BIT_USER : 0) +
 			(list_users ? BIT_LIST : 0) +
 			(force_initialised_password ? BIT_FIX_INIT : 0) +
+			(user_sid ? BIT_USERSIDS : 0) +
+			(group_sid ? BIT_USERSIDS : 0) +
 			(modify_user ? BIT_MODIFY : 0) +
 			(add_user ? BIT_CREATE : 0) +
 			(delete_user ? BIT_DELETE : 0) +
