@@ -50,5 +50,5 @@ del_entry(void *opt, int argc, char **argv)
 
     for(i = 0; i < argc; i++)
 	ret = foreach_principal(argv[i], do_del_entry, "del", NULL);
-    return 0;
+    return ret != 0;
 }
