@@ -52,8 +52,10 @@ kadm5_c_modify_principal(void *server_handle,
 	return ret;
 
     sp = krb5_storage_from_mem(buf, sizeof(buf));
-    if (sp == NULL)
+    if (sp == NULL) {
+	krb5_clear_error_string(context->contect);
 	return ENOMEM;
+    }
     krb5_store_int32(sp, kadm_modify);
     kadm5_store_principal_ent(sp, princ);
     krb5_store_int32(sp, mask);
@@ -66,10 +68,12 @@ kadm5_c_modify_principal(void *server_handle,
 	return ret;
     sp = krb5_storage_from_data (&reply);
     if (sp == NULL) {
+	krb5_clear_error_string(context->contect);
 	krb5_data_free (&reply);
 	return ENOMEM;
     }
     krb5_ret_int32(sp, &tmp);
+    krb5_clear_error_string(context->contect);
     krb5_storage_free(sp);
     krb5_data_free (&reply);
     return tmp;

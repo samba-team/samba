@@ -368,8 +368,10 @@ kadm_connect(kadm5_client_context *ctx)
 	hostname = slash + 1;
 
     error = getaddrinfo (hostname, portstr, &hints, &ai);
-    if (error) 
+    if (error) {
+	krb5_clear_error_string(context);
 	return KADM5_BAD_SERVER_NAME;
+    }
     
     for (a = ai; a != NULL; a = a->ai_next) {
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
@@ -384,6 +386,7 @@ kadm_connect(kadm5_client_context *ctx)
     }
     if (a == NULL) {
 	freeaddrinfo (ai);
+	krb5_clear_error_string(context);
 	krb5_warnx (context, "failed to contact %s", hostname);
 	return KADM5_FAILURE;
     }
@@ -407,6 +410,7 @@ kadm_connect(kadm5_client_context *ctx)
     if (service_name == NULL) {
 	freeaddrinfo (ai);
 	close(s);
+	krb5_clear_error_string(context);
 	return ENOMEM;
     }
 
@@ -450,11 +454,13 @@ kadm_connect(kadm5_client_context *ctx)
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0) {
 	    freeaddrinfo (ai);
+	    krb5_clear_error_string(context);
 	    return errno;
 	}
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    close (s);
 	    freeaddrinfo (ai);
+	    krb5_clear_error_string(context);
 	    return errno;
 	}
 	ret = krb5_sendauth(context, &ctx->ac, &s, 
@@ -471,10 +477,6 @@ kadm_connect(kadm5_client_context *ctx)
     krb5_free_principal(context, server);
     if(ctx->ccache == NULL)
 	krb5_cc_close(context, cc);
-    if(ret) {
-	close(s);
-	return ret;
-    }
     ctx->sock = s;
     
     return 0;

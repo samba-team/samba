@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000, 2005-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -96,8 +96,10 @@ kadm5_c_chpass_principal_with_key(void *server_handle,
 	return ret;
 
     sp = krb5_storage_from_mem(buf, sizeof(buf));
-    if (sp == NULL)
+    if (sp == NULL) {
+	krb5_clear_error_string(context->context);
 	return ENOMEM;
+    }
     krb5_store_int32(sp, kadm_chpass_with_key);
     krb5_store_principal(sp, princ);
     krb5_store_int32(sp, n_key_data);
@@ -110,10 +112,12 @@ kadm5_c_chpass_principal_with_key(void *server_handle,
 	return ret;
     sp = krb5_storage_from_data (&reply);
     if (sp == NULL) {
+	krb5_clear_error_string(context->context);
 	krb5_data_free (&reply);
 	return ENOMEM;
     }
     krb5_ret_int32(sp, &tmp);
+    krb5_clear_error_string(context->context);
     krb5_storage_free(sp);
     krb5_data_free (&reply);
     return tmp;
