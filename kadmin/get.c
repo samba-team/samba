@@ -64,6 +64,7 @@ static struct field_name {
     { "policy", KADM5_POLICY, 0, 0, "Policy", "Policy", 0 },
     { "keytypes", KADM5_KEY_DATA, 0, KADM5_PRINCIPAL, "Keytypes", "Keytypes", 0 },
     { "password", KADM5_TL_DATA, KRB5_TL_PASSWORD, KADM5_KEY_DATA, "Password", "Password", 0 },
+    { "pkinit-acl", KADM5_TL_DATA, KRB5_TL_PKINIT_ACL, 0, "PK-INIT ACL", "PK-INIT ACL", 0 },
     { NULL }
 };
 
@@ -255,6 +256,32 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 		     (int)tl->tl_data_length,
 		     (const char *)tl->tl_data_contents);
 	    break;
+	case KRB5_TL_PKINIT_ACL: {
+	    HDB_Ext_PKINIT_acl acl;
+	    size_t size;
+	    int i, ret;
+
+	    ret = decode_HDB_Ext_PKINIT_acl(tl->tl_data_contents,
+					    tl->tl_data_length,
+					    &acl,
+					    &size);
+	    if (ret) {
+		snprintf(buf, buf_len, "failed to decode ACL");
+		break;
+	    }
+
+	    buf[0] = '\0';
+	    for (i = 0; i < acl.len; i++) {
+		strlcpy(buf, "P: ", buf_len);
+		strlcpy(buf, acl.val[i].subject, buf_len);
+		strlcpy(buf, " ", buf_len);
+		strlcpy(buf, acl.val[i].issuer, buf_len);
+		if (i + 1 < acl.len)
+		    strlcpy(buf, ", ", buf_len);
+	    }
+	    free_HDB_Ext_PKINIT_acl(&acl);
+	    break;
+	}
 	default:
 	    snprintf(buf, buf_len, "unknown type %d", subfield);
 	    break;
@@ -358,7 +385,7 @@ setup_columns(struct get_entry_data *data, const char *column_info)
 }
 
 #define DEFAULT_COLUMNS_SHORT "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife"
-#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes,password"
+#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes"
 #define DEFAULT_COLUMNS_TERSE "principal="
 
 static int
@@ -415,7 +442,7 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
 	rtbl_destroy(data.table);
     }
     free_columns(&data);
-    return 0;
+    return ret != 0;
 }
 
 int
