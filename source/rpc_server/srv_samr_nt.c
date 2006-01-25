@@ -2648,8 +2648,12 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 
 	ZERO_STRUCT(sid);
 
+	if (strequal(domain_name, builtin_domain_name())) {
+		sid_copy(&sid, &global_sid_Builtin);
+	} else {
 	if (!secrets_fetch_domain_sid(domain_name, &sid)) {
 		r_u->status = NT_STATUS_NO_SUCH_DOMAIN;
+	}
 	}
 
 	DEBUG(2,("Returning domain sid for domain %s -> %s\n", domain_name, sid_string_static(&sid)));
@@ -2785,7 +2789,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	 * JFM.
 	 */
 
-	/* associate the user's SID with the new handle. */
+	/* associate the alias SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 		
