@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -124,13 +124,16 @@ ext_keytab(struct ext_keytab_options *opt, int argc, char **argv)
 
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_resolve");
-	return 0;
+	return 1;
     }
 
-    for(i = 0; i < argc; i++) 
-	foreach_principal(argv[i], do_ext_keytab, "ext", &data);
+    for(i = 0; i < argc; i++) {
+	ret = foreach_principal(argv[i], do_ext_keytab, "ext", &data);
+	if (ret)
+	    break;
+    }
 
     krb5_kt_close(context, data.keytab);
 
-    return 0;
+    return ret != 0;
 }

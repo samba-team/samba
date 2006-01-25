@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -553,8 +553,7 @@ loadit(int mergep, const char *name, int argc, char **argv)
 	return 0;
     }
 
-    doit(argv[0], mergep);
-    return 0;
+    return doit(argv[0], mergep);
 }
  
 int

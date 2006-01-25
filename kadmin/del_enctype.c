@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -119,5 +119,5 @@ out:
     kadm5_free_principal_ent(kadm_handle, &princ);
 out2:
     free (etypes);
-    return 0;
+    return ret != 0;
 }

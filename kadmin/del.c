@@ -48,7 +48,10 @@ del_entry(void *opt, int argc, char **argv)
     int i;
     krb5_error_code ret;
 
-    for(i = 0; i < argc; i++)
+    for(i = 0; i < argc; i++) {
 	ret = foreach_principal(argv[i], do_del_entry, "del", NULL);
+	if (ret)
+	    break;
+    }
     return ret != 0;
 }
