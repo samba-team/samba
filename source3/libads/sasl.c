@@ -419,7 +419,7 @@ failed:
 		ber_bvfree(scred);
 	return status;
 }
-#endif
+#endif /* HAVE_GGSAPI */
 
 /* mapping between SASL mechanisms and functions */
 static struct {
@@ -466,5 +466,5 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	return ADS_ERROR(LDAP_AUTH_METHOD_NOT_SUPPORTED);
 }
 
-#endif
+#endif /* HAVE_LDAP */
 
