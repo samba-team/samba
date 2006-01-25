@@ -1,6 +1,7 @@
 #!/bin/sh
 
 SAMBA_DHCP_CONF=/etc/samba/dhcp.conf
+SAMBA_DHCP_CONF_INFO_FILE=""
 
 netbios_setup() {
 	# No need to continue if we're called with an unsupported option
@@ -15,6 +16,7 @@ netbios_setup() {
 	# Nor should we continue if no settings have changed
 	if [ "$new_netbios_name_servers" = "$old_netbios_name_servers" ] \
 	   && [ "$new_netbios_scope" = "$old_netbios_scope" ]
+	   && [ -f $SAMBA_DHCP_CONF ]
 	then
 		return
 	fi
@@ -33,6 +35,8 @@ netbios_setup() {
 	done
 
 	echo -n > $SAMBA_DHCP_CONF
+	test -n "$SAMBA_DHCP_CONF_INFO_FILE" -a -f "$SAMBA_DHCP_CONF_INFO_FILE" && \
+		cat "$SAMBA_DHCP_CONF_INFO_FILE" >> $SAMBA_DHCP_CONF
 
 	# If we're updating on failure/expire, AND there are no WINS
 	# servers for other interfaces, leave the file empty.
