@@ -4495,8 +4495,11 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_SET_INFO, "_samr_set_groupinfo"))) {
 		return r_u->status;
 	}
-		
-	if (!get_domain_group_from_sid(group_sid, &map))
+
+	become_root();
+	ret = get_domain_group_from_sid(group_sid, &map);
+	unbecome_root();
+	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=q_u->ctr;
