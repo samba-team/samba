@@ -87,7 +87,7 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(tcon->dev_type);
 
 	/* prepare the private state for this connection */
-	private = talloc(tcon, struct ipc_private);
+	private = talloc(ntvfs, struct ipc_private);
 	NT_STATUS_HAVE_NO_MEMORY(private);
 
 	ntvfs->private_data = private;
