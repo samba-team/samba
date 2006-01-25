@@ -54,10 +54,10 @@ static NTSTATUS svfs_connect(struct ntvfs_module_context *ntvfs,
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct svfs_private *private;
 
-	private = talloc(tcon, struct svfs_private);
+	private = talloc(ntvfs, struct svfs_private);
 
 	private->next_search_handle = 0;
-	private->connectpath = talloc_strdup(tcon, lp_pathname(tcon->service));
+	private->connectpath = talloc_strdup(private, lp_pathname(tcon->service));
 	private->open_files = NULL;
 	private->search = NULL;
 

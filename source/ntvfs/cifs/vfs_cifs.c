@@ -93,7 +93,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	machine_account = lp_parm_bool(req->tcon->service, "cifs", "use_machine_account", False);
 
-	private = talloc(req->tcon, struct cvfs_private);
+	private = talloc(ntvfs, struct cvfs_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -178,6 +178,7 @@ static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs,
 	struct cvfs_private *private = ntvfs->private_data;
 
 	talloc_free(private);
+	ntvfs->private_data = NULL;
 
 	return NT_STATUS_OK;
 }

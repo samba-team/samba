@@ -207,7 +207,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	struct unixuid_private *private;
 	NTSTATUS status;
 
-	private = talloc(req->tcon, struct unixuid_private);
+	private = talloc(ntvfs, struct unixuid_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -239,6 +239,7 @@ static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	talloc_free(private);
+	ntvfs->private_data = NULL;
 
 	status = ntvfs_next_disconnect(ntvfs, tcon);
  
