@@ -358,6 +358,7 @@ gsskrb5_initiator_start
     Checksum cksum;
     krb5_enctype enctype;
     krb5_data fwd_data;
+    int is_cfx;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -486,6 +487,16 @@ gsskrb5_initiator_start
 
 	enctype = (*context_handle)->auth_context->keyblock->keytype;
 
+	gsskrb5_is_cfx(*context_handle, &is_cfx);
+	
+	if (is_cfx != 0) {
+		kret = krb5_auth_con_addflags(gssapi_krb5_context,
+					      (*context_handle)->auth_context,
+					      KRB5_AUTH_CONTEXT_USE_SUBKEY,
+					      NULL);
+		(*context_handle)->more_flags |= ACCEPTOR_SUBKEY;
+	}
+	    
 	/* We need to create an Authenticator */
 	{
 		kret = krb5_build_authenticator (gssapi_krb5_context,
