@@ -140,6 +140,8 @@ NTSTATUS ntvfs_init_connection(struct smbsrv_request *req, enum ntvfs_type type)
 		ntvfs = talloc(ctx, struct ntvfs_module_context);
 		NT_STATUS_HAVE_NO_MEMORY(ntvfs);
 
+		ntvfs->private_data = NULL;
+
 		ntvfs->ops = ntvfs_backend_byname(handlers[i], ctx->type);
 		if (!ntvfs->ops) {
 			DEBUG(1,("ntvfs_init_connection: failed to find backend=%s, type=%d\n",
