@@ -208,7 +208,7 @@ out:
 int
 add_new_key(struct add_options *opt, int argc, char **argv)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     int i;
     int num;
     krb5_key_data key_data[3];
@@ -227,7 +227,7 @@ add_new_key(struct add_options *opt, int argc, char **argv)
     if (num > 1) {
 	fprintf (stderr, "give only one of "
 		"--random-key, --random-password, --password, --key\n");
-	return 0;
+	return 1;
     }
 
     if (opt->key_string) {
@@ -236,7 +236,7 @@ add_new_key(struct add_options *opt, int argc, char **argv)
 	if (parse_des_key (opt->key_string, key_data, &error)) {
 	    fprintf (stderr, "failed parsing key \"%s\": %s\n", 
 		     opt->key_string, error);
-	    return 0;
+	    return 1;
 	}
 	kdp = key_data;
     }
@@ -262,5 +262,5 @@ add_new_key(struct add_options *opt, int argc, char **argv)
 	int16_t dummy = 3;
 	kadm5_free_key_data (kadm_handle, &dummy, key_data);
     }
-    return 0;
+    return ret != 0;
 }
