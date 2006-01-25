@@ -156,7 +156,7 @@ BOOL creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in
 	if (memcmp(dc->clnt_chal.data, rcv_cli_chal_in->data, 8)) {
 		DEBUG(5,("creds_server_check: challenge : %s\n", credstr(rcv_cli_chal_in->data)));
 		DEBUG(5,("calculated: %s\n", credstr(dc->clnt_chal.data)));
-		DEBUG(0,("creds_server_check: credentials check failed.\n"));
+		DEBUG(2,("creds_server_check: credentials check failed.\n"));
 		return False;
 	}
 	DEBUG(10,("creds_server_check: credentials check OK.\n"));
