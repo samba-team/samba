@@ -4,38 +4,34 @@
 Summary: Samba SMB client and server
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
-Name: samba
-Version: PVERSION
-Release: PRELEASE
+Name:         samba
+Version:      PVERSION
+Release:      PRELEASE
 License: GNU GPL version 2
 Group: System Environment/Daemons
 URL: http://www.samba.org/
 
-Source: samba-%{version}.tar.gz
-Source1:  samba.log
-Source3:  swat
-Source4:  samba.sysconfig
-Source5:  smb.init
-Source6:  winbind.init
-Source7:  samba.pamd
-Source8:  smbprint
-Source9:  smbusers
-Source10: smb.conf
+Source: samba-%{version}.tar.bz2
 
 # Don't depend on Net::LDAP
-Source999: filter-requires-samba.sh
+Source998: filter-requires-samba.sh
+Source999: setup.tar.bz2
 
 Requires: pam >= 0.64 %{auth} samba-common = %{version}
 Requires: logrotate >= 3.4 initscripts >= 5.54-1
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
-BuildRequires: pam-devel, readline-devel, ncurses-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
+BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prefix: /usr
+
+# Working around perl dependency problem from docs
+%define __perl_requires %{SOURCE998}
+
 
 %description
 Samba is the protocol by which a lot of PC-related machines share
@@ -84,13 +80,13 @@ Web browser.
 %prep
 %setup -q
 
-# copy Red Hat specific scripts
-cp %{SOURCE5} packaging/Fedora/
-cp %{SOURCE6} packaging/Fedora/
-cp %{SOURCE7} packaging/Fedora/
-cp %{SOURCE8} packaging/Fedora/winbind.init
+# setup the vendor files (init scripts, etc...)
+%setup -T -D -a 999 -n samba-%{version} -q
 
 %build
+
+/bin/cp setup/filter-requires-samba.sh %{SOURCE998}
+
 cd source
 %ifarch i386 sparc
 RPM_OPT_FLAGS="$RPM_OPT_FLAGS -D_FILE_OFFSET_BITS=64"
@@ -121,16 +117,14 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --with-swatdir=%{_datadir}/swat \
 	--enable-cups \
         --with-acl-support \
-	--with-ads \
         --with-automount \
         --with-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
 	--with-libsmbsharemodes \
-        --without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid \
+	--with-shared-modules=idmap_rid,idmap_ad \
 	--with-smbmount \
 	--with-syslog \
 	--with-utmp 
@@ -198,37 +192,42 @@ install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
 ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so.0
-if [ %{_libdir} == /usr/lib64 ];then
-	ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT/usr/lib/libsmbclient.so.0
-	ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT/usr/lib/libsmbclient.so
-fi
+#if [ %{_libdir} == /usr/lib64 ];then
+#	ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT/usr/lib/libsmbclient.so.0
+#	ln -s %{_libdir}/libsmbclient.so $RPM_BUILD_ROOT/usr/lib/libsmbclient.so
+#fi
 
 # make install puts libmsrpc.so in the wrong place on x86_64
+rm -f $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.so $RPM_BUILD_ROOT/usr/lib*/samba/libmsrpc.a || true
 install -m 755 source/bin/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so
 install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{_libdir}/libmsrpc.a
 install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{_includedir}
 rm -f $RPM_BUILD_ROOT%{_libdir}/samba/libmsrpc.*
 ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
+#if [ %{_libdir} == /usr/lib64 ];then
+#	ln -s %{_libdir}/libmsrpc.so $RPM_BUILD_ROOT/usr/lib/libmsrpc.so.0
+#	ln -s %{_libdir}/libmsrpc.so $RPM_BUILD_ROOT/usr/lib/libmsrpc.so
+#fi
 
 # Install pam_smbpass.so
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
 
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
-ln -sf %{_prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
-ln -sf %{_prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
-install -m644 %{SOURCE1} $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/samba
-install -m644 %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
-install -m644 %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
-install -m755 %{SOURCE5} $RPM_BUILD_ROOT%{initdir}/smb
-install -m755 %{SOURCE6} $RPM_BUILD_ROOT%{initdir}/winbind
-install -m644 %{SOURCE7} $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/samba
-install -m755 %{SOURCE8} $RPM_BUILD_ROOT%{_bindir}
-install -m644 %{SOURCE9} $RPM_BUILD_ROOT%{_sysconfdir}/samba/smbusers
-install -m644 %{SOURCE10} $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
+install -m644 setup/samba.log $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/samba
+install -m644 setup/swat $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
+install -m644 setup/samba.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
+install -m755 setup/smb.init $RPM_BUILD_ROOT%{initdir}/smb
+install -m755 setup/winbind.init $RPM_BUILD_ROOT%{initdir}/winbind
+install -m644 setup/samba.pamd $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/samba
+install -m755 setup/smbprint $RPM_BUILD_ROOT%{_bindir}
+install -m644 setup/smbusers $RPM_BUILD_ROOT%{_sysconfdir}/samba/smbusers
+install -m644 setup/smb.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
 install -m755 source/client/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
 install -m755 source/client/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
 install -m755 source/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
@@ -327,7 +326,6 @@ fi
 %attr(755,root,root) %config %{initdir}/smb
 %config(noreplace) %{_sysconfdir}/logrotate.d/samba
 %config(noreplace) %{_sysconfdir}/pam.d/samba
-%{_sysconfdir}/samba/samba.xinetd
 %{_mandir}/man1/smbcontrol.1*
 %{_mandir}/man1/smbstatus.1*
 %{_mandir}/man1/vfstest.1*
@@ -404,12 +402,12 @@ fi
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so
 %{_libdir}/libsmbclient.so.0
-%{_prefix}/lib/*
 %{_includedir}/libmsrpc.h
 %{_libdir}/libmsrpc.a
 %{_libdir}/libmsrpc.so
+%{_libdir}/libmsrpc.so.0
 %{_libdir}/samba/charset/CP*.so
-%{_libdir}/samba/idmap/idmap*.so
+%{_libdir}/samba/idmap/*.so
 %{_libdir}/samba/auth/script.so
 %{_bindir}/testparm
 %{_bindir}/smbpasswd
