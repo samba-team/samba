@@ -52,11 +52,15 @@ static NTSTATUS cmd_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 				     const char **argv) 
 {
 	NTSTATUS 		result;
-	uint32 			flags = 0x1;
+	uint32 			flags = DS_DOMAIN_IN_FOREST;
 	struct ds_domain_trust	 *trusts = NULL;
 	unsigned int 			num_domains = 0;
 	int i;
 	
+	if (argc > 1) {
+		flags = atoi(argv[1]);
+	}
+
 	result = rpccli_ds_enum_domain_trusts( cli, mem_ctx, cli->cli->desthost, flags, 
 		&trusts, &num_domains );
 	
