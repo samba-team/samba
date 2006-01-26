@@ -4512,6 +4512,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
 	NTSTATUS ret;
+	BOOL result;
 	BOOL can_mod_accounts;
 	DISP_INFO *disp_info = NULL;
 
@@ -4523,9 +4524,9 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	}
 
 	become_root();
-	ret = get_domain_group_from_sid(group_sid, &map);
+	result = get_domain_group_from_sid(group_sid, &map);
 	unbecome_root();
-	if (!ret)
+	if (!result)
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=q_u->ctr;
