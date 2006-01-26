@@ -10,7 +10,7 @@ cd $SRCDIR || exit 1
 
 echo "Installing js libs"
 mkdir -p $JSDIR || exit 1
-cp scripting/libjs/*.js $JSDIR/js || exit 1
+cp scripting/libjs/*.js $JSDIR || exit 1
 
 echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1
