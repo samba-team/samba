@@ -260,15 +260,19 @@ static BOOL wbinfo_wins_byip(char *ip)
 
 /* List trusted domains */
 
-static BOOL wbinfo_list_domains(void)
+static BOOL wbinfo_list_domains(BOOL list_all_domains)
 {
+	struct winbindd_request request;
 	struct winbindd_response response;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
 
-	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
+	request.data.list_all_domains = list_all_domains;
+
+	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -1043,7 +1047,8 @@ enum {
 	OPT_USERSIDS,
 	OPT_ALLOCATE_UID,
 	OPT_ALLOCATE_GID,
-	OPT_SEPARATOR
+	OPT_SEPARATOR,
+	OPT_LIST_ALL_DOMAINS
 };
 
 int main(int argc, char **argv)
@@ -1078,6 +1083,7 @@ int main(int argc, char **argv)
 		  "Get a new GID out of idmap" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
+		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
@@ -1222,7 +1228,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'm':
-			if (!wbinfo_list_domains()) {
+			if (!wbinfo_list_domains(False)) {
 				d_fprintf(stderr, "Could not list trusted domains\n");
 				goto done;
 			}
@@ -1344,6 +1350,10 @@ int main(int argc, char **argv)
 			d_printf("%c\n", sep);
 			break;
 		}
+		case OPT_LIST_ALL_DOMAINS:
+			if (!wbinfo_list_domains(True)) {
+				goto done;
+			}
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 			break;

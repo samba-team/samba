@@ -254,6 +254,7 @@ struct winbindd_request {
 			gid_t gid;
 			fstring sid;
 		} dual_idmapset;
+		BOOL list_all_domains;
 	} data;
 	char *extra_data;
 	size_t extra_len;

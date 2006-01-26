@@ -878,8 +878,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct ds_domain_trust	*domains = NULL;
 	int			count = 0;
 	int			i;
-				/* i think we only need our forest and downlevel trusted domains */
-	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
+	uint32			flags = DS_DOMAIN_DIRECT_OUTBOUND;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("ads: trusted_domains\n"));
