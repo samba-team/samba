@@ -719,7 +719,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	if (ret >= 1) {
 		const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
 		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", dom_sid_string(mem_ctx, sid), name)); 
-		/* We have a duplicate SID, we must reject the add */
+		/* We don't really like the idea of foreign sids that are not foreign */
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	} else if (ret == -1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: error searching for a domain with this sid: %s\n", dom_sid_string(mem_ctx, dom_sid));
