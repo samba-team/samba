@@ -87,8 +87,7 @@ static int do_search(struct ldb_context *ldb,
 		if (ret != LDB_SUCCESS) {
 			printf("search failed - %s\n", ldb_errstring(ldb));
 			if (req.op.search.res && req.op.search.res->controls) {
-				
-			/*	TODO: handle_control */ 
+				handle_controls_reply(req.op.search.res->controls, req.controls);
 			}
 			return -1;
 		}
