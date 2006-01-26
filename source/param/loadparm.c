@@ -694,8 +694,8 @@ static void init_globals(void)
 	do_parameter("tls keyfile", "tls/key.pem", NULL);
 	do_parameter("tls certfile", "tls/cert.pem", NULL);
 	do_parameter("tls cafile", "tls/ca.pem", NULL);
-	do_parameter_var("js include", "%s/js", dyn_LIBDIR);
-	do_parameter_var("setup directory", "%s/setup", dyn_LIBDIR);
+	do_parameter_var("js include", "%s", dyn_JSDIR);
+	do_parameter_var("setup directory", "%s", dyn_SETUPDIR);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(parm_table[i].flags & FLAG_CMDLINE)) {
