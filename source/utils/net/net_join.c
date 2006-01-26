@@ -46,7 +46,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 			} else if (strcasecmp(argv[1], "MEMBER") == 0) {
 				secure_channel_type = SEC_CHAN_WKSTA;
 			} else {
-				DEBUG(0, ("net_join: 2nd argument must be MEMBER or BDC\n"));
+				d_fprintf(stderr, "net_join: 2nd argument must be MEMBER or BDC\n");
 				return net_join_usage(ctx, argc, argv);
 			}
 			break;
@@ -76,8 +76,8 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 	status = libnet_Join(libnetctx, r, r);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Joining domain failed: %s\n",
-			 r->out.error_string ? r->out.error_string : nt_errstr(status));
+		d_fprintf(stderr, "Joining domain failed: %s\n",
+			  r->out.error_string ? r->out.error_string : nt_errstr(status));
 		talloc_free(r);
 		talloc_free(libnetctx);
 		return -1;
