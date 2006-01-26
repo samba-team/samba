@@ -11,6 +11,14 @@ dnl
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
+# Defaults and --without-fhs
+    configdir="\${LIBDIR}"
+    logfilebase="\${localstatedir}"
+    lockdir="\${localstatedir}/locks"
+    piddir="\${localstatedir}/locks"
+    privatedir="\${prefix}/private"
+    swatdir="\${prefix}/swat"
+
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
     configdir="${sysconfdir}/samba"
@@ -19,13 +27,7 @@ AC_ARG_WITH(fhs,
     logfilebase="\${localstatedir}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
-    swatdir="\${datadir}/samba/swat",
-    configdir="\${LIBDIR}"
-    logfilebase="\${localstatedir}"
-    lockdir="\${localstatedir}/locks"
-    piddir="\${localstatedir}/locks"
-    privatedir="\${prefix}/private"
-    swatdir="\${prefix}/swat")
+    swatdir="\${datadir}/samba/swat")
 
 #################################################
 # set private directory location
