@@ -327,14 +327,20 @@ static int process_root(int local_flags)
 	char *old_passwd = NULL;
 
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW) {
-		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
-			lp_ldap_admin_dn());
+		char *ldap_admin_dn = lp_ldap_admin_dn();
+		if ( ! *ldap_admin_dn ) {
+			DEBUG(0,("ERROR: 'ldap admin dn' not defined! Please check your smb.conf\n"));
+			goto done;
+		}
+
+		printf("Setting stored password for \"%s\" in secrets.tdb\n", ldap_admin_dn);
 		if ( ! *ldap_secret ) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
 			fstrcpy(ldap_secret, new_passwd);
 		}
-		if (!store_ldap_admin_pw(ldap_secret))
+		if (!store_ldap_admin_pw(ldap_secret)) {
 			DEBUG(0,("ERROR: Failed to store the ldap admin password!\n"));
+		}
 		goto done;
 	}
 
