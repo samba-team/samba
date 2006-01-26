@@ -16,12 +16,7 @@ shift 5
 failed=0
 
 runcmd() {
-	desc=$1
-	cmd=$2
-	shift 2
-	echo $cmd
-	bin/smbclient -c "$cmd" //$SERVER/tmp -U $DOMAIN\\$USERNAME%$PASSWORD
-	return $?
+	testit "$1" bin/smbclient //$SERVER/tmp -W "$DOMAIN "-U"$USERNAME"%"$PASSWORD"
 }
 
 incdir=`dirname $0`
@@ -35,36 +30,37 @@ bloe
 blah
 EOF
 
+
 # put that file
-runcmd "Putting file" "mput tmpfile" || failed=`expr $failed + 1`
+echo mput tmpfile | runcmd "Putting file" || failed=`expr $failed + 1`
 # check file info
-runcmd "Getting alternative name" "altname tmpfile" || failed=`expr $failed + 1`
+echo altname tmpfile | runcmd "Getting alternative name" || failed=`expr $failed + 1`
 # run allinfo on that file
-runcmd "Checking info on file" "allinfo tmpfile" || failed=`expr $failed + 1`
+echo allinfo tmpfile | runcmd "Checking info on file" || failed=`expr $failed + 1`
 # get that file
 mv tmpfile tmpfile-old
-runcmd "Getting file" "mget tmpfile" || failed=`expr $failed + 1`
+echo mget tmpfile | runcmd "Getting file" || failed=`expr $failed + 1`
 # remove that file
-runcmd "Removing file" "rm tmpfile" || failed=`expr $failed + 1`
+echo rm tmpfile | runcmd "Removing file" || failed=`expr $failed + 1`
 # compare locally
-diff tmpfile-old tmpfile
+testit "Comparing files" diff tmpfile-old tmpfile || failed=`expr $failed + 1`
 # create directory
-runcmd "Creating directory" "mkdir bla" || failed=`expr $failed + 1`
+echo mkdir bla | runcmd "Creating directory" || failed=`expr $failed + 1`
 # cd to directory
-runcmd "Changing directory" "cd bla" || failed=`expr $failed + 1`
+echo cd bla | runcmd "Changing directory" || failed=`expr $failed + 1`
 # cd to top level directory
-runcmd "Going back" "cd .." || failed=`expr $failed + 1`
+echo cd .. | runcmd "Going back" || failed=`expr $failed + 1`
 # remove directory
-runcmd "Removing directory" "rmdir bla" || failed=`expr $failed + 1`
+echo rmdir bla | runcmd "Removing directory"  || failed=`expr $failed + 1`
 # enable recurse, create nested directory
-runcmd "Creating nested directory" "recurse; mkdir bla/bloe" || failed=`expr $failed + 1`
+echo "recurse; echo mkdir bla/bloe; exit" | runcmd "Creating nested directory" || failed=`expr $failed + 1`
 # remove parent directory
-runcmd "Removing directory" "rmdir bla/bloe" || failed=`expr $failed + 1`
+echo rmdir bla/bloe | runcmd "Removing directory" || failed=`expr $failed + 1`
 # remove child directory
-runcmd "Removing directory" "rmdir bla" || failed=`expr $failed + 1`
+echo rmdir bla | runcmd "Removing directory" || failed=`expr $failed + 1`
 # run fsinfo
-runcmd "Getting file system info" "fsinfo objectid" || failed=`expr $failed + 1`
+echo fsinfo objectid | runcmd "Getting file system info" || failed=`expr $failed + 1`
 
-rm tmpfile tmpfile-old
+rm -f tmpfile tmpfile-old
 
 testok $0 $failed
