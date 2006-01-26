@@ -83,7 +83,8 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
-	 -DMODULESDIR=\"$(MODULESDIR)\"
+	 -DMODULESDIR=\"$(MODULESDIR)\" -DJSDIR=\"$(JSDIR)\" \
+	 -DSETUPDIR=\"$(SETUPDIR)\"
 
 install: showlayout installbin installdat installswat installmisc installlib \
 	installheader installpc
@@ -109,7 +110,8 @@ installdirs:
 		$(DESTDIR)$(LOGFILEBASE) \
 		$(DESTDIR)$(PRIVATEDIR)/tls \
 		$(DESTDIR)$(INCLUDEDIR) \
-		$(DESTDIR)$(PKGCONFIGDIR)
+		$(DESTDIR)$(PKGCONFIGDIR) \
+		$(DESTDIR)$(CONFIGDIR) \
 
 installbin: $(SBIN_PROGS) $(BIN_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh \

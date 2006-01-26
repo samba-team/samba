@@ -79,3 +79,7 @@ const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
 
 /** SWAT data file (images, etc) directory */
 const char *dyn_SWATDIR = SWATDIR;
+
+const char *dyn_SETUPDIR = SETUPDIR;
+
+const char *dyn_JSDIR = JSDIR;

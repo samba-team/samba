@@ -38,3 +38,5 @@ extern const char *dyn_PIDDIR;
 extern const char *dyn_SMB_PASSWD_FILE;
 extern const char *dyn_PRIVATE_DIR;
 extern const char *dyn_SWATDIR;
+extern const char *dyn_JSDIR;
+extern const char *dyn_SETUPDIR;
