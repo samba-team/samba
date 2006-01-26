@@ -12,20 +12,21 @@ dnl
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
 # Defaults and --without-fhs
-    logfilebase="\${localstatedir}"
-    lockdir="\${localstatedir}/locks"
-    piddir="\${localstatedir}/run"
-    privatedir="\${prefix}/private"
+logfilebase="${localstatedir}"
+lockdir="${localstatedir}/locks"
+piddir="${localstatedir}/run"
+privatedir="${prefix}/private"
 
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
-    lockdir="\${localstatedir}/lib/samba"
-    piddir="\${localstatedir}/run/samba"
-    logfilebase="\${localstatedir}/log/samba"
-    privatedir="\${localstatedir}/lib/samba/private"
-    libdir="\${libdir}/samba"
-    datadir="\${datadir}/samba"
-    includedir="\${includedir}/samba-4.0"
+    lockdir="${localstatedir}/lib/samba"
+    piddir="${localstatedir}/run/samba"
+    logfilebase="${localstatedir}/log/samba"
+    privatedir="${localstatedir}/lib/samba/private"
+    sysconfdir="${sysconfdir}/samba"
+    libdir="${libdir}/samba"
+    datadir="${datadir}/samba"
+    includedir="${includedir}/samba-4.0"
 )
 
 #################################################
