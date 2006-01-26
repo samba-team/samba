@@ -420,7 +420,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT 
 			 * TDB file doesn't exist, so try to create new one. This is useful to avoid
 			 * confusing error msg when adding user account first time
 			 */
-			if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_CREAT ))) {
+			if ((pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_CREAT )) != NULL) {
 				DEBUG(0, ("pdb_getsampwnam: TDB passwd (%s) did not exist. File successfully created.\n",
 				          tdb_state->tdbsam_location));
 			} else {
