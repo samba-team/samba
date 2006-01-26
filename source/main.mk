@@ -54,6 +54,8 @@ showlayout:
 	@echo '  piddir:   $(PIDDIR)'
 	@echo '  lockdir:  $(LOCKDIR)'
 	@echo '  logfilebase:  $(LOGFILEBASE)'
+	@echo '  setupdir: $(SETUPDIR)'
+	@echo '  jsdir:    $(JSDIR)'
 	@echo '  swatdir:  $(SWATDIR)'
 	@echo '  mandir:   $(MANDIR)'
 
@@ -142,7 +144,7 @@ installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
 installmisc: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(BINDIR)
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(BINDIR)
 
 installpc: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(srcdir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)

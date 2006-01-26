@@ -12,22 +12,21 @@ dnl
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
 # Defaults and --without-fhs
-    configdir="\${LIBDIR}"
     logfilebase="\${localstatedir}"
     lockdir="\${localstatedir}/locks"
-    piddir="\${localstatedir}/locks"
+    piddir="\${localstatedir}/run"
     privatedir="\${prefix}/private"
-    swatdir="\${prefix}/swat"
 
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
-    configdir="${sysconfdir}/samba"
     lockdir="\${localstatedir}/lib/samba"
     piddir="\${localstatedir}/run/samba"
     logfilebase="\${localstatedir}/log/samba"
-    privatedir="\${CONFIGDIR}/private"
-    libdir="\${prefix}/lib/samba"
-    swatdir="\${datadir}/samba/swat")
+    privatedir="\${localstatedir}/lib/samba/private"
+    libdir="\${libdir}/samba"
+    datadir="\${datadir}/samba"
+    includedir="\${includedir}/samba-4.0"
+)
 
 #################################################
 # set private directory location
@@ -78,22 +77,6 @@ AC_ARG_WITH(piddir,
   esac])
 
 #################################################
-# set configuration directory location
-AC_ARG_WITH(configdir,
-[  --with-configdir=DIR    Where to put configuration files (\$libdir)],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_WARN([--with-configdir called without argument - will use default])
-  ;;
-  * )
-    configdir="$withval"
-    ;;
-  esac])
-
-#################################################
 # set log directory location
 AC_ARG_WITH(logfilebase,
 [  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
@@ -110,40 +93,12 @@ AC_ARG_WITH(logfilebase,
   esac])
 
 
-#################################################
-# set swat directory location
-AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR    Where to put configuration files (\$swatdir)],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-swatdir called without argument - will use default])
-  ;;
-  * )
-    swatdir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set lib directory location
-AC_ARG_WITH(libdir,
-[  --with-libdir=DIR    Where to put modules files (\$libdir)],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-libdir called without argument - will use default])
-  ;;
-  * )
-    libdir="$withval"
-    ;;
-  esac])
-
-AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
 AC_SUBST(logfilebase)
 AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
-AC_SUBST(swatdir)
 
 #################################################
 # set prefix for 'make test'
