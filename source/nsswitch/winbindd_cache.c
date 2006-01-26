@@ -29,6 +29,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+/* Global online/offline state - False when online. winbindd starts up online
+   and sets this to true if the first query fails and there's an entry in
+   the cache tdb telling us to stay offline. */
+
+static BOOL global_winbindd_offline_state;
+
 struct winbind_cache {
 	TDB_CONTEXT *tdb;
 };
@@ -430,8 +436,17 @@ done:
 */
 static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, struct cache_entry *centry)
 {
+	/* If we've been told to be offline - stay in that state... */
+	if (lp_winbind_offline_logon() && global_winbindd_offline_state) {
+		DEBUG(10,("centry_expired: Key %s for domain %s valid as winbindd is globally offline.\n",
+			keystr, domain->name ));
+		return False;
+	}
+
 	/* when the domain is offline and we havent checked in the last 30
-	 * seconds if it has become online again, return the cached entry */
+	 * seconds if it has become online again, return the cached entry.
+	 * This deals with transient offline states... */
+
 	if (lp_winbind_offline_logon() && !domain->online && 
 	    !NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, domain->dcname))) {
 		DEBUG(10,("centry_expired: Key %s for domain %s valid as domain is offline.\n",
@@ -1830,8 +1845,9 @@ static BOOL init_wcache(void)
 		return True;
 
 	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_DEFAULT /*TDB_CLEAR_IF_FIRST*/, O_RDWR|O_CREAT, 0600);
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
+				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
+				TDB_DEFAULT /*TDB_CLEAR_IF_FIRST*/, O_RDWR|O_CREAT, 0600);
 
 	if (wcache->tdb == NULL) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
@@ -2078,8 +2094,9 @@ void wcache_flush_cache(void)
 		return;
 
 	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
+				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
+				TDB_DEFAULT /* TDB_CLEAR_IF_FIRST */, O_RDWR|O_CREAT, 0600);
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
@@ -2228,6 +2245,73 @@ done:
 	SAFE_FREE(oldest);
 	
 	return status;
+}
+
+/* Change the global online/offline state. */
+BOOL set_global_winbindd_state_offline(void)
+{
+	TDB_DATA data;
+	int err;
+
+	DEBUG(10,("set_global_winbindd_state_offline: offline requested.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("set_global_winbindd_state_offline: rejecting.\n"));
+		return False;
+	}
+
+	if (global_winbindd_offline_state) {
+		/* Already offline. */
+		return True;
+	}
+
+	/* Only go offline if someone has created
+	   the key "WINBINDD_OFFLINE" in the cache tdb. */
+
+	if (!wcache->tdb) {
+		return False;
+	}
+
+	wcache->tdb->ecode = 0;
+
+	data = tdb_fetch_bystring( wcache->tdb, "WINBINDD_OFFLINE" );
+
+	/* As this is a key with no data we don't need to free, we
+	   check for existence by looking at tdb_err. */
+
+	err = tdb_error(wcache->tdb);
+
+	if (err == TDB_ERR_NOEXIST) {
+		DEBUG(10,("set_global_winbindd_state_offline: offline state not set.\n"));
+		return False;
+	} else {
+		DEBUG(10,("set_global_winbindd_state_offline: offline state set.\n"));
+		global_winbindd_offline_state = True;
+		return True;
+	}
+}
+
+void set_global_winbindd_state_online(void)
+{
+	DEBUG(10,("set_global_winbindd_state_online: online requested.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("set_global_winbindd_state_online: rejecting.\n"));
+		return;
+	}
+
+	if (!global_winbindd_offline_state) {
+		/* Already online. */
+		return;
+	}
+	global_winbindd_offline_state = False;
+
+	if (!wcache->tdb) {
+		return;
+	}
+
+	/* Ensure there is no key "WINBINDD_OFFLINE" in the cache tdb. */
+	tdb_delete_bystring(wcache->tdb, "WINBINDD_OFFLINE");
 }
 
 /* the cache backend methods are exposed via this structure */

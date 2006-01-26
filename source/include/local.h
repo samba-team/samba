@@ -244,4 +244,7 @@
 /* Seconds between connection attempts to a remote server. */
 #define FAILED_CONNECTION_CACHE_TIMEOUT 30
 
+/* Default hash size for the winbindd cache. */
+#define WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE 5000
+
 #endif

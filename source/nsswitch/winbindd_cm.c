@@ -786,6 +786,11 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		if ((fd == -1) &&
 		    !find_new_dc(mem_ctx, domain, domain->dcname,
 				 &domain->dcaddr, &fd)) {
+			/* This is the one place where we will
+			   set the global winbindd offline state
+			   to true, if a "WINBINDD_OFFLINE" entry
+			   is found in the winbindd cache. */
+			set_global_winbindd_state_offline();
 			domain->online = False;
 			break;
 		}
@@ -800,6 +805,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
+		if (domain->online == False) {
+			/* We're changing state from offline to online. */
+			set_global_winbindd_state_online();
+		}
 		domain->online = True;
 	}
 
@@ -807,7 +816,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	return result;
 }
 
-/* Return true if a connection is still alive */
+/* Close down all open pipes on a connection. */
 
 void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 {

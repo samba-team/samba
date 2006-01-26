@@ -456,6 +456,17 @@ void winbind_msg_offline(int msg_type, struct process_id src, void *buf, size_t 
 
 	DEBUG(10,("winbind_msg_offline: got offline message.\n"));
 
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("winbind_msg_offline: rejecting offline message.\n"));
+		return;
+	}
+
+	/* Set our global state as offline. */
+	if (!set_global_winbindd_state_offline()) {
+		DEBUG(10,("winbind_msg_offline: offline request failed.\n"));
+		return;
+	}
+
 	for (child = children; child != NULL; child = child->next) {
 		DEBUG(10,("winbind_msg_offline: sending message to pid %u.\n",
 			(unsigned int)child->pid ));
@@ -469,6 +480,14 @@ void winbind_msg_online(int msg_type, struct process_id src, void *buf, size_t l
 	struct winbindd_child *child;
 
 	DEBUG(10,("winbind_msg_online: got online message.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("winbind_msg_online: rejecting online message.\n"));
+		return;
+	}
+
+	/* Set our global state as online. */
+	set_global_winbindd_state_online();
 
 	for (child = children; child != NULL; child = child->next) {
 		DEBUG(10,("winbind_msg_online: sending message to pid %u.\n",
@@ -516,6 +535,17 @@ static void child_msg_offline(int msg_type, struct process_id src, void *buf, si
 
 	DEBUG(5,("child_msg_offline received.\n"));
 
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("child_msg_offline: rejecting offline message.\n"));
+		return;
+	}
+
+	/* Set our global state as offline. */
+	if (!set_global_winbindd_state_offline()) {
+		DEBUG(10,("child_msg_offline: offline request failed.\n"));
+		return;
+	}
+
 	/* Mark all our domains as offline. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
@@ -531,6 +561,14 @@ static void child_msg_online(int msg_type, struct process_id src, void *buf, siz
 	struct winbindd_domain *domain;
 
 	DEBUG(5,("child_msg_online received.\n"));
+
+	if (!lp_winbind_offline_logon()) {
+		DEBUG(10,("child_msg_online: rejecting online message.\n"));
+		return;
+	}
+
+	/* Set our global state as online. */
+	set_global_winbindd_state_online();
 
 	/* Mark everything online - delete any negative cache entries
 	   to force an immediate reconnect. */
