@@ -74,8 +74,6 @@ void dos_clean_name(char *s)
 	/* remove any double slashes */
 	all_string_sub(s, "\\\\", "\\", 0);
 
-	all_string_sub(s, "/", "\\", 0);
-
 	while ((p = strstr(s,"\\..\\")) != NULL) {
 		*p = '\0';
 		if ((r = strrchr(s,'\\')) != NULL)
@@ -991,7 +989,7 @@ static int cmd_quit(struct smbclient_context *ctx, const char **args)
   ****************************************************************************/
 static int cmd_mkdir(struct smbclient_context *ctx, const char **args)
 {
-	char *mask;
+	char *mask, *p;
   
 	if (!args[1]) {
 		if (!ctx->recurse)
@@ -1002,28 +1000,20 @@ static int cmd_mkdir(struct smbclient_context *ctx, const char **args)
 	mask = talloc_asprintf(ctx, "%s%s", ctx->remote_cur_dir,args[1]);
 
 	if (ctx->recurse) {
-		int i;
-		const char **els;
-		char *parent = NULL;
 		dos_clean_name(mask);
 
 		trim_string(mask,".",NULL);
-
-		els = str_list_make(ctx, mask, "/\\");
-
-		for (i = 0; els[i]; i++) {
-			parent = talloc_asprintf_append(parent, "%s\\", els[i]);
+		for (p = strtok(mask,"/\\"); p; p = strtok(p, "/\\")) {
+			char *parent = talloc_strndup(ctx, mask, PTR_DIFF(p, mask));
 			
 			if (NT_STATUS_IS_ERR(smbcli_chkpath(ctx->cli->tree, parent))) { 
 				do_mkdir(ctx, parent);
 			}
+
+			talloc_free(parent);
 		}	 
-
-
-		talloc_free(parent);
 	} else {
-		if (NT_STATUS_IS_ERR(do_mkdir(ctx, mask)))
-			return 1;
+		do_mkdir(ctx, mask);
 	}
 	
 	return 0;
@@ -2094,13 +2084,10 @@ static int cmd_rmdir(struct smbclient_context *ctx, const char **args)
 		return 1;
 	}
 	mask = talloc_asprintf(ctx, "%s%s", ctx->remote_cur_dir, args[1]);
-	
-	dos_clean_name(mask);
 
 	if (NT_STATUS_IS_ERR(smbcli_rmdir(ctx->cli->tree, mask))) {
-		d_printf("%s removing remote directory %s\n",
+		d_printf("%s removing remote directory file %s\n",
 			 smbcli_errstr(ctx->cli->tree),mask);
-		return 1;
 	}
 	
 	return 0;
@@ -2705,8 +2692,7 @@ process a -c command string
 static int process_command_string(struct smbclient_context *ctx, const char *cmd)
 {
 	const char **lines;
-	int i;
-	int rc = 0;
+	int i, rc = 0;
 
 	lines = str_list_make(NULL, cmd, ";");
 	for (i = 0; lines[i]; i++) {
@@ -2950,12 +2936,9 @@ static int process_stdin(struct smbclient_context *ctx)
 {
 	int rc = 0;
 	while (1) {
-		char *the_prompt;
-		char *cline;
-		
 		/* display a prompt */
-		the_prompt = talloc_asprintf(ctx, "smb: %s> ", ctx->remote_cur_dir);
-		cline = smb_readline(the_prompt, readline_callback, completion_fn);
+		char *the_prompt = talloc_asprintf(ctx, "smb: %s> ", ctx->remote_cur_dir);
+		char *cline = smb_readline(the_prompt, readline_callback, completion_fn);
 		talloc_free(the_prompt);
 			
 		if (!cline) break;
@@ -2966,7 +2949,7 @@ static int process_stdin(struct smbclient_context *ctx)
 			continue;
 		}
 
-		rc |= process_line(ctx, cline); 
+		rc |= process_command_string(ctx, cline); 
 	}
 
 	return rc;
