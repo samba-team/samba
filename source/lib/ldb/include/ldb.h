@@ -276,7 +276,37 @@ struct ldb_parse_tree {
 
 struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s);
 char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
+
+/**
+   Encode a binary blob
+
+   This function encodes a binary blob using the encoding rules in RFC
+   2254 (Section 4). This function also escapes any non-printable
+   characters.
+
+   \param ctx the memory context to allocate the return string in.
+   \param val the (potentially) binary data to be encoded
+
+   \return the encoded data as a null terminated string
+
+   \sa <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>.
+*/
 char *ldb_binary_encode(void *ctx, struct ldb_val val);
+
+/**
+   Encode a string
+
+   This function encodes a string using the encoding rules in RFC 2254
+   (Section 4). This function also escapes any non-printable
+   characters.
+
+   \param mem_ctx the memory context to allocate the return string in.
+   \param string the string to be encoded
+
+   \return the encoded data as a null terminated string
+
+   \sa <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>.
+*/
 char *ldb_binary_encode_string(void *mem_ctx, const char *string);
 
 /*
@@ -328,7 +358,7 @@ struct ldb_attrib_handler {
 
   This is the well-known LDAP attribute syntax for a Directory String.
 
-  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+  \sa <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
 */
 #define LDB_SYNTAX_DIRECTORY_STRING     "1.3.6.1.4.1.1466.115.121.1.15"
 
@@ -532,7 +562,7 @@ struct ldb_request {
 
 	struct ldb_control **controls;
 	struct ldb_credentials *creds;
-}; 
+};
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
 

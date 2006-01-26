@@ -6,7 +6,7 @@ with_sqlite3_support=no
 AC_MSG_CHECKING([for SQLITE3 support])
 
 AC_ARG_WITH(sqlite3,
-[  --with-sqlite3          SQLITE3 support (default=no)],
+AS_HELP_STRING([--with-sqlite3],[SQLITE3 backend support (default=no)]),
 [ case "$withval" in
     yes|no|auto)
 	with_sqlite3_support=$withval

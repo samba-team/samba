@@ -6,7 +6,7 @@ with_ldap_support=auto
 AC_MSG_CHECKING([for LDAP support])
 
 AC_ARG_WITH(ldap,
-[  --with-ldap             LDAP support (default yes)],
+AS_HELP_STRING([--with-ldap],[LDAP backend support (default=yes)]),
 [ case "$withval" in
     yes|no)
 	with_ldap_support=$withval
