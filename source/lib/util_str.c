@@ -1837,12 +1837,12 @@ static void str_list_free_internal(TALLOC_CTX *mem_ctx, char ***list)
 
 void str_list_free_talloc(TALLOC_CTX *mem_ctx, char ***list)
 {
-	return str_list_free_internal(mem_ctx, list);
+	str_list_free_internal(mem_ctx, list);
 }
 
 void str_list_free(char ***list)
 {
-	return str_list_free_internal(NULL, list);
+	str_list_free_internal(NULL, list);
 }
 
 /******************************************************************************
