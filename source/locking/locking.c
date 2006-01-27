@@ -988,28 +988,6 @@ BOOL downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	return True;
 }
 
-
-/*******************************************************************
- We've just told all the smbd's that our level2 or fake level2 has been
- written to.
-********************************************************************/
-BOOL remove_all_share_oplocks(struct share_mode_lock *lck, files_struct *fsp)
-{
-	int i;
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->share_modes[i];
-		if (!is_valid_share_mode_entry(e)) {
-			continue;
-		}
-		if (e->op_type == NO_OPLOCK) {
-			continue;
-		}
-		e->op_type = NO_OPLOCK;
-		lck->modified = True;
-	}
-	return True;
-}
-
 /****************************************************************************
  Deal with the internal needs of setting the delete on close flag. Note that
  as the tdb locking is recursive, it is safe to call this from within 
