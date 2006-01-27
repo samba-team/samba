@@ -61,7 +61,7 @@ COMMON_OBJ=common/ldb.o common/ldb_ldif.o \
 
 MODULES_OBJ=modules/operational.o modules/schema.o modules/rdn_name.o \
 	   modules/objectclass.o modules/ldb_map.o \
-	   modules/paged_results.o modules/sort.o
+	   modules/paged_results.o modules/sort.o modules/asq.o
 
 OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ)
 
