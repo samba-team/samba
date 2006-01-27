@@ -84,6 +84,9 @@ CHANGES
 Those familiar with Samba 3 can find a list of user-visible changes
 since that release series in the NEWS file.
 
+ - An optional password is no longer supported as the second argument to 
+   smbclient.
+
 KNOWN ISSUES
 ============
 
