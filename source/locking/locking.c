@@ -547,7 +547,11 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	offset += sp_len + 1;
 	safe_strcpy(result.dptr + offset, lck->filename,
 		    result.dsize - offset - 1);
-	print_share_mode_table(data);
+
+	if (DEBUGLEVEL >= 10) {
+		print_share_mode_table(data);
+	}
+
 	return result;
 }
 
