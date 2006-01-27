@@ -8,13 +8,13 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
 
-
 Common bugs fixed in 3.0.21b include:
 
-  o Server crashes in smbd
-  o Compile issues on 64-bit platforms
-  o Crash bugs on big-endian systems
+  o Server crashes in smbd.
+  o Compile issues on 64-bit platforms.
+  o Crash bugs on big-endian systems.
   o Packaging fixes for RHEL/Fedora, Solaris, & Debian.
+  o Over 30 bugzilla reports closed.
 
 
 ######################################################################
@@ -41,6 +41,7 @@ o   Jeremy Allison <jra@samba.org>
     * Force smbd to exit if the guest account internal setup fails.
     * BUG 3419: vfs_full_audit fixes for multiple connections.
     * Ensure SWAT lists running processes.
+    * Fix NTLMv2 interoperability bug between Samba servers.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -89,8 +90,6 @@ o   Guenther Deschner <gd@samba.org>
     * Prevent 'net rpc' from dumping clear text password at high log 
       levels unless built with DEBUG_PASSWORD.
     * Fix 'net ads user add' with a Windows 2003 SP1 DC.
-    * Convert net command touse stderr for error messages rather than
-      stdout.
     * Fix python build.
     * Fix segfault in pdb_nds.c.
     * Don't write null sid mappings into the winbindd_cache.tdb.
@@ -189,6 +188,8 @@ o   Lars Müller <lmuelle@samba.org>
     * BUG 3264: Support backwards compatible setups using 
       'idmap backend = idmap_rid'.
     * Add %w macro for the winbind separator.
+    * Convert net command to use stderr for error messages rather 
+      than stdout.
 
 
 o   James Peach <jpeach@sgi.com>
