@@ -1,3 +1,7 @@
+2006-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/protocol.c (kcm_op_retrieve): remove unused variable
+	
 2006-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/krb5-config.in: Move depenency on @LIB_dbopen@ to
