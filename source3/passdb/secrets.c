@@ -299,7 +299,6 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 		*pass_last_set_time = pass->mod_time;
 	}
 	memcpy(ret_pwd, pass->hash, 16);
-	SAFE_FREE(pass);
 
 	if (channel) {
 		*channel = get_default_sec_channel();
@@ -313,6 +312,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 		}
 	}
 
+	SAFE_FREE(pass);
 	return True;
 }
 
