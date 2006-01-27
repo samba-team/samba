@@ -29,6 +29,7 @@ const char *samba_version_string(void)
 	static fstring samba_version;
 	fstring tmp_version;
 	static BOOL init_samba_version;
+	size_t remaining;
 
 	if (init_samba_version)
 		return samba_version;
@@ -38,8 +39,9 @@ const char *samba_version_string(void)
 		SAMBA_VERSION_VENDOR_SUFFIX);
 
 #ifdef SAMBA_VENDOR_PATCH
-	fstr_sprintf( tmp_version, "-%d", SAMBA_VENDOR_PATCH );
-	fstrcat( samba_version, tmp_version );
+	remaining = sizeof(samba_version)-strlen(samba_version);
+	snprintf( tmp_version, sizeof(tmp_version),  "-%d", SAMBA_VENDOR_PATCH );
+	strncat( samba_version, tmp_version, remaining );
 #endif
 
 	init_samba_version = True;

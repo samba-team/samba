@@ -1,12 +1,232 @@
                    ===============================
-                   Release Notes for Samba 3.0.21a
-                              Dec 30, 2005
+                   Release Notes for Samba 3.0.21b
+                              Jan 27, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
+
+
+Common bugs fixed in 3.0.21b include:
+
+  o Server crashes in smbd
+  o Compile issues on 64-bit platforms
+  o Crash bugs on big-endian systems
+  o Packaging fixes for RHEL/Fedora, Solaris, & Debian.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.21a
+--------------------
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * Fix the SAMR cache across handles opens and closes.
+    * Re-add the talloc_describe_all() function for reporting pool 
+      usage.
+    * Merge talloc license change from Samba 4.
+    * Fix 64-bit compile warnings reported by gcc.
+    * Add the share path into the sharemode db. 
+    * Consistency fixes: Remove use of uint8_t -> uint8.
+    * BUG 3346: Fix crash bug in big-endian boxes by linearizing 
+      structure when passing through the messaging API.
+    * BUG 3421: Fix segv in the kerberos key tab code (Thanks to 
+      Luke Deller).
+    * Force smbd to exit if the guest account internal setup fails.
+    * BUG 3419: vfs_full_audit fixes for multiple connections.
+    * Ensure SWAT lists running processes.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 3401: Fix crash bug caused by incorrect handling of weak 
+      session keys.  Based on original patch from Yau Lam Yiu.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 3397: Add USER_INFO_9 for SMS 2003 support (ported from 
+      Samba TNG code).
+
+
+o   Stefan Burkei <stefan@burkei.de>
+    * BUG 3248: When doing auth_crap authentication use the client 
+      given workstation name not our own.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fixing net rpc registry enumerate from overwriting the open 
+      subkey handle.
+    * BUG 3380: fix crash when changing printer drivers.
+    * BUG 3391: ensure we can lookup account policies for failed 
+      logons.
+    * Adding query/set ops for security descriptors on services.
+    * BUG 3329: Solaris packaging fixes.
+    * Better formatting for smbstatus output (based on patch from
+      Adam Neilson).
+    * Hook the max connections spin box in the share properties 
+      MMC plug-in dialog to the 'max connections' smb.conf parameter
+      and the 'modify share command' option.
+    * Work around building libnss_winbind.so on Solaris when 
+      --enable-developer is specified.
+    * Add vendor patch level string to VERSION.
+    * Consolidate packaging for RHEL4 and Fedora based on initial
+      work by jht.  
+
+
+o   Albert Chin <@thewrittenword.com>
+    * BUG 3374: Build failures on True64.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fill in samr_get_dom_pwinfo based on Samba4.
+    * Fill in the clientside TRUSTED_DOMAIN_INFO_EX query.
+    * Fixes for adssearch.pl example script.
+    * Prevent 'net rpc' from dumping clear text password at high log 
+      levels unless built with DEBUG_PASSWORD.
+    * Fix 'net ads user add' with a Windows 2003 SP1 DC.
+    * Convert net command touse stderr for error messages rather than
+      stdout.
+    * Fix python build.
+    * Fix segfault in pdb_nds.c.
+    * Don't write null sid mappings into the winbindd_cache.tdb.
+    * Save sid_to_name lookup result in winbindd already after doing 
+      a successful name_to_sid.
+    * BUG 3390: Fix segfault in "net rpc vampire|samdump".
+    * BUG 1524, 3205: Support changing expired passwords in 
+      pam_winbindd.
+    * Fix netfileenum returning WERR_BUF_TOO_SMALL in rpcclient.
+    * BUG 3264: Allow idmap_ad to load as 'ad'.  Cleanup the way 
+      idmap modules are build and loaded, idmap_rid now will have 
+      to be loaded without prefix, just "rid".
+    * Prevent cli_krb5_get_ticket of getting into an infinite loop. 
+
+
+o   Andrew Esh <Andrew_Esh@adaptec.com>
+    * BUG 1061: Fix nmbd to correctly the path to an lmhosts files 
+      specified on the command line with -H.
+
+
+o   SATOH Fumiyasu <fumiya@samba.gr.jp>
+    * End profile fixes.
+    * BUG 3348: Don't assume owning sticky bit directory means 
+      write access allowed.
+    * Fix double free in on failure path in POSIX acl code.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Configure check for Tru64 EA functions (not yet implemented).
+    * Find Tru64 AIO lib in configure.
+    * Cut-n-paste fixes in configure.in.
+
+
+o   Michael James <michael@james.st>
+    * sid2string fix in adssearch.pl.
+
+
+o   William JoJo <jojowil@hvcc.edu>
+    * BUG 3340: Prevent automatic inclusion of AIO support on AIX.
+    * BUG 3389: Failures on AIX in linking smbd when the symbol 
+      table for ld exceeds 65536 bytes.
+    * Add -W to smbpassword so that the ldap admin dn password does
+      not have to be specified on the command line.
+    * BUG 3408: Fix for external password change programs on AIX.
+    * BUG 1779: 64-bit compile fixes.
+
+
+o   Martin Koeppe <mkoeppe@gmx.de>
+    * BUG 3287: Match SFU behavior for dev/inode numbers.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 3291: Fix valgrind error in client connection code.
+    * BUG 3292: Prevent smbclient from spinning if server terminates
+      connection.
+    * BUG 3293: Use SMBecho instead of chkpath to keep a smbclient 
+      connection alive smbclient.
+    * Add lookupname to rpcclient query_user as a fallback, we now 
+      accept both rid and username.
+    * Introduce yet another copy of the string_sub function: 
+      talloc_string_sub use by AFS token code in winbindd.
+    * BUG 3351: pdb_mysql again overwrites password fields.
+    * BUG 3384: Fix segv in tdbtool.
+    * Use the same CFLAGS for generating the pch as we use to 
+      actually compile.
+    * Correct typo when compiling the vfs_catia module.
+
+
+o   Derrell Lipman <derrell@samba.org>
+    [libsmbclient]
+    * Fix parsing of file times (w_time and m_time were reversed).
+    * Add additional libsmbclient test programs.
+    * BUG 3336: Load networks interfaces in libsmbcliebt after parsing 
+      the configuration files.
+    * Avoid doing a NetBIOS name query for each server and workgroup 
+      enumeration call.
+    * Do not open connection when only looking for cached connection.
+    * BUG 2651: Add option to log debug messages to stderr instead 
+      of stdout.
+    * Added flag to not request authentication information.
+    * Enhancements to smbwrapper example code.
+    * Replace smbwrapper call to dlopen(/lib/libc...) with direct 
+      use of RTLD_NEXT.
+
+
+o   David May <mayd@cygnus.uwa.edu.au>
+    * BUG 3329: Shell scripting portability fixes on 'make test'.
+
+
+o   Tony Mountifield <tony@softins.co.uk>
+    * BUG 3327: fix bad access to gencache.tdb after fork() in 
+      smbmount.
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * BUG 3264: Support backwards compatible setups using 
+      'idmap backend = idmap_rid'.
+    * Add %w macro for the winbind separator.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Portability fixes in LDAP code.  Don't use non-static array 
+      initializers.
+    * Support the TCP_FASTACK socket option if it is available. 
+    * Tell the MIPSPro compiler to push DEBUG calls out of line.
+
+
+o   Makr Proehl <m.proehl@science-computing.de>
+    * BUG 1336: Print the server role when calling testparm in 
+      non-verbose mode.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Crackcheck utility enhancement based on patch sent by 
+      Tom Geissler.
+
+
+o   John Terpstra <jht@samba.org>
+    * RHEL/Fedora spec file patches.
+
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ===============================
+                   Release Notes for Samba 3.0.21a
+                              Dec 30, 2005
+                   ===============================
+
+Common bugs fixed in 3.0.21a include:
+
+  o Deadlocks when multiple users access an oplocked file 
+    concurrently
+
 
 ######################################################################
 Changes
@@ -27,9 +247,6 @@ o   Guenther Deschner <gd@samba.org>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 3349: Deadlock caused logic error in oplock code.
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
@@ -162,6 +379,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix memory leak in SMB client code found by Mikhail Kshevetskiy.
 
 
+
 o   Rashid N. Achilov <shelton@granch.ru>
     * Add better service description names to the svcctl code.
 
@@ -237,6 +455,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Add checks for invalid characters in new share names on the 
       srvsvc pipe.
     * Fix SWAT installation issues with 'make install'.
+    * Always add the BUILTIN\Administrators SID to a Domain 
+      Admins token.
 
 
 o   Alex Deiter <tiamat@komi.mts.ru>
@@ -339,9 +559,9 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Derrell Lipman <derrell@samba.org>
     * Cleanup libmsrpc version numbers.
-    * Libsmbclient memory & file descriptor leak fixes.
-    * Fix crash bug in libsmbclient.
-    * Add long share name support to libsmbclient when enumerating shares.
+    * BUG 2357, 3267, 3273: Plug memory and file descriptor leaks.    * Fix crash bug in libsmbclient.
+    * Add long share name support to libsmbclient when enumerating 
+      shares.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
