@@ -684,6 +684,11 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		   don't have to do anything */
 		for (i=0; i<lck->num_share_modes; i++) {
 			struct share_mode_entry *e = &lck->share_modes[i];
+
+			if (!is_valid_share_mode_entry(e)) {
+				continue;
+			}
+
 			if ((e->op_type == NO_OPLOCK) &&
 			    (e->share_file_id == fsp->file_id) &&
 			    (e->dev == fsp->dev) &&
@@ -700,6 +705,10 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	for(i = 0; i < lck->num_share_modes; i++) {
 		struct share_mode_entry *share_entry = &lck->share_modes[i];
 		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+
+		if (!is_valid_share_mode_entry(share_entry)) {
+			continue;
+		}
 
 		/*
 		 * As there could have been multiple writes waiting at the

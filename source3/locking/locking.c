@@ -384,11 +384,13 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 {
 	static pstring share_str;
 
-	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: "
+	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, file_id = %lu, "
 		 "dev = 0x%x, inode = %.0f",
-		 num, procid_str_static(&e->pid),
+		 num,
+		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
+		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
 		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
 		 (unsigned int)e->dev, (double)e->inode );
@@ -408,9 +410,11 @@ static void print_share_mode_table(struct locking_data *data)
 	int i;
 
 	for (i = 0; i < num_share_modes; i++) {
-		struct share_mode_entry *entry_p = &shares[i];
+		struct share_mode_entry entry;
+
+		memcpy(&entry, &shares[i], sizeof(struct share_mode_entry));
 		DEBUG(10,("print_share_mode_table: %s\n",
-			  share_mode_str(i, entry_p)));
+			  share_mode_str(i, &entry)));
 	}
 }
 
