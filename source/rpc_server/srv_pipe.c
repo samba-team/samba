@@ -1188,12 +1188,17 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p,
 					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
-	DATA_BLOB spnego_blob, auth_blob, auth_reply;
+	RPC_HDR_AUTH auth_info;
+	DATA_BLOB spnego_blob;
+	DATA_BLOB auth_blob;
+	DATA_BLOB auth_reply;
+	DATA_BLOB response;
 	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
 
 	ZERO_STRUCT(spnego_blob);
 	ZERO_STRUCT(auth_blob);
 	ZERO_STRUCT(auth_reply);
+	ZERO_STRUCT(response);
 
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP || !a) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: not in NTLMSSP auth state.\n"));
@@ -1230,7 +1235,24 @@ static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 
 	data_blob_free(&spnego_blob);
 	data_blob_free(&auth_blob);
+
+	/* Generate the spnego "accept completed" blob - no incoming data. */
+	response = spnego_gen_auth_response(&auth_reply, NT_STATUS_OK, OID_NTLMSSP);
+
+	/* Copy the blob into the pout_auth parse struct */
+	init_rpc_hdr_auth(&auth_info, RPC_SPNEGO_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
+		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of RPC_HDR_AUTH failed.\n"));
+		goto err;
+	}
+
+	if (!prs_copy_data_in(pout_auth, (char *)response.data, response.length)) {
+		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of data blob failed.\n"));
+		goto err;
+	}
+
 	data_blob_free(&auth_reply);
+	data_blob_free(&response);
 
 	p->pipe_bound = True;
 
@@ -1241,6 +1263,7 @@ static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 	data_blob_free(&spnego_blob);
 	data_blob_free(&auth_blob);
 	data_blob_free(&auth_reply);
+	data_blob_free(&response);
 
 	free_pipe_ntlmssp_auth_data(&p->auth);
 	p->auth.a_u.auth_ntlmssp_state = NULL;

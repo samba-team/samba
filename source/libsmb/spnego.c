@@ -341,4 +341,3 @@ BOOL free_spnego_data(SPNEGO_DATA *spnego)
 out:
 	return ret;
 }
-
