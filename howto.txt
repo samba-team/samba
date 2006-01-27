@@ -38,6 +38,11 @@ version at some future date using:
 Step 2: compile Samba4
 ----------------------
 
+Recommended optional development libraries:
+- acl and xattr development libraries
+- gnutls
+- readline
+
 Run this:
 
   $ cd samba4/source
