@@ -117,10 +117,19 @@ o   SATOH Fumiyasu <fumiya@samba.gr.jp>
     * Fix double free in on failure path in POSIX acl code.
 
 
+o   Andriy Gapon <avg@icyb.net.ua>
+    * BUG 3458: Fix crash bug in smbd and winbindd caused by 
+      accessing freed memory.
+
+
 o   Björn Jacke <bj@sernet.de>
     * Configure check for Tru64 EA functions (not yet implemented).
     * Find Tru64 AIO lib in configure.
     * Cut-n-paste fixes in configure.in.
+
+
+o   John Janosik <jpjanosi@us.ibm.com>
+    * IBM Tivoli Directory Server schema updates.
 
 
 o   Michael James <michael@james.st>
