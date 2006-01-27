@@ -87,6 +87,9 @@ since that release series in the NEWS file.
  - An optional password is no longer supported as the second argument to 
    smbclient.
 
+ - The default location of smb.conf in non-FHS builds has changed from the 
+   PREFIX/lib directory to the PREFIX/etc directory.
+
 KNOWN ISSUES
 ============
 
