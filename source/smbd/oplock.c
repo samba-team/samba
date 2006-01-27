@@ -372,11 +372,128 @@ static void oplock_timeout_handler(struct timed_event *te,
 {
 	files_struct *fsp = private_data;
 
-	DEBUG(0, ("Oplock break failed -- replying anyway\n"));
+	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
 	reply_to_oplock_break_requests(fsp);
 }
+
+/*******************************************************************
+ Add a timeout handler waiting for the client reply.
+*******************************************************************/
+
+static void add_oplock_timeout_handler(files_struct *fsp)
+{
+	if (fsp->oplock_timeout != NULL) {
+		DEBUG(0, ("Logic problem -- have an oplock event hanging "
+			  "around\n"));
+	}
+
+	fsp->oplock_timeout =
+		add_timed_event(NULL,
+				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
+				"oplock_timeout_handler",
+				oplock_timeout_handler, fsp);
+
+	if (fsp->oplock_timeout == NULL) {
+		DEBUG(0, ("Could not add oplock timeout handler\n"));
+	}
+}
+
+/*******************************************************************
+ This handles the case of a write triggering a break to none
+ message on a level2 oplock.
+ When we get this message we may be in any of three states :
+ NO_OPLOCK, LEVEL_II, FAKE_LEVEL2. We only send a message to
+ the client for LEVEL2.
+*******************************************************************/
+
+static void process_oplock_async_level2_break_message(int msg_type, struct process_id src,
+					 void *buf, size_t len)
+{
+	struct share_mode_entry msg;
+	files_struct *fsp;
+	char *break_msg;
+	BOOL break_to_level2 = False;
+	BOOL sign_state;
+
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != MSG_SMB_SHARE_MODE_ENTRY_SIZE) {
+		DEBUG(0, ("Got invalid msg len %d\n", (int)len));
+		return;
+	}
+
+	/* De-linearize incoming message. */
+	message_to_share_mode_entry(&msg, buf);
+
+	DEBUG(10, ("Got oplock async level 2 break message from pid %d: 0x%x/%.0f/%d\n",
+		   (int)procid_to_pid(&src), (unsigned int)msg.dev, (double)msg.inode,
+		   (int)msg.share_file_id));
+
+	fsp = initial_break_processing(msg.dev, msg.inode,
+				       msg.share_file_id);
+
+	if (fsp == NULL) {
+		/* We hit a race here. Break messages are sent, and before we
+		 * get to process this message, we have closed the file. 
+		 * No need to reply as this is an async message. */
+		DEBUG(3, ("process_oplock_async_level2_break_message: Did not find fsp, ignoring\n"));
+		return;
+	}
+
+	if (fsp->oplock_type == NO_OPLOCK) {
+		/* We already got a "break to none" message and we've handled it.
+		 * just ignore. */
+		DEBUG(3, ("process_oplock_async_level2_break_message: already broken to none, ignoring.\n"));
+		return;
+	}
+
+	if (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
+		/* Don't tell the client, just downgrade. */
+		DEBUG(3, ("process_oplock_async_level2_break_message: downgrading fake level 2 oplock.\n"));
+		remove_oplock(fsp);
+		return;
+	}
+
+	/* Ensure we're really at level2 state. */
+	SMB_ASSERT(fsp->oplock_type == LEVEL_II_OPLOCK);
+
+	/* Now send a break to none message to our client. */
+
+	break_msg = new_break_smb_message(NULL, fsp, OPLOCKLEVEL_NONE);
+	if (break_msg == NULL) {
+		exit_server("Could not talloc break_msg\n");
+	}
+
+	/* Need to wait before sending a break message if we sent ourselves this message. */
+	if (procid_to_pid(&src) == sys_getpid()) {
+		wait_before_sending_break();
+	}
+
+	/* Save the server smb signing state. */
+	sign_state = srv_oplock_set_signing(False);
+
+	show_msg(break_msg);
+	if (!send_smb(smbd_server_fd(), break_msg)) {
+		exit_server("oplock_break: send_smb failed.");
+	}
+
+	/* Restore the sign state to what it was. */
+	srv_oplock_set_signing(sign_state);
+
+	talloc_free(break_msg);
+
+	/* Async level2 request, don't send a reply, just remove the oplock. */
+	remove_oplock(fsp);
+}
+
+/*******************************************************************
+ This handles the generic oplock break message from another smbd.
+*******************************************************************/
 
 static void process_oplock_break_message(int msg_type, struct process_id src,
 					 void *buf, size_t len)
@@ -408,7 +525,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 				       msg.share_file_id);
 
 	if (fsp == NULL) {
-		/* We hit race here. Break messages are sent, and before we
+		/* a We hit race here. Break messages are sent, and before we
 		 * get to process this message, we have closed the file. Reply
 		 * with 'ok, oplock broken' */
 		DEBUG(3, ("Did not find fsp\n"));
@@ -447,8 +564,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		return;
 	}
 
-	if ((msg_type == MSG_SMB_BREAK_REQUEST) &&
-	    (global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
+	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
 	    !koplocks && /* NOTE: we force levelII off for kernel oplocks -
 			  * this will change when it is supported */
 	    lp_level2_oplocks(SNUM(fsp->conn))) {
@@ -461,7 +577,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		exit_server("Could not talloc break_msg\n");
 	}
 
-	/* Need to wait before sending a break message to a file of our own */
+	/* Need to wait before sending a break message if we sent ourselves this message. */
 	if (procid_to_pid(&src) == sys_getpid()) {
 		wait_before_sending_break();
 	}
@@ -479,33 +595,19 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 
 	talloc_free(break_msg);
 
-	if (msg_type == MSG_SMB_BREAK_REQUEST) {
-		fsp->sent_oplock_break = break_to_level2 ?
-			LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
-	} else {
-		/* Async level2 request, don't send a reply */
-		fsp->sent_oplock_break = ASYNC_LEVEL_II_BREAK_SENT;
-	}
+	fsp->sent_oplock_break = break_to_level2 ? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
+
 	msg.pid = src;
 	ADD_TO_ARRAY(NULL, struct share_mode_entry, msg,
 		     &fsp->pending_break_messages,
 		     &fsp->num_pending_break_messages);
 
-	if (fsp->oplock_timeout != NULL) {
-		DEBUG(0, ("Logic problem -- have an oplock event hanging "
-			  "around\n"));
-	}
-
-	fsp->oplock_timeout =
-		add_timed_event(NULL,
-				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
-				"oplock_timeout_handler",
-				oplock_timeout_handler, fsp);
-
-	if (fsp->oplock_timeout == NULL) {
-		DEBUG(0, ("Could not add oplock timeout handler\n"));
-	}
+	add_oplock_timeout_handler(fsp);
 }
+
+/*******************************************************************
+ This handles the kernel oplock break message.
+*******************************************************************/
 
 static void process_kernel_oplock_break(int msg_type, struct process_id src,
 					void *buf, size_t len)
@@ -570,6 +672,8 @@ static void process_kernel_oplock_break(int msg_type, struct process_id src,
 	talloc_free(break_msg);
 
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
+
+	add_oplock_timeout_handler(fsp);
 }
 
 void reply_to_oplock_break_requests(files_struct *fsp)
@@ -591,6 +695,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 	SAFE_FREE(fsp->pending_break_messages);
 	fsp->num_pending_break_messages = 0;
 	if (fsp->oplock_timeout != NULL) {
+		/* Remove the timed event handler. */
 		talloc_free(fsp->oplock_timeout);
 		fsp->oplock_timeout = NULL;
 	}
@@ -679,29 +784,6 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
 		  lck->num_share_modes ));
 
-	if (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
-		/* See if someone else has already downgraded us, then we
-		   don't have to do anything */
-		for (i=0; i<lck->num_share_modes; i++) {
-			struct share_mode_entry *e = &lck->share_modes[i];
-
-			if (!is_valid_share_mode_entry(e)) {
-				continue;
-			}
-
-			if ((e->op_type == NO_OPLOCK) &&
-			    (e->share_file_id == fsp->file_id) &&
-			    (e->dev == fsp->dev) &&
-			    (e->inode == fsp->inode) &&
-			    (procid_is_me(&e->pid))) {
-				/* We're done */
-				fsp->oplock_type = NO_OPLOCK;
-				talloc_free(lck);
-				return;
-			}
-		}
-	}
-
 	for(i = 0; i < lck->num_share_modes; i++) {
 		struct share_mode_entry *share_entry = &lck->share_modes[i];
 		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
@@ -714,7 +796,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		 * As there could have been multiple writes waiting at the
 		 * lock_share_entry gate we may not be the first to
 		 * enter. Hence the state of the op_types in the share mode
-		 * entries may be partly NO_OPLOCK and partly LEVEL_II
+		 * entries may be partly NO_OPLOCK and partly LEVEL_II or FAKE_LEVEL_II
 		 * oplock. It will do no harm to re-send break messages to
 		 * those smbd's that are still waiting their turn to remove
 		 * their LEVEL_II state, and also no harm to ignore existing
@@ -725,8 +807,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			  "share_entry[%i]->op_type == %d\n",
 			  i, share_entry->op_type ));
 
-		if ((share_entry->op_type == NO_OPLOCK) ||
-		    (share_entry->op_type == FAKE_LEVEL_II_OPLOCK)) {
+		if (share_entry->op_type == NO_OPLOCK) {
 			continue;
 		}
 
@@ -747,7 +828,9 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		unbecome_root();
 	}
 
-	remove_all_share_oplocks(lck, fsp);
+	/* We let the message receivers handle removing the oplock state
+	   in the share mode lock db. */
+
 	talloc_free(lck);
 }
 
@@ -795,12 +878,12 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 
 BOOL init_oplocks(void)
 {
-	DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
+	DEBUG(3,("open_oplock_ipc: initializing messages.\n"));
 
 	message_register(MSG_SMB_BREAK_REQUEST,
 			 process_oplock_break_message);
 	message_register(MSG_SMB_ASYNC_LEVEL2_BREAK,
-			 process_oplock_break_message);
+			 process_oplock_async_level2_break_message);
 	message_register(MSG_SMB_BREAK_RESPONSE,
 			 process_oplock_break_response);
 	message_register(MSG_SMB_KERNEL_BREAK,
