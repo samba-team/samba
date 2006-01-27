@@ -174,7 +174,8 @@ OBJ_FILES = \
 		nbt/wins.o \
 		nbt/winsbench.o \
 		nbt/winsreplication.o \
-		nbt/dgram.o
+		nbt/dgram.o \
+		nbt/browse.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB LIBCLI_NBT LIBCLI_WREPL
 # End SUBSYSTEM TORTURE_NBT
