@@ -22,7 +22,6 @@
 */
 #include "includes.h"
 #include "system/iconv.h"
-#include "pstring.h"
 
 /**
  * @file
@@ -303,10 +302,6 @@ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 		return ret;
 	}
 
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
-
 	src_len = strlen(src);
 
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
@@ -351,9 +346,6 @@ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
-
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
 
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		if (src_len == (size_t)-1) {
@@ -405,10 +397,6 @@ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 		talloc_free(tmpbuf);
 		return ret;
 	}
-
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
 
 	if (flags & STR_TERMINATE)
 		src_len++;
@@ -481,9 +469,6 @@ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
 size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
-
-	if (dest_len == (size_t)-1)
-		dest_len = sizeof(pstring);
 
 	if (ucs2_align(NULL, src, flags)) {
 		src = (const void *)((const char *)src + 1);
