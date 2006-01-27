@@ -336,9 +336,6 @@ kcm_op_retrieve(krb5_context context,
 				   &mcreds, &credp);
     if (ret && ((flags & KRB5_GC_CACHED) == 0)) {
 	krb5_ccache_data ccdata;
-	krb5_creds in;
-
-	memset(&in, 0, sizeof(in));
 
 	/* try and acquire */
 	HEIMDAL_MUTEX_lock(&ccache->mutex);
