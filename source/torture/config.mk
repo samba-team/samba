@@ -121,14 +121,13 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
-# Start SUBSYSTEM TORTURE_IPC
-[SUBSYSTEM::TORTURE_IPC]
+# Start SUBSYSTEM TORTURE_RAP
+[SUBSYSTEM::TORTURE_RAP]
 OBJ_FILES = \
-		ipc/rap.o \
-		ipc/np_echo.o 
+		rap/rap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
-# End SUBSYSTEM TORTURE_IPC
+# End SUBSYSTEM TORTURE_RAP
 #################################
 
 #################################
@@ -211,7 +210,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_RAW \
 		TORTURE_SMB2 \
 		TORTURE_RPC \
-		TORTURE_IPC \
+		TORTURE_RAP \
 		TORTURE_AUTH \
 		TORTURE_LOCAL \
 		TORTURE_NBENCH \

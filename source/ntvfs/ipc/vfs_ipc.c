@@ -4,7 +4,6 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Stefan (metze) Metzmacher 2004-2005
-   Copyright (C) Jelmer Vernooij 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,10 +28,8 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
-#include "ntvfs/ipc/ipc.h"
 #include "ntvfs/ntvfs.h"
 #include "rpc_server/dcerpc_server.h"
-#include "smb_build.h"
 
 #define IPC_BASE_FNUM 0x400
 
@@ -49,9 +46,8 @@ struct ipc_private {
 		struct pipe_state *next, *prev;
 		struct ipc_private *private;
 		const char *pipe_name;
-		const struct named_pipe_ops *ops;
-		void *private_data;
 		uint16_t fnum;
+		struct dcesrv_connection *dce_conn;
 		uint16_t ipc_state;
 		/* we need to remember the session it was opened on,
 		   as it is illegal to operate on someone elses fnum */
@@ -80,6 +76,7 @@ static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t 
 static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 			    struct smbsrv_request *req, const char *sharename)
 {
+	NTSTATUS status;
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct ipc_private *private;
 
@@ -99,6 +96,10 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 
 	private->idtree_fnum = idr_init(private);
 	NT_STATUS_HAVE_NO_MEMORY(private->idtree_fnum);
+
+	/* setup the DCERPC server subsystem */
+	status = dcesrv_init_ipc_context(private, &private->dcesrv);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
 }
@@ -170,55 +171,6 @@ static int ipc_fd_destructor(void *ptr)
 	return 0;
 }
 
-static struct named_pipe {
-	struct named_pipe *prev, *next;
-	const char *name;
-	const struct named_pipe_ops *ops;
-	void *context_data;
-} *named_pipes = NULL;
-
-static NTSTATUS find_pipe_ops(const char *fname, const struct named_pipe_ops **ops, void **context_data)
-{
-	struct named_pipe *np;
-
-	for (np = named_pipes; np; np = np->next) {
-		if (strcasecmp_m(np->name, fname) == 0) {
-			if (ops) *ops = np->ops;
-			if (context_data) *context_data = np->context_data;
-			return NT_STATUS_OK;
-		}
-	}
-
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-}
-
-NTSTATUS named_pipe_listen(const char *name, const struct named_pipe_ops *ops, void *context_data)
-{
-	NTSTATUS status;
-	struct named_pipe *np;
-	DEBUG(3, ("Registering named pipe `%s'\n", name));
-
-	status = find_pipe_ops(name, NULL, NULL);
-	if (NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		return status;
-	}
-
-	np = talloc(talloc_autofree_context(), struct named_pipe);
-	np->name = talloc_strdup(np, name);
-	np->ops = ops;
-	np->context_data = context_data;
-	np->prev = np->next = NULL;
-
-	DLIST_ADD(named_pipes, np);
-
-	return NT_STATUS_OK;
-}
-
-
 
 /*
   open a file backend - used for MSRPC pipes
@@ -229,9 +181,10 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 {
 	struct pipe_state *p;
 	NTSTATUS status;
+	struct dcerpc_binding *ep_description;
 	struct ipc_private *private = ntvfs->private_data;
-	void *context_data;
 	int fnum;
+	struct stream_connection *srv_conn = req->smb_conn->connection;
 
 	if (!req->session || !req->session->session_info) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -240,23 +193,13 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	p = talloc(req, struct pipe_state);
 	NT_STATUS_HAVE_NO_MEMORY(p);
 
+	ep_description = talloc(req, struct dcerpc_binding);
+	NT_STATUS_HAVE_NO_MEMORY(ep_description);
+
 	while (fname[0] == '\\') fname++;
-	
+
 	p->pipe_name = talloc_asprintf(p, "\\pipe\\%s", fname);
 	NT_STATUS_HAVE_NO_MEMORY(p->pipe_name);
-
-	status = find_pipe_ops(p->pipe_name, &p->ops, &context_data);
-
-	/* FIXME: Perhaps fall back to opening /var/lib/samba/ipc/<pipename> ? */
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0, ("Unable to find pipe ops for `%s'\n", p->pipe_name));
-		return status;
-	}
-
-	status = p->ops->open(context_data, p->pipe_name, req->session->session_info, req->smb_conn->connection, p, &p->private_data);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
 
 	fnum = idr_get_new_above(private->idtree_fnum, p, IPC_BASE_FNUM, UINT16_MAX);
 	if (fnum == -1) {
@@ -265,6 +208,29 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 
 	p->fnum = fnum;
 	p->ipc_state = 0x5ff;
+
+	/*
+	  we're all set, now ask the dcerpc server subsystem to open the 
+	  endpoint. At this stage the pipe isn't bound, so we don't
+	  know what interface the user actually wants, just that they want
+	  one of the interfaces attached to this pipe endpoint.
+	*/
+	ep_description->transport = NCACN_NP;
+	ep_description->endpoint = talloc_reference(ep_description, p->pipe_name);
+
+	/* The session info is refcount-increased in the 
+	 * dcesrv_endpoint_search_connect() function
+	 */
+	status = dcesrv_endpoint_search_connect(private->dcesrv,
+						p,
+						ep_description, 
+						req->session->session_info,
+						srv_conn,
+						&p->dce_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(private->idtree_fnum, p->fnum);
+		return status;
+	}
 
 	DLIST_ADD(private->pipe_list, p);
 
@@ -385,6 +351,18 @@ static NTSTATUS ipc_copy(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+static NTSTATUS ipc_readx_dcesrv_output(void *private_data, DATA_BLOB *out, size_t *nwritten)
+{
+	DATA_BLOB *blob = private_data;
+
+	if (out->length < blob->length) {
+		blob->length = out->length;
+	}
+	memcpy(blob->data, out->data, blob->length);
+	*nwritten = blob->length;
+	return NT_STATUS_OK;
+}
+
 /*
   read from a file
 */
@@ -415,7 +393,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (data.length != 0) {
-		status = p->ops->read(p->private_data, &data);
+		status = dcesrv_output(p->dce_conn, &data, ipc_readx_dcesrv_output);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -453,7 +431,7 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status = p->ops->write(p->private_data, &data);
+	status = dcesrv_input(p->dce_conn, &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -639,8 +617,71 @@ static NTSTATUS ipc_search_close(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+static NTSTATUS ipc_trans_dcesrv_output(void *private_data, DATA_BLOB *out, size_t *nwritten)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	DATA_BLOB *blob = private_data;
+
+	if (out->length > blob->length) {
+		status = STATUS_BUFFER_OVERFLOW;
+	}
+
+	if (out->length < blob->length) {
+		blob->length = out->length;
+	}
+	memcpy(blob->data, out->data, blob->length);
+	*nwritten = blob->length;
+	return status;
+}
+
+/* SMBtrans - handle a DCERPC command */
+static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
+			       struct smbsrv_request *req, struct smb_trans2 *trans)
+{
+	struct pipe_state *p;
+	struct ipc_private *private = ntvfs->private_data;
+	NTSTATUS status;
+
+	/* the fnum is in setup[1] */
+	p = pipe_state_find(private, trans->in.setup[1]);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	trans->out.data = data_blob_talloc(req, NULL, trans->in.max_data);
+	if (!trans->out.data.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* pass the data to the dcerpc server. Note that we don't
+	   expect this to fail, and things like NDR faults are not
+	   reported at this stage. Those sorts of errors happen in the
+	   dcesrv_output stage */
+	status = dcesrv_input(p->dce_conn, &trans->in.data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	  now ask the dcerpc system for some output. This doesn't yet handle
+	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
+	  the error is encoded at the dcerpc level
+	*/
+	status = dcesrv_output(p->dce_conn, &trans->out.data, ipc_trans_dcesrv_output);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	trans->out.setup_count = 0;
+	trans->out.setup = NULL;
+	trans->out.params = data_blob(NULL, 0);
+
+	return status;
+}
+
+
 /* SMBtrans - set named pipe state */
-static NTSTATUS ipc_np_set_nm_state(struct ntvfs_module_context *ntvfs,
+static NTSTATUS ipc_set_nm_pipe_state(struct ntvfs_module_context *ntvfs,
 				struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	struct ipc_private *private = ntvfs->private_data;
@@ -665,40 +706,6 @@ static NTSTATUS ipc_np_set_nm_state(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_OK;
 }
 
-/* SMBtrans - named pipe transaction */
-static NTSTATUS ipc_np_trans(struct ntvfs_module_context *ntvfs,
-				struct smbsrv_request *req, struct smb_trans2 *trans)
-{
-	struct ipc_private *private = ntvfs->private_data;
-	NTSTATUS status;
-	struct pipe_state *p;
-
-	/* the fnum is in setup[1] */
-	p = pipe_state_find(private, trans->in.setup[1]);
-	if (!p) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-   	if (trans->in.setup_count != 2) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
-	trans->out.data = data_blob_talloc(req, NULL, trans->in.max_data);
-	if (!trans->out.data.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	status = p->ops->trans(p->private_data, &trans->in.data, &trans->out.data);
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	trans->out.setup_count = 0;
-	trans->out.setup = NULL;
-	trans->out.params = data_blob(NULL, 0);
-
-	return NT_STATUS_OK;
-}
 
 /* SMBtrans - used to provide access to SMB pipes */
 static NTSTATUS ipc_trans(struct ntvfs_module_context *ntvfs,
@@ -706,27 +713,29 @@ static NTSTATUS ipc_trans(struct ntvfs_module_context *ntvfs,
 {
 	NTSTATUS status;
 
-	if (strequal(trans->in.trans_name, "\\PIPE\\")) { /* Named pipe */
-		switch (trans->in.setup[0]) {
-		case NAMED_PIPE_SETHANDLESTATE:
-			status = ipc_np_set_nm_state(ntvfs, req, trans);
-			break;
-		case NAMED_PIPE_TRANSACT:
-			status = ipc_np_trans(ntvfs, req, trans);
-			break;
-		default:
-			status = NT_STATUS_INVALID_PARAMETER;
-			break;
-		}
-	} else if (strequal(trans->in.trans_name, "\\PIPE\\LANMAN")) { /* RAP */
-		status = ipc_rap_call(req, trans);
-	} else {
-		DEBUG(1, ("Unknown transaction name `%s'\n", trans->in.trans_name));
-		status = NT_STATUS_NOT_SUPPORTED;
+	if (strequal(trans->in.trans_name, "\\PIPE\\LANMAN"))
+		return ipc_rap_call(req, trans);
+
+       	if (trans->in.setup_count != 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (trans->in.setup[0]) {
+	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
+		status = ipc_set_nm_pipe_state(ntvfs, req, trans);
+		break;
+	case TRANSACT_DCERPCCMD:
+		status = ipc_dcerpc_cmd(ntvfs, req, trans);
+		break;
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
 	}
 
 	return status;
 }
+
+
 
 /*
   initialialise the IPC backend, registering ourselves with the ntvfs subsystem
@@ -735,9 +744,7 @@ NTSTATUS ntvfs_ipc_init(void)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;
-	init_module_fn static_init[] = STATIC_ntvfs_ipc_MODULES;
-	init_module_fn *shared_init;
-	
+
 	ZERO_STRUCT(ops);
 	
 	/* fill in the name and type */
@@ -783,14 +790,6 @@ NTSTATUS ntvfs_ipc_init(void)
 		DEBUG(0,("Failed to register IPC backend!\n"));
 		return ret;
 	}
-
-	/* load available named pipe backends */
-	shared_init = load_samba_modules(NULL, "np");
-
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
-
-	talloc_free(shared_init);
 
 	return ret;
 }

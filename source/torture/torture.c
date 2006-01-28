@@ -2246,7 +2246,6 @@ static struct {
 	{"RAW-ACLS", torture_raw_acls, 0},
 	{"RAW-RAP", torture_raw_rap, 0},
 	{"RAW-COMPOSITE", torture_raw_composite, 0},
-	{"RAW-PIPE-ECHO", torture_np_echo, 0 },
 
 	/* SMB2 tests */
 	{"SMB2-CONNECT", torture_smb2_connect, 0},

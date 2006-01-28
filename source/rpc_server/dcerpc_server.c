@@ -1171,6 +1171,21 @@ static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_s
 	return NT_STATUS_OK;
 }
 
+/*
+  initialise the dcerpc server context for ncacn_np based services
+*/
+NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_dce_ctx)
+{
+	NTSTATUS status;
+	struct dcesrv_context *dce_ctx;
+
+	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(), 0, &dce_ctx);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*_dce_ctx = dce_ctx;
+	return NT_STATUS_OK;
+}
+
 /* the list of currently registered DCERPC endpoint servers.
  */
 static struct ep_server {
@@ -1290,8 +1305,8 @@ static NTSTATUS dcesrv_init(struct event_context *event_context, const struct mo
 			break;
 			
 		case NCACN_NP:
-			status = dcesrv_add_ep_np(dce_ctx, e, event_context, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
+/*			FIXME: status = dcesrv_add_ep_np(dce_ctx, e, event_context, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status); */
 			break;
 
 		default:
