@@ -447,7 +447,7 @@ static BOOL centry_expired(struct winbindd_domain *domain, const char *keystr, s
 	 * seconds if it has become online again, return the cached entry.
 	 * This deals with transient offline states... */
 
-	if (lp_winbind_offline_logon() && !domain->online && 
+	if (!domain->online && 
 	    !NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, domain->dcname))) {
 		DEBUG(10,("centry_expired: Key %s for domain %s valid as domain is offline.\n",
 			keystr, domain->name ));
