@@ -542,7 +542,7 @@ BOOL reload_services(BOOL test)
 
 	lp_killunused(conn_snum_used);
 
-	ret = lp_load(dyn_CONFIGFILE, False, False, True);
+	ret = lp_load(dyn_CONFIGFILE, False, False, True, True);
 
 	reload_printers();
 

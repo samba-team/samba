@@ -648,7 +648,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,False,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,False,False,False,True)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		return (-1);
 	}

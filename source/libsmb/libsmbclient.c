@@ -6018,7 +6018,7 @@ smbc_init_context(SMBCCTX *context)
                 home = getenv("HOME");
 		if (home) {
 			slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
-			if (lp_load(conf, True, False, False)) {
+			if (lp_load(conf, True, False, False, True)) {
 				conf_loaded = True;
 			} else {
                                 DEBUG(5, ("Could not load config file: %s\n",
@@ -6034,7 +6034,7 @@ smbc_init_context(SMBCCTX *context)
                          * defaults ...
                          */
 
-                        if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+                        if (!lp_load(dyn_CONFIGFILE, True, False, False, False)) {
                                 DEBUG(5, ("Could not load config file: %s\n",
                                           dyn_CONFIGFILE));
                         } else if (home) {
@@ -6045,7 +6045,7 @@ smbc_init_context(SMBCCTX *context)
                                  */
                                 slprintf(conf, sizeof(conf),
                                          "%s/.smb/smb.conf.append", home);
-                                if (!lp_load(conf, True, False, False)) {
+                                if (!lp_load(conf, True, False, False, False)) {
                                         DEBUG(10,
                                               ("Could not append config file: "
                                                "%s\n",

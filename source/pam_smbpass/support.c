@@ -167,7 +167,7 @@ int set_ctrl( int flags, int argc, const char **argv )
 
     /* Read some options from the Samba config. Can be overridden by
        the PAM config. */
-    if(lp_load(service_file,True,False,False) == False) {
+    if(lp_load(service_file,True,False,False,True) == False) {
 	_log_err( LOG_ERR, "Error loading service file %s", service_file );
     }
 

@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 	const char *ret = NULL;
 
 	/* Needed to initialize character set */
-	lp_load("/dev/null", True, False, False);
+	lp_load("/dev/null", True, False, False, True);
 
 	if (argc < 3) {
 		fprintf(stderr, "usage: %s STRING1 STRING2 [ITERS]\n"

@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	int count = 1;
 
 	/* Needed to initialize character set */
-	lp_load("/dev/null", True, False, False);
+	lp_load("/dev/null", True, False, False, True);
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s STRING1 [COUNT]\n"

@@ -1758,7 +1758,7 @@ enum {
 	
 	/* Samba client initialisation */
 
-	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+	if (!lp_load(dyn_CONFIGFILE, True, False, False, True)) {
 		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
 			dyn_CONFIGFILE, strerror(errno));
 		exit(1);
