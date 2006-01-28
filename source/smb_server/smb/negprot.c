@@ -383,7 +383,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Failed to start SPNEGO as well as NTLMSSP fallback: %s\n", nt_errstr(nt_status)));
-				smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO and NTLMSSP\n");
+				smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO and NTLMSSP");
 				return;
 			}
 			/* NTLMSSP is a client-first exchange */
