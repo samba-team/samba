@@ -62,6 +62,7 @@ static void popt_common_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
+		/* Hook for 'almost the first thing to do in a samba program' here */
 		/* setup for panics */
 		fault_setup(poptGetInvocationName(con));
 
