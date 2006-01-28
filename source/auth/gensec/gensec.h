@@ -95,6 +95,7 @@ struct gensec_security_ops {
 	BOOL (*have_feature)(struct gensec_security *gensec_security,
 				    uint32_t feature); 
 	BOOL enabled;
+	BOOL kerberos;
 };
 	
 struct gensec_security_ops_wrapper {
