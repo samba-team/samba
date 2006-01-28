@@ -958,6 +958,7 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info;
+	struct gensec_security_ops **not_kerberos_list;
 	*db = talloc(mem_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_string(context, "malloc: out of memory");
@@ -980,11 +981,8 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	 * certificates, for now it will almost certainly be NTLMSSP
 	*/
 	
-	nt_status = cli_credentials_gensec_remove_oid(session_info->credentials, 
-						      GENSEC_OID_KERBEROS5);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	cli_credentials_set_kerberos_state(session_info->credentials, 
+					   CRED_DONT_USE_KERBEROS);
 
 	/* Setup the link to LDB */
 	(*db)->hdb_db = samdb_connect(*db, session_info);
