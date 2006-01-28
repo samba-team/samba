@@ -41,7 +41,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 
 	setup_logging(argv[0],True);
 	
-	lp_load(dyn_CONFIGFILE,False,False,False);
+	lp_load(dyn_CONFIGFILE,False,False,False,True);
 
 	message_init();
 

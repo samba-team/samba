@@ -3654,7 +3654,7 @@ static int do_message_op(void)
 	if ( override_logfile )
 		setup_logging( lp_logfile(), False );
 	
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], dyn_CONFIGFILE);
 	}

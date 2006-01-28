@@ -242,7 +242,7 @@ enum client_action
 	*term_code = 0;
 #endif /* KANJI */
 
-	if (!lp_load(dyn_CONFIGFILE,True, False, False))
+	if (!lp_load(dyn_CONFIGFILE,True, False, False, True))
 	{
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 	}

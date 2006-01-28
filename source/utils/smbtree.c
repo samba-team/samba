@@ -216,7 +216,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 	while(poptGetNextOpt(pc) != -1);
 	poptFreeContext(pc);
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	load_interfaces();
 
 	/* Parse command line args */

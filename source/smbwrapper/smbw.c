@@ -76,7 +76,7 @@ void smbw_init(void)
 		pstrcpy(dyn_CONFIGFILE, p);
 	}
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 
 	if (!init_names())
 		exit(1);

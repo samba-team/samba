@@ -827,7 +827,7 @@ int main(int argc, const char **argv)
 	if (argc == 1)
 		usage(&pc);
 
-	lp_load(dyn_CONFIGFILE,False,False,False);
+	lp_load(dyn_CONFIGFILE,False,False,False,True);
 
 	/* Need to invert sense of return code -- samba
          * routines mostly return True==1 for success, but
