@@ -47,7 +47,10 @@ OBJ_FILES = \
 # End MODULE ntvfs_ipc
 ################################################
 
-
+[MODULE::np_echo]
+INIT_FUNCTION = np_echo_init
+OBJ_FILES = ipc/np_echo.o
+SUBSYSTEM = ntvfs_ipc
 
 ################################################
 # Start MODULE ntvfs_nbench

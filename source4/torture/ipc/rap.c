@@ -20,10 +20,10 @@
 */
 
 #include "includes.h"
-#include "torture/torture.h"
 #include "rap.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
+#include "torture/torture.h"
 
 struct rap_call {
 	uint16_t callno;
