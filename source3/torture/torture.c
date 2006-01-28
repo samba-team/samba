@@ -4916,7 +4916,7 @@ static void usage(void)
 
 	load_case_tables();
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	load_interfaces();
 
 	if (argc < 2) {

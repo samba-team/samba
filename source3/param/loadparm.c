@@ -1354,10 +1354,16 @@ static void init_printer_values(service *pService)
  Initialise the global parameter structure.
 ***************************************************************************/
 
-static void init_globals(void)
+static void init_globals(BOOL first_time_only)
 {
 	static BOOL done_init = False;
 	pstring s;
+
+        /* If requested to initialize only once and we've already done it... */
+        if (first_time_only && done_init) {
+                /* ... then we have nothing more to do */
+                return;
+        }
 
 	if (!done_init) {
 		int i;
@@ -4188,8 +4194,11 @@ static void set_allowed_client_auth(void)
  False on failure.
 ***************************************************************************/
 
-BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
-	     BOOL add_ipc)
+BOOL lp_load(const char *pszFname,
+             BOOL global_only,
+             BOOL save_defaults,
+	     BOOL add_ipc,
+             BOOL initialize_globals)
 {
 	pstring n2;
 	BOOL bRetval;
@@ -4208,7 +4217,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
 
-	init_globals();
+	init_globals(! initialize_globals);
 	debug_init();
 
 	if (save_defaults) {

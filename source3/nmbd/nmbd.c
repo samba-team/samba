@@ -291,7 +291,7 @@ static BOOL reload_nmbd_services(BOOL test)
 	if ( test && !lp_file_list_changed() )
 		return(True);
 
-	ret = lp_load( dyn_CONFIGFILE, True , False, False);
+	ret = lp_load( dyn_CONFIGFILE, True , False, False, True);
 
 	/* perhaps the config filename is now set */
 	if ( !test ) {

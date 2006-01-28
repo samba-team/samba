@@ -498,7 +498,7 @@ static void usage(void)
 	argc -= 4;
 	argv += 4;
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE,True,False,False,True);
 	load_interfaces();
 
 	if (getenv("USER")) {

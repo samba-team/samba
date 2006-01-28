@@ -64,7 +64,7 @@ BOOL reload_services(BOOL test)
 	if (test && !lp_file_list_changed())
 		return(True);
 
-	ret = lp_load(dyn_CONFIGFILE,False,False,True);
+	ret = lp_load(dyn_CONFIGFILE,False,False,True,True);
 
 
 	/* perhaps the config filename is now set */
