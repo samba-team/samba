@@ -912,7 +912,6 @@ FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 /* local prototypes */
 
 static int map_parameter(const char *pszParmName);
-static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
 static int getservicebyname(const char *pszServiceName,
 			    service * pserviceDest);
 static void copy_service(service * pserviceDest,
@@ -1004,7 +1003,7 @@ static BOOL lp_bool(const char *s)
 		return False;
 	}
 	
-	if (!set_boolean(&ret,s)) {
+	if (!set_boolean(s, &ret)) {
 		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
 		return False;
 	}
@@ -1371,34 +1370,6 @@ void *lp_parm_ptr(int snum, struct parm_struct *parm)
 		return parm->ptr;
 	}
 	return ((char *)ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
-}
-
-/***************************************************************************
- Set a boolean variable from the text value stored in the passed string.
- Returns True in success, False if the passed string does not correctly 
- represent a boolean.
-***************************************************************************/
-
-static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
-{
-	BOOL bRetval;
-
-	bRetval = True;
-	if (strwicmp(pszParmValue, "yes") == 0 ||
-	    strwicmp(pszParmValue, "true") == 0 ||
-	    strwicmp(pszParmValue, "1") == 0)
-		*pb = True;
-	else if (strwicmp(pszParmValue, "no") == 0 ||
-		    strwicmp(pszParmValue, "False") == 0 ||
-		    strwicmp(pszParmValue, "0") == 0)
-		*pb = False;
-	else {
-		DEBUG(0,
-		      ("ERROR: Badly formed boolean in configuration file: \"%s\".\n",
-		       pszParmValue));
-		bRetval = False;
-	}
-	return (bRetval);
 }
 
 /***************************************************************************
@@ -1841,7 +1812,10 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL:
-			set_boolean(parm_ptr, pszParmValue);
+			if (!set_boolean(pszParmValue, parm_ptr)) {
+				DEBUG(0,("lp_do_parameter(%s): value is not boolean!\n", pszParmValue));
+				return False;
+			}
 			break;
 
 		case P_INTEGER:

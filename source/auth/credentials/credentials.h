@@ -32,15 +32,19 @@ enum credentials_obtained {
 	CRED_SPECIFIED		 /* Was explicitly specified on the command-line */
 };
 
+enum credentials_use_kerberos {
+	CRED_AUTO_USE_KERBEROS = 0, /* Default, we try kerberos if available */
+	CRED_DONT_USE_KERBEROS,     /* Sometimes trying kerberos just does 'bad things', so don't */
+	CRED_MUST_USE_KERBEROS      /* Sometimes administrators are parinoid, so always do kerberos */
+};
+
 #define CLI_CRED_NTLM2       0x01
 #define CLI_CRED_NTLMv2_AUTH 0x02
 #define CLI_CRED_LANMAN_AUTH 0x04
 #define CLI_CRED_NTLM_AUTH   0x08
+#define CLI_CRED_CLEAR_AUTH  0x10   /* TODO:  Push cleartext auth with this flag */
 
 struct cli_credentials {
-	/* Preferred methods, NULL means default */
-	const char **preferred_methods;
-
 	enum credentials_obtained workstation_obtained;
 	enum credentials_obtained username_obtained;
 	enum credentials_obtained password_obtained;
@@ -94,8 +98,8 @@ struct cli_credentials {
 	/* Is this a machine account? */
 	BOOL machine_account;
 
-	/* A list of valid GENSEC mechanisms for use on this account */
-	const struct gensec_security_ops **gensec_list;
+	/* Should we be trying to use kerberos? */
+	enum credentials_use_kerberos use_kerberos;
 };
 
 #include "auth/credentials/credentials_proto.h"

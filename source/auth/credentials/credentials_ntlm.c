@@ -66,6 +66,10 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 	if (cred->machine_account) {
 		*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
 	}
+	
+	if (cred->use_kerberos == CRED_MUST_USE_KERBEROS) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (!nt_hash) {
 		static const uint8_t zeros[16];

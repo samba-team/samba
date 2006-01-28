@@ -1111,3 +1111,28 @@ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 
 	return ret;
 }
+
+/***************************************************************************
+ Set a boolean variable from the text value stored in the passed string.
+ Returns True in success, False if the passed string does not correctly 
+ represent a boolean.
+***************************************************************************/
+
+BOOL set_boolean(const char *boolean_string, BOOL *boolean)
+{
+	if (strwicmp(boolean_string, "yes") == 0 ||
+	    strwicmp(boolean_string, "true") == 0 ||
+	    strwicmp(boolean_string, "on") == 0 ||
+	    strwicmp(boolean_string, "1") == 0) {
+		*boolean = True;
+		return True;
+	} else if (strwicmp(boolean_string, "no") == 0 ||
+		   strwicmp(boolean_string, "false") == 0 ||
+		   strwicmp(boolean_string, "off") == 0 ||
+		   strwicmp(boolean_string, "0") == 0) {
+		*boolean = False;
+		return True;
+	}
+	return False;
+}
+

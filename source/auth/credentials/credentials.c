@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
-
+#include "auth/gensec/gensec.h"
 
 /**
  * Create a new credentials structure
@@ -54,12 +54,25 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->smb_krb5_context = NULL;
 	cred->salt_principal = NULL;
 	cred->machine_account = False;
-	cred->gensec_list = NULL;
 
 	cred->bind_dn = NULL;
 
+	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
+
 	return cred;
 }
+
+void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
+					enum credentials_use_kerberos use_kerberos)
+{
+	creds->use_kerberos = use_kerberos;
+}
+
+enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds)
+{
+	return creds->use_kerberos;
+}
+
 
 /**
  * Obtain the username for this credentials context.

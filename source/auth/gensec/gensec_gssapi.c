@@ -174,7 +174,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 	
 	if (!machine_account) {
 		DEBUG(3, ("No machine account credentials specified\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else {
 		ret = cli_credentials_get_server_gss_creds(machine_account, &gcc);
 		if (ret) {
@@ -933,7 +933,8 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
-	.enabled        = True
+	.enabled        = True,
+	.kerberos       = True
 };
 
 NTSTATUS gensec_gssapi_init(void)
