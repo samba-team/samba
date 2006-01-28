@@ -240,7 +240,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
         trans->in.data = *blob;
         trans->in.params = data_blob(NULL, 0);
         
-        setup[0] = NAMED_PIPE_TRANSACT;
+        setup[0] = TRANSACT_DCERPCCMD;
         setup[1] = smb->fnum;
 
         trans->in.max_param = 0;
