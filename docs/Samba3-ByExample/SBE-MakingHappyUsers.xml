@@ -3874,7 +3874,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 		<step><para>
 		Add a new data file, selecting the PST file in the new desired target location.
-		Gice this entry (not the filename) a new name such as <quote>Personal Mail Folders.</quote>
+		Give this entry (not the filename) a new name such as <quote>Personal Mail Folders.</quote>
 		</para>
 
 		<para>
