@@ -319,10 +319,10 @@
 /* used to indicate end of chain */
 #define SMB_CHAIN_NONE   0xFF
 
-/* These are the named pipe commands */
-#define NAMED_PIPE_SETHANDLESTATE  		0x01 
-#define NAMED_PIPE_TRANSACT				0x26
-#define NAMED_PIPE_WAITHANDLESTATE 		0x53
+/* These are the trans subcommands */
+#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
+#define TRANSACT_DCERPCCMD                0x26
+#define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
 
 /* These are the NT transact sub commands. */
 #define NT_TRANSACT_CREATE                1
