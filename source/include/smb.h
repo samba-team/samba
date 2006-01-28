@@ -588,7 +588,6 @@ struct current_user
 #define NO_BREAK_SENT 0
 #define BREAK_TO_NONE_SENT 1
 #define LEVEL_II_BREAK_SENT 2
-#define ASYNC_LEVEL_II_BREAK_SENT 3
 
 typedef struct {
 	fstring smb_name; /* user name from the client */

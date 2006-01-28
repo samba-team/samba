@@ -1,6 +1,6 @@
                    ===============================
                    Release Notes for Samba 3.0.21b
-                              Jan 27, 2006
+                              Jan 30, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version
@@ -42,6 +42,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 3419: vfs_full_audit fixes for multiple connections.
     * Ensure SWAT lists running processes.
     * Fix NTLMv2 interoperability bug between Samba servers.
+    * Oplock break logic fixes.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
