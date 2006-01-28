@@ -27,29 +27,110 @@
 #include "smb_build.h"
 
 /* the list of currently registered GENSEC backends */
-const static struct gensec_security_ops **generic_security_ops;
+static struct gensec_security_ops **generic_security_ops;
 static int gensec_num_backends;
 
-const struct gensec_security_ops **gensec_security_all(void)
+/* Return all the registered mechs.  Don't modify the return pointer,
+ * but you may talloc_reference it if convient */
+struct gensec_security_ops **gensec_security_all(void)
 {
 	return generic_security_ops;
+}
+
+/* Sometimes we want to force only kerberos, sometimes we want to
+ * force it's avoidance.  The old list could be either
+ * gensec_security_all(), or from cli_credentials_gensec_list() (ie,
+ * an existing list we have trimmed down) */
+
+struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx, 
+						       struct gensec_security_ops **old_gensec_list, 
+						       enum credentials_use_kerberos use_kerberos) 
+{
+	struct gensec_security_ops **new_gensec_list;
+	int i, j, num_mechs_in;
+
+	if (use_kerberos == CRED_AUTO_USE_KERBEROS) {
+		talloc_reference(mem_ctx, old_gensec_list);
+		return old_gensec_list;
+	}
+
+	for (num_mechs_in=0; old_gensec_list && old_gensec_list[num_mechs_in]; num_mechs_in++) {
+		/* noop */
+	}
+
+	new_gensec_list = talloc_array(mem_ctx, struct gensec_security_ops *, num_mechs_in + 1);
+	if (!new_gensec_list) {
+		return NULL;
+	}
+
+	j = 0;
+	for (i=0; old_gensec_list && old_gensec_list[i]; i++) {
+		int oid_idx;
+		for (oid_idx = 0; old_gensec_list[i]->oid && old_gensec_list[i]->oid[oid_idx]; oid_idx++) {
+			if (strcmp(old_gensec_list[i]->oid[oid_idx], GENSEC_OID_SPNEGO) == 0) {
+				new_gensec_list[j] = old_gensec_list[i];
+				j++;
+				break;
+			}
+		}
+		switch (use_kerberos) {
+		case CRED_DONT_USE_KERBEROS:
+			if (old_gensec_list[i]->kerberos == False) {
+				new_gensec_list[j] = old_gensec_list[i];
+				j++;
+			}
+			break;
+		case CRED_MUST_USE_KERBEROS:
+			if (old_gensec_list[i]->kerberos == True) {
+				new_gensec_list[j] = old_gensec_list[i];
+				j++;
+			}
+			break;
+		case CRED_AUTO_USE_KERBEROS:
+			break;
+		}
+	}
+	new_gensec_list[j] = NULL; 
+	
+	return new_gensec_list;
+}
+
+struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
+						   TALLOC_CTX *mem_ctx) 
+{
+	struct gensec_security_ops **backends;
+	backends = gensec_security_all();
+	if (!gensec_security) {
+		talloc_reference(mem_ctx, backends);
+		return backends;
+	} else {
+		struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+		enum credentials_use_kerberos use_kerberos
+			= cli_credentials_get_kerberos_state(creds);
+		return gensec_use_kerberos_mechs(mem_ctx, backends, use_kerberos);
+	}
+
 }
 
 static const struct gensec_security_ops *gensec_security_by_authtype(struct gensec_security *gensec_security,
 								     uint8_t auth_type)
 {
 	int i;
-	const struct gensec_security_ops **backends;
-	if (!gensec_security) {
-		backends = gensec_security_all();
-	} else {
-		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	struct gensec_security_ops **backends;
+	const struct gensec_security_ops *backend;
+	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	if (!mem_ctx) {
+		return NULL;
 	}
+	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
 		if (backends[i]->auth_type == auth_type) {
-			return backends[i];
+			backend = backends[i];
+			talloc_free(mem_ctx);
+			return backend;
 		}
 	}
+	talloc_free(mem_ctx);
 
 	return NULL;
 }
@@ -58,22 +139,26 @@ const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security 
 							 const char *oid_string)
 {
 	int i, j;
-	const struct gensec_security_ops **backends;
-	if (!gensec_security) {
-		backends = gensec_security_all();
-	} else {
-		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	struct gensec_security_ops **backends;
+	const struct gensec_security_ops *backend;
+	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	if (!mem_ctx) {
+		return NULL;
 	}
+	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
 		if (backends[i]->oid) {
 			for (j=0; backends[i]->oid[j]; j++) { 
 				if (backends[i]->oid[j] &&
 				    (strcmp(backends[i]->oid[j], oid_string) == 0)) {
-					return backends[i];
+					backend = backends[i];
+					talloc_free(mem_ctx);
+					return backend;
 				}
 			}
 		}
 	}
+	talloc_free(mem_ctx);
 
 	return NULL;
 }
@@ -82,18 +167,22 @@ static const struct gensec_security_ops *gensec_security_by_sasl_name(struct gen
 								      const char *sasl_name)
 {
 	int i;
-	const struct gensec_security_ops **backends;
-	if (!gensec_security) {
-		backends = gensec_security_all();
-	} else {
-		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	struct gensec_security_ops **backends;
+	const struct gensec_security_ops *backend;
+	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	if (!mem_ctx) {
+		return NULL;
 	}
+	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
 		if (backends[i]->sasl_name 
 		    && (strcmp(backends[i]->sasl_name, sasl_name) == 0)) {
-			return backends[i];
+			backend = backends[i];
+			talloc_free(mem_ctx);
+			return backend;
 		}
 	}
+	talloc_free(mem_ctx);
 
 	return NULL;
 }
@@ -102,19 +191,22 @@ static const struct gensec_security_ops *gensec_security_by_name(struct gensec_s
 								 const char *name)
 {
 	int i;
-	const struct gensec_security_ops **backends;
-	if (!gensec_security) {
-		backends = gensec_security_all();
-	} else {
-		backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	struct gensec_security_ops **backends;
+	const struct gensec_security_ops *backend;
+	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	if (!mem_ctx) {
+		return NULL;
 	}
+	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
 		if (backends[i]->name 
 		    && (strcmp(backends[i]->name, name) == 0)) {
-			return backends[i];
+			backend = backends[i];
+			talloc_free(mem_ctx);
+			return backend;
 		}
 	}
-
+	talloc_free(mem_ctx);
 	return NULL;
 }
 
@@ -131,7 +223,7 @@ const struct gensec_security_ops **gensec_security_by_sasl(struct gensec_securit
 							   const char **sasl_names)
 {
 	const struct gensec_security_ops **backends_out;
-	const struct gensec_security_ops **backends;
+	struct gensec_security_ops **backends;
 	int i, k, sasl_idx;
 	int num_backends_out = 0;
 
@@ -139,7 +231,7 @@ const struct gensec_security_ops **gensec_security_by_sasl(struct gensec_securit
 		return NULL;
 	}
 
-	backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	backends = gensec_security_mechs(gensec_security, mem_ctx);
 
 	backends_out = talloc_array(mem_ctx, const struct gensec_security_ops *, 1);
 	if (!backends_out) {
@@ -198,7 +290,7 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gen
 								      const char *skip)
 {
 	struct gensec_security_ops_wrapper *backends_out;
-	const struct gensec_security_ops **backends;
+	struct gensec_security_ops **backends;
 	int i, j, k, oid_idx;
 	int num_backends_out = 0;
 
@@ -206,7 +298,7 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gen
 		return NULL;
 	}
 
-	backends = cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	backends = gensec_security_mechs(gensec_security, gensec_security);
 
 	backends_out = talloc_array(mem_ctx, struct gensec_security_ops_wrapper, 1);
 	if (!backends_out) {
@@ -267,7 +359,7 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gen
  */
 
 const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx, 
-					   const struct gensec_security_ops **ops,				   
+					   struct gensec_security_ops **ops,				   
 					   const char *skip) 
 {
 	int i;
@@ -354,8 +446,8 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
 				  TALLOC_CTX *mem_ctx, 
 				  const char *skip) 
 {
-	const struct gensec_security_ops **ops
-		= cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	struct gensec_security_ops **ops
+		= gensec_security_mechs(gensec_security, mem_ctx);
 	return gensec_security_oids_from_ops(mem_ctx, ops, skip);
 }
 
@@ -944,10 +1036,8 @@ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-NTSTATUS gensec_register(const void *_ops)
+NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 {
-	const struct gensec_security_ops *ops = _ops;
-	
 	if (!lp_parm_bool(-1, "gensec", ops->name, ops->enabled)) {
 		DEBUG(2,("gensec subsystem %s is disabled\n", ops->name));
 		return NT_STATUS_OK;
@@ -960,11 +1050,12 @@ NTSTATUS gensec_register(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	generic_security_ops = realloc_p(generic_security_ops, 
-					 const struct gensec_security_ops *, 
-					 gensec_num_backends+2);
+	generic_security_ops = talloc_realloc(talloc_autofree_context(), 
+					      generic_security_ops, 
+					      struct gensec_security_ops *, 
+					      gensec_num_backends+2);
 	if (!generic_security_ops) {
-		smb_panic("out of memory in gensec_register");
+		smb_panic("out of memory (or failed to realloc referenced memory) in gensec_register");
 	}
 
 	generic_security_ops[gensec_num_backends] = ops;

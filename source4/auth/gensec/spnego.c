@@ -246,8 +246,8 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 						  const DATA_BLOB in, DATA_BLOB *out) 
 {
 	int i,j;
-	const struct gensec_security_ops **all_ops
-		= cli_credentials_gensec_list(gensec_get_credentials(gensec_security));
+	struct gensec_security_ops **all_ops
+		= gensec_security_mechs(gensec_security, out_mem_ctx);
 	for (i=0; all_ops[i]; i++) {
 		BOOL is_spnego;
 		NTSTATUS nt_status;
@@ -341,7 +341,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 							  out_mem_ctx, 
 							  unwrapped_in,
 							  unwrapped_out);
-				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
+				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
+				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
 					/* Pretend we never started it (lets the first run find some incompatible demand) */
 					
 					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse: %s\n", 
@@ -929,7 +930,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.session_key	= gensec_spnego_session_key,
 	.session_info   = gensec_spnego_session_info,
 	.have_feature   = gensec_spnego_have_feature,
-	.enabled        = True
+	.enabled        = True,
 };
 
 NTSTATUS gensec_spnego_init(void)
