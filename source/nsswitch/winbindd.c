@@ -47,7 +47,7 @@ static BOOL reload_services_file(void)
 	}
 
 	reopen_logs();
-	ret = lp_load(dyn_CONFIGFILE,False,False,True);
+	ret = lp_load(dyn_CONFIGFILE,False,False,True,True);
 
 	reopen_logs();
 	load_interfaces();

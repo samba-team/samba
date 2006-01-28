@@ -422,7 +422,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 static BOOL load_config(BOOL save_def)
 {
 	lp_resetnumservices();
-	return lp_load(dyn_CONFIGFILE,False,save_def,False);
+	return lp_load(dyn_CONFIGFILE,False,save_def,False,True);
 }
 
 /****************************************************************************
