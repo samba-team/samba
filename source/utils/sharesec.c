@@ -302,7 +302,7 @@ int main(int argc, const char *argv[])
 
 	load_case_tables();
 
-	lp_load( dyn_CONFIGFILE, False, False, False );
+	lp_load( dyn_CONFIGFILE, False, False, False, True );
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
 	
