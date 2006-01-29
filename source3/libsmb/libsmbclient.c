@@ -1523,39 +1523,6 @@ smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
         int ret;
 
         /*
-         * Get the create time of the file (if not provided); we'll need it in
-         * the set call.
-         */
-        if (! srv->no_pathinfo && c_time == 0) {
-                if (! cli_qpathinfo(&srv->cli, path,
-                                    &c_time, NULL, NULL, NULL, NULL)) {
-                        /* qpathinfo not available */
-                        srv->no_pathinfo = True;
-                } else {
-                        /*
-                         * We got a creation time.  Some OS versions don't
-                         * return a valid create time, though.  If we got an
-                         * invalid time, start with the current time instead.
-                         */
-                        if (c_time == 0 || c_time == (time_t) -1) {
-                                c_time = time(NULL);
-                        }
-
-                        /*
-                         * We got a creation time.  For sanity sake, since
-                         * there is no POSIX function to set the create time
-                         * of a file, if the existing create time is greater
-                         * than either of access time or modification time,
-                         * set create time to the smallest of those.  This
-                         * ensure that the create time of a file is never
-                         * greater than its last access or modification time.
-                         */
-                        if (c_time > a_time) c_time = a_time;
-                        if (c_time > m_time) c_time = m_time;
-                }
-        }
-
-        /*
          * First, try setpathinfo (if qpathinfo succeeded), for it is the
          * modern function for "new code" to be using, and it works given a
          * filename rather than requiring that the file be opened to have its
