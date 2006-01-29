@@ -181,7 +181,8 @@ smbc_urldecode(char *dest, char * src, size_t max_dest_len)
 
         *p = '\0';
 
-        strncpy(dest, temp, max_dest_len);
+        strncpy(dest, temp, max_dest_len - 1);
+        dest[max_dest_len - 1] = '\0';
 
         return err_count;
 }
@@ -268,6 +269,7 @@ static const char *smbc_prefix = "smb:";
 static int
 smbc_parse_path(SMBCCTX *context,
                 const char *fname,
+                char *workgroup, int workgroup_len,
                 char *server, int server_len,
                 char *share, int share_len,
                 char *path, int path_len,
@@ -282,6 +284,16 @@ smbc_parse_path(SMBCCTX *context,
 	int len;
 
 	server[0] = share[0] = path[0] = user[0] = password[0] = (char)0;
+
+        /*
+         * Assume we wont find an authentication domain to parse, so default
+         * to the workgroup in the provided context.
+         */
+        if (workgroup != NULL) {
+                strncpy(workgroup, context->workgroup, workgroup_len - 1);
+                workgroup[workgroup_len - 1] = '\0';
+        }
+
         if (options != NULL && options_len > 0) {
                 options[0] = (char)0;
         }
@@ -328,6 +340,7 @@ smbc_parse_path(SMBCCTX *context,
 			((strlen(context->workgroup) < 16)
                          ? strlen(context->workgroup)
                          : 16));
+                server[server_len - 1] = '\0';
 		return 0;
 		
 	}
@@ -369,11 +382,20 @@ smbc_parse_path(SMBCCTX *context,
 
 		}
 
-		if (username[0])
-			strncpy(user, username, user_len);  /* FIXME, domain */
+                if (domain[0] && workgroup) {
+                        strncpy(workgroup, domain, workgroup_len - 1);
+                        workgroup[workgroup_len - 1] = '\0';
+                }
 
-		if (passwd[0])
-			strncpy(password, passwd, password_len);
+		if (username[0]) {
+			strncpy(user, username, user_len - 1);
+                        user[user_len - 1] = '\0';
+                }
+
+		if (passwd[0]) {
+			strncpy(password, passwd, password_len - 1);
+                        password[password_len - 1] = '\0';
+                }
 
 	}
 
@@ -1001,6 +1023,7 @@ smbc_open_ctx(SMBCCTX *context,
 	}
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1012,8 +1035,6 @@ smbc_open_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -1208,6 +1229,7 @@ smbc_read_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>read: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1288,6 +1310,7 @@ smbc_write_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>write: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1359,6 +1382,7 @@ smbc_close_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>close: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1645,6 +1669,7 @@ smbc_unlink_ctx(SMBCCTX *context,
 	}
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -1656,8 +1681,6 @@ smbc_unlink_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -1762,6 +1785,7 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 	DEBUG(4, ("smbc_rename(%s,%s)\n", oname, nname));
 
 	smbc_parse_path(ocontext, oname,
+                        workgroup, sizeof(workgroup),
                         server1, sizeof(server1),
                         share1, sizeof(share1),
                         path1, sizeof(path1),
@@ -1772,6 +1796,7 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 	if (user1[0] == (char)0) fstrcpy(user1, ocontext->user);
 
 	smbc_parse_path(ncontext, nname,
+                        NULL, 0,
                         server2, sizeof(server2),
                         share2, sizeof(share2),
                         path2, sizeof(path2),
@@ -1790,8 +1815,6 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 		return -1;
 
 	}
-
-	fstrcpy(workgroup, ocontext->workgroup);
 
 	srv = smbc_server(ocontext, True,
                           server1, share1, workgroup, user1, password1);
@@ -1891,6 +1914,7 @@ smbc_lseek_ctx(SMBCCTX *context,
 	case SEEK_END:
 		/*d_printf(">>>lseek: parsing %s\n", file->fname);*/
 		if (smbc_parse_path(context, file->fname,
+                                    NULL, 0,
                                     server, sizeof(server),
                                     share, sizeof(share),
                                     path, sizeof(path),
@@ -2049,6 +2073,7 @@ smbc_stat_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_stat(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -2060,8 +2085,6 @@ smbc_stat_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -2137,6 +2160,7 @@ smbc_fstat_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>fstat: parsing %s\n", file->fname);*/
 	if (smbc_parse_path(context, file->fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -2270,8 +2294,12 @@ add_dirent(SMBCFILE *dir,
 	dirent->commentlen = comment_len;
 	dirent->dirlen = size;
   
+        /*
+         * dirent->namelen + 1 includes the null (no null termination needed)
+         * Ditto for dirent->commentlen.
+         * The space for the two null bytes was allocated.
+         */
 	strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
-
 	dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
 	strncpy(dirent->comment, (comment?comment:""), dirent->commentlen + 1);
 	
@@ -2510,6 +2538,7 @@ smbc_opendir_ctx(SMBCCTX *context,
 	}
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -2533,8 +2562,6 @@ smbc_opendir_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	pstrcpy(workgroup, context->workgroup);
 
 	dir = SMB_MALLOC_P(SMBCFILE);
 
@@ -2934,14 +2961,8 @@ smbc_readdir_internal(SMBCCTX * context,
                 dest->comment = dest->name + dest->namelen + 1;
 
                 /* Copy the comment */
-                strncpy(dest->comment, src->comment, max_namebuf_len);
-
-                /* Ensure the comment is null terminated */
-                if (max_namebuf_len > src->commentlen) {
-                        dest->comment[src->commentlen] = '\0';
-                } else {
-                        dest->comment[max_namebuf_len - 1] = '\0';
-                }
+                strncpy(dest->comment, src->comment, max_namebuf_len - 1);
+                dest->comment[max_namebuf_len - 1] = '\0';
 
                 /* Save other fields */
                 dest->smbc_type = src->smbc_type;
@@ -3156,6 +3177,7 @@ smbc_mkdir_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_mkdir(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3167,8 +3189,6 @@ smbc_mkdir_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3253,6 +3273,7 @@ smbc_rmdir_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_rmdir(%s)\n", fname));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3265,8 +3286,6 @@ smbc_rmdir_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3507,6 +3526,7 @@ smbc_chmod_ctx(SMBCCTX *context,
 	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, newmode));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3518,8 +3538,6 @@ smbc_chmod_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -3586,13 +3604,13 @@ smbc_utimes_ctx(SMBCCTX *context,
                 char atimebuf[32];
                 char mtimebuf[32];
 
-                strncpy(atimebuf, ctime(&a_time), sizeof(atimebuf));
+                strncpy(atimebuf, ctime(&a_time), sizeof(atimebuf) - 1);
                 atimebuf[sizeof(atimebuf) - 1] = '\0';
                 if ((p = strchr(atimebuf, '\n')) != NULL) {
                         *p = '\0';
                 }
 
-                strncpy(mtimebuf, ctime(&m_time), sizeof(mtimebuf));
+                strncpy(mtimebuf, ctime(&m_time), sizeof(mtimebuf) - 1);
                 mtimebuf[sizeof(mtimebuf) - 1] = '\0';
                 if ((p = strchr(mtimebuf, '\n')) != NULL) {
                         *p = '\0';
@@ -3603,6 +3621,7 @@ smbc_utimes_ctx(SMBCCTX *context,
         }
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -3614,8 +3633,6 @@ smbc_utimes_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -4999,6 +5016,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                   fname, name, (int) size, (const char*)value));
 
 	if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5010,8 +5028,6 @@ smbc_setxattr_ctx(SMBCCTX *context,
         }
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
-
-	fstrcpy(workgroup, context->workgroup);
 
 	srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5267,6 +5283,7 @@ smbc_getxattr_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_getxattr(%s, %s)\n", fname, name));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5278,8 +5295,6 @@ smbc_getxattr_ctx(SMBCCTX *context,
         }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
-
-        fstrcpy(workgroup, context->workgroup);
 
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5384,6 +5399,7 @@ smbc_removexattr_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_removexattr(%s, %s)\n", fname, name));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5395,8 +5411,6 @@ smbc_removexattr_ctx(SMBCCTX *context,
         }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
-
-        fstrcpy(workgroup, context->workgroup);
 
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
@@ -5539,6 +5553,7 @@ smbc_open_print_job_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_open_print_job_ctx(%s)\n", fname));
 
         if (smbc_parse_path(context, fname,
+                            NULL, 0,
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5676,6 +5691,7 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_list_print_jobs(%s)\n", fname));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5688,8 +5704,6 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
         
-        fstrcpy(workgroup, context->workgroup);
-
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
 
@@ -5747,6 +5761,7 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
         DEBUG(4, ("smbc_unlink_print_job(%s)\n", fname));
 
         if (smbc_parse_path(context, fname,
+                            workgroup, sizeof(workgroup),
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
@@ -5758,8 +5773,6 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
         }
 
         if (user[0] == (char)0) fstrcpy(user, context->user);
-
-        fstrcpy(workgroup, context->workgroup);
 
         srv = smbc_server(context, True,
                           server, share, workgroup, user, password);
