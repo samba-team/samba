@@ -947,13 +947,14 @@ BOOL lookup_global_sam_name(const char *c_user, int flags, uint32_t *rid,
  Change a password entry in the local smbpasswd file.
  *************************************************************/
 
-BOOL local_password_change(const char *user_name, int local_flags,
+NTSTATUS local_password_change(const char *user_name, int local_flags,
 			   const char *new_passwd, 
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len)
 {
 	SAM_ACCOUNT 	*sam_pass=NULL;
 	uint16 other_acb;
+	NTSTATUS result;
 
 	*err_str = '\0';
 	*msg_str = '\0';
@@ -967,7 +968,6 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		pdb_free_sam(&sam_pass);
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
-			NTSTATUS result;
 			int tmp_debug = DEBUGLEVEL;
 
 			/* Might not exist in /etc/passwd. */
@@ -980,18 +980,18 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			DEBUGLEVEL = tmp_debug;
 			if (NT_STATUS_EQUAL(result,
 					    NT_STATUS_INVALID_PRIMARY_GROUP)) {
-				return False;
+				return result;
 			}
 
 			if (!NT_STATUS_IS_OK(result)) {
 				slprintf(err_str, err_str_len-1, "Failed to "
 					 "initialize account for user %s: %s\n",
 					 user_name, nt_errstr(result));
-				return False;
+				return result;
 			}
 		} else {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
-			return False;
+			return NT_STATUS_NO_SUCH_USER;
 		}
 	} else {
 		unbecome_root();
@@ -1005,19 +1005,19 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb, PDB_CHANGED) ) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -1030,13 +1030,13 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'disabled' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 	
@@ -1044,7 +1044,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'no password required' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_SET_PASSWORD) {
 		/*
@@ -1060,19 +1060,19 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 				slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
 				pdb_free_sam(&sam_pass);
-				return False;
+				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'no password required' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
 		if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
 			slprintf(err_str, err_str_len-1, "Failed to set password for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}	
 
@@ -1080,24 +1080,25 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if (pdb_add_sam_account(sam_pass)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return True;
+			return NT_STATUS_OK;
 		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_DELETE_USER) {
 		if (!pdb_delete_sam_account(sam_pass)) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
 	} else {
-		if(!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pass))) {
+		result = pdb_update_sam_account(sam_pass);
+		if(!NT_STATUS_IS_OK(result)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
-			return False;
+			return result;
 		}
 		if(local_flags & LOCAL_DISABLE_USER)
 			slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
@@ -1108,7 +1109,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 	}
 
 	pdb_free_sam(&sam_pass);
-	return True;
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************

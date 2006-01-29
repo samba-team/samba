@@ -270,10 +270,11 @@ static char *prompt_for_new_password(BOOL stdin_get)
  Change a password either locally or remotely.
 *************************************************************/
 
-static BOOL password_change(const char *remote_mach, char *username, 
-			    char *old_passwd, char *new_pw, int local_flags)
+static NTSTATUS password_change(const char *remote_mach, char *username, 
+				char *old_passwd, char *new_pw,
+				int local_flags)
 {
-	BOOL ret;
+	NTSTATUS ret;
 	pstring err_str;
 	pstring msg_str;
 
@@ -281,7 +282,7 @@ static BOOL password_change(const char *remote_mach, char *username,
 		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
 							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
 			/* these things can't be done remotely yet */
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		ret = remote_password_change(remote_mach, username, 
 					     old_passwd, new_pw, err_str, sizeof(err_str));
@@ -465,7 +466,9 @@ static int process_root(int local_flags)
 		}
 	}
 
-	if (!password_change(remote_machine, user_name, old_passwd, new_passwd, local_flags)) {
+	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name,
+					     old_passwd, new_passwd,
+					     local_flags))) {
 		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
 		result = 1;
 		goto done;
@@ -549,7 +552,8 @@ static int process_nonroot(int local_flags)
 		exit(1);
 	}
 
-	if (!password_change(remote_machine, user_name, old_pw, new_pw, 0)) {
+	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name, old_pw,
+					     new_pw, 0))) {
 		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		result = 1;
 		goto done;

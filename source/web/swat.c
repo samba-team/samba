@@ -1031,17 +1031,17 @@ static void shares_page(void)
 /*************************************************************
 change a password either locally or remotely
 *************************************************************/
-static BOOL change_password(const char *remote_machine, const char *user_name, 
+static NTSTATUS change_password(const char *remote_machine, const char *user_name, 
 			    const char *old_passwd, const char *new_passwd, 
 				int local_flags)
 {
-	BOOL ret = False;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	pstring err_str;
 	pstring msg_str;
 
 	if (demo_mode) {
 		printf("%s\n<p>", _("password change in demo mode rejected"));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	if (remote_machine != NULL) {
@@ -1054,7 +1054,7 @@ static BOOL change_password(const char *remote_machine, const char *user_name,
 
 	if(!initialize_password_db(True)) {
 		printf("%s\n<p>", _("Can't setup password database vectors."));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	ret = local_password_change(user_name, local_flags, new_passwd, err_str, sizeof(err_str),
@@ -1139,10 +1139,10 @@ static void chg_passwd(void)
 	local_flags |= (cgi_variable(DISABLE_USER_FLAG) ? LOCAL_DISABLE_USER : 0);
 	
 
-	rslt = change_password(host,
-			       cgi_variable(SWAT_USER),
-			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
-				   local_flags);
+	rslt = NT_STATUS_IS_OK(change_password(host, cgi_variable(SWAT_USER),
+					       cgi_variable(OLD_PSWD),
+					       cgi_variable(NEW_PSWD),
+					       local_flags));
 
 	if(cgi_variable(CHG_S_PASSWD_FLAG)) {
 		printf("<p>");
