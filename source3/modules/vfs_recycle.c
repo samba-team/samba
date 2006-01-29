@@ -178,7 +178,7 @@ static mode_t recycle_directory_mode(vfs_handle_struct *handle)
 	}
 
 	DEBUG(10, ("recycle: directory_mode = %o\n", dirmode));
-	return dirmode;
+	return (mode_t)dirmode;
 }
 
 static BOOL recycle_directory_exist(vfs_handle_struct *handle, const char *dname)
