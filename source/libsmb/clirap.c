@@ -471,7 +471,6 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
 	char *rparam=NULL, *rdata=NULL;
 	int count=8;
 	BOOL ret;
-        void (*date_fn)(struct cli_state *, char *buf,int offset,time_t unixdate);
 	char *p;
 
 	memset(param, 0, sizeof(param));
@@ -480,7 +479,7 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
         p = param;
 
         /* Add the information level */
-	SSVAL(p, 0, SMB_INFO_STANDARD);
+	SSVAL(p, 0, SMB_FILE_BASIC_INFORMATION);
 
         /* Skip reserved */
 	p += 6;
@@ -492,26 +491,27 @@ BOOL cli_setpathinfo(struct cli_state *cli, const char *fname,
 
         p = data;
 
-	if (cli->win95) {
-		date_fn = cli_put_dos_date;
-	} else {
-		date_fn = cli_put_dos_date2;
-	}
+        /*
+         * Add the create, last access, modification, and status change times
+         */
+        
+        /* Don't set create time, at offset 0 */
+        p += 8;
 
-        /* Add the create, last access, and modification times */
-        (*date_fn)(cli, p, 0, c_time);
-        (*date_fn)(cli, p, 4, a_time);
-        (*date_fn)(cli, p, 8, m_time);
-        p += 12;
-
-        /* Skip DataSize and AllocationSize */
+        put_long_date(p, a_time);
+        p += 8;
+        
+        put_long_date(p, m_time);
+        p += 8;
+        
+        put_long_date(p, c_time);
         p += 8;
 
         /* Add attributes */
-        SSVAL(p, 0, mode);
-        p += 2;
+        SIVAL(p, 0, mode);
+        p += 4;
 
-        /* Add EA size (none) */
+        /* Add padding */
         SIVAL(p, 0, 0);
         p += 4;
 
