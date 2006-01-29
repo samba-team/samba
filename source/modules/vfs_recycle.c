@@ -166,13 +166,13 @@ static int recycle_maxsize(vfs_handle_struct *handle)
 
 static mode_t recycle_directory_mode(vfs_handle_struct *handle)
 {
-	mode_t dirmode;
+	int dirmode;
 	const char *buff;
 
 	buff = lp_parm_const_string(SNUM(handle->conn), "recycle", "directory_mode", NULL);
 
 	if (buff != NULL ) {
-		sscanf(buff, "%o", (int *)&dirmode);
+		sscanf(buff, "%o", &dirmode);
 	} else {
 		dirmode=S_IRUSR | S_IWUSR | S_IXUSR;
 	}
