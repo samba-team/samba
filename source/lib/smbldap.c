@@ -1100,6 +1100,14 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 			return True;
 		}
 
+		if (open_rc == LDAP_INSUFFICIENT_ACCESS) {
+			/* The fact that we are non-root or any other
+			 * access-denied condition will not change in the next
+			 * round of trying */
+			*rc = open_rc;
+			break;
+		}
+
 		if (got_alarm) {
 			*rc = LDAP_TIMEOUT;
 			break;
