@@ -50,7 +50,7 @@ static int _pam_parse(int argc, const char **argv)
 
 	load_case_tables();
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+	if (!lp_load(dyn_CONFIGFILE,True,False,False,True)) {
 		return -1;
 	}
 
