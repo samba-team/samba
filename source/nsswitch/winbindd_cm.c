@@ -101,8 +101,8 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 				     fstring dcname, struct in_addr *dc_ip)
 {
-	struct winbindd_domain *our_domain;
-	struct rpc_pipe_client *netlogon_pipe;
+	struct winbindd_domain *our_domain = NULL;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
 
@@ -1322,7 +1322,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	uint8  mach_pwd[16];
 	uint32  sec_chan_type;
 	const char *account_name;
-	struct rpc_pipe_client *netlogon_pipe;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+
+	*cli = NULL;
 
 	result = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(result)) {
