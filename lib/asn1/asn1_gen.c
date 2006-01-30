@@ -87,13 +87,13 @@ doit(const char *fn)
 	       ptr++;
 
 	class = strtok_r(ptr, " \t\n", &foo);
-	if (class == NULL) errx(1, "class missing one line %lu", line);
+	if (class == NULL) errx(1, "class missing on line %lu", line);
 	type = strtok_r(NULL, " \t\n", &foo);
-	if (type == NULL) errx(1, "type missing one line %lu", line);
+	if (type == NULL) errx(1, "type missing on line %lu", line);
 	tag = strtok_r(NULL, " \t\n", &foo);
-	if (tag == NULL) errx(1, "tag missing one line %lu", line);
+	if (tag == NULL) errx(1, "tag missing on line %lu", line);
 	length = strtok_r(NULL, " \t\n", &foo);
-	if (length == NULL) errx(1, "length missing one line %lu", line);
+	if (length == NULL) errx(1, "length missing on line %lu", line);
 	data = strtok_r(NULL, " \t\n", &foo);
 
 	c = der_get_class_num(class);
