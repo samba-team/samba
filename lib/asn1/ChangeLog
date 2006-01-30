@@ -1,5 +1,9 @@
-2006-01-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* asn1_gen.c: Spelling.
+	
+2006-01-20  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* der_length.c (length_heim_integer): Try handle negative length
 	of integers better.
 
