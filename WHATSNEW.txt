@@ -166,6 +166,7 @@ o   Volker Lendecke <vl@samba.org>
     * Use the same CFLAGS for generating the pch as we use to 
       actually compile.
     * Correct typo when compiling the vfs_catia module.
+    * Fix automatic recreation of a new tdb sam file.
 
 
 o   Derrell Lipman <derrell@samba.org>
@@ -217,6 +218,8 @@ o   Makr Proehl <m.proehl@science-computing.de>
 o   Simo Sorce <idra@samba.org>
     * Crackcheck utility enhancement based on patch sent by 
       Tom Geissler.
+    * BUG 3405: Fix segv ni vfs_recycle module on platforms wither 
+      mode_t is not 32-bits.
 
 
 o   John Terpstra <jht@samba.org>
