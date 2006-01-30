@@ -586,7 +586,7 @@ CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 MOUNT_OBJ = client/smbmount.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
 
-MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(SNPRINTF_OBJ)
+MNT_OBJ = client/smbmnt.o lib/replace.o $(VERSION_OBJ) $(SNPRINTF_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o
 
