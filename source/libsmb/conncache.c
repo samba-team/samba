@@ -105,10 +105,11 @@ void add_failed_connection_entry(const char *domain, const char *server, NTSTATU
 	   a domain, but maybe not a specific DC name. */
 
 	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {			
-		if ( strequal(fcc->domain_name, domain) && strequal(fcc->controller, server) ) 
-		{
+		if ( strequal(fcc->domain_name, domain) && strequal(fcc->controller, server) ) {
 			DEBUG(10, ("add_failed_connection_entry: domain %s (%s) already tried and failed\n",
 				   domain, server ));
+			/* Update the failed time. */
+			fcc->lookup_time = time(NULL);
 			return;
 		}
 	}
