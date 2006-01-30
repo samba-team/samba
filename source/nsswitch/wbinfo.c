@@ -47,7 +47,7 @@ static char winbind_separator_int(BOOL strict)
 	    NSS_STATUS_SUCCESS) {
 		d_fprintf(stderr, "could not obtain winbind separator!\n");
 		if (strict) {
-			return -1;
+			return 0;
 		}
 		/* HACK: (this module should not call lp_ funtions) */
 		return *lp_winbind_separator();
@@ -59,7 +59,7 @@ static char winbind_separator_int(BOOL strict)
 	if (!sep) {
 		d_fprintf(stderr, "winbind separator was NULL!\n");
 		if (strict) {
-			return -1;
+			return 0;
 		}
 		/* HACK: (this module should not call lp_ funtions) */
 		sep = *lp_winbind_separator();
@@ -1344,7 +1344,7 @@ int main(int argc, char **argv)
 			break;
 		case OPT_SEPARATOR: {
 			const char sep = winbind_separator_int(True);
-			if (sep == -1) {
+			if ( !sep ) {
 				goto done;
 			}
 			d_printf("%c\n", sep);
