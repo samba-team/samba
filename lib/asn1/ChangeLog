@@ -1,5 +1,7 @@
 2006-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* der.h: Remove , after the last element of enum.
+
 	* asn1_gen.c: Spelling.
 	
 2006-01-20  Love Hörnquist Åstrand <lha@it.su.se>
