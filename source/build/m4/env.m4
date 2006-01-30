@@ -10,6 +10,11 @@ AC_CANONICAL_HOST
 AC_SUBST(srcdir)
 export srcdir;
 
+dnl AS_HELP_STRING is not available in autoconf 2.57, and AC_HELP_STRING is deprecated
+dnl in autoconf 2.59, so define AS_HELP_STRING to be AC_HELP_STRING unless it is already
+dnl defined.
+m4_ifdef([AS_HELP_STRING], , [m4_define([AS_HELP_STRING], m4_defn([AC_HELP_STRING]))])
+
 # we always set builddir to "." as that's nicer than
 # having the absolute path of the current work directory
 builddir=.
