@@ -2255,6 +2255,14 @@ BOOL set_global_winbindd_state_offline(void)
 
 	DEBUG(10,("set_global_winbindd_state_offline: offline requested.\n"));
 
+	/* Only go offline if someone has created
+	   the key "WINBINDD_OFFLINE" in the cache tdb. */
+
+	if (wcache == NULL || wcache->tdb == NULL) {
+		DEBUG(10,("set_global_winbindd_state_offline: wcache not open yet.\n"));
+		return False;
+	}
+
 	if (!lp_winbind_offline_logon()) {
 		DEBUG(10,("set_global_winbindd_state_offline: rejecting.\n"));
 		return False;
@@ -2263,13 +2271,6 @@ BOOL set_global_winbindd_state_offline(void)
 	if (global_winbindd_offline_state) {
 		/* Already offline. */
 		return True;
-	}
-
-	/* Only go offline if someone has created
-	   the key "WINBINDD_OFFLINE" in the cache tdb. */
-
-	if (!wcache->tdb) {
-		return False;
 	}
 
 	wcache->tdb->ecode = 0;
