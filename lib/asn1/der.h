@@ -78,7 +78,7 @@ enum {
     UT_VideotexString	= 21,
     UT_GraphicString	= 25,
     UT_UniversalString	= 25,
-    UT_BMPString	= 30,
+    UT_BMPString	= 30
 };
 
 #define ASN1_INDEFINITE 0xdce0deed
