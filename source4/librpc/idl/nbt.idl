@@ -574,10 +574,10 @@
 		[switch_is(command)] nbt_ntlogon_request req;
 	} nbt_ntlogon_packet;
 
-	/*******************************************/
-	/* \MAILSLOT\BROWSE mailslot requests 
-	/* for details see http://ubiqx.org/cifs/Browsing.html
-	/*******************************************/
+	/********************************************************/
+	/* \MAILSLOT\BROWSE mailslot requests			*/
+	/* for details see http://ubiqx.org/cifs/Browsing.html  */
+	/********************************************************/
 	declare bitmap svcctl_ServerType;
 
 	typedef [enum8bit] enum { 
