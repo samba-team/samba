@@ -193,16 +193,16 @@ install -m 755 source/bin/libmsrpc.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libmsrpc.h $RPM_BUILD_ROOT%{prefix}/include/
 
 # Install the miscellany
-install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
-install -m755 packaging/RedHat/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
-install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
-install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
-install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
-install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.stack
-install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
+install -m755 packaging/RedHat-9/smbprint $RPM_BUILD_ROOT%{prefix}/bin
+install -m755 packaging/RedHat-9/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
+install -m755 packaging/RedHat-9/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
+install -m755 packaging/RedHat-9/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
+install -m644 packaging/RedHat-9/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+install -m644 packaging/RedHat-9/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
+install -m644 packaging/RedHat-9/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m644 packaging/RedHat-9/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+install -m644 packaging/RedHat-9/samba.pamd.stack $RPM_BUILD_ROOT/etc/samba/samba.stack
+install -m644 packaging/RedHat-9/samba.xinetd $RPM_BUILD_ROOT/etc/samba/samba.xinetd
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
 # Remove "*.old" files
