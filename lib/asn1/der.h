@@ -65,8 +65,10 @@ enum {
     UT_IA5String	= 22,
     UT_UTCTime		= 23,
     UT_GeneralizedTime	= 24,
+    UT_UniversalString	= 25,
     UT_VisibleString	= 26,
     UT_GeneralString	= 27,
+    UT_BMPString	= 30,
     /* unsupported types */
     UT_ObjectDescriptor = 7,
     UT_External		= 8,
@@ -76,9 +78,7 @@ enum {
     UT_NumericString	= 18,
     UT_TeletexString	= 20,
     UT_VideotexString	= 21,
-    UT_GraphicString	= 25,
-    UT_UniversalString	= 25,
-    UT_BMPString	= 30
+    UT_GraphicString	= 25
 };
 
 #define ASN1_INDEFINITE 0xdce0deed
