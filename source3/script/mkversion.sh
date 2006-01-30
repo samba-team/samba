@@ -102,7 +102,12 @@ echo "#define SAMBA_VERSION_STRING samba_version_string()" >> $OUTPUT_FILE
 echo "$0: 'include/version.h' created for Samba(\"${SAMBA_VERSION_STRING}\")"
 
 if test -n "${SAMBA_VERSION_VENDOR_SUFFIX}";then
-    echo "$0: with VENDOR_SUFFIX = ${SAMBA_VERSION_VENDOR_SUFFIX}"
+    echo -n "$0: with VENDOR_SUFFIX = \""
+    echo -n ${SAMBA_VERSION_VENDOR_SUFFIX} | sed 's/"//g'
+    if test -n ${SAMBA_VENDOR_PATCH}; then
+       echo -n "-${SAMBA_VENDOR_PATCH}"
+   fi
+   echo "\""
 fi
 
 exit 0
