@@ -141,10 +141,11 @@ fi
 #
 DEVELOPER_CFLAGS=""
 if test x$developer = xyes; then
+    	OLD_CFLAGS="${CFLAGS}"
+
+	CFLAGS="${CFLAGS} -D_SAMBA_DEVELOPER_DONNOT_USE_O2_"
 	DEVELOPER_CFLAGS="-DDEBUG_PASSWORD -DDEVELOPER"
 	if test x"$GCC" = x"yes" ; then
-	    OLD_CFLAGS="${CFLAGS}"
-	    CFLAGS="${CFLAGS} -D_SAMBA_DEVELOPER_DONNOT_USE_O2_"
 	    AX_CFLAGS_GCC_OPTION(-Wall, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wshadow, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Werror-implicit-function-declaration, DEVELOPER_CFLAGS)
@@ -157,8 +158,11 @@ if test x$developer = xyes; then
 	    AX_CFLAGS_GCC_OPTION(-Wformat=2, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wno-declaration-after-statement, DEVELOPER_CFLAGS)
-	    CFLAGS="${OLD_CFLAGS}"
+	else
+	    AX_CFLAGS_IRIX_OPTION(-fullwarn, DEVELOPER_CFLAGS)
 	fi
+
+    	CFLAGS="${OLD_CFLAGS}"
 fi
 if test -n "$DEVELOPER_CFLAGS"; then
 	OLD_CFLAGS="${CFLAGS}"
