@@ -414,7 +414,6 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	char *break_msg;
-	BOOL break_to_level2 = False;
 	BOOL sign_state;
 
 	if (buf == NULL) {
