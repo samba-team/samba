@@ -42,7 +42,7 @@ int gendb_search_v(struct ldb_context *ldb,
 	int ret;
 
 	if (format) {
-		vasprintf(&expr, format, ap);
+		expr = talloc_vasprintf(mem_ctx, format, ap);
 		if (expr == NULL) {
 			return -1;
 		}
@@ -55,7 +55,7 @@ int gendb_search_v(struct ldb_context *ldb,
 	ret = ldb_search(ldb, basedn, scope, expr, attrs, &res);
 
 	if (ret == LDB_SUCCESS) {
-		talloc_steal(mem_ctx, res);
+		talloc_steal(mem_ctx, res->msgs);
 
 		DEBUG(4,("gendb_search_v: %s %s -> %d\n", 
 			 basedn?ldb_dn_linearize(mem_ctx,basedn):"NULL",
@@ -63,13 +63,13 @@ int gendb_search_v(struct ldb_context *ldb,
 
 		ret = res->count;
 		*msgs = res->msgs;
-
+		talloc_free(res);
 	} else {
 		DEBUG(4,("gendb_search_v: search failed: %s", ldb_errstring(ldb)));
 		ret = -1;
 	}
 
-	free(expr);
+	talloc_free(expr);
 
 	return ret;
 }

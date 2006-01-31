@@ -157,6 +157,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 	/* look again, this time at the copied attribute */
 	if (!msg2 || (attribute = ldb_msg_find_element(msg2, "sambaPassword")) == NULL ) {
+		talloc_free(mem_ctx);
 		/* Gah?  where did it go?  Oh well... */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -170,6 +171,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
 							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
+			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
@@ -184,6 +186,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
 							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
+			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		
@@ -212,6 +215,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	/* Send the (modified) request of the original caller down to the database */
 	ret = ldb_next_request(module, modified_orig_request);
 	if (ret) {
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
@@ -226,6 +230,8 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 		/* Find out the old passwords details of the user */
 		old_res = search_request->op.search.res;
+		talloc_steal(mem_ctx, old_res);
+		talloc_free(search_request);
 		
 		if (old_res->count != 1) {
 			ldb_set_errstring(module, 
@@ -270,6 +276,9 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 	/* Find out the full details of the user */
 	res = search_request->op.search.res;
+	talloc_steal(mem_ctx, res);
+	talloc_free(search_request);
+
 	if (res->count != 1) {
 		ldb_set_errstring(module, 
 				  talloc_asprintf(mem_ctx, "password_hash_handle: "
