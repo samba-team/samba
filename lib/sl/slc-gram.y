@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -366,6 +366,82 @@ make_name(struct assignment *as)
     return s;
 }
 
+
+static void defval_int(const char *name, struct assignment *defval)
+{
+    if(defval != NULL)
+	cprint(1, "opt.%s = %s;\n", name, defval->u.value);
+    else
+	cprint(1, "opt.%s = 0;\n", name);
+}
+static void defval_string(const char *name, struct assignment *defval) 
+{
+    if(defval != NULL)
+	cprint(1, "opt.%s = \"%s\";\n", name, defval->u.value);
+    else
+	cprint(1, "opt.%s = NULL;\n", name);
+}
+static void defval_strings(const char *name, struct assignment *defval)
+{
+    cprint(1, "opt.%s.num_strings = 0;\n", name);
+    cprint(1, "opt.%s.strings = NULL;\n", name);
+}
+
+static void free_strings(const char *name)
+{
+    cprint(1, "free_getarg_strings (&opt.%s);\n", name);
+}
+
+struct type_handler {
+    const char *typename;
+    const char *c_type;
+    const char *getarg_type;
+    void (*defval)(const char*, struct assignment*);
+    void (*free)(const char*);
+} type_handlers[] = {
+	{ "integer",
+	  "int",
+	  "arg_integer",
+	  defval_int,
+	  NULL
+	},
+	{ "string",
+	  "char*",
+	  "arg_string",
+	  defval_string,
+	  NULL
+	},
+	{ "strings",
+	  "struct getarg_strings",
+	  "arg_strings",
+	  defval_strings,
+	  free_strings
+	},
+	{ "flag",
+	  "int",
+	  "arg_flag",
+	  defval_int,
+	  NULL
+	},
+	{ "-flag",
+	  "int",
+	  "arg_negative_flag",
+	  defval_int,
+	  NULL
+	},
+	{ NULL }
+};
+
+static struct type_handler *find_handler(struct assignment *type)
+{
+    struct type_handler *th;
+    for(th = type_handlers; th->typename != NULL; th++)
+	if(strcmp(type->u.value, th->typename) == 0)
+	    return th;
+    ex(type, "unknown type \"%s\"", type->u.value);
+    exit(1);
+}
+
 static void
 gen_options(struct assignment *opt1, const char *name)
 {
@@ -377,24 +453,13 @@ gen_options(struct assignment *opt1, const char *name)
 	tmp != NULL; 
 	tmp = find_next(tmp, "option")) {
 	struct assignment *type;
+	struct type_handler *th;
 	char *s;
 	
 	s = make_name(tmp->u.assignment);
 	type = find(tmp->u.assignment, "type");
-	if(strcmp(type->u.value, "string") == 0)
-	    hprint(1, "char *%s;\n", s);
-	else if(strcmp(type->u.value, "strings") == 0)
-	    hprint(1, "struct getarg_strings %s;\n", s);
-	else if(strcmp(type->u.value, "integer") == 0)
-	    hprint(1, "int %s;\n", s);
-	else if(strcmp(type->u.value, "flag") == 0) 
-	    hprint(1, "int %s;\n", s);
-	else if(strcmp(type->u.value, "-flag") == 0) 
-	    hprint(1, "int %s;\n", s);
-	else {
-	    ex(type, "unknown type \"%s\"", type->u.value);
-	    exit(1);
-	}
+	th = find_handler(type);
+	hprint(1, "%s %s;\n", th->c_type, s);
 	free(s);
     }
     hprint(0, "};\n");
@@ -410,7 +475,6 @@ gen_wrapper(struct assignment *as)
     struct assignment *tmp;
     char *n, *f;
     int nargs = 0;
-    int seen_strings = 0;
 
     name = find(as, "name");
     n = strdup(name->u.value);
@@ -447,6 +511,8 @@ gen_wrapper(struct assignment *as)
 	struct assignment *sopt = find(tmp->u.assignment, "short");
 	struct assignment *aarg = find(tmp->u.assignment, "argument");
 	struct assignment *help = find(tmp->u.assignment, "help");
+
+	struct type_handler *th;
 	
 	cprint(2, "{ ");
 	if(lopt)
@@ -457,20 +523,8 @@ gen_wrapper(struct assignment *as)
 	    fprintf(cfile, "'%c', ", *sopt->u.value);
 	else
 	    fprintf(cfile, "0, ");
-	if(strcmp(type->u.value, "string") == 0)
-	    fprintf(cfile, "arg_string, ");
-	else if(strcmp(type->u.value, "strings") == 0)
-	    fprintf(cfile, "arg_strings, ");
-	else if(strcmp(type->u.value, "integer") == 0)
-	    fprintf(cfile, "arg_integer, ");
-	else if(strcmp(type->u.value, "flag") == 0)
-	    fprintf(cfile, "arg_flag, ");
-	else if(strcmp(type->u.value, "-flag") == 0)
-	    fprintf(cfile, "arg_negative_flag, ");
-	else {
-	    ex(type, "unknown type \"%s\"", type->u.value);
-	    exit(1);
-	}
+	th = find_handler(type);
+	fprintf(cfile, "%s, ", th->getarg_type);
 	fprintf(cfile, "NULL, ");
 	if(help)
 	    fprintf(cfile, "\"%s\", ", help->u.value);
@@ -493,31 +547,12 @@ gen_wrapper(struct assignment *as)
 	struct assignment *type = find(tmp->u.assignment, "type");
 
 	struct assignment *defval = find(tmp->u.assignment, "default");
+
+	struct type_handler *th;
+	
 	s = make_name(tmp->u.assignment);
-	if(strcmp(type->u.value, "string") == 0) {
-	    if(defval != NULL)
-		cprint(1, "opt.%s = \"%s\";\n", s, defval->u.value);
-	    else
-		cprint(1, "opt.%s = NULL;\n", s);
-	} else if(strcmp(type->u.value, "strings") == 0) {
-	    seen_strings = 1;
-	    cprint(1, "opt.%s.num_strings = 0;\n", s);
-	    cprint(1, "opt.%s.strings = NULL;\n", s);
-	} else if(strcmp(type->u.value, "integer") == 0) {
-	    if(defval != NULL)
-		cprint(1, "opt.%s = %s;\n", s, defval->u.value);
-	    else
-		cprint(1, "opt.%s = 0;\n", s);
-	} else if(strcmp(type->u.value, "flag") == 0 ||
-		  strcmp(type->u.value, "-flag") == 0) {
-	    if(defval != NULL)
-		cprint(1, "opt.%s = %s;\n", s, defval->u.value);
-	    else
-		cprint(1, "opt.%s = 0;\n", s);
-	} else {
-	    ex(type, "unknown type \"%s\"", type->u.value);
-	    exit(1);
-	}
+	th = find_handler(type);
+	(*th->defval)(s, defval);
 	free(s);
     }
 
@@ -592,40 +627,39 @@ gen_wrapper(struct assignment *as)
 
     cprint(1, "ret = %s(%s, argc - optidx, argv + optidx);\n", 
 	   f, opt1 ? "&opt": "NULL");
-    if(seen_strings) {
-	if(seen_strings) {
-	    for(tmp = find(as, "option"); 
-		tmp != NULL; 
-		tmp = find_next(tmp, "option")) {
-		char *s;
-		struct assignment *type = find(tmp->u.assignment, "type");
-		
-		s = make_name(tmp->u.assignment);
-		if(strcmp(type->u.value, "strings") == 0) {
-		    cprint(1, "free_getarg_strings (&opt.%s);\n", s);
-		} 
-		free(s);
-	    }
-	}
+    
+    /* free allocated data */
+    for(tmp = find(as, "option"); 
+	tmp != NULL; 
+	tmp = find_next(tmp, "option")) {
+	char *s;
+	struct assignment *type = find(tmp->u.assignment, "type");
+	struct type_handler *th;
+	th = find_handler(type);
+	if(th->free == NULL)
+	    continue;
+	s = make_name(tmp->u.assignment);
+	(*th->free)(s);
+	free(s);
     }
     cprint(1, "return ret;\n");
 
     cprint(0, "usage:\n");
     cprint(1, "arg_printusage (args, %d, \"%s\", \"%s\");\n", nargs, 
 	   name->u.value, arg ? arg->u.value : "");
-    if(seen_strings) {
-	for(tmp = find(as, "option"); 
-	    tmp != NULL; 
-	    tmp = find_next(tmp, "option")) {
-	    char *s;
-	    struct assignment *type = find(tmp->u.assignment, "type");
-
-	    s = make_name(tmp->u.assignment);
-	    if(strcmp(type->u.value, "strings") == 0) {
-		cprint(1, "free_getarg_strings (&opt.%s);\n", s);
-	    } 
-	    free(s);
-	}
+    /* free allocated data */
+    for(tmp = find(as, "option"); 
+	tmp != NULL; 
+	tmp = find_next(tmp, "option")) {
+	char *s;
+	struct assignment *type = find(tmp->u.assignment, "type");
+	struct type_handler *th;
+	th = find_handler(type);
+	if(th->free == NULL)
+	    continue;
+	s = make_name(tmp->u.assignment);
+	(*th->free)(s);
+	free(s);
     }
     cprint(1, "return 0;\n");
     cprint(0, "}\n");
