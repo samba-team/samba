@@ -4,6 +4,7 @@
    client connect/disconnect routines
 
    Copyright (C) Andrew Tridgell 2003-2005
+   Copyright (C) James Peach 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -175,11 +176,33 @@ struct smbcli_state *smbcli_state_init(TALLOC_CTX *mem_ctx)
 	return talloc_zero(mem_ctx, struct smbcli_state);
 }
 
+/* Insert a NULL at the first separator of the given path and return a pointer
+ * to the location it was inserted at.
+ */
+static char *
+terminate_path_at_separator(char * path)
+{
+	char * p;
+
+	if ((p = strchr_m(path, '/'))) {
+	    *p = '\0';
+	    return(p);
+	}
+
+	if ((p = strchr_m(path, '\\'))) {
+	    *p = '\0';
+	    return(p);
+	}
+	
+	/* No terminator. Return pointer to the last byte. */
+	return(p + strlen(path));
+}
+
 /*
   parse a //server/share type UNC name
 */
 BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
-		      const char **hostname, const char **sharename)
+		      char **hostname, char **sharename)
 {
 	char *p;
 
@@ -189,13 +212,10 @@ BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 	}
 
 	*hostname = talloc_strdup(mem_ctx, &unc_name[2]);
-	p = strchr_m(&(*hostname)[2],'/');
-	if (!p) {
-		p = strchr_m(&(*hostname)[2],'\\');
-		if (!p) return False;
-	}
-	*p = 0;
+	p = terminate_path_at_separator(*hostname);
+
 	*sharename = talloc_strdup(mem_ctx, p+1);
+	p = terminate_path_at_separator(*sharename);
 
 	return True;
 }

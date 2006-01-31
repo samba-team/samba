@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
    Copyright (C) Martin Pool     2003
+   Copyright (C) James Peach	 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1136,3 +1137,73 @@ BOOL set_boolean(const char *boolean_string, BOOL *boolean)
 	return False;
 }
 
+BOOL conv_str_bool(const char * str, BOOL * val)
+{
+	char *	end = NULL;
+	long	lval;
+
+	if (str == NULL || *str == '\0') {
+		return False;
+	}
+
+	lval = strtol(str, &end, 10 /* base */);
+	if (end == NULL || *end != '\0' || end == str) {
+		return set_boolean(str, val);
+	}
+
+	*val = (lval) ? True : False;
+	return True;
+}
+
+/* Convert a size specification like 16K into an integral number of bytes. */
+BOOL conv_str_size(const char * str, uint64_t * val)
+{
+	char *		    end = NULL;
+	unsigned long long  lval;
+
+	if (str == NULL || *str == '\0') {
+		return False;
+	}
+
+	lval = strtoull(str, &end, 10 /* base */);
+	if (end == NULL || end == str) {
+		return False;
+	}
+
+	if (*end) {
+		if (strwicmp(end, "K") == 0) {
+			lval *= 1024ULL;
+		} else if (strwicmp(end, "M") == 0) {
+			lval *= (1024ULL * 1024ULL);
+		} else if (strwicmp(end, "G") == 0) {
+			lval *= (1024ULL * 1024ULL * 1024ULL);
+		} else if (strwicmp(end, "T") == 0) {
+			lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL);
+		} else if (strwicmp(end, "P") == 0) {
+			lval *= (1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL);
+		} else {
+			return False;
+		}
+	}
+
+	*val = (uint64_t)lval;
+	return True;
+}
+
+BOOL conv_str_u64(const char * str, uint64_t * val)
+{
+	char *		    end = NULL;
+	unsigned long long  lval;
+
+	if (str == NULL || *str == '\0') {
+		return False;
+	}
+
+	lval = strtoull(str, &end, 10 /* base */);
+	if (end == NULL || *end != '\0' || end == str) {
+		return False;
+	}
+
+	*val = (uint64_t)lval;
+	return True;
+}
