@@ -58,7 +58,7 @@ showlayout:
 	@echo '  jsdir:       $(JSDIR)'
 	@echo '  swatdir:     $(SWATDIR)'
 	@echo '  mandir:      $(MANDIR)'
-	@echo '  winbinddir:  $(WINBINDDIR)'
+	@echo '  winbindd_socket_dir:  $(WINBINDD_SOCKET_DIR)'
 
 showflags:
 	@echo 'Samba will be compiled with flags:'
