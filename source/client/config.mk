@@ -18,3 +18,20 @@ REQUIRED_SUBSYSTEMS = \
 		POPT_CREDENTIALS
 # End BINARY smbclient
 #################################
+
+#################################
+# Start BINARY cifsdd
+[BINARY::cifsdd]
+INSTALLDIR = BINDIR
+OBJ_FILES = \
+		cifsdd.o \
+		cifsddio.o
+REQUIRED_SUBSYSTEMS = \
+		CONFIG \
+		LIBSMB \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS
+# End BINARY sdd
+#################################
+
