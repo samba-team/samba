@@ -104,12 +104,15 @@ struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gense
 		talloc_reference(mem_ctx, backends);
 		return backends;
 	} else {
+		enum credentials_use_kerberos use_kerberos;
 		struct cli_credentials *creds = gensec_get_credentials(gensec_security);
-		enum credentials_use_kerberos use_kerberos
-			= cli_credentials_get_kerberos_state(creds);
+		if (!creds) {
+			talloc_reference(mem_ctx, backends);
+			return backends;
+		}
+		use_kerberos = cli_credentials_get_kerberos_state(creds);
 		return gensec_use_kerberos_mechs(mem_ctx, backends, use_kerberos);
 	}
-
 }
 
 static const struct gensec_security_ops *gensec_security_by_authtype(struct gensec_security *gensec_security,
