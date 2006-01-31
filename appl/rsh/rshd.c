@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -256,15 +256,25 @@ static void
 krb5_start_session (void)
 {
     krb5_error_code ret;
+    char *estr;
 
     ret = krb5_cc_resolve (context, tkfile, &ccache2);
     if (ret) {
+	estr = krb5_get_error_string(context);
+	syslog(LOG_WARNING, "resolve cred cache %s: %s", 
+	       tkfile, 
+	       estr ? estr : krb5_get_err_text(context, ret));
+	free(estr);
 	krb5_cc_destroy(context, ccache);
 	return;
     }
 
     ret = krb5_cc_copy_cache (context, ccache, ccache2);
     if (ret) {
+	estr = krb5_get_error_string(context);
+	syslog(LOG_WARNING, "storing credentials: %s", 
+	       estr ? estr : krb5_get_err_text(context, ret));
+	free(estr);
 	krb5_cc_destroy(context, ccache);
 	return ;
     }
