@@ -791,6 +791,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 				     &name_token,
 				     NULL);
 	if (maj_stat) {
+		talloc_free(mem_ctx);
 		return NT_STATUS_FOOBAR;
 	}
 
@@ -909,6 +910,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 	}
 	talloc_steal(gensec_gssapi_state, session_info);
+	talloc_free(mem_ctx);
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
