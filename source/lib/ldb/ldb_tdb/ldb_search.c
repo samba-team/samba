@@ -40,8 +40,7 @@
 /*
   add one element to a message
 */
-static int msg_add_element(struct ldb_context *ldb, 
-			   struct ldb_message *ret, 
+static int msg_add_element(struct ldb_message *ret, 
 			   const struct ldb_message_element *el,
 			   int check_duplicates)
 {
@@ -92,7 +91,7 @@ static int msg_add_element(struct ldb_context *ldb,
 /*
   add the special distinguishedName element
 */
-static int msg_add_distinguished_name(struct ldb_module *module, struct ldb_message *msg)
+static int msg_add_distinguished_name(struct ldb_message *msg)
 {
 	struct ldb_message_element el;
 	struct ldb_val val;
@@ -105,7 +104,7 @@ static int msg_add_distinguished_name(struct ldb_module *module, struct ldb_mess
 	val.data = (uint8_t *)ldb_dn_linearize(msg, msg->dn);
 	val.length = strlen((char *)val.data);
 	
-	ret = msg_add_element(module->ldb, msg, &el, 1);
+	ret = msg_add_element(msg, &el, 1);
 	return ret;
 }
 
@@ -119,7 +118,7 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 	unsigned int i;
 	int check_duplicates = (ret->num_elements != 0);
 
-	if (msg_add_distinguished_name(module, ret) != 0) {
+	if (msg_add_distinguished_name(ret) != 0) {
 		return -1;
 	}
 
@@ -129,7 +128,7 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 		if (h->flags & LDB_ATTR_FLAG_HIDDEN) {
 			continue;
 		}
-		if (msg_add_element(ldb, ret, &msg->elements[i],
+		if (msg_add_element(ret, &msg->elements[i],
 				    check_duplicates) != 0) {
 			return -1;
 		}
@@ -143,14 +142,14 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
   pull the specified list of attributes from a message
  */
 static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module, 
+					   TALLOC_CTX *mem_ctx, 
 					   const struct ldb_message *msg, 
 					   const char * const *attrs)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ldb_message *ret;
 	int i;
 
-	ret = talloc(ldb, struct ldb_message);
+	ret = talloc(mem_ctx, struct ldb_message);
 	if (!ret) {
 		return NULL;
 	}
@@ -184,7 +183,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 		}
 
 		if (ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
-			if (msg_add_distinguished_name(module, ret) != 0) {
+			if (msg_add_distinguished_name(ret) != 0) {
 				return NULL;
 			}
 			continue;
@@ -194,7 +193,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 		if (!el) {
 			continue;
 		}
-		if (msg_add_element(ldb, ret, el, 1) != 0) {
+		if (msg_add_element(ret, el, 1) != 0) {
 			talloc_free(ret);
 			return NULL;				
 		}
@@ -296,23 +295,24 @@ static int ltdb_unlock_read(struct ldb_module *module)
   add a set of attributes from a record to a set of results
   return 0 on success, -1 on failure
 */
-int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
+int ltdb_add_attr_results(struct ldb_module *module, 
+			  TALLOC_CTX *mem_ctx, 
+			  struct ldb_message *msg,
 			  const char * const attrs[], 
 			  unsigned int *count, 
 			  struct ldb_message ***res)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ldb_message *msg2;
 	struct ldb_message **res2;
 
 	/* pull the attributes that the user wants */
-	msg2 = ltdb_pull_attrs(module, msg, attrs);
+	msg2 = ltdb_pull_attrs(module, mem_ctx, msg, attrs);
 	if (!msg2) {
 		return -1;
 	}
 
 	/* add to the results list */
-	res2 = talloc_realloc(ldb, *res, struct ldb_message *, (*count)+2);
+	res2 = talloc_realloc(mem_ctx, *res, struct ldb_message *, (*count)+2);
 	if (!res2) {
 		talloc_free(msg2);
 		return -1;
@@ -385,7 +385,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return 0;
 	}
 
-	ret = ltdb_add_attr_results(sinfo->module, msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
+	ret = ltdb_add_attr_results(sinfo->module, sinfo, msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
 
 	if (ret == -1) {
 		sinfo->failures++;

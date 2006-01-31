@@ -665,7 +665,8 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 
 		ret = 0;
 		if (ldb_match_msg(module->ldb, msg, tree, base, scope) == 1) {
-			ret = ltdb_add_attr_results(module, msg, attrs, &(res->count), &(res->msgs));
+			ret = ltdb_add_attr_results(module, res, msg, 
+						    attrs, &(res->count), &(res->msgs));
 		}
 		talloc_free(msg);
 		if (ret != 0) {
