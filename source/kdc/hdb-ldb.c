@@ -509,18 +509,11 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	realm_dn_str = ldb_dn_linearize(mem_ctx, realm_dn);
 
-	if (lret != LDB_SUCCESS || res->count == 0) {
-		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' failed: %s", 
-			   realm_dn_str, filter, ldb_errstring(ldb_ctx));
-		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' failed: %s", 
-				      realm_dn_str, filter, ldb_errstring(ldb_ctx));
+	if (lret != LDB_SUCCESS) {
+		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
 		return HDB_ERR_NOENTRY;
-	} else if (res->count > 1) {
-		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
-			   realm_dn_str, filter, res->count);
-		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
-				      realm_dn_str, filter, res->count);
-		talloc_free(res);
+	} else if (res->count == 0 || res->count > 1) {
+		DEBUG(3, ("Failed find a single entry for %s: got %d\n", filter, res->count));
 		return HDB_ERR_NOENTRY;
 	}
 	talloc_steal(mem_ctx, res->msgs);
@@ -548,25 +541,21 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 
 	ret = ldb_search(ldb_ctx, NULL, LDB_SCOPE_SUBTREE, cross_ref_filter, realm_ref_attrs, &cross_ref_res);
 
-	if (ret != LDB_SUCCESS || cross_ref_res->count == 0) {
-		krb5_warnx(context, "ldb_search: filter: '%s' failed: %s", cross_ref_filter, ldb_errstring(ldb_ctx));
-		krb5_set_error_string(context, "ldb_search: filter: '%s' failed: %s", cross_ref_filter, ldb_errstring(ldb_ctx));
-
+	if (ret != LDB_SUCCESS) {
+		DEBUG(3, ("Failed to search for %s: %s\n", cross_ref_filter, ldb_errstring(ldb_ctx)));
 		talloc_free(cross_ref_res);
 		return HDB_ERR_NOENTRY;
-	} else if (cross_ref_res->count > 1) {
-		krb5_warnx(context, "ldb_search: filter: '%s' more than 1 entry: %d", cross_ref_filter, cross_ref_res->count);
-		krb5_set_error_string(context, "ldb_search: filter: '%s' more than 1 entry: %d", cross_ref_filter, cross_ref_res->count);
-
+	} else if (cross_ref_res->count == 0 || cross_ref_res->count > 1) {
+		DEBUG(3, ("Failed find a single entry for %s: got %d\n", cross_ref_filter, cross_ref_res->count));
 		talloc_free(cross_ref_res);
 		return HDB_ERR_NOENTRY;
 	}
 
 	if (pmsg) {
-		*pmsg = talloc_steal(mem_ctx, cross_ref_res->msgs);
-	} else {
-		talloc_free(cross_ref_res);
+		*pmsg = cross_ref_res->msgs;
+		talloc_steal(mem_ctx, cross_ref_res->msgs);
 	}
+	talloc_free(cross_ref_res);
 
 	return 0;
 }
@@ -922,6 +911,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	priv->count = res->count;
 	priv->msgs = talloc_steal(priv, res->msgs);
+	talloc_free(res);
 
 	db->hdb_openp = priv;
 
@@ -958,7 +948,6 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info;
-	struct gensec_security_ops **not_kerberos_list;
 	*db = talloc(mem_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_string(context, "malloc: out of memory");
