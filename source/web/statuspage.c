@@ -109,7 +109,13 @@ static char *tstring(time_t t)
 static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
 {
 	char           *utf8_fname;
-	int deny_mode = map_share_mode_to_deny_mode(e->share_access,
+	int deny_mode;
+
+	if (!is_valid_share_mode_entry(e)) {
+		return;
+	}
+
+	deny_mode = map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options);
 
 	printf("<tr><td>%s</td>",_(mapPid2Machine(e->pid)));
