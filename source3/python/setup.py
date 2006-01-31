@@ -63,9 +63,9 @@ for lib in string.split(samba_libs):
         next_is_flag = 0;
     elif lib == "-Wl,-rpath":
         next_is_path = 1;
-    elif lib[0:2] in ("-l"):
+    elif lib[0:2] == ("-l"):
         libraries.append(lib[2:])
-    elif lib[0:8] in ("-pthread"):
+    elif lib[0:8] == ("-pthread"):
         pass # Skip linker flags
     elif lib[0:2] == "-L":
         library_dirs.append(lib[2:])
