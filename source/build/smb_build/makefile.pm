@@ -84,6 +84,7 @@ LOCKDIR = $self->{config}->{lockdir}
 PIDDIR = $self->{config}->{piddir}
 MANDIR = $self->{config}->{mandir}
 PRIVATEDIR = $self->{config}->{privatedir}
+WINBINDD_SOCKET_DIR = $self->{config}->{winbindd_socket_dir}
 
 __EOD__
 );
