@@ -899,9 +899,9 @@ static BOOL init_idmap_tdb(TDB_CONTEXT *tdb)
 
 	if (version == -1) {
 		/* No key found, must be a new db */
-		if (!tdb_store_int32(tdb, "IDMAP_VERSION",
-				     IDMAP_VERSION) != 0) {
-			DEBUG(0, ("Could not store IDMAP_VERSION"));
+		if (tdb_store_int32(tdb, "IDMAP_VERSION",
+				    IDMAP_VERSION) != 0) {
+			DEBUG(0, ("Could not store IDMAP_VERSION\n"));
 			tdb_unlock_bystring(tdb, "IDMAP_VERSION");
 			return False;
 		}
