@@ -583,6 +583,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	}
 	talloc_steal(mem_ctx, *msgs);
 	talloc_steal(mem_ctx, *msgs_domain_ref);
+	talloc_free(tmp_ctx);
 	
 	return NT_STATUS_OK;
 }
@@ -610,7 +611,7 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principa
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	nt_status = sam_get_results_principal(sam_ctx, mem_ctx, principal, 
+	nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal, 
 					      &msgs, &msgs_domain_ref);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -638,31 +639,47 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	struct ldb_message **domain_ref_msgs;
 	struct ldb_context *sam_ctx;
 	DATA_BLOB user_sess_key, lm_sess_key;
+	TALLOC_CTX *tmp_ctx;
 
 	if (!account_name || !*account_name) {
 		/* 'not for me' */
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sam_ctx = samdb_connect(tmp_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	nt_status = authsam_search_account(mem_ctx, sam_ctx, account_name, domain, &msgs, &domain_ref_msgs);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	nt_status = authsam_search_account(tmp_ctx, sam_ctx, account_name, domain, &msgs, &domain_ref_msgs);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
 
-	nt_status = authsam_authenticate(ctx->auth_ctx, mem_ctx, sam_ctx, msgs, domain_ref_msgs, user_info,
+	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, sam_ctx, msgs, domain_ref_msgs, user_info,
 					 &user_sess_key, &lm_sess_key);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
 
-	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs[0], domain_ref_msgs[0],
+	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, msgs[0], domain_ref_msgs[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
 
-	talloc_free(msgs);
-	talloc_free(domain_ref_msgs);
+	talloc_steal(mem_ctx, *server_info);
+	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
 }

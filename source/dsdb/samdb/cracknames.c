@@ -44,47 +44,59 @@ static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					struct drsuapi_DsNameInfo1 *info1);
 
 static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
-				   TALLOC_CTX *mem_ctx,
-				   const char *alias_from,
-				   char **alias_to)
+						      TALLOC_CTX *mem_ctx,
+						      const char *alias_from,
+						      char **alias_to)
 {
 	int i;
 	int ret;
 	struct ldb_result *res;
 	struct ldb_message_element *spnmappings;
-	struct ldb_dn *service_dn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx),
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *service_dn;
+	char *service_dn_str;
+	
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+	}
+
+	service_dn = ldb_dn_string_compose(tmp_ctx, samdb_base_dn(mem_ctx),
 						"CN=Directory Service,CN=Windows NT"
 						",CN=Services,CN=Configuration");
-	char *service_dn_str = ldb_dn_linearize(mem_ctx, service_dn);
+	service_dn_str = ldb_dn_linearize(tmp_ctx, service_dn);
 	const char *directory_attrs[] = {
 		"sPNMappings", 
 		NULL
 	};
 
 	ret = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
-			   directory_attrs, &res);
-	talloc_steal(mem_ctx, res);
+			 directory_attrs, &res);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_search: dn: %s not found: %s", service_dn_str, ldb_errstring(ldb_ctx)));
-		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	} else if (res->count > 1) {
+		talloc_free(res);
 		DEBUG(1, ("ldb_search: dn: %s found %d times!", service_dn_str, res->count));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 	}
+	talloc_steal(tmp_ctx, res);
 	
 	spnmappings = ldb_msg_find_element(res->msgs[0], "sPNMappings");
 	if (!spnmappings || spnmappings->num_values == 0) {
 		DEBUG(1, ("ldb_search: dn: %s no sPNMappings attribute", service_dn_str));
+		talloc_free(tmp_ctx);
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 	}
 
 	for (i = 0; i < spnmappings->num_values; i++) {
 		char *mapping, *p, *str;
-		mapping = talloc_strdup(mem_ctx, 
+		mapping = talloc_strdup(tmp_ctx, 
 					(const char *)spnmappings->values[i].data);
 		if (!mapping) {
 			DEBUG(1, ("LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping\n", service_dn_str));
+			talloc_free(tmp_ctx);
 			return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		}
 		
@@ -94,6 +106,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		if (!p) {
 			DEBUG(1, ("ldb_search: dn: %s sPNMapping malformed: %s\n", 
 				  service_dn_str, mapping));
+			talloc_free(tmp_ctx);
 			return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		}
 		p[0] = '\0';
@@ -107,11 +120,14 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 			}
 			if (strcasecmp(str, alias_from) == 0) {
 				*alias_to = mapping;
+				talloc_steal(mem_ctx, mapping);
+				talloc_free(tmp_ctx);
 				return DRSUAPI_DS_NAME_STATUS_OK;
 			}
 		} while (p);
 	}
 	DEBUG(1, ("LDB_lookup_spn_alias: no alias for service %s applicable\n", alias_from));
+	talloc_free(tmp_ctx);
 	return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 }
 
@@ -332,6 +348,8 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		talloc_free(domain);
 		break;
 	}
+
+		/* A LDAP DN as a string */
 	case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
 		name_dn = ldb_dn_explode(mem_ctx, name);
 		domain_filter = NULL;
@@ -341,6 +359,8 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
+
+		/* A GUID as a string */
 	case DRSUAPI_DS_NAME_FORMAT_GUID: {
 		struct GUID guid;
 		char *ldap_guid;
@@ -372,6 +392,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		break;
 	}
 	
+		/* A S-1234-5678 style string */
 	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
 		struct dom_sid *sid = dom_sid_parse_talloc(mem_ctx, name);
 		char *ldap_sid;
