@@ -67,27 +67,6 @@ AC_CHECK_HEADERS(sys/mount.h, , , [AC_INCLUDES_DEFAULT
 #include <sys/param.h>
 #endif])
 
-AC_CACHE_CHECK([for MAX in sys/param.h], samba_cv_sys_param_h_max,
-	AC_TRY_COMPILE([
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif], [int i = MAX(1,2)],
-	samba_cv_sys_param_h_max=yes, samba_cv_sys_param_h_max=no) )
-
-if test x"$samba_cv_sys_param_h_max" = x"yes"; then
-	AC_DEFINE(HAVE_SYS_PARAM_H_MAX, 1, [Whether sys/param.h declares the MAX macro])
-fi
-
-AC_CACHE_CHECK([for MIN in sys/param.h], samba_cv_sys_param_h_min, [
-	AC_TRY_COMPILE([
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif], [int i = MIN(1,2)],
-	samba_cv_sys_param_h_min=yes, samba_cv_sys_param_h_min=no)] )
-
-if test x"$samba_cv_sys_param_h_min" = x"yes"; then
-	AC_DEFINE(HAVE_SYS_PARAM_H_MIN, 1, [Whether sys/param.h declares the MIN macro])
-fi
 
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
