@@ -43,21 +43,22 @@ everything: all
 
 showlayout: 
 	@echo 'Samba will be installed into:'
-	@echo '  basedir: $(BASEDIR)'
-	@echo '  bindir:  $(BINDIR)'
-	@echo '  sbindir: $(SBINDIR)'
-	@echo '  libdir:  $(LIBDIR)'
+	@echo '  basedir:     $(BASEDIR)'
+	@echo '  bindir:      $(BINDIR)'
+	@echo '  sbindir:     $(SBINDIR)'
+	@echo '  libdir:      $(LIBDIR)'
 	@echo '  modulesdir:  $(MODULESDIR)'
 	@echo '  includedir:  $(INCLUDEDIR)'
-	@echo '  vardir:  $(VARDIR)'
+	@echo '  vardir:      $(VARDIR)'
 	@echo '  privatedir:  $(PRIVATEDIR)'
-	@echo '  piddir:   $(PIDDIR)'
-	@echo '  lockdir:  $(LOCKDIR)'
-	@echo '  logfilebase:  $(LOGFILEBASE)'
-	@echo '  setupdir: $(SETUPDIR)'
-	@echo '  jsdir:    $(JSDIR)'
-	@echo '  swatdir:  $(SWATDIR)'
-	@echo '  mandir:   $(MANDIR)'
+	@echo '  piddir:      $(PIDDIR)'
+	@echo '  lockdir:     $(LOCKDIR)'
+	@echo '  logfilebase: $(LOGFILEBASE)'
+	@echo '  setupdir:    $(SETUPDIR)'
+	@echo '  jsdir:       $(JSDIR)'
+	@echo '  swatdir:     $(SWATDIR)'
+	@echo '  mandir:      $(MANDIR)'
+	@echo '  winbinddir:  $(WINBINDDIR)'
 
 showflags:
 	@echo 'Samba will be compiled with flags:'
@@ -84,7 +85,7 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\" \
 	 -DMODULESDIR=\"$(MODULESDIR)\" -DJSDIR=\"$(JSDIR)\" \
-	 -DSETUPDIR=\"$(SETUPDIR)\"
+	 -DSETUPDIR=\"$(SETUPDIR)\" -DWINBINDD_SOCKET_DIR=\"$(WINBINDD_SOCKET_DIR)\"
 
 install: showlayout installbin installdat installswat installmisc installlib \
 	installheader installpc

@@ -127,6 +127,7 @@ typedef struct
 	char **server_services;
 	char *ntptr_providor;
 	char *szWinbindSeparator;
+	char *szWinbinddSocketDirectory;
 	BOOL bWinbindSealedPipes;
 	char *swat_directory;
 	BOOL tls_enabled;
@@ -545,6 +546,7 @@ static struct parm_struct parm_table[] = {
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"winbindd socket directory", P_STRING, P_GLOBAL, &Globals.szWinbinddSocketDirectory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 	{"winbind sealed pipes", P_BOOL, P_GLOBAL, &Globals.bWinbindSealedPipes, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
@@ -599,7 +601,7 @@ static void init_globals(void)
 	do_parameter("max connections", "-1", NULL);
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup", NULL);
-	do_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc", NULL);
+	do_parameter("server services", "smb rpc nbt wrepl ldap cldap web kdc winbind", NULL);
 	do_parameter("ntptr providor", "simple_ldb", NULL);
 	do_parameter("auth methods", "anonymous sam_ignoredomain", NULL);
 	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
@@ -670,6 +672,7 @@ static void init_globals(void)
 
 	do_parameter("winbind separator", "\\", NULL);
 	do_parameter("winbind sealed pipes", "True", NULL);
+	do_parameter("winbindd socket directory", dyn_WINBINDD_SOCKET_DIR, NULL);
 
 	do_parameter("client signing", "Yes", NULL);
 	do_parameter("server signing", "auto", NULL);
@@ -820,6 +823,7 @@ FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 FN_GLOBAL_STRING(lp_wins_config_url, &Globals.szWINS_CONFIG_URL)
 FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, &Globals.szWinbinddSocketDirectory)
 FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, &Globals.bWinbindSealedPipes)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)

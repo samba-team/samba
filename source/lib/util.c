@@ -88,6 +88,49 @@ BOOL directory_exist(const char *dname)
 	return ret;
 }
 
+BOOL directory_create_or_exist(const char *dname, uid_t uid, 
+			       mode_t dir_perms)
+{
+	mode_t old_umask;
+  	struct stat st;
+      
+	old_umask = umask(0);
+	if (lstat(dname, &st) == -1) {
+		if (errno == ENOENT) {
+			/* Create directory */
+			if (mkdir(dname, dir_perms) == -1) {
+				DEBUG(0, ("error creating directory "
+					  "%s: %s\n", dname, 
+					  strerror(errno)));
+				umask(old_umask);
+				return False;
+			}
+		} else {
+			DEBUG(0, ("lstat failed on directory %s: %s\n",
+				  dname, strerror(errno)));
+			umask(old_umask);
+			return False;
+		}
+	} else {
+		/* Check ownership and permission on existing directory */
+		if (!S_ISDIR(st.st_mode)) {
+			DEBUG(0, ("directory %s isn't a directory\n",
+				dname));
+			umask(old_umask);
+			return False;
+		}
+		if ((st.st_uid != uid) || 
+		    ((st.st_mode & 0777) != dir_perms)) {
+			DEBUG(0, ("invalid permissions on directory "
+				  "%s\n", dname));
+			umask(old_umask);
+			return False;
+		}
+	}
+	return True;
+}       
+
+
 /*******************************************************************
  Returns the size in bytes of the named file.
 ********************************************************************/

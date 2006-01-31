@@ -16,6 +16,7 @@ logfilebase="${localstatedir}"
 lockdir="${localstatedir}/locks"
 piddir="${localstatedir}/run"
 privatedir="${prefix}/private"
+winbindd_socket_dir="${localstatedir}/run/winbind_pipe"
 
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
@@ -27,6 +28,7 @@ AC_ARG_WITH(fhs,
     libdir="${libdir}/samba"
     datadir="${datadir}/samba"
     includedir="${includedir}/samba-4.0"
+    winbindd_socket_dir="${localstatedir}/run/samba/winbind_pipe"
 )
 
 #################################################
@@ -42,6 +44,22 @@ AC_ARG_WITH(privatedir,
   ;;
   * )
     privatedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set where the winbindd socket should be put
+AC_ARG_WITH(winbindd-socket-dir,
+[  --with-winbindd-socket-dir=DIR   Where to put the winbindd socket ($ac_default_prefix/run/winbind_pipe)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-winbind-socketdir called without argument - will use default])
+  ;;
+  * )
+    winbindd_socket_dir="$withval"
     ;;
   esac])
 
@@ -100,6 +118,7 @@ AC_SUBST(logfilebase)
 AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
+AC_SUBST(winbindd_socket_dir)
 
 #################################################
 # set prefix for 'make test'

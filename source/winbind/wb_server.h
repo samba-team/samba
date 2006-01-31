@@ -22,12 +22,9 @@
 
 #include "nsswitch/winbindd_nss.h"
 
-#define WINBINDD_DIR "/tmp/.winbindd/"
-#define WINBINDD_SOCKET WINBINDD_DIR"socket"
-/* the privileged socket is in smbd_tmp_dir() */
-#define WINBINDD_PRIVILEGED_SOCKET "winbind_socket"
 
-#define WINBINDD_SAMBA3_SOCKET WINBINDD_DIR"pipe"
+
+#define WINBINDD_SAMBA3_SOCKET "pipe"
 /* the privileged socket is in smbd_tmp_dir() */
 #define WINBINDD_SAMBA3_PRIVILEGED_SOCKET "winbind_pipe"
 

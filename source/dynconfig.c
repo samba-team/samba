@@ -80,6 +80,13 @@ const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
 /** SWAT data file (images, etc) directory */
 const char *dyn_SWATDIR = SWATDIR;
 
+/** SETUP files (source files used by the provision) */
 const char *dyn_SETUPDIR = SETUPDIR;
 
+/** EJS Javascript library includes */
 const char *dyn_JSDIR = JSDIR;
+
+/** Where to find the winbindd socket */
+
+const char *dyn_WINBINDD_SOCKET_DIR = WINBINDD_SOCKET_DIR;
+
