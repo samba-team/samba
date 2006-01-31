@@ -152,6 +152,7 @@ struct gensec_ntlmssp_state
 	 *
 	 */
 	NTSTATUS (*check_password)(struct gensec_ntlmssp_state *, 
+				   TALLOC_CTX *mem_ctx, 
 				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	const char *server_name;
