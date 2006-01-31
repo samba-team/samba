@@ -616,14 +616,14 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, const char *principa
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(mem_ctx, sam_ctx, msgs[0], msgs_domain_ref[0],
+	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, msgs[0], msgs_domain_ref[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return nt_status;
+	if (NT_STATUS_IS_OK(nt_status)) {
+		talloc_steal(mem_ctx, *server_info);
 	}
-	return NT_STATUS_OK;
+	talloc_free(tmp_ctx);
+	return nt_status;
 }
 
 static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx,

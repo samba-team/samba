@@ -546,6 +546,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	} else {
 		pac = data_blob_talloc(mem_ctx, pac_data.data, pac_data.length);
 		if (!pac.data) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -554,6 +555,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 			DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
 				  smb_get_krb5_error_message(context, 
 							     ret, mem_ctx)));
+			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 		
@@ -568,12 +570,11 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		if (NT_STATUS_IS_OK(nt_status)) {
 			union netr_Validation validation;
 			validation.sam3 = &logon_info->info3;
-			nt_status = make_server_info_netlogon_validation(gensec_krb5_state, 
+			nt_status = make_server_info_netlogon_validation(mem_ctx, 
 									 NULL,
 									 3, &validation,
 									 &server_info); 
 		}
-		talloc_free(mem_ctx);
 	}
 
 		
@@ -590,6 +591,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 			DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
 				  smb_get_krb5_error_message(context, 
 							     ret, mem_ctx)));
+			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 		
@@ -597,6 +599,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 					client_principal, &principal_string);
 		krb5_free_principal(context, client_principal);
 		if (ret) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -611,16 +614,24 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(gensec_krb5_state, server_info, &session_info);
-	talloc_free(mem_ctx);
+	nt_status = auth_generate_session_info(mem_ctx, server_info, &session_info);
 
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
 
 	nt_status = gensec_krb5_session_key(gensec_security, &session_info->session_key);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
 
 	*_session_info = session_info;
 
+	talloc_steal(gensec_krb5_state, session_info);
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
 

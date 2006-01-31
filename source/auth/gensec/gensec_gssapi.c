@@ -759,7 +759,7 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 }
 
 static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_security,
-					 struct auth_session_info **_session_info) 
+					   struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
@@ -873,13 +873,17 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(gensec_gssapi_state, server_info, &session_info);
-	talloc_free(mem_ctx);
-	talloc_free(server_info);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	nt_status = auth_generate_session_info(mem_ctx, server_info, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
 
 	nt_status = gensec_gssapi_session_key(gensec_security, &session_info->session_key);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
 
 	if (!(gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG)) {
 		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
@@ -888,6 +892,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		DEBUG(10, ("gensec_gssapi: delegated credentials supplied by client\n"));
 		session_info->credentials = cli_credentials_init(session_info);
 		if (!session_info->credentials) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -897,11 +902,13 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 							   gensec_gssapi_state->delegated_cred_handle,
 							   CRED_SPECIFIED);
 		if (ret) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 	}
+	talloc_steal(gensec_gssapi_state, session_info);
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
