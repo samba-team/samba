@@ -55,7 +55,12 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_dn *service_dn;
 	char *service_dn_str;
-	
+
+	const char *directory_attrs[] = {
+		"sPNMappings", 
+		NULL
+	};
+
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
@@ -65,10 +70,6 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 						"CN=Directory Service,CN=Windows NT"
 						",CN=Services,CN=Configuration");
 	service_dn_str = ldb_dn_linearize(tmp_ctx, service_dn);
-	const char *directory_attrs[] = {
-		"sPNMappings", 
-		NULL
-	};
 
 	ret = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
 			 directory_attrs, &res);
