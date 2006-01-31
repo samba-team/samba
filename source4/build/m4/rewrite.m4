@@ -496,6 +496,18 @@ fi
 ;;
 esac
 
+AC_CACHE_CHECK([for O_DIRECT flag to open(2)],samba_cv_HAVE_OPEN_O_DIRECT,[
+AC_TRY_COMPILE([
+#include <unistd.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif],
+[int fd = open("/dev/null", O_DIRECT);],
+samba_cv_HAVE_OPEN_O_DIRECT=yes,samba_cv_HAVE_OPEN_O_DIRECT=no)])
+if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
+    AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
+fi 
+
 ###############################################
 # test for where we get crypt() from
 AC_CHECK_LIB_EXT(crypt, CRYPT_LIBS, crypt)
