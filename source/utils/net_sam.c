@@ -409,47 +409,7 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 		return -1;
 	}
 
-	if (pdb_getgrgid(&map, grp->gr_gid)) {
-		d_fprintf(stderr, "%s already mapped to %s (%s)\n",
-			  argv[0], map.nt_name,
-			  sid_string_static(&map.sid));
-		return -1;
-	}
-
-	map.gid = grp->gr_gid;
-
-	grpname = argv[0];
-
-	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
-			&dom, &name, NULL, NULL)) {
-
-		const char *tmp = talloc_asprintf(
-			tmp_talloc_ctx(), "Unix Group %s", argv[0]);
-
-		d_fprintf(stderr, "%s exists as %s\\%s, retrying as \"%s\"\n",
-			  grpname, dom, name, tmp);
-		grpname = tmp;
-	}
-
-	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
-			NULL, NULL, NULL, NULL)) {
-		d_fprintf(stderr, "\"%s\" exists, can't map it\n", argv[0]);
-		return -1;
-	}
-
-	fstrcpy(map.nt_name, grpname);
-
-	if (!pdb_new_rid(&rid)) {
-		d_fprintf(stderr, "Could not get a new rid\n");
-		return -1;
-	}
-
-	sid_compose(&map.sid, get_global_sam_sid(), rid);
-	map.sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map.comment, talloc_asprintf(tmp_talloc_ctx(), "Unix Group %s",
-					     argv[0]));
-
-	status = pdb_add_group_mapping_entry(&map);
+	status = map_unix_group(grp, &map);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Mapping group %s failed with %s\n",

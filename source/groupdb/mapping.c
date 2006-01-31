@@ -180,6 +180,64 @@ BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_us
 }
 
 /****************************************************************************
+ Map a unix group to a newly created mapping
+****************************************************************************/
+NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
+{
+	NTSTATUS status;
+	GROUP_MAP map;
+	const char *grpname, *dom, *name;
+	uint32 rid;
+
+	if (pdb_getgrgid(&map, grp->gr_gid)) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	map.gid = grp->gr_gid;
+	grpname = grp->gr_name;
+
+	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+			&dom, &name, NULL, NULL)) {
+
+		const char *tmp = talloc_asprintf(
+			tmp_talloc_ctx(), "Unix Group %s", grp->gr_name);
+
+		DEBUG(5, ("%s exists as %s\\%s, retrying as \"%s\"\n",
+			  grpname, dom, name, tmp));
+		grpname = tmp;
+	}
+
+	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+			NULL, NULL, NULL, NULL)) {
+		DEBUG(3, ("\"%s\" exists, can't map it\n", grp->gr_name));
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	fstrcpy(map.nt_name, grpname);
+
+	if (pdb_rid_algorithm()) {
+		rid = pdb_gid_to_group_rid( grp->gr_gid );
+	} else {
+		if (!pdb_new_rid(&rid)) {
+			DEBUG(3, ("Could not get a new RID for %s\n",
+				  grp->gr_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	sid_compose(&map.sid, get_global_sam_sid(), rid);
+	map.sid_name_use = SID_NAME_DOM_GRP;
+	fstrcpy(map.comment, talloc_asprintf(tmp_talloc_ctx(), "Unix Group %s",
+					     grp->gr_name));
+
+	status = pdb_add_group_mapping_entry(&map);
+	if (NT_STATUS_IS_OK(status)) {
+		*pmap = map;
+	}
+	return status;
+}
+
+/****************************************************************************
  Return the sid and the type of the unix group.
 ****************************************************************************/
 

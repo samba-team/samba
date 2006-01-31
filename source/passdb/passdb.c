@@ -403,6 +403,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 
 	if (!pdb_gid_to_sid(pwd->pw_gid, &group_sid)) {
 		struct group *grp;
+		GROUP_MAP map;
 
 		grp = getgrgid(pwd->pw_gid);
 		if (grp == NULL) {
@@ -412,13 +413,17 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 			goto done;
 		}
 
-		DEBUG(1, ("\nPrimary group %s of user %s is not mapped to "
-			  "a domain group\n"
-			  "Please add a mapping with\n\n"
-			  "net sam mapunixgroup %s\n\n",
-			  grp->gr_name, username, grp->gr_name));
-		result = NT_STATUS_INVALID_PRIMARY_GROUP;
-		goto done;
+		DEBUG(5, ("Primary group %s of user %s is not mapped to "
+			  "a domain group, auto-mapping it\n",
+			  grp->gr_name, username));
+		result = map_unix_group(grp, &map);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(1, ("Failed to map group %s\n", grp->gr_name));
+			goto done;
+		}
+		sid_copy(&group_sid, &map.sid);
+		DEBUG(5, ("Mapped unix group %s to SID %s\n",
+			  grp->gr_name, sid_string_static(&group_sid)));
 	}
 
 	/* Now check that it's actually a domain group and not something
