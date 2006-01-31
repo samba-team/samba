@@ -4,6 +4,8 @@ TEST DEFINITIONS ::=
 
 BEGIN
 
+IMPORTS heim_any FROM heim;
+
 TESTLargeTag ::= SEQUENCE {
 	foo[127] INTEGER (-2147483648..2147483647)
 }
@@ -51,7 +53,8 @@ TESTAllocInner ::= SEQUENCE {
 
 TESTAlloc ::= SEQUENCE {
 	  tagless TESTAllocInner OPTIONAL,
-	  three [1] INTEGER (-2147483648..2147483647)
+	  three [1] INTEGER (-2147483648..2147483647),
+	  tagless2 heim_any OPTIONAL
 }
 
 

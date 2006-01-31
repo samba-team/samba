@@ -614,6 +614,13 @@ cmp_TESTAlloc (void *a, void *b)
     IF_OPT_COMPARE(aa,ab,tagless) {
 	COMPARE_INTEGER(aa,ab,tagless->ai);
     }
+
+    COMPARE_INTEGER(aa,ab,three);
+
+    IF_OPT_COMPARE(aa,ab,tagless2) {
+	COMPARE_OPT_OCTECT_STRING(aa, ab, tagless2);
+    }
+
     return 0;
 }
 
@@ -628,6 +635,12 @@ UNIV CONS Sequence 12
 UNIV CONS Sequence 5
   CONTEXT CONS 1 3
     UNIV PRIM Integer 1 03
+
+UNIV CONS Sequence 8
+  CONTEXT CONS 1 3
+    UNIV PRIM Integer 1 04
+  UNIV PRIM Integer 1 05
+
 */
 
 static int
@@ -639,11 +652,15 @@ test_taglessalloc (void)
 	  "alloc 1" },
 	{ NULL,  7,  
 	  "\x30\x05\xa1\x03\x02\x01\x03", 
-	  "alloc 2" }
+	  "alloc 2" },
+	{ NULL,  10,  
+	  "\x30\x08\xa1\x03\x02\x01\x04\x02\x01\x05", 
+	  "alloc 3" }
     };
 
     int ret = 0, ntests = sizeof(tests) / sizeof(*tests);
-    TESTAlloc c1, c2;
+    TESTAlloc c1, c2, c3;
+    heim_any any3;
 
     memset(&c1, 0, sizeof(c1));
     c1.tagless = ecalloc(1, sizeof(*c1.tagless));
@@ -655,6 +672,14 @@ test_taglessalloc (void)
     c2.tagless = NULL;
     c2.three = 3;
     tests[1].val = &c2;
+
+    memset(&c3, 0, sizeof(c3));
+    c3.tagless = NULL;
+    c3.three = 4;
+    c3.tagless2 = &any3;
+    any3.data = "\x02\x01\x05";
+    any3.length = 3;
+    tests[2].val = &c3;
 
     ret += generic_test (tests, ntests, sizeof(TESTAlloc),
 			 (generic_encode)encode_TESTAlloc,
