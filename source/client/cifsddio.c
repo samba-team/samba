@@ -99,8 +99,13 @@ open_fd_handle(const char * path, uint64_t iosz, int options)
 	fdh->h.io_write = fd_write_func;
 	fdh->h.io_seek = fd_seek_func;
 
-	if (options & DD_DIRECT_IO)
+	if (options & DD_DIRECT_IO) {
+#ifdef HAVE_OPEN_O_DIRECT
 		oflags |= O_DIRECT;
+#else
+		DEBUG(1, ("no support for direct IO on this platform\n"));
+#endif
+	}
 
 	if (options & DD_SYNC_IO)
 		oflags |= O_SYNC;
