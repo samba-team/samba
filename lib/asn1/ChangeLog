@@ -1,4 +1,15 @@
+2006-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* extra.c: Stub-generator now generates alloc statements for
+	tagless ANY OPTIONAL, remove workaround.
+
+	* check-gen.c: check for "tagless ANY OPTIONAL"
+
+	* test.asn1: check for "tagless ANY OPTIONAL"
+	
 2006-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* der.h: UniversalString and BMPString are both implemented.
 
 	* der.h: Remove , after the last element of enum.
 
