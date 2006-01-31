@@ -123,9 +123,11 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
-	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(WINBINDD_DIR)) {
-		mkdir(WINBINDD_DIR, 0755);
+	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
+	if (!directory_create_or_exist(lp_winbindd_socket_directory(), geteuid(), 0755)) {
+		task_server_terminate(task,
+				      "Cannot create winbindd pipe directory");
+		return;
 	}
 
 	service = talloc_zero(task, struct wbsrv_service);
@@ -143,7 +145,9 @@ static void winbind_task_init(struct task_server *task)
 	/* setup the unprivileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
-	listen_socket->socket_path	= WINBINDD_SAMBA3_SOCKET;
+	listen_socket->socket_path	= talloc_asprintf(listen_socket, "%s/%s", 
+							  lp_winbindd_socket_directory(), 
+							  WINBINDD_SAMBA3_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= False;

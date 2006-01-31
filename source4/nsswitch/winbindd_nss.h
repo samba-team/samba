@@ -27,7 +27,9 @@
 #define _WINBINDD_NTDOM_H
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
+#ifndef WINBINDD_SOCKET_DIR
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
+#endif
 #define WINBINDD_PRIV_SOCKET_SUBDIR "winbindd_privileged" /* name of subdirectory of lp_lockdir() to hold the 'privileged' pipe */
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"

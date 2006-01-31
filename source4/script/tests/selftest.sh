@@ -59,6 +59,7 @@ PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
 TLSDIR=$PRIVATEDIR/tls
+WINBINDD_SOCKET_DIR=$PREFIX_ABS/winbind_socket
 CONFIGURATION="--configfile=$CONFFILE"
 export CONFIGURATION
 export CONFFILE
@@ -109,6 +110,7 @@ cat >$CONFFILE<<EOF
 	lock dir = $LOCKDIR
 	setup directory = $SRCDIR/setup
 	js include = $SRCDIR/scripting/libjs
+        winbindd socket directory = $WINBINDD_SOCKET_DIR
 	name resolve order = bcast
 	interfaces = 127.0.0.1/8
 	tls enabled = $TLS_ENABLED
