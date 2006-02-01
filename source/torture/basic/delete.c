@@ -163,6 +163,13 @@ BOOL torture_test_delete(void)
 		return False;
 	}
 
+	if (!torture_open_connection(&cli2)) {
+		printf("(%s) failed to open second connection.\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+
 	smbcli_deltree(cli1->tree, dirname);
 
 	/* Test 1 - this should delete the file on close. */
@@ -198,6 +205,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("first delete on close test succeeded.\n");
 	
 	/* Test 2 - this should delete the file on close. */
@@ -245,6 +255,9 @@ BOOL torture_test_delete(void)
 	} else
 		printf("second delete on close test succeeded.\n");
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	/* Test 3 - ... */
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
@@ -330,6 +343,9 @@ BOOL torture_test_delete(void)
 	} else
 		printf("third delete on close test succeeded.\n");
 
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	/* Test 4 ... */
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	status = smbcli_unlink(cli1->tree, fname);
@@ -397,14 +413,17 @@ BOOL torture_test_delete(void)
 	}
 	CHECK_STATUS(cli1, NT_STATUS_DELETE_PENDING);
 
-	printf("fourth delete on close test succeeded.\n");
-	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 2 failed (%s)\n", 
 		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
+	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
+	printf("fourth delete on close test succeeded.\n");
 	
 	/* Test 5 ... */
 	smbcli_setatr(cli1->tree, fname, 0, 0);
@@ -434,6 +453,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("fifth delete on close test succeeded.\n");
 	
 	/* Test 6 ... */
@@ -470,6 +492,9 @@ BOOL torture_test_delete(void)
 		correct = False;
 		goto fail;
 	}
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
 
 	printf("sixth delete on close test succeeded.\n");
 	
@@ -533,19 +558,15 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("seventh delete on close test succeeded.\n");
 	
 	/* Test 7 ... */
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 	
-	if (!torture_open_connection(&cli2)) {
-		printf("(%s) failed to open second connection.\n",
-		       __location__);
-		correct = False;
-		goto fail;
-	}
-
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
 				      SEC_FILE_READ_DATA|
 				      SEC_FILE_WRITE_DATA|
@@ -613,6 +634,9 @@ BOOL torture_test_delete(void)
 	} else
 		printf("eighth delete on close test succeeded.\n");
 
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	/* This should fail - we need to set DELETE_ACCESS. */
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
 				      SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
@@ -627,6 +651,9 @@ BOOL torture_test_delete(void)
 		correct = False;
 		goto fail;
 	}
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
 
 	printf("ninth delete on close test succeeded.\n");
 
@@ -662,6 +689,9 @@ BOOL torture_test_delete(void)
 		correct = False;
 	} else
 		printf("tenth delete on close test succeeded.\n");
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
 
 	/* test 11 - does having read only attribute still allow delete on close. */
 
@@ -699,6 +729,10 @@ BOOL torture_test_delete(void)
 
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
         printf("eleventh delete on close test succeeded.\n");
 
 	/* test 12 - does having read only attribute still allow delete on
@@ -729,6 +763,9 @@ BOOL torture_test_delete(void)
 		}
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
         printf("twelvth delete on close test succeeded.\n");
 
 	/* Test 13: Does resetting the delete on close flag affect a second
@@ -820,6 +857,9 @@ BOOL torture_test_delete(void)
 	smbcli_close(cli1->tree, fnum1);
 	smbcli_unlink(cli1->tree, fname);
 
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("thirteenth delete on close test succeeded.\n");
 
 	/* Test 14 -- directory */
@@ -867,6 +907,9 @@ BOOL torture_test_delete(void)
 		correct = False;
 		goto fail;
 	}
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
 
 	printf("fourteenth delete on close test succeeded.\n");
 
@@ -992,6 +1035,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("fifteenth delete on close test succeeded.\n");
 
 	/* Test 16. */
@@ -1054,6 +1100,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("sixteenth delete on close test succeeded.\n");
 
 	/* Test 17. */
@@ -1134,6 +1183,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("seventeenth delete on close test succeeded.\n");
 
 	/* Test 18. With directories. */
@@ -1205,6 +1257,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("eighteenth delete on close test succeeded.\n");
 
 	/* Test 19. */
@@ -1293,6 +1348,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+
 	printf("nineteenth delete on close test succeeded.\n");
 
 	/* Test 20 -- non-empty directory hardest to get right... */
@@ -1375,6 +1433,9 @@ BOOL torture_test_delete(void)
 	}
 
 	smbcli_close(cli1->tree, dnum1);
+
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
 
 	printf("twentieth delete on close test succeeded.\n");
 
