@@ -209,7 +209,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		DEBUG(0, ("close_file: Could not delete share entry for file %s\n", fsp->fsp_name));
 	}
 
-	delete_file = lck->delete_on_close;
+	delete_file = (lck->delete_on_close | lck->initial_delete_on_close);
 
 	if (delete_file) {
 		int i;
@@ -345,7 +345,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 		DEBUG(0, ("close_directory: Could not delete share entry for %s\n", fsp->fsp_name));
 	}
 
-	delete_dir = lck->delete_on_close;
+	delete_dir = (lck->delete_on_close | lck->initial_delete_on_close);
 
 	talloc_free(lck);
 
