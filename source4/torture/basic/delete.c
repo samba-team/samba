@@ -1077,6 +1077,148 @@ BOOL torture_test_delete(void)
 
 	printf("sixteenth delete on close test succeeded.\n");
 
+	/* Test 17. */
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly create with all access, but delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* The delete on close bit is *not* reported as being set. */
+	check_delete_on_close(cli1, fnum1, fname, False);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+	
+
+	/* Should work. */
+	if (fnum2 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* Now close both.... */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+
+	/* And the file should be deleted ! */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	if (fnum1 != -1) {
+		printf("(%s) open of %s succeeded (should fail)\n", 
+		       __location__, fname);
+		correct = False;
+		goto fail;
+	}
+	
+	printf("seventeenth delete on close test succeeded.\n");
+
+	/* Test 18. */
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE, 
+				      0, 0);
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* And close - just to create the file. */
+	smbcli_close(cli1->tree, fnum1);
+	
+	/* Next open with all access, but add delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* The delete on close bit is *not* reported as being set. */
+	check_delete_on_close(cli1, fnum1, fname, False);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+	
+	/* Should work. */
+	if (fnum2 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* Now close both.... */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+
+	/* See if the file is deleted - shouldn't be.... */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("(%s) open of %s failed (should succeed)\n", 
+		       __location__, fname);
+		correct = False;
+		goto fail;
+	}
+	
+	printf("eighteenth delete on close test succeeded.\n");
+
 	printf("finished delete test\n");
 
   fail:
