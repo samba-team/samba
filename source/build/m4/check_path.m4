@@ -15,7 +15,7 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 logfilebase="${localstatedir}"
 lockdir="${localstatedir}/locks"
 piddir="${localstatedir}/run"
-privatedir="${prefix}/private"
+privatedir="\${prefix}/private"
 winbindd_socket_dir="${localstatedir}/run/winbind_pipe"
 
 AC_ARG_WITH(fhs, 
@@ -34,7 +34,7 @@ AC_ARG_WITH(fhs,
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
+[  --with-privatedir=DIR   Where to put sam.ldb and other private files containing key material ($ac_default_prefix/private)],
 [ case "$withval" in
   yes|no)
   #
