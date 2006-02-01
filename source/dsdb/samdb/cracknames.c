@@ -66,9 +66,9 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	}
 
-	service_dn = ldb_dn_string_compose(tmp_ctx, samdb_base_dn(mem_ctx),
-						"CN=Directory Service,CN=Windows NT"
-						",CN=Services,CN=Configuration");
+	service_dn = ldb_dn_string_compose(tmp_ctx, samdb_base_dn(tmp_ctx),
+					   "CN=Directory Service,CN=Windows NT"
+					   ",CN=Services,CN=Configuration");
 	service_dn_str = ldb_dn_linearize(tmp_ctx, service_dn);
 
 	ret = ldb_search(ldb_ctx, service_dn, LDB_SCOPE_BASE, "(objectClass=nTDSService)",
@@ -77,7 +77,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_search: dn: %s not found: %s", service_dn_str, ldb_errstring(ldb_ctx)));
 		return DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
-	} else if (res->count > 1) {
+	} else if (res->count != 1) {
 		talloc_free(res);
 		DEBUG(1, ("ldb_search: dn: %s found %d times!", service_dn_str, res->count));
 		return DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
