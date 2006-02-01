@@ -92,7 +92,7 @@ static struct testcase {
     {NULL, 0}
 };
 
-int KRB5_LIB_FUNCTION
+int
 main(int argc, char **argv)
 {
     unsigned char data[MAXSIZE];
