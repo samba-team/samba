@@ -195,7 +195,7 @@ fail:
 static int transaction_write(struct tdb_context *tdb, tdb_off_t off, 
 			     const void *buf, tdb_len_t len)
 {
-	struct tdb_transaction_el *el;
+	struct tdb_transaction_el *el, *best_el=NULL;
 
 	if (len == 0) {
 		return 0;
@@ -212,6 +212,10 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	/* first see if we can replace an existing entry */
 	for (el=tdb->transaction->elements_last;el;el=el->prev) {
 		tdb_len_t partial;
+
+		if (best_el == NULL && off == el->offset+el->length) {
+			best_el = el;
+		}
 
 		if (off+len <= el->offset) {
 			continue;
@@ -245,6 +249,28 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 			goto fail;
 		}
 
+		return 0;
+	}
+
+	/* see if we can append the new entry to an existing entry */
+	if (best_el && best_el->offset + best_el->length == off && 
+	    (off+len < tdb->transaction->old_map_size ||
+	     off > tdb->transaction->old_map_size)) {
+		unsigned char *data = best_el->data;
+		el = best_el;
+		el->data = realloc(el->data, el->length + len);
+		if (el->data == NULL) {
+			tdb->ecode = TDB_ERR_OOM;
+			tdb->transaction->transaction_error = 1;
+			el->data = data;
+			return -1;
+		}
+		if (buf) {
+			memcpy(el->data + el->length, buf, len);
+		} else {
+			memset(el->data + el->length, TDB_PAD_BYTE, len);
+		}
+		el->length += len;
 		return 0;
 	}
 
@@ -432,6 +458,15 @@ int tdb_transaction_start(struct tdb_context *tdb)
 	   transaction specific methods */
 	tdb->transaction->io_methods = tdb->methods;
 	tdb->methods = &transaction_methods;
+
+	/* by calling this transaction write here, we ensure that we don't grow the
+	   transaction linked list due to hash table updates */
+	if (transaction_write(tdb, FREELIST_TOP, tdb->transaction->hash_heads, 
+			      TDB_HASHTABLE_SIZE(tdb)) != 0) {
+		TDB_LOG((tdb, 0, "tdb_transaction_start: failed to prime hash table\n"));
+		tdb->ecode = TDB_ERR_IO;
+		goto fail;
+	}
 
 	return 0;
 	
