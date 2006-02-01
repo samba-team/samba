@@ -154,10 +154,12 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 
 /*
   determine if two odb_entry structures conflict
+
+  return NT_STATUS_OK on no conflict
 */
-static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
+static NTSTATUS share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 {
-	if (e1->pending || e2->pending) return False;
+	if (e1->pending || e2->pending) return NT_STATUS_OK;
 
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
@@ -166,25 +168,25 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 				 SEC_FILE_READ_DATA |
 				 SEC_FILE_EXECUTE |
 				 SEC_STD_DELETE))) {
-		return False;
+		return NT_STATUS_OK;
 	}
 	if (!(e2->access_mask & (SEC_FILE_WRITE_DATA |
 				 SEC_FILE_APPEND_DATA |
 				 SEC_FILE_READ_DATA |
 				 SEC_FILE_EXECUTE |
 				 SEC_STD_DELETE))) {
-		return False;
+		return NT_STATUS_OK;
 	}
 
 	/* data IO access masks. This is skipped if the two open handles
 	   are on different streams (as in that case the masks don't
 	   interact) */
 	if (e1->stream_id != e2->stream_id) {
-		return False;
+		return NT_STATUS_OK;
 	}
 
 #define CHECK_MASK(am, right, sa, share) \
-	if (((am) & (right)) && !((sa) & (share))) return True
+	if (((am) & (right)) && !((sa) & (share))) return NT_STATUS_SHARING_VIOLATION
 
 	CHECK_MASK(e1->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
 		   e2->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
@@ -204,10 +206,10 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 	/* if a delete is pending then a second open is not allowed */
 	if ((e1->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) ||
 	    (e2->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
-		return True;
+		return NT_STATUS_DELETE_PENDING;
 	}
 
-	return False;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -242,9 +244,11 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 	count = dbuf.dsize / sizeof(struct odb_entry);
 
 	for (i=0;i<count;i++) {
-		if (share_conflict(elist+i, &e)) {
+		NTSTATUS status;
+		status = share_conflict(elist+i, &e);
+		if (!NT_STATUS_IS_OK(status)) {
 			if (dbuf.dptr) free(dbuf.dptr);
-			return NT_STATUS_SHARING_VIOLATION;
+			return status;
 		}
 	}
 
@@ -517,8 +521,15 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 	e.pending	 = False;
 
 	for (i=0;i<count;i++) {
-		if (share_conflict(elist+i, &e)) {
+		NTSTATUS status;
+		status = share_conflict(elist+i, &e);
+		if (!NT_STATUS_IS_OK(status)) {
 			if (dbuf.dptr) free(dbuf.dptr);
+			/* note that we discard the error code
+			   here. We do this as unless we are actually
+			   doing an open (which comes via a sdifferent
+			   function), we need to return a sharing
+			   violation */
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
