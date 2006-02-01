@@ -473,6 +473,10 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		return -1;
 	}
 
+	if (tree == NULL) {
+		return -1;
+	}
+
 	*res = NULL;
 
 	ret = ltdb_search_indexed(module, base, scope, tree, attrs, res);
