@@ -74,6 +74,7 @@ static int do_search(struct ldb_context *ldb,
 	req.op.search.base = basedn;
 	req.op.search.scope = options->scope;
 	req.op.search.tree = ldb_parse_tree(ldb, expression);
+	if (req.op.search.tree == NULL) return -1;
 	req.op.search.attrs = attrs;
 	req.op.search.res = NULL;
 	req.controls = parse_controls(ldb, options->controls);
