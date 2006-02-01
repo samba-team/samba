@@ -129,9 +129,11 @@ krb5_mk_priv(krb5_context context,
 
 
     ASN1_MALLOC_ENCODE(KRB_PRIV, buf, buf_size, &s, &len, ret);
-
-    if(ret)
+    if (ret)
 	goto fail;
+    if (buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+
     krb5_data_free (&s.enc_part.cipher);
 
     ret = krb5_data_copy(outbuf, buf + buf_size - len, len);
