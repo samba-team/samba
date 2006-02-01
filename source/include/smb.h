@@ -657,6 +657,7 @@ struct share_mode_lock {
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
 	BOOL delete_on_close;
+	BOOL initial_delete_on_close;
 	BOOL fresh;
 	BOOL modified;
 };
