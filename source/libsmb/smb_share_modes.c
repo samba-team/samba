@@ -123,6 +123,7 @@ struct locking_data {
 		struct {
 			int num_share_mode_entries;
 			BOOL delete_on_close;
+			BOOL initial_delete_on_close;
 		} s;
 		struct share_mode_entry dummy; /* Needed for alignment. */
 	} u;
@@ -282,6 +283,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		ld = (struct locking_data *)db_data.dptr;
 		ld->u.s.num_share_mode_entries = 1;
 		ld->u.s.delete_on_close = 0;
+		ld->u.s.initial_delete_on_close = 0;
 		shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 		create_share_mode_entry(shares, new_entry);
 
