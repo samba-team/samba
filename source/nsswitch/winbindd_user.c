@@ -122,10 +122,10 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 			     pw->pw_uid, pw->pw_gid, shell, pw->pw_shell))
 		return False;
 
-	/* Password - set to "x" as we can't generate anything useful here.
+	/* Password - set to "*" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
 
-	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+	safe_strcpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd) - 1);
 
 	return True;
 }
@@ -307,10 +307,10 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 		goto failed;
 	}
 
-	/* Password - set to "x" as we can't generate anything useful here.
+	/* Password - set to "*" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
 
-	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+	safe_strcpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd) - 1);
 
 	request_ok(s->state);
 	return;
