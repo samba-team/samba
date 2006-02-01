@@ -1,3 +1,8 @@
+2006-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/mk_priv.c (krb5_mk_priv): abort if ASN1_MALLOC_ENCODE
+	failes to produce the matching lenghts.
+	
 2006-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kcm/protocol.c (kcm_op_retrieve): remove unused variable
