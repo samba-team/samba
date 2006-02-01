@@ -53,14 +53,18 @@ static BOOL fd_seek_func(void * handle, uint64_t offset)
 	return(True);
 }
 
-static BOOL fd_read_func(void * handle, uint8_t * buf, uint64_t wanted, uint64_t * actual)
+static BOOL fd_read_func(void * handle,
+			uint8_t * buf,
+			uint64_t wanted,
+			uint64_t * actual)
 {
 	ssize_t ret;
 
 	ret = read(IO_HANDLE_TO_FD(handle), buf, wanted);
 	if (ret < 0) {
 		fprintf(stderr, "%s: %llu byte read failed: %s\n",
-				PROGNAME, (unsigned long long)wanted, strerror(errno));
+				PROGNAME, (unsigned long long)wanted,
+				strerror(errno));
 		return(False);
 	}
 
@@ -68,15 +72,18 @@ static BOOL fd_read_func(void * handle, uint8_t * buf, uint64_t wanted, uint64_t
 	return(True);
 }
 
-static BOOL
-fd_write_func(void * handle, uint8_t * buf, uint64_t wanted, uint64_t * actual)
+static BOOL fd_write_func(void * handle,
+			uint8_t * buf,
+			uint64_t wanted,
+			uint64_t * actual)
 {
 	ssize_t ret;
 
 	ret = write(IO_HANDLE_TO_FD(handle), buf, wanted);
 	if (ret < 0) {
 		fprintf(stderr, "%s: %llu byte write failed: %s\n",
-				PROGNAME, (unsigned long long)wanted, strerror(errno));
+				PROGNAME, (unsigned long long)wanted,
+				strerror(errno));
 		return(False);
 	}
 
@@ -84,8 +91,9 @@ fd_write_func(void * handle, uint8_t * buf, uint64_t wanted, uint64_t * actual)
 	return(True);
 }
 
-static struct dd_iohandle *
-open_fd_handle(const char * path, uint64_t iosz, int options)
+static struct dd_iohandle * open_fd_handle(const char * path,
+					uint64_t iosz,
+					int options)
 {
 	struct fd_handle * fdh;
 	int oflags = 0;
@@ -148,8 +156,10 @@ BOOL smb_seek_func(void * handle, uint64_t offset)
 	return(True);
 }
 
-BOOL smb_read_func(void * handle, uint8_t * buf,
-				uint64_t wanted, uint64_t * actual)
+BOOL smb_read_func(void * handle,
+		uint8_t * buf,
+		uint64_t wanted,
+		uint64_t * actual)
 {
 	NTSTATUS		ret;
 	union smb_read		r;
@@ -171,7 +181,8 @@ BOOL smb_read_func(void * handle, uint8_t * buf,
 	ret = smb_raw_read(smbh->cli->tree, &r);
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: %llu byte read failed: %s\n",
-				PROGNAME, (unsigned long long)wanted, nt_errstr(ret));
+				PROGNAME, (unsigned long long)wanted,
+				nt_errstr(ret));
 		return(False);
 	}
 
@@ -183,8 +194,10 @@ BOOL smb_read_func(void * handle, uint8_t * buf,
 	return(True);
 }
 
-BOOL smb_write_func(void * handle, uint8_t * buf,
-				uint64_t wanted, uint64_t * actual)
+BOOL smb_write_func(void * handle,
+		uint8_t * buf,
+		uint64_t wanted,
+		uint64_t * actual)
 {
 	NTSTATUS		ret;
 	union smb_write		w;
@@ -202,7 +215,8 @@ BOOL smb_write_func(void * handle, uint8_t * buf,
 	ret = smb_raw_write(smbh->cli->tree, &w);
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: %llu byte write failed: %s\n",
-				PROGNAME, (unsigned long long)wanted, nt_errstr(ret));
+				PROGNAME, (unsigned long long)wanted,
+				nt_errstr(ret));
 		return(False);
 	}
 
@@ -211,7 +225,8 @@ BOOL smb_write_func(void * handle, uint8_t * buf,
 	return(True);
 }
 
-static struct smbcli_state * init_smb_session(const char * host, const char * share)
+static struct smbcli_state * init_smb_session(const char * host,
+						const char * share)
 {
 	NTSTATUS		ret;
 	struct smbcli_state *	cli = NULL;
@@ -231,7 +246,9 @@ static struct smbcli_state * init_smb_session(const char * host, const char * sh
 	return(cli);
 }
 
-static int open_smb_file(struct smbcli_state * cli, const char * path, int options)
+static int open_smb_file(struct smbcli_state * cli,
+			const char * path,
+			int options)
 {
 	NTSTATUS	ret;
 	union smb_open	o;
@@ -276,8 +293,11 @@ static int open_smb_file(struct smbcli_state * cli, const char * path, int optio
 	return(o.ntcreatex.out.fnum);
 }
 
-static struct dd_iohandle * open_smb_handle(const char * host, const char * share,
-					const char * path, uint64_t iosz, int options)
+static struct dd_iohandle * open_smb_handle(const char * host,
+					const char * share,
+					const char * path,
+					uint64_t iosz,
+					int options)
 {
 	struct smb_handle * smbh;
 
@@ -337,8 +357,11 @@ struct dd_iohandle * dd_open_path(const char * path, uint64_t iosz, int options)
  * NOTE: The IO buffer is guaranteed to be big enough to fit needsz + blocksz
  * bytes into it.
  */
-BOOL dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
-		uint64_t * bufsz, uint64_t needsz, uint64_t blocksz)
+BOOL dd_fill_block(struct dd_iohandle * h,
+		uint8_t * buf,
+		uint64_t * bufsz,
+		uint64_t needsz,
+		uint64_t blocksz)
 {
 	uint64_t readsz;
 
@@ -378,8 +401,10 @@ BOOL dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
  * and shift any remaining bytes back to the head of the buffer when there are
  * no more blocksz sized IOs left.
  */
-BOOL dd_flush_block(struct dd_iohandle * h, uint8_t * buf,
-		uint64_t * bufsz, uint64_t blocksz)
+BOOL dd_flush_block(struct dd_iohandle * h,
+		uint8_t * buf,
+		uint64_t * bufsz,
+		uint64_t blocksz)
 {
 	uint64_t writesz;
 	uint64_t totalsz = 0;
