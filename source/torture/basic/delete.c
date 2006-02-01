@@ -1177,8 +1177,8 @@ BOOL torture_test_delete(void)
 	/* See if the file is deleted - shouldn't be.... */
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum1 == -1) {
-		printf("(%s) open of %s failed (should succeed)\n", 
-		       __location__, fname);
+		printf("(%s) open of %s failed (should succeed) - %s\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
