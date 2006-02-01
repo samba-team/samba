@@ -1660,32 +1660,28 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	}
 	set_share_mode(lck, fsp, 0, fsp->oplock_type);
 
-	if (create_options & FILE_DELETE_ON_CLOSE) {
-		uint32 dosattr= existing_dos_attributes;
-		NTSTATUS result;
-
-		if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
-				info == FILE_WAS_SUPERSEDED) {
-			dosattr = new_dos_attributes;
-		}
-
-		result = can_set_delete_on_close(fsp, True, dosattr);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			/* Remember to delete the mode we just added. */
-			del_share_mode(lck, fsp);
-			talloc_free(lck);
-			fd_close(conn,fsp);
-			file_free(fsp);
-			set_saved_ntstatus(result);
-			return NULL;
-		}
-		lck->delete_on_close = True;
-		lck->modified = True;
-	}
-	
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
 				info == FILE_WAS_SUPERSEDED) {
+
+		/* Handle strange delete on close create semantics. */
+		if (create_options & FILE_DELETE_ON_CLOSE) {
+			NTSTATUS result = can_set_delete_on_close(fsp, True, new_dos_attributes);
+
+			if (!NT_STATUS_IS_OK(result)) {
+				/* Remember to delete the mode we just added. */
+				del_share_mode(lck, fsp);
+				talloc_free(lck);
+				fd_close(conn,fsp);
+				file_free(fsp);
+				set_saved_ntstatus(result);
+				return NULL;
+			}
+			/* Note that here we set the *inital* delete on close flag,
+			   not the regular one. */
+			lck->initial_delete_on_close = True;
+			lck->modified = True;
+		}
+	
 		/* Files should be initially set as archive */
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
@@ -1976,7 +1972,9 @@ files_struct *open_directory(connection_struct *conn,
 
 	set_share_mode(lck, fsp, 0, NO_OPLOCK);
 
-	if (create_options & FILE_DELETE_ON_CLOSE) {
+	if ((create_options & FILE_DELETE_ON_CLOSE) &&
+			(info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
+			info == FILE_WAS_SUPERSEDED)) {
 		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			set_saved_ntstatus(status);
@@ -1985,7 +1983,7 @@ files_struct *open_directory(connection_struct *conn,
 			return NULL;
 		}
 
-		lck->delete_on_close = True;
+		lck->initial_delete_on_close = True;
 		lck->modified = True;
 	}
 

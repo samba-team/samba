@@ -49,6 +49,7 @@ struct locking_data {
 		struct {
 			int num_share_mode_entries;
 			BOOL delete_on_close;
+			BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 		} s;
                 struct share_mode_entry dummy; /* Needed for alignment. */
         } u;
@@ -435,11 +436,15 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	data = (struct locking_data *)dbuf.dptr;
 
 	lck->delete_on_close = data->u.s.delete_on_close;
+	lck->initial_delete_on_close = data->u.s.initial_delete_on_close;
 	lck->num_share_modes = data->u.s.num_share_mode_entries;
 
 	DEBUG(10, ("parse_share_modes: delete_on_close: %d, "
-		   "num_share_modes: %d\n", lck->delete_on_close,
-		   lck->num_share_modes));
+		   "initial_delete_on_close: %d, "
+		   "num_share_modes: %d\n",
+		lck->delete_on_close,
+		lck->initial_delete_on_close,
+		lck->num_share_modes));
 
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
 		DEBUG(0, ("invalid number of share modes: %d\n",
@@ -535,8 +540,10 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
-	DEBUG(10, ("unparse_share_modes: del: %d, num: %d\n",
+	data->u.s.initial_delete_on_close = lck->initial_delete_on_close;
+	DEBUG(10, ("unparse_share_modes: del: %d, initial del %d, num: %d\n",
 		   data->u.s.delete_on_close,
+		   data->u.s.initial_delete_on_close,
 		   data->u.s.num_share_mode_entries));
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
@@ -613,6 +620,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
 	lck->delete_on_close = False;
+	lck->initial_delete_on_close = False;
 	lck->fresh = False;
 	lck->modified = False;
 
@@ -1046,6 +1054,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
  changed the delete on close flag. This will be noticed
  in the close code, the last closer will delete the file
  if flag is set.
+ Note that setting this to any value clears the initial_delete_on_close flag.
 ****************************************************************************/
 
 BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
@@ -1067,6 +1076,11 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 	}
 	if (lck->delete_on_close != delete_on_close) {
 		lck->delete_on_close = delete_on_close;
+		lck->modified = True;
+	}
+
+	if (lck->initial_delete_on_close) {
+		lck->initial_delete_on_close = False;
 		lck->modified = True;
 	}
 
