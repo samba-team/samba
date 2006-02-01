@@ -949,8 +949,6 @@ BOOL torture_test_delete(void)
 
 	smbcli_close(cli1->tree, dnum1);
 
-	/* Now it should be gone... */
-
 	printf("fifteenth delete on close test succeeded.\n");
 
 	/* Test 16: delete on close under rename */
@@ -1219,6 +1217,165 @@ BOOL torture_test_delete(void)
 	
 	printf("eighteenth delete on close test succeeded.\n");
 
+	/* Test 19. With directories. */
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+
+	smbcli_deltree(cli1->tree, dirname);
+
+	/* Firstly create with all access, but delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      NTCREATEX_OPTIONS_DIRECTORY|NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, dirname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* The delete on close bit is *not* reported as being set. */
+	check_delete_on_close(cli1, fnum1, dirname, False);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	
+
+	/* Should work. */
+	if (fnum2 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, dirname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* Now close both.... */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+
+	/* And the directory should be deleted ! */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	if (fnum1 != -1) {
+		printf("(%s) open of %s succeeded (should fail)\n", 
+		       __location__, dirname);
+		correct = False;
+		goto fail;
+	}
+	
+	printf("nineteenth delete on close test succeeded.\n");
+
+	/* Test 20. */
+
+	smbcli_deltree(cli1->tree, dirname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, dirname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* And close - just to create the directory. */
+	smbcli_close(cli1->tree, fnum1);
+	
+	/* Next open with all access, but add delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DIRECTORY|NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* The delete on close bit is *not* reported as being set. */
+	check_delete_on_close(cli1, fnum1, dirname, False);
+
+	/* Now try opening again for read-only. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	
+	/* Should work. */
+	if (fnum2 == -1) {
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, dirname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	/* Now close both.... */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+
+	/* See if the file is deleted - shouldn't be.... */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	if (fnum1 == -1) {
+		printf("(%s) open of %s failed (should succeed)\n", 
+		       __location__, dirname);
+		correct = False;
+		goto fail;
+	}
+	
+	printf("twentieth delete on close test succeeded.\n");
+
 	printf("finished delete test\n");
 
   fail:
@@ -1230,6 +1387,8 @@ BOOL torture_test_delete(void)
 	smbcli_close(cli1->tree, fnum2);
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
+
+	smbcli_deltree(cli1->tree, dirname);
 
 	if (!torture_close_connection(cli1)) {
 		correct = False;
