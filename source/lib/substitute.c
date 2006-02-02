@@ -840,11 +840,11 @@ void standard_sub_snum(int snum, char *str, size_t len)
 	/* calling uidtoname() on every substitute would be too expensive, so
 	   we cache the result here as nearly every call is for the same uid */
 
-	if (cached_uid != current_user.uid) {
-		fstrcpy(cached_user, uidtoname(current_user.uid));
-		cached_uid = current_user.uid;
+	if (cached_uid != current_user.ut.uid) {
+		fstrcpy(cached_user, uidtoname(current_user.ut.uid));
+		cached_uid = current_user.ut.uid;
 	}
 
-	standard_sub_advanced(snum, cached_user, "", current_user.gid,
+	standard_sub_advanced(snum, cached_user, "", current_user.ut.gid,
 			      smb_user_name, str, len);
 }

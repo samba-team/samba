@@ -395,8 +395,6 @@ static int net_sam_mapunixgroup(int argc, const char **argv)
 	NTSTATUS status;
 	GROUP_MAP map;
 	struct group *grp;
-	const char *grpname, *dom, *name;
-	uint32 rid;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "usage: net sam mapunixgroup <name>\n");

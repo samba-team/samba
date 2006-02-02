@@ -617,8 +617,8 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	/* Set up for non-authenticated user. */
 	talloc_free(p->pipe_user.nt_user_token);
-	p->pipe_user.ngroups = 0;
-	SAFE_FREE( p->pipe_user.groups);
+	p->pipe_user.ut.ngroups = 0;
+	SAFE_FREE( p->pipe_user.ut.groups);
 
 	status = auth_ntlmssp_update(a, *p_resp_blob, &reply);
 
@@ -641,8 +641,8 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->pipe_user.uid = a->server_info->uid;
-	p->pipe_user.gid = a->server_info->gid;
+	p->pipe_user.ut.uid = a->server_info->uid;
+	p->pipe_user.ut.gid = a->server_info->gid;
 	
 	/*
 	 * Copy the session key from the ntlmssp state.
@@ -654,9 +654,10 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		return False;
 	}
 
-	p->pipe_user.ngroups = a->server_info->n_groups;
-	if (p->pipe_user.ngroups) {
-		if (!(p->pipe_user.groups = memdup(a->server_info->groups, sizeof(gid_t) * p->pipe_user.ngroups))) {
+	p->pipe_user.ut.ngroups = a->server_info->n_groups;
+	if (p->pipe_user.ut.ngroups) {
+		if (!(p->pipe_user.ut.groups = memdup(a->server_info->groups,
+						sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
 			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
 			return False;
 		}

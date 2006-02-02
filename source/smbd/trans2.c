@@ -856,7 +856,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
 		talloc_destroy(ctx);
-		close_file(fsp,False);
+		close_file(fsp,ERROR_CLOSE);
 		return(ERROR_DOS(ERRDOS,ERRnoaccess));
 	}
 
@@ -864,7 +864,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		status = set_ea(conn, fsp, fname, ea_list);
 		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			close_file(fsp,False);
+			close_file(fsp,ERROR_CLOSE);
 			return ERROR_NT(status);
 		}
 	}
@@ -2355,7 +2355,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			fsp.fnum = -1;
 			
 			/* access check */
-			if (current_user.uid != 0) {
+			if (current_user.ut.uid != 0) {
 				DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 					lp_servicename(SNUM(conn)),conn->user));
 				return ERROR_DOS(ERRDOS,ERRnoaccess);
@@ -2530,7 +2530,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				ZERO_STRUCT(quotas);
 
 				/* access check */
-				if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
+				if ((current_user.ut.uid != 0)||!CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 						lp_servicename(SNUM(conn)),conn->user));
 					return ERROR_DOS(ERRSRV,ERRaccess);
@@ -3888,7 +3888,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 									new_fsp->fnum, strerror(errno)));
 						ret = -1;
 					}
-					close_file(new_fsp,True);
+					close_file(new_fsp,NORMAL_CLOSE);
 				} else {
 					ret = vfs_allocate_file_space(fsp, allocation_size);
 					if (SMB_VFS_FSTAT(fsp,fd,&new_sbuf) != 0) {
@@ -3951,7 +3951,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 
 			/* The set is across all open files on this dev/inode pair. */
-			if (!set_delete_on_close(fsp, delete_on_close)) {
+			if (!set_delete_on_close(fsp, delete_on_close, &current_user.ut)) {
 				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 			}
 
@@ -4416,7 +4416,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
 			ret = vfs_set_filelen(new_fsp, size);
-			close_file(new_fsp,True);
+			close_file(new_fsp,NORMAL_CLOSE);
 		} else {
 			ret = vfs_set_filelen(fsp, size);
 		}

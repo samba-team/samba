@@ -798,7 +798,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
 	if (!fsp->is_directory && (fattr & aDIR)) {
-		close_file(fsp,False);
+		close_file(fsp,ERROR_CLOSE);
 		END_PROFILE(SMBntcreateX);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
@@ -812,13 +812,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 		if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 			if (fsp->is_directory) {
-				close_file(fsp,False);
+				close_file(fsp,ERROR_CLOSE);
 				END_PROFILE(SMBntcreateX);
 				/* Can't set allocation size on a directory. */
 				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 			}
 			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-				close_file(fsp,False);
+				close_file(fsp,ERROR_CLOSE);
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(NT_STATUS_DISK_FULL);
 			}
@@ -1416,7 +1416,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(ctx);
-			close_file(fsp,False);
+			close_file(fsp,ERROR_CLOSE);
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(status);
 		}
@@ -1427,7 +1427,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		status = set_ea(conn, fsp, fname, ea_list);
 		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			close_file(fsp,False);
+			close_file(fsp,ERROR_CLOSE);
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(status);
 		}
@@ -1441,7 +1441,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
 	if (!fsp->is_directory && (fattr & aDIR)) {
-		close_file(fsp,False);
+		close_file(fsp,ERROR_CLOSE);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
 	
@@ -1454,12 +1454,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		if (allocation_size && (allocation_size > file_len)) {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 			if (fsp->is_directory) {
-				close_file(fsp,False);
+				close_file(fsp,ERROR_CLOSE);
 				/* Can't set allocation size on a directory. */
 				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 			}
 			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-				close_file(fsp,False);
+				close_file(fsp,ERROR_CLOSE);
 				return ERROR_NT(NT_STATUS_DISK_FULL);
 			}
 		} else {
@@ -1688,7 +1688,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			status = NT_STATUS_ACCESS_DENIED;
 		}
 		set_saved_ntstatus(NT_STATUS_OK);
-		close_file(fsp1,False);
+		close_file(fsp1,ERROR_CLOSE);
 		return status;
 	}
 
@@ -1702,12 +1702,12 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	close_file(fsp1,False);
+	close_file(fsp1,NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	fsp_set_pending_modtime(fsp2, sbuf1.st_mtime);
 
-	close_ret = close_file(fsp2,False);
+	close_ret = close_file(fsp2,NORMAL_CLOSE);
 
 	/* Grrr. We have to do this as open_file_shared1 adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy case. JRA */
@@ -2379,7 +2379,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 	ZERO_STRUCT(qt);
 
 	/* access check */
-	if (current_user.uid != 0) {
+	if (current_user.ut.uid != 0) {
 		DEBUG(1,("get_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
@@ -2626,7 +2626,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	ZERO_STRUCT(qt);
 
 	/* access check */
-	if (current_user.uid != 0) {
+	if (current_user.ut.uid != 0) {
 		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);

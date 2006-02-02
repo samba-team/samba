@@ -145,13 +145,12 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 /****************************************************************************
  Close a file.
 
- If normal_close is 1 then this came from a normal SMBclose (or equivalent)
- operation otherwise it came as the result of some other operation such as
- the closing of the connection. In the latter case printing and
- magic scripts are not run.
+ close_type can be NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE.
+ printing and magic scripts are only run on normal close.
+ delete on close is done on normal and shutdown close.
 ****************************************************************************/
 
-static int close_normal_file(files_struct *fsp, BOOL normal_close)
+static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 {
 	BOOL delete_file = False;
 	connection_struct *conn = fsp->conn;
@@ -187,7 +186,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	}
 
 	if (fsp->print_file) {
-		print_fsp_end(fsp, normal_close);
+		print_fsp_end(fsp, close_type);
 		file_free(fsp);
 		return 0;
 	}
@@ -232,11 +231,25 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * reference to a file.
 	 */
 
-	if (normal_close && delete_file) {
+	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
+				delete_file &&
+				lck->delete_token) {
 		SMB_STRUCT_STAT sbuf;
 
 		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 			fsp->fsp_name));
+
+		/* Become the user who requested the delete. */
+
+		if (!push_sec_ctx()) {
+			smb_panic("close_file: file %s. failed to push sec_ctx.\n");
+		}
+
+		set_sec_ctx(lck->delete_token->uid,
+				lck->delete_token->gid,
+				lck->delete_token->ngroups,
+				lck->delete_token->groups,
+				NULL);
 
 		/* We can only delete the file if the name we have
 		   is still valid and hasn't been renamed. */
@@ -268,8 +281,11 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 					"and unlink failed with error %s\n",
 					fsp->fsp_name, strerror(errno) ));
 			}
-			process_pending_change_notify_queue((time_t)0);
 		}
+		/* unbecome user. */
+		pop_sec_ctx();
+
+		process_pending_change_notify_queue((time_t)0);
 	}
 
 	talloc_free(lck);
@@ -288,7 +304,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	}
 
 	/* check for magic scripts */
-	if (normal_close) {
+	if (close_type == NORMAL_CLOSE) {
 		check_magic(fsp,conn);
 	}
 
@@ -324,7 +340,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
-static int close_directory(files_struct *fsp, BOOL normal_close)
+static int close_directory(files_struct *fsp, enum file_close_type close_type)
 {
 	struct share_mode_lock *lck = 0;
 	BOOL delete_dir = False;
@@ -349,10 +365,30 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 
 	talloc_free(lck);
 
-	if (normal_close && delete_dir) {
-		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
+	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
+				delete_dir &&
+				lck->delete_token) {
+		BOOL ok;
+	
+		/* Become the user who requested the delete. */
+
+		if (!push_sec_ctx()) {
+			smb_panic("close_directory: failed to push sec_ctx.\n");
+		}
+
+		set_sec_ctx(lck->delete_token->uid,
+				lck->delete_token->gid,
+				lck->delete_token->ngroups,
+				lck->delete_token->groups,
+				NULL);
+
+		ok = rmdir_internals(fsp->conn, fsp->fsp_name);
+
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));
+
+		/* unbecome user. */
+		pop_sec_ctx();
 
 		/*
 		 * Ensure we remove any change notify requests that would
@@ -404,12 +440,12 @@ static int close_stat(files_struct *fsp)
  Close a files_struct.
 ****************************************************************************/
   
-int close_file(files_struct *fsp, BOOL normal_close)
+int close_file(files_struct *fsp, enum file_close_type close_type)
 {
 	if(fsp->is_directory)
-		return close_directory(fsp, normal_close);
+		return close_directory(fsp, close_type);
 	else if (fsp->is_stat)
 		return close_stat(fsp);
 	else
-		return close_normal_file(fsp, normal_close);
+		return close_normal_file(fsp, close_type);
 }

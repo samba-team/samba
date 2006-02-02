@@ -148,7 +148,7 @@ void file_close_conn(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn) {
-			close_file(fsp,False); 
+			close_file(fsp,SHUTDOWN_CLOSE); 
 		}
 	}
 }
@@ -164,7 +164,7 @@ void file_close_pid(uint16 smbpid)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->file_pid == smbpid) {
-			close_file(fsp,False); 
+			close_file(fsp,SHUTDOWN_CLOSE); 
 		}
 	}
 }
@@ -222,7 +222,7 @@ void file_close_user(int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->vuid == vuid) {
-			close_file(fsp,False);
+			close_file(fsp,SHUTDOWN_CLOSE);
 		}
 	}
 }

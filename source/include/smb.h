@@ -263,8 +263,7 @@ typedef struct nttime_info {
 #define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
 
 /* SID Types */
-enum SID_NAME_USE
-{
+enum SID_NAME_USE {
 	SID_NAME_USE_NONE = 0,
 	SID_NAME_USER    = 1, /* user */
 	SID_NAME_DOM_GRP,     /* domain group */
@@ -289,19 +288,17 @@ enum SID_NAME_USE
  *
  * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
  **/
-typedef struct sid_info
-{
-  uint8  sid_rev_num;             /**< SID revision number */
-  uint8  num_auths;               /**< Number of sub-authorities */
-  uint8  id_auth[6];              /**< Identifier Authority */
-  /*
-   *  Pointer to sub-authorities.
-   *
-   * @note The values in these uint32's are in *native* byteorder, not
-   * neccessarily little-endian...... JRA.
-   */
-  uint32 sub_auths[MAXSUBAUTHS];  
-
+typedef struct sid_info {
+	uint8  sid_rev_num;             /**< SID revision number */
+	uint8  num_auths;               /**< Number of sub-authorities */
+	uint8  id_auth[6];              /**< Identifier Authority */
+	/*
+	 *  Pointer to sub-authorities.
+	 *
+	 * @note The values in these uint32's are in *native* byteorder, not
+	 * neccessarily little-endian...... JRA.
+	 */
+	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
 
 struct lsa_dom_info {
@@ -363,10 +360,16 @@ typedef struct nt_user_token {
 	SE_PRIV privileges;
 } NT_USER_TOKEN;
 
+typedef struct _unix_token {
+	uid_t uid;
+	gid_t gid;
+	int ngroups;
+	gid_t *groups;
+} UNIX_USER_TOKEN;
+
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
-typedef struct time_info
-{
-  uint32 time;
+typedef struct time_info {
+	uint32 time;
 } UTIME;
 
 /* Structure used when SMBwritebmpx is active */
@@ -380,17 +383,15 @@ typedef struct {
 	BOOL  wr_discard; /* discard all further data */
 } write_bmpx_struct;
 
-typedef struct write_cache
-{
-    SMB_OFF_T file_size;
-    SMB_OFF_T offset;
-    size_t alloc_size;
-    size_t data_size;
-    char *data;
+typedef struct write_cache {
+	SMB_OFF_T file_size;
+	SMB_OFF_T offset;
+	size_t alloc_size;
+	size_t data_size;
+	char *data;
 } write_cache;
 
-typedef struct
-{
+typedef struct {
 	smb_ucs2_t *origname;
 	smb_ucs2_t *filename;
 	SMB_STRUCT_STAT *statinfo;
@@ -472,27 +473,23 @@ typedef struct data_blob_ {
  * Used in NT change-notify code.
  */
 
-typedef struct
-{
+typedef struct {
 	time_t modify_time;
 	time_t status_time;
 } dir_status_struct;
 
-struct vuid_cache_entry
-{
+struct vuid_cache_entry {
 	uint16 vuid;
 	BOOL read_only;
 	BOOL admin_user;
 };
 
-struct vuid_cache
-{
+struct vuid_cache {
 	unsigned int entries;
 	struct vuid_cache_entry array[VUID_CACHE_SIZE];
 };
 
-typedef struct
-{
+typedef struct {
 	char *name;
 	BOOL is_wild;
 } name_compare_entry;
@@ -512,8 +509,7 @@ struct dfree_cached_info {
 
 struct dptr_struct;
 
-typedef struct connection_struct
-{
+typedef struct connection_struct {
 	struct connection_struct *next, *prev;
 	TALLOC_CTX *mem_ctx;
 	unsigned cnum; /* an index passed over the wire */
@@ -564,14 +560,10 @@ typedef struct connection_struct
 	struct dfree_cached_info *dfree_info;
 } connection_struct;
 
-struct current_user
-{
+struct current_user {
 	connection_struct *conn;
 	uint16 vuid;
-	uid_t uid;
-	gid_t gid;
-	int ngroups;
-	gid_t *groups;
+	UNIX_USER_TOKEN ut;
 	NT_USER_TOKEN *nt_user_token;
 };
 
@@ -592,42 +584,37 @@ typedef struct {
 enum {LPQ_QUEUED=0,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING,LPQ_ERROR,LPQ_DELETING,
       LPQ_OFFLINE,LPQ_PAPEROUT,LPQ_PRINTED,LPQ_DELETED,LPQ_BLOCKED,LPQ_USER_INTERVENTION};
 
-typedef struct _print_queue_struct
-{
-  int job;		/* normally the UNIX jobid -- see note in 
-			   printing.c:traverse_fn_delete() */
-  int size;
-  int page_count;
-  int status;
-  int priority;
-  time_t time;
-  fstring fs_user;
-  fstring fs_file;
+typedef struct _print_queue_struct {
+	int job;		/* normally the UNIX jobid -- see note in 
+				   printing.c:traverse_fn_delete() */
+	int size;
+	int page_count;
+	int status;
+	int priority;
+	time_t time;
+	fstring fs_user;
+	fstring fs_file;
 } print_queue_struct;
 
 enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
 
-typedef struct
-{
-  fstring message;
-  int qcount;
-  int status;
+typedef struct {
+	fstring message;
+	int qcount;
+	int status;
 }  print_status_struct;
 
 /* used for server information: client, nameserv and ipc */
-struct server_info_struct
-{
-  fstring name;
-  uint32 type;
-  fstring comment;
-  fstring domain; /* used ONLY in ipc.c NOT namework.c */
-  BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
+struct server_info_struct {
+	fstring name;
+	uint32 type;
+	fstring comment;
+	fstring domain; /* used ONLY in ipc.c NOT namework.c */
+	BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
 };
 
-
 /* used for network interfaces */
-struct interface
-{
+struct interface {
 	struct interface *next, *prev;
 	struct in_addr ip;
 	struct in_addr bcast;
@@ -686,6 +673,7 @@ struct share_mode_lock {
 	SMB_INO_T ino;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
+	UNIX_USER_TOKEN *delete_token;
 	BOOL delete_on_close;
 	BOOL initial_delete_on_close;
 	BOOL fresh;
@@ -776,8 +764,7 @@ struct enum_list {
 	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
 				 br_off start, br_off size)
-struct parm_struct
-{
+struct parm_struct {
 	const char *label;
 	parm_type type;
 	parm_class p_class;
@@ -1404,8 +1391,7 @@ enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANM
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};
 
 /* server roles */
-enum server_types
-{
+enum server_types {
 	ROLE_STANDALONE,
 	ROLE_DOMAIN_MEMBER,
 	ROLE_DOMAIN_BDC,
@@ -1582,8 +1568,6 @@ struct cnotify_fns {
 	int select_time;
 };
 
-
-
 #include "smb_macros.h"
 
 #define MAX_NETBIOSNAME_LEN 16
@@ -1650,7 +1634,6 @@ typedef struct user_struct {
 	struct auth_ntlmssp_state *auth_ntlmssp_state;
 
 } user_struct;
-
 
 struct unix_error_map {
 	int unix_error;
@@ -1789,4 +1772,8 @@ enum usershare_err {
 		USERSHARE_PATH_NOT_DIRECTORY,
 		USERSHARE_POSIX_ERR
 };
+
+/* Different reasons for closing a file. */
+enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
+
 #endif /* _SMB_H */
