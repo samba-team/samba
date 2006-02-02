@@ -94,7 +94,7 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
  Print a file - called on closing the file.
 ****************************************************************************/
 
-void print_fsp_end(files_struct *fsp, BOOL normal_close)
+void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 {
 	uint32 jobid;
 	fstring sharename;
@@ -117,5 +117,5 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 		return;
 	}
 
-	print_job_end(SNUM(fsp->conn),jobid, normal_close);
+	print_job_end(SNUM(fsp->conn),jobid, close_type);
 }

@@ -1386,7 +1386,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 	if (fattr & aDIR) {
 		DEBUG(3,("attempt to open a directory %s\n",fname));
-		close_file(fsp,False);
+		close_file(fsp,ERROR_CLOSE);
 		END_PROFILE(SMBopen);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
@@ -1510,13 +1510,13 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	if (((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) && allocation_size) {
 		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(fsp,False);
+			close_file(fsp,ERROR_CLOSE);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 		retval = vfs_set_filelen(fsp, (SMB_OFF_T)allocation_size);
 		if (retval < 0) {
-			close_file(fsp,False);
+			close_file(fsp,ERROR_CLOSE);
 			END_PROFILE(SMBwrite);
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
@@ -1526,7 +1526,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	fattr = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 	if (fattr & aDIR) {
-		close_file(fsp,False);
+		close_file(fsp,ERROR_CLOSE);
 		END_PROFILE(SMBopenX);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
@@ -1845,7 +1845,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 		set_saved_ntstatus(NT_STATUS_OK);
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	close_file(fsp,False);
+	close_file(fsp,NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
 
@@ -1938,7 +1938,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 			set_saved_ntstatus(NT_STATUS_OK);
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		close_file(fsp,False);
+		close_file(fsp,NORMAL_CLOSE);
 	}
 	return NT_STATUS_OK;
 }
@@ -3267,7 +3267,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Special case - close NT SMB directory handle.
 		 */
 		DEBUG(3,("close %s fnum=%d\n", fsp->is_directory ? "directory" : "stat file open", fsp->fnum));
-		close_file(fsp,True);
+		close_file(fsp,NORMAL_CLOSE);
 	} else {
 		/*
 		 * Close ordinary file.
@@ -3295,7 +3295,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * a disk full error. If not then it was probably an I/O error.
 		 */
  
-		if((close_err = close_file(fsp,True)) != 0) {
+		if((close_err = close_file(fsp,NORMAL_CLOSE)) != 0) {
 			errno = close_err;
 			END_PROFILE(SMBclose);
 			return (UNIXERROR(ERRHRD,ERRgeneral));
@@ -3356,7 +3356,7 @@ int reply_writeclose(connection_struct *conn,
 	if (numtowrite) {
 		DEBUG(3,("reply_writeclose: zero length write doesn't close file %s\n",
 			fsp->fsp_name ));
-		close_err = close_file(fsp,True);
+		close_err = close_file(fsp,NORMAL_CLOSE);
 	}
 
 	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
@@ -3596,7 +3596,7 @@ int reply_printclose(connection_struct *conn,
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
 		 fsp->fh->fd,fsp->fnum));
   
-	close_err = close_file(fsp,True);
+	close_err = close_file(fsp,NORMAL_CLOSE);
 
 	if(close_err != 0) {
 		errno = close_err;
@@ -4746,7 +4746,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 			NULL);
 
 	if (!fsp2) {
-		close_file(fsp1,False);
+		close_file(fsp1,ERROR_CLOSE);
 		return(False);
 	}
 
@@ -4765,7 +4765,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
 	}
 
-	close_file(fsp1,False);
+	close_file(fsp1,NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
 	fsp_set_pending_modtime( fsp2, src_sbuf.st_mtime);
@@ -4776,7 +4776,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	 * Thus we don't look at the error return from the
 	 * close of fsp1.
 	 */
-	*err_ret = close_file(fsp2,False);
+	*err_ret = close_file(fsp2,NORMAL_CLOSE);
 
 	return(ret == (SMB_OFF_T)src_sbuf.st_size);
 }

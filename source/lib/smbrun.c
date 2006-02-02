@@ -58,8 +58,8 @@ outfd (or discard it if outfd is NULL).
 int smbrun(const char *cmd, int *outfd)
 {
 	pid_t pid;
-	uid_t uid = current_user.uid;
-	gid_t gid = current_user.gid;
+	uid_t uid = current_user.ut.uid;
+	gid_t gid = current_user.ut.gid;
 	
 	/*
 	 * Lose any kernel oplock capabilities we may have.
@@ -189,8 +189,8 @@ sends the provided secret to the child stdin.
 int smbrunsecret(const char *cmd, const char *secret)
 {
 	pid_t pid;
-	uid_t uid = current_user.uid;
-	gid_t gid = current_user.gid;
+	uid_t uid = current_user.ut.uid;
+	gid_t gid = current_user.ut.gid;
 	int ifd[2];
 	
 	/*

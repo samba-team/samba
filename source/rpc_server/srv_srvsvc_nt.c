@@ -1401,7 +1401,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((user.uid != sec_initial_uid()) && 
+	if ((user.ut.uid != sec_initial_uid()) && 
 		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
 
 		goto done;
@@ -1412,7 +1412,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
 		    strequal(session_list[snum].remote_machine, machine)) {
 		
-			if (user.uid != sec_initial_uid()) {
+			if (user.ut.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
@@ -1572,7 +1572,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	
 	/* fail out now if you are not root and not a disk op */
 	
-	if ( user.uid != sec_initial_uid() && !is_disk_op )
+	if ( user.ut.uid != sec_initial_uid() && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
@@ -1739,7 +1739,7 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 
-	if (user.uid != sec_initial_uid()  && !is_disk_op ) 
+	if (user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
@@ -1906,7 +1906,7 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
 
-	if (user.uid != sec_initial_uid()  && !is_disk_op ) 
+	if (user.ut.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
@@ -2098,7 +2098,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
 
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
 	close_cnum(conn, user.vuid);
 	return r_u->status;
@@ -2106,7 +2106,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 error_exit:
 
 	if(fsp) {
-		close_file(fsp, True);
+		close_file(fsp, NORMAL_CLOSE);
 	}
 
 	if (became_user)
@@ -2207,7 +2207,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 		goto error_exit;
 	}
 
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 	unbecome_user();
 	close_cnum(conn, user.vuid);
 	return r_u->status;
@@ -2215,7 +2215,7 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 error_exit:
 
 	if(fsp) {
-		close_file(fsp, True);
+		close_file(fsp, NORMAL_CLOSE);
 	}
 
 	if (became_user) {

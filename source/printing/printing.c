@@ -1932,7 +1932,7 @@ static BOOL is_owner(struct current_user *user, int snum, uint32 jobid)
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		return strequal(pjob->user, vuser->user.smb_name);
 	} else {
-		return strequal(pjob->user, uidtoname(user->uid));
+		return strequal(pjob->user, uidtoname(user->ut.uid));
 	}
 }
 
@@ -1963,7 +1963,7 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 		sys_adminlog( LOG_ERR, 
 			      "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(user->uid), PRINTERNAME(snum) );
+			      uidtoname(user->ut.uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 
 		return False;
@@ -2030,7 +2030,7 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 		sys_adminlog( LOG_ERR, 
 			"Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-				uidtoname(user->uid), PRINTERNAME(snum) );
+				uidtoname(user->ut.uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 
 		*errcode = WERR_ACCESS_DENIED;
@@ -2085,7 +2085,7 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 		sys_adminlog( LOG_ERR, 
 			 "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			uidtoname(user->uid), PRINTERNAME(snum) );
+			uidtoname(user->ut.uid), PRINTERNAME(snum) );
 		/* END_ADMIN_LOG */
 		return False;
 	}
@@ -2366,7 +2366,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		fstrcpy(pjob.user, vuser->user.smb_name);
 	} else {
-		fstrcpy(pjob.user, uidtoname(user->uid));
+		fstrcpy(pjob.user, uidtoname(user->ut.uid));
 	}
 
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
@@ -2437,7 +2437,7 @@ void print_job_endpage(int snum, uint32 jobid)
  error.
 ****************************************************************************/
 
-BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
+BOOL print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2453,7 +2453,8 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	if (pjob->spooled || pjob->pid != sys_getpid())
 		return False;
 
-	if (normal_close && (sys_fstat(pjob->fd, &sbuf) == 0)) {
+	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
+				(sys_fstat(pjob->fd, &sbuf) == 0)) {
 		pjob->size = sbuf.st_size;
 		close(pjob->fd);
 		pjob->fd = -1;
