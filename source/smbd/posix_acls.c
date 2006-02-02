@@ -929,7 +929,7 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take ownership to work
 				 * reasonably */
-				*puser = current_user.uid;
+				*puser = current_user.ut.uid;
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " owner sid for %s\n",
@@ -950,7 +950,7 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take group ownership to work
 				 * reasonably */
-				*pgrp = current_user.gid;
+				*pgrp = current_user.ut.gid;
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
 					 " group sid.\n"));
@@ -1024,7 +1024,7 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 
 	/* Assume that the current user is in the current group (force group) */
 
-	if (uid_ace->unix_ug.uid == current_user.uid && group_ace->unix_ug.gid == current_user.gid)
+	if (uid_ace->unix_ug.uid == current_user.ut.uid && group_ace->unix_ug.gid == current_user.ut.gid)
 		return True;
 
 	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
@@ -2246,8 +2246,8 @@ static BOOL current_user_in_group(gid_t gid)
 {
 	int i;
 
-	for (i = 0; i < current_user.ngroups; i++) {
-		if (current_user.groups[i] == gid) {
+	for (i = 0; i < current_user.ut.ngroups; i++) {
+		if (current_user.ut.groups[i] == gid) {
 			return True;
 		}
 	}
@@ -3026,7 +3026,7 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 						       &se_restore);
 
 		/* Case (2) */
-		if ( ( has_take_ownership_priv && ( uid == current_user.uid ) ) ||
+		if ( ( has_take_ownership_priv && ( uid == current_user.ut.uid ) ) ||
 		/* Case (3) */
 		     ( has_restore_priv ) ) {
 
@@ -3056,7 +3056,7 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	   and also copes with the case where the SID in a take ownership ACL is
 	   a local SID on the users workstation 
 	*/
-	uid = current_user.uid;
+	uid = current_user.ut.uid;
 
 	become_root();
 	/* Keep the current file gid the same. */
@@ -3136,7 +3136,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * the file.
 	 */
 
-	if (need_chown && (user == (uid_t)-1 || user == current_user.uid)) {
+	if (need_chown && (user == (uid_t)-1 || user == current_user.ut.uid)) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -3960,12 +3960,12 @@ refusing write due to mask.\n", fname));
 				break;
 			case SMB_ACL_USER:
 			{
-				/* Check against current_user.uid. */
+				/* Check against current_user.ut.uid. */
 				uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
 				if (puid == NULL) {
 					goto check_stat;
 				}
-				if (current_user.uid == *puid) {
+				if (current_user.ut.uid == *puid) {
 					/* We have a uid match but we must ensure we have seen the acl mask. */
 					ret = have_write;
 					DEBUG(10,("check_posix_acl_group_write: file %s \
@@ -4130,13 +4130,13 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (!S_ISDIR(sbuf.st_mode)) {
 		return False;
 	}
-	if (current_user.uid == 0 || conn->admin_user) {
+	if (current_user.ut.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.uid == sbuf.st_uid) {
+	if (current_user.ut.uid == sbuf.st_uid) {
 		return (sbuf.st_mode & S_IWUSR) ? True : False;
 	}
 
@@ -4152,7 +4152,7 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		 * for bug #3348. Don't assume owning sticky bit
 		 * directory means write access allowed.
 		 */
-		if (current_user.uid != sbuf_file.st_uid) {
+		if (current_user.ut.uid != sbuf_file.st_uid) {
 			return False;
 		}
 	}
@@ -4178,7 +4178,7 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 {
 	int ret;
 
-	if (current_user.uid == 0 || conn->admin_user) {
+	if (current_user.ut.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
@@ -4191,7 +4191,7 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.uid == psbuf->st_uid) {
+	if (current_user.ut.uid == psbuf->st_uid) {
 		return (psbuf->st_mode & S_IWUSR) ? True : False;
 	}
 

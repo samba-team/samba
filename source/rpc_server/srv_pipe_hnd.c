@@ -343,8 +343,8 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 
 	ZERO_STRUCT(p->pipe_user);
 
-	p->pipe_user.uid = (uid_t)-1;
-	p->pipe_user.gid = (gid_t)-1;
+	p->pipe_user.ut.uid = (uid_t)-1;
+	p->pipe_user.ut.gid = (gid_t)-1;
 	
 	/* Store the session key and NT_TOKEN */
 	if (vuser) {
@@ -1224,7 +1224,7 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 
 	delete_nt_token(&p->pipe_user.nt_user_token);
 	data_blob_free(&p->session_key);
-	SAFE_FREE(p->pipe_user.groups);
+	SAFE_FREE(p->pipe_user.ut.groups);
 
 	DLIST_REMOVE(InternalPipes, p);
 

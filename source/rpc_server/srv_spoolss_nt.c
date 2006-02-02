@@ -1620,9 +1620,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 			
-			if ( user.uid != 0
+			if ( user.ut.uid != 0
 				&& !user_has_privileges( user.nt_user_token, &se_printop )
-				&& !user_in_list(uidtoname(user.uid), lp_printer_admin(snum), user.groups, user.ngroups) )
+				&& !user_in_list(uidtoname(user.ut.uid), lp_printer_admin(snum), user.ut.groups, user.ut.ngroups) )
 			{
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
@@ -1676,7 +1676,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok(uidtoname(user.uid), snum, user.groups, user.ngroups) || !print_access_check(&user, snum, printer_default->access_required)) {
+		if (!user_ok(uidtoname(user.ut.uid), snum, user.ut.groups, user.ut.ngroups) || !print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
@@ -1869,7 +1869,7 @@ static WERROR _spoolss_enddocprinter_internal(pipes_struct *p, POLICY_HND *handl
 		return WERR_BADFID;
 
 	Printer->document_started=False;
-	print_job_end(snum, Printer->jobid,True);
+	print_job_end(snum, Printer->jobid,NORMAL_CLOSE);
 	/* error codes unhandled so far ... */
 
 	return WERR_OK;
@@ -7554,12 +7554,12 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	    case 3:
 		fstrcpy(driver_name, driver.info_3->name ? driver.info_3->name : "");
 		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-			driver_name, get_drv_ver_to_os(driver.info_3->cversion),uidtoname(user.uid));
+			driver_name, get_drv_ver_to_os(driver.info_3->cversion),uidtoname(user.ut.uid));
 		break;
 	    case 6:   
 		fstrcpy(driver_name, driver.info_6->name ?  driver.info_6->name : "");
 		sys_adminlog(LOG_INFO,"Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s.",
-			driver_name, get_drv_ver_to_os(driver.info_6->version),uidtoname(user.uid));
+			driver_name, get_drv_ver_to_os(driver.info_6->version),uidtoname(user.ut.uid));
 		break;
         }
 	/* END_ADMIN_LOG */
