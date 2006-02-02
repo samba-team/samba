@@ -1198,7 +1198,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
 	get_current_user( &user, p );
-	if ( user.uid != sec_initial_uid() 
+	if ( user.ut.uid != sec_initial_uid() 
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
@@ -1239,7 +1239,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
 	get_current_user( &user, p );
-	if ( user.uid != sec_initial_uid()
+	if ( user.ut.uid != sec_initial_uid()
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
 	{
 		return NT_STATUS_ACCESS_DENIED;
@@ -1401,7 +1401,7 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
 	get_current_user( &user, p );
-	if ( user.uid != sec_initial_uid()
+	if ( user.ut.uid != sec_initial_uid()
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
 	{
 		return NT_STATUS_ACCESS_DENIED;
@@ -1459,7 +1459,7 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
 	get_current_user( &user, p );
-	if ( user.uid != sec_initial_uid()
+	if ( user.ut.uid != sec_initial_uid()
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
@@ -1573,4 +1573,3 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 
 	return NT_STATUS_OK;
 }
-

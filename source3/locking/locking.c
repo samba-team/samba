@@ -50,6 +50,9 @@ struct locking_data {
 			int num_share_mode_entries;
 			BOOL delete_on_close;
 			BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
+			uint32 delete_token_size; /* Only valid if either of
+							the two previous fields 
+							are True. */
 		} s;
                 struct share_mode_entry dummy; /* Needed for alignment. */
         } u;
@@ -429,8 +432,7 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	int i;
 
 	if (dbuf.dsize < sizeof(struct locking_data)) {
-		DEBUG(0, ("parse_share_modes: buffer too short\n"));
-		return False;
+		smb_panic("PANIC: parse_share_modes: buffer too short.\n");
 	}
 
 	data = (struct locking_data *)dbuf.dptr;
@@ -449,18 +451,17 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
 		DEBUG(0, ("invalid number of share modes: %d\n",
 			  lck->num_share_modes));
-		return False;
+		smb_panic("PANIC: invalid number of share modes");
 	}
 
 	lck->share_modes = NULL;
-
+	
 	if (lck->num_share_modes != 0) {
 
 		if (dbuf.dsize < (sizeof(struct locking_data) +
 				  (lck->num_share_modes *
 				   sizeof(struct share_mode_entry)))) {
-			DEBUG(0, ("parse_share_modes: buffer too short\n"));
-			return False;
+			smb_panic("PANIC: parse_share_modes: buffer too short.\n");
 		}
 				  
 		lck->share_modes = talloc_memdup(lck, dbuf.dptr+sizeof(*data),
@@ -468,20 +469,67 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 						 sizeof(struct share_mode_entry));
 
 		if (lck->share_modes == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			return False;
+			smb_panic("talloc failed\n");
 		}
+	}
+
+	/* Get any delete token. */
+	if (data->u.s.delete_token_size) {
+		/* Each uid/gid is stored as a 4 byte value. */
+		uint32 val;
+		uint32 *p = (uint32 *)(dbuf.dptr + sizeof(*data) +
+				(lck->num_share_modes *
+				sizeof(struct share_mode_entry)));
+
+		if ((data->u.s.delete_token_size < 8) || (data->u.s.delete_token_size % 4) != 0) {
+			DEBUG(0, ("parse_share_modes: invalid token size %d\n",
+				data->u.s.delete_token_size));
+			smb_panic("parse_share_modes: invalid token size\n");
+		}
+
+		lck->delete_token = TALLOC_P(lck, UNIX_USER_TOKEN);
+		if (!lck->delete_token) {
+			smb_panic("talloc failed\n");
+		}
+
+		/* Copy out the uid and gid. */
+		memcpy(&val, p++, 4);
+		lck->delete_token->uid = (uid_t)val;
+		memcpy(&val, p++, 4);
+		lck->delete_token->gid = (gid_t)val;
+
+		/* Any supplementary groups ? */
+		lck->delete_token->ngroups = (data->u.s.delete_token_size > 8) ?
+						((data->u.s.delete_token_size - 8)/4) : 0;
+		if (lck->delete_token->ngroups) {
+			/* Make this a talloc child of lck->delete_token. */
+			lck->delete_token->groups = TALLOC_ARRAY(lck->delete_token, gid_t,
+							lck->delete_token->ngroups);
+			if (!lck->delete_token) {
+				smb_panic("talloc failed\n");
+			}
+
+			for (i = 0; i < lck->delete_token->ngroups; i++) {
+				memcpy(&val, p++, 4);
+				lck->delete_token->groups[i] = (gid_t)val;
+			}
+		}
+
+	} else {
+		lck->delete_token = NULL;
 	}
 
 	/* Save off the associated service path and filename. */
 	lck->servicepath = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
-				      (lck->num_share_modes *
-				      sizeof(struct share_mode_entry)));
+					(lck->num_share_modes *
+					sizeof(struct share_mode_entry)) +
+					data->u.s.delete_token_size );
 
 	lck->filename = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
-				      (lck->num_share_modes *
-				      sizeof(struct share_mode_entry)) +
-				      strlen(lck->servicepath) + 1 );
+					(lck->num_share_modes *
+					sizeof(struct share_mode_entry)) +
+					data->u.s.delete_token_size +
+					strlen(lck->servicepath) + 1 );
 
 	/*
 	 * Ensure that each entry has a real process attached.
@@ -528,6 +576,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 
 	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
+		(lck->delete_token ? (8 + (lck->delete_token->ngroups*4)) : 0) +
 		sp_len + 1 +
 		strlen(lck->filename) + 1;
 	result.dptr = talloc_size(lck, result.dsize);
@@ -549,6 +598,25 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
 	offset = sizeof(*data) +
 		sizeof(struct share_mode_entry)*lck->num_share_modes;
+
+	/* Store any delete on close token. */
+	if (lck->delete_token) {
+		uint32 val;
+		uint32 *p = (uint32 *)(result.dptr + offset);
+
+		val = (uint32)lck->delete_token->uid;
+		memcpy(p++, &val, 4);
+
+		val = (uint32)lck->delete_token->uid;
+		memcpy(p++, &val, 4);
+
+		for (i = 0; i < lck->delete_token->ngroups; i++) {
+			val = (uint32)lck->delete_token->groups[i];
+			memcpy(p++, &val, 4);
+		}
+		offset = ((char *)p - result.dptr);
+	}
+
 	safe_strcpy(result.dptr + offset, lck->servicepath,
 		    result.dsize - offset - 1);
 	offset += sp_len + 1;
@@ -619,6 +687,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->ino = ino;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
+	lck->delete_token = NULL;
 	lck->delete_on_close = False;
 	lck->initial_delete_on_close = False;
 	lck->fresh = False;
@@ -1047,6 +1116,55 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
 	return NT_STATUS_OK;
 }
 
+/*************************************************************************
+ Return a talloced copy of a UNIX_USER_TOKEN. NULL on fail.
+ (Should this be in locking.c.... ?).
+*************************************************************************/
+
+static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
+{
+	UNIX_USER_TOKEN *cpy;
+
+	if (tok == NULL) {
+		return NULL;
+	}
+
+	cpy = TALLOC_P(ctx, UNIX_USER_TOKEN);
+	if (!cpy) {
+		return NULL;
+	}
+
+	cpy->uid = tok->uid;
+	cpy->gid = tok->gid;
+	cpy->ngroups = tok->ngroups;
+	if (tok->ngroups) {
+		/* Make this a talloc child of cpy. */
+		cpy->groups = TALLOC_ARRAY(cpy, gid_t, tok->ngroups);
+		if (!cpy->groups) {
+			return NULL;
+		}
+		memcpy(cpy->groups, tok->groups, tok->ngroups * sizeof(gid_t));
+	}
+	return cpy;
+}
+
+/****************************************************************************
+ Replace the delete on close token.
+****************************************************************************/
+
+void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok)
+{
+	/* Ensure there's no token. */
+	if (lck->delete_token) {
+		talloc_free(lck->delete_token); /* Also deletes groups... */
+		lck->delete_token = NULL;
+	}
+
+	/* Copy the new token (can be NULL). */
+	lck->delete_token = copy_unix_token(lck, tok);
+	lck->modified = True;
+}
+
 /****************************************************************************
  Sets the delete on close flag over all share modes on this file.
  Modify the share mode entry for all files open
@@ -1055,9 +1173,11 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
  in the close code, the last closer will delete the file
  if flag is set.
  Note that setting this to any value clears the initial_delete_on_close flag.
+ If delete_on_close is True this makes a copy of any UNIX_USER_TOKEN into the
+ lck entry.
 ****************************************************************************/
 
-BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
+BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKEN *tok)
 {
 	struct share_mode_lock *lck;
 	
@@ -1074,8 +1194,13 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 	if (lck == NULL) {
 		return False;
 	}
+
 	if (lck->delete_on_close != delete_on_close) {
+		set_delete_on_close_token(lck, tok);
 		lck->delete_on_close = delete_on_close;
+		if (delete_on_close) {
+			SMB_ASSERT(lck->delete_token != NULL);
+		}
 		lck->modified = True;
 	}
 
@@ -1105,9 +1230,11 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
 	sharepath = dbuf.dptr + sizeof(*data) +
-		data->u.s.num_share_mode_entries*sizeof(*shares);
+		data->u.s.num_share_mode_entries*sizeof(*shares) +
+		data->u.s.delete_token_size;
 	fname = dbuf.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
+		data->u.s.delete_token_size +
 		strlen(sharepath) + 1;
 
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {

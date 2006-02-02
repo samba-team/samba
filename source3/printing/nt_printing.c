@@ -1296,7 +1296,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
@@ -1332,7 +1332,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
@@ -1361,7 +1361,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	error_exit:
 		if(fsp)
-			close_file(fsp, True);
+			close_file(fsp, NORMAL_CLOSE);
 		return -1;
 }
 
@@ -1486,7 +1486,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 		driverpath, cversion));
 
-	close_file(fsp, True);
+	close_file(fsp, NORMAL_CLOSE);
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 	*perr = WERR_OK;
@@ -1496,7 +1496,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
   error_exit:
 
 	if(fsp)
-		close_file(fsp, True);
+		close_file(fsp, NORMAL_CLOSE);
 
 	close_cnum(conn, user->vuid);
 	unbecome_user();
@@ -5275,7 +5275,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if ( user->uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
+	if ( user->ut.uid == 0 || user_has_privileges(user->nt_user_token, &se_printop ) ) {
 		return True;
 	}
 
@@ -5327,7 +5327,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
         /* see if we need to try the printer admin list */
 
         if ( access_granted == 0 ) {
-                if ( user_in_list(uidtoname(user->uid), lp_printer_admin(snum), user->groups, user->ngroups) )
+                if ( user_in_list(uidtoname(user->ut.uid), lp_printer_admin(snum), user->ut.groups, user->ut.ngroups) )
                         return True;
         }
 

@@ -1678,6 +1678,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			}
 			/* Note that here we set the *inital* delete on close flag,
 			   not the regular one. */
+			set_delete_on_close_token(lck, &current_user.ut);
 			lck->initial_delete_on_close = True;
 			lck->modified = True;
 		}
@@ -1983,6 +1984,7 @@ files_struct *open_directory(connection_struct *conn,
 			return NULL;
 		}
 
+		set_delete_on_close_token(lck, &current_user.ut);
 		lck->initial_delete_on_close = True;
 		lck->modified = True;
 	}

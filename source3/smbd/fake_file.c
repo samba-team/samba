@@ -109,7 +109,7 @@ files_struct *open_fake_file(connection_struct *conn,
 	files_struct *fsp = NULL;
 
 	/* access check */
-	if (current_user.uid != 0) {
+	if (current_user.ut.uid != 0) {
 		DEBUG(1,("open_fake_file_shared: access_denied to service[%s] file[%s] user[%s]\n",
 			lp_servicename(SNUM(conn)),fname,conn->user));
 		errno = EACCES;
