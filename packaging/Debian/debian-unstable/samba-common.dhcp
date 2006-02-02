@@ -15,7 +15,7 @@ netbios_setup() {
 
 	# Nor should we continue if no settings have changed
 	if [ "$new_netbios_name_servers" = "$old_netbios_name_servers" ] \
-	   && [ "$new_netbios_scope" = "$old_netbios_scope" ]
+	   && [ "$new_netbios_scope" = "$old_netbios_scope" ] \
 	   && [ -f $SAMBA_DHCP_CONF ]
 	then
 		return
