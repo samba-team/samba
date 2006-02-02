@@ -558,6 +558,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	struct locking_data *data;
 	ssize_t offset;
 	ssize_t sp_len;
+	uint32 delete_token_size;
 
 	result.dptr = NULL;
 	result.dsize = 0;
@@ -573,10 +574,12 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	}
 
 	sp_len = strlen(lck->servicepath);
+	delete_token_size = (lck->delete_token ?
+			(8 + (lck->delete_token->ngroups*4)) : 0);
 
 	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
-		(lck->delete_token ? (8 + (lck->delete_token->ngroups*4)) : 0) +
+		delete_token_size +
 		sp_len + 1 +
 		strlen(lck->filename) + 1;
 	result.dptr = talloc_size(lck, result.dsize);
@@ -590,10 +593,12 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
 	data->u.s.initial_delete_on_close = lck->initial_delete_on_close;
-	DEBUG(10, ("unparse_share_modes: del: %d, initial del %d, num: %d\n",
-		   data->u.s.delete_on_close,
-		   data->u.s.initial_delete_on_close,
-		   data->u.s.num_share_mode_entries));
+	data->u.s.delete_token_size = delete_token_size;
+	DEBUG(10, ("unparse_share_modes: del: %d, initial del %d, tok = %u, num: %d\n",
+		data->u.s.delete_on_close,
+		data->u.s.initial_delete_on_close,
+		(unsigned int)data->u.s.delete_token_size,
+		data->u.s.num_share_mode_entries));
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
 	offset = sizeof(*data) +
