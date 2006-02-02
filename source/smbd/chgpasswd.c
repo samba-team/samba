@@ -1010,15 +1010,31 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd, BOOL as_root)
 {
 	BOOL ret;
-	uint32 min_len;
+	uint32 min_len, min_age;
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
+	time_t last_change_time = pdb_get_pass_last_set_time(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
 
-	if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
-		DEBUG(1, ("user %s cannot change password now, must wait until %s\n", 
-			  username, http_timestring(can_change_time)));
-		return NT_STATUS_ACCOUNT_RESTRICTION;
+	if (pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &min_age)) {
+		/*
+		 * Windows calculates the minimum password age check
+		 * dynamically, it basically ignores the pwdcanchange
+		 * timestamp. Do likewise.
+		 */
+		if (last_change_time + min_age > time(NULL)) {
+			DEBUG(1, ("user %s cannot change password now, must "
+				  "wait until %s\n", username,
+				  http_timestring(last_change_time+min_age)));
+			return NT_STATUS_ACCOUNT_RESTRICTION;
+		}
+	} else {
+		if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
+			DEBUG(1, ("user %s cannot change password now, must "
+				  "wait until %s\n", username,
+				  http_timestring(can_change_time)));
+			return NT_STATUS_ACCOUNT_RESTRICTION;
+		}
 	}
 
 	if (pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
