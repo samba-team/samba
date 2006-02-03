@@ -1965,9 +1965,9 @@ files_struct *open_directory(connection_struct *conn,
 
 	set_share_mode(lck, fsp, 0, NO_OPLOCK);
 
-	if ((create_options & FILE_DELETE_ON_CLOSE) &&
-			(info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
-			info == FILE_WAS_SUPERSEDED)) {
+	/* For directories the delete on close bit at open time seems
+	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
+	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			set_saved_ntstatus(status);
