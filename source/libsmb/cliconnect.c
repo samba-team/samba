@@ -865,14 +865,16 @@ BOOL cli_session_setup(struct cli_state *cli,
 			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
 			return False;
 		}
-		return True;
+	} else {
+		/* otherwise do a NT1 style session setup */
+		if ( !cli_session_setup_nt1(cli, user, pass, passlen, ntpass, ntpasslen, workgroup) ) {
+			DEBUG(3,("cli_session_setup: NT1 session setup failed!\n"));
+			return False;
+		}
 	}
 
-	/* otherwise do a NT1 style session setup */
+	return True;
 
-	return cli_session_setup_nt1(cli, user, 
-				     pass, passlen, ntpass, ntpasslen,
-				     workgroup);	
 }
 
 /****************************************************************************
