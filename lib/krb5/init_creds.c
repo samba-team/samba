@@ -191,7 +191,8 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
     if(t != 0)
 	krb5_get_init_creds_opt_set_renew_life(opt, t);
 
-    krb5_appdefault_boolean(context, appname, realm, "no-addresses", FALSE, &b);
+    krb5_appdefault_boolean(context, appname, realm, "no-addresses", 
+			    KRB5_ADDRESSLESS_DEFAULT, &b);
     if (b)
 	krb5_get_init_creds_opt_set_address_list (opt, &no_addrs);
 
