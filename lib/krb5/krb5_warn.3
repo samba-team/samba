@@ -43,6 +43,7 @@
 .Nm krb5_free_error_string
 .Nm krb5_get_err_text ,
 .Nm krb5_get_error_string ,
+.Nm krb5_get_error_message ,
 .Nm krb5_have_error_string ,
 .Nm krb5_set_error_string ,
 .Nm krb5_set_warn_dest ,
@@ -94,6 +95,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_get_err_text "krb5_context context" "krb5_error_code code"
 .Ft char*
 .Fn krb5_get_error_string "krb5_context context"
+.Ft char*
+.Fn krb5_get_error_message "krb5_context context, krb5_error_code code"
 .Ft krb5_boolean
 .Fn krb5_have_error_string "krb5_context context"
 .Ft krb5_error_code
@@ -162,12 +165,27 @@ fetches the error string from
 The error message in the context is consumed and must be freed using
 .Fn krb5_free_error_string
 by the caller.
+See also
+.Fn krb5_get_error_message ,
+what is usually less verbose to use.
 .Pp
 .Fn krb5_have_error_string
 returns
 .Dv TRUE
 if there is a verbose error message in the
 .Fa context .
+.Pp
+.Fn krb5_get_error_message
+fetches the error string from the context, or if there
+is no customized error string in
+.Fa context ,
+uses
+.Fa code
+to return a error string.
+In either case, the error message in the context is consumed and must
+be freed using
+.Fn krb5_free_error_string
+by the caller.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_openlog 3
