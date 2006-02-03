@@ -400,9 +400,11 @@ change (krb5_auth_context auth_context,
     krb5_free_data (context, pwd_data);
     pwd_data = NULL;
     if (ret) {
-	krb5_warn (context, ret, "kadm5_s_chpass_principal_cond");
-	reply_priv (auth_context, s, sa, sa_size, KRB5_KPASSWD_HARDERROR,
-		    "Internal error");
+	char *str = krb5_get_error_message(context, ret);
+	krb5_warnx(context, "kadm5_s_chpass_principal_cond: %s", str);
+	reply_priv (auth_context, s, sa, sa_size, KRB5_KPASSWD_SOFTERROR,
+		    str ? str : "Internal error");
+	krb5_free_error_string(context, str);
 	goto out;
     }
     reply_priv (auth_context, s, sa, sa_size, KRB5_KPASSWD_SUCCESS,
