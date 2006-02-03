@@ -67,8 +67,8 @@ BOOL saf_store( const char *domain, const char *servername )
 	expire = time( NULL ) + SAF_TTL;
 	
 	
-	DEBUG(10,("saf_store: domain = [%s], server = [%s], expire = [%d]\n",
-		domain, servername, expire ));
+	DEBUG(10,("saf_store: domain = [%s], server = [%s], expire = [%u]\n",
+		domain, servername, (unsigned int)expire ));
 		
 	ret = gencache_set( key, servername, expire );
 	
