@@ -238,14 +238,6 @@ typedef struct nttime_info {
  
 #define MAX_HOURS_LEN 32
 
-/* 
- * window during which we must talk to the PDC to avoid
- * sam sync delays; expressed in seconds (15 minutes is the 
- * default period for SAM replication under Windows NT 4.0
- */
-#define SAM_SYNC_WINDOW		900
-
-
 #ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif

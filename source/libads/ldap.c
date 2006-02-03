@@ -136,6 +136,10 @@ BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	ads->ldap_port = port;
 	ads->ldap_ip = *interpret_addr2(srv);
 	free(srv);
+	
+	/* cache the successful connection */
+	
+	saf_store( ads->server.workgroup, server );
 
 	return True;
 }

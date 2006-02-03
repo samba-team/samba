@@ -358,6 +358,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
  session_setup_done:
 
+	/* cache the server name for later connections */
+
+	saf_store( (*cli)->domain, (*cli)->desthost );
+
 	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
 
 		result = cli_nt_error(*cli);
@@ -658,14 +662,6 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		return True;
 	}
 
-	if ( is_our_domain 
-		&& must_use_pdc(domain->name) 
-		&& get_pdc_ip(domain->name, &ip)) 
-	{
-		if (add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip), ip, dcs, num_dcs)) 
-			return True;
-	}
-
 	/* try standard netbios queries first */
 
 	get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
@@ -752,11 +748,34 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
-
+	char *saf_servername = saf_fetch( domain->name );
 	int retries;
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL)
 		return NT_STATUS_NO_MEMORY;
+
+	/* we have to check the server affinity cache here since 
+	   later we selecte a DC based on response time and not preference */
+	   
+	if ( saf_servername ) 
+	{
+		/* convert an ip address to a name */
+		if ( is_ipaddress( saf_servername ) )
+		{
+			fstring saf_name;
+			struct in_addr ip;
+
+			ip = *interpret_addr2( saf_servername );
+			dcip_to_name( domain->name, domain->alt_name, &domain->sid, ip, saf_name );
+			fstrcpy( domain->dcname, saf_name );
+		} 
+		else 
+		{
+			fstrcpy( domain->dcname, saf_servername );
+		}
+
+		SAFE_FREE( saf_servername );
+	}
 
 	for (retries = 0; retries < 3; retries++) {
 
@@ -765,27 +784,28 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
-		if ((strlen(domain->dcname) > 0) &&
-		    NT_STATUS_IS_OK(check_negative_conn_cache(
-					    domain->name, domain->dcname)) &&
-		    (resolve_name(domain->dcname, &domain->dcaddr.sin_addr,
-				  0x20))) {
-			int dummy;
-			struct sockaddr_in addrs[2];
-			addrs[0] = domain->dcaddr;
-			addrs[0].sin_port = htons(445);
-			addrs[1] = domain->dcaddr;
-			addrs[1].sin_port = htons(139);
-			if (!open_any_socket_out(addrs, 2, 10000,
-						 &dummy, &fd)) {
+		if ((strlen(domain->dcname) > 0) 
+			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname)) 
+			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20))) 
+		{
+			struct sockaddr_in *addrs = NULL;
+			int num_addrs = 0;
+			int dummy = 0;
+
+
+			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs);
+			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs);
+
+			if (!open_any_socket_out(addrs, num_addrs, 10000, &dummy, &fd)) {
 				fd = -1;
 			}
 		}
 
-		if ((fd == -1) &&
-		    !find_new_dc(mem_ctx, domain, domain->dcname,
-				 &domain->dcaddr, &fd))
+		if ((fd == -1) 
+			&& !find_new_dc(mem_ctx, domain, domain->dcname, &domain->dcaddr, &fd)) 
+		{
 			break;
+		}
 
 		new_conn->cli = NULL;
 
