@@ -678,6 +678,7 @@ sub prompt_user {
 
 sub check_ticket {
 	return 0;
+	# works only for heimdal
 	return system("$klist -t");
 }
 

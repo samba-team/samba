@@ -28,6 +28,7 @@
 #include <limits.h>
 #include <string.h>
 #include <libsmbclient.h>
+#include "bsd-strlfunc.h"
 
 #ifndef FALSE
 # define        FALSE   (0)
@@ -67,13 +68,13 @@ int main(int argc, char *argv[])
 		switch (opt) {
                 case 'p':       /* prepend library before smbwrapper.so */
                         if (*pre != '\0')
-                                strncat(pre, " ", PATH_MAX - strlen(pre));
-                        strncat(pre, optarg, PATH_MAX - strlen(pre));
+                                smbw_strlcat(pre, " ", sizeof(pre));
+                        smbw_strlcat(pre, optarg, sizeof(pre));
                         break;
                         
                 case 'a':       /* append library after smbwrapper.so */
-                        strncat(post, " ", PATH_MAX - strlen(post));
-                        strncat(post, optarg, PATH_MAX - strlen(post));
+                        smbw_strlcat(post, " ", sizeof(post));
+                        smbw_strlcat(post, optarg, sizeof(post));
                         break;
                         
                 case 'd':
@@ -121,20 +122,22 @@ int main(int argc, char *argv[])
                 }
         }
 
-        strncpy(line, pre, PATH_MAX - strlen(line));
-        strncat(line, " ", PATH_MAX - strlen(line));
-        strncat(line, libd, PATH_MAX - strlen(line));
-        strncat(line, "/smbwrapper.so", PATH_MAX - strlen(line));
-        strncat(line, post, PATH_MAX - strlen(line));
+        smbw_strlcpy(line, pre, PATH_MAX - strlen(line));
+        smbw_strlcat(line, " ", sizeof(line));
+        smbw_strlcat(line, libd, sizeof(line));
+        smbw_strlcat(line, "/smbwrapper.so", sizeof(line));
+        smbw_strlcat(line, post, sizeof(line));
 	setenv("LD_PRELOAD", line, TRUE);
         setenv("LD_BIND_NOW", "true", TRUE);
 
 	snprintf(line,sizeof(line)-1,"%s/smbwrapper.32.so", libd);
 
 	if (stat(line, &statbuf) == 0 && S_ISREG(statbuf.st_mode)) {
-		snprintf(line,sizeof(line)-1,"%s/smbwrapper.32.so:DEFAULT", libd);
+		snprintf(line, sizeof(line)-1,
+                         "%s/smbwrapper.32.so:DEFAULT", libd);
 		setenv("_RLD_LIST", line, TRUE);
-		snprintf(line,sizeof(line)-1,"%s/smbwrapper.so:DEFAULT", libd);
+		snprintf(line, sizeof(line)-1,
+                         "%s/smbwrapper.so:DEFAULT", libd);
 		setenv("_RLDN32_LIST", line, TRUE);
 	} else {
 		snprintf(line,sizeof(line)-1,"%s/smbwrapper.so:DEFAULT", libd);

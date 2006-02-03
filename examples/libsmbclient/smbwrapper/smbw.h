@@ -34,6 +34,10 @@
 #include "libsmbclient.h"
 #include "wrapper.h"
 
+#ifndef __restrict
+#  define __restrict
+#endif
+
 #undef DEBUG
 #define DEBUG(level, s) do { if (level <= debug_level) printf s; } while (0)
 
