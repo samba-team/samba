@@ -1,5 +1,15 @@
 2006-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kpasswd/kpasswdd.c: Send back a better error-message to the
+	client in case the password change was rejected.
+
+	* lib/krb5/krb5_warn.3: Document krb5_get_error_message.
+
+	* lib/krb5/error_string.c (krb5_get_error_message): new function,
+	and combination of krb5_get_error_string and krb5_get_err_text
+
+	* lib/krb5/krb5.3: sort, and krb5_get_error_message
+
 	* lib/hdb/hdb-ldap.c: Log the filter string to the error message
 	when doing searches.
 
