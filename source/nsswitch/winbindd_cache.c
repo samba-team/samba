@@ -960,8 +960,10 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 	*type = (enum SID_NAME_USE)centry_uint32(centry);
-	centry_sid(centry, sid);
 	status = centry->status;
+	if (NT_STATUS_IS_OK(status)) {
+		centry_sid(centry, sid);
+	}
 
 	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status %s\n",
 		domain->name, get_friendly_nt_error_msg(status) ));
