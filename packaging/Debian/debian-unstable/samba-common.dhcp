@@ -58,4 +58,8 @@ netbios_setup() {
 	fi
 }
 
-netbios_setup
+# Only call netbios_setup if we're not sourced.
+case "$0" in
+	*bin/sh|*bin/bash) : ;;
+	*) netbios_setup ;;
+esac
