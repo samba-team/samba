@@ -227,7 +227,6 @@ static BOOL open_file(files_struct *fsp,
 		/* It's a read-only share - fail if we wanted to write. */
 		if(accmode != O_RDONLY) {
 			DEBUG(3,("Permission denied opening %s\n",fname));
-			check_for_pipe(fname);
 			return False;
 		} else if(flags & O_CREAT) {
 			/* We don't want to write - but we must make sure that
