@@ -1,4 +1,26 @@
+2006-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: Log the filter string to the error message
+	when doing searches.
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_set_default_flags):
+	Use KRB5_ADDRESSLESS_DEFAULT when
+	checking [appdefault]no-addresses.
+
+	* lib/krb5/get_cred.c (get_cred_from_kdc_flags): Use
+	KRB5_ADDRESSLESS_DEFAULT when checking
+	[appdefault]no-addresses.
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds):
+	Use [appdefault]no-addresses before checking if the krbtgt is
+	address-less, use KRB5_ADDRESSLESS_DEFAULT.
+
+	* lib/krb5/krb5_locl.h: Introduce KRB5_ADDRESSLESS_DEFAULT that
+	controlls all address-less behavior.  Defaults to false.
+	
 2006-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/n-fold-test.c: main is not a KRB5_LIB_FUNCTION
 
 	* lib/krb5/mk_priv.c (krb5_mk_priv): abort if ASN1_MALLOC_ENCODE
 	failes to produce the matching lenghts.
