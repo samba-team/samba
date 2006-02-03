@@ -107,3 +107,25 @@ krb5_have_error_string(krb5_context context)
     HEIMDAL_MUTEX_unlock(context->mutex);
     return str != NULL;
 }
+
+char * KRB5_LIB_FUNCTION
+krb5_get_error_message(krb5_context context, krb5_error_code code)
+{
+    char *str;
+
+    str = krb5_get_error_string(context);
+    if (str)
+	return str;
+
+    {
+	const char *cstr = krb5_get_err_text(context, code);
+	if (cstr)
+	    return strdup(cstr);
+    }
+
+    if (asprintf(&str, "<unknown error: %d>", code) == -1)
+	return NULL;
+
+    return str;
+}
+
