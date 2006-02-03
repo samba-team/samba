@@ -111,9 +111,12 @@ krb5_have_error_string(krb5_context context)
 char * KRB5_LIB_FUNCTION
 krb5_get_error_message(krb5_context context, krb5_error_code code)
 {
-    char *str;
+    char *str = NULL;
 
-    str = krb5_get_error_string(context);
+    HEIMDAL_MUTEX_lock(context->mutex);
+    if (context->error_string)
+	str = strdup(context->error_string);
+    HEIMDAL_MUTEX_unlock(context->mutex);
     if (str)
 	return str;
 
