@@ -185,18 +185,29 @@ krb5_get_forwarded_creds (krb5_context	    context,
     addrs.val = NULL;
     paddrs = &addrs;
 
+    {
+	krb5_boolean noaddr;
+	krb5_appdefault_boolean(context, NULL, realm,
+				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
+				&noaddr);
+	if (noaddr)
+	    paddrs = NULL;
+    }
+	
     /*
      * If tickets are address-less, forward address-less tickets.
      */
 
-    ret = _krb5_get_krbtgt (context,
-			    ccache,
-			    realm,
-			    &ticket);
-    if(ret == 0) {
-	if (ticket->addresses.len == 0)
-	    paddrs = NULL;
-	krb5_free_creds (context, ticket);
+    if (paddrs) {
+	ret = _krb5_get_krbtgt (context,
+				ccache,
+				realm,
+				&ticket);
+	if(ret == 0) {
+	    if (ticket->addresses.len == 0)
+		paddrs = NULL;
+	    krb5_free_creds (context, ticket);
+	}
     }
     
     if (paddrs != NULL) {
@@ -277,21 +288,14 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	enc_krb_cred_part.usec = NULL;
     }
 
-    if (auth_context->local_address && auth_context->local_port) {
-	krb5_boolean noaddr;
-	krb5_const_realm srealm;
+    if (auth_context->local_address && auth_context->local_port && paddrs) {
 
-	srealm = krb5_principal_get_realm(context, out_creds->server);
-	krb5_appdefault_boolean(context, NULL, srealm, "no-addresses", 
-				paddrs == NULL,	&noaddr);
-	if (!noaddr) {
-	    ret = krb5_make_addrport (context,
-				      &enc_krb_cred_part.s_address,
-				      auth_context->local_address,
-				      auth_context->local_port);
-	    if (ret)
-		goto out4;
-	}
+	ret = krb5_make_addrport (context,
+				  &enc_krb_cred_part.s_address,
+				  auth_context->local_address,
+				  auth_context->local_port);
+	if (ret)
+	    goto out4;
     }
 
     if (auth_context->remote_address) {
