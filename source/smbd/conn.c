@@ -249,7 +249,7 @@ void conn_free_internal(connection_struct *conn)
 	}
 
 	if (conn->nt_user_token) {
-		delete_nt_token(&(conn->nt_user_token));
+		talloc_free(conn->nt_user_token);
 	}
 
 	free_namearray(conn->veto_list);

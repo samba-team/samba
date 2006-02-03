@@ -115,6 +115,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	int extra_data_len = 0;
 	char *extra_data;
 	NTSTATUS result;
+	BOOL have_own_domain = False;
 
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
@@ -137,6 +138,22 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 					     names[i],
 					     alt_names[i] ? alt_names[i] : names[i],
 					     sid_string_static(&sids[i]));
+	/* add our primary domain */
+	
+	for (i=0; i<num_domains; i++) {
+		if (strequal(names[i], domain->name)) {
+			have_own_domain = True;
+			break;
+		}
+	}
+
+	if (state->request.data.list_all_domains && !have_own_domain) {
+		extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
+					     extra_data,
+					     domain->name,
+					     domain->alt_name ? domain->alt_name : domain->name,
+					     sid_string_static(&domain->sid));
+	}
 
 	/* This is a bit excessive, but the extra data sooner or later will be
 	   talloc'ed */

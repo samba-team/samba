@@ -61,7 +61,7 @@ static int help_usage(int argc, const char **argv)
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
 "  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n"\
-"  CHANGESCRETPW IDMAP\n");
+"  CHANGESCRETPW LOOKUP SAM\n");
 	return -1;
 }
 
@@ -223,8 +223,9 @@ static int net_usage(int argc, const char **argv)
 		 "  net lookup\t\tto lookup host name or ip address\n"\
 		 "  net user\t\tto manage users\n"\
 		 "  net group\t\tto manage groups\n"\
+		 "  net sam\t\tto edit the local user database directly\n"\
+		 "  net lookup\t\tto look up various things\n"\
 		 "  net groupmap\t\tto manage group mappings\n"\
-		 "  net idmap\t\tto manage the idmap id mappings\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "  net cache\t\tto operate on cache tdb file\n"\
 		 "  net getlocalsid [NAME]\tto get the SID for local name\n"\
@@ -233,6 +234,7 @@ static int net_usage(int argc, const char **argv)
 		 "                    \tthis requires the -f flag as a safety barrier\n"\
 		 "  net status\t\tShow server status\n"\
 		"  net usersidlist\tto get a list of all users with their SIDs\n"
+		"  net usershare\t\tto add, delete and list locally user-modifiable shares\n"
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
@@ -270,11 +272,12 @@ int net_help(int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{"TIME", net_time_usage},
 		{"LOOKUP", net_lookup_usage},
+		{"USERSHARE", net_usershare_usage},
 		{"USERSIDLIST", net_usersidlist_usage},
 #ifdef WITH_FAKE_KASERVER
 		{"AFS", net_help_afs},
 #endif
-		{"IDMAP", net_help_idmap},
+
 		{"HELP", help_usage},
 		{NULL, NULL}};
 

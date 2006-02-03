@@ -542,11 +542,8 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		}
 		
 		become_root();
-		ret = pdb_update_sam_account (sampass);
+		r_u->status = pdb_update_sam_account (sampass);
 		unbecome_root();
-	}
-	if (ret) {
-		status = NT_STATUS_OK;
 	}
 
 	/* set up the LSA Server Password Set response */
@@ -587,29 +584,29 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 /*******************************************************************
  gets a domain user's groups from their already-calculated NT_USER_TOKEN
  ********************************************************************/
-static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid, 
-				       const NT_USER_TOKEN *nt_token,
+static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
+				       const DOM_SID *domain_sid,
+				       size_t num_sids,
+				       const DOM_SID *sids,
 				       int *numgroups, DOM_GID **pgids) 
 {
-	DOM_GID *gids;
 	int i;
 
-	gids = TALLOC_ARRAY(mem_ctx, DOM_GID, nt_token->num_sids);
-
-	if (!gids) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	*numgroups=0;
+	*pgids = NULL;
 
-	for (i=PRIMARY_GROUP_SID_INDEX; i < nt_token->num_sids; i++) {
-		if (sid_compare_domain(domain_sid, &nt_token->user_sids[i])==0) {
-			sid_peek_rid(&nt_token->user_sids[i], &(gids[*numgroups].g_rid));
-			gids[*numgroups].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
-			(*numgroups)++;
+	for (i=0; i<num_sids; i++) {
+		DOM_GID gid;
+		if (!sid_peek_check_rid(domain_sid, &sids[i], &gid.g_rid)) {
+			continue;
+		}
+		gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+			    SE_GROUP_ENABLED);
+		ADD_TO_ARRAY(mem_ctx, DOM_GID, gid, pgids, numgroups);
+		if (*pgids == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
-	*pgids = gids; 
 	return NT_STATUS_OK;
 }
 
@@ -655,7 +652,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_net_sam_logon: client %s not using schannel for netlogon\n",
 			p->dc->remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -734,10 +731,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		break;
 	}
 	case INTERACTIVE_LOGON_TYPE:
-		/* 'Interactive' autheticaion, supplies the password in its
-		   MD4 form, encrypted with the session key.  We will
-		   convert this to chellange/responce for the auth
-		   subsystem to chew on */
+		/* 'Interactive' authentication, supplies the password in its
+		   MD4 form, encrypted with the session key.  We will convert
+		   this to challenge/response for the auth subsystem to chew
+		   on */
 	{
 		const uint8 *chal;
 		
@@ -787,14 +784,15 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		     && !is_trusted_domain(nt_domain) )
 			r_u->auth_resp = 0; /* We are not authoritative */
 
-		free_server_info(&server_info);
+		talloc_free(server_info);
 		return status;
 	}
 
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
-		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST denied.\n"));
-		free_server_info(&server_info);
+		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST "
+			 "denied.\n"));
+		talloc_free(server_info);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -819,7 +817,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 		sampw = server_info->sam_account;
 
-		/* set up pointer indicating user/password failed to be found */
+		/* set up pointer indicating user/password failed to be
+		 * found */
 		usr_info->ptr_user_info = 0;
 
 		user_sid = pdb_get_user_sid(sampw);
@@ -829,8 +828,12 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		sid_split_rid(&domain_sid, &user_rid);
 
 		if (!sid_peek_check_rid(&domain_sid, group_sid, &group_rid)) {
-			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid %s\n but group sid %s.\nThe conflicting domain portions are not supported for NETLOGON calls\n", 	    
-				  pdb_get_domain(sampw), pdb_get_username(sampw),
+			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid "
+				  "%s\n but group sid %s.\n"
+				  "The conflicting domain portions are not "
+				  "supported for NETLOGON calls\n", 	    
+				  pdb_get_domain(sampw),
+				  pdb_get_username(sampw),
 				  sid_to_string(user_sid_string, user_sid),
 				  sid_to_string(group_sid_string, group_sid)));
 			return NT_STATUS_UNSUCCESSFUL;
@@ -842,26 +845,30 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		} else {
 		        pstrcpy(my_name, global_myname());
 		}
-		
-		if (!NT_STATUS_IS_OK(status 
-				     = nt_token_to_group_list(p->mem_ctx, 
-							      &domain_sid, 
-							      server_info->ptok, 
-							      &num_gids, 
-							      &gids))) {
+
+		status = nt_token_to_group_list(p->mem_ctx, &domain_sid,
+						server_info->num_sids,
+						server_info->sids,
+						&num_gids, &gids);
+
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
 		ZERO_STRUCT(netlogon_sess_key);
 		memcpy(netlogon_sess_key, p->dc->sess_key, 8);
 		if (server_info->user_session_key.length) {
-			memcpy(user_session_key, server_info->user_session_key.data, 
-			       MIN(sizeof(user_session_key), server_info->user_session_key.length));
+			memcpy(user_session_key,
+			       server_info->user_session_key.data, 
+			       MIN(sizeof(user_session_key),
+				   server_info->user_session_key.length));
 			SamOEMhash(user_session_key, netlogon_sess_key, 16);
 		}
 		if (server_info->lm_session_key.length) {
-			memcpy(lm_session_key, server_info->lm_session_key.data, 
-			       MIN(sizeof(lm_session_key), server_info->lm_session_key.length));
+			memcpy(lm_session_key,
+			       server_info->lm_session_key.data, 
+			       MIN(sizeof(lm_session_key),
+				   server_info->lm_session_key.length));
 			SamOEMhash(lm_session_key, netlogon_sess_key, 16);
 		}
 		ZERO_STRUCT(netlogon_sess_key);
@@ -891,14 +898,11 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    server_info->lm_session_key.length ? lm_session_key : NULL,
 				    my_name     , /* char *logon_srv */
 				    pdb_get_domain(sampw),
-				    &domain_sid,     /* DOM_SID *dom_sid */  
-				    /* Should be users domain sid, not servers - for trusted domains */
-				  
-				    NULL); /* char *other_sids */
+				    &domain_sid);     /* DOM_SID *dom_sid */  
 		ZERO_STRUCT(user_session_key);
 		ZERO_STRUCT(lm_session_key);
 	}
-	free_server_info(&server_info);
+	talloc_free(server_info);
 	return status;
 }
 

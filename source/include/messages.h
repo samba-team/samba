@@ -73,6 +73,8 @@
 /* winbind messages */
 #define MSG_WINBIND_FINISHED     4001
 #define MSG_WINBIND_FORGET_STATE 4002
+#define MSG_WINBIND_ONLINE       4003
+#define MSG_WINBIND_OFFLINE      4004
 
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */

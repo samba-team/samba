@@ -28,6 +28,8 @@ int net_lookup_usage(int argc, const char **argv)
 "  net lookup kdc [realm]\n\tgives IP of realm's kerberos KDC\n\n"
 "  net lookup dc [domain]\n\tgives IP of domains Domain Controllers\n\n"
 "  net lookup master [domain|wg]\n\tgive IP of master browser\n\n"
+"  net lookup name [name]\n\tLookup name's sid and type\n\n"
+"  net lookup sid [sid]\n\tGive sid's name and type\n\n"
 );
 	return -1;
 }
@@ -227,6 +229,54 @@ static int net_lookup_kdc(int argc, const char **argv)
 	return -1;
 }
 
+static int net_lookup_name(int argc, const char **argv)
+{
+	const char *dom, *name;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+
+	if (argc != 1) {
+		d_printf("usage: net lookup name <name>\n");
+		return -1;
+	}
+
+	if (!lookup_name(tmp_talloc_ctx(), argv[0], LOOKUP_NAME_ALL,
+			 &dom, &name, &sid, &type)) {
+		d_printf("Could not lookup name %s\n", argv[0]);
+		return -1;
+	}
+
+	d_printf("%s %d (%s) %s\\%s\n", sid_string_static(&sid),
+		 type, sid_type_lookup(type), dom, name);
+	return 0;
+}
+
+static int net_lookup_sid(int argc, const char **argv)
+{
+	const char *dom, *name;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+
+	if (argc != 1) {
+		d_printf("usage: net lookup sid <sid>\n");
+		return -1;
+	}
+
+	if (!string_to_sid(&sid, argv[0])) {
+		d_printf("Could not convert %s to SID\n", argv[0]);
+		return -1;
+	}
+
+	if (!lookup_sid(tmp_talloc_ctx(), &sid,
+			&dom, &name, &type)) {
+		d_printf("Could not lookup name %s\n", argv[0]);
+		return -1;
+	}
+
+	d_printf("%s %d (%s) %s\\%s\n", sid_string_static(&sid),
+		 type, sid_type_lookup(type), dom, name);
+	return 0;
+}
 
 /* lookup hosts or IP addresses using internal samba lookup fns */
 int net_lookup(int argc, const char **argv)
@@ -239,6 +289,8 @@ int net_lookup(int argc, const char **argv)
 		{"DC", net_lookup_dc},
 		{"MASTER", net_lookup_master},
 		{"KDC", net_lookup_kdc},
+		{"NAME", net_lookup_name},
+		{"SID", net_lookup_sid},
 		{NULL, NULL}
 	};
 

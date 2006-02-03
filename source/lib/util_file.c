@@ -386,30 +386,37 @@ char *file_pload(char *syscmd, size_t *size)
 
 /****************************************************************************
  Load a file into memory from a fd.
+ Truncate at maxsize. If maxsize == 0 - no limit.
 ****************************************************************************/ 
 
-char *fd_load(int fd, size_t *size)
+char *fd_load(int fd, size_t *psize, size_t maxsize)
 {
 	SMB_STRUCT_STAT sbuf;
+	size_t size;
 	char *p;
 
 	if (sys_fstat(fd, &sbuf) != 0) {
 		return NULL;
 	}
 
-	p = (char *)SMB_MALLOC(sbuf.st_size+1);
+	size = sbuf.st_size;
+	if (maxsize) {
+		size = MIN(size, maxsize);
+	}
+
+	p = (char *)SMB_MALLOC(size+1);
 	if (!p) {
 		return NULL;
 	}
 
-	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
+	if (read(fd, p, size) != size) {
 		SAFE_FREE(p);
 		return NULL;
 	}
-	p[sbuf.st_size] = 0;
+	p[size] = 0;
 
-	if (size) {
-		*size = sbuf.st_size;
+	if (psize) {
+		*psize = size;
 	}
 
 	return p;
@@ -419,7 +426,7 @@ char *fd_load(int fd, size_t *size)
  Load a file into memory.
 ****************************************************************************/
 
-char *file_load(const char *fname, size_t *size)
+char *file_load(const char *fname, size_t *size, size_t maxsize)
 {
 	int fd;
 	char *p;
@@ -433,7 +440,7 @@ char *file_load(const char *fname, size_t *size)
 		return NULL;
 	}
 
-	p = fd_load(fd, size);
+	p = fd_load(fd, size, maxsize);
 	close(fd);
 	return p;
 }
@@ -461,7 +468,7 @@ void *map_file(char *fname, size_t size)
 	}
 #endif
 	if (!p) {
-		p = file_load(fname, &s2);
+		p = file_load(fname, &s2, 0);
 		if (!p) {
 			return NULL;
 		}
@@ -522,12 +529,12 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
  must be freed with file_lines_free(). 
 ****************************************************************************/
 
-char **file_lines_load(const char *fname, int *numlines)
+char **file_lines_load(const char *fname, int *numlines, size_t maxsize)
 {
 	char *p;
 	size_t size = 0;
 
-	p = file_load(fname, &size);
+	p = file_load(fname, &size, maxsize);
 	if (!p) {
 		return NULL;
 	}
@@ -541,12 +548,12 @@ char **file_lines_load(const char *fname, int *numlines)
  the list.
 ****************************************************************************/
 
-char **fd_lines_load(int fd, int *numlines)
+char **fd_lines_load(int fd, int *numlines, size_t maxsize)
 {
 	char *p;
 	size_t size;
 
-	p = fd_load(fd, &size);
+	p = fd_load(fd, &size, maxsize);
 	if (!p) {
 		return NULL;
 	}

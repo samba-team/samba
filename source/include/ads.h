@@ -30,6 +30,7 @@ typedef struct {
 		unsigned flags;
 		int time_offset;
 		time_t expire;
+		time_t renewable;
 	} auth;
 
 	/* info derived from the servers config */
@@ -91,6 +92,7 @@ typedef void **ADS_MODLIST;
 #define ADS_NO_REFERRALS_OID 	"1.2.840.113556.1.4.1339"
 #define ADS_SERVER_SORT_OID 	"1.2.840.113556.1.4.473"
 #define ADS_PERMIT_MODIFY_OID 	"1.2.840.113556.1.4.1413"
+#define ADS_ASQ_OID		"1.2.840.113556.1.4.1504"
 
 /* ldap attribute oids (Services for Unix) */
 #define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"

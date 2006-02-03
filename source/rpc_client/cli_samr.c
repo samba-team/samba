@@ -360,7 +360,8 @@ NTSTATUS rpccli_samr_del_groupmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    POLICY_HND *user_pol, uint16 switch_value, 
+				    const POLICY_HND *user_pol,
+				    uint16 switch_value, 
 				    SAM_USERINFO_CTR **ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -1549,7 +1550,7 @@ NTSTATUS rpccli_samr_create_dom_user(struct rpc_pipe_client *cli, TALLOC_CTX *me
 /* Set userinfo */
 
 NTSTATUS rpccli_samr_set_userinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                               POLICY_HND *user_pol, uint16 switch_value,
+                               const POLICY_HND *user_pol, uint16 switch_value,
                                DATA_BLOB *sess_key, SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -1600,7 +1601,7 @@ NTSTATUS rpccli_samr_set_userinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 /* Set userinfo2 */
 
 NTSTATUS rpccli_samr_set_userinfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                                POLICY_HND *user_pol, uint16 switch_value,
+				   const POLICY_HND *user_pol, uint16 switch_value,
                                 DATA_BLOB *sess_key, SAM_USERINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;

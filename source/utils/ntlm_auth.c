@@ -1173,7 +1173,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 	       spnego.negTokenInit.mechListMIC.length);
 	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
 
-	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0);
+	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL);
 
 	if (retval) {
 
@@ -1191,12 +1191,12 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
 
 		if ((retval = kerberos_kinit_password(user, opt_password, 
-						      0, NULL, NULL))) {
+						      0, NULL, NULL, NULL, False, 0))) {
 			DEBUG(10, ("Requesting TGT failed: %s\n", error_message(retval)));
 			return False;
 		}
 
-		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0);
+		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0, NULL);
 
 		if (retval) {
 			DEBUG(10, ("Kinit suceeded, but getting a ticket failed: %s\n", error_message(retval)));

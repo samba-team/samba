@@ -388,10 +388,11 @@ BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
  * @return true if succeeded
  **/
 
-BOOL secrets_store_trusted_domain_password(const char* domain, smb_ucs2_t *uni_dom_name,
-                                           size_t uni_name_len, const char* pwd,
-                                           DOM_SID sid)
-{	
+BOOL secrets_store_trusted_domain_password(const char* domain, const char* pwd,
+                                           const DOM_SID *sid)
+{
+	smb_ucs2_t *uni_dom_name;
+
 	/* packing structures */
 	pstring pass_buf;
 	int pass_len = 0;
@@ -399,13 +400,15 @@ BOOL secrets_store_trusted_domain_password(const char* domain, smb_ucs2_t *uni_d
 	
 	struct trusted_dom_pass pass;
 	ZERO_STRUCT(pass);
-	
-	/* unicode domain name and its length */
-	if (!uni_dom_name)
+
+	if (push_ucs2_allocate(&uni_dom_name, domain) < 0) {
+		DEBUG(0, ("Could not convert domain name %s to unicode\n",
+			  domain));
 		return False;
-		
+	}
+	
 	strncpy_w(pass.uni_name, uni_dom_name, sizeof(pass.uni_name) - 1);
-	pass.uni_name_len = uni_name_len;
+	pass.uni_name_len = strlen_w(uni_dom_name)+1;
 
 	/* last change time */
 	pass.mod_time = time(NULL);
@@ -415,7 +418,7 @@ BOOL secrets_store_trusted_domain_password(const char* domain, smb_ucs2_t *uni_d
 	fstrcpy(pass.pass, pwd);
 
 	/* domain sid */
-	sid_copy(&pass.domain_sid, &sid);
+	sid_copy(&pass.domain_sid, sid);
 	
 	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_buf_len, &pass);
 
@@ -658,138 +661,97 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 
 /**
  * Get trusted domains info from secrets.tdb.
- *
- * The linked list is allocated on the supplied talloc context, caller gets to destroy
- * when done.
- *
- * @param ctx Allocation context
- * @param enum_ctx Starting index, eg. we can start fetching at third
- *        or sixth trusted domain entry. Zero is the first index.
- *        Value it is set to is the enum context for the next enumeration.
- * @param num_domains Number of domain entries to fetch at one call
- * @param domains Pointer to array of trusted domain structs to be filled up
- *
- * @return nt status code of rpc response
  **/ 
 
-NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains,
-                                     int *num_domains, TRUSTDOM ***domains)
+NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
+				 struct trustdom_info ***domains)
 {
 	TDB_LIST_NODE *keys, *k;
-	TRUSTDOM *dom = NULL;
 	char *pattern;
-	unsigned int start_idx;
-	uint32 idx = 0;
-	size_t size = 0, packed_size = 0;
-	fstring dom_name;
-	char *packed_pass;
-	struct trusted_dom_pass *pass = TALLOC_ZERO_P(ctx, struct trusted_dom_pass);
-	NTSTATUS status;
 
 	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
 	
-	if (!pass) {
-		DEBUG(0, ("talloc_zero failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-				
-	*num_domains = 0;
-	start_idx = *enum_ctx;
-
 	/* generate searching pattern */
-	if (!(pattern = talloc_asprintf(ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS))) {
-		DEBUG(0, ("secrets_get_trusted_domains: talloc_asprintf() failed!\n"));
+	pattern = talloc_asprintf(mem_ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS);
+	if (pattern == NULL) {
+		DEBUG(0, ("secrets_trusted_domains: talloc_asprintf() "
+			  "failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(5, ("secrets_get_trusted_domains: looking for %d domains, starting at index %d\n", 
-		  max_num_domains, *enum_ctx));
-
-	*domains = TALLOC_ZERO_ARRAY(ctx, TRUSTDOM *, max_num_domains);
+	*domains = NULL;
+	*num_domains = 0;
 
 	/* fetching trusted domains' data and collecting them in a list */
 	keys = tdb_search_keys(tdb, pattern);
 
-	/* 
-	 * if there's no keys returned ie. no trusted domain,
-	 * return "no more entries" code
-	 */
-	status = NT_STATUS_NO_MORE_ENTRIES;
-
 	/* searching for keys in secrets db -- way to go ... */
 	for (k = keys; k; k = k->next) {
+		char *packed_pass;
+		size_t size = 0, packed_size = 0;
+		struct trusted_dom_pass pass;
 		char *secrets_key;
+		struct trustdom_info *dom_info;
 		
 		/* important: ensure null-termination of the key string */
-		secrets_key = SMB_STRNDUP(k->node_key.dptr, k->node_key.dsize);
+		secrets_key = talloc_strndup(mem_ctx,
+					     k->node_key.dptr,
+					     k->node_key.dsize);
 		if (!secrets_key) {
 			DEBUG(0, ("strndup failed!\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		packed_pass = secrets_fetch(secrets_key, &size);
-		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size, pass);
+		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size,
+							  &pass);
 		/* packed representation isn't needed anymore */
 		SAFE_FREE(packed_pass);
 		
 		if (size != packed_size) {
-			DEBUG(2, ("Secrets record %s is invalid!\n", secrets_key));
+			DEBUG(2, ("Secrets record %s is invalid!\n",
+				  secrets_key));
 			continue;
 		}
-		
-		pull_ucs2_fstring(dom_name, pass->uni_name);
-		DEBUG(18, ("Fetched secret record num %d.\nDomain name: %s, SID: %s\n",
-			   idx, dom_name, sid_string_static(&pass->domain_sid)));
 
-		SAFE_FREE(secrets_key);
-
-		if (idx >= start_idx && idx < start_idx + max_num_domains) {
-			dom = TALLOC_ZERO_P(ctx, TRUSTDOM);
-			if (!dom) {
-				/* free returned tdb record */
-				return NT_STATUS_NO_MEMORY;
-			}
-			
-			/* copy domain sid */
-			SMB_ASSERT(sizeof(dom->sid) == sizeof(pass->domain_sid));
-			memcpy(&(dom->sid), &(pass->domain_sid), sizeof(dom->sid));
-			
-			/* copy unicode domain name */
-			dom->name = TALLOC_MEMDUP(ctx, pass->uni_name,
-						  (strlen_w(pass->uni_name) + 1) * sizeof(smb_ucs2_t));
-			
-			(*domains)[idx - start_idx] = dom;
-			
-			DEBUG(18, ("Secret record is in required range.\n \
-				   start_idx = %d, max_num_domains = %d. Added to returned array.\n",
-				   start_idx, max_num_domains));
-
-			*enum_ctx = idx + 1;
-			(*num_domains)++;
-		
-			/* set proper status code to return */
-			if (k->next) {
-				/* there are yet some entries to enumerate */
-				status = STATUS_MORE_ENTRIES;
-			} else {
-				/* this is the last entry in the whole enumeration */
-				status = NT_STATUS_OK;
-			}
-		} else {
-			DEBUG(18, ("Secret is outside the required range.\n \
-				   start_idx = %d, max_num_domains = %d. Not added to returned array\n",
-				   start_idx, max_num_domains));
+		if (pass.domain_sid.num_auths != 4) {
+			DEBUG(0, ("SID %s is not a domain sid, has %d "
+				  "auths instead of 4\n",
+				  sid_string_static(&pass.domain_sid),
+				  pass.domain_sid.num_auths));
+			continue;
 		}
-		
-		idx++;		
+
+		dom_info = TALLOC_P(mem_ctx, struct trustdom_info);
+		if (dom_info == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (pull_ucs2_talloc(mem_ctx, &dom_info->name,
+				     pass.uni_name) < 0) {
+			DEBUG(2, ("pull_ucs2_talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		sid_copy(&dom_info->sid, &pass.domain_sid);
+
+		ADD_TO_ARRAY(mem_ctx, struct trustdom_info *, dom_info,
+			     domains, num_domains);
+
+		if (*domains == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_steal(*domains, dom_info);
 	}
 	
-	DEBUG(5, ("secrets_get_trusted_domains: got %d domains\n", *num_domains));
+	DEBUG(5, ("secrets_get_trusted_domains: got %d domains\n",
+		  *num_domains));
 
 	/* free the results of searching the keys */
 	tdb_search_list_free(keys);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************************

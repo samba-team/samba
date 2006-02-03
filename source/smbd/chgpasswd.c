@@ -690,7 +690,7 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
 	}
  
 	/* Now flush the sam_passwd struct to persistent storage */
-	ret = pdb_update_sam_account (sampass);
+	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
 
 	return ret;
 }
@@ -828,7 +828,7 @@ static NTSTATUS check_oem_password(const char *user,
 			DEBUG(1, ("LM password change supplied for user %s, but we have disabled LanMan authentication\n", 
 				  user));
 		}
-			pdb_free_sam(&sampass);
+		pdb_free_sam(&sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	} else {
 		DEBUG(1, ("password change requested for user %s, but no password supplied!\n", 
@@ -1009,7 +1009,6 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 
 NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd, BOOL as_root)
 {
-	BOOL ret;
 	uint32 min_len, min_age;
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
@@ -1090,11 +1089,5 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	}
 
 	/* Now write it into the file. */
-	ret = pdb_update_sam_account (hnd);
-
-	if (!ret) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	
-	return NT_STATUS_OK;
+	return pdb_update_sam_account (hnd);
 }

@@ -199,10 +199,10 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 
     /* Add the user to the db if they aren't already there. */
    if (!exist) {
-	retval = local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
+	retval = NT_STATUS_IS_OK(local_password_change( name, LOCAL_ADD_USER|LOCAL_SET_PASSWORD,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
-	                                 msg_str, sizeof(msg_str) );
+	                                 msg_str, sizeof(msg_str) ));
 	if (!retval && *err_str)
 	{
 	    err_str[PSTRING_LEN-1] = '\0';
@@ -221,8 +221,8 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
     /* mimick 'update encrypted' as long as the 'no pw req' flag is not set */
     if ( pdb_get_acct_ctrl(sampass) & ~ACB_PWNOTREQ )
     {
-	retval = local_password_change( name, LOCAL_SET_PASSWORD, pass, err_str, sizeof(err_str),
-	                                 msg_str, sizeof(msg_str) );
+	retval = NT_STATUS_IS_OK(local_password_change( name, LOCAL_SET_PASSWORD, pass, err_str, sizeof(err_str),
+	                                 msg_str, sizeof(msg_str) ));
 	if (!retval && *err_str)
 	{
 	    err_str[PSTRING_LEN-1] = '\0';

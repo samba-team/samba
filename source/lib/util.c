@@ -1427,10 +1427,10 @@ const char *uidtoname(uid_t uid)
 	static fstring name;
 	struct passwd *pass;
 
-	pass = getpwuid_alloc(uid);
+	pass = getpwuid_alloc(NULL, uid);
 	if (pass) {
 		fstrcpy(name, pass->pw_name);
-		passwd_free(&pass);
+		talloc_free(pass);
 	} else {
 		slprintf(name, sizeof(name) - 1, "%ld",(long int)uid);
 	}
@@ -1464,10 +1464,10 @@ uid_t nametouid(const char *name)
 	char *p;
 	uid_t u;
 
-	pass = getpwnam_alloc(name);
+	pass = getpwnam_alloc(NULL, name);
 	if (pass) {
 		u = pass->pw_uid;
-		passwd_free(&pass);
+		talloc_free(pass);
 		return u;
 	}
 

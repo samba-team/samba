@@ -132,6 +132,29 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 	return usage_fn(argc, argv);
 }
 
+/*
+ * run a function from a function table.
+ */
+int net_run_function2(int argc, const char **argv, const char *whoami,
+		      struct functable2 *table)
+{
+	int i;
+
+	if (argc != 0) {
+		for (i=0; table[i].funcname; i++) {
+			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+				return table[i].fn(argc-1, argv+1);
+		}
+	}
+
+	for (i=0; table[i].funcname != NULL; i++) {
+		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+			 table[i].helptext);
+	}
+
+	return -1;
+}
+
 /****************************************************************************
 connect to \\server\service 
 ****************************************************************************/
@@ -376,6 +399,8 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
 	} else {
+		d_fprintf(stderr, "Connection failed: %s\n",
+			  nt_errstr(nt_status));
 		return NULL;
 	}
 }
@@ -705,6 +730,7 @@ static struct functable net_func[] = {
 	{"USER", net_user},
 	{"GROUP", net_group},
 	{"GROUPMAP", net_groupmap},
+	{"SAM", net_sam},
 	{"VALIDATE", net_rap_validate},
 	{"GROUPMEMBER", net_rap_groupmember},
 	{"ADMIN", net_rap_admin},
@@ -722,6 +748,7 @@ static struct functable net_func[] = {
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
 	{"STATUS", net_status},
+	{"USERSHARE", net_usershare},
 	{"USERSIDLIST", net_usersidlist},
 #ifdef WITH_FAKE_KASERVER
 	{"AFS", net_afs},

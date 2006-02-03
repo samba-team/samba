@@ -63,8 +63,8 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 		return NT_STATUS_INVALID_PARAMETER;
 	}		
 
-	secret_str_len = strlen(user_info->domain.str) + 1 +
-			strlen(user_info->smb_name.str) + 1 +
+	secret_str_len = strlen(user_info->domain) + 1 +
+			strlen(user_info->smb_name) + 1 +
 			16 + 1 + /* 8 bytes of challenge going to 16 */
 			48 + 1 + /* 24 bytes of challenge going to 48 */
 			48 + 1;
@@ -74,9 +74,9 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	safe_strcpy( secret_str, user_info->domain.str, secret_str_len - 1);
+	safe_strcpy( secret_str, user_info->domain, secret_str_len - 1);
 	safe_strcat( secret_str, "\n", secret_str_len - 1);
-	safe_strcat( secret_str, user_info->smb_name.str, secret_str_len - 1);
+	safe_strcat( secret_str, user_info->smb_name, secret_str_len - 1);
 	safe_strcat( secret_str, "\n", secret_str_len - 1);
 
 	for (i = 0; i < 8; i++) {
@@ -110,7 +110,7 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 
 	if (ret) {
 		DEBUG(1,("script_check_user_credentials: failed to authenticate %s\\%s\n",
-			user_info->domain.str, user_info->smb_name.str ));
+			user_info->domain, user_info->smb_name ));
 		/* auth failed. */
 		return NT_STATUS_NO_SUCH_USER;
 	}

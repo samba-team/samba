@@ -337,7 +337,7 @@ static int fix_users_list (struct pdb_context *in)
 	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
 		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
 	
-		if (!pdb_update_sam_account(sam_pwent)) {
+		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
 			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
 		pdb_free_sam(&sam_pwent);
@@ -498,7 +498,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	
 	get_global_sam_sid();
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username, 0))) {
+	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username))) {
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}
@@ -603,13 +603,13 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	fstrcpy(machineaccount, machinename);
 	fstrcat(machineaccount, "$");
 
-	if ((pwd = getpwnam_alloc(machineaccount))) {
+	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
 		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
 			fprintf(stderr, "Could not init sam from pw\n");
-			passwd_free(&pwd);
+			talloc_free(pwd);
 			return -1;
 		}
-		passwd_free(&pwd);
+		talloc_free(&pwd);
 	} else {
 		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 			fprintf(stderr, "Could not init sam from pw\n");

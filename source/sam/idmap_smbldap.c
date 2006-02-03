@@ -87,15 +87,6 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 }
 
 /*****************************************************************************
- Allocate a new RID
-*****************************************************************************/
-
-static NTSTATUS ldap_allocate_rid(uint32 *rid, int rid_type)
-{
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/*****************************************************************************
  Allocate a new uid or gid
 *****************************************************************************/
 
@@ -437,7 +428,6 @@ static void ldap_idmap_status(void)
 
 static struct idmap_methods ldap_methods = {
 	ldap_idmap_init,
-	ldap_allocate_rid,
 	ldap_allocate_id,
 	ldap_get_sid_from_id,
 	ldap_get_id_from_sid,

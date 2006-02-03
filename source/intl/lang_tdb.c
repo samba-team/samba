@@ -34,7 +34,7 @@ static BOOL load_msg(const char *msg_file)
 	char *msgid, *msgstr;
 	TDB_DATA key, data;
 
-	lines = file_lines_load(msg_file, &num_lines);
+	lines = file_lines_load(msg_file, &num_lines,0);
 
 	if (!lines) {
 		return False;

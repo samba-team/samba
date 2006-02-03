@@ -927,7 +927,7 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 	/* Create the ticket for the service principal and return it in a gss-api wrapped blob. */
 
 	ret = cli_krb5_get_ticket(a->service_principal, 0, &tkt,
-			&a->session_key, (uint32)AP_OPTS_MUTUAL_REQUIRED);
+			&a->session_key, (uint32)AP_OPTS_MUTUAL_REQUIRED, NULL);
 
 	if (ret) {
 		DEBUG(1,("create_krb5_auth_bind_req: cli_krb5_get_ticket for principal %s "
@@ -2699,7 +2699,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
 
 	/* Only get a new TGT if username/password are given. */
 	if (username && password) {
-		int ret = kerberos_kinit_password(username, password, 0, NULL, NULL);
+		int ret = kerberos_kinit_password(username, password, 0, NULL, NULL, NULL, False, 0);
 		if (ret) {
 			cli_rpc_pipe_close(result);
 			return NULL;
@@ -2737,7 +2737,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
  Close an open named pipe over SMB. Free any authentication data.
  ****************************************************************************/
 
-void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
+ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
 	if (!cli_close(cli->cli, cli->fnum)) {
 		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "

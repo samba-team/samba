@@ -1843,6 +1843,10 @@ typedef struct q_samr_chgpasswd3
 
 } SAMR_Q_CHGPASSWD3;
 
+#define REJECT_REASON_TOO_SHORT		0x00000001
+#define REJECT_REASON_IN_HISTORY	0x00000002
+#define REJECT_REASON_NOT_COMPLEX	0x00000005
+
 /* SAMR_CHANGE_REJECT */
 typedef struct samr_change_reject
 {

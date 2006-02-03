@@ -1620,10 +1620,13 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 			
-			if ( user.ut.uid != 0
-				&& !user_has_privileges( user.nt_user_token, &se_printop )
-				&& !user_in_list(uidtoname(user.ut.uid), lp_printer_admin(snum), user.ut.groups, user.ut.ngroups) )
-			{
+			if ((user.ut.uid != 0) &&
+			    !user_has_privileges(user.nt_user_token,
+						 &se_printop ) &&
+			    !token_contains_name_in_list(
+				    uidtoname(user.ut.uid), NULL,
+				    user.nt_user_token,
+				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
 			}
@@ -1676,7 +1679,10 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok(uidtoname(user.ut.uid), snum, user.ut.groups, user.ut.ngroups) || !print_access_check(&user, snum, printer_default->access_required)) {
+		if (!user_ok_token(uidtoname(user.ut.uid), user.nt_user_token,
+				   snum) ||
+		    !print_access_check(&user, snum,
+					printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
@@ -5997,7 +6003,7 @@ BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 
 	numlines = 0;
 	/* Get lines and convert them back to dos-codepage */
-	qlines = fd_lines_load(fd, &numlines);
+	qlines = fd_lines_load(fd, &numlines, 0);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	close(fd);
 
@@ -7195,7 +7201,7 @@ WERROR enumports_hook( int *count, char ***lines )
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines);
+		qlines = fd_lines_load(fd, &numlines, 0);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 	}

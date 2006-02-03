@@ -468,8 +468,8 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 
 	if (dc_unc != NULL) {
 		char *tmp;
-		if (rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
-					       &r.uni_dc_unc) < 0) {
+		tmp = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dc_unc);
+		if (tmp == NULL) {
 			return WERR_GENERAL_FAILURE;
 		}
 		if (*tmp == '\\') tmp += 1;
@@ -485,8 +485,8 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 
 	if (dc_address != NULL) {
 		char *tmp;
-		if (rpcstr_pull_unistr2_talloc(mem_ctx, &tmp,
-					       &r.uni_dc_address) < 0) {
+		tmp = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dc_address);
+		if (tmp == NULL) {
 			return WERR_GENERAL_FAILURE;
 		}
 		if (*tmp == '\\') tmp += 1;
@@ -509,14 +509,14 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	}
 
 	if ((domain_name_out != NULL) &&
-	    (rpcstr_pull_unistr2_talloc(mem_ctx, domain_name_out,
-					&r.uni_domain_name) < 1)) {
+	    ((*domain_name_out = rpcstr_pull_unistr2_talloc(
+		    mem_ctx, &r.uni_domain_name)) == NULL)) {
 		return WERR_GENERAL_FAILURE;
 	}
 
 	if ((forest_name != NULL) &&
-	    (rpcstr_pull_unistr2_talloc(mem_ctx, forest_name,
-					&r.uni_forest_name) < 1)) {
+	    ((*forest_name = rpcstr_pull_unistr2_talloc(
+		      mem_ctx, &r.uni_forest_name)) == NULL)) {
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -525,14 +525,14 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	}
 
 	if ((dc_site_name != NULL) &&
-	    (rpcstr_pull_unistr2_talloc(mem_ctx, dc_site_name,
-					&r.uni_dc_site_name) < 1)) {
+	    ((*dc_site_name = rpcstr_pull_unistr2_talloc(
+		      mem_ctx, &r.uni_dc_site_name)) == NULL)) {
 		return WERR_GENERAL_FAILURE;
 	}
 
 	if ((client_site_name != NULL) &&
-	    (rpcstr_pull_unistr2_talloc(mem_ctx, client_site_name,
-					&r.uni_client_site_name) < 1)) {
+	    ((*client_site_name = rpcstr_pull_unistr2_talloc(
+		      mem_ctx, &r.uni_client_site_name)) == NULL)) {
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -571,8 +571,8 @@ WERROR rpccli_netlogon_dsr_getsitename(struct rpc_pipe_client *cli,
 	}
 
 	if ((site_name != NULL) &&
-	    (rpcstr_pull_unistr2_talloc(mem_ctx, site_name,
-					&r.uni_site_name) < 1)) {
+	    ((*site_name = rpcstr_pull_unistr2_talloc(
+		      mem_ctx, &r.uni_site_name)) == NULL)) {
 		return WERR_GENERAL_FAILURE;
 	}
 
