@@ -33,6 +33,8 @@
 #include "lib/messaging/irpc.h"
 #include "lib/stream/packet.h"
 
+#include "librpc/gen_ndr/samr.h"
+
 /* hold all the info needed to send a reply */
 struct kdc_reply {
 	struct kdc_reply *next, *prev;
@@ -499,22 +501,22 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
 	int num_interfaces = iface_count();
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc);
 	NTSTATUS status;
+	
+	int i;
+	
+	for (i=0; i<num_interfaces; i++) {
+		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
+		status = kdc_add_socket(kdc, address);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
 	if (!lp_bind_interfaces_only()) {
 		status = kdc_add_socket(kdc, "0.0.0.0");
 		NT_STATUS_NOT_OK_RETURN(status);
-	} else {
-		int i;
-
-		for (i=0; i<num_interfaces; i++) {
-			const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
-			status = kdc_add_socket(kdc, address);
-			NT_STATUS_NOT_OK_RETURN(status);
-		}
 	}
-
+		
 	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
@@ -528,6 +530,19 @@ static void kdc_task_init(struct task_server *task)
 	struct kdc_server *kdc;
 	NTSTATUS status;
 	krb5_error_code ret;
+
+	switch (lp_server_role()) {
+	case ROLE_STANDALONE:
+		task_server_terminate(task, "kdc: no KDC required in standalone configuration");
+		return;
+	case ROLE_DOMAIN_MEMBER:
+		task_server_terminate(task, "kdc: no KDC required in member server configuration");
+		return;
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		/* Yes, we want a KDC */
+		break;
+	}
 
 	if (iface_count() == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured");
