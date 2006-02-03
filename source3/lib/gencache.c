@@ -268,7 +268,7 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		SAFE_FREE(entry_buf);
 
 		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
-			   "timeout = %s\n", t > time(NULL) ? "valid" :
+			   "timeout = %s", t > time(NULL) ? "valid" :
 			   "expired", keystr, v, ctime(&t)));
 
 		if (valstr)
@@ -281,20 +281,18 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 
 		return t > time(NULL);
 
-	} else {
-		SAFE_FREE(databuf.dptr);
+	} 
 
-		if (valstr)
-			*valstr = NULL;
+	SAFE_FREE(databuf.dptr);
 
-		if (timeout)
-			timeout = NULL;
+	if (valstr)
+		*valstr = NULL;
+	if (timeout)
+		timeout = NULL;
 
-		DEBUG(10, ("Cache entry with key = %s couldn't be found\n", 
-			   keystr));
+	DEBUG(10, ("Cache entry with key = %s couldn't be found\n", keystr));
 
-		return False;
-	}
+	return False;
 }
 
 
