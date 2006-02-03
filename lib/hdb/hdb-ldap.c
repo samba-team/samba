@@ -729,6 +729,7 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 {
     krb5_error_code ret;
     int rc;
+    const char *filter = "(objectClass=krb5Principal)";
     char **values;
     LDAPMessage *res = NULL, *e;
 
@@ -737,11 +738,11 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 	goto out;
 
     rc = ldap_search_s(HDB2LDAP(db), dn, LDAP_SCOPE_SUBTREE,
-		       "(objectClass=krb5Principal)", krb5principal_attrs,
+		       filter, krb5principal_attrs,
 		       0, &res);
     if (check_ldap(context, db, rc)) {
-	krb5_set_error_string(context, "ldap_search_s: %s",
-			      ldap_err2string(rc));
+	krb5_set_error_string(context, "ldap_search_s: filter: %s error: %s",
+			      filter, ldap_err2string(rc));
 	ret = HDB_ERR_NOENTRY;
 	goto out;
     }
@@ -799,8 +800,8 @@ LDAP__lookup_princ(krb5_context context,
     rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, filter, 
 		       krb5kdcentry_attrs, 0, msg);
     if (check_ldap(context, db, rc)) {
-	krb5_set_error_string(context, "ldap_search_s: %s",
-			      ldap_err2string(rc));
+	krb5_set_error_string(context, "ldap_search_s: filter: %s - error: %s",
+			      filter, ldap_err2string(rc));
 	ret = HDB_ERR_NOENTRY;
 	goto out;
     }
@@ -827,8 +828,9 @@ LDAP__lookup_princ(krb5_context context,
 	rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, 
 			   filter, krb5kdcentry_attrs, 0, msg);
 	if (check_ldap(context, db, rc)) {
-	    krb5_set_error_string(context, "ldap_search_s: %s",
-				  ldap_err2string(rc));
+	    krb5_set_error_string(context, 
+				  "ldap_search_s: filter: %s error: %s",
+				  filter, ldap_err2string(rc));
 	    ret = HDB_ERR_NOENTRY;
 	    goto out;
 	}
