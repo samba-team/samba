@@ -50,7 +50,7 @@
  Display the prompt and wait for input. Call callback() regularly
 ****************************************************************************/
 
-static char *smb_readline_replacement(char *prompt, void (*callback)(void), 
+static char *smb_readline_replacement(const char *prompt, void (*callback)(void), 
 				char **(completion_fn)(const char *text, int start, int end))
 {
 	fd_set fds;
@@ -82,7 +82,7 @@ static char *smb_readline_replacement(char *prompt, void (*callback)(void),
  Display the prompt and wait for input. Call callback() regularly.
 ****************************************************************************/
 
-char *smb_readline(char *prompt, void (*callback)(void), 
+char *smb_readline(const char *prompt, void (*callback)(void), 
 		   char **(completion_fn)(const char *text, int start, int end))
 {
 #if HAVE_LIBREADLINE

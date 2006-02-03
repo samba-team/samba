@@ -238,4 +238,13 @@
 /* tdb hash size for the open database. */
 #define SMB_OPEN_DATABASE_TDB_HASH_SIZE 1049
 
+/* Characters we disallow in sharenames. */
+#define INVALID_SHARENAME_CHARS "%<>*?|/\\+=;:\","
+
+/* Seconds between connection attempts to a remote server. */
+#define FAILED_CONNECTION_CACHE_TIMEOUT 30
+
+/* Default hash size for the winbindd cache. */
+#define WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE 5000
+
 #endif

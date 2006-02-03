@@ -604,4 +604,19 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		*n_sent = msg_all.n_sent;
 	return True;
 }
+
+/*
+ * Block and unblock receiving of messages. Allows removal of race conditions
+ * when doing a fork and changing message disposition.
+ */
+
+void message_block(void)
+{
+	BlockSignals(True, SIGUSR1);
+}
+
+void message_unblock(void)
+{
+	BlockSignals(False, SIGUSR1);
+}
 /** @} **/

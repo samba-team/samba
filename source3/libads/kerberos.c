@@ -62,13 +62,17 @@ int kerberos_kinit_password(const char *principal,
 				const char *password,
 				int time_offset,
 				time_t *expire_time,
-				const char *cache_name)
+				time_t *renew_till_time,
+				const char *cache_name,
+				BOOL request_pac,
+				time_t renewable_time)
 {
 	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
 	krb5_ccache cc = NULL;
 	krb5_principal me;
 	krb5_creds my_creds;
+	krb5_get_init_creds_opt opt;
 
 	initialize_krb5_error_table();
 	if ((code = krb5_init_context(&ctx)))
@@ -77,9 +81,11 @@ int kerberos_kinit_password(const char *principal,
 	if (time_offset != 0) {
 		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
 	}
-	
-	if ((code = krb5_cc_resolve(ctx, cache_name ?
-			cache_name : krb5_cc_default_name(ctx), &cc))) {
+
+	DEBUG(10,("kerberos_kinit_password: using %s as ccache\n",
+			cache_name ? cache_name: krb5_cc_default_name(ctx)));
+
+	if ((code = krb5_cc_resolve(ctx, cache_name ? cache_name : krb5_cc_default_name(ctx), &cc))) {
 		krb5_free_context(ctx);
 		return code;
 	}
@@ -88,10 +94,20 @@ int kerberos_kinit_password(const char *principal,
 		krb5_free_context(ctx);	
 		return code;
 	}
+
+	krb5_get_init_creds_opt_init(&opt);
+	krb5_get_init_creds_opt_set_renew_life(&opt, renewable_time);
+	krb5_get_init_creds_opt_set_forwardable(&opt, 1);
 	
+	if (request_pac) {
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
+		krb5_get_init_creds_opt_set_pac_request(ctx, &opt, True);
+#endif
+	}
+
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
 						 kerb_prompter, 
-						 NULL, 0, NULL, NULL))) {
+						 NULL, 0, NULL, &opt))) {
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
 		return code;
@@ -111,9 +127,14 @@ int kerberos_kinit_password(const char *principal,
 		krb5_free_context(ctx);		
 		return code;
 	}
-	
-	if (expire_time)
+
+	if (expire_time) {
 		*expire_time = (time_t) my_creds.times.endtime;
+	}
+
+	if (renew_till_time) {
+		*renew_till_time = (time_t) my_creds.times.renew_till;
+	}
 
 	krb5_cc_close(ctx, cc);
 	krb5_free_cred_contents(ctx, &my_creds);
@@ -157,7 +178,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 	
 	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.expire, NULL);
+			&ads->auth.expire, NULL, NULL, False, ads->auth.renewable);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
@@ -349,7 +370,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 	if (password == NULL) {
 		goto out;
 	}
-	if ((err = kerberos_kinit_password(machine_account, password, 0, NULL, LIBADS_CCACHE_NAME)) != 0) {
+	if ((err = kerberos_kinit_password(machine_account, password, 0, NULL, NULL, 
+					   LIBADS_CCACHE_NAME, False, 0)) != 0) {
 		DEBUG(0,("get_service_ticket: kerberos_kinit_password %s@%s failed: %s\n", 
 			machine_account,
 			lp_realm(),

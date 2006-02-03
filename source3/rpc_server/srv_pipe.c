@@ -616,7 +616,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	memset(p->wks, '\0', sizeof(p->wks));
 
 	/* Set up for non-authenticated user. */
-	delete_nt_token(&p->pipe_user.nt_user_token);
+	talloc_free(p->pipe_user.nt_user_token);
 	p->pipe_user.ut.ngroups = 0;
 	SAFE_FREE( p->pipe_user.ut.groups);
 
@@ -664,7 +664,8 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	}
 
 	if (a->server_info->ptok) {
-		p->pipe_user.nt_user_token = dup_nt_token(a->server_info->ptok);
+		p->pipe_user.nt_user_token =
+			dup_nt_token(NULL, a->server_info->ptok);
 	} else {
 		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
 		p->pipe_user.nt_user_token = NULL;

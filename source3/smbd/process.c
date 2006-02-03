@@ -223,115 +223,6 @@ BOOL push_deferred_smb_message(uint16 mid,
 				   private_data, priv_len);
 }
 
-static struct timed_event *timed_events;
-
-struct timed_event {
-	struct timed_event *next, *prev;
-	struct timeval when;
-	const char *event_name;
-	void (*handler)(struct timed_event *te,
-			const struct timeval *now,
-			void *private_data);
-	void *private_data;
-};
-
-static int timed_event_destructor(void *p)
-{
-	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
-	DEBUG(10, ("Destroying timed event %lx \"%s\"\n", (unsigned long)te,
-		   te->event_name));
-	DLIST_REMOVE(timed_events, te);
-	return 0;
-}
-
-/****************************************************************************
- Schedule a function for future calling, cancel with talloc_free().
- It's the responsibility of the handler to call talloc_free() on the event 
- handed to it.
-****************************************************************************/
-
-struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
-				    struct timeval when,
-				    const char *event_name,
-				    void (*handler)(struct timed_event *te,
-						    const struct timeval *now,
-						    void *private_data),
-				    void *private_data)
-{
-	struct timed_event *te, *last_te, *cur_te;
-
-	te = TALLOC_P(mem_ctx, struct timed_event);
-	if (te == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	te->when = when;
-	te->event_name = event_name;
-	te->handler = handler;
-	te->private_data = private_data;
-
-	/* keep the list ordered */
-	last_te = NULL;
-	for (cur_te = timed_events; cur_te; cur_te = cur_te->next) {
-		/* if the new event comes before the current one break */
-		if (!timeval_is_zero(&cur_te->when) &&
-		    timeval_compare(&te->when, &cur_te->when) < 0) {
-			break;
-		}
-		last_te = cur_te;
-	}
-
-	DLIST_ADD_AFTER(timed_events, te, last_te);
-	talloc_set_destructor(te, timed_event_destructor);
-
-	DEBUG(10, ("Added timed event \"%s\": %lx\n", event_name,
-		   (unsigned long)te));
-	return te;
-}
-
-static void run_events(void)
-{
-	struct timeval now;
-
-	if (timed_events == NULL) {
-		/* No syscall if there are no events */
-		DEBUG(10, ("run_events: No events\n"));
-		return;
-	}
-
-	GetTimeOfDay(&now);
-
-	if (timeval_compare(&now, &timed_events->when) < 0) {
-		/* Nothing to do yet */
-		DEBUG(10, ("run_events: Nothing to do\n"));
-		return;
-	}
-
-	DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
-		   (unsigned long)timed_events));
-
-	timed_events->handler(timed_events, &now, timed_events->private_data);
-	return;
-}
-
-struct timeval timed_events_timeout(void)
-{
-	struct timeval now, timeout;
-
-	if (timed_events == NULL) {
-		return timeval_set(SMBD_SELECT_TIMEOUT, 0);
-	}
-
-	now = timeval_current();
-	timeout = timeval_until(&now, &timed_events->when);
-
-	DEBUG(10, ("timed_events_timeout: %d/%d\n", (int)timeout.tv_sec,
-		   (int)timeout.tv_usec));
-
-	return timeout;
-}
-
 struct idle_event {
 	struct timed_event *te;
 	struct timeval interval;
@@ -537,8 +428,10 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	}
 
 	{
-		struct timeval tmp = timed_events_timeout();
-		to = timeval_min(&to, &tmp);
+		struct timeval tmp;
+		struct timeval *tp = get_timed_events_timeout(&tmp,SMBD_SELECT_TIMEOUT);
+
+		to = timeval_min(&to, tp);
 		if (timeval_is_zero(&to)) {
 			return True;
 		}

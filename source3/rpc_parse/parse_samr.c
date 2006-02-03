@@ -5031,7 +5031,7 @@ inits a SAMR_Q_QUERY_USERINFO structure.
 ********************************************************************/
 
 void init_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
-				POLICY_HND *hnd, uint16 switch_value)
+				const POLICY_HND *hnd, uint16 switch_value)
 {
 	DEBUG(5, ("init_samr_q_query_userinfo\n"));
 
@@ -6541,7 +6541,7 @@ inits a SAMR_Q_SET_USERINFO structure.
 ********************************************************************/
 
 void init_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
-			      POLICY_HND *hnd, DATA_BLOB *sess_key,
+			      const POLICY_HND *hnd, DATA_BLOB *sess_key,
 			      uint16 switch_value, void *info)
 {
 	DEBUG(5, ("init_samr_q_set_userinfo\n"));
@@ -6615,7 +6615,7 @@ inits a SAMR_Q_SET_USERINFO2 structure.
 ********************************************************************/
 
 void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
-			       POLICY_HND *hnd, DATA_BLOB *sess_key,
+			       const POLICY_HND *hnd, DATA_BLOB *sess_key,
 			       uint16 switch_value, SAM_USERINFO_CTR * ctr)
 {
 	DEBUG(5, ("init_samr_q_set_userinfo2\n"));

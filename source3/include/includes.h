@@ -989,6 +989,8 @@ extern int errno;
 
 #include "rpc_client.h"
 
+#include "event.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.
@@ -1018,6 +1020,11 @@ struct functable {
 	int (*fn)(int argc, const char **argv);
 };
 
+struct functable2 {
+	const char *funcname;
+	int (*fn)(int argc, const char **argv);
+	const char *helptext;
+};
 
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1
@@ -1508,8 +1515,10 @@ BOOL smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ1, 
 					  krb5_const_principal princ2);
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts);
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts, const char *ccname);
 PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
+krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *new_start_time);
+krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
 #endif /* HAVE_KRB5 */
 
 

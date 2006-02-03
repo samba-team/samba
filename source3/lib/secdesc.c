@@ -23,6 +23,15 @@
 
 #include "includes.h"
 
+/* Map generic permissions to file object specific permissions */
+
+struct generic_mapping file_generic_mapping = {
+	FILE_GENERIC_READ,
+	FILE_GENERIC_WRITE,
+	FILE_GENERIC_EXECUTE,
+	FILE_GENERIC_ALL
+};
+
 /*******************************************************************
  Works out the linearization size of a SEC_DESC.
 ********************************************************************/
@@ -519,4 +528,5 @@ void init_sec_access(SEC_ACCESS *t, uint32 mask)
 {
 	t->mask = mask;
 }
+
 

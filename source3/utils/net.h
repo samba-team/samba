@@ -39,6 +39,29 @@ typedef struct copy_clistate {
 	uint16 attribute;
 }copy_clistate;
 
+struct rpc_sh_ctx {
+	struct cli_state *cli;
+
+	DOM_SID *domain_sid;
+	char *domain_name;
+
+	const char *whoami;
+	const char *thiscmd;
+	struct rpc_sh_cmd *cmds;
+	struct rpc_sh_ctx *parent;
+};
+
+struct rpc_sh_cmd {
+	const char *name;
+	struct rpc_sh_cmd *(*sub)(TALLOC_CTX *mem_ctx,
+				  struct rpc_sh_ctx *ctx);
+	int pipe_idx;
+	NTSTATUS (*fn)(TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
+		       struct rpc_pipe_client *pipe_hnd,
+		       int argc, const char **argv);
+	const char *help;
+};
+
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"

@@ -161,6 +161,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	domain->initialized = False;
+	domain->online = False;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
@@ -334,6 +335,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct init_child_state *state;
+	struct winbindd_domain *request_domain;
 
 	mem_ctx = talloc_init("init_child_connection");
 	if (mem_ctx == NULL) {
@@ -366,7 +368,6 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 		fstrcpy(request->domain_name, domain->name);
 		request->data.init_conn.is_primary = True;
 		fstrcpy(request->data.init_conn.dcname, "");
-
 		async_request(mem_ctx, &domain->child, request, response,
 			      init_child_recv, state);
 		return WINBINDD_PENDING;
@@ -378,7 +379,11 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	async_domain_request(mem_ctx, find_our_domain(), request, response,
+	/* save online flag */
+	request_domain = find_our_domain();
+	request_domain->online = domain->online;
+	
+	async_domain_request(mem_ctx, request_domain, request, response,
 			     init_child_getdc_recv, state);
 	return WINBINDD_PENDING;
 }
@@ -1078,10 +1083,6 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *state
 /* High water mark keys */
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
-
-/* idmap version determines auto-conversion */
-#define IDMAP_VERSION 2
-
 
 /*****************************************************************************
  Convert the idmap database from an older version.

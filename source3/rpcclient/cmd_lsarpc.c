@@ -47,7 +47,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
+	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, NULL, &sids, &sid_types);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -165,7 +165,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 		goto done;
 
 	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      (const char**)(argv + 1), &sids, &types);
+				      (const char**)(argv + 1), NULL, &sids, &types);
 
 	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))

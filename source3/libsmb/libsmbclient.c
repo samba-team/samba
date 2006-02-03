@@ -3734,7 +3734,7 @@ convert_string_to_sid(struct cli_state *ipc_cli,
         }
 
 	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
-						  pol, 1, &str, &sids, 
+						  pol, 1, &str, NULL, &sids, 
 						  &types))) {
 		result = False;
 		goto done;
@@ -5927,22 +5927,14 @@ smbc_free_context(SMBCCTX *context,
 void
 smbc_option_set(SMBCCTX *context,
                 char *option_name,
-                ...)
+                void *option_value)
 {
-        va_list args;
-
-        va_start(args, option_name);
-
         if (strcmp(option_name, "debug_stderr") == 0) {
                 /*
                  * Log to standard error instead of standard output.
-                 *
-                 *  optional parameters: none (it can't be turned off once on)
                  */
                 context->internal->_debug_stderr = True;
         }
-
-        va_end(args);
 }
 
 
@@ -5991,6 +5983,7 @@ smbc_init_context(SMBCCTX *context)
                 DEBUGLEVEL = context->debug;
                 
                 load_case_tables();
+                setup_logging( "libsmbclient", True);
 
                 setup_logging("libsmbclient", True);
                 if (context->internal->_debug_stderr) {

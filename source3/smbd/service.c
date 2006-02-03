@@ -299,6 +299,13 @@ int find_service(fstring service)
 		}
 	}
 
+	/* Is it a usershare service ? */
+	if (iService < 0 && *lp_usershare_path()) {
+		/* Ensure the name is canonicalized. */
+		strlower_m(service);
+		iService = load_usershare_service(service);
+	}
+
 	if (iService >= 0) {
 		if (!VALID_SNUM(iService)) {
 			DEBUG(0,("Invalid snum %d for %s\n",iService, service));
@@ -359,6 +366,131 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS find_forced_user(int snum, BOOL vuser_is_guest,
+				 uid_t *uid, gid_t *gid, fstring username,
+				 struct nt_user_token **token)
+{
+	TALLOC_CTX *mem_ctx;
+	char *fuser, *found_username;
+	NTSTATUS result;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fuser = talloc_string_sub(mem_ctx, lp_force_user(snum), "%S",
+				  lp_servicename(snum));
+	if (fuser == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result = create_token_from_username(mem_ctx, fuser, vuser_is_guest,
+					    uid, gid, &found_username,
+					    token);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	talloc_steal(NULL, *token);
+	fstrcpy(username, found_username);
+
+	result = NT_STATUS_OK;
+ done:
+	talloc_free(mem_ctx);
+	return result;
+}
+
+/*
+ * Go through lookup_name etc to find the force'd group.  
+ *
+ * Create a new token from src_token, replacing the primary group sid with the
+ * one found.
+ */
+
+static NTSTATUS find_forced_group(BOOL force_user,
+				  int snum, const char *username,
+				  DOM_SID *pgroup_sid,
+				  gid_t *pgid)
+{
+	NTSTATUS result = NT_STATUS_NO_SUCH_GROUP;
+	TALLOC_CTX *mem_ctx;
+	DOM_SID group_sid;
+	enum SID_NAME_USE type;
+	char *groupname;
+	BOOL user_must_be_member = False;
+	gid_t gid;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	groupname = talloc_strdup(mem_ctx, lp_force_group(snum));
+	if (groupname == NULL) {
+		DEBUG(1, ("talloc_strdup failed\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (groupname[0] == '+') {
+		user_must_be_member = True;
+		groupname += 1;
+	}
+
+	groupname = talloc_string_sub(mem_ctx, groupname,
+				      "%S", lp_servicename(snum));
+
+	if (!lookup_name(mem_ctx, groupname,
+			 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
+			 NULL, NULL, &group_sid, &type)) {
+		DEBUG(10, ("lookup_name(%s) failed\n",
+			   groupname));
+		goto done;
+	}
+
+	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+	    (type != SID_NAME_WKN_GRP)) {
+		DEBUG(10, ("%s is a %s, not a group\n", groupname,
+			   sid_type_lookup(type)));
+		goto done;
+	}
+
+	if (!sid_to_gid(&group_sid, &gid)) {
+		DEBUG(10, ("sid_to_gid(%s) for %s failed\n",
+			   sid_string_static(&group_sid), groupname));
+		goto done;
+	}
+
+	/*
+	 * If the user has been forced and the forced group starts with a '+',
+	 * then we only set the group to be the forced group if the forced
+	 * user is a member of that group.  Otherwise, the meaning of the '+'
+	 * would be ignored.
+	 */
+
+	if (force_user && user_must_be_member) {
+		if (user_in_group(username, groupname)) {
+			sid_copy(pgroup_sid, &group_sid);
+			*pgid = gid;
+			DEBUG(3,("Forced group %s for member %s\n",
+				 groupname, username));
+		}
+	} else {
+		sid_copy(pgroup_sid, &group_sid);
+		*pgid = gid;
+		DEBUG(3,("Forced group %s\n", groupname));
+	}
+
+	result = NT_STATUS_OK;
+ done:
+	talloc_free(mem_ctx);
+	return result;
+}
+
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
@@ -395,7 +527,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
 		guest = True;
-		pass = getpwnam_alloc(guestname);
+		pass = getpwnam_alloc(NULL, guestname);
 		if (!pass) {
 			DEBUG(0,("make_connection_snum: Invalid guest "
 				 "account %s??\n",guestname));
@@ -408,7 +540,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->uid = pass->pw_uid;
 		conn->gid = pass->pw_gid;
 		string_set(&conn->user,pass->pw_name);
-		passwd_free(&pass);
+		talloc_free(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
 		if (vuser->guest) {
@@ -421,8 +553,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				      return NULL;
 			}
 		} else {
-			if (!user_ok(vuser->user.unix_name, snum,
-				     vuser->groups, vuser->n_groups)) {
+			if (!user_ok_token(vuser->user.unix_name,
+					   vuser->nt_user_token, snum)) {
 				DEBUG(2, ("user '%s' (from session setup) not "
 					  "permitted to access this share "
 					  "(%s)\n", vuser->user.unix_name,
@@ -501,86 +633,98 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->admin_user = False;
 
 	/*
-	 * If force user is true, then store the
-	 * given userid and also the groups
-	 * of the user we're forcing.
+	 * If force user is true, then store the given userid and the gid of
+	 * the user we're forcing.
+	 * For auxiliary groups see below.
 	 */
 	
 	if (*lp_force_user(snum)) {
-		struct passwd *pass2;
-		pstring fuser;
-		pstrcpy(fuser,lp_force_user(snum));
+		NTSTATUS status2;
 
-		/* Allow %S to be used by force user. */
-		pstring_sub(fuser,"%S",lp_servicename(snum));
-
-		pass2 = (struct passwd *)Get_Pwnam(fuser);
-		if (pass2) {
-			conn->uid = pass2->pw_uid;
-			conn->gid = pass2->pw_gid;
-			string_set(&conn->user,pass2->pw_name);
-			fstrcpy(user,pass2->pw_name);
-			conn->force_user = True;
-			DEBUG(3,("Forced user %s\n",user));	  
-		} else {
-			DEBUG(1,("Couldn't find user %s\n",fuser));
+		status2 = find_forced_user(snum,
+					   (vuser != NULL) && vuser->guest,
+					   &conn->uid, &conn->gid, user,
+					   &conn->nt_user_token);
+		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
-			*status = NT_STATUS_NO_SUCH_USER;
+			*status = status2;
 			return NULL;
 		}
+		string_set(&conn->user,user);
+		conn->force_user = True;
+		DEBUG(3,("Forced user %s\n",user));	  
 	}
 
-#ifdef HAVE_GETGRNAM 
 	/*
 	 * If force group is true, then override
 	 * any groupid stored for the connecting user.
 	 */
 	
 	if (*lp_force_group(snum)) {
-		gid_t gid;
-		pstring gname;
-		pstring tmp_gname;
-		BOOL user_must_be_member = False;
-		
-		pstrcpy(tmp_gname,lp_force_group(snum));
-		
-		if (tmp_gname[0] == '+') {
-			user_must_be_member = True;
-			/* even now, tmp_gname is null terminated */
-			pstrcpy(gname,&tmp_gname[1]);
-		} else {
-			pstrcpy(gname,tmp_gname);
-		}
-		/* default service may be a group name 		*/
-		pstring_sub(gname,"%S",lp_servicename(snum));
-		gid = nametogid(gname);
-		
-		if (gid == (gid_t)-1) {
-			DEBUG(1,("Couldn't find group %s\n",gname));
+		NTSTATUS status2;
+		DOM_SID group_sid;
+
+		status2 = find_forced_group(conn->force_user,
+					    snum, user,
+					    &group_sid, &conn->gid);
+		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
-			*status = NT_STATUS_NO_SUCH_GROUP;
+			*status = status2;
 			return NULL;
 		}
 
-		/*
-		 * If the user has been forced and the forced group starts
-		 * with a '+', then we only set the group to be the forced
-		 * group if the forced user is a member of that group.
-		 * Otherwise, the meaning of the '+' would be ignored.
-		 */
-		if (conn->force_user && user_must_be_member) {
-			if (user_in_group_list( user, gname, NULL, 0)) {
-				conn->gid = gid;
-				DEBUG(3,("Forced group %s for member %s\n",
-					 gname,user));
+		if ((conn->nt_user_token == NULL) && (vuser != NULL)) {
+
+			/* Not force user and not security=share, but force
+			 * group. vuser has a token to copy */
+			
+			conn->nt_user_token = dup_nt_token(
+				NULL, vuser->nt_user_token);
+			if (conn->nt_user_token == NULL) {
+				DEBUG(0, ("dup_nt_token failed\n"));
+				conn_free(conn);
+				*status = NT_STATUS_NO_MEMORY;
+				return NULL;
 			}
-		} else {
-			conn->gid = gid;
-			DEBUG(3,("Forced group %s\n",gname));
+		}
+
+		/* If conn->nt_user_token is still NULL, we have
+		 * security=share. This means ignore the SID, as we had no
+		 * vuser to copy from */
+
+		if (conn->nt_user_token != NULL) {
+			/* Overwrite the primary group sid */
+			sid_copy(&conn->nt_user_token->user_sids[1],
+				 &group_sid);
+
 		}
 		conn->force_group = True;
 	}
-#endif /* HAVE_GETGRNAM */
+
+	if (conn->nt_user_token != NULL) {
+		size_t i;
+
+		/* We have a share-specific token from force [user|group].
+		 * This means we have to create the list of unix groups from
+		 * the list of sids. */
+
+		conn->ngroups = 0;
+		conn->groups = NULL;
+
+		for (i=0; i<conn->nt_user_token->num_sids; i++) {
+			gid_t gid;
+			DOM_SID *sid = &conn->nt_user_token->user_sids[i];
+
+			if (!sid_to_gid(sid, &gid)) {
+				DEBUG(10, ("Could not convert SID %s to gid, "
+					   "ignoring it\n",
+					   sid_string_static(sid)));
+				continue;
+			}
+			add_gid_to_array_unique(NULL, gid, &conn->groups,
+						&conn->ngroups);
+		}
+	}
 
 	{
 		pstring s;
@@ -589,25 +733,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		set_conn_connectpath(conn,s);
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
 			 lp_servicename(snum)));
-	}
-
-	if (conn->force_user || conn->force_group) {
-		int ngroups = 0;
-
-		/* groups stuff added by ih */
-		conn->ngroups = 0;
-		conn->groups = NULL;
-		
-		/* Find all the groups this uid is in and
-		   store them. Used by change_to_user() */
-		initialise_groups(conn->user, conn->uid, conn->gid); 
-		get_current_groups(conn->gid, &ngroups, &conn->groups);
-		conn->ngroups = ngroups;
-		
-		conn->nt_user_token =
-			create_nt_token(conn->uid, conn->gid,
-					conn->ngroups, conn->groups,
-					guest);
 	}
 
 	/*

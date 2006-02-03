@@ -267,7 +267,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	map_username( user );
 
-	pw = smb_getpwnam( user, real_username, True );
+	pw = smb_getpwnam( mem_ctx, user, real_username, True );
 	if (!pw) {
 
 		/* this was originally the behavior of Samba 2.2, if a user
@@ -277,7 +277,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){ 
 			map_domainuser_to_guest = True;
 			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam( user, real_username, True );
+			pw = smb_getpwnam( mem_ctx, user, real_username, True );
 		} 
 
 		/* extra sanity check that the guest account is valid */
@@ -302,11 +302,11 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		ret = make_server_info_pac(&server_info, real_username, pw, logon_info);
 
 		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(1,("make_server_info_pac failed!\n"));
+			DEBUG(1,("make_server_info_pac failed: %s!\n",
+				 nt_errstr(ret)));
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			passwd_free(&pw);
 			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
@@ -315,25 +315,23 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		ret = make_server_info_pw(&server_info, real_username, pw);
 
 		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(1,("make_server_info_from_pw failed!\n"));
+			DEBUG(1,("make_server_info_pw failed: %s!\n",
+				 nt_errstr(ret)));
 			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			passwd_free(&pw);
 			talloc_destroy(mem_ctx);
 			return ERROR_NT(ret);
 		}
 
-	        /* make_server_info_pw does not set the domain. Without this we end up
-		 * with the local netbios name in substitutions for %D. */
+	        /* make_server_info_pw does not set the domain. Without this
+		 * we end up with the local netbios name in substitutions for
+		 * %D. */
 
 		if (server_info->sam_account != NULL) {
 			pdb_set_domain(server_info->sam_account, domain, PDB_SET);
 		}
 	}
-
-
-	passwd_free(&pw);
 
 	/* register_vuid keeps the server info */
 	/* register_vuid takes ownership of session_key, no need to free after this.
@@ -1057,6 +1055,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		data_blob_clear_free(&plaintext_password);
+		return ERROR_NT(nt_status_squash(nt_status));
+	}
+
+	nt_status = create_local_token(server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("create_local_token failed: %s\n",
+			   nt_errstr(nt_status)));
 		data_blob_free(&nt_resp);
 		data_blob_free(&lm_resp);
 		data_blob_clear_free(&plaintext_password);

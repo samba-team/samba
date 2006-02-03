@@ -958,7 +958,8 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[NT_HASH_LEN], enum
 	data_blob_clear_free(&sampass->private_u.nt_pw);
 	
        if (pwd) {
-               sampass->private_u.nt_pw = data_blob(pwd, NT_HASH_LEN);
+               sampass->private_u.nt_pw =
+		       data_blob_talloc(sampass->mem_ctx, pwd, NT_HASH_LEN);
        } else {
                sampass->private_u.nt_pw = data_blob(NULL, 0);
        }
@@ -978,7 +979,8 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[LM_HASH_LEN], 
 	data_blob_clear_free(&sampass->private_u.lm_pw);
 	
        if (pwd) {
-               sampass->private_u.lm_pw = data_blob(pwd, LM_HASH_LEN);
+               sampass->private_u.lm_pw =
+		       data_blob_talloc(sampass->mem_ctx, pwd, LM_HASH_LEN);
        } else {
                sampass->private_u.lm_pw = data_blob(NULL, 0);
        }
@@ -1093,8 +1095,10 @@ BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data,
 	if (!sampass)
 		return False;
 
-	if (sampass->private_u.backend_private_data && sampass->private_u.backend_private_data_free_fn) {
-		sampass->private_u.backend_private_data_free_fn(&sampass->private_u.backend_private_data);
+	if (sampass->private_u.backend_private_data &&
+	    sampass->private_u.backend_private_data_free_fn) {
+		sampass->private_u.backend_private_data_free_fn(
+			&sampass->private_u.backend_private_data);
 	}
 
 	sampass->private_u.backend_private_data = private_data;

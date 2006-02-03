@@ -140,7 +140,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		/* make sure to allow machine accounts */
 
 		if (name_types[i] != SID_NAME_USER && name_types[i] != SID_NAME_COMPUTER) {
-			DEBUG(3, ("name %s isn't a domain user\n", the_name));
+			DEBUG(3, ("name %s isn't a domain user (%s)\n", the_name, sid_type_lookup(name_types[i])));
 			continue;
 		}
 
@@ -208,6 +208,8 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	char *tmp, *gr_mem;
 	size_t gr_mem_len;
 	gid_t gid;
+	union unid_t id;
+	NTSTATUS status;
 	
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
@@ -241,8 +243,8 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	/* should we deal with users for our domain? */
 	
 	if ( lp_winbind_trusted_domains_only() && domain->primary) {
-		DEBUG(7,("winbindd_getgrnam: My domain -- rejecting getgrnam() for %s\\%s.\n", 
-			name_domain, name_group));
+		DEBUG(7,("winbindd_getgrnam: My domain -- rejecting "
+			 "getgrnam() for %s\\%s.\n", name_domain, name_group));
 		request_error(state);
 		return;
 	}
@@ -262,17 +264,34 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	       ((name_type==SID_NAME_ALIAS) && domain->internal) ||
 	       ((name_type==SID_NAME_WKN_GRP) && domain->internal)) )
 	{
-		DEBUG(1, ("name '%s' is not a local, domain or builtin group: %d\n", 
-			  name_group, name_type));
+		DEBUG(1, ("name '%s' is not a local, domain or builtin "
+			  "group: %d\n", name_group, name_type));
 		request_error(state);
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &gid, 0))) {
-		DEBUG(1, ("error converting unix gid to sid\n"));
-		request_error(state);
-		return;
+	/* Try to get the GID */
+
+	status = idmap_sid_to_gid(&group_sid, &gid, 0);
+
+	if (NT_STATUS_IS_OK(status)) {
+		goto got_gid;
 	}
+
+	/* Maybe it's one of our aliases in passdb */
+
+	if (pdb_sid_to_id(&group_sid, &id, &name_type) &&
+	    ((name_type == SID_NAME_ALIAS) ||
+	     (name_type == SID_NAME_WKN_GRP))) {
+		gid = id.gid;
+		goto got_gid;
+	}
+
+	DEBUG(1, ("error converting unix gid to sid\n"));
+	request_error(state);
+	return;
+
+ got_gid:
 
 	if (!fill_grent(&state->response.data.gr, name_domain,
 			name_group, gid) ||
@@ -303,6 +322,7 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 	fstring group_name;
 	size_t gr_mem_len;
 	char *gr_mem;
+	NTSTATUS status;
 
 	DEBUG(3, ("[%5lu]: getgrgid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
@@ -315,14 +335,29 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 		return;
 	}
 
-	/* Get rid from gid */
-	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&group_sid, state->request.data.gid, 0))) {
-		DEBUG(1, ("could not convert gid %lu to rid\n", 
-			  (unsigned long)state->request.data.gid));
-		request_error(state);
-		return;
+	/* Get sid from gid */
+
+	status = idmap_gid_to_sid(&group_sid, state->request.data.gid, 0);
+	if (NT_STATUS_IS_OK(status)) {
+		/* This is a remote one */
+		goto got_sid;
 	}
 
+	/* Ok, this might be "ours", i.e. an alias */
+
+	if (pdb_gid_to_sid(state->request.data.gid, &group_sid) &&
+	    lookup_sid(state->mem_ctx, &group_sid, NULL, NULL, &name_type) &&
+	    (name_type == SID_NAME_ALIAS)) {
+		/* Hey, got an alias */
+		goto got_sid;
+	}
+
+	DEBUG(1, ("could not convert gid %lu to sid\n", 
+		  (unsigned long)state->request.data.gid));
+	request_error(state);
+	return;
+
+ got_sid:
 	/* Get name from sid */
 
 	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &group_sid, dom_name,
@@ -665,13 +700,32 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &group_gid, 0))) {
-			
-			DEBUG(1, ("could not look up gid for group %s\n", 
-				  name_list[ent->sam_entry_index].acct_name));
-			
-			ent->sam_entry_index++;
-			goto tryagain;
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid,
+                                                    &group_gid, 0))) {
+			union unid_t id;
+			enum SID_NAME_USE type;
+
+			DEBUG(10, ("SID %s not in idmap\n",
+				   sid_string_static(&group_sid)));
+
+			if (!pdb_sid_to_id(&group_sid, &id, &type)) {
+				DEBUG(1, ("could not look up gid for group "
+					  "%s\n", 
+					  name_list[ent->sam_entry_index].acct_name));
+				ent->sam_entry_index++;
+				goto tryagain;
+			}
+
+			if ((type != SID_NAME_DOM_GRP) &&
+			    (type != SID_NAME_ALIAS) &&
+			    (type != SID_NAME_WKN_GRP)) {
+				DEBUG(1, ("Group %s is a %s, not a group\n",
+					  sid_type_lookup(type),
+					  name_list[ent->sam_entry_index].acct_name));
+				ent->sam_entry_index++;
+				goto tryagain;
+			}
+			group_gid = id.gid;
 		}
 
 		DEBUG(10, ("got gid %lu for group %lu\n", (unsigned long)group_gid,
@@ -1187,4 +1241,3 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 
 	return WINBINDD_OK;
 }
-

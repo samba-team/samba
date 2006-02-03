@@ -371,12 +371,6 @@ static NTSTATUS ad_idmap_close(void)
 	return NT_STATUS_OK;
 }
 
-/* New for beta3 */
-static NTSTATUS ad_idmap_allocate_rid(uint32 *rid, int rid_type)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS ad_idmap_allocate_id(unid_t *id, int id_type)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -389,7 +383,6 @@ static void ad_idmap_status(void)
 
 static struct idmap_methods ad_methods = {
 	ad_idmap_init,
-	ad_idmap_allocate_rid,
 	ad_idmap_allocate_id,
 	ad_idmap_get_sid_from_id,
 	ad_idmap_get_id_from_sid,

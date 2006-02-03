@@ -1411,6 +1411,13 @@ static const struct {
 	{NT_STATUS(0x80000289), W_ERROR(0x48e)},
 	{NT_STATUS_OK, WERR_OK}};
 
+static const struct {
+	WERROR werror;
+	NTSTATUS ntstatus;
+} werror_to_ntstatus_map[] = {
+	{ W_ERROR(0x5), NT_STATUS_ACCESS_DENIED },
+	{ WERR_OK, NT_STATUS_OK }
+};
 
 /*****************************************************************************
 convert a dos eclas/ecode to a NT status32 code
@@ -1460,6 +1467,14 @@ NTSTATUS werror_to_ntstatus(WERROR error)
 {
 	int i;
 	if (W_ERROR_IS_OK(error)) return NT_STATUS_OK;
+
+	for (i=0; !W_ERROR_IS_OK(werror_to_ntstatus_map[i].werror); i++) {
+		if (W_ERROR_V(error) == 
+		    W_ERROR_V(werror_to_ntstatus_map[i].werror)) {
+			return werror_to_ntstatus_map[i].ntstatus;
+		}
+	}
+
 	for (i=0; NT_STATUS_V(ntstatus_to_werror_map[i].ntstatus); i++) {
 		if (W_ERROR_V(error) == 
 		    W_ERROR_V(ntstatus_to_werror_map[i].werror)) {

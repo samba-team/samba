@@ -199,7 +199,7 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 		return False;
 
 	if (response.data.num_entries != 0)
-		d_printf("%s", (char *)response.extra_data);
+		printf("%s", (char *)response.extra_data);
 	
 	SAFE_FREE(response.extra_data);
 
@@ -260,15 +260,19 @@ static BOOL wbinfo_wins_byip(char *ip)
 
 /* List trusted domains */
 
-static BOOL wbinfo_list_domains(void)
+static BOOL wbinfo_list_domains(BOOL list_all_domains)
 {
+	struct winbindd_request request;
 	struct winbindd_response response;
 
+	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send request */
 
-	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
+	request.data.list_all_domains = list_all_domains;
+
+	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -510,14 +514,26 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	return True;
 }
 
-static BOOL wbinfo_allocate_rid(void)
+static BOOL wbinfo_allocate_uid(void)
 {
-	uint32 rid;
+	uid_t uid;
 
-	if (!winbind_allocate_rid(&rid))
+	if (!winbind_allocate_uid(&uid))
 		return False;
 
-	d_printf("New rid: %d\n", rid);
+	d_printf("New uid: %d\n", uid);
+
+	return True;
+}
+
+static BOOL wbinfo_allocate_gid(void)
+{
+	gid_t gid;
+
+	if (!winbind_allocate_gid(&gid))
+		return False;
+
+	d_printf("New gid: %d\n", gid);
 
 	return True;
 }
@@ -573,6 +589,67 @@ static BOOL wbinfo_lookupname(char *name)
 	d_printf("%s %s (%d)\n", response.data.sid.sid, sid_type_lookup(response.data.sid.type), response.data.sid.type);
 
 	return True;
+}
+
+/* Authenticate a user with a plaintext password */
+
+static BOOL wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+	char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	p = strchr(username, '%');
+
+	if (p) {
+		*p = 0;
+		fstrcpy(request.data.auth.user, username);
+		fstrcpy(request.data.auth.pass, p + 1);
+		*p = '%';
+	} else
+		fstrcpy(request.data.auth.user, username);
+
+	request.flags = flags;
+
+	fstrcpy(request.data.auth.krb5_cc_type, cctype);
+
+	request.data.auth.uid = geteuid();
+
+	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
+
+	/* Display response */
+
+	d_printf("plaintext kerberos password authentication for [%s] %s (requesting cctype: %s)\n", 
+		username, (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", cctype);
+
+	if (response.data.auth.nt_status)
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+	if (result == NSS_STATUS_SUCCESS) {
+
+		if (request.flags & WBFLAG_PAM_INFO3_TEXT) {
+			if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
+				d_printf("user_flgs: LOGON_CACHED_ACCOUNT\n");
+			}
+		}
+
+		if (response.data.auth.krb5ccname[0] != '\0') {
+			d_printf("credentials were put in: %s\n", response.data.auth.krb5ccname);
+		} else {
+			d_printf("no credentials cached\n");
+		}
+	}
+
+	return result == NSS_STATUS_SUCCESS;
 }
 
 /* Authenticate a user with a plaintext password */
@@ -968,7 +1045,10 @@ enum {
 	OPT_GETDCNAME,
 	OPT_USERDOMGROUPS,
 	OPT_USERSIDS,
-	OPT_SEPARATOR
+	OPT_ALLOCATE_UID,
+	OPT_ALLOCATE_GID,
+	OPT_SEPARATOR,
+	OPT_LIST_ALL_DOMAINS
 };
 
 int main(int argc, char **argv)
@@ -997,9 +1077,13 @@ int main(int argc, char **argv)
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y', "Converts sid to gid", "SID" },
-		{ "allocate-rid", 'A', POPT_ARG_NONE, 0, 'A', "Get a new RID out of idmap" },
+		{ "allocate-uid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_UID,
+		  "Get a new UID out of idmap" },
+		{ "allocate-gid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_GID,
+		  "Get a new GID out of idmap" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
+		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
@@ -1015,6 +1099,11 @@ int main(int argc, char **argv)
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
 #ifdef WITH_FAKE_KASERVER
  		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
+#endif
+#ifdef HAVE_KRB5
+		{ "krb5auth", 'K', POPT_ARG_STRING, &string_arg, 'K', "authenticate user using Kerberos", "user%password" },
+			/* destroys wbinfo --help output */
+			/* "user%password,DOM\\user%password,user@EXAMPLE.COM,EXAMPLE.COM\\user%password" }, */
 #endif
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		POPT_COMMON_VERSION
@@ -1120,9 +1209,15 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
-		case 'A':
-			if (!wbinfo_allocate_rid()) {
-				d_fprintf(stderr, "Could not allocate a RID\n");
+		case OPT_ALLOCATE_UID:
+			if (!wbinfo_allocate_uid()) {
+				d_fprintf(stderr, "Could not allocate a uid\n");
+				goto done;
+			}
+			break;
+		case OPT_ALLOCATE_GID:
+			if (!wbinfo_allocate_gid()) {
+				d_fprintf(stderr, "Could not allocate a gid\n");
 				goto done;
 			}
 			break;
@@ -1133,7 +1228,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'm':
-			if (!wbinfo_list_domains()) {
+			if (!wbinfo_list_domains(False)) {
 				d_fprintf(stderr, "Could not list trusted domains\n");
 				goto done;
 			}
@@ -1190,6 +1285,38 @@ int main(int argc, char **argv)
 					goto done;
 				break;
 			}
+		case 'K': {
+				BOOL got_error = False;
+				uint32 flags =  WBFLAG_PAM_KRB5 |
+						WBFLAG_PAM_CACHED_LOGIN |
+						WBFLAG_PAM_FALLBACK_AFTER_KRB5 |
+						WBFLAG_PAM_INFO3_TEXT;
+				fstring tok;
+				int i;
+				const char *arg[] = { string_arg, NULL };
+				const char *cctypes[] = { "FILE", 
+							  "KCM", 
+							  "KCM:0", 
+							  "Garbage", 
+							  NULL, 
+							  "0"};
+
+				while (next_token(arg, tok, LIST_SEP, sizeof(tok))) {
+
+					for (i=0; i < ARRAY_SIZE(cctypes); i++) {
+						if (!wbinfo_auth_krb5(tok, cctypes[i], flags)) {
+							d_fprintf(stderr, "Could not authenticate user [%s] with "
+								"Kerberos (ccache: %s)\n", tok, cctypes[i]);
+							got_error = True;
+						}
+					}
+				}
+
+				if (got_error)
+					goto done;
+
+				break;
+			}
 		case 'k':
 			if (!wbinfo_klog(string_arg)) {
 				d_fprintf(stderr, "Could not klog user\n");
@@ -1198,7 +1325,7 @@ int main(int argc, char **argv)
 			break;
 		case 'p':
 			if (!wbinfo_ping()) {
-				d_fprintf(stderr, "Could not ping winbindd!\n");
+				d_fprintf(stderr, "could not ping winbindd!\n");
 				goto done;
 			}
 			break;
@@ -1223,6 +1350,10 @@ int main(int argc, char **argv)
 			d_printf("%c\n", sep);
 			break;
 		}
+		case OPT_LIST_ALL_DOMAINS:
+			if (!wbinfo_list_domains(True)) {
+				goto done;
+			}
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 			break;

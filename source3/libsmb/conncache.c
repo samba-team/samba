@@ -25,8 +25,6 @@
 
 #include "includes.h"
 
-#define FAILED_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
-
 #define CONNCACHE_ADDR		1
 #define CONNCACHE_NAME		2
 
@@ -44,10 +42,13 @@ struct failed_connection_cache {
 static struct failed_connection_cache *failed_connection_cache;
 
 /**********************************************************************
- Check for a previously failed connection
+ Check for a previously failed connection.
+ failed_cache_timeout is an a absolute number of seconds after which
+ we should time this out. If failed_cache_timeout == 0 then time out
+ immediately. If failed_cache_timeout == -1 then never time out.
 **********************************************************************/
 
-NTSTATUS check_negative_conn_cache( const char *domain, const char *server )
+NTSTATUS check_negative_conn_cache_timeout( const char *domain, const char *server, unsigned int failed_cache_timeout )
 {
 	struct failed_connection_cache *fcc;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -59,22 +60,24 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server )
 
 	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
 	
-		if ( !(strequal(domain, fcc->domain_name) && strequal(server, fcc->controller)) )
+		if (!(strequal(domain, fcc->domain_name) && strequal(server, fcc->controller))) {
 			continue; /* no match; check the next entry */
+		}
 		
 		/* we have a match so see if it is still current */
+		if (failed_cache_timeout != (unsigned int)-1) {
+			if (failed_cache_timeout == 0 ||
+					(time(NULL) - fcc->lookup_time) > (time_t)failed_cache_timeout) {
+				/* Cache entry has expired, delete it */
 
-		if ((time(NULL) - fcc->lookup_time) > FAILED_CONNECTION_CACHE_TIMEOUT) 
-		{
-			/* Cache entry has expired, delete it */
+				DEBUG(10, ("check_negative_conn_cache: cache entry expired for %s, %s\n", 
+					domain, server ));
 
-			DEBUG(10, ("check_negative_conn_cache: cache entry expired for %s, %s\n", 
-				domain, server ));
+				DLIST_REMOVE(failed_connection_cache, fcc);
+				SAFE_FREE(fcc);
 
-			DLIST_REMOVE(failed_connection_cache, fcc);
-			SAFE_FREE(fcc);
-
-			return NT_STATUS_OK;
+				return NT_STATUS_OK;
+			}
 		}
 
 		/* The timeout hasn't expired yet so return false */
@@ -88,6 +91,11 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server )
 
 	/* end of function means no cache entry */	
 	return NT_STATUS_OK;
+}
+
+NTSTATUS check_negative_conn_cache( const char *domain, const char *server)
+{
+	return check_negative_conn_cache_timeout(domain, server, FAILED_CONNECTION_CACHE_TIMEOUT);
 }
 
 /**********************************************************************

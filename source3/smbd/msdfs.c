@@ -1094,13 +1094,19 @@ out:
 int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map *jucn, int jn_max)
 {
 	int i=0;
+	int sharecount = 0;
 	int jn_count = 0;
 
 	if(!lp_host_msdfs()) {
 		return 0;
 	}
 
-	for(i=0;i < lp_numservices() && (jn_max - jn_count) > 0;i++) {
+	/* Ensure all the usershares are loaded. */
+	become_root();
+	sharecount = load_usershare_shares();
+	unbecome_root();
+
+	for(i=0;i < sharecount && (jn_max - jn_count) > 0;i++) {
 		if(lp_msdfs_root(i)) {
 			jn_count += form_junctions(ctx, i,jucn,jn_max - jn_count);
 		}

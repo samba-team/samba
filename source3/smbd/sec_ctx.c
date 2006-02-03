@@ -129,7 +129,7 @@ static void gain_root(void)
  Get the list of current groups.
 ****************************************************************************/
 
-int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
+static int get_current_groups(gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i;
 	gid_t grp;
@@ -180,51 +180,6 @@ fail:
 }
 
 /****************************************************************************
- Initialize the groups a user belongs to.
-****************************************************************************/
-
-BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
-{
-	struct sec_ctx *prev_ctx_p;
-	BOOL result = True;
-
-	if (non_root_mode()) {
-		return True;
-	}
-
-	become_root();
-
-	/* Call initgroups() to get user groups */
-
-	if (winbind_initgroups(user,gid) == -1) {
-		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
-		if (getuid() == 0) {
-			if (gid < 0 || gid > 32767 || uid < 0 || uid > 32767) {
-				DEBUG(0,("This is probably a problem with the account %s\n", user));
-			}
-		}
-		result = False;
-		goto done;
-	}
-
-	/* Store groups in previous user's security context.  This will
-	   always work as the become_root() call increments the stack
-	   pointer. */
-
-	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx - 1];
-
-	SAFE_FREE(prev_ctx_p->ut.groups);
-	prev_ctx_p->ut.ngroups = 0;
-
-	get_current_groups(gid, &prev_ctx_p->ut.ngroups, &prev_ctx_p->ut.groups);
-
- done:
-	unbecome_root();
-
-	return result;
-}
-
-/****************************************************************************
  Create a new security context on the stack.  It is the same as the old
  one.  User changes are done using the set_sec_ctx() function.
 ****************************************************************************/
@@ -252,14 +207,15 @@ BOOL push_sec_ctx(void)
  	DEBUG(3, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
  		  (unsigned int)ctx_p->ut.uid, (unsigned int)ctx_p->ut.gid, sec_ctx_stack_ndx ));
 
-	ctx_p->token = dup_nt_token(sec_ctx_stack[sec_ctx_stack_ndx-1].token);
+	ctx_p->token = dup_nt_token(NULL,
+				    sec_ctx_stack[sec_ctx_stack_ndx-1].token);
 
 	ctx_p->ut.ngroups = sys_getgroups(0, NULL);
 
 	if (ctx_p->ut.ngroups != 0) {
 		if (!(ctx_p->ut.groups = SMB_MALLOC_ARRAY(gid_t, ctx_p->ut.ngroups))) {
 			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
-			delete_nt_token(&ctx_p->token);
+			talloc_free(ctx_p->token);
 			return False;
 		}
 
@@ -299,10 +255,10 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
 
-	delete_nt_token(&ctx_p->token);
+	talloc_free(ctx_p->token);
 	
 	ctx_p->ut.groups = memdup(groups, sizeof(gid_t) * ngroups);
-	ctx_p->token = dup_nt_token(token);
+	ctx_p->token = dup_nt_token(NULL, token);
 
 	become_id(uid, gid);
 
@@ -355,7 +311,7 @@ BOOL pop_sec_ctx(void)
 	SAFE_FREE(ctx_p->ut.groups);
 	ctx_p->ut.ngroups = 0;
 
-	delete_nt_token(&ctx_p->token);
+	talloc_free(ctx_p->token);
 
 	/* Pop back previous user */
 
