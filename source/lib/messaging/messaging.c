@@ -459,7 +459,14 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	return msg;
 }
 
-
+/* 
+   A hack, for the short term until we get 'client only' messaging in place 
+*/
+struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
+						struct event_context *ev)
+{
+	return messaging_init(mem_ctx, random() % 0x10000000, ev);
+}
 /*
   a list of registered irpc server functions
 */
