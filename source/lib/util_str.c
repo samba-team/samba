@@ -1667,7 +1667,7 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-char **str_list_make(const char *string, const char *sep)
+static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	char **list, **rlist;
 	const char *str;
@@ -1677,7 +1677,11 @@ char **str_list_make(const char *string, const char *sep)
 	
 	if (!string || !*string)
 		return NULL;
-	s = SMB_STRDUP(string);
+	if (mem_ctx) {
+		s = talloc_strdup(mem_ctx, string);
+	} else {
+		s = SMB_STRDUP(string);
+	}
 	if (!s) {
 		DEBUG(0,("str_list_make: Unable to allocate memory"));
 		return NULL;
@@ -1691,30 +1695,62 @@ char **str_list_make(const char *string, const char *sep)
 	while (next_token(&str, tok, sep, sizeof(tok))) {		
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
-			rlist = SMB_REALLOC_ARRAY(list, char *, lsize +1);
+			if (mem_ctx) {
+				rlist = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *, lsize +1);
+			} else {
+				rlist = SMB_REALLOC_ARRAY(list, char *, lsize +1);
+			}
 			if (!rlist) {
 				DEBUG(0,("str_list_make: Unable to allocate memory"));
 				str_list_free(&list);
-				SAFE_FREE(s);
+				if (mem_ctx) {
+					talloc_free(s);
+				} else {
+					SAFE_FREE(s);
+				}
 				return NULL;
 			} else
 				list = rlist;
 			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
 		}
+
+		if (mem_ctx) {
+			list[num] = talloc_strdup(mem_ctx, tok);
+		} else {
+			list[num] = SMB_STRDUP(tok);
+		}
 		
-		list[num] = SMB_STRDUP(tok);
 		if (!list[num]) {
 			DEBUG(0,("str_list_make: Unable to allocate memory"));
 			str_list_free(&list);
-			SAFE_FREE(s);
+			if (mem_ctx) {
+				talloc_free(s);
+			} else {
+				SAFE_FREE(s);
+			}
 			return NULL;
 		}
 	
 		num++;	
 	}
-	
-	SAFE_FREE(s);
+
+	if (mem_ctx) {
+		talloc_free(s);
+	} else {
+		SAFE_FREE(s);
+	}
+
 	return list;
+}
+
+char **str_list_make_talloc(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+{
+	return str_list_make_internal(mem_ctx, string, sep);
+}
+
+char **str_list_make(const char *string, const char *sep)
+{
+	return str_list_make_internal(NULL, string, sep);
 }
 
 BOOL str_list_copy(char ***dest, const char **src)
@@ -1778,16 +1814,35 @@ BOOL str_list_compare(char **list1, char **list2)
 	return True;
 }
 
-void str_list_free(char ***list)
+static void str_list_free_internal(TALLOC_CTX *mem_ctx, char ***list)
 {
 	char **tlist;
 	
 	if (!list || !*list)
 		return;
 	tlist = *list;
-	for(; *tlist; tlist++)
-		SAFE_FREE(*tlist);
-	SAFE_FREE(*list);
+	for(; *tlist; tlist++) {
+		if (mem_ctx) {
+			talloc_free(*tlist);
+		} else {
+			SAFE_FREE(*tlist);
+		}
+	}
+	if (mem_ctx) {
+		talloc_free(*tlist);
+	} else {
+		SAFE_FREE(*list);
+	}
+}
+
+void str_list_free_talloc(TALLOC_CTX *mem_ctx, char ***list)
+{
+	str_list_free_internal(mem_ctx, list);
+}
+
+void str_list_free(char ***list)
+{
+	str_list_free_internal(NULL, list);
 }
 
 /******************************************************************************
@@ -2317,3 +2372,23 @@ char *sstring_sub(const char *src, char front, char back)
 	temp3[len-1] = '\0';
 	return temp3;
 }
+
+/********************************************************************
+ Check a string for any occurrences of a specified list of invalid
+ characters.
+********************************************************************/
+
+BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len )
+{
+	int i;
+
+	for ( i=0; i<max_len && name[i]; i++ ) {
+		/* fail if strchr_m() finds one of the invalid characters */
+		if ( name[i] && strchr_m( invalid_chars, name[i] ) ) {
+			return False;
+		}
+	}
+
+	return True;
+}
+

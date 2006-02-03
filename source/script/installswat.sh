@@ -3,7 +3,7 @@
 
 SWATDIR=`echo $1 | sed 's/\/\//\//g'`
 SRCDIR=$2/
-BOOKDIR=$SWATDIR/help/using_samba
+BOOKDIR=$SWATDIR/using_samba
 
 echo Installing SWAT in $SWATDIR
 echo Installing the Samba Web Administration Tool
@@ -14,7 +14,7 @@ echo Installing langs are `cd $SRCDIR../swat/lang/; /bin/echo ??`
 for ln in $LANGS; do 
  SWATLANGDIR=$SWATDIR/$ln
  for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
-	$SWATLANGDIR/include; do
+	$SWATLANGDIR/include $SWATLANGDIR/js; do
     if [ ! -d $d ]; then
 	mkdir -p $d
 	if [ ! -d $d ]; then
@@ -28,7 +28,7 @@ done
 # Install images
 for ln in $LANGS; do
 
-  for f in $SRCDIR../swat/$ln/images/*.gif; do
+  for f in $SRCDIR../swat/$ln/images/*.png; do
       if [ ! -f $f ] ; then
 	continue
       fi
@@ -59,11 +59,23 @@ for ln in $LANGS; do
 
   # Install "server-side" includes
 
-  for f in $SRCDIR../swat/$ln/include/*.html; do
+  for f in $SRCDIR../swat/$ln/include/*; do
       if [ ! -f $f ] ; then
 	continue
       fi
       FNAME=$SWATDIR/$ln/include/`basename $f`
+      echo $FNAME
+      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+      chmod 0644 $FNAME
+  done
+
+  # Install javascripts
+
+  for f in $SRCDIR../swat/$ln/js/*.js; do
+      if [ ! -f $f ] ; then
+	continue
+      fi
+      FNAME=$SWATDIR/$ln/js/`basename $f`
       echo $FNAME
       cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
       chmod 0644 $FNAME

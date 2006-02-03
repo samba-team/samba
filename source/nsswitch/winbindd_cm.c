@@ -784,26 +784,32 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
-		if ((strlen(domain->dcname) > 0) 
-			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname)) 
-			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20))) 
+		if ((strlen(domain->dcname) > 0)
+			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
+			&& (resolve_name(domain->dcname, &domain->dcaddr.sin_addr, 0x20)))
 		{
 			struct sockaddr_in *addrs = NULL;
 			int num_addrs = 0;
 			int dummy = 0;
 
-
 			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 445, &addrs, &num_addrs);
 			add_sockaddr_to_array(mem_ctx, domain->dcaddr.sin_addr, 139, &addrs, &num_addrs);
 
 			if (!open_any_socket_out(addrs, num_addrs, 10000, &dummy, &fd)) {
+				domain->online = False;
 				fd = -1;
 			}
 		}
 
 		if ((fd == -1) 
-			&& !find_new_dc(mem_ctx, domain, domain->dcname, &domain->dcaddr, &fd)) 
+			&& !find_new_dc(mem_ctx, domain, domain->dcname, &domain->dcaddr, &fd))
 		{
+			/* This is the one place where we will
+			   set the global winbindd offline state
+			   to true, if a "WINBINDD_OFFLINE" entry
+			   is found in the winbindd cache. */
+			set_global_winbindd_state_offline();
+			domain->online = False;
 			break;
 		}
 
@@ -816,11 +822,19 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			break;
 	}
 
+	if (NT_STATUS_IS_OK(result)) {
+		if (domain->online == False) {
+			/* We're changing state from offline to online. */
+			set_global_winbindd_state_online();
+		}
+		domain->online = True;
+	}
+
 	talloc_destroy(mem_ctx);
 	return result;
 }
 
-/* Return true if a connection is still alive */
+/* Close down all open pipes on a connection. */
 
 void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 {

@@ -140,7 +140,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	if ( sid ) {
 		init_sec_access( &mask, sid_access );
 		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-}
+	}
 
 	/* create the security descriptor */
 
@@ -1416,7 +1416,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 				type[i] = SID_NAME_ALIAS;
 			}
 		} else {
-			lookup_global_sam_name(name, &rid[i], &type[i]);
+			lookup_global_sam_name(name, 0, &rid[i], &type[i]);
 		}
 
 		if (type[i] != SID_NAME_UNKNOWN) {
@@ -1927,28 +1927,6 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 			return r_u->status;
 		break;
 
-#if 0
-/* whoops - got this wrong.  i think.  or don't understand what's happening. */
-        case 17:
-        {
-            NTTIME expire;
-            info = (void *)&id11;
-
-            expire.low = 0xffffffff;
-            expire.high = 0x7fffffff;
-
-            ctr->info.id = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_17));
-	    ZERO_STRUCTP(ctr->info.id17);
-            init_sam_user_info17(ctr->info.id17, &expire,
-                         "BROOKFIELDS$",    /* name */
-                         0x03ef,    /* user rid */
-                         0x201, /* group rid */
-                         0x0080);   /* acb info */
-
-            break;
-        }
-#endif
-
 	case 18:
 		ctr->info.id18 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_18);
 		if (ctr->info.id18 == NULL)
@@ -1993,10 +1971,11 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
-	struct passwd *passwd;
 	DOM_SID  sid;
 	DOM_SID *sids;
+	DOM_GID dom_gid;
 	DOM_GID *gids = NULL;
+	uint32 primary_group_rid;
 	size_t num_groups = 0;
 	gid_t *unix_gids;
 	size_t i, num_gids;
@@ -2031,58 +2010,72 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	if (!sid_check_is_in_our_domain(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	pdb_init_sam(&sam_pass);
+	pdb_init_sam_talloc(p->mem_ctx, &sam_pass);
 	
 	become_root();
 	ret = pdb_getsampwsid(sam_pass, &sid);
 	unbecome_root();
 
-	if (ret == False) {
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	passwd = getpwnam_alloc(pdb_get_username(sam_pass));
-	if (passwd == NULL) {
-		pdb_free_sam(&sam_pass);
+	if (!ret) {
+		DEBUG(10, ("pdb_getsampwsid failed for %s\n",
+			   sid_string_static(&sid)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	sids = NULL;
 
 	become_root();
-	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
-					    passwd->pw_gid,
+	result = pdb_enum_group_memberships(p->mem_ctx, sam_pass,
 					    &sids, &unix_gids, &num_groups);
 	unbecome_root();
 
-	pdb_free_sam(&sam_pass);
-	passwd_free(&passwd);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("pdb_enum_group_memberships failed for %s\n",
+			   sid_string_static(&sid)));
 		return result;
-
-	SAFE_FREE(unix_gids);
+	}
 
 	gids = NULL;
 	num_gids = 0;
 
+	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+			SE_GROUP_ENABLED);
+
+	if (!sid_peek_check_rid(get_global_sam_sid(),
+				pdb_get_group_sid(sam_pass),
+				&primary_group_rid)) {
+		DEBUG(5, ("Group sid %s for user %s not in our domain\n",
+			  sid_string_static(pdb_get_group_sid(sam_pass)),
+			  pdb_get_username(sam_pass)));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	dom_gid.g_rid = primary_group_rid;
+
+	ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
+
 	for (i=0; i<num_groups; i++) {
-		uint32 rid;
 
 		if (!sid_peek_check_rid(get_global_sam_sid(),
-					&(sids[i]), &rid))
+					&(sids[i]), &dom_gid.g_rid)) {
+			DEBUG(10, ("Found sid %s not in our domain\n",
+				   sid_string_static(&sids[i])));
 			continue;
+		}
 
-		gids = TALLOC_REALLOC_ARRAY(p->mem_ctx, gids, DOM_GID, num_gids+1);
-		gids[num_gids].attr= (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|SE_GROUP_ENABLED);
-		gids[num_gids].g_rid = rid;
-		num_gids += 1;
+		if (dom_gid.g_rid == primary_group_rid) {
+			/* We added the primary group directly from the
+			 * sam_account. The other SIDs are unique from
+			 * enum_group_memberships */
+			continue;
+		}
+
+		ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
 	}
-	SAFE_FREE(sids);
 	
 	/* construct the response.  lkclXXXX: gids are not copied! */
-	init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
+	init_samr_r_query_usergroups(r_u, num_gids, gids, r_u->status);
 	
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 	
@@ -2322,7 +2315,8 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
  This funcion will need to be updated for bdc/domain trusts.
  ********************************************************************/
 
-NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREATE_USER *r_u)
+NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
+			   SAMR_R_CREATE_USER *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
 	fstring account;
@@ -2339,7 +2333,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 acc_granted;
 	SEC_DESC *psd;
 	size_t    sd_size;
-	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	BOOL can_add_account = False;
@@ -2347,20 +2340,26 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	DISP_INFO *disp_info = NULL;
 
 	/* Get the domain SID stored in the domain policy */
-	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted, &disp_info))
+	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted,
+				     &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(nt_status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_USER, "_samr_create_user"))) {
+	nt_status = access_check_samr_function(acc_granted,
+					       SA_RIGHT_DOMAIN_CREATE_USER,
+					       "_samr_create_user");
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	if (!(acb_info == ACB_NORMAL || acb_info == ACB_DOMTRUST || acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)) { 
+	if (!(acb_info == ACB_NORMAL || acb_info == ACB_DOMTRUST ||
+	      acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)) { 
 		/* Match Win2k, and return NT_STATUS_INVALID_PARAMETER if 
 		   this parameter is not an account type */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
+	rpcstr_pull(account, user_account.buffer, sizeof(account),
+		    user_account.uni_str_len*2, 0);
 	strlower_m(account);
 
 	nt_status = can_create(p->mem_ctx, account);
@@ -2369,14 +2368,14 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	}
 
 	/*********************************************************************
-	 * HEADS UP!  If we have to create a new user account, we have to get 
-	 * a new RID from somewhere.  This used to be done by the passdb 
-	 * backend. It has been moved into idmap now.  Since idmap is now 
-	 * wrapped up behind winbind, this means you have to run winbindd if you
-	 * want new accounts to get a new RID when "enable rid algorithm = no".
-	 * Tough.  We now have a uniform way of allocating RIDs regardless
-	 * of what ever passdb backend people may use.
-	 *                                             --jerry (2003-07-10)
+	 * HEADS UP!  If we have to create a new user account, we have to get
+	 * a new RID from somewhere.  This used to be done by the passdb
+	 * backend. It has been moved into idmap now.  Since idmap is now
+	 * wrapped up behind winbind, this means you have to run winbindd if
+	 * you want new accounts to get a new RID when "enable rid algorithm =
+	 * no".  Tough.  We now have a uniform way of allocating RIDs
+	 * regardless of what ever passdb backend people may use.  --jerry
+	 * (2003-07-10)
 	 *********************************************************************/
 
 	pw = Get_Pwnam(account);
@@ -2387,24 +2386,30 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		se_priv_copy( &se_rights, &se_machine_account );
-		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+		can_add_account = user_has_privileges(
+			p->pipe_user.nt_user_token, &se_rights );
 	} 
 	/* usrmgr.exe (and net rpc trustdom grant) creates a normal user 
 	   account for domain trusts and changes the ACB flags later */
-	else if ( acb_info & ACB_NORMAL && (account[strlen(account)-1] != '$') )
+	else if ( acb_info & ACB_NORMAL &&
+		  (account[strlen(account)-1] != '$') )
 	{
 		pstrcpy(add_script, lp_adduser_script());
 		se_priv_copy( &se_rights, &se_add_users );
-		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
+		can_add_account = user_has_privileges(
+			p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else 	/* implicit assumption of a BDC or domain trust account here (we already check the flags earlier) */
+	else 	/* implicit assumption of a BDC or domain trust account here
+		 * (we already check the flags earlier) */
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		if ( lp_enable_privileges() ) {
 			/* only Domain Admins can add a BDC or domain trust */
 			se_priv_copy( &se_rights, &se_priv_none );
-			can_add_account = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
-	}
+			can_add_account = nt_token_check_domain_rid(
+				p->pipe_user.nt_user_token,
+				DOMAIN_GROUP_RID_ADMINS );
+		}
 	}
 		
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
@@ -2419,16 +2424,20 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		if (*add_script) {
 			int add_ret;
 
-			all_string_sub(add_script, "%u", account, sizeof(add_script));
+			all_string_sub(add_script, "%u", account,
+				       sizeof(add_script));
 			add_ret = smbrun(add_script,NULL);
-			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running "
+					       "the command `%s' gave %d\n",
+					       add_script, add_ret));
 		}
 	}
 
-	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
+	/* implicit call to getpwnam() next.  we have a valid SID coming out
+	 * of this call */
 
 	flush_pwnam_cache();
-	nt_status = pdb_init_sam_new(&sam_pass, account, new_rid);
+	nt_status = pdb_init_sam_new(&sam_pass, account);
 
 	/* this code is order such that we have no unnecessary retuns 
 	   out of the admin block of code */	
@@ -2438,7 +2447,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 		if ( !(ret = pdb_add_sam_account(sam_pass)) ) {
 	 		pdb_free_sam(&sam_pass);
- 			DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
+ 			DEBUG(0, ("could not add user/computer %s to passdb. "
+				  "Check permissions?\n", 
 				account));
 			nt_status = NT_STATUS_ACCESS_DENIED;
 		}
@@ -2458,7 +2468,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	sid_copy(&sid, pdb_get_user_sid(sam_pass));
 	
-	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
+			    &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
@@ -2944,7 +2955,7 @@ static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, SAM_ACCOUNT *pwd)
 		return False;
 	}
 
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2980,7 +2991,7 @@ static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, SAM_ACCOUNT *pwd)
 		return False; 
 	}
  
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2997,8 +3008,7 @@ static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
 	struct group *grp;
 	gid_t gid;
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(pdb_get_group_sid(sampass),
-					&gid))) {
+	if (!sid_to_gid(pdb_get_group_sid(sampass), &gid)) {
 		DEBUG(2,("Could not get gid for primary group of "
 			 "user %s\n", pdb_get_username(sampass)));
 		return False;
@@ -3039,7 +3049,7 @@ static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, SAM_ACCOUNT *pwd)
 	copy_id20_to_sam_passwd(pwd, id20);
 
 	/* write the change out */
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3073,7 +3083,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, SAM_ACCOUNT *pwd)
 		set_unix_primary_group(pwd);
 
 	/* write the change out */
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3140,7 +3150,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID))
 		set_unix_primary_group(pwd);
 
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -3202,7 +3212,7 @@ static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 	DEBUG(5,("set_user_info_pw: pdb_update_pwd()\n"));
  
 	/* update the SAMBA password */
-	if(!pdb_update_sam_account(pwd)) {
+	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -3485,7 +3495,6 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	NTSTATUS ntstatus2;
 
 	DOM_SID *members;
-	BOOL res;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -3521,13 +3530,14 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	num_alias_rids = 0;
 
 	become_root();
-	res = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
-					 q_u->num_sids1,
-					 &alias_rids, &num_alias_rids);
+	ntstatus1 = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
+					       q_u->num_sids1,
+					       &alias_rids, &num_alias_rids);
 	unbecome_root();
 
-	if (!res)
-		return NT_STATUS_UNSUCCESSFUL;
+	if (!NT_STATUS_IS_OK(ntstatus1)) {
+		return ntstatus1;
+	}
 
 	init_samr_r_query_useraliases(r_u, num_alias_rids, alias_rids,
 				      NT_STATUS_OK);
@@ -3540,6 +3550,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 
 NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
 {
+	NTSTATUS status;
 	size_t i;
 	size_t num_sids = 0;
 	DOM_SID2 *sid;
@@ -3560,8 +3571,11 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 
 	DEBUG(10, ("sid is %s\n", sid_string_static(&alias_sid)));
 
-	if (!pdb_enum_aliasmem(&alias_sid, &sids, &num_sids))
-		return NT_STATUS_NO_SUCH_ALIAS;
+	status = pdb_enum_aliasmem(&alias_sid, &sids, &num_sids);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_sids);	
 	if (num_sids!=0 && sid == NULL) {
@@ -3710,7 +3724,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	BOOL ret;
+	NTSTATUS ret;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -3738,11 +3752,11 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return ret;
 }
 
 /*********************************************************************
@@ -3755,7 +3769,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	BOOL ret;
+	NTSTATUS ret;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -3784,11 +3798,11 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return ret;
 }
 
 /*********************************************************************
@@ -3847,19 +3861,18 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	}
 
 	/* check a real user exist before we run the script to add a user to a group */
-	if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
+	if (!sid_to_uid(pdb_get_user_sid(sam_user), &uid)) {
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	pdb_free_sam(&sam_user);
 
-	if ((pwd=getpwuid_alloc(uid)) == NULL) {
+	if ((pwd=getpwuid_alloc(p->mem_ctx, uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if ((grp=getgrgid(map.gid)) == NULL) {
-		passwd_free(&pwd);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -3867,8 +3880,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_unix_group_list(pwd->pw_name, grp_name)) {
-		passwd_free(&pwd);
+	if(user_in_unix_group(pwd->pw_name, grp_name)) {
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
@@ -3894,12 +3906,9 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	/******** END SeAddUsers BLOCK *********/
 	
 	/* check if the user has been added then ... */
-	if(!user_in_unix_group_list(pwd->pw_name, grp_name)) {
-		passwd_free(&pwd);
+	if(!user_in_unix_group(pwd->pw_name, grp_name)) {
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
 	}
-
-	passwd_free(&pwd);
 
 	force_flush_samr_cache(disp_info);
 
@@ -3961,7 +3970,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	}
 
 	/* if the user is not in the group */
-	if (!user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
+	if (!user_in_unix_group(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
@@ -3983,7 +3992,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	/******** END SeAddUsers BLOCK *********/
 	
 	/* check if the user has been removed then ... */
-	if (user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
+	if (user_in_unix_group(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_ACCESS_DENIED;		/* don't know what to reply else */
 	}
@@ -4290,19 +4299,28 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 		/* so far, so good */
 		
 		result = NT_STATUS_OK;
-		
-		r_u->rid = pdb_gid_to_group_rid( grp->gr_gid );
 
-		/* add the group to the mapping table */
+		if (pdb_rid_algorithm()) {
+			r_u->rid = pdb_gid_to_group_rid( grp->gr_gid );
+		} else {
+			if (!pdb_new_rid(&r_u->rid)) {
+				result = NT_STATUS_ACCESS_DENIED;
+			}
+		}
+
+		if (NT_STATUS_IS_OK(result)) {
+
+			/* add the group to the mapping table */
 		
-		sid_copy( &info_sid, get_global_sam_sid() );
-		sid_append_rid( &info_sid, r_u->rid );
-		sid_to_string( sid_string, &info_sid );
+			sid_copy( &info_sid, get_global_sam_sid() );
+			sid_append_rid( &info_sid, r_u->rid );
+			sid_to_string( sid_string, &info_sid );
 		
-		/* reset the error code if we fail to add the mapping entry */
+			/* reset the error code if we fail to add the mapping entry */
 		
-		if ( !add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL) )
-			result = NT_STATUS_ACCESS_DENIED;
+			if ( !add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL) )
+				result = NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if ( can_add_accounts )
@@ -4383,18 +4401,26 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		
 	/******** END SeAddUsers BLOCK *********/
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("pdb_create_alias failed: %s\n",
+			   nt_errstr(result)));
 		return result;
+	}
 
 	sid_copy(&info_sid, get_global_sam_sid());
 	sid_append_rid(&info_sid, r_u->rid);
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(&info_sid, &gid)))
+	if (!sid_to_gid(&info_sid, &gid)) {
+		DEBUG(10, ("Could not find alias just created\n"));
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* check if the group has been successfully created */
-	if ( getgrgid(gid) == NULL )
+	if ( getgrgid(gid) == NULL ) {
+		DEBUG(10, ("getgrgid(%d) of just created alias failed\n",
+			   gid));
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -4485,7 +4511,8 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	GROUP_MAP map;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	BOOL ret;
+	NTSTATUS ret;
+	BOOL result;
 	BOOL can_mod_accounts;
 	DISP_INFO *disp_info = NULL;
 
@@ -4497,9 +4524,9 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	}
 
 	become_root();
-	ret = get_domain_group_from_sid(group_sid, &map);
+	result = get_domain_group_from_sid(group_sid, &map);
 	unbecome_root();
-	if (!ret)
+	if (!result)
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=q_u->ctr;
@@ -4529,11 +4556,11 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 
 	/******** End SeAddUsers BLOCK *********/
 
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return ret;
 }
 
 /*********************************************************************

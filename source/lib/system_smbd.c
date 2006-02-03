@@ -28,47 +28,6 @@
 
 #ifndef HAVE_GETGROUPLIST
 
-static int int_compare( int *a, int *b )
-{
-	if ( *a == *b )
-		return 0;
-	else if ( *a < *b )
-		return -1;
-	else
-		return 1;
-}
-
-void remove_duplicate_gids( int *num_groups, gid_t *groups )
-{
-	int i;
-	int count = *num_groups;
-
-	if ( *num_groups <= 0 || !groups )
-		return;
-
-	DEBUG(8,("remove_duplicate_gids: Enter %d gids\n", *num_groups));
-
-	qsort( groups, *num_groups, sizeof(gid_t), QSORT_CAST int_compare );
-
-	for ( i=1; i<count; ) {
-		if ( groups[i-1] == groups[i] ) {
-			memmove( &groups[i-1], &groups[i], (count - i + 1)*sizeof(gid_t) );
-
-			/* decrement the total number of groups and do not increment
-			   the loop counter */
-			count--;
-			continue;
-		}
-		i++;
-	}
-
-	*num_groups = count;
-
-	DEBUG(8,("remove_duplicate_gids: Exit %d gids\n", *num_groups));
-
-	return;
-}
-
 /*
   This is a *much* faster way of getting the list of groups for a user
   without changing the current supplementary group list. The old
@@ -79,7 +38,8 @@ void remove_duplicate_gids( int *num_groups, gid_t *groups )
   NOTE!! this function only works if it is called as root!
   */
 
-static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
+static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
+				  int *grpcnt)
 {
 	gid_t *gids_saved;
 	int ret, ngrp_saved, num_gids;
@@ -140,9 +100,6 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 		}
 		groups[0] = gid;
 		*grpcnt = ret + 1;
-
-		/* remove any duplicates gids in the list */
-		remove_duplicate_gids( grpcnt, groups );
 	}
 
 	restore_re_gid();
@@ -169,11 +126,11 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	/* see if we should disable winbindd lookups for local users */
 	if (strchr(user, *lp_winbind_separator()) == NULL) {
 		if ( !winbind_off() )
-			DEBUG(0,("sys_getgroup_list: Insufficient environment space for %s\n",
-				WINBINDD_DONT_ENV));
+			DEBUG(0,("sys_getgroup_list: Insufficient environment space "
+				 "for %s\n", WINBINDD_DONT_ENV));
 		else
-			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group lookup [user == %s]\n",
-				user));
+			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
+				  "lookup [user == %s]\n", user));
 	}
 
 #ifdef HAVE_GETGROUPLIST
@@ -190,8 +147,9 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	return retval;
 }
 
-static BOOL getgroups_user(const char *user, gid_t primary_gid,
-			   gid_t **ret_groups, size_t *p_ngroups)
+BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
+			 gid_t primary_gid,
+			 gid_t **ret_groups, size_t *p_ngroups)
 {
 	size_t ngrp;
 	int max_grp;
@@ -229,10 +187,11 @@ static BOOL getgroups_user(const char *user, gid_t primary_gid,
 	groups = NULL;
 
 	/* Add in primary group first */
-	add_gid_to_array_unique(NULL, primary_gid, &groups, &ngrp);
+	add_gid_to_array_unique(mem_ctx, primary_gid, &groups, &ngrp);
 
 	for (i=0; i<max_grp; i++)
-		add_gid_to_array_unique(NULL, temp_groups[i], &groups, &ngrp);
+		add_gid_to_array_unique(mem_ctx, temp_groups[i],
+					&groups, &ngrp);
 
 	*p_ngroups = ngrp;
 	*ret_groups = groups;
@@ -241,15 +200,22 @@ static BOOL getgroups_user(const char *user, gid_t primary_gid,
 }
 
 NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
-					    const char *username,
-					    gid_t primary_gid,
+					    TALLOC_CTX *mem_ctx,
+					    SAM_ACCOUNT *user,
 					    DOM_SID **pp_sids,
 					    gid_t **pp_gids,
 					    size_t *p_num_groups)
 {
 	size_t i;
+	gid_t gid;
 
-	if (!getgroups_user(username, primary_gid, pp_gids, p_num_groups)) {
+	if (!sid_to_gid(pdb_get_group_sid(user), &gid)) {
+		DEBUG(10, ("sid_to_gid failed\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (!getgroups_unix_user(mem_ctx, pdb_get_username(user), gid,
+				 pp_gids, p_num_groups)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -257,22 +223,15 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 		smb_panic("primary group missing");
 	}
 
-	*pp_sids = SMB_MALLOC_ARRAY(DOM_SID, *p_num_groups);
+	*pp_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *p_num_groups);
 
 	if (*pp_sids == NULL) {
-		SAFE_FREE(pp_gids);
+		talloc_free(*pp_gids);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<*p_num_groups; i++) {
-		if (!NT_STATUS_IS_OK(gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]))) {
-			DEBUG(1, ("get_user_groups: failed to convert "
-				  "gid %ld to a sid!\n", 
-				  (long int)(*pp_gids)[i+1]));
-			SAFE_FREE(*pp_sids);
-			SAFE_FREE(*pp_gids);
-			return NT_STATUS_NO_SUCH_USER;
-		}
+		gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]);
 	}
 
 	return NT_STATUS_OK;

@@ -191,16 +191,6 @@ interface/version dce/rpc pipe identification
 	}, 0x00				    \
 }
 
-#define SYNT_UNIXINFO_V0                    \
-{                                           \
-	{                                   \
-		0x9c54e310, 0xa955, 0x4885, \
-		{ 0xbd, 0x31 },		    \
-                { 0x78, 0x78,               \
-                  0x71, 0x47, 0xdf, 0xa6 }  \
-	}, 0x00                             \
-}
-
 #define SYNT_NTSVCS_V1                      \
 {                                           \
 	{                                   \

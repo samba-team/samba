@@ -56,7 +56,7 @@ BOOL change_to_guest(void)
 
 	if (!pass) {
 		/* Don't need to free() this as its stored in a static */
-		pass = getpwnam_alloc(lp_guestaccount());
+		pass = getpwnam_alloc(NULL, lp_guestaccount());
 		if (!pass)
 			return(False);
 	}
@@ -71,65 +71,11 @@ BOOL change_to_guest(void)
 	
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
+
+	talloc_free(pass);
+	pass = NULL;
 	
-	passwd_free(&pass);
-
 	return True;
-}
-
-/****************************************************************************
- Readonly share for this user ?
-****************************************************************************/
-
-static BOOL is_share_read_only_for_user(int snum, user_struct *vuser)
-{
-	char **list;
-	const char *service = lp_servicename(snum);
-	BOOL read_only_ret = lp_readonly(snum);
-
-	if (!service)
-		return read_only_ret;
-
-	str_list_copy(&list, lp_readlist(snum));
-	if (list) {
-		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: read "
-				  "list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: read "
-				  "list service substitution failed\n"));
-		}
-		if (user_in_list(vuser->user.unix_name, (const char **)list,
-				 vuser->groups, vuser->n_groups)) {
-			read_only_ret = True;
-		}
-		str_list_free(&list);
-	}
-
-	str_list_copy(&list, lp_writelist(snum));
-	if (list) {
-		if (!str_list_sub_basic(list, vuser->user.smb_name) ) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: write "
-				  "list substitution failed\n"));
-		}
-		if (!str_list_substitute(list, "%S", service)) {
-			DEBUG(0, ("is_share_read_only_for_user: ERROR: write "
-				  "list service substitution failed\n"));
-		}
-		if (user_in_list(vuser->user.unix_name, (const char **)list,
-				 vuser->groups, vuser->n_groups)) {
-			read_only_ret = False;
-		}
-		str_list_free(&list);
-	}
-
-	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user "
-		  "%s\n", service,
-		  read_only_ret ? "read-only" : "read-write",
-		  vuser->user.unix_name ));
-
-	return read_only_ret;
 }
 
 /*******************************************************************
@@ -151,20 +97,25 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		}
 	}
 
-	if (!user_ok(vuser->user.unix_name,snum, vuser->groups, vuser->n_groups))
+	if (!user_ok_token(vuser->user.unix_name, vuser->nt_user_token, snum))
 		return(False);
 
-	readonly_share = is_share_read_only_for_user(conn->service, vuser);
+	readonly_share = is_share_read_only_for_token(vuser->user.unix_name,
+						      vuser->nt_user_token,
+						      conn->service);
 
 	if (!readonly_share &&
 	    !share_access_check(conn, snum, vuser, FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
 		readonly_share = True;
-		DEBUG(5,("falling back to read-only access-evaluation due to security descriptor\n"));
+		DEBUG(5,("falling back to read-only access-evaluation due to "
+			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(conn, snum, vuser, readonly_share ? FILE_READ_DATA : FILE_WRITE_DATA)) {
+	if (!share_access_check(conn, snum, vuser,
+				readonly_share ?
+				FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
 
@@ -176,11 +127,9 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	ent->vuid = vuser->vuid;
 	ent->read_only = readonly_share;
 
-	if (user_in_list(vuser->user.unix_name ,lp_admin_users(conn->service), vuser->groups, vuser->n_groups)) {
-		ent->admin_user = True;
-	} else {
-		ent->admin_user = False;
-	}
+	ent->admin_user = token_contains_name_in_list(
+		vuser->user.unix_name, NULL, vuser->nt_user_token,
+		lp_admin_users(conn->service));
 
 	conn->read_only = ent->read_only;
 	conn->admin_user = ent->admin_user;
@@ -217,20 +166,24 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
 	   (current_user.ut.uid == conn->uid)) {
-		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
+		DEBUG(4,("change_to_user: Skipping user change - already "
+			 "user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != 0) && (current_user.vuid == vuid) && 
 		   (current_user.ut.uid == vuser->uid)) {
-		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
+		DEBUG(4,("change_to_user: Skipping user change - already "
+			 "user\n"));
 		return(True);
 	}
 
 	snum = SNUM(conn);
 
 	if ((vuser) && !check_user_ok(conn, vuser, snum)) {
-		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) not permitted access to share %s.\n",
-			vuser->user.smb_name, vuser->user.unix_name, vuid, lp_servicename(snum)));
+		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
+			 "not permitted access to share %s.\n",
+			 vuser->user.smb_name, vuser->user.unix_name, vuid,
+			 lp_servicename(snum)));
 		return False;
 	}
 
@@ -247,7 +200,8 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.ut.groups  = vuser->groups;
 		token = vuser->nt_user_token;
 	} else {
-		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing share %s.\n",vuid, lp_servicename(snum) ));
+		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
+			 "share %s.\n",vuid, lp_servicename(snum) ));
 		return False;
 	}
 
@@ -258,7 +212,13 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if((group_c = *lp_force_group(snum))) {
-		BOOL is_guest = False;
+
+		token = dup_nt_token(NULL, token);
+		if (token == NULL) {
+			DEBUG(0, ("dup_nt_token failed\n"));
+			return False;
+		}
+		must_free_token = True;
 
 		if(group_c == '+') {
 
@@ -273,37 +233,25 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 			for (i = 0; i < current_user.ut.ngroups; i++) {
 				if (current_user.ut.groups[i] == conn->gid) {
 					gid = conn->gid;
+					gid_to_sid(&token->user_sids[1], gid);
 					break;
 				}
 			}
 		} else {
 			gid = conn->gid;
+			gid_to_sid(&token->user_sids[1], gid);
 		}
-
-		/*
-		 * We've changed the group list in the token - we must
-		 * re-create it.
-		 */
-
-		if (vuser && vuser->guest)
-			is_guest = True;
-
-		token = create_nt_token(uid, gid, current_user.ut.ngroups, current_user.ut.groups, is_guest);
-		if (!token) {
-			DEBUG(1, ("change_to_user: create_nt_token failed!\n"));
-			return False;
-		}
-		must_free_token = True;
 	}
 	
-	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups, token);
+	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups,
+		    token);
 
 	/*
 	 * Free the new token (as set_sec_ctx copies it).
 	 */
 
 	if (must_free_token)
-		delete_nt_token(&token);
+		talloc_free(token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
@@ -344,7 +292,8 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 		return False;
 
 	set_sec_ctx(p->pipe_user.ut.uid, p->pipe_user.ut.gid, 
-		    p->pipe_user.ut.ngroups, p->pipe_user.ut.groups, p->pipe_user.nt_user_token);
+		    p->pipe_user.ut.ngroups, p->pipe_user.ut.groups,
+		    p->pipe_user.nt_user_token);
 
 	return True;
 }

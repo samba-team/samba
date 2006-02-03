@@ -187,7 +187,7 @@ static int generic_queue_get(const char *printer_name,
 	}
 	
 	numlines = 0;
-	qlines = fd_lines_load(fd, &numlines);
+	qlines = fd_lines_load(fd, &numlines,0);
 	close(fd);
 
 	/* turn the lpq output into a series of job structures */

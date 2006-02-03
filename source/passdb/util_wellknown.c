@@ -70,6 +70,21 @@ static struct sid_name_map_info special_domains[] = {
 	{ &global_sid_NT_Authority, "NT Authority", nt_authority_users },
 	{ NULL, NULL, NULL }};
 
+BOOL sid_check_is_wellknown_domain(const DOM_SID *sid, const char **name)
+{
+	int i;
+
+	for (i=0; special_domains[i].sid != NULL; i++) {
+		if (sid_equal(sid, special_domains[i].sid)) {
+			if (name != NULL) {
+				*name = special_domains[i].name;
+			}
+			return True;
+		}
+	}
+	return False;
+}
+
 /**************************************************************************
  Looks up a known username from one of the known domains.
 ***************************************************************************/

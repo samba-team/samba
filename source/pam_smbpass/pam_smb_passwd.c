@@ -47,9 +47,9 @@ int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  const char *
 	err_str[0] = '\0';
 	msg_str[0] = '\0';
 
-	retval = local_password_change( user, LOCAL_SET_PASSWORD, pass_new,
+	retval = NT_STATUS_IS_OK(local_password_change( user, LOCAL_SET_PASSWORD, pass_new,
 	                                err_str, sizeof(err_str),
-	                                msg_str, sizeof(msg_str) );
+	                                msg_str, sizeof(msg_str) ));
 
 	if (!retval) {
 		if (*err_str) {
@@ -298,7 +298,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 	    uid_t uid;
 	    
             /* password updated */
-		if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sampass), &uid))) {
+		if (!sid_to_uid(pdb_get_user_sid(sampass), &uid)) {
 			_log_err( LOG_NOTICE, "Unable to get uid for user %s",
 				pdb_get_username(sampass));
 			_log_err( LOG_NOTICE, "password for (%s) changed by (%s/%d)",

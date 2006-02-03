@@ -32,7 +32,8 @@ pid_t pidfile_pid(const char *name)
 {
 	int fd;
 	char pidstr[20];
-	unsigned ret;
+	pid_t pid;
+	unsigned int ret;
 	pstring pidFile;
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
@@ -57,7 +58,8 @@ pid_t pidfile_pid(const char *name)
 		goto noproc;
 	}
 	
-	if (!process_exists_by_pid(ret)) {
+	pid = (pid_t)ret;
+	if (!process_exists_by_pid(pid)) {
 		goto noproc;
 	}
 

@@ -151,7 +151,8 @@ BOOL fill_passdb_alias_grmem(struct winbindd_domain *domain,
 	*gr_mem = NULL;
 	*gr_mem_len = 0;
 
-	if (!pdb_enum_aliasmem(group_sid, &members, &num_members))
+	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(group_sid, &members,
+					       &num_members)))
 		return True;
 
 	for (i=0; i<num_members; i++) {
@@ -265,19 +266,24 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
-	struct acct_info info;
+	const char *dom, *nam;
 
 	DEBUG(10, ("Converting SID %s\n", sid_string_static(sid)));
 
-	if (!pdb_get_aliasinfo(sid, &info))
+	/* Paranoia check */
+	if (!sid_check_is_in_builtin(sid) &&
+	    !sid_check_is_in_our_domain(sid)) {
+		DEBUG(0, ("Possible deadlock: Trying to lookup SID %s with "
+			  "passdb backend\n", sid_string_static(sid)));
 		return NT_STATUS_NONE_MAPPED;
+	}
 
-	*domain_name = talloc_strdup(mem_ctx, domain->name);
-	*name = talloc_strdup(mem_ctx, info.acct_name);
-	if (sid_check_is_in_builtin(sid))
-		*type = SID_NAME_WKN_GRP;
-	else
-		*type = SID_NAME_ALIAS;
+	if (!lookup_sid(mem_ctx, sid, &dom, &nam, type)) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	*domain_name = talloc_strdup(mem_ctx, dom);
+	*name = talloc_strdup(mem_ctx, nam);
 
 	return NT_STATUS_OK;
 }
@@ -305,14 +311,14 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   uint32 num_sids, const DOM_SID *sids,
 				   uint32 *p_num_aliases, uint32 **rids)
 {
-	BOOL result;
+	NTSTATUS result;
 	size_t num_aliases = 0;
 
 	result = pdb_enum_alias_memberships(mem_ctx, &domain->sid,
 					    sids, num_sids, rids, &num_aliases);
 
 	*p_num_aliases = num_aliases;
-	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return result;
 }
 
 /* Lookup group membership given a rid.   */
@@ -322,14 +328,104 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {
+	size_t i, num_members, num_mapped;
+	uint32 *rids;
+	NTSTATUS result;
+	const DOM_SID **sids;
+	struct lsa_dom_info *lsa_domains;
+	struct lsa_name_info *lsa_names;
+
+	if (!sid_check_is_in_our_domain(group_sid)) {
+		/* There's no groups, only aliases in BUILTIN */
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	result = pdb_enum_group_members(mem_ctx, group_sid, &rids,
+					&num_members);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	if (num_members == 0) {
+		*num_names = 0;
+		*sid_mem = NULL;
+		*names = NULL;
+		*name_types = NULL;
+		return NT_STATUS_OK;
+	}
+
+	*sid_mem = TALLOC_ARRAY(mem_ctx, DOM_SID, num_members);
+	*names = TALLOC_ARRAY(mem_ctx, char *, num_members);
+	*name_types = TALLOC_ARRAY(mem_ctx, uint32, num_members);
+	sids = TALLOC_ARRAY(mem_ctx, const DOM_SID *, num_members);
+
+	if (((*sid_mem) == NULL) || ((*names) == NULL) ||
+	    ((*name_types) == NULL) || (sids == NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		DOM_SID *sid = &((*sid_mem)[i]);
+		sid_copy(sid, &domain->sid);
+		sid_append_rid(sid, rids[i]);
+		sids[i] = sid;
+	}
+
+	result = lookup_sids(mem_ctx, num_members, sids, 1,
+			     &lsa_domains, &lsa_names);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	num_mapped = 0;
+	for (i=0; i<num_members; i++) {
+		if (lsa_names[i].type != SID_NAME_USER) {
+			DEBUG(2, ("Got %s as group member -- ignoring\n",
+				  sid_type_lookup(lsa_names[i].type)));
+			continue;
+		}
+		(*names)[i] = talloc_steal((*names),
+					   lsa_names[i].name);
+		(*name_types)[i] = lsa_names[i].type;
+
+		num_mapped += 1;
+	}
+
+	*num_names = num_mapped;
+
 	return NT_STATUS_OK;
 }
 
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
-	*seq = 1;
+	BOOL result;
+	time_t seq_num;
+
+	result = pdb_get_seq_num(&seq_num);
+	if (!result) {
+		*seq = 1;
+	}
+
+	*seq = (int) seq_num;
+	/* *seq = 1; */
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS lockout_policy(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       SAM_UNK_INFO_12 *lockout_policy)
+{
+	/* actually we have that */
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS password_policy(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				SAM_UNK_INFO_1 *password_policy)
+{
+	/* actually we have that */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /* get a list of trusted domains */
@@ -341,41 +437,35 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DOM_SID **dom_sids)
 {
 	NTSTATUS nt_status;
-	int enum_ctx = 0;
-	int num_sec_domains;
-	TRUSTDOM **domains;
+	struct trustdom_info **domains;
+	int i;
+
 	*num_domains = 0;
 	*names = NULL;
 	*alt_names = NULL;
 	*dom_sids = NULL;
-	do {
-		int i;
-		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, 1,
-							&num_sec_domains,
-							&domains);
-		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names, char *,
-					num_sec_domains + *num_domains);
-		*alt_names = TALLOC_REALLOC_ARRAY(mem_ctx, *alt_names, char *,
-					    num_sec_domains + *num_domains);
-		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids, DOM_SID,
-					   num_sec_domains + *num_domains);
 
-		for (i=0; i< num_sec_domains; i++) {
-			if (pull_ucs2_talloc(mem_ctx, &(*names)[*num_domains],
-					     domains[i]->name) == -1) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			(*alt_names)[*num_domains] = NULL;
-			(*dom_sids)[*num_domains] = domains[i]->sid;
-			(*num_domains)++;
-		}
-
-	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
-
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
-		return NT_STATUS_OK;
+	nt_status = secrets_trusted_domains(mem_ctx, num_domains,
+					    &domains);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
-	return nt_status;
+
+	*names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+	*alt_names = TALLOC_ARRAY(mem_ctx, char *, *num_domains);
+	*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_domains);
+
+	if ((*alt_names == NULL) || (*names == NULL) || (*dom_sids == NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<*num_domains; i++) {
+		(*alt_names)[i] = NULL;
+		(*names)[i] = talloc_steal((*names), domains[i]->name);
+		sid_copy(&(*dom_sids)[i], &domains[i]->sid);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /* the rpc backend methods are exposed via this structure */
@@ -391,5 +481,7 @@ struct winbindd_methods passdb_methods = {
 	lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
+	lockout_policy,
+	password_policy,
 	trusted_domains,
 };

@@ -304,9 +304,10 @@ typedef struct pdb_context
 					   size_t *p_num_members);
 
 	NTSTATUS (*pdb_enum_group_memberships)(struct pdb_context *context,
-					       const char *username,
-					       gid_t primary_gid,
-					       DOM_SID **pp_sids, gid_t **pp_gids,
+					       TALLOC_CTX *mem_ctx,
+					       SAM_ACCOUNT *user,
+					       DOM_SID **pp_sids,
+					       gid_t **pp_gids,
 					       size_t *p_num_groups);
 
 	NTSTATUS (*pdb_find_alias)(struct pdb_context *context,
@@ -376,6 +377,15 @@ typedef struct pdb_context
 	BOOL (*pdb_search_aliases)(struct pdb_context *context,
 				   struct pdb_search *search,
 				   const DOM_SID *sid);
+	BOOL (*pdb_uid_to_rid)(struct pdb_context *context,
+			       uid_t uid, uint32 *rid);
+	BOOL (*pdb_gid_to_sid)(struct pdb_context *context,
+			       uid_t gid, DOM_SID *sid);
+	BOOL (*pdb_sid_to_id)(struct pdb_context *context, const DOM_SID *sid,
+			      union unid_t *id, enum SID_NAME_USE *type);
+
+	BOOL (*pdb_rid_algorithm)(struct pdb_context *context);
+	BOOL (*pdb_new_rid)(struct pdb_context *context, uint32 *rid);
 
 	void (*free_fn)(struct pdb_context **);
 	
@@ -439,8 +449,8 @@ typedef struct pdb_methods
 				       size_t *p_num_members);
 
 	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
-					   const char *username,
-					   gid_t primary_gid,
+					   TALLOC_CTX *mem_ctx,
+					   SAM_ACCOUNT *user,
 					   DOM_SID **pp_sids, gid_t **pp_gids,
 					   size_t *p_num_groups);
 
@@ -506,6 +516,16 @@ typedef struct pdb_methods
 	BOOL (*search_aliases)(struct pdb_methods *methods,
 			       struct pdb_search *search,
 			       const DOM_SID *sid);
+
+	BOOL (*uid_to_rid)(struct pdb_methods *methods, uid_t uid,
+			   uint32 *rid);
+	BOOL (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
+			   DOM_SID *sid);
+	BOOL (*sid_to_id)(struct pdb_methods *methods, const DOM_SID *sid,
+			  union unid_t *id, enum SID_NAME_USE *type);
+
+	BOOL (*rid_algorithm)(struct pdb_methods *methods);
+	BOOL (*new_rid)(struct pdb_methods *methods, uint32 *rid);
 
 	void *private_data;  /* Private data of some kind */
 	

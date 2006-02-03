@@ -9,6 +9,7 @@
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Simo Sorce                        2003.
  *  Copyright (C) Gerald (Jerry) Carter             2005.
+ *  Copyright (C) Volker Lendecke                   2005.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -102,9 +103,7 @@ static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->num_ref_doms_1; num++) {
-			fstring domname;
-			rpcstr_pull(domname, ref->ref_dom[num].uni_dom_name.buffer, sizeof(domname), -1, 0);
-			if (strequal(domname, dom_name))
+			if (sid_equal(dom_sid, &ref->ref_dom[num].ref_dom.sid))
 				return num;
 		}
 	} else {
@@ -159,8 +158,8 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 
 		/* Split name into domain and user component */
 
-		if (rpcstr_pull_unistr2_talloc(mem_ctx, &full_name,
-					       &name[i]) < 0) {
+		full_name = rpcstr_pull_unistr2_talloc(mem_ctx, &name[i]);
+		if (full_name == NULL) {
 			DEBUG(0, ("pull_ucs2_talloc failed\n"));
 			return 0;
 		}
@@ -227,87 +226,6 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 }
 
 /***************************************************************************
- Init lsa_trans_names.
- ***************************************************************************/
-
-static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
-				 int num_entries, DOM_SID2 *sid,
-				 uint32 *mapped_count)
-{
-	int i;
-	int total = 0;
-	*mapped_count = 0;
-
-	/* Allocate memory for list of names */
-
-	if (num_entries > 0) {
-		if (!(trn->name = TALLOC_ARRAY(ctx, LSA_TRANS_NAME, num_entries))) {
-			DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
-			return;
-		}
-
-		if (!(trn->uni_name = TALLOC_ARRAY(ctx, UNISTR2, num_entries))) {
-			DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
-			return;
-		}
-	}
-
-	become_root(); /* Need root to get to passdb to for local sids */
-
-	for (i = 0; i < num_entries; i++) {
-		BOOL status = False;
-		DOM_SID find_sid = sid[i].sid;
-		uint32 rid = 0xffffffff;
-		int dom_idx = -1;
-		const char *name, *domain;
-		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
-
-		DEBUG(5, ("init_lsa_trans_names: looking up sid %s\n",
-			  sid_string_static(&find_sid)));
-
-		/* Lookup sid from winbindd */
-
-		status = lookup_sid(ctx, &find_sid, &domain, &name, &type);
-
-		DEBUG(5, ("init_lsa_trans_names: %s\n", status ? "found" : 
-			  "not found"));
-
-		if (!status) {
-			type = SID_NAME_UNKNOWN;
-			domain = talloc_strdup(ctx, "");
-			name = talloc_strdup(ctx,
-					     sid_string_static(&find_sid));
-			dom_idx = -1;
-
-			DEBUG(10,("init_lsa_trans_names: added unknown user "
-				  "'%s' to referenced list.\n", name ));
-		} else {
-			(*mapped_count)++;
-			/* Store domain sid in ref array */
-			if (find_sid.num_auths == 5) {
-				sid_split_rid(&find_sid, &rid);
-			}
-			dom_idx = init_dom_ref(ref, domain, &find_sid);
-
-			DEBUG(10,("init_lsa_trans_names: added %s '%s\\%s' "
-				  "(%d) to referenced list.\n", 
-				  sid_type_lookup(type), domain, name, type));
-
-		}
-
-		init_lsa_trans_name(&trn->name[total], &trn->uni_name[total],
-				    type, name, dom_idx);
-		total++;
-	}
-
-	unbecome_root();
-
-	trn->num_entries = total;
-	trn->ptr_trans_names = 1;
-	trn->num_entries2 = total;
-}
-
-/***************************************************************************
  Init_reply_lookup_sids.
  ***************************************************************************/
 
@@ -315,7 +233,7 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
                 DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
                 uint32 mapped_count)
 {
-	r_l->ptr_dom_ref  = 1;
+	r_l->ptr_dom_ref  = ref ? 1 : 0;
 	r_l->dom_ref      = ref;
 	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
@@ -496,10 +414,12 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
  ufff, done :)  mimir
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u)
+NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
+			     LSA_R_ENUM_TRUST_DOM *r_u)
 {
 	struct lsa_info *info;
-	uint32 enum_context = q_u->enum_context;
+	uint32 next_idx;
+	struct trustdom_info **domains;
 
 	/*
 	 * preferred length is set to 5 as a "our" preferred length
@@ -507,10 +427,11 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	 * update (20.08.2002): it's not preferred length, but preferred size!
 	 * it needs further investigation how to optimally choose this value
 	 */
-	uint32 max_num_domains = q_u->preferred_len < 5 ? q_u->preferred_len : 10;
-	TRUSTDOM **trust_doms;
+	uint32 max_num_domains =
+		q_u->preferred_len < 5 ? q_u->preferred_len : 10;
 	uint32 num_domains;
 	NTSTATUS nt_status;
+	uint32 num_thistime;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
@@ -519,19 +440,34 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	nt_status = secrets_get_trusted_domains(p->mem_ctx, (int *)&enum_context, max_num_domains, (int *)&num_domains, &trust_doms);
+	nt_status = secrets_trusted_domains(p->mem_ctx, &num_domains,
+					    &domains);
 
-	if (!NT_STATUS_IS_OK(nt_status) &&
-	    !NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES) &&
-	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
-	} else {
-		r_u->status = nt_status;
 	}
 
+	if (q_u->enum_context < num_domains) {
+		num_thistime = MIN(num_domains, max_num_domains);
+
+		r_u->status = STATUS_MORE_ENTRIES;
+
+		if (q_u->enum_context + num_thistime > num_domains) {
+			num_thistime = num_domains - q_u->enum_context;
+			r_u->status = NT_STATUS_OK;
+		}
+
+		next_idx = q_u->enum_context + num_thistime;
+	} else {
+		num_thistime = 0;
+		next_idx = 0xffffffff;
+		r_u->status = NT_STATUS_NO_MORE_ENTRIES;
+	}
+		
 	/* set up the lsa_enum_trust_dom response */
 
-	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
+	init_r_enum_trust_dom(p->mem_ctx, r_u, next_idx,
+			      num_thistime, domains+q_u->enum_context);
 
 	return r_u->status;
 }
@@ -650,23 +586,28 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
  _lsa_lookup_sids
  ***************************************************************************/
 
-NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SIDS *r_u)
+NTSTATUS _lsa_lookup_sids(pipes_struct *p,
+			  LSA_Q_LOOKUP_SIDS *q_u,
+			  LSA_R_LOOKUP_SIDS *r_u)
 {
 	struct lsa_info *handle;
-	DOM_SID2 *sid = q_u->sids.sid;
-	int num_entries = q_u->sids.num_entries;
-	DOM_R_REF *ref = NULL;
-	LSA_TRANS_NAME_ENUM *names = NULL;
+
+	int i, num_sids;
+	const DOM_SID **sids;
 	uint32 mapped_count = 0;
 
-	if (num_entries >  MAX_LOOKUP_SIDS) {
-		num_entries = 0;
-		DEBUG(5,("_lsa_lookup_sids: limit of %d exceeded, truncating SID lookup list to %d\n", MAX_LOOKUP_SIDS, num_entries));
-		r_u->status = NT_STATUS_NONE_MAPPED;
-	}
+	struct lsa_dom_info *dom_infos;
+	struct lsa_name_info *name_infos;
 
-	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	DOM_R_REF *ref = NULL;
+	LSA_TRANS_NAME_ENUM *names = NULL;
+
 	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM);
+
+	if ((q_u->level < 1) || (q_u->level > 6)) {
+		r_u->status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
@@ -678,19 +619,91 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
-	if (!ref || !names)
-		return NT_STATUS_NO_MEMORY;
 
-done:
-
-	/* set up the LSA Lookup SIDs response */
-	init_lsa_trans_names(p->mem_ctx, ref, names, num_entries, sid, &mapped_count);
-	if (NT_STATUS_IS_OK(r_u->status)) {
-		if (mapped_count == 0)
-			r_u->status = NT_STATUS_NONE_MAPPED;
-		else if (mapped_count != num_entries)
-			r_u->status = STATUS_SOME_UNMAPPED;
+	num_sids = q_u->sids.num_entries;
+	if (num_sids >  MAX_LOOKUP_SIDS) {
+		DEBUG(5,("_lsa_lookup_sids: limit of %d exceeded, truncating "
+			 "SID lookup list to %d\n",
+			 MAX_LOOKUP_SIDS, num_sids));
+		r_u->status = NT_STATUS_NONE_MAPPED;
+		goto done;
 	}
+
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+
+	sids = TALLOC_ARRAY(p->mem_ctx, const DOM_SID *, num_sids);
+	if ((ref == NULL) || (names == NULL) || (sids == NULL)) {
+		r_u->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		sids[i] = &q_u->sids.sid[i].sid;
+	}
+
+	r_u->status = lookup_sids(p->mem_ctx, num_sids, sids, q_u->level,
+				  &dom_infos, &name_infos);
+
+	if (!NT_STATUS_IS_OK(r_u->status)) {
+		goto done;
+	}
+
+	if (num_sids > 0) {
+		names->name = TALLOC_ARRAY(names, LSA_TRANS_NAME, num_sids);
+		names->uni_name = TALLOC_ARRAY(names, UNISTR2, num_sids);
+		if ((names->name == NULL) || (names->uni_name == NULL)) {
+			r_u->status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	for (i=0; i<MAX_REF_DOMAINS; i++) {
+
+		if (!dom_infos[i].valid) {
+			break;
+		}
+
+		if (init_dom_ref(ref, dom_infos[i].name,
+				 &dom_infos[i].sid) != i) {
+			DEBUG(0, ("Domain %s mentioned twice??\n",
+				  dom_infos[i].name));
+			r_u->status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+	}
+
+	for (i=0; i<num_sids; i++) {
+		struct lsa_name_info *name = &name_infos[i];
+
+		if (name->type == SID_NAME_UNKNOWN) {
+			name->dom_idx = -1;
+			name->name = talloc_asprintf(p->mem_ctx, "%8.8x",
+						     name->rid);
+			if (name->name == NULL) {
+				r_u->status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		} else {
+			mapped_count += 1;
+		}
+		init_lsa_trans_name(&names->name[i], &names->uni_name[i],
+				    name->type, name->name, name->dom_idx);
+	}
+
+	names->num_entries = num_sids;
+	names->ptr_trans_names = 1;
+	names->num_entries2 = num_sids;
+
+	r_u->status = NT_STATUS_NONE_MAPPED;
+	if (mapped_count > 0) {
+		r_u->status = (mapped_count < num_sids) ?
+			STATUS_SOME_UNMAPPED : NT_STATUS_OK;
+	}
+
+	DEBUG(10, ("num_sids %d, mapped_count %d, status %s\n",
+		   num_sids, mapped_count, nt_errstr(r_u->status)));
+
+ done:
 	init_reply_lookup_sids(r_u, ref, names, mapped_count);
 
 	return r_u->status;
@@ -1173,10 +1186,7 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	if(!pdb_update_group_mapping_entry(&map))
-		return NT_STATUS_NO_SUCH_GROUP;
-
-	return r_u->status;
+	return pdb_update_group_mapping_entry(&map);
 }
 
 /***************************************************************************

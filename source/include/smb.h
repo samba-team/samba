@@ -224,18 +224,26 @@ typedef struct nttime_info {
 
 
 /* Allowable account control bits */
-#define ACB_DISABLED   0x0001  /* 1 = User account disabled */
-#define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
-#define ACB_PWNOTREQ   0x0004  /* 1 = User password not required */
-#define ACB_TEMPDUP    0x0008  /* 1 = Temporary duplicate account */
-#define ACB_NORMAL     0x0010  /* 1 = Normal user account */
-#define ACB_MNS        0x0020  /* 1 = MNS logon user account */
-#define ACB_DOMTRUST   0x0040  /* 1 = Interdomain trust account */
-#define ACB_WSTRUST    0x0080  /* 1 = Workstation trust account */
-#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account (BDC) */
-#define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
-#define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
- 
+#define ACB_DISABLED			0x00000001  /* 1 = User account disabled */
+#define ACB_HOMDIRREQ			0x00000002  /* 1 = Home directory required */
+#define ACB_PWNOTREQ			0x00000004  /* 1 = User password not required */
+#define ACB_TEMPDUP			0x00000008  /* 1 = Temporary duplicate account */
+#define ACB_NORMAL			0x00000010  /* 1 = Normal user account */
+#define ACB_MNS				0x00000020  /* 1 = MNS logon user account */
+#define ACB_DOMTRUST			0x00000040  /* 1 = Interdomain trust account */
+#define ACB_WSTRUST			0x00000080  /* 1 = Workstation trust account */
+#define ACB_SVRTRUST			0x00000100  /* 1 = Server trust account (BDC) */
+#define ACB_PWNOEXP			0x00000200  /* 1 = User password does not expire */
+#define ACB_AUTOLOCK			0x00000400  /* 1 = Account auto locked */
+
+/* only valid for > Windows 2000 */
+#define ACB_ENC_TXT_PWD_ALLOWED		0x00000800  /* 1 = Text password encryped */
+#define ACB_SMARTCARD_REQUIRED		0x00001000  /* 1 = Smart Card required */
+#define ACB_TRUSTED_FOR_DELEGATION	0x00002000  /* 1 = Trusted for Delegation */
+#define ACB_NOT_DELEGATED		0x00004000  /* 1 = Not delegated */
+#define ACB_USE_DES_KEY_ONLY		0x00008000  /* 1 = Use DES key only */
+#define ACB_DONT_REQUIRE_PREAUTH	0x00010000  /* 1 = Preauth not required */
+
 #define MAX_HOURS_LEN 32
 
 #ifndef MAXSUBAUTHS
@@ -262,6 +270,9 @@ enum SID_NAME_USE {
 #define LOOKUP_NAME_REMOTE   2  /* Ask others */
 #define LOOKUP_NAME_ALL (LOOKUP_NAME_ISOLATED|LOOKUP_NAME_REMOTE)
 
+#define LOOKUP_NAME_GROUP    4  /* This is a NASTY hack for valid users = @foo
+				 * where foo also exists in as user. */
+
 /**
  * @brief Security Identifier
  *
@@ -279,6 +290,21 @@ typedef struct sid_info {
 	 */
 	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
+
+struct lsa_dom_info {
+	BOOL valid;
+	DOM_SID sid;
+	const char *name;
+	int num_idxs;
+	int *idxs;
+};
+
+struct lsa_name_info {
+	uint32 rid;
+	enum SID_NAME_USE type;
+	const char *name;
+	int dom_idx;
+};
 
 /* Some well-known SIDs */
 extern const DOM_SID global_sid_World_Domain;
@@ -302,6 +328,8 @@ extern const DOM_SID global_sid_Builtin_Server_Operators;
 extern const DOM_SID global_sid_Builtin_Print_Operators;
 extern const DOM_SID global_sid_Builtin_Backup_Operators;
 extern const DOM_SID global_sid_Builtin_Replicator;
+extern const DOM_SID global_sid_Unix_Users;
+extern const DOM_SID global_sid_Unix_Groups;
 
 /*
  * The complete list of SIDS belonging to this user.
@@ -316,7 +344,7 @@ extern const DOM_SID global_sid_Builtin_Replicator;
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-typedef struct _nt_user_token {
+typedef struct nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 	SE_PRIV privileges;
@@ -1718,6 +1746,22 @@ typedef struct uuid_flat {
 
 /* map readonly options */
 enum mapreadonly_options {MAP_READONLY_NO, MAP_READONLY_YES, MAP_READONLY_PERMISSIONS};
+
+/* usershare error codes. */
+enum usershare_err {
+		USERSHARE_OK=0,
+		USERSHARE_MALFORMED_FILE,
+		USERSHARE_BAD_VERSION,
+		USERSHARE_MALFORMED_PATH,
+		USERSHARE_MALFORMED_COMMENT_DEF,
+		USERSHARE_MALFORMED_ACL_DEF,
+		USERSHARE_ACL_ERR,
+		USERSHARE_PATH_NOT_ABSOLUTE,
+		USERSHARE_PATH_IS_DENIED,
+		USERSHARE_PATH_NOT_ALLOWED,
+		USERSHARE_PATH_NOT_DIRECTORY,
+		USERSHARE_POSIX_ERR
+};
 
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};

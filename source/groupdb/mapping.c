@@ -176,7 +176,65 @@ BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_us
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
 
-	return pdb_add_group_mapping_entry(&map);
+	return NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map));
+}
+
+/****************************************************************************
+ Map a unix group to a newly created mapping
+****************************************************************************/
+NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *pmap)
+{
+	NTSTATUS status;
+	GROUP_MAP map;
+	const char *grpname, *dom, *name;
+	uint32 rid;
+
+	if (pdb_getgrgid(&map, grp->gr_gid)) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	map.gid = grp->gr_gid;
+	grpname = grp->gr_name;
+
+	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+			&dom, &name, NULL, NULL)) {
+
+		const char *tmp = talloc_asprintf(
+			tmp_talloc_ctx(), "Unix Group %s", grp->gr_name);
+
+		DEBUG(5, ("%s exists as %s\\%s, retrying as \"%s\"\n",
+			  grpname, dom, name, tmp));
+		grpname = tmp;
+	}
+
+	if (lookup_name(tmp_talloc_ctx(), grpname, LOOKUP_NAME_ISOLATED,
+			NULL, NULL, NULL, NULL)) {
+		DEBUG(3, ("\"%s\" exists, can't map it\n", grp->gr_name));
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	fstrcpy(map.nt_name, grpname);
+
+	if (pdb_rid_algorithm()) {
+		rid = pdb_gid_to_group_rid( grp->gr_gid );
+	} else {
+		if (!pdb_new_rid(&rid)) {
+			DEBUG(3, ("Could not get a new RID for %s\n",
+				  grp->gr_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	sid_compose(&map.sid, get_global_sam_sid(), rid);
+	map.sid_name_use = SID_NAME_DOM_GRP;
+	fstrcpy(map.comment, talloc_asprintf(tmp_talloc_ctx(), "Unix Group %s",
+					     grp->gr_name));
+
+	status = pdb_add_group_mapping_entry(&map);
+	if (NT_STATUS_IS_OK(status)) {
+		*pmap = map;
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -794,99 +852,6 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	return True;
 }
 
-
-/* get a local (alias) group from it's SID */
-
-BOOL get_local_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
-{
-	BOOL ret;
-	
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
-
-	/* The group is in the mapping table */
-	become_root();
-	ret = pdb_getgrsid(map, *sid);
-	unbecome_root();
-	
-	if ( !ret )
-		return False;
-		
-	if ( ( (map->sid_name_use != SID_NAME_ALIAS) &&
-	       (map->sid_name_use != SID_NAME_WKN_GRP) )
-		|| (map->gid == -1)
-		|| (getgrgid(map->gid) == NULL) ) 
-	{
-		return False;
-	} 		
-			
-#if 1 	/* JERRY */
-	/* local groups only exist in the group mapping DB so this 
-	   is not necessary */
-	   
-	else {
-		/* the group isn't in the mapping table.
-		 * make one based on the unix information */
-		uint32 alias_rid;
-		struct group *grp;
-
-		sid_peek_rid(sid, &alias_rid);
-		map->gid=pdb_group_rid_to_gid(alias_rid);
-		
-		grp = getgrgid(map->gid);
-		if ( !grp ) {
-			DEBUG(3,("get_local_group_from_sid: No unix group for [%ul]\n", map->gid));
-			return False;
-		}
-
-		map->sid_name_use=SID_NAME_ALIAS;
-
-		fstrcpy(map->nt_name, grp->gr_name);
-		fstrcpy(map->comment, "Local Unix Group");
-
-		sid_copy(&map->sid, sid);
-	}
-#endif
-
-	return True;
-}
-
-/* get a builtin group from it's SID */
-
-BOOL get_builtin_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
-{
-	BOOL ret;
-	
-
-	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
-	}
-
-	become_root();
-	ret = pdb_getgrsid(map, *sid);
-	unbecome_root();
-	
-	if ( !ret )
-		return False;
-
-	if (map->sid_name_use!=SID_NAME_WKN_GRP) {
-		return False;
-	}
-
-	if (map->gid==-1) {
-		return False;
-	}
-
-	if ( getgrgid(map->gid) == NULL) {
-		return False;
-	}
-
-	return True;
-}
-
 /****************************************************************************
  Create a UNIX group on demand.
 ****************************************************************************/
@@ -1101,9 +1066,12 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	gid_t gid;
 	BOOL exists;
 	GROUP_MAP map;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
 
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	DEBUG(10, ("Trying to create alias %s\n", name));
 
+	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1116,8 +1084,18 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 		return NT_STATUS_ALIAS_EXISTS;
 	}
 
-	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))
+	if (!winbind_allocate_gid(&gid)) {
+		DEBUG(3, ("Could not get a gid out of winbind\n"));
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!pdb_new_rid(&new_rid)) {
+		DEBUG(0, ("Could not allocate a RID -- wasted a gid :-(\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(10, ("Creating alias %s with gid %d and rid %d\n",
+		   name, gid, new_rid));
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, new_rid);
@@ -1128,10 +1106,12 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, "");
 
-	if (!pdb_add_group_mapping_entry(&map)) {
-		DEBUG(0, ("Could not add group mapping entry for alias %s\n",
-			  name));
-		return NT_STATUS_ACCESS_DENIED;
+	status = pdb_add_group_mapping_entry(&map);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not add group mapping entry for alias %s "
+			  "(%s)\n", name, nt_errstr(status)));
+		return status;
 	}
 
 	*rid = new_rid;
@@ -1155,6 +1135,14 @@ NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 	if (!pdb_getgrsid(&map, *sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
+	if ((map.sid_name_use != SID_NAME_ALIAS) &&
+	    (map.sid_name_use != SID_NAME_WKN_GRP)) {
+		DEBUG(2, ("%s is a %s, expected an alias\n",
+			  sid_string_static(sid),
+			  sid_type_lookup(map.sid_name_use)));
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
 	fstrcpy(info->acct_name, map.nt_name);
 	fstrcpy(info->acct_desc, map.comment);
 	sid_peek_rid(&map.sid, &info->rid);
@@ -1172,10 +1160,7 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 
 	fstrcpy(map.comment, info->acct_desc);
 
-	if (!pdb_update_group_mapping_entry(&map))
-		return NT_STATUS_ACCESS_DENIED;
-
-	return NT_STATUS_OK;
+	return pdb_update_group_mapping_entry(&map);
 }
 
 NTSTATUS pdb_default_add_aliasmem(struct pdb_methods *methods,
@@ -1315,7 +1300,7 @@ BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
 	fstrcpy(map.nt_name, info->acct_name);
 	fstrcpy(map.comment, info->acct_desc);
 
-	return pdb_update_group_mapping_entry(&map);
+	return NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map));
 }
 
 

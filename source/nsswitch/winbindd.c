@@ -120,7 +120,7 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUG(2, ("\t\tpid %lu, sock %d\n",
+			DEBUGADD(2, ("\t\tpid %lu, sock %d\n",
 				  (unsigned long)tmp->pid, tmp->sock));
 		}
 	}
@@ -250,6 +250,7 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
+	{ WINBINDD_PAM_LOGOFF, winbindd_pam_logoff, "PAM_LOGOFF" },
 
 	/* Enumeration functions */
 
@@ -270,9 +271,8 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
-	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
-	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
-	  "ALLOCATE_RID_AND_GID" },
+	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
+	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_uid, "ALLOCATE_GID" },
 
 	/* Miscellaneous */
 
@@ -1062,7 +1062,11 @@ int main(int argc, char **argv)
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
 	message_register(MSG_SHUTDOWN, msg_shutdown);
-	
+
+	/* Handle online/offline messages. */
+	message_register(MSG_WINBIND_OFFLINE,winbind_msg_offline);
+	message_register(MSG_WINBIND_ONLINE,winbind_msg_online);
+
 	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */

@@ -62,6 +62,18 @@ static void smbd_set_server_fd(int fd)
 	client_setfd(fd);
 }
 
+/*******************************************************************
+ What to do when smb.conf is updated.
+ ********************************************************************/
+
+static void smb_conf_updated(int msg_type, struct process_id src,
+			     void *buf, size_t len)
+{
+	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
+	reload_services(False);
+}
+
+
 /****************************************************************************
  Terminate signal.
 ****************************************************************************/
@@ -331,6 +343,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
         message_register(MSG_SMB_SAM_REPL, msg_sam_repl);
         message_register(MSG_SHUTDOWN, msg_exit_server);
         message_register(MSG_SMB_FILE_RENAME, msg_file_was_renamed);
+	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated); 
 
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
@@ -697,6 +710,7 @@ void build_options(BOOL screen);
 
  int main(int argc,const char *argv[])
 {
+	extern BOOL in_server;
 	/* shall I run as a daemon */
 	static BOOL is_daemon = False;
 	static BOOL interactive = False;
@@ -717,6 +731,8 @@ void build_options(BOOL screen);
 	POPT_COMMON_SAMBA
 	{ NULL }
 	};
+
+	in_server = True;
 
 	load_case_tables();
 
@@ -826,11 +842,6 @@ void build_options(BOOL screen);
 
 	init_structs();
 
-	if (!init_guest_info()) {
-		DEBUG(0,("ERROR: failed to setup guest info.\n"));
-		return -1;
-	}
-
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
@@ -885,9 +896,6 @@ void build_options(BOOL screen);
 	if (!locking_init(0))
 		exit(1);
 
-	if (!share_info_db_init())
-		exit(1);
-
 	namecache_enable();
 
 	if (!init_registry())
@@ -900,6 +908,11 @@ void build_options(BOOL screen);
 
 	if (!print_backend_init())
 		exit(1);
+
+	if (!init_guest_info()) {
+		DEBUG(0,("ERROR: failed to setup guest info.\n"));
+		return -1;
+	}
 
 	/* Setup the main smbd so that we can get messages. */
 	/* don't worry about general printing messages here */

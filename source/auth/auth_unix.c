@@ -62,7 +62,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 	/* Now write it into the file. */
 	become_root();
 
-	ret = pdb_update_sam_account (sampass);
+	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
 
 	unbecome_root();
 
@@ -91,13 +91,13 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	struct passwd *pass = NULL;
 
 	become_root();
-	pass = Get_Pwnam(user_info->internal_username.str);
+	pass = Get_Pwnam(user_info->internal_username);
 
 	
 	/** @todo This call assumes a ASCII password, no charset transformation is 
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
-				pass ? pass->pw_name : user_info->internal_username.str, 
+				pass ? pass->pw_name : user_info->internal_username, 
 				(char *)user_info->plaintext_password.data,
 				user_info->plaintext_password.length-1,
 				lp_update_encrypted() ? 

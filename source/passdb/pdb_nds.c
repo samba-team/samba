@@ -771,13 +771,16 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 		result = pdb_get_backend_private_data(sam_acct, methods);
 		if (!result) {
-			attr_list = get_userattr_list(ldap_state->schema_ver);
+			attr_list = get_userattr_list(NULL,
+						      ldap_state->schema_ver);
 			rc = ldapsam_search_suffix_by_name(ldap_state, username, &result, attr_list );
-			free_attr_list( attr_list );
+			talloc_free( attr_list );
 			if (rc != LDAP_SUCCESS) {
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
-			pdb_set_backend_private_data(sam_acct, result, private_data_free_fn, methods, PDB_CHANGED);
+			pdb_set_backend_private_data(sam_acct, result, NULL,
+						     methods, PDB_CHANGED);
+			talloc_autofree_ldapmsg(sam_acct->mem_ctx, result);
 		}
 
 		if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {

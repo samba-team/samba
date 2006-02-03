@@ -353,11 +353,14 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 /****************************************************************************
  External interface.
  Close an open named pipe over SMB. Free any authentication data.
+ Returns False if the cli_close call failed.
  ****************************************************************************/
 
-void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
+BOOL cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
-	if (!cli_close(cli->cli, cli->fnum)) {
+	BOOL ret = cli_close(cli->cli, cli->fnum);
+
+	if (!ret) {
 		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s, "
                          "fnum 0x%x "
                          "to machine %s.  Error was %s\n",
@@ -376,6 +379,7 @@ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 
 	DLIST_REMOVE(cli->cli->pipe_list, cli);
 	talloc_destroy(cli->mem_ctx);
+	return ret;
 }
 
 /****************************************************************************

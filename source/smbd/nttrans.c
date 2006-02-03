@@ -2309,7 +2309,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		sid_parse(pdata+4,sid_len,&sid);
 		DEBUGADD(10,("for SID: %s\n",sid_string_static(&sid)));
 
-		if (!NT_STATUS_IS_OK(sid_to_uid(&sid, &uid))) {
+		if (!sid_to_uid(&sid, &uid)) {
 			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
 				sid_string_static(&sid),(unsigned long)sid_len));
 			uid = (-1);

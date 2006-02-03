@@ -102,6 +102,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads->auth.realm = SMB_STRDUP( lp_realm() );
 	}
 
+	ads->auth.renewable = 1;
+
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
 		extern struct winbindd_methods msrpc_methods, cache_methods;
@@ -206,8 +208,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (use_nss_info("sfu")) {
-			homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-			shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+			homedir = ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_homedir_attr);
+			shell = ads_pull_string(ads, mem_ctx, msg, 
+						ads->schema.sfu_shell_attr);
 		}
 	
 		if (!ads_pull_sid(ads, msg, "objectSid",
@@ -474,8 +478,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 
 	if (use_nss_info("sfu")) {
-		info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-		info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+		info->homedir = ads_pull_string(ads, mem_ctx, msg, 
+						ads->schema.sfu_homedir_attr);
+		info->shell = ads_pull_string(ads, mem_ctx, msg, 
+					      ads->schema.sfu_shell_attr);
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
@@ -872,8 +878,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	struct ds_domain_trust	*domains = NULL;
 	int			count = 0;
 	int			i;
-				/* i think we only need our forest and downlevel trusted domains */
-	uint32			flags = DS_DOMAIN_IN_FOREST | DS_DOMAIN_DIRECT_OUTBOUND;
+	uint32			flags = DS_DOMAIN_DIRECT_OUTBOUND;
 	struct rpc_pipe_client *cli;
 
 	DEBUG(3,("ads: trusted_domains\n"));
@@ -946,6 +951,8 @@ struct winbindd_methods ads_methods = {
 	msrpc_lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
+	msrpc_lockout_policy,
+	msrpc_password_policy,
 	trusted_domains,
 };
 

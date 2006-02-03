@@ -462,7 +462,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_netdfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
@@ -2871,6 +2871,8 @@ if test x"$with_ldap_support" != x"no"; then
   
   AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $smb_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
 
+  AC_CHECK_FUNC_EXT(ldap_dn2ad_canonical,$LDAP_LIBS)	
+  
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     CPPFLAGS="$CPPFLAGS -DLDAP_DEPRECATED"
@@ -3144,6 +3146,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_set_pac_request, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
 
@@ -3445,6 +3450,29 @@ if test x"$with_ads_support" != x"no"; then
 LIBS="$ac_save_LIBS"
 fi
 
+#################################################
+# check for KCM support
+
+with_kcm_support=no
+AC_MSG_CHECKING([for KCM support])
+
+AC_ARG_WITH(kcm,
+[  --with-kcm              KCM support (default no)],
+[ case "$withval" in
+    yes)
+	if test x$FOUND_KRB5 = x"no"; then
+		AC_MSG_ERROR(libkrb5 is needed for KCM support)
+	fi
+	with_kcm_support="$withval"
+	AC_DEFINE(WITH_KCM,1,[Whether to include KCM support])
+    	;;
+    *)
+	with_kcm_support="no"
+	AC_DEFINE(WITH_KCM,0,[Whether to include KCM support])
+    	;;
+  esac ])
+
+AC_MSG_RESULT($with_kcm_support)
 ########################################################
 # Compile experimental passdb backends?
 # (pdb_xml, pdb_mysql, pdb_pgsql)
@@ -5177,7 +5205,7 @@ SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_netdfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)

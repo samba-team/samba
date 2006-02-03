@@ -34,7 +34,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 11
+#define WINBIND_INTERFACE_VERSION 14
 
 /* Socket commands */
 
@@ -64,6 +64,7 @@ enum winbindd_cmd {
 	WINBINDD_PAM_AUTH,
 	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
+	WINBINDD_PAM_LOGOFF,
 
 	/* List various things */
 
@@ -82,8 +83,9 @@ enum winbindd_cmd {
 	WINBINDD_SID_TO_GID,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
-	WINBINDD_ALLOCATE_RID,
-	WINBINDD_ALLOCATE_RID_AND_GID,
+
+	WINBINDD_ALLOCATE_UID,
+	WINBINDD_ALLOCATE_GID,
 
 	/* Miscellaneous other stuff */
 
@@ -114,7 +116,7 @@ enum winbindd_cmd {
 	/* return a list of group sids for a user sid */
 	WINBINDD_GETUSERSIDS,
 
-	/* Return the domain groups a user is in */
+	/* Various group queries */
 	WINBINDD_GETUSERDOMGROUPS,
 
 	/* Initialize connection in a child */
@@ -165,7 +167,6 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_LMKEY      		0x0008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
 #define WBFLAG_QUERY_ONLY		0x0020
-#define WBFLAG_ALLOCATE_RID		0x0040
 #define WBFLAG_PAM_UNIX_NAME            0x0080
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
 #define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
@@ -174,6 +175,10 @@ typedef struct winbindd_gr {
 #define WBFLAG_IS_PRIVILEGED            0x0400
 /* Flag to say this is a winbindd internal send - don't recurse. */
 #define WBFLAG_RECURSE			0x0800
+
+#define WBFLAG_PAM_KRB5			0x1000
+#define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x2000
+#define WBFLAG_PAM_CACHED_LOGIN		0x4000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
@@ -199,6 +204,8 @@ struct winbindd_request {
 			fstring user;
 			fstring pass;
 		        fstring require_membership_of_sid;
+			fstring krb5_cc_type;
+			uid_t uid;
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
@@ -217,6 +224,11 @@ struct winbindd_request {
                     fstring oldpass;
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
+		struct {
+			fstring user;
+			fstring krb5ccname;
+			uid_t uid;
+		} logoff;              /* pam_winbind session module */
 		fstring sid;         /* lookupsid, sid_to_[ug]id */
 		struct {
 			fstring dom_name;       /* lookupname */
@@ -242,6 +254,7 @@ struct winbindd_request {
 			gid_t gid;
 			fstring sid;
 		} dual_idmapset;
+		BOOL list_all_domains;
 	} data;
 	char *extra_data;
 	size_t extra_len;
@@ -307,12 +320,41 @@ struct winbindd_response {
 			int pam_error;
 			char user_session_key[16];
 			char first_8_lm_hash[8];
+			fstring krb5ccname;
+			struct policy_settings {
+				uint16 min_length_password;
+				uint16 password_history;
+				uint32 password_properties;
+				time_t expire;
+				time_t min_passwordage;
+			} policy;
+			uint32 reject_reason;
+			struct info3_text {
+				time_t logon_time;
+				time_t logoff_time;
+				time_t kickoff_time;
+				time_t pass_last_set_time;
+				time_t pass_can_change_time;
+				time_t pass_must_change_time;
+				uint16 logon_count;
+				uint16 bad_pw_count;
+				fstring user_sid;
+				fstring group_sid;
+				fstring dom_sid;
+				uint32 num_groups;
+				uint32 user_flgs;
+				uint32 acct_flags;
+				uint32 num_other_sids;
+				fstring user_name;
+				fstring full_name;
+				fstring logon_script;
+				fstring profile_path;
+				fstring home_dir;
+				fstring dir_drive;
+				fstring logon_srv;
+				fstring logon_dom;
+			} info3;
 		} auth;
-		uint32 rid;	/* create user or group or allocate rid */
-		struct {
-			uint32 rid;
-			gid_t gid;
-		} rid_and_gid;
 		struct {
 			fstring name;
 			fstring alt_name;
@@ -334,6 +376,22 @@ struct winbindd_response {
 	/* Variable length return data */
 
 	void *extra_data;               /* getgrnam, getgrgid, getgrent */
+};
+
+struct WINBINDD_CCACHE_ENTRY {
+	const char *principal_name;
+	const char *ccname;
+	const char *service;
+	const char *username;
+	const char *sid_string;
+	const char *pass;
+	uid_t uid;
+	time_t create_time;
+	time_t renew_until;
+	BOOL refresh_tgt;
+	time_t refresh_time;
+	struct timed_event *event;
+	struct WINBINDD_CCACHE_ENTRY *next, *prev;
 };
 
 #endif

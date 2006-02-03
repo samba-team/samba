@@ -29,26 +29,6 @@ extern struct generic_mapping file_generic_mapping;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define INVALID_SHARENAME_CHARS "<>*?|/\\+=;:\","
-
-/********************************************************************
- Check a string for any occurrences of a specified list of invalid 
- characters.
-********************************************************************/
-
-static BOOL validate_net_name( const char *name, const char *invalid_chars, int max_len )
-{
-	int i;
-
-	for ( i=0; i<max_len && name[i]; i++ ) {
-		/* fail if strchr_m() finds one of the invalid characters */
-		if ( name[i] && strchr_m( invalid_chars, name[i] ) )
-			return False;
-	}
-
-	return True;
-}
-
 /*******************************************************************
  Utility function to get the 'type' of a share from an snum.
  ********************************************************************/
@@ -132,189 +112,10 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
 }
 
 /*******************************************************************
- What to do when smb.conf is updated.
- ********************************************************************/
-
-static void smb_conf_updated(int msg_type, struct process_id src,
-			     void *buf, size_t len)
-{
-	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
-	reload_services(False);
-}
-
-/*******************************************************************
- Create the share security tdb.
- ********************************************************************/
-
-static TDB_CONTEXT *share_tdb; /* used for share security descriptors */
-#define SHARE_DATABASE_VERSION_V1 1
-#define SHARE_DATABASE_VERSION_V2 2 /* version id in little endian. */
-
-BOOL share_info_db_init(void)
-{
-	static pid_t local_pid;
-	const char *vstring = "INFO/version";
-	int32 vers_id;
- 
-	if (share_tdb && local_pid == sys_getpid())
-		return True;
-	share_tdb = tdb_open_log(lock_path("share_info.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	if (!share_tdb) {
-		DEBUG(0,("Failed to open share info database %s (%s)\n",
-			lock_path("share_info.tdb"), strerror(errno) ));
-		return False;
-	}
- 
-	local_pid = sys_getpid();
- 
-	/* handle a Samba upgrade */
-	tdb_lock_bystring(share_tdb, vstring, 0);
-
-	/* Cope with byte-reversed older versions of the db. */
-	vers_id = tdb_fetch_int32(share_tdb, vstring);
-	if ((vers_id == SHARE_DATABASE_VERSION_V1) || (IREV(vers_id) == SHARE_DATABASE_VERSION_V1)) {
-		/* Written on a bigendian machine with old fetch_int code. Save as le. */
-		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
-		vers_id = SHARE_DATABASE_VERSION_V2;
-	}
-
-	if (vers_id != SHARE_DATABASE_VERSION_V2) {
-		tdb_traverse(share_tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_int32(share_tdb, vstring, SHARE_DATABASE_VERSION_V2);
-	}
-	tdb_unlock_bystring(share_tdb, vstring);
-
-	message_register(MSG_SMB_CONF_UPDATED, smb_conf_updated);
- 
-	return True;
-}
-
-/*******************************************************************
- Fake up a Everyone, full access as a default.
- ********************************************************************/
-
-static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
-{
-	SEC_ACCESS sa;
-	SEC_ACE ace;
-	SEC_ACL *psa = NULL;
-	SEC_DESC *psd = NULL;
-	uint32 def_access = GENERIC_ALL_ACCESS;
-
-	se_map_generic(&def_access, &file_generic_mapping);
-
-	init_sec_access(&sa, GENERIC_ALL_ACCESS | def_access );
-	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
-
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 1, &ace)) != NULL) {
-		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, psize);
-	}
-
-	if (!psd) {
-		DEBUG(0,("get_share_security: Failed to make SEC_DESC.\n"));
-		return NULL;
-	}
-
-	return psd;
-}
-
-/*******************************************************************
- Pull a security descriptor from the share tdb.
- ********************************************************************/
-
-static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
-{
-	prs_struct ps;
-	fstring key;
-	SEC_DESC *psd = NULL;
-
-	*psize = 0;
-
-	/* Fetch security descriptor from tdb */
- 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
- 
-	if (tdb_prs_fetch(share_tdb, key, &ps, ctx)!=0 ||
-		!sec_io_desc("get_share_security", &psd, &ps, 1)) {
- 
-		DEBUG(4,("get_share_security: using default secdesc for %s\n", lp_servicename(snum) ));
- 
-		return get_share_security_default(ctx, snum, psize);
-	}
-
-	if (psd)
-		*psize = sec_desc_size(psd);
-
-	prs_mem_free(&ps);
-	return psd;
-}
-
-/*******************************************************************
- Store a security descriptor in the share db.
- ********************************************************************/
-
-static BOOL set_share_security(TALLOC_CTX *ctx, const char *share_name, SEC_DESC *psd)
-{
-	prs_struct ps;
-	TALLOC_CTX *mem_ctx = NULL;
-	fstring key;
-	BOOL ret = False;
-
-	mem_ctx = talloc_init("set_share_security");
-	if (mem_ctx == NULL)
-		return False;
-
-	prs_init(&ps, (uint32)sec_desc_size(psd), mem_ctx, MARSHALL);
- 
-	if (!sec_io_desc("share_security", &psd, &ps, 1))
-		goto out;
- 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", share_name);
- 
-	if (tdb_prs_store(share_tdb, key, &ps)==0) {
-		ret = True;
-		DEBUG(5,("set_share_security: stored secdesc for %s\n", share_name ));
-	} else {
-		DEBUG(1,("set_share_security: Failed to store secdesc for %s\n", share_name ));
-	} 
-
-	/* Free malloc'ed memory */
- 
-out:
- 
-	prs_mem_free(&ps);
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
-	return ret;
-}
-
-/*******************************************************************
- Delete a security descriptor.
-********************************************************************/
-
-static BOOL delete_share_security(int snum)
-{
-	TDB_DATA kbuf;
-	fstring key;
-
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", lp_servicename(snum));
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
-	if (tdb_delete(share_tdb, kbuf) != 0) {
-		DEBUG(0,("delete_share_security: Failed to delete entry for share %s\n",
-				lp_servicename(snum) ));
-		return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
  Map any generic bits to file specific bits.
 ********************************************************************/
 
-void map_generic_share_sd_bits(SEC_DESC *psd)
+static void map_generic_share_sd_bits(SEC_DESC *psd)
 {
 	int i;
 	SEC_ACL *ps_dacl = NULL;
@@ -517,7 +318,7 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries, BOOL all_shares)
 {
 	int num_entries = 0;
-	int num_services = lp_numservices();
+	int num_services = 0;
 	int snum;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
@@ -527,6 +328,11 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 
 	ctr->info_level = ctr->switch_value = info_level;
 	*resume_hnd = 0;
+
+	/* Ensure all the usershares are loaded. */
+	become_root();
+	num_services = load_usershare_shares();
+	unbecome_root();
 
 	/* Count the number of entries. */
 	for (snum = 0; snum < num_services; snum++) {

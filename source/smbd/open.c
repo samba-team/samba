@@ -22,6 +22,7 @@
 
 #include "includes.h"
 
+extern struct generic_mapping file_generic_mapping;
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
 extern uint16 global_smbpid;
@@ -1017,15 +1018,6 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 	return True;
 
 }
-
-/* Map generic permissions to file object specific permissions */
-                                                                                                               
-struct generic_mapping file_generic_mapping = {
-	FILE_GENERIC_READ,
-	FILE_GENERIC_WRITE,
-	FILE_GENERIC_EXECUTE,
-	FILE_GENERIC_ALL
-};
 
 /****************************************************************************
  Open a file with a share mode.

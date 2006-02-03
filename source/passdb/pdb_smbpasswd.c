@@ -594,7 +594,6 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 	size_t new_entry_length;
 	char *new_entry;
 	SMB_OFF_T offpos;
-	uint32 max_found_uid = 0;
  
 	/* Open the smbpassword file - for update. */
 	fp = startsmbfilepwent(pfile, PWF_UPDATE, &smbpasswd_state->pw_file_lock_depth);
@@ -618,11 +617,6 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
 			DEBUG(0, ("add_smbfilepwd_entry: entry with name %s already exists\n", pwd->smb_name));
 			endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
 			return False;
-		}
-    
-		/* Look for a free uid for use in non-unix accounts */
-		if (pwd->smb_userid > max_found_uid) {
-			max_found_uid = pwd->smb_userid;
 		}
 	}
 
@@ -1161,14 +1155,13 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 		
 		/* If the user specified a RID, make sure its able to be both stored and retreived */
 		if (rid == DOMAIN_USER_RID_GUEST) {
-			struct passwd *passwd = getpwnam_alloc(lp_guestaccount());
+			struct passwd *passwd = getpwnam_alloc(NULL, lp_guestaccount());
 			if (!passwd) {
 				DEBUG(0, ("Could not find gest account via getpwnam()! (%s)\n", lp_guestaccount()));
 				return False;
 			}
 			smb_pw->smb_userid=passwd->pw_uid;
-			passwd_free(&passwd);
-
+			talloc_free(passwd);
 		} else if (algorithmic_pdb_rid_is_user(rid)) {
 			smb_pw->smb_userid=algorithmic_pdb_user_rid_to_uid(rid);
 		} else {
@@ -1204,7 +1197,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 
 	/* verify the user account exists */
 			
-	if ( !(pwfile = getpwnam_alloc(pw_buf->smb_name)) ) {
+	if ( !(pwfile = getpwnam_alloc(NULL, pw_buf->smb_name)) ) {
 		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid "
 		"%u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;
@@ -1213,7 +1206,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 	if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile)))
 		return False;
 		
-	passwd_free(&pwfile);
+	talloc_free(pwfile);
 
 	/* set remaining fields */
 		
@@ -1532,6 +1525,11 @@ done:
 	return (ret);	
 }
 
+static BOOL smbpasswd_rid_algorithm(struct pdb_methods *methods)
+{
+	return True;
+}
+
 static void free_private_data(void **vp) 
 {
 	struct smbpasswd_privates **privates = (struct smbpasswd_privates**)vp;
@@ -1562,6 +1560,8 @@ static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_m
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
 	(*pdb_method)->rename_sam_account = smbpasswd_rename_sam_account;
+
+	(*pdb_method)->rid_algorithm = smbpasswd_rid_algorithm;
 
 	/* Setup private data and free function */
 

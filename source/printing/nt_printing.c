@@ -3140,7 +3140,11 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 		win_rc = WERR_SERVER_UNAVAILABLE;
 		goto done;
 	}
+#ifdef HAVE_KCM
+	setenv(KRB5_ENV_CCNAME, "KCM:SYSTEM", 1);
+#else
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
+#endif
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
 		NULL, NULL);
@@ -3545,7 +3549,7 @@ static void map_to_os2_driver(fstring drivername)
 		return;
 	}
 
-	lines = file_lines_load(mapfile, &numlines);
+	lines = file_lines_load(mapfile, &numlines,0);
 	if (numlines == 0) {
 		DEBUG(0,("No entries in OS/2 driver map %s\n",mapfile));
 		return;
@@ -5326,9 +5330,11 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
         /* see if we need to try the printer admin list */
 
-        if ( access_granted == 0 ) {
-                if ( user_in_list(uidtoname(user->ut.uid), lp_printer_admin(snum), user->ut.groups, user->ut.ngroups) )
-                        return True;
+        if ((access_granted == 0) &&
+	    (token_contains_name_in_list(uidtoname(user->ut.uid), NULL,
+					 user->nt_user_token,
+					 lp_printer_admin(snum)))) {
+		return True;
         }
 
 	talloc_destroy(mem_ctx);
