@@ -188,12 +188,12 @@ static const char* get_parm_translated(
 	if(strcmp(pLabel, pTranslated) != 0)
 	{
 		pstr_sprintf(output,
-		  "<A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s <br><span class=\"i18n_translated_parm\">%s</span>",
+		  "<A HREF=\"/swat/help/manpages/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s <br><span class=\"i18n_translated_parm\">%s</span>",
 		   pAnchor, pHelp, pLabel, pTranslated);
 		return output;
 	}
 	pstr_sprintf(output, 
-	  "<a href=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\" class=\"help_link\"> %s</a> %s",
+	  "<A HREF=\"/swat/help/manpages/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s",
 	  pAnchor, pHelp, pLabel);
 	return output;
 }
@@ -220,7 +220,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td width=\"230\">%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
+	printf("<tr><td>%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
 	switch (parm->type) {
 	case P_CHAR:
 		printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",
@@ -230,7 +230,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_LIST:
-		printf("<input type=text size=30 name=\"parm_%s\" value=\"",
+		printf("<input type=text size=40 name=\"parm_%s\" value=\"",
 			make_parm_name(parm->label));
 		if ((char ***)ptr && *(char ***)ptr && **(char ***)ptr) {
 			char **list = *(char ***)ptr;
@@ -268,7 +268,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_STRING:
 	case P_USTRING:
 		push_utf8_allocate(&utf8_s1, *(char **)ptr);
-		printf("<input type=text size=30 name=\"parm_%s\" value=\"%s\">",
+		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
 		       make_parm_name(parm->label), fix_quotes(utf8_s1));
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
@@ -278,7 +278,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_GSTRING:
 	case P_UGSTRING:
 		push_utf8_allocate(&utf8_s1, (char *)ptr);
-		printf("<input type=text size=30 name=\"parm_%s\" value=\"%s\">",
+		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
 		       make_parm_name(parm->label), fix_quotes(utf8_s1));
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
@@ -523,50 +523,42 @@ static void commit_parameters(int snum)
 }
 
 /****************************************************************************
-  generate html for rollovers
+  spit out the html for a link with an image 
 ****************************************************************************/
-static void rollover_link(const char *name, const char *id, const char *page)
+static void image_link(const char *name, const char *hlink, const char *src)
 {
-	if ( strcmp(page, id)==0 ) {
-		printf("    <img src=\"/swat/images/%s_flat.png\" alt=\"%s\" />\n", 
-	       	   id, name);
-	} else {
-		printf("    <a href=\"%s/%s\" onmouseover=\"swapImg('%s','%sOver')\" onmouseout=\"swapImg('%s','%sLink')\"><img src=\"/swat/images/%s_link.png\" name=\"%s\" alt=\"%s\" /></a>\n",
-	       cgi_baseurl(), id, id, id, id, id, id, id, name);
-	}
+	printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
+	       cgi_baseurl(), hlink, src, name);
 }
 
 /****************************************************************************
   display the main navigation controls at the top of each page along
   with a title 
 ****************************************************************************/
-static void show_main_buttons(const char *page)
+static void show_main_buttons(void)
 {
 	char *p;
 	
-	printf("  <div id=\"nav\">\n");
-
-	if (have_write_access) {
-		rollover_link(_("Configure"), "conf", page);
-		rollover_link(_("Services"), "services", page);
-	}
-   
-	/* root always gets all buttons, otherwise look for -P */
-	if ( have_write_access || (!passwd_only && have_read_access) ) {
-		rollover_link(_("Status"), "status", page);
-	}
-	rollover_link(_("Password Management"), "passwd", page);
-	
-	printf("  </div>\n\n");
-	
-	/* Wrap the rest in a control div */
-	printf("  <div id=\"controls\">\n\n");
-
 	if ((p = cgi_user_name()) && strcmp(p, "root")) {
 		printf(_("Logged in as <b>%s</b>"), p);
 		printf("<p>\n");
 	}
 
+	image_link(_("Home"), "", "images/home.gif");
+	if (have_write_access) {
+		image_link(_("Globals"), "globals", "images/globals.gif");
+		image_link(_("Shares"), "shares", "images/shares.gif");
+		image_link(_("Printers"), "printers", "images/printers.gif");
+		image_link(_("Wizard"), "wizard", "images/wizard.gif");
+	}
+   /* root always gets all buttons, otherwise look for -P */
+	if ( have_write_access || (!passwd_only && have_read_access) ) {
+		image_link(_("Status"), "status", "images/status.gif");
+		image_link(_("View Config"), "viewconfig", "images/viewconfig.gif");
+	}
+	image_link(_("Password Management"), "passwd", "images/passwd.gif");
+
+	printf("<HR>\n");
 }
 
 /****************************************************************************
@@ -584,47 +576,11 @@ static void ViewModeBoxes(int mode)
 }
 
 /****************************************************************************
-  display a welcome page (Read-only users under passwd only get a unique welcome)
+  display a welcome page  
 ****************************************************************************/
 static void welcome_page(void)
 {
-	if (passwd_only && !have_write_access) {
-		include_html("help/welcome_passwd_only.html");
-	} else {
-		include_html("help/welcome.html");
-	}
-}
-
-/****************************************************************************
-  display help page  
-****************************************************************************/
-static void help_page(void)
-{
-	include_html("help/docs.html");
-}
-
-/****************************************************************************
-  display shares and printers links from an overall services page
-****************************************************************************/
-static void services_page(void)
-{
-	printf("  <div class=\"whereto\">\n");
-	printf("    <h2>File and Printer Shares</h2>\n\n");
-	printf("    <p>Follow the links below to edit service-level parameters for file and printer shares.</p>\n");
-	printf("  </div>\n\n");
-
-	printf("  <div class=\"view_conf\"><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
-
-	printf("  <div class=\"services_opts\">\n");
-	printf("    <ul>\n");
-	printf("      <li><a href=\"shares\">File Shares</a></li>\n");
-	printf("      <li><a href=\"printers\">Printer Shares</a></li>\n");
-	printf("    </ul>\n");
-	printf("  </div>\n\n");
-
-	printf("  <div>\n");
-	printf("    <p>Shares may also be added via the links above.</p>\n");
-	printf("  </div>\n\n");
+	include_html("help/welcome.html");
 }
 
 /****************************************************************************
@@ -692,9 +648,7 @@ static void rewritecfg_file(void)
 {
 	commit_parameters(GLOBAL_SECTION_SNUM);
 	save_reload(0);
-	printf("<h2>Samba Configuration Saved</h2>");
-	printf("<p>%s</p>\n", _("Note: smb.conf file has been read and rewritten"));
-	printf("<p>Return to the <a href=\"javascript:history.go(-1)\">previous page</a>.\n");
+	printf("<H2>%s</H2>\n", _("Note: smb.conf file has been read and rewritten"));
 }
 
 /****************************************************************************
@@ -806,7 +760,7 @@ static void wizard_page(void)
 	printf("<form method=post action=wizard>\n");
 
 	if (have_write_access) {
-		printf("%s\n", _("The &quot;Rewrite smb.conf file&quot; button will clear the smb.conf file of all default values and of comments."));
+		printf("%s\n", _("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments."));
 		printf("%s", _("The same will happen if you press the commit button."));
 		printf("<br><br>\n");
 		printf("<center>");
@@ -866,19 +820,14 @@ static void wizard_page(void)
 
 
 /****************************************************************************
-  display a conf page for editing global parameters 
+  display a globals editing page  
 ****************************************************************************/
-static void conf_page(void)
+static void globals_page(void)
 {
 	unsigned int parm_filter = FLAG_BASIC;
 	int mode = 0;
 
-	printf("  <div class=\"whereto\">\n");
-	printf("    <h2>Configuring Samba</h2>\n\n");
-	printf("    <p>The following menu allows for editing of global parameters affecting your Samba configuration.</p>\n");
-	printf("  </div>\n\n");
-
-	printf("  <div class=\"view_conf\"><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
+	printf("<H2>%s</H2>\n", _("Global Parameters"));
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
@@ -892,7 +841,7 @@ static void conf_page(void)
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
 
-	printf("<form name=\"swatform\" method=post action=conf>\n");
+	printf("<form name=\"swatform\" method=post action=globals>\n");
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
@@ -936,8 +885,6 @@ static void shares_page(void)
 		snum = lp_servicenumber(share);
 
 	printf("<H2>%s</H2>\n", _("Share Parameters"));
-	
-	printf("  <div class=\"view_conf\"><a href=\"services\">Return to Services Page</a><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -1031,17 +978,17 @@ static void shares_page(void)
 /*************************************************************
 change a password either locally or remotely
 *************************************************************/
-static NTSTATUS change_password(const char *remote_machine, const char *user_name, 
+static BOOL change_password(const char *remote_machine, const char *user_name, 
 			    const char *old_passwd, const char *new_passwd, 
 				int local_flags)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	BOOL ret = False;
 	pstring err_str;
 	pstring msg_str;
 
 	if (demo_mode) {
 		printf("%s\n<p>", _("password change in demo mode rejected"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return False;
 	}
 	
 	if (remote_machine != NULL) {
@@ -1054,7 +1001,7 @@ static NTSTATUS change_password(const char *remote_machine, const char *user_nam
 
 	if(!initialize_password_db(True)) {
 		printf("%s\n<p>", _("Can't setup password database vectors."));
-		return NT_STATUS_UNSUCCESSFUL;
+		return False;
 	}
 	
 	ret = local_password_change(user_name, local_flags, new_passwd, err_str, sizeof(err_str),
@@ -1139,10 +1086,10 @@ static void chg_passwd(void)
 	local_flags |= (cgi_variable(DISABLE_USER_FLAG) ? LOCAL_DISABLE_USER : 0);
 	
 
-	rslt = NT_STATUS_IS_OK(change_password(host, cgi_variable(SWAT_USER),
-					       cgi_variable(OLD_PSWD),
-					       cgi_variable(NEW_PSWD),
-					       local_flags));
+	rslt = change_password(host,
+			       cgi_variable(SWAT_USER),
+			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
+				   local_flags);
 
 	if(cgi_variable(CHG_S_PASSWD_FLAG)) {
 		printf("<p>");
@@ -1279,8 +1226,6 @@ static void printers_page(void)
 		snum = lp_servicenumber(share);
 
         printf("<H2>%s</H2>\n", _("Printer Parameters"));
-
-	printf("  <div class=\"view_conf\"><a href=\"services\">Return to Services Page</a><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
  
         printf("<H3>%s</H3>\n", _("Important Note:"));
         printf(_("Printer names marked with [*] in the Choose Printer drop-down box "));
@@ -1451,32 +1396,29 @@ static void printers_page(void)
 		have_read_access = (access(dyn_CONFIGFILE,R_OK) == 0);
 	}
 
+	show_main_buttons();
+
 	page = cgi_pathinfo();
 
-	show_main_buttons(page);
-
-	if (have_read_access && strcmp(page,"conf")==0) { 
-		conf_page();
-	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
-		viewconfig_page();
-	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
-		rewritecfg_file();
-	} else if (have_read_access && strcmp(page,"services")==0) {
-		services_page();
+	/* Root gets full functionality */
+	if (have_read_access && strcmp(page, "globals")==0) {
+		globals_page();
 	} else if (have_read_access && strcmp(page,"shares")==0) {
 		shares_page();
 	} else if (have_read_access && strcmp(page,"printers")==0) {
 		printers_page();
 	} else if (have_read_access && strcmp(page,"status")==0) {
 		status_page();
+	} else if (have_read_access && strcmp(page,"viewconfig")==0) {
+		viewconfig_page();
 	} else if (strcmp(page,"passwd")==0) {
 		passwd_page();
 	} else if (have_read_access && strcmp(page,"wizard")==0) {
 		wizard_page();
 	} else if (have_read_access && strcmp(page,"wizard_params")==0) {
 		wizard_params_page();
-	} else if (have_read_access && strcmp(page,"help")==0) {
-		help_page();
+	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
+		rewritecfg_file();
 	} else {
 		welcome_page();
 	}
