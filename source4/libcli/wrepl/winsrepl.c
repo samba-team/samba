@@ -563,6 +563,21 @@ struct wrepl_request *wrepl_associate_send(struct wrepl_socket *wrepl_socket,
 	packet->message.start.minor_version = 2;
 	packet->message.start.major_version = 5;
 
+	/*
+	 * nt4 uses 41 bytes for the start_association call
+	 * so do it the same and as we don't know th emeanings of this bytes
+	 * we just send zeros and nt4, w2k and w2k3 seems to be happy with this
+	 *
+	 * if we don't do this nt4 uses an old version of the wins replication protocol
+	 * and that would break nt4 <-> samba replication
+	 */
+	packet->padding	= data_blob_talloc(packet, NULL, 21);
+	if (packet->padding.data == NULL) {
+		talloc_free(packet);
+		return NULL;
+	}
+	memset(packet->padding.data, 0, packet->padding.length);
+
 	req = wrepl_request_send(wrepl_socket, packet, NULL);
 
 	talloc_free(packet);
