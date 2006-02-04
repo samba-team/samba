@@ -581,7 +581,7 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 		struct ldb_dn_component dc;
 		const struct ldb_attrib_handler *h;
 
-		dc.name = ldb_casefold(ldb, cedn, edn->components[i].name);
+		dc.name = ldb_attr_casefold(cedn, edn->components[i].name);
 		LDB_DN_NULL_FAILED(dc.name);
 
 		h = ldb_attrib_handler(ldb, dc.name);

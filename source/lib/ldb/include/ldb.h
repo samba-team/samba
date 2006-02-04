@@ -214,6 +214,7 @@ struct ldb_debug_ops {
 */
 struct ldb_utf8_fns {
 	void *context;
+	int (*caseless_cmp)(void *context, const char *s1, const char *s2);
 	char *(*casefold)(void *context, void *mem_ctx, const char *s);
 };
 
@@ -748,6 +749,21 @@ void ldb_set_utf8_default(struct ldb_context *ldb);
 char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s);
 
 /**
+   Compare two strings, without regard to case. 
+
+   \param ldb the ldb context
+   \param s1 the first string to compare
+   \param s2 the second string to compare
+
+   \return 0 if the strings are the same, non-zero if there are any
+   differences except for case.
+
+   \note The default function is not yet UTF8 aware. Provide your own
+         set of functions through ldb_set_utf8_fns()
+*/
+int ldb_caseless_cmp(struct ldb_context *ldb, const char *s1, const char *s2);
+
+/**
    Check the attribute name is valid according to rfc2251
    \param s tthe string to check
 
@@ -1101,6 +1117,7 @@ int ldb_set_debug(struct ldb_context *ldb,
 */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
 			void *context,
+			int (*cmp)(void *, const char *, const char *),
 			char *(*casefold)(void *, void *, const char *));
 
 /**
