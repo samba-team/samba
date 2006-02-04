@@ -670,6 +670,31 @@ struct share_mode_lock {
 	BOOL modified;
 };
 
+/*
+ * Internal structure of locking.tdb share mode db.
+ * Used by locking.c and libsmbsharemodes.c
+ */
+
+struct locking_data {
+	union {
+		struct {
+			int num_share_mode_entries;
+			BOOL delete_on_close;
+			BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
+			uint32 delete_token_size; /* Only valid if either of
+						     the two previous fields
+						     are True. */
+		} s;
+		struct share_mode_entry dummy; /* Needed for alignment. */
+	} u;
+	/* The following four entries are implicit
+	   struct share_mode_entry modes[num_share_mode_entries];
+	   char unix_token[delete_token_size] (divisible by 4).
+	   char share_name[];
+	   char file_name[];
+        */
+};
+
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
