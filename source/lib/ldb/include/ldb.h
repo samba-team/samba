@@ -1113,6 +1113,14 @@ int ldb_set_debug(struct ldb_context *ldb,
 		  void *context);
 
 /**
+  this allows the user to set custom utf8 function for error reporting
+*/
+void ldb_set_utf8_fns(struct ldb_context *ldb,
+			void *context,
+			int (*cmp)(void *, const char *, const char *),
+			char *(*casefold)(void *, void *, const char *));
+
+/**
    this sets up debug to print messages on stderr
 */
 int ldb_set_debug_stderr(struct ldb_context *ldb);
