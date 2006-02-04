@@ -80,6 +80,8 @@ fi
 echo "Testing binary file attribute value"
 $VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
 
+echo "*TODO* Testing UTF8 upper lower case searches !!"
+
 checkcount() {
     count=$1
     scope=$2
