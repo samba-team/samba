@@ -98,36 +98,11 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 	struct ldapsrv_connection *conn;
-	int result;
+	int result = 0;
 	const char *errstr;
 	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
-
-	if (!call->conn->gensec) {
-		call->conn->session_info = NULL;
-
-		status = gensec_server_start(call->conn, &call->conn->gensec,
-					     call->conn->connection->event.ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
-			return status;
-		}
-		
-		gensec_set_target_service(call->conn->gensec, "ldap");
-
-		gensec_set_credentials(call->conn->gensec, call->conn->server_credentials);
-
-		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SIGN);
-		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SEAL);
-		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_ASYNC_REPLIES);
-
-		status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC SASL[%s] server code: %s\n", 
-				req->creds.SASL.mechanism, nt_errstr(status)));
-		}
-	}
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
@@ -137,9 +112,43 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	
 	conn = call->conn;
 
+	if (!conn->gensec) {
+		conn->session_info = NULL;
+
+		status = gensec_server_start(conn, &conn->gensec,
+					     conn->connection->event.ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+			result = LDAP_OPERATIONS_ERROR;
+			errstr = talloc_asprintf(reply, "SASL: Failed to start authentication system: %s", 
+						 nt_errstr(status));
+		} else {
+		
+			gensec_set_target_service(conn->gensec, "ldap");
+			
+			gensec_set_credentials(conn->gensec, conn->server_credentials);
+			
+			gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
+			gensec_want_feature(conn->gensec, GENSEC_FEATURE_SEAL);
+			gensec_want_feature(conn->gensec, GENSEC_FEATURE_ASYNC_REPLIES);
+			
+			status = gensec_start_mech_by_sasl_name(conn->gensec, req->creds.SASL.mechanism);
+			
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("Failed to start GENSEC SASL[%s] server code: %s\n", 
+					  req->creds.SASL.mechanism, nt_errstr(status)));
+				result = LDAP_OPERATIONS_ERROR;
+				errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to start authentication backend: %s", 
+							 req->creds.SASL.mechanism, nt_errstr(status));
+			}
+		}
+	}
+
 	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_update(call->conn->gensec, reply,
+		status = gensec_update(conn->gensec, reply,
 				       req->creds.SASL.secblob, &resp->SASL.secblob);
+	} else {
+		resp->SASL.secblob = data_blob(NULL, 0);	
 	}
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
@@ -150,24 +159,24 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		result = LDAP_SUCCESS;
 		errstr = NULL;
-		if (gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SEAL) ||
-		    gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SIGN)) {
-			call->conn->enable_wrap = True;
+		if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL) ||
+		    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN)) {
+			conn->enable_wrap = True;
 		}
-		old_session_info = call->conn->session_info;
-		call->conn->session_info = NULL;
-		status = gensec_session_info(call->conn->gensec, &call->conn->session_info);
+		old_session_info = conn->session_info;
+		conn->session_info = NULL;
+		status = gensec_session_info(conn->gensec, &conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			call->conn->session_info = old_session_info;
+			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to get session info: %s", req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
 			talloc_free(old_session_info);
 
 			/* don't leak the old LDB */
-			talloc_free(call->conn->ldb);
+			talloc_free(conn->ldb);
 
-			status = ldapsrv_backend_Init(call->conn);		
+			status = ldapsrv_backend_Init(conn);		
 			
 			if (!NT_STATUS_IS_OK(status)) {
 				result = LDAP_OPERATIONS_ERROR;
@@ -176,8 +185,10 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 	} else {
 		status = auth_nt_status_squash(status);
-		result = LDAP_INVALID_CREDENTIALS;
-		errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
+		if (result == 0) {
+			result = LDAP_INVALID_CREDENTIALS;
+			errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
+		}
 	}
 
 	resp->response.resultcode = result;
