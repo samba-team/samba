@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
+#include "torture/rpc/proto.h"
 
 #define TEST_NAME "TORTURE_TEST"
 

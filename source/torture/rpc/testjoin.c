@@ -34,6 +34,7 @@
 #include "smb.h"
 #include "lib/ldb/include/ldb.h"
 
+#include "torture/rpc/proto.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;

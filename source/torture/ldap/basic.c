@@ -25,6 +25,8 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 
+#include "torture/ldap/proto.h"
+
 static BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	NTSTATUS status;

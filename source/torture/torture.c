@@ -28,6 +28,19 @@
 #include "libcli/libcli.h"
 #include "librpc/rpc/dcerpc_table.h"
 
+#include "torture/basic/proto.h"
+#include "torture/raw/proto.h"
+#include "torture/smb2/proto.h"
+#include "torture/rpc/proto.h"
+#include "torture/rap/proto.h"
+#include "torture/auth/proto.h"
+#include "torture/local/proto.h"
+#include "torture/nbench/proto.h"
+#include "torture/ldap/proto.h"
+#include "torture/com/proto.h"
+#include "torture/nbt/proto.h"
+#include "torture/libnet/proto.h"
+
 int torture_nprocs=4;
 int torture_numops=10;
 int torture_entries=1000;
