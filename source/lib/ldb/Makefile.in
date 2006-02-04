@@ -188,7 +188,7 @@ endif
 test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
 
 install: all
-	cp include/ldb.h $(includedir)
+	cp include/ldb.h include/ldb_errors.h $(includedir)
 	cp $(LDB_LIB) $(libdir)
 	cp $(BINS) $(bindir)
 	cp ldb.pc $(libdir)/pkgconfig

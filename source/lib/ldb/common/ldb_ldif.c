@@ -499,40 +499,6 @@ void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *ldif)
 }
 
 /*
-  add an empty element
-*/
-static int msg_add_empty(struct ldb_context *ldb,
-			 struct ldb_message *msg, const char *name, unsigned flags)
-{
-	struct ldb_message_element *el2, *el;
-
-	el2 = talloc_realloc(msg, msg->elements, 
-			       struct ldb_message_element, msg->num_elements+1);
-	if (!el2) {
-		errno = ENOMEM;
-		return -1;
-	}
-	
-	msg->elements = el2;
-
-	el = &msg->elements[msg->num_elements];
-	
-	el->name = talloc_strdup(msg->elements, name);
-	el->num_values = 0;
-	el->values = NULL;
-	el->flags = flags;
-
-	if (!el->name) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	msg->num_elements++;
-
-	return 0;
-}
-
-/*
  read from a LDIF source, creating a ldb_message
 */
 struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
@@ -630,7 +596,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		}
 
 		if (empty) {
-			if (msg_add_empty(ldb, msg, (char *)value.data, flags) != 0) {
+			if (ldb_msg_add_empty(msg, (char *)value.data, flags) != 0) {
 				goto failed;
 			}
 			continue;
