@@ -116,7 +116,6 @@ include:
 <indexterm><primary>backend authentication</primary></indexterm>
 <indexterm><primary>tdbsam</primary></indexterm>
 <indexterm><primary>ldapsam</primary></indexterm>
-<indexterm><primary>mysqlsam</primary></indexterm>
 <indexterm><primary>single-sign-on</primary></indexterm>
 <indexterm><primary>distribute authentication systems</primary></indexterm>
 
@@ -128,7 +127,7 @@ include:
 	<listitem><para>Creation of on-the-fly policy files.</para></listitem>
 	<listitem><para>Greater stability, reliability, performance, and availability.</para></listitem>
 	<listitem><para>Manageability via an SSH connection.</para></listitem>
-	<listitem><para>Flexible choices of backend authentication technologies (tdbsam, ldapsam, mysqlsam).</para></listitem>
+	<listitem><para>Flexible choices of backend authentication technologies (tdbsam, ldapsam).</para></listitem>
 	<listitem><para>Ability to implement a full single-sign-on architecture.</para></listitem>
 	<listitem><para>Ability to distribute authentication systems for absolute minimum wide-area network bandwidth demand.</para></listitem>
 </itemizedlist>
@@ -517,7 +516,7 @@ being contemplated.
 			<listitem><para>External server could use Active Directory or NT4 domain.</para></listitem>
 			<listitem><para>Can use pam_mkhomedir.so to autocreate home directories.</para></listitem>
 			<listitem><para> Samba-3 can use a local authentication backend: <parameter>smbpasswd</parameter>,
-				<parameter>tdbsam</parameter>, <parameter>ldapsam</parameter>, <parameter>mysqlsam</parameter>
+				<parameter>tdbsam</parameter>, <parameter>ldapsam</parameter>
 			</para></listitem>
 		</itemizedlist></para></listitem>
 		</varlistentry>

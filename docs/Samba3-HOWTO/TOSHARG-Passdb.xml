@@ -147,8 +147,6 @@ as follows:
 Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
-<indexterm><primary>SAM backend</primary><secondary>mysqlsam</secondary></indexterm>
-<indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
 </para>
 
 <variablelist>
@@ -225,45 +223,6 @@ Samba-3 introduces a number of new password backend capabilities.
 		</listitem>
 	</varlistentry>
 
-	<varlistentry><term>mysqlsam (MySQL-based backend)</term>
-		<listitem>
-			<para>
-<indexterm><primary>MySQL-based SAM</primary></indexterm>
-<indexterm><primary>database backend</primary></indexterm>
-<indexterm><primary>mysqlsam</primary></indexterm>
-			It is expected that the MySQL-based SAM will be very popular in some corners.
-			This database backend will be of considerable interest to sites that want to
-			leverage existing MySQL technology.
-			</para>
-		</listitem>
-	</varlistentry>
-
-	<varlistentry><term>pgsqlsam (PostGreSQL-based backend)</term>
-		<listitem>
-			<para>
-<indexterm><primary>PostgreSQL database</primary></indexterm>
-<indexterm><primary>mysqlsam</primary></indexterm>
-				Makes use of a PostgreSQL database to store account information.  This backend is largely undocumented at 
-				the moment, though its configuration is very similar to that of the mysqlsam backend.
-			</para>
-		</listitem>
-	</varlistentry>
-
-	<varlistentry><term>xmlsam (XML-based datafile)</term>
-		<listitem>
-			<para>
-<indexterm><primary>pdbedit</primary></indexterm>
-<indexterm><primary>XML format</primary></indexterm>
-<indexterm><primary>pdb2pdb</primary></indexterm>
-			Allows the account and password data to be stored in an XML format
-			data file. This backend cannot be used for normal operation, it can only 
-			be used in conjunction with <command>pdbedit</command>'s pdb2pdb 
-			functionality. The Document Type Definition (DTD) file that is used 
-			might be subject to changes in the future. (See the XML <ulink
-			url="http://www.brics.dk/~amoeller/XML/schemas/">reference</ulink> for a definition
-			of XML terms.)
-			</para>
-
 			<para>
 <indexterm><primary>account migration</primary></indexterm>
 <indexterm><primary>database backends</primary></indexterm>
@@ -319,7 +278,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	user that is not stored in a UNIX user database: for example, workstations the user may logon from,
 	the location where the user's profile is stored, and so on. Samba retrieves and stores this
 	information using a <smbconfoption name="passdb backend"/>. Commonly available backends are LDAP,
-	tdbsam, plain text file, and MySQL. For more information, see the man page for &smb.conf; regarding the 
+	tdbsam, and plain text file. For more information, see the man page for &smb.conf; regarding the 
 	<smbconfoption name="passdb backend"/> parameter.
 	</para>
 
@@ -352,7 +311,6 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>clear-text passwords</primary></indexterm>
 <indexterm><primary>hashed password equivalent</primary></indexterm>
 <indexterm><primary>LDAP</primary></indexterm>
-<indexterm><primary>MYSQL</primary></indexterm>
 <indexterm><primary>secret</primary></indexterm>
 		The UNIX and SMB password encryption techniques seem similar on the surface. This
 		similarity is, however, only skin deep. The UNIX scheme typically sends clear-text
@@ -363,7 +321,7 @@ Samba-3 introduces a number of new password backend capabilities.
 		they could potentially be used in a modified client to gain access to a server.
 		This would require considerable technical knowledge on behalf of the attacker but
 		is perfectly possible. You should therefore treat the data stored in whatever passdb
-		backend you use (smbpasswd file, LDAP, MYSQL) as though it contained the clear-text
+		backend you use (smbpasswd file, LDAP) as though it contained the clear-text
 		passwords of all your users. Its contents must be kept secret, and the file should
 		be protected accordingly.
 		</para>
@@ -2708,233 +2666,6 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 
 	</sect2>
 
-	<sect2>
-	<title>MySQL</title>
-
-	<para>
-	<indexterm><primary>SAM backend</primary><secondary>mysqlsam</secondary></indexterm>
-<indexterm><primary>SQL backend</primary></indexterm>
-	Every so often someone comes along with what seems (to them) like a great new idea. Storing user accounts
-	in an SQL backend is one of them. Those who want to do this are in the best position to know what the
-	specific benefits are to them. This may sound like a cop-out, but in truth we cannot document
-	every little detail of why certain things of marginal utility to the bulk of Samba users might make sense
-	to the rest. In any case, the following instructions should help the determined SQL user to implement a
-	working system. These account storage methods are not actively maintained by the Samba Team.
-	</para>
-
-		<sect3>
-		<title>Creating the Database</title>
-
-			<para>
-<indexterm><primary>MySQL</primary></indexterm>
-			You can set up your own table and specify the field names to pdb_mysql (see
-			<link linkend="moremysqlpdbe">MySQL field names for MySQL passdb backend</link> for
-			the column names) or use the default table. The file
-			<filename>examples/pdb/mysql/mysql.dump</filename> contains the correct queries to
-			create the required tables. Use the command:
-<screen>
-&rootprompt;<userinput>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> \
-	<replaceable>databasename</replaceable> &lt; <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></userinput>
-</screen>
-			</para>
-		</sect3>
-
-		<sect3>
-		<title>Configuring</title>
-
-			<para>This plug-in lacks some good documentation, but here is some brief information. Add the following to the
-			<smbconfoption name="passdb backend"/> variable in your &smb.conf;:
-<smbconfblock>
-<smbconfoption name="passdb backend">[other-plugins] mysql:identifier [other-plugins]</smbconfoption>
-</smbconfblock>
-			</para>
-
-			<para>The identifier can be any string you like, as long as it does not collide with 
-			the identifiers of other plugins or other instances of pdb_mysql. If you 
-			specify multiple pdb_mysql.so entries in <smbconfoption name="passdb backend"/>, you also need to 
-			use different identifiers.
-			</para>
-
-			<para>
-			Additional options can be given through the &smb.conf; file in the <smbconfsection name="[global]"/> section.
-			Refer to <link linkend="mysqlpbe">Basic smb.conf Options for MySQL passdb Backend</link>.
-			</para>
-
-			<table frame="all" id="mysqlpbe">
-				<title>Basic smb.conf Options for MySQL passdb Backend</title>
-				<tgroup cols="2">
-					<colspec align="left"/>
-					<colspec align="justify" colwidth="1*"/>
-				<thead>
-					<row><entry>Field</entry><entry>Contents</entry></row>
-				</thead>
-				<tbody>
-					<row><entry>mysql host</entry><entry>Host name, defaults to `localhost'</entry></row>
-					<row><entry>mysql password</entry><entry></entry></row>
-					<row><entry>mysql user</entry><entry>Defaults to `samba'</entry></row>
-					<row><entry>mysql database</entry><entry>Defaults to `samba'</entry></row>
-					<row><entry>mysql port</entry><entry>Defaults to 3306</entry></row>
-					<row><entry>table</entry><entry>Name of the table containing the users</entry></row>
-				</tbody>
-				</tgroup>
-			</table>
-
-			<warning>
-			<para>
-			Since the password for the MySQL user is stored in the &smb.conf; file, you should make the &smb.conf; file 
-			readable only to the user who runs Samba. This is considered a security bug and will soon be fixed.
-			</para>
-			</warning>
-
-			<para>Names of the columns are given in <link linkend="moremysqlpdbe">MySQL field names for MySQL
-			passdb backend</link>.  The default column names can be found in the example table dump.
-			 </para>
-
-		<para>
-			<table frame="all" id="moremysqlpdbe">
-				<title>MySQL field names for MySQL passdb backend</title>
-				<tgroup cols="3" align="justify">
-					<colspec align="left"/>
-					<colspec align="left"/>
-					<colspec align="justify" colwidth="1*"/>
-			<thead>		
-				<row><entry>Field</entry><entry>Type</entry><entry>Contents</entry></row>
-			</thead>
-			<tbody>
-				<row><entry>logon time column</entry><entry>int(9)</entry><entry>UNIX timestamp of last logon of user</entry></row>
-				<row><entry>logoff time column</entry><entry>int(9)</entry><entry>UNIX timestamp of last logoff of user</entry></row>
-				<row><entry>kickoff time column</entry><entry>int(9)</entry><entry>UNIX timestamp of moment user should be kicked off workstation (not enforced)</entry></row>
-				<row><entry>pass last set time column</entry><entry>int(9)</entry><entry>UNIX timestamp of moment password was last set</entry></row>
-				<row><entry>pass can change time column</entry><entry>int(9)</entry><entry>UNIX timestamp of moment from which password can be changed</entry></row>
-				<row><entry>pass must change time column</entry><entry>int(9)</entry><entry>UNIX timestamp of moment on which password must be changed</entry></row>
-				<row><entry>username column</entry><entry>varchar(255)</entry><entry>UNIX username</entry></row>
-				<row><entry>domain column</entry><entry>varchar(255)</entry><entry>NT domain user belongs to</entry></row>
-				<row><entry>nt username column</entry><entry>varchar(255)</entry><entry>NT username</entry></row>
-				<row><entry>fullname column</entry><entry>varchar(255)</entry><entry>Full name of user</entry></row>
-				<row><entry>home dir column</entry><entry>varchar(255)</entry><entry>UNIX homedir path (equivalent of the <smbconfoption name="logon home"/> parameter.</entry></row>
-				<row><entry>dir drive column</entry><entry>varchar(2)</entry><entry>Directory drive path (e.g., <quote>H:</quote>)</entry></row>
-				<row><entry>logon script column</entry><entry>varchar(255)</entry><entry>Batch file to run on client side when logging on</entry></row>
-				<row><entry>profile path column</entry><entry>varchar(255)</entry><entry>Path of profile</entry></row>
-				<row><entry>acct desc column</entry><entry>varchar(255)</entry><entry>Some ASCII NT user data</entry></row>
-				<row><entry>workstations column</entry><entry>varchar(255)</entry><entry>Workstations user can logon to (or NULL for all)</entry></row>
-				<row><entry>unknown string column</entry><entry>varchar(255)</entry><entry>Unknown string</entry></row>
-				<row><entry>munged dial column</entry><entry>varchar(255)</entry><entry>Unknown</entry></row>
-				<row><entry>user sid column</entry><entry>varchar(255)</entry><entry>NT user SID</entry></row>
-				<row><entry>group sid column</entry><entry>varchar(255)</entry><entry>NT group SID</entry></row>
-				<row><entry>lanman pass column</entry><entry>varchar(255)</entry><entry>Encrypted lanman password</entry></row>
-				<row><entry>nt pass column</entry><entry>varchar(255)</entry><entry>Encrypted nt passwd</entry></row>
-				<row><entry>plain pass column</entry><entry>varchar(255)</entry><entry>Plaintext password</entry></row>
-				<row><entry>acct ctrl column</entry><entry>int(9)</entry><entry>NT user data</entry></row>
-				<row><entry>unknown 3 column</entry><entry>int(9)</entry><entry>Unknown</entry></row>
-				<row><entry>logon divs column</entry><entry>int(9)</entry><entry>Unknown</entry></row>
-				<row><entry>hours len column</entry><entry>int(9)</entry><entry>Unknown</entry></row>
-				<row><entry>bad password count column</entry><entry>int(5)</entry><entry>Number of failed password tries before disabling an account</entry></row>
-				<row><entry>logon count column</entry><entry>int(5)</entry><entry>Number of logon attempts</entry></row>
-				<row><entry>unknown 6 column</entry><entry>int(9)</entry><entry>Unknown</entry></row>
-			</tbody></tgroup>
-		</table>
-		</para>
-
-			<para>
-			You can put a colon (:) after the name of each column, which 
-			should specify the column to update when updating the table. You can also specify nothing behind the colon, in which case the field data will not be updated. Setting a column name to <parameter>NULL</parameter> means the field should not be used.
-			</para>
-
-			<para><link linkend="mysqlsam">An example configuration</link> is shown in <link
-			linkend="mysqlsam">Example Configuration for the MySQL passdb Backend</link>.
-			</para>
-
-			<example id="mysqlsam">
-			<title>Example Configuration for the MySQL passdb Backend</title>
-			<smbconfblock>
-			<smbconfsection name="[global]"/>
-			<smbconfoption name="passdb backend">mysql:foo</smbconfoption>
-			<smbconfoption name="foo:mysql user">samba</smbconfoption>
-			<smbconfoption name="foo:mysql password">abmas</smbconfoption>
-			<smbconfoption name="foo:mysql database">samba</smbconfoption>
-			<smbconfcomment>domain name is static and can't be changed</smbconfcomment>
-			<smbconfoption name="foo:domain column">'MYWORKGROUP':</smbconfoption>
-			<smbconfcomment>The fullname column comes from several other columns</smbconfcomment>
-			<smbconfoption name="foo:fullname column">CONCAT(firstname,' ',surname):</smbconfoption>
-			<smbconfcomment>Samba should never write to the password columns</smbconfcomment>
-			<smbconfoption name="foo:lanman pass column">lm_pass:</smbconfoption>
-			<smbconfoption name="foo:nt pass column">nt_pass:</smbconfoption>
-			<smbconfcomment>The unknown 3 column is not stored</smbconfcomment>
-			<smbconfoption name="foo:unknown 3 column">NULL</smbconfoption>
-			</smbconfblock>
-			</example>
-		</sect3>
-
-		<sect3>
-		<title>Using Plaintext Passwords or Encrypted Password</title>
-
-			<para>
-<indexterm><primary>encrypted passwords</primary></indexterm>
-			I strongly discourage the use of plaintext passwords; however, you can use them.
-			</para>
-
-			<para>
-<indexterm><primary>plaintext passwords</primary></indexterm>
-			If you would like to use plaintext passwords, set
-			`identifier:lanman pass column' and `identifier:nt pass column' to
-			`NULL' (without the quotes) and `identifier:plain pass column' to the
-			name of the column containing the plaintext passwords. 
-			</para>
-
-			<para>
-			If you use encrypted passwords, set the 'identifier:plain pass
-			column' to 'NULL' (without the quotes). This is the default.
-			</para>
-
-		</sect3>
-
-		<sect3>
-		<title>Getting Non-Column Data from the Table</title>
-
-			<para>
-			It is possible to have not all data in the database by making some "constant."
-			</para>
-
-			<para>
-			For example, you can set `identifier:fullname column' to
-			something like <command>CONCAT(Firstname,' ',Surname)</command>
-			</para>
-
-			<para>
-			Or, set `identifier:workstations column' to:
-			<command>NULL</command></para>.
-
-			<para>See the MySQL documentation for more language constructs.</para>
-
-		</sect3>
-	</sect2>
-
-	<sect2 id="XMLpassdb">
-	<title>XML</title>
-
-	<para>
-<indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
-<indexterm><primary>libxml2</primary></indexterm>
-<indexterm><primary>pdb_xml</primary></indexterm>
-		This module requires libxml2 to be installed.</para>
-
-		<para>The usage of pdb_xml is fairly straightforward. To export data, use:
-		</para>
-
-		<para>
-<indexterm><primary>pdbedit</primary></indexterm>
-			<prompt>$ </prompt> <userinput>pdbedit -e xml:filename</userinput>
-		</para>
-
-		<para>
-		where filename is the name of the file to put the data in.
-		</para>
-
-		<para>
-		To import data, use:
-		<prompt>$ </prompt> <userinput>pdbedit -i xml:filename</userinput>
-		</para>
-	</sect2>
 </sect1>
 
 <sect1>
