@@ -502,9 +502,8 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 		const struct ldb_attrib_handler *h;
 
 		/* compare names (attribute names are guaranteed to be ASCII only) */
-		ret = ldb_caseless_cmp(ldb,
-				       base->components[n0].name,
-				       dn->components[n1].name);
+		ret = ldb_attr_cmp(base->components[n0].name,
+				   dn->components[n1].name);
 		if (ret) {
 			return ret;
 		}
