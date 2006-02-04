@@ -43,10 +43,18 @@ static void load_case_tables(void)
 	lowcase_table = map_file(lib_path(mem_ctx, "lowcase.dat"), 0x20000);
 	talloc_free(mem_ctx);
 	if (upcase_table == NULL) {
-		upcase_table = (void *)-1;
+		/* try also under codepages for testing purposes */
+		upcase_table = map_file("codepages/upcase.dat", 0x20000);
+		if (upcase_table == NULL) {
+			upcase_table = (void *)-1;
+		}
 	}
 	if (lowcase_table == NULL) {
-		lowcase_table = (void *)-1;
+		/* try also under codepages for testing purposes */
+		lowcase_table = map_file("codepages/lowcase.dat", 0x20000);
+		if (lowcase_table == NULL) {
+			lowcase_table = (void *)-1;
+		}
 	}
 }
 
@@ -58,11 +66,11 @@ codepoint_t toupper_w(codepoint_t val)
 	if (val < 128) {
 		return toupper(val);
 	}
-	if (upcase_table == (void *)-1) {
-		return val;
-	}
 	if (upcase_table == NULL) {
 		load_case_tables();
+	}
+	if (upcase_table == (void *)-1) {
+		return val;
 	}
 	if (val & 0xFFFF0000) {
 		return val;
@@ -78,11 +86,11 @@ codepoint_t tolower_w(codepoint_t val)
 	if (val < 128) {
 		return tolower(val);
 	}
-	if (lowcase_table == (void *)-1) {
-		return val;
-	}
 	if (lowcase_table == NULL) {
 		load_case_tables();
+	}
+	if (lowcase_table == (void *)-1) {
+		return val;
 	}
 	if (val & 0xFFFF0000) {
 		return val;
