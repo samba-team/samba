@@ -7629,8 +7629,10 @@ BOOL samr_io_q_set_domain_info(const char *desc, SAMR_Q_SET_DOMAIN_INFO *q_u,
 	if(!prs_align(ps))
 		return False;
 
-	if ((q_u->ctr = PRS_ALLOC_MEM(ps, SAM_UNK_CTR, 1)) == NULL)
-		return False;
+	if (UNMARSHALLING(ps)) {
+		if ((q_u->ctr = PRS_ALLOC_MEM(ps, SAM_UNK_CTR, 1)) == NULL)
+			return False;
+	}
 	
 	switch (q_u->switch_value) {
 

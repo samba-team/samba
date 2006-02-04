@@ -231,7 +231,7 @@ time_t nt_time_to_unix(NTTIME *nt)
  if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
 ****************************************************************************/
 
-time_t nt_time_to_unix_abs(NTTIME *nt)
+time_t nt_time_to_unix_abs(const NTTIME *nt)
 {
 	double d;
 	time_t ret;
@@ -239,6 +239,7 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 	   broken SCO compiler. JRA. */
 	time_t l_time_min = TIME_T_MIN;
 	time_t l_time_max = TIME_T_MAX;
+	NTTIME neg_nt;
 
 	if (nt->high == 0) {
 		return(0);
@@ -250,11 +251,11 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 
 	/* reverse the time */
 	/* it's a negative value, turn it to positive */
-	nt->high=~nt->high;
-	nt->low=~nt->low;
+	neg_nt.high=~nt->high;
+	neg_nt.low=~nt->low;
 
-	d = ((double)nt->high)*4.0*(double)(1<<30);
-	d += (nt->low&0xFFF00000);
+	d = ((double)neg_nt.high)*4.0*(double)(1<<30);
+	d += (neg_nt.low&0xFFF00000);
 	d *= 1.0e-7;
   
 	if (!(l_time_min <= d && d <= l_time_max)) {
@@ -728,11 +729,24 @@ void init_nt_time(NTTIME *nt)
 	nt->low = 0xFFFFFFFF;
 }
 
+BOOL nt_time_is_set(const NTTIME *nt)
+{
+	if ((nt->high == 0x7FFFFFFF) && (nt->low == 0xFFFFFFFF)) {
+		return False;
+	}
+
+	if ((nt->high == 0x80000000) && (nt->low == 0)) {
+		return False;
+	}
+
+	return True;
+}
+
 /****************************************************************************
  Check if NTTIME is 0.
 ****************************************************************************/
 
-BOOL nt_time_is_zero(NTTIME *nt)
+BOOL nt_time_is_zero(const NTTIME *nt)
 {
 	if(nt->high==0) {
 		return True;
@@ -744,7 +758,7 @@ BOOL nt_time_is_zero(NTTIME *nt)
  Check if two NTTIMEs are the same.
 ****************************************************************************/
 
-BOOL nt_time_equals(NTTIME *nt1, NTTIME *nt2)
+BOOL nt_time_equals(const NTTIME *nt1, const NTTIME *nt2)
 {
 	return (nt1->high == nt2->high && nt1->low == nt2->low);
 }

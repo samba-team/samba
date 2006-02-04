@@ -233,6 +233,9 @@ int net_rpc_shell(int argc, const char **argv)
 		}
 
 		ret = poptParseArgvString(line, &argc, &argv);
+		if (ret == POPT_ERROR_NOARG) {
+			continue;
+		}
 		if (ret != 0) {
 			d_fprintf(stderr, "cmdline invalid: %s\n",
 				  poptStrerror(ret));
@@ -252,7 +255,7 @@ int net_rpc_shell(int argc, const char **argv)
 	return 0;
 }
 
-static struct rpc_sh_cmd sh_cmds[5] = {
+static struct rpc_sh_cmd sh_cmds[6] = {
 
 	{ "info", NULL, PI_SAMR, rpc_sh_info,
 	  "Print information about the domain connected to" },
@@ -265,6 +268,9 @@ static struct rpc_sh_cmd sh_cmds[5] = {
 
 	{ "user", net_rpc_user_cmds, 0, NULL,
 	  "List/Add/Remove user info" },
+
+	{ "account", net_rpc_acct_cmds, 0, NULL,
+	  "Show/Change account policy settings" },
 
 	{ NULL, NULL, 0, NULL, NULL }
 };
