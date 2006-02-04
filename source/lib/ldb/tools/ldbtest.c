@@ -94,7 +94,7 @@ static void add_records(struct ldb_context *ldb,
 		el[2].name = talloc_strdup(tmp_ctx, "uid");
 		el[2].num_values = 1;
 		el[2].values = vals[2];
-		vals[2][0].data = (uint8_t *)ldb_casefold(tmp_ctx, name);
+		vals[2][0].data = (uint8_t *)ldb_casefold(ldb, tmp_ctx, name);
 		vals[2][0].length = strlen((char *)vals[2][0].data);
 
 		el[3].flags = 0;

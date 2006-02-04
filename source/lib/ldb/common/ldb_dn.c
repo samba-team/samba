@@ -55,23 +55,6 @@ int ldb_dn_check_special(const struct ldb_dn *dn, const char *check)
 	return ! strcmp((char *)dn->components[0].value.data, check);
 }
 
-static int ldb_dn_is_valid_attribute_name(const char *name)
-{
-	if (name == NULL) return 0;
-
-	while (*name) {
-		if (! isascii(*name)) {
-			return 0;
-		}
-		if (! (isalnum((unsigned char)*name) || *name == '-')) {
-			return 0;
-		}
-		name++;
-	}
-
-	return 1;
-}
-
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
 {
 	const char *p, *s, *src;
@@ -301,7 +284,7 @@ static struct ldb_dn_component ldb_dn_explode_component(void *mem_ctx, char *raw
 	if (!dc.name)
 		return dc;
 
-	if (! ldb_dn_is_valid_attribute_name(dc.name)) {
+	if (! ldb_valid_attr_name(dc.name)) {
 		goto failed;
 	}
 
@@ -519,7 +502,8 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 		const struct ldb_attrib_handler *h;
 
 		/* compare names (attribute names are guaranteed to be ASCII only) */
-		ret = ldb_caseless_cmp(base->components[n0].name,
+		ret = ldb_caseless_cmp(ldb,
+				       base->components[n0].name,
 				       dn->components[n1].name);
 		if (ret) {
 			return ret;
@@ -598,7 +582,7 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 		struct ldb_dn_component dc;
 		const struct ldb_attrib_handler *h;
 
-		dc.name = ldb_casefold(cedn, edn->components[i].name);
+		dc.name = ldb_casefold(ldb, cedn, edn->components[i].name);
 		LDB_DN_NULL_FAILED(dc.name);
 
 		h = ldb_attrib_handler(ldb, dc.name);
@@ -761,7 +745,7 @@ struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 						 const struct ldb_dn *base)
 {
 	struct ldb_dn *new;
-	if (! ldb_dn_is_valid_attribute_name(attr)) return NULL;
+	if (! ldb_valid_attr_name(attr)) return NULL;
 	if (value == NULL || value == '\0') return NULL; 
 
 	if (base != NULL) {

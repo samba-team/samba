@@ -209,6 +209,16 @@ struct ldb_debug_ops {
 };
 
 /**
+  The user can optionally supply a custom utf8 functions,
+  to handle comparisons and casefolding.
+*/
+struct ldb_utf8_fns {
+	void *context;
+	int (*caseless_cmp)(void *context, const char *s1, const char *s2);
+	char *(*casefold)(void *context, void *mem_ctx, const char *s);
+};
+
+/**
    Flag value for database connection mode.
 
    If LDB_FLG_RDONLY is used in ldb_connect, then the database will be
@@ -719,29 +729,47 @@ int ldb_transaction_cancel(struct ldb_context *ldb);
 const char *ldb_errstring(struct ldb_context *ldb);
 
 /**
+  setup the default utf8 functions
+  FIXME: these functions do not yet handle utf8
+*/
+void ldb_set_utf8_default(struct ldb_context *ldb);
+
+/**
    Casefold a string
 
+   \param ldb the ldb context
    \param mem_ctx the memory context to allocate the result string
    memory from. 
    \param s the string that is to be folded
    \return a copy of the string, converted to upper case
 
-   \todo This function should be UTF8 aware, but currently is not.
+   \note The default function is not yet UTF8 aware. Provide your own
+         set of functions through ldb_set_utf8_fns()
 */
-char *ldb_casefold(void *mem_ctx, const char *s);
+char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s);
 
 /**
    Compare two strings, without regard to case. 
 
+   \param ldb the ldb context
    \param s1 the first string to compare
    \param s2 the second string to compare
 
    \return 0 if the strings are the same, non-zero if there are any
    differences except for case.
 
-   \note This function is not UTF8 aware.
+   \note The default function is not yet UTF8 aware. Provide your own
+         set of functions through ldb_set_utf8_fns()
 */
-int ldb_caseless_cmp(const char *s1, const char *s2);
+int ldb_caseless_cmp(struct ldb_context *ldb, const char *s1, const char *s2);
+
+/**
+   Check the attribute name is valid according to rfc2251
+   \param s tthe string to check
+
+   \return 1 if the name is ok
+*/
+int ldb_valid_attr_name(const char *s);
 
 /*
   ldif manipulation functions

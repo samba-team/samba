@@ -35,11 +35,29 @@
 #include "includes.h"
 #include "ldb/include/includes.h"
 
+
 /*
-  TODO:
-  a simple case folding function - will be replaced by a UTF8 aware function later
+  this allow the user to pass in a caseless comparison
+  function to handle utf8 caseless comparisons
+ */
+void ldb_set_utf8_fns(struct ldb_context *ldb,
+			void *context,
+			int (*cmp)(void *, const char *, const char *),
+			char *(*casefold)(void *, void *, const char *))
+{
+	if (context)
+		ldb->utf8_fns.context = context;
+	if (cmp)
+		ldb->utf8_fns.caseless_cmp = cmp;
+	if (casefold)
+		ldb->utf8_fns.casefold = casefold;
+}
+
+/*
+  a simple case folding function
+  NOTE: does not handle UTF8
 */
-char *ldb_casefold(void *mem_ctx, const char *s)
+char *ldb_casefold_default(void *context, void *mem_ctx, const char *s)
 {
 	int i;
 	char *ret = talloc_strdup(mem_ctx, s);
@@ -55,20 +73,69 @@ char *ldb_casefold(void *mem_ctx, const char *s)
 
 /*
   a caseless compare, optimised for 7 bit
-  TODO: doesn't yet handle UTF8
+  NOTE: doesn't handle UTF8
 */
-int ldb_caseless_cmp(const char *s1, const char *s2)
+
+int ldb_caseless_cmp_default(void *context, const char *s1, const char *s2)
 {
-	return strcasecmp(s1, s2);
+	return strcasecmp(s1,s2);
+}
+
+void ldb_set_utf8_default(struct ldb_context *ldb)
+{
+	ldb_set_utf8_fns(ldb, NULL, ldb_caseless_cmp_default, ldb_casefold_default);
+}
+
+char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s)
+{
+	return ldb->utf8_fns.casefold(ldb->utf8_fns.context, mem_ctx, s);
+}
+
+int ldb_caseless_cmp(struct ldb_context *ldb, const char *s1, const char *s2)
+{
+	return ldb->utf8_fns.caseless_cmp(ldb->utf8_fns.context, s1, s2);
+}
+
+/*
+  check the attribute name is valid according to rfc2251
+  returns 1 if the name is ok
+ */
+
+int ldb_valid_attr_name(const char *s)
+{
+	int i;
+
+	if (!s || !s[0])
+		return 0;
+
+	/* handle special ldb_tdb wildcard */
+	if (strcmp(s, "*") == 0) return 1;
+
+	for (i = 0; s[i]; i++) {
+		if (! isascii(s[i])) {
+			return 0;
+		}
+		if (i == 0) { /* first char must be an alpha (or our special '@' identifier) */
+			if (! (isalpha(s[i]) || (s[i] == '@'))) {
+				return 0;
+			}
+		} else {
+			if (! (isalnum(s[i]) || (s[i] == '-'))) {
+				return 0;
+			}
+		}
+	}
+	return 1;
 }
 
 /*
   compare two attribute names
+  attribute names are restricted by rfc2251 so using strcasecmp here is ok.
   return 0 for match
 */
 int ldb_attr_cmp(const char *attr1, const char *attr2)
 {
-	return ldb_caseless_cmp(attr1, attr2);
+	return strcasecmp(attr1, attr2);
 }
 
 /*

@@ -90,6 +90,9 @@ struct ldb_context {
 	/* debugging operations */
 	struct ldb_debug_ops debug_ops;
 
+	/* custom utf8 functions */
+	struct ldb_utf8_fns utf8_fns;
+
 	/* backend specific opaque parameters */
 	struct ldb_opaque {
 		struct ldb_opaque *next;
@@ -191,4 +194,8 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 struct ldb_control *get_control_from_list(struct ldb_control **controls, const char *oid);
 int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver);
 int check_critical_controls(struct ldb_control **controls);
+
+/* The following definitions come from lib/ldb/common/ldb_utf8.c */
+char *ldb_casefold_default(void *context, void *mem_ctx, const char *s);
+int ldb_caseless_cmp_default(void *context, const char *s1, const char *s2);
 #endif

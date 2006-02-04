@@ -123,6 +123,10 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 {
 	struct ldb_message_element *els;
 
+	if (! ldb_valid_attr_name(attr_name)) {
+		return -1;
+	}
+
 	els = talloc_realloc(msg, msg->elements, 
 			     struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
@@ -135,6 +139,7 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 	els[msg->num_elements].flags = flags;
 	els[msg->num_elements].name = talloc_strdup(els, attr_name);
 	if (!els[msg->num_elements].name) {
+		errno = ENOMEM;
 		return -1;
 	}
 
