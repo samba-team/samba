@@ -252,7 +252,7 @@ int net_rpc_shell(int argc, const char **argv)
 	return 0;
 }
 
-static struct rpc_sh_cmd sh_cmds[] = {
+static struct rpc_sh_cmd sh_cmds[5] = {
 
 	{ "info", NULL, PI_SAMR, rpc_sh_info,
 	  "Print information about the domain connected to" },
