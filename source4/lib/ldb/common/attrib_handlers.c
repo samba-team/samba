@@ -145,15 +145,24 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
   compare two case insensitive strings, ignoring multiple whitespaces
   and leading and trailing whitespaces
   see rfc2252 section 8.1
+	
+  try to optimize for the ascii case,
+  but if we find out an utf8 codepoint revert to slower but correct function
 */
 static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
+	char *b1, *b2, *u1, *u2;
+	int ret;
 	while (*s1 == ' ') s1++;
 	while (*s2 == ' ') s2++;
 	/* TODO: make utf8 safe, possibly with helper function from application */
 	while (*s1 && *s2) {
+		/* the first 127 (0x7F) chars are ascii and utf8 guarantes they
+		 * never appear in multibyte sequences */
+		if (((unsigned char)s1[0]) & 0x80) goto utf8str;
+		if (((unsigned char)s2[0]) & 0x80) goto utf8str;
 		if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2))
 			break;
 		if (*s1 == ' ') {
@@ -163,7 +172,7 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		s1++; s2++;
 	}
 	if (! (*s1 && *s2)) {
-		/* remove trailing spaces only if one of the pointers
+		/* check for trailing spaces only if one of the pointers
 		 * has reached the end of the strings otherwise we
 		 * can mistakenly match.
 		 * ex. "domain users" <-> "domainUpdates"
@@ -172,6 +181,30 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		while (*s2 == ' ') s2++;
 	}
 	return (int)(toupper(*s1)) - (int)(toupper(*s2));
+
+utf8str:
+	/* non need to recheck from the start, just from the first utf8 char found */
+	b1 = u1 = ldb_casefold(ldb, mem_ctx, s1);
+	b2 = u2 = ldb_casefold(ldb, mem_ctx, s2);
+	
+	while (*u1 & *u2) {
+		if (*u1 != *u2)
+			break;
+		if (*u1 == ' ') {
+			while (u1[0] == u1[1]) u1++;
+			while (u2[0] == u2[1]) u2++;
+		}
+		u1++; u2++;
+	}
+	if (! (*u1 && *u2)) {
+		while (*u1 == ' ') u1++;
+		while (*u2 == ' ') u2++;
+	}
+	ret = (int)(*u1 - *u2);
+	talloc_free(b1);
+	talloc_free(b2);
+
+	return ret;
 }
 
 /*
