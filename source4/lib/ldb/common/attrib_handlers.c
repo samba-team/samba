@@ -46,30 +46,58 @@ int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
 /*
   a case folding copy handler, removing leading and trailing spaces and
   multiple internal spaces
+
+  We exploit the fact that utf8 never uses the space octet except for
+  the space itself
 */
 static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 			    const struct ldb_val *in, struct ldb_val *out)
 {
-	uint8_t *s1, *s2;
-	out->data = talloc_size(mem_ctx, strlen((char *)in->data)+1);
-	if (out->data == NULL) {
-		ldb_oom(ldb);
+	char *s, *t;
+	int l;
+	if (!in || !out || !(in->data)) {
 		return -1;
 	}
-	s1 = in->data;
-	s2 = out->data;
-	while (*s1 == ' ') s1++;
-	while (*s1) {
-		*s2 = toupper(*s1);
-		if (s1[0] == ' ') {
-			while (s1[0] == s1[1]) s1++;
-		}
-		s2++; s1++;
+
+	out->data = (uint8_t *)ldb_casefold(ldb, mem_ctx, (const char *)(in->data));
+	if (out->data == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_handler_fold: unable to casefold string [%s]", in->data);
+		return -1;
 	}
-	*s2 = 0;
+
+	s = (char *)(out->data);
+	
+	/* remove trailing spaces if any */
+	l = strlen(s);
+	while (s[l - 1] == ' ') l--;
+	s[l] = '\0';
+	
+	/* remove leading spaces if any */
+	if (*s == ' ') {
+		for (t = s; *s == ' '; s++) ;
+
+		/* remove leading spaces by moving down the string */
+		memmove(t, s, l);
+
+		s = t;
+	}
+
+	/* check middle spaces */
+	while ((t = strchr(s, ' ')) != NULL) {
+		for (s = t; *s == ' '; s++) ;
+
+		if ((s - t) > 1) {
+			l = strlen(s);
+
+			/* remove all spaces but one by moving down the string */
+			memmove(t + 1, s, l);
+		}
+	}
+
 	out->length = strlen((char *)out->data);
 	return 0;
 }
+
 
 
 /*
@@ -114,8 +142,8 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
-  compare two case insensitive strings, ignoring multiple whitespace
-  and leading and trailing whitespace
+  compare two case insensitive strings, ignoring multiple whitespaces
+  and leading and trailing whitespaces
   see rfc2252 section 8.1
 */
 static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,

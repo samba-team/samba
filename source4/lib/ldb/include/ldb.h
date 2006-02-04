@@ -970,6 +970,7 @@ int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
    case; non-zero if there are any differences
 */
 int ldb_attr_cmp(const char *attr1, const char *attr2);
+char *ldb_attr_casefold(void *mem_ctx, const char *s);
 int ldb_attr_dn(const char *attr);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
 
