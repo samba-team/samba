@@ -152,7 +152,6 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	int count, i;
 
 	const char **sasl_names;
-	const struct gensec_security_ops **mechs;
 	
 	static const char *supported_sasl_mech_attrs[] = {
 		"supportedSASLMechanisms", 
@@ -225,17 +224,10 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	}
 	sasl_names[i] = NULL;
 	
-	mechs = gensec_security_by_sasl(conn->gensec, tmp_ctx, sasl_names);
-	if (!mechs || !mechs[0]) {
-		DEBUG(1, ("None of the %d proposed SASL mechs were acceptable\n",
-			  count));
-		goto failed;
-	}
-
-	status = gensec_start_mech_by_ops(conn->gensec, mechs[0]);
+	status = gensec_start_mech_by_sasl_list(conn->gensec, sasl_names);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set GENSEC client mechanism: %s/%s %s\n",
-			  mechs[0]->name, mechs[0]->sasl_name, nt_errstr(status)));
+		DEBUG(1, ("None of the %d proposed SASL mechs were acceptable: %s\n",
+			  count, nt_errstr(status)));
 		goto failed;
 	}
 
@@ -265,11 +257,12 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		    !NT_STATUS_IS_OK(status)) {
 			break;
 		}
-		if (output.length == 0) {
+		if (NT_STATUS_IS_OK(status) && output.length == 0) {
 			break;
 		}
 
-		msg = new_ldap_sasl_bind_msg(tmp_ctx, "GSS-SPNEGO", &output);
+		/* Perhaps we should make gensec_start_mech_by_sasl_list() return the name we got? */
+		msg = new_ldap_sasl_bind_msg(tmp_ctx, conn->gensec->ops->sasl_name, &output);
 		if (msg == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
