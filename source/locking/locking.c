@@ -44,24 +44,6 @@ uint16 global_smbpid;
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
-struct locking_data {
-        union {
-		struct {
-			int num_share_mode_entries;
-			BOOL delete_on_close;
-			BOOL initial_delete_on_close; /* Only set at NTCreateX if file was created. */
-			uint32 delete_token_size; /* Only valid if either of
-							the two previous fields 
-							are True. */
-		} s;
-                struct share_mode_entry dummy; /* Needed for alignment. */
-        } u;
-        /* the following two entries are implicit
-           struct share_mode_entry modes[num_share_mode_entries];
-           char file_name[];
-        */
-};
-
 /****************************************************************************
  Debugging aid :-).
 ****************************************************************************/
