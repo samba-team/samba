@@ -327,12 +327,9 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_wellknown.o passdb/util_builtin.o passdb/pdb_compat.o \
 		passdb/util_unixsids.o passdb/lookup_sid.o \
-		passdb/login_cache.o @PDB_STATIC@ passdb/pdb_sql.o \
+		passdb/login_cache.o @PDB_STATIC@ \
 		lib/system_smbd.o lib/account_pol.o lib/privileges.o
 
-XML_OBJ = passdb/pdb_xml.o
-MYSQL_OBJ = passdb/pdb_mysql.o
-PGSQL_OBJ = passdb/pdb_pgsql.o
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
 CP437_OBJ = modules/CP437.o
@@ -1244,16 +1241,6 @@ bin/sam.@SHLIBEXT@: $(AUTH_SAM_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SAM_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
-bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.@PICSUFFIX@)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.@PICSUFFIX@) @MYSQL_LIBS@ \
-		@SONAMEFLAG@`basename $@`
-
-bin/pgsql.@SHLIBEXT@: $(PGSQL_OBJ:.o=.@PICSUFFIX@)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PGSQL_OBJ:.o=.@PICSUFFIX@) @PGSQL_LIBS@ \
-      @SONAMEFLAG@`basename $@`
-
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.@PICSUFFIX@
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) $(LDAP_LIBS) -o $@ passdb/pdb_ldap.@PICSUFFIX@ \
@@ -1298,11 +1285,6 @@ bin/macosxfs.@SHLIBEXT@: $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(CHARSET_MACOSXFS_OBJ:.o=.@PICSUFFIX@) \
 		-framework CoreFoundation @SONAMEFLAG@`basename $@`
-
-bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.@PICSUFFIX@) @XML_LIBS@ \
-		@SONAMEFLAG@`basename $@`
 
 bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
