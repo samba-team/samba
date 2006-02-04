@@ -796,7 +796,7 @@ void strlower_m(char *s)
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
-	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
+	while (*s && !(((uint8_t)*s) & 0x80)) {
 		*s = tolower((uint8_t)*s);
 		s++;
 	}
@@ -832,7 +832,7 @@ void strupper_m(char *s)
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
-	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
+	while (*s && !(((uint8_t)*s) & 0x80)) {
 		*s = toupper((uint8_t)*s);
 		s++;
 	}
@@ -870,7 +870,7 @@ size_t strlen_m(const char *s)
 		return 0;
 	}
 
-	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
+	while (*s && !(((uint8_t)*s) & 0x80)) {
 		s++;
 		count++;
 	}
