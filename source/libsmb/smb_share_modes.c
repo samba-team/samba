@@ -25,11 +25,6 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-/*
- * Version 2 - interface changed to handle the token added for correct
- * delete on close semantics.
- */
-
 #include "includes.h"
 #include "smb_share_modes.h"
 
@@ -119,23 +114,6 @@ int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
 {
 	return tdb_chainunlock(db_ctx->smb_tdb, get_locking_key(dev, ino));
 }
-
-#if 0
-struct locking_data {
-	union {
-		struct {
-			int num_share_mode_entries;
-			BOOL delete_on_close;
-			BOOL initial_delete_on_close;
-		} s;
-		struct share_mode_entry dummy; /* Needed for alignment. */
-	} u;
-	/* the following two entries are implicit
-	   struct share_mode_entry modes[num_share_mode_entries];
-	   char file_name[];
-	*/
-};
-#endif
 
 /*
  * Check if an external smb_share_mode_entry and an internal share_mode entry match.
