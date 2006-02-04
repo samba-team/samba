@@ -106,7 +106,7 @@ static struct ldb_dn *ldb_dn_key(struct ldb_context *ldb,
 	const struct ldb_attrib_handler *h;
 	char *attr_folded;
 
-	attr_folded = ldb_attr_casefold(ldb, ldb, attr);
+	attr_folded = ldb_attr_casefold(ldb, attr);
 	if (!attr_folded) {
 		return NULL;
 	}
