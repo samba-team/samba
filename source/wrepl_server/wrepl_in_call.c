@@ -50,10 +50,17 @@ static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 		return NT_STATUS_OK;
 	}
 
+/*
+ * it seems that we don't know all details about the start_association
+ * to support replication with NT4 (it sends 1.1 instead of 5.2)
+ * we ignore the version numbers until we know all details
+ */
+#if 0
 	if (start->minor_version != 2 || start->major_version != 5) {
 		/* w2k terminate the connection if the versions doesn't match */
 		return NT_STATUS_UNKNOWN_REVISION;
 	}
+#endif
 
 	call->wreplconn->assoc_ctx.stopped	= False;
 	call->wreplconn->assoc_ctx.our_ctx	= WREPLSRV_VALID_ASSOC_CTX;
@@ -63,6 +70,19 @@ static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 	start_reply->assoc_ctx			= call->wreplconn->assoc_ctx.our_ctx;
 	start_reply->minor_version		= 2;
 	start_reply->major_version		= 5;
+
+	/*
+	 * nt4 uses 41 bytes for the start_association call
+	 * so do it the same and as we don't know th emeanings of this bytes
+	 * we just send zeros and nt4, w2k and w2k3 seems to be happy with this
+	 *
+	 * if we don't do this nt4 uses an old version of the wins replication protocol
+	 * and that would break nt4 <-> samba replication
+	 */
+	call->rep_packet.padding		= data_blob_talloc(call, NULL, 21);
+	NT_STATUS_HAVE_NO_MEMORY(call->rep_packet.padding.data);
+
+	memset(call->rep_packet.padding.data, 0, call->rep_packet.padding.length);
 
 	return NT_STATUS_OK;
 }
