@@ -221,9 +221,9 @@ static const struct gensec_security_ops *gensec_security_by_name(struct gensec_s
  * attached to the gensec_security, and return in our preferred order.
  */
 
-const struct gensec_security_ops **gensec_security_by_sasl(struct gensec_security *gensec_security,
-							   TALLOC_CTX *mem_ctx, 
-							   const char **sasl_names)
+const struct gensec_security_ops **gensec_security_by_sasl_list(struct gensec_security *gensec_security,
+								TALLOC_CTX *mem_ctx, 
+								const char **sasl_names)
 {
 	const struct gensec_security_ops **backends_out;
 	struct gensec_security_ops **backends;
@@ -684,6 +684,33 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return gensec_start_mech(gensec_security);
+}
+
+/** 
+ * Start a GENSEC sub-mechanism with the preferred option from a SASL name list
+ *
+ */
+
+NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
+					const char **sasl_names) 
+{
+	NTSTATUS nt_status;
+	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	const struct gensec_security_ops **ops;
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ops = gensec_security_by_sasl_list(gensec_security, mem_ctx, sasl_names);
+	if (!ops || !*ops) {
+		DEBUG(3, ("Could not find GENSEC backend for any of sasl_name = %s\n", 
+			  str_list_join(mem_ctx, 
+					sasl_names, ' ')));
+		talloc_free(mem_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	nt_status = gensec_start_mech_by_ops(gensec_security, ops[0]);
+	talloc_free(mem_ctx);
+	return nt_status;
 }
 
 /** 
