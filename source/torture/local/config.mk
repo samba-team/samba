@@ -1,6 +1,8 @@
 #################################
 # Start SUBSYSTEM TORTURE_LOCAL
 [SUBSYSTEM::TORTURE_LOCAL]
+PRIVATE_PROTO_HEADER = \
+		proto.h
 OBJ_FILES = \
 		iconv.o \
 		../../lib/talloc/testsuite.o \

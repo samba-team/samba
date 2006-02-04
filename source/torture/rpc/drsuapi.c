@@ -26,6 +26,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "torture/rpc/drsuapi.h"
+#include "torture/rpc/proto.h"
 
 BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		 struct DsPrivate *priv)

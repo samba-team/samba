@@ -26,6 +26,8 @@
 #include "system/filesys.h"
 #include "libcli/raw/libcliraw.h"
 
+#include "torture/raw/proto.h"
+
 static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 				  const char *fname, BOOL expect_it)
 {

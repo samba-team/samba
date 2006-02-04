@@ -26,6 +26,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
 
+#include "torture/smb2/proto.h"
 
 #define FNAME "scan-getinfo.dat"
 #define DNAME "scan-getinfo.dir"

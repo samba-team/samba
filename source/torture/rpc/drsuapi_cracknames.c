@@ -26,6 +26,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "torture/rpc/drsuapi.h"
+#include "torture/rpc/proto.h"
 #include "ldb/include/ldb.h"
 
 static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 

@@ -2,6 +2,8 @@
 #################################
 # Start SUBSYSTEM TORTURE_SMB2
 [SUBSYSTEM::TORTURE_SMB2]
+PRIVATE_PROTO_HEADER = \
+		proto.h
 OBJ_FILES = \
 		connect.o \
 		scan.o \

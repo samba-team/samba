@@ -28,6 +28,7 @@
 #include "auth/auth.h"
 #include "smb.h"
 #include "lib/cmdline/popt_common.h"
+#include "torture/rpc/proto.h"
 
 static const char *machine_password;
 
