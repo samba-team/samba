@@ -164,6 +164,18 @@ static void bind_auth_recv_bindreply(struct composite_context *creq)
 	bind_auth_next_step(c);
 }
 
+/**
+   Bind to a DCE/RPC pipe, async
+   @param mem_ctx TALLOC_CTX for the allocation of the composite_context
+   @param p The dcerpc_pipe to bind (must already be connected)
+   @param table The interface table to use (the DCE/RPC bind both selects and interface and authenticates)
+   @param credentials The credentials of the account to connect with 
+   @param auth_type Select the authentication scheme to use
+   @param auth_level Chooses between unprotected (connect), signed or sealed
+   @param service The service (used by Kerberos to select the service principal to contact)
+   @retval A composite context describing the partial state of the bind
+*/
+
 struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 						struct dcerpc_pipe *p,
 						const struct dcerpc_interface_table *table,
@@ -316,8 +328,15 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 	return result;
 }
 
-/*
-  setup GENSEC on a DCE-RPC pipe
+/**
+   Perform a GENSEC authenticated bind to a DCE/RPC pipe, sync
+   @param p The dcerpc_pipe to bind (must already be connected)
+   @param table The interface table to use (the DCE/RPC bind both selects and interface and authenticates)
+   @param credentials The credentials of the account to connect with 
+   @param auth_type Select the authentication scheme to use
+   @param auth_level Chooses between unprotected (connect), signed or sealed
+   @param service The service (used by Kerberos to select the service principal to contact)
+   @retval NTSTATUS status code
 */
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
 			  const struct dcerpc_interface_table *table,
