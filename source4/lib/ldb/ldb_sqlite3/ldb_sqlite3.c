@@ -289,7 +289,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		 * For simple searches, we want to retrieve the list of EIDs that
 		 * match the criteria.
 		*/
-		attr = ldb_casefold(module->ldb, mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(module->ldb, mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
 		h = ldb_attrib_handler(module->ldb, attr);
 
@@ -353,7 +353,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			wild_card_string[strlen(wild_card_string) - 1] = '\0';
 		}
 
-		attr = ldb_casefold(module->ldb, mem_ctx, t->u.substring.attr);
+		attr = ldb_attr_casefold(module->ldb, mem_ctx, t->u.substring.attr);
 		if (attr == NULL) return NULL;
 		h = ldb_attrib_handler(module->ldb, attr);
 
@@ -374,7 +374,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 					value.data);
 
 	case LDB_OP_GREATER:
-		attr = ldb_casefold(module->ldb, mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(module->ldb, mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
 		h = ldb_attrib_handler(module->ldb, attr);
 
@@ -393,7 +393,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 					attr);
 
 	case LDB_OP_LESS:
-		attr = ldb_casefold(module->ldb, mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(module->ldb, mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
 		h = ldb_attrib_handler(module->ldb, attr);
 
@@ -416,7 +416,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			return talloc_strdup(mem_ctx, "SELECT eid FROM ldb_entry");
 		}
 
-		attr = ldb_casefold(module->ldb, mem_ctx, t->u.present.attr);
+		attr = ldb_attr_casefold(module->ldb, mem_ctx, t->u.present.attr);
 		if (attr == NULL) return NULL;
 
 		return lsqlite3_tprintf(mem_ctx,
@@ -425,7 +425,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 					attr);
 
 	case LDB_OP_APPROX:
-		attr = ldb_casefold(module->ldb, mem_ctx, t->u.equality.attr);
+		attr = ldb_attr_casefold(module->ldb, mem_ctx, t->u.equality.attr);
 		if (attr == NULL) return NULL;
 		h = ldb_attrib_handler(module->ldb, attr);
 
@@ -1058,7 +1058,7 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 		int j;
 
 		/* Get a case-folded copy of the attribute name */
-		attr = ldb_casefold(module->ldb, local_ctx, el->name);
+		attr = ldb_attr_casefold(module->ldb, local_ctx, el->name);
 		if (attr == NULL) {
 			ret = LDB_ERR_OTHER;
 			goto failed;
@@ -1157,7 +1157,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 		int j;
 
 		/* Get a case-folded copy of the attribute name */
-		attr = ldb_casefold(module->ldb, local_ctx, el->name);
+		attr = ldb_attr_casefold(module->ldb, local_ctx, el->name);
 		if (attr == NULL) {
 			ret = LDB_ERR_OTHER;
 			goto failed;
