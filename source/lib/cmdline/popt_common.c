@@ -47,9 +47,9 @@ static void popt_common_callback(poptContext con,
 	const char *pname;
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
+		lp_load();
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
-		lp_load();
 		return;
 	}
 
