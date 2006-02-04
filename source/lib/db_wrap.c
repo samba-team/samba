@@ -133,7 +133,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_caseless_cmp, wrap_casefold);
+	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
 	return ldb;
 }

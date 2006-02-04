@@ -197,5 +197,4 @@ int check_critical_controls(struct ldb_control **controls);
 
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
 char *ldb_casefold_default(void *context, void *mem_ctx, const char *s);
-int ldb_caseless_cmp_default(void *context, const char *s1, const char *s2);
 #endif

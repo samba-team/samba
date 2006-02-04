@@ -42,13 +42,10 @@
  */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
 			void *context,
-			int (*cmp)(void *, const char *, const char *),
 			char *(*casefold)(void *, void *, const char *))
 {
 	if (context)
 		ldb->utf8_fns.context = context;
-	if (cmp)
-		ldb->utf8_fns.caseless_cmp = cmp;
 	if (casefold)
 		ldb->utf8_fns.casefold = casefold;
 }
@@ -71,29 +68,14 @@ char *ldb_casefold_default(void *context, void *mem_ctx, const char *s)
 	return ret;
 }
 
-/*
-  a caseless compare, optimised for 7 bit
-  NOTE: doesn't handle UTF8
-*/
-
-int ldb_caseless_cmp_default(void *context, const char *s1, const char *s2)
-{
-	return strcasecmp(s1,s2);
-}
-
 void ldb_set_utf8_default(struct ldb_context *ldb)
 {
-	ldb_set_utf8_fns(ldb, NULL, ldb_caseless_cmp_default, ldb_casefold_default);
+	ldb_set_utf8_fns(ldb, NULL, ldb_casefold_default);
 }
 
 char *ldb_casefold(struct ldb_context *ldb, void *mem_ctx, const char *s)
 {
 	return ldb->utf8_fns.casefold(ldb->utf8_fns.context, mem_ctx, s);
-}
-
-int ldb_caseless_cmp(struct ldb_context *ldb, const char *s1, const char *s2)
-{
-	return ldb->utf8_fns.caseless_cmp(ldb->utf8_fns.context, s1, s2);
 }
 
 /*
