@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "libcli/cldap/cldap.h"
+#include "torture/ldap/proto.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *pipe;

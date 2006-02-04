@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "torture/rpc/proto.h"
 
 #define TEST_MACHINE_NAME "schannel"
 

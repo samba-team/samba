@@ -3,6 +3,8 @@
 #################################
 # Start SUBSYSTEM TORTURE_BASIC
 [SUBSYSTEM::TORTURE_BASIC]
+PRIVATE_PROTO_HEADER = \
+		basic/proto.h
 OBJ_FILES = \
 		basic/scanner.o \
 		basic/utable.o \
@@ -28,6 +30,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_RAW
 [SUBSYSTEM::TORTURE_RAW]
+PRIVATE_PROTO_HEADER = \
+		raw/proto.h
 OBJ_FILES = \
 		raw/qfsinfo.o \
 		raw/qfileinfo.o \
@@ -62,6 +66,8 @@ include smb2/config.mk
 #################################
 # Start SUBSYSTEM TORTURE_COM
 [SUBSYSTEM::TORTURE_COM]
+PRIVATE_PROTO_HEADER = \
+		com/proto.h
 OBJ_FILES = \
 		com/simple.o
 REQUIRED_SUBSYSTEMS = \
@@ -72,6 +78,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_RPC
 [SUBSYSTEM::TORTURE_RPC]
+PRIVATE_PROTO_HEADER = \
+		rpc/proto.h
 OBJ_FILES = \
 		rpc/join.o \
 		rpc/lsa.o \
@@ -123,6 +131,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_RAP
 [SUBSYSTEM::TORTURE_RAP]
+PRIVATE_PROTO_HEADER = \
+		rap/proto.h
 OBJ_FILES = \
 		rap/rap.o
 REQUIRED_SUBSYSTEMS = \
@@ -133,6 +143,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
 [SUBSYSTEM::TORTURE_AUTH]
+PRIVATE_PROTO_HEADER = \
+		auth/proto.h
 OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
@@ -146,6 +158,8 @@ include local/config.mk
 #################################
 # Start SUBSYSTEM TORTURE_NBENCH
 [SUBSYSTEM::TORTURE_NBENCH]
+PRIVATE_PROTO_HEADER = \
+		nbench/proto.h
 OBJ_FILES = \
 		nbench/nbio.o \
 		nbench/nbench.o
@@ -155,6 +169,8 @@ OBJ_FILES = \
 #################################
 # Start SUBSYSTEM TORTURE_LDAP
 [SUBSYSTEM::TORTURE_LDAP]
+PRIVATE_PROTO_HEADER = \
+		ldap/proto.h
 OBJ_FILES = \
 		ldap/common.o \
 		ldap/basic.o \
@@ -168,6 +184,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_NBT
 [SUBSYSTEM::TORTURE_NBT]
+PRIVATE_PROTO_HEADER = \
+		nbt/proto.h
 OBJ_FILES = \
 		nbt/query.o \
 		nbt/register.o \
@@ -184,6 +202,8 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start SUBSYSTEM TORTURE_NET
 [SUBSYSTEM::TORTURE_NET]
+PRIVATE_PROTO_HEADER = \
+		libnet/proto.h
 OBJ_FILES = \
 		libnet/userinfo.o \
 		libnet/userman.o \

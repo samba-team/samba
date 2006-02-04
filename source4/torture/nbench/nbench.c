@@ -24,6 +24,8 @@
 #include "system/filesys.h"
 #include "pstring.h"
 
+#include "torture/nbench/proto.h"
+
 int nbench_line_count = 0;
 static int timelimit = 600;
 static int warmup;
