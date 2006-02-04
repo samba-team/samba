@@ -1124,6 +1124,46 @@ NTSTATUS rpccli_samr_query_dom_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Set domain info */
+
+NTSTATUS rpccli_samr_set_domain_info(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, 
+				     POLICY_HND *domain_pol,
+				     uint16 switch_value,
+				     SAM_UNK_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_SET_DOMAIN_INFO q;
+	SAMR_R_SET_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_set_domain_info\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_set_domain_info(&q, domain_pol, switch_value, ctr);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_SET_DOMAIN_INFO,
+		q, r,
+		qbuf, rbuf,
+		samr_io_q_set_domain_info,
+		samr_io_r_set_domain_info,
+		NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+
+	return result;
+}
+
 /* User change password */
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
