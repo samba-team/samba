@@ -55,12 +55,12 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	free(s);
 }
 
-static int wrap_caseless_cmp(void *context, const char *s1, const char *s2)
+int wrap_caseless_cmp(void *context, const char *s1, const char *s2)
 {
 	return strcasecmp_m(s1, s2);
 }
 
-static char *wrap_casefold(void *context, void *mem_ctx, const char *s)
+char *wrap_casefold(void *context, void *mem_ctx, const char *s)
 {
 	return strupper_talloc(mem_ctx, s);
 }
