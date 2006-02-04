@@ -50,6 +50,8 @@ struct ldb_context *ldb_init(void *mem_ctx)
 		return NULL;
 	}
 
+	ldb_set_utf8_default(ldb);
+
 	return ldb;
 }
 
