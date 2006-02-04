@@ -72,8 +72,6 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	};
 
 #ifdef _SAMBA_BUILD_
-	gensec_init(); 
-
 	r = ldb_register_samba_handlers(ldb);
 	if (r != 0) {
 		goto failed;
@@ -198,6 +196,9 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		}
 
 #ifdef _SAMBA_BUILD_
+		/* Must be after we have processed command line options */
+		gensec_init(); 
+
 		if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
 			goto failed;
 		}
