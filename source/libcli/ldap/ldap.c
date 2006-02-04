@@ -219,8 +219,15 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 			asn1_push_tag(&data, ASN1_CONTEXT(3));
 			asn1_write_OctetString(&data, r->creds.SASL.mechanism,
 					       strlen(r->creds.SASL.mechanism));
-			asn1_write_OctetString(&data, r->creds.SASL.secblob.data,
-					       r->creds.SASL.secblob.length);
+			/* The value of data indicates if this
+			 * optional element exists at all.  In SASL
+			 * there is a difference between NULL and
+			 * zero-legnth, but our APIs don't express it
+			 * well */
+			if (r->creds.SASL.secblob.data) {
+				asn1_write_OctetString(&data, r->creds.SASL.secblob.data,
+						       r->creds.SASL.secblob.length);
+			}
 			asn1_pop_tag(&data);
 			break;
 		default:
@@ -234,7 +241,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		ldap_encode_response(&data, &r->response);
-		asn1_write_ContextSimple(&data, 7, &r->SASL.secblob);
+		/* The value of data indicates if this
+		 * optional element exists at all.  In SASL
+		 * there is a difference between NULL and
+		 * zero-legnth, but our APIs don't express it
+		 * well */
+		if (r->SASL.secblob.data) {
+			asn1_write_ContextSimple(&data, 7, &r->SASL.secblob);
+		}
 		asn1_pop_tag(&data);
 		break;
 	}
