@@ -44,6 +44,13 @@ for p in $PROTOCOLS; do
 	failed=`expr $failed + 1`
     fi
 
+    echo "Check rootDSE for Controls"
+    nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER -s base -b "" '(objectclass=*)' | grep -i supportedControl | wc -l`
+    if [ $nentries -lt 4 ]; then
+	echo "Should have found at least 4 entries"
+	failed=`expr $failed + 1`
+    fi
+
     echo "Test Paged Results Control"
     nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=paged_results:1:5 '(objectclass=user)' | grep sAMAccountName | wc -l`
     if [ $nentries -lt 1 ]; then
