@@ -304,7 +304,7 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 		}
 		lac->src_attr_len = source_attribute.length;
 		if (lac->src_attr_len) {
-			lac->source_attribute = talloc_memdup(lac, source_attribute.data, source_attribute.length);
+			lac->source_attribute = talloc_strndup(lac, source_attribute.data, source_attribute.length);
 
 			if (!(lac->source_attribute)) {
 				return False;

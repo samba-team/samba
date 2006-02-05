@@ -197,9 +197,29 @@ static int asq(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int asq_init_2(struct ldb_module *module)
+{
+	struct ldb_request request;
+	int ret;
+
+	request.operation = LDB_REQ_REGISTER;
+	request.op.reg.oid = LDB_CONTROL_ASQ_OID;
+	request.controls = NULL;
+
+	ret = ldb_request(module->ldb, &request);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "asq: Unable to register control with rootdse!\n");
+		return LDB_ERR_OTHER;
+	}
+
+	return ldb_next_second_stage_init(module);
+}
+
+
 static const struct ldb_module_ops asq_ops = {
 	.name		   = "asq",
-	.request      	   = asq
+	.request      	   = asq,
+	.second_stage_init = asq_init_2
 };
 
 struct ldb_module *asq_module_init(struct ldb_context *ldb, const char *options[])
