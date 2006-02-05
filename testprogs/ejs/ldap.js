@@ -52,6 +52,15 @@ cn: LDAPtestUSER2
 		assert(ok);
 	}
 
+	ok = ldb.add("
+dn: cn=ldaptestutf8user   èùéìòà ,cn=users," + base_dn + "
+objectClass: user
+");
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
+
 	println("Testing ldb.search");
 	var res = ldb.search("(&(cn=ldaptestuser)(objectClass=user))");
 
@@ -73,6 +82,21 @@ cn: LDAPtestUSER2
 	assert(res[0].dn == "cn=ldaptestuser2,cn=users," + base_dn);
 	assert(res[0].cn == "ldaptestuser2");
 	assert(res[0].name == "ldaptestuser2");
+	assert(res[0].objectGUID != undefined);
+	assert(res[0].whenCreated != undefined);
+
+	ok = ldb.del(res[0].dn);
+	if (!ok) {
+		println(ldb.errstring());
+		assert(ok);
+	}
+
+	println("Testing ldb.search");
+	var res = ldb.search("(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))");
+
+	assert(res[0].dn == "cn=ldaptestutf8user   èùéìòà,cn=users," + base_dn);
+	assert(res[0].cn == "ldaptestutf8user   èùéìòà");
+	assert(res[0].name == "ldaptestutf8user   èùéìòà");
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 
