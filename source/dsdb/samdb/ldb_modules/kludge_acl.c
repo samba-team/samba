@@ -196,14 +196,11 @@ static int kludge_acl_init_2(struct ldb_module *module)
 			 NULL, attrs,
 			 &res);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ret;
+		goto done;
 	}
 	talloc_steal(mem_ctx, res);
 	if (res->count == 0) {
-		talloc_free(mem_ctx);
-		data->password_attrs = NULL;
-		return LDB_SUCCESS;
+		goto done;
 	}
 
 	if (res->count > 1) {
@@ -215,8 +212,7 @@ static int kludge_acl_init_2(struct ldb_module *module)
 
 	password_attributes = ldb_msg_find_element(msg, "passwordAttribute");
 	if (!password_attributes) {
-		talloc_free(mem_ctx);
-		return LDB_SUCCESS;
+		goto done;
 	}
 	data->password_attrs = talloc_array(data, const char *, password_attributes->num_values + 1);
 	if (!data->password_attrs) {
@@ -228,8 +224,10 @@ static int kludge_acl_init_2(struct ldb_module *module)
 		talloc_steal(data->password_attrs, password_attributes->values[i].data);
 	}
 	data->password_attrs[i] = NULL;
+
+done:
 	talloc_free(mem_ctx);
-	return LDB_SUCCESS;
+	return ldb_next_second_stage_init(module);
 }
 
 static const struct ldb_module_ops kludge_acl_ops = {
