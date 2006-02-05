@@ -82,7 +82,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 
 	server_creds = talloc_get_type(ldb_get_opaque(module->ldb, "server_credentials"), 
 				       struct cli_credentials);
-	if (do_attribute(s->attrs, "supportedSASLMechanisms")) {
+	if (server_creds && do_attribute(s->attrs, "supportedSASLMechanisms")) {
 		struct gensec_security_ops **backends = gensec_security_all();
 		enum credentials_use_kerberos use_kerberos
 			= cli_credentials_get_kerberos_state(server_creds);
