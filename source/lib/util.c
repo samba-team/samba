@@ -132,21 +132,9 @@ BOOL directory_create_or_exist(const char *dname, uid_t uid,
 
 
 /*******************************************************************
- Returns the size in bytes of the named file.
-********************************************************************/
-off_t get_file_size(char *file_name)
-{
-	struct stat buf;
-	buf.st_size = 0;
-	if(stat(file_name,&buf) != 0)
-		return (off_t)-1;
-	return(buf.st_size);
-}
-
-/*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
-void close_low_fds(BOOL stderr_too)
+static void close_low_fds(BOOL stderr_too)
 {
 #ifndef VALGRIND
 	int fd;
@@ -408,17 +396,6 @@ BOOL is_zero_ip(struct ipv4_addr ip)
 }
 
 /*******************************************************************
- Set an IP to 0.0.0.0.
-******************************************************************/
-
-void zero_ip(struct ipv4_addr *ip)
-{
-	*ip = sys_inet_makeaddr(0,0);
-	return;
-}
-
-
-/*******************************************************************
  Are two IPs on the same subnet?
 ********************************************************************/
 
@@ -592,37 +569,6 @@ void *memdup(const void *p, size_t size)
 }
 
 /*****************************************************************
- Get local hostname and cache result.
-*****************************************************************/  
-
-char *myhostname(TALLOC_CTX *mem_ctx)
-{
-	char *myname, *ret;
-	myname = get_myname();
-	ret = talloc_strdup(mem_ctx, myname);
-	free(myname);
-	return ret;
-
-}
-
-/**********************************************************************
- Converts a name to a fully qalified domain name.
-***********************************************************************/
-
-char *name_to_fqdn(TALLOC_CTX *mem_ctx, const char *name)
-{
-	struct hostent *hp = sys_gethostbyname(name);
-	if ( hp && hp->h_name && *hp->h_name ) {
-		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, hp->h_name));
-		return talloc_strdup(mem_ctx, hp->h_name);
-	} else {
-		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
-		return talloc_strdup(mem_ctx, name);
-	}
-}
-
-
-/*****************************************************************
  A useful function for returning a path in the Samba lock directory.
 *****************************************************************/  
 char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
@@ -653,7 +599,7 @@ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 /*****************************************************************
  A useful function for returning a path in the Samba piddir directory.
 *****************************************************************/  
-char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
+static char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
 
@@ -732,7 +678,7 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 	return fname;
 }
 
-char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
+static char *modules_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	return talloc_asprintf(mem_ctx, "%s/%s", dyn_MODULESDIR, name);
 }
