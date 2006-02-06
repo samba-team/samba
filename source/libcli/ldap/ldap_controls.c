@@ -755,11 +755,19 @@ static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	}
 
 	if (lvrc->type == 0) {
+		if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+			return False;
+		}
+		
 		if (!asn1_write_Integer(&data, lvrc->match.byOffset.offset)) {
 			return False;
 		}
 
 		if (!asn1_write_Integer(&data, lvrc->match.byOffset.contentCount)) {
+			return False;
+		}
+
+		if (!asn1_pop_tag(&data)) {
 			return False;
 		}
 	} else {
