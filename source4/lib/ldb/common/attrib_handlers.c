@@ -69,7 +69,7 @@ static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 	
 	/* remove trailing spaces if any */
 	l = strlen(s);
-	while (s[l - 1] == ' ') l--;
+	while (l > 0 && s[l - 1] == ' ') l--;
 	s[l] = '\0';
 	
 	/* remove leading spaces if any */
