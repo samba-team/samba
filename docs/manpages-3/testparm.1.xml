@@ -93,7 +93,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>--parameter-name</term>
+		<term>--parameter-name parametername</term>
 		<listitem><para>
 		Dumps the named parameter.  If no section-name is set the view
 		is limited by default to the global section.
@@ -101,7 +101,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>--section-name</term>
+		<term>--section-name sectionname</term>
 		<listitem><para>
 		Dumps the named section.
 		</para></listitem>
