@@ -1,3 +1,17 @@
+2006-02-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.c: Spelling, from Alexey Dobriyan, via Jason McIntyre
+	
+2006-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* getcap.c: Don't use db support unless its build into libc but we
+	dont check for that now, so just disable the code. This removes
+	the dependency on libdb for roken, and that is a good thing since
+	it causes problem with nss plugins that uses DB3 that also
+	provides the same symbol, but with a diffrent ABI. so when the
+	application calls getpwnamn() and it linked to roken, it craches
+	in the nss functions.
+	
 2006-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hex.c (hex_decode): support decoding odd number of characters,
