@@ -2048,14 +2048,6 @@ BOOL lookup_cached_name(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_IS_OK(status);
 }
 
-void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
-		    const char *domain_name, const char *name,
-		    enum SID_NAME_USE type)
-{
-	wcache_save_sid_to_name(domain, NT_STATUS_OK, sid, domain_name,
-				name, type);
-}
-
 /* delete all centries that don't have NT_STATUS_OK set */
 static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, 
 			       TDB_DATA dbuf, void *state)
