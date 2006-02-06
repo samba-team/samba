@@ -74,6 +74,8 @@ domainFunctionality: 0
 forestFunctionality: 0
 domainControllerFunctionality: 2
 isSynchronized: TRUE
+vendorName: Samba Team (http://samba.org)
+vendorVersion: ${VERSION}
 
 #Add modules to the list to activate them by default
 #beware often order is important
