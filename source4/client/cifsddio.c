@@ -92,7 +92,7 @@ static BOOL fd_write_func(void * handle,
 }
 
 static struct dd_iohandle * open_fd_handle(const char * path,
-					uint64_t iosz,
+					uint64_t io_size,
 					int options)
 {
 	struct fd_handle * fdh;
@@ -296,7 +296,7 @@ static int open_smb_file(struct smbcli_state * cli,
 static struct dd_iohandle * open_smb_handle(const char * host,
 					const char * share,
 					const char * path,
-					uint64_t iosz,
+					uint64_t io_size,
 					int options)
 {
 	struct smb_handle * smbh;
@@ -327,10 +327,12 @@ static struct dd_iohandle * open_smb_handle(const char * host,
 /* Abstract IO interface.						     */
 /* ------------------------------------------------------------------------- */
 
-struct dd_iohandle * dd_open_path(const char * path, uint64_t iosz, int options)
+struct dd_iohandle * dd_open_path(const char * path,
+				uint64_t io_size,
+				int options)
 {
 	if (file_exist(path)) {
-		return(open_fd_handle(path, iosz, options));
+		return(open_fd_handle(path, io_size, options));
 	} else {
 		char * host;
 		char * share;
@@ -343,53 +345,55 @@ struct dd_iohandle * dd_open_path(const char * path, uint64_t iosz, int options)
 			while (*remain == '/' || *remain == '\\') { remain++; }
 
 			return(open_smb_handle(host, share, remain,
-						iosz, options));
+						io_size, options));
 		}
 
-		return(open_fd_handle(path, iosz, options));
+		return(open_fd_handle(path, io_size, options));
 	}
 }
 
-/* Fill the buffer till it has at least needsz bytes. Use read operations of
- * blocksz bytes. Return the number of bytes read and fill bufsz with the new
- * buffer size.
+/* Fill the buffer till it has at least need_size bytes. Use read operations of
+ * block_size bytes. Return the number of bytes read and fill buf_size with
+ * the new buffer size.
  *
- * NOTE: The IO buffer is guaranteed to be big enough to fit needsz + blocksz
- * bytes into it.
+ * NOTE: The IO buffer is guaranteed to be big enough to fit
+ * need_size + block_size bytes into it.
  */
 BOOL dd_fill_block(struct dd_iohandle * h,
 		uint8_t * buf,
-		uint64_t * bufsz,
-		uint64_t needsz,
-		uint64_t blocksz)
+		uint64_t * buf_size,
+		uint64_t need_size,
+		uint64_t block_size)
 {
-	uint64_t readsz;
+	uint64_t read_size;
 
-	SMB_ASSERT(blocksz > 0);
-	SMB_ASSERT(needsz > 0);
+	SMB_ASSERT(block_size > 0);
+	SMB_ASSERT(need_size > 0);
 
-	while (*bufsz < needsz) {
+	while (*buf_size < need_size) {
 
-		if (!h->io_read(h, buf + (*bufsz), blocksz, &readsz)) {
+		if (!h->io_read(h, buf + (*buf_size), block_size, &read_size)) {
 			return(False);
 		}
 
-		if (readsz == 0) {
+		if (read_size == 0) {
 			h->io_flags |= DD_END_OF_FILE;
 			break;
 		}
 
 		DEBUG(6, ("added %llu bytes to IO buffer (need %llu bytes)\n",
-			(unsigned long long)readsz, (unsigned long long)needsz));
+			(unsigned long long)read_size,
+			(unsigned long long)need_size));
 
-		*bufsz += readsz;
-		dd_stats.in.bytes += readsz;
+		*buf_size += read_size;
+		dd_stats.in.bytes += read_size;
 
-		if (readsz == blocksz) {
+		if (read_size == block_size) {
 			dd_stats.in.fblocks++;
 		} else {
 			DEBUG(3, ("partial read of %llu bytes (expected %llu)\n",
-				(unsigned long long)readsz, (unsigned long long)blocksz));
+				(unsigned long long)read_size,
+				(unsigned long long)block_size));
 			dd_stats.in.pblocks++;
 		}
 	}
@@ -397,87 +401,88 @@ BOOL dd_fill_block(struct dd_iohandle * h,
 	return(True);
 }
 
-/* Flush a buffer that contains bufsz bytes. Use writes of blocksz to do it,
+/* Flush a buffer that contains buf_size bytes. Use writes of block_size to do it,
  * and shift any remaining bytes back to the head of the buffer when there are
- * no more blocksz sized IOs left.
+ * no more block_size sized IOs left.
  */
 BOOL dd_flush_block(struct dd_iohandle * h,
 		uint8_t * buf,
-		uint64_t * bufsz,
-		uint64_t blocksz)
+		uint64_t * buf_size,
+		uint64_t block_size)
 {
-	uint64_t writesz;
-	uint64_t totalsz = 0;
+	uint64_t write_size;
+	uint64_t total_size = 0;
 
-	SMB_ASSERT(blocksz > 0);
+	SMB_ASSERT(block_size > 0);
 
 	/* We have explicitly been asked to write a partial block. */
-	if ((*bufsz) < blocksz) {
+	if ((*buf_size) < block_size) {
 
-		if (!h->io_write(h, buf, *bufsz, &writesz)) {
+		if (!h->io_write(h, buf, *buf_size, &write_size)) {
 			return(False);
 		}
 
-		if (writesz == 0) {
+		if (write_size == 0) {
 			fprintf(stderr, "%s: unexpectedly wrote 0 bytes\n",
 					PROGNAME);
 			return(False);
 		}
 
-		totalsz += writesz;
-		dd_stats.out.bytes += writesz;
+		total_size += write_size;
+		dd_stats.out.bytes += write_size;
 		dd_stats.out.pblocks++;
 	}
 
 	/* Write as many full blocks as there are in the buffer. */
-	while (((*bufsz) - totalsz) >= blocksz) {
+	while (((*buf_size) - total_size) >= block_size) {
 
-		if (!h->io_write(h, buf + totalsz, blocksz, &writesz)) {
+		if (!h->io_write(h, buf + total_size, block_size, &write_size)) {
 			return(False);
 		}
 
-		if (writesz == 0) {
+		if (write_size == 0) {
 			fprintf(stderr, "%s: unexpectedly wrote 0 bytes\n",
 					PROGNAME);
 			return(False);
 		}
 
-		if (writesz == blocksz) {
+		if (write_size == block_size) {
 			dd_stats.out.fblocks++;
 		} else {
 			dd_stats.out.pblocks++;
 		}
 
-		totalsz += writesz;
-		dd_stats.out.bytes += writesz;
+		total_size += write_size;
+		dd_stats.out.bytes += write_size;
 
 		DEBUG(6, ("flushed %llu bytes from IO buffer of %llu bytes (%llu remain)\n",
-			(unsigned long long)blocksz, (unsigned long long)blocksz,
-			(unsigned long long)(blocksz - totalsz)));
+			(unsigned long long)block_size,
+			(unsigned long long)block_size,
+			(unsigned long long)(block_size - total_size)));
 	}
 
-	SMB_ASSERT(totalsz > 0);
+	SMB_ASSERT(total_size > 0);
 
 	/* We have flushed as much of the IO buffer as we can while
-	 * still doing blocksz-sized operations. Shift any remaining data
+	 * still doing block_size'd operations. Shift any remaining data
 	 * to the front of the IO buffer.
 	 */
-	if ((*bufsz) > totalsz) {
-		uint64_t remain = (*bufsz) - totalsz;
+	if ((*buf_size) > total_size) {
+		uint64_t remain = (*buf_size) - total_size;
 
 		DEBUG(3, ("shifting %llu remainder bytes to IO buffer head\n",
 			(unsigned long long)remain));
 
-		memmove(buf, buf + totalsz, remain);
-		(*bufsz) = remain;
-	} else if ((*bufsz) == totalsz) {
-		(*bufsz) = 0;
+		memmove(buf, buf + total_size, remain);
+		(*buf_size) = remain;
+	} else if ((*buf_size) == total_size) {
+		(*buf_size) = 0;
 	} else {
-		/* Else buffer contains bufsz bytes that we will append
+		/* Else buffer contains buf_size bytes that we will append
 		 * to next time round.
 		 */
 		DEBUG(3, ("%llu unflushed bytes left in IO buffer\n",
-			(unsigned long long)(*bufsz)));
+			(unsigned long long)(*buf_size)));
 	}
 
 	return(True);
