@@ -533,8 +533,10 @@
 /* If we have --enable-developer and the valgrind header is present,
  * then we're OK to use it.  Set a macro so this logic can be done only
  * once. */
-#if defined(DEVELOPER) && (HAVE_VALGRIND_H || HAVE_VALGRIND_VALGRIND_H)
+#if defined(DEVELOPER) && !defined(HAVE_64BIT_LINUX)
+#if (HAVE_VALGRIND_H || HAVE_VALGRIND_VALGRIND_H)
 #define VALGRIND
+#endif
 #endif
 
 
