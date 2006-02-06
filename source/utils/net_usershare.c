@@ -268,13 +268,13 @@ struct priv_info {
  Call a function for every share on the list.
 ***************************************************************************/
 
-static int process_share_list(int (*fn)(struct file_list *, void *), void *private)
+static int process_share_list(int (*fn)(struct file_list *, void *), void *priv)
 {
 	struct file_list *fl;
 	int ret = 0;
 
 	for (fl = flist; fl; fl = fl->next) {
-		ret = (*fn)(fl, private);
+		ret = (*fn)(fl, priv);
 	}
 
 	return ret;
@@ -284,11 +284,11 @@ static int process_share_list(int (*fn)(struct file_list *, void *), void *priva
  Info function.
 ***************************************************************************/
 
-static int info_fn(struct file_list *fl, void *private)
+static int info_fn(struct file_list *fl, void *priv)
 {
 	SMB_STRUCT_STAT sbuf;
 	char **lines = NULL;
-	struct priv_info *pi = (struct priv_info *)private;
+	struct priv_info *pi = (struct priv_info *)priv;
 	TALLOC_CTX *ctx = pi->ctx;
 	int fd = -1;
 	int numlines = 0;
@@ -720,7 +720,7 @@ static int net_usershare_add(int argc, const char **argv)
  List function.
 ***************************************************************************/
 
-static int list_fn(struct file_list *fl, void *private)
+static int list_fn(struct file_list *fl, void *priv)
 {
 	d_printf("%s\n", fl->pathname);
 	return 0;
