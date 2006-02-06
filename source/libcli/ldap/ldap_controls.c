@@ -304,7 +304,7 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 		}
 		lac->src_attr_len = source_attribute.length;
 		if (lac->src_attr_len) {
-			lac->source_attribute = talloc_strndup(lac, source_attribute.data, source_attribute.length);
+			lac->source_attribute = talloc_strndup(lac, (char *)source_attribute.data, source_attribute.length);
 
 			if (!(lac->source_attribute)) {
 				return False;
@@ -350,6 +350,154 @@ static BOOL decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
 	if (in.length != 0) {
 		return False;
 	}
+
+	return True;
+}
+
+static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	DATA_BLOB assertion_value, context_id;
+	struct asn1_data data;
+	struct ldb_vlv_req_control *lvrc;
+
+	if (!asn1_load(&data, in)) {
+		return False;
+	}
+
+	lvrc = talloc(mem_ctx, struct ldb_vlv_req_control);
+	if (!lvrc) {
+		return False;
+	}
+
+	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_read_Integer(&data, &(lvrc->beforeCount))) {
+		return False;
+	}
+	
+	if (!asn1_read_Integer(&data, &(lvrc->afterCount))) {
+		return False;
+	}
+
+	if (asn1_peek_tag(&data, ASN1_SEQUENCE(0))) {
+
+		lvrc->type = 0;
+		
+		if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+			return False;
+		}
+
+		if (!asn1_read_Integer(&data, &(lvrc->match.byOffset.offset))) {
+			return False;
+		}
+
+		if (!asn1_read_Integer(&data, &(lvrc->match.byOffset.contentCount))) {
+			return False;
+		}
+
+		if (!asn1_end_tag(&data)) {
+			return False;
+		}
+
+	} else {
+
+		lvrc->type = 1;
+
+		if (!asn1_read_OctetString(&data, &assertion_value)) {
+			return False;
+		}
+		lvrc->match.gtOrEq.value_len = assertion_value.length;
+		if (lvrc->match.gtOrEq.value_len) {
+			lvrc->match.gtOrEq.value = talloc_memdup(lvrc, assertion_value.data, assertion_value.length);
+
+			if (!(lvrc->match.gtOrEq.value)) {
+				return False;
+			}
+		} else {
+			lvrc->match.gtOrEq.value = NULL;
+		}
+	}
+
+	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
+		if (!asn1_read_OctetString(&data, &context_id)) {
+			return False;
+		}
+		lvrc->ctxid_len = context_id.length;
+		if (lvrc->ctxid_len) {
+			lvrc->contextId = talloc_memdup(lvrc, context_id.data, context_id.length);
+
+			if (!(lvrc->contextId)) {
+				return False;
+			}
+		} else {
+			lvrc->contextId = NULL;
+		}
+	} else {
+		lvrc->contextId = NULL;
+		lvrc->ctxid_len = 0;
+	}
+
+	if (!asn1_end_tag(&data)) {
+		return False;
+	}
+
+	*out = lvrc;
+
+	return True;
+}
+
+static BOOL decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	DATA_BLOB context_id;
+	struct asn1_data data;
+	struct ldb_vlv_resp_control *lvrc;
+
+	if (!asn1_load(&data, in)) {
+		return False;
+	}
+
+	lvrc = talloc(mem_ctx, struct ldb_vlv_resp_control);
+	if (!lvrc) {
+		return False;
+	}
+
+	if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_read_Integer(&data, &(lvrc->targetPosition))) {
+		return False;
+	}
+	
+	if (!asn1_read_Integer(&data, &(lvrc->contentCount))) {
+		return False;
+	}
+	
+	if (!asn1_read_enumerated(&data, &(lvrc->vlv_result))) {
+		return False;
+	}
+
+	if (asn1_peek_tag(&data, ASN1_OCTET_STRING)) {
+		if (!asn1_read_OctetString(&data, &context_id)) {
+			return False;
+		}
+		lvrc->contextId = talloc_strndup(lvrc, (const char *)context_id.data, context_id.length);
+		if (!lvrc->contextId) {
+			return False;
+		}
+		lvrc->ctxid_len = context_id.length;
+	} else {
+		lvrc->contextId = NULL;
+		lvrc->ctxid_len = 0;
+	}
+
+	if (!asn1_end_tag(&data)) {
+		return False;
+	}
+
+	*out = lvrc;
 
 	return True;
 }
@@ -587,6 +735,99 @@ static BOOL encode_manageDSAIT_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return True;
 }
 
+static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	struct ldb_vlv_req_control *lvrc = talloc_get_type(in, struct ldb_vlv_req_control);
+	struct asn1_data data;
+
+	ZERO_STRUCT(data);
+
+	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, lvrc->beforeCount)) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, lvrc->afterCount)) {
+		return False;
+	}
+
+	if (lvrc->type == 0) {
+		if (!asn1_write_Integer(&data, lvrc->match.byOffset.offset)) {
+			return False;
+		}
+
+		if (!asn1_write_Integer(&data, lvrc->match.byOffset.contentCount)) {
+			return False;
+		}
+	} else {
+		
+		if (!asn1_write_OctetString(&data, lvrc->match.gtOrEq.value, lvrc->match.gtOrEq.value_len)) {
+			return False;
+		}
+	}
+
+	if (lvrc->ctxid_len) {
+		if (!asn1_write_OctetString(&data, lvrc->contextId, lvrc->ctxid_len)) {
+			return False;
+		}
+	}
+
+	if (!asn1_pop_tag(&data)) {
+		return False;
+	}
+
+	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	if (out->data == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL encode_vlv_response(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	struct ldb_vlv_resp_control *lvrc = talloc_get_type(in, struct ldb_vlv_resp_control);
+	struct asn1_data data;
+
+	ZERO_STRUCT(data);
+
+	if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, lvrc->targetPosition)) {
+		return False;
+	}
+
+	if (!asn1_write_Integer(&data, lvrc->contentCount)) {
+		return False;
+	}
+
+	if (!asn1_write_enumerated(&data, lvrc->vlv_result)) {
+		return False;
+	}
+
+	if (lvrc->ctxid_len) {
+		if (!asn1_write_OctetString(&data, lvrc->contextId, lvrc->ctxid_len)) {
+			return False;
+		}
+	}
+
+	if (!asn1_pop_tag(&data)) {
+		return False;
+	}
+
+	*out = data_blob_talloc(mem_ctx, data.data, data.length);
+	if (out->data == NULL) {
+		return False;
+	}
+
+	return True;
+}
+
 struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
@@ -596,6 +837,8 @@ struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
 	{ "1.2.840.113556.1.4.528", decode_notification_request, encode_notification_request },
 	{ "2.16.840.1.113730.3.4.2", decode_manageDSAIT_request, encode_manageDSAIT_request },
+	{ "2.16.840.1.113730.3.4.9", decode_vlv_request, encode_vlv_request },
+	{ "2.16.840.1.113730.3.4.10", decode_vlv_response, encode_vlv_response },
 	{ NULL, NULL, NULL }
 };
 
