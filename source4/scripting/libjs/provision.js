@@ -150,7 +150,6 @@ function hostname()
 	return s[0];
 }
 
-
 /* the ldb is in bad shape, possibly due to being built from an
    incompatible previous version of the code, so delete it
    completely */
@@ -452,6 +451,7 @@ function provision_guess()
 	assert(subobj.DOMAIN);
 	assert(subobj.HOSTNAME);
 
+	subobj.VERSION      = version();
 	subobj.HOSTIP       = hostip();
 	subobj.DOMAINGUID   = randguid();
 	subobj.DOMAINSID    = randsid();
