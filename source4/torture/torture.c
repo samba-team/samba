@@ -2556,10 +2556,12 @@ static void max_runtime_handler(int sig)
 	int argc_new;
 	char **argv_new;
 	poptContext pc;
-	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,OPT_DANGEROUS};
+	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS,
+	    OPT_DANGEROUS,OPT_SMB_PORTS};
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"smb-ports",	'p', POPT_ARG_STRING, NULL, 		0,	"SMB ports", 	NULL},
+		{"smb-ports",	'p', POPT_ARG_STRING, NULL,     OPT_SMB_PORTS,	"SMB ports", 	NULL},
 		{"seed",	  0, POPT_ARG_INT,  &torture_seed, 	0,	"seed", 	NULL},
 		{"num-progs",	  0, POPT_ARG_INT,  &torture_nprocs, 	0,	"num progs",	NULL},
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
@@ -2606,6 +2608,9 @@ static void max_runtime_handler(int sig)
 			break;
 		case OPT_DANGEROUS:
 			lp_set_cmdline("torture:dangerous", "Yes");
+			break;
+		case OPT_SMB_PORTS:
+			lp_set_cmdline("smb ports", poptGetOptArg(pc));
 			break;
 		default:
 			d_printf("Invalid option %s: %s\n", 
