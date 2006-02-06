@@ -455,19 +455,35 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 /**
    OID for LDAP Attribute Scoped Query extension.
 
-   This control is include in SearchRequest or SearchResponse
+   This control is included in SearchRequest or SearchResponse
    messages as part of the controls field of the LDAPMessage.
 */
 #define LDB_CONTROL_ASQ_OID		"1.2.840.113556.1.4.1504"
 
 /**
-   OID for LDAPrectory Sync extension. 
+   OID for LDAP Directory Sync extension. 
 
-   This control is include in SearchRequest or SearchResponse
+   This control is included in SearchRequest or SearchResponse
    messages as part of the controls field of the LDAPMessage.
 */
 #define LDB_CONTROL_DIRSYNC_OID		"1.2.840.113556.1.4.841"
 
+
+/**
+   OID for LDAP Virtual List View Request extension.
+
+   This control is included in SearchRequest messages
+   as part of the controls field of the LDAPMessage.
+*/
+#define LDB_CONTROL_VLV_REQ_OID		"2.16.840.1.113730.3.4.9"
+
+/**
+   OID for LDAP Virtual List View Response extension.
+
+   This control is included in SearchResponse messages
+   as part of the controls field of the LDAPMessage.
+*/
+#define LDB_CONTROL_VLV_RESP_OID	"2.16.840.1.113730.3.4.10"
 
 struct ldb_paged_control {
 	int size;
@@ -502,6 +518,32 @@ struct ldb_dirsync_control {
 	int max_attributes;
 	int cookie_len;
 	char *cookie;
+};
+
+struct ldb_vlv_req_control {
+	int beforeCount;
+	int afterCount;
+	int type;
+	union {
+		struct {
+			int offset;
+			int contentCount;
+		} byOffset;
+		struct {
+			int value_len;
+			char *value;
+		} gtOrEq;
+	} match;
+	int ctxid_len;
+	char *contextId;
+};
+
+struct ldb_vlv_resp_control {
+	int targetPosition;
+	int contentCount;
+	int vlv_result;
+	int ctxid_len;
+	char *contextId;
 };
 
 struct ldb_control {

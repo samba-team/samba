@@ -235,6 +235,52 @@ struct ldb_control **parse_controls(void *mem_ctx, char **control_strings)
 	ctrl = talloc_array(mem_ctx, struct ldb_control *, i + 1);
 
 	for (i = 0; control_strings[i]; i++) {
+		if (strncmp(control_strings[i], "vlv:", 4) == 0) {
+			struct ldb_vlv_req_control *control;
+			const char *p;
+			char attr[1024];
+			char ctxid[1024];
+			int crit, bc, ac, os, cc, ret;
+
+			attr[0] = '\0';
+			ctxid[0] = '\0';
+			p = &(control_strings[i][4]);
+			ret = sscanf(p, "%d:%d:%d:%d:%d:%1023[^$]", &crit, &bc, &ac, &os, &cc, ctxid);
+			if (ret < 5) {
+				ret = sscanf(p, "%d:%d:%d:%1023[^:]:%1023[^$]", &crit, &bc, &ac, attr, ctxid);
+			}
+			       
+			if ((ret < 4) || (crit < 0) || (crit > 1)) {
+				fprintf(stderr, "invalid server_sort control syntax\n");
+				return NULL;
+			}
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			ctrl[i]->oid = LDB_CONTROL_VLV_REQ_OID;
+			ctrl[i]->critical = crit;
+			control = talloc(ctrl[i], struct ldb_vlv_req_control);
+			control->beforeCount = bc;
+			control->afterCount = ac;
+			if (attr[0]) {
+				control->type = 1;
+				control->match.gtOrEq.value = talloc_strdup(control, attr);
+				control->match.gtOrEq.value_len = strlen(attr);
+			} else {
+				control->type = 0;
+				control->match.byOffset.offset = os;
+				control->match.byOffset.contentCount = cc;
+			}
+			if (ctxid[0]) {
+				control->ctxid_len = ldb_base64_decode(ctxid);
+				control->contextId = talloc_memdup(control, ctxid, control->ctxid_len);
+			} else {
+				control->ctxid_len = 0;
+				control->contextId = NULL;
+			}
+			ctrl[i]->data = control;
+
+			continue;
+		}
+
 		if (strncmp(control_strings[i], "dirsync:", 8) == 0) {
 			struct ldb_dirsync_control *control;
 			const char *p;
@@ -426,6 +472,31 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 	if (reply == NULL || request == NULL) return -1;
 	
 	for (i = 0; reply[i]; i++) {
+		if (strcmp(LDB_CONTROL_VLV_RESP_OID, reply[i]->oid) == 0) {
+			struct ldb_vlv_resp_control *rep_control;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_vlv_resp_control);
+			
+			/* check we have a matching control in the request */
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_VLV_REQ_OID, request[j]->oid) == 0)
+					break;
+			}
+			if (! request[j]) {
+				fprintf(stderr, "Warning VLV reply received but no request have been made\n");
+				continue;
+			}
+
+			/* check the result */
+			if (rep_control->vlv_result != 0) {
+				fprintf(stderr, "Warning: VLV not performed with error: %d\n", rep_control->vlv_result);
+			} else {
+				fprintf(stderr, "VLV Info: target position = %d, content count = %d\n", rep_control->targetPosition, rep_control->contentCount);
+			}
+
+			continue;
+		}
+
 		if (strcmp(LDB_CONTROL_ASQ_OID, reply[i]->oid) == 0) {
 			struct ldb_asq_control *rep_control;
 
@@ -438,6 +509,7 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 
 			continue;
 		}
+
 		if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, reply[i]->oid) == 0) {
 			struct ldb_paged_control *rep_control, *req_control;
 
