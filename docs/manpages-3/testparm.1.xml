@@ -93,6 +93,21 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>--parameter-name</term>
+		<listitem><para>
+		Dumps the named parameter.  If no section-name is set the view
+		is limited by default to the global section.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--section-name</term>
+		<listitem><para>
+		Dumps the named section.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>configfilename</term>
 		<listitem><para>This is the name of the configuration file 
 		to check. If this parameter is not present then the 
