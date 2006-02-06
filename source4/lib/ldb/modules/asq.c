@@ -126,14 +126,22 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 
 	ret = ldb_request(module->ldb, base_req);
 
-	if (ret != LDB_SUCCESS)
+	if (ret != LDB_SUCCESS) {
+		talloc_free(base_req);
 		return ret;
+	}
 
+	if (base_req->op.search.res->count == 0) {
+		talloc_free(base_req);
+		return build_response(res, ASQ_CTRL_SUCCESS);
+	}
+	
 	/* look up the DNs */
 	el = ldb_msg_find_element(base_req->op.search.res->msgs[0],
 				  asq_ctrl->source_attribute);
 	/* no values found */
 	if (el == NULL) {
+		talloc_free(base_req);
 		return build_response(res, ASQ_CTRL_SUCCESS);
 	}
 
@@ -180,6 +188,8 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 
 		talloc_free(exp_req);
 	}
+
+	talloc_free(base_req);
 
 	return build_response(res, ASQ_CTRL_SUCCESS);
 }
