@@ -25,6 +25,7 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
 #include "smb_build.h"
+#include "version.h"
 
 /*
   return the type of a variable
@@ -111,6 +112,15 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 	return 0;
 }
 
+/*
+  return the current version
+*/
+static int ejs_version(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	mpr_ReturnString(eid, SAMBA_VERSION_STRING);
+	return 0;
+}
+
 
 /*
   setup C functions that be called from ejs
@@ -146,5 +156,6 @@ void smb_setup_ejs_functions(void)
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "version", ejs_version, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
