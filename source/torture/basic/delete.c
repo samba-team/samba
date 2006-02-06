@@ -1208,7 +1208,8 @@ static BOOL deltest17(struct smbcli_state *cli1, struct smbcli_state *cli2)
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
-				      SEC_RIGHTS_FILE_READ,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_READ|
 				      NTCREATEX_SHARE_ACCESS_WRITE|
@@ -1532,6 +1533,68 @@ static BOOL deltest20(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	return correct;
 }
 
+/* Test 21 ... */
+static BOOL deltest21(struct smbcli_state **ppcli1, struct smbcli_state **ppcli2)
+{
+	int fnum1 = -1;
+	struct smbcli_state *cli1 = *ppcli1;
+	struct smbcli_state *cli2 = *ppcli2;
+	BOOL correct = True;
+
+	del_clean_area(cli1, cli2);
+
+	/* Test 21 -- Test removal of file after socket close. */
+
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		return False;
+	}
+	
+	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
+		printf("(%s) setting delete_on_close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
+		return False;
+	}
+	
+	/* Ensure delete on close is set. */
+	check_delete_on_close(cli1, fnum1, fname, True);
+
+	/* Now yank the rug from under cli1. */
+	smbcli_transport_dead(cli1->transport);
+
+	fnum1 = -1;
+
+	if (!torture_open_connection(ppcli1)) {
+		return False;
+	}
+
+	cli1 = *ppcli1;
+
+	/* File should not be there. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+	
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	printf("twenty-first delete on close test succeeded.\n");
+
+  fail:
+
+	return correct;
+}
+	
 /*
   Test delete on close semantics.
  */
@@ -1554,87 +1617,33 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	if (!deltest1(cli1, cli2)) {
-		correct = False;
-		goto fail;
+	correct &= deltest1(cli1, cli2);
+	correct &= deltest2(cli1, cli2);
+	correct &= deltest3(cli1, cli2);
+	correct &= deltest4(cli1, cli2);
+	correct &= deltest5(cli1, cli2);
+	correct &= deltest6(cli1, cli2);
+	correct &= deltest7(cli1, cli2);
+	correct &= deltest8(cli1, cli2);
+	correct &= deltest9(cli1, cli2);
+	correct &= deltest10(cli1, cli2);
+	correct &= deltest11(cli1, cli2);
+	correct &= deltest12(cli1, cli2);
+	correct &= deltest13(cli1, cli2);
+	correct &= deltest14(cli1, cli2);
+	correct &= deltest15(cli1, cli2);
+	correct &= deltest16(cli1, cli2);
+	correct &= deltest17(cli1, cli2);
+	correct &= deltest18(cli1, cli2);
+	correct &= deltest19(cli1, cli2);
+	correct &= deltest20(cli1, cli2);
+	correct &= deltest21(&cli1, &cli2);
+
+	if (!correct) {
+		printf("Failed delete test\n");
+	} else {
+		printf("delete test ok !\n");
 	}
-	if (!deltest2(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest3(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest4(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest5(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest6(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest7(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest8(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest9(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest10(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest11(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest12(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest13(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest14(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest15(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest16(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest17(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest18(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest19(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	if (!deltest20(cli1, cli2)) {
-		correct = False;
-		goto fail;
-	}
-	printf("finished delete test\n");
 
   fail:
 	del_clean_area(cli1, cli2);
