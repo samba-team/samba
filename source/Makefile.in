@@ -1488,7 +1488,7 @@ python_install: $(PYTHON_PICOBJS)
 	PYTHON_OBJS="$(PYTHON_PICOBJS)" \
 	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 	LIBS="$(LDFLAGS) $(LIBS)" \
-		$(PYTHON) python/setup.py install
+		$(PYTHON) python/setup.py install --root=$(DESTDIR)
 
 python_clean:
 	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
