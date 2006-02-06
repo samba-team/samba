@@ -275,7 +275,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	}
 
 	/* the signer name is placed after the sig_data, to make it
-           easy to free this struture; the size calculation below
+           easy to free this structure; the size calculation below
            includes the zero-termination if the structure itself.
 	   don't you just love C?
 	*/
