@@ -402,7 +402,7 @@ static int copy_files(void)
 {
 	uint8_t *	iobuf;	/* IO buffer. */
 	uint64_t	iomax;	/* Size of the IO buffer. */
-	uint64_t	iosz;	/* Amount of data in the IO buffer. */
+	uint64_t	data_size; /* Amount of data in the IO buffer. */
 
 	uint64_t	ibs;
 	uint64_t	obs;
@@ -445,7 +445,7 @@ static int copy_files(void)
 
 	DEBUG(4, ("max xmit was negotiated to be %d\n", lp_max_xmit()));
 
-	for (iosz = 0;;) {
+	for (data_size = 0;;) {
 
 		/* Handle signals. We are somewhat compatible with GNU dd.
 		 * SIGINT makes us stop, but still print transfer statistics.
@@ -462,10 +462,11 @@ static int copy_files(void)
 		}
 
 		if (ifile->io_flags & DD_END_OF_FILE) {
-			DEBUG(4, ("flushing %llu bytes at EOF\n", (unsigned long long)iosz));
-			while (iosz > 0) {
+			DEBUG(4, ("flushing %llu bytes at EOF\n",
+					(unsigned long long)data_size));
+			while (data_size > 0) {
 				if (!dd_flush_block(ofile, iobuf,
-							&iosz, obs)) {
+							&data_size, obs)) {
 					return(IOERROR_EXIT_CODE);
 				}
 			}
@@ -475,11 +476,11 @@ static int copy_files(void)
 		/* Try and read enough blocks of ibs bytes to be able write
 		 * out one of obs bytes.
 		 */
-		if (!dd_fill_block(ifile, iobuf, &iosz, obs, ibs)) {
+		if (!dd_fill_block(ifile, iobuf, &data_size, obs, ibs)) {
 			return(IOERROR_EXIT_CODE);
 		}
 
-		if (iosz == 0) {
+		if (data_size == 0) {
 			/* Done. */
 			SMB_ASSERT(ifile->io_flags & DD_END_OF_FILE);
 		}
@@ -497,7 +498,7 @@ static int copy_files(void)
 		 * at least obs bytes in the IO buffer but might not if the
 		 * file is too small.
 		 */
-		if (!dd_flush_block(ofile, iobuf, &iosz, obs)) {
+		if (!dd_flush_block(ofile, iobuf, &data_size, obs)) {
 			return(IOERROR_EXIT_CODE);
 		}
 	}

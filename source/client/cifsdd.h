@@ -90,10 +90,10 @@ struct dd_iohandle
 #define DD_OPLOCK		0x00000008
 
 struct dd_iohandle * dd_open_path(const char * path,
-				uint64_t iosz, int options);
+				uint64_t io_size, int options);
 BOOL dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
-		uint64_t * bufsz, uint64_t needsz, uint64_t blocksz);
+		uint64_t * buf_size, uint64_t need_size, uint64_t block_size);
 BOOL dd_flush_block(struct dd_iohandle * h, uint8_t * buf,
-		uint64_t * bufsz, uint64_t blocksz);
+		uint64_t * buf_size, uint64_t block_size);
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */
