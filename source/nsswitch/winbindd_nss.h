@@ -338,8 +338,8 @@ struct winbindd_response {
 				time_t pass_must_change_time;
 				uint16 logon_count;
 				uint16 bad_pw_count;
-				fstring user_sid;
-				fstring group_sid;
+				uint32 user_rid;
+				uint32 group_rid;
 				fstring dom_sid;
 				uint32 num_groups;
 				uint32 user_flgs;
