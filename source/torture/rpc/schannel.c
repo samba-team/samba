@@ -23,8 +23,88 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "torture/rpc/proto.h"
+#include "lib/cmdline/popt_common.h"
 
 #define TEST_MACHINE_NAME "schannel"
+
+/*
+  try a netlogon SamLogon
+*/
+BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			  struct cli_credentials *credentials, 
+			  struct creds_CredentialState *creds)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogonEx r;
+	struct netr_NetworkInfo ninfo;
+	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
+	int i;
+	BOOL ret = True;
+	int flags = CLI_CRED_NTLM_AUTH;
+	if (lp_client_lanman_auth()) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth()) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+
+	cli_credentials_get_ntlm_username_domain(cmdline_credentials, mem_ctx, 
+						 &ninfo.identity_info.account_name.string,
+						 &ninfo.identity_info.domain_name.string);
+	
+	generate_random_buffer(ninfo.challenge, 
+			       sizeof(ninfo.challenge));
+	chal = data_blob_const(ninfo.challenge, 
+			       sizeof(ninfo.challenge));
+
+	names_blob = NTLMv2_generate_names_blob(mem_ctx, cli_credentials_get_workstation(credentials), 
+						cli_credentials_get_domain(credentials));
+
+	status = cli_credentials_get_ntlm_response(cmdline_credentials, mem_ctx, 
+						   &flags, 
+						   chal,
+						   names_blob,
+						   &lm_resp, &nt_resp,
+						   NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_credentials_get_ntlm_response failed: %s\n", 
+		       nt_errstr(status));
+		return False;
+	}
+
+	ninfo.lm.data = lm_resp.data;
+	ninfo.lm.length = lm_resp.length;
+
+	ninfo.nt.data = nt_resp.data;
+	ninfo.nt.length = nt_resp.length;
+
+	ninfo.identity_info.parameter_control = 0;
+	ninfo.identity_info.logon_id_low = 0;
+	ninfo.identity_info.logon_id_high = 0;
+	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.workstation = cli_credentials_get_workstation(credentials);
+	r.in.logon_level = 2;
+	r.in.logon.network = &ninfo;
+	r.in.flags = 0;
+
+	printf("Testing LogonSamLogonEx with name %s\n", ninfo.identity_info.account_name.string);
+	
+	for (i=2;i<3;i++) {
+		r.in.validation_level = i;
+		
+		status = dcerpc_netr_LogonSamLogonEx(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonSamLogon failed: %s\n", 
+			       nt_errstr(status));
+			return False;
+		}
+	}
+
+	return ret;
+}
 
 /*
   do some samr ops using the schannel connection
@@ -157,6 +237,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
+	struct dcerpc_pipe *p_netlogon2 = NULL;
 	struct dcerpc_pipe *p_samr2 = NULL;
 	struct dcerpc_pipe *p_lsa = NULL;
 	struct creds_CredentialState *creds;
@@ -230,6 +311,11 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_netlogon_ex_ops(p_netlogon, test_ctx, credentials, creds)) {
+		printf("Failed to process schannel secured NETLOGON EX ops\n");
+		ret = False;
+	}
+
 	/* Swap the binding details from SAMR to LSARPC */
 	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_lsarpc, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -282,6 +368,37 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	/* do a couple of logins.  We have *not* done a new serverauthenticate */
 	if (!test_samr_ops(p_samr2, test_ctx)) {
 		printf("Failed to process schannel secured SAMR ops (on fresh connection)\n");
+		goto failed;
+	}
+
+	/* Swap the binding details from SAMR to NETLOGON */
+	status = dcerpc_epm_map_binding(test_ctx, b, &dcerpc_table_netlogon, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2, 
+					     b);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = dcerpc_bind_auth(p_netlogon2, &dcerpc_table_netlogon,
+				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+				  dcerpc_auth_level(p_samr2->conn),
+				  NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+	
+	/* We can only do the 'ex' ops, because the original SamLogon
+	 * call does shared credentials stuff Samba4 doesn't pass
+	 * yet */
+
+	if (!test_netlogon_ex_ops(p_netlogon2, test_ctx, credentials, creds)) {
+		printf("Failed to process schannel secured NETLOGON EX ops\n");
 		ret = False;
 	}
 
