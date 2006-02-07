@@ -34,8 +34,6 @@ prepend a prefix on all generated symbols
 
 implicit optional CONS types
 
-untag optional
-
 ** lib/auth
 
 ** lib/auth/sia
