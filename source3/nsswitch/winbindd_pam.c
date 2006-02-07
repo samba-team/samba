@@ -32,7 +32,6 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    struct winbindd_cli_state *state, 
 				    NET_USER_INFO_3 *info3) 
 {
-	DOM_SID user_sid, group_sid;
 	fstring str_sid;
 
 	state->response.data.auth.info3.logon_time = 
@@ -51,18 +50,8 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	state->response.data.auth.info3.logon_count = info3->logon_count;
 	state->response.data.auth.info3.bad_pw_count = info3->bad_pw_count;
 
-	sid_copy(&user_sid, &(info3->dom_sid.sid));
-	sid_append_rid(&user_sid, info3->user_rid);
-
-	sid_to_string(str_sid, &user_sid);
-	fstrcpy(state->response.data.auth.info3.user_sid, str_sid);
-
-	sid_copy(&group_sid, &(info3->dom_sid.sid));
-	sid_append_rid(&group_sid, info3->group_rid);
-
-	sid_to_string(str_sid, &group_sid);
-	fstrcpy(state->response.data.auth.info3.group_sid, str_sid);
-
+	state->response.data.auth.info3.user_rid = info3->user_rid;
+	state->response.data.auth.info3.group_rid = info3->group_rid;
 	sid_to_string(str_sid, &(info3->dom_sid.sid));
 	fstrcpy(state->response.data.auth.info3.dom_sid, str_sid);
 
