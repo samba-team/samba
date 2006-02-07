@@ -157,6 +157,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
+	struct dcerpc_pipe *p_samr2 = NULL;
 	struct dcerpc_pipe *p_lsa = NULL;
 	struct creds_CredentialState *creds;
 	struct cli_credentials *credentials;
@@ -253,6 +254,34 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	if (!test_lsa_ops(p_lsa, test_ctx)) {
 		printf("Failed to process schannel secured LSA ops\n");
+		ret = False;
+	}
+
+	/* Drop the socket, we want to start from scratch */
+	talloc_free(p);
+	p = NULL;
+
+	/* Now see what we are still allowed to do */
+	
+	status = dcerpc_parse_binding(test_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Bad binding string %s\n", binding);
+		goto failed;
+	}
+
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= dcerpc_flags;
+
+	status = dcerpc_pipe_connect_b(test_ctx, &p_samr2, b, &dcerpc_table_samr,
+				       credentials, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+	/* do a couple of logins.  We have *not* done a new serverauthenticate */
+	if (!test_samr_ops(p_samr2, test_ctx)) {
+		printf("Failed to process schannel secured SAMR ops (on fresh connection)\n");
 		ret = False;
 	}
 
