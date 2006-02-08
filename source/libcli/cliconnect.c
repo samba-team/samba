@@ -177,25 +177,29 @@ struct smbcli_state *smbcli_state_init(TALLOC_CTX *mem_ctx)
 }
 
 /* Insert a NULL at the first separator of the given path and return a pointer
- * to the location it was inserted at.
+ * to the remainder of the string.
  */
 static char *
 terminate_path_at_separator(char * path)
 {
 	char * p;
 
+	if (!path) {
+		return NULL;
+	}
+
 	if ((p = strchr_m(path, '/'))) {
-	    *p = '\0';
-	    return(p);
+		*p = '\0';
+		return p + 1;
 	}
 
 	if ((p = strchr_m(path, '\\'))) {
-	    *p = '\0';
-	    return(p);
+		*p = '\0';
+		return p + 1;
 	}
 	
-	/* No terminator. Return pointer to the last byte. */
-	return(p + strlen(path));
+	/* No separator. */
+	return NULL;
 }
 
 /*
@@ -206,6 +210,8 @@ BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 {
 	char *p;
 
+	*hostname = *sharename = NULL;
+
 	if (strncmp(unc_name, "\\\\", 2) &&
 	    strncmp(unc_name, "//", 2)) {
 		return False;
@@ -214,10 +220,19 @@ BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 	*hostname = talloc_strdup(mem_ctx, &unc_name[2]);
 	p = terminate_path_at_separator(*hostname);
 
-	*sharename = talloc_strdup(mem_ctx, p+1);
-	p = terminate_path_at_separator(*sharename);
+	if (p && *p) {
+		*sharename = talloc_strdup(mem_ctx, p);
+		terminate_path_at_separator(*sharename);
+	}
 
-	return True;
+	if (*hostname && *sharename) {
+		return True;
+	}
+
+	talloc_free(*hostname);
+	talloc_free(*sharename);
+	*hostname = *sharename = NULL;
+	return False;
 }
 
 
