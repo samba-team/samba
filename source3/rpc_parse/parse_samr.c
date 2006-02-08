@@ -6965,8 +6965,7 @@ void init_samr_q_connect_anon(SAMR_Q_CONNECT_ANON * q_u)
 
 	q_u->ptr = 1;
 	q_u->unknown_0 = 0x5c;	/* server name (?!!) */
-	q_u->unknown_1 = 0x01;
-	q_u->access_mask = 0x20;
+	q_u->access_mask = MAXIMUM_ALLOWED_ACCESS;
 }
 
 /*******************************************************************
@@ -6987,9 +6986,11 @@ BOOL samr_io_q_connect_anon(const char *desc, SAMR_Q_CONNECT_ANON * q_u,
 
 	if(!prs_uint32("ptr      ", ps, depth, &q_u->ptr))
 		return False;
-	if(!prs_uint16("unknown_0", ps, depth, &q_u->unknown_0))
-		return False;
-	if(!prs_uint16("unknown_1", ps, depth, &q_u->unknown_1))
+	if (q_u->ptr) {
+		if(!prs_uint16("unknown_0", ps, depth, &q_u->unknown_0))
+			return False;
+	}
+	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
