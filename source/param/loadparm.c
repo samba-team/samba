@@ -1655,8 +1655,6 @@ static void init_globals(BOOL first_time_only)
 
 	Globals.bASUSupport       = True;
 	
-	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
-
 	/* User defined shares. */
 	pstrcpy(s, dyn_LOCKDIR);
 	pstrcat(s, "/usershares");
