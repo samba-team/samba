@@ -67,7 +67,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     SAM_ACCOUNT *sampass = NULL;
     extern BOOL in_client;
     const char *name;
-    void (*oldsig_handler)(int);
+    void (*oldsig_handler)(int) = NULL;
     BOOL found;
 
     /* Points to memory managed by the PAM library. Do not free. */

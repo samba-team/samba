@@ -43,6 +43,7 @@
 #endif
 
 #include <ctype.h>
+#include <string.h>
 
 #if HAVE_STDLIB_H
 # include <stdlib.h> /* for `free'; used by Bison 1.27 */
