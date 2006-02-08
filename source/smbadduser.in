@@ -10,15 +10,15 @@ PRIVATEDIR=@privatedir@
 CONFIGDIR=@configdir@
 
 unalias *
-set path = ($path /usr/local/samba/bin)
+set path = ($path /usr/bin)
 
 set smbpasswd = $PRIVATEDIR/smbpasswd
-set user_map  = $CONFIGDIR/users.map
+set user_map  = $CONFIGDIR/smbusers
 
 #
 # Set to site specific passwd command
 #
-set passwd    = "cat /etc/passwd"
+set passwd    = "getent passwd"
 #set passwd    = "niscat passwd.org_dir"
 #set passwd    = "ypcat passwd"
 
