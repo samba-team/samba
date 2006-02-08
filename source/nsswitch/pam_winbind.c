@@ -419,7 +419,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 	/* handle the case where the auth was ok, but the password must expire right now */
 	/* good catch from Ralf Haferkamp: an expiry of "never" is translated to -1 */
-	if ((response.data.auth.info3.user_rid != DOMAIN_USER_RID_ADMIN ) &&
+	if ( ! (response.data.auth.info3.acct_flags & ACB_PWNOEXP) &&
 	    (response.data.auth.policy.expire > 0) && 
 	    (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire < time(NULL))) {
 
@@ -436,7 +436,7 @@ static int winbind_auth_request(pam_handle_t * pamh,
 	}
 
 	/* warn a user if the password is about to expire soon */
-	if ((response.data.auth.info3.user_rid != DOMAIN_USER_RID_ADMIN ) &&
+	if ( ! (response.data.auth.info3.acct_flags & ACB_PWNOEXP) &&
 	    (response.data.auth.policy.expire) && 
 	    (response.data.auth.info3.pass_last_set_time + response.data.auth.policy.expire > time(NULL) ) ) {
 
