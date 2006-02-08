@@ -210,6 +210,10 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	/* store a successful connection */
+
+	saf_store( domain, cli->desthost );
+
 	ZERO_STRUCT(info3);
 
         /*

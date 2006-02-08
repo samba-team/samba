@@ -5541,6 +5541,10 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			nt_errstr(nt_status)));
 		return -1;
 	}
+
+	/* store who we connected to */
+
+	saf_store( domain_name, cli->desthost );
 	
 	/*
 	 * Connect to \\server\ipc$ again (this time anonymously)
