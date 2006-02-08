@@ -301,6 +301,11 @@ static struct dd_iohandle * open_smb_handle(const char * host,
 {
 	struct smb_handle * smbh;
 
+	if (path == NULL  || *path == '\0') {
+		fprintf(stderr, "%s: missing path name within share //%s/%s\n",
+			PROGNAME, host, share);
+	}
+
 	DEBUG(4, ("opening SMB stream to //%s/%s for %s\n",
 		host, share, path));
 
