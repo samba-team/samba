@@ -1677,13 +1677,10 @@ typedef struct r_samr_open_alias_info
 
 
 /* SAMR_Q_CONNECT_ANON - probably an open */
-typedef struct q_samr_connect_anon_info
-{
+typedef struct q_samr_connect_anon_info {
 	uint32 ptr;                  /* ptr? */
-	uint16 unknown_0;            /* 0x005c */
-	uint16 unknown_1;            /* 0x0001 */
+	uint16 unknown_0;	     /* Only pushed if ptr is non-zero. */
 	uint32 access_mask;
-
 } SAMR_Q_CONNECT_ANON;
 
 /* SAMR_R_CONNECT_ANON - probably an open */
