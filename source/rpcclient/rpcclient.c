@@ -689,6 +689,7 @@ out_free:
 	struct in_addr 		server_ip;
 	NTSTATUS 		nt_status;
 	static int		opt_port = 0;
+	fstring new_workgroup;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -755,10 +756,21 @@ out_free:
 	if (!init_names())
 		return 1;
 
+	/* save the workgroup...
+	
+	   FIXME!! do we need to do this for other options as well 
+	   (or maybe a generic way to keep lp_load() from overwriting 
+	   everything)?  */
+	
+	fstrcpy( new_workgroup, lp_workgroup() );
+
 	/* Load smb.conf file */
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False,True))
 		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
+
+	if ( strlen(new_workgroup) != 0 )
+		set_global_myworkgroup( new_workgroup );
 
 	/*
 	 * Get password
