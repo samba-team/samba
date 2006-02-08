@@ -395,6 +395,11 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
 	}
 
+	/* store the server in the affinity cache if it was a PDC */
+
+	if ( flags & NET_FLAGS_PDC )
+		saf_store( cli->server_domain, cli->desthost );
+
 	SAFE_FREE(server_name);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
