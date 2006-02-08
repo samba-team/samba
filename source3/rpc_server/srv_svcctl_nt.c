@@ -72,7 +72,7 @@ BOOL init_service_op_table( void )
 
 	/* services listed in smb.conf get the rc.init interface */
 	
-	for ( i=0; service_list[i]; i++ ) {
+	for ( i=0; service_list && service_list[i]; i++ ) {
 		svcctl_ops[i].name = talloc_strdup( svcctl_ops, service_list[i] );
 		svcctl_ops[i].ops  = &rcinit_svc_ops;
 	}

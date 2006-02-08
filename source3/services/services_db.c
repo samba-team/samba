@@ -436,7 +436,7 @@ void svcctl_init_keys( void )
 	for ( i=0; builtin_svcs[i].servicename; i++ )
 		add_new_svc_name( key, subkeys, builtin_svcs[i].servicename );
 		
-	for ( i=0; service_list[i]; i++ ) {
+	for ( i=0; service_list && service_list[i]; i++ ) {
 	
 		/* only add new services */
 		if ( regsubkey_ctr_key_exists( subkeys, service_list[i] ) )

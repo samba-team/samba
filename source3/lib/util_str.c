@@ -1852,6 +1852,9 @@ int str_list_count( const char **list )
 {
 	int i = 0;
 
+	if ( ! list )
+		return 0;
+
 	/* count the number of list members */
 	
 	for ( i=0; *list; i++, list++ );
