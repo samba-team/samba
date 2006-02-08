@@ -152,7 +152,18 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 
 make showlayout
 
-make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE"  proto pch
+make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE"  proto 
+
+## check for gcc 3.4 or later
+CC_VERSION=`${CC} --version | head -1 | awk '{print $3}'`
+CC_MAJOR=`echo ${CC_VERSION} | cut -d. -f 1`
+CC_MINOR=`echo ${CC_VERSION} | cut -d. -f 2`
+if [ ${CC_MAJOR} -ge 3 ]; then
+        if [ ${CC_MAJOR} -gt 3 -o ${CC_MINOR} -ge 4 ]; then
+                make pch
+        fi
+fi
+
 
 make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" %{?_smp_mflags} \
 	all modules pam_smbpass
@@ -276,9 +287,7 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man5/vfstest.1*
 rm -rf $RPM_BUILD_ROOT
 
 %post
-/sbin/chkconfig --add smb
-
-## deal with an upgrade from a broken 3.0.21a.1 RPM
+## deal with an upgrade from a broken 3.0.21b RPM
 if [ "$1" -eq "2" ]; then
 	if [ -d /var/cache/samba ]; then
 		for file in `ls /var/cache/samba/*tdb`; do
@@ -296,6 +305,7 @@ fi
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
+    /sbin/chkconfig --del winbind
     # rm -rf /var/log/samba/* /var/lib/samba/*
     /sbin/service smb stop >/dev/null 2>&1
 fi
@@ -303,7 +313,7 @@ exit 0
 
 %postun
 if [ "$1" -ge "1" ]; then
-	%{initdir}/smb condrestart >/dev/null 2>&1
+	%{initdir}/smb restart >/dev/null 2>&1
 fi	
 
 
@@ -314,30 +324,10 @@ if [ ! "`grep ^\s**swat /etc/services`" ]; then
 fi
 
 %post common
-/sbin/chkconfig --add winbind
 /sbin/ldconfig
 
-%preun common
-if [ $1 = 0 ] ; then
-    /sbin/chkconfig --del winbind
-    /sbin/service winbind stop >/dev/null 2>&1
-fi
-exit 0
-
-%postun common -p /sbin/ldconfig
-
-%triggerpostun -- samba < 1.9.18p7
-if [ $1 != 0 ]; then
-    /sbin/chkconfig --add smb
-fi
-
-%triggerpostun -- samba < 2.0.5a-3
-if [ $1 != 0 ]; then
-    [ ! -d /var/lock/samba ] && mkdir -m 0755 /var/lock/samba
-    [ ! -d /var/spool/samba ] && mkdir -m 1777 /var/spool/samba
-    chmod 644 /etc/services
-    [ -f /etc/inetd.conf ] && chmod 644 /etc/inetd.conf
-fi
+%postun common 
+/sbin/ldconfig
 
 #######################################################################
 ## Files section                                                     ##
