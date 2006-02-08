@@ -277,6 +277,13 @@ typedef struct sam_user_info_25
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 } SAM_USER_INFO_25;
 
+/* SAM_USER_INFO_26 */
+typedef struct sam_user_info_26
+{
+	uint8 pass[532];
+	uint8 pw_len;
+} SAM_USER_INFO_26;
+
 
 /* SAM_USER_INFO_21 */
 typedef struct sam_user_info_21
@@ -1272,6 +1279,7 @@ typedef struct sam_userinfo_ctr_info
 		SAM_USER_INFO_23 *id23;
 		SAM_USER_INFO_24 *id24;
 		SAM_USER_INFO_25 *id25;
+		SAM_USER_INFO_26 *id26;
 		void* id; /* to make typecasting easy */
 
 	} info;
