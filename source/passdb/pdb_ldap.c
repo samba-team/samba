@@ -3875,7 +3875,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	return result;
 }
 
-char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
+static char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 {
 	char *filter = NULL;
 	char *escaped = NULL;
