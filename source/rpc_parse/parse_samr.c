@@ -5404,12 +5404,40 @@ static BOOL sam_io_user_info24(const char *desc, SAM_USER_INFO_24 * usr,
 	if (MARSHALLING(ps) && (usr->pw_len != 0)) {
 		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
 			return False;
+	} else if (UNMARSHALLING(ps)) {
+		if (!prs_uint16("pw_len", ps, depth, &usr->pw_len))
+			return False;
 	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_user_info26(const char *desc, SAM_USER_INFO_26 * usr,
+			       prs_struct *ps, int depth)
+{
+	if (usr == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_user_info26");
+	depth++;
+
 	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint8s(False, "password", ps, depth, usr->pass, 
+		       sizeof(usr->pass)))
+		return False;
+	
+	if (!prs_uint8("pw_len", ps, depth, &usr->pw_len))
 		return False;
 
 	return True;
 }
+
 
 /*************************************************************************
  init_sam_user_info23
@@ -6474,6 +6502,16 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 			return False;
 		}
 		ret = sam_io_user_info25("", ctr->info.id25, ps, depth);
+		break;
+	case 26:
+		if (UNMARSHALLING(ps))
+			ctr->info.id26 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_26,1);
+
+		if (ctr->info.id26 == NULL) {
+			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+			return False;
+		}
+		ret = sam_io_user_info26("", ctr->info.id26, ps,  depth);
 		break;
 	default:
 		DEBUG(2, ("samr_io_userinfo_ctr: unknown switch level 0x%x\n", ctr->switch_value));
