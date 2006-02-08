@@ -531,6 +531,25 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 }
 
 /***********************************************************
+ Decode an arc4 encrypted password change buffer.
+************************************************************/
+
+void encode_or_decode_arc4_passwd_buffer(char pw_buf[532], const DATA_BLOB *psession_key)
+{
+	struct MD5Context tctx;
+	unsigned char key_out[16];
+
+	/* Confounder is last 16 bytes. */
+
+	MD5Init(&tctx);
+	MD5Update(&tctx, &pw_buf[516], 16);
+	MD5Update(&tctx, psession_key->data, psession_key->length);
+	MD5Final(key_out, &tctx);
+	/* arc4 with key_out. */
+	SamOEMhash(pw_buf, key_out, 516);
+}
+
+/***********************************************************
  Encrypt/Decrypt used for LSA secrets and trusted domain
  passwords.
 ************************************************************/

@@ -3316,27 +3316,27 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			break;
 
 		case 25:
-#if 0
-			/*
-			 * Currently we don't really know how to unmarshall
-			 * the level 25 struct, and the password encryption
-			 * is different. This is a placeholder for when we
-			 * do understand it. In the meantime just return INVALID
-			 * info level and W2K SP2 drops down to level 23... JRA.
-			 */
-
 			if (!p->session_key.length) {
 				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(ctr->info.id25->pass, 532, &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(ctr->info.id25->pass, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
-			if (!set_user_info_pw(ctr->info.id25->pass, &sid))
+			if (!set_user_info_pw(ctr->info.id25->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
-#endif
-			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+
+		case 26:
+			if (!p->session_key.length) {
+				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+			}
+			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
+
+			dump_data(100, (char *)ctr->info.id26->pass, 516);
+
+			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 23:
@@ -3432,7 +3432,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
 	}
 	
-	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
+	DEBUG(5, ("_samr_set_userinfo2: %s does%s possess sufficient rights\n",
 		p->pipe_user_name, has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
@@ -3463,6 +3463,28 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 		case 21:
 			if (!set_user_info_21(ctr->info.id21, pwd))
 				return NT_STATUS_ACCESS_DENIED;
+			break;
+		case 23:
+			if (!p->session_key.length) {
+				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+			}
+			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
+
+			dump_data(100, (char *)ctr->info.id23->pass, 516);
+
+			if (!set_user_info_23(ctr->info.id23, pwd))
+				r_u->status = NT_STATUS_ACCESS_DENIED;
+			break;
+		case 26:
+			if (!p->session_key.length) {
+				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+			}
+			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
+
+			dump_data(100, (char *)ctr->info.id26->pass, 516);
+
+			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		default:
 			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
