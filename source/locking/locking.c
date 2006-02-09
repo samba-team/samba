@@ -457,13 +457,12 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 
 	/* Get any delete token. */
 	if (data->u.s.delete_token_size) {
-		/* Each uid/gid is stored as a 4 byte value. */
-		uint32 val;
-		uint32 *p = (uint32 *)(dbuf.dptr + sizeof(*data) +
+		char *p = dbuf.dptr + sizeof(*data) +
 				(lck->num_share_modes *
-				sizeof(struct share_mode_entry)));
+				sizeof(struct share_mode_entry));
 
-		if ((data->u.s.delete_token_size < 8) || (data->u.s.delete_token_size % 4) != 0) {
+		if ((data->u.s.delete_token_size < sizeof(uid_t) + sizeof(gid_t)) ||
+				((data->u.s.delete_token_size - sizeof(uid_t)) % sizeof(gid_t)) != 0) {
 			DEBUG(0, ("parse_share_modes: invalid token size %d\n",
 				data->u.s.delete_token_size));
 			smb_panic("parse_share_modes: invalid token size\n");
@@ -475,14 +474,16 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 
 		/* Copy out the uid and gid. */
-		memcpy(&val, p++, 4);
-		lck->delete_token->uid = (uid_t)val;
-		memcpy(&val, p++, 4);
-		lck->delete_token->gid = (gid_t)val;
+		memcpy(&lck->delete_token->uid, p, sizeof(uid_t));
+		p += sizeof(uid_t);
+		memcpy(&lck->delete_token->gid, p, sizeof(gid_t));
+		p += sizeof(gid_t);
 
 		/* Any supplementary groups ? */
-		lck->delete_token->ngroups = (data->u.s.delete_token_size > 8) ?
-						((data->u.s.delete_token_size - 8)/4) : 0;
+		lck->delete_token->ngroups = (data->u.s.delete_token_size > (sizeof(uid_t) + sizeof(gid_t))) ?
+					((data->u.s.delete_token_size -
+						(sizeof(uid_t) + sizeof(gid_t)))/sizeof(gid_t)) : 0;
+
 		if (lck->delete_token->ngroups) {
 			/* Make this a talloc child of lck->delete_token. */
 			lck->delete_token->groups = TALLOC_ARRAY(lck->delete_token, gid_t,
@@ -492,8 +493,8 @@ static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 			}
 
 			for (i = 0; i < lck->delete_token->ngroups; i++) {
-				memcpy(&val, p++, 4);
-				lck->delete_token->groups[i] = (gid_t)val;
+				memcpy(&lck->delete_token->groups[i], p, sizeof(gid_t));
+				p += sizeof(gid_t);
 			}
 		}
 
@@ -557,7 +558,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 
 	sp_len = strlen(lck->servicepath);
 	delete_token_size = (lck->delete_token ?
-			(8 + (lck->delete_token->ngroups*4)) : 0);
+			(sizeof(uid_t) + sizeof(gid_t) + (lck->delete_token->ngroups*sizeof(gid_t))) : 0);
 
 	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
@@ -588,20 +589,18 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 
 	/* Store any delete on close token. */
 	if (lck->delete_token) {
-		uint32 val;
-		uint32 *p = (uint32 *)(result.dptr + offset);
+		char *p = result.dptr + offset;
 
-		val = (uint32)lck->delete_token->uid;
-		memcpy(p++, &val, 4);
+		memcpy(p, &lck->delete_token->uid, sizeof(uid_t));
+		p += sizeof(uid_t);
 
-		val = (uint32)lck->delete_token->uid;
-		memcpy(p++, &val, 4);
+		memcpy(p, &lck->delete_token->gid, sizeof(gid_t));
 
 		for (i = 0; i < lck->delete_token->ngroups; i++) {
-			val = (uint32)lck->delete_token->groups[i];
-			memcpy(p++, &val, 4);
+			memcpy(p, &lck->delete_token->groups[i], sizeof(gid_t));
+			p += sizeof(gid_t);
 		}
-		offset = ((char *)p - result.dptr);
+		offset = p - result.dptr;
 	}
 
 	safe_strcpy(result.dptr + offset, lck->servicepath,
