@@ -169,6 +169,57 @@ typedef struct net_user_info_2 {
 } NET_USER_INFO_2;
 #endif
 
+/* NET_USER_INFO_2 */
+typedef struct net_user_info_2 {
+	uint32 ptr_user_info;
+
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
+
+	uint16 logon_count;  /* logon count */
+	uint16 bad_pw_count; /* bad password count */
+
+	uint32 user_rid;       /* User RID */
+	uint32 group_rid;      /* Group RID */
+
+	uint32 num_groups;    /* num groups */
+	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
+	uint32 user_flgs;     /* user flags */
+
+	uint8 user_sess_key[16]; /* user session key */
+
+	UNIHDR hdr_logon_srv; /* logon server unicode string header */
+	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
+
+	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
+	uint8 lm_sess_key[8];	/* lm session key */
+	uint32 acct_flags;	/* account flags */
+	uint32 unknown[7];	/* unknown */
+
+	UNISTR2 uni_user_name;    /* username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+
+	UNISTR2 uni_logon_srv; /* logon server unicode string */
+	UNISTR2 uni_logon_dom; /* logon domain unicode string */
+
+	DOM_SID2 dom_sid;           /* domain SID */
+} NET_USER_INFO_2;
+
 /* NET_USER_INFO_3 */
 typedef struct net_user_info_3 {
 	uint32 ptr_user_info;

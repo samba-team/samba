@@ -197,10 +197,10 @@ static BOOL api_net_sam_logon(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-    if(!net_io_q_sam_logon("", &q_u, data, 0)) {
-        DEBUG(0, ("api_net_sam_logon: Failed to unmarshall NET_Q_SAM_LOGON.\n"));
-        return False;
-    }
+	if(!net_io_q_sam_logon("", &q_u, data, 0)) {
+		DEBUG(0, ("api_net_sam_logon: Failed to unmarshall NET_Q_SAM_LOGON.\n"));
+		return False;
+	}
    
 	r_u.status = _net_sam_logon(p, &q_u, &r_u);
 
