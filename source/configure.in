@@ -14,6 +14,27 @@ if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 fi
 
 #################################################
+# Figure out what type of system we are building on.
+
+UNAME_S=`(uname -s) 2>/dev/null` || UNAME_S="unknown"
+AC_MSG_CHECKING(uname -s)
+AC_MSG_RESULT(${UNAME_S})
+
+UNAME_R=`(uname -r) 2>/dev/null` || UNAME_R="unknown"
+AC_MSG_CHECKING(uname -r)
+AC_MSG_RESULT(${UNAME_R})
+
+UNAME_M=`(uname -m) 2>/dev/null` || UNAME_M="unknown"
+AC_MSG_CHECKING(uname -m)
+AC_MSG_RESULT(${UNAME_M})
+
+UNAME_P=`(uname -p) 2>/dev/null` || UNAME_P="unknown"
+AC_MSG_CHECKING(uname -p)
+AC_MSG_RESULT(${UNAME_P})
+
+AC_CANONICAL_SYSTEM
+
+#################################################
 # Detect the compiler early so we know how to run
 # feature tests correctly.
 
@@ -309,7 +330,14 @@ AC_ARG_ENABLE(socket-wrapper,
 # if it has no value.  This prevent *very* large debug binaries from occurring
 # by default.
 if test "x$CFLAGS" = x; then
-  CFLAGS="-O"
+    AX_CFLAGS_GCC_OPTION(-O2, CFLAGS)
+    AX_CFLAGS_IRIX_OPTION(-O2, CFLAGS)
+    # Make sure the MIPSPro compiler will never decide functions are too
+    # big to optimise
+    AX_CFLAGS_IRIX_OPTION(-OPT:Olimit=0, CFLAGS)
+    AX_CFLAGS_HPUX_OPTION(-O2, CFLAGS)
+    AX_CFLAGS_SUN_OPTION(-O2, CFLAGS)
+    AX_CFLAGS_AIX_OPTION(-O2, CFLAGS)
 fi
 
 CPPFLAGS="${CPPFLAGS} -D_SAMBA_BUILD_"
@@ -351,6 +379,88 @@ then
                   [Define to check invariants around some common functions])
 	LIBS="$LIBS -ldmalloc"	
 fi
+
+# Check for profile guided optimisation (PGO) support.
+
+AC_ARG_ENABLE(pgo,
+[  --enable-pgo=SCRIPT     Compile with PGO (default=no)],
+[
+    case $enableval in
+	yes|no)
+	    AC_MSG_ERROR(the argument to --enable-pgo must be an executable script)
+    esac
+
+    samba_cv_have_pgo=no
+
+    # Test for IRIX PGO first. Unfortunately, some of the later GCC option
+    # tests can spuriously succeed with the MIPSPro compilers. Despite the
+    # test succeeding, the GCC options don't work.
+    if test "x$samba_cv_have_pgo" = "xno" ; then
+	samba_cv_have_pgo=yes
+	# The backslash below is horrible but necessary -- jpeach
+	AX_CFLAGS_IRIX_OPTION("-fb_create\ samba.feedback",
+		PGO_GENERATE_CFLAGS, [], [samba_cv_have_pgo=no])
+	AX_CFLAGS_IRIX_OPTION("-fb_opt\ samba.feedback",
+		PGO_USE_CFLAGS, [], [samba_cv_have_pgo=no])
+    fi
+
+    # Test GCC 4.x style profile flags.
+    if test "x$samba_cv_have_pgo" = "xno" ; then
+	samba_cv_have_pgo=yes
+	AX_CFLAGS_GCC_OPTION(-fprofile-generate, PGO_GENERATE_CFLAGS,
+		[], [samba_cv_have_pgo=no])
+	AX_CFLAGS_GCC_OPTION(-fprofile-use, PGO_USE_CFLAGS,
+		[], [samba_cv_have_pgo=no])
+    fi
+
+    # Test GCC 3.x style profile flags. This is rather more complicated so
+    # we only require a minimal set of options to enable PGO.
+    if test "x$samba_cv_have_pgo" = "xno" ; then
+	samba_cv_have_pgo=yes
+	AX_CFLAGS_GCC_OPTION(-fprofile-arcs, PGO_GENERATE_CFLAGS,
+		[], [samba_cv_have_pgo=no])
+	AX_CFLAGS_GCC_OPTION(-fvpt, PGO_GENERATE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-fspeculative-prefetching, PGO_GENERATE_CFLAGS,
+		[], [])
+	AX_CFLAGS_GCC_OPTION(-fprofile-values, PGO_GENERATE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-fbranch-probabilities, PGO_USE_CFLAGS,
+		[], [samba_cv_have_pgo=no])
+	AX_CFLAGS_GCC_OPTION(-fvpt, PGO_USE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-freorder-functions, PGO_USE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-fprofile-values, PGO_USE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-fspeculative-prefetching, PGO_USE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-funroll-loops, PGO_USE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-fpeel-loops, PGO_USE_CFLAGS, [], [])
+	AX_CFLAGS_GCC_OPTION(-ftracer, PGO_USE_CFLAGS, [], [])
+    fi
+
+    if test -r "$enableval" ; then
+	PGO_EXPERIMENT_SCRIPT="$enableval"
+    else
+	AC_MSG_ERROR(cannot find PGO experiment script $enableval)
+    fi
+
+    if test "x$samba_cv_have_pgo" = "xno" ; then
+	ifPGO="#"
+    else
+	# Enable PGO targets in Makefile
+	ifPGO=""
+	# System-specific profiling tweaks
+	case "$host_os" in
+	    *irix*) PGO_LIBS="$PGO_LIBS -linstr" ;;
+	esac
+    fi
+],
+[
+    ifPGO="#"
+]
+)
+
+AC_SUBST(ifPGO)
+AC_SUBST(PGO_GENERATE_CFLAGS)
+AC_SUBST(PGO_USE_CFLAGS)
+AC_SUBST(PGO_EXPERIMENT_SCRIPT)
+AC_SUBST(PGO_LIBS)
 
 dnl Checks for programs.
 
@@ -420,24 +530,6 @@ AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
 if test x"$samba_cv_volatile" = x"yes"; then
    AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
-
-UNAME_S=`(uname -s) 2>/dev/null` || UNAME_S="unknown"
-AC_MSG_CHECKING(uname -s)
-AC_MSG_RESULT(${UNAME_S})
-
-UNAME_R=`(uname -r) 2>/dev/null` || UNAME_R="unknown"
-AC_MSG_CHECKING(uname -r)
-AC_MSG_RESULT(${UNAME_R})
-
-UNAME_M=`(uname -m) 2>/dev/null` || UNAME_M="unknown"
-AC_MSG_CHECKING(uname -m)
-AC_MSG_RESULT(${UNAME_M})
-
-UNAME_P=`(uname -p) 2>/dev/null` || UNAME_P="unknown"
-AC_MSG_CHECKING(uname -p)
-AC_MSG_RESULT(${UNAME_P})
-
-AC_CANONICAL_SYSTEM
 
 dnl Add #include for broken IRIX header files
   case "$host_os" in
