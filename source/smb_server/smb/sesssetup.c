@@ -149,7 +149,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		req->smb_conn->negotiate.client_caps = sess->nt1.in.capabilities;
 	}
 
-	if (req->smb_conn->negotiate.spnego_negotiated) {
+	if (req->smb_conn->negotiate.oid) {
 		if (sess->nt1.in.user && *sess->nt1.in.user) {
 			/* We can't accept a normal login, because we
 			 * don't have a challenge */
@@ -294,9 +294,10 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
 
-		status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);
+		status = gensec_start_mech_by_oid(gensec_ctx, req->smb_conn->negotiate.oid);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC SPNEGO server code: %s\n", nt_errstr(status)));
+			DEBUG(1, ("Failed to start GENSEC %s server code: %s\n", 
+				  gensec_get_name_by_oid(req->smb_conn->negotiate.oid), nt_errstr(status)));
 			return status;
 		}
 

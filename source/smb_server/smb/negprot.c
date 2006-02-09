@@ -218,6 +218,22 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 	req_send_reply(req);
 }
 
+static void reply_nt1_orig(struct smbsrv_request *req)
+{
+	/* Create a token value and add it to the outgoing packet. */
+	if (req->smb_conn->negotiate.encrypted_passwords) {
+		req_grow_data(req, 8);
+		/* note that we do not send a challenge at all if
+		   we are using plaintext */
+		get_challenge(req->smb_conn, req->out.ptr);
+		req->out.ptr += 8;
+		SCVAL(req->out.vwv+1, VWV(16), 8);
+	}
+	req_push_str(req, NULL, lp_workgroup(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
+	req_push_str(req, NULL, lp_netbios_name(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
+	DEBUG(3,("not using SPNEGO\n"));
+}
+
 /****************************************************************************
  Reply for the nt protocol.
 ****************************************************************************/
@@ -313,23 +329,13 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	SSVALS(req->out.vwv+1,VWV(15), req->smb_conn->negotiate.zone_offset/60);
 	
 	if (!negotiate_spnego) {
-		/* Create a token value and add it to the outgoing packet. */
-		if (req->smb_conn->negotiate.encrypted_passwords) {
-			req_grow_data(req, 8);
-			/* note that we do not send a challenge at all if
-			   we are using plaintext */
-			get_challenge(req->smb_conn, req->out.ptr);
-			req->out.ptr += 8;
-			SCVAL(req->out.vwv+1, VWV(16), 8);
-		}
-		req_push_str(req, NULL, lp_workgroup(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
-		req_push_str(req, NULL, lp_netbios_name(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
-		DEBUG(3,("not using SPNEGO\n"));
+		reply_nt1_orig(req);
 	} else {
 		struct cli_credentials *server_credentials;
 		struct gensec_security *gensec_security;
 		DATA_BLOB null_data_blob = data_blob(NULL, 0);
 		DATA_BLOB blob;
+		const char *oid;
 		NTSTATUS nt_status = gensec_server_start(req->smb_conn, 
 							 &gensec_security,
 							 req->smb_conn->connection->event.ctx);
@@ -366,31 +372,33 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 
 		gensec_set_credentials(gensec_security, server_credentials);
 
-		nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
+		oid = GENSEC_OID_SPNEGO;
+		nt_status = gensec_start_mech_by_oid(gensec_security, oid);
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			/* Get and push the proposed OID list into the packets */
 			nt_status = gensec_update(gensec_security, req, null_data_blob, &blob);
 
 			if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-				DEBUG(0, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));
-				smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO - no first token\n");
-				return;
+				DEBUG(1, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));
 			}
-		} else {
+		}
+
+		if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			DEBUG(5, ("Failed to start SPNEGO, falling back to NTLMSSP only: %s\n", nt_errstr(nt_status)));
-			nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
+			oid = GENSEC_OID_NTLMSSP;
+			nt_status = gensec_start_mech_by_oid(gensec_security, oid);
 			
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Failed to start SPNEGO as well as NTLMSSP fallback: %s\n", nt_errstr(nt_status)));
-				smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO and NTLMSSP");
+				reply_nt1_orig(req);
 				return;
 			}
 			/* NTLMSSP is a client-first exchange */
 			blob = data_blob(NULL, 0);
 		}
 
-		req->smb_conn->negotiate.spnego_negotiated = True;
+		req->smb_conn->negotiate.oid = oid;
 	
 		req_grow_data(req, blob.length + 16);
 		/* a NOT very random guid, perhaps we should get it
