@@ -473,7 +473,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
@@ -573,7 +573,7 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		DEBUG(2,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	r_u->status = NT_STATUS_OK;
@@ -636,9 +636,13 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
  	/* store the user information, if there is any. */
 	r_u->user = usr_info;
-	r_u->switch_value = 0; /* indicates no info */
 	r_u->auth_resp = 1; /* authoritative response */
-	r_u->switch_value = 3; /* indicates type of validation user info */
+	if (q_u->validation_level != 2 && q_u->validation_level != 3) {
+		DEBUG(0,("_net_sam_logon: bad validation_level value %d.\n", (int)q_u->validation_level ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	/* We handle the return of USER_INFO_2 instead of 3 in the parse return. Sucks, I know... */
+	r_u->switch_value = q_u->validation_level; /* indicates type of validation user info */
 	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
  
 	if (!get_valid_user_struct(p->vuid))
@@ -662,7 +666,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* find the username */
