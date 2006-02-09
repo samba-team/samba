@@ -1,5 +1,12 @@
-2006-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-02-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_locl.h: Move Configurable options to last in the
+	file.
+	
+	* lib/krb5/krb5_locl.h: Wrap KRB5_ADDRESSLESS_DEFAULT with #ifndef
+	
+2006-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* kpasswd/kpasswdd.c: Send back a better error-message to the
 	client in case the password change was rejected.
 
