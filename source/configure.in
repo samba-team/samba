@@ -206,6 +206,7 @@ dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(SONAMEFLAG)
+AC_SUBST(SONAMEVERSIONSUFFIX)
 AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAGS)
@@ -1382,6 +1383,7 @@ BLDSHARED="false"
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG="#"
+SONAMEVERSIONSUFFIX=""
 SHLD="\${CC} \${CFLAGS}"
 PICFLAGS=""
 PICSUFFIX="po"
@@ -1406,6 +1408,7 @@ if test "$enable_shared" = "yes"; then
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
+			SONAMEVERSIONSUFFIX=".2"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
