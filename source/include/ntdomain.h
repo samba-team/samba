@@ -140,7 +140,7 @@ struct dcinfo {
 	DOM_CHAL clnt_chal; /* Client credential */
 	DOM_CHAL srv_chal;  /* Server credential */
  
-	uchar  sess_key[8]; /* Session key */
+	uchar  sess_key[16]; /* Session key - 8 bytes followed by 8 zero bytes */
 	uchar  mach_pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
