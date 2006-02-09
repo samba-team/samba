@@ -393,11 +393,14 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 	
-	/* We can only do the 'ex' ops, because the original SamLogon
-	 * call does shared credentials stuff Samba4 doesn't pass
-	 * yet */
-
+	/* Try the schannel-only SamLogonEx operation */
 	if (!test_netlogon_ex_ops(p_netlogon2, test_ctx, credentials, creds)) {
+		printf("Failed to process schannel secured NETLOGON EX ops\n");
+		ret = False;
+	}
+
+	/* And the more traditional style */
+	if (!test_netlogon_ops(p_netlogon2, test_ctx, credentials, creds)) {
 		printf("Failed to process schannel secured NETLOGON EX ops\n");
 		ret = False;
 	}

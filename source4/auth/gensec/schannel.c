@@ -149,7 +149,7 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 			       TALLOC_CTX *mem_ctx,
 			       struct creds_CredentialState **creds)
 { 
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 
 	*creds = talloc_reference(mem_ctx, state->creds);
 	if (!*creds) {
@@ -167,7 +167,7 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 					 struct auth_session_info **_session_info) 
 {
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 	return auth_anonymous_session_info(state, _session_info);
 }
 
