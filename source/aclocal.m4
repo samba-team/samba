@@ -76,18 +76,6 @@ AC_DEFUN(SMB_SUBSYSTEM,
     	ifelse([$2], , :, [rm -f $2])
 ])
 
-dnl AC_PROG_CC_FLAG(flag)
-AC_DEFUN(AC_PROG_CC_FLAG,
-[AC_CACHE_CHECK(whether ${CC-cc} accepts -$1, ac_cv_prog_cc_$1,
-[echo 'void f(){}' > conftest.c
-if test -z "`${CC-cc} -$1 -c conftest.c 2>&1`"; then
-  ac_cv_prog_cc_$1=yes
-else
-  ac_cv_prog_cc_$1=no
-fi
-rm -f conftest*
-])])
-
 dnl see if a declaration exists for a function or variable
 dnl defines HAVE_function_DECL if it exists
 dnl AC_HAVE_DECL(var, includes)
