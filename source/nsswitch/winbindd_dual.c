@@ -697,7 +697,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		ret = sys_select(state.sock + 1, &read_fds, NULL, NULL, tp);
 
 		if (ret == 0) {
-			DEBUG(10,("nothing is ready yet, continue\n"));
+			DEBUG(11,("nothing is ready yet, continue\n"));
 			continue;
 		}
 
