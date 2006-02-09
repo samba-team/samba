@@ -105,7 +105,7 @@ NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 				const uint8_t *whole_pdu, size_t pdu_length, 
 				const DATA_BLOB *sig)
 {
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 	
 	uint8_t digest_final[16];
 	uint8_t confounder[8];
@@ -156,7 +156,7 @@ NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 			       const uint8_t *whole_pdu, size_t pdu_length, 
 			       const DATA_BLOB *sig)
 {
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
@@ -204,7 +204,7 @@ NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 			      const uint8_t *whole_pdu, size_t pdu_length, 
 			      DATA_BLOB *sig)
 {
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 
 	uint8_t digest_final[16];
 	uint8_t confounder[8];
@@ -252,7 +252,7 @@ NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
 			      const uint8_t *whole_pdu, size_t pdu_length, 
 			      DATA_BLOB *sig)
 {
-	struct schannel_state *state = gensec_security->private_data;
+	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
