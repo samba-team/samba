@@ -178,7 +178,9 @@ struct _krb5_krb_auth_data;
 #endif
 #endif
 
+#ifndef KRB5_ADDRESSLESS_DEFAULT
 #define KRB5_ADDRESSLESS_DEFAULT FALSE
+#endif
 
 typedef enum {
     KRB5_PA_PAC_DONT_CARE = 0, 
