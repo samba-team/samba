@@ -365,7 +365,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	/* do a couple of logins.  We have *not* done a new serverauthenticate */
+	/* do a some SAMR operations.  We have *not* done a new serverauthenticate */
 	if (!test_samr_ops(p_samr2, test_ctx)) {
 		printf("Failed to process schannel secured SAMR ops (on fresh connection)\n");
 		goto failed;
@@ -379,11 +379,11 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2, 
 					     b);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
+	/* and now setup an SCHANNEL bind on netlogon */
 	status = dcerpc_bind_auth(p_netlogon2, &dcerpc_table_netlogon,
 				  credentials, DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p_samr2->conn),
@@ -399,7 +399,8 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	/* And the more traditional style */
+	/* And the more traditional style, proving that the
+	 * credentials chaining state is fully present */
 	if (!test_netlogon_ops(p_netlogon2, test_ctx, credentials, creds)) {
 		printf("Failed to process schannel secured NETLOGON EX ops\n");
 		ret = False;
