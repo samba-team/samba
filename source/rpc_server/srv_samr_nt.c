@@ -2537,6 +2537,11 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 	   was observed from a win98 client trying to enumerate users (when configured  
 	   user level access control on shares)   --jerry */
 	   
+	if (des_access == MAXIMUM_ALLOWED_ACCESS) {
+		/* Map to max possible knowing we're filtered below. */
+		des_access = GENERIC_ALL_ACCESS;
+	}
+
 	se_map_generic( &des_access, &sam_generic_mapping );
 	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
 	
