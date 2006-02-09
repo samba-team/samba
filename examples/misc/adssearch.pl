@@ -438,6 +438,7 @@ my %attr_handler = (
 	"msDS-User-Account-Control-Computed" => \&dump_uacc,
 #	"msRADIUSFramedIPAddress"	=> \&dump_ipaddr,
 #	"msRASSavedFramedIPAddress" 	=> \&dump_ipaddr,
+	"netbootGUID"			=> \&dump_guid,
 	"nTMixedDomain"			=> \&dump_mixed_domain,
 	"nTSecurityDescriptor"		=> \&dump_secdesc,
 	"objectGUID"			=> \&dump_guid,
