@@ -258,7 +258,8 @@ static void dohash(char *out, char *in, char *key, int forw)
 	permute(out, rl, perm6, 64);
 }
 
-static void str_to_key(const unsigned char *str,unsigned char *key)
+/* Convert a 7 byte string to an 8 byte key. */
+static void str_to_key(const unsigned char str[7], unsigned char key[8])
 {
 	int i;
 
@@ -330,7 +331,8 @@ void E_old_pw_hash( unsigned char *p14, const unsigned char *in, unsigned char *
         des_crypt56(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(unsigned char *out, const unsigned char *in, const unsigned char *key)
+/* forward des encryption with a 128 bit key */
+void des_crypt128(unsigned char out[8], const unsigned char in[8], const unsigned char key[16])
 {
 	unsigned char buf[8];
 
@@ -338,23 +340,47 @@ void cred_hash1(unsigned char *out, const unsigned char *in, const unsigned char
 	des_crypt56(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out, const unsigned char *in, const unsigned char *key)
+/* forward des encryption with a 64 bit key */
+void des_crypt64(unsigned char out[8], const unsigned char in[8], const unsigned char key[8])
 {
 	unsigned char buf[8];
-	static unsigned char key2[8];
+	unsigned char key2[8];
 
+	memset(key2,'\0',8);
 	des_crypt56(buf, in, key, 1);
 	key2[0] = key[7];
 	des_crypt56(out, buf, key2, 1);
 }
 
+/* des encryption with a 112 bit (14 byte) key */
+/* Note that if the forw is 1, and key is actually 8 bytes of key, followed by 6 bytes of zeros,
+   this is identical to des_crypt64(). JRA. */
+
+void des_crypt112(unsigned char out[8], const unsigned char in[8], const unsigned char key[14], int forw)
+{
+	unsigned char buf[8];
+	des_crypt56(buf, in, key, forw);
+	des_crypt56(out, buf, key+7, forw);
+}
+
 void cred_hash3(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
 {
-        static unsigned char key2[8];
+        unsigned char key2[8];
 
+	memset(key2,'\0',8);
         des_crypt56(out, in, key, forw);
         key2[0] = key[7];
         des_crypt56(out + 8, in + 8, key2, forw);
+}
+
+/* des encryption of a 16 byte lump of data with a 112 bit key */
+/* Note that if the key is actually 8 bytes of key, followed by 6 bytes of zeros,
+   this is identical to cred_hash3(). JRA. */
+
+void des_crypt112_16(unsigned char out[16], unsigned char in[16], const unsigned char key[14], int forw)
+{
+	des_crypt56(out, in, key, forw);
+	des_crypt56(out + 8, in + 8, key+7, forw);
 }
 
 /*****************************************************************
