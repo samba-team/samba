@@ -1273,7 +1273,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
 	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
+		DEBUG(10, ("cm_connect_lsa: Could not get schannel auth info "
 			   "for domain %s, trying anon\n", conn->cli->domain));
 		goto anonymous;
 	}

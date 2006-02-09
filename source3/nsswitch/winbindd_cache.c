@@ -1650,8 +1650,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
  	status = centry->status;
  
-	DEBUG(10,("trusted_domains: [Cached] - cached info for domain %s status %s\n",
-		domain->name, get_friendly_nt_error_msg(status) ));
+	DEBUG(10,("trusted_domains: [Cached] - cached info for domain %s (%d trusts) status %s\n",
+		domain->name, *num_domains, get_friendly_nt_error_msg(status) ));
  
  	centry_free(centry);
  	return status;
@@ -1957,8 +1957,6 @@ void cache_cleanup_response(pid_t pid)
 
 	if (!init_wcache())
 		return;
-
-	DEBUG(10,("Cleaning up response for pid %d\n", pid));
 
 	fstr_sprintf(key_str, "DR/%d", pid);
 	tdb_delete(wcache->tdb, string_tdb_data(key_str));
