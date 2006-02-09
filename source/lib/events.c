@@ -84,7 +84,7 @@ void run_events(void)
 
 	if (timed_events == NULL) {
 		/* No syscall if there are no events */
-		DEBUG(10, ("run_events: No events\n"));
+		DEBUG(11, ("run_events: No events\n"));
 		return;
 	}
 
@@ -92,7 +92,7 @@ void run_events(void)
 
 	if (timeval_compare(&now, &timed_events->when) < 0) {
 		/* Nothing to do yet */
-		DEBUG(10, ("run_events: Nothing to do\n"));
+		DEBUG(11, ("run_events: Nothing to do\n"));
 		return;
 	}
 

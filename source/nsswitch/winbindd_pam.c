@@ -549,7 +549,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	}
 
 	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n", 
-		client_princ));
+		local_service));
 
 	if (!pac_data) {
 		DEBUG(3,("winbindd_raw_kerberos_login: no pac data\n"));
