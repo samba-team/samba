@@ -1684,6 +1684,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
 		{"objectGUID", False, dump_guid},
+		{"netbootGUID", False, dump_guid},
 		{"nTSecurityDescriptor", False, dump_sd},
 		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
