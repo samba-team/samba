@@ -5,9 +5,6 @@ AC_PREREQ(2.53)
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 
-AC_DISABLE_STATIC
-AC_ENABLE_SHARED
-
 SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
@@ -15,6 +12,31 @@ SAMBA_VERSION_SVN_REVISION=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_
 if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
 fi
+
+#################################################
+# Detect the compiler early so we know how to run
+# feature tests correctly.
+
+sinclude(compiler.m4)
+
+##
+## for some reason this macro resets the CFLAGS
+## so save and restore
+##
+OLD_CFLAGS=${CFLAGS}
+AC_PROG_CC
+CFLAGS=${OLD_CFLAGS}
+
+OLD_CFLAGS=${CFLAGS}
+AC_PROG_CPP
+CFLAGS=${OLD_CFLAGS}
+
+dnl Check if we use GNU ld
+LD=${LD-ld}
+AC_PROG_LD_GNU
+
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
 
 #################################################
 # Directory handling stuff to support both the
@@ -290,34 +312,34 @@ if test "x$CFLAGS" = x; then
   CFLAGS="-O"
 fi
 
-CFLAGS="${CFLAGS} -D_SAMBA_BUILD_"
+CPPFLAGS="${CPPFLAGS} -D_SAMBA_BUILD_"
 
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
-    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
-	# Add -Wdeclaration-after-statement if compiler supports it
-	AC_CACHE_CHECK(
-          [that the C compiler understands -Wdeclaration-after-statement],
-          samba_cv_HAVE_Wdeclaration_after_statement, [
-	  AC_TRY_RUN_STRICT([
-	    int main(void)
-	    {
-	    	return 0;
-	    }],[-Wdeclaration-after-statement],[$CPPFLAGS],[$LDFLAGS],
-	    samba_cv_HAVE_Wdeclaration_after_statement=yes,
-	    samba_cv_HAVE_Wdeclaration_after_statement=no,
-	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
-       ])
-       if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
-	    CFLAGS="${CFLAGS} -Wdeclaration-after-statement"
-       fi
+	AX_CFLAGS_WARN_ALL(CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-gstabs, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wshadow, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wstrict-prototypes, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wpointer-arith, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wcast-align, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wwrite-strings, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wdeclaration-after-statement, CFLAGS)
+    	CPPFLAGS="${CPPFLAGS} -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
     [if eval "test x$enable_krb5developer = xyes"; then
         developer=yes
-	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+	AX_CFLAGS_WARN_ALL(CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-gstabs, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wshadow, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wpointer-arith, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wcast-align, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wcast-qual, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wwrite-strings, CFLAGS)
+	AX_CFLAGS_GCC_OPTION(-Wdeclaration-after-statement, CFLAGS)
+    	CPPFLAGS="${CPPFLAGS} -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
 
 AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable heap debugging [default=no]])
@@ -332,27 +354,11 @@ fi
 
 dnl Checks for programs.
 
-##
-## for some reason this macro resets the CFLAGS
-## so save and restore
-##
-OLD_CFLAGS=${CFLAGS}
-AC_PROG_CC
-CFLAGS=${OLD_CFLAGS}
-
-OLD_CFLAGS=${CFLAGS}
-AC_PROG_CPP
-CFLAGS=${OLD_CFLAGS}
-
 AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PATH_PROG(PERL, perl)
 
 AC_CHECK_TOOL(AR, ar)
-
-dnl Check if we use GNU ld
-LD=ld
-AC_PROG_LD_GNU
 
 dnl Certain versions of GNU ld the default is not to have the 
 dnl --allow-shlib-undefined flag defined.  This causes a stackload of
@@ -402,28 +408,10 @@ fi
 AC_SUBST(BROKEN_CC)
 
 dnl Check if the C compiler understands -Werror
-AC_CACHE_CHECK([that the C compiler understands -Werror],samba_cv_HAVE_Werror, [
- AC_TRY_RUN_STRICT([
-  int main(void)
-  {
-  	return 0;
-  }],[-Werror],[$CPPFLAGS],[$LDFLAGS],
-  samba_cv_HAVE_Werror=yes,samba_cv_HAVE_Werror=no,samba_cv_HAVE_Werror=cross)])
-if test x"$samba_cv_HAVE_Werror" = x"yes"; then
-   Werror_FLAGS="-Werror"
-else 
+AX_CFLAGS_GCC_OPTION(-Werror, Werror_FLAGS)
+
 dnl Check if the C compiler understands -w2
-AC_CACHE_CHECK([that the C compiler understands -w2],samba_cv_HAVE_w2, [
- AC_TRY_RUN_STRICT([
-  int main(void)
-  {
-  	return 0;
-  }],[-w2],[$CPPFLAGS],[$LDFLAGS],
-  samba_cv_HAVE_w2=yes,samba_cv_HAVE_w2=no,samba_cv_HAVE_w2=cross)])
-if test x"$samba_cv_HAVE_w2" = x"yes"; then
-   Werror_FLAGS="-w2"
-fi
-fi
+AX_CFLAGS_IRIX_OPTION(-w2, Werror_FLAGS)
 
 dnl Check if the C compiler understands volatile (it should, being ANSI).
 AC_CACHE_CHECK([that the C compiler understands volatile],samba_cv_volatile, [
@@ -482,12 +470,11 @@ case "$host_os" in
 # Try to work out if this is the native HPUX compiler that uses the -Ae flag.
     *hpux*)
     
-      AC_PROG_CC_FLAG(Ae)
+      AX_CFLAGS_HPUX_OPTION(Ae, CFLAGS,
+	      [ac_cv_prog_cc_Ae=yes], [ac_cv_prog_cc_Ae=no])
       # mmap on HPUX is completely broken...
       AC_DEFINE(MMAP_BLACKLIST, 1, [Whether MMAP is broken])
-      if test $ac_cv_prog_cc_Ae = yes; then
-        CPPFLAGS="$CPPFLAGS -Ae"
-      fi
+
 #
 # Defines needed for HPUX support.
 # HPUX has bigcrypt but (sometimes?) doesn't use it for
