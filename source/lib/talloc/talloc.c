@@ -1011,7 +1011,7 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	
 	VA_COPY(ap2, ap);
 
-	if ((len = vsnprintf(NULL, 0, fmt, ap2)) <= 0) {
+	if ((len = vsnprintf(NULL, 0, fmt, ap2)) < 0) {
 		return NULL;
 	}
 
