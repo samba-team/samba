@@ -817,7 +817,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		fstring group_sid_string;
 		uchar user_session_key[16];
 		uchar lm_session_key[16];
-		uchar netlogon_sess_key[16];
 
 		sampw = server_info->sam_account;
 
@@ -859,23 +858,20 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 			return status;
 		}
 
-		ZERO_STRUCT(netlogon_sess_key);
-		memcpy(netlogon_sess_key, p->dc->sess_key, 8);
 		if (server_info->user_session_key.length) {
 			memcpy(user_session_key,
 			       server_info->user_session_key.data, 
 			       MIN(sizeof(user_session_key),
 				   server_info->user_session_key.length));
-			SamOEMhash(user_session_key, netlogon_sess_key, 16);
+			SamOEMhash(user_session_key, p->dc->sess_key, 16);
 		}
 		if (server_info->lm_session_key.length) {
 			memcpy(lm_session_key,
 			       server_info->lm_session_key.data, 
 			       MIN(sizeof(lm_session_key),
 				   server_info->lm_session_key.length));
-			SamOEMhash(lm_session_key, netlogon_sess_key, 16);
+			SamOEMhash(lm_session_key, p->dc->sess_key, 16);
 		}
-		ZERO_STRUCT(netlogon_sess_key);
 		
 		init_net_user_info3(p->mem_ctx, usr_info, 
 				    user_rid,

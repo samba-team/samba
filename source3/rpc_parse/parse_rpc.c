@@ -848,4 +848,3 @@ BOOL smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len,
 
 	return True;
 }
-

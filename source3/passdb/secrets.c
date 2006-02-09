@@ -1063,6 +1063,7 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	memcpy(pdc->clnt_chal.data, pclnt_chal, 8);
 	memcpy(pdc->srv_chal.data, psrv_chal, 8);
 	memcpy(pdc->sess_key, psess_key, 8);
+	memset(&pdc->sess_key[8], '\0', 8); /* key followed by 8 bytes of zero. */
 	memcpy(pdc->mach_pw, pmach_pw, 16);
 
 	/* We know these are true so didn't bother to store them. */

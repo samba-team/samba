@@ -90,12 +90,19 @@ enum RPC_PKT_TYPE {
 #define RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN 	0x18
 
 
+#define NETLOGON_EXTRA_SIDS			    0x0020
+#define NETLOGON_RESOURCE_GROUPS		    0x0200
+#define NETLOGON_NEG_ARCFOUR			0x00000004
+#define NETLOGON_NEG_128BIT			0x00004000
+#define NETLOGON_NEG_SCHANNEL			0x40000000
+
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
- 
-#define NETLOGON_NEG_SCHANNEL    		0x40000000
 #define NETLOGON_NEG_DOMAIN_TRUST_ACCOUNT	0x2010b000
+ 
+/* these are the flags that ADS clients use */
+#define NETLOGON_NEG_AUTH2_ADS_FLAGS (0x200fbffb | NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT | NETLOGON_NEG_SCHANNEL)
 
 enum schannel_direction {
 	SENDER_IS_INITIATOR,
