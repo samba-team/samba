@@ -69,6 +69,7 @@ conf_args = \
 		--with-automount \
 		--with-tdbsam \
 		--with-ldap \
+		--with-shared-modules=idmap_ad,idmap_rid \
 		--with-python=python2.3
 
 ifeq ($(DEB_HOST_GNU_SYSTEM),linux)
@@ -229,7 +230,7 @@ endif
 
 	# The smbwrapper package is not being generated anymore, so we must
 	#	delete the related man pages.
-	rm $(DESTDIR)/usr/share/man/man1/smbsh.1
+	# rm $(DESTDIR)/usr/share/man/man1/smbsh.1
 
 	# We're not providing findsmb (should we?) so let's remove the man
 	#	pages.
