@@ -251,8 +251,8 @@ struct smbsrv_connection {
 		/* did we tell the client we support encrypted passwords? */
 		BOOL encrypted_passwords;
 	
-		/* did we send an extended security negprot reply? */
-		BOOL spnego_negotiated;
+		/* Did we choose SPNEGO, or perhaps raw NTLMSSP, or even no extended security at all? */
+		const char *oid;
 	
 		/* client capabilities */
 		uint32_t client_caps;
