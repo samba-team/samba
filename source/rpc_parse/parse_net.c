@@ -1295,7 +1295,7 @@ static BOOL net_io_id_info_ctr(const char *desc, NET_ID_INFO_CTR **pp_ctr, prs_s
 {
 	NET_ID_INFO_CTR *ctr = *pp_ctr;
 
-	prs_debug(ps, depth, desc, "smb_io_sam_info");
+	prs_debug(ps, depth, desc, "smb_io_sam_info_ctr");
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
@@ -1323,7 +1323,7 @@ static BOOL net_io_id_info_ctr(const char *desc, NET_ID_INFO_CTR **pp_ctr, prs_s
 		break;
 	default:
 		/* PANIC! */
-		DEBUG(4,("smb_io_sam_info: unknown switch_value!\n"));
+		DEBUG(4,("smb_io_sam_info_ctr: unknown switch_value!\n"));
 		break;
 	}
 
@@ -1350,8 +1350,10 @@ static BOOL smb_io_sam_info(const char *desc, DOM_SAM_INFO *sam, prs_struct *ps,
 
 	if(!prs_uint32("ptr_rtn_cred ", ps, depth, &sam->ptr_rtn_cred))
 		return False;
-	if(!smb_io_cred("", &sam->rtn_cred, ps, depth))
-		return False;
+	if (sam->ptr_rtn_cred) {
+		if(!smb_io_cred("", &sam->rtn_cred, ps, depth))
+			return False;
+	}
 
 	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
 		return False;
@@ -1700,7 +1702,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
 		return False;
 
-	if (usr->buffer_other_sids) {
+	if (validation_level == 3 && usr->buffer_other_sids) {
 
 		uint32 num_other_sids = usr->num_other_sids;
 
@@ -1776,7 +1778,7 @@ BOOL net_io_q_sam_logon(const char *desc, NET_Q_SAM_LOGON *q_l, prs_struct *ps, 
 
 	if(!prs_align_uint16(ps))
 		return False;
-	
+
 	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
 		return False;
 
