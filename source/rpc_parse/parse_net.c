@@ -1366,6 +1366,35 @@ static BOOL smb_io_sam_info(const char *desc, DOM_SAM_INFO *sam, prs_struct *ps,
 	return True;
 }
 
+/*******************************************************************
+ Reads or writes a DOM_SAM_INFO_EX structure.
+ ********************************************************************/
+
+static BOOL smb_io_sam_info_ex(const char *desc, DOM_SAM_INFO_EX *sam, prs_struct *ps, int depth)
+{
+	if (sam == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_sam_info_ex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!smb_io_clnt_info2("", &sam->client, ps, depth))
+		return False;
+
+	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
+		return False;
+
+	if (sam->logon_level != 0) {
+		if(!net_io_id_info_ctr("logon_info", &sam->ctr, ps, depth))
+			return False;
+	}
+
+	return True;
+}
+
 /*************************************************************************
  Inits a NET_USER_INFO_3 structure.
 
@@ -1830,6 +1859,79 @@ BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, 
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_q_sam_logon_ex(const char *desc, NET_Q_SAM_LOGON_EX *q_l, prs_struct *ps, int depth)
+{
+	if (q_l == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_sam_logon_ex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!smb_io_sam_info_ex("", &q_l->sam_id, ps, depth))
+		return False;
+
+	if(!prs_align_uint16(ps))
+		return False;
+
+	if(!prs_uint16("validation_level", ps, depth, &q_l->validation_level))
+		return False;
+
+	if(!prs_uint32("flags  ", ps, depth, &q_l->flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL net_io_r_sam_logon_ex(const char *desc, NET_R_SAM_LOGON_EX *r_l, prs_struct *ps, int depth)
+{
+	if (r_l == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_sam_logon_ex");
+	depth++;
+
+	if(!prs_uint16("switch_value", ps, depth, &r_l->switch_value))
+		return False;
+	if(!prs_align(ps))
+		return False;
+
+#if 1 /* W2k always needs this - even for bad passwd. JRA */
+	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
+		return False;
+#else
+	if (r_l->switch_value != 0) {
+		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
+			return False;
+	}
+#endif
+
+	if(!prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp)) /* 1 - Authoritative response; 0 - Non-Auth? */
+		return False;
+
+	if(!prs_uint32("flags   ", ps, depth, &r_l->flags))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &r_l->status))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	return True;
+}
+
 
 /*******************************************************************
  Reads or writes a structure.
