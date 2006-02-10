@@ -1505,7 +1505,8 @@ NTSTATUS _samr_chgpasswd_user3(pipes_struct *p, SAMR_Q_CHGPASSWD_USER3 *q_u, SAM
 	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
 				      q_u->nt_newpass.pass, q_u->nt_oldhash.hash, &reject_reason);
 
-	if (NT_STATUS_EQUAL(r_u->status, NT_STATUS_PASSWORD_RESTRICTION)) {
+	if (NT_STATUS_EQUAL(r_u->status, NT_STATUS_PASSWORD_RESTRICTION) || 
+	    NT_STATUS_EQUAL(r_u->status, NT_STATUS_ACCOUNT_RESTRICTION)) {
 
 		uint32 min_pass_len,pass_hist,password_properties;
 		time_t u_expire, u_min_age;
