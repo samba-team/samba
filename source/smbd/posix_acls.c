@@ -1015,7 +1015,6 @@ static void apply_default_perms(files_struct *fsp, canon_ace *pace, mode_t type)
 static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 {
 	fstring u_name;
-	fstring g_name;
 
 	/* "Everyone" always matches every uid. */
 
@@ -1028,14 +1027,7 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 		return True;
 
 	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
-	fstrcpy(g_name, gidtoname(group_ace->unix_ug.gid));
-
-	/*
-	 * Due to the winbind interfaces we need to do this via names,
-	 * not uids/gids.
-	 */
-
-	return user_in_group(u_name, g_name);
+	return username_in_group(u_name, &group_ace->trustee);
 }
 
 /****************************************************************************

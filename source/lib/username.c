@@ -529,7 +529,7 @@ BOOL user_in_unix_group(const char *user,const char *gname)
  Check if a user is in a group list. Ask winbind first, then use UNIX.
 ****************************************************************************/
 
-BOOL user_in_group(const char *user, const char *gname)
+static BOOL user_in_group(const char *user, const char *gname)
 {
 	BOOL winbind_answered = False;
 	BOOL ret;

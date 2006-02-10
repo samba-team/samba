@@ -473,7 +473,7 @@ static NTSTATUS find_forced_group(BOOL force_user,
 	 */
 
 	if (force_user && user_must_be_member) {
-		if (user_in_group(username, groupname)) {
+		if (username_in_group(username, &group_sid)) {
 			sid_copy(pgroup_sid, &group_sid);
 			*pgid = gid;
 			DEBUG(3,("Forced group %s for member %s\n",
