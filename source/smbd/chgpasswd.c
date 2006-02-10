@@ -703,7 +703,8 @@ NTSTATUS pass_oem_change(char *user,
 			 uchar password_encrypted_with_lm_hash[516], 
 			 const uchar old_lm_hash_encrypted[16],
 			 uchar password_encrypted_with_nt_hash[516], 
-			 const uchar old_nt_hash_encrypted[16])
+			 const uchar old_nt_hash_encrypted[16],
+			 uint32 *reject_reason)
 {
 	pstring new_passwd;
 	SAM_ACCOUNT *sampass = NULL;
@@ -718,7 +719,7 @@ NTSTATUS pass_oem_change(char *user,
 
 	/* We've already checked the old password here.... */
 	become_root();
-	nt_status = change_oem_password(sampass, NULL, new_passwd, True);
+	nt_status = change_oem_password(sampass, NULL, new_passwd, True, reject_reason);
 	unbecome_root();
 
 	memset(new_passwd, 0, sizeof(new_passwd));
@@ -1007,7 +1008,7 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
  is correct before calling. JRA.
 ************************************************************/
 
-NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd, BOOL as_root)
+NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd, BOOL as_root, uint32 *samr_reject_reason)
 {
 	uint32 min_len, min_age;
 	struct passwd *pass = NULL;
@@ -1040,11 +1041,17 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 		DEBUG(1, ("user %s cannot change password - password too short\n", 
 			  username));
 		DEBUGADD(1, (" account policy min password len = %d\n", min_len));
+		if (samr_reject_reason) {
+			*samr_reject_reason = REJECT_REASON_TOO_SHORT;
+		}
 		return NT_STATUS_PASSWORD_RESTRICTION;
 /* 		return NT_STATUS_PWD_TOO_SHORT; */
 	}
 
 	if (check_passwd_history(hnd,new_passwd)) {
+		if (samr_reject_reason) {
+			*samr_reject_reason = REJECT_REASON_IN_HISTORY;
+		}
 		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
@@ -1063,6 +1070,9 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 
 		if (check_ret != 0) {
 			DEBUG(1, ("change_oem_password: check password script said new password is not good enough!\n"));
+			if (samr_reject_reason) {
+				*samr_reject_reason = REJECT_REASON_NOT_COMPLEX;
+			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 	}
