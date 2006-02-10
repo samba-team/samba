@@ -330,14 +330,14 @@ AC_ARG_ENABLE(socket-wrapper,
 # if it has no value.  This prevent *very* large debug binaries from occurring
 # by default.
 if test "x$CFLAGS" = x; then
-    AX_CFLAGS_GCC_OPTION(-O2, CFLAGS)
-    AX_CFLAGS_IRIX_OPTION(-O2, CFLAGS)
+    AX_CFLAGS_GCC_OPTION(-O, CFLAGS)
+    AX_CFLAGS_IRIX_OPTION(-O, CFLAGS)
     # Make sure the MIPSPro compiler will never decide functions are too
     # big to optimise
     AX_CFLAGS_IRIX_OPTION(-OPT:Olimit=0, CFLAGS)
-    AX_CFLAGS_HPUX_OPTION(-O2, CFLAGS)
-    AX_CFLAGS_SUN_OPTION(-O2, CFLAGS)
-    AX_CFLAGS_AIX_OPTION(-O2, CFLAGS)
+    AX_CFLAGS_HPUX_OPTION(-O, CFLAGS)
+    AX_CFLAGS_SUN_OPTION(-O, CFLAGS)
+    AX_CFLAGS_AIX_OPTION(-O, CFLAGS)
 fi
 
 CPPFLAGS="${CPPFLAGS} -D_SAMBA_BUILD_"
