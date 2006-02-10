@@ -2214,7 +2214,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
 
 			become_root();
-			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2, False))) {
+			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2, False, NULL))) {
 				SSVAL(*rparam,0,NERR_Success);
 			}
 			unbecome_root();
@@ -2297,7 +2297,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 
 	(void)map_username(user);
 
-	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL))) {
+	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL, NULL))) {
 		SSVAL(*rparam,0,NERR_Success);
 	}
 
