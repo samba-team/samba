@@ -955,3 +955,105 @@ time_t generalized_to_unix_time(const char *str)
 
 	return timegm(&tm);
 }
+
+/****************************************************************************
+ Return all the possible time fields from a stat struct as a timespec.
+****************************************************************************/
+
+struct timespec get_atimespec(SMB_STRUCT_STAT *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STAT_ST_ATIM)
+	return pst->st_atim;
+#elif defined(HAVE_STAT_ST_ATIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_atimensec;
+	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+struct timespec get_mtimespec(SMB_STRUCT_STAT *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STAT_ST_MTIM)
+	return pst->st_mtim;
+#elif defined(HAVE_STAT_ST_MTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_mtimensec;
+	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+struct timespec get_ctimespec(SMB_STRUCT_STAT *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->ctime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STAT_ST_CTIM)
+	return pst->st_ctim;
+#elif defined(HAVE_STAT_ST_CTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_ctimensec;
+	return ret;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
+#endif
+#endif
+}
+
+#if 0
+/****************************************************************************
+ Return the best approximation to a 'create time' under UNIX from a stat
+ structure.
+****************************************************************************/
+
+struct timespec get_create_timespec(SMB_STRUCT_STAT *st,BOOL fake_dirs)
+{
+	time_t ret, ret1;
+
+	if(S_ISDIR(st->st_mode) && fake_dirs) {
+		return (time_t)315493200L;          /* 1/1/1980 */
+	}
+    
+	ret = MIN(st->st_ctime, st->st_mtime);
+	ret1 = MIN(ret, st->st_atime);
+
+	if(ret1 != (time_t)0) {
+		return ret1;
+	}
+
+	/*
+	 * One of ctime, mtime or atime was zero (probably atime).
+	 * Just return MIN(ctime, mtime).
+	 */
+	return ret;
+}
+#endif
