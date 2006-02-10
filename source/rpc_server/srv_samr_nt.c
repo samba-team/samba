@@ -3621,70 +3621,6 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	return NT_STATUS_OK;
 }
 
-static void add_uid_to_array_unique(uid_t uid, uid_t **uids, int *num)
-{
-	int i;
-
-	for (i=0; i<*num; i++) {
-		if ((*uids)[i] == uid)
-			return;
-	}
-	
-	*uids = SMB_REALLOC_ARRAY(*uids, uid_t, *num+1);
-
-	if (*uids == NULL)
-		return;
-
-	(*uids)[*num] = uid;
-	*num += 1;
-}
-
-
-static BOOL get_memberuids(gid_t gid, uid_t **uids, int *num)
-{
-	struct group *grp;
-	char **gr;
-	struct sys_pwent *userlist, *user;
- 
-	*uids = NULL;
-	*num = 0;
-
-	/* We only look at our own sam, so don't care about imported stuff */
-
-	winbind_off();
-
-	if ((grp = getgrgid(gid)) == NULL) {
-		winbind_on();
-		return False;
-	}
-
-	/* Primary group members */
-
-	userlist = getpwent_list();
-
-	for (user = userlist; user != NULL; user = user->next) {
-		if (user->pw_gid != gid)
-			continue;
-		add_uid_to_array_unique(user->pw_uid, uids, num);
-	}
-
-	pwent_free(userlist);
-
-	/* Secondary group members */
-
-	for (gr = grp->gr_mem; (*gr != NULL) && ((*gr)[0] != '\0'); gr += 1) {
-		struct passwd *pw = getpwnam(*gr);
-
-		if (pw == NULL)
-			continue;
-		add_uid_to_array_unique(pw->pw_uid, uids, num);
-	}
-
-	winbind_on();
-
-	return True;
-}	
-
 /*********************************************************************
  _samr_query_groupmem
 *********************************************************************/
@@ -4476,9 +4412,6 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 {
 	DOM_SID group_sid;
 	GROUP_MAP map;
-	DOM_SID *sids=NULL;
-	uid_t *uids;
-	int num=0;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
 	BOOL ret;
@@ -4501,14 +4434,25 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 		return NT_STATUS_NO_MEMORY;
 
 	switch (q_u->switch_level) {
-		case 1:
+		case 1: {
+			uint32 *members;
+			size_t num_members;
+
 			ctr->switch_value1 = 1;
-			if(!get_memberuids(map.gid, &uids, &num))
-				return NT_STATUS_NO_SUCH_GROUP;
-			SAFE_FREE(uids);
-			init_samr_group_info1(&ctr->group.info1, map.nt_name, map.comment, num);
-			SAFE_FREE(sids);
+
+			become_root();
+			r_u->status = pdb_enum_group_members(
+				p->mem_ctx, &group_sid, &members, &num_members);
+			unbecome_root();
+	
+			if (!NT_STATUS_IS_OK(r_u->status)) {
+				return r_u->status;
+			}
+
+			init_samr_group_info1(&ctr->group.info1, map.nt_name,
+				      map.comment, num_members);
 			break;
+		}
 		case 3:
 			ctr->switch_value1 = 3;
 			init_samr_group_info3(&ctr->group.info3);
