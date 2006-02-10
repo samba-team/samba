@@ -1368,7 +1368,7 @@ static void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv, const cha
  Inits or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
 
-static BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth)
+BOOL smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth)
 {
 	if (logcln == NULL)
 		return False;
