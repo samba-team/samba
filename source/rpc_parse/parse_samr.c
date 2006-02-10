@@ -7299,7 +7299,7 @@ inits a SAMR_R_CHGPASSWD_USER structure.
 
 void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, NTSTATUS status)
 {
-	DEBUG(5, ("init_r_chgpasswd_user\n"));
+	DEBUG(5, ("init_samr_r_chgpasswd_user\n"));
 
 	r_u->status = status;
 }
@@ -7330,14 +7330,14 @@ BOOL samr_io_r_chgpasswd_user(const char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 inits a SAMR_Q_CHGPASSWD3 structure.
 ********************************************************************/
 
-void init_samr_q_chgpasswd3(SAMR_Q_CHGPASSWD3 * q_u,
-			    const char *dest_host, const char *user_name,
-			    const uchar nt_newpass[516],
-			    const uchar nt_oldhash[16],
-			    const uchar lm_newpass[516],
-			    const uchar lm_oldhash[16])
+void init_samr_q_chgpasswd_user3(SAMR_Q_CHGPASSWD_USER3 * q_u,
+				 const char *dest_host, const char *user_name,
+				 const uchar nt_newpass[516],
+				 const uchar nt_oldhash[16],
+				 const uchar lm_newpass[516],
+				 const uchar lm_oldhash[16])
 {
-	DEBUG(5, ("init_samr_q_chgpasswd3\n"));
+	DEBUG(5, ("init_samr_q_chgpasswd_user3\n"));
 
 	q_u->ptr_0 = 1;
 	init_unistr2(&q_u->uni_dest_host, dest_host, UNI_FLAGS_NONE);
@@ -7361,13 +7361,13 @@ void init_samr_q_chgpasswd3(SAMR_Q_CHGPASSWD3 * q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_chgpasswd3(const char *desc, SAMR_Q_CHGPASSWD3 * q_u,
-			  prs_struct *ps, int depth)
+BOOL samr_io_q_chgpasswd_user3(const char *desc, SAMR_Q_CHGPASSWD_USER3 * q_u,
+			       prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_chgpasswd3");
+	prs_debug(ps, depth, desc, "samr_io_q_chgpasswd_user3");
 	depth++;
 
 	if(!prs_align(ps))
@@ -7408,14 +7408,30 @@ BOOL samr_io_q_chgpasswd3(const char *desc, SAMR_Q_CHGPASSWD3 * q_u,
 }
 
 /*******************************************************************
-inits a SAMR_R_CHGPASSWD3 structure.
+inits a SAMR_R_CHGPASSWD_USER3 structure.
 ********************************************************************/
 
-void init_samr_r_chgpasswd3(SAMR_R_CHGPASSWD3 * r_u, NTSTATUS status)
+void init_samr_r_chgpasswd_user3(SAMR_R_CHGPASSWD_USER3 *r_u, NTSTATUS status, 
+				 SAMR_CHANGE_REJECT *reject, SAM_UNK_INFO_1 *info)
 {
-	DEBUG(5, ("init_r_chgpasswd3\n"));
+	DEBUG(5, ("init_samr_r_chgpasswd_user3\n"));
 
 	r_u->status = status;
+	r_u->info = 0;
+	r_u->ptr_info = 0;
+	r_u->reject = 0;
+	r_u->ptr_reject = 0;
+
+	if (NT_STATUS_EQUAL(r_u->status, NT_STATUS_PASSWORD_RESTRICTION)) {
+		if (info) {
+			r_u->info = info;
+			r_u->ptr_info = 1;
+		}
+		if (reject) {
+			r_u->reject = reject;
+			r_u->ptr_reject = 1;
+		}
+	}
 }
 
 /*******************************************************************
@@ -7452,41 +7468,37 @@ BOOL samr_io_change_reject(const char *desc, SAMR_CHANGE_REJECT *reject, prs_str
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_chgpasswd3(const char *desc, SAMR_R_CHGPASSWD3 * r_u,
-			  prs_struct *ps, int depth)
+BOOL samr_io_r_chgpasswd_user3(const char *desc, SAMR_R_CHGPASSWD_USER3 *r_u,
+			       prs_struct *ps, int depth)
 {
-	uint32 ptr_info, ptr_reject;
-	
 	if (r_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_chgpasswd3");
+	prs_debug(ps, depth, desc, "samr_io_r_chgpasswd_user3");
 	depth++;
 
-	if(!prs_align(ps))
+	if (!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("ptr_info", ps, depth, &ptr_info))
+	if (!prs_uint32("ptr_info", ps, depth, &r_u->ptr_info))
 		return False;
 
-	if (ptr_info) {
-
+	if (r_u->ptr_info && r_u->info != NULL) {
 		/* SAM_UNK_INFO_1 */
-		if(!sam_io_unk_info1("info", &r_u->info, ps, depth))
+		if (!sam_io_unk_info1("info", r_u->info, ps, depth))
 			return False;
 	}
 
-	if(!prs_uint32("ptr_reject", ps, depth, &ptr_reject))
+	if (!prs_uint32("ptr_reject", ps, depth, &r_u->ptr_reject))
 		return False;
 			     
-	if (ptr_reject) {
-
+	if (r_u->ptr_reject && r_u->reject != NULL) {
 		/* SAMR_CHANGE_REJECT */
-		if(!samr_io_change_reject("reject", &r_u->reject, ps, depth))
+		if (!samr_io_change_reject("reject", r_u->reject, ps, depth))
 			return False;
 	}
 
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if (!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
