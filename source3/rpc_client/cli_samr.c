@@ -1253,12 +1253,12 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 				const char *username, 
 				const char *newpassword, 
 				const char *oldpassword,
-				SAM_UNK_INFO_1 **info,
-				SAMR_CHANGE_REJECT **reject)
+				SAM_UNK_INFO_1 *info,
+				SAMR_CHANGE_REJECT *reject)
 {
 	prs_struct qbuf, rbuf;
-	SAMR_Q_CHGPASSWD3 q;
-	SAMR_R_CHGPASSWD3 r;
+	SAMR_Q_CHGPASSWD_USER3 q;
+	SAMR_R_CHGPASSWD_USER3 r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	uchar new_nt_password[516];
@@ -1273,13 +1273,10 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
-	DEBUG(10,("rpccli_samr_chgpasswd3\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
-
-	*info = NULL;
-	*reject = NULL;
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(oldpassword, old_nt_hash);
@@ -1309,27 +1306,25 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	init_samr_q_chgpasswd3(&q, srv_name_slash, username, 
-			       new_nt_password, 
-			       old_nt_hash_enc, 
-			       new_lm_password,
-			       old_lanman_hash_enc);
+	init_samr_q_chgpasswd_user3(&q, srv_name_slash, username, 
+				    new_nt_password, 
+				    old_nt_hash_enc, 
+				    new_lm_password,
+				    old_lanman_hash_enc);
+	r.info = info;
+	r.reject = reject;
 
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD3,
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD_USER3,
 		q, r,
 		qbuf, rbuf,
-		samr_io_q_chgpasswd3,
-		samr_io_r_chgpasswd3,
+		samr_io_q_chgpasswd_user3,
+		samr_io_r_chgpasswd_user3,
 		NT_STATUS_UNSUCCESSFUL); 
 
 	/* Return output parameters */
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		*info = &r.info;
-		*reject = &r.reject;
-		goto done;
-	}
-
+	result = r.status;
+	
  done:
 
 	return result;

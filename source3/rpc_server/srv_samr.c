@@ -680,6 +680,37 @@ static BOOL api_samr_connect4(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_samr_chgpasswd_user3
+ ********************************************************************/
+
+static BOOL api_samr_chgpasswd_user3(pipes_struct *p)
+{
+	SAMR_Q_CHGPASSWD_USER3 q_u;
+	SAMR_R_CHGPASSWD_USER3 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* change password request */
+	if (!samr_io_q_chgpasswd_user3("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_chgpasswd_user3: Failed to unmarshall SAMR_Q_CHGPASSWD_USER3.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_chgpasswd_user3(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!samr_io_r_chgpasswd_user3("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_chgpasswd_user3: Failed to marshall SAMR_R_CHGPASSWD_USER3.\n" ));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
  api_samr_connect5
  ********************************************************************/
 
@@ -1524,6 +1555,7 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_QUERY_DOMAIN_INFO2", SAMR_QUERY_DOMAIN_INFO2, api_samr_query_domain_info2},
       {"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },
       {"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         },
+      {"SAMR_CHGPASSWD_USER3"   , SAMR_CHGPASSWD_USER3  , api_samr_chgpasswd_user3  },
       {"SAMR_CONNECT5"          , SAMR_CONNECT5         , api_samr_connect5         }
 };
 

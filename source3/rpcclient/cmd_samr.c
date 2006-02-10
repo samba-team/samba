@@ -1915,6 +1915,82 @@ done:
 	return result;
 }
 
+/* Change user password */
+
+static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli, 
+				    TALLOC_CTX *mem_ctx,
+				    int argc, const char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *user, *oldpass, *newpass;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	SAM_UNK_INFO_1 info;
+	SAMR_CHANGE_REJECT reject;
+
+	if (argc < 3) {
+		printf("Usage: %s username oldpass newpass\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = argv[1];
+	oldpass = argv[2];
+	newpass = argv[3];
+	
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get domain policy handle */
+
+	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      access_mask,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Change user password */
+	result = rpccli_samr_chgpasswd3(cli, mem_ctx, user, newpass, oldpass, &info, &reject);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
+	
+		display_sam_unk_info_1(&info);
+
+		switch (reject.reject_reason) {
+			case REJECT_REASON_TOO_SHORT:
+				d_printf("REJECT_REASON_TOO_SHORT\n");
+				break;
+			case REJECT_REASON_IN_HISTORY:
+				d_printf("REJECT_REASON_IN_HISTORY\n");
+				break;
+			case REJECT_REASON_NOT_COMPLEX:
+				d_printf("REJECT_REASON_NOT_COMPLEX\n");
+				break;
+			case 0:
+				break;
+			default:
+				d_printf("unknown reject reason: %d\n", reject.reject_reason);
+				break;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+ done:
+	return result;
+}
 
 /* List of commands exported by this module */
 
@@ -1945,5 +2021,6 @@ struct cmd_set samr_commands[] = {
 	{ "getdompwinfo",       RPC_RTYPE_NTSTATUS, cmd_samr_get_dom_pwinfo,        NULL, PI_SAMR, NULL, "Retrieve domain password info", "" },
 
 	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, NULL, "Lookup Domain Name", "" },
+	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd,             NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ NULL }
 };
