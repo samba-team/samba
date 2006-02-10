@@ -17,13 +17,6 @@ CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
 EXEEXT=@EXEEXT@
 LDFLAGS=@LDFLAGS@
-
-PGO_GENERATE_CFLAGS=@PGO_GENERATE_CFLAGS@
-PGO_USE_CFLAGS=@PGO_USE_CFLAGS@
-PGO_EXPERIMENT_SCRIPT=@PGO_EXPERIMENT_SCRIPT@
-PGO_LIBS=@PGO_LIBS@
-PGO_TARGET=bin/smbd
-
 AR=@AR@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
 WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
@@ -800,24 +793,6 @@ cac: SHOWFLAGS bin/libmsrpc.@SHLIBEXT@ bin/libmsrpc.a
 everything: all libsmbclient debug2html smbfilter talloctort modules torture \
 	$(EVERYTHING_PROGS)
 
-# Top level target to build $(PGO_TARGET) with profiling data. Use sub-makes to
-# make sure that parallel make does not perturb this sequence.
-@ifPGO@pgo:
-@ifPGO@	$(MAKE) pgo-generate
-@ifPGO@	$(MAKE) pgo-workload
-@ifPGO@	$(MAKE) clean
-@ifPGO@	$(MAKE) headers
-@ifPGO@	$(MAKE)	pgo-use
-
-@ifPGO@pgo-generate:
-@ifPGO@	$(MAKE) CFLAGS="$(CFLAGS) $(PGO_GENERATE_CFLAGS)" "LIBS=$(LIBS) $(PGO_LIBS)" $(PGO_TARGET)
-
-@ifPGO@pgo-workload:
-@ifPGO@	$(SHELL) $(PGO_EXPERIMENT_SCRIPT)
-
-@ifPGO@pgo-use:
-@ifPGO@	$(MAKE) CFLAGS="$(CFLAGS) $(PGO_USE_CFLAGS)" $(PGO_TARGET)
-
 .SUFFIXES:
 .SUFFIXES: .c .o .@PICSUFFIX@ .lo
 
@@ -828,8 +803,6 @@ SHOWFLAGS:
 	@echo "      LDFLAGS = $(LDFLAGS)"
 	@echo "      PIE_CFLAGS = @PIE_CFLAGS@"
 	@echo "      PIE_LDFLAGS = @PIE_LDFLAGS@"
-@ifPGO@	@echo "      PGO_GENERATE_CFLAGS = $(PGO_GENERATE_CFLAGS)"
-@ifPGO@	@echo "      PGO_USE_CFLAGS = $(PGO_USE_CFLAGS)"
 
 MAKEDIR = || exec false; \
 	  if test -d "$$dir"; then :; else \
@@ -1642,7 +1615,6 @@ ctags:
 
 realclean: clean delheaders
 	-rm -f config.log bin/.dummy script/findsmb
-@ifPGO@	-rm -f *.gcno *.gcda *.da */*.gcno */*.gcda */*.da
 
 distclean: realclean
 	-rm -f include/stamp-h
