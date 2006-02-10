@@ -916,6 +916,66 @@ static BOOL api_lsa_delete_object(pipes_struct *p)
 	return True;
 }
 
+/***************************************************************************
+ api_lsa_lookup_sids2
+ ***************************************************************************/
+
+static BOOL api_lsa_lookup_sids2(pipes_struct *p)
+{
+	LSA_Q_LOOKUP_SIDS2 q_u;
+	LSA_R_LOOKUP_SIDS2 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the info class and policy handle */
+	if(!lsa_io_q_lookup_sids2("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_lookup_sids2: failed to unmarshall LSA_Q_LOOKUP_SIDS2.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_lookup_sids2(p, &q_u, &r_u);
+
+	if(!lsa_io_r_lookup_sids2("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_lookup_sids2: Failed to marshall LSA_R_LOOKUP_SIDS2.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_lookup_sids3
+ ***************************************************************************/
+
+static BOOL api_lsa_lookup_sids3(pipes_struct *p)
+{
+	LSA_Q_LOOKUP_SIDS3 q_u;
+	LSA_R_LOOKUP_SIDS3 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the info class and policy handle */
+	if(!lsa_io_q_lookup_sids3("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_lookup_sids3: failed to unmarshall LSA_Q_LOOKUP_SIDS3.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_lookup_sids3(p, &q_u, &r_u);
+
+	if(!lsa_io_r_lookup_sids3("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_lookup_sids3: Failed to marshall LSA_R_LOOKUP_SIDS3.\n"));
+		return False;
+	}
+
+	return True;
+}
+
 #if 0	/* AD DC work in ongoing in Samba 4 */
 
 /***************************************************************************
@@ -984,7 +1044,9 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_CREATETRUSTDOM"  , LSA_CREATETRUSTDOM  , api_lsa_create_trust_dom },
 	{ "LSA_CREATSECRET"     , LSA_CREATESECRET    , api_lsa_create_secret },
 	{ "LSA_SETSECRET"       , LSA_SETSECRET       , api_lsa_set_secret },
-	{ "LSA_DELETEOBJECT"    , LSA_DELETEOBJECT    , api_lsa_delete_object }
+	{ "LSA_DELETEOBJECT"    , LSA_DELETEOBJECT    , api_lsa_delete_object },
+	{ "LSA_LOOKUPSIDS2"     , LSA_LOOKUPSIDS2     , api_lsa_lookup_sids2 },
+	{ "LSA_LOOKUPSIDS3"     , LSA_LOOKUPSIDS3     , api_lsa_lookup_sids3 }
 #if 0	/* AD DC work in ongoing in Samba 4 */
 	/* be careful of the adding of new RPC's.  See commentrs below about
 	   ADS DC capabilities                                               */

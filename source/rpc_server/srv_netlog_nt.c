@@ -935,7 +935,11 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
 	ZERO_STRUCT(r);
 
 	/* Only allow this if the pipe is protected. */
-	/* FIXME ! */
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+		DEBUG(0,("_net_sam_logon_ex: client %s not using schannel for netlogon\n",
+			p->dc->remote_machine ));
+		return NT_STATUS_INVALID_PARAMETER;
+        }
 
 	/* Map a NET_Q_SAM_LOGON_EX to NET_Q_SAM_LOGON. */
 	q.validation_level = q_u->validation_level;
