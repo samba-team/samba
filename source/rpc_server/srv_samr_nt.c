@@ -1462,11 +1462,102 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	 */
 
 	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-				q_u->nt_newpass.pass, q_u->nt_oldhash.hash);
+				q_u->nt_newpass.pass, q_u->nt_oldhash.hash, NULL);
 
 	init_samr_r_chgpasswd_user(r_u, r_u->status);
 
 	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ _samr_chgpasswd_user3
+ ********************************************************************/
+
+NTSTATUS _samr_chgpasswd_user3(pipes_struct *p, SAMR_Q_CHGPASSWD_USER3 *q_u, SAMR_R_CHGPASSWD_USER3 *r_u)
+{
+	fstring user_name;
+	fstring wks;
+	uint32 reject_reason;
+	SAM_UNK_INFO_1 *info = NULL;
+	SAMR_CHANGE_REJECT *reject = NULL;
+
+	DEBUG(5,("_samr_chgpasswd_user3: %d\n", __LINE__));
+
+	rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
+	rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
+
+	DEBUG(5,("_samr_chgpasswd_user3: user: %s wks: %s\n", user_name, wks));
+
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+ 
+	(void)map_username(user_name);
+ 
+	/*
+	 * UNIX username case mangling not required, pass_oem_change 
+	 * is case insensitive.
+	 */
+
+	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
+				      q_u->nt_newpass.pass, q_u->nt_oldhash.hash, &reject_reason);
+
+	if (NT_STATUS_EQUAL(r_u->status, NT_STATUS_PASSWORD_RESTRICTION)) {
+
+		uint32 min_pass_len,pass_hist,password_properties;
+		time_t u_expire, u_min_age;
+		NTTIME nt_expire, nt_min_age;
+		uint32 account_policy_temp;
+
+		if ((info = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_INFO_1)) == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if ((reject = TALLOC_ZERO_P(p->mem_ctx, SAMR_CHANGE_REJECT)) == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ZERO_STRUCTP(info);
+		ZERO_STRUCTP(reject);
+
+		become_root();
+
+		/* AS ROOT !!! */
+
+		pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+		min_pass_len = account_policy_temp;
+
+		pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
+		pass_hist = account_policy_temp;
+
+		pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+		password_properties = account_policy_temp;
+
+		pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+		u_expire = account_policy_temp;
+
+		pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+		u_min_age = account_policy_temp;
+
+		/* !AS ROOT */
+		
+		unbecome_root();
+
+		unix_to_nt_time_abs(&nt_expire, u_expire);
+		unix_to_nt_time_abs(&nt_min_age, u_min_age);
+
+		init_unk_info1(info, (uint16)min_pass_len, (uint16)pass_hist, 
+		               password_properties, nt_expire, nt_min_age);
+
+		reject->reject_reason = reject_reason;
+	}
+	
+	init_samr_r_chgpasswd_user3(r_u, r_u->status, reject, info);
+
+	DEBUG(5,("_samr_chgpasswd_user3: %d\n", __LINE__));
 
 	return r_u->status;
 }
@@ -2090,7 +2181,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 {
 	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
-	uint32 min_pass_len,pass_hist,flag;
+	uint32 min_pass_len,pass_hist,password_properties;
 	time_t u_expire, u_min_age;
 	NTTIME nt_expire, nt_min_age;
 
@@ -2136,7 +2227,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			pass_hist = account_policy_temp;
 
 			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
-			flag = account_policy_temp;
+			password_properties = account_policy_temp;
 
 			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
@@ -2152,7 +2243,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
 			init_unk_info1(&ctr->info.inf1, (uint16)min_pass_len, (uint16)pass_hist, 
-			               flag, nt_expire, nt_min_age);
+			               password_properties, nt_expire, nt_min_age);
 			break;
 		case 0x02:
 
@@ -4815,7 +4906,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 {
 	struct samr_info *info = NULL;
 	SAM_UNK_CTR *ctr;
-	uint32 min_pass_len,pass_hist,flag;
+	uint32 min_pass_len,pass_hist,password_properties;
 	time_t u_expire, u_min_age;
 	NTTIME nt_expire, nt_min_age;
 
@@ -4855,7 +4946,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 			pass_hist = account_policy_temp;
 
 			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
-			flag = account_policy_temp;
+			password_properties = account_policy_temp;
 
 			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
@@ -4867,7 +4958,7 @@ NTSTATUS _samr_query_domain_info2(pipes_struct *p,
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
 			init_unk_info1(&ctr->info.inf1, (uint16)min_pass_len, (uint16)pass_hist, 
-			               flag, nt_expire, nt_min_age);
+			               password_properties, nt_expire, nt_min_age);
 			break;
 		case 0x02:
 			become_root();		

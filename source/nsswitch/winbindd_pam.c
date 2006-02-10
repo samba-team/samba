@@ -1557,8 +1557,8 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	struct winbindd_domain *contact_domain;
 	struct rpc_pipe_client *cli;
 	BOOL got_info = False;
-	SAM_UNK_INFO_1 *info;
-	SAMR_CHANGE_REJECT *reject;
+	SAM_UNK_INFO_1 info;
+	SAMR_CHANGE_REJECT reject;
 
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
@@ -1594,18 +1594,18 @@ void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
 
 		state->response.data.auth.policy.min_length_password = 
-			info->min_length_password;
+			info.min_length_password;
 		state->response.data.auth.policy.password_history = 
-			info->password_history;
+			info.password_history;
 		state->response.data.auth.policy.password_properties = 
-			info->password_properties;
+			info.password_properties;
 		state->response.data.auth.policy.expire = 
-			nt_time_to_unix_abs(&info->expire);
+			nt_time_to_unix_abs(&info.expire);
 		state->response.data.auth.policy.min_passwordage = 
-			nt_time_to_unix_abs(&info->min_passwordage);
+			nt_time_to_unix_abs(&info.min_passwordage);
 
 		state->response.data.auth.reject_reason = 
-			reject->reject_reason;
+			reject.reject_reason;
 
 		got_info = True;
 		
