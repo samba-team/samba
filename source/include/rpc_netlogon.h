@@ -41,6 +41,7 @@
 #define NET_DSR_GETDCNAME	0x14
 #define NET_AUTH3		0x1a
 #define NET_DSR_GETSITENAME	0x1c
+#define NET_SAMLOGON_EX		0x27
 
 /* Secure Channel types.  used in NetrServerAuthenticate negotiation */
 #define SEC_CHAN_WKSTA   2
@@ -571,11 +572,25 @@ typedef struct sam_info {
 	NET_ID_INFO_CTR *ctr;
 } DOM_SAM_INFO;
 
+/* SAM_INFO - sam logon/off id structure - no creds */
+typedef struct sam_info_ex {
+	DOM_CLNT_INFO2  client;
+	uint16          logon_level;
+	NET_ID_INFO_CTR *ctr;
+} DOM_SAM_INFO_EX;
+
 /* NET_Q_SAM_LOGON */
 typedef struct net_q_sam_logon_info {
 	DOM_SAM_INFO sam_id;
 	uint16          validation_level;
 } NET_Q_SAM_LOGON;
+
+/* NET_Q_SAM_LOGON_EX */
+typedef struct net_q_sam_logon_info_ex {
+	DOM_SAM_INFO_EX sam_id;
+	uint16          validation_level;
+	uint32 flags;
+} NET_Q_SAM_LOGON_EX;
 
 /* NET_R_SAM_LOGON */
 typedef struct net_r_sam_logon_info {
@@ -589,6 +604,17 @@ typedef struct net_r_sam_logon_info {
 
 	NTSTATUS status; /* return code */
 } NET_R_SAM_LOGON;
+
+/* NET_R_SAM_LOGON_EX */
+typedef struct net_r_sam_logon_info_ex {
+	uint16 switch_value; /* 3 - indicates type of USER INFO */
+	NET_USER_INFO_3 *user;
+
+	uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
+	uint32 flags;
+
+	NTSTATUS status; /* return code */
+} NET_R_SAM_LOGON_EX;
 
 
 /* NET_Q_SAM_LOGOFF */
