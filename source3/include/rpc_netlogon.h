@@ -574,7 +574,7 @@ typedef struct sam_info {
 
 /* SAM_INFO - sam logon/off id structure - no creds */
 typedef struct sam_info_ex {
-	DOM_CLNT_INFO2  client;
+	DOM_CLNT_SRV	client;
 	uint16          logon_level;
 	NET_ID_INFO_CTR *ctr;
 } DOM_SAM_INFO_EX;

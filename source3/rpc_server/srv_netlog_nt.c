@@ -941,6 +941,7 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
 	q.validation_level = q_u->validation_level;
 
  	/* Map a DOM_SAM_INFO_EX into a DOM_SAM_INFO with no creds. */
+	q.sam_id.client.login = q_u->sam_id.client;
 	q.sam_id.logon_level = q_u->sam_id.logon_level;
 	q.sam_id.ctr = q_u->sam_id.ctr;
 
