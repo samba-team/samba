@@ -1381,7 +1381,7 @@ static BOOL smb_io_sam_info_ex(const char *desc, DOM_SAM_INFO_EX *sam, prs_struc
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_clnt_info2("", &sam->client, ps, depth))
+	if(!smb_io_clnt_srv("", &sam->client, ps, depth))
 		return False;
 
 	if(!prs_uint16("logon_level  ", ps, depth, &sam->logon_level))
