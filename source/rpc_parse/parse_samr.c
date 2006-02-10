@@ -7422,15 +7422,13 @@ void init_samr_r_chgpasswd_user3(SAMR_R_CHGPASSWD_USER3 *r_u, NTSTATUS status,
 	r_u->reject = 0;
 	r_u->ptr_reject = 0;
 
-	if (NT_STATUS_EQUAL(r_u->status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (info) {
-			r_u->info = info;
-			r_u->ptr_info = 1;
-		}
-		if (reject) {
-			r_u->reject = reject;
-			r_u->ptr_reject = 1;
-		}
+	if (info) {
+		r_u->info = info;
+		r_u->ptr_info = 1;
+	}
+	if (reject && (reject->reject_reason != Undefined)) {
+		r_u->reject = reject;
+		r_u->ptr_reject = 1;
 	}
 }
 
