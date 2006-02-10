@@ -210,7 +210,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
 		return False;
 	}
 
-    return True;
+	return True;
 }
 
 /*************************************************************************
@@ -307,6 +307,37 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 }
 
 /*************************************************************************
+ api_net_sam_logon_ex:
+ *************************************************************************/
+
+static BOOL api_net_sam_logon_ex(pipes_struct *p)
+{
+	NET_Q_SAM_LOGON_EX q_u;
+	NET_R_SAM_LOGON_EX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+    
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!net_io_q_sam_logon_ex("", &q_u, data, 0)) {
+		DEBUG(0, ("api_net_sam_logon_ex: Failed to unmarshall NET_Q_SAM_LOGON_EX.\n"));
+		return False;
+	}
+   
+	r_u.status = _net_sam_logon_ex(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!net_io_r_sam_logon_ex("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_net_sam_logon_ex: Failed to marshall NET_R_SAM_LOGON_EX.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/*************************************************************************
  api_ds_enum_dom_trusts:
  *************************************************************************/
 
@@ -356,6 +387,7 @@ static struct api_struct api_net_cmds [] =
       { "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
       { "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
       { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
+      { "NET_SAMLOGON_EX"   , NET_SAMLOGON_EX   , api_net_sam_logon_ex   },
 #if 0	/* JERRY */
       { "DS_ENUM_DOM_TRUSTS", DS_ENUM_DOM_TRUSTS, api_ds_enum_dom_trusts }
 #endif	/* JERRY */
