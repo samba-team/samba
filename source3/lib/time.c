@@ -1012,7 +1012,7 @@ struct timespec get_ctimespec(SMB_STRUCT_STAT *pst)
 	struct timespec ret;
 
 	/* Old system - no ns timestamp. */
-	ret.tv_sec = pst->ctime;
+	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = 0;
 	return ret;
 #else
