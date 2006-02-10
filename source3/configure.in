@@ -1395,6 +1395,45 @@ if test x"$samba_stat_hires" = x"yes" ; then
 	    [whether struct stat has sub-second timestamps])
 fi
 
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec], samba_stat_hires_notimespec,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtime;
+		t.tv_nsec = s.st_mtimensec;
+		t.tv_sec = s.st_ctime;
+		t.tv_nsec = s.st_ctimensec;
+		t.tv_sec = s.st_atime;
+		t.tv_nsec = s.st_atimensec;
+	    ],
+	    samba_stat_hires=yes, samba_stat_hires=no)
+    ])
+
+if test x"$samba_stat_hires_notimespec" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIMENSEC, 1, [whether struct stat contains st_mtimensec])
+    AC_DEFINE(HAVE_STAT_ST_ATIMENSEC, 1, [whether struct stat contains st_atimensec])
+    AC_DEFINE(HAVE_STAT_ST_CTIMENSEC, 1, [whether struct stat contains st_ctimensec])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps without struct timespec])
+fi
+
 #####################################
 # we might need the resolv library on some systems
 AC_CHECK_LIB(resolv, dn_expand)
