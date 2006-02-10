@@ -1016,6 +1016,10 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	time_t last_change_time = pdb_get_pass_last_set_time(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
 
+	if (samr_reject_reason) {
+		*samr_reject_reason = Undefined;
+	}
+
 	if (pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &min_age)) {
 		/*
 		 * Windows calculates the minimum password age check
@@ -1026,6 +1030,9 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 			DEBUG(1, ("user %s cannot change password now, must "
 				  "wait until %s\n", username,
 				  http_timestring(last_change_time+min_age)));
+			if (samr_reject_reason) {
+				*samr_reject_reason = REJECT_REASON_OTHER;
+			}
 			return NT_STATUS_ACCOUNT_RESTRICTION;
 		}
 	} else {
@@ -1033,6 +1040,9 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 			DEBUG(1, ("user %s cannot change password now, must "
 				  "wait until %s\n", username,
 				  http_timestring(can_change_time)));
+			if (samr_reject_reason) {
+				*samr_reject_reason = REJECT_REASON_OTHER;
+			}
 			return NT_STATUS_ACCOUNT_RESTRICTION;
 		}
 	}
