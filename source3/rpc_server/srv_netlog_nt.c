@@ -614,7 +614,10 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
  _net_sam_logon
  *************************************************************************/
 
-NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
+static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
+					NET_Q_SAM_LOGON *q_u,
+					NET_R_SAM_LOGON *r_u,
+					BOOL process_creds)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
@@ -648,8 +651,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	if (!p->dc || !p->dc->authenticated) {
-		return NT_STATUS_INVALID_HANDLE;
+	if (process_creds) {
+		if (!p->dc || !p->dc->authenticated) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
 	}
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
@@ -661,12 +666,14 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-		DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
-			"request from client %s machine account %s\n",
-			p->dc->remote_machine, p->dc->mach_acct ));
-		return NT_STATUS_INVALID_PARAMETER;
+	if (process_creds) {
+		/* checks and updates credentials.  creates reply credentials */
+		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
+			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
+				"request from client %s machine account %s\n",
+				p->dc->remote_machine, p->dc->mach_acct ));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	/* find the username */
@@ -907,13 +914,48 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 }
 
 /*************************************************************************
- _net_sam_logon_ex
+ _net_sam_logon
+ *************************************************************************/
+
+NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
+{
+	return _net_sam_logon_internal(p, q_u, r_u, True);
+}
+ 
+/*************************************************************************
+ _net_sam_logon_ex - no credential chaining. Map into net sam logon.
  *************************************************************************/
 
 NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_LOGON_EX *r_u)
 {
-	setup_fault_pdu(p, NT_STATUS(0x1c010002));
-	return NT_STATUS(0x1c010002);
+	NET_Q_SAM_LOGON q;
+	NET_R_SAM_LOGON r;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Only allow this if the pipe is protected. */
+	/* FIXME ! */
+
+	/* Map a NET_Q_SAM_LOGON_EX to NET_Q_SAM_LOGON. */
+	q.validation_level = q_u->validation_level;
+
+ 	/* Map a DOM_SAM_INFO_EX into a DOM_SAM_INFO with no creds. */
+	q.sam_id.logon_level = q_u->sam_id.logon_level;
+	q.sam_id.ctr = q_u->sam_id.ctr;
+
+	r_u->status = _net_sam_logon_internal(p, &q, &r, False);
+
+	if (!NT_STATUS_IS_OK(r_u->status)) {
+		return r_u->status;
+	}
+
+	/* Map the NET_R_SAM_LOGON to NET_R_SAM_LOGON_EX. */
+	r_u->switch_value = r.switch_value;
+	r_u->user = r.user;
+	r_u->auth_resp = r.auth_resp;
+	r_u->flags = 0; /* FIXME ! */
+	return r_u->status;
 }
 
 /*************************************************************************
