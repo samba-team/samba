@@ -907,6 +907,16 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 }
 
 /*************************************************************************
+ _net_sam_logon_ex
+ *************************************************************************/
+
+NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_LOGON_EX *r_u)
+{
+	setup_fault_pdu(p, NT_STATUS(0x1c010002));
+	return NT_STATUS(0x1c010002);
+}
+
+/*************************************************************************
  _ds_enum_dom_trusts
  *************************************************************************/
 #if 0	/* JERRY -- not correct */
