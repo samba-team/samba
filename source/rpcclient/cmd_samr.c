@@ -2021,6 +2021,6 @@ struct cmd_set samr_commands[] = {
 	{ "getdompwinfo",       RPC_RTYPE_NTSTATUS, cmd_samr_get_dom_pwinfo,        NULL, PI_SAMR, NULL, "Retrieve domain password info", "" },
 
 	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, NULL, "Lookup Domain Name", "" },
-	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd,             NULL, PI_SAMR, NULL, "Change user password", "" },
+	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd3,            NULL, PI_SAMR, NULL, "Change user password", "" },
 	{ NULL }
 };
