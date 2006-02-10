@@ -26,12 +26,6 @@
 
 /* Opcodes available on PIPE_LSARPC */
 
-#if 0	/* UNIMPLEMENTED */
-
-#define LSA_LOOKUPSIDS2		0x39
-
-#endif
-
 #define LSA_CLOSE              0x00
 #define LSA_DELETE             0x01
 #define LSA_ENUM_PRIVS         0x02
@@ -57,7 +51,7 @@
 #define LSA_SETQUOTAS          0x16
 #define LSA_GETSYSTEMACCOUNT   0x17
 #define LSA_SETSYSTEMACCOUNT   0x18
-#define LSA_OPENTRUSTDOM       0x19	/* TODO: implement this one  -- jerry */
+#define LSA_OPENTRUSTDOM       0x19
 #define LSA_QUERYTRUSTDOMINFO  0x1a
 #define LSA_SETINFOTRUSTDOM    0x1b
 #define LSA_OPENSECRET         0x1c	/* TODO: implement this one  -- jerry */
@@ -83,18 +77,21 @@
 #define LSA_QUERYDOMINFOPOL    0x35
 #define LSA_OPENTRUSTDOMBYNAME 0x37
 
+#define LSA_LOOKUPSIDS2        0x39
+#define LSA_LOOKUPSIDS3        0x4c
+
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
 
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
 typedef struct dom_query_info
 {
-  uint16 uni_dom_max_len; /* domain name string length * 2 */
-  uint16 uni_dom_str_len; /* domain name string length * 2 */
-  uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
-  uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
-  UNISTR2 uni_domain_name; /* domain name (unicode string) */
-  DOM_SID2 dom_sid; /* domain SID */
+	uint16 uni_dom_max_len; /* domain name string length * 2 */
+	uint16 uni_dom_str_len; /* domain name string length * 2 */
+	uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
+	uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
+	UNISTR2 uni_domain_name; /* domain name (unicode string) */
+	DOM_SID2 dom_sid; /* domain SID */
 
 } DOM_QUERY;
 
@@ -372,13 +369,13 @@ typedef struct dom_trust_info
 /* DOM_R_REF */
 typedef struct dom_ref_info
 {
-    uint32 num_ref_doms_1; /* num referenced domains */
-    uint32 ptr_ref_dom; /* pointer to referenced domains */
-    uint32 max_entries; /* 32 - max number of entries */
-    uint32 num_ref_doms_2; /* num referenced domains */
+	uint32 num_ref_doms_1; /* num referenced domains */
+	uint32 ptr_ref_dom; /* pointer to referenced domains */
+	uint32 max_entries; /* 32 - max number of entries */
+	uint32 num_ref_doms_2; /* num referenced domains */
 
-    DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
-    DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
+	DOM_TRUST_HDR  hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domains */
+	DOM_TRUST_INFO ref_dom    [MAX_REF_DOMAINS]; /* referenced domains */
 
 } DOM_R_REF;
 
@@ -392,6 +389,16 @@ typedef struct lsa_trans_name_info
 	uint32 domain_idx; /* index into DOM_R_REF array of SIDs */
 
 } LSA_TRANS_NAME;
+
+/* LSA_TRANS_NAME2 - translated name */
+typedef struct lsa_trans_name_info2
+{
+	uint16 sid_name_use; /* value is 5 for a well-known group; 2 for a domain group; 1 for a user... */
+	UNIHDR hdr_name; 
+	uint32 domain_idx; /* index into DOM_R_REF array of SIDs */
+	uint32 unknown;
+
+} LSA_TRANS_NAME2;
 
 /* This number is based on Win2k and later maximum response allowed */
 #define MAX_LOOKUP_SIDS 20480	/* 0x5000 */
@@ -407,6 +414,18 @@ typedef struct lsa_trans_name_enum_info
 	UNISTR2 *uni_name;
 
 } LSA_TRANS_NAME_ENUM;
+
+/* LSA_TRANS_NAME_ENUM2 - LSA Translated Name Enumeration container 2 */
+typedef struct lsa_trans_name_enum_info2
+{
+	uint32 num_entries;
+	uint32 ptr_trans_names;
+	uint32 num_entries2;
+	
+	LSA_TRANS_NAME2 *name; /* translated names  */
+	UNISTR2 *uni_name;
+
+} LSA_TRANS_NAME_ENUM2;
 
 /* LSA_SID_ENUM - LSA SID enumeration container */
 typedef struct lsa_sid_enum_info
@@ -443,6 +462,57 @@ typedef struct lsa_r_lookup_sids
 	NTSTATUS            status; /* return code */
 
 } LSA_R_LOOKUP_SIDS;
+
+/* LSA_Q_LOOKUP_SIDS2 - LSA Lookup SIDs 2*/
+typedef struct lsa_q_lookup_sids2
+{
+	POLICY_HND          pol; /* policy handle */
+	LSA_SID_ENUM        sids;
+	LSA_TRANS_NAME_ENUM2 names;
+	uint16              level;
+	uint32              mapped_count;
+	uint32              unknown1;
+	uint32              unknown2;
+
+} LSA_Q_LOOKUP_SIDS2;
+
+/* LSA_R_LOOKUP_SIDS2 - response to LSA Lookup SIDs 2*/
+typedef struct lsa_r_lookup_sids2
+{
+	uint32              ptr_dom_ref;
+	DOM_R_REF           *dom_ref; /* domain reference info */
+
+	LSA_TRANS_NAME_ENUM2 *names;
+	uint32              mapped_count;
+
+	NTSTATUS            status; /* return code */
+
+} LSA_R_LOOKUP_SIDS2;
+
+/* LSA_Q_LOOKUP_SIDS3 - LSA Lookup SIDs 3 */
+typedef struct lsa_q_lookup_sids3
+{
+	LSA_SID_ENUM        sids;
+	LSA_TRANS_NAME_ENUM2 names;
+	uint16              level;
+	uint32              mapped_count;
+	uint32              unknown1;
+	uint32              unknown2;
+
+} LSA_Q_LOOKUP_SIDS3;
+
+/* LSA_R_LOOKUP_SIDS3 - response to LSA Lookup SIDs 3 */
+typedef struct lsa_r_lookup_sids3
+{
+	uint32              ptr_dom_ref;
+	DOM_R_REF           *dom_ref; /* domain reference info */
+
+	LSA_TRANS_NAME_ENUM2 *names;
+	uint32              mapped_count;
+
+	NTSTATUS            status; /* return code */
+
+} LSA_R_LOOKUP_SIDS3;
 
 /* LSA_Q_LOOKUP_NAMES - LSA Lookup NAMEs */
 typedef struct lsa_q_lookup_names

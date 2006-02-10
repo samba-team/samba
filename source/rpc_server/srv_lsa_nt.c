@@ -229,14 +229,73 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
  Init_reply_lookup_sids.
  ***************************************************************************/
 
-static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
-                DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
-                uint32 mapped_count)
+static void init_reply_lookup_sids2(LSA_R_LOOKUP_SIDS2 *r_l,
+				DOM_R_REF *ref,
+				LSA_TRANS_NAME_ENUM2 *names,
+				uint32 mapped_count)
 {
 	r_l->ptr_dom_ref  = ref ? 1 : 0;
 	r_l->dom_ref      = ref;
 	r_l->names        = names;
 	r_l->mapped_count = mapped_count;
+}
+
+/***************************************************************************
+ Init_reply_lookup_sids.
+ ***************************************************************************/
+
+static void init_reply_lookup_sids3(LSA_R_LOOKUP_SIDS3 *r_l,
+				DOM_R_REF *ref,
+				LSA_TRANS_NAME_ENUM2 *names,
+				uint32 mapped_count)
+{
+	r_l->ptr_dom_ref  = ref ? 1 : 0;
+	r_l->dom_ref      = ref;
+	r_l->names        = names;
+	r_l->mapped_count = mapped_count;
+}
+
+/***************************************************************************
+ Init_reply_lookup_sids.
+ ***************************************************************************/
+
+static NTSTATUS init_reply_lookup_sids(TALLOC_CTX *mem_ctx,
+				LSA_R_LOOKUP_SIDS *r_l,
+				DOM_R_REF *ref,
+				LSA_TRANS_NAME_ENUM2 *names,
+				uint32 mapped_count)
+{
+	LSA_TRANS_NAME_ENUM *oldnames = TALLOC_ZERO_P(mem_ctx, LSA_TRANS_NAME_ENUM);
+
+	if (!oldnames) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	oldnames->num_entries = names->num_entries;
+	oldnames->ptr_trans_names = names->ptr_trans_names;
+	oldnames->num_entries2 = names->num_entries2;
+	oldnames->uni_name = names->uni_name;
+
+	if (names->num_entries) {
+		int i;
+
+		oldnames->name = TALLOC_ARRAY(oldnames, LSA_TRANS_NAME, names->num_entries);
+
+		if (!oldnames->name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		for (i = 0; i < names->num_entries; i++) {
+			oldnames->name[i].sid_name_use = names->name[i].sid_name_use;
+			oldnames->name[i].hdr_name = names->name[i].hdr_name;
+			oldnames->name[i].domain_idx = names->name[i].domain_idx;
+		}
+	}
+
+	r_l->ptr_dom_ref  = ref ? 1 : 0;
+	r_l->dom_ref      = ref;
+	r_l->names        = oldnames;
+	r_l->mapped_count = mapped_count;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size)
@@ -583,77 +642,54 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 }
 
 /***************************************************************************
- _lsa_lookup_sids
+ _lsa_lookup_sids_internal
  ***************************************************************************/
 
-NTSTATUS _lsa_lookup_sids(pipes_struct *p,
-			  LSA_Q_LOOKUP_SIDS *q_u,
-			  LSA_R_LOOKUP_SIDS *r_u)
+static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
+				uint16 level,				/* input */
+				int num_sids,				/* input */
+				const DOM_SID2 *sid,			/* input */
+				DOM_R_REF **pp_ref,			/* output */
+				LSA_TRANS_NAME_ENUM2 **pp_names,	/* output */
+				uint32 *pp_mapped_count)
 {
-	struct lsa_info *handle;
-
-	int i, num_sids;
-	const DOM_SID **sids;
-	uint32 mapped_count = 0;
-
-	struct lsa_dom_info *dom_infos;
-	struct lsa_name_info *name_infos;
-
+	NTSTATUS status;
+	int i;
+	const DOM_SID **sids = NULL;
+	LSA_TRANS_NAME_ENUM2 *names = NULL;
 	DOM_R_REF *ref = NULL;
-	LSA_TRANS_NAME_ENUM *names = NULL;
+	uint32 mapped_count = 0;
+	struct lsa_dom_info *dom_infos = NULL;
+	struct lsa_name_info *name_infos = NULL;
 
-	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM);
-
-	if ((q_u->level < 1) || (q_u->level > 6)) {
-		r_u->status = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
-
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
-		r_u->status = NT_STATUS_INVALID_HANDLE;
-		goto done;
-	}
-
-	/* check if the user have enough rights */
-	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
-		r_u->status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	num_sids = q_u->sids.num_entries;
-	if (num_sids >  MAX_LOOKUP_SIDS) {
-		DEBUG(5,("_lsa_lookup_sids: limit of %d exceeded, truncating "
-			 "SID lookup list to %d\n",
-			 MAX_LOOKUP_SIDS, num_sids));
-		r_u->status = NT_STATUS_NONE_MAPPED;
-		goto done;
-	}
-
+	*pp_mapped_count = 0;
+	*pp_ref = NULL;
+	*pp_names = NULL;
+	
+	names = TALLOC_ZERO_P(p->mem_ctx, LSA_TRANS_NAME_ENUM2);
+	sids = TALLOC_ARRAY(p->mem_ctx, const DOM_SID *, num_sids);
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 
-	sids = TALLOC_ARRAY(p->mem_ctx, const DOM_SID *, num_sids);
-	if ((ref == NULL) || (names == NULL) || (sids == NULL)) {
-		r_u->status = NT_STATUS_NO_MEMORY;
-		goto done;
+	if (sids == NULL || names == NULL || ref == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<num_sids; i++) {
-		sids[i] = &q_u->sids.sid[i].sid;
+		sids[i] = &sid[i].sid;
 	}
 
-	r_u->status = lookup_sids(p->mem_ctx, num_sids, sids, q_u->level,
+	status = lookup_sids(p->mem_ctx, num_sids, sids, level,
 				  &dom_infos, &name_infos);
 
-	if (!NT_STATUS_IS_OK(r_u->status)) {
-		goto done;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (num_sids > 0) {
-		names->name = TALLOC_ARRAY(names, LSA_TRANS_NAME, num_sids);
+		names->name = TALLOC_ARRAY(names, LSA_TRANS_NAME2, num_sids);
 		names->uni_name = TALLOC_ARRAY(names, UNISTR2, num_sids);
 		if ((names->name == NULL) || (names->uni_name == NULL)) {
-			r_u->status = NT_STATUS_NO_MEMORY;
-			goto done;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -667,8 +703,7 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p,
 				 &dom_infos[i].sid) != i) {
 			DEBUG(0, ("Domain %s mentioned twice??\n",
 				  dom_infos[i].name));
-			r_u->status = NT_STATUS_INTERNAL_ERROR;
-			goto done;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 	}
 
@@ -680,13 +715,12 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p,
 			name->name = talloc_asprintf(p->mem_ctx, "%8.8x",
 						     name->rid);
 			if (name->name == NULL) {
-				r_u->status = NT_STATUS_NO_MEMORY;
-				goto done;
+				return NT_STATUS_NO_MEMORY;
 			}
 		} else {
 			mapped_count += 1;
 		}
-		init_lsa_trans_name(&names->name[i], &names->uni_name[i],
+		init_lsa_trans_name2(&names->name[i], &names->uni_name[i],
 				    name->type, name->name, name->dom_idx);
 	}
 
@@ -694,18 +728,152 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p,
 	names->ptr_trans_names = 1;
 	names->num_entries2 = num_sids;
 
-	r_u->status = NT_STATUS_NONE_MAPPED;
+	status = NT_STATUS_NONE_MAPPED;
 	if (mapped_count > 0) {
-		r_u->status = (mapped_count < num_sids) ?
+		status = (mapped_count < num_sids) ?
 			STATUS_SOME_UNMAPPED : NT_STATUS_OK;
 	}
 
 	DEBUG(10, ("num_sids %d, mapped_count %d, status %s\n",
-		   num_sids, mapped_count, nt_errstr(r_u->status)));
+		   num_sids, mapped_count, nt_errstr(status)));
 
- done:
-	init_reply_lookup_sids(r_u, ref, names, mapped_count);
+	*pp_mapped_count = mapped_count;
+	*pp_ref = ref;
+	*pp_names = names;
 
+	return status;
+}
+
+/***************************************************************************
+ _lsa_lookup_sids
+ ***************************************************************************/
+
+NTSTATUS _lsa_lookup_sids(pipes_struct *p,
+			  LSA_Q_LOOKUP_SIDS *q_u,
+			  LSA_R_LOOKUP_SIDS *r_u)
+{
+	struct lsa_info *handle;
+	int num_sids = q_u->sids.num_entries;
+	uint32 mapped_count = 0;
+	DOM_R_REF *ref = NULL;
+	LSA_TRANS_NAME_ENUM2 *names = NULL;
+	NTSTATUS status;
+
+	if ((q_u->level < 1) || (q_u->level > 6)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check if the user has enough rights */
+	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (num_sids >  MAX_LOOKUP_SIDS) {
+		DEBUG(5,("_lsa_lookup_sids: limit of %d exceeded, requested %d\n",
+			 MAX_LOOKUP_SIDS, num_sids));
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	r_u->status = _lsa_lookup_sids_internal(p,
+						q_u->level,
+						num_sids, 
+						q_u->sids.sid,
+						&ref,
+						&names,
+						&mapped_count);
+
+	/* Convert from LSA_TRANS_NAME_ENUM2 to LSA_TRANS_NAME_ENUM */
+
+	status = init_reply_lookup_sids(p->mem_ctx, r_u, ref, names, mapped_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return r_u->status;
+}
+
+/***************************************************************************
+ _lsa_lookup_sids2
+ ***************************************************************************/
+
+NTSTATUS _lsa_lookup_sids2(pipes_struct *p,
+			  LSA_Q_LOOKUP_SIDS2 *q_u,
+			  LSA_R_LOOKUP_SIDS2 *r_u)
+{
+	struct lsa_info *handle;
+	int num_sids = q_u->sids.num_entries;
+	uint32 mapped_count = 0;
+	DOM_R_REF *ref = NULL;
+	LSA_TRANS_NAME_ENUM2 *names = NULL;
+
+	if ((q_u->level < 1) || (q_u->level > 6)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check if the user have enough rights */
+	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (num_sids >  MAX_LOOKUP_SIDS) {
+		DEBUG(5,("_lsa_lookup_sids2: limit of %d exceeded, requested %d\n",
+			 MAX_LOOKUP_SIDS, num_sids));
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	r_u->status = _lsa_lookup_sids_internal(p,
+						q_u->level,
+						num_sids, 
+						q_u->sids.sid,
+						&ref,
+						&names,
+						&mapped_count);
+
+	init_reply_lookup_sids2(r_u, ref, names, mapped_count);
+	return r_u->status;
+}
+
+/***************************************************************************
+ _lsa_lookup_sida3
+ ***************************************************************************/
+
+NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
+			  LSA_Q_LOOKUP_SIDS3 *q_u,
+			  LSA_R_LOOKUP_SIDS3 *r_u)
+{
+	int num_sids = q_u->sids.num_entries;
+	uint32 mapped_count = 0;
+	DOM_R_REF *ref = NULL;
+	LSA_TRANS_NAME_ENUM2 *names = NULL;
+
+	if ((q_u->level < 1) || (q_u->level > 6)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* No policy handle on this call. Restrict to crypto connections. */
+
+	if (num_sids >  MAX_LOOKUP_SIDS) {
+		DEBUG(5,("_lsa_lookup_sids3: limit of %d exceeded, requested %d\n",
+			 MAX_LOOKUP_SIDS, num_sids));
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	r_u->status = _lsa_lookup_sids_internal(p,
+						q_u->level,
+						num_sids, 
+						q_u->sids.sid,
+						&ref,
+						&names,
+						&mapped_count);
+
+	init_reply_lookup_sids3(r_u, ref, names, mapped_count);
 	return r_u->status;
 }
 
