@@ -209,9 +209,30 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	size_t i;
 	gid_t gid;
 
-	if (!sid_to_gid(pdb_get_group_sid(user), &gid)) {
-		DEBUG(10, ("sid_to_gid failed\n"));
-		return NT_STATUS_NO_SUCH_USER;
+	if ( !sid_to_gid(pdb_get_group_sid(user), &gid) ) 
+	{
+		uint32 rid;
+		struct passwd *pwd;
+	
+		/* second try, allow the DOMAIN_USERS group to pass */
+		
+		if ( !sid_peek_check_rid( get_global_sam_sid(), pdb_get_group_sid(user), &rid ) )
+			return NT_STATUS_NO_SUCH_USER;
+			
+		if ( rid != DOMAIN_GROUP_RID_USERS ) {
+			DEBUG(10, ("sid_to_gid failed\n"));
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		
+		DEBUG(5,("pdb_default_enum_group_memberships: sid_to_gid() failed but giving "
+			"free pass to 'Domain Users' as primary group\n"));
+		
+		if ( !(pwd = getpwnam_alloc( NULL, pdb_get_username(user) ) ) ) 
+			return NT_STATUS_NO_SUCH_USER;
+			
+		gid = pwd->pw_gid;
+		
+		TALLOC_FREE( pwd );		
 	}
 
 	if (!getgroups_unix_user(mem_ctx, pdb_get_username(user), gid,
