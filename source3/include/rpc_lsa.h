@@ -78,7 +78,10 @@
 #define LSA_OPENTRUSTDOMBYNAME 0x37
 
 #define LSA_LOOKUPSIDS2        0x39
+#define LSA_LOOKUPNAMES2       0x3a
+#define LSA_LOOKUPNAMES3       0x44
 #define LSA_LOOKUPSIDS3        0x4c
+#define LSA_LOOKUPNAMES4       0x4d
 
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
