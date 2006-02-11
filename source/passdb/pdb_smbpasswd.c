@@ -1540,12 +1540,12 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char *location )
 {
 	NTSTATUS nt_status;
 	struct smbpasswd_privates *privates;
 
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
+	if ( !NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method )) ) {
 		return nt_status;
 	}
 
@@ -1565,9 +1565,7 @@ static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_m
 
 	/* Setup private data and free function */
 
-	privates = TALLOC_ZERO_P(pdb_context->mem_ctx, struct smbpasswd_privates);
-
-	if (!privates) {
+	if ( !(privates = TALLOC_ZERO_P( *pdb_method, struct smbpasswd_privates )) ) {
 		DEBUG(0, ("talloc() failed for smbpasswd private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1575,9 +1573,9 @@ static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_m
 	/* Store some config details */
 
 	if (location) {
-		privates->smbpasswd_file = talloc_strdup(pdb_context->mem_ctx, location);
+		privates->smbpasswd_file = talloc_strdup(*pdb_method, location);
 	} else {
-		privates->smbpasswd_file = talloc_strdup(pdb_context->mem_ctx, lp_smb_passwd_file());
+		privates->smbpasswd_file = talloc_strdup(*pdb_method, lp_smb_passwd_file());
 	}
 	
 	if (!privates->smbpasswd_file) {

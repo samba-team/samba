@@ -55,70 +55,6 @@
 #define MASK_USER_GOOD		0x00405FE0
 
 /*********************************************************
- Add all currently available users to another db
- ********************************************************/
-
-static int export_database (struct pdb_context *in, struct pdb_context
-			    *out, const char *username) {
-	SAM_ACCOUNT *user = NULL;
-
-	DEBUG(3, ("called with username=\"%s\"\n", username));
-
-	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0, 0))) {
-		fprintf(stderr, "Can't sampwent!\n");
-		return 1;
-	}
-
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&user))) {
-		fprintf(stderr, "Can't initialize new SAM_ACCOUNT!\n");
-		return 1;
-	}
-
-	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
-		DEBUG(4, ("Processing account %s\n",
-			  user->private_u.username));
-		if (!username || 
-		    (strcmp(username, user->private_u.username)
-		     == 0)) {
-			out->pdb_add_sam_account(out, user);
-			if (!NT_STATUS_IS_OK(pdb_reset_sam(user))) {
-				fprintf(stderr,
-					"Can't reset SAM_ACCOUNT!\n");
-				return 1;
-			}
-		}
-	}
-
-	in->pdb_endsampwent(in);
-
-	return 0;
-}
-
-/*********************************************************
- Add all currently available group mappings to another db
- ********************************************************/
-
-static int export_groups (struct pdb_context *in, struct pdb_context *out) {
-	GROUP_MAP *maps = NULL;
-	size_t i, entries = 0;
-
-	if (NT_STATUS_IS_ERR(in->pdb_enum_group_mapping(in, SID_NAME_UNKNOWN,
-							&maps, &entries,
-							False))) {
-		fprintf(stderr, "Can't get group mappings!\n");
-		return 1;
-	}
-
-	for (i=0; i<entries; i++) {
-		out->pdb_add_group_mapping_entry(out, &(maps[i]));
-	}
-
-	SAFE_FREE(maps);
-
-	return 0;
-}
-
-/*********************************************************
  Reset account policies to their default values and remove marker
  ********************************************************/
 
@@ -145,38 +81,6 @@ static int reinit_account_policies (void)
 
 	return 0;
 }
-
-
-/*********************************************************
- Add all currently available account policy from tdb to one backend
- ********************************************************/
-
-static int export_account_policies (struct pdb_context *in, struct pdb_context *out) 
-{
-	int i;
-
-	if (!account_policy_migrated(True)) {
-		fprintf(stderr, "Can't set account policy marker in tdb\n");
-		return -1;
-	}
-
-	for (i=1; decode_account_policy_name(i) != NULL; i++) {
-		uint32 policy_value;
-		if (NT_STATUS_IS_ERR(in->pdb_get_account_policy(in, i, &policy_value))) {
-			fprintf(stderr, "Can't get account policy from tdb\n");
-			remove_account_policy_migrated();
-			return -1;
-		}
-		if (NT_STATUS_IS_ERR(out->pdb_set_account_policy(out, i, policy_value))) {
-			fprintf(stderr, "Can't set account policy in passdb\n");
-			remove_account_policy_migrated();
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
 
 /*********************************************************
  Print info from sam structure
@@ -266,7 +170,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
  Get an Print User Info
 **********************************************************/
 
-static int print_user_info (struct pdb_context *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
+static int print_user_info (struct pdb_methods *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
@@ -275,7 +179,7 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 		return -1;
 	}
 
-	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
+	ret = NT_STATUS_IS_OK(in->getsampwnam (in, sam_pwent, username));
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
@@ -292,12 +196,12 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 /*********************************************************
  List Users
 **********************************************************/
-static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwdstyle)
+static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check;
 	
-	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
+	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
 	if (!check) {
 		return 1;
 	}
@@ -305,7 +209,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	check = True;
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
-	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
+	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
@@ -314,19 +218,19 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	}
 	if (check) pdb_free_sam(&sam_pwent);
 	
-	in->pdb_endsampwent(in);
+	in->endsampwent(in);
 	return 0;
 }
 
 /*********************************************************
  Fix a list of Users for uninitialised passwords
 **********************************************************/
-static int fix_users_list (struct pdb_context *in)
+static int fix_users_list (struct pdb_methods *in)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check;
 	
-	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
+	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
 	if (!check) {
 		return 1;
 	}
@@ -334,7 +238,7 @@ static int fix_users_list (struct pdb_context *in)
 	check = True;
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
-	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
+	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
 		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
 	
 		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
@@ -349,7 +253,7 @@ static int fix_users_list (struct pdb_context *in)
 	}
 	if (check) pdb_free_sam(&sam_pwent);
 	
-	in->pdb_endsampwent(in);
+	in->endsampwent(in);
 	return 0;
 }
 
@@ -357,7 +261,7 @@ static int fix_users_list (struct pdb_context *in)
  Set User Info
 **********************************************************/
 
-static int set_user_info (struct pdb_context *in, const char *username, 
+static int set_user_info (struct pdb_methods *in, const char *username, 
 			  const char *fullname, const char *homedir, 
 			  const char *acct_desc, 
 			  const char *drive, const char *script, 
@@ -373,7 +277,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 	
 	pdb_init_sam(&sam_pwent);
 	
-	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
+	ret = NT_STATUS_IS_OK(in->getsampwnam (in, sam_pwent, username));
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
 		pdb_free_sam(&sam_pwent);
@@ -473,7 +377,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_bad_password_time(sam_pwent, 0, PDB_CHANGED);
 	}
 
-	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
+	if (NT_STATUS_IS_OK(in->update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
@@ -487,7 +391,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 /*********************************************************
  Add New User
 **********************************************************/
-static int new_user (struct pdb_context *in, const char *username,
+static int new_user (struct pdb_methods *in, const char *username,
 			const char *fullname, const char *homedir,
 			const char *drive, const char *script,
 			const char *profile, char *user_sid, char *group_sid)
@@ -568,7 +472,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL, PDB_CHANGED);
 	
-	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) { 
+	if (NT_STATUS_IS_OK(in->add_sam_account (in, sam_pwent))) { 
 		print_user_info (in, username, True, False);
 	} else {
 		fprintf (stderr, "Unable to add user! (does it already exist?)\n");
@@ -583,7 +487,7 @@ static int new_user (struct pdb_context *in, const char *username,
  Add New Machine
 **********************************************************/
 
-static int new_machine (struct pdb_context *in, const char *machine_in)
+static int new_machine (struct pdb_methods *in, const char *machine_in)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	fstring machinename;
@@ -625,7 +529,7 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	
 	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS, PDB_CHANGED);
 	
-	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) {
+	if (NT_STATUS_IS_OK(in->add_sam_account (in, sam_pwent))) {
 		print_user_info (in, machineaccount, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
@@ -640,7 +544,7 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
  Delete user entry
 **********************************************************/
 
-static int delete_user_entry (struct pdb_context *in, const char *username)
+static int delete_user_entry (struct pdb_methods *in, const char *username)
 {
 	SAM_ACCOUNT *samaccount = NULL;
 
@@ -648,12 +552,12 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, username))) {
+	if (!NT_STATUS_IS_OK(in->getsampwnam(in, samaccount, username))) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount))) {
+	if (!NT_STATUS_IS_OK(in->delete_sam_account (in, samaccount))) {
 		fprintf (stderr, "Unable to delete user %s\n", username);
 		return -1;
 	}
@@ -664,7 +568,7 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
  Delete machine entry
 **********************************************************/
 
-static int delete_machine_entry (struct pdb_context *in, const char *machinename)
+static int delete_machine_entry (struct pdb_methods *in, const char *machinename)
 {
 	fstring name;
 	SAM_ACCOUNT *samaccount = NULL;
@@ -678,12 +582,12 @@ static int delete_machine_entry (struct pdb_context *in, const char *machinename
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, name))) {
+	if (!NT_STATUS_IS_OK(in->getsampwnam(in, samaccount, name))) {
 		fprintf (stderr, "machine %s does not exist in the passdb\n", name);
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount))) {
+	if (!NT_STATUS_IS_OK(in->delete_sam_account (in, samaccount))) {
 		fprintf (stderr, "Unable to delete machine %s\n", name);
 		return -1;
 	}
@@ -733,9 +637,7 @@ int main (int argc, char **argv)
 	static char *pwd_must_change_time = NULL;
 	static char *pwd_time_format = NULL;
 
-	struct pdb_context *bin;
-	struct pdb_context *bout;
-	struct pdb_context *bdef;
+	struct pdb_methods *bdef = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -835,12 +737,12 @@ int main (int argc, char **argv)
 			(pwd_must_change_time ? BIT_MUST_CHANGE: 0);
 
 	if (setparms & BIT_BACKEND) {
-		if (!NT_STATUS_IS_OK(make_pdb_context_string(&bdef, backend))) {
+		if (!NT_STATUS_IS_OK(make_pdb_method_name( &bdef, backend ))) {
 			fprintf(stderr, "Can't initialize passdb backend.\n");
 			return 1;
 		}
 	} else {
-		if (!NT_STATUS_IS_OK(make_pdb_context_list(&bdef, lp_passdb_backend()))) {
+		if (!NT_STATUS_IS_OK(make_pdb_method_name(&bdef, lp_passdb_backend()))) {
 			fprintf(stderr, "Can't initialize passdb backend.\n");
 			return 1;
 		}
@@ -892,41 +794,6 @@ int main (int argc, char **argv)
 		}
 
 		exit(0);
-	}
-
-	/* import and export operations */
-	if (((checkparms & BIT_IMPORT) || (checkparms & BIT_EXPORT))
-	    && !(checkparms & ~(BIT_IMPORT +BIT_EXPORT +BIT_USER))) {
-		if (backend_in) {
-			if (!NT_STATUS_IS_OK(make_pdb_context_string(&bin, backend_in))) {
-				fprintf(stderr, "Can't initialize passdb backend.\n");
-				return 1;
-			}
-		} else {
-			bin = bdef;
-		}
-		if (backend_out) {
-			if (!NT_STATUS_IS_OK(make_pdb_context_string(&bout, backend_out))) {
-				fprintf(stderr, "Can't initialize %s.\n", backend_out);
-				return 1;
-			}
-		} else {
-			bout = bdef;
-		}
-		if (transfer_account_policies) {
-			if (!(checkparms & BIT_USER))
-				return export_account_policies(bin, bout);
-		} else 	if (transfer_groups) {
-			if (!(checkparms & BIT_USER))
-				return export_groups(bin, bout);
-		} else {
-			if (checkparms & BIT_USER)
-				return export_database(bin, bout,
-						       user_name);
-			else
-				return export_database(bin, bout,
-						       NULL);
-		}
 	}
 
 	/* if BIT_USER is defined but nothing else then threat it as -l -u for compatibility */
