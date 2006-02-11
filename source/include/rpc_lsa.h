@@ -567,7 +567,7 @@ typedef struct lsa_q_lookup_names2
 
 } LSA_Q_LOOKUP_NAMES2;
 
-/* LSA_R_LOOKUP_NAMES - response to LSA Lookup NAMEs by name */
+/* LSA_R_LOOKUP_NAMES2 - response to LSA Lookup NAMEs by name 2 */
 typedef struct lsa_r_lookup_names2
 {
 	uint32 ptr_dom_ref;
