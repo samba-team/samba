@@ -1026,6 +1026,23 @@ done:
 	return r_u->status;
 }
 
+/***************************************************************************
+lsa_reply_lookup_names3 - stub for now.
+ ***************************************************************************/
+
+NTSTATUS _lsa_lookup_names3(pipes_struct *p, LSA_Q_LOOKUP_NAMES3 *q_u, LSA_R_LOOKUP_NAMES3 *r_u)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+/***************************************************************************
+lsa_reply_lookup_names4 - stub for now.
+ ***************************************************************************/
+
+NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOOKUP_NAMES4 *r_u)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
 
 /***************************************************************************
  _lsa_close. Also weird - needs to check if lsa handle is correct. JRA.
