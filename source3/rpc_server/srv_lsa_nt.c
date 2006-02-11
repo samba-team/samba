@@ -225,6 +225,25 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 }
 
 /***************************************************************************
+ init_reply_lookup_names2
+ ***************************************************************************/
+
+static void init_reply_lookup_names2(LSA_R_LOOKUP_NAMES2 *r_l,
+                DOM_R_REF *ref, uint32 num_entries,
+                DOM_RID2 *rid, uint32 mapped_count)
+{
+	r_l->ptr_dom_ref  = 1;
+	r_l->dom_ref      = ref;
+
+	r_l->num_entries  = num_entries;
+	r_l->ptr_entries  = 1;
+	r_l->num_entries2 = num_entries;
+	r_l->dom_rid      = rid;
+
+	r_l->mapped_count = mapped_count;
+}
+
+/***************************************************************************
  Init_reply_lookup_sids.
  ***************************************************************************/
 
@@ -937,6 +956,76 @@ done:
 
 	return r_u->status;
 }
+
+/***************************************************************************
+lsa_reply_lookup_names2
+ ***************************************************************************/
+
+NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOOKUP_NAMES2 *r_u)
+{
+	struct lsa_info *handle;
+	UNISTR2 *names = q_u->uni_name;
+	int num_entries = q_u->num_entries;
+	DOM_R_REF *ref;
+	DOM_RID *rids;
+	DOM_RID2 *rids2;
+	int i;
+	uint32 mapped_count = 0;
+	int flags = 0;
+
+	if (num_entries >  MAX_LOOKUP_SIDS) {
+		num_entries = MAX_LOOKUP_SIDS;
+		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
+	}
+		
+	/* Probably the lookup_level is some sort of bitmask. */
+	if (q_u->lookup_level == 1) {
+		flags = LOOKUP_NAME_ALL;
+	}
+
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
+	rids2 = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
+
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
+		r_u->status = NT_STATUS_INVALID_HANDLE;
+		goto done;
+	}
+
+	/* check if the user have enough rights */
+	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	if (!ref || !rids || !rids2)
+		return NT_STATUS_NO_MEMORY;
+
+	/* set up the LSA Lookup RIDs response */
+	mapped_count = init_lsa_rids(p->mem_ctx, ref, rids, num_entries,
+				      names, flags);
+done:
+
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		if (mapped_count == 0)
+			r_u->status = NT_STATUS_NONE_MAPPED;
+		else if (mapped_count != num_entries)
+			r_u->status = STATUS_SOME_UNMAPPED;
+	}
+
+	/* Convert the rids array to rids2. */
+	for (i = 0; i < num_entries; i++) {
+		rids2[i].type = rids[i].type;
+		rids2[i].rid = rids[i].rid;
+		rids2[i].rid_idx = rids[i].rid_idx;
+		rids2[i].unknown = 0;
+	}
+
+	init_reply_lookup_names2(r_u, ref, num_entries, rids2, mapped_count);
+
+	return r_u->status;
+}
+
 
 /***************************************************************************
  _lsa_close. Also weird - needs to check if lsa handle is correct. JRA.
