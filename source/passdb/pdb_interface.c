@@ -1837,7 +1837,7 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 {
 	struct group *grp;
 	char **gr;
-	struct sys_pwent *userlist, *user;
+	struct passwd *pwd;
  
 	*pp_uids = NULL;
 	*p_num = 0;
@@ -1853,15 +1853,14 @@ static BOOL get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 
 	/* Primary group members */
 
-	userlist = getpwent_list();
-
-	for (user = userlist; user != NULL; user = user->next) {
-		if (user->pw_gid != gid)
-			continue;
-		add_uid_to_array_unique(mem_ctx, user->pw_uid, pp_uids, p_num);
+	setpwent();
+	while ((pwd = getpwent()) != NULL) {
+		if (pwd->pw_gid == gid) {
+			add_uid_to_array_unique(mem_ctx, pwd->pw_uid,
+						pp_uids, p_num);
+		}
 	}
-
-	pwent_free(userlist);
+	endpwent();
 
 	/* Secondary group members */
 
@@ -1908,13 +1907,51 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 		uid_to_sid(&sid, uids[i]);
 
 		if (!sid_check_is_in_our_domain(&sid)) {
-			DEBUG(1, ("Inconsistent SAM -- group member uid not "
+			DEBUG(5, ("Inconsistent SAM -- group member uid not "
 				  "in our domain\n"));
 			continue;
 		}
 
 		sid_peek_rid(&sid, &(*pp_member_rids)[*p_num_members]);
 		*p_num_members += 1;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
+					    TALLOC_CTX *mem_ctx,
+					    SAM_ACCOUNT *user,
+					    DOM_SID **pp_sids,
+					    gid_t **pp_gids,
+					    size_t *p_num_groups)
+{
+	size_t i;
+	gid_t gid;
+
+	if (!sid_to_gid(pdb_get_group_sid(user), &gid)) {
+		DEBUG(10, ("sid_to_gid failed\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (!getgroups_unix_user(mem_ctx, pdb_get_username(user), gid,
+				 pp_gids, p_num_groups)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (*p_num_groups == 0) {
+		smb_panic("primary group missing");
+	}
+
+	*pp_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *p_num_groups);
+
+	if (*pp_sids == NULL) {
+		talloc_free(*pp_gids);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<*p_num_groups; i++) {
+		gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]);
 	}
 
 	return NT_STATUS_OK;

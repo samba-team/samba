@@ -485,45 +485,63 @@ static BOOL user_in_winbind_group(const char *user, const char *gname,
 
 BOOL user_in_unix_group(const char *user,const char *gname)
 {
-	struct passwd *pass = Get_Pwnam(user);
-	struct sys_userlist *user_list;
-	struct sys_userlist *member;
+	TALLOC_CTX *mem_ctx;
+	struct passwd *pwd;
+	struct group *grp;
+	gid_t gid;
+	gid_t *gids;
+	size_t i, num_gids;
+	BOOL ret = False;
 
 	DEBUG(10,("user_in_unix_group: checking user %s in group %s\n",
 		  user, gname));
 
- 	/*
- 	 * We need to check the users primary group as this
- 	 * group is implicit and often not listed in the group database.
- 	 */
- 
- 	if (pass) {
- 		if (strequal(gname,gidtoname(pass->pw_gid))) {
- 			DEBUG(10,("user_in_unix_group: group %s is "
-				  "primary group.\n", gname ));
- 			return True;
- 		}
- 	}
- 
-	user_list = get_users_in_group(gname);
- 	if (user_list == NULL) {
- 		DEBUG(10,("user_in_unix_group: no such group %s\n",
-			  gname ));
- 		return False;
- 	}
-
-	for (member = user_list; member; member = member->next) {
- 		DEBUG(10,("user_in_unix_group: checking user %s against "
-			  "member %s\n", user, member->unix_name ));
-  		if (strequal(member->unix_name,user)) {
-			free_userlist(user_list);
-  			return(True);
-  		}
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
 	}
 
-	free_userlist(user_list);
-	return False;
-}	      
+	pwd = Get_Pwnam_alloc(mem_ctx, user);
+	if (pwd == NULL) {
+		DEBUG(10, ("Could not find user %s\n", user));
+		goto done;
+	}
+
+	grp = getgrnam(gname);
+	if (grp == NULL) {
+		DEBUG(10, ("Could not find group %s\n", gname));
+		goto done;
+	}
+
+	if (pwd->pw_gid == grp->gr_gid) {
+		DEBUG(10, ("%s is %s's primary group\n", gname, user));
+		ret = True;
+		goto done;
+	}
+
+	/* Save gid, you never know what getgroups_unix_user does to it. */
+	gid = grp->gr_gid;
+
+	if (!getgroups_unix_user(mem_ctx, user, pwd->pw_gid,
+				 &gids, &num_gids)) {
+		DEBUG(10, ("getgroups_unix_user failed\n"));
+		goto done;
+	}
+
+	for (i=0; i<num_gids; i++) {
+		if (gids[i] == gid) {
+			DEBUG(10, ("%s is %s's %dth auxiliary group\n",
+				   gname, user, (int)i));
+			ret = True;
+			goto done;
+		}
+	}
+
+ done:
+	talloc_free(mem_ctx);
+	return ret;
+}
 
 /****************************************************************************
  Check if a user is in a group list. Ask winbind first, then use UNIX.
