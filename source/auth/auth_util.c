@@ -1023,13 +1023,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
  Expensive helper function to figure out whether a user given its name is
  member of a particular group.
-
- (Justification: Before this function existed, the callers of this function
-  called user_in_group() which was potentially even more expensive as
-  it lists all group members which can be *huge* -- vl )
-
 ***************************************************************************/
-BOOL username_in_group(const char *username, const DOM_SID *group_sid)
+BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
 {
 	NTSTATUS status;
 	uid_t uid;
@@ -1055,6 +1050,32 @@ BOOL username_in_group(const char *username, const DOM_SID *group_sid)
 	talloc_free(mem_ctx);
 	return result;
 	
+}
+
+BOOL user_in_group(const char *username, const char *groupname)
+{
+	TALLOC_CTX *mem_ctx;
+	DOM_SID group_sid;
+	NTSTATUS status;
+	BOOL ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
+	ret = lookup_name(mem_ctx, groupname, LOOKUP_NAME_ALL,
+			  NULL, NULL, &group_sid, NULL);
+	talloc_free(mem_ctx);
+
+	if (!ret) {
+		DEBUG(10, ("lookup_name(%s) failed: %s\n", groupname,
+			   nt_errstr(status)));
+		return False;
+	}
+
+	return user_in_group_sid(username, &group_sid);
 }
 
 

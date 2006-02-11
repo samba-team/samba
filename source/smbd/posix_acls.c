@@ -1027,7 +1027,7 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 		return True;
 
 	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
-	return username_in_group(u_name, &group_ace->trustee);
+	return user_in_group_sid(u_name, &group_ace->trustee);
 }
 
 /****************************************************************************

@@ -3935,7 +3935,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_unix_group(pwd->pw_name, grp_name)) {
+	if(user_in_group_sid(pwd->pw_name, &group_sid)) {
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
@@ -3961,7 +3961,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	/******** END SeAddUsers BLOCK *********/
 	
 	/* check if the user has been added then ... */
-	if(!user_in_unix_group(pwd->pw_name, grp_name)) {
+	if(!user_in_group_sid(pwd->pw_name, &group_sid)) {
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
 	}
 
@@ -4025,7 +4025,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	}
 
 	/* if the user is not in the group */
-	if (!user_in_unix_group(pdb_get_username(sam_pass), grp_name)) {
+	if (!user_in_group_sid(pdb_get_username(sam_pass), &group_sid)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
@@ -4047,7 +4047,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	/******** END SeAddUsers BLOCK *********/
 	
 	/* check if the user has been removed then ... */
-	if (user_in_unix_group(pdb_get_username(sam_pass), grp_name)) {
+	if (user_in_group_sid(pdb_get_username(sam_pass), &group_sid)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_ACCESS_DENIED;		/* don't know what to reply else */
 	}

@@ -844,22 +844,12 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL lookup_global_sam_name(const char *c_user, int flags, uint32_t *rid,
+BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 			    enum SID_NAME_USE *type)
 {
-	fstring user;
 	SAM_ACCOUNT *sam_account = NULL;
 	struct group *grp;
 	GROUP_MAP map;
-
-	/*
-	 * user may be quoted a const string, and map_username and
-	 * friends can modify it. Make a modifiable copy. JRA.
-	 */
-
-	fstrcpy(user, c_user);
-
-	(void)map_username(user);
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 		return False;
