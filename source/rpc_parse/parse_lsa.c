@@ -1412,9 +1412,132 @@ BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct
 		}
 
 		if (UNMARSHALLING(ps)) {
-			if ((out->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID2, out->num_entries2))
+			if ((out->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID, out->num_entries2))
 			    == NULL) {
 				DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
+				return False;
+			}
+		}
+
+		for (i = 0; i < out->num_entries2; i++)
+			if(!smb_io_dom_rid("", &out->dom_rid[i], ps, depth)) /* domain RIDs being looked up */
+				return False;
+	}
+
+	if(!prs_uint32("mapped_count", ps, depth, &out->mapped_count))
+		return False;
+
+	if(!prs_ntstatus("status      ", ps, depth, &out->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_q_lookup_names2(const char *desc, LSA_Q_LOOKUP_NAMES2 *q_r, 
+			   prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
+		return False;
+	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (q_r->num_entries) {
+			if ((q_r->hdr_name = PRS_ALLOC_MEM(ps, UNIHDR, q_r->num_entries)) == NULL)
+				return False;
+			if ((q_r->uni_name = PRS_ALLOC_MEM(ps, UNISTR2, q_r->num_entries)) == NULL)
+				return False;
+		}
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
+			return False;
+	}
+
+	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
+			return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
+		return False;
+	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
+		return False;
+	if(!prs_uint32("lookup_level   ", ps, depth, &q_r->lookup_level))
+		return False;
+	if(!prs_uint32("mapped_count   ", ps, depth, &q_r->mapped_count))
+		return False;
+	if(!prs_uint32("unknown1   ", ps, depth, &q_r->unknown1))
+		return False;
+	if(!prs_uint32("unknown2   ", ps, depth, &q_r->unknown2))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL lsa_io_r_lookup_names2(const char *desc, LSA_R_LOOKUP_NAMES2 *out, prs_struct *ps, int depth)
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_dom_ref", ps, depth, &out->ptr_dom_ref))
+		return False;
+
+	if (out->ptr_dom_ref != 0)
+		if(!lsa_io_dom_r_ref("", out->dom_ref, ps, depth))
+			return False;
+
+	if(!prs_uint32("num_entries", ps, depth, &out->num_entries))
+		return False;
+	if(!prs_uint32("ptr_entries", ps, depth, &out->ptr_entries))
+		return False;
+
+	if (out->ptr_entries != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &out->num_entries2))
+			return False;
+
+		if (out->num_entries2 != out->num_entries) {
+			/* RPC fault */
+			return False;
+		}
+
+		if (UNMARSHALLING(ps)) {
+			if ((out->dom_rid = PRS_ALLOC_MEM(ps, DOM_RID2, out->num_entries2))
+			    == NULL) {
+				DEBUG(3, ("lsa_io_r_lookup_names2(): out of memory\n"));
 				return False;
 			}
 		}
@@ -1432,6 +1555,7 @@ BOOL lsa_io_r_lookup_names(const char *desc, LSA_R_LOOKUP_NAMES *out, prs_struct
 
 	return True;
 }
+
 
 
 /*******************************************************************
