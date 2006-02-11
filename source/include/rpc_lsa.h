@@ -542,12 +542,46 @@ typedef struct lsa_r_lookup_names
 	uint32 num_entries;
 	uint32 ptr_entries;
 	uint32 num_entries2;
-	DOM_RID2 *dom_rid; /* domain RIDs being looked up */
+	DOM_RID *dom_rid; /* domain RIDs being looked up */
 
 	uint32 mapped_count;
 
 	NTSTATUS status; /* return code */
 } LSA_R_LOOKUP_NAMES;
+
+/* LSA_Q_LOOKUP_NAMES2 - LSA Lookup NAMEs 2*/
+typedef struct lsa_q_lookup_names2
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 num_entries;
+	uint32 num_entries2;
+	UNIHDR  *hdr_name; /* name buffer pointers */
+	UNISTR2 *uni_name; /* names to be looked up */
+
+	uint32 num_trans_entries;
+	uint32 ptr_trans_sids; /* undocumented domain SID buffer pointer */
+	uint32 lookup_level;
+	uint32 mapped_count;
+	uint32 unknown1;
+	uint32 unknown2;
+
+} LSA_Q_LOOKUP_NAMES2;
+
+/* LSA_R_LOOKUP_NAMES - response to LSA Lookup NAMEs by name */
+typedef struct lsa_r_lookup_names2
+{
+	uint32 ptr_dom_ref;
+	DOM_R_REF *dom_ref; /* domain reference info */
+
+	uint32 num_entries;
+	uint32 ptr_entries;
+	uint32 num_entries2;
+	DOM_RID2 *dom_rid; /* domain RIDs being looked up */
+
+	uint32 mapped_count;
+
+	NTSTATUS status; /* return code */
+} LSA_R_LOOKUP_NAMES2;
 
 typedef struct lsa_enum_priv_entry
 {

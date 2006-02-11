@@ -1251,23 +1251,50 @@ BOOL smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockou
 }
 
 /*******************************************************************
- Inits a DOM_RID2 structure.
+ Inits a DOM_RID structure.
 ********************************************************************/
 
-void init_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx)
+void init_dom_rid(DOM_RID *prid, uint32 rid, uint8 type, uint32 idx)
 {
-	rid2->type    = type;
-	rid2->rid     = rid;
-	rid2->rid_idx = idx;
+	prid->type    = type;
+	prid->rid     = rid;
+	prid->rid_idx = idx;
+}
+
+/*******************************************************************
+ Reads or writes a DOM_RID structure.
+********************************************************************/
+
+BOOL smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth)
+{
+	if (rid == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_dom_rid");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+   
+	if(!prs_uint8("type   ", ps, depth, &rid->type))
+		return False;
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("rid    ", ps, depth, &rid->rid))
+		return False;
+	if(!prs_uint32("rid_idx", ps, depth, &rid->rid_idx))
+		return False;
+
+	return True;
 }
 
 /*******************************************************************
  Reads or writes a DOM_RID2 structure.
 ********************************************************************/
 
-BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth)
+BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth)
 {
-	if (rid2 == NULL)
+	if (rid == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_rid2");
@@ -1276,17 +1303,20 @@ BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid2, prs_struct *ps, int depth
 	if(!prs_align(ps))
 		return False;
    
-	if(!prs_uint8("type   ", ps, depth, &rid2->type))
+	if(!prs_uint8("type   ", ps, depth, &rid->type))
 		return False;
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("rid    ", ps, depth, &rid2->rid))
+	if(!prs_uint32("rid    ", ps, depth, &rid->rid))
 		return False;
-	if(!prs_uint32("rid_idx", ps, depth, &rid2->rid_idx))
+	if(!prs_uint32("rid_idx", ps, depth, &rid->rid_idx))
+		return False;
+	if(!prs_uint32("unknown", ps, depth, &rid->unknown))
 		return False;
 
 	return True;
 }
+
 
 /*******************************************************************
 creates a DOM_RID3 structure.
