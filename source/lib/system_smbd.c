@@ -123,14 +123,16 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 
 	DEBUG(10,("sys_getgrouplist: user [%s]\n", user));
 	
-	/* see if we should disable winbindd lookups for local users */
-	if (strchr(user, *lp_winbind_separator()) == NULL) {
-		if ( !winbind_off() )
-			DEBUG(0,("sys_getgroup_list: Insufficient environment space "
-				 "for %s\n", WINBINDD_DONT_ENV));
-		else
-			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
-				  "lookup [user == %s]\n", user));
+	/* This is only ever called for Unix users, remote memberships are
+	 * always determined by the info3 coming back from auth3 or the
+	 * PAC. */
+
+	if ( !winbind_off() ) {
+		DEBUG(0,("sys_getgroup_list: Insufficient environment space "
+			 "for %s\n", WINBINDD_DONT_ENV));
+	} else {
+		DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
+			  "lookup [user == %s]\n", user));
 	}
 
 #ifdef HAVE_GETGROUPLIST
