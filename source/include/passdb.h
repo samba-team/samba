@@ -249,158 +249,9 @@ struct pdb_search {
 
 #define PASSDB_INTERFACE_VERSION 12
 
-typedef struct pdb_context 
-{
-	struct pdb_methods *pdb_methods;
-	struct pdb_methods *pwent_methods;
-	
-	/* These functions are wrappers for the functions listed above.
-	   They may do extra things like re-reading a SAM_ACCOUNT on update */
-
-	NTSTATUS (*pdb_setsampwent)(struct pdb_context *, BOOL update, uint16 acb_mask);
-	
-	void (*pdb_endsampwent)(struct pdb_context *);
-	
-	NTSTATUS (*pdb_getsampwent)(struct pdb_context *, SAM_ACCOUNT *user);
-	
-	NTSTATUS (*pdb_getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
-	
-	NTSTATUS (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
-
-	NTSTATUS (*pdb_add_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
-	
-	NTSTATUS (*pdb_update_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
-	
-	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
-	
-	NTSTATUS (*pdb_rename_sam_account)(struct pdb_context *, SAM_ACCOUNT *oldname, const char *newname);
-
-	NTSTATUS (*pdb_update_login_attempts)(struct pdb_context *context, SAM_ACCOUNT *sam_acct, BOOL success);
-
-	NTSTATUS (*pdb_getgrsid)(struct pdb_context *context, GROUP_MAP *map, DOM_SID sid);
-	
-	NTSTATUS (*pdb_getgrgid)(struct pdb_context *context, GROUP_MAP *map, gid_t gid);
-	
-	NTSTATUS (*pdb_getgrnam)(struct pdb_context *context, GROUP_MAP *map, const char *name);
-	
-	NTSTATUS (*pdb_add_group_mapping_entry)(struct pdb_context *context,
-						GROUP_MAP *map);
-	
-	NTSTATUS (*pdb_update_group_mapping_entry)(struct pdb_context *context,
-						   GROUP_MAP *map);
-	
-	NTSTATUS (*pdb_delete_group_mapping_entry)(struct pdb_context *context,
-						   DOM_SID sid);
-	
-	NTSTATUS (*pdb_enum_group_mapping)(struct pdb_context *context,
-					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
-					   BOOL unix_only);
-
-	NTSTATUS (*pdb_enum_group_members)(struct pdb_context *context,
-					   TALLOC_CTX *mem_ctx,
-					   const DOM_SID *group,
-					   uint32 **pp_member_rids,
-					   size_t *p_num_members);
-
-	NTSTATUS (*pdb_enum_group_memberships)(struct pdb_context *context,
-					       TALLOC_CTX *mem_ctx,
-					       SAM_ACCOUNT *user,
-					       DOM_SID **pp_sids,
-					       gid_t **pp_gids,
-					       size_t *p_num_groups);
-
-	NTSTATUS (*pdb_find_alias)(struct pdb_context *context,
-				   const char *name, DOM_SID *sid);
-
-	NTSTATUS (*pdb_create_alias)(struct pdb_context *context,
-				     const char *name, uint32 *rid);
-
-	NTSTATUS (*pdb_delete_alias)(struct pdb_context *context,
-				     const DOM_SID *sid);
-
-	NTSTATUS (*pdb_get_aliasinfo)(struct pdb_context *context,
-				      const DOM_SID *sid,
-				      struct acct_info *info);
-
-	NTSTATUS (*pdb_set_aliasinfo)(struct pdb_context *context,
-				      const DOM_SID *sid,
-				      struct acct_info *info);
-
-	NTSTATUS (*pdb_add_aliasmem)(struct pdb_context *context,
-				     const DOM_SID *alias,
-				     const DOM_SID *member);
-
-	NTSTATUS (*pdb_del_aliasmem)(struct pdb_context *context,
-				     const DOM_SID *alias,
-				     const DOM_SID *member);
-
-	NTSTATUS (*pdb_enum_aliasmem)(struct pdb_context *context,
-				      const DOM_SID *alias,
-				      DOM_SID **pp_members, size_t *p_num_members);
-
-	NTSTATUS (*pdb_enum_alias_memberships)(struct pdb_context *context,
-					       TALLOC_CTX *mem_ctx,
-					       const DOM_SID *domain_sid,
-					       const DOM_SID *members,
-					       size_t num_members,
-					       uint32 **pp_alias_rids,
-					       size_t *p_num_alias_rids);
-
-	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
-				    const DOM_SID *domain_sid,
-				    size_t num_rids,
-				    uint32 *rids,
-				    const char **pp_names,
-				    uint32 *attrs);
-
-	NTSTATUS (*pdb_lookup_names)(struct pdb_context *context,
-				     const DOM_SID *domain_sid,
-				     size_t num_names,
-				     const char **names,
-				     uint32 *rids,
-				     uint32 *attrs);
-
-	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
-					   int policy_index, uint32 *value);
-
-	NTSTATUS (*pdb_set_account_policy)(struct pdb_context *context,
-					   int policy_index, uint32 value);
-
-	NTSTATUS (*pdb_get_seq_num)(struct pdb_context *context, time_t *seq_num);
-
-	BOOL (*pdb_search_users)(struct pdb_context *context,
-				 struct pdb_search *search,
-				 uint16 acct_flags);
-	BOOL (*pdb_search_groups)(struct pdb_context *context,
-				  struct pdb_search *search);
-	BOOL (*pdb_search_aliases)(struct pdb_context *context,
-				   struct pdb_search *search,
-				   const DOM_SID *sid);
-	BOOL (*pdb_uid_to_rid)(struct pdb_context *context,
-			       uid_t uid, uint32 *rid);
-	BOOL (*pdb_gid_to_sid)(struct pdb_context *context,
-			       uid_t gid, DOM_SID *sid);
-	BOOL (*pdb_sid_to_id)(struct pdb_context *context, const DOM_SID *sid,
-			      union unid_t *id, enum SID_NAME_USE *type);
-
-	BOOL (*pdb_rid_algorithm)(struct pdb_context *context);
-	BOOL (*pdb_new_rid)(struct pdb_context *context, uint32 *rid);
-
-	void (*free_fn)(struct pdb_context **);
-	
-	TALLOC_CTX *mem_ctx;
-	
-} PDB_CONTEXT;
-
-typedef struct pdb_methods 
+struct pdb_methods 
 {
 	const char *name; /* What name got this module */
-	struct pdb_context *parent;
-
-	/* Use macros from dlinklist.h on these two */
-	struct pdb_methods *next;
-	struct pdb_methods *prev;
 
 	NTSTATUS (*setsampwent)(struct pdb_methods *, BOOL update, uint16 acb_mask);
 	
@@ -530,17 +381,16 @@ typedef struct pdb_methods
 	void *private_data;  /* Private data of some kind */
 	
 	void (*free_private_data)(void **);
+};
 
-} PDB_METHODS;
-
-typedef NTSTATUS (*pdb_init_function)(struct pdb_context *, 
-			 struct pdb_methods **, 
-			 const char *);
+typedef NTSTATUS (*pdb_init_function)(struct pdb_methods **, const char *);
 
 struct pdb_init_function_entry {
 	const char *name;
+
 	/* Function to create a member of the pdb_methods list */
 	pdb_init_function init;
+
 	struct pdb_init_function_entry *prev, *next;
 };
 

@@ -114,7 +114,7 @@ static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_AC
 
 	/* apparently thr build farm relies upon this heavior :-( */
 
-	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
+	return methods->add_sam_account(methods, newpwd);
 #else
 	/* I don't think we should allow any modification of 
 	   the guest account as SID will could messed up with 
@@ -124,16 +124,11 @@ static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_AC
 #endif
 }
 
-NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_init_guestsam(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	
-	if (!pdb_context) {
-		DEBUG(0, ("invalid pdb_context specified\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method ))) {
 		return nt_status;
 	}
 	

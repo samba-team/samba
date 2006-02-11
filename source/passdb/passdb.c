@@ -206,7 +206,11 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 			if (!pdb_set_user_sid_from_rid(account_data, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (!pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT)) {
+			
+			/* by default the guest account is a member of of the domain users group
+			   as well as the domain guests group.  Verified against Windows NT - 2003 */
+			   
+			if (!pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT)) {
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			return NT_STATUS_OK;

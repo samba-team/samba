@@ -558,15 +558,13 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	gid_t *gids;
 	auth_serversupplied_info *result;
 
-	pwd = getpwnam_alloc(NULL, pdb_get_username(sampass));
-	if ( pwd == NULL )  {
+	if ( !(pwd = getpwnam_alloc(NULL, pdb_get_username(sampass))) ) {
 		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
 			  pdb_get_username(sampass)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	result = make_server_info(NULL);
-	if (result == NULL) {
+	if ( !(result = make_server_info(NULL)) ) {
 		talloc_free(pwd);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1176,7 +1174,8 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
  Make (and fill) a user_info struct for a guest login.
  This *must* succeed for smbd to start. If there is no mapping entry for
  the guest gid, then create one.
-***************************************************************************/
+**********************
+*****************************************************/
 
 static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_info)
 {
@@ -1205,48 +1204,9 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	}
 
 	status = make_server_info_sam(server_info, sampass);
-
 	if (!NT_STATUS_IS_OK(status)) {
-
-		/* If there was no initial group mapping for the nobody user,
-		   create one*/
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-			GROUP_MAP map;
-			struct passwd *pwd = getpwnam_alloc(NULL, pdb_get_username(sampass));
-
-			if ( pwd == NULL )  {
-				DEBUG(1, ("No guest user %s!\n",
-					  pdb_get_username(sampass)));
-				pdb_free_sam(&sampass);
-				return NT_STATUS_NO_SUCH_USER;
-			}
-
-			map.gid = pwd->pw_gid;
-			sid_copy(&map.sid, get_global_sam_sid());
-			sid_append_rid(&map.sid, DOMAIN_GROUP_RID_GUESTS);
-			map.sid_name_use = SID_NAME_DOM_GRP;
-			fstrcpy(map.nt_name, "Domain Guests");
-			map.comment[0] = '\0';
-
-			if ( !NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map)) ) {
-				DEBUG(1, ("Could not update group database for guest user %s\n",
-					pdb_get_username(sampass) ));
-				talloc_free(pwd);
-				pdb_free_sam(&sampass);
-				return NT_STATUS_NO_SUCH_USER;
-			}
-
-			talloc_free(pwd);
-
-			/* And try again. */
-			status = make_server_info_sam(server_info, sampass);
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			pdb_free_sam(&sampass);
-			return status;
-		}
+		pdb_free_sam(&sampass);
+		return status;
 	}
 	
 	(*server_info)->guest = True;
@@ -1304,6 +1264,8 @@ BOOL init_guest_info(void)
 {
 	if (guest_info != NULL)
 		return True;
+		
+	
 
 	return NT_STATUS_IS_OK(make_new_server_info_guest(&guest_info));
 }

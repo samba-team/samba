@@ -124,7 +124,7 @@ typedef struct {
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
-	char **szPassdbBackend;
+	char *szPassdbBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
 	char *szSocketOptions;
@@ -861,7 +861,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED}, 
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED}, 
-	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
+	{"passdb backend", P_STRING, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED}, 
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED}, 
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_HIDE}, 
@@ -1560,13 +1560,12 @@ static void init_globals(BOOL first_time_only)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-	str_list_free(&Globals.szPassdbBackend);
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
-	Globals.szPassdbBackend = str_list_make("ldapsam_compat", NULL);
+	string_set(&Globals.szPassdbBackend, "ldapsam_compat");
 #else
-	Globals.szPassdbBackend = str_list_make("smbpasswd", NULL);
+	string_set(&Globals.szPassdbBackend, "smbpasswd");
 #endif /* WITH_LDAP_SAMCONFIG */
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
@@ -1807,7 +1806,7 @@ FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
-FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
+FN_GLOBAL_STRING(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)

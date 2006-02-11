@@ -965,25 +965,21 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-
-
-
 /**
  * Init tdbsam backend
  *
- * @param pdb_context initialised passdb context
  * @param pdb_method backend methods structure to be filled with function pointers
  * @param location the backend tdb file location
  *
  * @return nt_status code
  **/
 
-static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
 
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method ))) {
 		return nt_status;
 	}
 
@@ -1002,21 +998,19 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->rid_algorithm = tdbsam_rid_algorithm;
 	(*pdb_method)->new_rid = tdbsam_new_rid;
 
-	tdb_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct tdbsam_privates);
-
-	if (!tdb_state) {
+	if ( !(tdb_state = TALLOC_ZERO_P( *pdb_method, struct tdbsam_privates)) ) {
 		DEBUG(0, ("talloc() failed for tdbsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (location) {
-		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, location);
+		tdb_state->tdbsam_location = talloc_strdup(*pdb_method, location);
 	} else {
 		pstring tdbfile;
 		get_private_directory(tdbfile);
 		pstrcat(tdbfile, "/");
 		pstrcat(tdbfile, PASSDB_FILE_NAME);
-		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
+		tdb_state->tdbsam_location = talloc_strdup(*pdb_method, tdbfile);
 	}
 
 	(*pdb_method)->private_data = tdb_state;
