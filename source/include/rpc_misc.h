@@ -264,13 +264,20 @@ typedef struct {
  * Domain SID structures
  **********************************************************************/
 
-/* DOM_RID2 - domain RID structure for ntlsa pipe */
+/* DOM_RID - domain RID structure for ntlsa pipe */
 typedef struct {
 	uint8 type; /* value is SID_NAME_USE enum */
 	uint32 rid;
 	uint32 rid_idx; /* referenced domain index */
-} DOM_RID2;
+} DOM_RID;
 
+/* DOM_RID2 - second domain RID structure for ntlsa pipe */
+typedef struct {
+	uint8 type; /* value is SID_NAME_USE enum */
+	uint32 rid;
+	uint32 rid_idx; /* referenced domain index */
+	uint32 unknown;
+} DOM_RID2;
 
 typedef struct {		/* DOM_RID3 - domain RID structure for samr pipe */
 	uint32 rid;        /* domain-relative (to a SID) id */

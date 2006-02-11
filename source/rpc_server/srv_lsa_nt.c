@@ -131,11 +131,11 @@ static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 }
 
 /***************************************************************************
- init_lsa_rid2s
+ init_lsa_rids
  ***************************************************************************/
 
-static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
-			  DOM_R_REF *ref, DOM_RID2 *rid2,
+static int init_lsa_rids(TALLOC_CTX *mem_ctx,
+			  DOM_R_REF *ref, DOM_RID *prid,
 			  int num_entries, UNISTR2 *name,
 			  int flags)
 {
@@ -148,7 +148,6 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 	become_root(); /* lookup_name can require root privs */
 
 	for (i = 0; i < num_entries; i++) {
-		BOOL status = False;
 		DOM_SID sid;
 		uint32 rid;
 		int dom_idx;
@@ -164,7 +163,7 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 			return 0;
 		}
 
-		DEBUG(5, ("init_lsa_rid2s: looking up name %s\n", full_name));
+		DEBUG(5, ("init_lsa_rids: looking up name %s\n", full_name));
 
 		/* We can ignore the result of lookup_name, it will not touch
 		   "type" if it's not successful */
@@ -172,8 +171,6 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 		lookup_name(mem_ctx, full_name, flags, &domain, NULL,
 			    &sid, &type);
 
-		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
-			  "not found"));
 
 		switch (type) {
 		case SID_NAME_USER:
@@ -181,10 +178,12 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 		case SID_NAME_DOMAIN:
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP:
+			DEBUG(5, ("init_lsa_rids: %s found\n", full_name));
 			/* Leave these unchanged */
 			break;
 		default:
 			/* Don't hand out anything but the list above */
+			DEBUG(5, ("init_lsa_rids: %s not found\n", full_name));
 			type = SID_NAME_UNKNOWN;
 			break;
 		}
@@ -198,7 +197,7 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 			mapped_count++;
 		}
 
-		init_dom_rid2(&rid2[i], rid, type, dom_idx);
+		init_dom_rid(&prid[i], rid, type, dom_idx);
 	}
 
 	unbecome_root();
@@ -212,7 +211,7 @@ static int init_lsa_rid2s(TALLOC_CTX *mem_ctx,
 
 static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
                 DOM_R_REF *ref, uint32 num_entries,
-                DOM_RID2 *rid2, uint32 mapped_count)
+                DOM_RID *rid, uint32 mapped_count)
 {
 	r_l->ptr_dom_ref  = 1;
 	r_l->dom_ref      = ref;
@@ -220,7 +219,7 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 	r_l->num_entries  = num_entries;
 	r_l->ptr_entries  = 1;
 	r_l->num_entries2 = num_entries;
-	r_l->dom_rid      = rid2;
+	r_l->dom_rid      = rid;
 
 	r_l->mapped_count = mapped_count;
 }
@@ -892,7 +891,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	UNISTR2 *names = q_u->uni_name;
 	int num_entries = q_u->num_entries;
 	DOM_R_REF *ref;
-	DOM_RID2 *rids;
+	DOM_RID *rids;
 	uint32 mapped_count = 0;
 	int flags = 0;
 
@@ -907,7 +906,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
-	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID2, num_entries);
+	rids = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_RID, num_entries);
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
 		r_u->status = NT_STATUS_INVALID_HANDLE;
@@ -924,7 +923,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
-	mapped_count = init_lsa_rid2s(p->mem_ctx, ref, rids, num_entries,
+	mapped_count = init_lsa_rids(p->mem_ctx, ref, rids, num_entries,
 				      names, flags);
 done:
 
