@@ -1259,7 +1259,6 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CHGPASSWD_USER3 q;
 	SAMR_R_CHGPASSWD_USER3 r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	uchar new_nt_password[516];
 	uchar new_lm_password[516];
@@ -1323,11 +1322,7 @@ NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	result = r.status;
-	
- done:
-
-	return result;
+	return r.status;
 }
 
 /* This function returns the bizzare set of (max_entries, max_size) required
