@@ -858,6 +858,11 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 	}
 
 	/* No policy handle on this call. Restrict to crypto connections. */
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+		DEBUG(0,("_lsa_lookup_sids3: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (num_sids >  MAX_LOOKUP_SIDS) {
 		DEBUG(5,("_lsa_lookup_sids3: limit of %d exceeded, requested %d\n",
