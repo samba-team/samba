@@ -4632,17 +4632,17 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
-/**********************************************************************
- Intitalise the parts of the pdb_context that are common to all pdb_ldap modes
- *********************************************************************/
+/*********************************************************************
+ Intitalise the parts of the pdb_methods structure that are common to 
+ all pdb_ldap modes
+*********************************************************************/
 
-static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
-					const char *location)
+static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
 
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method ))) {
 		return nt_status;
 	}
 
@@ -4676,18 +4676,18 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 
 	/* TODO: Setup private data and free */
 
-	ldap_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct ldapsam_privates);
-	if (!ldap_state) {
+	if ( !(ldap_state = TALLOC_ZERO_P(*pdb_method, struct ldapsam_privates)) ) {
 		DEBUG(0, ("pdb_init_ldapsam_common: talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = 
-			     smbldap_init(pdb_context->mem_ctx, location, 
-					  &ldap_state->smbldap_state)));
+	nt_status = smbldap_init(*pdb_method, location, &ldap_state->smbldap_state);
 
-	ldap_state->domain_name = talloc_strdup(pdb_context->mem_ctx, get_global_sam_name());
-	if (!ldap_state->domain_name) {
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
+		return nt_status;
+	}
+
+	if ( !(ldap_state->domain_name = talloc_strdup(*pdb_method, get_global_sam_name()) ) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -4702,13 +4702,14 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
  Initialise the 'compat' mode for pdb_ldap
  *********************************************************************/
 
-NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
+	char *uri = talloc_strdup( NULL, location );
 
 #ifdef WITH_LDAP_SAMCONFIG
-	if (!location) {
+	if (!uri) {
 		int ldap_port = lp_ldap_port();
 			
 		/* remap default port if not using SSL (ie clear or TLS) */
@@ -4716,16 +4717,22 @@ NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 			ldap_port = 389;
 		}
 
-		location = talloc_asprintf(pdb_context->mem_ctx, "%s://%s:%d", lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", lp_ldap_server(), ldap_port);
-		if (!location) {
+		uri = talloc_asprintf(NULL, "%s://%s:%d", lp_ldap_ssl() == LDAP_SSL_ON ? "ldaps" : "ldap", lp_ldap_server(), ldap_port);
+		if (!uri) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		location = uri;
 	}
 #endif
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location))) {
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common( pdb_method, uri ))) {
 		return nt_status;
 	}
+
+	/* the module itself stores a copy of the location so throw this one away */
+
+	if ( uri )
+		TALLOC_FREE( uri );
 
 	(*pdb_method)->name = "ldapsam_compat";
 
@@ -4741,7 +4748,7 @@ NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
  Initialise the normal mode for pdb_ldap
  *********************************************************************/
 
-NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
@@ -4754,7 +4761,7 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	pstring domain_sid_string;
 	char *dn;
 
-	nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location);
+	nt_status = pdb_init_ldapsam_common(pdb_method, location);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

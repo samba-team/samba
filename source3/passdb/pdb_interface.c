@@ -25,6 +25,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
+/* Cache of latest SAM lookup query */
+
+static SAM_ACCOUNT *csamuser = NULL;
+
 static struct pdb_init_function_entry *backends = NULL;
 
 static void lazy_initialize_passdb(void)
@@ -123,763 +127,11 @@ static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 	return NULL;
 }
 
-static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update, uint16 acb_mask)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	context->pwent_methods = context->pdb_methods;
-
-	if (!context->pwent_methods) {
-		/* No passdbs at all */
-		return ret;
-	}
-
-	while (NT_STATUS_IS_ERR(ret = context->pwent_methods->setsampwent(context->pwent_methods, update, acb_mask))) {
-		context->pwent_methods = context->pwent_methods->next;
-		if (context->pwent_methods == NULL) 
-			return NT_STATUS_UNSUCCESSFUL;
-	}
-	return ret;
-}
-
-static void context_endsampwent(struct pdb_context *context)
-{
-	if ((!context)){
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return;
-	}
-
-	if (context->pwent_methods && context->pwent_methods->endsampwent)
-		context->pwent_methods->endsampwent(context->pwent_methods);
-
-	/* So we won't get strange data when calling getsampwent now */
-	context->pwent_methods = NULL;
-}
-
-static NTSTATUS context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pwent_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	/* Loop until we find something useful */
-	while (NT_STATUS_IS_ERR(ret = context->pwent_methods->getsampwent(context->pwent_methods, user))) {
-
-		context->pwent_methods->endsampwent(context->pwent_methods);
-
-		context->pwent_methods = context->pwent_methods->next;
-
-		/* All methods are checked now. There are no more entries */
-		if (context->pwent_methods == NULL)
-			return ret;
-	
-		context->pwent_methods->setsampwent(context->pwent_methods, False, 0);
-	}
-	user->methods = context->pwent_methods;
-	pdb_force_pw_initialization(user);
-	return ret;
-}
-
-static NTSTATUS context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const char *username)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		if (NT_STATUS_IS_OK(ret = curmethods->getsampwnam(curmethods, sam_acct, username))) {
-			pdb_force_pw_initialization(sam_acct);
-			sam_acct->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_getsampwsid(struct pdb_context *context, SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	
-	curmethods = context->pdb_methods;
-
-	while (curmethods){
-		if (NT_STATUS_IS_OK(ret = curmethods->getsampwsid(curmethods, sam_acct, sid))) {
-			pdb_force_pw_initialization(sam_acct);
-			sam_acct->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_add_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	const uint8 *lm_pw, *nt_pw;
-	uint16 acb_flags;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	/* disable acccounts with no passwords (that has not 
-	   been allowed by the  ACB_PWNOTREQ bit */
-	
-	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_nt_passwd( sam_acct );
-	acb_flags = pdb_get_acct_ctrl( sam_acct );
-	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
-		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
-	}
-	
-	/** @todo  This is where a 're-read on add' should be done */
-	/* We now add a new account to the first database listed. 
-	 * Should we? */
-
-	return context->pdb_methods->add_sam_account(context->pdb_methods, sam_acct);
-}
-
-static NTSTATUS context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	const uint8 *lm_pw, *nt_pw;
-	uint16 acb_flags;
-
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	if (!sam_acct || !sam_acct->methods){
-		DEBUG(0, ("invalid sam_acct specified\n"));
-		return ret;
-	}
-
-	/* disable acccounts with no passwords (that has not 
-	   been allowed by the  ACB_PWNOTREQ bit */
-	
-	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_nt_passwd( sam_acct );
-	acb_flags = pdb_get_acct_ctrl( sam_acct );
-	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
-		acb_flags |= ACB_DISABLED;
-		pdb_set_acct_ctrl( sam_acct, acb_flags, PDB_CHANGED );
-	}
-	
-	/** @todo  This is where a 're-read on update' should be done */
-
-	return sam_acct->methods->update_sam_account(sam_acct->methods, sam_acct);
-}
-
-static NTSTATUS context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT *sam_acct)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *pdb_selected;
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	if (!sam_acct->methods){
-		pdb_selected = context->pdb_methods;
-		/* There's no passdb backend specified for this account.
-		 * Try to delete it in every passdb available 
-		 * Needed to delete accounts in smbpasswd that are not
-		 * in /etc/passwd.
-		 */
-		while (pdb_selected){
-			if (NT_STATUS_IS_OK(ret = pdb_selected->delete_sam_account(pdb_selected, sam_acct))) {
-				return ret;
-			}
-			pdb_selected = pdb_selected->next;
-		}
-		return ret;
-	}
-
-	if (!sam_acct->methods->delete_sam_account){
-		DEBUG(0,("invalid sam_acct->methods->delete_sam_account\n"));
-		return ret;
-	}
-	
-	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
-}
-
-static NTSTATUS context_rename_sam_account(struct pdb_context *context, SAM_ACCOUNT *oldname, const char *newname)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *pdb_selected;
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	if (!oldname->methods){
-		pdb_selected = context->pdb_methods;
-		/* There's no passdb backend specified for this account.
-		 * Try to delete it in every passdb available 
-		 * Needed to delete accounts in smbpasswd that are not
-		 * in /etc/passwd.
-		 */
-		while (pdb_selected){
-			if (NT_STATUS_IS_OK(ret = pdb_selected->rename_sam_account(pdb_selected, oldname, newname))) {
-				return ret;
-			}
-			pdb_selected = pdb_selected->next;
-		}
-		return ret;
-	}
-
-	if (!oldname->methods->rename_sam_account){
-		DEBUG(0,("invalid oldname->methods->rename_sam_account\n"));
-		return ret;
-	}
-	
-	return oldname->methods->rename_sam_account(oldname->methods, oldname, newname);
-}
-
-
-static NTSTATUS context_update_login_attempts(struct pdb_context *context,
-						SAM_ACCOUNT *sam_acct, BOOL success)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if (!context) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	if (!sam_acct || !sam_acct->methods){
-		DEBUG(0, ("invalid sam_acct specified\n"));
-		return ret;
-	}
-
-	return sam_acct->methods->update_login_attempts(sam_acct->methods, sam_acct, success);
-}
-
-static NTSTATUS context_getgrsid(struct pdb_context *context,
-				 GROUP_MAP *map, DOM_SID sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		ret = curmethods->getgrsid(curmethods, map, sid);
-		if (NT_STATUS_IS_OK(ret)) {
-			map->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_getgrgid(struct pdb_context *context,
-				 GROUP_MAP *map, gid_t gid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		ret = curmethods->getgrgid(curmethods, map, gid);
-		if (NT_STATUS_IS_OK(ret)) {
-			map->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_getgrnam(struct pdb_context *context,
-				 GROUP_MAP *map, const char *name)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	struct pdb_methods *curmethods;
-	if ((!context)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-	curmethods = context->pdb_methods;
-	while (curmethods){
-		ret = curmethods->getgrnam(curmethods, map, name);
-		if (NT_STATUS_IS_OK(ret)) {
-			map->methods = curmethods;
-			return ret;
-		}
-		curmethods = curmethods->next;
-	}
-
-	return ret;
-}
-
-static NTSTATUS context_add_group_mapping_entry(struct pdb_context *context,
-						GROUP_MAP *map)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->add_group_mapping_entry(context->pdb_methods,
-							     map);
-}
-
-static NTSTATUS context_update_group_mapping_entry(struct pdb_context *context,
-						   GROUP_MAP *map)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->
-		pdb_methods->update_group_mapping_entry(context->pdb_methods, map);
-}
-
-static NTSTATUS context_delete_group_mapping_entry(struct pdb_context *context,
-						   DOM_SID sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->
-		pdb_methods->delete_group_mapping_entry(context->pdb_methods, sid);
-}
-
-static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
-					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
-					   BOOL unix_only)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->enum_group_mapping(context->pdb_methods,
-							sid_name_use, pp_rmap,
-							p_num_entries, unix_only);
-}
-
-static NTSTATUS context_enum_group_members(struct pdb_context *context,
-					   TALLOC_CTX *mem_ctx,
-					   const DOM_SID *group,
-					   uint32 **pp_member_rids,
-					   size_t *p_num_members)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->enum_group_members(context->pdb_methods,
-							mem_ctx, group,
-							pp_member_rids,
-							p_num_members);
-}
-
-static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
-					       TALLOC_CTX *mem_ctx,
-					       SAM_ACCOUNT *user,
-					       DOM_SID **pp_sids,
-					       gid_t **pp_gids,
-					       size_t *p_num_groups)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->
-		enum_group_memberships(context->pdb_methods, mem_ctx, user,
-				       pp_sids, pp_gids, p_num_groups);
-}
-
-static NTSTATUS context_find_alias(struct pdb_context *context,
-				   const char *name, DOM_SID *sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->find_alias(context->pdb_methods,
-						name, sid);
-}
-
-static NTSTATUS context_create_alias(struct pdb_context *context,
-				     const char *name, uint32 *rid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->create_alias(context->pdb_methods,
-						  name, rid);
-}
-
-static NTSTATUS context_delete_alias(struct pdb_context *context,
-				     const DOM_SID *sid)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->delete_alias(context->pdb_methods, sid);
-}
-
-static NTSTATUS context_get_aliasinfo(struct pdb_context *context,
-				      const DOM_SID *sid,
-				      struct acct_info *info)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->get_aliasinfo(context->pdb_methods,
-						   sid, info);
-}
-
-static NTSTATUS context_set_aliasinfo(struct pdb_context *context,
-				      const DOM_SID *sid,
-				      struct acct_info *info)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->set_aliasinfo(context->pdb_methods,
-						   sid, info);
-}
-
-static NTSTATUS context_add_aliasmem(struct pdb_context *context,
-				     const DOM_SID *alias,
-				     const DOM_SID *member)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->add_aliasmem(context->pdb_methods,
-						  alias, member);
-}
-	
-static NTSTATUS context_del_aliasmem(struct pdb_context *context,
-				     const DOM_SID *alias,
-				     const DOM_SID *member)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->del_aliasmem(context->pdb_methods,
-						  alias, member);
-}
-	
-static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
-				      const DOM_SID *alias, DOM_SID **pp_members,
-				      size_t *p_num)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->enum_aliasmem(context->pdb_methods,
-						   alias, pp_members, p_num);
-}
-	
-static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
-					       TALLOC_CTX *mem_ctx,
-					       const DOM_SID *domain_sid,
-					       const DOM_SID *members,
-					       size_t num_members,
-					       uint32 **pp_alias_rids,
-					       size_t *p_num_alias_rids)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->
-		enum_alias_memberships(context->pdb_methods, mem_ctx,
-				       domain_sid, members, num_members,
-				       pp_alias_rids, p_num_alias_rids);
-}
-
-static NTSTATUS context_lookup_rids(struct pdb_context *context,
-				    const DOM_SID *domain_sid,
-				    size_t num_rids,
-				    uint32 *rids,
-				    const char **pp_names,
-				    uint32 *pp_attrs)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->lookup_rids(context->pdb_methods,
-						 domain_sid, num_rids,
-						 rids, pp_names, pp_attrs);
-}
-
-static NTSTATUS context_lookup_names(struct pdb_context *context,
-				     const DOM_SID *domain_sid,
-				     size_t num_names,
-				     const char **pp_names,
-				     uint32 *rids,
-				     uint32 *pp_attrs)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->lookup_names(context->pdb_methods,
-						  domain_sid, num_names,
-						  pp_names, rids, pp_attrs);
-}
-
-static NTSTATUS context_get_account_policy(struct pdb_context *context,
-					   int policy_index, uint32 *value)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->get_account_policy(context->pdb_methods,
-							policy_index, value);
-}
-
-static NTSTATUS context_set_account_policy(struct pdb_context *context,
-					   int policy_index, uint32 value)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->set_account_policy(context->pdb_methods,
-							policy_index, value);
-}
-
-static NTSTATUS context_get_seq_num(struct pdb_context *context, time_t *seq_num)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return ret;
-	}
-
-	return context->pdb_methods->get_seq_num(context->pdb_methods, seq_num);
-}
-
-static BOOL context_uid_to_rid(struct pdb_context *context, uid_t uid,
-			       uint32 *rid)
-{
-	if ((context == NULL) || (context->pdb_methods == NULL)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->uid_to_rid(context->pdb_methods, uid,
-						rid);
-}
-	
-static BOOL context_gid_to_sid(struct pdb_context *context, gid_t gid,
-			       DOM_SID *sid)
-{
-	if ((context == NULL) || (context->pdb_methods == NULL)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->gid_to_sid(context->pdb_methods, gid,
-						sid);
-}
-
-static BOOL context_sid_to_id(struct pdb_context *context,
-			      const DOM_SID *sid,
-			      union unid_t *id, enum SID_NAME_USE *type)
-{
-	if ((context == NULL) || (context->pdb_methods == NULL)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->sid_to_id(context->pdb_methods, sid,
-					       id, type);
-}
-	
-static BOOL context_rid_algorithm(struct pdb_context *context)
-{
-	if ((context == NULL) || (context->pdb_methods == NULL)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->rid_algorithm(context->pdb_methods);
-}
-	
-static BOOL context_new_rid(struct pdb_context *context, uint32 *rid)
-{
-	if ((context == NULL) || (context->pdb_methods == NULL)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->new_rid(context->pdb_methods, rid);
-}
-	
-/******************************************************************
-  Free and cleanup a pdb context, any associated data and anything
-  that the attached modules might have associated.
- *******************************************************************/
-
-static void free_pdb_context(struct pdb_context **context)
-{
-	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
-
-	while (pdb_selected){
-		if(pdb_selected->free_private_data)
-			pdb_selected->free_private_data(&(pdb_selected->private_data));
-		pdb_selected = pdb_selected->next;
-	}
-
-	talloc_destroy((*context)->mem_ctx);
-	*context = NULL;
-}
-
-static BOOL context_search_users(struct pdb_context *context,
-				 struct pdb_search *search, uint16 acct_flags)
-{
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->search_users(context->pdb_methods,
-						  search, acct_flags);
-}
-
-static BOOL context_search_groups(struct pdb_context *context,
-				  struct pdb_search *search)
-{
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->search_groups(context->pdb_methods,
-						   search);
-}
-
-static BOOL context_search_aliases(struct pdb_context *context,
-				   struct pdb_search *search,
-				   const DOM_SID *sid)
-{
-	if ((!context) || (!context->pdb_methods)) {
-		DEBUG(0, ("invalid pdb_context specified!\n"));
-		return False;
-	}
-
-	return context->pdb_methods->search_aliases(context->pdb_methods,
-						    search, sid);
-}
-
 /******************************************************************
   Make a pdb_methods from scratch
  *******************************************************************/
 
-static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_context *context, const char *selected)
+NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected)
 {
 	char *module_name = smb_xstrdup(selected);
 	char *module_location = NULL, *p;
@@ -921,191 +173,41 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	}
 
 	DEBUG(5,("Found pdb backend %s\n", module_name));
-	nt_status = entry->init(context, methods, module_location);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5,("pdb backend %s has a valid init\n", selected));
-	} else {
-		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
-	}
 	SAFE_FREE(module_name);
+
+	if ( !NT_STATUS_IS_OK( nt_status = entry->init(methods, module_location) ) ) {
+		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", 
+			selected, nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	DEBUG(5,("pdb backend %s has a valid init\n", selected));
+
 	return nt_status;
 }
 
 /******************************************************************
-  Make a pdb_context from scratch.
- *******************************************************************/
-
-static NTSTATUS make_pdb_context(struct pdb_context **context) 
-{
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("pdb_context internal allocation context");
-
-	if (!mem_ctx) {
-		DEBUG(0, ("make_pdb_context: talloc init failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}		
-
-	*context = TALLOC_P(mem_ctx, struct pdb_context);
-	if (!*context) {
-		DEBUG(0, ("make_pdb_context: talloc failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ZERO_STRUCTP(*context);
-
-	(*context)->mem_ctx = mem_ctx;
-
-	(*context)->pdb_setsampwent = context_setsampwent;
-	(*context)->pdb_endsampwent = context_endsampwent;
-	(*context)->pdb_getsampwent = context_getsampwent;
-	(*context)->pdb_getsampwnam = context_getsampwnam;
-	(*context)->pdb_getsampwsid = context_getsampwsid;
-	(*context)->pdb_add_sam_account = context_add_sam_account;
-	(*context)->pdb_update_sam_account = context_update_sam_account;
-	(*context)->pdb_delete_sam_account = context_delete_sam_account;
-	(*context)->pdb_rename_sam_account = context_rename_sam_account;
-	(*context)->pdb_update_login_attempts = context_update_login_attempts;
-	(*context)->pdb_getgrsid = context_getgrsid;
-	(*context)->pdb_getgrgid = context_getgrgid;
-	(*context)->pdb_getgrnam = context_getgrnam;
-	(*context)->pdb_add_group_mapping_entry = context_add_group_mapping_entry;
-	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
-	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
-	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
-	(*context)->pdb_enum_group_members = context_enum_group_members;
-	(*context)->pdb_enum_group_memberships = context_enum_group_memberships;
-
-	(*context)->pdb_find_alias = context_find_alias;
-	(*context)->pdb_create_alias = context_create_alias;
-	(*context)->pdb_delete_alias = context_delete_alias;
-	(*context)->pdb_get_aliasinfo = context_get_aliasinfo;
-	(*context)->pdb_set_aliasinfo = context_set_aliasinfo;
-	(*context)->pdb_add_aliasmem = context_add_aliasmem;
-	(*context)->pdb_del_aliasmem = context_del_aliasmem;
-	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
-	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
-	(*context)->pdb_lookup_rids = context_lookup_rids;
-	(*context)->pdb_lookup_names = context_lookup_names;
-
-	(*context)->pdb_get_account_policy = context_get_account_policy;
-	(*context)->pdb_set_account_policy = context_set_account_policy;
-
-	(*context)->pdb_get_seq_num = context_get_seq_num;
-
-	(*context)->pdb_search_users = context_search_users;
-	(*context)->pdb_search_groups = context_search_groups;
-	(*context)->pdb_search_aliases = context_search_aliases;
-
-	(*context)->pdb_uid_to_rid = context_uid_to_rid;
-	(*context)->pdb_gid_to_sid = context_gid_to_sid;
-	(*context)->pdb_sid_to_id = context_sid_to_id;
-
-	(*context)->pdb_rid_algorithm = context_rid_algorithm;
-	(*context)->pdb_new_rid = context_new_rid;
-
-	(*context)->free_fn = free_pdb_context;
-
-	return NT_STATUS_OK;
-}
-
-
-/******************************************************************
-  Make a pdb_context, given an array of strings
- *******************************************************************/
-
-NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **selected) 
-{
-	int i = 0;
-	struct pdb_methods *curmethods, *tmpmethods;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	BOOL have_guest = False;
-
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
-		return nt_status;
-	}
-
-	if (!selected) {
-		DEBUG(0, ("ERROR: empty passdb backend list!\n"));
-		return nt_status;
-	}
-
-	while (selected[i]){
-		if (strcmp(selected[i], "guest") == 0) {
-			have_guest = True;
-		}
-		/* Try to initialise pdb */
-		DEBUG(5,("Trying to load: %s\n", selected[i]));
-		if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))) {
-			DEBUG(1, ("Loading %s failed!\n", selected[i]));
-			free_pdb_context(context);
-			return nt_status;
-		}
-		curmethods->parent = *context;
-		DLIST_ADD_END((*context)->pdb_methods, curmethods, tmpmethods);
-		i++;
-	}
-
-	if (have_guest)
-		return NT_STATUS_OK;
-
-	if ( (lp_guestaccount() == NULL) ||
-	     (*lp_guestaccount() == '\0') ) {
-		/* We explicitly don't want guest access. No idea what
-		   else that breaks, but be it that way. */
-		return NT_STATUS_OK;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods,
-							       *context,
-							       "guest"))) {
-		DEBUG(1, ("Loading guest module failed!\n"));
-		free_pdb_context(context);
-		return nt_status;
-	}
-
-	curmethods->parent = *context;
-	DLIST_ADD_END((*context)->pdb_methods, curmethods, tmpmethods);
-	
-	return NT_STATUS_OK;
-}
-
-/******************************************************************
-  Make a pdb_context, given a text string.
- *******************************************************************/
-
-NTSTATUS make_pdb_context_string(struct pdb_context **context, const char *selected) 
-{
-	NTSTATUS ret;
-	char **newsel = str_list_make(selected, NULL);
-	ret = make_pdb_context_list(context, (const char **)newsel);
-	str_list_free(&newsel);
-	return ret;
-}
-
-/******************************************************************
- Return an already initialised pdb_context, to facilitate backward 
- compatibility (see functions below).
+ Return an already initialised pdn_methods structure
 *******************************************************************/
 
-static struct pdb_context *pdb_get_static_context(BOOL reload) 
+static struct pdb_methods *pdb_get_methods( BOOL reload ) 
 {
-	static struct pdb_context *pdb_context = NULL;
+	static struct pdb_methods *pdb = NULL;
 
-	if ((pdb_context) && (reload)) {
-		pdb_context->free_fn(&pdb_context);
-		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
+	if ( pdb && reload ) {
+		pdb->free_private_data( &(pdb->private_data) );
+		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
 			return NULL;
 		}
 	}
 
-	if (!pdb_context) {
-		if (!NT_STATUS_IS_OK(make_pdb_context_list(&pdb_context, lp_passdb_backend()))) {
+	if ( !pdb ) {
+		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
 			return NULL;
 		}
 	}
 
-	return pdb_context;
+	return pdb;
 }
 
 /******************************************************************
@@ -1114,227 +216,266 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 
 BOOL pdb_setsampwent(BOOL update, uint16 acb_mask) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_setsampwent(pdb_context, update, acb_mask));
+	return NT_STATUS_IS_OK(pdb->setsampwent(pdb, update, acb_mask));
 }
 
 void pdb_endsampwent(void) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return;
 	}
 
-	pdb_context->pdb_endsampwent(pdb_context);
+	pdb->endsampwent(pdb);
 }
 
 BOOL pdb_getsampwent(SAM_ACCOUNT *user) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwent(pdb_context, user));
-}
-
-static SAM_ACCOUNT *sam_account_cache = NULL;
-
-BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username) 
-{
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
-
-	if (!pdb_context) {
+	if ( !NT_STATUS_IS_OK(pdb->getsampwent(pdb, user) ) ) {
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_context->pdb_getsampwnam(pdb_context,
-							  sam_acct, username)))
-		return False;
+	pdb_force_pw_initialization( user );
 
-	if (sam_account_cache != NULL) {
-		pdb_free_sam(&sam_account_cache);
-		sam_account_cache = NULL;
-	}
-
-	pdb_copy_sam_account(sam_acct, &sam_account_cache);
 	return True;
 }
 
-BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
+BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	if ((sam_account_cache != NULL) &&
-	    (sid_equal(sid, pdb_get_user_sid(sam_account_cache))))
-		return pdb_copy_sam_account(sam_account_cache, &sam_acct);
+	if (!NT_STATUS_IS_OK(pdb->getsampwnam(pdb, sam_acct, username))) {
+		return False;
+	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid));
+	if (csamuser != NULL) {
+		pdb_free_sam(&csamuser);
+		csamuser = NULL;
+	}
+
+	pdb_force_pw_initialization( sam_acct );
+	pdb_copy_sam_account(sam_acct, &csamuser);
+
+	return True;
+}
+
+/**********************************************************************
+**********************************************************************/
+
+BOOL guest_user_info( SAM_ACCOUNT *user )
+{
+	struct passwd *pwd;
+	NTSTATUS ntstatus;
+	const char *guestname = lp_guestaccount();
+	
+	if ( !(pwd = getpwnam_alloc( NULL, guestname ) ) ) {
+		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n", 
+			guestname));
+		return False;
+	}
+	
+	/* fill in from the users information */
+	
+	ntstatus = pdb_fill_sam_pw( user, pwd );
+	
+	return NT_STATUS_IS_OK(ntstatus);
+
+}
+
+/**********************************************************************
+**********************************************************************/
+
+BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
+{
+	struct pdb_methods *pdb;
+	uint32 rid;
+
+	if ( !(pdb = pdb_get_methods(False)) ) {
+		return False;
+	}
+
+	/* hard code the Guest RID of 501 */
+
+	if ( !sid_peek_check_rid( get_global_sam_sid(), sid, &rid ) )
+		return False;
+
+	if ( rid == DOMAIN_USER_RID_GUEST ) {
+		DEBUG(6,("pdb_getsampwsid: Building guest account\n"));
+		return guest_user_info( sam_acct );
+	}
+	
+	/* check the cache first */
+	
+	if ( csamuser && sid_equal(sid, pdb_get_user_sid(csamuser) ) )
+		return pdb_copy_sam_account(csamuser, &sam_acct);
+
+	return NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
 }
 
 BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 	
-	return NT_STATUS_IS_OK(pdb_context->pdb_add_sam_account(pdb_context, sam_acct));
+	return NT_STATUS_IS_OK(pdb->add_sam_account(pdb, sam_acct));
 }
 
 NTSTATUS pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (sam_account_cache != NULL) {
-		pdb_free_sam(&sam_account_cache);
-		sam_account_cache = NULL;
+	if (csamuser != NULL) {
+		pdb_free_sam(&csamuser);
+		csamuser = NULL;
 	}
 
-	return pdb_context->pdb_update_sam_account(pdb_context, sam_acct);
+	return pdb->update_sam_account(pdb, sam_acct);
 }
 
 BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	if (sam_account_cache != NULL) {
-		pdb_free_sam(&sam_account_cache);
-		sam_account_cache = NULL;
+	if (csamuser != NULL) {
+		pdb_free_sam(&csamuser);
+		csamuser = NULL;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
+	return NT_STATUS_IS_OK(pdb->delete_sam_account(pdb, sam_acct));
 }
 
 NTSTATUS pdb_rename_sam_account(SAM_ACCOUNT *oldname, const char *newname)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	if (sam_account_cache != NULL) {
-		pdb_free_sam(&sam_account_cache);
-		sam_account_cache = NULL;
+	if (csamuser != NULL) {
+		pdb_free_sam(&csamuser);
+		csamuser = NULL;
 	}
 
-	return pdb_context->pdb_rename_sam_account(pdb_context, oldname, newname);
+	return pdb->rename_sam_account(pdb, oldname, newname);
 }
 
 NTSTATUS pdb_update_login_attempts(SAM_ACCOUNT *sam_acct, BOOL success)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return pdb_context->pdb_update_login_attempts(pdb_context, sam_acct, success);
+	return pdb->update_login_attempts(pdb, sam_acct, success);
 }
 
 BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrsid(pdb_context, map, sid));
+	return NT_STATUS_IS_OK(pdb->getgrsid(pdb, map, sid));
 }
 
 BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrgid(pdb_context, map, gid));
+	return NT_STATUS_IS_OK(pdb->getgrgid(pdb, map, gid));
 }
 
 BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_getgrnam(pdb_context, map, name));
+	return NT_STATUS_IS_OK(pdb->getgrnam(pdb, map, name));
 }
 
 NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_add_group_mapping_entry(pdb_context, map);
+	return pdb->add_group_mapping_entry(pdb, map);
 }
 
 NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_update_group_mapping_entry(pdb_context, map);
+	return pdb->update_group_mapping_entry(pdb, map);
 }
 
 BOOL pdb_delete_group_mapping_entry(DOM_SID sid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_delete_group_mapping_entry(pdb_context, sid));
+	return NT_STATUS_IS_OK(pdb->delete_group_mapping_entry(pdb, sid));
 }
 
 BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
 			    size_t *p_num_entries, BOOL unix_only)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_enum_group_mapping(pdb_context, sid_name_use,
-						      pp_rmap, p_num_entries, unix_only));
+	return NT_STATUS_IS_OK(pdb-> enum_group_mapping(pdb, sid_name_use,
+		pp_rmap, p_num_entries, unix_only));
 }
 
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
@@ -1342,13 +483,13 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				uint32 **pp_member_rids,
 				size_t *p_num_members)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_enum_group_members(pdb_context, mem_ctx, sid, 
+	return pdb->enum_group_members(pdb, mem_ctx, sid, 
 						   pp_member_rids, p_num_members);
 }
 
@@ -1356,109 +497,109 @@ NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user,
 				    DOM_SID **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_enum_group_memberships(
-		pdb_context, mem_ctx, user,
+	return pdb->enum_group_memberships(
+		pdb, mem_ctx, user,
 		pp_sids, pp_gids, p_num_groups);
 }
 
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_find_alias(pdb_context,
+	return NT_STATUS_IS_OK(pdb->find_alias(pdb,
 							     name, sid));
 }
 
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return pdb_context->pdb_create_alias(pdb_context, name, rid);
+	return pdb->create_alias(pdb, name, rid);
 }
 
 BOOL pdb_delete_alias(const DOM_SID *sid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_delete_alias(pdb_context,
+	return NT_STATUS_IS_OK(pdb->delete_alias(pdb,
 							     sid));
 							    
 }
 
 BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_get_aliasinfo(pdb_context, sid,
+	return NT_STATUS_IS_OK(pdb->get_aliasinfo(pdb, sid,
 							      info));
 }
 
 BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_set_aliasinfo(pdb_context, sid,
+	return NT_STATUS_IS_OK(pdb->set_aliasinfo(pdb, sid,
 							      info));
 }
 
 NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_add_aliasmem(pdb_context, alias, member);
+	return pdb->add_aliasmem(pdb, alias, member);
 }
 
 NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_del_aliasmem(pdb_context, alias, member);
+	return pdb->del_aliasmem(pdb, alias, member);
 }
 
 NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias,
 			   DOM_SID **pp_members, size_t *p_num_members)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return pdb_context->pdb_enum_aliasmem(pdb_context, alias,
+	return pdb->enum_aliasmem(pdb, alias,
 					      pp_members, p_num_members);
 }
 
@@ -1468,13 +609,13 @@ NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,
 				    uint32 **pp_alias_rids,
 				    size_t *p_num_alias_rids)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return pdb_context->pdb_enum_alias_memberships(pdb_context, mem_ctx,
+	return pdb->enum_alias_memberships(pdb, mem_ctx,
 						       domain_sid,
 						       members, num_members,
 						       pp_alias_rids,
@@ -1487,13 +628,13 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 			 const char **names,
 			 uint32 *attrs)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return pdb_context->pdb_lookup_rids(pdb_context, domain_sid,
+	return pdb->lookup_rids(pdb, domain_sid,
 					    num_rids, rids, names, attrs);
 }
 
@@ -1503,102 +644,99 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  uint32 *rids,
 			  uint32 *attrs)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return pdb_context->pdb_lookup_names(pdb_context, domain_sid,
+	return pdb->lookup_names(pdb, domain_sid,
 					     num_names, names, rids, attrs);
 }
 
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_get_account_policy(pdb_context, policy_index, value));
+	return NT_STATUS_IS_OK(pdb->get_account_policy(pdb, policy_index, value));
 }
 
 BOOL pdb_set_account_policy(int policy_index, uint32 value)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_set_account_policy(pdb_context, policy_index, value));
+	return NT_STATUS_IS_OK(pdb->set_account_policy(pdb, policy_index, value));
 }
 
 BOOL pdb_get_seq_num(time_t *seq_num)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_get_seq_num(pdb_context, seq_num));
+	return NT_STATUS_IS_OK(pdb->get_seq_num(pdb, seq_num));
 }
 
 BOOL pdb_uid_to_rid(uid_t uid, uint32 *rid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return pdb_context->pdb_uid_to_rid(pdb_context, uid, rid);
+	return pdb->uid_to_rid(pdb, uid, rid);
 }
 
 BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return pdb_context->pdb_gid_to_sid(pdb_context, gid, sid);
+	return pdb->gid_to_sid(pdb, gid, sid);
 }
 
 BOOL pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 		   enum SID_NAME_USE *type)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return pdb_context->pdb_sid_to_id(pdb_context, sid, id, type);
+	return pdb->sid_to_id(pdb, sid, id, type);
 }
 
 BOOL pdb_rid_algorithm(void)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
-	return pdb_context->pdb_rid_algorithm(pdb_context);
+	return pdb->rid_algorithm(pdb);
 }
 
 BOOL pdb_new_rid(uint32 *rid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 
-	if (!pdb_context) {
+	if ( !pdb ) {
 		return False;
 	}
 
@@ -1617,7 +755,7 @@ BOOL pdb_new_rid(uint32 *rid)
 		return False;
 	}
 
-	return pdb_context->pdb_new_rid(pdb_context, rid);
+	return pdb->new_rid(pdb, rid);
 }
 
 /***************************************************************
@@ -1628,7 +766,7 @@ BOOL pdb_new_rid(uint32 *rid)
 
 BOOL initialize_password_db(BOOL reload)
 {	
-	return (pdb_get_static_context(reload) != NULL);
+	return (pdb_get_methods(reload) != NULL);
 }
 
 
@@ -2360,15 +1498,15 @@ static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
 
 struct pdb_search *pdb_search_users(uint16 acct_flags)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 	struct pdb_search *result;
 
-	if (pdb_context == NULL) return NULL;
+	if (pdb == NULL) return NULL;
 
 	result = pdb_search_init(PDB_USER_SEARCH);
 	if (result == NULL) return NULL;
 
-	if (!pdb_context->pdb_search_users(pdb_context, result, acct_flags)) {
+	if (!pdb->search_users(pdb, result, acct_flags)) {
 		talloc_destroy(result->mem_ctx);
 		return NULL;
 	}
@@ -2377,15 +1515,15 @@ struct pdb_search *pdb_search_users(uint16 acct_flags)
 
 struct pdb_search *pdb_search_groups(void)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 	struct pdb_search *result;
 
-	if (pdb_context == NULL) return NULL;
+	if (pdb == NULL) return NULL;
 
 	result = pdb_search_init(PDB_GROUP_SEARCH);
 	if (result == NULL) return NULL;
 
-	if (!pdb_context->pdb_search_groups(pdb_context, result)) {
+	if (!pdb->search_groups(pdb, result)) {
 		talloc_destroy(result->mem_ctx);
 		return NULL;
 	}
@@ -2394,15 +1532,15 @@ struct pdb_search *pdb_search_groups(void)
 
 struct pdb_search *pdb_search_aliases(const DOM_SID *sid)
 {
-	struct pdb_context *pdb_context = pdb_get_static_context(False);
+	struct pdb_methods *pdb = pdb_get_methods(False);
 	struct pdb_search *result;
 
-	if (pdb_context == NULL) return NULL;
+	if (pdb == NULL) return NULL;
 
 	result = pdb_search_init(PDB_ALIAS_SEARCH);
 	if (result == NULL) return NULL;
 
-	if (!pdb_context->pdb_search_aliases(pdb_context, result, sid)) {
+	if (!pdb->search_aliases(pdb, result, sid)) {
 		talloc_destroy(result->mem_ctx);
 		return NULL;
 	}
@@ -2443,15 +1581,20 @@ void pdb_search_destroy(struct pdb_search *search)
 	talloc_destroy(search->mem_ctx);
 }
 
-NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
-{
-	*methods = TALLOC_P(mem_ctx, struct pdb_methods);
+/*******************************************************************
+ Create a pdb_methods structure and initialize it with the default
+ operations.  In this way a passdb module can simply implement
+ the functionality it cares about.  However, normally this is done 
+ in groups of related functions.
+*******************************************************************/
 
-	if (!*methods) {
+NTSTATUS make_pdb_method( struct pdb_methods **methods ) 
+{
+	/* allocate memory for the structure as its own talloc CTX */
+
+	if ( !(*methods = TALLOC_ZERO_P(NULL, struct pdb_methods) ) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCTP(*methods);
 
 	(*methods)->setsampwent = pdb_default_setsampwent;
 	(*methods)->endsampwent = pdb_default_endsampwent;
