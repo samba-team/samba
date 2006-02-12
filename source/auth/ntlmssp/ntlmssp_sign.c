@@ -365,7 +365,7 @@ NTSTATUS ntlmssp_sign_init(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
 			
 		} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			weak_session_key.length = 6;
+			weak_session_key.length = 7;
 		} else { /* forty bits */
 			weak_session_key.length = 5;
 		}
