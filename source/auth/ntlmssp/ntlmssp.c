@@ -302,16 +302,18 @@ DATA_BLOB ntlmssp_weakend_key(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 	   to do this for the LM_KEY.  
 	*/
 	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
-		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
-			
-		} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
+		/* LM key doesn't support 128 bit crypto, so this is
+		 * the best we can do.  If you negotiate 128 bit, but
+		 * not 56, you end up with 40 bit... */
+		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
 			weakened_key.data[7] = 0xa0;
+			weakened_key.length = 8;
 		} else { /* forty bits */
 			weakened_key.data[5] = 0xe5;
 			weakened_key.data[6] = 0x38;
 			weakened_key.data[7] = 0xb0;
+			weakened_key.length = 8;
 		}
-		weakened_key.length = 8;
 	}
 	return weakened_key;
 }
