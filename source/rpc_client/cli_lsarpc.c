@@ -343,7 +343,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		DOM_RID2 *t_rids = r.dom_rid;
+		DOM_RID *t_rids = r.dom_rid;
 		uint32 dom_idx = t_rids[i].rid_idx;
 		uint32 dom_rid = t_rids[i].rid;
 		DOM_SID *sid = &(*sids)[i];
