@@ -259,9 +259,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	talloc_steal(out_mem_ctx, out->data);
 
-	/* The client might be using 56 or 40 bit weakened keys */
-	ntlmssp_weaken_keys(gensec_ntlmssp_state);
-
 	gensec_ntlmssp_state->chal = challenge_blob;
 	gensec_ntlmssp_state->lm_resp = lm_response;
 	talloc_steal(gensec_ntlmssp_state->lm_resp.data, lm_response.data);
