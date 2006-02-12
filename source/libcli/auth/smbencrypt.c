@@ -270,13 +270,13 @@ void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 	/* Calculate the LM session key (effective length 40 bits,
 	   but changes with each session) */
 	uint8_t p24[24];
-	uint8_t p21[21];
+	uint8_t partial_lm_hash[14];
  
-	memset(p21,'\0',21);
-	memcpy(p21, lm_hash, 8);    
-	memset(p21 + 8, 0xbd, 8);
+	memcpy(partial_lm_hash, lm_hash, 8);    
+	memset(partial_lm_hash + 8, 0xbd, 6);
 
-	E_P24(p21, lm_resp, p24);
+	des_crypt56(p24,   lm_resp, partial_lm_hash,     1);
+	des_crypt56(p24+8, lm_resp, partial_lm_hash + 7, 1);
 
 	memcpy(sess_key, p24, 16);
 
