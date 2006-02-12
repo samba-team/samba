@@ -64,6 +64,8 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SIGN\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_SEAL) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_SEAL\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_DATAGRAM_STYLE) 
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_DATAGRAM_STYLE\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_LM_KEY\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NETWARE) 
@@ -78,6 +80,10 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_ALWAYS_SIGN\n"));
+	if (neg_flags & NTLMSSP_CHAL_ACCEPT_RESPONSE) 
+		DEBUGADD(4, ("  NTLMSSP_CHAL_ACCEPT_RESPONSE\n"));
+	if (neg_flags & NTLMSSP_CHAL_NON_NT_SESSION_KEY) 
+		DEBUGADD(4, ("  NTLMSSP_CHAL_NON_NT_SESSION_KEY\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_NTLM2\n"));
 	if (neg_flags & NTLMSSP_CHAL_TARGET_INFO) 
@@ -86,6 +92,8 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_128\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_KEY_EXCH\n"));
+	if (neg_flags & NTLMSSP_NEGOTIATE_56) 
+		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_56\n"));
 }
 
 static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security, 
@@ -277,11 +285,16 @@ void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
    by the client lanman auth/lanman auth parameters, it isn't too bad.
 */
 
-void ntlmssp_weaken_keys(struct gensec_ntlmssp_state *gensec_ntlmssp_state) 
+DATA_BLOB ntlmssp_weakend_key(struct gensec_ntlmssp_state *gensec_ntlmssp_state, 
+			      TALLOC_CTX *mem_ctx) 
 {
+	DATA_BLOB weakened_key = data_blob_talloc(mem_ctx, 
+						  gensec_ntlmssp_state->session_key.data, 
+						  gensec_ntlmssp_state->session_key.length);
 	/* Nothing to weaken.  We certainly don't want to 'extend' the length... */
-	if (gensec_ntlmssp_state->session_key.length < 8) {
-		return;
+	if (weakened_key.length < 16) {
+		/* perhaps there was no key? */
+		return weakened_key;
 	}
 
 	/* Key weakening not performed on the master key for NTLM2
@@ -292,14 +305,15 @@ void ntlmssp_weaken_keys(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
 			
 		} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			gensec_ntlmssp_state->session_key.data[7] = 0xa0;
+			weakened_key.data[7] = 0xa0;
 		} else { /* forty bits */
-			gensec_ntlmssp_state->session_key.data[5] = 0xe5;
-			gensec_ntlmssp_state->session_key.data[6] = 0x38;
-			gensec_ntlmssp_state->session_key.data[7] = 0xb0;
+			weakened_key.data[5] = 0xe5;
+			weakened_key.data[6] = 0x38;
+			weakened_key.data[7] = 0xb0;
 		}
-		gensec_ntlmssp_state->session_key.length = 8;
+		weakened_key.length = 8;
 	}
+	return weakened_key;
 }
 
 static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,

@@ -554,9 +554,6 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	/* keep the session key around on the new context */
 	talloc_steal(gensec_ntlmssp_state, session_key.data);
 
- 	/* The server might need us to use a partial-strength session key */
- 	ntlmssp_weaken_keys(gensec_ntlmssp_state);
-
 	if ((gensec_security->want_features & GENSEC_FEATURE_SIGN)
 	    || (gensec_security->want_features & GENSEC_FEATURE_SEAL)) {
 		nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
