@@ -328,17 +328,22 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 {
 	unsigned char p24[24];
 	ZERO_STRUCT(p24);
+	TALLOC_CTX *mem_ctx = talloc_init("weak_keys");
+
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(3, ("NTLMSSP Sign/Seal - Initialising with flags:\n"));
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
-	if (!ntlmssp_state->session_key.length) {
+	if (ntlmssp_state->session_key.length < 8) {
+		talloc_free(mem_ctx);
 		DEBUG(3, ("NO session key, cannot intialise signing\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)
-	{
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		DATA_BLOB weak_session_key = ntlmssp_state->session_key;
 		const char *send_sign_const;
 		const char *send_seal_const;
@@ -359,11 +364,8 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 			recv_seal_const = CLI_SEAL;
 			break;
 		default:
-			send_sign_const = "unknown role";
-			send_seal_const = "unknown role";
-			recv_sign_const = "unknown role";
-			recv_seal_const = "unknown role";
-			break;
+			talloc_free(mem_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		/**
@@ -374,7 +376,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
 			;
 		} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			weak_session_key.length = 6;
+			weak_session_key.length = 7;
 		} else { /* forty bits */
 			weak_session_key.length = 5;
 		}
@@ -383,12 +385,13 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 				weak_session_key.data,
 				weak_session_key.length);
 
-		/* SEND */
+		/* SEND: sign key */
 		calc_ntlmv2_key(ntlmssp_state->send_sign_key,
 				ntlmssp_state->session_key, send_sign_const);
 		dump_data_pw("NTLMSSP send sign key:\n",
 				ntlmssp_state->send_sign_key, 16);
 
+		/* SEND: seal ARCFOUR pad */
 		calc_ntlmv2_key(ntlmssp_state->send_seal_key,
 				weak_session_key, send_seal_const);
 		dump_data_pw("NTLMSSP send seal key:\n",
@@ -401,12 +404,13 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 			     ntlmssp_state->send_seal_arc4_state, 
 			     sizeof(ntlmssp_state->send_seal_arc4_state));
 
-		/* RECV */
+		/* RECV: sign key */
 		calc_ntlmv2_key(ntlmssp_state->recv_sign_key,
 				ntlmssp_state->session_key, recv_sign_const);
 		dump_data_pw("NTLMSSP recv send sign key:\n",
 				ntlmssp_state->recv_sign_key, 16);
 
+		/* RECV: seal ARCFOUR pad */
 		calc_ntlmv2_key(ntlmssp_state->recv_seal_key,
 				weak_session_key, recv_seal_const);
 		
@@ -446,10 +450,12 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 				weak_session_key.length);
 #endif
 
+		DATA_BLOB weak_session_key = ntlmssp_weaken_keys(ntlmssp_state, mem_ctx);
+
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NTLM1\n"));
 
 		smb_arc4_init(ntlmssp_state->ntlmv1_arc4_state,
-                             ntlmssp_state->session_key.data, ntlmssp_state->session_key.length);
+                             weak_session_key.data, weak_session_key.length);
 
                 dump_data_pw("NTLMv1 arc4 state:\n", ntlmssp_state->ntlmv1_arc4_state,
 				sizeof(ntlmssp_state->ntlmv1_arc4_state));
@@ -457,5 +463,6 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		ntlmssp_state->ntlmv1_seq_num = 0;
 	}
 
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
