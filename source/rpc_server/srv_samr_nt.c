@@ -2459,17 +2459,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		return nt_status;
 	}
 
-	/*********************************************************************
-	 * HEADS UP!  If we have to create a new user account, we have to get
-	 * a new RID from somewhere.  This used to be done by the passdb
-	 * backend. It has been moved into idmap now.  Since idmap is now
-	 * wrapped up behind winbind, this means you have to run winbindd if
-	 * you want new accounts to get a new RID when "enable rid algorithm =
-	 * no".  Tough.  We now have a uniform way of allocating RIDs
-	 * regardless of what ever passdb backend people may use.  --jerry
-	 * (2003-07-10)
-	 *********************************************************************/
-
 	pw = Get_Pwnam(account);
 
 	/* determine which user right we need to check based on the acb_info */
