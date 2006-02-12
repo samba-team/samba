@@ -6,6 +6,7 @@
    Copyright (C) Gerald (Jerry) Carter		2000-2001
    Copyright (C) Andrew Bartlett		2001-2002
    Copyright (C) Simo Sorce			2003
+   Copyright (C) Volker Lendecke 		2006
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -847,98 +848,67 @@ BOOL algorithmic_pdb_rid_is_user(uint32 rid)
 BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 			    enum SID_NAME_USE *type)
 {
-	SAM_ACCOUNT *sam_account = NULL;
-	struct group *grp;
 	GROUP_MAP map;
-
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
-		return False;
-	}
-	
-	/* BEGIN ROOT BLOCK */
-	
-	become_root();
+	BOOL ret;
 
 	/* LOOKUP_NAME_GROUP is a hack to allow valid users = @foo to work
 	 * correctly in the case where foo also exists as a user. If the flag
 	 * is set, don't look for users at all. */
 
-	if (((flags & LOOKUP_NAME_GROUP) == 0) &&
-	    pdb_getsampwnam(sam_account, user)) {
-		const DOM_SID *user_sid;
+	if ((flags & LOOKUP_NAME_GROUP) == 0) {
+		SAM_ACCOUNT *sam_account = NULL;
+		DOM_SID user_sid;
 
-		unbecome_root();
-
-		user_sid = pdb_get_user_sid(sam_account);
-
-		if (!sid_check_is_in_our_domain(user_sid)) {
-			DEBUG(0, ("User %s with invalid SID %s in passdb\n",
-				  user, sid_string_static(user_sid)));
+		if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
 			return False;
 		}
+	
+		become_root();
+		ret =  pdb_getsampwnam(sam_account, user);
+		unbecome_root();
 
-		sid_peek_rid(user_sid, rid);
-		*type = SID_NAME_USER;
+		if (ret) {
+			sid_copy(&user_sid, pdb_get_user_sid(sam_account));
+		}
+		
 		pdb_free_sam(&sam_account);
-		return True;
-	}
 
-	pdb_free_sam(&sam_account);
+		if (ret) {
+			if (!sid_check_is_in_our_domain(&user_sid)) {
+				DEBUG(0, ("User %s with invalid SID %s in passdb\n",
+					  user, sid_string_static(&user_sid)));
+				return False;
+			}
+
+			sid_peek_rid(&user_sid, rid);
+			*type = SID_NAME_USER;
+			return True;
+		}
+	}
 
 	/*
-	 * Maybe it was a group ?
+	 * Maybe it is a group ?
 	 */
 
-	/* check if it's a mapped group */
-	if (pdb_getgrnam(&map, user)) {
-
-		unbecome_root();
-
-		/* BUILTIN groups are looked up elsewhere */
-		if (!sid_check_is_in_our_domain(&map.sid)) {
-			DEBUG(10, ("Found group %s (%s) not in our domain -- "
-				   "ignoring.", user,
-				   sid_string_static(&map.sid)));
-			return False;
-		}
-		
-		/* yes it's a mapped group */
-		sid_peek_rid(&map.sid, rid);
-		*type = map.sid_name_use;
-		return True;
-	}
-
-	return False;
-
-	/* it's not a mapped group */
-	grp = getgrnam(user);
-	if(!grp) {
-		unbecome_root();		/* ---> exit form block */	
-		return False;
-	}
-		
-	/* 
-	 *check if it's mapped, if it is reply it doesn't exist
-	 *
-	 * that's to prevent this case:
-	 *
-	 * unix group ug is mapped to nt group ng
-	 * someone does a lookup on ug
-	 * we must not reply as it doesn't "exist" anymore
-	 * for NT. For NT only ng exists.
-	 * JFM, 30/11/2001
-	 */
-		
-	if (pdb_getgrgid(&map, grp->gr_gid)) {
-		unbecome_root();		/* ---> exit form block */
-		return False;
-	}
+	become_root();
+	ret = pdb_getgrnam(&map, user);
 	unbecome_root();
-	/* END ROOT BLOCK */
 
-	*rid = pdb_gid_to_group_rid(grp->gr_gid);
-	*type = SID_NAME_ALIAS;
+ 	if (!ret) {
+		return False;
+	}
 
+	/* BUILTIN groups are looked up elsewhere */
+	if (!sid_check_is_in_our_domain(&map.sid)) {
+		DEBUG(10, ("Found group %s (%s) not in our domain -- "
+			   "ignoring.", user,
+			   sid_string_static(&map.sid)));
+		return False;
+	}
+
+	/* yes it's a mapped group */
+	sid_peek_rid(&map.sid, rid);
+	*type = map.sid_name_use;
 	return True;
 }
 
