@@ -144,9 +144,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		auth_gen_string = "CdBBAAABd";
 	}
 
-	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
-	debug_ntlmssp_flags(gensec_ntlmssp_state->neg_flags);
-
 	if (!msrpc_parse(mem_ctx,
 			 &in, chal_parse_string,
 			 "NTLMSSP",
@@ -215,7 +212,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, zeros,
 						  new_session_key.data);
 		}
-		new_session_key.length = 16;
 		session_key = new_session_key;
 		dump_data_pw("LM session key\n", session_key.data, session_key.length);
 	}
@@ -238,6 +234,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* Mark the new session key as the 'real' session key */
 		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
 	}
+
+	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
+	debug_ntlmssp_flags(gensec_ntlmssp_state->neg_flags);
 
 	/* this generates the actual auth packet */
 	if (!msrpc_gen(mem_ctx, 
@@ -304,7 +303,8 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(-1, "ntlmssp_client", "send_nt_reponse", True);
 
 	gensec_ntlmssp_state->allow_lm_key = (lp_client_lanman_auth() 
-					  && lp_parm_bool(-1, "ntlmssp_client", "allow_lm_key", False));
+					      && (lp_parm_bool(-1, "ntlmssp_client", "allow_lm_key", False)
+						  || lp_parm_bool(-1, "ntlmssp_client", "lm_key", False)));
 
 	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
@@ -316,6 +316,14 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	if (lp_parm_bool(-1, "ntlmssp_client", "128bit", True)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "56bit", False)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "lm_key", False)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (lp_parm_bool(-1, "ntlmssp_client", "keyexchange", True)) {
