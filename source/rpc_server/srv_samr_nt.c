@@ -2410,18 +2410,13 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 			   SAMR_R_CREATE_USER *r_u)
 {
-	SAM_ACCOUNT *sam_pass=NULL;
-	fstring account;
+	char *account;
 	DOM_SID sid;
-	pstring add_script;
 	POLICY_HND dom_pol = q_u->domain_pol;
-	UNISTR2 user_account = q_u->uni_name;
 	uint16 acb_info = q_u->acb_info;
 	POLICY_HND *user_pol = &r_u->user_pol;
 	struct samr_info *info = NULL;
-	BOOL ret;
 	NTSTATUS nt_status;
-	struct passwd *pw;
 	uint32 acc_granted;
 	SEC_DESC *psd;
 	size_t    sd_size;
@@ -2450,22 +2445,20 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	rpcstr_pull(account, user_account.buffer, sizeof(account),
-		    user_account.uni_str_len*2, 0);
-	strlower_m(account);
+	account = rpcstr_pull_unistr2_talloc(p->mem_ctx, &q_u->uni_name);
+	if (account == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	nt_status = can_create(p->mem_ctx, account);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	pw = Get_Pwnam(account);
-
 	/* determine which user right we need to check based on the acb_info */
 	
 	if ( acb_info & ACB_WSTRUST )
 	{
-		pstrcpy(add_script, lp_addmachine_script());
 		se_priv_copy( &se_rights, &se_machine_account );
 		can_add_account = user_has_privileges(
 			p->pipe_user.nt_user_token, &se_rights );
@@ -2475,7 +2468,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	else if ( acb_info & ACB_NORMAL &&
 		  (account[strlen(account)-1] != '$') )
 	{
-		pstrcpy(add_script, lp_adduser_script());
 		se_priv_copy( &se_rights, &se_add_users );
 		can_add_account = user_has_privileges(
 			p->pipe_user.nt_user_token, &se_rights );
@@ -2483,7 +2475,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	else 	/* implicit assumption of a BDC or domain trust account here
 		 * (we already check the flags earlier) */
 	{
-		pstrcpy(add_script, lp_addmachine_script());
 		if ( lp_enable_privileges() ) {
 			/* only Domain Admins can add a BDC or domain trust */
 			se_priv_copy( &se_rights, &se_priv_none );
@@ -2501,40 +2492,9 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	if ( can_add_account )
 		become_root();
 
-	if ( !pw ) {
-		if (*add_script) {
-			int add_ret;
+	nt_status = pdb_create_user(p->mem_ctx, account, acb_info,
+				    &r_u->user_rid);
 
-			all_string_sub(add_script, "%u", account,
-				       sizeof(add_script));
-			add_ret = smbrun(add_script,NULL);
-			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running "
-					       "the command `%s' gave %d\n",
-					       add_script, add_ret));
-		}
-	}
-
-	/* implicit call to getpwnam() next.  we have a valid SID coming out
-	 * of this call */
-
-	flush_pwnam_cache();
-	nt_status = pdb_init_sam_new(&sam_pass, account);
-
-	/* this code is order such that we have no unnecessary retuns 
-	   out of the admin block of code */	
-	   
-	if ( NT_STATUS_IS_OK(nt_status) ) {
-	 	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
-	
-		if ( !(ret = pdb_add_sam_account(sam_pass)) ) {
-	 		pdb_free_sam(&sam_pass);
- 			DEBUG(0, ("could not add user/computer %s to passdb. "
-				  "Check permissions?\n", 
-				account));
-			nt_status = NT_STATUS_ACCESS_DENIED;
-		}
-	}
-		
 	if ( can_add_account )
 		unbecome_root();
 
@@ -2546,8 +2506,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		return nt_status;
 			
 	/* Get the user's SID */
-	
-	sid_copy(&sid, pdb_get_user_sid(sam_pass));
+
+	sid_compose(&sid, get_global_sam_sid(), r_u->user_rid);
 	
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
 			    &sid, SAMR_USR_RIGHTS_WRITE_PW);
@@ -2563,7 +2523,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 
 	/* associate the user's SID with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL) {
-		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2573,18 +2532,13 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info)) {
-		pdb_free_sam(&sam_pass);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/* After a "set" ensure we have no cached display info. */
 	force_flush_samr_cache(info->disp_info);
 
-	r_u->user_rid=pdb_get_user_rid(sam_pass);
-
 	r_u->access_granted = acc_granted;
-
-	pdb_free_sam(&sam_pass);
 
 	return NT_STATUS_OK;
 }
@@ -4049,26 +4003,6 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 
 }
 
-/****************************************************************************
- Delete a UNIX user on demand.
-****************************************************************************/
-
-static int smb_delete_user(const char *unix_user)
-{
-	pstring del_script;
-	int ret;
-
-	pstrcpy(del_script, lp_deluser_script());
-	if (! *del_script)
-		return -1;
-	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
-	ret = smbrun(del_script,NULL);
-	flush_pwnam_cache();
-	DEBUG(ret ? 0 : 3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
-
-	return ret;
-}
-
 /*********************************************************************
  _samr_delete_dom_user
 *********************************************************************/
@@ -4079,7 +4013,6 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	SAM_ACCOUNT *sam_pass=NULL;
 	uint32 acc_granted;
 	BOOL can_add_accounts;
-	BOOL ret;
 	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
@@ -4111,29 +4044,19 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	if ( can_add_accounts )
 		become_root();
 
-	/* First delete the samba side....
-	   code is order to prevent unnecessary returns out of the admin 
-	   block of code */
-	   
-	if ( (ret = pdb_delete_sam_account(sam_pass)) == True ) {
-		/*
-		 * Now delete the unix side ....
-		 * note: we don't check if the delete really happened
-		 * as the script is not necessary present
-		 * and maybe the sysadmin doesn't want to delete the unix side
-		 */
-		smb_delete_user( pdb_get_username(sam_pass) );
-	}
-	
+	r_u->status = pdb_delete_user(p->mem_ctx, sam_pass);
+
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 		
-	if ( !ret ) {
-		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
+	if ( !NT_STATUS_IS_OK(r_u->status) ) {
+		DEBUG(5,("_samr_delete_dom_user: Failed to delete entry for "
+			 "user %s: %s.\n", pdb_get_username(sam_pass),
+			 nt_errstr(r_u->status)));
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_CANNOT_DELETE;
+		return r_u->status;
 	}
 
 
@@ -4154,16 +4077,10 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, SAMR_R_DELETE_DOM_GROUP *r_u)
 {
 	DOM_SID group_sid;
-	DOM_SID dom_sid;
 	uint32 group_rid;
-	fstring group_sid_str;
-	gid_t gid;
-	struct group *grp;
-	GROUP_MAP map;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	BOOL ret;
 	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
@@ -4175,27 +4092,13 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_group"))) {
 		return r_u->status;
 	}
-		
-	sid_copy(&dom_sid, &group_sid);
-	sid_to_string(group_sid_str, &dom_sid);
-	sid_split_rid(&dom_sid, &group_rid);
 
-	DEBUG(10, ("sid is %s\n", group_sid_str));
+	DEBUG(10, ("sid is %s\n", sid_string_static(&group_sid)));
 
-	/* we check if it's our SID before deleting */
-	if (!sid_equal(&dom_sid, get_global_sam_sid()))
+	if (!sid_peek_check_rid(get_global_sam_sid(), &group_sid,
+				&group_rid)) {
 		return NT_STATUS_NO_SUCH_GROUP;
-
-	DEBUG(10, ("lookup on Domain SID\n"));
-
-	if(!get_domain_group_from_sid(group_sid, &map))
-		return NT_STATUS_NO_SUCH_GROUP;
-
-	gid=map.gid;
-
-	/* check if group really exists */
-	if ( (grp=getgrgid(gid)) == NULL) 
-		return NT_STATUS_NO_SUCH_GROUP;
+	}
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
@@ -4205,26 +4108,21 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( can_add_accounts )
 		become_root();
 
-	/* delete mapping first */
-	
-	if ( (ret = pdb_delete_group_mapping_entry(group_sid)) == True ) {
-		smb_delete_group( grp->gr_name );
-	}
+	r_u->status = pdb_delete_dom_group(p->mem_ctx, group_rid);
 
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if ( !ret ) {
-		DEBUG(5,("_samr_delete_dom_group: Failed to delete mapping entry for group %s.\n", 
-			group_sid_str));
-		return NT_STATUS_ACCESS_DENIED;
+	if ( !NT_STATUS_IS_OK(r_u->status) ) {
+		DEBUG(5,("_samr_delete_dom_group: Failed to delete mapping "
+			 "entry for group %s: %s\n",
+			 sid_string_static(&group_sid),
+			 nt_errstr(r_u->status)));
+		return r_u->status;
 	}
 	
-	/* don't check that the unix group has been deleted.  Work like 
-	   _samr_delet_dom_user() */
-
 	if (!close_policy_hnd(p, &q_u->group_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
@@ -4298,15 +4196,11 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 {
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
-	fstring name;
-	fstring sid_string;
-	struct group *grp;
+	const char *name;
 	struct samr_info *info;
 	uint32 acc_granted;
-	gid_t gid;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
-	NTSTATUS result;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
@@ -4320,7 +4214,10 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name)-1);
+	name = rpcstr_pull_unistr2_talloc(p->mem_ctx, &q_u->uni_acct_desc);
+	if (name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	r_u->status = can_create(p->mem_ctx, name);
 	if (!NT_STATUS_IS_OK(r_u->status)) {
@@ -4337,35 +4234,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	
 	/* check that we successfully create the UNIX group */
 	
-	result = NT_STATUS_ACCESS_DENIED;
-	if ( (smb_create_group(name, &gid) == 0) && ((grp=getgrgid(gid)) != NULL) ) {
-	
-		/* so far, so good */
-		
-		result = NT_STATUS_OK;
-
-		if (pdb_rid_algorithm()) {
-			r_u->rid = pdb_gid_to_group_rid( grp->gr_gid );
-		} else {
-			if (!pdb_new_rid(&r_u->rid)) {
-				result = NT_STATUS_ACCESS_DENIED;
-			}
-		}
-
-		if (NT_STATUS_IS_OK(result)) {
-
-			/* add the group to the mapping table */
-		
-			sid_copy( &info_sid, get_global_sam_sid() );
-			sid_append_rid( &info_sid, r_u->rid );
-			sid_to_string( sid_string, &info_sid );
-		
-			/* reset the error code if we fail to add the mapping entry */
-		
-			if ( !add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL) )
-				result = NT_STATUS_ACCESS_DENIED;
-		}
-	}
+	r_u->status = pdb_create_dom_group(p->mem_ctx, name, &r_u->rid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4374,12 +4243,13 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	
 	/* check if we should bail out here */
 	
-	if ( !NT_STATUS_IS_OK(result) )
-		return result;
+	if ( !NT_STATUS_IS_OK(r_u->status) )
+		return r_u->status;
+
+	sid_compose(&info_sid, get_global_sam_sid(), r_u->rid);
 	
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
-
 
 	/* they created it; let the user do what he wants with it */
 

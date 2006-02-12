@@ -1046,7 +1046,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	}	
 
 	if (local_flags & LOCAL_ADD_USER) {
-		if (pdb_add_sam_account(sam_pass)) {
+		if (NT_STATUS_IS_OK(pdb_add_sam_account(sam_pass))) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return NT_STATUS_OK;
@@ -1056,7 +1056,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_DELETE_USER) {
-		if (!pdb_delete_sam_account(sam_pass)) {
+		if (!NT_STATUS_IS_OK(pdb_delete_sam_account(sam_pass))) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;

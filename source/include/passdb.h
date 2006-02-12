@@ -262,6 +262,13 @@ struct pdb_methods
 	NTSTATUS (*getsampwnam)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const char *username);
 	
 	NTSTATUS (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
+
+	NTSTATUS (*create_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
+				const char *name, uint32 acct_flags,
+				uint32 *rid);
+
+	NTSTATUS (*delete_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
+				SAM_ACCOUNT *sam_acct);
 	
 	NTSTATUS (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
@@ -278,6 +285,13 @@ struct pdb_methods
 	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map, gid_t gid);
 
 	NTSTATUS (*getgrnam)(struct pdb_methods *methods, GROUP_MAP *map, const char *name);
+
+	NTSTATUS (*create_dom_group)(struct pdb_methods *methods,
+				     TALLOC_CTX *mem_ctx, const char *name,
+				     uint32 *rid);
+
+	NTSTATUS (*delete_dom_group)(struct pdb_methods *methods,
+				     TALLOC_CTX *mem_ctx, uint32 rid);
 
 	NTSTATUS (*add_group_mapping_entry)(struct pdb_methods *methods,
 					    GROUP_MAP *map);

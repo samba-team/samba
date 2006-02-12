@@ -329,15 +329,141 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 	return NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
 }
 
-BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
+static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
+					TALLOC_CTX *tmp_ctx, const char *name,
+					uint32 acb_info, uint32 *rid)
+{
+	SAM_ACCOUNT *sam_pass = NULL;
+	NTSTATUS status;
+
+	if (Get_Pwnam_alloc(tmp_ctx, name) == NULL) {
+		pstring add_script;
+		int add_ret;
+
+		if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] != '$') {
+			pstrcpy(add_script, lp_adduser_script());
+		} else {
+			pstrcpy(add_script, lp_addmachine_script());
+		}
+
+		if (add_script[0] == '\0') {
+			DEBUG(3, ("Could not find user %s and no add script "
+				  "defined\n", name));
+			return NT_STATUS_NO_SUCH_USER;
+		}
+
+		all_string_sub(add_script, "%u", name, sizeof(add_script));
+		add_ret = smbrun(add_script,NULL);
+		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the "
+					"command `%s' gave %d\n",
+					add_script, add_ret));
+	}
+
+	/* implicit call to getpwnam() next.  we have a valid SID coming out
+	 * of this call */
+
+	flush_pwnam_cache();
+	status = pdb_init_sam_new(&sam_pass, name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("pdb_init_sam_new failed: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	if (!sid_peek_check_rid(get_global_sam_sid(),
+				pdb_get_user_sid(sam_pass), rid)) {
+		DEBUG(0, ("Could not get RID of fresh user\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/* Disable the account on creation, it does not have a reasonable
+	 * password yet. */
+
+	acb_info |= ACB_DISABLED;
+
+	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
+
+	status = pdb_add_sam_account(sam_pass);
+
+	pdb_free_sam(&sam_pass);
+
+	return status;
+}
+
+NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32 flags,
+			 uint32 *rid)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
 	if ( !pdb ) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->create_user(pdb, mem_ctx, name, flags, rid);
+}
+
+/****************************************************************************
+ Delete a UNIX user on demand.
+****************************************************************************/
+
+static int smb_delete_user(const char *unix_user)
+{
+	pstring del_script;
+	int ret;
+
+	pstrcpy(del_script, lp_deluser_script());
+	if (! *del_script)
+		return -1;
+	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
+	ret = smbrun(del_script,NULL);
+	flush_pwnam_cache();
+	DEBUG(ret ? 0 : 3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+
+	return ret;
+}
+
+static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
+					TALLOC_CTX *mem_ctx,
+					SAM_ACCOUNT *sam_acct)
+{
+	NTSTATUS status;
+
+	status = pdb_delete_sam_account(sam_acct);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Now delete the unix side ....
+	 * note: we don't check if the delete really happened as the script is
+	 * not necessary present and maybe the sysadmin doesn't want to delete
+	 * the unix side
+	 */
+	smb_delete_user( pdb_get_username(sam_acct) );
+	
+	return status;
+}
+
+NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *sam_acct)
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->delete_user(pdb, mem_ctx, sam_acct);
+}
+
+NTSTATUS pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	return NT_STATUS_IS_OK(pdb->add_sam_account(pdb, sam_acct));
+	return pdb->add_sam_account(pdb, sam_acct);
 }
 
 NTSTATUS pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
@@ -356,12 +482,12 @@ NTSTATUS pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 	return pdb->update_sam_account(pdb, sam_acct);
 }
 
-BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
+NTSTATUS pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
 	if ( !pdb ) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (csamuser != NULL) {
@@ -369,7 +495,7 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 		csamuser = NULL;
 	}
 
-	return NT_STATUS_IS_OK(pdb->delete_sam_account(pdb, sam_acct));
+	return pdb->delete_sam_account(pdb, sam_acct);
 }
 
 NTSTATUS pdb_rename_sam_account(SAM_ACCOUNT *oldname, const char *newname)
@@ -432,6 +558,115 @@ BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
 	return NT_STATUS_IS_OK(pdb->getgrnam(pdb, map, name));
 }
 
+static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
+					     TALLOC_CTX *mem_ctx,
+					     const char *name,
+					     uint32 *rid)
+{
+	DOM_SID group_sid;
+	struct group *grp;
+
+	grp = getgrnam(name);
+
+	if (grp == NULL) {
+		gid_t gid;
+
+		if (smb_create_group(name, &gid) != 0) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		grp = getgrgid(gid);
+	}
+
+	if (grp == NULL) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (pdb_rid_algorithm()) {
+		*rid = pdb_gid_to_group_rid( grp->gr_gid );
+	} else {
+		if (!pdb_new_rid(rid)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	sid_compose(&group_sid, get_global_sam_sid(), *rid);
+		
+	return add_initial_entry(grp->gr_gid, sid_string_static(&group_sid),
+				 SID_NAME_DOM_GRP, name, NULL);
+}
+
+NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
+			      uint32 *rid)
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->create_dom_group(pdb, mem_ctx, name, rid);
+}
+
+static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
+					     TALLOC_CTX *mem_ctx,
+					     uint32 rid)
+{
+	DOM_SID group_sid;
+	GROUP_MAP map;
+	NTSTATUS status;
+	struct group *grp;
+	const char *grp_name;
+
+	sid_compose(&group_sid, get_global_sam_sid(), rid);
+
+	if (!get_domain_group_from_sid(group_sid, &map)) {
+		DEBUG(10, ("Could not find group for rid %d\n", rid));
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	/* We need the group name for the smb_delete_group later on */
+
+	if (map.gid == (gid_t)-1) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	grp = getgrgid(map.gid);
+	if (grp == NULL) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	/* Copy the name, no idea what pdb_delete_group_mapping_entry does.. */
+
+	grp_name = talloc_strdup(mem_ctx, grp->gr_name);
+	if (grp_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pdb_delete_group_mapping_entry(group_sid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Don't check the result of smb_delete_group */
+	
+	smb_delete_group(grp_name);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32 rid)
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->delete_dom_group(pdb, mem_ctx, rid);
+}
+
 NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
@@ -454,15 +689,15 @@ NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map)
 	return pdb->update_group_mapping_entry(pdb, map);
 }
 
-BOOL pdb_delete_group_mapping_entry(DOM_SID sid)
+NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
 	if ( !pdb ) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return NT_STATUS_IS_OK(pdb->delete_group_mapping_entry(pdb, sid));
+	return pdb->delete_group_mapping_entry(pdb, sid);
 }
 
 BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
@@ -1659,6 +1894,8 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->getsampwent = pdb_default_getsampwent;
 	(*methods)->getsampwnam = pdb_default_getsampwnam;
 	(*methods)->getsampwsid = pdb_default_getsampwsid;
+	(*methods)->create_user = pdb_default_create_user;
+	(*methods)->delete_user = pdb_default_delete_user;
 	(*methods)->add_sam_account = pdb_default_add_sam_account;
 	(*methods)->update_sam_account = pdb_default_update_sam_account;
 	(*methods)->delete_sam_account = pdb_default_delete_sam_account;
@@ -1668,6 +1905,8 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->getgrsid = pdb_default_getgrsid;
 	(*methods)->getgrgid = pdb_default_getgrgid;
 	(*methods)->getgrnam = pdb_default_getgrnam;
+	(*methods)->create_dom_group = pdb_default_create_dom_group;
+	(*methods)->delete_dom_group = pdb_default_delete_dom_group;
 	(*methods)->add_group_mapping_entry = pdb_default_add_group_mapping_entry;
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
