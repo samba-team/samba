@@ -18,22 +18,27 @@ incdir=`dirname $0`
 
 failed=0
 transport="ncacn_np"
+for bindoptions in validate seal; do
+ for keyexchange in "yes" "no"; do
+ for ntlm2 in "yes" "no"; do
+ for lm_key in "yes" "no"; do
   for ntlmoptions in \
-        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes" \
-        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no" \
-        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no" \
-        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no" \
-        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no" \
-        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no" \
-        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no" \
-        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=yes" \
-        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=yes --option=ntlmssp_client:128bit=no" \
-        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no --option=ntlmssp_client:128bit=no" \
-        "--option=usespnego=no --option=clientntlmv2auth=yes" \
-        "--option=usespnego=no" \
+        "-k no --option=usespnego=yes" \
+        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no" \
+        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes" \
+        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
+        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no" \
+        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes" \
+        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no" \
+        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
+        "-k no --option=usespnego=no --option=clientntlmv2auth=yes" \
+        "-k no --option=usespnego=no" \
     ; do
-   name="RPC-SECRETS on $transport with $ntlmoptions"
-   testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-SECRETS "$*" || failed=`expr $failed + 1`
+   name="RPC-SECRETS on $transport:$server[$bindoptions] with NTLM2:$ntlm2 KEYEX:$keyexchange LM_KEY:$lm_key $ntlmoptions"
+   testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" --option=ntlmssp_client:keyexchange=$keyexchange --option=ntlmssp_client:ntlm2=$ntlm2 --option=ntlmssp_client:lm_key=$lm_key $ntlmoptions -U"$username"%"$password" -W $domain RPC-SECRETS "$*" || failed=`expr $failed + 1`
   done
-
+ done
+ done
+ done
+done
 testok $0 $failed
