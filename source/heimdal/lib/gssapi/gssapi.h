@@ -815,8 +815,10 @@ gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
 					  gss_ctx_id_t context_handle,
 					  time_t *authtime);
 OM_uint32
-gss_krb5_get_subkey(const gss_ctx_id_t context_handle,
-		    struct EncryptionKey **key);
+gsskrb5_get_initiator_subkey
+        (OM_uint32 * /*minor_status*/,
+	 const gss_ctx_id_t context_handle,
+	 gss_buffer_t /* subkey */);
 
 #define GSS_C_KRB5_COMPAT_DES3_MIC 1
 

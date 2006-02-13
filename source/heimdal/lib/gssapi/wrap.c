@@ -36,6 +36,61 @@
 RCSID("$Id: wrap.c,v 1.31 2005/01/05 02:52:12 lukeh Exp $");
 
 OM_uint32
+gsskrb5_get_initiator_subkey(OM_uint32 *minor_status,
+			     gss_ctx_id_t context_handle,
+			     gss_buffer_t key)
+{
+    krb5_error_code ret;
+    krb5_keyblock *skey = NULL;
+
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    if (context_handle->more_flags & LOCAL) {
+	ret = krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
+					   context_handle->auth_context, 
+					   &skey);
+	if (ret) {
+		*minor_status = ret;
+		return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
+	}
+	
+    } else {
+	ret = krb5_auth_con_getremotesubkey(gssapi_krb5_context,
+					    context_handle->auth_context, 
+					    &skey);
+	if (ret) {
+		*minor_status = ret;
+		return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
+	}
+    
+    }
+    
+    /* If there was no subkey, perhaps try this... */
+    if(skey == NULL) {
+	krb5_auth_con_getkey(gssapi_krb5_context,
+			     context_handle->auth_context, 
+			     &skey);
+    }
+
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+
+    /* ensure never to segfault */
+    if(skey == NULL) {
+	return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
+    }
+
+    key->length = skey->keyvalue.length;
+    key->value  = malloc (key->length);
+    if (!key->value) {
+	    krb5_free_keyblock(gssapi_krb5_context, skey);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+    }
+    memcpy(key->value, skey->keyvalue.data, key->length);
+    krb5_free_keyblock(gssapi_krb5_context, skey);
+    return 0;
+}
+
+OM_uint32
 gss_krb5_get_subkey(const gss_ctx_id_t context_handle,
 		    krb5_keyblock **key)
 {

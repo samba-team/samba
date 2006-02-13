@@ -1058,21 +1058,22 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 	if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
 	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
 		       gensec_gssapi_state->gss_oid->length) == 0)) {
-		OM_uint32 maj_stat;
-		krb5_keyblock *skey;
+		OM_uint32 maj_stat, min_stat;
+		gss_buffer_desc skey;
 		
-		maj_stat = gss_krb5_get_subkey(gensec_gssapi_state->gssapi_context, 
-					       &skey);
+		maj_stat = gsskrb5_get_initiator_subkey(&min_stat, 
+							gensec_gssapi_state->gssapi_context, 
+							&skey);
 		
 		if (maj_stat == 0) {
 			DEBUG(10, ("Got KRB5 session key of length %d\n",  
-				   (int)KRB5_KEY_LENGTH(skey)));
+				   (int)skey.length));
 			gensec_gssapi_state->session_key = data_blob_talloc(gensec_gssapi_state, 
-									    KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+									    skey.value, skey.length);
 			*session_key = gensec_gssapi_state->session_key;
 			dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 			
-			krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context, skey);
+			gss_release_buffer(&min_stat, &skey);
 			return NT_STATUS_OK;
 		}
 		return NT_STATUS_NO_USER_SESSION_KEY;
