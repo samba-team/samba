@@ -505,7 +505,13 @@ build_auth_pack(krb5_context context,
     if (ret) 
 	return ret;
 
-    ret = krb5_data_copy(&a->pkAuthenticator.paChecksum,
+    ALLOC(a->pkAuthenticator.paChecksum, 1);
+    if (a->pkAuthenticator.paChecksum == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    ret = krb5_data_copy(a->pkAuthenticator.paChecksum,
 			 checksum.checksum.data, checksum.checksum.length);
     free_Checksum(&checksum);
     if (ret)
@@ -984,11 +990,9 @@ pk_verify_chain_standard(krb5_context context,
      * Since X509_verify_cert() doesn't do CRL checking at all, we have to
      * perform own verification against CRLs
      */
-#if 0
-    ret = pk_verify_crl(context, store_ctx, id->crls);
-    if (ret)
-	goto end;
-#endif
+    /*
+     * XXX add crl checking
+     */
 
     if (client_cert && cert)
 	*client_cert = X509_dup(cert);
@@ -2429,6 +2433,31 @@ _krb5_pk_load_openssl_id(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+select_dh_group(krb5_context context, DH *dh, unsigned long bits, 
+		struct krb5_dh_moduli **moduli)
+{
+    const struct krb5_dh_moduli *m;
+
+    m = moduli[1]; /* XXX */
+    if (m == NULL)
+	m = moduli[0]; /* XXX */
+
+    dh->p = integer_to_BN(context, "p", &m->p);
+    if (dh->p == NULL)
+	return ENOMEM;
+    dh->g = integer_to_BN(context, "g", &m->g);
+    if (dh->g == NULL)
+	return ENOMEM;
+    dh->q = integer_to_BN(context, "q", &m->q);
+    if (dh->q == NULL)
+	return ENOMEM;
+
+    return 0;
+}
+
+#endif /* PKINIT */
+
 static int
 parse_integer(krb5_context context, char **p, const char *file, int lineno, 
 	      const char *name, heim_integer *integer)
@@ -2526,7 +2555,7 @@ out:
     return ret;
 }
 
-static void
+void
 _krb5_free_moduli(struct krb5_dh_moduli **moduli)
 {
     int i;
@@ -2541,8 +2570,9 @@ _krb5_free_moduli(struct krb5_dh_moduli **moduli)
 }
 
 static const char *default_moduli =
-    /* bits */
+    /* name */
     "RFC2412-MODP-group2 "
+    /* bits */
     "1024 "
     /* p */
     "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
@@ -2566,7 +2596,7 @@ krb5_error_code
 _krb5_parse_moduli(krb5_context context, const char *file,
 		   struct krb5_dh_moduli ***moduli)
 {
-    /* comment bits P G Q */
+    /* name bits P G Q */
     krb5_error_code ret;
     struct krb5_dh_moduli **m = NULL, **m2;
     char buf[4096];
@@ -2589,10 +2619,8 @@ _krb5_parse_moduli(krb5_context context, const char *file,
     }
     n = 1;
 
-    if (file == NULL) {
-	*moduli = m;
-	return 0;
-    }
+    if (file == NULL)
+	file = MODULI_FILE;
 
     f = fopen(file, "r");
     if (f == NULL) {
@@ -2646,7 +2674,7 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
     for (i = 0; moduli[i] != NULL; i++) {
 	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
 	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
-	    heim_integer_cmp(&moduli[i]->q, q) == 0)
+	    (q == NULL || heim_integer_cmp(&moduli[i]->q, q) == 0))
 	{
 	    if (bits && bits > moduli[i]->bits) {
 		krb5_set_error_string(context, "PKINIT: DH group parameter %s "
@@ -2662,32 +2690,6 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
     krb5_set_error_string(context, "PKINIT: DH group parameter no ok");
     return KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
 }
-
-static krb5_error_code
-select_dh_group(krb5_context context, DH *dh, unsigned long bits, 
-		struct krb5_dh_moduli **moduli)
-{
-    const struct krb5_dh_moduli *m;
-
-    m = moduli[1]; /* XXX */
-    if (m == NULL)
-	m = moduli[0]; /* XXX */
-
-    dh->p = integer_to_BN(context, "p", &m->p);
-    if (dh->p == NULL)
-	return ENOMEM;
-    dh->g = integer_to_BN(context, "g", &m->g);
-    if (dh->g == NULL)
-	return ENOMEM;
-    dh->q = integer_to_BN(context, "q", &m->q);
-    if (dh->q == NULL)
-	return ENOMEM;
-
-    return 0;
-}
-
-
-#endif /* PKINIT */
 
 void KRB5_LIB_FUNCTION
 _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
@@ -2772,11 +2774,10 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     if ((flags & 2) == 0) {
 	const char *moduli_file;
 
-	moduli_file = krb5_config_get_string_default(context, NULL,
-						     MODULI_FILE,
-						     "libdefaults",
-						     "moduli",
-						     NULL);
+	moduli_file = krb5_config_get_string(context, NULL,
+					     "libdefaults",
+					     "moduli",
+					     NULL);
 
 	ret = _krb5_parse_moduli(context, moduli_file, 
 				 &opt->opt_private->pk_init_ctx->m);
