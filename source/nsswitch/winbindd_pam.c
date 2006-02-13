@@ -633,8 +633,17 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 	
-	parse_domain_user(state->request.data.auth.user,
-			  name_domain, name_user);
+	if (!parse_domain_user(state->request.data.auth.user,
+			       name_domain, name_user)) {
+		set_auth_errors(&state->response, NT_STATUS_NO_SUCH_USER);
+		DEBUG(5, ("Plain text authentication for %s returned %s "
+			  "(PAM: %d)\n",
+			  state->request.data.auth.user, 
+			  state->response.data.auth.nt_status_string,
+			  state->response.data.auth.pam_error));
+		request_error(state);
+		return;
+	}
 
 	domain = find_auth_domain(state, name_domain);
 
