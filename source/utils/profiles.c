@@ -145,6 +145,8 @@ int main( int argc, char *argv[] )
 	};
 	poptContext pc;
 
+	load_case_tables();
+
 	/* setup logging options */
 
 	setup_logging( "profiles", True );
