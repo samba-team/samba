@@ -1,3 +1,11 @@
+2006-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: update to new paChecksum definition, update
+	the dhgroup handling
+
+	* kdc/pkinit.c: update to new paChecksum definition, use
+	hdb_entry_ex
+	
 2006-02-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_locl.h: Move Configurable options to last in the

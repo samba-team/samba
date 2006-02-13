@@ -1,3 +1,8 @@
+2006-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pkinit.asn1: paChecksum is now OPTIONAL so it can be upgraded to
+	something better then SHA1
+	
 2006-01-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* extra.c: Stub-generator now generates alloc statements for
