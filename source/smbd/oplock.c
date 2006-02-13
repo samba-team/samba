@@ -240,21 +240,16 @@ BOOL downgrade_oplock(files_struct *fsp)
 }
 
 /****************************************************************************
- Setup the listening set of file descriptors for an oplock break
- message either from the UDP socket or from the kernel. Returns the maximum
- fd used.
+ Return the fd (if any) used for receiving oplock notifications.
 ****************************************************************************/
 
-int setup_oplock_select_set( fd_set *fds)
+int oplock_notify_fd(void)
 {
-	int maxfd = 0;
-
-	if (koplocks && koplocks->notification_fd != -1) {
-		FD_SET(koplocks->notification_fd, fds);
-		maxfd = MAX(maxfd, koplocks->notification_fd);
+	if (koplocks) {
+		return koplocks->notification_fd;
 	}
 
-	return maxfd;
+	return -1;
 }
 
 /****************************************************************************

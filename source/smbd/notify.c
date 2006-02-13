@@ -206,6 +206,15 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	return True;
 }
 
+int change_notify_fd(void)
+{
+	if (cnotify) {
+		return cnotify->notification_fd;
+	}
+
+	return -1;
+}
+
 /****************************************************************************
  Initialise the change notify subsystem.
 ****************************************************************************/
