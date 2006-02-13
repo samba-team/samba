@@ -835,10 +835,9 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
 		} else {
-			fstrcpy( domain, get_global_sam_name() ); 
+			return False;
 		}
-	} 
-	else {
+	} else {
 		fstrcpy(user, p+1);
 		fstrcpy(domain, domuser);
 		domain[PTR_DIFF(p, domuser)] = 0;
@@ -853,7 +852,9 @@ BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 			      char **domain, char **user)
 {
 	fstring fstr_domain, fstr_user;
-	parse_domain_user(domuser, fstr_domain, fstr_user);
+	if (!parse_domain_user(domuser, fstr_domain, fstr_user)) {
+		return False;
+	}
 	*domain = talloc_strdup(mem_ctx, fstr_domain);
 	*user = talloc_strdup(mem_ctx, fstr_user);
 	return ((*domain != NULL) && (*user != NULL));

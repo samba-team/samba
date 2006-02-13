@@ -566,10 +566,38 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
  *	 0  = OK
  * 	-1  = System error
  */
-static int valid_user(const char *user)
+static int valid_user(const char *user, pam_handle_t *pamh, int ctrl)
 {
-	if (getpwnam(user)) return 0;
-	return 1;
+	/* check not only if the user is available over NSS calls, also make
+	 * sure it's really a winbind user, this is important when stacking PAM
+	 * modules in the 'account' or 'password' facility. */
+
+	struct passwd *pwd = NULL;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int ret;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	pwd = getpwnam(user);
+	if (pwd == NULL) {
+		return 1;
+	}
+
+	fstrcpy(request.data.username, user);
+
+	ret = pam_winbind_request_log(pamh, ctrl, WINBINDD_GETPWNAM, &request, &response, user);
+
+	switch (ret) {
+		case PAM_USER_UNKNOWN:
+			return 1;
+		case PAM_SUCCESS:
+			return 0;
+		default:
+			break;
+	}
+	return -1;
 }
 
 static char *_pam_delete(register char *xx)
@@ -897,7 +925,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	}
 
 	/* Verify the username */
-	retval = valid_user(username);
+	retval = valid_user(username, pamh, ctrl);
 	switch (retval) {
 	case -1:
 		/* some sort of system error. The log was already printed */
@@ -1123,6 +1151,17 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		return retval;
 	}
 
+	/* check if this is really a user in winbindd, not only in NSS */
+	retval = valid_user(user, pamh, ctrl);
+	switch (retval) {
+		case 1:
+			return PAM_USER_UNKNOWN;
+		case -1:
+			return PAM_SYSTEM_ERR;
+		default:
+			break;
+	}
+		
 	/*
 	 * obtain and verify the current password (OLDAUTHTOK) for
 	 * the user.
