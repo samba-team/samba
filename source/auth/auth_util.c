@@ -1045,6 +1045,11 @@ BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
 					    &uid, &gid, &found_username,
 					    &token);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("could not create token for %s\n", username));
+		return False;
+	}
+
 	result = nt_token_check_sid(group_sid, token);
 
 	talloc_free(mem_ctx);

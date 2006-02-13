@@ -319,6 +319,18 @@ struct pdb_methods
 					   DOM_SID **pp_sids, gid_t **pp_gids,
 					   size_t *p_num_groups);
 
+	NTSTATUS (*set_unix_primary_group)(struct pdb_methods *methods,
+					   TALLOC_CTX *mem_ctx,
+					   SAM_ACCOUNT *user);
+
+	NTSTATUS (*add_groupmem)(struct pdb_methods *methods,
+				 TALLOC_CTX *mem_ctx,
+				 uint32 group_rid, uint32 member_rid);
+
+	NTSTATUS (*del_groupmem)(struct pdb_methods *methods,
+				 TALLOC_CTX *mem_ctx,
+				 uint32 group_rid, uint32 member_rid);
+
 	NTSTATUS (*find_alias)(struct pdb_methods *methods,
 			       const char *name, DOM_SID *sid);
 

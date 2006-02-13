@@ -947,7 +947,7 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
  Add a user to a UNIX group.
 ****************************************************************************/
 
-int smb_add_user_group(char *unix_group, char *unix_user)
+int smb_add_user_group(const char *unix_group, const char *unix_user)
 {
 	pstring add_script;
 	int ret;

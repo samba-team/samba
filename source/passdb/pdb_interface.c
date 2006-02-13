@@ -4,6 +4,7 @@
    Copyright (C) Andrew Bartlett			2002
    Copyright (C) Jelmer Vernooij			2002
    Copyright (C) Simo Sorce				2003
+   Copyright (C) Volker Lendecke			2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -741,6 +742,200 @@ NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user,
 	return pdb->enum_group_memberships(
 		pdb, mem_ctx, user,
 		pp_sids, pp_gids, p_num_groups);
+}
+
+static NTSTATUS pdb_default_set_unix_primary_group(struct pdb_methods *methods,
+						   TALLOC_CTX *mem_ctx,
+						   SAM_ACCOUNT *sampass)
+{
+	struct group *grp;
+	gid_t gid;
+
+	if (!sid_to_gid(pdb_get_group_sid(sampass), &gid) ||
+	    (grp = getgrgid(gid)) == NULL) {
+		return NT_STATUS_INVALID_PRIMARY_GROUP;
+	}
+
+	if (smb_set_primary_group(grp->gr_name,
+				  pdb_get_username(sampass)) != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user)
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->set_unix_primary_group(pdb, mem_ctx, user);
+}
+
+/*
+ * Helper function to see whether a user is in a group. We can't use
+ * user_in_group_sid here because this creates dependencies only smbd can
+ * fulfil.
+ */
+
+static BOOL pdb_user_in_group(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *account,
+			      const DOM_SID *group_sid)
+{
+	DOM_SID *sids;
+	gid_t *gids;
+	size_t i, num_groups;
+
+	if (!NT_STATUS_IS_OK(pdb_enum_group_memberships(mem_ctx, account,
+							&sids, &gids,
+							&num_groups))) {
+		return False;
+	}
+
+	for (i=0; i<num_groups; i++) {
+		if (sid_equal(group_sid, &sids[i])) {
+			return True;
+		}
+	}
+	return False;
+}
+
+static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
+					 TALLOC_CTX *mem_ctx,
+					 uint32 group_rid,
+					 uint32 member_rid)
+{
+	DOM_SID group_sid, member_sid;
+	SAM_ACCOUNT *account = NULL;
+	GROUP_MAP map;
+	struct group *grp;
+	struct passwd *pwd;
+	const char *group_name;
+	uid_t uid;
+	NTSTATUS status;
+
+	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
+	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
+
+	if (!get_domain_group_from_sid(group_sid, &map) ||
+	    (map.gid == (gid_t)-1) ||
+	    ((grp = getgrgid(map.gid)) == NULL)) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	group_name = talloc_strdup(mem_ctx, grp->gr_name);
+	if (group_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!NT_STATUS_IS_OK(status = pdb_init_sam(&account))) {
+		return status;
+	}
+
+	if (!pdb_getsampwsid(account, &member_sid) ||
+	    !sid_to_uid(&member_sid, &uid) ||
+	    ((pwd = getpwuid_alloc(mem_ctx, uid)) == NULL)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (pdb_user_in_group(mem_ctx, account, &group_sid)) {
+		return NT_STATUS_MEMBER_IN_GROUP;
+	}
+
+	/* 
+	 * ok, the group exist, the user exist, the user is not in the group,
+	 * we can (finally) add it to the group !
+	 */
+
+	smb_add_user_group(group_name, pwd->pw_name);
+
+	if (!pdb_user_in_group(mem_ctx, account, &group_sid)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
+			  uint32 member_rid)
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->add_groupmem(pdb, mem_ctx, group_rid, member_rid);
+}
+
+static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
+					 TALLOC_CTX *mem_ctx,
+					 uint32 group_rid,
+					 uint32 member_rid)
+{
+	DOM_SID group_sid, member_sid;
+	SAM_ACCOUNT *account = NULL;
+	GROUP_MAP map;
+	struct group *grp;
+	struct passwd *pwd;
+	const char *group_name;
+	uid_t uid;
+	NTSTATUS status;
+
+	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
+	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
+
+	if (!get_domain_group_from_sid(group_sid, &map) ||
+	    (map.gid == (gid_t)-1) ||
+	    ((grp = getgrgid(map.gid)) == NULL)) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	group_name = talloc_strdup(mem_ctx, grp->gr_name);
+	if (group_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!NT_STATUS_IS_OK(status = pdb_init_sam(&account))) {
+		return status;
+	}
+
+	if (!pdb_getsampwsid(account, &member_sid) ||
+	    !sid_to_uid(&member_sid, &uid) ||
+	    ((pwd = getpwuid_alloc(mem_ctx, uid)) == NULL)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (!pdb_user_in_group(mem_ctx, account, &group_sid)) {
+		return NT_STATUS_MEMBER_NOT_IN_GROUP;
+	}
+
+	/* 
+	 * ok, the group exist, the user exist, the user is in the group,
+	 * we can (finally) delete it from the group!
+	 */
+
+	smb_delete_user_group(group_name, pwd->pw_name);
+
+	if (pdb_user_in_group(mem_ctx, account, &group_sid)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
+			  uint32 member_rid)
+{
+	struct pdb_methods *pdb = pdb_get_methods(False);
+
+	if ( !pdb ) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb->del_groupmem(pdb, mem_ctx, group_rid, member_rid);
 }
 
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
@@ -1913,6 +2108,9 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
 	(*methods)->enum_group_members = pdb_default_enum_group_members;
 	(*methods)->enum_group_memberships = pdb_default_enum_group_memberships;
+	(*methods)->set_unix_primary_group = pdb_default_set_unix_primary_group;
+	(*methods)->add_groupmem = pdb_default_add_groupmem;
+	(*methods)->del_groupmem = pdb_default_del_groupmem;
 	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;
