@@ -157,26 +157,26 @@ static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 /****************************************************************************
 initialise first time the mapping list
 ****************************************************************************/
-BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_use, const char *nt_name, const char *comment)
+NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_use, const char *nt_name, const char *comment)
 {
 	GROUP_MAP map;
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
-		return(False);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	map.gid=gid;
 	if (!string_to_sid(&map.sid, sid)) {
 		DEBUG(0, ("string_to_sid failed: %s", sid));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	map.sid_name_use=sid_name_use;
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
 
-	return NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map));
+	return pdb_add_group_mapping_entry(&map);
 }
 
 /****************************************************************************
@@ -856,7 +856,7 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
  Create a UNIX group on demand.
 ****************************************************************************/
 
-int smb_create_group(char *unix_group, gid_t *new_gid)
+int smb_create_group(const char *unix_group, gid_t *new_gid)
 {
 	pstring add_script;
 	int 	ret = -1;
@@ -901,7 +901,7 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
  Delete a UNIX group on demand.
 ****************************************************************************/
 
-int smb_delete_group(char *unix_group)
+int smb_delete_group(const char *unix_group)
 {
 	pstring del_script;
 	int ret;
@@ -947,7 +947,7 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
  Add a user to a UNIX group.
 ****************************************************************************/
 
-int smb_add_user_group(char *unix_group, char *unix_user)
+int smb_add_user_group(const char *unix_group, const char *unix_user)
 {
 	pstring add_script;
 	int ret;
@@ -1122,8 +1122,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
 				  const DOM_SID *sid)
 {
-	return pdb_delete_group_mapping_entry(*sid) ?
-		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+	return pdb_delete_group_mapping_entry(*sid);
 }
 
 NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
