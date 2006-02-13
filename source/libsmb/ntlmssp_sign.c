@@ -236,8 +236,6 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 			     uchar *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
 {	
-	NTSTATUS nt_status;
-
 	if (!(ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 		DEBUG(3, ("NTLMSSP Sealing not negotiated - cannot seal packet!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -254,10 +252,14 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 		/* The order of these two operations matters - we must first seal the packet,
 		   then seal the sequence number - this is becouse the send_seal_hash is not
 		   constant, but is is rather updated with each iteration */
-		nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+		NTSTATUS nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
 							data, length,
 							whole_pdu, pdu_length,
 							NTLMSSP_SEND, sig, False);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
 		smb_arc4_crypt(ntlmssp_state->send_seal_arc4_state, data, length);
 		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 			smb_arc4_crypt(ntlmssp_state->send_seal_arc4_state, sig->data+4, 8);
@@ -283,8 +285,6 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 		smb_arc4_crypt(ntlmssp_state->ntlmv1_arc4_state, sig->data+4, sig->length-4);
 
 		ntlmssp_state->ntlmv1_seq_num++;
-
-		nt_status = NT_STATUS_OK;
 	}
 	dump_data_pw("ntlmssp signature\n", sig->data, sig->length);
 	dump_data_pw("ntlmssp sealed data\n", data, length);
