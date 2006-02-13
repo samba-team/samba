@@ -891,7 +891,7 @@ int cac_SamClearGroupMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
 
    int result = CAC_SUCCESS;
 
-   uint32 i = 0;
+   int i = 0;
 
    uint32 num_mem = 0;
    uint32 *rid    = NULL;
@@ -1389,7 +1389,7 @@ int cac_SamClearAliasMembers(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, POLICY_H
 
    int result = CAC_SUCCESS;
 
-   uint32 i = 0;
+   int i = 0;
 
    uint32 num_mem = 0;
    DOM_SID *sid   = NULL;
