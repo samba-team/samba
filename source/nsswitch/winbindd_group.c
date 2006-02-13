@@ -992,7 +992,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	if (!parse_domain_user_talloc(state->mem_ctx,
 				      state->request.data.username,
 				      &s->domname, &s->username)) {
-		DEBUG(0, ("Could not parse domain user: %s\n",
+		DEBUG(5, ("Could not parse domain user: %s\n",
 			  state->request.data.username));
 		request_error(state);
 		return;
