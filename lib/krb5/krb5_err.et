@@ -88,14 +88,16 @@ error_code REVOKED_CERTIFICATE, "Certificate revoked"
 error_code REVOCATION_STATUS_UNKNOWN, "Revocation status unknown"
 error_code CLIENT_NAME_MISMATCH, "Revocation status unknown"
 error_code INCONSISTENT_KEY_PURPOSE, "Inconsistent key purpose"
+error_code DIGEST_IN_CERT_NOT_ACCEPTED, "Digest in certificate not accepted"
+error_code PA_CHECKSUM_MUST_BE_INCLUDED, "paChecksum must be included"
+error_code DIGEST_IN_SIGNED_DATA_NOT_ACCEPTED, "Digest in signedData not accepted"
+error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not supported"
 
-
-# 77-79 are reserved
-
-index 80
-prefix KRB5_IAKERB
-error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
-error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
+## these are never used
+#index 80
+#prefix KRB5_IAKERB
+#error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
+#error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
 
 # 82-127 are reserved
 
