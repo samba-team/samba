@@ -250,7 +250,7 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	struct socket_address *dest;
 	struct test_join *join_ctx;
 	struct cli_credentials *machine_credentials;
-	const char *dom_sid;
+	const struct dom_sid *dom_sid;
 
 	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_ntlogon_packet logon;
@@ -305,7 +305,7 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	logon.req.logon.user_name     = TEST_NAME"$";
 	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
 	logon.req.logon.acct_control  = ACB_WSTRUST;
-	logon.req.logon.sid           = *dom_sid_parse_talloc(dgmslot, dom_sid);
+	logon.req.logon.sid           = *dom_sid;
 	logon.req.logon.nt_version    = 1;
 	logon.req.logon.lmnt_token    = 0xFFFF;
 	logon.req.logon.lm20_token    = 0xFFFF;

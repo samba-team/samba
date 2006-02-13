@@ -40,7 +40,8 @@ struct test_join {
 	struct dcerpc_pipe *p;
 	struct policy_handle user_handle;
 	struct libnet_JoinDomain *libnet_r;
-	const char *dom_sid;
+	struct dom_sid *dom_sid;
+	struct dom_sid *user_sid;
 };
 
 
@@ -161,7 +162,8 @@ struct test_join *torture_create_testuser(const char *username,
 		goto failed;
 	}
 
-	join->dom_sid = dom_sid_string(join, l.out.sid);
+	talloc_steal(join, l.out.sid);
+	join->dom_sid = l.out.sid;
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -199,6 +201,8 @@ again:
 		printf("CreateUser2 failed - %s\n", nt_errstr(status));
 		goto failed;
 	}
+
+	join->user_sid = dom_sid_add_rid(join, join->dom_sid, rid);
 
 	pwp.in.user_handle = &join->user_handle;
 
@@ -330,7 +334,8 @@ struct test_join *torture_join_domain(const char *machine_name,
 	}
 	tj->p = libnet_r->out.samr_pipe;
 	tj->user_handle = *libnet_r->out.user_handle;
-	tj->dom_sid = dom_sid_string(tj, libnet_r->out.domain_sid);
+	tj->dom_sid = libnet_r->out.domain_sid;
+	talloc_steal(tj, libnet_r->out.domain_sid);
 
 	ZERO_STRUCT(u);
 	s.in.user_handle = &tj->user_handle;
@@ -353,11 +358,6 @@ struct test_join *torture_join_domain(const char *machine_name,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo (non-critical) failed - %s\n", nt_errstr(status));
 	}
-
-	DEBUG(0, ("%s joined domain %s (%s).\n", 
-		  libnet_r->in.netbios_name, 
-		  libnet_r->out.domain_name, 
-		  tj->dom_sid));
 
 	*machine_credentials = cli_credentials_init(tj);
 	cli_credentials_set_conf(*machine_credentials);
@@ -489,7 +489,7 @@ void torture_leave_domain(struct test_join *join)
 /*
   return the dom sid for a test join
 */
-const char *torture_join_sid(struct test_join *join)
+const struct dom_sid *torture_join_sid(struct test_join *join)
 {
 	return join->dom_sid;
 }
