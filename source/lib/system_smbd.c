@@ -123,14 +123,16 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 
 	DEBUG(10,("sys_getgrouplist: user [%s]\n", user));
 	
-	/* see if we should disable winbindd lookups for local users */
-	if (strchr(user, *lp_winbind_separator()) == NULL) {
-		if ( !winbind_off() )
-			DEBUG(0,("sys_getgroup_list: Insufficient environment space "
-				 "for %s\n", WINBINDD_DONT_ENV));
-		else
-			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
-				  "lookup [user == %s]\n", user));
+	/* This is only ever called for Unix users, remote memberships are
+	 * always determined by the info3 coming back from auth3 or the
+	 * PAC. */
+
+	if ( !winbind_off() ) {
+		DEBUG(0,("sys_getgroup_list: Insufficient environment space "
+			 "for %s\n", WINBINDD_DONT_ENV));
+	} else {
+		DEBUG(10,("sys_getgrouplist(): disabled winbindd for group "
+			  "lookup [user == %s]\n", user));
 	}
 
 #ifdef HAVE_GETGROUPLIST
@@ -197,63 +199,4 @@ BOOL getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 	*ret_groups = groups;
 	SAFE_FREE(temp_groups);
 	return True;
-}
-
-NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
-					    TALLOC_CTX *mem_ctx,
-					    SAM_ACCOUNT *user,
-					    DOM_SID **pp_sids,
-					    gid_t **pp_gids,
-					    size_t *p_num_groups)
-{
-	size_t i;
-	gid_t gid;
-
-	if ( !sid_to_gid(pdb_get_group_sid(user), &gid) ) 
-	{
-		uint32 rid;
-		struct passwd *pwd;
-	
-		/* second try, allow the DOMAIN_USERS group to pass */
-		
-		if ( !sid_peek_check_rid( get_global_sam_sid(), pdb_get_group_sid(user), &rid ) )
-			return NT_STATUS_NO_SUCH_USER;
-			
-		if ( rid != DOMAIN_GROUP_RID_USERS ) {
-			DEBUG(10, ("sid_to_gid failed\n"));
-			return NT_STATUS_NO_SUCH_USER;
-		}
-		
-		DEBUG(5,("pdb_default_enum_group_memberships: sid_to_gid() failed but giving "
-			"free pass to 'Domain Users' as primary group\n"));
-		
-		if ( !(pwd = getpwnam_alloc( NULL, pdb_get_username(user) ) ) ) 
-			return NT_STATUS_NO_SUCH_USER;
-			
-		gid = pwd->pw_gid;
-		
-		TALLOC_FREE( pwd );		
-	}
-
-	if (!getgroups_unix_user(mem_ctx, pdb_get_username(user), gid,
-				 pp_gids, p_num_groups)) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	if (*p_num_groups == 0) {
-		smb_panic("primary group missing");
-	}
-
-	*pp_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *p_num_groups);
-
-	if (*pp_sids == NULL) {
-		talloc_free(*pp_gids);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0; i<*p_num_groups; i++) {
-		gid_to_sid(&(*pp_sids)[i], (*pp_gids)[i]);
-	}
-
-	return NT_STATUS_OK;
 }

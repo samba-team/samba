@@ -402,6 +402,135 @@ void add_session_user(const char *user)
 }
 
 /****************************************************************************
+ Check if a user is in a netgroup user list. If at first we don't succeed,
+ try lower case.
+****************************************************************************/
+
+BOOL user_in_netgroup(const char *user, const char *ngname)
+{
+#ifdef HAVE_NETGROUP
+	static char *mydomain = NULL;
+	fstring lowercase_user;
+
+	if (mydomain == NULL)
+		yp_get_default_domain(&mydomain);
+
+	if(mydomain == NULL) {
+		DEBUG(5,("Unable to get default yp domain\n"));
+		return False;
+	}
+
+	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+		user, mydomain, ngname));
+
+	if (innetgr(ngname, NULL, user, mydomain)) {
+		DEBUG(5,("user_in_netgroup: Found\n"));
+		return (True);
+	} else {
+
+		/*
+		 * Ok, innetgr is case sensitive. Try once more with lowercase
+		 * just in case. Attempt to fix #703. JRA.
+		 */
+
+		fstrcpy(lowercase_user, user);
+		strlower_m(lowercase_user);
+	
+		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+			lowercase_user, mydomain, ngname));
+
+		if (innetgr(ngname, NULL, lowercase_user, mydomain)) {
+			DEBUG(5,("user_in_netgroup: Found\n"));
+			return (True);
+		}
+	}
+#endif /* HAVE_NETGROUP */
+	return False;
+}
+
+/****************************************************************************
+ Check if a user is in a user list - can check combinations of UNIX
+ and netgroup lists.
+****************************************************************************/
+
+BOOL user_in_list(const char *user,const char **list)
+{
+	if (!list || !*list)
+		return False;
+
+	DEBUG(10,("user_in_list: checking user %s in list\n", user));
+
+	while (*list) {
+
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n",
+			  user, *list));
+
+		/*
+		 * Check raw username.
+		 */
+		if (strequal(user, *list))
+			return(True);
+
+		/*
+		 * Now check to see if any combination
+		 * of UNIX and netgroups has been specified.
+		 */
+
+		if(**list == '@') {
+			/*
+			 * Old behaviour. Check netgroup list
+			 * followed by UNIX list.
+			 */
+			if(user_in_netgroup(user, *list +1))
+				return True;
+			if(user_in_group(user, *list +1))
+				return True;
+		} else if (**list == '+') {
+
+			if((*(*list +1)) == '&') {
+				/*
+				 * Search UNIX list followed by netgroup.
+				 */
+				if(user_in_group(user, *list +2))
+					return True;
+				if(user_in_netgroup(user, *list +2))
+					return True;
+
+			} else {
+
+				/*
+				 * Just search UNIX list.
+				 */
+
+				if(user_in_group(user, *list +1))
+					return True;
+			}
+
+		} else if (**list == '&') {
+
+			if(*(*list +1) == '+') {
+				/*
+				 * Search netgroup list followed by UNIX list.
+				 */
+				if(user_in_netgroup(user, *list +2))
+					return True;
+				if(user_in_group(user, *list +2))
+					return True;
+			} else {
+				/*
+				 * Just search netgroup list.
+				 */
+				if(user_in_netgroup(user, *list +1))
+					return True;
+			}
+		}
+    
+		list++;
+	}
+	return(False);
+}
+
+/****************************************************************************
  Check if a username is valid.
 ****************************************************************************/
 

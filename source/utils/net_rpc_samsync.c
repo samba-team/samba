@@ -550,7 +550,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		sam_account_from_delta(sam_account, delta);
 		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n", 
 			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
-		if (!pdb_add_sam_account(sam_account)) {
+		if (!NT_STATUS_IS_OK(pdb_add_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
 				  account));
 			return NT_STATUS_ACCESS_DENIED; 

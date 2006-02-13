@@ -1019,6 +1019,72 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 }
 
 /***************************************************************************
+ Build upon create_token_from_username:
+
+ Expensive helper function to figure out whether a user given its name is
+ member of a particular group.
+***************************************************************************/
+BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
+{
+	NTSTATUS status;
+	uid_t uid;
+	gid_t gid;
+	char *found_username;
+	struct nt_user_token *token;
+	BOOL result;
+
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
+	status = create_token_from_username(mem_ctx, username, False,
+					    &uid, &gid, &found_username,
+					    &token);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("could not create token for %s\n", username));
+		return False;
+	}
+
+	result = nt_token_check_sid(group_sid, token);
+
+	talloc_free(mem_ctx);
+	return result;
+	
+}
+
+BOOL user_in_group(const char *username, const char *groupname)
+{
+	TALLOC_CTX *mem_ctx;
+	DOM_SID group_sid;
+	NTSTATUS status;
+	BOOL ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return False;
+	}
+
+	ret = lookup_name(mem_ctx, groupname, LOOKUP_NAME_ALL,
+			  NULL, NULL, &group_sid, NULL);
+	talloc_free(mem_ctx);
+
+	if (!ret) {
+		DEBUG(10, ("lookup_name(%s) failed: %s\n", groupname,
+			   nt_errstr(status)));
+		return False;
+	}
+
+	return user_in_group_sid(username, &group_sid);
+}
+
+
+/***************************************************************************
  Make (and fill) a user_info struct from a Kerberos PAC logon_info by
  conversion to a SAM_ACCOUNT
 ***************************************************************************/

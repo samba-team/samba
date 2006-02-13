@@ -1067,7 +1067,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 
 	pass = Get_Pwnam(username);
 	if (!pass) {
-		DEBUG(1, ("check_oem_password: Username %s does not exist in system !?!\n", username));
+		DEBUG(1, ("change_oem_password: Username %s does not exist in system !?!\n", username));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
