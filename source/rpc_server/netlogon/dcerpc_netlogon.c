@@ -31,7 +31,13 @@
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
 	struct netr_Credential server_challenge;
-	struct creds_CredentialState *creds;
+
+	/* This is a bit (dangeroursly?) tricky:
+	   - The session key, computer name and domain elements are
+	     valid. 
+	   - However the credentials chaining (seed, client, server etc)
+	     should be obtained from the database at runtime */
+	struct creds_CredentialState *creds; 
 };
 
 
@@ -286,7 +292,16 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 	return netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
 }
 
+/*
+  Validate an incoming authenticator against the credentials for the remote machine.
 
+  The credentials are (re)read and from the schannel database, and
+  written back after the caclulations are performed.
+
+  The creds_out parameter (if not NULL) returns the credentials, if
+  the caller needs some of that information.
+
+*/
 static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_state,
 					     TALLOC_CTX *mem_ctx, 
 					     struct netr_Authenticator *received_authenticator,
