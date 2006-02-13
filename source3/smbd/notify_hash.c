@@ -230,6 +230,7 @@ struct cnotify_fns *hash_notify_init(void)
 	cnotify.check_notify = hash_check_notify;
 	cnotify.remove_notify = hash_remove_notify;
 	cnotify.select_time = lp_change_notify_timeout();
+	cnotify.notification_fd = -1;
 
 	return &cnotify;
 }

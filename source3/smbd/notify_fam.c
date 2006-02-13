@@ -63,8 +63,29 @@ static int		global_fc_generation;
 #define FAM_TRACE	8
 #define FAM_TRACE_LOW	10
 
-#define FAM_NOTIFY_CHECK_TIMEOUT    1 /* secs */
 #define FAM_EVENT_DRAIN		    ((uint32_t)(-1))
+
+static void * fam_register_notify(connection_struct * conn,
+		    char *		path,
+		    uint32		flags);
+
+static BOOL fam_check_notify(connection_struct * conn,
+		 uint16_t		vuid,
+		 char *			path,
+		 uint32_t		flags,
+		 void *			data,
+		 time_t			when);
+
+static void fam_remove_notify(void * data)
+
+static struct cnotify_fns global_fam_notify =
+{
+    fam_register_notify,
+    fam_check_notify,
+    fam_remove_notify,
+    -1,
+    -1
+};
 
 /* Turn a FAM event code into a string. Don't rely on specific code values,
  * because that might not work across all flavours of FAM.
@@ -110,6 +131,7 @@ fam_check_reconnect(void)
 	}
     }
 
+    global_fam_notify.notification_fd = FAMCONNECTION_GETFD(&global_fc);
     return(True);
 }
 
@@ -420,18 +442,6 @@ fam_remove_notify(void * data)
 
 struct cnotify_fns * fam_notify_init(void)
 {
-    static struct cnotify_fns global_fam_notify =
-    {
-	fam_register_notify,
-	fam_check_notify,
-	fam_remove_notify,
-	FAM_NOTIFY_CHECK_TIMEOUT
-    };
-
-    /* TODO: rather than relying on FAM_NOTIFY_CHECK_TIMEOUT, we should have an
-     * API to push the FAM fd into the global server fd set.
-     */
-
     FAMCONNECTION_GETFD(&global_fc) = -1;
 
     if (!fam_test_connection()) {

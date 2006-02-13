@@ -283,7 +283,7 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 
 	return result;
 }
-	
+
 /****************************************************************************
  Do all async processing in here. This includes kernel oplock messages, change
  notify events etc.
@@ -319,6 +319,20 @@ static void async_processing(void)
 }
 
 /****************************************************************************
+ Add a fd to the set we will be select(2)ing on.
+****************************************************************************/
+
+static int select_on_fd(int fd, int maxfd, fd_set *fds)
+{
+	if (fd != -1) {
+		FD_SET(fd, fds);
+		maxfd = MAX(maxfd, fd);
+	}
+
+	return maxfd;
+}
+
+/****************************************************************************
   Do a select on an two fd's - with timeout. 
 
   If a local udp message has been pushed onto the
@@ -344,7 +358,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	fd_set fds;
 	int selrtn;
 	struct timeval to = timeval_set(SMBD_SELECT_TIMEOUT, 0);
-	int maxfd;
+	int maxfd = 0;
 
 	smb_read_error = 0;
 
@@ -437,10 +451,11 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		}
 	}
 	
-	FD_SET(smbd_server_fd(),&fds);
-	maxfd = setup_oplock_select_set(&fds);
+	maxfd = select_on_fd(smbd_server_fd(), maxfd, &fds);
+	maxfd = select_on_fd(change_notify_fd(), maxfd, &fds);
+	maxfd = select_on_fd(oplock_notify_fd(), maxfd, &fds);
 
-	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,&to);
+	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
