@@ -76,7 +76,7 @@ static BOOL fam_check_notify(connection_struct * conn,
 		 void *			data,
 		 time_t			when);
 
-static void fam_remove_notify(void * data)
+static void fam_remove_notify(void * data);
 
 static struct cnotify_fns global_fam_notify =
 {
