@@ -312,7 +312,7 @@ static int net_groupmap_add(int argc, const char **argv)
 		fstrcpy( ntgroup, unixgrp );
 		
 	
-	if (!add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment)) {
+	if (!NT_STATUS_IS_OK(add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment))) {
 		d_fprintf(stderr, "adding entry for group %s failed!\n", ntgroup);
 		return -1;
 	}
@@ -494,7 +494,7 @@ static int net_groupmap_delete(int argc, const char **argv)
 		return -1;
 	}
 
-	if ( !pdb_delete_group_mapping_entry(sid) ) {
+	if ( !NT_STATUS_IS_OK(pdb_delete_group_mapping_entry(sid)) ) {
 		d_fprintf(stderr, "Failed to removing group %s from the mapping db!\n", ntgroup);
 		return -1;
 	}
