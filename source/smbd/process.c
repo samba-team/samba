@@ -289,13 +289,13 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
  notify events etc.
 ****************************************************************************/
 
-static void async_processing(void)
+static void async_processing(fd_set *pfds)
 {
 	DEBUG(10,("async_processing: Doing async processing.\n"));
 
 	process_aio_queue();
 
-	process_kernel_oplocks();
+	process_kernel_oplocks(pfds);
 
 	/* Do the aio check again after receive_local_message as it does a
 	   select and may have eaten our signal. */
@@ -432,7 +432,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 
 	if (oplock_message_waiting(&fds)) {
 		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing();
+		async_processing(&fds);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -462,7 +462,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	   is the best we can do until the oplock code knows more about
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
-		async_processing();
+		async_processing(&fds);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -491,7 +491,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 */
 
 	if (oplock_message_waiting(&fds)) {
-		async_processing();
+		async_processing(&fds);
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -540,7 +540,7 @@ void respond_to_all_remaining_local_messages(void)
 		return;
 	}
 
-	process_kernel_oplocks();
+	process_kernel_oplocks(NULL);
 
 	return;
 }

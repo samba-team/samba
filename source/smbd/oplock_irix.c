@@ -93,6 +93,9 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 	char dummy;
 	files_struct *fsp;
 
+	/* Ensure we only get one call per select fd set. */
+	FD_CLR(fds, oplock_pipe_read);
+
 	/*
 	 * Read one byte of zero to clear the
 	 * kernel break notify message.
@@ -204,14 +207,36 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 
 /****************************************************************************
  Set *maxfd to include oplock read pipe.
+ Note that fds MAY BE NULL ! If so we must do our own select.
 ****************************************************************************/
 
 static BOOL irix_oplock_msg_waiting(fd_set *fds)
 {
+	int maxfd, selrtn;
+	fd_set myfds;
+	struct timeval to;
+
 	if (oplock_pipe_read == -1)
 		return False;
 
-	return FD_ISSET(oplock_pipe_read,fds);
+	if (fds) {
+		return FD_ISSET(oplock_pipe_read,fds);
+	}
+
+	FD_ZERO(&myfds);
+	maxfd = setup_oplock_select_set(&myfds);
+	/* Only do the select if we have something to select *on*. */
+	if (maxfd == 0) {
+		return False;
+	}
+
+	/* Do a zero-time select. We just need to find out if there
+	 * are any outstanding messages. We use sys_select_intr as
+	 * we need to ignore any signals. */
+
+	to = timeval_set(0, 0);
+	selrtn = sys_select_intr(maxfd+1,&myfds,NULL,NULL,&to);
+	return (selrtn == 1) ? True : False;
 }
 
 /****************************************************************************
