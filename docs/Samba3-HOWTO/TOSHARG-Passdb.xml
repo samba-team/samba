@@ -223,17 +223,6 @@ Samba-3 introduces a number of new password backend capabilities.
 		</listitem>
 	</varlistentry>
 
-			<para>
-<indexterm><primary>account migration</primary></indexterm>
-<indexterm><primary>database backends</primary></indexterm>
-<indexterm><primary>backend format</primary></indexterm>
-			The <parameter>xmlsam</parameter> option can be useful for account migration between database
-			backends or backups. Use of this tool allows the data to be edited before migration
-			into another backend format.
-			</para>
-		</listitem>
-	</varlistentry>
-
 </variablelist>
 
 </sect2>
