@@ -375,7 +375,7 @@ dsa_verify_signature(const struct signature_alg *sig_alg,
     spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
     dsa = DSA_new();
-    if (dsa)
+    if (dsa == NULL)
 	return ENOMEM;
 
     ret = decode_DSAPublicKey(spi->subjectPublicKey.data,
