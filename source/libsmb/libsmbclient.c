@@ -5983,7 +5983,6 @@ smbc_init_context(SMBCCTX *context)
                 DEBUGLEVEL = context->debug;
                 
                 load_case_tables();
-                setup_logging( "libsmbclient", True);
 
                 setup_logging("libsmbclient", True);
                 if (context->internal->_debug_stderr) {
