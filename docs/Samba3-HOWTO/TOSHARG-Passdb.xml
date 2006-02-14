@@ -1791,10 +1791,9 @@ may be said that the solution is <quote>too clever by half!</quote>
 <indexterm><primary>smbpasswd plaintext database</primary></indexterm>
 <indexterm><primary>tdbsam</primary></indexterm>
 <indexterm><primary>ldapsam</primary></indexterm>
-<indexterm><primary>xmlsam</primary></indexterm>
 <indexterm><primary>enterprise</primary></indexterm>
 		Samba provides an enhanced set of passdb backends that overcome the deficiencies
-		of the smbpasswd plaintext database. These are tdbsam, ldapsam, and xmlsam.
+		of the smbpasswd plaintext database. These are tdbsam and ldapsam.
 		Of these, ldapsam will be of most interest to large corporate or enterprise sites.
 		</para>
 
