@@ -293,7 +293,7 @@ find_extension(const Certificate *cert, const heim_oid *oid, int *idx)
     
     for (;*idx < c->extensions->len; (*idx)++) {
 	if (heim_oid_cmp(&c->extensions->val[*idx].extnID, oid) == 0)
-	    return &c->extensions->val[*idx];
+	    return &c->extensions->val[(*idx)++];
     }
     return NULL;
 }
@@ -907,16 +907,15 @@ match_RDN(const RelativeDistinguishedName *c,
 static int
 match_X501Name(const Name *c, const Name *n)
 {
-    int i, j, ret;
+    int i, ret;
 
     if (c->element != choice_Name_rdnSequence
 	|| n->element != choice_Name_rdnSequence)
 	return 0;
     if (c->u.rdnSequence.len > n->u.rdnSequence.len)
 	return HX509_NAME_CONSTRAINT_ERROR;
-    for (i = c->u.rdnSequence.len - 1, j = n->u.rdnSequence.len - 1;
-	 i >= 0; i--, j--) {
-	ret = match_RDN(&c->u.rdnSequence.val[i], &c->u.rdnSequence.val[j]);
+    for (i = 0; i < c->u.rdnSequence.len; i++) {
+	ret = match_RDN(&c->u.rdnSequence.val[i], &n->u.rdnSequence.val[i]);
 	if (ret)
 	    return ret;
     }
@@ -927,6 +926,10 @@ match_X501Name(const Name *c, const Name *n)
 static int
 match_general_name(const GeneralName *c, const GeneralName *n)
 {
+    /* 
+     * Name constraints only apply to the same name type, see RFC3280,
+     * 4.2.1.11.
+     */
     if (c->element != n->element)
 	return 0;
 
@@ -1041,7 +1044,7 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
     for (i = 0; i < t->len; i++) {
 	if (t->val[i].minimum && t->val[i].maximum)
 	    return HX509_RANGE;
-	if (match_name(&t->val[i].base, c))
+	if (match_name(&t->val[i].base, c) == 0)
 	    *match = 1;
     }
     return 0;
