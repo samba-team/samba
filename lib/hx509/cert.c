@@ -924,14 +924,13 @@ match_X501Name(const Name *c, const Name *n)
 
 
 static int
-match_general_name(const GeneralName *c, const GeneralName *n)
+match_general_name(const GeneralName *c, const GeneralName *n, int *match)
 {
     /* 
      * Name constraints only apply to the same name type, see RFC3280,
      * 4.2.1.11.
      */
-    if (c->element != n->element)
-	return 0;
+    assert(c->element == n->element);
 
     switch(c->element) {
     case choice_GeneralName_otherName:
@@ -941,6 +940,7 @@ match_general_name(const GeneralName *c, const GeneralName *n)
 	if (heim_any_cmp(&c->u.otherName.value,
 			 &n->u.otherName.value) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
+	*match = 1;
 	return 0;
     case choice_GeneralName_rfc822Name: {
 	const char *s;
@@ -962,6 +962,7 @@ match_general_name(const GeneralName *c, const GeneralName *n)
 	    if (len1 < len2 && s[len2 - len1] != '.')
 		return HX509_NAME_CONSTRAINT_ERROR;
 	}
+	*match = 1;
 	return 0;
     }
     case choice_GeneralName_dNSName: {
@@ -973,10 +974,13 @@ match_general_name(const GeneralName *c, const GeneralName *n)
 	    return HX509_NAME_CONSTRAINT_ERROR;
 	if (strcasecmp(&n->u.dNSName[len2 - len1], c->u.dNSName) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
+	*match = 1;
 	return 0;
     }
     case choice_GeneralName_directoryName: {
 	Name c_name, n_name;
+	int ret;
+
 	c_name._save.data = NULL;
 	c_name._save.length = 0;
 	c_name.element = c->u.directoryName.element;
@@ -987,7 +991,10 @@ match_general_name(const GeneralName *c, const GeneralName *n)
 	n_name.element = n->u.directoryName.element;
 	n_name.u.rdnSequence = n->u.directoryName.u.rdnSequence;
 
-	return match_X501Name(&c_name, &n_name);
+	ret = match_X501Name(&c_name, &n_name);
+	if (ret == 0)
+	    *match = 1;
+	return ret;
     }
     case choice_GeneralName_uniformResourceIdentifier:
     case choice_GeneralName_iPAddress:
@@ -999,22 +1006,11 @@ match_general_name(const GeneralName *c, const GeneralName *n)
 
 
 static int
-match_name(const GeneralName *n, const Certificate *c)
+match_alt_name(const GeneralName *n, const Certificate *c, 
+	       int *same, int *match)
 {
-    GeneralName certname;
     GeneralNames sa;
     int ret, i, j;
-
-    certname.element = choice_GeneralName_directoryName;
-    /* certname.u.directoryName = c->tbsCertificate.subject; */
-
-    certname.u.directoryName.element = c->tbsCertificate.subject.element;
-    certname.u.directoryName.u.rdnSequence = 
-	c->tbsCertificate.subject.u.rdnSequence;
-    
-    ret = match_general_name(n, &certname);
-    if (ret)
-	return ret;
 
     i = 0;
     do {
@@ -1026,28 +1022,57 @@ match_name(const GeneralName *n, const Certificate *c)
 	    break;
 
 	for (j = 0; j < sa.len; j++) {
-	    ret = match_general_name(n, &sa.val[j]);
-	    if (ret)
-		break;
+	    if (n->element == sa.val[j].element) {
+		*same = 1;
+		ret = match_general_name(n, &sa.val[j], match);
+	    }
 	}
 	free_GeneralNames(&sa);
-    } while (ret == 0);
+    } while (1);
 
     return ret;
 }
 
+
 static int
 match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 {
+    int name, alt_name, same;
     unsigned int i;
-    *match = 0;
+    int ret = 0;
+
+    name = alt_name = same = *match = 0;
     for (i = 0; i < t->len; i++) {
 	if (t->val[i].minimum && t->val[i].maximum)
 	    return HX509_RANGE;
-	if (match_name(&t->val[i].base, c) == 0)
-	    *match = 1;
+
+	/*
+	 * If the constraint apply to directoryNames, test is with
+	 * subjectName of the certificate.
+	 */
+
+	if (t->val[i].base.element == choice_GeneralName_directoryName) {
+	    GeneralName certname;
+	    
+	    certname.element = choice_GeneralName_directoryName;
+	    certname.u.directoryName.element = 
+		c->tbsCertificate.subject.element;
+	    certname.u.directoryName.u.rdnSequence = 
+		c->tbsCertificate.subject.u.rdnSequence;
+    
+	    ret = match_general_name(&t->val[i].base, &certname, &name);
+	}
+
+	/* Handle subjectAltNames, this is icky since they
+	 * restrictions only apply if the subjectAltName is of the
+	 * same type. So if there have been a match of type, require
+	 * altname to be set.
+	 */
+	ret = match_alt_name(&t->val[i].base, c, &same, &alt_name);
     }
-    return 0;
+    if (name && (!same || alt_name))
+	*match = 1;
+    return ret;
 }
 
 static int
