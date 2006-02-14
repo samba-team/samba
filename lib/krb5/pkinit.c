@@ -35,6 +35,14 @@
 
 RCSID("$Id$");
 
+struct krb5_dh_moduli {
+    char *name;
+    unsigned long bits;
+    heim_integer p;
+    heim_integer g;
+    heim_integer q;
+};
+
 #ifdef PKINIT
 
 #include <openssl/evp.h>
@@ -102,14 +110,6 @@ struct krb5_pk_identity {
 
 struct krb5_pk_cert {
     X509 *cert;
-};
-
-struct krb5_dh_moduli {
-    char *name;
-    unsigned long bits;
-    heim_integer p;
-    heim_integer g;
-    heim_integer q;
 };
 
 struct krb5_pk_init_ctx_data {
