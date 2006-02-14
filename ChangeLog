@@ -1,3 +1,8 @@
+2006-02-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Make struct krb5_dh_moduli available when
+	compiling w/o pkinit.
+	
 2006-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: update to new paChecksum definition, update
