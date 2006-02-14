@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 2005 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,6 +33,12 @@
 
 #include "hx_locl.h"
 RCSID("Id$");
+
+/*
+ * Should use two hash/tree certificates intead of a array.  Criteria
+ * should be subject and subjectKeyIdentifier since those two are
+ * commonly seached on in CMS and path building.
+ */
 
 struct mem_data {
     char *name;
