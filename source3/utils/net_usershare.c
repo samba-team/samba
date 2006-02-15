@@ -362,10 +362,13 @@ static int info_fn(struct file_list *fl, void *priv)
 		char access_str[2];
 		const char *domain;
 		const char *name;
+		NTSTATUS ntstatus;
 
 		access_str[1] = '\0';
 
-		if (net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name)) {
+		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name);
+
+		if (!NT_STATUS_IS_OK(ntstatus)) {
 			if (*domain) {
 				pstrcat(acl_str, domain);
 				pstrcat(acl_str, sep_str);
@@ -548,7 +551,9 @@ static int net_usershare_add(int argc, const char **argv)
 
 	if ((myeuid != 0) && lp_usershare_owner_only() && (myeuid != sbuf.st_uid)) {
 		d_fprintf(stderr, "net usershare add: cannot share path %s as "
-			"we are restricted to only sharing directories we own.\n",
+			"we are restricted to only sharing directories we own.\n"
+			"\tAsk the administrator to add the line \"usershare owner only = False\" \n"
+			"\tto the [global] section of the smb.conf to allow this.\n",
 			us_path );
 		SAFE_FREE(sharename);
 		return -1;
@@ -610,9 +615,15 @@ static int net_usershare_add(int argc, const char **argv)
 		name = talloc_strndup(ctx, pacl, pcolon - pacl);
 		if (!string_to_sid(&sid, name)) {
 			/* Convert to a SID */
-			if (!net_lookup_sid_from_name(ctx, name, &sid)) {
-				d_fprintf(stderr, "net usershare add: cannot convert name %s to a SID.\n",
-					name );
+			NTSTATUS ntstatus = net_lookup_sid_from_name(ctx, name, &sid);
+			if (!NT_STATUS_IS_OK(ntstatus)) {
+				d_fprintf(stderr, "net usershare add: cannot convert name \"%s\" to a SID. %s.",
+					name, get_friendly_nt_error_msg(ntstatus) );
+				if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_CONNECTION_REFUSED)) {
+					d_fprintf(stderr,  " Maybe smbd is not running.\n");
+				} else {
+					d_fprintf(stderr, "\n");
+				}
 				talloc_destroy(ctx);
 				SAFE_FREE(sharename);
 				return -1;
