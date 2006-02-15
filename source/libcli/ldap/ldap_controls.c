@@ -98,7 +98,7 @@ static BOOL decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 		if (!lssc) {
 			return False;
 		}
-		lssc[num] = talloc(lssc, struct ldb_server_sort_control);
+		lssc[num] = talloc_zero(lssc, struct ldb_server_sort_control);
 		if (!lssc[num]) {
 			return False;
 		}
