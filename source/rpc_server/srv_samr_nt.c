@@ -252,6 +252,17 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid, const char *sid_str)
 	TALLOC_CTX *mem_ctx;
 	DISP_INFO *dpi;
 
+	/* There are two cases to consider here:
+	   1) The SID is a domain SID and we look for an equality match, or
+	   2) This is an account SID and so we return the DISP_INFO* for our 
+	      domain */
+
+	if ( psid && sid_check_is_in_our_domain( psid ) ) {
+		DEBUG(10,("get_samr_dispinfo_by_sid: Replacing %s with our domain SID\n",
+			sid_str));
+		psid = get_global_sam_sid();
+	}
+
 	for (dpi = disp_info_list; dpi; dpi = dpi->next) {
 		if (sid_equal(psid, &dpi->sid)) {
 			return dpi;
