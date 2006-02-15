@@ -207,7 +207,8 @@ OM_uint32 gss_import_name
     *minor_status = 0;
     *output_name = GSS_C_NO_NAME;
     
-    if (gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE))
+    if (gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE) ||
+	gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE_X))
 	return import_hostbased_name (minor_status,
 				      input_name_buffer,
 				      output_name);
