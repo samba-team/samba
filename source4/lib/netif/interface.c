@@ -29,7 +29,6 @@
 struct interface {
 	struct interface *next, *prev;
 	struct ipv4_addr ip;
-	struct ipv4_addr bcast;
 	struct ipv4_addr nmask;
 	const char *ip_s;
 	const char *bcast_s;
@@ -75,13 +74,9 @@ add an interface to the linked list of interfaces
 static void add_interface(struct in_addr ip, struct in_addr nmask)
 {
 	struct interface *iface;
+	struct ipv4_addr bcast;
 	if (iface_find(ip, False)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
-		return;
-	}
-
-	if (nmask.s_addr == ~0) {
-		DEBUG(3,("not adding non-broadcast interface %s\n",inet_ntoa(ip)));
 		return;
 	}
 
@@ -92,18 +87,20 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 
 	iface->ip = tov4(ip);
 	iface->nmask = tov4(nmask);
-	iface->bcast.addr = MKBCADDR(iface->ip.addr, iface->nmask.addr);
+	bcast.addr = MKBCADDR(iface->ip.addr, iface->nmask.addr);
 
 	/* keep string versions too, to avoid people tripping over the implied
 	   static in sys_inet_ntoa() */
 	iface->ip_s = talloc_strdup(iface, sys_inet_ntoa(iface->ip));
-	iface->bcast_s = talloc_strdup(iface, sys_inet_ntoa(iface->bcast));
 	iface->nmask_s = talloc_strdup(iface, sys_inet_ntoa(iface->nmask));
+	
+	if (nmask.s_addr != ~0) {
+		iface->bcast_s = talloc_strdup(iface, sys_inet_ntoa(bcast));
+	}
 
 	DLIST_ADD_END(local_interfaces, iface, struct interface *);
 
-	DEBUG(2,("added interface ip=%s bcast=%s nmask=%s\n", 
-		 iface->ip_s, iface->bcast_s, iface->nmask_s));
+	DEBUG(2,("added interface ip=%s nmask=%s\n", iface->ip_s, iface->nmask_s));
 }
 
 
@@ -149,8 +146,7 @@ static void interpret_interface(const char *token,
 		}
 		ip.s_addr = interpret_addr2(token).addr;
 		for (i=0;i<total_probed;i++) {
-			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
-			    probed_ifaces[i].netmask.s_addr != ~0) {
+			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
 				add_interface(probed_ifaces[i].ip,
 					      probed_ifaces[i].netmask);
 				return;
@@ -209,15 +205,14 @@ static void load_interfaces(void)
 	/* probe the kernel for interfaces */
 	total_probed = get_interfaces(ifaces, MAX_INTERFACES);
 
-	/* if we don't have a interfaces line then use all broadcast capable 
-	   interfaces except loopback */
+	/* if we don't have a interfaces line then use all interfaces
+	   except loopback */
 	if (!ptr || !*ptr || !**ptr) {
 		if (total_probed <= 0) {
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 		}
 		for (i=0;i<total_probed;i++) {
-			if (ifaces[i].netmask.s_addr != ~0 &&
-			    ifaces[i].ip.s_addr != loopback_ip.addr) {
+			if (ifaces[i].ip.s_addr != loopback_ip.addr) {
 				add_interface(ifaces[i].ip, 
 					      ifaces[i].netmask);
 			}

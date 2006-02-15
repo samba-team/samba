@@ -236,6 +236,7 @@ static BOOL process_one(const char *name)
 		int i, num_interfaces = iface_count();
 		for (i=0;i<num_interfaces;i++) {
 			const char *bcast = iface_n_bcast(i);
+			if (bcast == NULL) continue;
 			status = do_node_query(nbtsock, bcast, node_name, node_type, True);
 			if (NT_STATUS_IS_OK(status)) break;
 		}
