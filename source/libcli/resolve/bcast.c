@@ -31,19 +31,22 @@ struct composite_context *resolve_name_bcast_send(struct nbt_name *name,
 	int num_interfaces = iface_count();
 	const char **address_list;
 	struct composite_context *c;
-	int i;
+	int i, count=0;
 
 	address_list = talloc_array(NULL, const char *, num_interfaces+1);
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		address_list[i] = talloc_strdup(address_list, iface_n_bcast(i));
-		if (address_list[i] == NULL) {
+		const char *bcast = iface_n_bcast(i);
+		if (bcast == NULL) continue;
+		address_list[count] = talloc_strdup(address_list, bcast);
+		if (address_list[count] == NULL) {
 			talloc_free(address_list);
 			return NULL;
 		}
+		count++;
 	}
-	address_list[i] = NULL;
+	address_list[count] = NULL;
 
 	c = resolve_name_nbtlist_send(name, event_ctx, address_list, True, False);
 	talloc_free(address_list);
