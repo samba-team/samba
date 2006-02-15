@@ -510,13 +510,6 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc)
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	/* if we are allowing incoming packets from any address, then
-	   we need to bind to the wildcard address */
-	if (!lp_bind_interfaces_only()) {
-		status = kdc_add_socket(kdc, "0.0.0.0");
-		NT_STATUS_NOT_OK_RETURN(status);
-	}
-		
 	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
