@@ -997,7 +997,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx, const struct dcinf
 
 BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				const char *remote_machine,
-				struct dcinfo *pdc)
+				struct dcinfo **ppdc)
 {
 	TDB_CONTEXT *tdb_sc = NULL;
 	TDB_DATA value;
@@ -1008,10 +1008,11 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	unsigned char *pmach_pw = NULL;
 	uint32 l1, l2, l3, l4, l5;
 	int ret;
+	struct dcinfo *pdc = NULL;
 	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
 				remote_machine);
 
-	ZERO_STRUCTP(pdc);
+	*ppdc = NULL;
 
 	if (!keystr) {
 		return False;
@@ -1035,6 +1036,8 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	tdb_close(tdb_sc);
 
+	pdc = TALLOC_ZERO_P(mem_ctx, struct dcinfo);
+
 	/* Retrieve the record. */
 	ret = tdb_unpack(value.dptr, value.dsize, "dBBBBBfff",
 				&pdc->sequence,
@@ -1049,13 +1052,13 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 8 || l5 != 16) {
 		talloc_free(keystr);
+		talloc_free(pdc);
 		SAFE_FREE(pseed_chal);
 		SAFE_FREE(pclnt_chal);
 		SAFE_FREE(psrv_chal);
 		SAFE_FREE(psess_key);
 		SAFE_FREE(pmach_pw);
 		SAFE_FREE(value.dptr);
-		ZERO_STRUCTP(pdc);
 		return False;
 	}
 
@@ -1070,7 +1073,7 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	pdc->challenge_sent = True;
 	pdc->authenticated = True;
 
-	DEBUG(3,("secrets_store_schannel_session_info: restored schannel info key %s\n",
+	DEBUG(3,("secrets_restore_schannel_session_info: restored schannel info key %s\n",
 		keystr ));
 
 	SAFE_FREE(pseed_chal);
@@ -1081,5 +1084,8 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	talloc_free(keystr);
 	SAFE_FREE(value.dptr);
+
+	*ppdc = pdc;
+
 	return True;
 }

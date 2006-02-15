@@ -183,17 +183,30 @@ static void creds_reseed(struct dcinfo *dc)
 
 BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
 {
-	dc->sequence = received_cred->timestamp.time;
+	BOOL ret;
+	struct dcinfo tmp_dc = *dc;
 
-	creds_step(dc);
+	/* Do all operations on a temporary copy of the dc,
+	   which we throw away if the checks fail. */
+
+	tmp_dc.sequence = received_cred->timestamp.time;
+
+	creds_step(&tmp_dc);
 
 	/* Create the outgoing credentials */
-	cred_out->timestamp.time = dc->sequence + 1;
-	cred_out->challenge = dc->srv_chal;
+	cred_out->timestamp.time = tmp_dc.sequence + 1;
+	cred_out->challenge = tmp_dc.srv_chal;
 
-	creds_reseed(dc);
+	creds_reseed(&tmp_dc);
 
-	return creds_server_check(dc, &received_cred->challenge);
+	ret = creds_server_check(&tmp_dc, &received_cred->challenge);
+	if (!ret) {
+		return False;
+	}
+
+	/* creds step succeeded - replace the current creds. */
+	*dc = tmp_dc;
+	return True;
 }
 
 /****************************************************************************
