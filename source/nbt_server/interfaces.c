@@ -245,9 +245,15 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(i));
-		const char *bcast   = talloc_strdup(tmp_ctx, iface_n_bcast(i));
-		const char *netmask = talloc_strdup(tmp_ctx, iface_n_netmask(i));
+		const char *bcast = iface_n_bcast(i);
+		const char *address, *netmask;
+
+		/* we can't assume every interface is broadcast capable */
+		if (bcast == NULL) continue;
+
+		address = talloc_strdup(tmp_ctx, iface_n_ip(i));
+		bcast   = talloc_strdup(tmp_ctx, bcast);
+		netmask = talloc_strdup(tmp_ctx, iface_n_netmask(i));
 
 		status = nbtd_add_socket(nbtsrv, address, address, bcast, netmask);
 		NT_STATUS_NOT_OK_RETURN(status);
