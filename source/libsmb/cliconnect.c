@@ -1394,7 +1394,11 @@ again:
 		DEBUG(1,("cli_start_connection: failed to connect to %s (%s)\n",
 			 nmb_namestr(&called), inet_ntoa(ip)));
 		cli_shutdown(cli);
-		return NT_STATUS_UNSUCCESSFUL;
+		if (is_zero_ip(ip)) {
+			return NT_STATUS_BAD_NETWORK_NAME;
+		} else {
+			return NT_STATUS_CONNECTION_REFUSED;
+		}
 	}
 
 	if (retry)
@@ -1412,7 +1416,7 @@ again:
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
 	cli_setup_signing_state(cli, signing_state);
@@ -1424,7 +1428,10 @@ again:
 
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
-		nt_status = NT_STATUS_UNSUCCESSFUL;
+		nt_status = cli_nt_error(cli);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+		}
 		cli_shutdown(cli);
 		return nt_status;
 	}
