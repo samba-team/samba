@@ -109,7 +109,7 @@ struct ldap_BindRequest {
 		const char *password;
 		struct {
 			const char *mechanism;
-			DATA_BLOB secblob;
+			DATA_BLOB *secblob;/* optional */
 		} SASL;
 	} creds;
 };
@@ -117,7 +117,7 @@ struct ldap_BindRequest {
 struct ldap_BindResponse {
 	struct ldap_Result response;
 	union {
-		DATA_BLOB secblob;
+		DATA_BLOB *secblob;/* optional */
 	} SASL;
 };
 
@@ -192,7 +192,7 @@ struct ldap_ModifyDNRequest {
 	const char *dn;
 	const char *newrdn;
 	BOOL deleteolddn;
-	const char *newsuperior;
+	const char *newsuperior;/* optional */
 };
 
 struct ldap_CompareRequest {
@@ -207,13 +207,13 @@ struct ldap_AbandonRequest {
 
 struct ldap_ExtendedRequest {
 	const char *oid;
-	DATA_BLOB value;
+	DATA_BLOB *value;/* optional */
 };
 
 struct ldap_ExtendedResponse {
 	struct ldap_Result response;
-	const char *name;
-	DATA_BLOB value;
+	const char *oid;/* optional */
+	DATA_BLOB *value;/* optional */
 };
 
 union ldap_Request {

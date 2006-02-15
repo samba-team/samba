@@ -219,14 +219,9 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 			asn1_push_tag(&data, ASN1_CONTEXT(3));
 			asn1_write_OctetString(&data, r->creds.SASL.mechanism,
 					       strlen(r->creds.SASL.mechanism));
-			/* The value of data indicates if this
-			 * optional element exists at all.  In SASL
-			 * there is a difference between NULL and
-			 * zero-legnth, but our APIs don't express it
-			 * well */
-			if (r->creds.SASL.secblob.data) {
-				asn1_write_OctetString(&data, r->creds.SASL.secblob.data,
-						       r->creds.SASL.secblob.length);
+			if (r->creds.SASL.secblob) {
+				asn1_write_OctetString(&data, r->creds.SASL.secblob->data,
+						       r->creds.SASL.secblob->length);
 			}
 			asn1_pop_tag(&data);
 			break;
@@ -241,13 +236,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		ldap_encode_response(&data, &r->response);
-		/* The value of data indicates if this
-		 * optional element exists at all.  In SASL
-		 * there is a difference between NULL and
-		 * zero-legnth, but our APIs don't express it
-		 * well */
-		if (r->SASL.secblob.data) {
-			asn1_write_ContextSimple(&data, 7, &r->SASL.secblob);
+		if (r->SASL.secblob) {
+			asn1_write_ContextSimple(&data, 7, r->SASL.secblob);
 		}
 		asn1_pop_tag(&data);
 		break;
@@ -396,7 +386,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_write_OctetString(&data, r->newrdn, strlen(r->newrdn));
 		asn1_write_BOOLEAN(&data, r->deleteolddn);
-		if (r->newsuperior != NULL) {
+		if (r->newsuperior) {
 			asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(0));
 			asn1_write(&data, r->newsuperior,
 				   strlen(r->newsuperior));
@@ -452,9 +442,11 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(0));
 		asn1_write(&data, r->oid, strlen(r->oid));
 		asn1_pop_tag(&data);
-		asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(1));
-		asn1_write(&data, r->value.data, r->value.length);
-		asn1_pop_tag(&data);
+		if (r->value) {
+			asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(1));
+			asn1_write(&data, r->value->data, r->value->length);
+			asn1_pop_tag(&data);
+		}
 		asn1_pop_tag(&data);
 		break;
 	}
@@ -462,6 +454,16 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ct
 		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
 		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		ldap_encode_response(&data, &r->response);
+		if (r->oid) {
+			asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(10));
+			asn1_write(&data, r->oid, strlen(r->oid));
+			asn1_pop_tag(&data);
+		}
+		if (r->value) {
+			asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(11));
+			asn1_write(&data, r->value->data, r->value->length);
+			asn1_pop_tag(&data);
+		}
 		asn1_pop_tag(&data);
 		break;
 	}
@@ -960,12 +962,17 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			r->mechanism = LDAP_AUTH_MECH_SASL;
 			asn1_read_OctetString_talloc(msg, data, &r->creds.SASL.mechanism);
 			if (asn1_peek_tag(data, ASN1_OCTET_STRING)) { /* optional */
-				asn1_read_OctetString(data, &r->creds.SASL.secblob);
-				if (r->creds.SASL.secblob.data) {
-					talloc_steal(msg, r->creds.SASL.secblob.data);
+				DATA_BLOB tmp_blob = data_blob(NULL, 0);
+				asn1_read_OctetString(data, &tmp_blob);
+				r->creds.SASL.secblob = talloc(msg, DATA_BLOB);
+				if (!r->creds.SASL.secblob) {
+					return False;
 				}
+				*r->creds.SASL.secblob = data_blob_talloc(r->creds.SASL.secblob,
+									  tmp_blob.data, tmp_blob.length);
+				data_blob_free(&tmp_blob);
 			} else {
-				r->creds.SASL.secblob = data_blob(NULL, 0);
+				r->creds.SASL.secblob = NULL;
 			}
 			asn1_end_tag(data);
 		}
@@ -981,10 +988,15 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
 			DATA_BLOB tmp_blob = data_blob(NULL, 0);
 			asn1_read_ContextSimple(data, 7, &tmp_blob);
-			r->SASL.secblob = data_blob_talloc(msg, tmp_blob.data, tmp_blob.length);
+			r->SASL.secblob = talloc(msg, DATA_BLOB);
+			if (!r->SASL.secblob) {
+				return False;
+			}
+			*r->SASL.secblob = data_blob_talloc(r->SASL.secblob,
+							    tmp_blob.data, tmp_blob.length);
 			data_blob_free(&tmp_blob);
 		} else {
-			r->SASL.secblob = data_blob(NULL, 0);
+			r->SASL.secblob = NULL;
 		}
 		asn1_end_tag(data);
 		break;
@@ -1241,10 +1253,14 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(1))) {
 			asn1_read_ContextSimple(data, 1, &tmp_blob);
-			r->value = data_blob_talloc(msg, tmp_blob.data, tmp_blob.length);
+			r->value = talloc(msg, DATA_BLOB);
+			if (!r->value) {
+				return False;
+			}
+			*r->value = data_blob_talloc(r->value, tmp_blob.data, tmp_blob.length);
 			data_blob_free(&tmp_blob);
 		} else {
-			r->value = data_blob(NULL, 0);
+			r->value = NULL;
 		}
 
 		asn1_end_tag(data);
@@ -1253,15 +1269,35 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 	case ASN1_APPLICATION(LDAP_TAG_ExtendedResponse): {
 		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
+		DATA_BLOB tmp_blob = data_blob(NULL, 0);
+
 		msg->type = LDAP_TAG_ExtendedResponse;
 		asn1_start_tag(data, tag);		
 		ldap_decode_response(msg, data, &r->response);
-		/* I have to come across an operation that actually sends
-		 * something back to really see what's going on. The currently
-		 * needed pwdchange does not send anything back. */
-		r->name = NULL;
-		r->value.data = NULL;
-		r->value.length = 0;
+
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(10))) {
+			asn1_read_ContextSimple(data, 1, &tmp_blob);
+			r->oid = blob2string_talloc(msg, tmp_blob);
+			data_blob_free(&tmp_blob);
+			if (!r->oid) {
+				return False;
+			}
+		} else {
+			r->oid = NULL;
+		}
+
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(11))) {
+			asn1_read_ContextSimple(data, 1, &tmp_blob);
+			r->value = talloc(msg, DATA_BLOB);
+			if (!r->value) {
+				return False;
+			}
+			*r->value = data_blob_talloc(r->value, tmp_blob.data, tmp_blob.length);
+			data_blob_free(&tmp_blob);
+		} else {
+			r->value = NULL;
+		}
+
 		asn1_end_tag(data);
 		break;
 	}

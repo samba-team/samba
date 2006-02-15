@@ -49,8 +49,6 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 						  req->creds.password, &session_info);
 	}
 
-	/* When we add authentication here, we also need to handle telling the backends */
-
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
 		return NT_STATUS_NO_MEMORY;
@@ -84,9 +82,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	resp->response.errormessage = errstr;
 	resp->response.dn = NULL;
 	resp->response.referral = NULL;
-
-	/* This looks wrong... */
-	resp->SASL.secblob = data_blob(NULL, 0);
+	resp->SASL.secblob = NULL;
 
 	ldapsrv_queue_reply(call, reply);
 	return NT_STATUS_OK;
@@ -145,10 +141,29 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
+		DATA_BLOB input = data_blob(NULL, 0);
+		DATA_BLOB output = data_blob(NULL, 0);
+
+		if (req->creds.SASL.secblob) {
+			input = *req->creds.SASL.secblob;
+		}
+
+		resp->SASL.secblob = talloc(reply, DATA_BLOB);
+		NT_STATUS_HAVE_NO_MEMORY(resp->SASL.secblob);
+
 		status = gensec_update(conn->gensec, reply,
-				       req->creds.SASL.secblob, &resp->SASL.secblob);
+				       input, &output);
+
+		/* TODO: gensec should really handle the difference between NULL and length=0 better! */
+		if (output.data) {
+			resp->SASL.secblob = talloc(reply, DATA_BLOB);
+			NT_STATUS_HAVE_NO_MEMORY(resp->SASL.secblob);
+			*resp->SASL.secblob = output;
+		} else {
+			resp->SASL.secblob = NULL;
+		}
 	} else {
-		resp->SASL.secblob = data_blob(NULL, 0);	
+		resp->SASL.secblob = NULL;
 	}
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
@@ -223,7 +238,7 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	resp->response.dn = NULL;
 	resp->response.errormessage = talloc_asprintf(reply, "Bad AuthenticationChoice [%d]", req->mechanism);
 	resp->response.referral = NULL;
-	resp->SASL.secblob = data_blob(NULL, 0);
+	resp->SASL.secblob = NULL;
 
 	ldapsrv_queue_reply(call, reply);
 	return NT_STATUS_OK;

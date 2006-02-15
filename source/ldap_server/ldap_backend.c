@@ -139,9 +139,8 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	r->response.dn = NULL;
 	r->response.errormessage = NULL;
 	r->response.referral = NULL;
-	r->name = NULL;
-	r->value.data = NULL;
-	r->value.length = 0;
+	r->oid = NULL;
+	r->value = NULL;
 
 	ldapsrv_queue_reply(call, reply);
 	return NT_STATUS_OK;
