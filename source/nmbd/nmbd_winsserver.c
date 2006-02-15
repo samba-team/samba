@@ -207,6 +207,11 @@ struct name_record *find_name_on_wins_subnet(const struct nmb_name *nmbname, BOO
 	}
 
 	namerec = wins_record_to_name_record(key, data);
+
+	/* done with the this */
+
+	SAFE_FREE( data.dptr );
+
 	if (!namerec) {
 		return NULL;
 	}
