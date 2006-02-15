@@ -297,9 +297,8 @@ if [ "$1" -eq "2" ]; then
 		for file in `ls /var/cache/samba/eventlog/*tdb`; do
 			/bin/cp -up $file /var/lib/samba/eventlog/`basename $file`
 		done
+		/bin/mv /var/cache/samba /var/cache/samba.moved
         fi
-
-	/bin/mv /var/cache/samba /var/cache/samba.moved
 fi
 
 %preun
