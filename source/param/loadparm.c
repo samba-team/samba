@@ -1646,13 +1646,8 @@ static void init_globals(BOOL first_time_only)
 	Globals.bDeferSharingViolations = True;
 	string_set(&Globals.smb_ports, SMB_PORTS);
 
-	/* don't enable privileges by default since Domain 
-	   Admins can then assign thr rights to perform certain 
-	   operations as root */
-
-	Globals.bEnablePrivileges = False;
-
-	Globals.bASUSupport       = True;
+	Globals.bEnablePrivileges = True;
+	Globals.bASUSupport       = False;
 	
 	/* User defined shares. */
 	pstrcpy(s, dyn_LOCKDIR);
@@ -5240,15 +5235,6 @@ const char *lp_printername(int snum)
 	return ret;
 }
 
-
-/****************************************************************
- Compatibility fn. for 2.2.2 code.....
-*****************************************************************/
-
-void get_private_directory(pstring privdir)
-{
-	pstrcpy (privdir, lp_private_dir());
-}
 
 /***********************************************************
  Allow daemons such as winbindd to fix their logfile name.
