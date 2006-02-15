@@ -281,6 +281,10 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 			q_u->uni_logon_clnt.buffer,
 			sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
 
+	/* Remember the workstation name. This is what we'll use to look
+	   up the secrets.tdb record later. */
+	fstrcpy(p->wks, p->dc->remote_machine);
+
 	/* Save the client challenge to the server. */
 	memcpy(p->dc->clnt_chal.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 
@@ -464,10 +468,31 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	DOM_CRED cred_out;
 	const uchar *old_pw;
 
+	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
+
+	/* We need the workstation name for the creds lookup. */
+	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
+		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
+
+	if (!p->dc) {
+		/* Restore the saved state of the netlogon creds. */
+		become_root();
+		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
+							workstation,
+							&p->dc);
+		unbecome_root();
+		if (!ret) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+	}
+
 	if (!p->dc || !p->dc->authenticated) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	DEBUG(3,("_net_srv_pwset: Server Password Set by Wksta:[%s] on account [%s]\n",
+			workstation, p->dc->mach_acct));
+	
 	/* Step the creds chain forward. */
 	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
 		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
@@ -476,17 +501,10 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
-
-	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
-		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
-
-	DEBUG(3,("_net_srv_pwset: Server Password Set by Wksta:[%s] on account [%s]\n",
-			workstation, p->dc->mach_acct));
-	
-	pdb_init_sam(&sampass);
-
+	/* We must store the creds state after an update. */
 	become_root();
+	secrets_store_schannel_session_info(p->pipe_state_mem_ctx, p->dc);
+	pdb_init_sam(&sampass);
 	ret=pdb_getsampwnam(sampass, p->dc->mach_acct);
 	unbecome_root();
 
@@ -559,8 +577,27 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
+	fstring workstation;
+
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
+
+	if (!p->dc) {
+		/* Restore the saved state of the netlogon creds. */
+		BOOL ret;
+
+		*workstation = '\0';
+		rpcstr_pull_unistr2_fstring(workstation, &q_u->sam_id.client.login.uni_comp_name);
+
+		become_root();
+		secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
+							workstation,
+							&p->dc);
+		unbecome_root();
+		if (!ret) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+	}
 
 	if (!p->dc || !p->dc->authenticated) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -575,6 +612,11 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	/* We must store the creds state after an update. */
+	become_root();
+	secrets_store_schannel_session_info(p->pipe_state_mem_ctx, p->dc);
+	unbecome_root();
 
 	r_u->status = NT_STATUS_OK;
 	return r_u->status;
@@ -651,32 +693,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	if (process_creds) {
-		if (!p->dc || !p->dc->authenticated) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
-	}
-
-	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
-		/* 'server schannel = yes' should enforce use of
-		   schannel, the client did offer it in auth2, but
-		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logon: client %s not using schannel for netlogon\n",
-			p->dc->remote_machine ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (process_creds) {
-		/* checks and updates credentials.  creates reply credentials */
-		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
-				"request from client %s machine account %s\n",
-				p->dc->remote_machine, p->dc->mach_acct ));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
-	/* find the username */
+	/* We need the workstation name for the creds lookup. */
     
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
@@ -703,9 +720,52 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	rpcstr_pull(nt_domain,uni_samlogon_domain->buffer,sizeof(nt_domain),uni_samlogon_domain->uni_str_len*2,0);
 	rpcstr_pull(nt_workstation,uni_samlogon_workstation->buffer,sizeof(nt_workstation),uni_samlogon_workstation->uni_str_len*2,0);
 
-	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, 
-                 nt_workstation, nt_domain));
-   	
+	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, nt_workstation, nt_domain));
+
+	if (process_creds) {
+		if (!p->dc) {
+			/* Restore the saved state of the netlogon creds. */
+			BOOL ret;
+
+			become_root();
+			secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
+								nt_workstation,
+								&p->dc);
+			unbecome_root();
+			if (!ret) {
+				return NT_STATUS_INVALID_HANDLE;
+			}
+		}
+
+		if (!p->dc || !p->dc->authenticated) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+	}
+
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logon: client %s not using schannel for netlogon\n",
+			p->dc->remote_machine ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (process_creds) {
+		/* checks and updates credentials.  creates reply credentials */
+		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
+			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
+				"request from client %s machine account %s\n",
+				p->dc->remote_machine, p->dc->mach_acct ));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/* We must store the creds state after an update. */
+		become_root();
+		secrets_store_schannel_session_info(p->pipe_state_mem_ctx, p->dc);
+		unbecome_root();
+	}
+
 	fstrcpy(current_user_info.smb_name, nt_username);
 	sub_set_smb_name(nt_username);
      
@@ -822,8 +882,9 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		pstring my_name;
 		fstring user_sid_string;
 		fstring group_sid_string;
-		uchar user_session_key[16];
-		uchar lm_session_key[16];
+		unsigned char user_session_key[16];
+		unsigned char lm_session_key[16];
+		unsigned char pipe_session_key[16];
 
 		sampw = server_info->sam_account;
 
@@ -870,14 +931,36 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 			       server_info->user_session_key.data, 
 			       MIN(sizeof(user_session_key),
 				   server_info->user_session_key.length));
-			SamOEMhash(user_session_key, p->dc->sess_key, 16);
+			if (process_creds) {
+				/* Get the pipe session key from the creds. */
+				memcpy(pipe_session_key, p->dc->sess_key, 16);
+			} else {
+				/* Get the pipe session key from the schannel. */
+				if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL || p->auth.a_u.schannel_auth == NULL) {
+					return NT_STATUS_INVALID_HANDLE;
+				}
+				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
+			}
+			SamOEMhash(user_session_key, pipe_session_key, 16);
+			memset(pipe_session_key, '\0', 16);
 		}
 		if (server_info->lm_session_key.length) {
 			memcpy(lm_session_key,
 			       server_info->lm_session_key.data, 
 			       MIN(sizeof(lm_session_key),
 				   server_info->lm_session_key.length));
-			SamOEMhash(lm_session_key, p->dc->sess_key, 16);
+			if (process_creds) {
+				/* Get the pipe session key from the creds. */
+				memcpy(pipe_session_key, p->dc->sess_key, 16);
+			} else {
+				/* Get the pipe session key from the schannel. */
+				if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL || p->auth.a_u.schannel_auth == NULL) {
+					return NT_STATUS_INVALID_HANDLE;
+				}
+				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
+			}
+			SamOEMhash(lm_session_key, pipe_session_key, 16);
+			memset(pipe_session_key, '\0', 16);
 		}
 		
 		init_net_user_info3(p->mem_ctx, usr_info, 
