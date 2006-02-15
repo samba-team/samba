@@ -1284,7 +1284,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	RPC_AUTH_SCHANNEL_NEG neg;
 	RPC_AUTH_VERIFIER auth_verifier;
 	BOOL ret;
-	struct dcinfo stored_dcinfo;
+	struct dcinfo *pdcinfo;
 	uint32 flags;
 
 	if (!smb_io_rpc_auth_schannel_neg("", &neg, rpc_in_p, 0)) {
@@ -1292,10 +1292,8 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return False;
 	}
 
-	ZERO_STRUCT(stored_dcinfo);
-
 	become_root();
-	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &stored_dcinfo);
+	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &pdcinfo);
 	unbecome_root();
 
 	if (!ret) {
@@ -1305,28 +1303,23 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
 	p->auth.a_u.schannel_auth = TALLOC_P(p->pipe_state_mem_ctx, struct schannel_auth_struct);
 	if (!p->auth.a_u.schannel_auth) {
+		talloc_free(pdcinfo);
 		return False;
 	}
 
 	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
-	memcpy(p->auth.a_u.schannel_auth->sess_key, stored_dcinfo.sess_key, sizeof(stored_dcinfo.sess_key));
+	memcpy(p->auth.a_u.schannel_auth->sess_key, pdcinfo->sess_key,
+			sizeof(pdcinfo->sess_key));
+
+	talloc_free(pdcinfo);
 
 	p->auth.a_u.schannel_auth->seq_num = 0;
 
 	/*
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
-	 * here ? We do that for NTLMSPP, but the session key is already set up from the vuser
+	 * here ? We do that for NTLMSSP, but the session key is already set up from the vuser
 	 * struct of the person who opened the pipe. I need to test this further. JRA.
 	 */
-
-	/* The client opens a second RPC NETLOGON pipe without
-		doing a auth2. The credentials for the schannel are
-		re-used from the auth2 the client did before. */
-	p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
-	if (!p->dc) {
-		return False;
-	}
-	*p->dc = stored_dcinfo;
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
