@@ -39,6 +39,9 @@ struct interface {
 static struct interface *local_interfaces;
 
 #define ALLONES  ((uint32_t)0xFFFFFFFF)
+/*
+  address construction based on a patch from fred@datalync.com
+*/
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
 #define MKNETADDR(_IP, _NM) (_IP & _NM)
 
