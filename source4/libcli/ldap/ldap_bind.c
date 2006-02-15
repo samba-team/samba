@@ -129,7 +129,16 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
 	res->r.BindRequest.dn = "";
 	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SASL;
 	res->r.BindRequest.creds.SASL.mechanism = talloc_strdup(res, sasl_mechanism);
-	res->r.BindRequest.creds.SASL.secblob = *secblob;
+	if (secblob) {
+		res->r.BindRequest.creds.SASL.secblob = talloc(res, DATA_BLOB);
+		if (!res->r.BindRequest.creds.SASL.secblob) {
+			talloc_free(res);
+			return NULL;
+		}
+		*res->r.BindRequest.creds.SASL.secblob = *secblob;
+	} else {
+		res->r.BindRequest.creds.SASL.secblob = NULL;
+	}
 	res->controls = NULL;
 
 	return res;
@@ -262,7 +271,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		}
 
 		/* Perhaps we should make gensec_start_mech_by_sasl_list() return the name we got? */
-		msg = new_ldap_sasl_bind_msg(tmp_ctx, conn->gensec->ops->sasl_name, &output);
+		msg = new_ldap_sasl_bind_msg(tmp_ctx, conn->gensec->ops->sasl_name, (output.data?&output:NULL));
 		if (msg == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
@@ -297,7 +306,11 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		if (!NT_STATUS_EQUAL(gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			break;
 		}
-		input = response->r.BindResponse.SASL.secblob;
+		if (response->r.BindResponse.SASL.secblob) {
+			input = *response->r.BindResponse.SASL.secblob;
+		} else {
+			input = data_blob(NULL, 0);
+		}
 	}
 
 	if (NT_STATUS_IS_OK(status) &&

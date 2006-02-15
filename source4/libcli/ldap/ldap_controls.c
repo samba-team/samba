@@ -304,7 +304,7 @@ static BOOL decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 		}
 		lac->src_attr_len = source_attribute.length;
 		if (lac->src_attr_len) {
-			lac->source_attribute = talloc_strndup(lac, (char *)source_attribute.data, source_attribute.length);
+			lac->source_attribute = talloc_strndup(lac, (const char *)source_attribute.data, source_attribute.length);
 
 			if (!(lac->source_attribute)) {
 				return False;
@@ -864,7 +864,7 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 		return False;
 	}
 	ctrl->oid = talloc_strndup(mem_ctx, (char *)oid.data, oid.length);
-	if (!(ctrl->oid)) {
+	if (!ctrl->oid) {
 		return False;
 	}
 
@@ -878,13 +878,17 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 
 	ctrl->value = NULL;
 
+	if (!asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		goto end_tag;
+	}
+
+	if (!asn1_read_OctetString(data, &value)) {
+		return False;
+	}
+
 	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
 		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			
-			if (!asn1_read_OctetString(data, &value)) {
-				return False;
-			}
-			if (!ldap_known_controls[i].decode(mem_ctx, value, &(ctrl->value))) {
+			if (!ldap_known_controls[i].decode(mem_ctx, value, &ctrl->value)) {
 				return False;
 			}
 			break;
@@ -894,6 +898,7 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 		return False;
 	}
 
+end_tag:
 	if (!asn1_end_tag(data)) {
 		return False;
 	}
@@ -909,15 +914,19 @@ BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 		return False;
 	}
-	
+
 	if (!asn1_write_OctetString(data, ctrl->oid, strlen(ctrl->oid))) {
 		return False;
 	}
-	
+
 	if (ctrl->critical) {
 		if (!asn1_write_BOOLEAN(data, ctrl->critical)) {
 			return False;
 		}
+	}
+
+	if (!ctrl->value) {
+		goto pop_tag;
 	}
 
 	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
@@ -932,12 +941,11 @@ BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 		return False;
 	}
 
-	if (value.length != 0) {
-		if (!asn1_write_OctetString(data, value.data, value.length)) {
-			return False;
-		}
+	if (!asn1_write_OctetString(data, value.data, value.length)) {
+		return False;
 	}
 
+pop_tag:
 	if (!asn1_pop_tag(data)) {
 		return False;
 	}
