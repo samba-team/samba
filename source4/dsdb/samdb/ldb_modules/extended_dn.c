@@ -185,6 +185,9 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	extended_ctrl = talloc_get_type(control->data, struct ldb_extended_dn_control);
+	if (!extended_ctrl) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	/* save it locally and remove it from the list */
 	if (!save_controls(control, req, &saved_controls)) {
