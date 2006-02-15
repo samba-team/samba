@@ -117,6 +117,9 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	paged_ctrl = talloc_get_type(control->data, struct ldb_paged_control);
+	if (!paged_ctrl) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	/* check if it is a continuation search the store */
 	if (paged_ctrl->cookie_len != 0) {

@@ -105,6 +105,9 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	asq_ctrl = talloc_get_type(control->data, struct ldb_asq_control);
+	if (!asq_ctrl) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	/* get the object to retrieve the DNs to search */
 	base_req = talloc_zero(req, struct ldb_request);

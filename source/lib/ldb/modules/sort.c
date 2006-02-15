@@ -126,6 +126,9 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	}
 
 	sort_ctrls = talloc_get_type(control->data, struct ldb_server_sort_control *);
+	if (!sort_ctrls) {
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	/* FIXME: we do not support more than one attribute for sorting right now */
 	/* FIXME: we need to check if the attribute type exist or return an error */
