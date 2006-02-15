@@ -1,5 +1,10 @@
-2006-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-02-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* import_name.c: Accept both GSS_C_NT_HOSTBASED_SERVICE and
+	GSS_C_NT_HOSTBASED_SERVICE_X as nametype for hostbased names.
+	
+2006-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* delete_sec_context.c (gss_delete_sec_context): if the context
 	handle is GSS_C_NO_CONTEXT, don't fall over.
 
