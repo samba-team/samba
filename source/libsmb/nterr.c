@@ -541,6 +541,8 @@ static nt_err_code_struct nt_errs[] =
 	{ NULL, NT_STATUS(0) }
 };
 
+/* These need sorting..... */
+
 nt_err_code_struct nt_err_desc[] =
 {
 	{ "Success", 				NT_STATUS_OK },
@@ -595,6 +597,8 @@ nt_err_code_struct nt_err_desc[] =
 	{ "Duplicate name on network", 		NT_STATUS_DUPLICATE_NAME },
 	{ "Print queue is full", 		NT_STATUS_PRINT_QUEUE_FULL },
 	{ "No print spool space available", 	NT_STATUS_NO_SPOOL_SPACE },
+	{ "The network name cannot be found",   NT_STATUS_BAD_NETWORK_NAME },
+	{ "The connection was refused",         NT_STATUS_CONNECTION_REFUSED },
 	{ "Too many names", 			NT_STATUS_TOO_MANY_NAMES },
 	{ "Too many sessions", 			NT_STATUS_TOO_MANY_SESSIONS },
 	{ "Invalid server state", 		NT_STATUS_INVALID_SERVER_STATE },

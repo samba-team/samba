@@ -29,6 +29,7 @@
 
 struct con_struct {
 	BOOL failed_connect;
+	NTSTATUS err;
 	struct cli_state *cli;
 	struct rpc_pipe_client *lsapipe;
 	POLICY_HND pol;
@@ -53,13 +54,16 @@ static int cs_destructor(void *p)
  Create the connection to localhost.
 ********************************************************/
 
-static struct con_struct *create_cs(TALLOC_CTX *ctx)
+static struct con_struct *create_cs(TALLOC_CTX *ctx, NTSTATUS *perr)
 {
 	NTSTATUS nt_status;
 	struct in_addr loopback_ip = *interpret_addr2("127.0.0.1");;
 
+	*perr = NT_STATUS_OK;
+
 	if (cs) {
 		if (cs->failed_connect) {
+			*perr = cs->err;
 			return NULL;
 		}
 		return cs;
@@ -67,6 +71,7 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 
 	cs = TALLOC_P(ctx, struct con_struct);
 	if (!cs) {
+		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
 
@@ -103,6 +108,8 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: Connect failed. Error was %s\n", nt_errstr(nt_status)));
 		cs->failed_connect = True;
+		cs->err = nt_status;
+		*perr = nt_status;
 		return NULL;
 	}
 
@@ -113,6 +120,8 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	if (cs->lsapipe == NULL) {
 		DEBUG(2,("create_cs: open LSA pipe failed. Error was %s\n", nt_errstr(nt_status)));
 		cs->failed_connect = True;
+		cs->err = nt_status;
+		*perr = nt_status;
 		return NULL;
 	}
 
@@ -123,9 +132,11 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: rpccli_lsa_open_policy failed. Error was %s\n", nt_errstr(nt_status)));
 		cs->failed_connect = True;
+		cs->err = nt_status;
+		*perr = nt_status;
 		return NULL;
 	}
-	
+
 	return cs;
 }
 
@@ -137,7 +148,7 @@ static struct con_struct *create_cs(TALLOC_CTX *ctx)
  The local smbd will also ask winbindd for us, so we don't have to.
 ********************************************************/
 
-BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx,
+NTSTATUS net_lookup_name_from_sid(TALLOC_CTX *ctx,
 				DOM_SID *psid,
 				const char **ppdomain,
 				const char **ppname)
@@ -151,9 +162,9 @@ BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx,
 	*ppdomain = NULL;
 	*ppname = NULL;
 
-	csp = create_cs(ctx);
+	csp = create_cs(ctx, &nt_status);
 	if (csp == NULL) {
-		return False;
+		return nt_status;
 	}
 
 	nt_status = rpccli_lsa_lookup_sids(csp->lsapipe, ctx,
@@ -164,7 +175,7 @@ BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx,
 						&types);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return False;
+		return nt_status;
 	}
 
 	*ppdomain = domains[0];
@@ -172,23 +183,23 @@ BOOL net_lookup_name_from_sid(TALLOC_CTX *ctx,
 	/* Don't care about type here. */
 
         /* Converted OK */
-        return True;
+        return NT_STATUS_OK;
 }
 
 /********************************************************
  Do a lookup_names call to localhost.
 ********************************************************/
 
-BOOL net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SID *pret_sid)
+NTSTATUS net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SID *pret_sid)
 {
 	NTSTATUS nt_status;
 	struct con_struct *csp = NULL;
 	DOM_SID *sids = NULL;
 	uint32 *types = NULL;
 
-	csp = create_cs(ctx);
+	csp = create_cs(ctx, &nt_status);
 	if (csp == NULL) {
-		return False;
+		return nt_status;
 	}
 
 	nt_status = rpccli_lsa_lookup_names(csp->lsapipe, ctx,
@@ -199,11 +210,11 @@ BOOL net_lookup_sid_from_name(TALLOC_CTX *ctx, const char *full_name, DOM_SID *p
 						&types);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return False;
+		return nt_status;
 	}
 
 	*pret_sid = sids[0];
 
         /* Converted OK */
-        return True;
+        return NT_STATUS_OK;
 }
