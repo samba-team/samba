@@ -1,10 +1,14 @@
 /* 
    Unix SMB/CIFS implementation.
    passdb editing frontend
-   
+
+   Copyright (C) Jeremy Allison  1998
+   Copyright (C) Andrew Tridgell 1998
+   Copyright (C) Tim Potter      2000
    Copyright (C) Simo Sorce      2000
-   Copyright (C) Andrew Bartlett 2001
-   Copyright (C) Jelmer Vernooij 2002
+   Copyright (C) Martin Pool     2001
+   Copyright (C) Gerald Carter   2002
+   Copyright (C) Andrew Bartlett 2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
