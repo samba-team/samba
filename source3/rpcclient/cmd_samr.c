@@ -151,25 +151,25 @@ static const char *display_time(NTTIME nttime)
 
 static void display_password_properties(uint32 password_properties) 
 {
-		printf("password_properties: 0x%08x\n", password_properties);
+	printf("password_properties: 0x%08x\n", password_properties);
 		
-		if (password_properties & DOMAIN_PASSWORD_COMPLEX)
-			printf("\tDOMAIN_PASSWORD_COMPLEX\n");
+	if (password_properties & DOMAIN_PASSWORD_COMPLEX)
+		printf("\tDOMAIN_PASSWORD_COMPLEX\n");
 			
-		if (password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE)
-			printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
+	if (password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE)
+		printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
 			
-		if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
-			printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
+	if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
+		printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
 			
-		if (password_properties & DOMAIN_LOCKOUT_ADMINS)
-			printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+	if (password_properties & DOMAIN_LOCKOUT_ADMINS)
+		printf("\tDOMAIN_LOCKOUT_ADMINS\n");
 			
-		if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
-			printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
+	if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
+		printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
 			
-		if (password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
-			printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
+	if (password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
+		printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
 }
 
 static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
