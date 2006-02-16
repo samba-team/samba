@@ -4,7 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997,
- *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Jeremy Allison                    2001, 2006.
  *  Copyright (C) Rafal Szczesniak                  2002,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Simo Sorce                        2003.
@@ -131,21 +131,23 @@ static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 }
 
 /***************************************************************************
- init_lsa_rids
+ lookup_lsa_rids. Must be called as root for lookup_name to work.
  ***************************************************************************/
 
-static int init_lsa_rids(TALLOC_CTX *mem_ctx,
-			  DOM_R_REF *ref, DOM_RID *prid,
-			  int num_entries, UNISTR2 *name,
-			  int flags)
+static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
+			DOM_R_REF *ref,
+			DOM_RID *prid,
+			int num_entries,
+			const UNISTR2 *name,
+			int flags,
+			int *pmapped_count)
 {
 	int mapped_count, i;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
 	mapped_count = 0;
-
-	become_root(); /* lookup_name can require root privs */
+	*pmapped_count = 0;
 
 	for (i = 0; i < num_entries; i++) {
 		DOM_SID sid;
@@ -160,17 +162,16 @@ static int init_lsa_rids(TALLOC_CTX *mem_ctx,
 		full_name = rpcstr_pull_unistr2_talloc(mem_ctx, &name[i]);
 		if (full_name == NULL) {
 			DEBUG(0, ("pull_ucs2_talloc failed\n"));
-			return 0;
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		DEBUG(5, ("init_lsa_rids: looking up name %s\n", full_name));
+		DEBUG(5, ("lookup_lsa_rids: looking up name %s\n", full_name));
 
 		/* We can ignore the result of lookup_name, it will not touch
 		   "type" if it's not successful */
 
 		lookup_name(mem_ctx, full_name, flags, &domain, NULL,
 			    &sid, &type);
-
 
 		switch (type) {
 		case SID_NAME_USER:
@@ -200,9 +201,92 @@ static int init_lsa_rids(TALLOC_CTX *mem_ctx,
 		init_dom_rid(&prid[i], rid, type, dom_idx);
 	}
 
-	unbecome_root();
+	*pmapped_count = mapped_count;
+	return NT_STATUS_OK;
+}
 
-	return mapped_count;
+/***************************************************************************
+ lookup_lsa_sids. Must be called as root for lookup_name to work.
+ ***************************************************************************/
+
+static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
+			DOM_R_REF *ref,
+			LSA_TRANSLATED_SID3 *trans_sids,
+			int num_entries,
+			const UNISTR2 *name,
+			int flags,
+			int *pmapped_count)
+{
+	int mapped_count, i;
+
+	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
+
+	mapped_count = 0;
+	*pmapped_count = 0;
+
+	for (i = 0; i < num_entries; i++) {
+		DOM_SID sid;
+		uint32 rid;
+		int dom_idx;
+		char *full_name;
+		const char *domain;
+		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+
+		/* Split name into domain and user component */
+
+		full_name = rpcstr_pull_unistr2_talloc(mem_ctx, &name[i]);
+		if (full_name == NULL) {
+			DEBUG(0, ("pull_ucs2_talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		DEBUG(5, ("init_lsa_sids: looking up name %s\n", full_name));
+
+		/* We can ignore the result of lookup_name, it will not touch
+		   "type" if it's not successful */
+
+		lookup_name(mem_ctx, full_name, flags, &domain, NULL,
+			    &sid, &type);
+
+		switch (type) {
+		case SID_NAME_USER:
+		case SID_NAME_DOM_GRP:
+		case SID_NAME_DOMAIN:
+		case SID_NAME_ALIAS:
+		case SID_NAME_WKN_GRP:
+			DEBUG(5, ("init_lsa_sids: %s found\n", full_name));
+			/* Leave these unchanged */
+			break;
+		default:
+			/* Don't hand out anything but the list above */
+			DEBUG(5, ("init_lsa_sids: %s not found\n", full_name));
+			type = SID_NAME_UNKNOWN;
+			break;
+		}
+
+		rid = 0;
+		dom_idx = -1;
+
+		if (type != SID_NAME_UNKNOWN) {
+			DOM_SID domain_sid;
+			sid_copy(&domain_sid, &sid);
+			sid_split_rid(&domain_sid, &rid);
+			dom_idx = init_dom_ref(ref, domain, &domain_sid);
+			mapped_count++;
+		}
+
+		/* Initialize the LSA_TRANSLATED_SID3 return. */
+		trans_sids[i].sid_type = type;
+		trans_sids[i].sid2 = TALLOC_P(mem_ctx, DOM_SID2);
+		if (trans_sids[i].sid2 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		init_dom_sid2(trans_sids[i].sid2, &sid);
+		trans_sids[i].sid_idx = dom_idx;
+	}
+
+	*pmapped_count = mapped_count;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -239,6 +323,44 @@ static void init_reply_lookup_names2(LSA_R_LOOKUP_NAMES2 *r_l,
 	r_l->ptr_entries  = 1;
 	r_l->num_entries2 = num_entries;
 	r_l->dom_rid      = rid;
+
+	r_l->mapped_count = mapped_count;
+}
+
+/***************************************************************************
+ init_reply_lookup_names3
+ ***************************************************************************/
+
+static void init_reply_lookup_names3(LSA_R_LOOKUP_NAMES3 *r_l,
+                DOM_R_REF *ref, uint32 num_entries,
+                LSA_TRANSLATED_SID3 *trans_sids, uint32 mapped_count)
+{
+	r_l->ptr_dom_ref  = 1;
+	r_l->dom_ref      = ref;
+
+	r_l->num_entries  = num_entries;
+	r_l->ptr_entries  = 1;
+	r_l->num_entries2 = num_entries;
+	r_l->trans_sids   = trans_sids;
+
+	r_l->mapped_count = mapped_count;
+}
+
+/***************************************************************************
+ init_reply_lookup_names4
+ ***************************************************************************/
+
+static void init_reply_lookup_names4(LSA_R_LOOKUP_NAMES4 *r_l,
+                DOM_R_REF *ref, uint32 num_entries,
+                LSA_TRANSLATED_SID3 *trans_sids, uint32 mapped_count)
+{
+	r_l->ptr_dom_ref  = 1;
+	r_l->dom_ref      = ref;
+
+	r_l->num_entries  = num_entries;
+	r_l->ptr_entries  = 1;
+	r_l->num_entries2 = num_entries;
+	r_l->trans_sids   = trans_sids;
 
 	r_l->mapped_count = mapped_count;
 }
@@ -942,8 +1064,11 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
-	mapped_count = init_lsa_rids(p->mem_ctx, ref, rids, num_entries,
-				      names, flags);
+	become_root(); /* lookup_name can require root privs */
+	r_u->status = lookup_lsa_rids(p->mem_ctx, ref, rids, num_entries,
+				      names, flags, &mapped_count);
+	unbecome_root();
+
 done:
 
 	if (NT_STATUS_IS_OK(r_u->status)) {
@@ -952,8 +1077,8 @@ done:
 		else if (mapped_count != num_entries)
 			r_u->status = STATUS_SOME_UNMAPPED;
 	}
-	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 
+	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 	return r_u->status;
 }
 
@@ -975,7 +1100,7 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 
 	if (num_entries >  MAX_LOOKUP_SIDS) {
 		num_entries = MAX_LOOKUP_SIDS;
-		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
+		DEBUG(5,("_lsa_lookup_names2: truncating name lookup list to %d\n", num_entries));
 	}
 		
 	/* Probably the lookup_level is some sort of bitmask. */
@@ -998,19 +1123,24 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 		goto done;
 	}
 
-	if (!ref || !rids || !rids2)
+	if (!ref || !rids || !rids2) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* set up the LSA Lookup RIDs response */
-	mapped_count = init_lsa_rids(p->mem_ctx, ref, rids, num_entries,
-				      names, flags);
+	become_root(); /* lookup_name can require root privs */
+	r_u->status = lookup_lsa_rids(p->mem_ctx, ref, rids, num_entries,
+				      names, flags, &mapped_count);
+	unbecome_root();
+
 done:
 
 	if (NT_STATUS_IS_OK(r_u->status)) {
-		if (mapped_count == 0)
+		if (mapped_count == 0) {
 			r_u->status = NT_STATUS_NONE_MAPPED;
-		else if (mapped_count != num_entries)
+		} else if (mapped_count != num_entries) {
 			r_u->status = STATUS_SOME_UNMAPPED;
+		}
 	}
 
 	/* Convert the rids array to rids2. */
@@ -1022,26 +1152,124 @@ done:
 	}
 
 	init_reply_lookup_names2(r_u, ref, num_entries, rids2, mapped_count);
-
 	return r_u->status;
 }
 
 /***************************************************************************
-lsa_reply_lookup_names3 - stub for now.
+lsa_reply_lookup_names3.
  ***************************************************************************/
 
 NTSTATUS _lsa_lookup_names3(pipes_struct *p, LSA_Q_LOOKUP_NAMES3 *q_u, LSA_R_LOOKUP_NAMES3 *r_u)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	struct lsa_info *handle;
+	UNISTR2 *names = q_u->uni_name;
+	int num_entries = q_u->num_entries;
+	DOM_R_REF *ref = NULL;
+	LSA_TRANSLATED_SID3 *trans_sids = NULL;
+	uint32 mapped_count = 0;
+	int flags = 0;
+
+	if (num_entries >  MAX_LOOKUP_SIDS) {
+		num_entries = MAX_LOOKUP_SIDS;
+		DEBUG(5,("_lsa_lookup_names3: truncating name lookup list to %d\n", num_entries));
+	}
+		
+	/* Probably the lookup_level is some sort of bitmask. */
+	if (q_u->lookup_level == 1) {
+		flags = LOOKUP_NAME_ALL;
+	}
+
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_TRANSLATED_SID3, num_entries);
+
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle)) {
+		r_u->status = NT_STATUS_INVALID_HANDLE;
+		goto done;
+	}
+
+	/* check if the user have enough rights */
+	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	if (!ref || !trans_sids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* set up the LSA Lookup SIDs response */
+	become_root(); /* lookup_name can require root privs */
+	r_u->status = lookup_lsa_sids(p->mem_ctx, ref, trans_sids, num_entries,
+				      names, flags, &mapped_count);
+	unbecome_root();
+
+done:
+
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		if (mapped_count == 0) {
+			r_u->status = NT_STATUS_NONE_MAPPED;
+		} else if (mapped_count != num_entries) {
+			r_u->status = STATUS_SOME_UNMAPPED;
+		}
+	}
+
+	init_reply_lookup_names3(r_u, ref, num_entries, trans_sids, mapped_count);
+	return r_u->status;
 }
 
 /***************************************************************************
-lsa_reply_lookup_names4 - stub for now.
+lsa_reply_lookup_names4.
  ***************************************************************************/
 
 NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOOKUP_NAMES4 *r_u)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	UNISTR2 *names = q_u->uni_name;
+	int num_entries = q_u->num_entries;
+	DOM_R_REF *ref = NULL;
+	LSA_TRANSLATED_SID3 *trans_sids = NULL;
+	uint32 mapped_count = 0;
+	int flags = 0;
+
+	if (num_entries >  MAX_LOOKUP_SIDS) {
+		num_entries = MAX_LOOKUP_SIDS;
+		DEBUG(5,("_lsa_lookup_names4: truncating name lookup list to %d\n", num_entries));
+	}
+		
+	/* Probably the lookup_level is some sort of bitmask. */
+	if (q_u->lookup_level == 1) {
+		flags = LOOKUP_NAME_ALL;
+	}
+
+	/* No policy handle on this call. Restrict to crypto connections. */
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+		DEBUG(0,("_lsa_lookup_names4: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
+	trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_TRANSLATED_SID3, num_entries);
+
+	if (!ref || !trans_sids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* set up the LSA Lookup SIDs response */
+	become_root(); /* lookup_name can require root privs */
+	r_u->status = lookup_lsa_sids(p->mem_ctx, ref, trans_sids, num_entries,
+				      names, flags, &mapped_count);
+	unbecome_root();
+
+	if (NT_STATUS_IS_OK(r_u->status)) {
+		if (mapped_count == 0) {
+			r_u->status = NT_STATUS_NONE_MAPPED;
+		} else if (mapped_count != num_entries) {
+			r_u->status = STATUS_SOME_UNMAPPED;
+		}
+	}
+
+	init_reply_lookup_names4(r_u, ref, num_entries, trans_sids, mapped_count);
+	return r_u->status;
 }
 
 /***************************************************************************
@@ -1050,8 +1278,9 @@ NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOO
 
 NTSTATUS _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
 {
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL)) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	close_policy_hnd(p, &q_u->pol);
 	return NT_STATUS_OK;

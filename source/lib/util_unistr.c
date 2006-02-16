@@ -291,7 +291,7 @@ int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
  * have been to manually talloc_strdup them in rpc_client/cli_netlogon.c.
  */
 
-char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, UNISTR2 *src)
+char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *mem_ctx, const UNISTR2 *src)
 {
 	pstring tmp;
 	size_t result;
