@@ -169,13 +169,12 @@ static BOOL query_one(const char *lookup, unsigned int lookup_type)
 			}
 		}
 		d_printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
-	}
-
-	/* We can only do find_status if the ip address returned
-	   was valid - ie. name_query returned true.
-	*/
-	if (find_status) {
-		do_node_status(ServerFD, lookup, lookup_type, ip_list[0]);
+		/* We can only do find_status if the ip address returned
+		   was valid - ie. name_query returned true.
+		 */
+		if (find_status) {
+			do_node_status(ServerFD, lookup, lookup_type, ip_list[j]);
+		}
 	}
 
 	safe_free(ip_list);
