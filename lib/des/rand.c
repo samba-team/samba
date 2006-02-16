@@ -65,7 +65,7 @@ RAND_bytes(void *outdata, size_t size)
 	close(fd);
     }
 
-    abort();
+    return 0;
 }
 
 int
