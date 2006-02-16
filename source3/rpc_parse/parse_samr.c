@@ -344,7 +344,7 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 {
 	DEBUG(5, ("init_samr_r_get_usrdom_pwinfo\n"));
 	
-	r_u->unknown_0 = 0x0000;
+	r_u->min_pwd_length = 0x0000;
 
 	/*
 	 * used to be 	
@@ -354,7 +354,7 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 	r_u->unknown_1 = 0x01D1;
 	r_u->unknown_1 = 0x0015;
 
-	r_u->unknown_2 = 0x00000000;
+	r_u->password_properties = 0x00000000;
 
 	r_u->status = status;
 }
@@ -375,12 +375,13 @@ BOOL samr_io_r_get_usrdom_pwinfo(const char *desc, SAMR_R_GET_USRDOM_PWINFO * r_
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint16("unknown_0", ps, depth, &r_u->unknown_0))
+	if(!prs_uint16("min_pwd_length", ps, depth, &r_u->min_pwd_length))
 		return False;
 	if(!prs_uint16("unknown_1", ps, depth, &r_u->unknown_1))
 		return False;
-	if(!prs_uint32("unknown_2", ps, depth, &r_u->unknown_2))
+	if(!prs_uint32("password_properties", ps, depth, &r_u->password_properties))
 		return False;
+
 	if(!prs_ntstatus("status   ", ps, depth, &r_u->status))
 		return False;
 
