@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2001, 2003, 2005 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -111,17 +111,16 @@ krb5_have_error_string(krb5_context context)
 char * KRB5_LIB_FUNCTION
 krb5_get_error_message(krb5_context context, krb5_error_code code)
 {
+    const char *cstr;
     char *str;
 
     str = krb5_get_error_string(context);
     if (str)
 	return str;
 
-    {
-	const char *cstr = krb5_get_err_text(context, code);
-	if (cstr)
-	    return strdup(cstr);
-    }
+    cstr = krb5_get_err_text(context, code);
+    if (cstr)
+	return strdup(cstr);
 
     if (asprintf(&str, "<unknown error: %d>", code) == -1)
 	return NULL;
