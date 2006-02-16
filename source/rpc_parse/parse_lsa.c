@@ -1731,7 +1731,7 @@ BOOL lsa_io_q_lookup_names4(const char *desc, LSA_Q_LOOKUP_NAMES4 *q_r,
 {
 	unsigned int i;
 
-	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names3");
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names4");
 	depth++;
 
 	if(!prs_align(ps))
