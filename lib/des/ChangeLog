@@ -1,3 +1,9 @@
+2006-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rand.c (RAND_bytes): Don't abort() on failure, return error.
+
+	* bn.c (BN_rand): check return value from RAND_bytes
+	
 2006-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* dh.c (DH_compute_key): check public key
