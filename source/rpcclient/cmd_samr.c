@@ -149,33 +149,35 @@ static const char *display_time(NTTIME nttime)
 	return (string);
 }
 
+static void display_password_properties(uint32 password_properties) 
+{
+		printf("password_properties: 0x%08x\n", password_properties);
+		
+		if (password_properties & DOMAIN_PASSWORD_COMPLEX)
+			printf("\tDOMAIN_PASSWORD_COMPLEX\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE)
+			printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
+			printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
+			
+		if (password_properties & DOMAIN_LOCKOUT_ADMINS)
+			printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+			
+		if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
+			printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
+			
+		if (password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
+			printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
+}
+
 static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
 {
 	
 	printf("Minimum password length:\t\t\t%d\n", info1->min_length_password);
 	printf("Password uniqueness (remember x passwords):\t%d\n", info1->password_history);
-	printf("Password Properties:\t\t\t\t0x%08x\n", info1->password_properties);
-
-	if (info1->password_properties & DOMAIN_PASSWORD_COMPLEX)
-		printf("\tDOMAIN_PASSWORD_COMPLEX\n");
-			
-	if (info1->password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE) {
-		printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
-		printf("users must open a session to change password ");
-	}
-			
-	if (info1->password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
-		printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
-			
-	if (info1->password_properties & DOMAIN_LOCKOUT_ADMINS)
-		printf("\tDOMAIN_LOCKOUT_ADMINS\n");
-			
-	if (info1->password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
-		printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
-			
-	if (info1->password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
-		printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
-
+	display_password_properties(info1->password_properties);
 	printf("password expire in:\t\t\t\t%s\n", display_time(info1->expire));
 	printf("Min password age (allow changing in x days):\t%s\n", display_time(info1->min_passwordage));
 }
@@ -1829,6 +1831,63 @@ done:
 	return result;
 }
 
+static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli, 
+					   TALLOC_CTX *mem_ctx,
+					   int argc, const char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	uint16 min_pwd_length;
+	uint32 password_properties, unknown1, rid;
+
+	if (argc != 2) {
+		printf("Usage: %s rid\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	sscanf(argv[1], "%i", &rid);
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					 MAXIMUM_ALLOWED_ACCESS, &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_get_usrdom_pwinfo(cli, mem_ctx, &user_pol,
+					       &min_pwd_length, &password_properties, 
+					       &unknown1) ;
+
+	if (NT_STATUS_IS_OK(result)) {
+		printf("min_pwd_length: %d\n", min_pwd_length);
+		printf("unknown1: %d\n", unknown1);
+		display_password_properties(password_properties);
+	}
+
+ done:
+	rpccli_samr_close(cli, mem_ctx, &user_pol);
+	rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+
+	return result;
+}
+
+
 static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, 
 					TALLOC_CTX *mem_ctx,
 					int argc, const char **argv) 
@@ -1846,25 +1905,7 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli,
 	
 	if (NT_STATUS_IS_OK(result)) {
 		printf("min_pwd_length: %d\n", min_pwd_length);
-		printf("password_properties: 0x%08x\n", password_properties);
-		
-		if (password_properties & DOMAIN_PASSWORD_COMPLEX)
-			printf("\tDOMAIN_PASSWORD_COMPLEX\n");
-			
-		if (password_properties & DOMAIN_PASSWORD_NO_ANON_CHANGE)
-			printf("\tDOMAIN_PASSWORD_NO_ANON_CHANGE\n");
-			
-		if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
-			printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
-			
-		if (password_properties & DOMAIN_LOCKOUT_ADMINS)
-			printf("\tDOMAIN_LOCKOUT_ADMINS\n");
-			
-		if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
-			printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
-			
-		if (password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE)
-			printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
+		display_password_properties(password_properties);
 	}
 
 	return result;
@@ -2019,6 +2060,7 @@ struct cmd_set samr_commands[] = {
 	{ "deletedomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_delete_dom_user,       NULL, PI_SAMR, NULL,	"Delete domain user",      "" },
 	{ "samquerysecobj",     RPC_RTYPE_NTSTATUS, cmd_samr_query_sec_obj,         NULL, PI_SAMR, NULL, "Query SAMR security object",   "" },
 	{ "getdompwinfo",       RPC_RTYPE_NTSTATUS, cmd_samr_get_dom_pwinfo,        NULL, PI_SAMR, NULL, "Retrieve domain password info", "" },
+	{ "getusrdompwinfo",    RPC_RTYPE_NTSTATUS, cmd_samr_get_usrdom_pwinfo,     NULL, PI_SAMR, NULL, "Retrieve user domain password info", "" },
 
 	{ "lookupdomain",       RPC_RTYPE_NTSTATUS, cmd_samr_lookup_domain,         NULL, PI_SAMR, NULL, "Lookup Domain Name", "" },
 	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd3,            NULL, PI_SAMR, NULL, "Change user password", "" },
