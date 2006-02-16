@@ -1698,8 +1698,8 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 			return 0;
 		}
 		newOptind++;
-		Optind++;
-		if (! read_inclusion_file(argv[Optind])) {
+		/* Optind points at the tar output file, Optind+1 at the inclusion file. */
+		if (! read_inclusion_file(argv[Optind+1])) {
 			return 0;
 		}
 	} else if (Optind+1<argc && !tar_re_search) { /* For backwards compatibility */
@@ -1738,7 +1738,8 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 		newOptind += clipn;
 	}
 
-	if (Optind+1<argc && tar_re_search) {  /* Doing regular expression seaches */
+	if (Optind+1<argc && tar_re_search && tar_clipfl != 'F') {
+		/* Doing regular expression seaches not from an inclusion file. */
 		clipn=argc-Optind-1;
 		cliplist=argv+Optind+1;
 		newOptind += clipn;
