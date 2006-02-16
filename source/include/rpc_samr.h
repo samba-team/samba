@@ -468,9 +468,9 @@ SAMR_R_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 /* SAMR_R_GET_USRDOM_PWINFO */
 typedef struct r_samr_usrdom_pwinfo_info
 {
-	uint16 unknown_0; /* 0000 */
+	uint16 min_pwd_length;
 	uint16 unknown_1; /* 0x0016 or 0x0015 */
-	uint32 unknown_2; /* 0x0000 0000 */
+	uint32 password_properties;
 	NTSTATUS status; 
 
 } SAMR_R_GET_USRDOM_PWINFO;

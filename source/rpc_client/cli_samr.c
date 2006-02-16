@@ -1880,6 +1880,50 @@ NTSTATUS rpccli_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return result;
 }
 
+/* Get domain password info */
+
+NTSTATUS rpccli_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+				       POLICY_HND *pol, uint16 *min_pwd_length, 
+				       uint32 *password_properties, uint32 *unknown1)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_GET_USRDOM_PWINFO q;
+	SAMR_R_GET_USRDOM_PWINFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_get_usrdom_pwinfo\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Marshall data and send request */
+
+	init_samr_q_get_usrdom_pwinfo(&q, pol);
+
+	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_GET_USRDOM_PWINFO,
+		   q, r,
+		   qbuf, rbuf,
+		   samr_io_q_get_usrdom_pwinfo,
+		   samr_io_r_get_usrdom_pwinfo,
+		   NT_STATUS_UNSUCCESSFUL); 
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result)) {
+		if (min_pwd_length)
+			*min_pwd_length = r.min_pwd_length;
+		if (password_properties)
+			*password_properties = r.password_properties;
+		if (unknown1)
+			*unknown1 = r.unknown_1;
+	}
+
+	return result;
+}
+
+
 /* Lookup Domain Name */
 
 NTSTATUS rpccli_samr_lookup_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
