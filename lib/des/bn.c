@@ -337,7 +337,11 @@ BN_rand(BIGNUM *bn, int bits, int top, int bottom)
 	return 0;
     i->length = len;
 
-    RAND_bytes(i->data, i->length);
+    if (RAND_bytes(i->data, i->length) != 1) {
+	free(i->data);
+	i->data = NULL;
+	return 0;
+    }
 
     {
 	size_t i = len * 8;
