@@ -342,12 +342,18 @@
 			Is the default behavior when filenames are specified above. Causes 
 			tar files to be included in an extract or create (and therefore 
 			everything else to be excluded). See example below.  Filename globbing 
-			works  in one of two ways.  See r below. </para></listitem>
+			works  in one of two ways.  See <parameter>r</parameter> below. </para></listitem>
 			
 			<listitem><para><parameter>X</parameter> - Exclude files and directories. 
 			Causes tar files to be excluded from an extract or create. See 
 			example below.  Filename globbing works in one of two ways now. 
 			See <parameter>r</parameter> below. </para></listitem>
+			
+			<listitem><para><parameter>F</parameter> - File containing a list of include files and directories.
+			The <parameter>F</parameter> must be followed by a filename that
+			is read for a list of files and directories to include. The filename globbing
+			 works  in one of two ways. See <parameter>r</parameter> below.
+			<para></listitem>
 			
 			<listitem><para><parameter>b</parameter> - Blocksize. Must be followed 
 			by a valid (greater than zero) blocksize.  Causes tar file to be 
