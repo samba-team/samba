@@ -3789,7 +3789,8 @@ krb5_generate_random_block(void *buf, size_t len)
 	rng_initialized = 1;
     }
     HEIMDAL_MUTEX_unlock(&crypto_mutex);
-    RAND_bytes(buf, len);
+    if (RAND_bytes(buf, len) != 1)
+	krb5_abortx(NULL, "Failed to generate random block");
 }
 
 #else
