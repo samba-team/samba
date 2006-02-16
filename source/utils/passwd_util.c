@@ -54,8 +54,8 @@ char *stdin_new_passwd( void)
 
 /*************************************************************
  Utility function to get passwords via tty or stdin
- Used if the '-t' option is set to silently get passwords
- to enable scripting.
+ Used if the '-s' (smbpasswd) or '-t' (pdbedit) option is set
+ to silently get passwords to enable scripting.
 *************************************************************/
 char *get_pass( char *prompt, BOOL stdin_get)
 {
