@@ -400,6 +400,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 	SAM_ACCOUNT *sam_pwent=NULL;
 
 	char *password1, *password2;
+	int rc_pwd_cmp;
 
 	get_global_sam_sid();
 
@@ -410,21 +411,21 @@ static int new_user (struct pdb_methods *in, const char *username,
 
 	password1 = get_pass( "new password:", stdin_get);
 	password2 = get_pass( "retype new password:", stdin_get);
-	if (strcmp (password1, password2)) {
-		fprintf (stderr, "Passwords does not match!\n");
-		memset(password1, 0, strlen(password1));
-		SAFE_FREE(password1);
-		memset(password2, 0, strlen(password2));
-		SAFE_FREE(password2);
+	if ((rc_pwd_cmp = strcmp (password1, password2))) {
+		fprintf (stderr, "Passwords do not match!\n");
 		pdb_free_sam (&sam_pwent);
-		return -1;
+	} else {
+		pdb_set_plaintext_passwd(sam_pwent, password1);
 	}
 
-	pdb_set_plaintext_passwd(sam_pwent, password1);
 	memset(password1, 0, strlen(password1));
 	SAFE_FREE(password1);
 	memset(password2, 0, strlen(password2));
 	SAFE_FREE(password2);
+
+	/* pwds do _not_ match? */
+	if (rc_pwd_cmp)
+		return -1;
 
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
