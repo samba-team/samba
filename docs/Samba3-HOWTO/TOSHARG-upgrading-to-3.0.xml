@@ -762,14 +762,14 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 <indexterm><primary>idmap backend</primary></indexterm>
 		Samba-3 supports an LDAP backend for the idmap subsystem. The
 		following options inform Samba that the idmap table should be
-		stored on the directory server <emphasis>onterose</emphasis> in the ou=idmap,dc=quenya,dc=org partition.
+		stored on the directory server <emphasis>onterose</emphasis> in the ou=Idmap,dc=quenya,dc=org partition.
 		</para>
 
 		<smbconfblock>
 		<smbconfsection name="[global]"/>
 		<member>...</member>
 		<smbconfoption name="idmap backend">ldap:ldap://onterose/</smbconfoption>
-		<smbconfoption name="ldap idmap suffix">ou=idmap,dc=quenya,dc=org</smbconfoption>
+		<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
 		<smbconfoption name="idmap uid">40000-50000</smbconfoption>
 		<smbconfoption name="idmap gid">40000-50000</smbconfoption>
 		</smbconfblock>
