@@ -1293,7 +1293,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	}
 
 	become_root();
-	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &pdcinfo);
+	ret = secrets_restore_schannel_session_info(p->mem_ctx, get_remote_machine_name(), &pdcinfo);
 	unbecome_root();
 
 	if (!ret) {
