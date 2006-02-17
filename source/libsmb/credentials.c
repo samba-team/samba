@@ -25,7 +25,7 @@
  Represent a credential as a string.
 ****************************************************************************/
 
-char *credstr(const uchar *cred)
+char *credstr(const unsigned char *cred)
 {
 	static fstring buf;
 	slprintf(buf, sizeof(buf) - 1, "%02X%02X%02X%02X%02X%02X%02X%02X",
@@ -34,6 +34,58 @@ char *credstr(const uchar *cred)
 	return buf;
 }
 
+/****************************************************************************
+ Setup the session key and the client and server creds in dc.
+ ADS-style 128 bit session keys.
+ Used by both client and server creds setup.
+****************************************************************************/
+
+static void creds_init_128(struct dcinfo *dc,
+				const DOM_CHAL *clnt_chal_in,
+				const DOM_CHAL *srv_chal_in,
+				const char mach_pw[16])
+{
+	unsigned char zero[4], tmp[16];
+	HMACMD5Context ctx;
+	struct MD5Context md5;
+
+	/* Just in case this isn't already there */
+	memcpy(dc->mach_pw, mach_pw, 16);
+
+	ZERO_STRUCT(dc->sess_key);
+
+	memset(zero, 0, sizeof(zero));
+
+	hmac_md5_init_rfc2104(mach_pw, 16, &ctx);
+	MD5Init(&md5);
+	MD5Update(&md5, zero, sizeof(zero));
+	MD5Update(&md5, clnt_chal_in->data, 8);
+	MD5Update(&md5, srv_chal_in->data, 8);
+	MD5Final(tmp, &md5);
+	hmac_md5_update(tmp, sizeof(tmp), &ctx);
+	hmac_md5_final(dc->sess_key, &ctx);
+
+	/* debug output */
+	DEBUG(5,("creds_init_128\n"));
+	DEBUG(5,("\tclnt_chal_in: %s\n", credstr(clnt_chal_in->data)));
+	DEBUG(5,("\tsrv_chal_in : %s\n", credstr(srv_chal_in->data)));
+	dump_data_pw("\tsession_key ", (const unsigned char *)dc->sess_key, 16);
+
+	/* Generate the next client and server creds. */
+	
+	des_crypt112(dc->clnt_chal.data,		/* output */
+			clnt_chal_in->data,		/* input */
+			dc->sess_key,			/* input */
+			1);
+
+	des_crypt112(dc->srv_chal.data,			/* output */
+			srv_chal_in->data,		/* input */
+			dc->sess_key,			/* input */
+			1);
+
+	/* Seed is the client chal. */
+	memcpy(dc->seed_chal.data, dc->clnt_chal.data, 8);
+}
 
 /****************************************************************************
  Setup the session key and the client and server creds in dc.
@@ -63,10 +115,10 @@ static void creds_init_64(struct dcinfo *dc,
 
 	/* debug output */
 	DEBUG(5,("creds_init_64\n"));
-	DEBUG(5,("	clnt_chal_in: %s\n", credstr(clnt_chal_in->data)));
-	DEBUG(5,("	srv_chal_in : %s\n", credstr(srv_chal_in->data)));
-	DEBUG(5,("	clnt+srv : %s\n", credstr(sum2)));
-	DEBUG(5,("	sess_key_out : %s\n", credstr(dc->sess_key)));
+	DEBUG(5,("\tclnt_chal_in: %s\n", credstr(clnt_chal_in->data)));
+	DEBUG(5,("\tsrv_chal_in : %s\n", credstr(srv_chal_in->data)));
+	DEBUG(5,("\tclnt+srv : %s\n", credstr(sum2)));
+	DEBUG(5,("\tsess_key_out : %s\n", credstr(dc->sess_key)));
 
 	/* Generate the next client and server creds. */
 	
@@ -120,21 +172,30 @@ static void creds_step(struct dcinfo *dc)
  Create a server credential struct.
 ****************************************************************************/
 
-void creds_server_init(struct dcinfo *dc,
+void creds_server_init(uint32 neg_flags,
+			struct dcinfo *dc,
 			DOM_CHAL *clnt_chal,
 			DOM_CHAL *srv_chal,
 			const char mach_pw[16],
 			DOM_CHAL *init_chal_out)
 {
+	DEBUG(10,("creds_server_init: neg_flags : %x\n", (unsigned int)neg_flags));
 	DEBUG(10,("creds_server_init: client chal : %s\n", credstr(clnt_chal->data) ));
 	DEBUG(10,("creds_server_init: server chal : %s\n", credstr(srv_chal->data) ));
 	dump_data_pw("creds_server_init: machine pass", (const unsigned char *)mach_pw, 16);
 
 	/* Generate the session key and the next client and server creds. */
-	creds_init_64(dc,
+	if (neg_flags & NETLOGON_NEG_128BIT) {
+		creds_init_128(dc,
 			clnt_chal,
 			srv_chal,
 			mach_pw);
+	} else {
+		creds_init_64(dc,
+			clnt_chal,
+			srv_chal,
+			mach_pw);
+	}
 
 	dump_data_pw("creds_server_init: session key", dc->sess_key, 16);
 
@@ -213,7 +274,8 @@ BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRE
  Create a client credential struct.
 ****************************************************************************/
 
-void creds_client_init(struct dcinfo *dc,
+void creds_client_init(uint32 neg_flags,
+			struct dcinfo *dc,
 			DOM_CHAL *clnt_chal,
 			DOM_CHAL *srv_chal,
 			const unsigned char mach_pw[16],
@@ -221,15 +283,23 @@ void creds_client_init(struct dcinfo *dc,
 {
 	dc->sequence = time(NULL);
 
+	DEBUG(10,("creds_client_init: neg_flags : %x\n", (unsigned int)neg_flags));
 	DEBUG(10,("creds_client_init: client chal : %s\n", credstr(clnt_chal->data) ));
 	DEBUG(10,("creds_client_init: server chal : %s\n", credstr(srv_chal->data) ));
 	dump_data_pw("creds_client_init: machine pass", (const unsigned char *)mach_pw, 16);
 
 	/* Generate the session key and the next client and server creds. */
-	creds_init_64(dc,
+	if (neg_flags & NETLOGON_NEG_128BIT) {
+		creds_init_128(dc,
+				clnt_chal,
+				srv_chal,
+				mach_pw);
+	} else {
+		creds_init_64(dc,
 			clnt_chal,
 			srv_chal,
 			mach_pw);
+	}
 
 	dump_data_pw("creds_client_init: session key", dc->sess_key, 16);
 
