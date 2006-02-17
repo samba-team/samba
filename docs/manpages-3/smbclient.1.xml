@@ -355,7 +355,7 @@
 			be included in an extract or create (and therefore everything else to be excluded).
 			See example below. Filename globbing works in one of two ways.
 			See <parameter>r</parameter> below.
-			<para></listitem>
+			</para></listitem>
 			
 			<listitem><para><parameter>b</parameter> - Blocksize. Must be followed 
 			by a valid (greater than zero) blocksize.  Causes tar file to be 
