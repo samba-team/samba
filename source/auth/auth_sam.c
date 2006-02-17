@@ -328,7 +328,11 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_server_info_sam(server_info, sampass))) {		
+	become_root();
+	nt_status = make_server_info_sam(server_info, sampass);
+	unbecome_root();
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
 		pdb_free_sam(&sampass);
 		data_blob_free(&user_sess_key);
