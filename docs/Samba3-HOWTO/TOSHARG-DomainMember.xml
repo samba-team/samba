@@ -1265,7 +1265,7 @@ To use the <emphasis>LDAP</emphasis> <parameter>ldap idmap suffix</parameter>, s
 </para>
 
 <smbconfblock>
-<smbconfoption name="ldap idmap suffix">ou=Idmap,dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
 </smbconfblock>
 
 <para>
