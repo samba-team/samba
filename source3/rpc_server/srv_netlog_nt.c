@@ -281,10 +281,6 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 			q_u->uni_logon_clnt.buffer,
 			sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
 
-	/* Remember the workstation name. This is what we'll use to look
-	   up the secrets.tdb record later. */
-	fstrcpy(p->wks, p->dc->remote_machine);
-
 	/* Save the client challenge to the server. */
 	memcpy(p->dc->clnt_chal.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 
@@ -448,7 +444,9 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
-	secrets_store_schannel_session_info(p->mem_ctx, p->dc);
+	secrets_store_schannel_session_info(p->mem_ctx,
+					get_remote_machine_name(),
+					p->dc);
 	unbecome_root();
 
 	return r_u->status;
@@ -480,7 +478,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		/* Restore the saved state of the netlogon creds. */
 		become_root();
 		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-							workstation,
+							get_remote_machine_name(),
 							&p->dc);
 		unbecome_root();
 		if (!ret) {
@@ -505,7 +503,9 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 	/* We must store the creds state after an update. */
 	become_root();
-	secrets_store_schannel_session_info(p->pipe_state_mem_ctx, p->dc);
+	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
+						get_remote_machine_name(),
+						p->dc);
 	pdb_init_sam(&sampass);
 	ret=pdb_getsampwnam(sampass, p->dc->mach_acct);
 	unbecome_root();
@@ -579,8 +579,6 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
-	fstring workstation;
-
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
@@ -588,12 +586,10 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		/* Restore the saved state of the netlogon creds. */
 		BOOL ret;
 
-		*workstation = '\0';
-		rpcstr_pull_unistr2_fstring(workstation, &q_u->sam_id.client.login.uni_comp_name);
-
 		become_root();
-		ret = secrets_restore_schannel_session_info(
-			p->pipe_state_mem_ctx, workstation, &p->dc);
+		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
+						get_remote_machine_name(),
+						&p->dc);
 		unbecome_root();
 		if (!ret) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -616,7 +612,9 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 
 	/* We must store the creds state after an update. */
 	become_root();
-	secrets_store_schannel_session_info(p->pipe_state_mem_ctx, p->dc);
+	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
+					get_remote_machine_name(),
+					p->dc);
 	unbecome_root();
 
 	r_u->status = NT_STATUS_OK;
@@ -694,8 +692,53 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	/* We need the workstation name for the creds lookup. */
-    
+	if (process_creds) {
+		if (!p->dc) {
+			/* Restore the saved state of the netlogon creds. */
+			BOOL ret;
+
+			become_root();
+			ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
+					get_remote_machine_name(),
+					&p->dc);
+			unbecome_root();
+			if (!ret) {
+				return NT_STATUS_INVALID_HANDLE;
+			}
+		}
+
+		if (!p->dc || !p->dc->authenticated) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+	}
+
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logon: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (process_creds) {
+		/* checks and updates credentials.  creates reply credentials */
+		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
+			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
+				"request from client %s machine account %s\n",
+				p->dc->remote_machine, p->dc->mach_acct ));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/* We must store the creds state after an update. */
+		become_root();
+		secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
+					get_remote_machine_name(),
+					p->dc);
+		unbecome_root();
+	}
+
+
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
 		uni_samlogon_user = &ctr->auth.id1.uni_user_name;
@@ -722,51 +765,6 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	rpcstr_pull(nt_workstation,uni_samlogon_workstation->buffer,sizeof(nt_workstation),uni_samlogon_workstation->uni_str_len*2,0);
 
 	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, nt_workstation, nt_domain));
-
-	if (process_creds) {
-		if (!p->dc) {
-			/* Restore the saved state of the netlogon creds. */
-			BOOL ret;
-
-			become_root();
-			ret = secrets_restore_schannel_session_info(
-				p->pipe_state_mem_ctx, nt_workstation,
-				&p->dc);
-			unbecome_root();
-			if (!ret) {
-				return NT_STATUS_INVALID_HANDLE;
-			}
-		}
-
-		if (!p->dc || !p->dc->authenticated) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
-	}
-
-	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
-		/* 'server schannel = yes' should enforce use of
-		   schannel, the client did offer it in auth2, but
-		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logon: client %s not using schannel for netlogon\n",
-			p->dc->remote_machine ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (process_creds) {
-		/* checks and updates credentials.  creates reply credentials */
-		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
-				"request from client %s machine account %s\n",
-				p->dc->remote_machine, p->dc->mach_acct ));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* We must store the creds state after an update. */
-		become_root();
-		secrets_store_schannel_session_info(p->pipe_state_mem_ctx, p->dc);
-		unbecome_root();
-	}
-
 	fstrcpy(current_user_info.smb_name, nt_username);
 	sub_set_smb_name(nt_username);
      
