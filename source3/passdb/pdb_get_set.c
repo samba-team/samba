@@ -571,10 +571,20 @@ BOOL pdb_set_user_sid_from_string (SAM_ACCOUNT *sampass, fstring u_sid, enum pdb
 
 BOOL pdb_set_group_sid (SAM_ACCOUNT *sampass, const DOM_SID *g_sid, enum pdb_value_state flag)
 {
+	gid_t gid;
+
 	if (!sampass || !g_sid)
 		return False;
 
-	sid_copy(&sampass->private_u.group_sid, g_sid);
+	/* if we cannot resolve the SID to gid, then just ignore it and 
+	   store DOMAIN_USERS as the primary groupSID */
+
+	if ( sid_to_gid( g_sid, &gid ) ) {
+		sid_copy(&sampass->private_u.group_sid, g_sid);
+	} else {
+		sid_copy( &sampass->private_u.group_sid, get_global_sam_sid() );
+		sid_append_rid( &sampass->private_u.group_sid, DOMAIN_GROUP_RID_USERS );
+	}
 
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
 		    sid_string_static(&sampass->private_u.group_sid)));
