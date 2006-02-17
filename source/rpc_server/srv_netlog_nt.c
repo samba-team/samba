@@ -592,9 +592,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		rpcstr_pull_unistr2_fstring(workstation, &q_u->sam_id.client.login.uni_comp_name);
 
 		become_root();
-		secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-							workstation,
-							&p->dc);
+		ret = secrets_restore_schannel_session_info(
+			p->pipe_state_mem_ctx, workstation, &p->dc);
 		unbecome_root();
 		if (!ret) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -730,9 +729,9 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 			BOOL ret;
 
 			become_root();
-			secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-								nt_workstation,
-								&p->dc);
+			ret = secrets_restore_schannel_session_info(
+				p->pipe_state_mem_ctx, nt_workstation,
+				&p->dc);
 			unbecome_root();
 			if (!ret) {
 				return NT_STATUS_INVALID_HANDLE;
