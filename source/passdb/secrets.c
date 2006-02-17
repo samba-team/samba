@@ -949,7 +949,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx, const struct dcinf
 				8, pdc->seed_chal.data,
 				8, pdc->clnt_chal.data,
 				8, pdc->srv_chal.data,
-				8, pdc->sess_key,
+				16, pdc->sess_key,
 				16, pdc->mach_pw,
 				pdc->mach_acct,
 				pdc->remote_machine,
@@ -966,7 +966,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx, const struct dcinf
 				8, pdc->seed_chal.data,
 				8, pdc->clnt_chal.data,
 				8, pdc->srv_chal.data,
-				8, pdc->sess_key,
+				16, pdc->sess_key,
 				16, pdc->mach_pw,
 				pdc->mach_acct,
 				pdc->remote_machine,
@@ -1050,7 +1050,7 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				&pdc->remote_machine,
 				&pdc->domain);
 
-	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 8 || l5 != 16) {
+	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 16 || l5 != 16) {
 		talloc_free(keystr);
 		talloc_free(pdc);
 		SAFE_FREE(pseed_chal);
@@ -1059,14 +1059,15 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 		SAFE_FREE(psess_key);
 		SAFE_FREE(pmach_pw);
 		SAFE_FREE(value.dptr);
+		/* Bad record - delete it. */
+		tdb_delete_bystring(tdb_sc, keystr);
 		return False;
 	}
 
 	memcpy(pdc->seed_chal.data, pseed_chal, 8);
 	memcpy(pdc->clnt_chal.data, pclnt_chal, 8);
 	memcpy(pdc->srv_chal.data, psrv_chal, 8);
-	memcpy(pdc->sess_key, psess_key, 8);
-	memset(&pdc->sess_key[8], '\0', 8); /* key followed by 8 bytes of zero. */
+	memcpy(pdc->sess_key, psess_key, 16);
 	memcpy(pdc->mach_pw, pmach_pw, 16);
 
 	/* We know these are true so didn't bother to store them. */
