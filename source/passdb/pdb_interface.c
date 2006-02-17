@@ -1498,35 +1498,29 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 {
 	size_t i;
 	gid_t gid;
+	struct passwd *pw;
+	const char *username = pdb_get_username(user);
+	
 
-	if ( !sid_to_gid(pdb_get_group_sid(user), &gid) )
-	{
-		uint32 rid;
-		struct passwd *pwd;
-
-		/* second try, allow the DOMAIN_USERS group to pass */
-
-		if ( !sid_peek_check_rid( get_global_sam_sid(), pdb_get_group_sid(user), &rid ) )
-			return NT_STATUS_NO_SUCH_USER;
-
-		if ( rid != DOMAIN_GROUP_RID_USERS ) {
-			DEBUG(10, ("sid_to_gid failed\n"));
-			return NT_STATUS_NO_SUCH_USER;
-		}
-
-		DEBUG(5,("pdb_default_enum_group_memberships: sid_to_gid() failed but giving "
-			"free pass to 'Domain Users' as primary group\n"));
-
-		if ( !(pwd = getpwnam_alloc( NULL, pdb_get_username(user) ) ) )
-			return NT_STATUS_NO_SUCH_USER;
-
-		gid = pwd->pw_gid;
-
-		TALLOC_FREE( pwd );
+#if 0
+	/* Ignore the primary group SID.  Honor the real Unix primary group.
+	   The primary group SID is only of real use to Windows clients */
+	   
+	if (!sid_to_gid(pdb_get_group_sid(user), &gid)) {
+		DEBUG(10, ("sid_to_gid failed\n"));
+		return NT_STATUS_NO_SUCH_USER;
 	}
+#else
+	if ( !(pw = getpwnam_alloc(mem_ctx, username)) ) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	
+	gid = pw->pw_gid;
+	
+	TALLOC_FREE( pw );
+#endif
 
-	if (!getgroups_unix_user(mem_ctx, pdb_get_username(user), gid,
-				 pp_gids, p_num_groups)) {
+	if (!getgroups_unix_user(mem_ctx, username, gid, pp_gids, p_num_groups)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -1602,32 +1596,33 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	ret = pdb_getgrsid(&map, sid);
 	unbecome_root();
 	/* END BECOME_ROOT BLOCK */
-	
-	if ( ret ) {
-		if (map.gid!=(gid_t)-1) {
-			DEBUG(5,("lookup_global_sam_rid: mapped group %s to "
-				 "gid %u\n", map.nt_name,
-				 (unsigned int)map.gid));
-		} else {
-			DEBUG(5,("lookup_global_sam_rid: mapped group %s to "
-				 "no unix gid.  Returning name.\n",
-				 map.nt_name));
-		}
-
+  
+	/* do not resolve SIDs to a name unless there is a valid 
+	   gid associated with it */
+		   
+	if ( ret && (map.gid != (gid_t)-1) ) {
 		*name = talloc_strdup(mem_ctx, map.nt_name);
 		*psid_name_use = map.sid_name_use;
 
-		if (unix_id == NULL) {
-			return True;
+		if ( unix_id ) {
+			unix_id->gid = map.gid;
 		}
 
-		if (map.gid == (gid_t)-1) {
-			DEBUG(5, ("Can't find a unix id for an unmapped "
-				  "group\n"));
-			return False;
-		}
+		return True;
+	}
+	
+	/* Windows will always map RID 513 to something.  On a non-domain 
+	   controller, this gets mapped to SERVER\None. */
 
-		unix_id->gid = map.gid;
+	if ( unix_id ) {
+		DEBUG(5, ("Can't find a unix id for an unmapped group\n"));
+		return False;
+	}
+	
+	if ( rid == DOMAIN_GROUP_RID_USERS ) {
+		*name = talloc_strdup(mem_ctx, "None" );
+		*psid_name_use = IS_DC ? SID_NAME_DOM_GRP : SID_NAME_ALIAS;
+		
 		return True;
 	}
 
