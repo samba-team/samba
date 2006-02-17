@@ -494,6 +494,11 @@ const struct dom_sid *torture_join_sid(struct test_join *join)
 	return join->dom_sid;
 }
 
+const struct dom_sid *torture_join_user_sid(struct test_join *join)
+{
+	return join->user_sid;
+}
+
 
 struct test_join_ads_dc {
 	struct test_join *join;
