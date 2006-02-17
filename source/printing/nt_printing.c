@@ -4783,6 +4783,11 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 		return False;
 	}
 
+	if ( !CAN_WRITE(conn) ) {
+		DEBUG(3,("delete_driver_files: Cannot delete print driver when [print$] is read-only\n"));
+		return False;
+	}
+
         /* Save who we are - we are temporarily becoming the connection user. */
 
 	if ( !become_user(conn, conn->vuid) ) {
