@@ -301,7 +301,8 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	}
 
 	/* Calculate the session key and client credentials */
-	creds_client_init(dc,
+	creds_client_init(*neg_flags_inout,
+			dc,
 			&clnt_chal_send,
 			&srv_chal_recv,
 			machine_pwd,
