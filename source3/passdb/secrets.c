@@ -1051,6 +1051,8 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 				&pdc->domain);
 
 	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 16 || l5 != 16) {
+		/* Bad record - delete it. */
+		tdb_delete_bystring(tdb_sc, keystr);
 		talloc_free(keystr);
 		talloc_free(pdc);
 		SAFE_FREE(pseed_chal);
@@ -1059,8 +1061,6 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 		SAFE_FREE(psess_key);
 		SAFE_FREE(pmach_pw);
 		SAFE_FREE(value.dptr);
-		/* Bad record - delete it. */
-		tdb_delete_bystring(tdb_sc, keystr);
 		return False;
 	}
 
