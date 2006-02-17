@@ -338,7 +338,8 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	}
 
 	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(p->dc,
+	creds_server_init(0,			/* No neg flags. */
+			p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
 			(const char *)p->dc->mach_pw,
@@ -415,7 +416,8 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	}
 
 	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(p->dc,
+	creds_server_init(q_u->clnt_flgs.neg_flags,
+			p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
 			(const char *)p->dc->mach_pw,
