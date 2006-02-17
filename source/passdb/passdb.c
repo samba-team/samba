@@ -218,6 +218,8 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 		}
 	}
 
+	/* we really need to throw away the mapping algorithm here */
+	
 	if (!pdb_set_user_sid_from_rid(account_data, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
 		DEBUG(0,("Can't set User SID from RID!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -229,17 +231,23 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 	unbecome_root();
 	
 	if( ret ) {
-		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
+		if ( !pdb_set_group_sid(account_data, &map.sid, PDB_SET) ) {
 			DEBUG(0,("Can't set Group SID!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		
+		return NT_STATUS_OK;
 	} 
-	else {
-		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-			DEBUG(0,("Can't set Group SID\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
+
+	/* at this point we do not have an explicit mapping for the user's 
+	   primary group.  We do not want to fall back to the rid mapping 
+	   algorithm.   Windows standalone servers set the 0x201 rid as the 
+	   primary group and LookupSid( S-1...-513 ) returns SERVER\None. 
+	   Do something similar.  Use the Domain Users RID as a a placeholder. 
+	   This is a workaround only.  */
+		
+	if ( !pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_USERS, PDB_SET)) 
+		return NT_STATUS_INVALID_PARAMETER;
 
 	return NT_STATUS_OK;
 }
