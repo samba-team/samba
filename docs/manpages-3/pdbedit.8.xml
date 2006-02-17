@@ -281,8 +281,6 @@ retype new password
 		from standard input, rather than from /dev/tty (like the
 		<command>passwd(1)</command> program does).  The password has
 		to be submitted twice and terminated by a newline each.</para>
-
-		</para>
 		</listitem>
 		</varlistentry>
 
