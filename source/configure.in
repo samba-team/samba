@@ -5156,7 +5156,6 @@ do
 done
 
 dnl Always built these modules static
-MODULE_pdb_guest=STATIC
 MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srv=STATIC
 MODULE_idmap_tdb=STATIC
@@ -5183,7 +5182,6 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o, "bin/ldapsam.$SHLIBEXT"
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
-SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 
