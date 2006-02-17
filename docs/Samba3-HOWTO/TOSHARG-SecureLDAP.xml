@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="ch-ldap-tls">
+<chapterinfo>
+        &author.gavin;
+        &author.henry;
+        <pubdate>July 8, 2005</pubdate>
+</chapterinfo>
 <title>LDAP and Transport Layer Security</title>
 
 <sect1 id="s1-intro-ldap-tls">
