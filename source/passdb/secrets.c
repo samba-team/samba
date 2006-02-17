@@ -930,13 +930,15 @@ static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
  Note we must be root here.
 *******************************************************************************/
 
-BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx, const struct dcinfo *pdc)
+BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
+				const char *remote_machine,
+				const struct dcinfo *pdc)
 {
 	TDB_CONTEXT *tdb_sc = NULL;
 	TDB_DATA value;
 	BOOL ret;
 	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
-				pdc->remote_machine);
+				remote_machine);
 	if (!keystr) {
 		return False;
 	}
