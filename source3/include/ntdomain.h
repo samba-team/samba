@@ -140,8 +140,8 @@ struct dcinfo {
 	DOM_CHAL clnt_chal; /* Client credential */
 	DOM_CHAL srv_chal;  /* Server credential */
  
-	uchar  sess_key[16]; /* Session key - 8 bytes followed by 8 zero bytes */
-	uchar  mach_pw[16];   /* md4(machine password) */
+	unsigned char  sess_key[16]; /* Session key - 8 bytes followed by 8 zero bytes */
+	unsigned char  mach_pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
 
@@ -187,7 +187,7 @@ struct kerberos_auth_struct {
 
 /* auth state for schannel. */
 struct schannel_auth_struct {
-	uchar sess_key[16];
+	unsigned char sess_key[16];
 	uint32 seq_num;
 };
 
