@@ -1,3 +1,15 @@
+2006-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_warn.3: Document that applications want to use
+	krb5_get_error_message, add example.
+
+2006-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (krb5_generate_random_block): check return
+	value from RAND_bytes
+
+	* lib/krb5/error_string.c: Change indentation, update (c)
+
 2006-02-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: Make struct krb5_dh_moduli available when
