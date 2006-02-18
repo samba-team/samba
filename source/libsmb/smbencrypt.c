@@ -534,7 +534,7 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
  Decode an arc4 encrypted password change buffer.
 ************************************************************/
 
-void encode_or_decode_arc4_passwd_buffer(char pw_buf[532], const DATA_BLOB *psession_key)
+void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_BLOB *psession_key)
 {
 	struct MD5Context tctx;
 	unsigned char key_out[16];

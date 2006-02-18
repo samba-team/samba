@@ -43,7 +43,7 @@ char *credstr(const unsigned char *cred)
 static void creds_init_128(struct dcinfo *dc,
 				const DOM_CHAL *clnt_chal_in,
 				const DOM_CHAL *srv_chal_in,
-				const char mach_pw[16])
+				const unsigned char mach_pw[16])
 {
 	unsigned char zero[4], tmp[16];
 	HMACMD5Context ctx;
@@ -95,7 +95,7 @@ static void creds_init_128(struct dcinfo *dc,
 static void creds_init_64(struct dcinfo *dc,
 			const DOM_CHAL *clnt_chal_in,
 			const DOM_CHAL *srv_chal_in,
-			const char mach_pw[16])
+			const unsigned char mach_pw[16])
 {
 	uint32 sum[2];
 	unsigned char sum2[8];
@@ -176,13 +176,13 @@ void creds_server_init(uint32 neg_flags,
 			struct dcinfo *dc,
 			DOM_CHAL *clnt_chal,
 			DOM_CHAL *srv_chal,
-			const char mach_pw[16],
+			const unsigned char mach_pw[16],
 			DOM_CHAL *init_chal_out)
 {
 	DEBUG(10,("creds_server_init: neg_flags : %x\n", (unsigned int)neg_flags));
 	DEBUG(10,("creds_server_init: client chal : %s\n", credstr(clnt_chal->data) ));
 	DEBUG(10,("creds_server_init: server chal : %s\n", credstr(srv_chal->data) ));
-	dump_data_pw("creds_server_init: machine pass", (const unsigned char *)mach_pw, 16);
+	dump_data_pw("creds_server_init: machine pass", mach_pw, 16);
 
 	/* Generate the session key and the next client and server creds. */
 	if (neg_flags & NETLOGON_NEG_128BIT) {
