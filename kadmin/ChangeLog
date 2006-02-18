@@ -1,5 +1,30 @@
-2005-12-01  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-02-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cpw.c (cpw_entry): make sure ret have a defined value
+
+	* del.c (del_entry): make sure ret have a defined value
+
+	* mod.c: Return error code so that toplevel function can catch
+	them.
+	
+2006-01-25  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* cpw.c (cpw_entry): return 1 on failure.
+
+	* rename.c (rename_entry): return 1 on failure.
+
+	* del.c (del_entry): return 1 on failure.
+
+	* ank.c (add_new_key): return 1 on failure.
+
+	* get.c: Add printing of pkinit-acls. Don't print password by
+	default. Return 1 on failure processing any of the principals.
+
+	* util.c (foreach_principal): If any of calls to `func' failes,
+	the first error is returned when all principals are processed.
+	
+2005-12-01  Love Hörnquist Åstrand <lha@it.su.se>
+	
 	* kadmin-commands.in: Add ank as an alias to add, it lost in
 	transition to slc, from Måns Nilsson.
 	
