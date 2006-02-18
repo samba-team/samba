@@ -137,12 +137,12 @@ static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
 static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 			DOM_R_REF *ref,
 			DOM_RID *prid,
-			int num_entries,
+			uint32 num_entries,
 			const UNISTR2 *name,
 			int flags,
-			int *pmapped_count)
+			uint32 *pmapped_count)
 {
-	int mapped_count, i;
+	uint32 mapped_count, i;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
@@ -212,12 +212,12 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 			DOM_R_REF *ref,
 			LSA_TRANSLATED_SID3 *trans_sids,
-			int num_entries,
+			uint32 num_entries,
 			const UNISTR2 *name,
 			int flags,
-			int *pmapped_count)
+			uint32 *pmapped_count)
 {
-	int mapped_count, i;
+	uint32 mapped_count, i;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
@@ -1030,7 +1030,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 {
 	struct lsa_info *handle;
 	UNISTR2 *names = q_u->uni_name;
-	int num_entries = q_u->num_entries;
+	uint32 num_entries = q_u->num_entries;
 	DOM_R_REF *ref;
 	DOM_RID *rids;
 	uint32 mapped_count = 0;
@@ -1090,7 +1090,7 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 {
 	struct lsa_info *handle;
 	UNISTR2 *names = q_u->uni_name;
-	int num_entries = q_u->num_entries;
+	uint32 num_entries = q_u->num_entries;
 	DOM_R_REF *ref;
 	DOM_RID *rids;
 	DOM_RID2 *rids2;
@@ -1163,7 +1163,7 @@ NTSTATUS _lsa_lookup_names3(pipes_struct *p, LSA_Q_LOOKUP_NAMES3 *q_u, LSA_R_LOO
 {
 	struct lsa_info *handle;
 	UNISTR2 *names = q_u->uni_name;
-	int num_entries = q_u->num_entries;
+	uint32 num_entries = q_u->num_entries;
 	DOM_R_REF *ref = NULL;
 	LSA_TRANSLATED_SID3 *trans_sids = NULL;
 	uint32 mapped_count = 0;
@@ -1224,7 +1224,7 @@ lsa_reply_lookup_names4.
 NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOOKUP_NAMES4 *r_u)
 {
 	UNISTR2 *names = q_u->uni_name;
-	int num_entries = q_u->num_entries;
+	uint32 num_entries = q_u->num_entries;
 	DOM_R_REF *ref = NULL;
 	LSA_TRANSLATED_SID3 *trans_sids = NULL;
 	uint32 mapped_count = 0;
