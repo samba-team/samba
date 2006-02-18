@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd February  3, 2006
+.Dd February 18, 2006
 .Dt KRB5_WARN 3
 .Os HEIMDAL
 .Sh NAME
@@ -42,8 +42,8 @@
 .Nm krb5_errx ,
 .Nm krb5_free_error_string
 .Nm krb5_get_err_text ,
-.Nm krb5_get_error_string ,
 .Nm krb5_get_error_message ,
+.Nm krb5_get_error_string ,
 .Nm krb5_have_error_string ,
 .Nm krb5_set_error_string ,
 .Nm krb5_set_warn_dest ,
@@ -117,6 +117,10 @@ functions exit with exit status
 .Fa eval
 after printing the message.
 .Pp
+Applications that want to get the error message to report it to a user
+or store it in a log want to use
+.Fn krb5_get_error_message .
+.Pp
 The
 .Fn krb5_set_warn_func
 function sets the destination for warning messages to the specified
@@ -186,6 +190,29 @@ In either case, the error message in the context is consumed and must
 be freed using
 .Fn krb5_free_error_string
 by the caller.
+.Sh EXAMPLES
+Below is a simple example how to report error messages from the
+Kerberos library in an application.
+.Bd -literal
+#include <krb5.h>
+
+krb5_error_code
+function (krb5_context context)
+{
+    krb5_error_code ret;
+
+    ret = krb5_function (context, arg1, arg2);
+    if (ret) {
+	char *s = krb5_get_error_message(context, ret);
+	if (s == NULL)
+	     errx(1, "kerberos error: %d (and out of memory)", ret);
+	application_logger("krb5_function failed: %s", s);
+	krb5_free_error_string(context, s);
+	return ret;
+    }
+    return 0;
+}
+.Ed
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_openlog 3
