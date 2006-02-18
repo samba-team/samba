@@ -474,6 +474,15 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
 		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
 
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		DEBUG(0,("_net_srv_pwset: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
 		become_root();
@@ -579,6 +588,16 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
@@ -671,10 +690,20 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	auth_serversupplied_info *server_info = NULL;
 	SAM_ACCOUNT *sampw;
 	struct auth_context *auth_context = NULL;
-	        
+	 
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logon_internal: client %s not using schannel for netlogon\n",
+			get_remote_machine_name() ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	usr_info = TALLOC_P(p->mem_ctx, NET_USER_INFO_3);
-	if (!usr_info)
+	if (!usr_info) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	ZERO_STRUCTP(usr_info);
 
@@ -710,18 +739,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		if (!p->dc || !p->dc->authenticated) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
-	}
 
-	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
-		/* 'server schannel = yes' should enforce use of
-		   schannel, the client did offer it in auth2, but
-		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logon: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (process_creds) {
 		/* checks and updates credentials.  creates reply credentials */
 		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
 			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
@@ -737,7 +755,6 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 					p->dc);
 		unbecome_root();
 	}
-
 
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
