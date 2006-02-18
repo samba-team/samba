@@ -134,7 +134,7 @@ do_cpw_entry(krb5_principal principal, void *data)
 int
 cpw_entry(struct passwd_options *opt, int argc, char **argv)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     int i;
     struct cpw_entry_data data;
     int num;
