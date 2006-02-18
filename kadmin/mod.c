@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2006 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,18 +78,20 @@ do_mod_entry(krb5_principal principal, void *data)
     }
     
     kadm5_free_principal_ent(kadm_handle, &princ);
-    return 0;
+    return ret;
 }
 
 int
 mod_entry(struct modify_options *opt, int argc, char **argv)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     int i;
 
-    for(i = 0; i < argc; i++)
+    for(i = 0; i < argc; i++) {
 	ret = foreach_principal(argv[i], do_mod_entry, "mod", opt);
-
-    return 0;
+	if (ret)
+	    break;
+    }
+    return ret != 0;
 }
 
