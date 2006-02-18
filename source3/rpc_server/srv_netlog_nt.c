@@ -385,6 +385,8 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
 				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
+
+	/* We use this as the key to store the creds. */
 	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
 				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
 
@@ -445,7 +447,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
 	secrets_store_schannel_session_info(p->mem_ctx,
-					get_remote_machine_name(),
+					remote_machine,
 					p->dc);
 	unbecome_root();
 
@@ -459,7 +461,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-	fstring workstation;
+	fstring remote_machine;
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret = False;
 	unsigned char pwd[16];
@@ -470,16 +472,16 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
-	/* We need the workstation name for the creds lookup. */
-	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
-		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
+	/* We need the remote machine name for the creds lookup. */
+	rpcstr_pull(remote_machine,q_u->clnt_id.login.uni_comp_name.buffer,
+		    sizeof(remote_machine),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
 		DEBUG(0,("_net_srv_pwset: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
+			remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -487,7 +489,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		/* Restore the saved state of the netlogon creds. */
 		become_root();
 		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-							get_remote_machine_name(),
+							remote_machine,
 							&p->dc);
 		unbecome_root();
 		if (!ret) {
@@ -499,21 +501,21 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(3,("_net_srv_pwset: Server Password Set by Wksta:[%s] on account [%s]\n",
-			workstation, p->dc->mach_acct));
+	DEBUG(3,("_net_srv_pwset: Server Password Set by remote machine:[%s] on account [%s]\n",
+			remote_machine, p->dc->mach_acct));
 	
 	/* Step the creds chain forward. */
 	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
 		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			p->dc->remote_machine, p->dc->mach_acct ));
+			remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We must store the creds state after an update. */
 	become_root();
 	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-						get_remote_machine_name(),
+						remote_machine,
 						p->dc);
 	pdb_init_sam(&sampass);
 	ret=pdb_getsampwnam(sampass, p->dc->mach_acct);
@@ -588,6 +590,8 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
+	fstring remote_machine;
+
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
@@ -601,13 +605,17 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
+	/* Get the remote machine name for the creds store. */
+	rpcstr_pull(remote_machine,q_u->sam_id.client.login.uni_comp_name.buffer,
+		    sizeof(remote_machine),q_u->sam_id.client.login.uni_comp_name.uni_str_len*2,0);
+
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
 		BOOL ret;
 
 		become_root();
 		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-						get_remote_machine_name(),
+						remote_machine,
 						&p->dc);
 		unbecome_root();
 		if (!ret) {
@@ -625,14 +633,14 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
 		DEBUG(2,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			p->dc->remote_machine, p->dc->mach_acct ));
+			remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We must store the creds state after an update. */
 	become_root();
 	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-					get_remote_machine_name(),
+					remote_machine,
 					p->dc);
 	unbecome_root();
 
@@ -640,10 +648,10 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	return r_u->status;
 }
 
-
 /*******************************************************************
  gets a domain user's groups from their already-calculated NT_USER_TOKEN
  ********************************************************************/
+
 static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
 				       size_t num_sids,
@@ -722,13 +730,22 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		return NT_STATUS_NO_SUCH_USER;
 
 	if (process_creds) {
+		fstring remote_machine;
+
+		/* Get the remote machine name for the creds store. */
+		/* Note this is the remote machine this request is coming from (member server),
+		   not neccessarily the workstation name the user is logging onto.
+		*/
+		rpcstr_pull(remote_machine,q_u->sam_id.client.login.uni_comp_name.buffer,
+		    sizeof(remote_machine),q_u->sam_id.client.login.uni_comp_name.uni_str_len*2,0);
+
 		if (!p->dc) {
 			/* Restore the saved state of the netlogon creds. */
 			BOOL ret;
 
 			become_root();
 			ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-					get_remote_machine_name(),
+					remote_machine,
 					&p->dc);
 			unbecome_root();
 			if (!ret) {
@@ -744,14 +761,14 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
 			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
 				"request from client %s machine account %s\n",
-				p->dc->remote_machine, p->dc->mach_acct ));
+				remote_machine, p->dc->mach_acct ));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		/* We must store the creds state after an update. */
 		become_root();
 		secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-					get_remote_machine_name(),
+					remote_machine,
 					p->dc);
 		unbecome_root();
 	}

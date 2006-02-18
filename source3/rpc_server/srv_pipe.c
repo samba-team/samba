@@ -1292,8 +1292,14 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return False;
 	}
 
+	/*
+	 * The neg.myname key here must match the remote computer name
+	 * given in the DOM_CLNT_SRV.uni_comp_name used on all netlogon pipe
+	 * operations that use credentials.
+	 */
+
 	become_root();
-	ret = secrets_restore_schannel_session_info(p->mem_ctx, get_remote_machine_name(), &pdcinfo);
+	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &pdcinfo);
 	unbecome_root();
 
 	if (!ret) {
