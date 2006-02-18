@@ -1802,12 +1802,6 @@ files_struct *open_directory(connection_struct *conn,
 		return NULL;
 	}
 
-	if (dir_existed && !S_ISDIR(psbuf->st_mode)) {
-		DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
-		set_saved_ntstatus(NT_STATUS_NOT_A_DIRECTORY);
-		return NULL;
-	}
-
 	switch( create_disposition ) {
 		case FILE_OPEN:
 			/* If directory exists open. If directory doesn't
