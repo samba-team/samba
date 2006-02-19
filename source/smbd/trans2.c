@@ -1927,6 +1927,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 		case SMB_FIND_FILE_NAMES_INFO:
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+		case SMB_FIND_ID_FULL_DIRECTORY_INFO:
+		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
 			if (!lp_unix_extensions())
