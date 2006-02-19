@@ -324,3 +324,246 @@ NTSTATUS dcerpc_pipe_connect_ncacn_np_smb2(TALLOC_CTX *mem_ctx,
 	c = dcerpc_pipe_connect_ncacn_np_smb2_send(mem_ctx, io);
 	return dcerpc_pipe_connect_ncacn_np_smb2_recv(c);
 }
+
+
+struct pipe_ip_tcp_state {
+	struct dcerpc_pipe_connect io;
+	const char *host;
+	uint32_t port;
+};
+
+
+void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_ip_tcp_state *s = talloc_get_type(c->private_data,
+						      struct pipe_ip_tcp_state);
+
+	c->status = dcerpc_pipe_open_tcp_recv(ctx);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(0,("Failed to connect to %s:%d - %s\n", s->host, s->port,
+			 nt_errstr(c->status)));
+		composite_error(c, c->status);
+		return;
+	}
+
+	composite_done(c);
+}
+
+
+struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CTX *mem_ctx,
+								struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	struct pipe_ip_tcp_state *s;
+	struct composite_context *pipe_req;
+
+	/* composite context allocation and setup */
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_ip_tcp_state);
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+	
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = io->pipe->conn->event_ctx;
+
+	s->io    = *io;
+	s->host  = talloc_strdup(c, io->binding->host);
+	s->port  = atoi(io->binding->endpoint);   /* port number is a binding endpoint here */
+
+	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->host, s->port);
+	if (pipe_req == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	composite_continue(c, pipe_req, continue_pipe_open_ncacn_ip_tcp, c);
+done:
+	return c;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	
+	talloc_free(c);
+	return status;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *mem_ctx,
+					  struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	c = dcerpc_pipe_connect_ncacn_ip_tcp_send(mem_ctx, io);
+	return dcerpc_pipe_connect_ncacn_ip_tcp_recv(c);
+}
+
+
+struct pipe_unix_state {
+	struct dcerpc_pipe_connect io;
+	const char *path;
+};
+
+
+void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_unix_state *s = talloc_get_type(c->private_data,
+						    struct pipe_unix_state);
+	
+	c->status = dcerpc_pipe_open_unix_stream_recv(ctx);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(0,("Failed to open unix socket %s - %s\n",
+			 s->io.binding->endpoint, nt_errstr(c->status)));
+		composite_error(c, c->status);
+		return;
+	}
+
+	composite_done(c);
+}
+
+
+struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALLOC_CTX *mem_ctx,
+								     struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	struct pipe_unix_state *s;
+	struct composite_context *pipe_req;
+
+	/* composite context allocation and setup */
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_unix_state);
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+	
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = io->pipe->conn->event_ctx;
+	
+	s->io = *io;
+
+	if (!io->binding->endpoint) {
+		DEBUG(0, ("Path to unix socket not specified\n"));
+		composite_error(c, NT_STATUS_INVALID_PARAMETER);
+		goto done;
+	}
+
+	s->path  = talloc_strdup(c, io->binding->endpoint);  /* path is a binding endpoint here */
+	
+	pipe_req = dcerpc_pipe_open_unix_stream_send(s->io.pipe->conn, s->path);
+	if (pipe_req == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+
+	composite_continue(c, pipe_req, continue_pipe_open_ncacn_unix_stream, c);
+done:
+	return c;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+
+	talloc_free(c);
+	return status;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(TALLOC_CTX *mem_ctx,
+					       struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	c = dcerpc_pipe_connect_ncacn_unix_stream_send(mem_ctx, io);
+	return dcerpc_pipe_connect_ncacn_unix_stream_recv(c);	
+}
+
+
+struct pipe_ncalrpc_state {
+	struct dcerpc_pipe_connect io;
+};
+
+
+void continue_pipe_open_ncalrpc(struct composite_context *ctx)
+{
+	struct composite_context *c = talloc_get_type(ctx->async.private_data,
+						      struct composite_context);
+	struct pipe_ncalrpc_state *s = talloc_get_type(c->private_data,
+						       struct pipe_ncalrpc_state);
+
+	c->status = dcerpc_pipe_connect_ncalrpc_recv(ctx);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DEBUG(0,("Failed to open ncalrpc pipe '%s' - %s\n", s->io.binding->endpoint,
+			 nt_errstr(c->status)));
+		composite_error(c, c->status);
+		return;
+	}
+
+	composite_done(c);
+}
+
+
+struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
+							   struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c;
+	struct pipe_ncalrpc_state *s;
+	struct composite_context *pipe_req;
+
+	/* composite context allocation and setup */
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct pipe_ncalrpc_state);
+	if (s == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+	
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx = io->pipe->conn->event_ctx;
+
+	s->io  = *io;
+
+	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, s->io.binding->endpoint);
+	if (pipe_req == NULL) {
+		composite_error(c, NT_STATUS_NO_MEMORY);
+		goto done;
+	}
+	
+	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
+done:
+	return c;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncalrpc_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	
+	talloc_free(c);
+	return status;
+}
+
+
+NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *mem_ctx,
+				     struct dcerpc_pipe_connect *io)
+{
+	struct composite_context *c = dcerpc_pipe_connect_ncalrpc_send(mem_ctx, io);
+	return dcerpc_pipe_connect_ncalrpc_recv(c);
+}
