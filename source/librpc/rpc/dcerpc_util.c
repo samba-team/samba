@@ -956,75 +956,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 }
 
 
-/* open a rpc connection to a rpc pipe on SMP using the binding
-   structure to determine the endpoint and options */
-static NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *tmp_ctx, 
-					    struct dcerpc_pipe *p, 
-					    struct dcerpc_binding *binding,
-						const struct dcerpc_interface_table *table)
-{
-	NTSTATUS status;
-
-	status = dcerpc_pipe_open_pipe(p->conn, binding->endpoint);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to open ncalrpc pipe '%s' - %s\n", 
-			 binding->endpoint, nt_errstr(status)));
-   		return status;
-	}
-
-	return status;
-}
-
-
-
-/* open a rpc connection to a rpc pipe on SMP using the binding
-   structure to determine the endpoint and options */
-static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(TALLOC_CTX *tmp_ctx, 
-						      struct dcerpc_pipe *p, 
-						      struct dcerpc_binding *binding,
-						 	  const struct dcerpc_interface_table *table)
-{
-	NTSTATUS status;
-
-	if (!binding->endpoint) {
-		DEBUG(0, ("Path to unix socket not specified\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = dcerpc_pipe_open_unix_stream(p->conn, binding->endpoint);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to open unix socket %s - %s\n", 
-			 binding->endpoint, nt_errstr(status)));
-		talloc_free(p);
-        return status;
-	}
-
-	return status;
-}
-
-/* open a rpc connection to a rpc pipe on TCP/IP sockets using the binding
-   structure to determine the endpoint and options */
-static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *tmp_ctx, 
-						 struct dcerpc_pipe *p, 
-						 struct dcerpc_binding *binding,
-						 const struct dcerpc_interface_table *table)
-{
-	NTSTATUS status;
-	uint32_t port = 0;
-
-	port = atoi(binding->endpoint);
-
-	status = dcerpc_pipe_open_tcp(p->conn, binding->host, port);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to connect to %s:%d - %s\n", 
-			 binding->host, port, nt_errstr(status)));
-                return status;
-        }
-
-        return status;
-}
-
-
 /* open a rpc connection to a rpc pipe, using the specified 
    binding structure to determine the endpoint and options */
 NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx, 
@@ -1082,17 +1013,17 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 		break;
 
 	case NCACN_IP_TCP:
-		status = dcerpc_pipe_connect_ncacn_ip_tcp(tmp_ctx, 
-							  p, binding, table);
+		status = dcerpc_pipe_connect_ncacn_ip_tcp(tmp_ctx, &pc);
 		break;
+
 	case NCACN_UNIX_STREAM:
-		status = dcerpc_pipe_connect_ncacn_unix_stream(tmp_ctx, 
-							       p, binding, table);
+		status = dcerpc_pipe_connect_ncacn_unix_stream(tmp_ctx, &pc);
 		break;
+
 	case NCALRPC:
-		status = dcerpc_pipe_connect_ncalrpc(tmp_ctx, 
-						     p, binding, table);
+		status = dcerpc_pipe_connect_ncalrpc(tmp_ctx, &pc);
 		break;
+
 	default:
 		return NT_STATUS_NOT_SUPPORTED;
 	}
