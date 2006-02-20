@@ -1333,6 +1333,49 @@ BOOL prs_string_alloc(const char *name, prs_struct *ps, int depth, const char **
 }
 
 /*******************************************************************
+ Stream a null-terminated string of fixed len.
+ ********************************************************************/
+
+BOOL prs_string_len(const char *name, prs_struct *ps, int depth, char *str, int len)
+{
+	char *q;
+	int i;
+	BOOL charmode = True;
+
+	q = prs_mem_get(ps, len+1);
+	if (q == NULL)
+		return False;
+
+	for(i = 0; i < len; i++) {
+		if (UNMARSHALLING(ps))
+			str[i] = q[i];
+		else
+			q[i] = str[i];
+	}
+
+	/* The terminating null. */
+	str[i] = '\0';
+
+	if (MARSHALLING(ps)) {
+		q[i] = '\0';
+	}
+
+	ps->data_offset += len+1;
+	
+	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+	if (charmode) {
+		print_asc(5, (unsigned char*)str, len);
+	} else {
+		for (i = 0; i < len; i++)
+			DEBUG(5,("%04x ", str[i]));
+	}
+	DEBUG(5,("\n"));
+
+	return True;
+}
+
+
+/*******************************************************************
  prs_uint16 wrapper. Call this and it sets up a pointer to where the
  uint16 should be stored, or gets the size if reading.
  ********************************************************************/

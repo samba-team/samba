@@ -42,16 +42,7 @@ static BOOL pac_io_logon_name(const char *desc, PAC_LOGON_NAME *logon_name,
 	if (!prs_uint16("len", ps, depth, &logon_name->len))
 		return False;
 
-	if (UNMARSHALLING(ps) && logon_name->len) {
-		logon_name->username = PRS_ALLOC_MEM(ps, uint16, logon_name->len);
-		if (!logon_name->username) {
-			DEBUG(3, ("No memory available\n"));
-			return False;
-		}
-	}
-
-	if (!prs_uint16s(True, "name", ps, depth, logon_name->username, 
-			 (logon_name->len / sizeof(uint16))))
+	if (!prs_string_len("name", ps, depth, logon_name->username, logon_name->len))
 		return False;
 
 	return True;
@@ -891,7 +882,8 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 		nt_status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
-	rpcstr_pull(username, logon_name->username, sizeof(username), -1, STR_TERMINATE);
+
+	rpcstr_pull(username, logon_name->username, sizeof(username), logon_name->len, 0);
 
 	ret = smb_krb5_parse_name_norealm(context, username, &client_principal_pac);
 	if (ret) {
