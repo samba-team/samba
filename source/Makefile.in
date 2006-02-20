@@ -439,13 +439,6 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
            $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
-WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
-             wrepld/partners.o
-
-WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) \
-	    $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
-	    $(LIBSAMBA_OBJ)
-
 SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o 
 
@@ -891,10 +884,6 @@ bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
-
-bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(WREPL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1533,13 +1522,13 @@ clean: delheaders python_clean
 # exist, not necessarily that they are up to date.  Since they're
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
-proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
+proto_exists: include/proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
 	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
 
 delheaders:
 	@echo Removing prototype headers
-	@rm -f include/proto.h include/build_env.h  include/wrepld_proto.h \
+	@rm -f include/proto.h include/build_env.h  \
 		nsswitch/winbindd_proto.h web/swat_proto.h \
 		client/client_proto.h utils/net_proto.h \
 		smbd/build_options.c
@@ -1556,12 +1545,6 @@ include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
 	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
 	  > $(builddir)/include/build_env.h
-
-include/wrepld_proto.h:
-	@echo Building include/wrepld_proto.h
-	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
-	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
-	  $(WREPL_OBJ1)
 
 nsswitch/winbindd_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
@@ -1601,7 +1584,6 @@ headers:
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/proto.h; \
 	$(MAKE) include/build_env.h; \
-	$(MAKE) include/wrepld_proto.h; \
 	$(MAKE) nsswitch/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
