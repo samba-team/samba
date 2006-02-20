@@ -17,17 +17,17 @@ Source: samba-%{version}.tar.bz2
 Source998: filter-requires-samba.sh
 Source999: setup.tar.bz2
 
-Requires: pam >= 0.64 %{auth} samba-common = %{version}
-Requires: logrotate >= 3.4 initscripts >= 5.54-1
-BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
-BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
-Provides: samba = %{version}
-Obsoletes: samba-common, samba-client, samba-swat
 
-BuildRoot: %{_tmppath}/%{name}-%{version}-root
+Requires: pam >= 0.64 %{auth} 
+Requires: samba-common = %{version}-%{release}
+Requires: logrotate >= 3.4 initscripts >= 5.54-1
+Provides: samba = %{version}
+
 Prefix: /usr
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
+BuildRequires: pam-devel, readline-devel, ncurses-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
 
 # Working around perl dependency problem from docs
 %define __perl_requires %{SOURCE998}
@@ -45,11 +45,13 @@ TCP/IP (NetBT) protocols and does NOT need the NetBEUI (Microsoft Raw
 NetBIOS frame) protocol.
 
 
+#######################################################################
 %package client
 Summary: Samba (SMB) client programs.
 Group: Applications/System
-Requires: samba-common = %{version}
+Requires: samba-common = %{version}-%{release}
 Obsoletes: smbfs
+Provides: samba-client = %{version}-%{release}
 
 %description client
 The samba-client package provides some SMB clients to compliment the
@@ -57,25 +59,44 @@ built-in SMB filesystem in Linux. These clients allow access of SMB
 shares and printing to SMB printers.
 
 
+#######################################################################
 %package common
 Summary: Files used by both Samba servers and clients.
 Group: Applications/System
+Provides: samba-common = %{version}-%{release}
 
 %description common
 Samba-common provides files necessary for both the server and client
 packages of Samba.
 
 
+#######################################################################
 %package swat
 Summary: The Samba SMB server configuration program.
 Group: Applications/System
 Requires: samba = %{version} xinetd
+Provides: samba-swat = %{version}-%{release}
 
 %description swat
 The samba-swat package includes the new SWAT (Samba Web Administration
 Tool), for remotely managing Samba's smb.conf file using your favorite
 Web browser.
 
+
+#######################################################################
+%package doc
+Summary:      Samba Documentation
+Group:        Documentation/Other
+Provides:     samba-doc = %{version}-%{release}
+Prereq:       /usr/bin/find /bin/rm /usr/bin/xargs
+
+%description doc
+The samba-doc package includes the HTML versions of the Samba manpages
+utilized by SWAT as well as the HTML and PDF version of "Using Samba",
+"Samba By Example", and "The Official Samba HOWTO and Reference Guide".
+
+
+#######################################################################
 
 %prep
 %setup -q
@@ -98,17 +119,15 @@ autoconf
 EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
 
-## run autogen if missing the configure script
-if [ ! -f "configure" ]; then
-	./autogen.sh
-fi
+## always run autogen.sh
+./autogen.sh
 
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
         --with-configdir=%{_sysconfdir}/samba \
         --with-libdir=%{_libdir}/samba \
-        --with-lockdir=/var/cache/samba \
+        --with-lockdir=/var/lib/samba \
         --with-logfilebase=/var/log/samba \
         --with-mandir=%{_mandir} \
         --with-piddir=/var/run \
@@ -117,11 +136,13 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --with-swatdir=%{_datadir}/swat \
 	--enable-cups \
         --with-acl-support \
+	--with-ads \
         --with-automount \
         --with-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
 	--with-libsmbsharemodes \
+        --without-smbwrapper \
 	--with-pam \
 	--with-quotas \
 	--with-shared-modules=idmap_rid,idmap_ad \
@@ -131,7 +152,18 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 
 make showlayout
 
-make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE"  proto pch
+make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE"  proto 
+
+## check for gcc 3.4 or later
+CC_VERSION=`${CC} --version | head -1 | awk '{print $3}'`
+CC_MAJOR=`echo ${CC_VERSION} | cut -d. -f 1`
+CC_MINOR=`echo ${CC_VERSION} | cut -d. -f 2`
+if [ ${CC_MAJOR} -ge 3 ]; then
+        if [ ${CC_MAJOR} -gt 3 -o ${CC_MINOR} -ge 4 ]; then
+                make pch
+        fi
+fi
+
 
 make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" %{?_smp_mflags} \
 	all modules pam_smbpass
@@ -167,7 +199,7 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{pam.d,logrotate.d}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/{samba,sysconfig}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
-mkdir -p $RPM_BUILD_ROOT/var/cache/samba/winbindd_privileged
+mkdir -p $RPM_BUILD_ROOT/var/lib/samba/winbindd_privileged
 mkdir -p $RPM_BUILD_ROOT/var/{log,run/winbindd,spool}/samba
 
 cd source
@@ -213,8 +245,8 @@ ln -s /%{_libdir}/libmsrpc.so $RPM_BUILD_ROOT%{_libdir}/libmsrpc.so.0
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
 
 # we need a symlink for mount to recognise the smb and smbfs filesystem types
-ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
-ln -sf %{_prefix}/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
+ln -sf %{_prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+ln -sf %{_prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
@@ -255,19 +287,32 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man5/vfstest.1*
 rm -rf $RPM_BUILD_ROOT
 
 %post
-/sbin/chkconfig --add smb
+## deal with an upgrade from a broken 3.0.21b RPM
+if [ "$1" -eq "2" ]; then
+	if [ -d /var/cache/samba ]; then
+		for file in `ls /var/cache/samba/*tdb`; do
+			/bin/cp -up $file /var/lib/samba/`basename $file`
+		done
+		mkdir -p /var/lib/samba/eventlog
+		for file in `ls /var/cache/samba/eventlog/*tdb`; do
+			/bin/cp -up $file /var/lib/samba/eventlog/`basename $file`
+		done
+		/bin/mv /var/cache/samba /var/cache/samba.moved
+        fi
+fi
 
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
-    rm -rf /var/log/samba/* /var/cache/samba/*
+    /sbin/chkconfig --del winbind
+    # rm -rf /var/log/samba/* /var/lib/samba/*
     /sbin/service smb stop >/dev/null 2>&1
 fi
 exit 0
 
 %postun
 if [ "$1" -ge "1" ]; then
-	%{initdir}/smb condrestart >/dev/null 2>&1
+	%{initdir}/smb restart >/dev/null 2>&1
 fi	
 
 
@@ -278,54 +323,56 @@ if [ ! "`grep ^\s**swat /etc/services`" ]; then
 fi
 
 %post common
-/sbin/chkconfig --add winbind
 /sbin/ldconfig
 
-%preun common
-if [ $1 = 0 ] ; then
-    /sbin/chkconfig --del winbind
-    /sbin/service winbind stop >/dev/null 2>&1
-fi
-exit 0
+%postun common 
+/sbin/ldconfig
 
-%postun common -p /sbin/ldconfig
-
-%triggerpostun -- samba < 1.9.18p7
-if [ $1 != 0 ]; then
-    /sbin/chkconfig --add smb
-fi
-
-%triggerpostun -- samba < 2.0.5a-3
-if [ $1 != 0 ]; then
-    [ ! -d /var/lock/samba ] && mkdir -m 0755 /var/lock/samba
-    [ ! -d /var/spool/samba ] && mkdir -m 1777 /var/spool/samba
-    chmod 644 /etc/services
-    [ -f /etc/inetd.conf ] && chmod 644 /etc/inetd.conf
-fi
+#######################################################################
+## Files section                                                     ##
+#######################################################################
 
 %files
 %defattr(-,root,root)
-%doc README COPYING Manifest 
-%doc WHATSNEW.txt Roadmap
-%doc docs
-%doc examples/autofs examples/LDAP examples/libsmbclient examples/misc examples/printer-accounting
-%doc examples/printing
 
-%attr(755,root,root) /%{_lib}/security/pam_smbpass.so
+%config(noreplace) %{_sysconfdir}/sysconfig/samba
+%config(noreplace) %{_sysconfdir}/samba/smbusers
+%attr(755,root,root) %config %{initdir}/smb
+%attr(755,root,root) %config %{initdir}/winbind
+%config(noreplace) %{_sysconfdir}/logrotate.d/samba
+%config(noreplace) %{_sysconfdir}/pam.d/samba
+
+%attr(0755,root,root) %dir /var/log/samba
+%attr(0755,root,root) %dir /var/lib/samba
+%attr(1777,root,root) %dir /var/spool/samba
+
 %{_sbindir}/samba
 %{_sbindir}/winbind
+
 %{_sbindir}/smbd
 %{_sbindir}/nmbd
+%{_sbindir}/winbindd
+
+%attr(755,root,root) /%{_lib}/libnss_wins.so*
+%attr(755,root,root) /%{_lib}/libnss_winbind.so*
+%attr(755,root,root) /%{_lib}/security/pam_winbind.so
+%attr(755,root,root) /%{_lib}/security/pam_smbpass.so
+
 %{_bindir}/mksmbpasswd.sh
 %{_bindir}/smbcontrol
 %{_bindir}/smbstatus
 %{_bindir}/tdbbackup
 %{_bindir}/tdbtool
-%config(noreplace) %{_sysconfdir}/sysconfig/samba
-%config(noreplace) %{_sysconfdir}/samba/smbusers
-%attr(755,root,root) %config %{initdir}/smb
-%config(noreplace) %{_sysconfdir}/logrotate.d/samba
-%config(noreplace) %{_sysconfdir}/pam.d/samba
+%{_bindir}/tdbdump
+%{_bindir}/wbinfo
+%{_bindir}/ntlm_auth
+%{_bindir}/pdbedit
+%{_bindir}/eventlogadm
+
+%{_libdir}/samba/idmap/*.so
+%{_libdir}/samba/vfs/*.so
+%{_libdir}/samba/auth/*.so
+
 %{_mandir}/man1/smbcontrol.1*
 %{_mandir}/man1/smbstatus.1*
 %{_mandir}/man1/vfstest.1*
@@ -336,20 +383,36 @@ fi
 %{_mandir}/man8/smbd.8*
 %{_mandir}/man7/pam_winbind.7*
 %{_mandir}/man8/tdbbackup.8*
-%{_mandir}/man7/libsmbclient.7*
+%{_mandir}/man8/tdbdump.8*
+%{_mandir}/man8/winbindd.8*
+%{_mandir}/man1/ntlm_auth.1*
+%{_mandir}/man1/wbinfo.1*
 
-%{_libdir}/samba/vfs
 
-%attr(0700,root,root) %dir /var/log/samba
-%attr(1777,root,root) %dir /var/spool/samba
+##########
+
+%files doc
+%defattr(-,root,root)
+%doc README COPYING Manifest 
+%doc WHATSNEW.txt Roadmap
+%doc docs
+%doc examples/autofs examples/LDAP examples/libsmbclient examples/misc examples/printer-accounting
+%doc examples/printing
+%doc %{_datadir}/swat/help
+
+##########
 
 %files swat
 %defattr(-,root,root)
 %config(noreplace) %{_sysconfdir}/xinetd.d/swat
-%{_datadir}/swat
+%dir %{_datadir}/swat
+%{_datadir}/swat/include
+%{_datadir}/swat/images
+%{_datadir}/swat/lang
 %{_sbindir}/swat
 %{_mandir}/man8/swat.8*
-%attr(755,root,root) %{_libdir}/samba/*.msg
+
+##########
 
 %files client
 %defattr(-,root,root)
@@ -357,23 +420,14 @@ fi
 /sbin/mount.smbfs
 /sbin/mount.cifs
 /sbin/umount.cifs
-%{_libdir}/samba/lowcase.dat
-%{_libdir}/samba/upcase.dat
-%{_libdir}/samba/valid.dat
+
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
 %{_bindir}/smbmount
 %{_bindir}/smbmnt
 %{_bindir}/smbumount
 %{_bindir}/findsmb
-%{_bindir}/tdbdump
-%{_mandir}/man8/tdbdump.8*
-%{_mandir}/man8/smbmnt.8*
-%{_mandir}/man8/smbmount.8*
-%{_mandir}/man8/smbumount.8*
-%{_mandir}/man8/mount.cifs.8.*
-%{_mandir}/man8/umount.cifs.8.*
-%{_mandir}/man8/smbspool.8*
+%{_bindir}/smbcquotas
 %{_bindir}/nmblookup
 %{_bindir}/smbget
 %{_bindir}/smbclient
@@ -382,6 +436,13 @@ fi
 %{_bindir}/smbtar
 %{_bindir}/net
 %{_bindir}/smbtree
+
+%{_mandir}/man8/smbmnt.8*
+%{_mandir}/man8/smbmount.8*
+%{_mandir}/man8/smbumount.8*
+%{_mandir}/man8/mount.cifs.8.*
+%{_mandir}/man8/umount.cifs.8.*
+%{_mandir}/man8/smbspool.8*
 %{_mandir}/man1/smbget.1*
 %{_mandir}/man5/smbgetrc.5*
 %{_mandir}/man1/findsmb.1*
@@ -392,45 +453,37 @@ fi
 %{_mandir}/man1/smbtar.1*
 %{_mandir}/man1/smbtree.1*
 %{_mandir}/man8/net.8*
+%{_mandir}/man1/smbcquotas.1*
+
+##########
 
 %files common
 %defattr(-,root,root)
-/%{_lib}/libnss_wins.so*
-/%{_lib}/libnss_winbind.so*
-/%{_lib}/security/pam_winbind.so
-%{_includedir}/libsmbclient.h
-%{_libdir}/libsmbclient.a
-%{_libdir}/libsmbclient.so
-%{_libdir}/libsmbclient.so.0
-%{_includedir}/libmsrpc.h
-%{_libdir}/libmsrpc.a
-%{_libdir}/libmsrpc.so
-%{_libdir}/libmsrpc.so.0
-%{_libdir}/samba/charset/CP*.so
-%{_libdir}/samba/idmap/*.so
-%{_libdir}/samba/auth/script.so
-%{_bindir}/testparm
-%{_bindir}/smbpasswd
-%{_bindir}/wbinfo
-%{_bindir}/ntlm_auth
-%{_bindir}/pdbedit
-%{_bindir}/eventlogadm
-%{_bindir}/profiles
-%{_bindir}/smbcquotas
-%{_sbindir}/winbindd
+%dir %{_sysconfdir}/samba
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
-%dir %{_sysconfdir}/samba
-%{initdir}/winbind
-%{_mandir}/man1/ntlm_auth.1*
+
+%{_includedir}/libsmbclient.h
+%{_libdir}/libsmbclient.a
+%{_libdir}/libsmbclient.so*
+%{_includedir}/libmsrpc.h
+%{_libdir}/libmsrpc.a
+%{_libdir}/libmsrpc.so*
+
+%{_libdir}/samba/*.dat
+%{_libdir}/samba/*.msg
+%{_libdir}/samba/charset/*.so
+
+%{_bindir}/testparm
+%{_bindir}/smbpasswd
+%{_bindir}/profiles
+
 %{_mandir}/man1/profiles.1*
-%{_mandir}/man1/smbcquotas.1*
 %{_mandir}/man1/testparm.1*
 %{_mandir}/man5/smb.conf.5*
 %{_mandir}/man5/lmhosts.5*
 %{_mandir}/man8/smbpasswd.8*
-%{_mandir}/man1/wbinfo.1*
-%{_mandir}/man8/winbindd.8*
+%{_mandir}/man7/libsmbclient.7*
 
 %changelog
 * Fri Jan 16 2004 Gerald (Jerry) Carter <jerry@samba,org>
