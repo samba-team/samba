@@ -796,7 +796,9 @@ AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h sys/proplist.h)
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
+
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
 
 AC_CHECK_HEADERS(netinet/ip.h,,,[[
@@ -1395,6 +1397,8 @@ case "$host_os" in
   *)
 	AC_SEARCH_LIBS(getxattr, [attr])
 	AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
+	AC_CHECK_FUNCS(getea fgetea lgetea listea flistea llistea)
+	AC_CHECK_FUNCS(removeea fremoveea lremoveea setea fsetea lsetea)
 	AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
 	AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
 	AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
