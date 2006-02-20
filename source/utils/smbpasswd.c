@@ -197,48 +197,6 @@ static int process_options(int argc, char **argv, int local_flags)
 }
 
 /*************************************************************
- Utility function to prompt for passwords from stdin. Each
- password entered must end with a newline.
-*************************************************************/
-static char *stdin_new_passwd(void)
-{
-	static fstring new_pw;
-	size_t len;
-
-	ZERO_ARRAY(new_pw);
-
-	/*
-	 * if no error is reported from fgets() and string at least contains
-	 * the newline that ends the password, then replace the newline with
-	 * a null terminator.
-	 */
-	if ( fgets(new_pw, sizeof(new_pw), stdin) != NULL) {
-		if ((len = strlen(new_pw)) > 0) {
-			if(new_pw[len-1] == '\n')
-				new_pw[len - 1] = 0; 
-		}
-	}
-	return(new_pw);
-}
-
-
-/*************************************************************
- Utility function to get passwords via tty or stdin
- Used if the '-s' option is set to silently get passwords
- to enable scripting.
-*************************************************************/
-static char *get_pass( const char *prompt, BOOL stdin_get)
-{
-	char *p;
-	if (stdin_get) {
-		p = stdin_new_passwd();
-	} else {
-		p = getpass(prompt);
-	}
-	return smb_xstrdup(p);
-}
-
-/*************************************************************
  Utility function to prompt for new password.
 *************************************************************/
 static char *prompt_for_new_password(BOOL stdin_get)

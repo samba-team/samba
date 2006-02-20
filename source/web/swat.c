@@ -580,7 +580,11 @@ static void ViewModeBoxes(int mode)
 ****************************************************************************/
 static void welcome_page(void)
 {
-	include_html("help/welcome.html");
+	if (file_exist("help/welcome.html", NULL)) {
+		include_html("help/welcome.html");
+	} else {
+		include_html("help/welcome-no-samba-doc.html");
+	}
 }
 
 /****************************************************************************

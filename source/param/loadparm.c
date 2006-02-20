@@ -1623,10 +1623,7 @@ static void init_globals(void)
 	   operations as root */
 
 	Globals.bEnablePrivileges = False;
-
 	Globals.bASUSupport       = True;
-	
-	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
 }
 
 static TALLOC_CTX *lp_talloc;

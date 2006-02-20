@@ -73,23 +73,6 @@ int fd_close(struct connection_struct *conn,
 	return fd_close_posix(conn, fsp);
 }
 
-
-/****************************************************************************
- Check a filename for the pipe string.
-****************************************************************************/
-
-static void check_for_pipe(const char *fname)
-{
-	/* special case of pipe opens */
-	char s[10];
-	StrnCpy(s,fname,sizeof(s)-1);
-	strlower_m(s);
-	if (strstr(s,"pipe/")) {
-		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
-		set_saved_error_triple(ERRSRV, ERRaccess, NT_STATUS_ACCESS_DENIED);
-	}
-}
-
 /****************************************************************************
  Change the ownership of a file to that of the parent directory.
  Do this by fd if possible.
@@ -226,7 +209,6 @@ static BOOL open_file(files_struct *fsp,
 		/* It's a read-only share - fail if we wanted to write. */
 		if(accmode != O_RDONLY) {
 			DEBUG(3,("Permission denied opening %s\n",fname));
-			check_for_pipe(fname);
 			return False;
 		} else if(flags & O_CREAT) {
 			/* We don't want to write - but we must make sure that
@@ -292,7 +274,6 @@ static BOOL open_file(files_struct *fsp,
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n",
 				 fname,strerror(errno),local_flags,flags));
-			check_for_pipe(fname);
 			return False;
 		}
 
@@ -1828,12 +1809,6 @@ files_struct *open_directory(connection_struct *conn,
 
 	if (is_ntfs_stream_name(fname)) {
 		DEBUG(0,("open_directory: %s is a stream name!\n", fname ));
-		set_saved_ntstatus(NT_STATUS_NOT_A_DIRECTORY);
-		return NULL;
-	}
-
-	if (dir_existed && !S_ISDIR(psbuf->st_mode)) {
-		DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 		set_saved_ntstatus(NT_STATUS_NOT_A_DIRECTORY);
 		return NULL;
 	}

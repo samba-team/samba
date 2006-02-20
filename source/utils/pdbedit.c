@@ -490,12 +490,14 @@ static int set_user_info (struct pdb_context *in, const char *username,
 static int new_user (struct pdb_context *in, const char *username,
 			const char *fullname, const char *homedir,
 			const char *drive, const char *script,
-			const char *profile, char *user_sid, char *group_sid)
+			const char *profile, char *user_sid, char *group_sid,
+			BOOL stdin_get)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 
-	char *password1, *password2, *staticpass;
-	
+	char *password1, *password2;
+	int rc_pwd_cmp;
+
 	get_global_sam_sid();
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username, 0))) {
@@ -503,27 +505,23 @@ static int new_user (struct pdb_context *in, const char *username,
 		return -1;
 	}
 
-	staticpass = getpass("new password:");
-	password1 = SMB_STRDUP(staticpass);
-	memset(staticpass, 0, strlen(staticpass));
-	staticpass = getpass("retype new password:");
-	password2 = SMB_STRDUP(staticpass);
-	memset(staticpass, 0, strlen(staticpass));
-	if (strcmp (password1, password2)) {
-		fprintf (stderr, "Passwords does not match!\n");
-		memset(password1, 0, strlen(password1));
-		SAFE_FREE(password1);
-		memset(password2, 0, strlen(password2));
-		SAFE_FREE(password2);
+	password1 = get_pass( "new password:", stdin_get);
+	password2 = get_pass( "retype new password:", stdin_get);
+	if ((rc_pwd_cmp = strcmp (password1, password2))) {
+		fprintf (stderr, "Passwords do not match!\n");
 		pdb_free_sam (&sam_pwent);
-		return -1;
+	} else {
+		pdb_set_plaintext_passwd(sam_pwent, password1);
 	}
 
-	pdb_set_plaintext_passwd(sam_pwent, password1);
 	memset(password1, 0, strlen(password1));
 	SAFE_FREE(password1);
 	memset(password2, 0, strlen(password2));
 	SAFE_FREE(password2);
+
+	/* pwds do _not_ match? */
+	if (rc_pwd_cmp)
+		return -1;
 
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
@@ -732,6 +730,7 @@ int main (int argc, char **argv)
 	static char *pwd_can_change_time = NULL;
 	static char *pwd_must_change_time = NULL;
 	static char *pwd_time_format = NULL;
+	BOOL pw_from_stdin = False;
 
 	struct pdb_context *bin;
 	struct pdb_context *bout;
@@ -769,8 +768,9 @@ int main (int argc, char **argv)
 		{"bad-password-count-reset", 'z', POPT_ARG_NONE, &badpw_reset, 0, "reset bad password count", NULL},
 		{"logon-hours-reset", 'Z', POPT_ARG_NONE, &hours_reset, 0, "reset logon hours", NULL},
 		{"pwd-can-change-time", 0, POPT_ARG_STRING, &pwd_can_change_time, 0, "Set password can change time (unix time in seconds since 1970 if time format not provided)", NULL },
-		{"pwd-must-change-time", 0, POPT_ARG_STRING, &pwd_must_change_time, 0, "Set password can change time (unix time in seconds since 1970 if time format not provided)", NULL },
+		{"pwd-must-change-time", 0, POPT_ARG_STRING, &pwd_must_change_time, 0, "Set password must change time (unix time in seconds since 1970 if time format not provided)", NULL },
 		{"time-format", 0, POPT_ARG_STRING, &pwd_time_format, 0, "The time format for time parameters", NULL },
+		{"password-from-stdin", 't', POPT_ARG_NONE, &pw_from_stdin, 0, "get password from standard in", NULL},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -979,7 +979,8 @@ int main (int argc, char **argv)
 			} else {
 				return new_user (bdef, user_name, full_name, home_dir, 
 						 home_drive, logon_script, 
-						 profile_path, user_sid, group_sid);
+						 profile_path, user_sid, group_sid,
+						 pw_from_stdin);
 			}
 		}
 

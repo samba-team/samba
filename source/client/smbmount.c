@@ -868,6 +868,8 @@ static void parse_mount_smb(int argc, char **argv)
 
 	DEBUGLEVEL = 1;
 
+	load_case_tables();
+
 	/* here we are interactive, even if run from autofs */
 	setup_logging("mount.smbfs",True);
 

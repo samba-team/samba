@@ -1967,9 +1967,20 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	struct current_user		user;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
+	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;	
 	
 	get_current_user(&user, p);
 	 
+	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
+	   and not a printer admin, then fail */
+			
+	if ( (user.uid != 0) 
+		&& !user_has_privileges(user.nt_user_token, &se_printop ) 
+		&& !user_in_list(uidtoname(user.uid), lp_printer_admin(-1), user.groups, user.ngroups) )
+	{
+		return WERR_ACCESS_DENIED;
+	}
+
 	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
 	
@@ -2053,8 +2064,19 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	struct current_user		user;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
+	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;	
 	
 	get_current_user(&user, p);
+	
+	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
+	   and not a printer admin, then fail */
+			
+	if ( (user.uid != 0) 
+		&& !user_has_privileges(user.nt_user_token, &se_printop ) 
+		&& !user_in_list(uidtoname(user.uid), lp_printer_admin(-1), user.groups, user.ngroups) )
+	{
+		return WERR_ACCESS_DENIED;
+	}
 	
 	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );

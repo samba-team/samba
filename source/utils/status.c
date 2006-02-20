@@ -101,6 +101,11 @@ static BOOL Ucrit_addPid( pid_t pid )
 static void print_share_mode(const struct share_mode_entry *e, const char *sharepath, const char *fname)
 {
 	static int count;
+
+	if (!is_valid_share_mode_entry(e)) {
+		return;
+	}
+
 	if (count==0) {
 		d_printf("Locked files:\n");
 		d_printf("Pid          DenyMode   Access      R/W        Oplock           SharePath           Name\n");

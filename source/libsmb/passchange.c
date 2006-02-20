@@ -34,6 +34,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	struct in_addr ip;
 
 	NTSTATUS result;
+	BOOL pass_must_change = False;
 
 	*err_str = '\0';
 
@@ -73,6 +74,28 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
 	if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd)+1, old_passwd, strlen(old_passwd)+1, "")) {
+
+		result = cli_nt_error(&cli);
+
+		if (!NT_STATUS_IS_OK(result)) {
+
+			/* Password must change is the only valid error
+			 * condition here from where we can proceed, the rest
+			 * like account locked out or logon failure will lead
+			 * to errors later anyway */
+
+			if (!NT_STATUS_EQUAL(result,
+					     NT_STATUS_PASSWORD_MUST_CHANGE)) {
+				slprintf(err_str, err_str_len-1, "Could not "
+					 "connect to machine %s: %s\n",
+					 remote_machine, cli_errstr(&cli));
+				cli_shutdown(&cli);
+				return False;
+			}
+
+			pass_must_change = True;
+		}
+
 		/*
 		 * We should connect as the anonymous user here, in case
 		 * the server has "must change password" checked...
@@ -100,13 +123,25 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 
 	/* Try not to give the password away too easily */
 
-	pipe_hnd = cli_rpc_pipe_open_ntlmssp(&cli,
+	if (!pass_must_change) {
+		pipe_hnd = cli_rpc_pipe_open_ntlmssp(&cli,
 						PI_SAMR,
 						PIPE_AUTH_LEVEL_PRIVACY,
 						"", /* what domain... ? */
 						user_name,
 						old_passwd,
 						&result);
+	} else {
+		/*
+		 * If the user password must be changed the ntlmssp bind will
+		 * fail the same way as the session setup above did. The
+		 * difference ist that with a pipe bind we don't get a good
+		 * error message, the result will be that the rpc call below
+		 * will just fail. So we do it anonymously, there's no other
+		 * way.
+		 */
+		pipe_hnd = cli_rpc_pipe_open_noauth(&cli, PI_SAMR, &result);
+	}
 
 	if (!pipe_hnd) {
 		if (lp_client_lanman_auth()) {

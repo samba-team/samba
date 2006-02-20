@@ -4218,7 +4218,6 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_ST
 SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 {
 	SEC_DESC *psd, *ret_sd;
-	size_t sd_size;
 	connection_struct conn;
 	files_struct finfo;
 	struct fd_handle fh;
@@ -4229,7 +4228,7 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	conn.service = -1;
 	
 	if ( !(conn.mem_ctx = talloc_init( "novfs_get_nt_acl" )) ) {
-		DEBUG(0,("novfs_get_nt_acl: talloc() failed!\n"));
+		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
 		return NULL;
 	}
 	
@@ -4237,7 +4236,8 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	string_set(&conn.connectpath, path);
 	
 	if (!smbd_vfs_init(&conn)) {
-		DEBUG(0,("novfs_get_nt_acl: Unable to create a fake connection struct!\n"));
+		DEBUG(0,("get_nt_acl_no_snum: Unable to create a fake connection struct!\n"));
+		conn_free_internal( &conn );
 		return NULL;
         }
 	
@@ -4251,7 +4251,11 @@ SEC_DESC* get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	pstrcpy( filename, fname );
 	finfo.fsp_name = filename;
 	
-	sd_size = get_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd );
+	if (get_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd ) == 0) {
+		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
+		conn_free_internal( &conn );
+		return NULL;
+	}
 	
 	ret_sd = dup_sec_desc( ctx, psd );
 	

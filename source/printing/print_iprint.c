@@ -1206,7 +1206,7 @@ static int iprint_queue_get(const char *sharename,
 
 static int iprint_queue_pause(int snum)
 {
-	return(-1); //Not supported without credentials
+	return(-1); /* Not supported without credentials */
 }
 
 
@@ -1216,7 +1216,7 @@ static int iprint_queue_pause(int snum)
 
 static int iprint_queue_resume(int snum)
 {
-	return(-1); //Not supported without credentials
+	return(-1); /* Not supported without credentials */
 }
 
 /*******************************************************************

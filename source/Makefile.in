@@ -481,14 +481,15 @@ TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
-		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
-                $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
-		$(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_OBJ)
+SMBPASSWD_OBJ = utils/smbpasswd.o utils/passwd_util.o $(PASSCHANGE_OBJ) \
+		$(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
+		$(GROUPDB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+		$(POPT_OBJS) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_OBJ)
 
-PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
-		$(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) libsmb/asn1.o
+PDBEDIT_OBJ = utils/pdbedit.o utils/passwd_util.o $(PARAM_OBJ) $(PASSDB_OBJ) \
+		$(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
+		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) libsmb/asn1.o \
+		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ)
 
@@ -663,7 +664,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) \
-            $(RPC_NTSVCS_OBJ)
+            $(RPC_NTSVCS_OBJ) utils/passwd_util.o
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
@@ -864,7 +865,7 @@ smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
 	@dir=smbd $(MAKEDIR) && $(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
 
-.c.@PICSUFFIX@: 
+.c.@PICSUFFIX@:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAGS@
@@ -1172,13 +1173,13 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 @WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) \
-		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`
+		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`@SONAMEVERSIONSUFFIX@
 
 @WINBIND_WINS_NSS@: $(WINBIND_WINS_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_WINS_NSS_PICOBJS) \
-		$(LDAP_LIBS) $(KRB5LIBS) -lc \
-		@SONAMEFLAG@`basename $@`
+		$(LDAP_LIBS) $(KRB5LIBS) \
+		@SONAMEFLAG@`basename $@`@SONAMEVERSIONSUFFIX@
 
 nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_PICOBJ) bin/.dummy
 	@echo "Linking $@"
@@ -1356,7 +1357,7 @@ bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc $(LDAP_LIBS) $(KRB5LIBS)
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) $(LDAP_LIBS) $(KRB5LIBS)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1479,7 +1480,7 @@ python_install: $(PYTHON_PICOBJS)
 	PYTHON_OBJS="$(PYTHON_PICOBJS)" \
 	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 	LIBS="$(LDFLAGS) $(LIBS)" \
-		$(PYTHON) python/setup.py install
+		$(PYTHON) python/setup.py install --root=$(DESTDIR)
 
 python_clean:
 	@-if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
@@ -1494,7 +1495,7 @@ installman: installdirs
 
 .PHONY: showlayout
 
-showlayout: 
+showlayout:
 	@echo "Samba will be installed into:"
 	@echo "  basedir:     $(BASEDIR)"
 	@echo "  bindir:      $(BINDIR)"
@@ -1572,27 +1573,32 @@ include/wrepld_proto.h:
 	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
 	  $(WREPL_OBJ1)
 
-nsswitch/winbindd_proto.h: 
+nsswitch/winbindd_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _WINBINDD_PROTO_H_ $(builddir)/nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
-web/swat_proto.h: 
+web/swat_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _SWAT_PROTO_H_ $(builddir)/web/swat_proto.h \
 	  $(SWAT_OBJ1)
 
-client/client_proto.h: 
+client/client_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _CLIENT_PROTO_H_ $(builddir)/client/client_proto.h \
 	  $(CLIENT_OBJ1)
 
-utils/net_proto.h: 
+utils/net_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _NET_PROTO_H_ $(builddir)/utils/net_proto.h \
 	  $(NET_OBJ1)
 
-utils/ntlm_auth_proto.h: 
+utils/passwd_proto.h:
+	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
+	  -h _PASSWD_PROTO_H_ $(builddir)/utils/passwd_proto.h \
+	  utils/passwd_util.o
+
+utils/ntlm_auth_proto.h:
 	@cd $(srcdir) && $(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _NTLM_AUTH_PROTO_H_ $(builddir)/utils/ntlm_auth_proto.h \
 	  $(NTLM_AUTH_OBJ1)
@@ -1600,7 +1606,7 @@ utils/ntlm_auth_proto.h:
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
-headers: 
+headers:
 	$(MAKE) delheaders; \
 	$(MAKE) smbd/build_options.c; \
 	$(MAKE) include/proto.h; \
@@ -1610,7 +1616,8 @@ headers:
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
 	$(MAKE) utils/ntlm_auth_proto.h; \
-	$(MAKE) utils/net_proto.h;
+	$(MAKE) utils/net_proto.h; \
+	$(MAKE) utils/passwd_proto.h;
 
 proto: headers 
 
