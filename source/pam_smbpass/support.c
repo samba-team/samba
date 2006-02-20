@@ -305,7 +305,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
     }
 }
 
-int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
+int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
 			  const char *p, unsigned int ctrl )
 {
     uchar lm_pw[16];
@@ -437,7 +437,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
  * - to avoid prompting for one in such cases (CG)
  */
 
-int _smb_blankpasswd( unsigned int ctrl, SAM_ACCOUNT *sampass )
+int _smb_blankpasswd( unsigned int ctrl, struct samu *sampass )
 {
 	int retval;
 

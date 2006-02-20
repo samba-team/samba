@@ -36,10 +36,10 @@
 		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
 
 /*************************************************************
- Copies a SAM_USER_INFO_20 to a SAM_ACCOUNT
+ Copies a SAM_USER_INFO_20 to a struct samu
 **************************************************************/
 
-void copy_id20_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_20 *from)
+void copy_id20_to_sam_passwd(struct samu *to, SAM_USER_INFO_20 *from)
 {
 	const char *old_string;
 	char *new_string;
@@ -63,10 +63,10 @@ void copy_id20_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_20 *from)
 }
 
 /*************************************************************
- Copies a SAM_USER_INFO_21 to a SAM_ACCOUNT
+ Copies a SAM_USER_INFO_21 to a struct samu
 **************************************************************/
 
-void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
+void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 {
 	time_t unix_time, stored_time;
 	const char *old_string, *new_string;
@@ -312,10 +312,10 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 
 /*************************************************************
- Copies a SAM_USER_INFO_23 to a SAM_ACCOUNT
+ Copies a SAM_USER_INFO_23 to a struct samu
 **************************************************************/
 
-void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
+void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 {
 	time_t unix_time, stored_time;
 	const char *old_string, *new_string;

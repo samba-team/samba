@@ -206,7 +206,7 @@ static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
 
 static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	const uint8 *pass;
 	BOOL ret;
 	uint32 acct_ctrl;
@@ -239,7 +239,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
  
  	if (ret==False) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
@@ -251,12 +251,12 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 	    ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
 		memcpy(md4pw, pass, 16);
 		dump_data(5, md4pw, 16);
- 		pdb_free_sam(&sampass);
+ 		TALLOC_FREE(sampass);
 		return True;
 	}
  	
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	return False;
 
 }
@@ -462,7 +462,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	fstring remote_machine;
-	SAM_ACCOUNT *sampass=NULL;
+	struct samu *sampass=NULL;
 	BOOL ret = False;
 	unsigned char pwd[16];
 	int i;
@@ -529,12 +529,12 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	      && (acct_ctrl & ACB_WSTRUST ||
 		      acct_ctrl & ACB_SVRTRUST ||
 		      acct_ctrl & ACB_DOMTRUST))) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
 	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
@@ -557,17 +557,17 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 		/* LM password should be NULL for machines */
 		if (!pdb_set_lanman_passwd(sampass, NULL, PDB_CHANGED)) {
-			pdb_free_sam(&sampass);
+			TALLOC_FREE(sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
 		
 		if (!pdb_set_nt_passwd(sampass, pwd, PDB_CHANGED)) {
-			pdb_free_sam(&sampass);
+			TALLOC_FREE(sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
 		
 		if (!pdb_set_pass_changed_now(sampass)) {
-			pdb_free_sam(&sampass);
+			TALLOC_FREE(sampass);
 			/* Not quite sure what this one qualifies as, but this will do */
 			return NT_STATUS_UNSUCCESSFUL; 
 		}
@@ -580,7 +580,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &cred_out, status);
 
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	return r_u->status;
 }
 
@@ -696,7 +696,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
-	SAM_ACCOUNT *sampw;
+	struct samu *sampw;
 	struct auth_context *auth_context = NULL;
 	 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {

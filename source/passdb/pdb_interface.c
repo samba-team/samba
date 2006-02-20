@@ -28,7 +28,7 @@
 
 /* Cache of latest SAM lookup query */
 
-static SAM_ACCOUNT *csamuser = NULL;
+static struct samu *csamuser = NULL;
 
 static struct pdb_init_function_entry *backends = NULL;
 
@@ -54,7 +54,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
  time, such LDAP with a missing attribute would produce.
 ********************************************************************/
 
-static void pdb_force_pw_initialization(SAM_ACCOUNT *pass) 
+static void pdb_force_pw_initialization(struct samu *pass) 
 {
 	const uint8 *lm_pwd, *nt_pwd;
 	
@@ -239,7 +239,7 @@ void pdb_endsampwent(void)
 	pdb->endsampwent(pdb);
 }
 
-BOOL pdb_getsampwent(SAM_ACCOUNT *user) 
+BOOL pdb_getsampwent(struct samu *user) 
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -256,7 +256,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	return True;
 }
 
-BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username) 
+BOOL pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -269,7 +269,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 	}
 
 	if (csamuser != NULL) {
-		pdb_free_sam(&csamuser);
+		TALLOC_FREE(csamuser);
 		csamuser = NULL;
 	}
 
@@ -282,7 +282,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 /**********************************************************************
 **********************************************************************/
 
-BOOL guest_user_info( SAM_ACCOUNT *user )
+BOOL guest_user_info( struct samu *user )
 {
 	struct passwd *pwd;
 	NTSTATUS ntstatus;
@@ -305,7 +305,7 @@ BOOL guest_user_info( SAM_ACCOUNT *user )
 /**********************************************************************
 **********************************************************************/
 
-BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
+BOOL pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid) 
 {
 	struct pdb_methods *pdb;
 	uint32 rid;
@@ -336,7 +336,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 					TALLOC_CTX *tmp_ctx, const char *name,
 					uint32 acb_info, uint32 *rid)
 {
-	SAM_ACCOUNT *sam_pass = NULL;
+	struct samu *sam_pass = NULL;
 	NTSTATUS status;
 
 	if (Get_Pwnam_alloc(tmp_ctx, name) == NULL) {
@@ -388,7 +388,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 
 	status = pdb_add_sam_account(sam_pass);
 
-	pdb_free_sam(&sam_pass);
+	TALLOC_FREE(sam_pass);
 
 	return status;
 }
@@ -427,7 +427,7 @@ static int smb_delete_user(const char *unix_user)
 
 static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 					TALLOC_CTX *mem_ctx,
-					SAM_ACCOUNT *sam_acct)
+					struct samu *sam_acct)
 {
 	NTSTATUS status;
 
@@ -447,7 +447,7 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	return status;
 }
 
-NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *sam_acct)
+NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -458,7 +458,7 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *sam_acct)
 	return pdb->delete_user(pdb, mem_ctx, sam_acct);
 }
 
-NTSTATUS pdb_add_sam_account(SAM_ACCOUNT *sam_acct) 
+NTSTATUS pdb_add_sam_account(struct samu *sam_acct) 
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -469,7 +469,7 @@ NTSTATUS pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 	return pdb->add_sam_account(pdb, sam_acct);
 }
 
-NTSTATUS pdb_update_sam_account(SAM_ACCOUNT *sam_acct) 
+NTSTATUS pdb_update_sam_account(struct samu *sam_acct) 
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -478,14 +478,14 @@ NTSTATUS pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 	}
 
 	if (csamuser != NULL) {
-		pdb_free_sam(&csamuser);
+		TALLOC_FREE(csamuser);
 		csamuser = NULL;
 	}
 
 	return pdb->update_sam_account(pdb, sam_acct);
 }
 
-NTSTATUS pdb_delete_sam_account(SAM_ACCOUNT *sam_acct) 
+NTSTATUS pdb_delete_sam_account(struct samu *sam_acct) 
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -494,14 +494,14 @@ NTSTATUS pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	}
 
 	if (csamuser != NULL) {
-		pdb_free_sam(&csamuser);
+		TALLOC_FREE(csamuser);
 		csamuser = NULL;
 	}
 
 	return pdb->delete_sam_account(pdb, sam_acct);
 }
 
-NTSTATUS pdb_rename_sam_account(SAM_ACCOUNT *oldname, const char *newname)
+NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -510,14 +510,14 @@ NTSTATUS pdb_rename_sam_account(SAM_ACCOUNT *oldname, const char *newname)
 	}
 
 	if (csamuser != NULL) {
-		pdb_free_sam(&csamuser);
+		TALLOC_FREE(csamuser);
 		csamuser = NULL;
 	}
 
 	return pdb->rename_sam_account(pdb, oldname, newname);
 }
 
-NTSTATUS pdb_update_login_attempts(SAM_ACCOUNT *sam_acct, BOOL success)
+NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -731,7 +731,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 						   pp_member_rids, p_num_members);
 }
 
-NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user,
+NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,
 				    DOM_SID **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups)
 {
@@ -748,7 +748,7 @@ NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user,
 
 static NTSTATUS pdb_default_set_unix_primary_group(struct pdb_methods *methods,
 						   TALLOC_CTX *mem_ctx,
-						   SAM_ACCOUNT *sampass)
+						   struct samu *sampass)
 {
 	struct group *grp;
 	gid_t gid;
@@ -766,7 +766,7 @@ static NTSTATUS pdb_default_set_unix_primary_group(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user)
+NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, struct samu *user)
 {
 	struct pdb_methods *pdb = pdb_get_methods(False);
 
@@ -783,7 +783,7 @@ NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *user)
  * fulfil.
  */
 
-static BOOL pdb_user_in_group(TALLOC_CTX *mem_ctx, SAM_ACCOUNT *account,
+static BOOL pdb_user_in_group(TALLOC_CTX *mem_ctx, struct samu *account,
 			      const DOM_SID *group_sid)
 {
 	DOM_SID *sids;
@@ -810,7 +810,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 					 uint32 member_rid)
 {
 	DOM_SID group_sid, member_sid;
-	SAM_ACCOUNT *account = NULL;
+	struct samu *account = NULL;
 	GROUP_MAP map;
 	struct group *grp;
 	struct passwd *pwd;
@@ -878,7 +878,7 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 					 uint32 member_rid)
 {
 	DOM_SID group_sid, member_sid;
-	SAM_ACCOUNT *account = NULL;
+	struct samu *account = NULL;
 	GROUP_MAP map;
 	struct group *grp;
 	struct passwd *pwd;
@@ -1206,38 +1206,38 @@ BOOL initialize_password_db(BOOL reload)
   Default implementations of some functions.
  ****************************************************************************/
 
-static NTSTATUS pdb_default_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS pdb_default_getsampwnam (struct pdb_methods *methods, struct samu *user, const char *sname)
 {
 	return NT_STATUS_NO_SUCH_USER;
 }
 
-static NTSTATUS pdb_default_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
+static NTSTATUS pdb_default_getsampwsid(struct pdb_methods *my_methods, struct samu * user, const DOM_SID *sid)
 {
 	return NT_STATUS_NO_SUCH_USER;
 }
 
-static NTSTATUS pdb_default_add_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS pdb_default_add_sam_account (struct pdb_methods *methods, struct samu *newpwd)
 {
 	DEBUG(0,("this backend (%s) should not be listed as the first passdb backend! You can't add users to it.\n", methods->name));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+static NTSTATUS pdb_default_update_sam_account (struct pdb_methods *methods, struct samu *newpwd)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_delete_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *pwd)
+static NTSTATUS pdb_default_delete_sam_account (struct pdb_methods *methods, struct samu *pwd)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_rename_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *pwd, const char *newname)
+static NTSTATUS pdb_default_rename_sam_account (struct pdb_methods *methods, struct samu *pwd, const char *newname)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, SAM_ACCOUNT *newpwd, BOOL success)
+static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, struct samu *newpwd, BOOL success)
 {
 	return NT_STATUS_OK;
 }
@@ -1247,7 +1247,7 @@ static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT *user)
+static NTSTATUS pdb_default_getsampwent(struct pdb_methods *methods, struct samu *user)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -1276,7 +1276,7 @@ static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq
 static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 				   uint32 *rid)
 {
-	SAM_ACCOUNT *sampw = NULL;
+	struct samu *sampw = NULL;
 	struct passwd *unix_pw;
 	BOOL ret;
 	
@@ -1290,7 +1290,7 @@ static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 	
 	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
 		DEBUG(0,("pdb_default_uid_to_rid: failed to allocate "
-			 "SAM_ACCOUNT object\n"));
+			 "struct samu object\n"));
 		return False;
 	}
 	
@@ -1302,7 +1302,7 @@ static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 	if (!ret) {
 		DEBUG(5, ("pdb_default_uid_to_rid: Did not find user "
 			  "%s (%d)\n", unix_pw->pw_name, uid));
-		pdb_free_sam(&sampw);
+		TALLOC_FREE(sampw);
 		return False;
 	}
 
@@ -1314,7 +1314,7 @@ static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 			  sid_string_static(pdb_get_user_sid(sampw))));
 	}
 
-	pdb_free_sam(&sampw);
+	TALLOC_FREE(sampw);
 	return ret;
 }
 
@@ -1491,7 +1491,7 @@ NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 
 NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 					    TALLOC_CTX *mem_ctx,
-					    SAM_ACCOUNT *user,
+					    struct samu *user,
 					    DOM_SID **pp_sids,
 					    gid_t **pp_gids,
 					    size_t *p_num_groups)
@@ -1551,7 +1551,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  enum SID_NAME_USE *psid_name_use,
 				  union unid_t *unix_id)
 {
-	SAM_ACCOUNT *sam_account = NULL;
+	struct samu *sam_account = NULL;
 	GROUP_MAP map;
 	BOOL ret;
 	DOM_SID sid;
@@ -1578,7 +1578,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 		*name = talloc_strdup(mem_ctx, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 
 		if (unix_id == NULL) {
 			return True;
@@ -1591,7 +1591,7 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 		unix_id->uid = pw->pw_uid;
 		return True;
 	}
-	pdb_free_sam(&sam_account);
+	TALLOC_FREE(sam_account);
 	
 	ret = pdb_getgrsid(&map, sid);
 	unbecome_root();
@@ -1812,7 +1812,7 @@ static BOOL next_entry_users(struct pdb_search *s,
 			     struct samr_displayentry *entry)
 {
 	struct user_search *state = s->private_data;
-	SAM_ACCOUNT *user = NULL;
+	struct samu *user = NULL;
 	NTSTATUS status;
 
  next:
@@ -1823,13 +1823,13 @@ static BOOL next_entry_users(struct pdb_search *s,
 	}
 
 	if (!pdb_getsampwent(user)) {
-		pdb_free_sam(&user);
+		TALLOC_FREE(user);
 		return False;
 	}
 
  	if ((state->acct_flags != 0) &&
 	    ((pdb_get_acct_ctrl(user) & state->acct_flags) == 0)) {
-		pdb_free_sam(&user);
+		TALLOC_FREE(user);
 		goto next;
 	}
 
@@ -1838,7 +1838,7 @@ static BOOL next_entry_users(struct pdb_search *s,
 			  pdb_get_fullname(user), pdb_get_acct_desc(user),
 			  entry);
 
-	pdb_free_sam(&user);
+	TALLOC_FREE(user);
 	return True;
 }
 

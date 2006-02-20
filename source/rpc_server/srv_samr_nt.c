@@ -470,7 +470,7 @@ static void force_flush_samr_cache(DISP_INFO *disp_info)
  Ensure password info is never given out. Paranioa... JRA.
  ********************************************************************/
 
-static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
+static void samr_clear_sam_passwd(struct samu *sam_pass)
 {
 	
 	if (!sam_pass)
@@ -1667,7 +1667,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 
 NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
 {
-	SAM_ACCOUNT *sampass=NULL;
+	struct samu *sampass=NULL;
 	DOM_SID sid;
 	POLICY_HND domain_pol = q_u->domain_pol;
 	POLICY_HND *user_pol = &r_u->user_pol;
@@ -1727,7 +1727,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
         	return NT_STATUS_NO_SUCH_USER;
 	}
 
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 
 	/* associate the user's SID and access bits with the new handle. */
 	if ((info = get_samr_info_by_sid(&sid)) == NULL)
@@ -1747,7 +1747,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 
 static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_SID *user_sid)
 {
-	SAM_ACCOUNT *smbpass=NULL;
+	struct samu *smbpass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
 
@@ -1771,7 +1771,7 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
 	ZERO_STRUCTP(id7);
 	init_sam_user_info7(id7, pdb_get_username(smbpass) );
 
-	pdb_free_sam(&smbpass);
+	TALLOC_FREE(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -1781,7 +1781,7 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
  *************************************************************************/
 static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_SID *user_sid)
 {
-	SAM_ACCOUNT *smbpass=NULL;
+	struct samu *smbpass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
 
@@ -1805,7 +1805,7 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_
 	ZERO_STRUCTP(id9);
 	init_sam_user_info9(id9, pdb_get_group_rid(smbpass) );
 
-	pdb_free_sam(&smbpass);
+	TALLOC_FREE(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -1816,7 +1816,7 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_
 
 static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DOM_SID *user_sid)
 {
-	SAM_ACCOUNT *smbpass=NULL;
+	struct samu *smbpass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
 
@@ -1840,7 +1840,7 @@ static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DO
 	ZERO_STRUCTP(id16);
 	init_sam_user_info16(id16, pdb_get_acct_ctrl(smbpass) );
 
-	pdb_free_sam(&smbpass);
+	TALLOC_FREE(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -1853,7 +1853,7 @@ static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DO
 
 static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_INFO_18 * id18, DOM_SID *user_sid)
 {
-	SAM_ACCOUNT *smbpass=NULL;
+	struct samu *smbpass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
 
@@ -1879,21 +1879,21 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 
 	if (ret == False) {
 		DEBUG(4, ("User %s not found\n", sid_string_static(user_sid)));
-		pdb_free_sam(&smbpass);
+		TALLOC_FREE(smbpass);
 		return (geteuid() == (uid_t)0) ? NT_STATUS_NO_SUCH_USER : NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(3,("User:[%s] 0x%x\n", pdb_get_username(smbpass), pdb_get_acct_ctrl(smbpass) ));
 
 	if ( pdb_get_acct_ctrl(smbpass) & ACB_DISABLED) {
-		pdb_free_sam(&smbpass);
+		TALLOC_FREE(smbpass);
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	ZERO_STRUCTP(id18);
 	init_sam_user_info18(id18, pdb_get_lanman_passwd(smbpass), pdb_get_nt_passwd(smbpass));
 	
-	pdb_free_sam(&smbpass);
+	TALLOC_FREE(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -1904,7 +1904,7 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 
 static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
 {
-	SAM_ACCOUNT *sampass=NULL;
+	struct samu *sampass=NULL;
 	BOOL ret;
 
 	pdb_init_sam_talloc(mem_ctx, &sampass);
@@ -1925,7 +1925,7 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DO
 	ZERO_STRUCTP(id20);
 	init_sam_user_info20A(id20, sampass);
 	
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 
 	return NT_STATUS_OK;
 }
@@ -1937,7 +1937,7 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DO
 static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21, 
 				 DOM_SID *user_sid, DOM_SID *domain_sid)
 {
-	SAM_ACCOUNT *sampass=NULL;
+	struct samu *sampass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
 
@@ -1962,7 +1962,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	ZERO_STRUCTP(id21);
 	nt_status = init_sam_user_info21A(id21, sampass, domain_sid);
 	
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 
 	return NT_STATUS_OK;
 }
@@ -2073,7 +2073,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 
 NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
-	SAM_ACCOUNT *sam_pass=NULL;
+	struct samu *sam_pass=NULL;
 	DOM_SID  sid;
 	DOM_SID *sids;
 	DOM_GID dom_gid;
@@ -2150,7 +2150,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		DEBUG(5, ("Group sid %s for user %s not in our domain\n",
 			  sid_string_static(pdb_get_group_sid(sam_pass)),
 			  pdb_get_username(sam_pass)));
-		pdb_free_sam(&sam_pass);
+		TALLOC_FREE(sam_pass);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -2951,20 +2951,20 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
  set_user_info_7
  ********************************************************************/
 static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
-				const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
+				const SAM_USER_INFO_7 *id7, struct samu *pwd)
 {
 	fstring new_name;
 	NTSTATUS rc;
 
 	if (id7 == NULL) {
 		DEBUG(5, ("set_user_info_7: NULL id7\n"));
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if(!rpcstr_pull(new_name, id7->uni_name.buffer, sizeof(new_name), id7->uni_name.uni_str_len*2, 0)) {
 	        DEBUG(5, ("set_user_info_7: failed to get new username\n"));
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -2984,7 +2984,7 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 
 	rc = pdb_rename_sam_account(pwd, new_name);
 
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 	return rc;
 }
 
@@ -2992,26 +2992,26 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
  set_user_info_16
  ********************************************************************/
 
-static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
 {
 	if (id16 == NULL) {
 		DEBUG(5, ("set_user_info_16: NULL id16\n"));
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
 	
 	/* FIX ME: check if the value is really changed --metze */
 	if (!pdb_set_acct_ctrl(pwd, id16->acb_info, PDB_CHANGED)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
 
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
 
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 
 	return True;
 }
@@ -3020,34 +3020,34 @@ static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, SAM_ACCOUNT *pwd)
  set_user_info_18
  ********************************************************************/
 
-static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
 {
 
 	if (id18 == NULL) {
 		DEBUG(2, ("set_user_info_18: id18 is NULL\n"));
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
  
 	if (!pdb_set_lanman_passwd (pwd, id18->lm_pwd, PDB_CHANGED)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
 	if (!pdb_set_nt_passwd     (pwd, id18->nt_pwd, PDB_CHANGED)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
  	if (!pdb_set_pass_changed_now (pwd)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False; 
 	}
  
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
  	}
 
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 	return True;
 }
 
@@ -3055,7 +3055,7 @@ static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, SAM_ACCOUNT *pwd)
  set_user_info_20
  ********************************************************************/
 
-static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, struct samu *pwd)
 {
 	if (id20 == NULL) {
 		DEBUG(5, ("set_user_info_20: NULL id20\n"));
@@ -3066,11 +3066,11 @@ static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, SAM_ACCOUNT *pwd)
 
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
  	}
 
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 
 	return True;
 }
@@ -3079,7 +3079,7 @@ static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, SAM_ACCOUNT *pwd)
  ********************************************************************/
 
 static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
-				 SAM_ACCOUNT *pwd)
+				 struct samu *pwd)
 {
 	NTSTATUS status;
 
@@ -3105,11 +3105,11 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return status;
  	}
 
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 
 	return NT_STATUS_OK;
 }
@@ -3119,7 +3119,7 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
  ********************************************************************/
 
 static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
-				 SAM_ACCOUNT *pwd)
+				 struct samu *pwd)
 {
 	pstring plaintext_buf;
 	uint32 len;
@@ -3137,12 +3137,12 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
 	if (!decode_pw_buffer(id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_INVALID_PARAMETER;
  	}
   
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
  
@@ -3162,7 +3162,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 			}
 			
 			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
-				pdb_free_sam(&pwd);
+				TALLOC_FREE(pwd);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 		}
@@ -3173,16 +3173,16 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID) &&
 	    (!NT_STATUS_IS_OK(status =  pdb_set_unix_primary_group(mem_ctx,
 								   pwd)))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return status;
 	}
 
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return status;
 	}
  
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 
 	return NT_STATUS_OK;
 }
@@ -3191,7 +3191,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 {
 	uint32 len;
 	pstring plaintext_buf;
@@ -3205,12 +3205,12 @@ static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 	ZERO_STRUCT(plaintext_buf);
  
 	if (!decode_pw_buffer(pass, plaintext_buf, 256, &len, STR_UNICODE)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
  	}
 
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
 	}
  
@@ -3228,7 +3228,7 @@ static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 			}
 			
 			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
-				pdb_free_sam(&pwd);
+				TALLOC_FREE(pwd);
 				return False;
 			}
 		}
@@ -3240,11 +3240,11 @@ static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
  
 	/* update the SAMBA password */
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return False;
  	}
 
-	pdb_free_sam(&pwd);
+	TALLOC_FREE(pwd);
 
 	return True;
 }
@@ -3255,7 +3255,7 @@ static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
 
 NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_USERINFO *r_u)
 {
-	SAM_ACCOUNT *pwd = NULL;
+	struct samu *pwd = NULL;
 	DOM_SID sid;
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
@@ -3297,7 +3297,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	unbecome_root();
 	
 	if ( !ret ) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_SUCH_USER;
  	}
 	
@@ -3401,7 +3401,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SET_USERINFO2 *r_u)
 {
-	SAM_ACCOUNT *pwd = NULL;
+	struct samu *pwd = NULL;
 	DOM_SID sid;
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
 	POLICY_HND *pol = &q_u->pol;
@@ -3445,7 +3445,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	unbecome_root();
 	
 	if ( !ret ) {
-		pdb_free_sam(&pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_SUCH_USER;
  	}
 	
@@ -3897,7 +3897,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAMR_R_DELETE_DOM_USER *r_u )
 {
 	DOM_SID user_sid;
-	SAM_ACCOUNT *sam_pass=NULL;
+	struct samu *sam_pass=NULL;
 	uint32 acc_granted;
 	BOOL can_add_accounts;
 	DISP_INFO *disp_info = NULL;
@@ -3920,7 +3920,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
 		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", 
 			sid_string_static(&user_sid)));
-		pdb_free_sam(&sam_pass);
+		TALLOC_FREE(sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
@@ -3942,12 +3942,12 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		DEBUG(5,("_samr_delete_dom_user: Failed to delete entry for "
 			 "user %s: %s.\n", pdb_get_username(sam_pass),
 			 nt_errstr(r_u->status)));
-		pdb_free_sam(&sam_pass);
+		TALLOC_FREE(sam_pass);
 		return r_u->status;
 	}
 
 
-	pdb_free_sam(&sam_pass);
+	TALLOC_FREE(sam_pass);
 
 	if (!close_policy_hnd(p, &q_u->user_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;

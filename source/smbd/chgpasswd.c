@@ -55,7 +55,7 @@ static NTSTATUS check_oem_password(const char *user,
 				   const uchar old_lm_hash_encrypted[16],
 				   uchar password_encrypted_with_nt_hash[516], 
 				   const uchar old_nt_hash_encrypted[16],
-				   SAM_ACCOUNT **hnd, char *new_passwd,
+				   struct samu **hnd, char *new_passwd,
 				   int new_passwd_size);
 
 #if ALLOW_CHANGE_PASSWORD
@@ -570,11 +570,11 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
 ************************************************************/
 
 BOOL check_lanman_password(char *user, uchar * pass1,
-			   uchar * pass2, SAM_ACCOUNT **hnd)
+			   uchar * pass2, struct samu **hnd)
 {
 	uchar unenc_new_pw[16];
 	uchar unenc_old_pw[16];
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	uint16 acct_ctrl;
 	const uint8 *lanman_pw;
 	BOOL ret;
@@ -585,7 +585,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	if (ret == False) {
 		DEBUG(0,("check_lanman_password: getsampwnam returned NULL\n"));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 	
@@ -594,7 +594,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
@@ -605,7 +605,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 			return True;
 		} else {
 			DEBUG(0, ("check_lanman_password: no lanman password !\n"));
-			pdb_free_sam(&sampass);
+			TALLOC_FREE(sampass);
 			return False;
 		}
 	}
@@ -619,7 +619,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	/* Check that the two old passwords match. */
 	if (memcmp(lanman_pw, unenc_old_pw, 16)) {
 		DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
@@ -636,7 +636,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
  is correct before calling. JRA.
 ************************************************************/
 
-BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
+BOOL change_lanman_password(struct samu *sampass, uchar *pass2)
 {
 	static uchar null_pw[16];
 	uchar unenc_new_pw[16];
@@ -684,7 +684,7 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar *pass2)
 	}
 
 	if (!pdb_set_pass_changed_now  (sampass)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		/* Not quite sure what this one qualifies as, but this will do */
 		return False; 
 	}
@@ -707,7 +707,7 @@ NTSTATUS pass_oem_change(char *user,
 			 uint32 *reject_reason)
 {
 	pstring new_passwd;
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	NTSTATUS nt_status = check_oem_password(user, password_encrypted_with_lm_hash, 
 						old_lm_hash_encrypted, 
 						password_encrypted_with_nt_hash, 
@@ -724,7 +724,7 @@ NTSTATUS pass_oem_change(char *user,
 
 	memset(new_passwd, 0, sizeof(new_passwd));
 
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 
 	return nt_status;
 }
@@ -746,12 +746,12 @@ static NTSTATUS check_oem_password(const char *user,
 				   const uchar old_lm_hash_encrypted[16],
 				   uchar password_encrypted_with_nt_hash[516], 
 				   const uchar old_nt_hash_encrypted[16],
-				   SAM_ACCOUNT **hnd, char *new_passwd,
+				   struct samu **hnd, char *new_passwd,
 				   int new_passwd_size)
 {
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	uint8 *password_encrypted;
 	const uint8 *encryption_key;
 	const uint8 *lanman_pw, *nt_pw;
@@ -776,7 +776,7 @@ static NTSTATUS check_oem_password(const char *user,
 
 	if (ret == False) {
 		DEBUG(0, ("check_oem_password: getsmbpwnam returned NULL\n"));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER; 
 	}
 
@@ -784,7 +784,7 @@ static NTSTATUS check_oem_password(const char *user,
 	
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(2,("check_lanman_password: account %s disabled.\n", user));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
@@ -819,7 +819,7 @@ static NTSTATUS check_oem_password(const char *user,
 	} else if (nt_pass_set) {
 		DEBUG(1, ("NT password change supplied for user %s, but we have no NT password to check it with\n", 
 			  user));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_WRONG_PASSWORD;	
 	} else if (lm_pass_set) {
 		if (lp_lanman_auth()) {
@@ -829,12 +829,12 @@ static NTSTATUS check_oem_password(const char *user,
 			DEBUG(1, ("LM password change supplied for user %s, but we have disabled LanMan authentication\n", 
 				  user));
 		}
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	} else {
 		DEBUG(1, ("password change requested for user %s, but no password supplied!\n", 
 			  user));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -845,7 +845,7 @@ static NTSTATUS check_oem_password(const char *user,
 
 	if ( !decode_pw_buffer(password_encrypted, new_passwd, new_passwd_size, &new_pw_len, 
 			       nt_pass_set ? STR_UNICODE : STR_ASCII)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -868,7 +868,7 @@ static NTSTATUS check_oem_password(const char *user,
 			E_old_pw_hash(new_nt_hash, nt_pw, verifier);
 			if (memcmp(verifier, old_nt_hash_encrypted, 16)) {
 				DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
-				pdb_free_sam(&sampass);
+				TALLOC_FREE(sampass);
 				return NT_STATUS_WRONG_PASSWORD;
 			}
 			
@@ -896,7 +896,7 @@ static NTSTATUS check_oem_password(const char *user,
 			E_old_pw_hash(new_nt_hash, lanman_pw, verifier);
 			if (memcmp(verifier, old_lm_hash_encrypted, 16)) {
 				DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
-				pdb_free_sam(&sampass);
+				TALLOC_FREE(sampass);
 				return NT_STATUS_WRONG_PASSWORD;
 			}
 #ifdef DEBUG_PASSWORD
@@ -918,7 +918,7 @@ static NTSTATUS check_oem_password(const char *user,
 		E_old_pw_hash(new_lm_hash, lanman_pw, verifier);
 		if (memcmp(verifier, old_lm_hash_encrypted, 16)) {
 			DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
-			pdb_free_sam(&sampass);
+			TALLOC_FREE(sampass);
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 		
@@ -931,7 +931,7 @@ static NTSTATUS check_oem_password(const char *user,
 	}
 
 	/* should not be reached */
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	return NT_STATUS_WRONG_PASSWORD;
 }
 
@@ -941,7 +941,7 @@ static NTSTATUS check_oem_password(const char *user,
  found in the history list.
 ************************************************************/
 
-static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
+static BOOL check_passwd_history(struct samu *sampass, const char *plaintext)
 {
 	uchar new_nt_p16[NT_HASH_LEN];
 	uchar zero_md5_nt_pw[SALTED_MD5_HASH_LEN];
@@ -1008,7 +1008,7 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
  is correct before calling. JRA.
 ************************************************************/
 
-NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd, BOOL as_root, uint32 *samr_reject_reason)
+NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, BOOL as_root, uint32 *samr_reject_reason)
 {
 	uint32 min_len, min_age;
 	struct passwd *pass = NULL;
