@@ -616,7 +616,7 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	memset(p->wks, '\0', sizeof(p->wks));
 
 	/* Set up for non-authenticated user. */
-	talloc_free(p->pipe_user.nt_user_token);
+	TALLOC_FREE(p->pipe_user.nt_user_token);
 	p->pipe_user.ut.ngroups = 0;
 	SAFE_FREE( p->pipe_user.ut.groups);
 
@@ -1309,7 +1309,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
 	p->auth.a_u.schannel_auth = TALLOC_P(p->pipe_state_mem_ctx, struct schannel_auth_struct);
 	if (!p->auth.a_u.schannel_auth) {
-		talloc_free(pdcinfo);
+		TALLOC_FREE(pdcinfo);
 		return False;
 	}
 
@@ -1317,7 +1317,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	memcpy(p->auth.a_u.schannel_auth->sess_key, pdcinfo->sess_key,
 			sizeof(pdcinfo->sess_key));
 
-	talloc_free(pdcinfo);
+	TALLOC_FREE(pdcinfo);
 
 	p->auth.a_u.schannel_auth->seq_num = 0;
 

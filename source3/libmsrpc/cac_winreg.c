@@ -244,15 +244,15 @@ int cac_RegEnumKeys(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegEnumKey
    class_names_out = TALLOC_ARRAY(mem_ctx, char *, op->in.max_keys);
    if(!class_names_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(key_names_out);
+      TALLOC_FREE(key_names_out);
       return CAC_FAILURE;
    }
 
    mod_times_out = TALLOC_ARRAY(mem_ctx, time_t, op->in.max_keys);
    if(!mod_times_out) {
       hnd->status = NT_STATUS_NO_MEMORY;
-      talloc_free(key_names_out);
-      talloc_free(class_names_out);
+      TALLOC_FREE(key_names_out);
+      TALLOC_FREE(class_names_out);
 
       return CAC_FAILURE;
    }
@@ -675,15 +675,15 @@ int cac_RegEnumValues(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct RegEnumV
 
    values_out = talloc_array(mem_ctx, REG_VALUE_DATA *, op->in.max_values);
    if(!values_out) {
-      talloc_free(types_out);
+      TALLOC_FREE(types_out);
       hnd->status = NT_STATUS_NO_MEMORY;
       return CAC_FAILURE;
    }
 
    val_names_out = talloc_array(mem_ctx, char *, op->in.max_values);
    if(!val_names_out) {
-      talloc_free(types_out);
-      talloc_free(values_out);
+      TALLOC_FREE(types_out);
+      TALLOC_FREE(values_out);
       hnd->status = NT_STATUS_NO_MEMORY;
       return CAC_FAILURE;
    }

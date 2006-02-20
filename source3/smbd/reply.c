@@ -4263,11 +4263,11 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
 			fsp->fsp_name,newname));
 		rename_open_files(conn, lck, fsp->dev, fsp->inode, newname);
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		return NT_STATUS_OK;	
 	}
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	if (errno == ENOTDIR || errno == EISDIR) {
 		error = NT_STATUS_OBJECT_NAME_COLLISION;
@@ -4492,11 +4492,11 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
 				directory,newname));
 			rename_open_files(conn, lck, sbuf1.st_dev, sbuf1.st_ino, newname);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NT_STATUS_OK;	
 		}
 
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		if (errno == ENOTDIR || errno == EISDIR)
 			error = NT_STATUS_OBJECT_NAME_COLLISION;
 		else
@@ -4599,7 +4599,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					count++;
 					error = NT_STATUS_OK;
 				}
-				talloc_free(lck);
+				TALLOC_FREE(lck);
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
 			CloseDir(dir_hnd);

@@ -484,7 +484,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 		pdb_free_sam(new_sam_acct);
 	}
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return result;
 }
 

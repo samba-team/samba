@@ -2026,7 +2026,7 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 done:
 	unbecome_root();				/* END ROOT BLOCK */
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return ret;
 }
@@ -2219,7 +2219,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 			}
 			unbecome_root();
 
-			talloc_free(server_info);
+			TALLOC_FREE(server_info);
 		}
 		data_blob_clear_free(&password);
 	}

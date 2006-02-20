@@ -91,7 +91,7 @@ static BOOL push_queued_message(char *buf, int msg_len,
 	msg->buf = data_blob_talloc(msg, buf, msg_len);
 	if(msg->buf.data == NULL) {
 		DEBUG(0,("push_message: malloc fail (2)\n"));
-		talloc_free(msg);
+		TALLOC_FREE(msg);
 		return False;
 	}
 
@@ -103,7 +103,7 @@ static BOOL push_queued_message(char *buf, int msg_len,
 						     private_len);
 		if (msg->private_data.data == NULL) {
 			DEBUG(0,("push_message: malloc fail (3)\n"));
-			talloc_free(msg);
+			TALLOC_FREE(msg);
 			return False;
 		}
 	}
@@ -131,7 +131,7 @@ void remove_deferred_open_smb_message(uint16 mid)
 				  (unsigned int)mid,
 				  (unsigned int)pml->buf.length ));
 			DLIST_REMOVE(deferred_open_queue, pml);
-			talloc_free(pml);
+			TALLOC_FREE(pml);
 			return;
 		}
 	}
@@ -237,11 +237,11 @@ static void idle_event_handler(struct timed_event *te,
 	struct idle_event *event =
 		talloc_get_type_abort(private_data, struct idle_event);
 
-	talloc_free(event->te);
+	TALLOC_FREE(event->te);
 
 	if (!event->handler(now, event->private_data)) {
 		/* Don't repeat, delete ourselves */
-		talloc_free(event);
+		TALLOC_FREE(event);
 		return;
 	}
 
@@ -277,7 +277,7 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 				     idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("add_timed_event failed\n"));
-		talloc_free(result);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 
@@ -1623,8 +1623,8 @@ void smbd_process(void)
 		errno = 0;      
 		
 		/* free up temporary memory */
-		lp_talloc_free();
-		main_loop_talloc_free();
+		lp_TALLOC_FREE();
+		main_loop_TALLOC_FREE();
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {

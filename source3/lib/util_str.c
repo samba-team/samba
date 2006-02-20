@@ -1704,7 +1704,7 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 				DEBUG(0,("str_list_make: Unable to allocate memory"));
 				str_list_free(&list);
 				if (mem_ctx) {
-					talloc_free(s);
+					TALLOC_FREE(s);
 				} else {
 					SAFE_FREE(s);
 				}
@@ -1724,7 +1724,7 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 			DEBUG(0,("str_list_make: Unable to allocate memory"));
 			str_list_free(&list);
 			if (mem_ctx) {
-				talloc_free(s);
+				TALLOC_FREE(s);
 			} else {
 				SAFE_FREE(s);
 			}
@@ -1735,7 +1735,7 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string, co
 	}
 
 	if (mem_ctx) {
-		talloc_free(s);
+		TALLOC_FREE(s);
 	} else {
 		SAFE_FREE(s);
 	}
@@ -1823,13 +1823,13 @@ static void str_list_free_internal(TALLOC_CTX *mem_ctx, char ***list)
 	tlist = *list;
 	for(; *tlist; tlist++) {
 		if (mem_ctx) {
-			talloc_free(*tlist);
+			TALLOC_FREE(*tlist);
 		} else {
 			SAFE_FREE(*tlist);
 		}
 	}
 	if (mem_ctx) {
-		talloc_free(*tlist);
+		TALLOC_FREE(*tlist);
 	} else {
 		SAFE_FREE(*list);
 	}

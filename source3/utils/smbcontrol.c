@@ -151,7 +151,7 @@ static void pong_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
 	char *src_string = procid_str(NULL, &pid);
 	printf("PONG from pid %s\n", src_string);
-	talloc_free(src_string);
+	TALLOC_FREE(src_string);
 	num_replies++;
 }
 

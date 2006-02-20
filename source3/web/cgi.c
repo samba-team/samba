@@ -306,7 +306,7 @@ static void cgi_web_auth(void)
 		       head, user, (int)geteuid(), (int)getuid(), tail);
 		exit(0);
 	}
-	talloc_free(pwd);
+	TALLOC_FREE(pwd);
 }
 
 
@@ -367,7 +367,7 @@ static BOOL cgi_handle_authorization(char *line)
 			
 			/* Save the users name */
 			C_user = SMB_STRDUP(user);
-			talloc_free(pass);
+			TALLOC_FREE(pass);
 			return True;
 		}
 	}
@@ -377,7 +377,7 @@ err:
 			"WWW-Authenticate: Basic realm=\"SWAT\"\r\n",
 			"username or password incorrect");
 
-	talloc_free(pass);
+	TALLOC_FREE(pass);
 	return False;
 }
 

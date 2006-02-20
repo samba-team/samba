@@ -681,7 +681,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 
 	if (tdb_chainlock(tdb, key) != 0) {
 		DEBUG(3, ("Could not lock share entry\n"));
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		return NULL;
 	}
 
@@ -697,20 +697,20 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	if (lck->fresh) {
 
 		if (fname == NULL || servicepath == NULL) {
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 		lck->filename = talloc_strdup(lck, fname);
 		lck->servicepath = talloc_strdup(lck, servicepath);
 		if (lck->filename == NULL || lck->servicepath == NULL) {
 			DEBUG(0, ("talloc failed\n"));
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 	} else {
 		if (!parse_share_modes(data, lck)) {
 			DEBUG(0, ("Could not parse share modes\n"));
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			SAFE_FREE(data.dptr);
 			return NULL;
 		}
@@ -814,7 +814,7 @@ BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 		return False;
 	}
 	result = lck->delete_on_close;
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return result;
 }
 
@@ -1142,7 +1142,7 @@ void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok
 {
 	/* Ensure there's no token. */
 	if (lck->delete_token) {
-		talloc_free(lck->delete_token); /* Also deletes groups... */
+		TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
 		lck->delete_token = NULL;
 	}
 
@@ -1195,7 +1195,7 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close, UNIX_USER_TOKE
 		lck->modified = True;
 	}
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return True;
 }
 

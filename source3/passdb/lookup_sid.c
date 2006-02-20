@@ -265,13 +265,13 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 	}
 
  failed:
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 	return False;
 
  ok:
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
-		talloc_free(tmp_ctx);
+		TALLOC_FREE(tmp_ctx);
 		return False;
 	}
 
@@ -293,7 +293,7 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		*ret_type = type;
 	}
 
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 	return True;
 }
 
@@ -746,7 +746,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 	result = NT_STATUS_OK;
 
  done:
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 	return result;
 }
 
@@ -802,7 +802,7 @@ BOOL lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		DEBUG(10, ("failed to lookup sid %s\n",
 			   sid_string_static(sid)));
 	}
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
