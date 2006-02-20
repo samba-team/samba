@@ -498,6 +498,10 @@
 #include <sys/xattr.h>
 #endif
 
+#ifdef HAVE_SYS_EA_H
+#include <sys/ea.h>
+#endif
+
 #ifdef HAVE_SYS_EXTATTR_H
 #include <sys/extattr.h>
 #endif
