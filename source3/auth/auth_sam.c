@@ -35,7 +35,7 @@ extern struct timeval smb_last_time;
 
 static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
-				SAM_ACCOUNT *sampass, 
+				struct samu *sampass, 
 				const auth_usersupplied_info *user_info, 
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
@@ -73,7 +73,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
  bitmask.
 ****************************************************************************/
                                                                                                               
-static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
+static BOOL logon_hours_ok(struct samu *sampass)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
 	const uint8 *hours;
@@ -108,12 +108,12 @@ static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 }
 
 /****************************************************************************
- Do a specific test for a SAM_ACCOUNT being vaild for this connection 
+ Do a specific test for a struct samu being vaild for this connection 
  (ie not disabled, expired and the like).
 ****************************************************************************/
 
 static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
-			       SAM_ACCOUNT *sampass, 
+			       struct samu *sampass, 
 			       const auth_usersupplied_info *user_info)
 {
 	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
@@ -236,7 +236,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   const auth_usersupplied_info *user_info, 
 				   auth_serversupplied_info **server_info)
 {
-	SAM_ACCOUNT *sampass=NULL;
+	struct samu *sampass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
 	NTSTATUS update_login_attempts_status;
@@ -263,7 +263,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	if (ret == False) {
 		DEBUG(3,("check_sam_security: Couldn't find user '%s' in "
 			 "passdb.\n", user_info->internal_username));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -301,7 +301,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		}
 		data_blob_free(&user_sess_key);
 		data_blob_free(&lm_sess_key);
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return nt_status;
 	}
 
@@ -322,7 +322,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		data_blob_free(&user_sess_key);
 		data_blob_free(&lm_sess_key);
 		return nt_status;
@@ -334,7 +334,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		data_blob_free(&user_sess_key);
 		data_blob_free(&lm_sess_key);
 		return nt_status;

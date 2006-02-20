@@ -741,7 +741,7 @@ int pdb_nds_set_password(
 *********************************************************************/
 
 static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
-					SAM_ACCOUNT *sam_acct, BOOL success)
+					struct samu *sam_acct, BOOL success)
 {
 	struct ldapsam_privates *ldap_state;
 
@@ -780,7 +780,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			}
 			pdb_set_backend_private_data(sam_acct, result, NULL,
 						     methods, PDB_CHANGED);
-			talloc_autofree_ldapmsg(sam_acct->mem_ctx, result);
+			talloc_autofree_ldapmsg(sam_acct, result);
 		}
 
 		if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {

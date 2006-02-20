@@ -401,7 +401,7 @@ static int process_root(int local_flags)
 			 */
 			
 			if(local_flags & LOCAL_ENABLE_USER) {
-				SAM_ACCOUNT *sampass = NULL;
+				struct samu *sampass = NULL;
 				BOOL ret;
 				
 				pdb_init_sam(&sampass);
@@ -410,7 +410,7 @@ static int process_root(int local_flags)
 				   (pdb_get_lanman_passwd(sampass) == NULL)) {
 					local_flags |= LOCAL_SET_PASSWORD;
 				}
-				pdb_free_sam(&sampass);
+				TALLOC_FREE(sampass);
 			}
 		}
 		
@@ -435,7 +435,7 @@ static int process_root(int local_flags)
 	if(remote_machine) {
 		printf("Password changed for user %s on %s.\n", user_name, remote_machine );
 	} else if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD|LOCAL_SET_PASSWORD))) {
-		SAM_ACCOUNT *sampass = NULL;
+		struct samu *sampass = NULL;
 		BOOL ret;
 		
 		pdb_init_sam(&sampass);
@@ -447,7 +447,7 @@ static int process_root(int local_flags)
 		if((ret != False) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) )
 			printf(" User has no password flag set.");
 		printf("\n");
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 	}
 
  done:

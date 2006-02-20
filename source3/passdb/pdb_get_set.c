@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   SAM_ACCOUNT access routines
+   struct samu access routines
    Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
@@ -37,126 +37,126 @@
 #define PDB_NOT_QUITE_NULL ""
 
 /*********************************************************************
- Collection of get...() functions for SAM_ACCOUNT.
+ Collection of get...() functions for struct samu.
  ********************************************************************/
 
-uint16 pdb_get_acct_ctrl (const SAM_ACCOUNT *sampass)
+uint16 pdb_get_acct_ctrl (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.acct_ctrl);
+		return (sampass->acct_ctrl);
 	else
 		return (ACB_DISABLED);
 }
 
-time_t pdb_get_logon_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_logon_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.logon_time);
+		return (sampass->logon_time);
 	else
 		return (0);
 }
 
-time_t pdb_get_logoff_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_logoff_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.logoff_time);
+		return (sampass->logoff_time);
 	else
 		return (-1);
 }
 
-time_t pdb_get_kickoff_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_kickoff_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.kickoff_time);
+		return (sampass->kickoff_time);
 	else
 		return (-1);
 }
 
-time_t pdb_get_bad_password_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_bad_password_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.bad_password_time);
+		return (sampass->bad_password_time);
 	else
 		return (-1);
 }
 
-time_t pdb_get_pass_last_set_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_pass_last_set_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.pass_last_set_time);
+		return (sampass->pass_last_set_time);
 	else
 		return (-1);
 }
 
-time_t pdb_get_pass_can_change_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_pass_can_change_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.pass_can_change_time);
+		return (sampass->pass_can_change_time);
 	else
 		return (-1);
 }
 
-time_t pdb_get_pass_must_change_time (const SAM_ACCOUNT *sampass)
+time_t pdb_get_pass_must_change_time (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.pass_must_change_time);
+		return (sampass->pass_must_change_time);
 	else
 		return (-1);
 }
 
-uint16 pdb_get_logon_divs (const SAM_ACCOUNT *sampass)
+uint16 pdb_get_logon_divs (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.logon_divs);
+		return (sampass->logon_divs);
 	else
 		return (-1);
 }
 
-uint32 pdb_get_hours_len (const SAM_ACCOUNT *sampass)
+uint32 pdb_get_hours_len (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.hours_len);
+		return (sampass->hours_len);
 	else
 		return (-1);
 }
 
-const uint8* pdb_get_hours (const SAM_ACCOUNT *sampass)
+const uint8* pdb_get_hours (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.hours);
+		return (sampass->hours);
 	else
 		return (NULL);
 }
 
-const uint8* pdb_get_nt_passwd (const SAM_ACCOUNT *sampass)
+const uint8* pdb_get_nt_passwd (const struct samu *sampass)
 {
 	if (sampass) {
-		SMB_ASSERT((!sampass->private_u.nt_pw.data) 
-			   || sampass->private_u.nt_pw.length == NT_HASH_LEN);
-		return ((uint8*)sampass->private_u.nt_pw.data);
+		SMB_ASSERT((!sampass->nt_pw.data) 
+			   || sampass->nt_pw.length == NT_HASH_LEN);
+		return ((uint8*)sampass->nt_pw.data);
 	}
 	else
 		return (NULL);
 }
 
-const uint8* pdb_get_lanman_passwd (const SAM_ACCOUNT *sampass)
+const uint8* pdb_get_lanman_passwd (const struct samu *sampass)
 {
 	if (sampass) {
-		SMB_ASSERT((!sampass->private_u.lm_pw.data) 
-			   || sampass->private_u.lm_pw.length == LM_HASH_LEN);
-		return ((uint8*)sampass->private_u.lm_pw.data);
+		SMB_ASSERT((!sampass->lm_pw.data) 
+			   || sampass->lm_pw.length == LM_HASH_LEN);
+		return ((uint8*)sampass->lm_pw.data);
 	}
 	else
 		return (NULL);
 }
 
-const uint8* pdb_get_pw_history (const SAM_ACCOUNT *sampass, uint32 *current_hist_len)
+const uint8* pdb_get_pw_history (const struct samu *sampass, uint32 *current_hist_len)
 {
 	if (sampass) {
-		SMB_ASSERT((!sampass->private_u.nt_pw_his.data) 
-		   || ((sampass->private_u.nt_pw_his.length % PW_HISTORY_ENTRY_LEN) == 0));
-		*current_hist_len = sampass->private_u.nt_pw_his.length / PW_HISTORY_ENTRY_LEN;
-		return ((uint8*)sampass->private_u.nt_pw_his.data);
+		SMB_ASSERT((!sampass->nt_pw_his.data) 
+		   || ((sampass->nt_pw_his.length % PW_HISTORY_ENTRY_LEN) == 0));
+		*current_hist_len = sampass->nt_pw_his.length / PW_HISTORY_ENTRY_LEN;
+		return ((uint8*)sampass->nt_pw_his.data);
 	} else {
 		*current_hist_len = 0;
 		return (NULL);
@@ -169,49 +169,49 @@ const uint8* pdb_get_pw_history (const SAM_ACCOUNT *sampass, uint32 *current_his
    Used to pass the plaintext to passdb backends that might 
    want to store more than just the NTLM hashes.
 */
-const char* pdb_get_plaintext_passwd (const SAM_ACCOUNT *sampass)
+const char* pdb_get_plaintext_passwd (const struct samu *sampass)
 {
 	if (sampass) {
-		return (sampass->private_u.plaintext_pw);
+		return (sampass->plaintext_pw);
 	}
 	else
 		return (NULL);
 }
-const DOM_SID *pdb_get_user_sid(const SAM_ACCOUNT *sampass)
+const DOM_SID *pdb_get_user_sid(const struct samu *sampass)
 {
 	if (sampass) 
-		return &sampass->private_u.user_sid;
+		return &sampass->user_sid;
 	else
 		return (NULL);
 }
 
-const DOM_SID *pdb_get_group_sid(const SAM_ACCOUNT *sampass)
+const DOM_SID *pdb_get_group_sid(const struct samu *sampass)
 {
 	if (sampass)
-		return &sampass->private_u.group_sid;
+		return &sampass->group_sid;
 	else	
 		return (NULL);
 }	
 
 /**
- * Get flags showing what is initalised in the SAM_ACCOUNT
- * @param sampass the SAM_ACCOUNT in question
+ * Get flags showing what is initalised in the struct samu
+ * @param sampass the struct samu in question
  * @return the flags indicating the members initialised in the struct.
  **/
  
-enum pdb_value_state pdb_get_init_flags (const SAM_ACCOUNT *sampass, enum pdb_elements element)
+enum pdb_value_state pdb_get_init_flags (const struct samu *sampass, enum pdb_elements element)
 {
 	enum pdb_value_state ret = PDB_DEFAULT;
 	
-        if (!sampass || !sampass->private_u.change_flags || !sampass->private_u.set_flags)
+        if (!sampass || !sampass->change_flags || !sampass->set_flags)
         	return ret;
         	
-        if (bitmap_query(sampass->private_u.set_flags, element)) {
+        if (bitmap_query(sampass->set_flags, element)) {
 		DEBUG(11, ("element %d: SET\n", element)); 
         	ret = PDB_SET;
 	}
 		
-        if (bitmap_query(sampass->private_u.change_flags, element)) {
+        if (bitmap_query(sampass->change_flags, element)) {
 		DEBUG(11, ("element %d: CHANGED\n", element)); 
         	ret = PDB_CHANGED;
 	}
@@ -223,270 +223,270 @@ enum pdb_value_state pdb_get_init_flags (const SAM_ACCOUNT *sampass, enum pdb_el
         return ret;
 }
 
-const char* pdb_get_username (const SAM_ACCOUNT *sampass)
+const char* pdb_get_username (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.username);
+		return (sampass->username);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_domain (const SAM_ACCOUNT *sampass)
+const char* pdb_get_domain (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.domain);
+		return (sampass->domain);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_nt_username (const SAM_ACCOUNT *sampass)
+const char* pdb_get_nt_username (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.nt_username);
+		return (sampass->nt_username);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_fullname (const SAM_ACCOUNT *sampass)
+const char* pdb_get_fullname (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.full_name);
+		return (sampass->full_name);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_homedir (const SAM_ACCOUNT *sampass)
+const char* pdb_get_homedir (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.home_dir);
+		return (sampass->home_dir);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_unix_homedir (const SAM_ACCOUNT *sampass)
+const char* pdb_get_unix_homedir (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.unix_home_dir);
+		return (sampass->unix_home_dir);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_dir_drive (const SAM_ACCOUNT *sampass)
+const char* pdb_get_dir_drive (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.dir_drive);
+		return (sampass->dir_drive);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_logon_script (const SAM_ACCOUNT *sampass)
+const char* pdb_get_logon_script (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.logon_script);
+		return (sampass->logon_script);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_profile_path (const SAM_ACCOUNT *sampass)
+const char* pdb_get_profile_path (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.profile_path);
+		return (sampass->profile_path);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_acct_desc (const SAM_ACCOUNT *sampass)
+const char* pdb_get_acct_desc (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.acct_desc);
+		return (sampass->acct_desc);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_workstations (const SAM_ACCOUNT *sampass)
+const char* pdb_get_workstations (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.workstations);
+		return (sampass->workstations);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_unknown_str (const SAM_ACCOUNT *sampass)
+const char* pdb_get_unknown_str (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.unknown_str);
+		return (sampass->unknown_str);
 	else
 		return (NULL);
 }
 
-const char* pdb_get_munged_dial (const SAM_ACCOUNT *sampass)
+const char* pdb_get_munged_dial (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.munged_dial);
+		return (sampass->munged_dial);
 	else
 		return (NULL);
 }
 
-uint16 pdb_get_bad_password_count(const SAM_ACCOUNT *sampass)
+uint16 pdb_get_bad_password_count(const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.bad_password_count);
+		return (sampass->bad_password_count);
 	else
 		return 0;
 }
 
-uint16 pdb_get_logon_count(const SAM_ACCOUNT *sampass)
+uint16 pdb_get_logon_count(const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.logon_count);
+		return (sampass->logon_count);
 	else
 		return 0;
 }
 
-uint32 pdb_get_unknown_6 (const SAM_ACCOUNT *sampass)
+uint32 pdb_get_unknown_6 (const struct samu *sampass)
 {
 	if (sampass)
-		return (sampass->private_u.unknown_6);
+		return (sampass->unknown_6);
 	else
 		return (-1);
 }
 
-void *pdb_get_backend_private_data (const SAM_ACCOUNT *sampass, const struct pdb_methods *my_methods)
+void *pdb_get_backend_private_data (const struct samu *sampass, const struct pdb_methods *my_methods)
 {
-	if (sampass && my_methods == sampass->private_u.backend_private_methods)
-		return sampass->private_u.backend_private_data;
+	if (sampass && my_methods == sampass->backend_private_methods)
+		return sampass->backend_private_data;
 	else
 		return NULL;
 }
 
 /*********************************************************************
- Collection of set...() functions for SAM_ACCOUNT.
+ Collection of set...() functions for struct samu.
  ********************************************************************/
 
-BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 acct_ctrl, enum pdb_value_state flag)
+BOOL pdb_set_acct_ctrl (struct samu *sampass, uint16 acct_ctrl, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 		
-	sampass->private_u.acct_ctrl = acct_ctrl;
+	sampass->acct_ctrl = acct_ctrl;
 
 	return pdb_set_init_flags(sampass, PDB_ACCTCTRL, flag);
 }
 
-BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
+BOOL pdb_set_logon_time (struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.logon_time = mytime;
+	sampass->logon_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_LOGONTIME, flag);
 }
 
-BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
+BOOL pdb_set_logoff_time (struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.logoff_time = mytime;
+	sampass->logoff_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_LOGOFFTIME, flag);
 }
 
-BOOL pdb_set_kickoff_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
+BOOL pdb_set_kickoff_time (struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.kickoff_time = mytime;
+	sampass->kickoff_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_KICKOFFTIME, flag);
 }
 
-BOOL pdb_set_bad_password_time (SAM_ACCOUNT *sampass, time_t mytime, 
+BOOL pdb_set_bad_password_time (struct samu *sampass, time_t mytime, 
 				enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.bad_password_time = mytime;
+	sampass->bad_password_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_BAD_PASSWORD_TIME, flag);
 }
 
-BOOL pdb_set_pass_can_change_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
+BOOL pdb_set_pass_can_change_time (struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.pass_can_change_time = mytime;
+	sampass->pass_can_change_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_CANCHANGETIME, flag);
 }
 
-BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
+BOOL pdb_set_pass_must_change_time (struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.pass_must_change_time = mytime;
+	sampass->pass_must_change_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_MUSTCHANGETIME, flag);
 }
 
-BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t mytime, enum pdb_value_state flag)
+BOOL pdb_set_pass_last_set_time (struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.pass_last_set_time = mytime;
+	sampass->pass_last_set_time = mytime;
 
 	return pdb_set_init_flags(sampass, PDB_PASSLASTSET, flag);
 }
 
-BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len, enum pdb_value_state flag)
+BOOL pdb_set_hours_len (struct samu *sampass, uint32 len, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.hours_len = len;
+	sampass->hours_len = len;
 
 	return pdb_set_init_flags(sampass, PDB_HOURSLEN, flag);
 }
 
-BOOL pdb_set_logon_divs (SAM_ACCOUNT *sampass, uint16 hours, enum pdb_value_state flag)
+BOOL pdb_set_logon_divs (struct samu *sampass, uint16 hours, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.logon_divs = hours;
+	sampass->logon_divs = hours;
 
 	return pdb_set_init_flags(sampass, PDB_LOGONDIVS, flag);
 }
 
 /**
- * Set flags showing what is initalised in the SAM_ACCOUNT
- * @param sampass the SAM_ACCOUNT in question
+ * Set flags showing what is initalised in the struct samu
+ * @param sampass the struct samu in question
  * @param flag The *new* flag to be set.  Old flags preserved
  *             this flag is only added.  
  **/
  
-BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum pdb_value_state value_flag)
+BOOL pdb_set_init_flags (struct samu *sampass, enum pdb_elements element, enum pdb_value_state value_flag)
 {
-        if (!sampass || !sampass->mem_ctx)
+        if (!sampass || !sampass)
                 return False;
 
-        if (!sampass->private_u.set_flags) {
-        	if ((sampass->private_u.set_flags = 
-        		bitmap_talloc(sampass->mem_ctx, 
+        if (!sampass->set_flags) {
+        	if ((sampass->set_flags = 
+        		bitmap_talloc(sampass, 
         				PDB_COUNT))==NULL) {
         		DEBUG(0,("bitmap_talloc failed\n"));
         		return False;
         	}
         }
-        if (!sampass->private_u.change_flags) {
-        	if ((sampass->private_u.change_flags = 
-        		bitmap_talloc(sampass->mem_ctx, 
+        if (!sampass->change_flags) {
+        	if ((sampass->change_flags = 
+        		bitmap_talloc(sampass, 
         				PDB_COUNT))==NULL) {
         		DEBUG(0,("bitmap_talloc failed\n"));
         		return False;
@@ -495,22 +495,22 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
         
         switch(value_flag) {
         	case PDB_CHANGED:
-        		if (!bitmap_set(sampass->private_u.change_flags, element)) {
+        		if (!bitmap_set(sampass->change_flags, element)) {
 				DEBUG(0,("Can't set flag: %d in change_flags.\n",element));
 				return False;
 			}
-        		if (!bitmap_set(sampass->private_u.set_flags, element)) {
+        		if (!bitmap_set(sampass->set_flags, element)) {
 				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
 			DEBUG(11, ("element %d -> now CHANGED\n", element)); 
         		break;
         	case PDB_SET:
-        		if (!bitmap_clear(sampass->private_u.change_flags, element)) {
+        		if (!bitmap_clear(sampass->change_flags, element)) {
 				DEBUG(0,("Can't set flag: %d in change_flags.\n",element));
 				return False;
 			}
-        		if (!bitmap_set(sampass->private_u.set_flags, element)) {
+        		if (!bitmap_set(sampass->set_flags, element)) {
 				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
@@ -518,11 +518,11 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
         		break;
         	case PDB_DEFAULT:
         	default:
-        		if (!bitmap_clear(sampass->private_u.change_flags, element)) {
+        		if (!bitmap_clear(sampass->change_flags, element)) {
 				DEBUG(0,("Can't set flag: %d in change_flags.\n",element));
 				return False;
 			}
-        		if (!bitmap_clear(sampass->private_u.set_flags, element)) {
+        		if (!bitmap_clear(sampass->set_flags, element)) {
 				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
@@ -533,20 +533,20 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
         return True;
 }
 
-BOOL pdb_set_user_sid (SAM_ACCOUNT *sampass, const DOM_SID *u_sid, enum pdb_value_state flag)
+BOOL pdb_set_user_sid (struct samu *sampass, const DOM_SID *u_sid, enum pdb_value_state flag)
 {
 	if (!sampass || !u_sid)
 		return False;
 	
-	sid_copy(&sampass->private_u.user_sid, u_sid);
+	sid_copy(&sampass->user_sid, u_sid);
 
 	DEBUG(10, ("pdb_set_user_sid: setting user sid %s\n", 
-		    sid_string_static(&sampass->private_u.user_sid)));
+		    sid_string_static(&sampass->user_sid)));
 
 	return pdb_set_init_flags(sampass, PDB_USERSID, flag);
 }
 
-BOOL pdb_set_user_sid_from_string (SAM_ACCOUNT *sampass, fstring u_sid, enum pdb_value_state flag)
+BOOL pdb_set_user_sid_from_string (struct samu *sampass, fstring u_sid, enum pdb_value_state flag)
 {
 	DOM_SID new_sid;
 	
@@ -562,14 +562,14 @@ BOOL pdb_set_user_sid_from_string (SAM_ACCOUNT *sampass, fstring u_sid, enum pdb
 	}
 	 
 	if (!pdb_set_user_sid(sampass, &new_sid, flag)) {
-		DEBUG(1, ("pdb_set_user_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", u_sid));
+		DEBUG(1, ("pdb_set_user_sid_from_string: could not set sid %s on struct samu!\n", u_sid));
 		return False;
 	}
 
 	return True;
 }
 
-BOOL pdb_set_group_sid (SAM_ACCOUNT *sampass, const DOM_SID *g_sid, enum pdb_value_state flag)
+BOOL pdb_set_group_sid (struct samu *sampass, const DOM_SID *g_sid, enum pdb_value_state flag)
 {
 	gid_t gid;
 
@@ -580,19 +580,19 @@ BOOL pdb_set_group_sid (SAM_ACCOUNT *sampass, const DOM_SID *g_sid, enum pdb_val
 	   store DOMAIN_USERS as the primary groupSID */
 
 	if ( sid_to_gid( g_sid, &gid ) ) {
-		sid_copy(&sampass->private_u.group_sid, g_sid);
+		sid_copy(&sampass->group_sid, g_sid);
 	} else {
-		sid_copy( &sampass->private_u.group_sid, get_global_sam_sid() );
-		sid_append_rid( &sampass->private_u.group_sid, DOMAIN_GROUP_RID_USERS );
+		sid_copy( &sampass->group_sid, get_global_sam_sid() );
+		sid_append_rid( &sampass->group_sid, DOMAIN_GROUP_RID_USERS );
 	}
 
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
-		    sid_string_static(&sampass->private_u.group_sid)));
+		    sid_string_static(&sampass->group_sid)));
 
 	return pdb_set_init_flags(sampass, PDB_GROUPSID, flag);
 }
 
-BOOL pdb_set_group_sid_from_string (SAM_ACCOUNT *sampass, fstring g_sid, enum pdb_value_state flag)
+BOOL pdb_set_group_sid_from_string (struct samu *sampass, fstring g_sid, enum pdb_value_state flag)
 {
 	DOM_SID new_sid;
 	if (!sampass || !g_sid)
@@ -607,7 +607,7 @@ BOOL pdb_set_group_sid_from_string (SAM_ACCOUNT *sampass, fstring g_sid, enum pd
 	}
 	 
 	if (!pdb_set_group_sid(sampass, &new_sid, flag)) {
-		DEBUG(1, ("pdb_set_group_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", g_sid));
+		DEBUG(1, ("pdb_set_group_sid_from_string: could not set sid %s on struct samu!\n", g_sid));
 		return False;
 	}
 	return True;
@@ -617,24 +617,24 @@ BOOL pdb_set_group_sid_from_string (SAM_ACCOUNT *sampass, fstring g_sid, enum pd
  Set the user's UNIX name.
  ********************************************************************/
 
-BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username, enum pdb_value_state flag)
+BOOL pdb_set_username(struct samu *sampass, const char *username, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
  
 	if (username) { 
 		DEBUG(10, ("pdb_set_username: setting username %s, was %s\n", username,
-			(sampass->private_u.username)?(sampass->private_u.username):"NULL"));
+			(sampass->username)?(sampass->username):"NULL"));
 
-		sampass->private_u.username = talloc_strdup(sampass->mem_ctx, username);
+		sampass->username = talloc_strdup(sampass, username);
 
-		if (!sampass->private_u.username) {
+		if (!sampass->username) {
 			DEBUG(0, ("pdb_set_username: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.username = PDB_NOT_QUITE_NULL;
+		sampass->username = PDB_NOT_QUITE_NULL;
 	}
 	
 	return pdb_set_init_flags(sampass, PDB_USERNAME, flag);
@@ -644,24 +644,24 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username, enum pdb_value
  Set the domain name.
  ********************************************************************/
 
-BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain, enum pdb_value_state flag)
+BOOL pdb_set_domain(struct samu *sampass, const char *domain, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (domain) { 
 		DEBUG(10, ("pdb_set_domain: setting domain %s, was %s\n", domain,
-			(sampass->private_u.domain)?(sampass->private_u.domain):"NULL"));
+			(sampass->domain)?(sampass->domain):"NULL"));
 
-		sampass->private_u.domain = talloc_strdup(sampass->mem_ctx, domain);
+		sampass->domain = talloc_strdup(sampass, domain);
 
-		if (!sampass->private_u.domain) {
+		if (!sampass->domain) {
 			DEBUG(0, ("pdb_set_domain: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.domain = PDB_NOT_QUITE_NULL;
+		sampass->domain = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_DOMAIN, flag);
@@ -671,24 +671,24 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain, enum pdb_value_sta
  Set the user's NT name.
  ********************************************************************/
 
-BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username, enum pdb_value_state flag)
+BOOL pdb_set_nt_username(struct samu *sampass, const char *nt_username, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (nt_username) { 
 		DEBUG(10, ("pdb_set_nt_username: setting nt username %s, was %s\n", nt_username,
-			(sampass->private_u.nt_username)?(sampass->private_u.nt_username):"NULL"));
+			(sampass->nt_username)?(sampass->nt_username):"NULL"));
  
-		sampass->private_u.nt_username = talloc_strdup(sampass->mem_ctx, nt_username);
+		sampass->nt_username = talloc_strdup(sampass, nt_username);
 		
-		if (!sampass->private_u.nt_username) {
+		if (!sampass->nt_username) {
 			DEBUG(0, ("pdb_set_nt_username: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.nt_username = PDB_NOT_QUITE_NULL;
+		sampass->nt_username = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_NTUSERNAME, flag);
@@ -698,24 +698,24 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username, enum pdb
  Set the user's full name.
  ********************************************************************/
 
-BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *full_name, enum pdb_value_state flag)
+BOOL pdb_set_fullname(struct samu *sampass, const char *full_name, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (full_name) { 
 		DEBUG(10, ("pdb_set_full_name: setting full name %s, was %s\n", full_name,
-			(sampass->private_u.full_name)?(sampass->private_u.full_name):"NULL"));
+			(sampass->full_name)?(sampass->full_name):"NULL"));
 	
-		sampass->private_u.full_name = talloc_strdup(sampass->mem_ctx, full_name);
+		sampass->full_name = talloc_strdup(sampass, full_name);
 
-		if (!sampass->private_u.full_name) {
+		if (!sampass->full_name) {
 			DEBUG(0, ("pdb_set_fullname: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.full_name = PDB_NOT_QUITE_NULL;
+		sampass->full_name = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_FULLNAME, flag);
@@ -725,24 +725,24 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *full_name, enum pdb_valu
  Set the user's logon script.
  ********************************************************************/
 
-BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, enum pdb_value_state flag)
+BOOL pdb_set_logon_script(struct samu *sampass, const char *logon_script, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (logon_script) { 
 		DEBUG(10, ("pdb_set_logon_script: setting logon script %s, was %s\n", logon_script,
-			(sampass->private_u.logon_script)?(sampass->private_u.logon_script):"NULL"));
+			(sampass->logon_script)?(sampass->logon_script):"NULL"));
  
-		sampass->private_u.logon_script = talloc_strdup(sampass->mem_ctx, logon_script);
+		sampass->logon_script = talloc_strdup(sampass, logon_script);
 
-		if (!sampass->private_u.logon_script) {
+		if (!sampass->logon_script) {
 			DEBUG(0, ("pdb_set_logon_script: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.logon_script = PDB_NOT_QUITE_NULL;
+		sampass->logon_script = PDB_NOT_QUITE_NULL;
 	}
 	
 	return pdb_set_init_flags(sampass, PDB_LOGONSCRIPT, flag);
@@ -752,24 +752,24 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, enum p
  Set the user's profile path.
  ********************************************************************/
 
-BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, enum pdb_value_state flag)
+BOOL pdb_set_profile_path (struct samu *sampass, const char *profile_path, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (profile_path) { 
 		DEBUG(10, ("pdb_set_profile_path: setting profile path %s, was %s\n", profile_path,
-			(sampass->private_u.profile_path)?(sampass->private_u.profile_path):"NULL"));
+			(sampass->profile_path)?(sampass->profile_path):"NULL"));
  
-		sampass->private_u.profile_path = talloc_strdup(sampass->mem_ctx, profile_path);
+		sampass->profile_path = talloc_strdup(sampass, profile_path);
 		
-		if (!sampass->private_u.profile_path) {
+		if (!sampass->profile_path) {
 			DEBUG(0, ("pdb_set_profile_path: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.profile_path = PDB_NOT_QUITE_NULL;
+		sampass->profile_path = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_PROFILE, flag);
@@ -779,24 +779,24 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, enum 
  Set the user's directory drive.
  ********************************************************************/
 
-BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, enum pdb_value_state flag)
+BOOL pdb_set_dir_drive (struct samu *sampass, const char *dir_drive, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (dir_drive) { 
 		DEBUG(10, ("pdb_set_dir_drive: setting dir drive %s, was %s\n", dir_drive,
-			(sampass->private_u.dir_drive)?(sampass->private_u.dir_drive):"NULL"));
+			(sampass->dir_drive)?(sampass->dir_drive):"NULL"));
  
-		sampass->private_u.dir_drive = talloc_strdup(sampass->mem_ctx, dir_drive);
+		sampass->dir_drive = talloc_strdup(sampass, dir_drive);
 		
-		if (!sampass->private_u.dir_drive) {
+		if (!sampass->dir_drive) {
 			DEBUG(0, ("pdb_set_dir_drive: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.dir_drive = PDB_NOT_QUITE_NULL;
+		sampass->dir_drive = PDB_NOT_QUITE_NULL;
 	}
 	
 	return pdb_set_init_flags(sampass, PDB_DRIVE, flag);
@@ -806,24 +806,24 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, enum pdb_va
  Set the user's home directory.
  ********************************************************************/
 
-BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, enum pdb_value_state flag)
+BOOL pdb_set_homedir (struct samu *sampass, const char *home_dir, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (home_dir) { 
 		DEBUG(10, ("pdb_set_homedir: setting home dir %s, was %s\n", home_dir,
-			(sampass->private_u.home_dir)?(sampass->private_u.home_dir):"NULL"));
+			(sampass->home_dir)?(sampass->home_dir):"NULL"));
  
-		sampass->private_u.home_dir = talloc_strdup(sampass->mem_ctx, home_dir);
+		sampass->home_dir = talloc_strdup(sampass, home_dir);
 		
-		if (!sampass->private_u.home_dir) {
+		if (!sampass->home_dir) {
 			DEBUG(0, ("pdb_set_home_dir: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.home_dir = PDB_NOT_QUITE_NULL;
+		sampass->home_dir = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_SMBHOME, flag);
@@ -833,25 +833,25 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, enum pdb_value
  Set the user's unix home directory.
  ********************************************************************/
 
-BOOL pdb_set_unix_homedir (SAM_ACCOUNT *sampass, const char *unix_home_dir, enum pdb_value_state flag)
+BOOL pdb_set_unix_homedir (struct samu *sampass, const char *unix_home_dir, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (unix_home_dir) { 
 		DEBUG(10, ("pdb_set_unix_homedir: setting home dir %s, was %s\n", unix_home_dir,
-			(sampass->private_u.unix_home_dir)?(sampass->private_u.unix_home_dir):"NULL"));
+			(sampass->unix_home_dir)?(sampass->unix_home_dir):"NULL"));
  
-		sampass->private_u.unix_home_dir = talloc_strdup(sampass->mem_ctx, 
+		sampass->unix_home_dir = talloc_strdup(sampass, 
 							  unix_home_dir);
 		
-		if (!sampass->private_u.unix_home_dir) {
+		if (!sampass->unix_home_dir) {
 			DEBUG(0, ("pdb_set_unix_home_dir: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.unix_home_dir = PDB_NOT_QUITE_NULL;
+		sampass->unix_home_dir = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_UNIXHOMEDIR, flag);
@@ -861,21 +861,21 @@ BOOL pdb_set_unix_homedir (SAM_ACCOUNT *sampass, const char *unix_home_dir, enum
  Set the user's account description.
  ********************************************************************/
 
-BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc, enum pdb_value_state flag)
+BOOL pdb_set_acct_desc (struct samu *sampass, const char *acct_desc, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (acct_desc) { 
-		sampass->private_u.acct_desc = talloc_strdup(sampass->mem_ctx, acct_desc);
+		sampass->acct_desc = talloc_strdup(sampass, acct_desc);
 
-		if (!sampass->private_u.acct_desc) {
+		if (!sampass->acct_desc) {
 			DEBUG(0, ("pdb_set_acct_desc: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.acct_desc = PDB_NOT_QUITE_NULL;
+		sampass->acct_desc = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_ACCTDESC, flag);
@@ -885,24 +885,24 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc, enum pdb_va
  Set the user's workstation allowed list.
  ********************************************************************/
 
-BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations, enum pdb_value_state flag)
+BOOL pdb_set_workstations (struct samu *sampass, const char *workstations, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (workstations) { 
 		DEBUG(10, ("pdb_set_workstations: setting workstations %s, was %s\n", workstations,
-			(sampass->private_u.workstations)?(sampass->private_u.workstations):"NULL"));
+			(sampass->workstations)?(sampass->workstations):"NULL"));
  
-		sampass->private_u.workstations = talloc_strdup(sampass->mem_ctx, workstations);
+		sampass->workstations = talloc_strdup(sampass, workstations);
 
-		if (!sampass->private_u.workstations) {
+		if (!sampass->workstations) {
 			DEBUG(0, ("pdb_set_workstations: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.workstations = PDB_NOT_QUITE_NULL;
+		sampass->workstations = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_WORKSTATIONS, flag);
@@ -912,21 +912,21 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations, enum 
  Set the user's 'unknown_str', whatever the heck this actually is...
  ********************************************************************/
 
-BOOL pdb_set_unknown_str (SAM_ACCOUNT *sampass, const char *unknown_str, enum pdb_value_state flag)
+BOOL pdb_set_unknown_str (struct samu *sampass, const char *unknown_str, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (unknown_str) { 
-		sampass->private_u.unknown_str = talloc_strdup(sampass->mem_ctx, unknown_str);
+		sampass->unknown_str = talloc_strdup(sampass, unknown_str);
 		
-		if (!sampass->private_u.unknown_str) {
+		if (!sampass->unknown_str) {
 			DEBUG(0, ("pdb_set_unknown_str: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.unknown_str = PDB_NOT_QUITE_NULL;
+		sampass->unknown_str = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_UNKNOWNSTR, flag);
@@ -936,21 +936,21 @@ BOOL pdb_set_unknown_str (SAM_ACCOUNT *sampass, const char *unknown_str, enum pd
  Set the user's dial string.
  ********************************************************************/
 
-BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial, enum pdb_value_state flag)
+BOOL pdb_set_munged_dial (struct samu *sampass, const char *munged_dial, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (munged_dial) { 
-		sampass->private_u.munged_dial = talloc_strdup(sampass->mem_ctx, munged_dial);
+		sampass->munged_dial = talloc_strdup(sampass, munged_dial);
 		
-		if (!sampass->private_u.munged_dial) {
+		if (!sampass->munged_dial) {
 			DEBUG(0, ("pdb_set_munged_dial: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.munged_dial = PDB_NOT_QUITE_NULL;
+		sampass->munged_dial = PDB_NOT_QUITE_NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_MUNGEDDIAL, flag);
@@ -960,18 +960,18 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial, enum pd
  Set the user's NT hash.
  ********************************************************************/
 
-BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[NT_HASH_LEN], enum pdb_value_state flag)
+BOOL pdb_set_nt_passwd (struct samu *sampass, const uint8 pwd[NT_HASH_LEN], enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	data_blob_clear_free(&sampass->private_u.nt_pw);
+	data_blob_clear_free(&sampass->nt_pw);
 	
        if (pwd) {
-               sampass->private_u.nt_pw =
-		       data_blob_talloc(sampass->mem_ctx, pwd, NT_HASH_LEN);
+               sampass->nt_pw =
+		       data_blob_talloc(sampass, pwd, NT_HASH_LEN);
        } else {
-               sampass->private_u.nt_pw = data_blob(NULL, 0);
+               sampass->nt_pw = data_blob(NULL, 0);
        }
 
 	return pdb_set_init_flags(sampass, PDB_NTPASSWD, flag);
@@ -981,18 +981,18 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[NT_HASH_LEN], enum
  Set the user's LM hash.
  ********************************************************************/
 
-BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[LM_HASH_LEN], enum pdb_value_state flag)
+BOOL pdb_set_lanman_passwd (struct samu *sampass, const uint8 pwd[LM_HASH_LEN], enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	data_blob_clear_free(&sampass->private_u.lm_pw);
+	data_blob_clear_free(&sampass->lm_pw);
 	
        if (pwd) {
-               sampass->private_u.lm_pw =
-		       data_blob_talloc(sampass->mem_ctx, pwd, LM_HASH_LEN);
+               sampass->lm_pw =
+		       data_blob_talloc(sampass, pwd, LM_HASH_LEN);
        } else {
-               sampass->private_u.lm_pw = data_blob(NULL, 0);
+               sampass->lm_pw = data_blob(NULL, 0);
        }
 
 	return pdb_set_init_flags(sampass, PDB_LMPASSWD, flag);
@@ -1005,20 +1005,20 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[LM_HASH_LEN], 
  in pwd.
 ********************************************************************/
 
-BOOL pdb_set_pw_history (SAM_ACCOUNT *sampass, const uint8 *pwd, uint32 historyLen, enum pdb_value_state flag)
+BOOL pdb_set_pw_history (struct samu *sampass, const uint8 *pwd, uint32 historyLen, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (historyLen && pwd){
-		sampass->private_u.nt_pw_his = data_blob_talloc(sampass->mem_ctx,
+		sampass->nt_pw_his = data_blob_talloc(sampass,
 						pwd, historyLen*PW_HISTORY_ENTRY_LEN);
-		if (!sampass->private_u.nt_pw_his.length) {
+		if (!sampass->nt_pw_his.length) {
 			DEBUG(0, ("pdb_set_pw_history: data_blob_talloc() failed!\n"));
 			return False;
 		}
 	} else {
-		sampass->private_u.nt_pw_his = data_blob_talloc(sampass->mem_ctx, NULL, 0);
+		sampass->nt_pw_his = data_blob_talloc(sampass, NULL, 0);
 	}
 
 	return pdb_set_init_flags(sampass, PDB_PWHISTORY, flag);
@@ -1029,75 +1029,75 @@ BOOL pdb_set_pw_history (SAM_ACCOUNT *sampass, const uint8 *pwd, uint32 historyL
  below)
  ********************************************************************/
 
-BOOL pdb_set_plaintext_pw_only (SAM_ACCOUNT *sampass, const char *password, enum pdb_value_state flag)
+BOOL pdb_set_plaintext_pw_only (struct samu *sampass, const char *password, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (password) { 
-		if (sampass->private_u.plaintext_pw!=NULL) 
-			memset(sampass->private_u.plaintext_pw,'\0',strlen(sampass->private_u.plaintext_pw)+1);
+		if (sampass->plaintext_pw!=NULL) 
+			memset(sampass->plaintext_pw,'\0',strlen(sampass->plaintext_pw)+1);
 
-		sampass->private_u.plaintext_pw = talloc_strdup(sampass->mem_ctx, password);
+		sampass->plaintext_pw = talloc_strdup(sampass, password);
 		
-		if (!sampass->private_u.plaintext_pw) {
+		if (!sampass->plaintext_pw) {
 			DEBUG(0, ("pdb_set_unknown_str: talloc_strdup() failed!\n"));
 			return False;
 		}
 
 	} else {
-		sampass->private_u.plaintext_pw = NULL;
+		sampass->plaintext_pw = NULL;
 	}
 
 	return pdb_set_init_flags(sampass, PDB_PLAINTEXT_PW, flag);
 }
 
-BOOL pdb_set_bad_password_count(SAM_ACCOUNT *sampass, uint16 bad_password_count, enum pdb_value_state flag)
+BOOL pdb_set_bad_password_count(struct samu *sampass, uint16 bad_password_count, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.bad_password_count = bad_password_count;
+	sampass->bad_password_count = bad_password_count;
 
 	return pdb_set_init_flags(sampass, PDB_BAD_PASSWORD_COUNT, flag);
 }
 
-BOOL pdb_set_logon_count(SAM_ACCOUNT *sampass, uint16 logon_count, enum pdb_value_state flag)
+BOOL pdb_set_logon_count(struct samu *sampass, uint16 logon_count, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.logon_count = logon_count;
+	sampass->logon_count = logon_count;
 
 	return pdb_set_init_flags(sampass, PDB_LOGON_COUNT, flag);
 }
 
-BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn, enum pdb_value_state flag)
+BOOL pdb_set_unknown_6 (struct samu *sampass, uint32 unkn, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
-	sampass->private_u.unknown_6 = unkn;
+	sampass->unknown_6 = unkn;
 
 	return pdb_set_init_flags(sampass, PDB_UNKNOWN6, flag);
 }
 
-BOOL pdb_set_hours (SAM_ACCOUNT *sampass, const uint8 *hours, enum pdb_value_state flag)
+BOOL pdb_set_hours (struct samu *sampass, const uint8 *hours, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;
 
 	if (!hours) {
-		memset ((char *)sampass->private_u.hours, 0, MAX_HOURS_LEN);
+		memset ((char *)sampass->hours, 0, MAX_HOURS_LEN);
 		return True;
 	}
 	
-	memcpy (sampass->private_u.hours, hours, MAX_HOURS_LEN);
+	memcpy (sampass->hours, hours, MAX_HOURS_LEN);
 
 	return pdb_set_init_flags(sampass, PDB_HOURS, flag);
 }
 
-BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data, 
+BOOL pdb_set_backend_private_data (struct samu *sampass, void *private_data, 
 				   void (*free_fn)(void **), 
 				   const struct pdb_methods *my_methods, 
 				   enum pdb_value_state flag)
@@ -1105,15 +1105,15 @@ BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data,
 	if (!sampass)
 		return False;
 
-	if (sampass->private_u.backend_private_data &&
-	    sampass->private_u.backend_private_data_free_fn) {
-		sampass->private_u.backend_private_data_free_fn(
-			&sampass->private_u.backend_private_data);
+	if (sampass->backend_private_data &&
+	    sampass->backend_private_data_free_fn) {
+		sampass->backend_private_data_free_fn(
+			&sampass->backend_private_data);
 	}
 
-	sampass->private_u.backend_private_data = private_data;
-	sampass->private_u.backend_private_data_free_fn = free_fn;
-	sampass->private_u.backend_private_methods = my_methods;
+	sampass->backend_private_data = private_data;
+	sampass->backend_private_data_free_fn = free_fn;
+	sampass->backend_private_methods = my_methods;
 
 	return pdb_set_init_flags(sampass, PDB_BACKEND_PRIVATE_DATA, flag);
 }
@@ -1126,7 +1126,7 @@ BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data,
  password change.
  ********************************************************************/
 
-BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
+BOOL pdb_set_pass_changed_now (struct samu *sampass)
 {
 	uint32 expire;
 	uint32 min_age;
@@ -1166,7 +1166,7 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
  Also sets the last change time to NOW.
  ********************************************************************/
 
-BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
+BOOL pdb_set_plaintext_passwd (struct samu *sampass, const char *plaintext)
 {
 	uchar new_lanman_p16[LM_HASH_LEN];
 	uchar new_nt_p16[NT_HASH_LEN];
@@ -1208,11 +1208,11 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 			uint32 current_history_len;
 			/* We need to make sure we don't have a race condition here - the
 			   account policy history length can change between when the pw_history
-			   was first loaded into the SAM_ACCOUNT struct and now.... JRA. */
+			   was first loaded into the struct samu struct and now.... JRA. */
 			pwhistory = (uchar *)pdb_get_pw_history(sampass, &current_history_len);
 
 			if (current_history_len != pwHistLen) {
-				/* After closing and reopening SAM_ACCOUNT the history
+				/* After closing and reopening struct samu the history
 					values will sync up. We can't do this here. */
 
 				/* current_history_len > pwHistLen is not a problem - we
@@ -1220,7 +1220,7 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 
 				if (current_history_len < pwHistLen) {
 					/* Ensure we have space for the needed history. */
-					uchar *new_history = TALLOC(sampass->mem_ctx,
+					uchar *new_history = TALLOC(sampass,
 								pwHistLen*PW_HISTORY_ENTRY_LEN);
 					/* And copy it into the new buffer. */
 					if (current_history_len) {
@@ -1261,7 +1261,7 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 }
 
 /* check for any PDB_SET/CHANGED field and fill the appropriate mask bit */
-uint32 pdb_build_fields_present (SAM_ACCOUNT *sampass)
+uint32 pdb_build_fields_present (struct samu *sampass)
 {
 	/* value set to all for testing */
 	return 0x00ffffff;

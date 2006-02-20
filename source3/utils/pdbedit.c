@@ -86,7 +86,7 @@ static int reinit_account_policies (void)
  Print info from sam structure
 **********************************************************/
 
-static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
+static int print_sam_info (struct samu *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
 {
 	uid_t uid;
 	time_t tmp;
@@ -172,7 +172,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 
 static int print_user_info (struct pdb_methods *in, const char *username, BOOL verbosity, BOOL smbpwdstyle)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL ret;
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
@@ -183,12 +183,12 @@ static int print_user_info (struct pdb_methods *in, const char *username, BOOL v
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
 
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-	pdb_free_sam(&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	
 	return ret;
 }
@@ -198,7 +198,7 @@ static int print_user_info (struct pdb_methods *in, const char *username, BOOL v
 **********************************************************/
 static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwdstyle)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL check;
 	
 	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
@@ -213,10 +213,10 @@ static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwd
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
 	}
-	if (check) pdb_free_sam(&sam_pwent);
+	if (check) TALLOC_FREE(sam_pwent);
 	
 	in->endsampwent(in);
 	return 0;
@@ -227,7 +227,7 @@ static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwd
 **********************************************************/
 static int fix_users_list (struct pdb_methods *in)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL check;
 	
 	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
@@ -244,14 +244,14 @@ static int fix_users_list (struct pdb_methods *in)
 		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
 			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
 		if (!check) {
-			fprintf(stderr, "Failed to initialise new SAM_ACCOUNT structure (out of memory?)\n");
+			fprintf(stderr, "Failed to initialise new struct samu structure (out of memory?)\n");
 		}
 			
 	}
-	if (check) pdb_free_sam(&sam_pwent);
+	if (check) TALLOC_FREE(sam_pwent);
 	
 	in->endsampwent(in);
 	return 0;
@@ -272,7 +272,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 			  time_t pwd_can_change, time_t pwd_must_change)
 {
 	BOOL updated_autolock = False, updated_badpw = False;
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	BOOL ret;
 	
 	pdb_init_sam(&sam_pwent);
@@ -280,7 +280,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 	ret = NT_STATUS_IS_OK(in->getsampwnam (in, sam_pwent, username));
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
 
@@ -333,7 +333,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 
 		if (newflag & not_settable) {
 			fprintf(stderr, "Can only set [NDHLX] flags\n");
-			pdb_free_sam(&sam_pwent);
+			TALLOC_FREE(sam_pwent);
 			return -1;
 		}
 
@@ -381,10 +381,10 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 		print_user_info (in, username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
-		pdb_free_sam(&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam(&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	return 0;
 }
 
@@ -397,7 +397,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 			const char *profile, char *user_sid, char *group_sid,
 			BOOL stdin_get)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 
 	char *password1, *password2;
 	int rc_pwd_cmp;
@@ -413,7 +413,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 	password2 = get_pass( "retype new password:", stdin_get);
 	if ((rc_pwd_cmp = strcmp (password1, password2))) {
 		fprintf (stderr, "Passwords do not match!\n");
-		pdb_free_sam (&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 	} else {
 		pdb_set_plaintext_passwd(sam_pwent, password1);
 	}
@@ -474,10 +474,10 @@ static int new_user (struct pdb_methods *in, const char *username,
 		print_user_info (in, username, True, False);
 	} else {
 		fprintf (stderr, "Unable to add user! (does it already exist?)\n");
-		pdb_free_sam (&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam (&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	return 0;
 }
 
@@ -487,7 +487,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 
 static int new_machine (struct pdb_methods *in, const char *machine_in)
 {
-	SAM_ACCOUNT *sam_pwent=NULL;
+	struct samu *sam_pwent=NULL;
 	fstring machinename;
 	fstring machineaccount;
 	struct passwd  *pwd = NULL;
@@ -531,10 +531,10 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 		print_user_info (in, machineaccount, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
-		pdb_free_sam (&sam_pwent);
+		TALLOC_FREE(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam (&sam_pwent);
+	TALLOC_FREE(sam_pwent);
 	return 0;
 }
 
@@ -544,7 +544,7 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 
 static int delete_user_entry (struct pdb_methods *in, const char *username)
 {
-	SAM_ACCOUNT *samaccount = NULL;
+	struct samu *samaccount = NULL;
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
 		return -1;
@@ -569,7 +569,7 @@ static int delete_user_entry (struct pdb_methods *in, const char *username)
 static int delete_machine_entry (struct pdb_methods *in, const char *machinename)
 {
 	fstring name;
-	SAM_ACCOUNT *samaccount = NULL;
+	struct samu *samaccount = NULL;
 	
 	fstrcpy(name, machinename);
 	name[15] = '\0';

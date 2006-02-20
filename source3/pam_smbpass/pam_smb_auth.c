@@ -47,7 +47,7 @@ do {								\
 } while (0)
 
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, SAM_ACCOUNT *sampass, BOOL exist);
+                         const char *name, struct samu *sampass, BOOL exist);
 
 
 /*
@@ -64,7 +64,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 {
     unsigned int ctrl;
     int retval, *ret_data = NULL;
-    SAM_ACCOUNT *sampass = NULL;
+    struct samu *sampass = NULL;
     extern BOOL in_client;
     const char *name;
     void (*oldsig_handler)(int) = NULL;
@@ -113,14 +113,14 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     if (on( SMB_MIGRATE, ctrl )) {
 	retval = _smb_add_user(pamh, ctrl, name, sampass, found);
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	AUTH_RETURN;
     }
 
     if (!found) {
         _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
         retval = PAM_USER_UNKNOWN;
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	sampass = NULL;
         AUTH_RETURN;
     }
@@ -128,7 +128,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     /* if this user does not have a password... */
 
     if (_smb_blankpasswd( ctrl, sampass )) {
-        pdb_free_sam(&sampass);
+        TALLOC_FREE(sampass);
         retval = PAM_SUCCESS;
         AUTH_RETURN;
     }
@@ -139,14 +139,14 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     if (retval != PAM_SUCCESS ) {
 	_log_err(LOG_CRIT, "auth: no password provided for [%s]"
 		 , name);
-        pdb_free_sam(&sampass);
+        TALLOC_FREE(sampass);
         AUTH_RETURN;
     }
 
     /* verify the password of this user */
 
     retval = _smb_verify_password( pamh, sampass, p, ctrl );
-    pdb_free_sam(&sampass);
+    TALLOC_FREE(sampass);
     p = NULL;
     AUTH_RETURN;
 }
@@ -176,7 +176,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 /* Helper function for adding a user to the db. */
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, SAM_ACCOUNT *sampass, BOOL exist)
+                         const char *name, struct samu *sampass, BOOL exist)
 {
     pstring err_str;
     pstring msg_str;

@@ -63,7 +63,7 @@ typedef struct auth_serversupplied_info {
 
         char *login_server; /* which server authorized the login? */
 	
-	SAM_ACCOUNT *sam_account;
+	struct samu *sam_account;
 	
 	void *pam_handle;
 

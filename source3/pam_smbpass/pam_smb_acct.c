@@ -46,7 +46,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     int retval;
 
     const char *name;
-    SAM_ACCOUNT *sampass = NULL;
+    struct samu *sampass = NULL;
     void (*oldsig_handler)(int);
     extern BOOL in_client;
 
