@@ -42,7 +42,7 @@
 typedef struct pac_logon_name {
 	NTTIME logon_time;
 	uint16 len;
-	uint16 *username; /* might not be null terminated, so not UNISTR */
+	fstring username;
 } PAC_LOGON_NAME;
 
 typedef struct pac_signature_data {
