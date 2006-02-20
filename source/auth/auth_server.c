@@ -384,7 +384,7 @@ use this machine as the password server.\n"));
 			real_username, True )) != NULL ) 
 		{
 			nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
-			talloc_free(pass);
+			TALLOC_FREE(pass);
 		}
 		else
 		{

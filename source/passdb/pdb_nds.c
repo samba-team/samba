@@ -774,7 +774,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			attr_list = get_userattr_list(NULL,
 						      ldap_state->schema_ver);
 			rc = ldapsam_search_suffix_by_name(ldap_state, username, &result, attr_list );
-			talloc_free( attr_list );
+			TALLOC_FREE( attr_list );
 			if (rc != LDAP_SUCCESS) {
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}

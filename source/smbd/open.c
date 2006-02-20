@@ -1352,7 +1352,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 					   &state);
 			}
 
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 
@@ -1363,7 +1363,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
 			set_saved_ntstatus(status);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			file_free(fsp);
 			return NULL;
 		}
@@ -1384,7 +1384,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 							  create_options);
 
 				if (fsp_dup) {
-					talloc_free(lck);
+					TALLOC_FREE(lck);
 					file_free(fsp);
 					if (pinfo) {
 						*pinfo = FILE_WAS_OPENED;
@@ -1447,7 +1447,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				}
 			}
 
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			if (fsp_open) {
 				fd_close(conn, fsp);
 				/*
@@ -1490,7 +1490,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	if (!fsp_open) {
 		if (lck != NULL) {
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 		}
 		file_free(fsp);
 		return NULL;
@@ -1551,7 +1551,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 			defer_open(lck, request_time, timeval_zero(),
 				   &state);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			return NULL;
 		}
 
@@ -1588,7 +1588,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		 */
 		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
 		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			fd_close(conn,fsp);
 			file_free(fsp);
 			return NULL;
@@ -1643,7 +1643,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			if (!NT_STATUS_IS_OK(result)) {
 				/* Remember to delete the mode we just added. */
 				del_share_mode(lck, fsp);
-				talloc_free(lck);
+				TALLOC_FREE(lck);
 				fd_close(conn,fsp);
 				file_free(fsp);
 				set_saved_ntstatus(result);
@@ -1712,7 +1712,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	/* If this is a successful open, we must remove any deferred open
 	 * records. */
 	del_deferred_open_entry(lck, mid);
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	conn->num_files_open++;
 
@@ -1933,7 +1933,7 @@ files_struct *open_directory(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		set_saved_ntstatus(status);
-		talloc_free(lck);
+		TALLOC_FREE(lck);
 		file_free(fsp);
 		return NULL;
 	}
@@ -1946,7 +1946,7 @@ files_struct *open_directory(connection_struct *conn,
 		status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			set_saved_ntstatus(status);
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			file_free(fsp);
 			return NULL;
 		}
@@ -1956,7 +1956,7 @@ files_struct *open_directory(connection_struct *conn,
 		lck->modified = True;
 	}
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	/* Change the owner if required. */
 	if ((info == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {

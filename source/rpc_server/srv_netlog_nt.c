@@ -888,7 +888,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		     && !is_trusted_domain(nt_domain) )
 			r_u->auth_resp = 0; /* We are not authoritative */
 
-		talloc_free(server_info);
+		TALLOC_FREE(server_info);
 		return status;
 	}
 
@@ -896,7 +896,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		/* We don't like guest domain logons... */
 		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST "
 			 "denied.\n"));
-		talloc_free(server_info);
+		TALLOC_FREE(server_info);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -1025,7 +1025,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		ZERO_STRUCT(user_session_key);
 		ZERO_STRUCT(lm_session_key);
 	}
-	talloc_free(server_info);
+	TALLOC_FREE(server_info);
 	return status;
 }
 

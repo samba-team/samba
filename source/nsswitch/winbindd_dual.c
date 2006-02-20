@@ -509,7 +509,7 @@ static void account_lockout_policy_handler(struct timed_event *te,
 	DEBUG(10,("account_lockout_policy_handler called\n"));
 
 	if (child->timed_event) {
-		talloc_free(child->timed_event);
+		TALLOC_FREE(child->timed_event);
 	}
 
 	methods = child->domain->methods;
@@ -675,8 +675,8 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		struct timeval now;
 
 		/* free up any talloc memory */
-		lp_talloc_free();
-		main_loop_talloc_free();
+		lp_TALLOC_FREE();
+		main_loop_TALLOC_FREE();
 
 		run_events();
 

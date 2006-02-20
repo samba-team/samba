@@ -704,7 +704,7 @@ static void display_reg_value(REGISTRY_VALUE value)
 			}
 			putchar(hex[i]);
 		}
-		talloc_free(hex);
+		TALLOC_FREE(hex);
 		putchar('\n');
 		break;
 	}

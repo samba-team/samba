@@ -1481,7 +1481,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 								(const unsigned char *)lm_key,
 								sizeof(lm_key));
 					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
-					talloc_free(hex_lm_key);
+					TALLOC_FREE(hex_lm_key);
 				}
 
 				if (ntlm_server_1_user_session_key 
@@ -1491,7 +1491,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 									  (const unsigned char *)user_session_key, 
 									  sizeof(user_session_key));
 					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
-					talloc_free(hex_user_session_key);
+					TALLOC_FREE(hex_user_session_key);
 				}
 			}
 		}
@@ -1682,7 +1682,7 @@ static BOOL check_auth_crap(void)
 		hex_lm_key = hex_encode(NULL, (const unsigned char *)lm_key,
 					sizeof(lm_key));
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
-		talloc_free(hex_lm_key);
+		TALLOC_FREE(hex_lm_key);
 	}
 	if (request_user_session_key 
 	    && (memcmp(zeros, user_session_key, 
@@ -1690,7 +1690,7 @@ static BOOL check_auth_crap(void)
 		hex_user_session_key = hex_encode(NULL, (const unsigned char *)user_session_key, 
 						  sizeof(user_session_key));
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
-		talloc_free(hex_user_session_key);
+		TALLOC_FREE(hex_user_session_key);
 	}
 
         return True;

@@ -1161,7 +1161,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 				return False;
 			}
 			smb_pw->smb_userid=passwd->pw_uid;
-			talloc_free(passwd);
+			TALLOC_FREE(passwd);
 		} else if (algorithmic_pdb_rid_is_user(rid)) {
 			smb_pw->smb_userid=algorithmic_pdb_user_rid_to_uid(rid);
 		} else {
@@ -1206,7 +1206,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 	if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile)))
 		return False;
 		
-	talloc_free(pwfile);
+	TALLOC_FREE(pwfile);
 
 	/* set remaining fields */
 		

@@ -121,7 +121,7 @@ static int do_reseed(BOOL use_fd, int fd)
 		mdfour(md4_tmp, (unsigned char *)pw->pw_passwd, strlen(pw->pw_passwd));
 		for (i=0;i<16;i++)
 			seed_inbuf[8+i] ^= md4_tmp[i];
-		talloc_free(pw);
+		TALLOC_FREE(pw);
 	}
 
 	/*

@@ -109,7 +109,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 
 	attr_list = get_attr_list( NULL, dominfo_attr_list );
 	rc = smbldap_search_suffix(ldap_state, filter, attr_list, &result);
-	talloc_free( attr_list );
+	TALLOC_FREE( attr_list );
 
 	if (rc != LDAP_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -217,7 +217,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 
 	attr_list = get_attr_list( NULL, dominfo_attr_list );
 	rc = smbldap_search_suffix(ldap_state, filter, attr_list , result);
-	talloc_free( attr_list );
+	TALLOC_FREE( attr_list );
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(2,("Problem during LDAPsearch: %s\n", ldap_err2string (rc)));

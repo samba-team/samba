@@ -508,10 +508,10 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
 		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
 			fprintf(stderr, "Could not init sam from pw\n");
-			talloc_free(pwd);
+			TALLOC_FREE(pwd);
 			return -1;
 		}
-		talloc_free(&pwd);
+		TALLOC_FREE(pwd);
 	} else {
 		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 			fprintf(stderr, "Could not init sam from pw\n");

@@ -692,7 +692,7 @@ static void remove_client(struct winbindd_cli_state *state)
 		/* Remove from list and free */
 		
 		winbindd_remove_client(state);
-		talloc_free(state);
+		TALLOC_FREE(state);
 	}
 }
 
@@ -751,8 +751,8 @@ static void process_loop(void)
 
 	/* Free up temporary memory */
 
-	lp_talloc_free();
-	main_loop_talloc_free();
+	lp_TALLOC_FREE();
+	main_loop_TALLOC_FREE();
 
 	/* Initialise fd lists for select() */
 

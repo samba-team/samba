@@ -288,7 +288,7 @@ static int close_normal_file(files_struct *fsp, enum file_close_type close_type)
 		process_pending_change_notify_queue((time_t)0);
 	}
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	if(fsp->oplock_type)
 		release_file_oplock(fsp);
@@ -363,7 +363,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 
 	delete_dir = (lck->delete_on_close | lck->initial_delete_on_close);
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir &&
