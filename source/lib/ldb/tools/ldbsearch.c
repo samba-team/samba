@@ -97,7 +97,7 @@ static int do_search(struct ldb_context *ldb,
 		printf("# returned %d records\n", result->count);
 
 		if (options->sorted) {
-			ldb_qsort(result->msgs, ret, sizeof(struct ldb_message *),
+			ldb_qsort(result->msgs, result->count, sizeof(struct ldb_message *),
 				  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
 		}
 
