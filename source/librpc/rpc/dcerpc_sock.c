@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Rafal Szczesniak 2006
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -360,6 +361,10 @@ void continue_ipv6_open_socket(struct composite_context *ctx);
 void continue_ipv4_open_socket(struct composite_context *ctx);
 
 
+/*
+  Stage 2 of dcerpc_pipe_open_tcp_send: receive result of pipe open request
+  on IPv6 and send the request on IPv4 unless IPv6 transport succeeded.
+*/
 void continue_ipv6_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -368,18 +373,20 @@ void continue_ipv6_open_socket(struct composite_context *ctx)
 						   struct pipe_tcp_state);
 	struct composite_context *sock_ipv4_req;
 
+	/* receive result of socket open request */
 	c->status = dcerpc_pipe_open_socket_recv(ctx);
 	if (NT_STATUS_IS_OK(c->status)) return;
 
 	talloc_free(s->srvaddr);
 
+	/* prepare server address using host:ip and transport name */
 	s->srvaddr = socket_address_from_strings(s->conn, "ipv4", s->server, s->port);
 	if (!s->srvaddr) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 	
-	/* Try IPv4 if IPv6 fails */
+	/* try IPv4 if IPv6 fails */
 	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCACN_IP_TCP);
 	if (sock_ipv4_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -390,19 +397,25 @@ void continue_ipv6_open_socket(struct composite_context *ctx)
 }
 
 
+/*
+  Stage 2 of dcerpc_pipe_open_tcp_send: receive result of pipe open request
+  on IPv4 transport.
+*/
 void continue_ipv4_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	struct pipe_tcp_state *s = talloc_get_type(c->private_data,
 						   struct pipe_tcp_state);
-
+	
+	/* receive result socket open request */
 	c->status = dcerpc_pipe_open_socket_recv(ctx);
 	if (NT_STATUS_IS_OK(c->status)) {
 		composite_done(c);
 		return;
 	}
 
+	/* something went wrong... */
 	DEBUG(0, ("Failed to connect host %s on port %d - %s.\n",
 		  s->server, s->port, nt_errstr(c->status)));
 
@@ -410,6 +423,10 @@ void continue_ipv4_open_socket(struct composite_context *ctx)
 }
 
 
+/*
+  Send rpc pipe open request to given host:port using
+  tcp/ip transport
+*/
 struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *conn,
 						    const char* server, uint32_t port)
 {
@@ -431,17 +448,19 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	c->private_data = s;
 	c->event_ctx = conn->event_ctx;
 
+	/* store input parameters in state structure */
 	s->server = talloc_strdup(c, server);
 	s->port   = port;
 	s->conn   = conn;
 	
+	/* prepare server address using host ip:port and transport name */
 	s->srvaddr = socket_address_from_strings(s->conn, "ipv6", s->server, s->port);
 	if (!s->srvaddr) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
-	/* Try IPv6 first */
+	/* try IPv6 first - send socket open request */
 	sock_ipv6_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCACN_IP_TCP);
 	if (sock_ipv6_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -454,6 +473,9 @@ done:
 }
 
 
+/*
+  Receive result of pipe open request on tcp/ip
+*/
 NTSTATUS dcerpc_pipe_open_tcp_recv(struct composite_context *c)
 {
 	NTSTATUS status;
@@ -464,8 +486,8 @@ NTSTATUS dcerpc_pipe_open_tcp_recv(struct composite_context *c)
 }
 
 
-/* 
-   open a rpc connection using tcp - sync version
+/*
+  Open rpc pipe on tcp/ip transport - sync version
 */
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_connection *conn, const char *server,
 			      uint32_t port)
@@ -484,6 +506,10 @@ struct pipe_unix_state {
 };
 
 
+/*
+  Stage 2 of dcerpc_pipe_open_unix_stream_send: receive result of pipe open
+  request on unix socket.
+*/
 void continue_unix_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -499,6 +525,9 @@ void continue_unix_open_socket(struct composite_context *ctx)
 }
 
 
+/*
+  Send pipe open request on unix socket
+*/
 struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connection *conn,
 							    const char *path)
 {
@@ -520,15 +549,18 @@ struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connec
 	c->private_data = s;
 	c->event_ctx = conn->event_ctx;
 
+	/* store parameters in state structure */
 	s->path = talloc_strdup(c, path);
 	s->conn = conn;
 
+	/* prepare server address using socket path and transport name */
 	s->srvaddr = socket_address_from_strings(conn, "unix", s->path, 0);
 	if (s->srvaddr == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
-	
+
+	/* send socket open request */
 	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCALRPC);
 	if (sock_unix_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -542,6 +574,9 @@ done:
 }
 
 
+/*
+  Receive result of pipe open request on unix socket
+*/
 NTSTATUS dcerpc_pipe_open_unix_stream_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -551,8 +586,8 @@ NTSTATUS dcerpc_pipe_open_unix_stream_recv(struct composite_context *c)
 }
 
 
-/* 
-   open a rpc connection to a unix socket - sync version
+/*
+  Open a rpc pipe on a unix socket - sync version
 */
 NTSTATUS dcerpc_pipe_open_unix_stream(struct dcerpc_connection *conn, const char *path)
 {
@@ -568,6 +603,9 @@ struct pipe_np_state {
 };
 
 
+/*
+  Stage 2 of dcerpc_pipe_open_pipe_send: receive socket open request
+*/
 void continue_np_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -583,6 +621,9 @@ void continue_np_open_socket(struct composite_context *ctx)
 }
 
 
+/*
+  Send pipe open request on ncalrpc
+*/
 struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *conn,
 						     const char *identifier)
 {
@@ -606,18 +647,21 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	c->private_data = s;
 	c->event_ctx = conn->event_ctx;
 
+	/* store parameters in state structure */
 	canon = talloc_strdup(c, identifier);
 	s->conn = conn;
 
 	string_replace(canon, '/', '\\');
 	s->full_path = talloc_asprintf(canon, "%s/%s", lp_ncalrpc_dir(), canon);
 
+	/* prepare server address using path and transport name */
 	s->srvaddr = socket_address_from_strings(conn, "unix", s->full_path, 0);
 	if (s->srvaddr == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
+	/* send socket open request */
 	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NCALRPC);
 	if (sock_np_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -632,6 +676,9 @@ done:
 }
 
 
+/*
+  Receive result of pipe open request on ncalrpc
+*/
 NTSTATUS dcerpc_pipe_open_pipe_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -641,8 +688,8 @@ NTSTATUS dcerpc_pipe_open_pipe_recv(struct composite_context *c)
 }
 
 
-/* 
-   open a rpc connection to a named pipe - sync version
+/*
+  Open a rpc pipe on a named pipe - sync version
 */
 NTSTATUS dcerpc_pipe_open_pipe(struct dcerpc_connection *conn, const char *identifier)
 {
