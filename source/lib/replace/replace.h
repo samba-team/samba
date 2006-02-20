@@ -162,6 +162,14 @@ int rep_mkstemp(char *temp);
 #include <limits.h>
 #endif
 
+/* The extra casts work around common compiler bugs.  */
+#define _TYPE_SIGNED(t) (! ((t) 0 < (t) -1))
+/* The outer cast is needed to work around a bug in Cray C 5.0.3.0.
+   It is necessary at least when t == time_t.  */
+#define _TYPE_MINIMUM(t) ((t) (_TYPE_SIGNED (t) \
+  			      ? ~ (t) 0 << (sizeof (t) * CHAR_BIT - 1) : (t) 0))
+#define _TYPE_MAXIMUM(t) ((t) (~ (t) 0 - _TYPE_MINIMUM (t)))
+
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 64
 #endif
@@ -176,6 +184,14 @@ int rep_mkstemp(char *temp);
 
 #ifndef UINT64_MAX
 #define UINT64_MAX ((uint64_t)-1)
+#endif
+
+#ifndef CHAR_BIT
+#define CHAR_BIT 8
+#endif
+
+#ifndef INT32_MAX
+#define INT32_MAX _TYPE_MAXIMUM(int32_t)
 #endif
 
 #endif
