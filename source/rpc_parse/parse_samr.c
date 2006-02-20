@@ -5976,7 +5976,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
  *************************************************************************/
 
-NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *domain_sid)
+NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, struct samu *pw, DOM_SID *domain_sid)
 {
 	NTTIME 		logon_time, logoff_time, kickoff_time,
 			pass_last_set_time, pass_can_change_time,
@@ -6242,7 +6242,7 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 	return True;
 }
 
-void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
+void init_sam_user_info20A(SAM_USER_INFO_20 *usr, struct samu *pw)
 {
 	const char *munged_dial = pdb_get_munged_dial(pw);
 	DATA_BLOB blob = base64_decode_data_blob(munged_dial);

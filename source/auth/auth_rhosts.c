@@ -24,16 +24,17 @@
 #define DBGC_CLASS DBGC_AUTH
 
 /****************************************************************************
- Create a SAM_ACCOUNT - either by looking in the pdb, or by faking it up from
+ Create a struct samu - either by looking in the pdb, or by faking it up from
  unix info.
 ****************************************************************************/
 
-static NTSTATUS auth_get_sam_account(const char *user, SAM_ACCOUNT **account) 
+static NTSTATUS auth_get_sam_account(const char *user, struct samu **account) 
 {
 	BOOL pdb_ret;
 	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(account))) {
-		return nt_status;
+
+	if ( !(*account = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 	
 	become_root();
@@ -161,7 +162,7 @@ static BOOL check_user_equiv(const char *user, const char *remote, const char *e
 check for a possible hosts equiv or rhosts entry for the user
 ****************************************************************************/
 
-static BOOL check_hosts_equiv(SAM_ACCOUNT *account)
+static BOOL check_hosts_equiv(struct samu *account)
 {
 	uid_t uid;
 	char *fname = NULL;
@@ -191,7 +192,7 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 					  auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
-	SAM_ACCOUNT *account = NULL;
+	struct samu *account = NULL;
 	if (!NT_STATUS_IS_OK(nt_status = 
 			     auth_get_sam_account(user_info->internal_username,
 						  &account))) {
@@ -203,10 +204,10 @@ static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_contex
 	if (check_hosts_equiv(account)) {
 		nt_status = make_server_info_sam(server_info, account);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			pdb_free_sam(&account);
+			TALLOC_FREE(account);
 		}
 	} else {
-		pdb_free_sam(&account);
+		TALLOC_FREE(account);
 		nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -237,7 +238,7 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 				      auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
-	SAM_ACCOUNT *account = NULL;
+	struct samu *account = NULL;
 	pstring rhostsfile;
 	const char *home;
 	
@@ -257,14 +258,14 @@ static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
 		if (check_user_equiv(pdb_get_username(account),client_name(),rhostsfile)) {
 			nt_status = make_server_info_sam(server_info, account);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				pdb_free_sam(&account);
+				TALLOC_FREE(account);
 			}
 		} else {
-			pdb_free_sam(&account);
+			TALLOC_FREE(account);
 		}
 		unbecome_root();
 	} else {
-		pdb_free_sam(&account);
+		TALLOC_FREE(account);
 		nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	}
 	

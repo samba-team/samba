@@ -1920,7 +1920,7 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	int uLevel = SVAL(p,0);
 	const char *level_string;
 	int count=0;
-	SAM_ACCOUNT *sampw = NULL;
+	struct samu *sampw = NULL;
 	BOOL ret = False;
 	DOM_SID *sids;
 	gid_t *gids;
@@ -2235,7 +2235,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 	 */
 
 	if(SVAL(*rparam,0) != NERR_Success) {
-		SAM_ACCOUNT *hnd = NULL;
+		struct samu *hnd = NULL;
 
 		if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd)) {
 			become_root();
@@ -2243,7 +2243,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 				SSVAL(*rparam,0,NERR_Success);
 			}
 			unbecome_root();
-			pdb_free_sam(&hnd);
+			TALLOC_FREE(hnd);
 		}
 	}
 

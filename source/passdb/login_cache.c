@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   SAM_ACCOUNT local cache for 
+   struct samu local cache for 
    Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2004.
       
    This program is free software; you can redistribute it and/or modify
@@ -64,7 +64,7 @@ BOOL login_cache_shutdown(void)
 }
 
 /* if we can't read the cache, oh well, no need to return anything */
-LOGIN_CACHE * login_cache_read(SAM_ACCOUNT *sampass)
+LOGIN_CACHE * login_cache_read(struct samu *sampass)
 {
 	TDB_DATA keybuf, databuf;
 	LOGIN_CACHE *entry;
@@ -108,7 +108,7 @@ LOGIN_CACHE * login_cache_read(SAM_ACCOUNT *sampass)
 	return entry;
 }
 
-BOOL login_cache_write(const SAM_ACCOUNT *sampass, LOGIN_CACHE entry)
+BOOL login_cache_write(const struct samu *sampass, LOGIN_CACHE entry)
 {
 
 	TDB_DATA keybuf, databuf;
@@ -155,7 +155,7 @@ BOOL login_cache_write(const SAM_ACCOUNT *sampass, LOGIN_CACHE entry)
 	return ret == 0;
 }
 
-BOOL login_cache_delentry(const SAM_ACCOUNT *sampass)
+BOOL login_cache_delentry(const struct samu *sampass)
 {
 	int ret;
 	TDB_DATA keybuf;

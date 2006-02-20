@@ -30,7 +30,7 @@
  **/
 static BOOL update_smbpassword_file(const char *user, const char *password)
 {
-	SAM_ACCOUNT 	*sampass = NULL;
+	struct samu 	*sampass = NULL;
 	BOOL            ret;
 	
 	pdb_init_sam(&sampass);
@@ -41,7 +41,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 
 	if(ret == False) {
 		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
@@ -50,12 +50,12 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 	 * users password from a login.
 	 */
 	if (!pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED, PDB_CHANGED)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
 	if (!pdb_set_plaintext_passwd (sampass, password)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return False;
 	}
 
@@ -70,7 +70,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 		DEBUG(3,("pdb_update_sam_account returned %d\n",ret));
 	}
 
-	pdb_free_sam(&sampass);
+	TALLOC_FREE(sampass);
 	return ret;
 }
 
