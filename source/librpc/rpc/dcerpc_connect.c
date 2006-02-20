@@ -333,6 +333,9 @@ struct pipe_ip_tcp_state {
 };
 
 
+/*
+  Stage 2 of ncacn_ip_tcp: rpc pipe opened (or not)
+*/
 void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
@@ -340,6 +343,7 @@ void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 	struct pipe_ip_tcp_state *s = talloc_get_type(c->private_data,
 						      struct pipe_ip_tcp_state);
 
+	/* receive result of named pipe open request on tcp/ip */
 	c->status = dcerpc_pipe_open_tcp_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to connect to %s:%d - %s\n", s->host, s->port,
@@ -352,6 +356,10 @@ void continue_pipe_open_ncacn_ip_tcp(struct composite_context *ctx)
 }
 
 
+/*
+  Initiate async open of a rpc connection to a rpc pipe on TCP/IP using
+  the binding structure to determine the endpoint and options
+*/
 struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CTX *mem_ctx,
 								struct dcerpc_pipe_connect *io)
 {
@@ -373,10 +381,12 @@ struct composite_context* dcerpc_pipe_connect_ncacn_ip_tcp_send(TALLOC_CTX *mem_
 	c->private_data = s;
 	c->event_ctx = io->pipe->conn->event_ctx;
 
+	/* store input parameters in state structure */
 	s->io    = *io;
 	s->host  = talloc_strdup(c, io->binding->host);
 	s->port  = atoi(io->binding->endpoint);   /* port number is a binding endpoint here */
 
+	/* send pipe open request on tcp/ip */
 	pipe_req = dcerpc_pipe_open_tcp_send(s->io.pipe->conn, s->host, s->port);
 	if (pipe_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -389,6 +399,9 @@ done:
 }
 
 
+/*
+  Receive result of a rpc connection to a rpc pipe on TCP/IP
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -398,6 +411,9 @@ NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp_recv(struct composite_context *c)
 }
 
 
+/*
+  Sync version of rpc connection to a rpc pipe on TCP/IP
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *mem_ctx,
 					  struct dcerpc_pipe_connect *io)
 {
@@ -413,13 +429,17 @@ struct pipe_unix_state {
 };
 
 
+/*
+  Stage 2 of ncacn_unix: rpc pipe opened (or not)
+*/
 void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	struct pipe_unix_state *s = talloc_get_type(c->private_data,
 						    struct pipe_unix_state);
-	
+
+	/* receive result of pipe open request on unix socket */
 	c->status = dcerpc_pipe_open_unix_stream_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to open unix socket %s - %s\n",
@@ -432,6 +452,10 @@ void continue_pipe_open_ncacn_unix_stream(struct composite_context *ctx)
 }
 
 
+/*
+  Initiate async open of a rpc connection to a rpc pipe on unix socket using
+  the binding structure to determine the endpoint and options
+*/
 struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALLOC_CTX *mem_ctx,
 								     struct dcerpc_pipe_connect *io)
 {
@@ -452,9 +476,11 @@ struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALLOC_CTX 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 	c->event_ctx = io->pipe->conn->event_ctx;
-	
-	s->io = *io;
 
+	/* prepare pipe open parameters and store them in state structure
+	   also, verify whether biding endpoint is not null */
+	s->io = *io;
+	
 	if (!io->binding->endpoint) {
 		DEBUG(0, ("Path to unix socket not specified\n"));
 		composite_error(c, NT_STATUS_INVALID_PARAMETER);
@@ -462,7 +488,8 @@ struct composite_context* dcerpc_pipe_connect_ncacn_unix_stream_send(TALLOC_CTX 
 	}
 
 	s->path  = talloc_strdup(c, io->binding->endpoint);  /* path is a binding endpoint here */
-	
+
+	/* send pipe open request on unix socket */
 	pipe_req = dcerpc_pipe_open_unix_stream_send(s->io.pipe->conn, s->path);
 	if (pipe_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -475,6 +502,9 @@ done:
 }
 
 
+/*
+  Receive result of a rpc connection to a pipe on unix socket
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -484,6 +514,9 @@ NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream_recv(struct composite_context *c)
 }
 
 
+/*
+  Sync version of a rpc connection to a rpc pipe on unix socket
+*/
 NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(TALLOC_CTX *mem_ctx,
 					       struct dcerpc_pipe_connect *io)
 {
@@ -498,13 +531,17 @@ struct pipe_ncalrpc_state {
 };
 
 
+/*
+  Stage 2 of ncalrpc: rpc pipe opened (or not)
+*/
 void continue_pipe_open_ncalrpc(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
 	struct pipe_ncalrpc_state *s = talloc_get_type(c->private_data,
-						       struct pipe_ncalrpc_state);
+							 struct pipe_ncalrpc_state);
 
+	/* receive result of pipe open request on ncalrpc */
 	c->status = dcerpc_pipe_connect_ncalrpc_recv(ctx);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(0,("Failed to open ncalrpc pipe '%s' - %s\n", s->io.binding->endpoint,
@@ -517,6 +554,10 @@ void continue_pipe_open_ncalrpc(struct composite_context *ctx)
 }
 
 
+/* 
+   Initiate async open of a rpc connection request on NCALRPC using
+   the binding structure to determine the endpoint and options
+*/
 struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
 							   struct dcerpc_pipe_connect *io)
 {
@@ -537,9 +578,11 @@ struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = s;
 	c->event_ctx = io->pipe->conn->event_ctx;
-
+	
+	/* store input parameters in state structure */
 	s->io  = *io;
 
+	/* send pipe open request */
 	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, s->io.binding->endpoint);
 	if (pipe_req == NULL) {
 		composite_error(c, NT_STATUS_NO_MEMORY);
@@ -552,6 +595,9 @@ done:
 }
 
 
+/*
+  Receive result of a rpc connection to a rpc pipe on NCALRPC
+*/
 NTSTATUS dcerpc_pipe_connect_ncalrpc_recv(struct composite_context *c)
 {
 	NTSTATUS status = composite_wait(c);
@@ -561,6 +607,9 @@ NTSTATUS dcerpc_pipe_connect_ncalrpc_recv(struct composite_context *c)
 }
 
 
+/*
+  Sync version of a rpc connection to a rpc pipe on NCALRPC
+*/
 NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *mem_ctx,
 				     struct dcerpc_pipe_connect *io)
 {
