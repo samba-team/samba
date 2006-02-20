@@ -22,8 +22,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-static struct rpc_sh_cmd sh_cmds[];
-
 static NTSTATUS rpc_sh_info(TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,
 			    struct rpc_pipe_client *pipe_hnd,
 			    int argc, const char **argv)
@@ -181,6 +179,26 @@ static BOOL net_sh_process(struct rpc_sh_ctx *ctx,
 	return True;
 }
 
+static struct rpc_sh_cmd sh_cmds[6] = {
+
+	{ "info", NULL, PI_SAMR, rpc_sh_info,
+	  "Print information about the domain connected to" },
+
+	{ "rights", net_rpc_rights_cmds, 0, NULL,
+	  "List/Grant/Revoke user rights" },
+
+	{ "share", net_rpc_share_cmds, 0, NULL,
+	  "List/Add/Remove etc shares" },
+
+	{ "user", net_rpc_user_cmds, 0, NULL,
+	  "List/Add/Remove user info" },
+
+	{ "account", net_rpc_acct_cmds, 0, NULL,
+	  "Show/Change account policy settings" },
+
+	{ NULL, NULL, 0, NULL, NULL }
+};
+
 int net_rpc_shell(int argc, const char **argv)
 {
 	NTSTATUS status;
@@ -254,23 +272,3 @@ int net_rpc_shell(int argc, const char **argv)
 
 	return 0;
 }
-
-static struct rpc_sh_cmd sh_cmds[6] = {
-
-	{ "info", NULL, PI_SAMR, rpc_sh_info,
-	  "Print information about the domain connected to" },
-
-	{ "rights", net_rpc_rights_cmds, 0, NULL,
-	  "List/Grant/Revoke user rights" },
-
-	{ "share", net_rpc_share_cmds, 0, NULL,
-	  "List/Add/Remove etc shares" },
-
-	{ "user", net_rpc_user_cmds, 0, NULL,
-	  "List/Add/Remove user info" },
-
-	{ "account", net_rpc_acct_cmds, 0, NULL,
-	  "Show/Change account policy settings" },
-
-	{ NULL, NULL, 0, NULL, NULL }
-};
