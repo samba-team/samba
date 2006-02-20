@@ -339,7 +339,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
 	if (ntlmssp_state->session_key.length < 8) {
-		talloc_free(mem_ctx);
+		TALLOC_FREE(mem_ctx);
 		DEBUG(3, ("NO session key, cannot intialise signing\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
@@ -365,7 +365,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 			recv_seal_const = CLI_SEAL;
 			break;
 		default:
-			talloc_free(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
@@ -464,6 +464,6 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		ntlmssp_state->ntlmv1_seq_num = 0;
 	}
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_OK;
 }

@@ -424,7 +424,7 @@ int cac_LsaFetchSid(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaFetchSi
       op->out.local_sid->domain = dom_name;
       
       sid_copy(&op->out.local_sid->sid, local_sid);
-      talloc_free(local_sid);
+      TALLOC_FREE(local_sid);
    }
 
 domain:
@@ -453,7 +453,7 @@ domain:
 
       op->out.domain_sid->domain = dom_name;
       sid_copy(&op->out.domain_sid->sid, domain_sid);
-      talloc_free(domain_sid);
+      TALLOC_FREE(domain_sid);
    }
    
 done:
@@ -816,7 +816,7 @@ int cac_LsaOpenAccount(CacServerHandle *hnd, TALLOC_CTX *mem_ctx, struct LsaOpen
    hnd->status = rpccli_lsa_open_account(pipe_hnd, mem_ctx, op->in.pol, op->in.sid, op->in.access, user_pol);
 
    if(!NT_STATUS_IS_OK(hnd->status)) {
-      talloc_free(user_pol);
+      TALLOC_FREE(user_pol);
       return CAC_FAILURE;
    }
 

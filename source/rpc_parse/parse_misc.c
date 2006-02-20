@@ -49,7 +49,7 @@ static TALLOC_CTX *main_loop_talloc = NULL;
 free up temporary memory - called from the main loop
 ********************************************************************/
 
-void main_loop_talloc_free(void)
+void main_loop_TALLOC_FREE(void)
 {
     if (!main_loop_talloc)
         return;

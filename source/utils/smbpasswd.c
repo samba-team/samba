@@ -331,7 +331,7 @@ static int process_root(int local_flags)
 
 	if (!user_name[0] && (pwd = getpwuid_alloc(NULL, geteuid()))) {
 		fstrcpy(user_name, pwd->pw_name);
-		talloc_free(pwd);
+		TALLOC_FREE(pwd);
 	} 
 
 	if (!user_name[0]) {
@@ -476,7 +476,7 @@ static int process_nonroot(int local_flags)
 		pwd = getpwuid_alloc(NULL, getuid());
 		if (pwd) {
 			fstrcpy(user_name,pwd->pw_name);
-			talloc_free(pwd);
+			TALLOC_FREE(pwd);
 		} else {
 			fprintf(stderr, "smbpasswd: cannot lookup user name for uid %u\n", (unsigned int)getuid());
 			exit(1);

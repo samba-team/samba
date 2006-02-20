@@ -1380,7 +1380,7 @@ static BOOL pdb_default_sid_to_id(struct pdb_methods *methods,
 
  done:
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
@@ -1531,7 +1531,7 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	*pp_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *p_num_groups);
 
 	if (*pp_sids == NULL) {
-		talloc_free(*pp_gids);
+		TALLOC_FREE(*pp_gids);
 		return NT_STATUS_NO_MEMORY;
 	}
 

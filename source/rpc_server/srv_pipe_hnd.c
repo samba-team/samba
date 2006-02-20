@@ -1223,7 +1223,7 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
 
-	talloc_free(p->pipe_user.nt_user_token);
+	TALLOC_FREE(p->pipe_user.nt_user_token);
 	data_blob_free(&p->session_key);
 	SAFE_FREE(p->pipe_user.ut.groups);
 

@@ -1265,7 +1265,7 @@ done:
 				strlen(state->response.extra_data)+1;
 
 	no_token:
-		talloc_free(afsname);
+		TALLOC_FREE(afsname);
 	}
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;

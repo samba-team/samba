@@ -445,8 +445,8 @@ static void process_ldap_loop(void)
 
 	/* Free up temporary memory */
 
-	lp_talloc_free();
-	main_loop_talloc_free();
+	lp_TALLOC_FREE();
+	main_loop_TALLOC_FREE();
 
 	if (do_sigterm) {
 #if 0

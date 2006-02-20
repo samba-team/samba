@@ -105,7 +105,7 @@ static BOOL test_ref1(void)
 	CHECK_BLOCKS(r1, 2);
 
 	printf("Freeing p2\n");
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p1, 5);
@@ -113,13 +113,13 @@ static BOOL test_ref1(void)
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing p1\n");
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing r1\n");
-	talloc_free(r1);
+	TALLOC_FREE(r1);
 	talloc_report_full(NULL, stdout);
 
 	printf("Testing NULL\n");
@@ -131,7 +131,7 @@ static BOOL test_ref1(void)
 
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -161,7 +161,7 @@ static BOOL test_ref2(void)
 	CHECK_BLOCKS(r1, 2);
 
 	printf("Freeing ref\n");
-	talloc_free(ref);
+	TALLOC_FREE(ref);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p1, 5);
@@ -169,25 +169,25 @@ static BOOL test_ref2(void)
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing p2\n");
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p1, 4);
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing p1\n");
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing r1\n");
-	talloc_free(r1);
+	TALLOC_FREE(r1);
 	talloc_report_full(root, stdout);
 
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -213,19 +213,19 @@ static BOOL test_ref3(void)
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing p1\n");
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p2, 2);
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing p2\n");
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 	talloc_report_full(root, stdout);
 
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -255,25 +255,25 @@ static BOOL test_ref4(void)
 	CHECK_BLOCKS(r1, 2);
 
 	printf("Freeing r1\n");
-	talloc_free(r1);
+	TALLOC_FREE(r1);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p1, 5);
 	CHECK_BLOCKS(p2, 1);
 
 	printf("Freeing p2\n");
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 	talloc_report_full(root, stdout);
 
 	CHECK_BLOCKS(p1, 4);
 
 	printf("Freeing p1\n");
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_report_full(root, stdout);
 
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -312,12 +312,12 @@ static BOOL test_unlink1(void)
 	CHECK_BLOCKS(r1, 1);
 
 	printf("Freeing p1\n");
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_report_full(root, stdout);
 
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -352,7 +352,7 @@ static BOOL test_misc(void)
 	talloc_increase_ref_count(p1);
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
 	talloc_unlink(NULL, p1);
@@ -367,7 +367,7 @@ static BOOL test_misc(void)
 		printf("failed: talloc_unlink() of parent should succeed\n");
 		return False;
 	}
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	CHECK_BLOCKS(p1, 1);
 	CHECK_BLOCKS(root, 2);
 
@@ -388,13 +388,13 @@ static BOOL test_misc(void)
 	CHECK_BLOCKS(root, 3);
 	
 
-	if (talloc_free(NULL) != -1) {
-		printf("talloc_free(NULL) should give -1\n");
+	if (TALLOC_FREE(NULL) != -1) {
+		printf("TALLOC_FREE(NULL) should give -1\n");
 		return False;
 	}
 
 	talloc_set_destructor(p1, fail_destructor);
-	if (talloc_free(p1) != -1) {
+	if (TALLOC_FREE(p1) != -1) {
 		printf("Failed destructor should cause talloc_free to fail\n");
 		return False;
 	}
@@ -408,7 +408,7 @@ static BOOL test_misc(void)
 		printf("Failed to give zero memory\n");
 		return False;
 	}
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 
 	if (talloc_strdup(root, NULL) != NULL) {
 		printf("failed: strdup on NULL should give NULL\n");
@@ -435,7 +435,7 @@ static BOOL test_misc(void)
 	}
 	CHECK_BLOCKS(p2, 1);
 	CHECK_BLOCKS(p1, 3);
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 
 	d = talloc_array(p1, double, 0x20000000);
 	if (d) {
@@ -449,7 +449,7 @@ static BOOL test_misc(void)
 		return False;
 	}
 
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	CHECK_BLOCKS(root, 1);
 
 	p1 = talloc_named(root, 100, "%d bytes", 100);
@@ -500,7 +500,7 @@ static BOOL test_misc(void)
 
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	CHECK_SIZE(NULL, 0);
 
@@ -564,7 +564,7 @@ static BOOL test_realloc(void)
 	CHECK_BLOCKS(root, 1);
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -609,7 +609,7 @@ static BOOL test_realloc_child(void)
 	el1->list2 = talloc_realloc(el1, el1->list2, struct el2 *, 200);
 	el1->list3 = talloc_realloc(el1, el1->list3, struct el2 *, 300);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -651,7 +651,7 @@ static BOOL test_type(void)
 		return False;
 	}
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -691,21 +691,21 @@ static BOOL test_steal(void)
 	CHECK_BLOCKS(root, 1);
 	CHECK_SIZE(root, 0);
 
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_steal(root, p2);
 	CHECK_BLOCKS(root, 2);
 	CHECK_SIZE(root, 20);
 	
-	talloc_free(p2);
+	TALLOC_FREE(p2);
 
 	CHECK_BLOCKS(root, 1);
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 	p1 = talloc_size(NULL, 3);
 	CHECK_SIZE(NULL, 3);
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 
 	return True;
 }
@@ -731,7 +731,7 @@ static BOOL test_realloc_fn(void)
 	CHECK_BLOCKS(root, 1);
 	CHECK_SIZE(root, 0);
 
-	talloc_free(root);
+	TALLOC_FREE(root);
 
 
 	return True;
@@ -751,13 +751,13 @@ static BOOL test_unref_reparent(void)
 	c1 = talloc_named_const(p1, 1, "child");
 	talloc_reference(p2, c1);
 
-	talloc_free(p1);
+	TALLOC_FREE(p1);
 	talloc_unlink(p2, c1);
 
 	CHECK_SIZE(root, 1);
 
-	talloc_free(p2);
-	talloc_free(root);
+	TALLOC_FREE(p2);
+	TALLOC_FREE(root);
 
 	return True;
 }
@@ -780,13 +780,13 @@ static BOOL test_speed(void)
 		p1 = talloc_size(ctx, count);
 		p2 = talloc_strdup(p1, "foo bar");
 		p3 = talloc_size(p1, 300);
-		talloc_free(p1);
+		TALLOC_FREE(p1);
 		count += 3;
 	} while (timeval_elapsed(&tv) < 5.0);
 
 	printf("talloc: %.0f ops/sec\n", count/timeval_elapsed(&tv));
 
-	talloc_free(ctx);
+	TALLOC_FREE(ctx);
 
 	tv = timeval_current();
 	count = 0;

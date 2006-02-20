@@ -399,7 +399,7 @@ static NTSTATUS find_forced_user(int snum, BOOL vuser_is_guest,
 
 	result = NT_STATUS_OK;
  done:
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return result;
 }
 
@@ -487,7 +487,7 @@ static NTSTATUS find_forced_group(BOOL force_user,
 
 	result = NT_STATUS_OK;
  done:
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return result;
 }
 
@@ -540,7 +540,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->uid = pass->pw_uid;
 		conn->gid = pass->pw_gid;
 		string_set(&conn->user,pass->pw_name);
-		talloc_free(pass);
+		TALLOC_FREE(pass);
 		DEBUG(3,("Guest only user %s\n",user));
 	} else if (vuser) {
 		if (vuser->guest) {

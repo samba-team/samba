@@ -53,7 +53,7 @@ BOOL lookup_unix_user_name(const char *name, DOM_SID *sid)
 	sid_copy(sid, &global_sid_Unix_Users);
 	sid_append_rid(sid, pwd->pw_uid); /* For 64-bit uid's we have enough
 					  * space ... */
-	talloc_free(pwd);
+	TALLOC_FREE(pwd);
 	return True;
 }
 

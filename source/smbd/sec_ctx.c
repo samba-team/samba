@@ -215,7 +215,7 @@ BOOL push_sec_ctx(void)
 	if (ctx_p->ut.ngroups != 0) {
 		if (!(ctx_p->ut.groups = SMB_MALLOC_ARRAY(gid_t, ctx_p->ut.ngroups))) {
 			DEBUG(0, ("Out of memory in push_sec_ctx()\n"));
-			talloc_free(ctx_p->token);
+			TALLOC_FREE(ctx_p->token);
 			return False;
 		}
 
@@ -255,7 +255,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
 
-	talloc_free(ctx_p->token);
+	TALLOC_FREE(ctx_p->token);
 	
 	ctx_p->ut.groups = memdup(groups, sizeof(gid_t) * ngroups);
 	ctx_p->token = dup_nt_token(NULL, token);
@@ -311,7 +311,7 @@ BOOL pop_sec_ctx(void)
 	SAFE_FREE(ctx_p->ut.groups);
 	ctx_p->ut.ngroups = 0;
 
-	talloc_free(ctx_p->token);
+	TALLOC_FREE(ctx_p->token);
 
 	/* Pop back previous user */
 

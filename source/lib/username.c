@@ -161,7 +161,7 @@ struct passwd *Get_Pwnam(const char *user)
 	*/
 
 	if (Get_Pwnam_ret) {
-		talloc_free(Get_Pwnam_ret);
+		TALLOC_FREE(Get_Pwnam_ret);
 	}
 	
 	Get_Pwnam_ret = ret;

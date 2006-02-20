@@ -72,7 +72,7 @@ BOOL change_to_guest(void)
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 
-	talloc_free(pass);
+	TALLOC_FREE(pass);
 	pass = NULL;
 	
 	return True;
@@ -251,7 +251,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if (must_free_token)
-		talloc_free(token);
+		TALLOC_FREE(token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
