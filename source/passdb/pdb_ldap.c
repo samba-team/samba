@@ -30,7 +30,7 @@
 *  Clean up SSL stuff, compile on OpenLDAP 1.x, 2.x, and Netscape SDK
 *
 *  Other LDAP based login attributes: accountExpires, etc.
-*  (should be the domain of Samba proper, but the sam_password/SAM_ACCOUNT
+*  (should be the domain of Samba proper, but the sam_password/struct samu
 *  structures don't have fields for some of these attributes)
 *
 *  SSL is done, but can't get the certificate based authentication to work
@@ -76,10 +76,6 @@
 #define LDAP_TAG_EXOP_MODIFY_PASSWD_NEW       ((ber_tag_t) 0x82U)
 #endif
 
-
-#ifndef SAM_ACCOUNT
-#define SAM_ACCOUNT struct sam_passwd
-#endif
 
 #include "smbldap.h"
 
@@ -450,10 +446,10 @@ static int ldapsam_delete_entry(struct ldapsam_privates *priv,
 #if 0	/* JERRY - not uesed anymore */
 
 /**********************************************************************
-Initialize SAM_ACCOUNT from an LDAP query (unix attributes only)
+Initialize struct samu from an LDAP query (unix attributes only)
 *********************************************************************/
 static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state, 
-				SAM_ACCOUNT * sampass,
+				struct samu * sampass,
 				LDAPMessage * entry,
 				gid_t *gid)
 {
@@ -521,12 +517,12 @@ static time_t ldapsam_get_entry_timestamp(
 }
 
 /**********************************************************************
- Initialize SAM_ACCOUNT from an LDAP query.
+ Initialize struct samu from an LDAP query.
  (Based on init_sam_from_buffer in pdb_tdb.c)
 *********************************************************************/
 
 static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state, 
-				SAM_ACCOUNT * sampass,
+				struct samu * sampass,
 				LDAPMessage * entry)
 {
 	time_t  logon_time,
@@ -734,7 +730,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_HOME_PATH), homedir)) 
 	{
 		pdb_set_homedir( sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, lp_logon_home()),
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, homedir );
@@ -749,7 +745,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_SCRIPT), logon_script)) 
 	{
 		pdb_set_logon_script( sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()), 
+			talloc_sub_basic(sampass, username, lp_logon_script()), 
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, logon_script );
@@ -764,7 +760,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PROFILE_PATH), profile_path)) 
 	{
 		pdb_set_profile_path( sampass, 
-			talloc_sub_basic( sampass->mem_ctx, username, lp_logon_path()),
+			talloc_sub_basic( sampass, username, lp_logon_path()),
 			PDB_DEFAULT );
 	} else {
 		pstrcpy( tmpstring, profile_path );
@@ -1003,14 +999,14 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 }
 
 /**********************************************************************
- Initialize the ldap db from a SAM_ACCOUNT. Called on update.
+ Initialize the ldap db from a struct samu. Called on update.
  (Based on init_buffer_from_sam in pdb_tdb.c)
 *********************************************************************/
 
 static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
 				LDAPMessage *existing,
-				LDAPMod *** mods, SAM_ACCOUNT * sampass,
-				BOOL (*need_update)(const SAM_ACCOUNT *,
+				LDAPMod *** mods, struct samu * sampass,
+				BOOL (*need_update)(const struct samu *,
 						    enum pdb_elements))
 {
 	pstring temp;
@@ -1392,7 +1388,7 @@ Get the next entry in the LDAP password database.
 *********************************************************************/
 
 static NTSTATUS ldapsam_getsampwent(struct pdb_methods *my_methods,
-				    SAM_ACCOUNT *user)
+				    struct samu *user)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state =
@@ -1434,10 +1430,10 @@ static void append_attr(TALLOC_CTX *mem_ctx, const char ***attr_list,
 }
 
 /**********************************************************************
-Get SAM_ACCOUNT entry from LDAP by username.
+Get struct samu entry from LDAP by username.
 *********************************************************************/
 
-static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu *user, const char *sname)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
@@ -1447,11 +1443,11 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	const char ** attr_list;
 	int rc;
 	
-	attr_list = get_userattr_list( user->mem_ctx, ldap_state->schema_ver );
-	append_attr(user->mem_ctx, &attr_list,
+	attr_list = get_userattr_list( user, ldap_state->schema_ver );
+	append_attr(user, &attr_list,
 		    get_userattr_key2string(ldap_state->schema_ver,
 					    LDAP_ATTR_MOD_TIMESTAMP));
-	append_attr(user->mem_ctx, &attr_list, "uidNumber");
+	append_attr(user, &attr_list, "uidNumber");
 	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result,
 					   attr_list);
 	TALLOC_FREE( attr_list );
@@ -1480,7 +1476,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 		}
 		pdb_set_backend_private_data(user, result, NULL,
 					     my_methods, PDB_CHANGED);
-		talloc_autofree_ldapmsg(user->mem_ctx, result);
+		talloc_autofree_ldapmsg(user, result);
 		ret = NT_STATUS_OK;
 	} else {
 		ldap_msgfree(result);
@@ -1536,10 +1532,10 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 }
 
 /**********************************************************************
- Get SAM_ACCOUNT entry from LDAP by SID.
+ Get struct samu entry from LDAP by SID.
 *********************************************************************/
 
-static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
+static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu * user, const DOM_SID *sid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result = NULL;
@@ -1581,7 +1577,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 
 	pdb_set_backend_private_data(user, result, NULL,
 				     my_methods, PDB_CHANGED);
-	talloc_autofree_ldapmsg(user->mem_ctx, result);
+	talloc_autofree_ldapmsg(user, result);
 	return NT_STATUS_OK;
 }	
 
@@ -1596,9 +1592,9 @@ static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
 **********************************************************************/
 
 static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods, 
-				     SAM_ACCOUNT *newpwd, char *dn,
+				     struct samu *newpwd, char *dn,
 				     LDAPMod **mods, int ldap_op, 
-				     BOOL (*need_update)(const SAM_ACCOUNT *, enum pdb_elements))
+				     BOOL (*need_update)(const struct samu *, enum pdb_elements))
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
@@ -1731,7 +1727,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 *********************************************************************/
 
 static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
-					   SAM_ACCOUNT * sam_acct)
+					   struct samu * sam_acct)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)my_methods->private_data;
@@ -1792,17 +1788,17 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
  we need LDAP modification.
 *********************************************************************/
 
-static BOOL element_is_changed(const SAM_ACCOUNT *sampass,
+static BOOL element_is_changed(const struct samu *sampass,
 			       enum pdb_elements element)
 {
 	return IS_SAM_CHANGED(sampass, element);
 }
 
 /**********************************************************************
- Update SAM_ACCOUNT.
+ Update struct samu.
 *********************************************************************/
 
-static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * newpwd)
+static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struct samu * newpwd)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
@@ -1823,7 +1819,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		}
 		pdb_set_backend_private_data(newpwd, result, NULL,
 					     my_methods, PDB_CHANGED);
-		talloc_autofree_ldapmsg(newpwd->mem_ctx, result);
+		talloc_autofree_ldapmsg(newpwd, result);
 	}
 
 	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
@@ -1869,12 +1865,12 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 }
 
 /***************************************************************************
- Renames a SAM_ACCOUNT
+ Renames a struct samu
  - The "rename user script" has full responsibility for changing everything
 ***************************************************************************/
 
 static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
-					   SAM_ACCOUNT *old_acct, 
+					   struct samu *old_acct, 
 					   const char *newname)
 {
 	const char *oldname;
@@ -1919,7 +1915,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
  we need LDAP modification.
  *********************************************************************/
 
-static BOOL element_is_set_or_changed(const SAM_ACCOUNT *sampass,
+static BOOL element_is_set_or_changed(const struct samu *sampass,
 				      enum pdb_elements element)
 {
 	return (IS_SAM_SET(sampass, element) ||
@@ -1927,10 +1923,10 @@ static BOOL element_is_set_or_changed(const SAM_ACCOUNT *sampass,
 }
 
 /**********************************************************************
- Add SAM_ACCOUNT to LDAP.
+ Add struct samu to LDAP.
 *********************************************************************/
 
-static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * newpwd)
+static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct samu * newpwd)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
@@ -2561,7 +2557,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
-					       SAM_ACCOUNT *user,
+					       struct samu *user,
 					       DOM_SID **pp_sids,
 					       gid_t **pp_gids,
 					       size_t *p_num_groups)

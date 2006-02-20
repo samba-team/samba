@@ -300,12 +300,12 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 	return NT_STATUS_OK;
 }
 
-/* Convert a SAM_ACCOUNT_DELTA to a SAM_ACCOUNT. */
+/* Convert a struct samu_DELTA to a struct samu. */
 #define STRING_CHANGED (old_string && !new_string) ||\
 		    (!old_string && new_string) ||\
 		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
-static NTSTATUS sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
+static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *delta)
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
@@ -497,7 +497,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	NTSTATUS nt_ret;
 	fstring account;
 	pstring add_script;
-	SAM_ACCOUNT *sam_account=NULL;
+	struct samu *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
 	DOM_SID user_sid;
@@ -562,7 +562,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
-			pdb_free_sam(&sam_account);
+			TALLOC_FREE(sam_account);
 			return NT_STATUS_ACCESS_DENIED; 
 		}
 	}
@@ -589,7 +589,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	}
 
  done:
-	pdb_free_sam(&sam_account);
+	TALLOC_FREE(sam_account);
 	return nt_ret;
 }
 
@@ -691,7 +691,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 
 	for (i=0; i<delta->num_members; i++) {
 		NTSTATUS nt_status;
-		SAM_ACCOUNT *member = NULL;
+		struct samu *member = NULL;
 		DOM_SID member_sid;
 
 		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(t, &member))) {
@@ -705,19 +705,19 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		if (!pdb_getsampwsid(member, &member_sid)) {
 			DEBUG(1, ("Found bogus group member: %d (member_sid=%s group=%s)\n",
 				  delta->rids[i], sid_string_static(&member_sid), grp->gr_name));
-			pdb_free_sam(&member);
+			TALLOC_FREE(member);
 			continue;
 		}
 
 		if (pdb_get_group_rid(member) == rid) {
 			d_printf("%s(primary),", pdb_get_username(member));
-			pdb_free_sam(&member);
+			TALLOC_FREE(member);
 			continue;
 		}
 		
 		d_printf("%s,", pdb_get_username(member));
 		nt_members[i] = talloc_strdup(t, pdb_get_username(member));
-		pdb_free_sam(&member);
+		TALLOC_FREE(member);
 	}
 
 	d_printf("\n");

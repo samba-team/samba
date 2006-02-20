@@ -196,7 +196,7 @@ static BOOL check_domain_match(const char *user, const char *domain)
  *                  function auth_get_challenge().  
  *
  * @param server_info If successful, contains information about the authentication, 
- *                    including a SAM_ACCOUNT struct describing the user.
+ *                    including a struct samu struct describing the user.
  *
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
  *

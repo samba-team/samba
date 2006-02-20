@@ -48,49 +48,47 @@ const char *get_default_sam_name(void)
 }
 
 /************************************************************
- Fill the SAM_ACCOUNT with default values.
+ Fill the struct samu with default values.
  ***********************************************************/
 
-void pdb_fill_default_sam(SAM_ACCOUNT *user)
+void pdb_fill_default_sam(struct samu *user)
 {
-	ZERO_STRUCT(user->private_u); /* Don't touch the talloc context */
-
 	/* no initial methods */
 	user->methods = NULL;
 
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	user->private_u.logon_time            = (time_t)0;
-	user->private_u.pass_last_set_time    = (time_t)0;
-	user->private_u.pass_can_change_time  = (time_t)0;
-	user->private_u.logoff_time           = 
-	user->private_u.kickoff_time          = 
-	user->private_u.pass_must_change_time = get_time_t_max();
-	user->private_u.fields_present        = 0x00ffffff;
-	user->private_u.logon_divs = 168; 	/* hours per week */
-	user->private_u.hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset(user->private_u.hours, 0xff, user->private_u.hours_len); /* available at all hours */
-	user->private_u.bad_password_count = 0;
-	user->private_u.logon_count = 0;
-	user->private_u.unknown_6 = 0x000004ec; /* don't know */
+	user->logon_time            = (time_t)0;
+	user->pass_last_set_time    = (time_t)0;
+	user->pass_can_change_time  = (time_t)0;
+	user->logoff_time           = 
+	user->kickoff_time          = 
+	user->pass_must_change_time = get_time_t_max();
+	user->fields_present        = 0x00ffffff;
+	user->logon_divs = 168; 	/* hours per week */
+	user->hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
+	user->bad_password_count = 0;
+	user->logon_count = 0;
+	user->unknown_6 = 0x000004ec; /* don't know */
 
 	/* Some parts of samba strlen their pdb_get...() returns, 
 	   so this keeps the interface unchanged for now. */
 	   
-	user->private_u.username = "";
-	user->private_u.domain = "";
-	user->private_u.nt_username = "";
-	user->private_u.full_name = "";
-	user->private_u.home_dir = "";
-	user->private_u.logon_script = "";
-	user->private_u.profile_path = "";
-	user->private_u.acct_desc = "";
-	user->private_u.workstations = "";
-	user->private_u.unknown_str = "";
-	user->private_u.munged_dial = "";
+	user->username = "";
+	user->domain = "";
+	user->nt_username = "";
+	user->full_name = "";
+	user->home_dir = "";
+	user->logon_script = "";
+	user->profile_path = "";
+	user->acct_desc = "";
+	user->workstations = "";
+	user->unknown_str = "";
+	user->munged_dial = "";
 
-	user->private_u.plaintext_pw = NULL;
+	user->plaintext_pw = NULL;
 
 	/* 
 	   Unless we know otherwise have a Account Control Bit
@@ -98,56 +96,70 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	   asks for a filtered list of users.
 	*/
 
-	user->private_u.acct_ctrl = ACB_NORMAL;
+	user->acct_ctrl = ACB_NORMAL;
 }	
 
-static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
-{
-	if (*user) {
-		data_blob_clear_free(&((*user)->private_u.lm_pw));
-		data_blob_clear_free(&((*user)->private_u.nt_pw));
+/**********************************************************************
+***********************************************************************/
 
-		if((*user)->private_u.plaintext_pw!=NULL)
-			memset((*user)->private_u.plaintext_pw,'\0',strlen((*user)->private_u.plaintext_pw));
-		talloc_destroy((*user)->mem_ctx);
-		*user = NULL;
-	}
+static int samu_destroy(void *p) 
+{
+	struct samu *user = p;
+
+	data_blob_clear_free( &user->lm_pw );
+	data_blob_clear_free( &user->nt_pw );
+
+	if ( user->plaintext_pw )
+		memset( user->plaintext_pw, 0x0, strlen(user->plaintext_pw) );
+
+	return 0;
 }
 
+/**********************************************************************
+***********************************************************************/
+
+BOOL samu_init( struct samu *user ) 
+{
+	pdb_fill_default_sam( user );
+	
+	return True;
+}
+
+/**********************************************************************
+ generate a new struct samuser
+***********************************************************************/
+
+struct samu* samu_new( TALLOC_CTX *ctx )
+{
+	struct samu *user;
+	
+	if ( !(user = TALLOC_ZERO_P( ctx, struct samu )) ) {
+		DEBUG(0,("samuser_new: Talloc failed!\n"));
+		return NULL;
+	}
+	
+	if ( !samu_init( user ) ) {
+		DEBUG(0,("samuser_new: initialization failed!\n"));
+		TALLOC_FREE( user );
+		return NULL;	
+	}
+	
+	talloc_set_destructor( user, samu_destroy );
+	
+	return user;
+}
 
 /**********************************************************************
  Allocates memory and initialises a struct sam_passwd on supplied mem_ctx.
 ***********************************************************************/
 
-NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
+NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, struct samu **user)
 {
-	if (*user != NULL) {
-		DEBUG(0,("pdb_init_sam_talloc: SAM_ACCOUNT was non NULL\n"));
-#if 0
-		smb_panic("non-NULL pointer passed to pdb_init_sam\n");
-#endif
+	if ( !*user )
 		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!mem_ctx) {
-		DEBUG(0,("pdb_init_sam_talloc: mem_ctx was NULL!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	*user=TALLOC_P(mem_ctx, SAM_ACCOUNT);
-
-	if (*user==NULL) {
-		DEBUG(0,("pdb_init_sam_talloc: error while allocating memory\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*user)->mem_ctx = mem_ctx;
-
-	(*user)->free_fn = NULL;
-
-	pdb_fill_default_sam(*user);
 	
-	return NT_STATUS_OK;
+	*user = samu_new( mem_ctx );
+	return *user ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
 
@@ -155,26 +167,10 @@ NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
  Allocates memory and initialises a struct sam_passwd.
  ************************************************************/
 
-NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
+NTSTATUS pdb_init_sam(struct samu **user)
 {
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS nt_status;
-	
-	mem_ctx = talloc_init("passdb internal SAM_ACCOUNT allocation");
-
-	if (!mem_ctx) {
-		DEBUG(0,("pdb_init_sam: error while doing talloc_init()\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, user))) {
-		talloc_destroy(mem_ctx);
-		return nt_status;
-	}
-	
-	(*user)->free_fn = destroy_pdb_talloc;
-
-	return NT_STATUS_OK;
+	*user = samu_new( NULL );
+	return *user ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
 /**************************************************************************
@@ -186,7 +182,7 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
  * 									SSS
  ***************************************************************************/
 
-static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
+static NTSTATUS pdb_set_sam_sids(struct samu *account_data, const struct passwd *pwd)
 {
 	const char *guest_account = lp_guestaccount();
 	GROUP_MAP map;
@@ -256,7 +252,7 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
  Initialises a struct sam_passwd with sane values.
  ************************************************************/
 
-NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
+NTSTATUS pdb_fill_sam_pw(struct samu *sam_account, const struct passwd *pwd)
 {
 	NTSTATUS ret;
 
@@ -290,28 +286,28 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
 	{
 		pdb_set_profile_path(sam_account, 
-				     talloc_sub_specified((sam_account)->mem_ctx, 
+				     talloc_sub_specified(sam_account, 
 							    lp_logon_path(), 
 							    pwd->pw_name, global_myname(), 
 							    pwd->pw_uid, pwd->pw_gid), 
 				     PDB_DEFAULT);
 		
 		pdb_set_homedir(sam_account, 
-				talloc_sub_specified((sam_account)->mem_ctx, 
+				talloc_sub_specified(sam_account, 
 						       lp_logon_home(),
 						       pwd->pw_name, global_myname(), 
 						       pwd->pw_uid, pwd->pw_gid),
 				PDB_DEFAULT);
 		
 		pdb_set_dir_drive(sam_account, 
-				  talloc_sub_specified((sam_account)->mem_ctx, 
+				  talloc_sub_specified(sam_account, 
 							 lp_logon_drive(),
 							 pwd->pw_name, global_myname(), 
 							 pwd->pw_uid, pwd->pw_gid),
 				  PDB_DEFAULT);
 		
 		pdb_set_logon_script(sam_account, 
-				     talloc_sub_specified((sam_account)->mem_ctx, 
+				     talloc_sub_specified(sam_account, 
 							    lp_logon_script(),
 							    pwd->pw_name, global_myname(), 
 							    pwd->pw_uid, pwd->pw_gid), 
@@ -334,7 +330,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
  Initialises a struct sam_passwd with sane values.
  ************************************************************/
 
-NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
+NTSTATUS pdb_init_sam_pw(struct samu **new_sam_acct, const struct passwd *pwd)
 {
 	NTSTATUS nt_status;
 
@@ -349,7 +345,7 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*new_sam_acct, pwd))) {
-		pdb_free_sam(new_sam_acct);
+		TALLOC_FREE(new_sam_acct);
 		new_sam_acct = NULL;
 		return nt_status;
 	}
@@ -359,11 +355,11 @@ NTSTATUS pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 
 
 /*************************************************************
- Initialises a SAM_ACCOUNT ready to add a new account, based
+ Initialises a struct samu ready to add a new account, based
  on the UNIX user.  Pass in a RID if you have one
  ************************************************************/
 
-NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
+NTSTATUS pdb_init_sam_new(struct samu **new_sam_acct, const char *username)
 {
 	NTSTATUS 	result;
 	struct passwd 	*pwd;
@@ -481,84 +477,13 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 
  done:
 	if (!NT_STATUS_IS_OK(result) && (*new_sam_acct != NULL)) {
-		pdb_free_sam(new_sam_acct);
+		TALLOC_FREE(new_sam_acct);
 	}
 
 	TALLOC_FREE(mem_ctx);
 	return result;
 }
 
-
-/**
- * Free the contets of the SAM_ACCOUNT, but not the structure.
- *
- * Also wipes the LM and NT hashes and plaintext password from 
- * memory.
- *
- * @param user SAM_ACCOUNT to free members of.
- **/
-
-static void pdb_free_sam_contents(SAM_ACCOUNT *user)
-{
-
-	/* Kill off sensitive data.  Free()ed by the
-	   talloc mechinism */
-
-	data_blob_clear_free(&(user->private_u.lm_pw));
-	data_blob_clear_free(&(user->private_u.nt_pw));
-	if (user->private_u.plaintext_pw!=NULL)
-		memset(user->private_u.plaintext_pw,'\0',strlen(user->private_u.plaintext_pw));
-
-	if (user->private_u.backend_private_data && user->private_u.backend_private_data_free_fn) {
-		user->private_u.backend_private_data_free_fn(&user->private_u.backend_private_data);
-	}
-}
-
-
-/************************************************************
- Reset the SAM_ACCOUNT and free the NT/LM hashes.
- ***********************************************************/
-
-NTSTATUS pdb_reset_sam(SAM_ACCOUNT *user)
-{
-	if (user == NULL) {
-		DEBUG(0,("pdb_reset_sam: SAM_ACCOUNT was NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_free_sam\n");
-#endif
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	pdb_free_sam_contents(user);
-
-	pdb_fill_default_sam(user);
-
-	return NT_STATUS_OK;
-}
-
-
-/************************************************************
- Free the SAM_ACCOUNT and the member pointers.
- ***********************************************************/
-
-NTSTATUS pdb_free_sam(SAM_ACCOUNT **user)
-{
-	if (*user == NULL) {
-		DEBUG(0,("pdb_free_sam: SAM_ACCOUNT was NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_free_sam\n");
-#endif
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	pdb_free_sam_contents(*user);
-	
-	if ((*user)->free_fn) {
-		(*user)->free_fn(user);
-	}
-
-	return NT_STATUS_OK;	
-}
 
 /**********************************************************
  Encode the account control bits into a string.
@@ -864,7 +789,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 	 * is set, don't look for users at all. */
 
 	if ((flags & LOOKUP_NAME_GROUP) == 0) {
-		SAM_ACCOUNT *sam_account = NULL;
+		struct samu *sam_account = NULL;
 		DOM_SID user_sid;
 
 		if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
@@ -879,7 +804,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 			sid_copy(&user_sid, pdb_get_user_sid(sam_account));
 		}
 		
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 
 		if (ret) {
 			if (!sid_check_is_in_our_domain(&user_sid)) {
@@ -929,7 +854,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 			   char *err_str, size_t err_str_len,
 			   char *msg_str, size_t msg_str_len)
 {
-	SAM_ACCOUNT 	*sam_pass=NULL;
+	struct samu 	*sam_pass=NULL;
 	uint16 other_acb;
 	NTSTATUS result;
 
@@ -942,7 +867,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	become_root();
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		unbecome_root();
-		pdb_free_sam(&sam_pass);
+		TALLOC_FREE(sam_pass);
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			int tmp_debug = DEBUGLEVEL;
@@ -981,19 +906,19 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	if (local_flags & LOCAL_TRUST_ACCOUNT) {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb, PDB_CHANGED) ) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
 		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -1006,13 +931,13 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	if (local_flags & LOCAL_DISABLE_USER) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'disabled' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -1020,7 +945,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ, PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'no password required' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_SET_PASSWORD) {
@@ -1036,19 +961,19 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED)) {
 			if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
 				slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
-				pdb_free_sam(&sam_pass);
+				TALLOC_FREE(sam_pass);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ), PDB_CHANGED)) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'no password required' flag for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
 		if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
 			slprintf(err_str, err_str_len-1, "Failed to set password for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}	
@@ -1056,17 +981,17 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	if (local_flags & LOCAL_ADD_USER) {
 		if (NT_STATUS_IS_OK(pdb_add_sam_account(sam_pass))) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_OK;
 		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else if (local_flags & LOCAL_DELETE_USER) {
 		if (!NT_STATUS_IS_OK(pdb_delete_sam_account(sam_pass))) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
@@ -1074,7 +999,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 		result = pdb_update_sam_account(sam_pass);
 		if(!NT_STATUS_IS_OK(result)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
+			TALLOC_FREE(sam_pass);
 			return result;
 		}
 		if(local_flags & LOCAL_DISABLE_USER)
@@ -1085,12 +1010,12 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
 	}
 
-	pdb_free_sam(&sam_pass);
+	TALLOC_FREE(sam_pass);
 	return NT_STATUS_OK;
 }
 
 /**********************************************************************
- Marshall/unmarshall SAM_ACCOUNT structs.
+ Marshall/unmarshall struct samu structs.
  *********************************************************************/
 
 #define TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd"
@@ -1098,25 +1023,25 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 #define TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 
 /**********************************************************************
- Intialize a SAM_ACCOUNT struct from a BYTE buffer of size len
+ Intialize a struct samu struct from a BYTE buffer of size len
  *********************************************************************/
 
-BOOL init_sam_from_buffer(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
+BOOL init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 	return(init_sam_from_buffer_v2(sampass, buf, buflen));
 }
 
 /**********************************************************************
- Intialize a BYTE buffer from a SAM_ACCOUNT struct
+ Intialize a BYTE buffer from a struct samu struct
  *********************************************************************/
 
-uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_only)
+uint32 init_buffer_from_sam (uint8 **buf, const struct samu *sampass, BOOL size_only)
 {
 	return(init_buffer_from_sam_v2(buf, sampass, size_only));
 }
 
 
-BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
+BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -1216,7 +1141,7 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -1224,7 +1149,7 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
 		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass->mem_ctx,  username, lp_logon_drive()),
+			talloc_sub_basic(sampass,  username, lp_logon_drive()),
 			PDB_DEFAULT);
 	}
 
@@ -1232,7 +1157,7 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
@@ -1240,7 +1165,7 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -1294,7 +1219,7 @@ done:
 	return ret;
 }
 
-BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
+BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -1400,7 +1325,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -1408,7 +1333,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
 		pdb_set_dir_drive(sampass, 
-			talloc_sub_basic(sampass->mem_ctx,  username, lp_logon_drive()),
+			talloc_sub_basic(sampass,  username, lp_logon_drive()),
 			PDB_DEFAULT);
 	}
 
@@ -1416,7 +1341,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
@@ -1424,7 +1349,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -1480,7 +1405,7 @@ done:
 }
 
 
-BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
+BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -1593,7 +1518,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	else {
 		pdb_set_homedir(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_home()),
+			talloc_sub_basic(sampass, username, lp_logon_home()),
 			PDB_DEFAULT);
 	}
 
@@ -1612,7 +1537,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 	else {
 		pdb_set_logon_script(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_script()),
+			talloc_sub_basic(sampass, username, lp_logon_script()),
 			PDB_DEFAULT);
 	}
 	
@@ -1626,7 +1551,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	} 
 	else {
 		pdb_set_profile_path(sampass, 
-			talloc_sub_basic(sampass->mem_ctx, username, lp_logon_path()),
+			talloc_sub_basic(sampass, username, lp_logon_path()),
 			PDB_DEFAULT);
 	}
 
@@ -1709,7 +1634,7 @@ done:
 	return ret;
 }
 
-uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_only)
+uint32 init_buffer_from_sam_v2 (uint8 **buf, const struct samu *sampass, BOOL size_only)
 {
 	size_t len, buflen;
 
@@ -1751,9 +1676,9 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	uint32  nt_pw_hist_len;
 	uint32 pwHistLen = 0;
 
-	/* do we have a valid SAM_ACCOUNT pointer? */
+	/* do we have a valid struct samu pointer? */
 	if (sampass == NULL) {
-		DEBUG(0, ("init_buffer_from_sam: SAM_ACCOUNT is NULL!\n"));
+		DEBUG(0, ("init_buffer_from_sam: struct samu is NULL!\n"));
 		return -1;
 	}
 	
@@ -1981,7 +1906,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	return (buflen);
 }
 
-BOOL pdb_copy_sam_account(const SAM_ACCOUNT *src, SAM_ACCOUNT **dst)
+BOOL pdb_copy_sam_account(const struct samu *src, struct samu **dst)
 {
 	BOOL result;
 	uint8 *buf;
@@ -2007,7 +1932,7 @@ BOOL pdb_copy_sam_account(const SAM_ACCOUNT *src, SAM_ACCOUNT **dst)
  Update the bad password count checking the AP_RESET_COUNT_TIME 
 *********************************************************************/
 
-BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
+BOOL pdb_update_bad_password_count(struct samu *sampass, BOOL *updated)
 {
 	time_t LastBadPassword;
 	uint16 BadPasswordCount;
@@ -2050,7 +1975,7 @@ BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
  Update the ACB_AUTOLOCK flag checking the AP_LOCK_ACCOUNT_DURATION 
 *********************************************************************/
 
-BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
+BOOL pdb_update_autolock_flag(struct samu *sampass, BOOL *updated)
 {
 	uint32 duration;
 	time_t LastBadPassword;
@@ -2103,7 +2028,7 @@ bad password time. Leaving locked out.\n",
  Increment the bad_password_count 
 *********************************************************************/
 
-BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
+BOOL pdb_increment_bad_password_count(struct samu *sampass)
 {
 	uint32 account_policy_lockout;
 	BOOL autolock_updated = False, badpw_updated = False;

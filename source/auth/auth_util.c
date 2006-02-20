@@ -514,7 +514,7 @@ static int server_info_dtor(void *p)
 		talloc_get_type_abort(p, auth_serversupplied_info);
 
 	if (server_info->sam_account != NULL) {
-		pdb_free_sam(&server_info->sam_account);
+		TALLOC_FREE(server_info->sam_account);
 	}
 
 	ZERO_STRUCTP(server_info);
@@ -547,11 +547,11 @@ static auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 }
 
 /***************************************************************************
- Make (and fill) a user_info struct from a SAM_ACCOUNT
+ Make (and fill) a user_info struct from a struct samu
 ***************************************************************************/
 
 NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info, 
-			      SAM_ACCOUNT *sampass)
+			      struct samu *sampass)
 {
 	NTSTATUS status;
 	struct passwd *pwd;
@@ -949,7 +949,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		/* This is a passdb user, so ask passdb */
 
-		SAM_ACCOUNT *sam_acct = NULL;
+		struct samu *sam_acct = NULL;
 
 		result = pdb_init_sam_talloc(tmp_ctx, &sam_acct);
 		if (!NT_STATUS_IS_OK(result)) {
@@ -1086,7 +1086,7 @@ BOOL user_in_group(const char *username, const char *groupname)
 
 /***************************************************************************
  Make (and fill) a user_info struct from a Kerberos PAC logon_info by
- conversion to a SAM_ACCOUNT
+ conversion to a struct samu
 ***************************************************************************/
 
 NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info, 
@@ -1095,7 +1095,7 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 			      PAC_LOGON_INFO *logon_info)
 {
 	NTSTATUS status;
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	DOM_SID user_sid, group_sid;
 	fstring dom_name;
 	auth_serversupplied_info *result;
@@ -1108,7 +1108,7 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 
 	result = make_server_info(NULL);
 	if (result == NULL) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1145,7 +1145,7 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 
 /***************************************************************************
  Make (and fill) a user_info struct from a 'struct passwd' by conversion 
- to a SAM_ACCOUNT
+ to a struct samu
 ***************************************************************************/
 
 NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, 
@@ -1153,7 +1153,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 			     struct passwd *pwd)
 {
 	NTSTATUS status;
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	gid_t *gids;
 	auth_serversupplied_info *result;
 	
@@ -1166,7 +1166,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	result = make_server_info(NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return status;
 	}
 
@@ -1206,7 +1206,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_info)
 {
 	NTSTATUS status;
-	SAM_ACCOUNT *sampass = NULL;
+	struct samu *sampass = NULL;
 	DOM_SID guest_sid;
 	BOOL ret;
 	static const char zeros[16];
@@ -1225,13 +1225,13 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	unbecome_root();
 
 	if (!ret) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	status = make_server_info_sam(server_info, sampass);
 	if (!NT_STATUS_IS_OK(status)) {
-		pdb_free_sam(&sampass);
+		TALLOC_FREE(sampass);
 		return status;
 	}
 	
@@ -1311,7 +1311,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 const char *username,
 				 char **found_username,
 				 uid_t *uid, gid_t *gid,
-				 SAM_ACCOUNT **sam_account)
+				 struct samu **sam_account)
 {
 	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
@@ -1453,7 +1453,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	const char *nt_domain;
 	const char *nt_username;
 
-	SAM_ACCOUNT *sam_account = NULL;
+	struct samu *sam_account = NULL;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
 
@@ -1532,74 +1532,74 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 		
 	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_username(sam_account, nt_username, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_domain(sam_account, nt_domain, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_user_sid(sam_account, &user_sid, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (!pdb_set_group_sid(sam_account, &group_sid, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
 	if (!pdb_set_fullname(sam_account,
 			      unistr2_static(&(info3->uni_full_name)), 
 			      PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_logon_script(sam_account,
 				  unistr2_static(&(info3->uni_logon_script)),
 				  PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_profile_path(sam_account,
 				  unistr2_static(&(info3->uni_profile_path)),
 				  PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_homedir(sam_account,
 			     unistr2_static(&(info3->uni_home_dir)),
 			     PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_dir_drive(sam_account,
 			       unistr2_static(&(info3->uni_dir_drive)),
 			       PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	result = make_server_info(NULL);
 	if (result == NULL) {
 		DEBUG(4, ("make_server_info failed!\n"));
-		pdb_free_sam(&sam_account);
+		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* save this here to _net_sam_logon() doesn't fail (it assumes a 
-	   valid SAM_ACCOUNT) */
+	   valid struct samu) */
 		   
 	result->sam_account = sam_account;
 	result->unix_name = talloc_strdup(result, found_username);

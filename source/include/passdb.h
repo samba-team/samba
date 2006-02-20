@@ -62,7 +62,7 @@
 #define ACCT_OWF_PWD		0x20000000
 
 /*
- * bit flags representing initialized fields in SAM_ACCOUNT
+ * bit flags representing initialized fields in struct samu
  */
 enum pdb_elements {
 	PDB_UNINIT,
@@ -135,70 +135,62 @@ typedef struct logon_cache_struct {
 	time_t bad_password_time;
 } LOGIN_CACHE;
 		
-typedef struct sam_passwd {
-	TALLOC_CTX *mem_ctx;
-	
-	void (*free_fn)(struct sam_passwd **);
-
+struct samu {
 	struct pdb_methods *methods;
 
-	struct user_data {
-		/* initialization flags */
-		struct bitmap *change_flags;
-		struct bitmap *set_flags;
+	/* initialization flags */
+	struct bitmap *change_flags;
+	struct bitmap *set_flags;
 
-		time_t logon_time;            /* logon time */
-		time_t logoff_time;           /* logoff time */
-		time_t kickoff_time;          /* kickoff time */
-		time_t bad_password_time;     /* last bad password entered */
-		time_t pass_last_set_time;    /* password last set time */
-		time_t pass_can_change_time;  /* password can change time */
-		time_t pass_must_change_time; /* password must change time */
+	time_t logon_time;            /* logon time */
+	time_t logoff_time;           /* logoff time */
+	time_t kickoff_time;          /* kickoff time */
+	time_t bad_password_time;     /* last bad password entered */
+	time_t pass_last_set_time;    /* password last set time */
+	time_t pass_can_change_time;  /* password can change time */
+	time_t pass_must_change_time; /* password must change time */
 		
-		const char * username;     /* UNIX username string */
-		const char * domain;       /* Windows Domain name */
-		const char * nt_username;  /* Windows username string */
-		const char * full_name;    /* user's full name string */
-		const char * unix_home_dir;     /* UNIX home directory string */
-		const char * home_dir;     /* home directory string */
-		const char * dir_drive;    /* home directory drive string */
-		const char * logon_script; /* logon script string */
-		const char * profile_path; /* profile path string */
-		const char * acct_desc;    /* user description string */
-		const char * workstations; /* login from workstations string */
-		const char * unknown_str;  /* don't know what this is, yet. */
-		const char * munged_dial;  /* munged path name and dial-back tel number */
+	const char *username;     /* UNIX username string */
+	const char *domain;       /* Windows Domain name */
+	const char *nt_username;  /* Windows username string */
+	const char *full_name;    /* user's full name string */
+	const char *unix_home_dir;     /* UNIX home directory string */
+	const char *home_dir;     /* home directory string */
+	const char *dir_drive;    /* home directory drive string */
+	const char *logon_script; /* logon script string */
+	const char *profile_path; /* profile path string */
+	const char *acct_desc;    /* user description string */
+	const char *workstations; /* login from workstations string */
+	const char *unknown_str;  /* don't know what this is, yet. */
+	const char *munged_dial;  /* munged path name and dial-back tel number */
 		
-		DOM_SID user_sid;    /* Primary User SID */
-		DOM_SID group_sid;   /* Primary Group SID */
+	DOM_SID user_sid;    /* Primary User SID */
+	DOM_SID group_sid;   /* Primary Group SID */
 		
-		DATA_BLOB lm_pw; /* .data is Null if no password */
-		DATA_BLOB nt_pw; /* .data is Null if no password */
-		DATA_BLOB nt_pw_his; /* nt hashed password history .data is Null if not available */
-		char* plaintext_pw; /* is Null if not available */
+	DATA_BLOB lm_pw; /* .data is Null if no password */
+	DATA_BLOB nt_pw; /* .data is Null if no password */
+	DATA_BLOB nt_pw_his; /* nt hashed password history .data is Null if not available */
+	char* plaintext_pw; /* is Null if not available */
 		
-		uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-		uint32 fields_present; /* 0x00ff ffff */
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 fields_present; /* 0x00ff ffff */
 		
-		uint16 logon_divs; /* 168 - number of hours in a week */
-		uint32 hours_len; /* normally 21 bytes */
-		uint8 hours[MAX_HOURS_LEN];
-		
-		/* Was unknown_5. */
-		uint16 bad_password_count;
-		uint16 logon_count;
-
-		uint32 unknown_6; /* 0x0000 04ec */
-		/* a tag for who added the private methods */
-		const struct pdb_methods *backend_private_methods;
-		void *backend_private_data; 
-		void (*backend_private_data_free_fn)(void **);
-	} private_u;
-
-	/* Lets see if the remaining code can get the hint that you
-	   are meant to use the pdb_...() functions. */
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
 	
-} SAM_ACCOUNT;
+	/* Was unknown_5. */
+	uint16 bad_password_count;
+	uint16 logon_count;
+
+	uint32 unknown_6; /* 0x0000 04ec */
+
+	/* a tag for who added the private methods */
+	const struct pdb_methods *backend_private_methods;
+	void *backend_private_data; 
+	void (*backend_private_data_free_fn)(void **);
+
+};
 
 struct acct_info {
 	fstring acct_name; /* account name */
@@ -257,28 +249,28 @@ struct pdb_methods
 	
 	void (*endsampwent)(struct pdb_methods *);
 	
-	NTSTATUS (*getsampwent)(struct pdb_methods *, SAM_ACCOUNT *user);
+	NTSTATUS (*getsampwent)(struct pdb_methods *, struct samu *user);
 	
-	NTSTATUS (*getsampwnam)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const char *username);
+	NTSTATUS (*getsampwnam)(struct pdb_methods *, struct samu *sam_acct, const char *username);
 	
-	NTSTATUS (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
+	NTSTATUS (*getsampwsid)(struct pdb_methods *, struct samu *sam_acct, const DOM_SID *sid);
 
 	NTSTATUS (*create_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
 				const char *name, uint32 acct_flags,
 				uint32 *rid);
 
 	NTSTATUS (*delete_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
-				SAM_ACCOUNT *sam_acct);
+				struct samu *sam_acct);
 	
-	NTSTATUS (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
+	NTSTATUS (*add_sam_account)(struct pdb_methods *, struct samu *sampass);
 	
-	NTSTATUS (*update_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
+	NTSTATUS (*update_sam_account)(struct pdb_methods *, struct samu *sampass);
 	
-	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
+	NTSTATUS (*delete_sam_account)(struct pdb_methods *, struct samu *username);
 	
-	NTSTATUS (*rename_sam_account)(struct pdb_methods *, SAM_ACCOUNT *oldname, const char *newname);
+	NTSTATUS (*rename_sam_account)(struct pdb_methods *, struct samu *oldname, const char *newname);
 	
-	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, SAM_ACCOUNT *sam_acct, BOOL success);
+	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, struct samu *sam_acct, BOOL success);
 
 	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
 
@@ -315,13 +307,13 @@ struct pdb_methods
 
 	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
-					   SAM_ACCOUNT *user,
+					   struct samu *user,
 					   DOM_SID **pp_sids, gid_t **pp_gids,
 					   size_t *p_num_groups);
 
 	NTSTATUS (*set_unix_primary_group)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
-					   SAM_ACCOUNT *user);
+					   struct samu *user);
 
 	NTSTATUS (*add_groupmem)(struct pdb_methods *methods,
 				 TALLOC_CTX *mem_ctx,

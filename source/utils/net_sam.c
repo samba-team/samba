@@ -27,10 +27,10 @@
  */
 
 static int net_sam_userset(int argc, const char **argv, const char *field,
-			   BOOL (*fn)(SAM_ACCOUNT *, const char *,
+			   BOOL (*fn)(struct samu *, const char *,
 				      enum pdb_value_state))
 {
-	SAM_ACCOUNT *sam_acct = NULL;
+	struct samu *sam_acct = NULL;
 	DOM_SID sid;
 	enum SID_NAME_USE type;
 	const char *dom, *name;
@@ -76,7 +76,7 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	pdb_free_sam(&sam_acct);
+	TALLOC_FREE(sam_acct);
 
 	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
 	return 0;
@@ -125,7 +125,7 @@ static int net_sam_set_workstations(int argc, const char **argv)
 static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 				uint16 flag)
 {
-	SAM_ACCOUNT *sam_acct = NULL;
+	struct samu *sam_acct = NULL;
 	DOM_SID sid;
 	enum SID_NAME_USE type;
 	const char *dom, *name;
@@ -178,7 +178,7 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	pdb_free_sam(&sam_acct);
+	TALLOC_FREE(sam_acct);
 
 	d_fprintf(stderr, "Updated flag %s for %s\\%s to %s\n", field, dom,
 		  name, argv[1]);
@@ -210,10 +210,10 @@ static int net_sam_set_pwnoexp(int argc, const char **argv)
  */
 
 static int net_sam_set_time(int argc, const char **argv, const char *field,
-			    BOOL (*fn)(SAM_ACCOUNT *, time_t,
+			    BOOL (*fn)(struct samu *, time_t,
 				       enum pdb_value_state))
 {
-	SAM_ACCOUNT *sam_acct = NULL;
+	struct samu *sam_acct = NULL;
 	DOM_SID sid;
 	enum SID_NAME_USE type;
 	const char *dom, *name;
@@ -276,7 +276,7 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	pdb_free_sam(&sam_acct);
+	TALLOC_FREE(sam_acct);
 
 	d_printf("Updated %s for %s\\%s to %s\n", field, dom, name, argv[1]);
 	return 0;
