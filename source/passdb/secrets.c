@@ -892,7 +892,7 @@ static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 
         if (!tdb_sc) {
                 DEBUG(0,("open_schannel_session_store: Failed to open %s\n", fname));
-		talloc_free(fname);
+		TALLOC_FREE(fname);
                 return NULL;
         }
 
@@ -920,7 +920,7 @@ static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
 	}
 
 	SAFE_FREE(vers.dptr);
-	talloc_free(fname);
+	TALLOC_FREE(fname);
 
 	return tdb_sc;
 }
@@ -959,7 +959,7 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	value.dptr = TALLOC(mem_ctx, value.dsize);
 	if (!value.dptr) {
-		talloc_free(keystr);
+		TALLOC_FREE(keystr);
 		return False;
 	}
 
@@ -976,8 +976,8 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	tdb_sc = open_schannel_session_store(mem_ctx);
 	if (!tdb_sc) {
-		talloc_free(keystr);
-		talloc_free(value.dptr);
+		TALLOC_FREE(keystr);
+		TALLOC_FREE(value.dptr);
 		return False;
 	}
 
@@ -987,8 +987,8 @@ BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
 		keystr ));
 
 	tdb_close(tdb_sc);
-	talloc_free(keystr);
-	talloc_free(value.dptr);
+	TALLOC_FREE(keystr);
+	TALLOC_FREE(value.dptr);
 	return ret;
 }
 
@@ -1024,7 +1024,7 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 
 	tdb_sc = open_schannel_session_store(mem_ctx);
 	if (!tdb_sc) {
-		talloc_free(keystr);
+		TALLOC_FREE(keystr);
 		return False;
 	}
 
@@ -1055,8 +1055,8 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 16 || l5 != 16) {
 		/* Bad record - delete it. */
 		tdb_delete_bystring(tdb_sc, keystr);
-		talloc_free(keystr);
-		talloc_free(pdc);
+		TALLOC_FREE(keystr);
+		TALLOC_FREE(pdc);
 		SAFE_FREE(pseed_chal);
 		SAFE_FREE(pclnt_chal);
 		SAFE_FREE(psrv_chal);
@@ -1085,7 +1085,7 @@ BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
 	SAFE_FREE(psess_key);
 	SAFE_FREE(pmach_pw);
 
-	talloc_free(keystr);
+	TALLOC_FREE(keystr);
 	SAFE_FREE(value.dptr);
 
 	*ppdc = pdc;

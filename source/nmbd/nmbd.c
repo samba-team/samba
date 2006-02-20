@@ -607,7 +607,7 @@ static void process(void)
 			return;
 
 		/* free up temp memory */
-			lp_talloc_free();
+			lp_TALLOC_FREE();
 	}
 }
 

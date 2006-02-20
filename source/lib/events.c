@@ -33,8 +33,8 @@ static int timed_event_destructor(void *p)
 }
 
 /****************************************************************************
- Schedule a function for future calling, cancel with talloc_free().
- It's the responsibility of the handler to call talloc_free() on the event
+ Schedule a function for future calling, cancel with TALLOC_FREE().
+ It's the responsibility of the handler to call TALLOC_FREE() on the event
  handed to it.
 ****************************************************************************/
 

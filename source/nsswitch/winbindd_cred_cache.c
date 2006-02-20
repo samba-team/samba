@@ -73,8 +73,9 @@ NTSTATUS remove_ccache_by_ccname(const char *ccname)
 	for (entry = ccache_list; entry; entry = entry->next) {
 		if (strequal(entry->ccname, ccname)) {
 			DLIST_REMOVE(ccache_list, entry);
-			talloc_free(entry->event); /* unregisters events */
-			return talloc_free(entry) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+			TALLOC_FREE(entry->event); /* unregisters events */
+			TALLOC_FREE(entry);
+			return NT_STATUS_OK;
 		}
 	}
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -94,7 +95,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 	DEBUG(10,("krb5_ticket_refresh_handler called\n"));
 	DEBUGADD(10,("event called for: %s, %s\n", entry->ccname, entry->username));
 
-	talloc_free(entry->event);
+	TALLOC_FREE(entry->event);
 
 #ifdef HAVE_KRB5
 
@@ -117,7 +118,7 @@ static void krb5_ticket_refresh_handler(struct timed_event *te,
 
 		if (ret) {
 			DEBUG(3,("could not re-kinit: %s\n", error_message(ret)));
-			talloc_free(entry->event);
+			TALLOC_FREE(entry->event);
 			return;
 		}
 

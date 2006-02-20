@@ -1665,11 +1665,11 @@ static TALLOC_CTX *lp_talloc;
  Free up temporary memory - called from the main loop.
 ********************************************************************/
 
-void lp_talloc_free(void)
+void lp_TALLOC_FREE(void)
 {
 	if (!lp_talloc)
 		return;
-	talloc_free(lp_talloc);
+	TALLOC_FREE(lp_talloc);
 	lp_talloc = NULL;
 }
 

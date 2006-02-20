@@ -187,7 +187,7 @@ void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 		((*auth_ntlmssp_state)->auth_context->free)(&(*auth_ntlmssp_state)->auth_context);
 	}
 	if ((*auth_ntlmssp_state)->server_info) {
-		talloc_free((*auth_ntlmssp_state)->server_info);
+		TALLOC_FREE((*auth_ntlmssp_state)->server_info);
 	}
 	talloc_destroy(mem_ctx);
 	*auth_ntlmssp_state = NULL;

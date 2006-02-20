@@ -112,7 +112,7 @@ static BOOL net_sh_process(struct rpc_sh_ctx *ctx,
 		if (strequal(argv[0], "..") &&
 		    (this_ctx->parent != NULL)) {
 			new_ctx = this_ctx->parent;
-			talloc_free(this_ctx);
+			TALLOC_FREE(this_ctx);
 			this_ctx = new_ctx;
 			return True;
 		}
@@ -250,7 +250,7 @@ int net_rpc_shell(int argc, const char **argv)
 
 	cli_shutdown(ctx->cli);
 
-	talloc_free(ctx);
+	TALLOC_FREE(ctx);
 
 	return 0;
 }

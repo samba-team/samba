@@ -1078,7 +1078,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 
 	exists = lookup_name(mem_ctx, name, LOOKUP_NAME_ISOLATED,
 			     NULL, NULL, &sid, &type);
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	if (exists) {
 		return NT_STATUS_ALIAS_EXISTS;

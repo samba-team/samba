@@ -161,13 +161,13 @@ BOOL token_contains_name_in_list(const char *username,
 	while (*list != NULL) {
 		if (token_contains_name(mem_ctx, username, sharename,
 					token, *list)) {
-			talloc_free(mem_ctx);
+			TALLOC_FREE(mem_ctx);
 			return True;
 		}
 		list += 1;
 	}
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return False;
 }
 

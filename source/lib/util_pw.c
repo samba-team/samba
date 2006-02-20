@@ -55,7 +55,7 @@ static void init_pwnam_cache(void)
 
 void flush_pwnam_cache(void)
 {
-	talloc_free(pwnam_cache);
+	TALLOC_FREE(pwnam_cache);
 	pwnam_cache = NULL;
 	init_pwnam_cache();
 }
@@ -96,7 +96,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		i = rand() % PWNAMCACHE_SIZE;
 
 	if (pwnam_cache[i] != NULL) {
-		talloc_free(pwnam_cache[i]);
+		TALLOC_FREE(pwnam_cache[i]);
 	}
 
 	pwnam_cache[i] = talloc_copy_passwd(pwnam_cache, temp);

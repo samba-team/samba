@@ -2469,7 +2469,7 @@ done:
         cli_rpc_pipe_close(pipe_hnd);
 
         /* Free all memory which was allocated for this request */
-        talloc_free(mem_ctx);
+        TALLOC_FREE(mem_ctx);
 
         /* Tell 'em if it worked */
         return W_ERROR_IS_OK(result) ? 0 : -1;

@@ -100,7 +100,7 @@ void invalidate_vuid(uint16 vuid)
 	session_yield(vuser);
 	SAFE_FREE(vuser->session_keystr);
 
-	talloc_free(vuser->server_info);
+	TALLOC_FREE(vuser->server_info);
 
 	data_blob_free(&vuser->session_key);
 
@@ -111,7 +111,7 @@ void invalidate_vuid(uint16 vuid)
 	conn_clear_vuid_cache(vuid);
 
 	SAFE_FREE(vuser->groups);
-	talloc_free(vuser->nt_user_token);
+	TALLOC_FREE(vuser->nt_user_token);
 	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }
@@ -215,7 +215,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 				 "vuser->groups\n"));
 			data_blob_free(&session_key);
 			free(vuser);
-			talloc_free(server_info);
+			TALLOC_FREE(server_info);
 			return UID_FIELD_INVALID;
 		}
 	}
@@ -252,7 +252,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 			if (passwd) {
 				vuser->unix_homedir =
 					smb_xstrdup(passwd->pw_dir);
-				talloc_free(passwd);
+				TALLOC_FREE(passwd);
 			}
 		}
 		
@@ -280,7 +280,7 @@ int register_vuid(auth_serversupplied_info *server_info,
 	} else {
 		DEBUG(1, ("server_info does not contain a user_token - "
 			  "cannot continue\n"));
-		talloc_free(server_info);
+		TALLOC_FREE(server_info);
 		data_blob_free(&session_key);
 		SAFE_FREE(vuser->homedir);
 		SAFE_FREE(vuser->unix_homedir);

@@ -522,7 +522,7 @@ static int server_info_dtor(void *p)
 }
 
 /***************************************************************************
- Make a server_info struct. Free with talloc_free().
+ Make a server_info struct. Free with TALLOC_FREE().
 ***************************************************************************/
 
 static auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
@@ -565,7 +565,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	}
 
 	if ( !(result = make_server_info(NULL)) ) {
-		talloc_free(pwd);
+		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -574,7 +574,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	result->gid = pwd->pw_gid;
 	result->uid = pwd->pw_uid;
 	
-	talloc_free(pwd);
+	TALLOC_FREE(pwd);
 
 	status = pdb_enum_group_memberships(result, sampass,
 					    &result->sids, &gids,
@@ -584,14 +584,14 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
 			   nt_errstr(status)));
 		result->sam_account = NULL; /* Don't free on error exit. */
-		talloc_free(result);
+		TALLOC_FREE(result);
 		return status;
 	}
 
 	/* For now we throw away the gids and convert via sid_to_gid
 	 * later. This needs fixing, but I'd like to get the code straight and
 	 * simple first. */
-	talloc_free(gids);
+	TALLOC_FREE(gids);
 
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
 		 pdb_get_username(sampass), result->unix_name));
@@ -793,7 +793,7 @@ static struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	talloc_steal(mem_ctx, result);
 
  done:
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 	return result;
 }
 
@@ -846,7 +846,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 
 	status = log_nt_token(mem_ctx, server_info->ptok);
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return status;
 }
 
@@ -1014,7 +1014,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 	result = NT_STATUS_OK;
  done:
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 	return result;
 }
 
@@ -1052,7 +1052,7 @@ BOOL user_in_group_sid(const char *username, const DOM_SID *group_sid)
 
 	result = nt_token_check_sid(group_sid, token);
 
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return result;
 	
 }
@@ -1072,7 +1072,7 @@ BOOL user_in_group(const char *username, const char *groupname)
 
 	ret = lookup_name(mem_ctx, groupname, LOOKUP_NAME_ALL,
 			  NULL, NULL, &group_sid, NULL);
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	if (!ret) {
 		DEBUG(10, ("lookup_name(%s) failed: %s\n", groupname,
@@ -1182,14 +1182,14 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
 			   nt_errstr(status)));
-		talloc_free(result);
+		TALLOC_FREE(result);
 		return status;
 	}
 
 	/* For now we throw away the gids and convert via sid_to_gid
 	 * later. This needs fixing, but I'd like to get the code straight and
 	 * simple first. */
-	talloc_free(gids);
+	TALLOC_FREE(gids);
 
 	*server_info = result;
 
@@ -1349,7 +1349,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 		*found_username));
 
 	nt_status = pdb_init_sam_pw(sam_account, passwd);
-	talloc_free(passwd);
+	TALLOC_FREE(passwd);
 	return nt_status;
 }
 
@@ -1622,7 +1622,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				 info3->gids[i].g_rid)) {
 			DEBUG(3,("could not append additional group rid "
 				 "0x%x\n", info3->gids[i].g_rid));
-			talloc_free(result);
+			TALLOC_FREE(result);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		add_sid_to_array(result, &sid, &result->sids,
@@ -1742,7 +1742,7 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, NT_USER_TOKEN *ptoken)
 
 	if ((ptoken->user_sids != NULL) && (token->user_sids == NULL)) {
 		DEBUG(0, ("talloc_memdup failed\n"));
-		talloc_free(token);
+		TALLOC_FREE(token);
 		return NULL;
 	}
 

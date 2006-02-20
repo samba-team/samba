@@ -197,7 +197,7 @@ BOOL remove_oplock(files_struct *fsp)
 			 (double)inode));
 	}
 	release_file_oplock(fsp);
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return ret;
 }
 
@@ -226,7 +226,7 @@ BOOL downgrade_oplock(files_struct *fsp)
 	}
 
 	downgrade_file_oplock(fsp);
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 	return ret;
 }
 
@@ -470,7 +470,7 @@ static void process_oplock_async_level2_break_message(int msg_type, struct proce
 	/* Restore the sign state to what it was. */
 	srv_oplock_set_signing(sign_state);
 
-	talloc_free(break_msg);
+	TALLOC_FREE(break_msg);
 
 	/* Async level2 request, don't send a reply, just remove the oplock. */
 	remove_oplock(fsp);
@@ -578,7 +578,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	/* Restore the sign state to what it was. */
 	srv_oplock_set_signing(sign_state);
 
-	talloc_free(break_msg);
+	TALLOC_FREE(break_msg);
 
 	fsp->sent_oplock_break = break_to_level2 ? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
 
@@ -654,7 +654,7 @@ static void process_kernel_oplock_break(int msg_type, struct process_id src,
 	/* Restore the sign state to what it was. */
 	srv_oplock_set_signing(sign_state);
 
-	talloc_free(break_msg);
+	TALLOC_FREE(break_msg);
 
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
 
@@ -681,7 +681,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 	fsp->num_pending_break_messages = 0;
 	if (fsp->oplock_timeout != NULL) {
 		/* Remove the timed event handler. */
-		talloc_free(fsp->oplock_timeout);
+		TALLOC_FREE(fsp->oplock_timeout);
 		fsp->oplock_timeout = NULL;
 	}
 	return;
@@ -801,7 +801,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			DEBUG(0,("release_level_2_oplocks_on_change: PANIC. "
 				 "share mode entry %d is an exlusive "
 				 "oplock !\n", i ));
-			talloc_free(lck);
+			TALLOC_FREE(lck);
 			abort();
 		}
 
@@ -816,7 +816,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	/* We let the message receivers handle removing the oplock state
 	   in the share mode lock db. */
 
-	talloc_free(lck);
+	TALLOC_FREE(lck);
 }
 
 /****************************************************************************
