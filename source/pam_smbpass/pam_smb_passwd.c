@@ -102,8 +102,6 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     char *pass_old;
     char *pass_new;
 
-    NTSTATUS nt_status;
-
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
     in_client = True;
@@ -137,9 +135,9 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     }
 
     /* obtain user record */
-    if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
+    if ( !(sampass = samu_new( NULL )) ) {
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
-        return nt_status_to_pam(nt_status);
+        return nt_status_to_pam(NT_STATUS_NO_MEMORY);
     }
 
     if (!pdb_getsampwnam(sampass,user)) {

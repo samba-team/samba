@@ -1693,10 +1693,9 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
 
-	nt_status = pdb_init_sam_talloc(p->mem_ctx, &sampass);
-	
-	if (!NT_STATUS_IS_OK(nt_status))
-		return nt_status;
+	if ( !(sampass = samu_new( p->mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* append the user's RID to it */
 	
@@ -1749,19 +1748,16 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
 {
 	struct samu *smbpass=NULL;
 	BOOL ret;
-	NTSTATUS nt_status;
 
-	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if ( !(smbpass = samu_new( mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
-
+	
 	become_root();
 	ret = pdb_getsampwsid(smbpass, user_sid);
 	unbecome_root();
 
-	if (ret==False) {
+	if ( !ret ) {
 		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -1783,12 +1779,9 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx, SAM_USER_INFO_9 * id9, DOM_
 {
 	struct samu *smbpass=NULL;
 	BOOL ret;
-	NTSTATUS nt_status;
 
-	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if ( !(smbpass = samu_new( mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	become_root();
@@ -1818,12 +1811,9 @@ static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DO
 {
 	struct samu *smbpass=NULL;
 	BOOL ret;
-	NTSTATUS nt_status;
 
-	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if ( !(smbpass = samu_new( mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	become_root();
@@ -1855,7 +1845,6 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 {
 	struct samu *smbpass=NULL;
 	BOOL ret;
-	NTSTATUS nt_status;
 
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP || p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -1869,10 +1858,8 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
 	 */
 
-	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if ( !(smbpass = samu_new( mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ret = pdb_getsampwsid(smbpass, user_sid);
@@ -1907,7 +1894,9 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DO
 	struct samu *sampass=NULL;
 	BOOL ret;
 
-	pdb_init_sam_talloc(mem_ctx, &sampass);
+	if ( !(sampass = samu_new( mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	become_root();
 	ret = pdb_getsampwsid(sampass, user_sid);
@@ -1941,9 +1930,8 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	BOOL ret;
 	NTSTATUS nt_status;
 
-	nt_status = pdb_init_sam_talloc(mem_ctx, &sampass);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if ( !(sampass = samu_new( mem_ctx )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	become_root();
@@ -2113,8 +2101,10 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	if (!sid_check_is_in_our_domain(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	pdb_init_sam_talloc(p->mem_ctx, &sam_pass);
-	
+        if ( !(sam_pass = samu_new( p->mem_ctx )) ) {
+                return NT_STATUS_NO_MEMORY;
+        }
+
 	become_root();
 	ret = pdb_getsampwsid(sam_pass, &sid);
 	unbecome_root();
@@ -3290,7 +3280,9 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 	
- 	pdb_init_sam(&pwd);	
+ 	if ( !(pwd = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	
 	become_root();
 	ret = pdb_getsampwsid(pwd, &sid);
@@ -3438,8 +3430,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 	switch_value=ctr->switch_value;
 
- 	pdb_init_sam(&pwd);	
-	
+	if ( !(pwd = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	become_root();
 	ret = pdb_getsampwsid(pwd, &sid);
 	unbecome_root();
@@ -3916,7 +3910,10 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_CANNOT_DELETE;
 
 	/* check if the user exists before trying to delete */
-	pdb_init_sam(&sam_pass);
+	if ( !(sam_pass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
 		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", 
 			sid_string_static(&user_sid)));

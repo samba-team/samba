@@ -54,7 +54,7 @@ static int net_sam_userset(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+	if ( !(sam_acct = samu_new( NULL )) ) {
 		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
@@ -151,7 +151,7 @@ static int net_sam_set_userflag(int argc, const char **argv, const char *field,
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+	if ( !(sam_acct = samu_new( NULL )) ) {
 		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}
@@ -254,7 +254,7 @@ static int net_sam_set_time(int argc, const char **argv, const char *field,
 	}
 
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_acct))) {
+	if ( !(sam_acct = samu_new( NULL )) ) {
 		d_fprintf(stderr, "Internal error\n");
 		return -1;
 	}

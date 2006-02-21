@@ -3,7 +3,7 @@
    Password and authentication handling
    Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
-   Copyright (C) Gerald (Jerry) Carter		2000-2001
+   Copyright (C) Gerald (Jerry) Carter		2000-2006
    Copyright (C) Andrew Bartlett		2001-2002
    Copyright (C) Simo Sorce			2003
    Copyright (C) Volker Lendecke 		2006
@@ -36,7 +36,7 @@
  standalone box will map to WKS\user.
 ******************************************************************/
 
-const char *get_default_sam_name(void)
+const char *my_sam_name(void)
 {
 	/* standalone servers can only use the local netbios name */
 	if ( lp_server_role() == ROLE_STANDALONE )
@@ -51,7 +51,7 @@ const char *get_default_sam_name(void)
  Fill the struct samu with default values.
  ***********************************************************/
 
-void pdb_fill_default_sam(struct samu *user)
+static void samu_init( struct samu *user )
 {
 	/* no initial methods */
 	user->methods = NULL;
@@ -62,8 +62,8 @@ void pdb_fill_default_sam(struct samu *user)
 	user->logon_time            = (time_t)0;
 	user->pass_last_set_time    = (time_t)0;
 	user->pass_can_change_time  = (time_t)0;
-	user->logoff_time           = 
-	user->kickoff_time          = 
+	user->logoff_time           = get_time_t_max();
+	user->kickoff_time          = get_time_t_max();
 	user->pass_must_change_time = get_time_t_max();
 	user->fields_present        = 0x00ffffff;
 	user->logon_divs = 168; 	/* hours per week */
@@ -116,16 +116,6 @@ static int samu_destroy(void *p)
 }
 
 /**********************************************************************
-***********************************************************************/
-
-BOOL samu_init( struct samu *user ) 
-{
-	pdb_fill_default_sam( user );
-	
-	return True;
-}
-
-/**********************************************************************
  generate a new struct samuser
 ***********************************************************************/
 
@@ -138,39 +128,11 @@ struct samu* samu_new( TALLOC_CTX *ctx )
 		return NULL;
 	}
 	
-	if ( !samu_init( user ) ) {
-		DEBUG(0,("samuser_new: initialization failed!\n"));
-		TALLOC_FREE( user );
-		return NULL;	
-	}
+	samu_init( user );
 	
 	talloc_set_destructor( user, samu_destroy );
 	
 	return user;
-}
-
-/**********************************************************************
- Allocates memory and initialises a struct sam_passwd on supplied mem_ctx.
-***********************************************************************/
-
-NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, struct samu **user)
-{
-	if ( !*user )
-		return NT_STATUS_UNSUCCESSFUL;
-	
-	*user = samu_new( mem_ctx );
-	return *user ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
-}
-
-
-/*************************************************************
- Allocates memory and initialises a struct sam_passwd.
- ************************************************************/
-
-NTSTATUS pdb_init_sam(struct samu **user)
-{
-	*user = samu_new( NULL );
-	return *user ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
 /**************************************************************************
@@ -252,21 +214,17 @@ static NTSTATUS pdb_set_sam_sids(struct samu *account_data, const struct passwd 
  Initialises a struct sam_passwd with sane values.
  ************************************************************/
 
-NTSTATUS pdb_fill_sam_pw(struct samu *sam_account, const struct passwd *pwd)
+NTSTATUS samu_set_unix(struct samu *sam_account, const struct passwd *pwd)
 {
 	NTSTATUS ret;
 
-	if (!pwd) {
-		return NT_STATUS_UNSUCCESSFUL;
+	if ( !pwd ) {
+		return NT_STATUS_NO_SUCH_USER;
 	}
-
-	pdb_fill_default_sam(sam_account);
 
 	pdb_set_username(sam_account, pwd->pw_name, PDB_SET);
 	pdb_set_fullname(sam_account, pwd->pw_gecos, PDB_SET);
-
 	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
-
 	pdb_set_domain (sam_account, get_global_sam_name(), PDB_DEFAULT);
 	
 	/* When we get a proper uid -> SID and SID -> uid allocation
@@ -280,7 +238,8 @@ NTSTATUS pdb_fill_sam_pw(struct samu *sam_account, const struct passwd *pwd)
 	*/
 
 	ret = pdb_set_sam_sids(sam_account, pwd);
-	if (!NT_STATUS_IS_OK(ret)) return ret;
+	if (!NT_STATUS_IS_OK(ret)) 
+		return ret;
 
 	/* check if this is a user account or a machine account */
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
@@ -325,38 +284,9 @@ NTSTATUS pdb_fill_sam_pw(struct samu *sam_account, const struct passwd *pwd)
 	return NT_STATUS_OK;
 }
 
-
-/*************************************************************
- Initialises a struct sam_passwd with sane values.
- ************************************************************/
-
-NTSTATUS pdb_init_sam_pw(struct samu **new_sam_acct, const struct passwd *pwd)
-{
-	NTSTATUS nt_status;
-
-	if (!pwd) {
-		new_sam_acct = NULL;
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(new_sam_acct))) {
-		new_sam_acct = NULL;
-		return nt_status;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*new_sam_acct, pwd))) {
-		TALLOC_FREE(new_sam_acct);
-		new_sam_acct = NULL;
-		return nt_status;
-	}
-
-	return NT_STATUS_OK;
-}
-
-
 /*************************************************************
  Initialises a struct samu ready to add a new account, based
- on the UNIX user.  Pass in a RID if you have one
+ on the UNIX user. 
  ************************************************************/
 
 NTSTATUS pdb_init_sam_new(struct samu **new_sam_acct, const char *username)
@@ -374,17 +304,21 @@ NTSTATUS pdb_init_sam_new(struct samu **new_sam_acct, const char *username)
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	pwd = Get_Pwnam_alloc(mem_ctx, username);
-
-	if (pwd == NULL) {
+	if ( !(pwd = Get_Pwnam_alloc(mem_ctx, username)) ) {
 		DEBUG(10, ("Could not find user %s\n", username));
 		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
-	result = pdb_init_sam_pw(new_sam_acct, pwd);
+	if ( !(*new_sam_acct = samu_new( NULL )) ) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result = samu_set_unix( *new_sam_acct, pwd );
+
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("pdb_init_sam_pw failed: %s\n", nt_errstr(result)));
+		DEBUG(10, ("samu_set_unix failed: %s\n", nt_errstr(result)));
 		goto done;
 	}
 		
@@ -792,7 +726,7 @@ BOOL lookup_global_sam_name(const char *user, int flags, uint32_t *rid,
 		struct samu *sam_account = NULL;
 		DOM_SID user_sid;
 
-		if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
+		if ( !(sam_account = samu_new( NULL )) ) {
 			return False;
 		}
 	
@@ -862,7 +796,10 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 	*msg_str = '\0';
 
 	/* Get the smb passwd entry for this user */
-	pdb_init_sam(&sam_pass);
+
+	if ( !(sam_pass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	become_root();
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
@@ -880,8 +817,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 
 			result = pdb_init_sam_new(&sam_pass, user_name);
 			DEBUGLEVEL = tmp_debug;
-			if (NT_STATUS_EQUAL(result,
-					    NT_STATUS_INVALID_PRIMARY_GROUP)) {
+			if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PRIMARY_GROUP)) {
 				return result;
 			}
 
@@ -1912,7 +1848,7 @@ BOOL pdb_copy_sam_account(const struct samu *src, struct samu **dst)
 	uint8 *buf;
 	int len;
 
-	if ((*dst == NULL) && (!NT_STATUS_IS_OK(pdb_init_sam(dst))))
+	if ( !*dst && !(*dst = samu_new(NULL)) )
 		return False;
 
 	len = init_buffer_from_sam_v2(&buf, src, False);

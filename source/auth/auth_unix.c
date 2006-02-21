@@ -30,10 +30,12 @@
  **/
 static BOOL update_smbpassword_file(const char *user, const char *password)
 {
-	struct samu 	*sampass = NULL;
+	struct samu 	*sampass;
 	BOOL            ret;
 	
-	pdb_init_sam(&sampass);
+	if ( !(sampass = samu_new( NULL )) ) {
+		return False;
+	}
 	
 	become_root();
 	ret = pdb_getsampwnam(sampass, user);

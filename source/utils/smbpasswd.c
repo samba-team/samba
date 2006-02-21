@@ -404,7 +404,7 @@ static int process_root(int local_flags)
 				struct samu *sampass = NULL;
 				BOOL ret;
 				
-				pdb_init_sam(&sampass);
+				sampass = samu_new( NULL );
 				ret = pdb_getsampwnam(sampass, user_name);
 				if((ret) &&
 				   (pdb_get_lanman_passwd(sampass) == NULL)) {
@@ -438,7 +438,7 @@ static int process_root(int local_flags)
 		struct samu *sampass = NULL;
 		BOOL ret;
 		
-		pdb_init_sam(&sampass);
+		sampass = samu_new( NULL );
 		ret = pdb_getsampwnam(sampass, user_name);
 
 		printf("Password changed for user %s.", user_name );

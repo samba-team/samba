@@ -101,7 +101,11 @@ static BOOL tdbsam_convert(int32 from)
 			}
 	
 			/* unpack the buffer from the former format */
-			pdb_init_sam( &user );
+			if ( !(user = samu_new( NULL )) ) {
+				DEBUG(0,("tdbsam_convert: samu_new() failed!\n"));
+				SAFE_FREE( data.dptr );
+				return False;
+			}
 			DEBUG(10,("tdbsam_convert: Try unpacking a record with (key:%s) (version:%d)\n", key.dptr, from));
 			switch (from) {
 				case 0:

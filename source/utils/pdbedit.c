@@ -175,7 +175,7 @@ static int print_user_info (struct pdb_methods *in, const char *username, BOOL v
 	struct samu *sam_pwent=NULL;
 	BOOL ret;
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+	if ( !(sam_pwent = samu_new( NULL )) ) {
 		return -1;
 	}
 
@@ -207,16 +207,22 @@ static int print_users_list (struct pdb_methods *in, BOOL verbosity, BOOL smbpwd
 	}
 
 	check = True;
-	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
+	if ( !(sam_pwent = samu_new( NULL )) ) {
+		return 1;
+	}
 
 	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 		TALLOC_FREE(sam_pwent);
-		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
+		
+		if ( !(sam_pwent = samu_new( NULL )) ) {
+			check = False;
+		}
 	}
-	if (check) TALLOC_FREE(sam_pwent);
+	if (check) 
+		TALLOC_FREE(sam_pwent);
 	
 	in->endsampwent(in);
 	return 0;
@@ -236,7 +242,9 @@ static int fix_users_list (struct pdb_methods *in)
 	}
 
 	check = True;
-	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
+	if ( !(sam_pwent = samu_new( NULL )) ) {
+		return 1;
+	}
 
 	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
 		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
@@ -245,13 +253,16 @@ static int fix_users_list (struct pdb_methods *in)
 			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
 		TALLOC_FREE(sam_pwent);
-		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
+		if ( !(sam_pwent = samu_new( NULL )) ) {
+			check = False;
+		}
 		if (!check) {
 			fprintf(stderr, "Failed to initialise new struct samu structure (out of memory?)\n");
 		}
 			
 	}
-	if (check) TALLOC_FREE(sam_pwent);
+	if (check) 
+		TALLOC_FREE(sam_pwent);
 	
 	in->endsampwent(in);
 	return 0;
@@ -275,7 +286,9 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 	struct samu *sam_pwent=NULL;
 	BOOL ret;
 	
-	pdb_init_sam(&sam_pwent);
+	if ( !(sam_pwent = samu_new( NULL )) ) {
+		return 1;
+	}
 	
 	ret = NT_STATUS_IS_OK(in->getsampwnam (in, sam_pwent, username));
 	if (ret==False) {
@@ -506,14 +519,22 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 	fstrcat(machineaccount, "$");
 
 	if ((pwd = getpwnam_alloc(NULL, machineaccount))) {
-		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
+
+		if ( !(sam_pwent = samu_new( NULL )) ) {
+			fprintf(stderr, "Memory allocation error!\n");
+			TALLOC_FREE(pwd);
+			return -1;
+		}
+
+		if ( !NT_STATUS_IS_OK(samu_set_unix(sam_pwent, pwd)) ) {
 			fprintf(stderr, "Could not init sam from pw\n");
 			TALLOC_FREE(pwd);
 			return -1;
 		}
+
 		TALLOC_FREE(pwd);
 	} else {
-		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+		if ( !(sam_pwent = samu_new( NULL )) ) {
 			fprintf(stderr, "Could not init sam from pw\n");
 			return -1;
 		}
@@ -546,7 +567,7 @@ static int delete_user_entry (struct pdb_methods *in, const char *username)
 {
 	struct samu *samaccount = NULL;
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
+	if ( !(samaccount = samu_new( NULL )) ) {
 		return -1;
 	}
 
@@ -576,7 +597,7 @@ static int delete_machine_entry (struct pdb_methods *in, const char *machinename
 	if (name[strlen(name)-1] != '$')
 		fstrcat (name, "$");
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
+	if ( !(samaccount = samu_new( NULL )) ) {
 		return -1;
 	}
 
