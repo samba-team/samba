@@ -22,8 +22,7 @@
 
 #include "includes.h"
 
-static struct passwd *talloc_copy_passwd(TALLOC_CTX *mem_ctx,
-					 const struct passwd *from) 
+struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) 
 {
 	struct passwd *ret = TALLOC_P(mem_ctx, struct passwd);
 	ret->pw_name = talloc_strdup(ret, from->pw_name);
@@ -99,13 +98,13 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		TALLOC_FREE(pwnam_cache[i]);
 	}
 
-	pwnam_cache[i] = talloc_copy_passwd(pwnam_cache, temp);
+	pwnam_cache[i] = tcopy_passwd(pwnam_cache, temp);
 
 	if (mem_ctx != NULL) {
 		return talloc_reference(mem_ctx, pwnam_cache[i]);
 	}
 
-	return talloc_copy_passwd(NULL, pwnam_cache[i]);
+	return tcopy_passwd(NULL, pwnam_cache[i]);
 }
 
 struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) 
@@ -123,5 +122,5 @@ struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
 		return NULL;
 	}
 
-	return talloc_copy_passwd(mem_ctx, temp);
+	return tcopy_passwd(mem_ctx, temp);
 }
