@@ -50,6 +50,7 @@ struct pwent_list {
 	TDB_DATA key;
 };
 static struct pwent_list *tdbsam_pwent_list;
+static BOOL pwent_initialized;
 
 /* GLOBAL TDB SAM CONTEXT */
 
@@ -292,6 +293,7 @@ static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update, 
 	}
 
 	tdb_traverse( tdbsam, tdbsam_traverse_setpwent, NULL );
+	pwent_initialized = True;
 
 	return NT_STATUS_OK;
 }
@@ -305,6 +307,13 @@ static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
 	struct pwent_list *ptr, *ptr_next;
 	
+	/* close the tdb only if we have a valid pwent state */
+	
+	if ( pwent_initialized ) {
+		DEBUG(7, ("endtdbpwent: closed sam database.\n"));
+		tdbsam_close();
+	}
+	
 	/* clear out any remaining entries in the list */
 	
 	for ( ptr=tdbsam_pwent_list; ptr; ptr = ptr_next ) {
@@ -312,11 +321,9 @@ static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 		DLIST_REMOVE( tdbsam_pwent_list, ptr );
 		SAFE_FREE( ptr->key.dptr);
 		SAFE_FREE( ptr );
-	}
+	}	
 	
-	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
-
-	tdbsam_close();
+	pwent_initialized = False;
 }
 
 /*****************************************************************
