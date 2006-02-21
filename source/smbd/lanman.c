@@ -1981,8 +1981,8 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 		goto done;
 	}
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam_talloc(mem_ctx, &sampw))) {
-		DEBUG(10, ("pdb_init_sam_talloc failed\n"));
+	if ( !(sampw = samu_new(mem_ctx)) ) {
+		DEBUG(0, ("samu_new() failed!\n"));
 		goto done;
 	}
 

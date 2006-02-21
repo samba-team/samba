@@ -285,7 +285,7 @@ BOOL pdb_getsampwnam(struct samu *sam_acct, const char *username)
 BOOL guest_user_info( struct samu *user )
 {
 	struct passwd *pwd;
-	NTSTATUS ntstatus;
+	NTSTATUS result;
 	const char *guestname = lp_guestaccount();
 	
 	if ( !(pwd = getpwnam_alloc( NULL, guestname ) ) ) {
@@ -294,11 +294,11 @@ BOOL guest_user_info( struct samu *user )
 		return False;
 	}
 	
-	/* fill in from the users information */
-	
-	ntstatus = pdb_fill_sam_pw( user, pwd );
-	
-	return NT_STATUS_IS_OK(ntstatus);
+	result = samu_set_unix(user, pwd);
+
+	TALLOC_FREE( pwd );
+
+	return NT_STATUS_IS_OK( result );
 
 }
 
@@ -816,7 +816,6 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
-	NTSTATUS status;
 
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
@@ -832,8 +831,8 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!NT_STATUS_IS_OK(status = pdb_init_sam(&account))) {
-		return status;
+	if ( !(account = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_getsampwsid(account, &member_sid) ||
@@ -884,7 +883,6 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
-	NTSTATUS status;
 
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
@@ -900,8 +898,8 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!NT_STATUS_IS_OK(status = pdb_init_sam(&account))) {
-		return status;
+	if ( !(account = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_getsampwsid(account, &member_sid) ||
@@ -1288,12 +1286,11 @@ static BOOL pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 		return False;
 	}
 	
-	if ( !NT_STATUS_IS_OK(pdb_init_sam(&sampw)) ) {
-		DEBUG(0,("pdb_default_uid_to_rid: failed to allocate "
-			 "struct samu object\n"));
+	if ( !(sampw = samu_new( NULL )) ) {
+		DEBUG(0,("pdb_default_uid_to_rid: samu_new() failed!\n"));
 		return False;
 	}
-	
+
 	become_root();
 	ret = NT_STATUS_IS_OK(
 		methods->getsampwnam(methods, sampw, unix_pw->pw_name ));
@@ -1565,7 +1562,8 @@ static BOOL lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	sid_append_rid(&sid, rid);
 	
 	/* see if the passdb can help us with the name of the user */
-	if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_account))) {
+
+	if ( !(sam_account = samu_new( NULL )) ) {
 		return False;
 	}
 
@@ -1813,12 +1811,10 @@ static BOOL next_entry_users(struct pdb_search *s,
 {
 	struct user_search *state = s->private_data;
 	struct samu *user = NULL;
-	NTSTATUS status;
 
  next:
-	status = pdb_init_sam(&user);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Could not pdb_init_sam\n"));
+	if ( !(user = samu_new( NULL )) ) {
+		DEBUG(0, ("next_entry_users: samu_new() failed!\n"));
 		return False;
 	}
 

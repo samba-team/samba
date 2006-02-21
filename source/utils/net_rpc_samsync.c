@@ -508,8 +508,9 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
 	d_printf("Creating account: %s\n", account);
 
-	if (!NT_STATUS_IS_OK(nt_ret = pdb_init_sam(&sam_account)))
-		return nt_ret;
+	if ( !(sam_account = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (!(passwd = Get_Pwnam(account))) {
 		/* Create appropriate user */
@@ -690,13 +691,12 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members);
 
 	for (i=0; i<delta->num_members; i++) {
-		NTSTATUS nt_status;
 		struct samu *member = NULL;
 		DOM_SID member_sid;
 
-		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(t, &member))) {
+		if ( !(member = samu_new(t)) ) {
 			talloc_destroy(t);
-			return nt_status;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		sid_copy(&member_sid, get_global_sam_sid());
