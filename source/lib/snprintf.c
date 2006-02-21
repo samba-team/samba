@@ -1112,25 +1112,28 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 }
 
 static struct pr_chunk *new_chunk(void) {
-	struct pr_chunk *new = (struct pr_chunk *)malloc(sizeof(struct pr_chunk));
+	struct pr_chunk *new_c = (struct pr_chunk *)malloc(sizeof(struct pr_chunk));
 
-	if (!new) return NULL;
+	if ( !new_c ) 
+		return NULL;
 
-	new->type = 0;
-	new->num = 0;
-	new->min = 0;
-	new->min_star = NULL;
-	new->max = -1;
-	new->max_star = NULL;
-	new->flags = 0;
-	new->cflags = 0;
-	new->start = 0;
-	new->len = 0;
-	new->value = 0;
-	new->fvalue = 0;
-	new->strvalue = NULL;
-	new->pnum = NULL;
-	new->next = NULL;
+	new_c->type = 0;
+	new_c->num = 0;
+	new_c->min = 0;
+	new_c->min_star = NULL;
+	new_c->max = -1;
+	new_c->max_star = NULL;
+	new_c->flags = 0;
+	new_c->cflags = 0;
+	new_c->start = 0;
+	new_c->len = 0;
+	new_c->value = 0;
+	new_c->fvalue = 0;
+	new_c->strvalue = NULL;
+	new_c->pnum = NULL;
+	new_c->next = NULL;
+
+	return new_c;
 }
 
 static int add_cnk_list_entry(struct pr_chunk_x **list,
