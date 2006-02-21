@@ -154,7 +154,6 @@ struct samu {
 	const char *domain;       /* Windows Domain name */
 	const char *nt_username;  /* Windows username string */
 	const char *full_name;    /* user's full name string */
-	const char *unix_home_dir;     /* UNIX home directory string */
 	const char *home_dir;     /* home directory string */
 	const char *dir_drive;    /* home directory drive string */
 	const char *logon_script; /* logon script string */
@@ -189,7 +188,10 @@ struct samu {
 	const struct pdb_methods *backend_private_methods;
 	void *backend_private_data; 
 	void (*backend_private_data_free_fn)(void **);
+	
+	/* maintain a copy of the user's struct passwd */
 
+	struct passwd *unix_pw;
 };
 
 struct acct_info {

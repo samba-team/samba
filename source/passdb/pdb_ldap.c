@@ -441,67 +441,7 @@ static int ldapsam_delete_entry(struct ldapsam_privates *priv,
 	return smbldap_modify(priv->smbldap_state, dn, mods);
 }
 		  
-/* New Interface is being implemented here */
-
-#if 0	/* JERRY - not uesed anymore */
-
-/**********************************************************************
-Initialize struct samu from an LDAP query (unix attributes only)
-*********************************************************************/
-static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state, 
-				struct samu * sampass,
-				LDAPMessage * entry,
-				gid_t *gid)
-{
-	pstring  homedir;
-	pstring  temp;
-	char **ldap_values;
-	char **values;
-
-	if ((ldap_values = ldap_get_values (ldap_state->smbldap_state->ldap_struct, entry, "objectClass")) == NULL) {
-		DEBUG (1, ("get_unix_attributes: no objectClass! \n"));
-		return False;
-	}
-
-	for (values=ldap_values;*values;values++) {
-		if (strequal(*values, LDAP_OBJ_POSIXACCOUNT )) {
-			break;
-		}
-	}
-	
-	if (!*values) { /*end of array, no posixAccount */
-		DEBUG(10, ("user does not have %s attributes\n", LDAP_OBJ_POSIXACCOUNT));
-		ldap_value_free(ldap_values);
-		return False;
-	}
-	ldap_value_free(ldap_values);
-
-	if ( !smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_UNIX_HOME), homedir) ) 
-	{
-		return False;
-	}
-	
-	if ( !smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_GIDNUMBER), temp) )
-	{
-		return False;
-	}
-	
-	*gid = (gid_t)atol(temp);
-
-	pdb_set_unix_homedir(sampass, homedir, PDB_SET);
-	
-	DEBUG(10, ("user has %s attributes\n", LDAP_OBJ_POSIXACCOUNT));
-	
-	return True;
-}
-
-#endif
-
-static time_t ldapsam_get_entry_timestamp(
-	struct ldapsam_privates *ldap_state,
-	LDAPMessage * entry)
+static time_t ldapsam_get_entry_timestamp( struct ldapsam_privates *ldap_state, LDAPMessage * entry)
 {
 	pstring temp;	
 	struct tm tm;
