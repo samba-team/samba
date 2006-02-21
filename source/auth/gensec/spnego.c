@@ -358,6 +358,10 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		}
 	}
 	
+	/* Having tried any optomisitc token from the client (if we
+	 * were the server), if we didn't get anywhere, walk our list
+	 * in our preference order */
+	
 	if (!spnego_state->sub_sec_security) {
 		for (i=0; all_sec && all_sec[i].op; i++) {
 			nt_status = gensec_subcontext_start(spnego_state,
@@ -382,6 +386,25 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 						  out_mem_ctx, 
 						  null_data_blob, 
 						  unwrapped_out);
+
+			/* it is likely that a NULL input token will
+			 * not be liked by most server mechs, but if
+			 * we are in the client, we want the first
+			 * update packet to be able to abort the use
+			 * of this mech */
+			if (spnego_state->state_position != SPNEGO_SERVER_START) {
+				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
+				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
+					/* Pretend we never started it (lets the first run find some incompatible demand) */
+					
+					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse: %s\n", 
+						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+					talloc_free(spnego_state->sub_sec_security);
+					spnego_state->sub_sec_security = NULL;
+					continue;
+				}
+			}
+
 			break;
 		}
 	}
