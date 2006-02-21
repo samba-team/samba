@@ -152,10 +152,15 @@ NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	/* Basic properties based upon the Unix account information */
+
 	pdb_set_username(user, pwd->pw_name, PDB_SET);
 	pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
-	pdb_set_unix_homedir(user, pwd->pw_dir, PDB_SET);
 	pdb_set_domain (user, get_global_sam_name(), PDB_DEFAULT);
+
+	/* save the password structure for later use */
+
+	user->unix_pw = tcopy_passwd( user, pwd );
 
 	/* Special case for the guest account which must have a RID of 501.
 	   By default the guest account is a member of of the domain users 

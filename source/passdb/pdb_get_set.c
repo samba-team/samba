@@ -265,10 +265,10 @@ const char* pdb_get_homedir (const struct samu *sampass)
 
 const char* pdb_get_unix_homedir (const struct samu *sampass)
 {
-	if (sampass)
-		return (sampass->unix_home_dir);
-	else
-		return (NULL);
+	if ( sampass && sampass->unix_pw )
+		return ( sampass->unix_pw->pw_dir );
+
+	return (NULL);
 }
 
 const char* pdb_get_dir_drive (const struct samu *sampass)
@@ -827,34 +827,6 @@ BOOL pdb_set_homedir (struct samu *sampass, const char *home_dir, enum pdb_value
 	}
 
 	return pdb_set_init_flags(sampass, PDB_SMBHOME, flag);
-}
-
-/*********************************************************************
- Set the user's unix home directory.
- ********************************************************************/
-
-BOOL pdb_set_unix_homedir (struct samu *sampass, const char *unix_home_dir, enum pdb_value_state flag)
-{
-	if (!sampass)
-		return False;
-
-	if (unix_home_dir) { 
-		DEBUG(10, ("pdb_set_unix_homedir: setting home dir %s, was %s\n", unix_home_dir,
-			(sampass->unix_home_dir)?(sampass->unix_home_dir):"NULL"));
- 
-		sampass->unix_home_dir = talloc_strdup(sampass, 
-							  unix_home_dir);
-		
-		if (!sampass->unix_home_dir) {
-			DEBUG(0, ("pdb_set_unix_home_dir: talloc_strdup() failed!\n"));
-			return False;
-		}
-
-	} else {
-		sampass->unix_home_dir = PDB_NOT_QUITE_NULL;
-	}
-
-	return pdb_set_init_flags(sampass, PDB_UNIXHOMEDIR, flag);
 }
 
 /*********************************************************************
