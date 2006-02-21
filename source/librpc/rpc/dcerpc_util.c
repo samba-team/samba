@@ -810,7 +810,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	status = dcerpc_pipe_connect_b(mem_ctx, 
 				       &p,
 				       epmapper_binding,
-					   &dcerpc_table_epmapper,
+				       &dcerpc_table_epmapper,
 				       anon_creds, ev);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1054,8 +1054,8 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
    binding to determine the endpoint and options */
 NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
 			     struct dcerpc_pipe **pp, 
-				 const char *binding,
-				 const struct dcerpc_interface_table *table,
+			     const char *binding,
+			     const struct dcerpc_interface_table *table,
 			     struct cli_credentials *credentials,
 			     struct event_context *ev)
 {
