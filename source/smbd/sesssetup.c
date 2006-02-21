@@ -70,6 +70,23 @@ static int add_signature(char *outbuf, char *p)
 }
 
 /****************************************************************************
+ Start the signing engine if needed. Don't fail signing here.
+****************************************************************************/
+
+static void sessionsetup_start_signing_engine(const auth_serversupplied_info *server_info, char *inbuf)
+{
+	if (!server_info->guest && !srv_signing_started()) {
+		/* We need to start the signing engine
+		 * here but a W2K client sends the old
+		 * "BSRSPYL " signature instead of the
+		 * correct one. Subsequent packets will
+		 * be correct.
+		 */
+	       	srv_check_sign_mac(inbuf, False);
+	}
+}
+
+/****************************************************************************
  Send a security blob via a session setup reply.
 ****************************************************************************/
 
@@ -355,15 +372,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		
 		SSVAL(outbuf, smb_uid, sess_vuid);
 
-		if (!server_info->guest && !srv_signing_started()) {
-			/* We need to start the signing engine
-			 * here but a W2K client sends the old
-			 * "BSRSPYL " signature instead of the
-			 * correct one. Subsequent packets will
-			 * be correct.
-			 */
-		       	srv_check_sign_mac(inbuf, False);
-		}
+		sessionsetup_start_signing_engine(server_info, inbuf);
 	}
 
         /* wrap that up in a nice GSS-API wrapping */
@@ -436,16 +445,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 			
 			SSVAL(outbuf,smb_uid,sess_vuid);
 
-			if (!server_info->guest && !srv_signing_started()) {
-				/* We need to start the signing engine
-				 * here but a W2K client sends the old
-				 * "BSRSPYL " signature instead of the
-				 * correct one. Subsequent packets will
-				 * be correct.
-				 */
-
-				srv_check_sign_mac(inbuf, False);
-			}
+			sessionsetup_start_signing_engine(server_info, inbuf);
 		}
 	}
 
@@ -1107,9 +1107,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	/* current_user_info is changed on new vuid */
 	reload_services( True );
 
- 	if (!server_info->guest && !srv_signing_started() && !srv_check_sign_mac(inbuf, True)) {
-		exit_server("reply_sesssetup_and_X: bad smb signature");
-	}
+	sessionsetup_start_signing_engine(server_info, inbuf);
 
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
