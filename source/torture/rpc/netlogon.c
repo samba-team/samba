@@ -539,7 +539,7 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;
@@ -564,7 +564,6 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			printf("Credential chaining failed\n");
 			ret = False;
 		}
-		
 	}
 
 	r.in.credential = NULL;
@@ -573,7 +572,7 @@ BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.validation_level = i;
 
-		printf("Testing SamLogon with validation level %d\n", i);
+		printf("Testing SamLogon with validation level %d and a NULL credential\n", i);
 
 		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {

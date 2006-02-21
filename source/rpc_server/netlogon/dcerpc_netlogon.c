@@ -31,71 +31,8 @@
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
 	struct netr_Credential server_challenge;
-
-	/* This is a bit (dangeroursly?) tricky:
-	   - The session key, computer name and domain elements are
-	     valid. 
-	   - However the credentials chaining (seed, client, server etc)
-	     should be obtained from the database at runtime */
-	struct creds_CredentialState *creds; 
 };
 
-
-/*
-  a client has connected to the netlogon server using schannel, so we need
-  to re-establish the credentials state
-*/
-static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call) 
-{
-	struct server_pipe_state *state;
-	NTSTATUS status;
-
-	/* We want the client and server challenge zero */
-	state = talloc_zero(dce_call->conn, struct server_pipe_state);
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	status = dcerpc_schannel_creds(dce_call->conn->auth_state.gensec_security, 
-				       state, 
-				       &state->creds);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("getting schannel credentials failed with %s\n", nt_errstr(status)));
-		talloc_free(state);
-		return status;
-	}
-	
-	dce_call->context->private = state;
-
-	return NT_STATUS_OK;
-}
-
-/*
-  a hook for bind on the netlogon pipe
-*/
-static NTSTATUS netlogon_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *di) 
-{
-	dce_call->context->private = NULL;
-
-	/* if this is a schannel bind then we need to reconstruct the pipe state */
-	if (dce_call->conn->auth_state.auth_info &&
-	    dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		NTSTATUS status;
-
-		DEBUG(5, ("schannel bind on netlogon\n"));
-
-		status = netlogon_schannel_setup(dce_call);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("schannel bind on netlogon failed with %s\n", nt_errstr(status)));
-			return status;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
-#define DCESRV_INTERFACE_NETLOGON_BIND netlogon_bind
 
 static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
@@ -115,8 +52,6 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	if (!pipe_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	pipe_state->creds = NULL;
 
 	pipe_state->client_challenge = *r->in.credentials;
 
@@ -238,12 +173,6 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	/* remember this session key state */
 	nt_status = schannel_store_session_key(mem_ctx, creds);
 
-	if (pipe_state->creds) {
-		talloc_free(pipe_state->creds);
-	}
-	talloc_steal(pipe_state, creds);
-	pipe_state->creds = creds;
-
 	return nt_status;
 }
 						 
@@ -302,7 +231,7 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
   the caller needs some of that information.
 
 */
-static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_state,
+static NTSTATUS netr_creds_server_step_check(const char *computer_name,
 					     TALLOC_CTX *mem_ctx, 
 					     struct netr_Authenticator *received_authenticator,
 					     struct netr_Authenticator *return_authenticator,
@@ -312,11 +241,6 @@ static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_stat
 	NTSTATUS nt_status;
 	struct ldb_context *ldb;
 	int ret;
-
-	if (!pipe_state) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	ldb = schannel_db_connect(mem_ctx);
 	if (!ldb) {
@@ -333,8 +257,8 @@ static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_stat
 	 * disconnects) we must update the database every time we
 	 * update the structure */ 
 	
-	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, pipe_state->creds->computer_name, 
-						   pipe_state->creds->domain, &creds);
+	nt_status = schannel_fetch_session_key_ldb(ldb, ldb, computer_name, lp_workgroup(),
+						   &creds);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = creds_server_step_check(creds, 
 						    received_authenticator, 
@@ -365,12 +289,11 @@ static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_stat
 static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
 	struct creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
 
-	nt_status = netr_creds_server_step_check(pipe_state, mem_ctx, 
+	nt_status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 						 &r->in.credential, &r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -400,7 +323,6 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet2 *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
 	struct creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
@@ -410,7 +332,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 
 	struct samr_CryptPassword password_buf;
 
-	nt_status = netr_creds_server_step_check(pipe_state, mem_ctx, 
+	nt_status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 						 &r->in.credential, &r->out.return_authenticator,
 						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -464,15 +386,15 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 
 /* 
-  netr_LogonSamLogonEx
+  netr_LogonSamLogon_base
 
   This version of the function allows other wrappers to say 'do not check the credentials'
+
+  We can't do the traditional 'wrapping' format completly, as this function must only run under schannel
 */
-static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				     struct netr_LogonSamLogonEx *r)
+static NTSTATUS netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct netr_LogonSamLogonEx *r, struct creds_CredentialState *creds)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
-	struct creds_CredentialState *creds = pipe_state->creds;
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info;
 	struct auth_serversupplied_info *server_info;
@@ -496,7 +418,7 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	case 1:
 	case 3:
 	case 5:
-		if (pipe_state->creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			creds_arcfour_crypt(creds, 
 					    r->in.logon.password->lmpassword.hash, 
 					    sizeof(r->in.logon.password->lmpassword.hash));
@@ -633,6 +555,23 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct netr_LogonSamLogonEx *r) 
+{
+	NTSTATUS nt_status;
+	struct creds_CredentialState *creds;
+	nt_status = schannel_fetch_session_key(mem_ctx, r->in.computer_name, lp_workgroup(), &creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	if (!dce_call->conn->auth_state.auth_info
+	    || dce_call->conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);
+}
+
 /* 
   netr_LogonSamLogonWithFlags
 
@@ -640,8 +579,8 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct netr_LogonSamLogonWithFlags *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
 	NTSTATUS nt_status;
+	struct creds_CredentialState *creds;
 	struct netr_LogonSamLogonEx r2;
 
 	struct netr_Authenticator *return_authenticator;
@@ -649,21 +588,21 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
 	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
 
-	nt_status = netr_creds_server_step_check(pipe_state, mem_ctx, 
+	nt_status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 						 r->in.credential, return_authenticator,
-						 NULL);
+						 &creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	ZERO_STRUCT(r2);
 
 	r2.in.server_name	= r->in.server_name;
-	r2.in.workstation	= r->in.workstation;
+	r2.in.computer_name	= r->in.computer_name;
 	r2.in.logon_level	= r->in.logon_level;
 	r2.in.logon		= r->in.logon;
 	r2.in.validation_level	= r->in.validation_level;
 	r2.in.flags		= r->in.flags;
 
-	nt_status = netr_LogonSamLogonEx(dce_call, mem_ctx, &r2);
+	nt_status = netr_LogonSamLogon_base(dce_call, mem_ctx, &r2, creds);
 
 	r->out.return_authenticator	= return_authenticator;
 	r->out.validation		= r2.out.validation;
@@ -685,7 +624,7 @@ static NTSTATUS netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CT
 	ZERO_STRUCT(r2);
 
 	r2.in.server_name = r->in.server_name;
-	r2.in.workstation = r->in.workstation;
+	r2.in.computer_name = r->in.computer_name;
 	r2.in.credential  = r->in.credential;
 	r2.in.return_authenticator = r->in.return_authenticator;
 	r2.in.logon_level = r->in.logon_level;
@@ -947,7 +886,6 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *
 static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonGetDomainInfo *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
 	const char * const attrs[] = { "dnsDomain", "objectSid", 
 				       "objectGUID", "flatName", "securityIdentifier",
 				       NULL };
@@ -960,7 +898,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 
 	const char *local_domain;
 
-	status = netr_creds_server_step_check(pipe_state, mem_ctx, 
+	status = netr_creds_server_step_check(r->in.computer_name, mem_ctx, 
 					      r->in.credential, 
 					      r->out.return_authenticator,
 					      NULL);

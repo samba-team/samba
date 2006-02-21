@@ -153,7 +153,7 @@ static void pam_auth_crap_recv_domain(struct composite_context *ctx)
 
 	ZERO_STRUCT(state->auth2);
 
-	state->r.in.workstation =
+	state->r.in.computer_name =
 		cli_credentials_get_workstation(domain->schannel_creds);
 	state->r.in.credential = &state->auth;
 	state->r.in.return_authenticator = &state->auth2;

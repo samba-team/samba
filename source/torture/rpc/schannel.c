@@ -85,7 +85,7 @@ BOOL test_netlogon_ex_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.logon_level = 2;
 	r.in.logon.network = &ninfo;
 	r.in.flags = 0;
@@ -238,6 +238,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
 	struct dcerpc_pipe *p_netlogon2 = NULL;
+	struct dcerpc_pipe *p_netlogon3 = NULL;
 	struct dcerpc_pipe *p_samr2 = NULL;
 	struct dcerpc_pipe *p_lsa = NULL;
 	struct creds_CredentialState *creds;
@@ -395,14 +396,37 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	
 	/* Try the schannel-only SamLogonEx operation */
 	if (!test_netlogon_ex_ops(p_netlogon2, test_ctx, credentials, creds)) {
-		printf("Failed to process schannel secured NETLOGON EX ops\n");
+		printf("Failed to process schannel secured NETLOGON EX ops (on fresh connection)\n");
 		ret = False;
 	}
 
 	/* And the more traditional style, proving that the
 	 * credentials chaining state is fully present */
 	if (!test_netlogon_ops(p_netlogon2, test_ctx, credentials, creds)) {
-		printf("Failed to process schannel secured NETLOGON EX ops\n");
+		printf("Failed to process schannel secured NETLOGON ops (on fresh connection)\n");
+		ret = False;
+	}
+
+	/* Drop the socket, we want to start from scratch (again) */
+	talloc_free(p_samr2);
+
+	/* We don't want schannel for this test */
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+
+	status = dcerpc_pipe_connect_b(test_ctx, &p_netlogon3, b, &dcerpc_table_netlogon,
+				       credentials, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect without schannel: %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+	if (test_netlogon_ex_ops(p_netlogon3, test_ctx, credentials, creds)) {
+		printf("Processed NOT schannel secured NETLOGON EX ops without SCHANNEL (unsafe)\n");
+		ret = False;
+	}
+
+	if (!test_netlogon_ops(p_netlogon3, test_ctx, credentials, creds)) {
+		printf("Failed to processed NOT schannel secured NETLOGON ops without new ServerAuth\n");
 		ret = False;
 	}
 

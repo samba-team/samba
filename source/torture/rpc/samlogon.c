@@ -1335,17 +1335,17 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer(samlogon_state.chall.data, 8);
 	samlogon_state.r_flags.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
-	samlogon_state.r_flags.in.workstation = TEST_MACHINE_NAME;
+	samlogon_state.r_flags.in.computer_name = TEST_MACHINE_NAME;
 	samlogon_state.r_flags.in.credential = &samlogon_state.auth;
 	samlogon_state.r_flags.in.return_authenticator = &samlogon_state.auth2;
 	samlogon_state.r_flags.in.flags = 0;
 
 	samlogon_state.r_ex.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
-	samlogon_state.r_ex.in.workstation = TEST_MACHINE_NAME;
+	samlogon_state.r_ex.in.computer_name = TEST_MACHINE_NAME;
 	samlogon_state.r_ex.in.flags = 0;
 
 	samlogon_state.r.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
-	samlogon_state.r.in.workstation = TEST_MACHINE_NAME;
+	samlogon_state.r.in.computer_name = TEST_MACHINE_NAME;
 	samlogon_state.r.in.credential = &samlogon_state.auth;
 	samlogon_state.r.in.return_authenticator = &samlogon_state.auth2;
 
@@ -1415,7 +1415,7 @@ BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	creds_client_authenticator(creds, &a);
 
 	r.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = TEST_MACHINE_NAME;
+	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &a;
 	r.in.return_authenticator = &ra;
 	r.in.logon_level = 5;

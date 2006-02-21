@@ -175,7 +175,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 					struct ldb_context *ldb,
 					const char *computer_name, 
-					const char *domain, 
+					const char *domain,
 					struct creds_CredentialState **creds)
 {
 	struct ldb_result *res;
