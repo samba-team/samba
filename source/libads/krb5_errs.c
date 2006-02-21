@@ -58,7 +58,7 @@ static const struct {
 
 static const struct {
 	NTSTATUS ntstatus;
-	int krb5_code;
+	long krb5_code;
 } nt_status_to_krb5_map[] = {
 	{NT_STATUS_LOGON_FAILURE, KRB5KDC_ERR_PREAUTH_FAILED},
 	{NT_STATUS_NO_LOGON_SERVERS, KRB5_KDC_UNREACH},
