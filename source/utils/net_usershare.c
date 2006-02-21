@@ -368,8 +368,8 @@ static int info_fn(struct file_list *fl, void *priv)
 
 		ntstatus = net_lookup_name_from_sid(ctx, &psd->dacl->ace[num_aces].trustee, &domain, &name);
 
-		if (!NT_STATUS_IS_OK(ntstatus)) {
-			if (*domain) {
+		if (NT_STATUS_IS_OK(ntstatus)) {
+			if (domain && *domain) {
 				pstrcat(acl_str, domain);
 				pstrcat(acl_str, sep_str);
 			}
