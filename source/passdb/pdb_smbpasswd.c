@@ -1190,7 +1190,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 {
 	struct passwd *pwfile;
 	
-	if (sam_pass==NULL) {
+	if ( !sam_pass ) {
 		DEBUG(5,("build_sam_account: struct samu is NULL\n"));
 		return False;
 	}
@@ -1203,7 +1203,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			return False;
 	}
 	
-	if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile)))
+	if ( !NT_STATUS_IS_OK( samu_set_unix(sam_pass, pwfile)) )
 		return False;
 		
 	TALLOC_FREE(pwfile);
@@ -1269,13 +1269,11 @@ static NTSTATUS smbpasswd_getsampwent(struct pdb_methods *my_methods, struct sam
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *pw_buf=NULL;
 	BOOL done = False;
+
 	DEBUG(5,("pdb_getsampwent\n"));
 
-	if (user==NULL) {
+	if ( !user ) {
 		DEBUG(5,("pdb_getsampwent (smbpasswd): user is NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to getsampwent (smbpasswd)\n");
-#endif
 		return nt_status;
 	}
 
@@ -1338,9 +1336,6 @@ static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 
 	if (!sam_acct) {
 		DEBUG(10,("getsampwnam (smbpasswd): struct samu is NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_getsampwnam\n");
-#endif
 		return nt_status;
 	}
 		
@@ -1398,9 +1393,6 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 		
 	if (!sam_acct) {
 		DEBUG(10,("getsampwrid: (smbpasswd) struct samu is NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_getsampwrid\n");
-#endif
 		return nt_status;
 	}
 

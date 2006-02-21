@@ -768,7 +768,9 @@ static NTSTATUS check_oem_password(const char *user,
 
 	*hnd = NULL;
 
-	pdb_init_sam(&sampass);
+	if ( !(sampass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	become_root();
 	ret = pdb_getsampwnam(sampass, user);

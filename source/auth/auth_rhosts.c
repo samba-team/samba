@@ -31,7 +31,7 @@
 static NTSTATUS auth_get_sam_account(const char *user, struct samu **account) 
 {
 	BOOL pdb_ret;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 
 	if ( !(*account = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -41,17 +41,18 @@ static NTSTATUS auth_get_sam_account(const char *user, struct samu **account)
 	pdb_ret = pdb_getsampwnam(*account, user);
 	unbecome_root();
 
-	if (!pdb_ret) {
-		
-		struct passwd *pass = Get_Pwnam(user);
-		if (!pass) 
-			return NT_STATUS_NO_SUCH_USER;
+	if (!pdb_ret) 
+	{
+		struct passwd *pass;
 
-		if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*account, pass))) {
-			return nt_status;
+		if ( !(pass = Get_Pwnam( user )) ) {
+			return NT_STATUS_NO_SUCH_USER;
 		}
+
+		nt_status = samu_set_unix( *account, pass );
 	}
-	return NT_STATUS_OK;
+
+	return nt_status;
 }
 
 /****************************************************************************

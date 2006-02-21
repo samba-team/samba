@@ -229,8 +229,9 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 	}
 #endif /* 0 */
 
-	if(!NT_STATUS_IS_OK(pdb_init_sam(&sampass)))
+	if ( !(sampass = samu_new( NULL )) ) {
 		return False;
+	}
 
 	/* JRA. This is ok as it is only used for generating the challenge. */
 	become_root();
@@ -517,9 +518,13 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
 						remote_machine,
 						p->dc);
-	pdb_init_sam(&sampass);
-	ret=pdb_getsampwnam(sampass, p->dc->mach_acct);
+	if ( (sampass = samu_new( NULL )) != NULL ) {
+		ret = pdb_getsampwnam(sampass, p->dc->mach_acct);
+	}
 	unbecome_root();
+
+	if ( !sampass ) 
+		return NT_STATUS_NO_MEMORY;
 
 	/* Ensure the account exists and is a machine account. */
 	
