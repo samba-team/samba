@@ -23,7 +23,7 @@
 #ifdef HAVE_KRB5
 
 static const struct {
-	int krb5_code;
+	long krb5_code;
 	NTSTATUS ntstatus;
 } krb5_to_nt_status_map[] = {
 	{KRB5_CC_IO, NT_STATUS_UNEXPECTED_IO_ERROR},
