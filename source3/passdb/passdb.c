@@ -135,152 +135,120 @@ struct samu* samu_new( TALLOC_CTX *ctx )
 	return user;
 }
 
-/**************************************************************************
- * This function will take care of all the steps needed to correctly
- * allocate and set the user SID, please do use this function to create new
- * users, messing with SIDs is not good.
- *
- * account_data must be provided initialized, pwd may be null.
- * 									SSS
- ***************************************************************************/
+/*********************************************************************
+ Initialize a struct samu from a struct passwd including the user 
+ and group SIDs
+*********************************************************************/
 
-static NTSTATUS pdb_set_sam_sids(struct samu *account_data, const struct passwd *pwd)
+NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 {
 	const char *guest_account = lp_guestaccount();
 	GROUP_MAP map;
 	BOOL ret;
+
+	/* Set the Unix attributes */
 	
-	if (!account_data || !pwd) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* this is a hack this thing should not be set
-	   this way --SSS */
-	if (!(guest_account && *guest_account)) {
-		DEBUG(1, ("NULL guest account!?!?\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	} else {
-		/* Ensure this *must* be set right */
-		if (strcmp(pwd->pw_name, guest_account) == 0) {
-			if (!pdb_set_user_sid_from_rid(account_data, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			
-			/* by default the guest account is a member of of the domain users group
-			   as well as the domain guests group.  Verified against Windows NT - 2003 */
-			   
-			if (!pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT)) {
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			return NT_STATUS_OK;
-		}
-	}
-
-	/* we really need to throw away the mapping algorithm here */
-	
-	if (!pdb_set_user_sid_from_rid(account_data, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
-		DEBUG(0,("Can't set User SID from RID!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
-	/* call the mapping code here */
-	become_root();
-	ret = pdb_getgrgid(&map, pwd->pw_gid);
-	unbecome_root();
-	
-	if( ret ) {
-		if ( !pdb_set_group_sid(account_data, &map.sid, PDB_SET) ) {
-			DEBUG(0,("Can't set Group SID!\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		
-		return NT_STATUS_OK;
-	} 
-
-	/* at this point we do not have an explicit mapping for the user's 
-	   primary group.  We do not want to fall back to the rid mapping 
-	   algorithm.   Windows standalone servers set the 0x201 rid as the 
-	   primary group and LookupSid( S-1...-513 ) returns SERVER\None. 
-	   Do something similar.  Use the Domain Users RID as a a placeholder. 
-	   This is a workaround only.  */
-		
-	if ( !pdb_set_group_sid_from_rid(account_data, DOMAIN_GROUP_RID_USERS, PDB_SET)) 
-		return NT_STATUS_INVALID_PARAMETER;
-
-	return NT_STATUS_OK;
-}
-
-/*************************************************************
- Initialises a struct sam_passwd with sane values.
- ************************************************************/
-
-NTSTATUS samu_set_unix(struct samu *sam_account, const struct passwd *pwd)
-{
-	NTSTATUS ret;
-
 	if ( !pwd ) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	pdb_set_username(sam_account, pwd->pw_name, PDB_SET);
-	pdb_set_fullname(sam_account, pwd->pw_gecos, PDB_SET);
-	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
-	pdb_set_domain (sam_account, get_global_sam_name(), PDB_DEFAULT);
+	pdb_set_username(user, pwd->pw_name, PDB_SET);
+	pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
+	pdb_set_unix_homedir(user, pwd->pw_dir, PDB_SET);
+	pdb_set_domain (user, get_global_sam_name(), PDB_DEFAULT);
+
+	/* Special case for the guest account which must have a RID of 501.
+	   By default the guest account is a member of of the domain users 
+	   group as well as the domain guests group.  Verified against 
+	   Windows NT - 2003 */
 	
-	/* When we get a proper uid -> SID and SID -> uid allocation
-	   mechinism, we should call it here.  
-	   
-	   We can't just set this to 0 or allow it only to be filled
-	   in when added to the backend, because the user's SID 
-	   may already be in security descriptors etc.
-	   
-	   -- abartlet 11-May-02
-	*/
-
-	ret = pdb_set_sam_sids(sam_account, pwd);
-	if (!NT_STATUS_IS_OK(ret)) 
-		return ret;
-
-	/* check if this is a user account or a machine account */
-	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
+	if ( !guest_account ) {
+		DEBUG(0,("samu_set_unix: No guest user defined!\n"));
+		return NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
+	
+	if ( strequal( pwd->pw_name, guest_account ) ) 
 	{
-		pdb_set_profile_path(sam_account, 
-				     talloc_sub_specified(sam_account, 
-							    lp_logon_path(), 
-							    pwd->pw_name, global_myname(), 
-							    pwd->pw_uid, pwd->pw_gid), 
-				     PDB_DEFAULT);
-		
-		pdb_set_homedir(sam_account, 
-				talloc_sub_specified(sam_account, 
-						       lp_logon_home(),
-						       pwd->pw_name, global_myname(), 
-						       pwd->pw_uid, pwd->pw_gid),
-				PDB_DEFAULT);
-		
-		pdb_set_dir_drive(sam_account, 
-				  talloc_sub_specified(sam_account, 
-							 lp_logon_drive(),
-							 pwd->pw_name, global_myname(), 
-							 pwd->pw_uid, pwd->pw_gid),
-				  PDB_DEFAULT);
-		
-		pdb_set_logon_script(sam_account, 
-				     talloc_sub_specified(sam_account, 
-							    lp_logon_script(),
-							    pwd->pw_name, global_myname(), 
-							    pwd->pw_uid, pwd->pw_gid), 
-				     PDB_DEFAULT);
-		if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT)) {
-			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", pwd->pw_name));
-			return NT_STATUS_UNSUCCESSFUL;
+		if ( !pdb_set_user_sid_from_rid(user, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
+			return NT_STATUS_NO_SUCH_USER;
 		}
-	} else {
-		if (!pdb_set_acct_ctrl(sam_account, ACB_WSTRUST, PDB_DEFAULT)) {
-			DEBUG(1, ("Failed to set 'trusted workstation account' flags for user %s.\n", pwd->pw_name));
-			return NT_STATUS_UNSUCCESSFUL;
+			   
+		if ( !pdb_set_group_sid_from_rid(user, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT) ) {
+			return NT_STATUS_NO_SUCH_USER;
+		}
+		return NT_STATUS_OK;
+	}
+
+	/* normal user setup -- we really need to throw away the mapping algorithm here */
+	
+	if (!pdb_set_user_sid_from_rid(user, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
+		DEBUG(0,("Can't set User SID from RID!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+#if 1	/* I think we could throw away the primaryGroupSID attribute altogether
+	   and just build it from the UNIX_TOKEN.   --jerry */
+	   
+	/* call the mapping code here */
+	
+	become_root();
+	ret = pdb_getgrgid(&map, pwd->pw_gid);
+	unbecome_root();
+
+	/* We do not want to fall back to the rid mapping algorithm.   Windows 
+	   standalone servers set the 0x201 rid as the primary group and 
+	   LookupSid( S-1...-513 ) returns SERVER\None.   Do something similar.  
+	   Use the Domain Users RID as a a placeholder. This is a workaround only.  */
+		   
+	if( ret ) {
+		if ( !pdb_set_group_sid(user, &map.sid, PDB_SET) ) {
+			DEBUG(0,("Can't set Group SID!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	} else {		
+		if ( !pdb_set_group_sid_from_rid(user, DOMAIN_GROUP_RID_USERS, PDB_SET)) 
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif
+	
+	if (pwd->pw_name[strlen(pwd->pw_name)-1] == '$') {
+		/* workstation */
+		
+		if (!pdb_set_acct_ctrl(user, ACB_WSTRUST, PDB_DEFAULT)) {
+			DEBUG(1, ("Failed to set 'workstation account' flags for user %s.\n", 
+				pwd->pw_name));
+			return NT_STATUS_INVALID_COMPUTER_NAME;
+		}
+	
+		/* we're done here for a machine account */
+			
+		return NT_STATUS_OK;
+	} 
+	else {
+		/* user */
+		
+		if (!pdb_set_acct_ctrl(user, ACB_NORMAL, PDB_DEFAULT)) {
+			DEBUG(1, ("Failed to set 'normal account' flags for user %s.\n", 
+				pwd->pw_name));
+			return NT_STATUS_INVALID_ACCOUNT_NAME;
 		}
 	}
+	
+	/* set some basic attributes */
+	
+	pdb_set_profile_path(user, talloc_sub_specified(user, 
+		lp_logon_path(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid), 
+		PDB_DEFAULT);		
+	pdb_set_homedir(user, talloc_sub_specified(user, 
+		lp_logon_home(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid),
+		PDB_DEFAULT);
+	pdb_set_dir_drive(user, talloc_sub_specified(user, 
+		lp_logon_drive(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid),
+		PDB_DEFAULT);
+	pdb_set_logon_script(user, talloc_sub_specified(user, 
+		lp_logon_script(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid), 
+		PDB_DEFAULT);
+		
 	return NT_STATUS_OK;
 }
 
