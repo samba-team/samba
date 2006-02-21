@@ -172,7 +172,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	   and let the "passdb backend" handle unknown users. */
 
 	if ( !is_trusted_domain(domain) && !strequal(domain, get_global_sam_name()) ) 
-		domain = get_default_sam_name();
+		domain = my_sam_name();
 	
 	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
 	
@@ -492,7 +492,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	if ( token )
 		return token;
 		
-	if ( !(pw = getpwnam( "root" )) ) {
+	if ( !(pw = sys_getpwnam( "root" )) ) {
 		DEBUG(0,("get_root_nt_token: getpwnam\"root\") failed!\n"));
 		return NULL;
 	}
@@ -951,8 +951,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		struct samu *sam_acct = NULL;
 
-		result = pdb_init_sam_talloc(tmp_ctx, &sam_acct);
-		if (!NT_STATUS_IS_OK(result)) {
+		if ( !(sam_acct = samu_new( tmp_ctx )) ) {
 			goto done;
 		}
 
@@ -1100,9 +1099,12 @@ NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info,
 	fstring dom_name;
 	auth_serversupplied_info *result;
 
-	status = pdb_init_sam_pw(&sampass, pwd);
-
-	if (!NT_STATUS_IS_OK(status)) {		
+	if ( !(sampass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+		
+	status = samu_set_unix( sampass, pwd );
+	if ( !NT_STATUS_IS_OK(status) ) {		
 		return status;
 	}
 
@@ -1157,8 +1159,11 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 	gid_t *gids;
 	auth_serversupplied_info *result;
 	
-	status = pdb_init_sam_pw(&sampass, pwd);
-
+	if ( !(sampass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	status = samu_set_unix( sampass, pwd );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1211,10 +1216,8 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	BOOL ret;
 	static const char zeros[16];
 
-	status = pdb_init_sam(&sampass);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if ( !(sampass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	sid_copy(&guest_sid, get_global_sam_sid());
@@ -1311,7 +1314,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 const char *username,
 				 char **found_username,
 				 uid_t *uid, gid_t *gid,
-				 struct samu **sam_account)
+				 struct samu *account)
 {
 	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
@@ -1345,11 +1348,12 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	   
 	*found_username = talloc_strdup( mem_ctx, real_username );
 	
-	DEBUG(5,("fill_sam_account: located username was [%s]\n",
-		*found_username));
+	DEBUG(5,("fill_sam_account: located username was [%s]\n", *found_username));
 
-	nt_status = pdb_init_sam_pw(sam_account, passwd);
+	nt_status = samu_set_unix( account, passwd );
+	
 	TALLOC_FREE(passwd);
+	
 	return nt_status;
 }
 
@@ -1452,7 +1456,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	char *found_username;
 	const char *nt_domain;
 	const char *nt_username;
-
 	struct samu *sam_account = NULL;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
@@ -1504,30 +1507,30 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   that is how the current code is designed.  Making the change here
 	   is the least disruptive place.  -- jerry */
 	   
+	if ( !(sam_account = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	nt_status = fill_sam_account(mem_ctx, nt_domain, sent_nt_username,
-				     &found_username, &uid, &gid,
-				     &sam_account);
+				     &found_username, &uid, &gid, sam_account);
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		DEBUG(3,("User %s does not exist, trying to add it\n",
 			 internal_username));
 		smb_create_user( nt_domain, sent_nt_username, NULL);
-		nt_status = fill_sam_account( mem_ctx, nt_domain,
-					      sent_nt_username, 
-					      &found_username, &uid, &gid,
-					      &sam_account );
+		nt_status = fill_sam_account( mem_ctx, nt_domain, sent_nt_username, 
+					      &found_username, &uid, &gid, sam_account );
 	}
 	
 	/* if we still don't have a valid unix account check for 
 	  'map to gues = bad uid' */
 	  
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE( sam_account );
 		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
 		 	make_server_info_guest(server_info); 
 			return NT_STATUS_OK;
 		}
-		
-		DEBUG(0, ("make_server_info_info3: pdb_init_sam failed!\n"));
 		return nt_status;
 	}
 		

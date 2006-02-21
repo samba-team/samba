@@ -250,8 +250,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	/* Can't use the talloc version here, because the returned struct gets
 	   kept on the server_info */
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
-		return nt_status;
+
+	if ( !(sampass = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* get the account information */

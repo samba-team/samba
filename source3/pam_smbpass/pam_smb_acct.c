@@ -79,10 +79,13 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     }
 
     /* Get the user's record. */
-    pdb_init_sam(&sampass);
-    pdb_getsampwnam(sampass, name );
 
-    if (!sampass) {
+    if ( (sampass = samu_new( NULL )) != NULL ) {
+    	pdb_getsampwnam(sampass, name );
+    } 
+
+    /* check for lookup failure */
+    if ( !sampass || !strlen(pdb_get_username(sampass)) ) {
         CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_USER_UNKNOWN;
     }

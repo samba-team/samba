@@ -107,7 +107,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
         AUTH_RETURN;
     }
 
-    pdb_init_sam(&sampass);
+    sampass = samu_new( NULL );
     
     found = pdb_getsampwnam( sampass, name );
 
