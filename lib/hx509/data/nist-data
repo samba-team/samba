@@ -74,5 +74,18 @@ unknown f BadnotBeforeDateCACert.crt
 4.13.10   f InvalidDNnameConstraintsTest10EE.crt nameConstraintsDN5CACert.crt nameConstraintsDN5CACRL.crl
 4.13.11   p ValidDNnameConstraintsTest11EE.crt nameConstraintsDN5CACert.crt nameConstraintsDN5CACRL.crl
 4.13.12   f InvalidDNnameConstraintsTest12EE.crt nameConstraintsDN1subCA1Cert.crt nameConstraintsDN1subCA1CRL.crl nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.13   f InvalidDNnameConstraintsTest13EE.crt nameConstraintsDN1subCA1Cert.crt nameConstraintsDN1subCA1CRL.crl nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.14   p ValidDNnameConstraintsTest14EE.crt nameConstraintsDN1subCA2Cert.crt nameConstraintsDN1subCA2CRL.crl nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.15   f InvalidDNnameConstraintsTest15EE.crt nameConstraintsDN3subCA1Cert.crt nameConstraintsDN3subCA1CRL.crl nameConstraintsDN3CACert.crt nameConstraintsDN3CACRL.crl
+4.13.16   f InvalidDNnameConstraintsTest16EE.crt nameConstraintsDN3subCA1Cert.crt nameConstraintsDN3subCA1CRL.crl nameConstraintsDN3CACert.crt nameConstraintsDN3CACRL.crl
+4.13.17   f InvalidDNnameConstraintsTest17EE.crt nameConstraintsDN3subCA2Cert.crt nameConstraintsDN3subCA2CRL.crl nameConstraintsDN3CACert.crt nameConstraintsDN3CACRL.crl
+4.13.18   p ValidDNnameConstraintsTest18EE.crt nameConstraintsDN3subCA2Cert.crt nameConstraintsDN3subCA2CRL.crl nameConstraintsDN3CACert.crt nameConstraintsDN3CACRL.crl
+#
+# no crl for self issued cert
+#
+#4.13.19   p ValidDNnameConstraintsTest19EE.crt nameConstraintsDN1SelfIssuedCACert.crt nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+# ??
+4.13.20   f InvalidDNnameConstraintsTest20EE.crt nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+#4.13.21   p ValidRFC822nameConstraintsTest21EE.crt nameConstraintsRFC822CA1Cert.crt nameConstraintsRFC822CA1CRL.crl
 #page 74
 end
