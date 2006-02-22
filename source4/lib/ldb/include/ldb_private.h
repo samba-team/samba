@@ -133,7 +133,7 @@ int ldb_next_end_trans(struct ldb_module *module);
 int ldb_next_del_trans(struct ldb_module *module);
 int ldb_next_second_stage_init(struct ldb_module *module);
 
-void ldb_set_errstring(struct ldb_module *module, char *err_string);
+void ldb_set_errstring(struct ldb_context *ldb, char *err_string);
 void ldb_reset_err_string(struct ldb_context *ldb);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */

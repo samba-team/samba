@@ -135,7 +135,7 @@ static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 	case ADMINISTRATOR:
 		return ldb_next_request(module, req);
 	default:
-		ldb_set_errstring(module, 
+		ldb_set_errstring(module->ldb, 
 				  talloc_asprintf(req, "kludge_acl_change: "
 						  "attempted database modify not permitted. User %s is not SYSTEM or an administrator",
 						  user_name(req, module)));

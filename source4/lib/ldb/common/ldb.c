@@ -106,12 +106,12 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	return LDB_SUCCESS;
 }
 
-void ldb_set_errstring(struct ldb_module *module, char *err_string)
+void ldb_set_errstring(struct ldb_context *ldb, char *err_string)
 {
-	if (module->ldb->err_string) {
-		talloc_free(module->ldb->err_string);
+	if (ldb->err_string) {
+		talloc_free(ldb->err_string);
 	}
-	module->ldb->err_string = talloc_steal(module->ldb, err_string);
+	ldb->err_string = talloc_steal(ldb, err_string);
 }
 
 void ldb_reset_err_string(struct ldb_context *ldb)
@@ -158,7 +158,7 @@ int ldb_transaction_start(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_set_errstring(ldb->modules, 
+			ldb_set_errstring(ldb, 
 					  talloc_asprintf(ldb, "ldb transaction start error %d", status));
 		}
 	}
@@ -186,7 +186,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_set_errstring(ldb->modules, 
+			ldb_set_errstring(ldb, 
 					  talloc_asprintf(ldb, "ldb transaction commit error %d", status));
 		}
 	}
@@ -212,7 +212,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
-			ldb_set_errstring(ldb->modules, 
+			ldb_set_errstring(ldb, 
 					  talloc_asprintf(ldb, "ldb transaction cancel error %d", status));
 		}
 	}
@@ -238,7 +238,7 @@ static int ldb_op_finish(struct ldb_context *ldb, int status)
 	}
 	if (ldb->err_string == NULL) {
 		/* no error string was setup by the backend */
-		ldb_set_errstring(ldb->modules, 
+		ldb_set_errstring(ldb, 
 				  talloc_asprintf(ldb, "ldb error %d", status));
 	}
 	ldb_transaction_cancel(ldb);
@@ -330,7 +330,7 @@ int ldb_search(struct ldb_context *ldb,
 
 	tree = ldb_parse_tree(ldb, expression);
 	if (tree == NULL) {
-		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Unable to parse search expression"));
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "Unable to parse search expression"));
 		return -1;
 	}
 
