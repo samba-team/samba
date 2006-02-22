@@ -884,7 +884,6 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 		memset(info3->lm_sess_key, '\0', 8);
 	}
 
-	memset(&info3->acct_flags, '\0', 4);
 	for (i=0; i < 7; i++) {
 		memset(&info3->unknown[i], '\0', 4);
 	}
