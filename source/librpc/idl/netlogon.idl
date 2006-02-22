@@ -139,8 +139,18 @@ interface netlogon
 	} netr_LMSessionKey;
 
 	/* Flags for user_flags below */
-	const int NETLOGON_EXTRA_SIDS = 0x0020;
-	const int NETLOGON_RESOURCE_GROUPS = 0x0200;
+	typedef [public,bitmap32bit] bitmap {
+		NETLOGON_GUEST			= 0x0001,
+		NETLOGON_NOENCRYPTION		= 0x0002,
+		NETLOGON_CACHED_ACCOUNT		= 0x0004,
+		NETLOGON_USED_LM_PASSWORD	= 0x0008,
+		NETLOGON_EXTRA_SIDS 		= 0x0020,
+		NETLOGON_SUBAUTH_SESSION_KEY	= 0x0040,
+		NETLOGON_SERVER_TRUST_ACCOUNT	= 0x0080,
+		NETLOGON_NTLMV2_ENABLED		= 0x0100,
+		NETLOGON_RESOURCE_GROUPS	= 0x0200,
+		NETLOGON_PROFILE_PATH_RETURNED	= 0x0400
+	} netr_UserFlags;
 
 	typedef struct {
 		NTTIME last_logon;
@@ -160,7 +170,7 @@ interface netlogon
 		uint32 rid;
 		uint32 primary_gid;
 		samr_RidWithAttributeArray groups;
-		uint32 user_flags;
+		netr_UserFlags user_flags;
 		netr_UserSessionKey key;
 		lsa_StringLarge logon_server;
 		lsa_StringLarge domain;
