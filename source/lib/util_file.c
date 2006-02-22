@@ -195,7 +195,7 @@ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 /*******************************************************************
 mmap (if possible) or read a file
 ********************************************************************/
-void *map_file(char *fname, size_t size)
+void *map_file(const char *fname, size_t size)
 {
 	size_t s2 = 0;
 	void *p = NULL;
