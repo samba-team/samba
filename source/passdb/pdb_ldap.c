@@ -1837,8 +1837,11 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	DEBUG (3, ("ldapsam_rename_sam_account: Renaming user %s to %s.\n", 
 		   oldname, newname));
 
-	pstring_sub(rename_script, "%unew", newname);
-	pstring_sub(rename_script, "%uold", oldname);
+	/* we have to allow the account name to end with a '$' */
+	string_sub2(rename_script, "%unew", newname, sizeof(pstring), 
+		    True, False, True);
+	string_sub2(rename_script, "%uold", oldname, sizeof(pstring), 
+		    True, False, True);
 	rc = smbrun(rename_script, NULL);
 
 	DEBUG(rc ? 0 : 3,("Running the command `%s' gave %d\n", 
