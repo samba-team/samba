@@ -133,10 +133,20 @@
 		ROLE_DOMAIN_PDC    = 3
 	} samr_Role;
 
+	/* password properties flags */
+	typedef [public,bitmap32bit] bitmap {
+		DOMAIN_PASSWORD_COMPLEX		= 0x00000001,
+		DOMAIN_PASSWORD_NO_ANON_CHANGE  = 0x00000002,
+		DOMAIN_PASSWORD_NO_CLEAR_CHANGE = 0x00000004,
+		DOMAIN_PASSWORD_LOCKOUT_ADMINS  = 0x00000008,
+		DOMAIN_PASSWORD_STORE_CLEARTEXT = 0x00000010,
+		DOMAIN_REFUSE_PASSWORD_CHANGE   = 0x00000020
+	} samr_PasswordProperties;
+
 	typedef struct {
 		uint16 min_password_length;
 		uint16 password_history_length;
-		uint32 password_properties;
+		samr_PasswordProperties password_properties;
 		/* yes, these are signed. They are in negative 100ns */
 		dlong  max_password_age;
 		dlong  min_password_age;
@@ -935,17 +945,9 @@
 	/************************/
 	/* Function    0x2c     */
 
-	/* password properties flags */
-	const uint32 DOMAIN_PASSWORD_COMPLEX         = 0x00000001;
-	const uint32 DOMAIN_PASSWORD_NO_ANON_CHANGE  = 0x00000002;
-	const uint32 DOMAIN_PASSWORD_NO_CLEAR_CHANGE = 0x00000004;
-	const uint32 DOMAIN_PASSWORD_LOCKOUT_ADMINS  = 0x00000008;
-	const uint32 DOMAIN_PASSWORD_STORE_CLEARTEXT = 0x00000010;
-	const uint32 DOMAIN_REFUSE_PASSWORD_CHANGE   = 0x00000020;
-
 	typedef struct {
 		uint16 min_password_length;
-		uint32 password_properties;
+		samr_PasswordProperties password_properties;
 	} samr_PwInfo;
 
 	NTSTATUS samr_GetUserPwInfo(
