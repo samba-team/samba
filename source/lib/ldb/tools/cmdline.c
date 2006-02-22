@@ -596,10 +596,6 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 			cookie = ldb_base64_encode(req_control, rep_control->cookie, rep_control->cookie_len);
 			printf("# DIRSYNC cookie returned was:\n# %s\n", cookie);
 
-			sleep(120);
-			
-			ret = 1;
-
 			continue;
 		}
 

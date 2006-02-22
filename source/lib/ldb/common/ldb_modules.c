@@ -263,13 +263,3 @@ int ldb_next_del_trans(struct ldb_module *module)
 	FIND_OP(module, del_transaction);
 	return module->ops->del_transaction(module);
 }
-
-void ldb_set_errstring(struct ldb_module *module, char *err_string)
-{
-	if (module->ldb->err_string) {
-		talloc_free(module->ldb->err_string);
-	}
-
-	module->ldb->err_string = talloc_steal(module->ldb, err_string);
-}
-

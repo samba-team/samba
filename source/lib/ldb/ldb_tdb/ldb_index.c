@@ -709,6 +709,7 @@ int ltdb_search_indexed(struct ldb_module *module,
 	}
 	(*res)->count = 0;
 	(*res)->msgs = NULL;
+	(*res)->refs = NULL;
 	(*res)->controls = NULL;
 
 	if (scope == LDB_SCOPE_BASE) {

@@ -90,9 +90,9 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 /*
   handle packet errors
 */
-static void ldap_error_handler(void *private, NTSTATUS status)
+static void ldap_error_handler(void *private_data, NTSTATUS status)
 {
-	struct ldap_connection *conn = talloc_get_type(private, 
+	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
 	ldap_connection_dead(conn);
 }
@@ -155,14 +155,14 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
   check if a blob is a complete ldap packet
   handle wrapper or unwrapped connections
 */
-NTSTATUS ldap_complete_packet(void *private, DATA_BLOB blob, size_t *size)
+NTSTATUS ldap_complete_packet(void *private_data, DATA_BLOB blob, size_t *size)
 {
-	struct ldap_connection *conn = talloc_get_type(private, 
+	struct ldap_connection *conn = talloc_get_type(private_data,
 						       struct ldap_connection);
 	if (conn->enable_wrap) {
-		return packet_full_request_u32(private, blob, size);
+		return packet_full_request_u32(private_data, blob, size);
 	}
-	return ldap_full_packet(private, blob, size);
+	return ldap_full_packet(private_data, blob, size);
 }
 
 /*
@@ -234,9 +234,9 @@ static NTSTATUS ldap_decode_wrapped(struct ldap_connection *conn, DATA_BLOB blob
 /*
   handle ldap recv events
 */
-static NTSTATUS ldap_recv_handler(void *private, DATA_BLOB blob)
+static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
 {
-	struct ldap_connection *conn = talloc_get_type(private, 
+	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
 	if (conn->enable_wrap) {
 		return ldap_decode_wrapped(conn, blob);
@@ -250,9 +250,9 @@ static NTSTATUS ldap_recv_handler(void *private, DATA_BLOB blob)
   handle ldap socket events
 */
 static void ldap_io_handler(struct event_context *ev, struct fd_event *fde, 
-			    uint16_t flags, void *private)
+			    uint16_t flags, void *private_data)
 {
-	struct ldap_connection *conn = talloc_get_type(private, 
+	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
 	if (flags & EVENT_FD_WRITE) {
 		packet_queue_run(conn->packet);
@@ -433,9 +433,9 @@ static int ldap_request_destructor(void *ptr)
   called on timeout of a ldap request
 */
 static void ldap_request_timeout(struct event_context *ev, struct timed_event *te, 
-				      struct timeval t, void *private)
+				      struct timeval t, void *private_data)
 {
-	struct ldap_request *req = talloc_get_type(private, struct ldap_request);
+	struct ldap_request *req = talloc_get_type(private_data, struct ldap_request);
 	req->status = NT_STATUS_IO_TIMEOUT;
 	if (req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(req->conn->pending, req);
@@ -451,9 +451,9 @@ static void ldap_request_timeout(struct event_context *ev, struct timed_event *t
   called on completion of a one-way ldap request
 */
 static void ldap_request_complete(struct event_context *ev, struct timed_event *te, 
-				  struct timeval t, void *private)
+				  struct timeval t, void *private_data)
 {
-	struct ldap_request *req = talloc_get_type(private, struct ldap_request);
+	struct ldap_request *req = talloc_get_type(private_data, struct ldap_request);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
@@ -534,9 +534,9 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	DLIST_ADD(conn->pending, req);
 
 	/* put a timeout on the request */
-	event_add_timed(conn->event.event_ctx, req, 
-			timeval_current_ofs(conn->timeout, 0),
-			ldap_request_timeout, req);
+	req->time_event = event_add_timed(conn->event.event_ctx, req, 
+					  timeval_current_ofs(conn->timeout, 0),
+					  ldap_request_timeout, req);
 
 	return req;
 

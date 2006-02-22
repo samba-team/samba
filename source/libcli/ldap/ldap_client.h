@@ -42,8 +42,10 @@ struct ldap_request {
 	DATA_BLOB data;
 	struct {
 		void (*fn)(struct ldap_request *);
-		void *private;
+		void *private_data;
 	} async;
+
+	struct timed_event *time_event;
 };
 
 

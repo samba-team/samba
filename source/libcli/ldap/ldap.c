@@ -1309,19 +1309,19 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 	if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
 		int i;
-		struct ldap_Control **ctrl = NULL;
+		struct ldb_control **ctrl = NULL;
 
 		asn1_start_tag(data, ASN1_CONTEXT(0));
 
 		for (i=0; asn1_peek_tag(data, ASN1_SEQUENCE(0)); i++) {
 			/* asn1_start_tag(data, ASN1_SEQUENCE(0)); */
 
-			ctrl = talloc_realloc(msg, ctrl, struct ldap_Control *, i+2);
+			ctrl = talloc_realloc(msg, ctrl, struct ldb_control *, i+2);
 			if (!ctrl) {
 				return False;
 			}
 
-			ctrl[i] = talloc(ctrl, struct ldap_Control);
+			ctrl[i] = talloc(ctrl, struct ldb_control);
 			if (!ctrl[i]) {
 				return False;
 			}
@@ -1348,7 +1348,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
   return NT_STATUS_OK if a blob has enough bytes in it to be a full
   ldap packet. Set packet_size if true.
 */
-NTSTATUS ldap_full_packet(void *private, DATA_BLOB blob, size_t *packet_size)
+NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size)
 {
 	return asn1_full_tag(blob, ASN1_SEQUENCE(0), packet_size);
 }

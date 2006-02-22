@@ -560,13 +560,49 @@ enum ldb_request_type {
 	LDB_REQ_MODIFY,
 	LDB_REQ_DELETE,
 	LDB_REQ_RENAME,
+	LDB_ASYNC_SEARCH,
+	LDB_ASYNC_ADD,
+	LDB_ASYNC_MODIFY,
+	LDB_ASYNC_DELETE,
+	LDB_ASYNC_RENAME,
+
 	LDB_REQ_REGISTER
+};
+
+enum ldb_reply_type {
+	LDB_REPLY_ENTRY,
+	LDB_REPLY_REFERRAL,
+	LDB_REPLY_DONE
+};
+
+enum ldb_async_wait_type {
+	LDB_WAIT_ALL,
+	LDB_WAIT_NONE
+};
+
+enum ldb_async_state {
+	LDB_ASYNC_PENDING,
+	LDB_ASYNC_DONE
 };
 
 struct ldb_result {
 	unsigned int count;
 	struct ldb_message **msgs;
+	char **refs;
 	struct ldb_control **controls;
+};
+
+struct ldb_async_result {
+	enum ldb_reply_type type;
+	struct ldb_message *message;
+	char *referral;
+	struct ldb_control **controls;
+};
+
+struct ldb_async_handle {
+	int status;
+	enum ldb_async_state state;
+	void *private_data;
 };
 
 struct ldb_search {
@@ -613,9 +649,19 @@ struct ldb_request {
 
 	struct ldb_control **controls;
 	struct ldb_credentials *creds;
+
+	struct {
+		void *context;
+		int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+
+		time_t timeout;
+		struct ldb_async_handle *handle;
+	} async;
 };
 
 int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
+
+int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type);
 
 /**
   Initialise an ldb context

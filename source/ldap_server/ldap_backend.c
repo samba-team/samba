@@ -45,44 +45,6 @@ static int map_ldb_error(struct ldb_context *ldb, int err, const char **errstrin
 }
 
 /*
-  map controls
-*/
-static int get_ldb_controls(void *mem_ctx, struct ldap_Control **controls, struct ldb_control ***lcontrols)
-{
-	struct ldb_control **lctrl;
-	int i, l;
-
-	if (controls == NULL || controls[0] == NULL) {
-		*lcontrols = NULL;
-		return LDB_SUCCESS;
-	}
-
-	l = 0;
-	lctrl = NULL;
-	*lcontrols = NULL;
-	
-	for (i = 0; controls[i] != NULL; i++) {
-		lctrl = talloc_realloc(mem_ctx, lctrl, struct ldb_control *, l + 2);
-		if (lctrl == NULL) {
-			return LDB_ERR_OTHER;
-		}
-		lctrl[l] = talloc(lctrl, struct ldb_control);
-		if (lctrl[l] == NULL) {
-			return LDB_ERR_OTHER;
-		}
-		lctrl[l]->oid = controls[i]->oid;
-		lctrl[l]->critical = controls[i]->critical;
-		lctrl[l]->data = controls[i]->value;
-		l++;
-	}	
-	lctrl[l] = NULL;
-
-	*lcontrols = lctrl;
-
-	return LDB_SUCCESS;
-}
-
-/*
   connect to the sam database
 */
 NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn) 
@@ -217,14 +179,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	lreq.op.search.tree = req->tree;
 	lreq.op.search.attrs = attrs;
 
-	ldb_ret = get_ldb_controls(local_ctx, call->request->controls, &lreq.controls);
-
-	if (ldb_ret != LDB_SUCCESS) {
-		/* get_ldb_controls fails only on a critical internal error or when
-		 * a control is defined as critical but it is not supported
-		 */
-		goto reply;
-	}
+	lreq.controls = call->request->controls;
 
 	ldb_ret = ldb_request(samdb, &lreq);
 
@@ -281,7 +236,7 @@ reply:
 			errstr = ldb_errstring(samdb);
 		}
 		if (res->controls) {
-			done_r->msg->controls = (struct ldap_Control **)(res->controls);
+			done_r->msg->controls = res->controls;
 			talloc_steal(done_r, res->controls);
 		}
 	} else {
