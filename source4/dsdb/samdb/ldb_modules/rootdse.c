@@ -64,8 +64,8 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 	msg->dn = ldb_dn_explode(msg, "");
 
 	if (do_attribute(s->attrs, "currentTime")) {
-		if (ldb_msg_add_string(msg, "currentTime", 
-				       ldb_timestring(msg, time(NULL))) != 0) {
+		if (ldb_msg_add_steal_string(msg, "currentTime", 
+					     ldb_timestring(msg, time(NULL))) != 0) {
 			goto failed;
 		}
 	}
@@ -77,8 +77,8 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 			if (!control) {
 				goto failed;
 			}
-			if (ldb_msg_add_string(msg, "supportedControl",
-					       control) != 0) {
+			if (ldb_msg_add_steal_string(msg, "supportedControl",
+						     control) != 0) {
 				goto failed;
  			}
  		}
@@ -95,12 +95,12 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 		int i;
 		for (i = 0; ops && ops[i]; i++) {
 			if (ops[i]->sasl_name) {
-				const char *sasl_name = talloc_strdup(msg, ops[i]->sasl_name);
+				char *sasl_name = talloc_strdup(msg, ops[i]->sasl_name);
 				if (!sasl_name) {
 					goto failed;
 				}
-				if (ldb_msg_add_string(msg, "supportedSASLMechanisms",
-						       sasl_name) != 0) {
+				if (ldb_msg_add_steal_string(msg, "supportedSASLMechanisms",
+							     sasl_name) != 0) {
 					goto failed;
 				}
 			}
