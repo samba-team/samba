@@ -1,5 +1,7 @@
 2006-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* data/nist-data: Add some of the test from 4.13 Name Constraints.
+
 	* cert.c: Name constraits needs to be evaluated in block as they
 	appear in the certificates, they can not be joined to one
 	list. One example of this is:
