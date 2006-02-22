@@ -86,7 +86,7 @@ static int construct_canonical_name(struct ldb_module *module, struct ldb_messag
 	if (canonicalName == NULL) {
 		return -1;
 	}
-	return ldb_msg_add_string(msg, "canonicalName", canonicalName);
+	return ldb_msg_add_steal_string(msg, "canonicalName", canonicalName);
 }
 
 /*

@@ -199,6 +199,24 @@ int ldb_msg_add_value(struct ldb_message *msg,
 
 
 /*
+  add a value to a message, stealing it into the 'right' place
+*/
+int ldb_msg_add_steal_value(struct ldb_message *msg, 
+			    const char *attr_name,
+			    struct ldb_val *val)
+{
+	int ret;
+	ret = ldb_msg_add_value(msg, attr_name, val);
+	if (ret == LDB_SUCCESS) {
+		struct ldb_message_element *el;
+		el = ldb_msg_find_element(msg, attr_name);
+		talloc_steal(el->values, val->data);
+	}
+	return ret;
+}
+
+
+/*
   add a string element to a message
 */
 int ldb_msg_add_string(struct ldb_message *msg, 
@@ -210,6 +228,20 @@ int ldb_msg_add_string(struct ldb_message *msg,
 	val.length = strlen(str);
 
 	return ldb_msg_add_value(msg, attr_name, &val);
+}
+
+/*
+  add a string element to a message, stealing it into the 'right' place
+*/
+int ldb_msg_add_steal_string(struct ldb_message *msg, 
+			     const char *attr_name, char *str)
+{
+	struct ldb_val val;
+
+	val.data = (uint8_t *)str;
+	val.length = strlen(str);
+
+	return ldb_msg_add_steal_value(msg, attr_name, &val);
 }
 
 /*
