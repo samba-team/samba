@@ -966,6 +966,15 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
     }
 }
 
+/*
+ * The subjectName is "null" when its empty set of relative DBs.
+ */
+
+static int
+subject_null_p(const Certificate *c)
+{
+    return c->tbsCertificate.subject.u.rdnSequence.len == 0;
+}
 
 static int
 match_alt_name(const GeneralName *n, const Certificate *c, 
@@ -1010,11 +1019,15 @@ match_tree(const GeneralSubtrees *t, const Certificate *c, int *match)
 
 	/*
 	 * If the constraint apply to directoryNames, test is with
-	 * subjectName of the certificate.
+	 * subjectName of the certificate if the certificate have a
+	 * non-null (empty) subjectName.
 	 */
 
-	if (t->val[i].base.element == choice_GeneralName_directoryName) {
+	if (t->val[i].base.element == choice_GeneralName_directoryName
+	    && !subject_null_p(c))
+	{
 	    GeneralName certname;
+	    
 	    
 	    certname.element = choice_GeneralName_directoryName;
 	    certname.u.directoryName.element = 
@@ -1052,7 +1065,8 @@ check_name_constraints(const hx509_name_constraints *nc,
 	    ret = match_tree(&gs, c, &match);
 	    if (ret)
 		return ret;
-	    if (match == 0)
+	    /* allow null subjectNames, they wont matches anything */
+	    if (match == 0 && !subject_null_p(c))
 		return HX509_VERIFY_CONSTRAINTS;
 	}
 	if (nc->val[i].excludedSubtrees) {
