@@ -9619,9 +9619,42 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 }
 
 /*
-  test WINS replication operations
+  test simple WINS replication operations
 */
-BOOL torture_nbt_winsreplication(void)
+BOOL torture_nbt_winsreplication_simple(void)
+{
+	const char *address;
+	struct nbt_name name;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	NTSTATUS status;
+	BOOL ret = True;
+
+	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
+
+	/* do an initial name resolution to find its IP */
+	status = resolve_name(&name, mem_ctx, &address, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to resolve %s - %s\n",
+		       name.name, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ret &= test_assoc_ctx1(mem_ctx, address);
+	ret &= test_assoc_ctx2(mem_ctx, address);
+
+	ret &= test_wins_replication(mem_ctx, address);
+
+done:
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/*
+  test WINS replication replica conflicts operations
+*/
+BOOL torture_nbt_winsreplication_replica(void)
 {
 	const char *address;
 	struct nbt_name name;
@@ -9641,18 +9674,44 @@ BOOL torture_nbt_winsreplication(void)
 		return False;
 	}
 
-	ret &= test_assoc_ctx1(mem_ctx, address);
-	ret &= test_assoc_ctx2(mem_ctx, address);
-
-	ret &= test_wins_replication(mem_ctx, address);
-
-	if (lp_parm_bool(-1, "torture", "quick", False)) goto done;
-
 	ctx = test_create_conflict_ctx(mem_ctx, address);
 	if (!ctx) return False;
 
 	ret &= test_conflict_same_owner(ctx);
 	ret &= test_conflict_different_owner(ctx);
+
+done:
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/*
+  test WINS replication owned conflicts operations
+*/
+BOOL torture_nbt_winsreplication_owned(void)
+{
+	const char *address;
+	struct nbt_name name;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	NTSTATUS status;
+	BOOL ret = True;
+	struct test_wrepl_conflict_conn *ctx;
+
+	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
+
+	/* do an initial name resolution to find its IP */
+	status = resolve_name(&name, mem_ctx, &address, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to resolve %s - %s\n",
+		       name.name, nt_errstr(status));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ctx = test_create_conflict_ctx(mem_ctx, address);
+	if (!ctx) return False;
+
 	ret &= test_conflict_owned_released_vs_replica(ctx);
 	ret &= test_conflict_owned_active_vs_replica(ctx);
 

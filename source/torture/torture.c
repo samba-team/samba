@@ -2346,8 +2346,10 @@ static struct {
 	{"NBT-REGISTER", torture_nbt_register, 0},
 	{"NBT-WINS", torture_nbt_wins, 0},
 	{"NBT-DGRAM", torture_nbt_dgram, 0},
-	{"NBT-WINSREPLICATION", torture_nbt_winsreplication, 0},
 	{"NBT-BROWSE", torture_nbt_browse, 0},
+	{"NBT-WINSREPLICATION-SIMPLE", torture_nbt_winsreplication_simple, 0},
+	{"NBT-WINSREPLICATION-REPLICA", torture_nbt_winsreplication_replica, 0},
+	{"NBT-WINSREPLICATION-OWNED", torture_nbt_winsreplication_owned, 0},
 	
 	/* libnet tests */
 	{"NET-USERINFO", torture_userinfo, 0},
