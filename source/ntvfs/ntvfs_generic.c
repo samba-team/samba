@@ -495,8 +495,7 @@ _PUBLIC_ NTSTATUS ntvfs_map_fsinfo(struct smbsrv_request *req, union smb_fsinfo 
 		return NT_STATUS_INVALID_LEVEL;
 	}
 	
-	/* this map function is only used by the simple backend, which
-	   doesn't do async */
+	/* only used by the simple backend, which doesn't do async */
 	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
 
 	/* ask the backend for the generic info */
@@ -854,6 +853,9 @@ _PUBLIC_ NTSTATUS ntvfs_map_qfileinfo(struct smbsrv_request *req, union smb_file
 	info2->generic.level = RAW_FILEINFO_GENERIC;
 	info2->generic.in.fnum = info->generic.in.fnum;
 
+	/* only used by the simple backend, which doesn't do async */
+	req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
+
 	status = ntvfs->ops->qfileinfo(ntvfs, req, info2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -936,6 +938,11 @@ _PUBLIC_ NTSTATUS ntvfs_map_lock(struct smbsrv_request *req, union smb_lock *lck
 	locks->pid = req->smbpid;
 	locks->offset = lck->lock.in.offset;
 	locks->count = lck->lock.in.count;
+
+	/* 
+	 * we don't need to call ntvfs_map_async_setup() here,
+	 * as lock() doesn't have any output fields
+	 */
 
 	return ntvfs->ops->lock(ntvfs, req, lck2);
 }
@@ -1221,6 +1228,11 @@ _PUBLIC_ NTSTATUS ntvfs_map_close(struct smbsrv_request *req, union smb_close *c
 		cl2->close.in.fnum = cl->splclose.in.fnum;
 		break;
 	}
+
+	/* 
+	 * we don't need to call ntvfs_map_async_setup() here,
+	 * as close() doesn't have any output fields
+	 */
 
 	return ntvfs->ops->close(ntvfs, req, cl2);
 }
