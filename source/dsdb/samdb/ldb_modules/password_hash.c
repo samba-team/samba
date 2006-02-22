@@ -167,7 +167,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	
 	if (req->operation == LDB_REQ_ADD) {
 		if (attribute->num_values > 1) {
-			ldb_set_errstring(module, 
+			ldb_set_errstring(module->ldb,
 					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
 							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
@@ -182,7 +182,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	} else if (((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_ADD)
 		   || ((attribute->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_REPLACE)) {
 		if (attribute->num_values > 1) {
-			ldb_set_errstring(module, 
+			ldb_set_errstring(module->ldb,
 					  talloc_asprintf(mem_ctx, "sambaPassword_handle: "
 							  "attempted set of multiple sambaPassword attributes on %s rejected",
 							  ldb_dn_linearize(mem_ctx, dn)));
@@ -234,7 +234,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		talloc_free(search_request);
 		
 		if (old_res->count != 1) {
-			ldb_set_errstring(module, 
+			ldb_set_errstring(module->ldb, 
 					  talloc_asprintf(mem_ctx, "password_hash_handle: "
 							  "(pre) search for %s found %d != 1 objects, for entry we just modified",
 							  ldb_dn_linearize(mem_ctx, dn),
@@ -280,7 +280,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 	talloc_free(search_request);
 
 	if (res->count != 1) {
-		ldb_set_errstring(module, 
+		ldb_set_errstring(module->ldb,
 				  talloc_asprintf(mem_ctx, "password_hash_handle: "
 						  "search for %s found %d != 1 objects, for entry we just added/modified",
 						  ldb_dn_linearize(mem_ctx, dn),
@@ -308,7 +308,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		/* Not a 'person', so the rest of this doesn't make
 		 * sense.  How we got a sambaPassword this far I don't
 		 * know... */
-		ldb_set_errstring(module, 
+		ldb_set_errstring(module->ldb,
 				  talloc_asprintf(mem_ctx, "password_hash_handle: "
 						  "attempted set of sambaPassword on non-'person' object %s rejected",
 						  ldb_dn_linearize(mem_ctx, dn)));
@@ -338,7 +338,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 	if (dom_res->count != 1) {
 		/* What happend?  The user we are modifying must be odd... */
-		ldb_set_errstring(module, 
+		ldb_set_errstring(module->ldb, 
 				  talloc_asprintf(mem_ctx, "password_hash_handle: "
 						  "search for domain %s found %d != 1 objects",
 						  dom_sid_string(mem_ctx, domain_sid),
@@ -414,7 +414,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 			char *samAccountName = talloc_strdup(mem_ctx, ldb_msg_find_string(res->msgs[0], "samAccountName", NULL));
 			char *saltbody;
 			if (!samAccountName) {
-				ldb_set_errstring(module, 
+				ldb_set_errstring(module->ldb,
 						  talloc_asprintf(mem_ctx, "password_hash_handle: "
 								  "generation of new kerberos keys failed: %s is a computer without a samAccountName",
 								  ldb_dn_linearize(mem_ctx, dn)));
@@ -443,7 +443,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		} else {
 			const char *samAccountName = ldb_msg_find_string(res->msgs[0], "samAccountName", NULL);
 			if (!samAccountName) {
-				ldb_set_errstring(module, 
+				ldb_set_errstring(module->ldb,
 						  talloc_asprintf(mem_ctx, "password_hash_handle: "
 								  "generation of new kerberos keys failed: %s has no samAccountName",
 								  ldb_dn_linearize(mem_ctx, dn)));
@@ -455,7 +455,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 
 
 		if (krb5_ret) {
-			ldb_set_errstring(module, 
+			ldb_set_errstring(module->ldb,
 					  talloc_asprintf(mem_ctx, "password_hash_handle: "
 							  "generation of a saltking principal failed: %s",
 							  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
@@ -470,7 +470,7 @@ static int password_hash_handle(struct ldb_module *module, struct ldb_request *r
 		krb5_free_principal(smb_krb5_context->krb5_context, salt_principal);
 
 		if (krb5_ret) {
-			ldb_set_errstring(module, 
+			ldb_set_errstring(module->ldb,
 					  talloc_asprintf(mem_ctx, "password_hash_handle: "
 							  "generation of new kerberos keys failed: %s",
 							  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
