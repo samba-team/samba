@@ -73,8 +73,12 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 	if (do_attribute(s->attrs, "supportedControl")) {
  		int i;
 		for (i = 0; i < priv->num_controls; i++) {
+			char *control = talloc_strdup(msg, priv->controls[i]);
+			if (!control) {
+				goto failed;
+			}
 			if (ldb_msg_add_string(msg, "supportedControl",
-						priv->controls[i]) != 0) {
+					       control) != 0) {
 				goto failed;
  			}
  		}
