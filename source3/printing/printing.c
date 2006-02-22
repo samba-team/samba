@@ -1447,11 +1447,13 @@ static void print_queue_update(int snum, BOOL force)
 	/* don't strip out characters like '$' from the printername */
 	
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
-	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), False, False );
+	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), 
+		     False, False, False );
 	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
 	
 	pstrcpy( lprmcommand, lp_lprmcommand(snum));
-	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), False, False );
+	string_sub2( lprmcommand, "%p", PRINTERNAME(snum), sizeof(lprmcommand), 
+		     False, False, False );
 	standard_sub_snum( snum, lprmcommand, sizeof(lprmcommand) );
 	
 	/* 

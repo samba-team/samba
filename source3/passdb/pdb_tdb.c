@@ -1200,9 +1200,10 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	}
 
 	/* rename the posix user */
-	
-	pstring_sub(rename_script, "%unew", newname);
-	pstring_sub(rename_script, "%uold", pdb_get_username(old_acct));
+	string_sub2(rename_script, "%unew", newname, sizeof(pstring), 
+		    True, False, True);
+	string_sub2(rename_script, "%uold", pdb_get_username(old_acct), 
+		    sizeof(pstring), True, False, True);
 	rename_ret = smbrun(rename_script, NULL);
 
 	DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
