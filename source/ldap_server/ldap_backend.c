@@ -153,7 +153,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldap_Result *done;
 	struct ldapsrv_reply *ent_r, *done_r;
 	void *local_ctx;
-	struct ldb_context *samdb = call->conn->ldb;
+	struct ldb_context *samdb = talloc_get_type(call->conn->ldb, struct ldb_context);
 	struct ldb_dn *basedn;
 	struct ldb_result *res = NULL;
 	struct ldb_request lreq;
@@ -163,13 +163,13 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	int success_limit = 1;
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
-	int i, j, y;
+	int i, j;
 
 	DEBUG(10, ("SearchRequest"));
 	DEBUGADD(10, (" basedn: %s", req->basedn));
 	DEBUGADD(10, (" filter: %s\n", ldb_filter_from_tree(call, req->tree)));
 
-	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
+	local_ctx = talloc_new(call);
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	basedn = ldb_dn_explode(local_ctx, req->basedn);
@@ -228,7 +228,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	ldb_ret = ldb_request(samdb, &lreq);
 
-	res = talloc_steal(samdb, lreq.op.search.res);
+	/* Ensure we don't keep the search results around for too long */
+	res = talloc_steal(local_ctx, lreq.op.search.res);
 
 	if (ldb_ret == LDB_SUCCESS) {
 		for (i = 0; i < res->count; i++) {
@@ -253,14 +254,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 					continue;
 				}
 				ent->attributes[j].num_values = res->msgs[i]->elements[j].num_values;
-				ent->attributes[j].values = talloc_array(ent->attributes,
-								DATA_BLOB, ent->attributes[j].num_values);
-				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
-				for (y=0; y < ent->attributes[j].num_values; y++) {
-					ent->attributes[j].values[y].length = res->msgs[i]->elements[j].values[y].length;
-					ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
-										res->msgs[i]->elements[j].values[y].data);
-				}
+				ent->attributes[j].values = res->msgs[i]->elements[j].values;
+				talloc_steal(ent->attributes, res->msgs[i]->elements[j].values);
 			}
 queue_reply:
 			ldapsrv_queue_reply(call, ent_r);
@@ -287,6 +282,7 @@ reply:
 		}
 		if (res->controls) {
 			done_r->msg->controls = (struct ldap_Control **)(res->controls);
+			talloc_steal(done_r, res->controls);
 		}
 	} else {
 		DEBUG(10,("SearchRequest: error\n"));
