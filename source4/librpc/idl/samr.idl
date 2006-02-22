@@ -364,16 +364,22 @@
 		);
 
 	/* Group attributes */
-	const int SE_GROUP_MANDATORY = 0x0001;
-	const int SE_GROUP_ENABLED_BY_DEFAULT = 0x0002;
-	const int SE_GROUP_ENABLED = 0x0004;
+	typedef [public,bitmap32bit] bitmap {
+		SE_GROUP_MANDATORY		= 0x00000001,
+		SE_GROUP_ENABLED_BY_DEFAULT 	= 0x00000002,
+		SE_GROUP_ENABLED 		= 0x00000004,
+		SE_GROUP_OWNER 			= 0x00000008,
+		SE_GROUP_USE_FOR_DENY_ONLY 	= 0x00000010,
+		SE_GROUP_RESOURCE 		= 0x20000000,
+		SE_GROUP_LOGON_ID 		= 0xC0000000
+	} samr_GroupAttrs;
 
 	/************************/
 	/* Function    0x14     */
 
 	typedef struct {
 		lsa_String name;
-		uint32 attributes;
+		samr_GroupAttrs attributes;
 		uint32 num_members;
 		lsa_String description;
 	} samr_GroupInfoAll;
@@ -826,7 +832,7 @@
 
 	typedef [public] struct {
 		uint32 rid;
-		uint32 attributes;
+		samr_GroupAttrs attributes;
 	} samr_RidWithAttribute;
 
 	typedef [public] struct {
