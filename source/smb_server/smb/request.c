@@ -160,6 +160,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 		SSVAL(req->out.hdr,HDR_UID,SVAL(req->in.hdr,HDR_UID));
 		SSVAL(req->out.hdr,HDR_MID,SVAL(req->in.hdr,HDR_MID));
 	} else {
+		SCVAL(req->out.hdr,HDR_COM,0);
 		SSVAL(req->out.hdr,HDR_TID,0);
 		SSVAL(req->out.hdr,HDR_PID,0);
 		SSVAL(req->out.hdr,HDR_UID,0);
