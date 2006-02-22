@@ -1,7 +1,6 @@
 # $Id$
 # id verify cert hxtool-verify-arguments...
 # p(ass) f(ail)
-#
 # Those id's that end with i are invariants of the orignal test
 #
 # 4.1 Signature Verification
@@ -60,3 +59,20 @@ unknown p AnyPolicyTest14EE.crt anyPolicyCACert.crt anyPolicyCACRL.crl
 unknown f BadSignedCACert.crt
 unknown f BadnotAfterDateCACert.crt
 unknown f BadnotBeforeDateCACert.crt
+#
+# 4.13 Name Constraints
+#
+4.13.1   p ValidDNnameConstraintsTest1EE.crt nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.2   f InvalidDNnameConstraintsTest2EE.crt nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.3   f InvalidDNnameConstraintsTest3EE.crt nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.4   p ValidDNnameConstraintsTest4EE.crt nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+4.13.5   p ValidDNnameConstraintsTest5EE.crt nameConstraintsDN2CACert.crt nameConstraintsDN2CACRL.crl
+4.13.6   p ValidDNnameConstraintsTest6EE.crt nameConstraintsDN3CACert.crt nameConstraintsDN3CACRL.crl
+4.13.7   f InvalidDNnameConstraintsTest7EE.crt nameConstraintsDN3CACert.crt nameConstraintsDN3CACRL.crl
+4.13.8   f InvalidDNnameConstraintsTest8EE.crt nameConstraintsDN4CACert.crt nameConstraintsDN4CACRL.crl
+4.13.9   f InvalidDNnameConstraintsTest9EE.crt nameConstraintsDN4CACert.crt nameConstraintsDN4CACRL.crl
+4.13.10   f InvalidDNnameConstraintsTest10EE.crt nameConstraintsDN5CACert.crt nameConstraintsDN5CACRL.crl
+4.13.11   p ValidDNnameConstraintsTest11EE.crt nameConstraintsDN5CACert.crt nameConstraintsDN5CACRL.crl
+4.13.12   f InvalidDNnameConstraintsTest12EE.crt nameConstraintsDN1subCA1Cert.crt nameConstraintsDN1subCA1CRL.crl nameConstraintsDN1CACert.crt nameConstraintsDN1CACRL.crl
+#page 74
+end
