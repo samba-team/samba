@@ -88,10 +88,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
 	uint32 sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct rpc_pipe_client *netlogon_schannel_pipe = NULL;
 
 	/* rpc variables */
 
@@ -325,29 +324,37 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	netlogon_schannel_pipe = cli_rpc_pipe_open_schannel_with_key(cli,
+	/* We can only check the schannel connection if the client is allowed
+	   to do this and the server supports it. If not, just assume success
+	   (after all the rpccli_netlogon_setup_creds() succeeded, and we'll
+	   do the same again (setup creds) in net_rpc_join_ok(). JRA. */
+
+	if (lp_client_schannel() && (neg_flags & NETLOGON_NEG_SCHANNEL)) {
+		struct rpc_pipe_client *netlogon_schannel_pipe = 
+						cli_rpc_pipe_open_schannel_with_key(cli,
 							PI_NETLOGON,
 							PIPE_AUTH_LEVEL_PRIVACY,
 							domain,
 							pipe_hnd->dc,
 							&result);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("Error in domain join verification (schannel setup failed): %s\n\n",
-			  nt_errstr(result)));
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0, ("Error in domain join verification (schannel setup failed): %s\n\n",
+				  nt_errstr(result)));
 
-		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
-		     (sec_channel_type == SEC_CHAN_BDC) ) {
-			d_fprintf(stderr, "Please make sure that no computer account\n"
-				 "named like this machine (%s) exists in the domain\n",
-				 global_myname());
+			if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
+			     (sec_channel_type == SEC_CHAN_BDC) ) {
+				d_fprintf(stderr, "Please make sure that no computer account\n"
+					 "named like this machine (%s) exists in the domain\n",
+					 global_myname());
+			}
+
+			goto done;
 		}
-
-		goto done;
+		cli_rpc_pipe_close(netlogon_schannel_pipe);
 	}
 
 	cli_rpc_pipe_close(pipe_hnd);
-	cli_rpc_pipe_close(netlogon_schannel_pipe);
 
 	/* Now store the secret in the secrets database */
 
