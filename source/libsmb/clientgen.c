@@ -358,7 +358,13 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 BOOL cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
-	BOOL ret = cli_close(cli->cli, cli->fnum);
+	BOOL ret;
+
+	if (!cli) {
+		return False;
+	}
+
+	ret = cli_close(cli->cli, cli->fnum);
 
 	if (!ret) {
 		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s, "
