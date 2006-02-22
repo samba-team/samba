@@ -43,31 +43,57 @@
  **/
 static int net_rpc_join_ok(const char *domain)
 {
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	int retval = 1;
-	NTSTATUS ret;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	NTSTATUS ntret = NT_STATUS_UNSUCCESSFUL;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
-		return 1;
+		return -1;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_schannel(cli, PI_NETLOGON,
-						PIPE_AUTH_LEVEL_PRIVACY,
-						domain, &ret);
+	/* Setup the creds as though we're going to do schannel... */
+        netlogon_pipe = get_schannel_session_key(cli, domain, &neg_flags, &ntret);
+
+	/* We return NT_STATUS_INVALID_NETWORK_RESPONSE if the server is refusing
+	   to negotiate schannel, but the creds were set up ok. That'll have to do. */
+
+        if (!netlogon_pipe) {
+		if (NT_STATUS_EQUAL(ntret, NT_STATUS_INVALID_NETWORK_RESPONSE)) {
+			cli_shutdown(cli);
+			return 0;
+		} else {
+			DEBUG(0,("net_rpc_join_ok: failed to get schannel session "
+					"key from server %s for domain %s. Error was %s\n",
+				cli->desthost, domain, nt_errstr(ntret) ));
+			cli_shutdown(cli);
+			return -1;
+		}
+	}
+
+	/* Only do the rest of the schannel test if the client is allowed to do this. */
+	if (!lp_client_schannel()) {
+		cli_shutdown(cli);
+		/* We're good... */
+		return 0;
+	}
+
+	pipe_hnd = cli_rpc_pipe_open_schannel_with_key(cli, PI_NETLOGON,
+				PIPE_AUTH_LEVEL_PRIVACY,
+				domain, netlogon_pipe->dc, &ntret);
 
 	if (!pipe_hnd) {
-		DEBUG(0,("Error connecting to NETLOGON pipe. Error was %s\n", nt_errstr(ret) ));
-		goto done;
+		DEBUG(0,("net_rpc_join_ok: failed to open schannel session "
+				"on netlogon pipe to server %s for domain %s. Error was %s\n",
+			cli->desthost, domain, nt_errstr(ntret) ));
+		cli_shutdown(cli);
+		return -1;
 	}
 
-	retval = 0;		/* Success! */
-	
-done:
-
 	cli_shutdown(cli);
-	return retval;
+	return 0;
 }
 
 /**
