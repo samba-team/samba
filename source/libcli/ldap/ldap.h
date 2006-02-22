@@ -240,17 +240,11 @@ union ldap_Request {
 	struct ldap_ExtendedResponse 	ExtendedResponse;
 };
 
-struct ldap_Control {
-	const char *oid;
-	BOOL        critical;
-	void       *value;
-};
-
 struct ldap_message {
 	int                     messageid;
 	enum ldap_request_tag   type;
 	union ldap_Request      r;
-	struct ldap_Control    **controls;
+	struct ldb_control    **controls;
 };
 
 #include "libcli/ldap/ldap_proto.h"

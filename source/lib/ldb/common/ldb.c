@@ -106,7 +106,15 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	return LDB_SUCCESS;
 }
 
-static void ldb_reset_err_string(struct ldb_context *ldb)
+void ldb_set_errstring(struct ldb_module *module, char *err_string)
+{
+	if (module->ldb->err_string) {
+		talloc_free(module->ldb->err_string);
+	}
+	module->ldb->err_string = talloc_steal(module->ldb, err_string);
+}
+
+void ldb_reset_err_string(struct ldb_context *ldb)
 {
 	if (ldb->err_string) {
 		talloc_free(ldb->err_string);
@@ -211,6 +219,14 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 	return status;
 }
 
+int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+{
+	if (ldb->async_wait != NULL)
+		return ldb->async_wait(handle, type);
+
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
 /*
   check for an error return from an op 
   if an op fails, but has not setup an error string, then setup one now
@@ -278,6 +294,9 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *request)
 	   the context of the ldb before freeing the request */
 	if (request->operation == LDB_REQ_SEARCH) {
 		request->op.search.res = talloc_steal(ldb, r->op.search.res);
+	}
+	if (request->operation == LDB_ASYNC_SEARCH) {
+		request->async.handle = r->async.handle;
 	}
 	talloc_free(r);
 

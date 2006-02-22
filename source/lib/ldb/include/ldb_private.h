@@ -105,6 +105,8 @@ struct ldb_context {
 	char *err_string;
 
 	int transaction_active;
+
+	int (*async_wait)(struct ldb_async_handle *, enum ldb_async_wait_type);
 };
 
 /* the modules init function */
@@ -132,6 +134,7 @@ int ldb_next_del_trans(struct ldb_module *module);
 int ldb_next_second_stage_init(struct ldb_module *module);
 
 void ldb_set_errstring(struct ldb_module *module, char *err_string);
+void ldb_reset_err_string(struct ldb_context *ldb);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);

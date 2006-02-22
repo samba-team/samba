@@ -381,10 +381,14 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 		return False;
 	}
 
-	if (asn1_peek_tag(&data, ASN1_SEQUENCE(0))) {
+	if (asn1_peek_tag(&data, ASN1_CONTEXT(0))) {
 
 		lvrc->type = 0;
 		
+		if (!asn1_start_tag(&data, ASN1_CONTEXT(0))) {
+			return False;
+		}
+
 		if (!asn1_start_tag(&data, ASN1_SEQUENCE(0))) {
 			return False;
 		}
@@ -397,13 +401,21 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 			return False;
 		}
 
-		if (!asn1_end_tag(&data)) {
+		if (!asn1_end_tag(&data)) { /*SEQUENCE*/
+			return False;
+		}
+
+		if (!asn1_end_tag(&data)) { /*CONTEXT*/
 			return False;
 		}
 
 	} else {
 
 		lvrc->type = 1;
+
+		if (!asn1_start_tag(&data, ASN1_CONTEXT(1))) {
+			return False;
+		}
 
 		if (!asn1_read_OctetString(&data, &assertion_value)) {
 			return False;
@@ -417,6 +429,10 @@ static BOOL decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 			}
 		} else {
 			lvrc->match.gtOrEq.value = NULL;
+		}
+
+		if (!asn1_end_tag(&data)) { /*CONTEXT*/
+			return False;
 		}
 	}
 
@@ -755,6 +771,10 @@ static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	}
 
 	if (lvrc->type == 0) {
+		if (!asn1_push_tag(&data, ASN1_CONTEXT(0))) {
+			return False;
+		}
+		
 		if (!asn1_push_tag(&data, ASN1_SEQUENCE(0))) {
 			return False;
 		}
@@ -767,12 +787,23 @@ static BOOL encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 			return False;
 		}
 
-		if (!asn1_pop_tag(&data)) {
+		if (!asn1_pop_tag(&data)) { /*SEQUENCE*/
+			return False;
+		}
+
+		if (!asn1_pop_tag(&data)) { /*CONTEXT*/
 			return False;
 		}
 	} else {
+		if (!asn1_push_tag(&data, ASN1_CONTEXT(1))) {
+			return False;
+		}
 		
 		if (!asn1_write_OctetString(&data, lvrc->match.gtOrEq.value, lvrc->match.gtOrEq.value_len)) {
+			return False;
+		}
+
+		if (!asn1_pop_tag(&data)) { /*CONTEXT*/
 			return False;
 		}
 	}
@@ -850,7 +881,7 @@ struct control_handler ldap_known_controls[] = {
 	{ NULL, NULL, NULL }
 };
 
-BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Control *ctrl)
+BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldb_control *ctrl)
 {
 	int i;
 	DATA_BLOB oid;
@@ -876,7 +907,7 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 		ctrl->critical = False;
 	}
 
-	ctrl->value = NULL;
+	ctrl->data = NULL;
 
 	if (!asn1_peek_tag(data, ASN1_OCTET_STRING)) {
 		goto end_tag;
@@ -888,7 +919,7 @@ BOOL ldap_decode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 
 	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
 		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			if (!ldap_known_controls[i].decode(mem_ctx, value, &ctrl->value)) {
+			if (!ldap_known_controls[i].decode(mem_ctx, value, &ctrl->data)) {
 				return False;
 			}
 			break;
@@ -906,7 +937,7 @@ end_tag:
 	return True;
 }
 
-BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Control *ctrl)
+BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldb_control *ctrl)
 {
 	DATA_BLOB value;
 	int i;
@@ -925,13 +956,13 @@ BOOL ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldap_Cont
 		}
 	}
 
-	if (!ctrl->value) {
+	if (!ctrl->data) {
 		goto pop_tag;
 	}
 
 	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
 		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			if (!ldap_known_controls[i].encode(mem_ctx, ctrl->value, &value)) {
+			if (!ldap_known_controls[i].encode(mem_ctx, ctrl->data, &value)) {
 				return False;
 			}
 			break;
