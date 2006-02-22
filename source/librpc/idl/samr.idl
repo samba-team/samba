@@ -390,7 +390,7 @@
 
 	typedef struct {
 		lsa_String description;
-	} samr_GroupInfoDesciption;
+	} samr_GroupInfoDescription;
 
 	typedef enum {
 		GROUPINFOALL          = 1,
