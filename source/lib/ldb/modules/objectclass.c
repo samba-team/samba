@@ -115,7 +115,7 @@ static int objectclass_handle(struct ldb_module *module, struct ldb_request *req
 	res = search_request->op.search.res;
 	talloc_steal(mem_ctx, res);
 	if (res->count != 1) {
-		ldb_set_errstring(module, 
+		ldb_set_errstring(module->ldb, 
 				  talloc_asprintf(mem_ctx, "objectClass_handle: "
 						  "search for %s found %d != 1 objects, for entry we just added/modified",
 						  ldb_dn_linearize(mem_ctx, msg->dn),

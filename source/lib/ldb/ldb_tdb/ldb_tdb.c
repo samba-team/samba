@@ -142,7 +142,7 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
 			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
 				char *err_string = talloc_strdup(module, "Invalid attribute value in an @ATTRIBUTES entry");
 				if (err_string) {
-					ldb_set_errstring(module, err_string);
+					ldb_set_errstring(module->ldb, err_string);
 				}
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
@@ -532,7 +532,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el2, &el->values[j])) {
 					err_string = talloc_strdup(module, "Type or value exists");
-					if (err_string) ldb_set_errstring(module, err_string);
+					if (err_string) ldb_set_errstring(module->ldb, err_string);
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
@@ -577,7 +577,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 				if (msg_delete_attribute(module, ldb, msg2, 
 							 msg->elements[i].name) != 0) {
 					err_string = talloc_asprintf(module, "No such attribute: %s", msg->elements[i].name);
-					if (err_string) ldb_set_errstring(module, err_string);
+					if (err_string) ldb_set_errstring(module->ldb, err_string);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
@@ -589,7 +589,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
 					err_string = talloc_asprintf(module, "No such attribute: %s", msg->elements[i].name);
-					if (err_string) ldb_set_errstring(module, err_string);
+					if (err_string) ldb_set_errstring(module->ldb, err_string);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
@@ -602,7 +602,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			err_string = talloc_asprintf(module, "Invalid ldb_modify flags on %s: 0x%x", 
 						     msg->elements[i].name, 
 						     msg->elements[i].flags & LDB_FLAG_MOD_MASK);
-			if (err_string) ldb_set_errstring(module, err_string);
+			if (err_string) ldb_set_errstring(module->ldb, err_string);
 			ret = LDB_ERR_PROTOCOL_ERROR;
 			goto failed;
 		}
@@ -690,7 +690,7 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 		ltdb_delete(module, newdn);
 	}
 
-	ldb_set_errstring(module, error_str);
+	ldb_set_errstring(module->ldb, error_str);
 
 	talloc_free(msg);
 

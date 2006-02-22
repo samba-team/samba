@@ -180,7 +180,9 @@ static int samldb_find_next_rid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	str = ldb_msg_find_string(res->msgs[0], "nextRid", NULL);
 	if (str == NULL) {
-		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "attribute nextRid not found in %s\n", ldb_dn_linearize(res, dn)));
+		ldb_set_errstring(module->ldb,
+				  talloc_asprintf(mem_ctx, "attribute nextRid not found in %s\n",
+						  ldb_dn_linearize(res, dn)));
 		talloc_free(res);
 		return -1;
 	}
@@ -337,7 +339,11 @@ int samldb_notice_sid(struct ldb_module *module,
 			   "objectSid=%s",
 			   ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret > 0) {
-		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "Attempt to add record with SID %s rejected, because this SID is already in the database", dom_sid_string(mem_ctx, sid)));
+		ldb_set_errstring(module->ldb,
+				  talloc_asprintf(mem_ctx,
+						  "Attempt to add record with SID %s rejected,"
+						  " because this SID is already in the database",
+						  dom_sid_string(mem_ctx, sid)));
 		/* We have a duplicate SID, we must reject the add */
 		talloc_free(dom_msgs);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -605,7 +611,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
 
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_set_errstring(module, talloc_asprintf(module, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn->name));
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Bad RDN (%s=) for user/computer, should be CN=!\n", rdn->name));
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -681,7 +687,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
 
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_set_errstring(module, talloc_asprintf(module, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn->name));
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Bad RDN (%s=) for ForeignSecurityPrincipal, should be CN=!", rdn->name));
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -692,7 +698,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 
 	sid = dom_sid_parse_talloc(msg2, (const char *)rdn->value.data);
 	if (!sid) {
-		ldb_set_errstring(module, talloc_asprintf(module, "No valid found SID in ForeignSecurityPrincipal CN!"));
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "No valid found SID in ForeignSecurityPrincipal CN!"));
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -718,7 +724,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
 	if (ret >= 1) {
 		const char *name = samdb_result_string(dom_msgs[0], "name", NULL);
-		ldb_set_errstring(module, talloc_asprintf(mem_ctx, "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", dom_sid_string(mem_ctx, sid), name)); 
+		ldb_set_errstring(module->ldb, talloc_asprintf(mem_ctx, "Attempt to add foreign SID record with SID %s rejected, because this domian (%s) is already in the database", dom_sid_string(mem_ctx, sid), name)); 
 		/* We don't really like the idea of foreign sids that are not foreign */
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	} else if (ret == -1) {

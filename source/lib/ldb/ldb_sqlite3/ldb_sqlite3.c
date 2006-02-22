@@ -943,7 +943,7 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 	ret = sqlite3_exec(lsqlite3->sqlite, query, lsqlite3_search_callback, &msgs, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			ldb_set_errstring(module, talloc_strdup(module, errmsg));
+			ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
 		ret = LDB_ERR_OTHER;
@@ -1039,7 +1039,7 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			ldb_set_errstring(module, talloc_strdup(module, errmsg));
+			ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
 		ret = LDB_ERR_OTHER;
@@ -1094,7 +1094,7 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 			ret = sqlite3_exec(lsqlite3->sqlite, insert, NULL, NULL, &errmsg);
 			if (ret != SQLITE_OK) {
 				if (errmsg) {
-					ldb_set_errstring(module, talloc_strdup(module, errmsg));
+					ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 					free(errmsg);
 				}
 				ret = LDB_ERR_OTHER;
@@ -1184,7 +1184,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 			ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 			if (ret != SQLITE_OK) {
 				if (errmsg) {
-					ldb_set_errstring(module, talloc_strdup(module, errmsg));
+					ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 					free(errmsg);
 				}
 				ret = LDB_ERR_OTHER;
@@ -1222,7 +1222,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 				if (ret != SQLITE_OK) {
 					if (errmsg) {
-						ldb_set_errstring(module, talloc_strdup(module, errmsg));
+						ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 						free(errmsg);
 					}
 					ret = LDB_ERR_OTHER;
@@ -1248,7 +1248,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 				if (ret != SQLITE_OK) {
 					if (errmsg) {
-						ldb_set_errstring(module, talloc_strdup(module, errmsg));
+						ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 						free(errmsg);
 					}
 					ret = LDB_ERR_OTHER;
@@ -1282,7 +1282,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 				if (ret != SQLITE_OK) {
 					if (errmsg) {
-						ldb_set_errstring(module, talloc_strdup(module, errmsg));
+						ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 						free(errmsg);
 					}
 					ret = LDB_ERR_OTHER;
@@ -1343,7 +1343,7 @@ static int lsqlite3_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			ldb_set_errstring(module, talloc_strdup(module, errmsg));
+			ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
 		ret = LDB_ERR_OTHER;
@@ -1402,7 +1402,7 @@ static int lsqlite3_rename(struct ldb_module *module, const struct ldb_dn *olddn
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			ldb_set_errstring(module, talloc_strdup(module, errmsg));
+			ldb_set_errstring(module->ldb, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
 		ret = LDB_ERR_OTHER;

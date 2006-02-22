@@ -78,7 +78,7 @@ static int lldb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 
 	lldb->last_rc = ldap_rename_s(lldb->ldap, old_dn, newrdn, parentdn, 1, NULL, NULL);
 	if (lldb->last_rc != LDAP_SUCCESS) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
+		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -108,7 +108,7 @@ static int lldb_delete(struct ldb_module *module, const struct ldb_dn *edn)
 
 	lldb->last_rc = ldap_delete_s(lldb->ldap, dn);
 	if (lldb->last_rc != LDAP_SUCCESS) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
+		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -226,7 +226,7 @@ static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 				      0, &ldapres);
 	talloc_free(search_base);
 	if (lldb->last_rc != LDAP_SUCCESS) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
+		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		return lldb->last_rc;
 	}
 
@@ -412,7 +412,7 @@ static int lldb_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	lldb->last_rc = ldap_add_s(lldb->ldap, dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
+		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -451,7 +451,7 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	lldb->last_rc = ldap_modify_s(lldb->ldap, dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
-		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
+		ldb_set_errstring(module->ldb, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 

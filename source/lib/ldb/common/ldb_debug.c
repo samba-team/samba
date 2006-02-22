@@ -97,7 +97,7 @@ void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level,
 	msg = talloc_vasprintf(ldb, fmt, ap);
 	va_end(ap);
 	if (msg != NULL) {
-		ldb_set_errstring(ldb->modules, msg);
+		ldb_set_errstring(ldb, msg);
 		ldb_debug(ldb, level, "%s", msg);
 	}
 }

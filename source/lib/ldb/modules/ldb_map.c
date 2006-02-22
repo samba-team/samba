@@ -827,7 +827,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	talloc_free(newattrs);
 
 	if (mpret != LDB_SUCCESS) {
-		ldb_set_errstring(module, talloc_strdup(module, ldb_errstring(privdat->mapped_ldb)));
+		ldb_set_errstring(module->ldb, talloc_strdup(module, ldb_errstring(privdat->mapped_ldb)));
 		return mpret;
 	}
 

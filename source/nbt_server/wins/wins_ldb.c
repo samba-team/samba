@@ -45,7 +45,7 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req, c
 	if (!h) {
 		error = talloc_strdup(module, "WINS_LDB: INTERNAL ERROR: no winsdb_handle present!");
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s", error);
-		ldb_set_errstring(module, error);
+		ldb_set_errstring(module->ldb, error);
 		return LDB_ERR_OTHER;
 	}
 
