@@ -743,17 +743,13 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		if (my_info3->acct_flags & ACB_DOMTRUST) {
 			return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 		}
-#if 0
-		/* The info3 acct_flags in NT4's samlogon reply don't have 
-		 * ACB_NORMAL set. Disable this paranoia check until we
-		 * can research this more - Guenther */
-		
+
 		if (!(my_info3->acct_flags & ACB_NORMAL)) {
 			DEBUG(10,("winbindd_dual_pam_auth_cached: whats wrong with that one?: 0x%08x\n", 
 				my_info3->acct_flags));
 			return NT_STATUS_LOGON_FAILURE;
 		}
-#endif	
+
 		kickoff_time = nt_time_to_unix(&my_info3->kickoff_time);
 		if (kickoff_time != 0 && time(NULL) > kickoff_time) {
 			return NT_STATUS_ACCOUNT_EXPIRED;
