@@ -1,4 +1,5 @@
 TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:quick=yes"
+TORTURE_QUICK="yes"
 
 $SRCDIR/script/tests/test_ejs.sh $DOMAIN $USERNAME $PASSWORD || failed=`expr $failed + $?`
 $SRCDIR/script/tests/test_ldap.sh $SERVER $USERNAME $PASSWORD || failed=`expr $failed + $?`
