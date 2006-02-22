@@ -27,8 +27,7 @@
 
 #ifndef __cplusplus
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
-/* allow to build with newer heimdal releases */
-/* #define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES */
+#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
