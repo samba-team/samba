@@ -2929,10 +2929,12 @@ static BOOL service_ok(int iService)
 	}
 
 	if (ServicePtrs[iService]->szPath[0] == '\0' &&
-	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0) {
-		DEBUG(0, ("No path in service %s - using %s\n",
-		       ServicePtrs[iService]->szService, tmpdir()));
-		string_set(&ServicePtrs[iService]->szPath, tmpdir());
+	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0 &&
+	    ServicePtrs[iService]->szMSDfsProxy[0] == '\0'
+	    ) {
+		DEBUG(0, ("WARNING: No path in service %s - making it unavailable!\n",
+			ServicePtrs[iService]->szService));
+		ServicePtrs[iService]->bAvailable = False;
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
