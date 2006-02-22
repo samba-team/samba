@@ -73,7 +73,7 @@ for p in $PROTOCOLS; do
     fi
 
     echo "Test Attribute Scope Query Control"
-    nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=asq:1:member -s base -b 'CN=Administrators,CN=Builtin,DC=samba,DC=example,DC=com' | grep sAMAccountName | wc -l`
+    nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=asq:1:member -s base -b "CN=Administrators,CN=Builtin,$BASEDN" | grep sAMAccountName | wc -l`
    if [ $nentries -lt 1 ]; then
 	echo "Attribute Scope Query test returned 0 items"
 	failed=`expr $failed + 1`
