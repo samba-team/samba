@@ -61,11 +61,8 @@ struct hx509_cert_data {
 };
 
 typedef struct hx509_name_constraints {
-    /* NameConstraints nc; */
-    struct {
-	GeneralSubtrees *permittedSubtrees;
-	GeneralSubtrees *excludedSubtrees;
-    } nc;
+    NameConstraints *val;
+    size_t len;
 } hx509_name_constraints;
 
 #define GeneralSubtrees_SET(g,var) \
@@ -816,44 +813,6 @@ static int
 init_name_constraints(hx509_name_constraints *nc)
 {
     memset(nc, 0, sizeof(*nc));
-
-    nc->nc.permittedSubtrees = calloc(1, sizeof(*nc->nc.permittedSubtrees));
-    if (nc->nc.permittedSubtrees == NULL)
-	return ENOMEM;
-    nc->nc.excludedSubtrees = calloc(1, sizeof(*nc->nc.excludedSubtrees));
-    if (nc->nc.excludedSubtrees == NULL) {
-	free(nc->nc.permittedSubtrees);
-	nc->nc.permittedSubtrees = NULL;
-	return ENOMEM;
-    }
-    return 0;
-}
-
-static int
-append_tree(const GeneralSubtrees *add, GeneralSubtrees *merge)
-{
-    unsigned int num, i;
-    GeneralSubtree *st;
-    int ret;
-	    
-    num = merge->len + add->len;
-    if (num < merge->len)
-	return HX509_RANGE;
-    if (num > UINT_MAX/sizeof(merge->val[0]))
-	return HX509_RANGE;
-    st = realloc(merge->val, sizeof(*st) * num);
-    if (st == NULL)
-	return ENOMEM;
-    merge->val = st;
-    memset(&st[merge->len], 0, sizeof(add->val[0]) * add->len);
-    for (i = 0; i < add->len; i++) {
-	ret = copy_GeneralSubtree(&add->val[i],
-				  &merge->val[merge->len + i]);
-	if (ret)
-	    return ret;
-    }
-    merge->len = num;
-
     return 0;
 }
 
@@ -872,16 +831,19 @@ add_name_constraints(const Certificate *c, int not_ca,
     else if (not_ca) {
 	ret = HX509_VERIFY_CONSTRAINTS;
     } else {
-	GeneralSubtrees gs;
-	if (tnc.permittedSubtrees) {
-	    GeneralSubtrees_SET(&gs, tnc.permittedSubtrees);
-	    ret = append_tree(&gs, nc->nc.permittedSubtrees);
+	NameConstraints *val;
+	val = realloc(nc->val, sizeof(nc->val[0]) * (nc->len + 1));
+	if (val == NULL) {
+	    ret = ENOMEM;
+	    goto out;
 	}
-	if (ret == 0 && tnc.excludedSubtrees) {
-	    GeneralSubtrees_SET(&gs, tnc.excludedSubtrees);
-	    ret = append_tree(&gs, nc->nc.excludedSubtrees);
-	}
+	nc->val = val;
+	ret = copy_NameConstraints(&tnc, &nc->val[nc->len]);
+	if (ret)
+	    goto out;
+	nc->len += 1;
     }
+out:
     free_NameConstraints(&tnc);
     return ret;
 }
@@ -1079,26 +1041,28 @@ static int
 check_name_constraints(const hx509_name_constraints *nc,
 		       const Certificate *c)
 {
-    GeneralSubtrees gs;
     int match, ret;
+    int i;
 
-    if (nc->nc.permittedSubtrees->len > 0) {
-	GeneralSubtrees_SET(&gs, nc->nc.permittedSubtrees);
+    for (i = 0 ; i < nc->len; i++) {
+	GeneralSubtrees gs;
 
-	ret = match_tree(&gs, c, &match);
-	if (ret)
-	    return ret;
-	if (match == 0)
-	    return HX509_VERIFY_CONSTRAINTS;
-    }
-    if (nc->nc.excludedSubtrees->len > 0) {
-	GeneralSubtrees_SET(&gs, nc->nc.excludedSubtrees);
-
-	ret = match_tree(&gs, c, &match);
-	if (ret)
-	    return ret;
-	if (match)
-	    return HX509_VERIFY_CONSTRAINTS;
+	if (nc->val[i].permittedSubtrees) {
+	    GeneralSubtrees_SET(&gs, nc->val[i].permittedSubtrees);
+	    ret = match_tree(&gs, c, &match);
+	    if (ret)
+		return ret;
+	    if (match == 0)
+		return HX509_VERIFY_CONSTRAINTS;
+	}
+	if (nc->val[i].excludedSubtrees) {
+	    GeneralSubtrees_SET(&gs, nc->val[i].excludedSubtrees);
+	    ret = match_tree(&gs, c, &match);
+	    if (ret)
+		return ret;
+	    if (match)
+		return HX509_VERIFY_CONSTRAINTS;
+	}
     }
     return 0;
 }
@@ -1106,17 +1070,11 @@ check_name_constraints(const hx509_name_constraints *nc,
 static void
 free_name_constraints(hx509_name_constraints *nc)
 {
-    /* free_NameConstraints(&nc->nc); */
-    if (nc->nc.permittedSubtrees) {
-	free_GeneralSubtrees(nc->nc.permittedSubtrees);
-	free(nc->nc.permittedSubtrees);
-	nc->nc.permittedSubtrees = NULL;
-    }
-    if (nc->nc.excludedSubtrees) {
-	free_GeneralSubtrees(nc->nc.excludedSubtrees);
-	free(nc->nc.excludedSubtrees);
-	nc->nc.excludedSubtrees = NULL;
-    }
+    int i;
+
+    for (i = 0 ; i < nc->len; i++)
+	free_NameConstraints(&nc->val[i]);
+    free(nc->val);
 }
 
 int
