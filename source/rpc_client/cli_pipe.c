@@ -2393,13 +2393,14 @@ struct rpc_pipe_client *cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 
 /****************************************************************************
  Open a netlogon pipe and get the schannel session key.
+ Now exposed to external callers.
  ****************************************************************************/
 
-static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
+struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 							const char *domain,
+							uint32 *pneg_flags,
 							NTSTATUS *perr)
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
 	unsigned char machine_pwd[16];
@@ -2438,7 +2439,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 					machine_account, /* machine account name */
 					machine_pwd,
 					sec_chan_type,
-					&neg_flags);
+					pneg_flags);
 
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(3,("get_schannel_session_key: rpccli_netlogon_setup_creds "
@@ -2448,7 +2449,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		return NULL;
 	}
 
-	if ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0) {
+	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
 			cli->desthost));
 		cli_rpc_pipe_close(netlogon_pipe);
@@ -2520,9 +2521,9 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 							const char *domain,
 							const char *username,
 							const char *password,
+							uint32 *pneg_flags,
 							NTSTATUS *perr)
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
 	unsigned char machine_pwd[16];
@@ -2564,7 +2565,7 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 					machine_account,   /* machine account name */
 					machine_pwd,
 					sec_chan_type,
-					&neg_flags);
+					pneg_flags);
 
 	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(3,("get_schannel_session_key_auth_ntlmssp: rpccli_netlogon_setup_creds "
@@ -2574,7 +2575,7 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 		return NULL;
 	}
 
-	if ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0) {
+	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key_auth_ntlmssp: Server %s did not offer schannel\n",
 			cli->desthost));
 		cli_rpc_pipe_close(netlogon_pipe);
@@ -2599,10 +2600,12 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state
 						const char *password,
 						NTSTATUS *perr)
 {
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
-	netlogon_pipe = get_schannel_session_key_auth_ntlmssp(cli, domain, username, password, perr);
+	netlogon_pipe = get_schannel_session_key_auth_ntlmssp(cli, domain, username,
+							password, &neg_flags, perr);
 	if (!netlogon_pipe) {
 		DEBUG(0,("cli_rpc_pipe_open_ntlmssp_auth_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
@@ -2631,10 +2634,11 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
                                                 const char *domain,
 						NTSTATUS *perr)
 {
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
-	netlogon_pipe = get_schannel_session_key(cli, domain, perr);
+	netlogon_pipe = get_schannel_session_key(cli, domain, &neg_flags, perr);
 	if (!netlogon_pipe) {
 		DEBUG(0,("cli_rpc_pipe_open_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
