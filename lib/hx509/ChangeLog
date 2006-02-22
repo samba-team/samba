@@ -1,4 +1,17 @@
-2006-02-14  Love Hörnquist Åstrand  <lha@it.su.se>
+2006-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cert.c: Name constraits needs to be evaluated in block as they
+	appear in the certificates, they can not be joined to one
+	list. One example of this is:
+	
+	- cert is cn=foo,dc=bar,dc=baz
+	- subca is dc=foo,dc=baz with name restriction dc=kaka,dc=baz
+	- ca is dc=baz with name restriction dc=baz
+	
+	If the name restrictions are merged to a list, the certificate
+	will pass this test.
+
+2006-02-14 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* cert.c: Handle more name constraints cases.
 
