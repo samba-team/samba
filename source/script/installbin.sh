@@ -15,13 +15,13 @@ shift
 
 for p in $*; do
  p2=`basename $p`
- echo Installing $p as $BINDIR/$p2
- if [ -f $BINDIR/$p2 ]; then
-   rm -f $BINDIR/$p2.old
-   mv $BINDIR/$p2 $BINDIR/$p2.old
+ echo Installing $p as $DESTDIR/$BINDIR/$p2
+ if [ -f $DESTDIR/$BINDIR/$p2 ]; then
+   rm -f $DESTDIR/$BINDIR/$p2.old
+   mv $DESTDIR/$BINDIR/$p2 $DESTDIR/$BINDIR/$p2.old
  fi
- cp $p $BINDIR/
- chmod $INSTALLPERMS $BINDIR/$p2
+ cp $p $DESTDIR/$BINDIR/
+ chmod $INSTALLPERMS $DESTDIR/$BINDIR/$p2
 
  # this is a special case, mount needs this in a specific location
  if [ $p2 = smbmount ]; then
