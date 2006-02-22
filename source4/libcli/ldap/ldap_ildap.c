@@ -152,13 +152,13 @@ int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
 
 
 /*
-  perform a ldap search
+  perform a synchronous ldap search
 */
 NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
 			     int scope, struct ldb_parse_tree *tree,
 			     const char * const *attrs, BOOL attributesonly, 
-			     struct ldap_Control **control_req,
-			     struct ldap_Control ***control_res,
+			     struct ldb_control **control_req,
+			     struct ldb_control ***control_res,
 			     struct ldap_message ***results)
 {
 	struct ldap_message *msg;
@@ -203,7 +203,9 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 			break;
 		}
 
-		if (res->type != LDAP_TAG_SearchResultEntry) continue;
+		if (res->type != LDAP_TAG_SearchResultEntry &&
+		    res->type != LDAP_TAG_SearchResultReference)
+			continue;
 		
 		(*results) = talloc_realloc(conn, *results, struct ldap_message *, n+2);
 		if (*results == NULL) {
@@ -228,8 +230,8 @@ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn,
 NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
 		      int scope, const char *expression, 
 		      const char * const *attrs, BOOL attributesonly, 
-		      struct ldap_Control **control_req,
-		      struct ldap_Control ***control_res,
+		      struct ldb_control **control_req,
+		      struct ldb_control ***control_res,
 		      struct ldap_message ***results)
 {
 	struct ldb_parse_tree *tree = ldb_parse_tree(conn, expression);

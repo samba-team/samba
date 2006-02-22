@@ -964,6 +964,7 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 
 	(*res)->msgs = talloc_steal(*res, msgs.msgs);
 	(*res)->count = msgs.count;
+	(*res)->refs = NULL;
 	(*res)->controls = NULL;
 
 	talloc_free(local_ctx);

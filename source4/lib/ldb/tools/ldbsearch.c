@@ -64,9 +64,10 @@ static int do_search(struct ldb_context *ldb,
 		     const char *expression,
 		     const char * const *attrs)
 {
-	int ret, i;
+	int ret, i, n;
 	int loop = 0;
 	int total = 0;
+	int refs = 0;
 	struct ldb_request req;
 	struct ldb_result *result = NULL;
 
@@ -94,7 +95,6 @@ static int do_search(struct ldb_context *ldb,
 		}
 
 		result = req.op.search.res;
-		printf("# returned %d records\n", result->count);
 
 		if (options->sorted) {
 			ldb_qsort(result->msgs, result->count, sizeof(struct ldb_message *),
@@ -120,6 +120,12 @@ static int do_search(struct ldb_context *ldb,
 			ldb_ldif_write_file(ldb, stdout, &ldif);
 		}
 
+		if (result->refs) {
+			for(n = 0;result->refs[n]; n++, refs++) {
+				printf("# referral %d\nref: %s\n\n", refs + 1, result->refs[n]);
+			}
+		}
+		
 		if (result->controls) {
 			if (handle_controls_reply(result->controls, req.controls) == 1)
 				loop = 1;
@@ -136,6 +142,8 @@ static int do_search(struct ldb_context *ldb,
 		req.op.search.res = NULL;
 		
 	} while(loop);
+
+	printf("# returned %d records\n# %d entries\n# %d referrals\n", total + refs, total, refs);
 
 	return 0;
 }
