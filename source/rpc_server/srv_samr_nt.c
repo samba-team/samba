@@ -3071,13 +3071,47 @@ static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, struct samu *pwd)
 static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 				 struct samu *pwd)
 {
+	fstring new_name;
 	NTSTATUS status;
-
+	
 	if (id21 == NULL) {
 		DEBUG(5, ("set_user_info_21: NULL id21\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
- 
+
+	/* we need to separately check for an account rename first */
+	if (rpcstr_pull(new_name, id21->uni_user_name.buffer, 
+			sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0) && 
+	   (!strequal(new_name, pdb_get_username(pwd)))) {
+
+		/* check to see if the new username already exists.  Note: we can't
+		   reliably lock all backends, so there is potentially the 
+		   possibility that a user can be created in between this check and
+		   the rename.  The rename should fail, but may not get the
+		   exact same failure status code.  I think this is small enough
+		   of a window for this type of operation and the results are
+		   simply that the rename fails with a slightly different status
+		   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
+
+		status = can_create(mem_ctx, new_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = pdb_rename_sam_account(pwd, new_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("set_user_info_21: failed to rename account: %s\n", 
+				nt_errstr(status)));
+			TALLOC_FREE(pwd);
+			return status;
+		}
+
+		/* set the new username so that later 
+		   functions can work on the new account */
+		pdb_set_username(pwd, new_name, PDB_SET);
+	}
+
 	copy_id21_to_sam_passwd(pwd, id21);
  
 	/*

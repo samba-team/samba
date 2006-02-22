@@ -923,7 +923,7 @@ BOOL string_set(char **dest,const char *src)
 **/
 
 void string_sub2(char *s,const char *pattern, const char *insert, size_t len, 
-		 BOOL remove_unsafe_characters, BOOL replace_once)
+		 BOOL remove_unsafe_characters, BOOL replace_once, BOOL allow_trailing_dollar)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
@@ -955,6 +955,11 @@ void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
 			case '\'':
 			case ';':
 			case '$':
+				/* allow a trailing $ (as in machine accounts) */
+				if (allow_trailing_dollar && (i == li - 1 )) {
+					p[i] = insert[i];
+					break;
+				}
 			case '%':
 			case '\r':
 			case '\n':
@@ -978,12 +983,12 @@ void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
 
 void string_sub_once(char *s, const char *pattern, const char *insert, size_t len)
 {
-	string_sub2( s, pattern, insert, len, True, True );
+	string_sub2( s, pattern, insert, len, True, True, False );
 }
 
 void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
-	string_sub2( s, pattern, insert, len, True, False );
+	string_sub2( s, pattern, insert, len, True, False, False );
 }
 
 void fstring_sub(char *s,const char *pattern,const char *insert)
