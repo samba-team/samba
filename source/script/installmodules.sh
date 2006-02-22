@@ -1,17 +1,19 @@
 #!/bin/sh
 
 INSTALLPERMS=$1
-BASEDIR=`echo $2 | sed 's/\/\//\//g'`
-LIBDIR=`echo $3 | sed 's/\/\//\//g'`
+DESTDIR=`echo $2 | sed 's/\/\//\//g'`
+BASEDIR=`echo $3 | sed 's/\/\//\//g'`
+LIBDIR=`echo $4 | sed 's/\/\//\//g'`
+shift
 shift
 shift
 shift
 
 for d in $BASEDIR $LIBDIR; do
-if [ ! -d $d ]; then
-mkdir $d
-if [ ! -d $d ]; then
-  echo Failed to make directory $d
+if [ ! -d $DESTDIR/$d ]; then
+mkdir $DESTDIR/$d
+if [ ! -d $DESTDIR/$d ]; then
+  echo Failed to make directory $DESTDIR/$d
   exit 1
 fi
 fi
@@ -19,9 +21,9 @@ done
 
 for p in $*; do
  p2=`basename $p`
- echo Installing $p as $LIBDIR/$p2
- cp -f $p $LIBDIR/
- chmod $INSTALLPERMS $LIBDIR/$p2
+ echo Installing $p as $DESTDIR/$LIBDIR/$p2
+ cp -f $p $DESTDIR/$LIBDIR/
+ chmod $INSTALLPERMS $DESTDIR/$LIBDIR/$p2
 done
 
 exit 0
