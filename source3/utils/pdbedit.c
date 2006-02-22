@@ -655,7 +655,7 @@ int main (int argc, char **argv)
 	static char *pwd_can_change_time = NULL;
 	static char *pwd_must_change_time = NULL;
 	static char *pwd_time_format = NULL;
-	BOOL pw_from_stdin = False;
+	static BOOL pw_from_stdin = False;
 
 	struct pdb_methods *bdef = NULL;
 	poptContext pc;
