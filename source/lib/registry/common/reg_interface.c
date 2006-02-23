@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "lib/registry/registry.h"
-#include "smb_build.h"
+#include "build.h"
 
 /* List of available backends */
 static struct reg_init_function_entry *backends = NULL;

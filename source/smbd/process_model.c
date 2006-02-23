@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
-#include "smb_build.h"
+#include "build.h"
 
 /*
   setup the events for the chosen process model

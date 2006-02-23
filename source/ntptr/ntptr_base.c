@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "ntptr/ntptr.h"
-#include "smb_build.h"
+#include "build.h"
 
 /* the list of currently registered NTPTR backends */
 static struct ntptr_backend {

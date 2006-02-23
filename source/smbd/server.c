@@ -29,7 +29,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "smb_build.h"
+#include "build.h"
 #include "registry/registry.h"
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"

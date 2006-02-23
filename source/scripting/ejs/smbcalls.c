@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
-#include "smb_build.h"
+#include "build.h"
 #include "version.h"
 
 /*
