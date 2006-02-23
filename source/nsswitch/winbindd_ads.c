@@ -483,17 +483,12 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 
 	if (use_nss_info("sfu")) {
-<<<<<<< .working
-		info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-		info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
-=======
 		info->homedir 	= ads_pull_string(ads, mem_ctx, msg, 
 						  ads->schema.sfu_homedir_attr);
 		info->shell 	= ads_pull_string(ads, mem_ctx, msg, 
 						  ads->schema.sfu_shell_attr);
 		info->full_name	= ads_pull_string(ads, mem_ctx, msg,
 						  ads->schema.sfu_gecos_attr);
->>>>>>> .merge-right.r13657
 	}
 
 	if (info->full_name == NULL) {
