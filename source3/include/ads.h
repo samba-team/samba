@@ -48,6 +48,7 @@ typedef struct {
 		char *sfu_shell_attr;
 		char *sfu_uidnumber_attr;
 		char *sfu_gidnumber_attr;
+		char *sfu_gecos_attr;
 	} schema;
 
 } ADS_STRUCT;
@@ -99,6 +100,7 @@ typedef void **ADS_MODLIST;
 #define ADS_ATTR_SFU_GIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.311"
 #define ADS_ATTR_SFU_HOMEDIR_OID 	"1.2.840.113556.1.6.18.1.344"
 #define ADS_ATTR_SFU_SHELL_OID 		"1.2.840.113556.1.6.18.1.312"
+#define ADS_ATTR_SFU_GECOS_OID 		"1.2.840.113556.1.6.18.1.337"
 
 /* ldap bitwise searches */
 #define ADS_LDAP_MATCHING_RULE_BIT_AND	"1.2.840.113556.1.4.803"
