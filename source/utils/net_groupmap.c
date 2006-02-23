@@ -818,7 +818,7 @@ int net_groupmap(int argc, const char **argv)
 
 	/* we shouldn't have silly checks like this */
 	if (getuid() != 0) {
-		d_fprintf(stderr, "You must be root to edit group mappings.\nExiting...\n");
+		d_fprintf(stderr, "You must be root to edit group mappings.\n");
 		return -1;
 	}
 	
