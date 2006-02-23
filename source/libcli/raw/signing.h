@@ -27,6 +27,10 @@ enum smb_signing_engine_state {
 	SMB_SIGNING_ENGINE_ON
 };
 
+enum smb_signing_state {
+	SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
+	SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
+
 struct smb_signing_context {
 	enum smb_signing_engine_state signing_state;
 	DATA_BLOB mac_key;

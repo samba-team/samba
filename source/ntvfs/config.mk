@@ -59,16 +59,6 @@ OBJ_FILES = \
 # End MODULE ntvfs_nbench
 ################################################
 
-################################################
-# Start SUBSYSTEM ntvfs_common
-[SUBSYSTEM::ntvfs_common]
-OBJ_FILES = \
-		common/brlock.o \
-		common/opendb.o \
-		common/sidmap.o
-# End SUBSYSTEM ntvfs_common
-################################################
-
 
 ################################################
 # Start SUBSYSTEM NTVFS
@@ -83,7 +73,10 @@ OBJ_FILES = \
 		ntvfs_base.o \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
-		ntvfs_util.o
+		ntvfs_util.o \
+		common/brlock.o \
+		common/opendb.o \
+		common/sidmap.o
 #
 # End SUBSYSTEM NTVFS
 ################################################

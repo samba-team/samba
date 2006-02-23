@@ -25,7 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "ioctl.h"
+#include "libcli/raw/ioctl.h"
 
 /* transport private information used by SMB2 pipe transport */
 struct smb2_private {

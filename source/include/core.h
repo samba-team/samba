@@ -24,10 +24,6 @@
 #ifndef _SAMBA_CORE_H
 #define _SAMBA_CORE_H
 
-/*
- * Define VOLATILE if needed.
- */
-
 #define False (0)
 #define True (1)
 #define Auto (2)
@@ -54,4 +50,4 @@ typedef uint64_t NTTIME;
 
 typedef NTSTATUS (*init_module_fn) (void);
 
-#endif /* _SMB_H */
+#endif /* _SAMBA_CORE_H */

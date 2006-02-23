@@ -86,28 +86,31 @@ struct ipv4_addr {
 	uint32_t addr;
 };
 
+/* protocol types. It assumes that higher protocols include lower protocols
+   as subsets. FIXME: Move to one of the smb-specific headers */
+enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
+
+/* passed to br lock code. FIXME: Move to one of the smb-specific headers */
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
+
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "lib/replace/replace.h"
 
 /* Lists, trees, caching, database... */
-#include "xfile.h"
-#include "talloc/talloc.h"
 #include "nt_status.h"
-#include "structs.h"
-#include "trans2.h"
-#include "libcli/util/nterr.h"
-#include "charset/charset.h"
+#include "talloc/talloc.h"
 #include "core.h"
-#include "debug.h"
+#include "charset/charset.h"
+#include "structs.h"
+#include "util/util.h"
+#include "libcli/util/nterr.h"
 #include "libcli/util/doserr.h"
-#include "enums.h"
-#include "smb_macros.h"
-#include "byteorder.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/ndr/ndr_orpc.h"
 #include "librpc/gen_ndr/orpc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "libcli/raw/trans2.h"
 #include "libcli/raw/interfaces.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/nbt/libnbt.h"
@@ -116,12 +119,11 @@ struct ipv4_addr {
 #define _PRINTF_ATTRIBUTE(a1, a2)
 
 /***** automatically generated prototypes *****/
-#include "basic.h"
 #include "include/proto.h"
 
 /* String routines */
 
-#include "safe_string.h"
+#include "util/safe_string.h"
 
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1

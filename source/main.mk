@@ -246,7 +246,7 @@ include/includes.h: \
 		librpc/rpc/dcerpc.h \
 		auth/credentials/credentials_proto.h \
 		libcli/nbt/libnbt.h \
-		lib/basic.h \
+		lib/util/util_proto.h \
 		lib/charset/charset.h
 
 clean_pch: 

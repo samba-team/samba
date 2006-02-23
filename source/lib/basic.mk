@@ -16,6 +16,7 @@ include socket_wrapper/config.mk
 include appweb/config.mk
 include replace/config.mk
 include stream/config.mk
+include util/config.mk
 
 ##############################
 # Start SUBSYSTEM LIBNETIF
@@ -57,50 +58,13 @@ OBJ_FILES = \
 ################################################
 
 [SUBSYSTEM::GENCACHE]
-PRIVATE_PROTO_HEADER = gencache.h
+PRIVATE_PROTO_HEADER = gencache/gencache.h
 OBJ_FILES = \
-		gencache.o \
-
-##############################
-# Start SUBSYSTEM LIBBASIC
-[SUBSYSTEM::LIBBASIC]
-PRIVATE_PROTO_HEADER = basic.h
-OBJ_FILES = version.o \
-		xfile.o \
-		debug.o \
-		fault.o \
-		signal.o \
-		system.o \
-		time.o \
-		genrand.o \
-		dprintf.o \
-		util_str.o \
-		util_strlist.o \
-		util_unistr.o \
-		util_file.o \
-		data_blob.o \
-		util.o \
-		util_sock.o \
-		substitute.o \
-		fsusage.o \
-		ms_fnmatch.o \
-		select.o \
-		mutex.o \
-		idtree.o \
-		module.o
-REQUIRED_SUBSYSTEMS = \
-		CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
-		SOCKET_WRAPPER CONFIG
-# End SUBSYSTEM LIBBASIC
-##############################
+		gencache/gencache.o \
 
 [SUBSYSTEM::DB_WRAP]
 OBJ_FILES = db_wrap.o \
 		gendb.o
 REQUIRED_SUBSYSTEMS = LIBLDB LIBTDB
 
-[SUBSYSTEM::PIDFILE]
-OBJ_FILES = pidfile.o
 
-[SUBSYSTEM::UNIX_PRIVS]
-OBJ_FILES = unix_privs.o

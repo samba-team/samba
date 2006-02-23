@@ -21,6 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+struct mutex_ops;
+
 /* To add a new read/write lock, add it to enum rwlock_id
  */
 enum rwlock_id { RWLOCK_SMBD, 		/* global smbd lock */
