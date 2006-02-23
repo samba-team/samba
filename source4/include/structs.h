@@ -133,8 +133,6 @@ struct wb_sid_object;
 struct cldap_socket;
 struct cldapd_server;
 
-struct mutex_ops;
-
 struct websrv_context;
 
 struct wbsrv_call;
@@ -160,7 +158,5 @@ struct registry_context;
 struct nbtd_interface;
 struct smbcli_session;
 struct smbcli_state;
-
-struct substitute_context;
 
 struct model_ops;

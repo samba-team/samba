@@ -19,8 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
 /* this structure is just a wrapper for a string, the only reason we
    bother with this is that it allows us to check the length provided
    on the wire in testsuite test code to ensure that we are

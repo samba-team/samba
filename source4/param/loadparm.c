@@ -61,6 +61,8 @@
 #include "system/iconv.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "smb_server/smb_server.h"
+#include "libcli/raw/signing.h"
 #include "dlinklist.h"
 #include "param/loadparm.h"
 

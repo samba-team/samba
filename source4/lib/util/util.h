@@ -1,11 +1,11 @@
 /* 
    Unix SMB/CIFS implementation.
-   Some convenient macros
+   Utility functions for Samba
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) John H Terpstra 1996-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    Copyright (C) Paul Ashton 1998 - 1999
-   
+    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -21,8 +21,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _SMB_MACROS_H
-#define _SMB_MACROS_H
+#ifndef _SAMBA_UTIL_H_
+#define _SAMBA_UTIL_H_
+
+struct substitute_context;
+
+#include "util/xfile.h"
+#include "util/debug.h"
+#include "util/mutex.h"
+#include "util/byteorder.h"
+#include "util/util_proto.h"
 
 /* zero a structure */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
@@ -70,4 +78,4 @@
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
-#endif /* _SMB_MACROS_H */
+#endif /* _SAMBA_UTIL_H_ */

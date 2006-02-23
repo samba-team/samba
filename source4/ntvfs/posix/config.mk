@@ -31,6 +31,6 @@ OBJ_FILES = \
 		pvfs_acl.o \
 		xattr_system.o \
 		xattr_tdb.o
-REQUIRED_SUBSYSTEMS = NDR_XATTR ntvfs_common EXT_LIB_XATTR EXT_LIB_BLKID
+REQUIRED_SUBSYSTEMS = NDR_XATTR EXT_LIB_XATTR EXT_LIB_BLKID
 # End MODULE ntvfs_posix
 ################################################
