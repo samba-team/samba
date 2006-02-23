@@ -7,6 +7,7 @@ exec_prefix = @exec_prefix@
 includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
+mandir = @mandir@
 WITH_GCOV = @WITH_GCOV@
 WITH_LDAP = @WITH_LDAP@
 WITH_SQLITE3 = @WITH_SQLITE3@
@@ -192,6 +193,9 @@ install: all
 	cp $(LDB_LIB) $(libdir)
 	cp $(BINS) $(bindir)
 	cp ldb.pc $(libdir)/pkgconfig
+	mkdir -p $(mandir) $(mandir)/man3
+	cp $(filter %.1, $(MANPAGES)) $(mandir)/man1
+	cp $(filter %.3, $(MANPAGES)) $(mandir)/man3
 
 gcov:
 	$(GCOV) -po ldb_sqlite3 ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
