@@ -1054,7 +1054,7 @@ int main(int argc, char **argv)
 	/* Initialise messaging system */
 
 	if (!message_init()) {
-		DEBUG(0, ("unable to initialise messaging system\n"));
+		DEBUG(0, ("unable to initialize messaging system\n"));
 		exit(1);
 	}
 	
@@ -1071,7 +1071,10 @@ int main(int argc, char **argv)
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
-	init_domain_list();
+	if (!init_domain_list()) {
+		DEBUG(0, ("unable to initialize domain list\n"));
+		exit(1);
+	}
 
 	init_idmap_child();
 
