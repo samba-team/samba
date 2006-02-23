@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   SMB parameters and setup
+   Some convenient macros
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) John H Terpstra 1996-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
