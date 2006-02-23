@@ -15,9 +15,4 @@ for dir in $@; do
 		echo "Failed to make directory $DESTDIR/$DIRNAME "
 		exit 1
 	fi
-
-	shift;
 done
-
-
-
