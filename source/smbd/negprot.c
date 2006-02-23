@@ -178,6 +178,7 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
 				   NULL};
+	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 	int len;
 
 	global_spnego_negotiated = True;
@@ -212,9 +213,13 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 	*/
 
 	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
-		memcpy(p, guid, 16);
-		*pkeylen = 0;
-		return 16;
+#if 0
+		/* Code for PocketPC client */
+		blob = data_blob(guid, 16);
+#else
+		/* Code for standalone WXP client */
+		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
+#endif
 	} else {
 		fstring myname;
 		char *host_princ_s = NULL;
@@ -224,14 +229,20 @@ static int negprot_spnego(char *p, uint8 *pkeylen)
 		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, host_princ_s);
 		SAFE_FREE(host_princ_s);
 	}
+
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
 	if (len > 256) {
 		DEBUG(0,("negprot_spnego: blob length too long (%d)\n", len));
 		len = 255;
 	}
-	*pkeylen = len;
 	data_blob_free(&blob);
+
+	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
+		*pkeylen = 0;
+	} else {
+		*pkeylen = len;
+	}
 	return len;
 }
 
