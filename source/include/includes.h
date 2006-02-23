@@ -108,7 +108,7 @@ struct ipv4_addr {
 #include "librpc/ndr/ndr_orpc.h"
 #include "librpc/gen_ndr/orpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "smb_interfaces.h"
+#include "libcli/raw/interfaces.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/nbt/libnbt.h"
 
