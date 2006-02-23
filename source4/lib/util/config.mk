@@ -1,6 +1,15 @@
-[SUBSYSTEM::LIBBASIC]
+[LIBRARY::LIBBASIC]
+MAJOR_VERSION = 0
+MINOR_VERSION = 0
+RELEASE_VERSION = 1
+DESCRIPTION = Generic utility functions
 PRIVATE_PROTO_HEADER = util_proto.h
-PUBLIC_HEADERS = util.h
+PUBLIC_HEADERS = util.h \
+				 byteorder.h \
+				 debug.h \
+				 mutex.h \
+				 safe_string.h \
+				 xfile.h
 OBJ_FILES = xfile.o \
 		debug.o \
 		fault.o \
