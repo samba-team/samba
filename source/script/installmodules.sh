@@ -19,11 +19,15 @@ fi
 fi
 done
 
+set -x
+
 for p in $*; do
  p2=`basename $p`
  echo Installing $p as $DESTDIR/$LIBDIR/$p2
  cp -f $p $DESTDIR/$LIBDIR/
  chmod $INSTALLPERMS $DESTDIR/$LIBDIR/$p2
 done
+
+set +x
 
 exit 0
