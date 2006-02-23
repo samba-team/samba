@@ -151,7 +151,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       "name", "objectSid", "primaryGroupID", 
 			       "sAMAccountType", 
 			       ADS_ATTR_SFU_HOMEDIR_OID, 
-			       ADS_ATTR_SFU_SHELL_OID, 
+			       ADS_ATTR_SFU_SHELL_OID,
+			       ADS_ATTR_SFU_GECOS_OID,
 			       NULL};
 	int i, count;
 	ADS_STATUS rc;
@@ -191,7 +192,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	i = 0;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		char *name, *gecos;
+		char *name, *gecos = NULL;
 		char *homedir = NULL;
 		char *shell = NULL;
 		uint32 group;
@@ -204,10 +205,18 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		name = ads_pull_username(ads, mem_ctx, msg);
-		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
+
 		if (use_nss_info("sfu")) {
-			homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-			shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+			homedir = ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_homedir_attr);
+			shell 	= ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_shell_attr);
+			gecos 	= ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_gecos_attr);
+		}
+
+		if (gecos == NULL) {
+			gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		}
 	
 		if (!ads_pull_sid(ads, msg, "objectSid",
@@ -433,7 +442,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			       "name", 
 			       "primaryGroupID", 
 			       ADS_ATTR_SFU_HOMEDIR_OID, 
-			       ADS_ATTR_SFU_SHELL_OID, 
+			       ADS_ATTR_SFU_SHELL_OID,
+			       ADS_ATTR_SFU_GECOS_OID,
 			       NULL};
 	ADS_STATUS rc;
 	int count;
@@ -471,11 +481,23 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
-	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 
 	if (use_nss_info("sfu")) {
+<<<<<<< .working
 		info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
 		info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+=======
+		info->homedir 	= ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_homedir_attr);
+		info->shell 	= ads_pull_string(ads, mem_ctx, msg, 
+						  ads->schema.sfu_shell_attr);
+		info->full_name	= ads_pull_string(ads, mem_ctx, msg,
+						  ads->schema.sfu_gecos_attr);
+>>>>>>> .merge-right.r13657
+	}
+
+	if (info->full_name == NULL) {
+		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {

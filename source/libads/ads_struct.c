@@ -139,6 +139,7 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->schema.sfu_gidnumber_attr);
 		SAFE_FREE((*ads)->schema.sfu_shell_attr);
 		SAFE_FREE((*ads)->schema.sfu_homedir_attr);
+		SAFE_FREE((*ads)->schema.sfu_gecos_attr);
 		
 		ZERO_STRUCTP(*ads);
 

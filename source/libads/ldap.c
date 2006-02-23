@@ -2563,7 +2563,7 @@ BOOL ads_check_sfu_mapping(ADS_STRUCT *ads)
 { 
 	BOOL ret = False; 
 	TALLOC_CTX *ctx = NULL; 
-	const char *gidnumber, *uidnumber, *homedir, *shell;
+	const char *gidnumber, *uidnumber, *homedir, *shell, *gecos;
 
 	ctx = talloc_init("ads_check_sfu_mapping");
 	if (ctx == NULL)
@@ -2588,6 +2588,11 @@ BOOL ads_check_sfu_mapping(ADS_STRUCT *ads)
 	if (shell == NULL)
 		goto done;
 	ads->schema.sfu_shell_attr = SMB_STRDUP(shell);
+
+	gecos = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_GECOS_OID);
+	if (gecos == NULL)
+		goto done;
+	ads->schema.sfu_gecos_attr = SMB_STRDUP(gecos);
 
 	ret = True;
 done:
