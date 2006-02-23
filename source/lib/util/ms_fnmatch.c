@@ -161,7 +161,7 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 	}
 
 	if (strpbrk(pattern, "<>*?\"") == NULL) {
-		/* this is not just an optmisation - it is essential
+		/* this is not just an optimisation - it is essential
 		   for LANMAN1 correctness */
 		return strcasecmp_m(pattern, string);
 	}

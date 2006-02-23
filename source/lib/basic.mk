@@ -66,5 +66,3 @@ OBJ_FILES = \
 OBJ_FILES = db_wrap.o \
 		gendb.o
 REQUIRED_SUBSYSTEMS = LIBLDB LIBTDB
-
-
