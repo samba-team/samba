@@ -27,6 +27,7 @@
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap.h"
+#include "ntvfs/ntvfs.h"
 
 /*
   this type allows us to distinguish handle types

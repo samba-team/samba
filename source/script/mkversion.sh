@@ -8,7 +8,7 @@ if test -z "$VERSION_FILE";then
 fi
 
 if test -z "$OUTPUT_FILE";then
-	OUTPUT_FILE="include/version.h"
+	OUTPUT_FILE="version.h"
 fi
 
 SOURCE_DIR=$3
@@ -114,7 +114,7 @@ echo "#define SAMBA_VERSION_OFFICIAL_STRING \"${SAMBA_VERSION_STRING}\"" >> $OUT
 
 echo "#define SAMBA_VERSION_STRING samba_version_string()" >> $OUTPUT_FILE
 
-echo "$0: 'include/version.h' created for Samba(\"${SAMBA_VERSION_STRING}\")"
+echo "$0: 'version.h' created for Samba(\"${SAMBA_VERSION_STRING}\")"
 
 if test -n "${SAMBA_VERSION_RELEASE_NICKNAME}";then
     echo "$0: with RELEASE_NICKNAME = ${SAMBA_VERSION_RELEASE_NICKNAME}"

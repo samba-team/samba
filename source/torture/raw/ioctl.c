@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
-#include "ioctl.h"
+#include "libcli/raw/ioctl.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 
