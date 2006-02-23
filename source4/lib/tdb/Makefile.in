@@ -24,7 +24,8 @@ all: $(PROGS)
 install: all
 	mkdir -p $(bindir)
 	mkdir -p $(includedir)
-	mkdir -p $(libdir)
+	mkdir -p $(libdir) 
+	mkdir -p $(libdir)/pkgconfig
 	cp $(PROGS) $(bindir)
 	cp include/tdb.h $(includedir)
 	cp tdb.pc $(libdir)/pkgconfig
