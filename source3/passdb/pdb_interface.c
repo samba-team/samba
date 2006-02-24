@@ -274,7 +274,9 @@ BOOL pdb_getsampwnam(struct samu *sam_acct, const char *username)
 	}
 
 	pdb_force_pw_initialization( sam_acct );
-	pdb_copy_sam_account(sam_acct, &csamuser);
+	
+	if ( (csamuser = samu_new( NULL )) != NULL )
+		pdb_copy_sam_account(csamuser, sam_acct);
 
 	return True;
 }
@@ -294,12 +296,11 @@ BOOL guest_user_info( struct samu *user )
 		return False;
 	}
 	
-	result = samu_set_unix(user, pwd);
+	result = samu_set_unix(user, pwd );
 
 	TALLOC_FREE( pwd );
 
 	return NT_STATUS_IS_OK( result );
-
 }
 
 /**********************************************************************
@@ -327,7 +328,7 @@ BOOL pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 	/* check the cache first */
 	
 	if ( csamuser && sid_equal(sid, pdb_get_user_sid(csamuser) ) )
-		return pdb_copy_sam_account(csamuser, &sam_acct);
+		return pdb_copy_sam_account(sam_acct, csamuser);
 
 	return NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
 }
@@ -338,8 +339,9 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 {
 	struct samu *sam_pass = NULL;
 	NTSTATUS status;
+	struct passwd *pwd;
 
-	if (Get_Pwnam_alloc(tmp_ctx, name) == NULL) {
+	if ( !(pwd = Get_Pwnam_alloc(tmp_ctx, name)) ) {
 		pstring add_script;
 		int add_ret;
 
@@ -357,19 +359,21 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 
 		all_string_sub(add_script, "%u", name, sizeof(add_script));
 		add_ret = smbrun(add_script,NULL);
-		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the "
-					"command `%s' gave %d\n",
+		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the command `%s' gave %d\n",
 					add_script, add_ret));
+		flush_pwnam_cache();
+
+		pwd = Get_Pwnam_alloc(tmp_ctx, name);
 	}
 
-	/* implicit call to getpwnam() next.  we have a valid SID coming out
-	 * of this call */
+	/* we have a valid SID coming out of this call */
 
-	flush_pwnam_cache();
-	status = pdb_init_sam_new(&sam_pass, name);
+	status = samu_alloc_rid_unix( sam_pass, pwd );
+
+	TALLOC_FREE( pwd );
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("pdb_init_sam_new failed: %s\n", nt_errstr(status)));
+		DEBUG(3, ("pdb_default_create_user: failed to create a new user structure: %s\n", nt_errstr(status)));
 		return status;
 	}
 
@@ -379,8 +383,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	/* Disable the account on creation, it does not have a reasonable
-	 * password yet. */
+	/* Disable the account on creation, it does not have a reasonable password yet. */
 
 	acb_info |= ACB_DISABLED;
 

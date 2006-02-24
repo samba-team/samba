@@ -1273,14 +1273,18 @@ static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
 					    sizeof(gid_t)*dst->n_groups);
 	else
 		dst->groups = NULL;
+		
 	dst->ptok = dup_nt_token(dst, src->ptok);
-	dst->user_session_key = data_blob_talloc(
-		dst, src->user_session_key.data,
+	
+	dst->user_session_key = data_blob_talloc( dst, src->user_session_key.data,
 		src->user_session_key.length);
-	dst->lm_session_key = data_blob_talloc(
-		dst, src->lm_session_key.data,
+		
+	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
 		src->lm_session_key.length);
-	pdb_copy_sam_account(src->sam_account, &dst->sam_account);
+		
+	if ( (dst->sam_account = samu_new( NULL )) != NULL )
+		pdb_copy_sam_account(dst->sam_account, src->sam_account);
+	
 	dst->pam_handle = NULL;
 	dst->unix_name = talloc_strdup(dst, src->unix_name);
 

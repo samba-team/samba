@@ -1203,7 +1203,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			return False;
 	}
 	
-	if ( !NT_STATUS_IS_OK( samu_set_unix(sam_pass, pwfile)) )
+	if ( !NT_STATUS_IS_OK( samu_set_unix(sam_pass, pwfile )) )
 		return False;
 		
 	TALLOC_FREE(pwfile);
@@ -1474,10 +1474,16 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 	if (!*(lp_renameuser_script()))
 		goto done;
 
-	if (!pdb_copy_sam_account(old_acct, &new_acct) ||
-	    !pdb_set_username(new_acct, newname, PDB_CHANGED))
+	if ( !(new_acct = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	if ( !pdb_copy_sam_account( new_acct, old_acct ) 
+		|| !pdb_set_username(new_acct, newname, PDB_CHANGED)) 
+	{
 		goto done;
-
+	}
+	
 	ret = smbpasswd_add_sam_account(my_methods, new_acct);
 	if (!NT_STATUS_IS_OK(ret))
 		goto done;

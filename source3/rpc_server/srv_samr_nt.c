@@ -3121,17 +3121,16 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	 * id21.  I don't know if they need to be set.    --jerry
 	 */
  
-	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID) &&
-	    !NT_STATUS_IS_OK(status = pdb_set_unix_primary_group(mem_ctx,
-								 pwd))) {
-		return status;
+	if ( IS_SAM_CHANGED(pwd, PDB_GROUPSID) ) {
+		status = pdb_set_unix_primary_group(mem_ctx, pwd);
+		if ( !NT_STATUS_IS_OK(status) ) {
+			return status;
+		}
 	}
-
-	/* write the change out */
-	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
-		return status;
- 	}
+	
+	/* Don't worry about writing out the user account since the
+	   primary group SID is generated solely from the user's Unix 
+	   primary group. */
 
 	TALLOC_FREE(pwd);
 

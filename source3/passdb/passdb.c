@@ -47,13 +47,39 @@ const char *my_sam_name(void)
 	return lp_workgroup();
 }
 
-/************************************************************
- Fill the struct samu with default values.
- ***********************************************************/
+/**********************************************************************
+***********************************************************************/
 
-static void samu_init( struct samu *user )
+static int samu_destroy(void *p) 
 {
+	struct samu *user = p;
+
+	data_blob_clear_free( &user->lm_pw );
+	data_blob_clear_free( &user->nt_pw );
+
+	if ( user->plaintext_pw )
+		memset( user->plaintext_pw, 0x0, strlen(user->plaintext_pw) );
+
+	return 0;
+}
+
+/**********************************************************************
+ generate a new struct samuser
+***********************************************************************/
+
+struct samu* samu_new( TALLOC_CTX *ctx )
+{
+	struct samu *user;
+	
+	if ( !(user = TALLOC_ZERO_P( ctx, struct samu )) ) {
+		DEBUG(0,("samuser_new: Talloc failed!\n"));
+		return NULL;
+	}
+	
+	talloc_set_destructor( user, samu_destroy );
+	
 	/* no initial methods */
+	
 	user->methods = NULL;
 
         /* Don't change these timestamp settings without a good reason.
@@ -90,132 +116,53 @@ static void samu_init( struct samu *user )
 
 	user->plaintext_pw = NULL;
 
-	/* 
-	   Unless we know otherwise have a Account Control Bit
+	/* Unless we know otherwise have a Account Control Bit
 	   value of 'normal user'.  This helps User Manager, which
-	   asks for a filtered list of users.
-	*/
+	   asks for a filtered list of users. */
 
 	user->acct_ctrl = ACB_NORMAL;
-}	
-
-/**********************************************************************
-***********************************************************************/
-
-static int samu_destroy(void *p) 
-{
-	struct samu *user = p;
-
-	data_blob_clear_free( &user->lm_pw );
-	data_blob_clear_free( &user->nt_pw );
-
-	if ( user->plaintext_pw )
-		memset( user->plaintext_pw, 0x0, strlen(user->plaintext_pw) );
-
-	return 0;
-}
-
-/**********************************************************************
- generate a new struct samuser
-***********************************************************************/
-
-struct samu* samu_new( TALLOC_CTX *ctx )
-{
-	struct samu *user;
 	
-	if ( !(user = TALLOC_ZERO_P( ctx, struct samu )) ) {
-		DEBUG(0,("samuser_new: Talloc failed!\n"));
-		return NULL;
-	}
-	
-	samu_init( user );
-	
-	talloc_set_destructor( user, samu_destroy );
 	
 	return user;
 }
 
 /*********************************************************************
  Initialize a struct samu from a struct passwd including the user 
- and group SIDs
+ and group SIDs.  The *user structure is filled out with the Unix
+ attributes and a user SID.
 *********************************************************************/
 
-NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
+static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, BOOL create)
 {
 	const char *guest_account = lp_guestaccount();
-	GROUP_MAP map;
-	BOOL ret;
+	const char *domain = global_myname();
+	uint32 urid;
 
-	/* Set the Unix attributes */
-	
 	if ( !pwd ) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	/* Basic properties based upon the Unix account information */
-
+	
 	pdb_set_username(user, pwd->pw_name, PDB_SET);
 	pdb_set_fullname(user, pwd->pw_gecos, PDB_SET);
 	pdb_set_domain (user, get_global_sam_name(), PDB_DEFAULT);
-
+	
 	/* save the password structure for later use */
-
+	
 	user->unix_pw = tcopy_passwd( user, pwd );
 
-	/* Special case for the guest account which must have a RID of 501.
-	   By default the guest account is a member of of the domain users 
-	   group as well as the domain guests group.  Verified against 
-	   Windows NT - 2003 */
+	/* Special case for the guest account which must have a RID of 501 */
 	
-	if ( !guest_account ) {
-		DEBUG(0,("samu_set_unix: No guest user defined!\n"));
-		return NT_STATUS_INVALID_ACCOUNT_NAME;
-	}
-	
-	if ( strequal( pwd->pw_name, guest_account ) ) 
-	{
+	if ( strequal( pwd->pw_name, guest_account ) ) {
 		if ( !pdb_set_user_sid_from_rid(user, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
-			return NT_STATUS_NO_SUCH_USER;
-		}
-			   
-		if ( !pdb_set_group_sid_from_rid(user, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT) ) {
 			return NT_STATUS_NO_SUCH_USER;
 		}
 		return NT_STATUS_OK;
 	}
-
-	/* normal user setup -- we really need to throw away the mapping algorithm here */
 	
-	if (!pdb_set_user_sid_from_rid(user, algorithmic_pdb_uid_to_user_rid(pwd->pw_uid), PDB_SET)) {
-		DEBUG(0,("Can't set User SID from RID!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	/* Non-guest accounts...Check for a workstation or user account */
 
-#if 1	/* I think we could throw away the primaryGroupSID attribute altogether
-	   and just build it from the UNIX_TOKEN.   --jerry */
-	   
-	/* call the mapping code here */
-	
-	become_root();
-	ret = pdb_getgrgid(&map, pwd->pw_gid);
-	unbecome_root();
-
-	/* We do not want to fall back to the rid mapping algorithm.   Windows 
-	   standalone servers set the 0x201 rid as the primary group and 
-	   LookupSid( S-1...-513 ) returns SERVER\None.   Do something similar.  
-	   Use the Domain Users RID as a a placeholder. This is a workaround only.  */
-		   
-	if( ret ) {
-		if ( !pdb_set_group_sid(user, &map.sid, PDB_SET) ) {
-			DEBUG(0,("Can't set Group SID!\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	} else {		
-		if ( !pdb_set_group_sid_from_rid(user, DOMAIN_GROUP_RID_USERS, PDB_SET)) 
-			return NT_STATUS_INVALID_PARAMETER;
-	}
-#endif
-	
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] == '$') {
 		/* workstation */
 		
@@ -223,11 +170,7 @@ NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 			DEBUG(1, ("Failed to set 'workstation account' flags for user %s.\n", 
 				pwd->pw_name));
 			return NT_STATUS_INVALID_COMPUTER_NAME;
-		}
-	
-		/* we're done here for a machine account */
-			
-		return NT_STATUS_OK;
+		}	
 	} 
 	else {
 		/* user */
@@ -237,160 +180,72 @@ NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 				pwd->pw_name));
 			return NT_STATUS_INVALID_ACCOUNT_NAME;
 		}
+		
+		/* set some basic attributes */
+	
+		pdb_set_profile_path(user, talloc_sub_specified(user, 
+			lp_logon_path(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid), 
+			PDB_DEFAULT);		
+		pdb_set_homedir(user, talloc_sub_specified(user, 
+			lp_logon_home(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid),
+			PDB_DEFAULT);
+		pdb_set_dir_drive(user, talloc_sub_specified(user, 
+			lp_logon_drive(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid),
+			PDB_DEFAULT);
+		pdb_set_logon_script(user, talloc_sub_specified(user, 
+			lp_logon_script(), pwd->pw_name, domain, pwd->pw_uid, pwd->pw_gid), 
+			PDB_DEFAULT);
 	}
 	
-	/* set some basic attributes */
-	
-	pdb_set_profile_path(user, talloc_sub_specified(user, 
-		lp_logon_path(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid), 
-		PDB_DEFAULT);		
-	pdb_set_homedir(user, talloc_sub_specified(user, 
-		lp_logon_home(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid),
-		PDB_DEFAULT);
-	pdb_set_dir_drive(user, talloc_sub_specified(user, 
-		lp_logon_drive(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid),
-		PDB_DEFAULT);
-	pdb_set_logon_script(user, talloc_sub_specified(user, 
-		lp_logon_script(), pwd->pw_name, global_myname(), pwd->pw_uid, pwd->pw_gid), 
-		PDB_DEFAULT);
+	/* Now deal with the user SID.  If we have a backend that can generate 
+	   RIDs, then do so.  But sometimes the caller just wanted a structure 
+	   initialized and will fill in these fields later (such as from a 
+	   NET_USER_INFO_3 structure) */
+
+	if ( create && !pdb_rid_algorithm() ) {
+		uint32 user_rid;
+		DOM_SID user_sid;
 		
+		if ( !pdb_new_rid( &user_rid ) ) {
+			DEBUG(3, ("Could not allocate a new RID\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		sid_copy( &user_sid, get_global_sam_sid() );
+		sid_append_rid( &user_sid, user_rid );
+
+		if ( !pdb_set_user_sid(user, &user_sid, PDB_SET) ) {
+			DEBUG(3, ("pdb_set_user_sid failed\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		
+		return NT_STATUS_OK;
+	}
+
+	/* generate a SID for the user ewith the RID algorithm */
+	
+	urid = algorithmic_pdb_uid_to_user_rid( user->unix_pw->pw_uid );
+		
+	if ( !pdb_set_user_sid_from_rid( user, urid, PDB_SET) ) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	
 	return NT_STATUS_OK;
 }
 
-/*************************************************************
- Initialises a struct samu ready to add a new account, based
- on the UNIX user. 
- ************************************************************/
+/********************************************************************
+ Set the Unix user attributes
+********************************************************************/
 
-NTSTATUS pdb_init_sam_new(struct samu **new_sam_acct, const char *username)
+NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 {
-	NTSTATUS 	result;
-	struct passwd 	*pwd;
-	uint32 user_rid;
-	DOM_SID user_sid, group_sid;
-	TALLOC_CTX *mem_ctx;
-	enum SID_NAME_USE type;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	if ( !(pwd = Get_Pwnam_alloc(mem_ctx, username)) ) {
-		DEBUG(10, ("Could not find user %s\n", username));
-		result = NT_STATUS_NO_SUCH_USER;
-		goto done;
-	}
-
-	if ( !(*new_sam_acct = samu_new( NULL )) ) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	result = samu_set_unix( *new_sam_acct, pwd );
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("samu_set_unix failed: %s\n", nt_errstr(result)));
-		goto done;
-	}
-		
-	if (pdb_rid_algorithm()) {
-		if (!pdb_set_user_sid_from_rid(
-			    *new_sam_acct,
-			    algorithmic_pdb_uid_to_user_rid(pwd->pw_uid),
-			    PDB_SET)) {
-			result = NT_STATUS_INTERNAL_ERROR;
-			goto done;
-		}
-		if (!pdb_set_group_sid_from_rid(
-			    *new_sam_acct, pdb_gid_to_group_rid(pwd->pw_gid),
-			    PDB_SET)) {
-			result = NT_STATUS_INTERNAL_ERROR;
-			goto done;
-		}
-		result = NT_STATUS_OK;
-		goto done;
-	}
-
-	/* No algorithmic mapping, meaning that we have to figure out the
-	 * primary group SID according to group mapping and the user SID must
-	 * be a newly allocated one */
-
-	if (!pdb_gid_to_sid(pwd->pw_gid, &group_sid)) {
-		struct group *grp;
-		GROUP_MAP map;
-
-		grp = getgrgid(pwd->pw_gid);
-		if (grp == NULL) {
-			DEBUG(1, ("Primary group %d of user %s does not "
-				  "exist.\n", pwd->pw_gid, username));
-			result = NT_STATUS_INVALID_PRIMARY_GROUP;
-			goto done;
-		}
-
-		DEBUG(5, ("Primary group %s of user %s is not mapped to "
-			  "a domain group, auto-mapping it\n",
-			  grp->gr_name, username));
-		result = map_unix_group(grp, &map);
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(1, ("Failed to map group %s\n", grp->gr_name));
-			goto done;
-		}
-		sid_copy(&group_sid, &map.sid);
-		DEBUG(5, ("Mapped unix group %s to SID %s\n",
-			  grp->gr_name, sid_string_static(&group_sid)));
-	}
-
-	/* Now check that it's actually a domain group and not something
-	 * else */
-
-	if (!lookup_sid(mem_ctx, &group_sid, NULL, NULL, &type)) {
-		DEBUG(3, ("Could not lookup %s's primary group sid %s\n",
-			  username, sid_string_static(&group_sid)));
-		result = NT_STATUS_INVALID_PRIMARY_GROUP;
-		goto done;
-	}
-
-	if (type != SID_NAME_DOM_GRP) {
-		DEBUG(3, ("Primary group for user %s is a %s and not a domain "
-			  "group\n", username, sid_type_lookup(type)));
-		result = NT_STATUS_INVALID_PRIMARY_GROUP;
-		goto done;
-	}
-
-	if (!pdb_set_group_sid(*new_sam_acct, &group_sid, PDB_SET)) {
-		DEBUG(3, ("Could not set group SID\n"));
-		result = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-
-	if (!pdb_new_rid(&user_rid)) {
-		DEBUG(3, ("Could not allocate a new RID\n"));
-		result = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	sid_copy(&user_sid, get_global_sam_sid());
-	sid_append_rid(&user_sid, user_rid);
-
-	if (!pdb_set_user_sid(*new_sam_acct, &user_sid, PDB_SET)) {
-		DEBUG(3, ("pdb_set_user_sid failed\n"));
-		result = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-
-	result = NT_STATUS_OK;
-
- done:
-	if (!NT_STATUS_IS_OK(result) && (*new_sam_acct != NULL)) {
-		TALLOC_FREE(new_sam_acct);
-	}
-
-	TALLOC_FREE(mem_ctx);
-	return result;
+	return samu_set_unix_internal( user, pwd, False );
 }
 
+NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd)
+{
+	return samu_set_unix_internal( user, pwd, True );
+}
 
 /**********************************************************
  Encode the account control bits into a string.
@@ -574,6 +429,9 @@ BOOL pdb_gethexhours(const char *p, unsigned char *hours)
 	return (True);
 }
 
+/********************************************************************
+********************************************************************/
+
 int algorithmic_rid_base(void)
 {
 	static int rid_offset = 0;
@@ -654,7 +512,7 @@ uint32 pdb_gid_to_group_rid(gid_t gid)
  Decides if a RID is a well known RID.
  ********************************************************************/
 
-static BOOL pdb_rid_is_well_known(uint32 rid)
+static BOOL rid_is_well_known(uint32 rid)
 {
 	/* Not using rid_offset here, because this is the actual
 	   NT fixed value (1000) */
@@ -668,7 +526,7 @@ static BOOL pdb_rid_is_well_known(uint32 rid)
 
 BOOL algorithmic_pdb_rid_is_user(uint32 rid)
 {
-	if(pdb_rid_is_well_known(rid)) {
+	if ( rid_is_well_known(rid) ) {
 		/*
 		 * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
 		 * and DOMAIN_USER_RID_GUEST.
@@ -781,6 +639,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			int tmp_debug = DEBUGLEVEL;
+			struct passwd *pwd;
 
 			/* Might not exist in /etc/passwd. */
 
@@ -788,16 +647,29 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 				DEBUGLEVEL = 1;
 			}
 
-			result = pdb_init_sam_new(&sam_pass, user_name);
+			if ( !(pwd = getpwnam_alloc( NULL, user_name)) ) {
+				return NT_STATUS_NO_SUCH_USER;
+			}
+
+			/* create the struct samu and initialize the basic Unix properties */
+
+			if ( !(sam_pass = samu_new( NULL )) ) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			result = samu_set_unix( sam_pass, pwd );
+
 			DEBUGLEVEL = tmp_debug;
+
+			TALLOC_FREE( pwd );
+
 			if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PRIMARY_GROUP)) {
 				return result;
 			}
 
 			if (!NT_STATUS_IS_OK(result)) {
-				slprintf(err_str, err_str_len-1, "Failed to "
-					 "initialize account for user %s: %s\n",
-					 user_name, nt_errstr(result));
+				slprintf(err_str, err_str_len-1, "Failed to " "initialize account for user %s: %s\n",
+					user_name, nt_errstr(result));
 				return result;
 			}
 		} else {
@@ -1130,7 +1002,6 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	}
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -1164,7 +1035,7 @@ done:
 /*********************************************************************
 *********************************************************************/
 
-uint32 init_buffer_from_sam_v2 (uint8 **buf, const struct samu *sampass, BOOL size_only)
+uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_only)
 {
 	size_t len, buflen;
 
@@ -1440,13 +1311,13 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const struct samu *sampass, BOOL si
 /*********************************************************************
 *********************************************************************/
 
-BOOL pdb_copy_sam_account(const struct samu *src, struct samu **dst)
+BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
 {
 	BOOL result;
 	uint8 *buf;
 	int len;
 
-	if ( !*dst && !(*dst = samu_new(NULL)) )
+	if ( !dst )
 		return False;
 
 	len = init_buffer_from_sam_v2(&buf, src, False);
@@ -1454,8 +1325,11 @@ BOOL pdb_copy_sam_account(const struct samu *src, struct samu **dst)
 	if (len == -1)
 		return False;
 
-	result = init_sam_from_buffer_v2(*dst, buf, len);
-	(*dst)->methods = src->methods;
+	result = init_sam_from_buffer_v2( dst, buf, len );
+	dst->methods = src->methods;
+	
+	if ( src->unix_pw )
+		dst->unix_pw = tcopy_passwd( dst, src->unix_pw );
 
 	free(buf);
 
