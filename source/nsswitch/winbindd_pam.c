@@ -1416,6 +1416,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		ZERO_STRUCT(info3);
 		retry = False;
 
+		netlogon_pipe = NULL;
 		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {

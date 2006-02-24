@@ -38,7 +38,7 @@ uint32 pdb_get_user_rid (const struct samu *sampass)
 	return (0);
 }
 
-uint32 pdb_get_group_rid (const struct samu *sampass)
+uint32 pdb_get_group_rid (struct samu *sampass)
 {
 	uint32 g_rid;
 
