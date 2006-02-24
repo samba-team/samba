@@ -1,7 +1,7 @@
 #!/bin/sh
 
 INSTALLPERMS=$1
-DESTDIR=`echo $2 | sed 's/\/\//\//g'`
+DESTDIR=$2
 BASEDIR=`echo $3 | sed 's/\/\//\//g'`
 LIBDIR=`echo $4 | sed 's/\/\//\//g'`
 shift

@@ -217,10 +217,14 @@ AC_SUBST(PIE_LDFLAGS)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(INSTALLLIBCMD_SH)
 AC_SUBST(INSTALLLIBCMD_A)
+AC_SUBST(UNINSTALLLIBCMD_SH)
+AC_SUBST(UNINSTALLLIBCMD_A)
 AC_SUBST(INSTALL_LIBMSRPC)
+AC_SUBST(UNINSTALL_LIBMSRPC)
 AC_SUBST(LIBMSRPC_SHARED)
 AC_SUBST(LIBMSRPC)
 AC_SUBST(INSTALL_LIBSMBCLIENT)
+AC_SUBST(UNINSTALL_LIBSMBCLIENT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(INSTALL_LIBSMBSHAREMODES)
@@ -4081,17 +4085,22 @@ fi
 
 INSTALLLIBCMD_SH=:
 INSTALLLIBCMD_A=:
+UNINSTALLLIBCMD_SH=:
+UNINSTALLLIBCMD_A=:
 
 if test $BLDSHARED = true; then
 	INSTALLLIBCMD_SH="\$(INSTALLCMD)"
+	UNINSTALLLIBCMD_SH="rm -f"
 fi
 if test $enable_static = yes; then
 	INSTALLLIBCMD_A="\$(INSTALLCMD)"
+	UNINSTALLLIBCMD_A="rm -f"
 fi
 
 #################################################
 # should we build libmsrpc?
 INSTALL_LIBMSRPC=
+UNINSTALL_LIBMSRPC=
 LIBMSRPC_SHARED=
 LIBMSRPC=
 AC_MSG_CHECKING(whether to build the libmsrpc shared library)
@@ -4114,6 +4123,7 @@ AC_ARG_WITH(libmsrpc,
         LIBMSRPC=libmsrpc
      fi
      INSTALL_LIBMSRPC=installlibmsrpc
+     UNINSTALL_LIBMSRPC=uninstalllibmsrpc
      ;;
   esac ],
 [
@@ -4130,11 +4140,13 @@ AC_ARG_WITH(libmsrpc,
      LIBMSRPC=libmsrpc
   fi]
   INSTALL_LIBMSRPC=installlibmsrpc
+  UNINSTALL_LIBMSRPC=uninstalllibmsrpc
 )
 
 #################################################
 # should we build libsmbclient?
 INSTALL_LIBSMBCLIENT=
+UNINSTALL_LIBSMBCLIENT=
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
@@ -4157,6 +4169,7 @@ AC_ARG_WITH(libsmbclient,
         LIBSMBCLIENT=libsmbclient
      fi
      INSTALL_LIBSMBCLIENT=installclientlib
+     UNINSTALL_LIBSMBCLIENT=uninstallclientlib
      ;;
   esac ],
 [
@@ -4173,6 +4186,7 @@ AC_ARG_WITH(libsmbclient,
      LIBSMBCLIENT=libsmbclient
   fi]
   INSTALL_LIBSMBCLIENT=installclientlib
+  UNINSTALL_LIBSMBCLIENT=uninstallclientlib
 )
 
 INSTALL_LIBSMBSHAREMODES=
