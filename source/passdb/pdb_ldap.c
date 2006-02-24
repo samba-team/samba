@@ -4548,7 +4548,6 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	BOOL is_machine = False;
 	BOOL is_new_entry = False;
 	LDAPMod **mods = NULL;
-	char *groupsidstr;
 	char *usersidstr;
 	char *actflags;
 	char *username;
@@ -4587,7 +4586,6 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	}
 	
 	if (num_result == 1) {
-		GROUP_MAP map;
 		char *tmp;
 
 		/* check if it is just a posix account.
@@ -4606,7 +4604,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 			return NT_STATUS_USER_EXISTS;
 		}
 
-		/* it is just a posix account, retrieve the user_sid and group_sid for later use */
+		/* it is just a posix account, retrieve the user_sid and the gid for later use */
 		if (!smbldap_get_single_attribute(priv2ld(ldap_state), entry, "gidNumber", str, sizeof(str)-1)) {
 			DEBUG (1, ("ldapsam_create_user: Couldn't retrieve the gidNumber for [%s]?!?!\n", name));
 			ldap_msgfree(result);
@@ -4614,14 +4612,6 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		}
 		
 		gid = strtoul(str, NULL, 10);
-
-		if (!NT_STATUS_IS_OK((ret = ldapsam_getgrgid(my_methods, &map, gid)))) {
-			DEBUG(1, ("ldapsam_create_user: User's primary group is not mapped! Fail.\n"));
-			ldap_msgfree(result);
-			return ret;
-		}
-
-		sid_copy(&group_sid, &map.sid);
 
 		tmp = smbldap_get_dn(priv2ld(ldap_state), entry);
 		if (!tmp) {
@@ -4698,8 +4688,6 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, *rid);
 
-	sid_to_string(str, &group_sid);
-	groupsidstr = talloc_strdup(tmp_ctx, str);
 	sid_to_string(str, &user_sid);
 	usersidstr = talloc_strdup(tmp_ctx, str);
 
@@ -4709,13 +4697,12 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		actflags = talloc_strdup(tmp_ctx, pdb_encode_acct_ctrl(acb_info & ACB_DISABLED, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 	}
 
-	if (!groupsidstr || !usersidstr || !actflags) {
+	if (!usersidstr || !actflags) {
 		DEBUG(0,("ldapsam_create_user: Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBASAMACCOUNT);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), usersidstr);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), usersidstr);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_DISPLAY_NAME), name);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ACB_INFO), actflags);
