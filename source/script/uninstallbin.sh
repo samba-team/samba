@@ -2,30 +2,32 @@
 #4 July 96 Dan.Shearer@UniSA.edu.au   
 
 INSTALLPERMS=$1
-BASEDIR=`echo $2 | sed 's/\/\//\//g'`
+DESTDIR=$2
 BINDIR=`echo $3 | sed 's/\/\//\//g'`
-LIBDIR=`echo $4 | sed 's/\/\//\//g'`
-VARDIR=`echo $5 | sed 's/\/\//\//g'`
-shift
-shift
 shift
 shift
 shift
 
-if [ ! -d $BINDIR ]; then
-  echo Directory $BINDIR does not exist!
-  echo Do a "make installbin" or "make install" first.
+if [ ! -d $DESTDIR/$BINDIR ]; then
+  echo "Directory $DESTDIR/$BINDIR does not exist! "
+  echo "Do a "make installbin" or "make install" first. "
   exit 1
 fi
 
 for p in $*; do
   p2=`basename $p`
-  if [ -f $BINDIR/$p2 ]; then
-    echo Removing $BINDIR/$p2
-    rm -f $BINDIR/$p2
-    if [ -f $BINDIR/$p2 ]; then
-      echo Cannot remove $BINDIR/$p2 ... does $USER have privileges?
+  if [ -f $DESTDIR/$BINDIR/$p2 ]; then
+    echo "Removing $DESTDIR/$BINDIR/$p2 "
+    rm -f $DESTDIR/$BINDIR/$p2
+    if [ -f $DESTDIR/$BINDIR/$p2 ]; then
+      echo "Cannot remove $DESTDIR/$BINDIR/$p2 ... does $USER have privileges? "
     fi
+  fi
+
+  # this is a special case, mount needs this in a specific location
+  if test "$p2" = smbmount -a -e "$DESTDIR/sbin/mount.smbfs"; then
+    echo "Removing $DESTDIR/sbin/mount.smbfs "
+    rm -f "$DESTDIR/sbin/mount.smbfs"
   fi
 done
 
