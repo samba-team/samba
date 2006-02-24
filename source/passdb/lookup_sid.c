@@ -116,6 +116,25 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
+	/*
+	 * Nasty hack necessary for too common scenarios:
+	 *
+	 * For 'valid users = +users' we know "users" is most probably not
+	 * BUILTIN\users but the unix group users. This hack requires the
+	 * admin to explicitly qualify BUILTIN if BUILTIN\users is meant.
+	 *
+	 * Please note that LOOKUP_NAME_GROUP can not be requested via for
+	 * example lsa_lookupnames, it only comes into this routine via
+	 * the expansion of group names coming in from smb.conf
+	 */
+
+	if ((flags & LOOKUP_NAME_GROUP) &&
+	    (lookup_unix_group_name(name, &sid))) {
+		domain = talloc_strdup(tmp_ctx, unix_groups_domain_name());
+		type = SID_NAME_DOM_GRP;
+		goto ok;
+	}
+
 	/* Now the guesswork begins, we haven't been given an explicit
 	 * domain. Try the sequence as documented on
 	 * http://msdn.microsoft.com/library/en-us/secmgmt/security/lsalookupnames.asp
