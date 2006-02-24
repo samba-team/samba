@@ -123,11 +123,9 @@ BOOL lookup_name(TALLOC_CTX *mem_ctx,
 
 	/* 1. well-known names */
 
-	{
-		if (lookup_wellknown_name(tmp_ctx, name, &sid, &domain)) {
-			type = SID_NAME_WKN_GRP;
-			goto ok;
-		}
+	if (lookup_wellknown_name(tmp_ctx, name, &sid, &domain)) {
+		type = SID_NAME_WKN_GRP;
+		goto ok;
 	}
 
 	/* 2. Builtin domain as such */
