@@ -1438,7 +1438,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	if (conn->netlogon_pipe == NULL) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
 			  "was %s\n", nt_errstr(result)));
-		return result;
+			  
+		/* make sure we return something besides OK */
+		return !NT_STATUS_IS_OK(result) ? result : NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
 
 	*cli = conn->netlogon_pipe;

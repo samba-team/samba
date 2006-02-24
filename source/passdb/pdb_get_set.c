@@ -181,16 +181,77 @@ const DOM_SID *pdb_get_user_sid(const struct samu *sampass)
 {
 	if (sampass) 
 		return &sampass->user_sid;
-	else
-		return (NULL);
+		
+	return NULL;
 }
 
-const DOM_SID *pdb_get_group_sid(const struct samu *sampass)
+const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 {
-	if (sampass)
-		return &sampass->group_sid;
-	else	
-		return (NULL);
+	DOM_SID *gsid;
+	struct passwd *pwd;
+	
+	/* sanity check */
+	
+	if ( !sampass ) {
+		return NULL;
+	}
+		
+	/* Return the cached group SID if we have that */
+	    
+	if ( sampass->group_sid ) {
+		return sampass->group_sid;
+	}
+		
+	/* generate the group SID from the user's primary Unix group */
+	
+	if ( !(gsid  = TALLOC_P( sampass, DOM_SID )) ) {
+		return NULL;
+	}
+	
+	/* No algorithmic mapping, meaning that we have to figure out the
+	   primary group SID according to group mapping and the user SID must
+	   be a newly allocated one.  We rely on the user's Unix primary gid.
+	   We have no choice but to fail if we can't find it. */
+
+	if ( sampass->unix_pw )
+		pwd = sampass->unix_pw;
+	else
+		pwd = getpwnam_alloc( sampass, pdb_get_username(sampass) );
+
+	if ( !pwd ) {
+		DEBUG(0,("pdb_get_group_sid: Failed to find Unix account for %s\n", pdb_get_username(sampass) ));
+		return NULL;
+	}
+	
+	if ( pdb_gid_to_sid(pwd->pw_gid, gsid) ) {
+		enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+		TALLOC_CTX *mem_ctx = talloc_init("pdb_get_group_sid");
+		BOOL lookup_ret;
+		
+		/* Now check that it's actually a domain group and not something else */
+
+		lookup_ret = lookup_sid(mem_ctx, gsid, NULL, NULL, &type);
+
+		TALLOC_FREE( mem_ctx );
+
+		if ( lookup_ret && (type == SID_NAME_DOM_GRP) ) {
+			sampass->group_sid = gsid;
+			return sampass->group_sid;
+		}
+
+		DEBUG(3, ("Primary group for user %s is a %s and not a domain group\n", 
+			pwd->pw_name, sid_type_lookup(type)));
+	}
+
+	/* Just set it to the 'Domain Users' RID of 512 which will 
+	   always resolve to a name */
+		   
+	sid_copy( gsid, get_global_sam_sid() );
+	sid_append_rid( gsid, DOMAIN_GROUP_RID_USERS );
+		
+	sampass->group_sid = gsid;
+		
+	return sampass->group_sid;
 }	
 
 /**
@@ -569,6 +630,14 @@ BOOL pdb_set_user_sid_from_string (struct samu *sampass, fstring u_sid, enum pdb
 	return True;
 }
 
+/********************************************************************
+ We never fill this in from a passdb backend but rather set is 
+ based on the user's primary group membership.  However, the 
+ struct samu* is overloaded and reused in domain memship code 
+ as well and built from the NET_USER_INFO_3 or PAC so we 
+ have to allow the explicitly setting of a group SID here.
+********************************************************************/
+
 BOOL pdb_set_group_sid (struct samu *sampass, const DOM_SID *g_sid, enum pdb_value_state flag)
 {
 	gid_t gid;
@@ -576,41 +645,24 @@ BOOL pdb_set_group_sid (struct samu *sampass, const DOM_SID *g_sid, enum pdb_val
 	if (!sampass || !g_sid)
 		return False;
 
+	if ( !(sampass->group_sid = TALLOC_P( sampass, DOM_SID )) ) {
+		return False;
+	}
+
 	/* if we cannot resolve the SID to gid, then just ignore it and 
 	   store DOMAIN_USERS as the primary groupSID */
 
 	if ( sid_to_gid( g_sid, &gid ) ) {
-		sid_copy(&sampass->group_sid, g_sid);
+		sid_copy(sampass->group_sid, g_sid);
 	} else {
-		sid_copy( &sampass->group_sid, get_global_sam_sid() );
-		sid_append_rid( &sampass->group_sid, DOMAIN_GROUP_RID_USERS );
+		sid_copy( sampass->group_sid, get_global_sam_sid() );
+		sid_append_rid( sampass->group_sid, DOMAIN_GROUP_RID_USERS );
 	}
 
 	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
-		    sid_string_static(&sampass->group_sid)));
+		sid_string_static(sampass->group_sid)));
 
 	return pdb_set_init_flags(sampass, PDB_GROUPSID, flag);
-}
-
-BOOL pdb_set_group_sid_from_string (struct samu *sampass, fstring g_sid, enum pdb_value_state flag)
-{
-	DOM_SID new_sid;
-	if (!sampass || !g_sid)
-		return False;
-
-	DEBUG(10, ("pdb_set_group_sid_from_string: setting group sid %s\n",
-		   g_sid));
-
-	if (!string_to_sid(&new_sid, g_sid)) { 
-		DEBUG(1, ("pdb_set_group_sid_from_string: %s isn't a valid SID!\n", g_sid));
-		return False;
-	}
-	 
-	if (!pdb_set_group_sid(sampass, &new_sid, flag)) {
-		DEBUG(1, ("pdb_set_group_sid_from_string: could not set sid %s on struct samu!\n", g_sid));
-		return False;
-	}
-	return True;
 }
 
 /*********************************************************************

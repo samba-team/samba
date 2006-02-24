@@ -552,35 +552,11 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), temp)) {
 			pdb_set_user_sid_from_string(sampass, temp, PDB_SET);
 		}
-		
-		if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), temp)) {
-			pdb_set_group_sid_from_string(sampass, temp, PDB_SET);			
-		} else {
-			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-		}
 	} else {
 		if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_RID), temp)) {
 			user_rid = (uint32)atol(temp);
 			pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-		}
-		
-		if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-				get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_RID), temp)) {
-			pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-		} else {
-			uint32 group_rid;
-			
-			group_rid = (uint32)atol(temp);
-			
-			/* for some reason, we often have 0 as a primary group RID.
-			   Make sure that we treat this just as a 'default' value */
-			   
-			if ( group_rid > 0 )
-				pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
-			else
-				pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 		}
 	}
 

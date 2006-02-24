@@ -216,7 +216,6 @@ static BOOL init_sam_from_buffer_v0(struct samu *sampass, uint8 *buf, uint32 buf
 
 	pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -404,7 +403,6 @@ static BOOL init_sam_from_buffer_v1(struct samu *sampass, uint8 *buf, uint32 buf
 	pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
 
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
-	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
@@ -447,7 +445,7 @@ static BOOL init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen
  Intialize a BYTE buffer from a struct samu struct
  *********************************************************************/
 
-static uint32 init_buffer_from_sam (uint8 **buf, const struct samu *sampass, BOOL size_only)
+static uint32 init_buffer_from_sam (uint8 **buf, struct samu *sampass, BOOL size_only)
 {
 	return init_buffer_from_sam_v2(buf, sampass, size_only);
 }
@@ -1171,7 +1169,11 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	
 	tdbsam_endsampwent( my_methods );
 
-	if ( !pdb_copy_sam_account(old_acct, &new_acct) 
+	if ( !(new_acct = samu_new( NULL )) ) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	if ( !pdb_copy_sam_account(new_acct, old_acct) 
 		|| !pdb_set_username(new_acct, newname, PDB_CHANGED)) 
 	{
 		TALLOC_FREE(new_acct );

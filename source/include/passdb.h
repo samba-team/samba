@@ -163,8 +163,8 @@ struct samu {
 	const char *unknown_str;  /* don't know what this is, yet. */
 	const char *munged_dial;  /* munged path name and dial-back tel number */
 		
-	DOM_SID user_sid;    /* Primary User SID */
-	DOM_SID group_sid;   /* Primary Group SID */
+	DOM_SID user_sid;  
+	DOM_SID *group_sid;
 		
 	DATA_BLOB lm_pw; /* .data is Null if no password */
 	DATA_BLOB nt_pw; /* .data is Null if no password */
@@ -185,6 +185,7 @@ struct samu {
 	uint32 unknown_6; /* 0x0000 04ec */
 
 	/* a tag for who added the private methods */
+
 	const struct pdb_methods *backend_private_methods;
 	void *backend_private_data; 
 	void (*backend_private_data_free_fn)(void **);
