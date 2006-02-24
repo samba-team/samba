@@ -277,8 +277,7 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 			  const char *acct_desc, 
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
-			  const char *user_sid, const char *group_sid,
-			  const char *user_domain,
+			  const char *user_sid, const char *user_domain,
 			  const BOOL badpw, const BOOL hours,
 			  time_t pwd_can_change, time_t pwd_must_change)
 {
@@ -369,21 +368,6 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 		}
 		pdb_set_user_sid (sam_pwent, &u_sid, PDB_CHANGED);
 	}
-	if (group_sid) {
-		DOM_SID g_sid;
-		if (!string_to_sid(&g_sid, group_sid)) {
-			/* not a complete sid, may be a RID, try building a SID */
-			int g_rid;
-			
-			if (sscanf(group_sid, "%d", &g_rid) != 1) {
-				fprintf(stderr, "Error passed string is not a complete group SID or RID!\n");
-				return -1;
-			}
-			sid_copy(&g_sid, get_global_sam_sid());
-			sid_append_rid(&g_sid, g_rid);
-		}
-		pdb_set_group_sid (sam_pwent, &g_sid, PDB_CHANGED);
-	}
 
 	if (badpw) {
 		pdb_set_bad_password_count(sam_pwent, 0, PDB_CHANGED);
@@ -407,17 +391,28 @@ static int set_user_info (struct pdb_methods *in, const char *username,
 static int new_user (struct pdb_methods *in, const char *username,
 			const char *fullname, const char *homedir,
 			const char *drive, const char *script,
-			const char *profile, char *user_sid, char *group_sid,
-			BOOL stdin_get)
+			const char *profile, char *user_sid, BOOL stdin_get)
 {
-	struct samu *sam_pwent=NULL;
-
+	struct samu *sam_pwent;
 	char *password1, *password2;
 	int rc_pwd_cmp;
+	struct passwd *pwd;
 
 	get_global_sam_sid();
 
-	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username))) {
+	if ( !(pwd = getpwnam_alloc( NULL, username )) ) {
+		DEBUG(0,("Cannot locate Unix account for %s\n", username));
+		return -1;
+	}
+
+	if ( !(sam_pwent = samu_new( NULL )) ) {
+		DEBUG(0, ("Memory allocation failure!\n"));
+		return -1;
+	}
+
+	if (!NT_STATUS_IS_OK(samu_alloc_rid_unix(sam_pwent, pwd ))) {
+		TALLOC_FREE( sam_pwent );
+		TALLOC_FREE( pwd );
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}
@@ -465,21 +460,6 @@ static int new_user (struct pdb_methods *in, const char *username,
 		}
 		pdb_set_user_sid (sam_pwent, &u_sid, PDB_CHANGED);
 	}
-	if (group_sid) {
-		DOM_SID g_sid;
-		if (!string_to_sid(&g_sid, group_sid)) {
-			/* not a complete sid, may be a RID, try building a SID */
-			int g_rid;
-			
-			if (sscanf(group_sid, "%d", &g_rid) != 1) {
-				fprintf(stderr, "Error passed string is not a complete group SID or RID!\n");
-				return -1;
-			}
-			sid_copy(&g_sid, get_global_sam_sid());
-			sid_append_rid(&g_sid, g_rid);
-		}
-		pdb_set_group_sid (sam_pwent, &g_sid, PDB_CHANGED);
-	}
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL, PDB_CHANGED);
 	
@@ -526,7 +506,7 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 			return -1;
 		}
 
-		if ( !NT_STATUS_IS_OK(samu_set_unix(sam_pwent, pwd)) ) {
+		if ( !NT_STATUS_IS_OK(samu_set_unix(sam_pwent, pwd )) ) {
 			fprintf(stderr, "Could not init sam from pw\n");
 			TALLOC_FREE(pwd);
 			return -1;
@@ -541,12 +521,8 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 	}
 
 	pdb_set_plaintext_passwd (sam_pwent, machinename);
-
-	pdb_set_username (sam_pwent, machineaccount, PDB_CHANGED);
-	
+	pdb_set_username (sam_pwent, machineaccount, PDB_CHANGED);	
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST, PDB_CHANGED);
-	
-	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS, PDB_CHANGED);
 	
 	if (NT_STATUS_IS_OK(in->add_sam_account (in, sam_pwent))) {
 		print_user_info (in, machineaccount, True, False);
@@ -647,7 +623,6 @@ int main (int argc, char **argv)
 	static char *account_control = NULL;
 	static char *account_policy = NULL;
 	static char *user_sid = NULL;
-	static char *group_sid = NULL;
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
@@ -673,7 +648,6 @@ int main (int argc, char **argv)
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
 		{"domain",	'I', POPT_ARG_STRING, &user_domain, 0, "set a users' domain", NULL},
 		{"user SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
-		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
 		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
@@ -743,7 +717,6 @@ int main (int argc, char **argv)
 			(list_users ? BIT_LIST : 0) +
 			(force_initialised_password ? BIT_FIX_INIT : 0) +
 			(user_sid ? BIT_USERSIDS : 0) +
-			(group_sid ? BIT_USERSIDS : 0) +
 			(modify_user ? BIT_MODIFY : 0) +
 			(add_user ? BIT_CREATE : 0) +
 			(delete_user ? BIT_DELETE : 0) +
@@ -868,9 +841,7 @@ int main (int argc, char **argv)
 				return new_machine (bdef, user_name);
 			} else {
 				return new_user (bdef, user_name, full_name, home_dir, 
-						 home_drive, logon_script, 
-						 profile_path, user_sid, group_sid,
-						 pw_from_stdin);
+					home_drive, logon_script, profile_path, user_sid, pw_from_stdin);
 			}
 		}
 
@@ -939,16 +910,10 @@ int main (int argc, char **argv)
 					}
 				}	
 			}
-			return set_user_info (bdef, user_name, full_name,
-					      home_dir,
-					      acct_desc,
-					      home_drive,
-					      logon_script,
-					      profile_path, account_control,
-					      user_sid, group_sid,
-					      user_domain,
-					      badpw_reset, hours_reset,
-					      pwd_can_change, pwd_must_change);
+			return set_user_info (bdef, user_name, full_name, home_dir,
+				acct_desc, home_drive, logon_script, profile_path, account_control,
+				user_sid, user_domain, badpw_reset, hours_reset, pwd_can_change, 
+				pwd_must_change);
 error:
 			fprintf (stderr, "Error parsing the time in pwd-%s-change-time!\n", errstr);
 			return -1;
