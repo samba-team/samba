@@ -1146,7 +1146,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				continue;
 			}
 
-			file_size = get_file_size(sbuf);
+			if (!(mode & aDIR))
+				file_size = get_file_size(sbuf);
 			allocation_size = get_allocation_size(conn,NULL,&sbuf);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
@@ -1158,13 +1159,6 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				adate &= ~1;
 			}
 
-			if(mode & aDIR) {
-				/* This is necessary, as otherwise the
-				 * desktop.ini file in this folder is
-				 * ignored */
-				mode |= (lp_profile_acls(SNUM(conn)) ? aRONLY : 0);
-				file_size = 0;
-			}
 
 			DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
 	  
@@ -2915,13 +2909,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		mode = FILE_ATTRIBUTE_NORMAL;
 
 	fullpathname = fname;
-	file_size = get_file_size(sbuf);
-	if (mode & aDIR) {
-		/* This is necessary, as otherwise the desktop.ini file in
-		 * this folder is ignored */
-		mode |= (lp_profile_acls(SNUM(conn)) ? aRONLY : 0);
-		file_size = 0;
-	}
+	if (!(mode & aDIR))
+		file_size = get_file_size(sbuf);
 
 	/* Pull any EA list from the data portion. */
 	if (info_level == SMB_INFO_QUERY_EAS_FROM_LIST) {
