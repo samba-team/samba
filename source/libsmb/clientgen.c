@@ -360,7 +360,7 @@ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 	BOOL ret;
 
 	if (!cli) {
-		return False;
+		return;
 	}
 
 	ret = cli_close(cli->cli, cli->fnum);

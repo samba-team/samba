@@ -8,7 +8,7 @@ that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
 
-Common bugs fixed in 3.0.21b include:
+Common bugs fixed in 3.0.21c include:
 
   o Access checks when deleting printer driver meta-data.
   o Several non-default combinations schannel and SPNEGO support.
