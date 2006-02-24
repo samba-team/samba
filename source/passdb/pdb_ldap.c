@@ -4524,6 +4524,220 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 	return ret;
 }
 
+/*
+ * This function is called only if ldapsam:trusted
+ * and ldapsam:editposix are set to true
+ *
+ * It creates a new posixAccount and sambaSamAccount
+ * object in the ldap users subtree
+ *
+ * The uid is allocated by winbindd.
+ */
+
+static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
+				    TALLOC_CTX *tmp_ctx, const char *name,
+				    uint32 acb_info, uint32 *rid)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	NTSTATUS ret;
+	LDAPMessage *entry = NULL;
+	LDAPMessage *result = NULL;
+	uint32 num_result;
+	pstring filter;
+	fstring str;
+	BOOL is_machine = False;
+	BOOL is_new_entry = False;
+	LDAPMod **mods = NULL;
+	char *groupsidstr;
+	char *usersidstr;
+	char *actflags;
+	char *username;
+	char *homedir;
+	char *gidstr;
+	char *uidstr;
+	char *shell;
+	char *dn = NULL;
+	DOM_SID group_sid;
+	DOM_SID user_sid;
+	gid_t gid = -1;
+	uid_t uid = -1;
+	int rc;
+	
+	if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') {
+		is_machine = True;
+	}
+
+	username = escape_ldap_string_alloc(name);
+	pstrcpy(filter, "(uid=%u)");
+	all_string_sub(filter, "%u", username, sizeof(filter));
+	SAFE_FREE(username);
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_create_user: ldap search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	num_result = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_create_user: More than one user with that username exists: bailing out!\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	if (num_result == 1) {
+		GROUP_MAP map;
+		char *tmp;
+
+		/* check if it is just a posix account.
+		 * or if there is a sid attached to this entry
+		 */
+
+		entry = ldap_first_entry(priv2ld(ldap_state), result);
+		if (!entry) {
+			ldap_msgfree(result);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (!smbldap_get_single_attribute(priv2ld(ldap_state), entry, "sambaSID", str, sizeof(str)-1)) {
+			DEBUG (1, ("ldapsam_create_user: The user [%s] already exist!\n", name));
+			ldap_msgfree(result);
+			return NT_STATUS_USER_EXISTS;
+		}
+
+		/* it is just a posix account, retrieve the user_sid and group_sid for later use */
+		if (!smbldap_get_single_attribute(priv2ld(ldap_state), entry, "gidNumber", str, sizeof(str)-1)) {
+			DEBUG (1, ("ldapsam_create_user: Couldn't retrieve the gidNumber for [%s]?!?!\n", name));
+			ldap_msgfree(result);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		
+		gid = strtoul(str, NULL, 10);
+
+		if (!NT_STATUS_IS_OK((ret = ldapsam_getgrgid(my_methods, &map, gid)))) {
+			DEBUG(1, ("ldapsam_create_user: User's primary group is not mapped! Fail.\n"));
+			ldap_msgfree(result);
+			return ret;
+		}
+
+		sid_copy(&group_sid, &map.sid);
+
+		tmp = smbldap_get_dn(priv2ld(ldap_state), entry);
+		if (!tmp) {
+			DEBUG(1, ("ldapsam_create_user: Couldn't retrieve the DN for [%s]?!?!\n", name));
+			ldap_msgfree(result);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		dn = talloc_strdup(tmp_ctx, tmp);
+		SAFE_FREE(tmp);
+		if (!dn) {
+			DEBUG(0,("ldapsam_create_user: Out of memory!\n"));
+			ldap_msgfree(result);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ldap_msgfree(result);
+
+	if (num_result == 0) {
+		DEBUG(3,("ldapsam_create_user: Creating new posix user\n"));
+
+		is_new_entry = True;
+	
+		/* retrieve the Domain Users group gid */
+		if (!sid_compose(&group_sid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS) ||
+		    !sid_to_gid(&group_sid, &gid)) {
+			DEBUG (0, ("ldapsam_create_user: Unable to get the Domain Users gid: bailing out!\n"));
+			return NT_STATUS_INVALID_PRIMARY_GROUP;
+		}
+
+		/* lets allocate a new userid for this user */
+		if (!winbind_allocate_uid(&uid)) {
+			DEBUG (0, ("ldapsam_create_user: Unable to allocate a new user id: bailing out!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+
+		if (is_machine) {
+			/* TODO: choose a more appropriate default for machines */
+			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), "SMB_workstations_home", ldap_state->domain_name, uid, gid);
+			shell = talloc_strdup(tmp_ctx, "/bin/false");
+		} else {
+			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), name, ldap_state->domain_name, uid, gid);
+			shell = talloc_sub_specified(tmp_ctx, lp_template_shell(), name, ldap_state->domain_name, uid, gid);
+		}
+		uidstr = talloc_asprintf(tmp_ctx, "%d", uid);
+		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
+		if (is_machine) {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", name, lp_ldap_machine_suffix ());
+		} else {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", name, lp_ldap_user_suffix ());
+		}
+
+		if (!homedir || !shell || !uidstr || !gidstr || !dn) {
+			DEBUG (0, ("ldapsam_create_user: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_ACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uid", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uidNumber", uidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", homedir);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
+	}
+
+	if (!NT_STATUS_IS_OK((ret = ldapsam_get_new_rid(ldap_state, rid)))) {
+		DEBUG(1, ("ldapsam_create_user: Could not allocate a new RID\n"));
+		return ret;
+	}
+
+	sid_copy(&user_sid, get_global_sam_sid());
+	sid_append_rid(&user_sid, *rid);
+
+	sid_to_string(str, &group_sid);
+	groupsidstr = talloc_strdup(tmp_ctx, str);
+	sid_to_string(str, &user_sid);
+	usersidstr = talloc_strdup(tmp_ctx, str);
+
+	if (is_machine) {
+		actflags = talloc_strdup(tmp_ctx, pdb_encode_acct_ctrl(ACB_WSTRUST & ACB_DISABLED, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	} else {
+		actflags = talloc_strdup(tmp_ctx, pdb_encode_acct_ctrl(acb_info & ACB_DISABLED, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	}
+
+	if (!groupsidstr || !usersidstr || !actflags) {
+		DEBUG(0,("ldapsam_create_user: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBASAMACCOUNT);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), usersidstr);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), usersidstr);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_DISPLAY_NAME), name);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ACB_INFO), actflags);
+
+	if (is_new_entry) {	
+		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
+	} else {
+		rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+	}	
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_create_user: failed to create a new user [%s] (dn = %s)\n", name ,dn));
+		ldap_mods_free(mods, True);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(2,("ldapsam_create_user: added account [%s] in the LDAP database\n", username));
+	ldap_mods_free(mods, True);
+
+	return NT_STATUS_OK;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -4589,6 +4803,10 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
 	(*pdb_method)->new_rid = ldapsam_new_rid;
 
+	if (lp_parm_bool(-1, "ldapsam", "trusted", False) &&
+	    lp_parm_bool(-1, "ldapsam", "editposix", False)) {
+		(*pdb_method)->create_user = ldapsam_create_user;
+	}
 	/* TODO: Setup private data and free */
 
 	if ( !(ldap_state = TALLOC_ZERO_P(*pdb_method, struct ldapsam_privates)) ) {
