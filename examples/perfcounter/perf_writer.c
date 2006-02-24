@@ -26,7 +26,7 @@ sig_atomic_t keep_running = TRUE;
 /* allocates memory and gets numCPUs, total memory, and PerfFreq, number of disks... */
 void get_constants(PERF_DATA_BLOCK *data)
 {
-    data->cpuInfo.numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
+    data->cpuInfo.numCPUs = sysconf(_SC_NPROCESSORS_ONLN) > 0 ? sysconf(_SC_NPROCESSORS_ONLN) : 1;
     data->PerfFreq = sysconf(_SC_CLK_TCK);
     init_mem_data(data);
     init_cpu_data(data);
