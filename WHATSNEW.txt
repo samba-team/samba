@@ -1,12 +1,133 @@
                    ===============================
-                   Release Notes for Samba 3.0.21b
-                              Jan 30, 2006
+                   Release Notes for Samba 3.0.21c
+                              Feb 24, 2006
                    ===============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
+
+Common bugs fixed in 3.0.21b include:
+
+  o Access checks when deleting printer driver meta-data.
+  o Several non-default combinations schannel and SPNEGO support.
+  o Password changes with NT4 and Win2k pre-SP4 clients.
+  o High load issues on IRIX caused by a bug when interfacing 
+    with kernel oplocks.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.21b
+---------------------
+
+commits
+-------
+o   Michael Adam <ma@SerNet.DE>
+    * Add popt to the include path for examples/VFS.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix bug in the USC2 macros on big-endian CPUs.
+    * Filter deleted oplocks from the output of smbstatus.
+    * Remove invalid test check_for_pipe().
+    * BUG 3515: Fix kernel oplock support on IRIX.
+    * BUG 3522: Fix return value for mkdir request when the directory
+      already exists.
+    * BUG 3526: Add missing FindNext info levels (diagnosed by Corinna 
+      Vinschen).
+    * BUG 3330: Fix username parsing in Kerberos PAC (based on work 
+      by Guenther).
+    * BUG 3512: Fix cause of "use spnego=no" and "server signing=auto" 
+      resulting in a client disconnect after negprot.
+    * BUG 3510: Fix 'net join' against a server with client schannel 
+      disabled.
+    * Fix negprot bug causing a 2k client with cached domain 
+      credentials to refuse to connect to a standalone Samba host.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix domain joins from NT4 clients and password changes.
+
+
+o   Richard Bollinger <rabollinger@gmail.com>.
+    * Compile fix in pdbedit.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Break RHEL/Fedora packaging out to include a samba-docs rpm.
+    * Remove use of /var/cache/samba from RHEL/Fedora packaging.
+    * Fix bug in loadparm.c that caused builtin services to be also
+      listed as external services (e.g. Spooler, NETLOGON, etc..).
+    * Fix bug in the samr dispinfo enumeration code.
+    * Add earlier checks to deny deleting a printer driver meta-data.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Add Account Policy LDAP attributes for eDirectory schema.
+
+
+o   William JoJo <jojowil@hvcc.edu>
+    * BUG 1870: Make nmblookup do a node status on all IP's when 
+      requested.
+    * BUG 2353: Fix clitar -F processing.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix the build for --with-aio-support.
+    * Fix remote password changing if password must change is set.
+    * Fix rpcclient to obey the -W parameter.
+    * Fix segv in smbmount and the profiles tool.
+    * Fix typo in pdbedit help text (reported by Karolin Seeger).
+
+
+o   Vladimir Lettiev
+    * Honour the $(DESTDIR) Makefile variable when installing 
+      Python extensions.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes.
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * Fix python build with older python versions.
+    * Update dhcp.conf files in Debian packaging
+    * SWAT welcome file updates
+    * Compiler warning fixes.
+    * Add .2 to the SONAME as version suffix if we link the nss 
+      modules on linux.
+    * Add -t|--password-from-stdin option to pdbedit.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Continue not enabling valgrind on 64-bit Linux.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Remove unused #defines.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Debian packaging updates.
+
+
+o   Qiao Yang <qyang@stbernard.com>
+    * Make sure to refresh the timestamp on entries in the failed 
+      connection code in winbindd.
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ===============================
+                   Release Notes for Samba 3.0.21b
+                              Jan 30, 2006
+                   ===============================
 
 Common bugs fixed in 3.0.21b include:
 
@@ -22,7 +143,7 @@ Changes
 #######
 
 Changes since 3.0.21a
---------------------
+---------------------
 
 commits
 -------
@@ -225,10 +346,6 @@ o   Simo Sorce <idra@samba.org>
 o   John Terpstra <jht@samba.org>
     * RHEL/Fedora spec file patches.
 
-
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================
