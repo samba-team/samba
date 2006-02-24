@@ -47,6 +47,8 @@ o   Jeremy Allison <jra@samba.org>
       disabled.
     * Fix negprot bug causing a 2k client with cached domain 
       credentials to refuse to connect to a standalone Samba host.
+    * Ensure that the correct error is checked when encountering a 
+      socket error (fixes crashes in winbindd).
 
 
 o   Andrew Bartlett <abartlet@samba.org>
