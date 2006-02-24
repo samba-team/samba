@@ -1,89 +1,152 @@
 #!/bin/sh
 #first version March 1998, Andrew Tridgell
 
-SWATDIR=`echo $1 | sed 's/\/\//\//g'`
-SRCDIR=$2/
-BOOKDIR=$SWATDIR/using_samba
+DESTDIR=$1
+SWATDIR=`echo $2 | sed 's/\/\//\//g'`
+SRCDIR=$3/
+BOOKDIR="$DESTDIR/$SWATDIR/using_samba"
 
-echo Installing SWAT in $SWATDIR
-echo Installing the Samba Web Administration Tool
+case $0 in
+	*uninstall*)
+		echo "Removing SWAT from $DESTDIR/$SWATDIR "
+		echo "Removing the Samba Web Administration Tool "
+		echo -n "Removed "
+		mode='uninstall'
+		;;
+	*)
+		echo "Installing SWAT in $DESTDIR/$SWATDIR "
+		echo "Installing the Samba Web Administration Tool "
+		echo -n "Installing "
+		mode='install'
+		;;
+esac
 
 LANGS=". `cd $SRCDIR../swat/; /bin/echo lang/??`"
-echo Installing langs are `cd $SRCDIR../swat/lang/; /bin/echo ??`
+echo "langs are `cd $SRCDIR../swat/lang/; /bin/echo ??` "
 
-for ln in $LANGS; do 
- SWATLANGDIR=$SWATDIR/$ln
- for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
-	$SWATLANGDIR/include $SWATLANGDIR/js; do
+if test "$mode" = 'install'; then
+ for ln in $LANGS; do 
+  SWATLANGDIR="$DESTDIR/$SWATDIR/$ln"
+  for d in $SWATLANGDIR $SWATLANGDIR/help $SWATLANGDIR/images \
+  $SWATLANGDIR/include $SWATLANGDIR/js; do
+   if [ ! -d $d ]; then
+    mkdir -p $d
     if [ ! -d $d ]; then
-	mkdir -p $d
-	if [ ! -d $d ]; then
-	    echo Failed to make directory $d, does $USER have privileges?
-	    exit 1
-	fi
+     echo "Failed to make directory $d, does $USER have privileges? "
+     exit 1
     fi
+   fi
+  done
  done
-done
+fi
 
-# Install images
 for ln in $LANGS; do
 
+  # images
   for f in $SRCDIR../swat/$ln/images/*.png; do
-      if [ ! -f $f ] ; then
-	continue
+    if [ ! -f $f ] ; then
+      continue
+    fi
+    FNAME="$DESTDIR/$SWATDIR/$ln/images/`basename $f`"
+    echo $FNAME
+    if test "$mode" = 'install'; then
+      cp "$f" "$FNAME"
+      if test ! -e "$FNAME"; then
+        echo "Cannot install $FNAME. Does $USER have privileges? "
+        exit 1
       fi
-      FNAME=$SWATDIR/$ln/images/`basename $f`
-      echo $FNAME
-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-      chmod 0644 $FNAME
+      chmod 0644 "$FNAME"
+    elif test "$mode" = 'uninstall'; then
+      rm -f "$FNAME"
+      if test -e "$FNAME"; then
+        echo "Cannot remove $FNAME.  Does $USER have privileges? "
+        exit 1
+      fi
+    else
+      echo "Unknown mode, $mode.  Script called as $0 "
+      exit 1
+    fi
   done
 
-  # Install html help
-
+  # html help
   for f in $SRCDIR../swat/$ln/help/*.html; do
-      if [ ! -f $f ] ; then
-	continue
-      fi
-      FNAME=$SWATDIR/$ln/help/`basename $f`
-      echo $FNAME
+    if [ ! -f $f ] ; then
+      continue
+    fi
+    FNAME="$DESTDIR/$SWATDIR/$ln/help/`basename $f`"
+    echo $FNAME
+    if test "$mode" = 'install'; then
       if [ "x$BOOKDIR" = "x" ]; then
         cat $f | sed 's/@BOOKDIR@.*$//' > $f.tmp
       else
         cat $f | sed 's/@BOOKDIR@//' > $f.tmp
       fi
       f=$f.tmp
-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-      rm -f $f
-      chmod 0644 $FNAME
+      cp "$f" "$FNAME"
+      rm -f "$f"
+      if test ! -e "$FNAME"; then
+        echo "Cannot install $FNAME. Does $USER have privileges? "
+        exit 1
+      fi
+      chmod 0644 "$FNAME"
+    elif test "$mode" = 'uninstall'; then
+      rm -f "$FNAME"
+      if test -e "$FNAME"; then
+        echo "Cannot remove $FNAME.  Does $USER have privileges? "
+        exit 1
+      fi
+    fi
   done
 
-  # Install "server-side" includes
-
+  # "server-side" includes
   for f in $SRCDIR../swat/$ln/include/*; do
       if [ ! -f $f ] ; then
 	continue
       fi
-      FNAME=$SWATDIR/$ln/include/`basename $f`
+      FNAME="$DESTDIR/$SWATDIR/$ln/include/`basename $f`"
       echo $FNAME
-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-      chmod 0644 $FNAME
+      if test "$mode" = 'install'; then
+        cp "$f" "$FNAME"
+        if test ! -e "$FNAME"; then
+          echo "Cannot install $FNAME. Does $USER have privileges? "
+          exit 1
+        fi
+        chmod 0644 $FNAME
+      elif test "$mode" = 'uninstall'; then
+        rm -f "$FNAME"
+        if test -e "$FNAME"; then
+          echo "Cannot remove $FNAME.  Does $USER have privileges? "
+          exit 1
+        fi
+      fi
   done
 
-  # Install javascripts
-
+  # javascripts
   for f in $SRCDIR../swat/$ln/js/*.js; do
       if [ ! -f $f ] ; then
 	continue
       fi
-      FNAME=$SWATDIR/$ln/js/`basename $f`
+      FNAME="$DESTDIR/$SWATDIR/$ln/js/`basename $f`"
       echo $FNAME
-      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-      chmod 0644 $FNAME
+      if test "$mode" = 'install'; then
+        cp "$f" "$FNAME"
+        if test ! -e "$FNAME"; then
+          echo "Cannot install $FNAME. Does $USER have privileges? "
+          exit 1
+        fi
+        chmod 0644 $FNAME
+      elif test "$mode" = 'uninstall'; then
+        rm -f "$FNAME"
+        if test -e "$FNAME"; then
+          echo "Cannot remove $FNAME.  Does $USER have privileges? "
+          exit 1
+        fi
+      fi
   done
 
 done
 
-# Install html documentation (if html documentation tree is here)
+# Install/ remove html documentation (if html documentation tree is here)
 
 if [ -d $SRCDIR../docs/htmldocs/ ]; then
 
@@ -94,47 +157,75 @@ if [ -d $SRCDIR../docs/htmldocs/ ]; then
         continue
       fi
       
-      INSTALLDIR=$SWATDIR/help/`echo $dir | sed 's/htmldocs\///g'`
-      if [ ! -d $INSTALLDIR ]; then
-        mkdir $INSTALLDIR
+      INSTALLDIR="$DESTDIR/$SWATDIR/help/`echo $dir | sed 's/htmldocs\///g'`"
+      if test ! -d "$INSTALLDIR" -a "$mode" = 'install'; then
+        mkdir "$INSTALLDIR"
+        if test ! -d "$INSTALLDIR"; then
+          echo "Failed to make directory $INSTALLDIR, does $USER have privileges? "
+          exit 1
+        fi
       fi
 
       for f in $SRCDIR../docs/$dir/*.html; do
 	  FNAME=$INSTALLDIR/`basename $f`
 	  echo $FNAME
-	  cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-	  chmod 0644 $FNAME
+          if test "$mode" = 'install'; then
+            cp "$f" "$FNAME"
+            if test ! -e "$FNAME"; then
+              echo "Cannot install $FNAME. Does $USER have privileges? "
+              exit 1
+            fi
+            chmod 0644 $FNAME
+          elif test "$mode" = 'uninstall'; then
+            rm -f "$FNAME"
+            if test -e "$FNAME"; then
+              echo "Cannot remove $FNAME.  Does $USER have privileges? "
+              exit 1
+            fi
+          fi
       done
 
-      if [ -d $SRCDIR../docs/$dir/images/ ]; then
-          if [ ! -d $INSTALLDIR/images/ ]; then
-              mkdir $INSTALLDIR/images
-              if [ ! -d $INSTALLDIR/images/ ]; then
-                  echo Failed to make directory $SWATDIR/help/images, does $USER have privileges?
+      if test -d "$SRCDIR../docs/$dir/images/"; then
+          if test ! -d "$INSTALLDIR/images/" -a "$mode" = 'install'; then
+              mkdir "$INSTALLDIR/images"
+              if test ! -d "$INSTALLDIR/images/"; then
+                  echo "Failed to make directory $INSTALLDIR/images, does $USER have privileges? "
                   exit 1
               fi
           fi
           for f in $SRCDIR../docs/$dir/images/*.png; do
               FNAME=$INSTALLDIR/images/`basename $f`
               echo $FNAME
-              cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-              chmod 0644 $FNAME
+              if test "$mode" = 'install'; then
+                cp "$f" "$FNAME"
+                if test ! -e "$FNAME"; then
+                  echo "Cannot install $FNAME. Does $USER have privileges? "
+                  exit 1
+                fi
+                chmod 0644 $FNAME
+              elif test "$mode" = 'uninstall'; then
+                rm -f "$FNAME"
+                if test -e "$FNAME"; then
+                  echo "Cannot remove $FNAME.  Does $USER have privileges? "
+                  exit 1
+                fi
+              fi
           done
       fi
     done
 fi
 
-# Install Using Samba book (but only if it is there)
+# Install/ remove Using Samba book (but only if it is there)
 
 if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; then
 
     # Create directories
 
     for d in $BOOKDIR $BOOKDIR/figs ; do
-        if [ ! -d $d ]; then
+        if test ! -d "$d" -a "$mode" = 'install'; then
             mkdir $d
-            if [ ! -d $d ]; then
-                echo Failed to make directory $d, does $USER have privileges?
+            if test ! -d "$d"; then
+                echo "Failed to make directory $d, does $USER have privileges? "
                 exit 1
             fi
         fi
@@ -145,15 +236,39 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
     for f in $SRCDIR../docs/htmldocs/using_samba/*.html; do
         FNAME=$BOOKDIR/`basename $f`
         echo $FNAME
-        cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-        chmod 0644 $FNAME
+        if test "$mode" = 'install'; then
+          cp "$f" "$FNAME"
+          if test ! -e "$FNAME"; then
+            echo "Cannot install $FNAME. Does $USER have privileges? "
+            exit 1
+          fi
+          chmod 0644 $FNAME
+        elif test "$mode" = 'uninstall'; then
+          rm -f "$FNAME"
+          if test -e "$FNAME"; then
+            echo "Cannot remove $FNAME.  Does $USER have privileges? "
+            exit 1
+          fi
+        fi
     done
 
     for f in $SRCDIR../docs/htmldocs/using_samba/*.gif; do
         FNAME=$BOOKDIR/`basename $f`
         echo $FNAME
-        cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-        chmod 0644 $FNAME
+        if test "$mode" = 'install'; then
+          cp "$f" "$FNAME"
+          if test ! -e "$FNAME"; then
+            echo "Cannot install $FNAME. Does $USER have privileges? "
+            exit 1
+          fi
+          chmod 0644 $FNAME
+        elif test "$mode" = 'uninstall'; then
+          rm -f "$FNAME"
+          if test -e "$FNAME"; then
+            echo "Cannot remove $FNAME.  Does $USER have privileges? "
+            exit 1
+          fi
+        fi
     done
 
     # Figures
@@ -161,18 +276,40 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
     for f in $SRCDIR../docs/htmldocs/using_samba/figs/*.gif; do
         FNAME=$BOOKDIR/figs/`basename $f`
         echo $FNAME
-        cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-        chmod 0644 $FNAME
+        if test "$mode" = 'install'; then
+          cp "$f" "$FNAME"
+          if test ! -e "$FNAME"; then
+            echo "Cannot install $FNAME. Does $USER have privileges? "
+            exit 1
+          fi
+          chmod 0644 $FNAME
+        elif test "$mode" = 'uninstall'; then
+          rm -f "$FNAME"
+          if test -e "$FNAME"; then
+            echo "Cannot remove $FNAME.  Does $USER have privileges? "
+            exit 1
+          fi
+        fi
     done
 
 fi
 
-cat << EOF
+if test "$mode" = 'install'; then
+  cat << EOF
 ======================================================================
 The SWAT files have been installed. Remember to read the documentation
 for information on enabling and using SWAT
 ======================================================================
 EOF
+else
+  cat << EOF
+======================================================================
+The SWAT files have been removed.  You may restore these files using
+the command "make installswat" or "make install" to install binaries, 
+man pages, modules, SWAT, and shell scripts.
+======================================================================
+EOF
+fi
 
 exit 0
 

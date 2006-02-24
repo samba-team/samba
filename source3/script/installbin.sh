@@ -2,20 +2,14 @@
 
 INSTALLPERMS=$1
 DESTDIR=$2
-BASEDIR=`echo $3 | sed 's/\/\//\//g'`
-BINDIR=`echo $4 | sed 's/\/\//\//g'`
-LIBDIR=`echo $5 | sed 's/\/\//\//g'`
-VARDIR=`echo $6 | sed 's/\/\//\//g'`
-shift
-shift
-shift
+BINDIR=`echo $3 | sed 's/\/\//\//g'`
 shift
 shift
 shift
 
 for p in $*; do
  p2=`basename $p`
- echo Installing $p as $DESTDIR/$BINDIR/$p2
+ echo "Installing $p as $DESTDIR/$BINDIR/$p2 "
  if [ -f $DESTDIR/$BINDIR/$p2 ]; then
    rm -f $DESTDIR/$BINDIR/$p2.old
    mv $DESTDIR/$BINDIR/$p2 $DESTDIR/$BINDIR/$p2.old
@@ -27,7 +21,8 @@ for p in $*; do
  if [ $p2 = smbmount ]; then
    if [ ! -d $DESTDIR/sbin ]; then
       mkdir $DESTDIR/sbin
-   fi 
+   fi
+   echo "Creating sym link $DESTDIR/sbin/mount.smbfs to $BINDIR/$p2 "
    ln -sf $BINDIR/$p2 $DESTDIR/sbin/mount.smbfs
  fi
 done
