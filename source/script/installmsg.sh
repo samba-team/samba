@@ -21,16 +21,16 @@ case $0 in
 	*) mode='install' ;;
 esac
 
-for f in $@; do
-	FNAME="$DESTDIR/$MSGDIR/$f.msg"
+for f in $SRCDIR/po/*.msg; do
+	FNAME="$DESTDIR/$MSGDIR/`basename $f`"
 	if test "$mode" = 'install'; then
-		echo "Installing $f.msg as $FNAME "
-		cp "$SRCDIR/po/$f.msg" "$FNAME"
+		echo "Installing $f as $FNAME "
+		cp "$f" "$FNAME"
 		if test ! -e "$FNAME"; then
 			echo "Cannot install $FNAME.  Does $USER have privileges? "
 			exit 1
 		fi
-		chmod 0644 $FNAME
+		chmod 0644 "$FNAME"
 	elif test "$mode" = 'uninstall'; then
 		echo "Removing $FNAME "
 		rm -f "$FNAME"
