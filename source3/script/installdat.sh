@@ -20,16 +20,16 @@ case $0 in
 	*) mode='install' ;;    
 esac
 
-for f in $@; do
-	FNAME="$DESTDIR/$DATDIR/$f.dat"
+for f in $SRCDIR/codepages/*.dat; do
+	FNAME="$DESTDIR/$DATDIR/`basename $f`"
 	if test "$mode" = 'install'; then
-		echo "Installing $f.dat as $FNAME "
-		cp "$SRCDIR/codepages/$f.dat" "$FNAME"
+		echo "Installing $f as $FNAME "
+		cp "$f" "$FNAME"
 		if test ! -e "$FNAME"; then
 			echo "Cannot install $FNAME.  Does $USER have privileges? "
 			exit 1
 		fi
-		chmod 0644 $FNAME
+		chmod 0644 "$FNAME"
 	elif test "$mode" = 'uninstall'; then
 		echo "Removing $FNAME "
 		rm -f "$FNAME"
