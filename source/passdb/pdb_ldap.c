@@ -4584,7 +4584,6 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 
 	if (num_result > 1) {
 		DEBUG (0, ("ldapsam_create_user: There exists more than one iuser with name [%s]: bailing out!\n", name));
-		ldap_msgfree(result);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
@@ -4785,7 +4784,6 @@ static NTSTATUS ldapsam_create_group(struct pdb_methods *my_methods,
 
 	if (num_result > 1) {
 		DEBUG (0, ("ldapsam_create_group: There exists more than one group with name [%s]: bailing out!\n", name));
-		ldap_msgfree(result);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
