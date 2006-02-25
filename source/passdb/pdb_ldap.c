@@ -4720,6 +4720,8 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
 	}
 
+	talloc_autofree_ldapmod(tmp_ctx, mods);
+
 	if (add_posix) {	
 		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
 	} else {
@@ -4728,12 +4730,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldapsam_create_user: failed to create a new user [%s] (dn = %s)\n", name ,dn));
-		ldap_mods_free(mods, True);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(2,("ldapsam_create_user: added account [%s] in the LDAP database\n", name));
-	ldap_mods_free(mods, True);
 
 	return NT_STATUS_OK;
 }
@@ -4864,6 +4864,7 @@ static NTSTATUS ldapsam_create_group(struct pdb_methods *my_methods,
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", groupsidstr);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", grouptype);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
+	talloc_autofree_ldapmod(tmp_ctx, mods);
 
 	if (is_new_entry) {	
 		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
@@ -4881,12 +4882,10 @@ static NTSTATUS ldapsam_create_group(struct pdb_methods *my_methods,
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldapsam_create_group: failed to create a new group [%s] (dn = %s)\n", name ,dn));
-		ldap_mods_free(mods, True);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(2,("ldapsam_create_group: added group [%s] in the LDAP database\n", name));
-	ldap_mods_free(mods, True);
 
 	return NT_STATUS_OK;
 }
