@@ -4569,8 +4569,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	}
 
 	username = escape_ldap_string_alloc(name);
-	filter = talloc_asprintf(tmp_ctx, "(&(uid=%%u)(objectClass=posixAccount))");
-	talloc_string_sub(tmp_ctx, filter, "%u", username);
+	filter = talloc_asprintf(tmp_ctx, "(&(uid=%s)(objectClass=posixAccount))", username);
 	SAFE_FREE(username);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -4583,7 +4582,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
 	if (num_result > 1) {
-		DEBUG (0, ("ldapsam_create_user: There exists more than one iuser with name [%s]: bailing out!\n", name));
+		DEBUG (0, ("ldapsam_create_user: More than one user with name [%s] ?!\n", name));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
@@ -4738,6 +4737,59 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *tmp_ctx, struct samu *sam_acct)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int num_result;
+	const char *dn;
+	char *filter;
+	int rc;
+
+	DEBUG(0,("ldapsam_delete_user: Attempt to delete user [%s]\n", pdb_get_username(sam_acct)));
+	
+	filter = talloc_asprintf(tmp_ctx, "(&(uid=%s)(objectClass=posixAccount))", pdb_get_username(sam_acct));
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_delete_user: user search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(0,("ldapsam_delete_user: user not found!\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_delete_user: More than one user with name [%s] ?!\n", pdb_get_username(sam_acct)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* it is just a posix account, retrieve the dn for later use */
+	dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+	if (!dn) {
+		DEBUG(0,("ldapsam_delete_user: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = smbldap_delete(ldap_state->smbldap_state, dn);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
  * ldapsam_create_group creates a new
  * posixGroup and sambaGroupMapping object
@@ -4746,10 +4798,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
  * The gid is allocated by winbindd.
  */
 
-static NTSTATUS ldapsam_create_group(struct pdb_methods *my_methods,
-				     TALLOC_CTX *tmp_ctx,
-				     const char *name,
-				     uint32 *rid)
+static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
+					 TALLOC_CTX *tmp_ctx,
+					 const char *name,
+					 uint32 *rid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	NTSTATUS ret;
@@ -4769,8 +4821,7 @@ static NTSTATUS ldapsam_create_group(struct pdb_methods *my_methods,
 	int rc;
 	
 	groupname = escape_ldap_string_alloc(name);
-	filter = talloc_asprintf(tmp_ctx, "(&(cn=%%g)(objectClass=posixGroup))");
-	talloc_string_sub(tmp_ctx, filter, "%g", groupname);
+	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=posixGroup))", groupname);
 	SAFE_FREE(groupname);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
@@ -4890,6 +4941,90 @@ static NTSTATUS ldapsam_create_group(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_CTX *tmp_ctx, uint32 rid)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int num_result;
+	const char *dn;
+	char *gidstr;
+	char *filter;
+	DOM_SID group_sid;
+	int rc;
+
+	/* get the group sid */
+	sid_copy(&group_sid, get_global_sam_sid());
+	sid_append_rid(&group_sid, rid);
+
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(sambaSID=%s)"
+				 "(objectClass=posixGroup)"
+				 "(objectClass=sambaGroupMapping))",
+				 sid_string_static(&group_sid));
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1,("ldapsam_delete_dom_group: group search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(1,("ldapsam_delete_dom_group: group not found!\n"));
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_delete_dom_group: More than one group with the same SID ?!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* here it is, retrieve the dn for later use */
+	dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+	if (!dn) {
+		DEBUG(0,("ldapsam_delete_user: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", tmp_ctx);
+	if (!gidstr) {
+		DEBUG (0, ("ldapsam_delete_dom_group: Unable to find the group's gid!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* check no user have this group marked as primary group */
+	filter = talloc_asprintf(tmp_ctx, "(&(gidNumber=%s)(objectClass=posixAccount))", gidstr);
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1,("ldapsam_delete_dom_group: accounts search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result != 0) {
+		DEBUG(3,("ldapsam_delete_dom_group: Can't delete group, it is a primary group for %d users\n", num_result));
+		return NT_STATUS_MEMBERS_PRIMARY_GROUP;
+	}
+
+	rc = smbldap_delete(ldap_state->smbldap_state, dn);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -4958,7 +5093,9 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 	if (lp_parm_bool(-1, "ldapsam", "trusted", False) &&
 	    lp_parm_bool(-1, "ldapsam", "editposix", False)) {
 		(*pdb_method)->create_user = ldapsam_create_user;
-		(*pdb_method)->create_dom_group = ldapsam_create_group;
+		(*pdb_method)->delete_user = ldapsam_delete_user;
+		(*pdb_method)->create_dom_group = ldapsam_create_dom_group;
+		(*pdb_method)->delete_dom_group = ldapsam_delete_dom_group;
 	}
 	/* TODO: Setup private data and free */
 
