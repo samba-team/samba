@@ -474,6 +474,12 @@
 #if defined(LDAP_SASL_BIND_INPROGRESS) && !defined(LDAP_SASL_BIND_IN_PROGRESS)
 #define LDAP_SASL_BIND_IN_PROGRESS LDAP_SASL_BIND_INPROGRESS
 #endif
+/* Solaris 8 defines SSL_LDAP_PORT, not LDAPS_PORT and it only does so if
+   LDAP_SSL is defined - but SSL is not working. We just want the
+   port number! Let's just define LDAPS_PORT correct. */
+#if !defined(LDAPS_PORT)
+#define LDAPS_PORT 636
+#endif
 #else
 #undef HAVE_LDAP
 #endif

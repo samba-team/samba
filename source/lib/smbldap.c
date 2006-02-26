@@ -999,7 +999,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 #endif
 		if (reopen) {
 		    	/* the other end has died. reopen. */
-		    	ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
+		    	ldap_unbind(ldap_state->ldap_struct);
 		    	ldap_state->ldap_struct = NULL;
 		    	ldap_state->last_ping = (time_t)0;
 		} else {
@@ -1017,7 +1017,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 	}
 
 	if ((rc = smbldap_connect_system(ldap_state, ldap_state->ldap_struct))) {
-		ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
+		ldap_unbind(ldap_state->ldap_struct);
 		ldap_state->ldap_struct = NULL;
 		return rc;
 	}
@@ -1039,7 +1039,7 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 		return NT_STATUS_INVALID_PARAMETER;
 		
 	if (ldap_state->ldap_struct != NULL) {
-		ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
+		ldap_unbind(ldap_state->ldap_struct);
 		ldap_state->ldap_struct = NULL;
 	}
 
