@@ -34,7 +34,6 @@
 #include <errno.h>
 #include <string.h>
 #include <mntent.h>
-#include <fstab.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
 #define UNMOUNT_CIFS_VERSION_MINOR "5"
