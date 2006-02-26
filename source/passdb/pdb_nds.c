@@ -819,7 +819,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			rc = ldap_simple_bind_s(ld, dn, clear_text_pw);
 			if (rc == LDAP_SUCCESS) {
 				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Successful for %s\n", username));
-				ldap_unbind_ext(ld, NULL, NULL);
+				ldap_unbind(ld);
 			} else {
 				NTSTATUS nt_status = NT_STATUS_ACCOUNT_RESTRICTION;
 				DEBUG(5,("pdb_nds_update_login_attempts: ldap_simple_bind_s Failed for %s\n", username));
