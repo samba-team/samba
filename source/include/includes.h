@@ -470,6 +470,10 @@
 #ifndef LDAP_OPT_SUCCESS
 #define LDAP_OPT_SUCCESS 0
 #endif
+/* Solaris 8 and maybe other LDAP implementations spell this "..._INPROGRESS": */
+#if defined(LDAP_SASL_BIND_INPROGRESS) && !defined(LDAP_SASL_BIND_IN_PROGRESS)
+#define LDAP_SASL_BIND_IN_PROGRESS LDAP_SASL_BIND_INPROGRESS
+#endif
 #else
 #undef HAVE_LDAP
 #endif
