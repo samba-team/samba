@@ -2310,35 +2310,145 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	struct smbldap_state *conn = ldap_state->smbldap_state;
-	pstring filter;
-	int rc, count;
-	LDAPMessage *msg = NULL;
+	const char *id_attrs[] = { "memberUid", "gidNumber", NULL };
+	const char *sid_attrs[] = { "sambaSID", NULL };
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *result = NULL;
 	LDAPMessage *entry;
+	char *filter;
 	char **values = NULL;
 	char **memberuid;
-	char *sid_filter = NULL;
-	char *tmp;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	char *gidstr;
+	int rc, count;
 
 	*pp_member_rids = NULL;
 	*p_num_members = 0;
 
-	pstr_sprintf(filter,
-		     "(&(objectClass=sambaSamAccount)"
-		     "(sambaPrimaryGroupSid=%s))",
-		     sid_string_static(group));
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=sambaGroupMapping)"
+				 "(objectClass=posixGroup)"
+				 "(sambaSID=%s))",
+				 sid_string_static(group));
 
-	{
-		const char *attrs[] = { "sambaSID", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
-				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
-				    &msg);
-	}
+	rc = smbldap_search(conn, lp_ldap_group_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, id_attrs, 0,
+			    &result);
 
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
-	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	count = ldap_count_entries(conn->ldap_struct, result);
+
+	if (count > 1) {
+		DEBUG(1, ("Found more than one groupmap entry for %s\n",
+			  sid_string_static(group)));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	if (count == 0) {
+		ret = NT_STATUS_NO_SUCH_GROUP;
+		goto done;
+	}
+
+	entry = ldap_first_entry(conn->ldap_struct, result);
+	if (entry == NULL)
+		goto done;
+
+	gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
+	if (!gidstr) {
+		DEBUG (0, ("ldapsam_enum_group_members: Unable to find the group's gid!\n"));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	values = ldap_get_values(conn->ldap_struct, entry, "memberUid");
+
+	if (values) {
+
+		filter = talloc_strdup(mem_ctx, "(&(objectClass=sambaSamAccount)(|");
+		if (filter == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		for (memberuid = values; *memberuid != NULL; memberuid += 1) {
+			filter = talloc_asprintf(mem_ctx, "%s(uidNumber=%s)", filter, *memberuid);
+			if (filter == NULL) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		}
+
+		filter = talloc_asprintf(mem_ctx, "%s))", filter);
+		if (filter == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
+				    &result);
+
+		if (rc != LDAP_SUCCESS)
+			goto done;
+
+		count = ldap_count_entries(conn->ldap_struct, result);
+		DEBUG(10,("ldapsam_enum_group_members: found %d accounts\n", count));
+
+		talloc_autofree_ldapmsg(mem_ctx, result);
+
+		for (entry = ldap_first_entry(conn->ldap_struct, result);
+		     entry != NULL;
+		     entry = ldap_next_entry(conn->ldap_struct, entry))
+		{
+			char *sidstr;
+			DOM_SID sid;
+			uint32 rid;
+
+			sidstr = smbldap_talloc_single_attribute(conn->ldap_struct,
+								 entry, "sambaSID",
+								 mem_ctx);
+			if (!sidstr) {
+				DEBUG(0, ("Severe DB error, sambaSamAccount can't miss "
+					  "the sambaSID attribute\n"));
+				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+
+			if (!string_to_sid(&sid, sidstr))
+				goto done;
+
+			if (!sid_check_is_in_our_domain(&sid)) {
+				DEBUG(0, ("Inconsistent SAM -- group member uid not "
+					  "in our domain\n"));
+				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+
+			sid_peek_rid(&sid, &rid);
+
+			add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
+						p_num_members);
+		}
+	}
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=sambaSamAccount)"
+				 "(gidNumber=%s))", gidstr);
+
+	rc = smbldap_search(conn, lp_ldap_user_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
+			    &result);
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	for (entry = ldap_first_entry(conn->ldap_struct, result);
 	     entry != NULL;
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
@@ -2348,130 +2458,24 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 						    entry,
 						    get_global_sam_sid(),
 						    &rid)) {
-			DEBUG(2, ("Could not find sid from ldap entry\n"));
-			continue;
+			DEBUG(0, ("Severe DB error, sambaSamAccount can't miss "
+				  "the sambaSID attribute\n"));
+			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto done;
 		}
 
 		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
 					p_num_members);
 	}
 
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	pstr_sprintf(filter,
-		     "(&(objectClass=sambaGroupMapping)"
-		     "(objectClass=posixGroup)"
-		     "(sambaSID=%s))",
-		     sid_string_static(group));
-
-	{
-		const char *attrs[] = { "memberUid", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
-				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
-				    &msg);
-	}
-
-	if (rc != LDAP_SUCCESS)
-		goto done;
-
-	count = ldap_count_entries(conn->ldap_struct, msg);
-
-	if (count > 1) {
-		DEBUG(1, ("Found more than one groupmap entry for %s\n",
-			  sid_string_static(group)));
-		goto done;
-	}
-
-	if (count == 0) {
-		result = NT_STATUS_OK;
-		goto done;
-	}
-
-	entry = ldap_first_entry(conn->ldap_struct, msg);
-	if (entry == NULL)
-		goto done;
-
-	values = ldap_get_values(conn->ldap_struct, msg, "memberUid");
-	if (values == NULL) {
-		result = NT_STATUS_OK;
-		goto done;
-	}
-
-	sid_filter = SMB_STRDUP("(&(objectClass=sambaSamAccount)(|");
-	if (sid_filter == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	for (memberuid = values; *memberuid != NULL; memberuid += 1) {
-		tmp = sid_filter;
-		asprintf(&sid_filter, "%s(uid=%s)", tmp, *memberuid);
-		free(tmp);
-		if (sid_filter == NULL) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	}
-
-	tmp = sid_filter;
-	asprintf(&sid_filter, "%s))", sid_filter);
-	free(tmp);
-	if (sid_filter == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	{
-		const char *attrs[] = { "sambaSID", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
-				    LDAP_SCOPE_SUBTREE, sid_filter, attrs, 0,
-				    &msg);
-	}
-
-	if (rc != LDAP_SUCCESS)
-		goto done;
-
-	for (entry = ldap_first_entry(conn->ldap_struct, msg);
-	     entry != NULL;
-	     entry = ldap_next_entry(conn->ldap_struct, entry))
-	{
-		fstring str;
-		DOM_SID sid;
-		uint32 rid;
-
-		if (!smbldap_get_single_attribute(conn->ldap_struct,
-						  entry, "sambaSID",
-						  str, sizeof(str)-1))
-			continue;
-
-		if (!string_to_sid(&sid, str))
-			goto done;
-
-		if (!sid_check_is_in_our_domain(&sid)) {
-			DEBUG(1, ("Inconsistent SAM -- group member uid not "
-				  "in our domain\n"));
-			continue;
-		}
-
-		sid_peek_rid(&sid, &rid);
-
-		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
-					p_num_members);
-	}
-
-	result = NT_STATUS_OK;
+	ret = NT_STATUS_OK;
 	
  done:
-	SAFE_FREE(sid_filter);
 
-	if (values != NULL)
+	if (values)
 		ldap_value_free(values);
 
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	return result;
+	return ret;
 }
 
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
