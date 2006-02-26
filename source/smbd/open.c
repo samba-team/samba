@@ -1110,7 +1110,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
 			del_deferred_open_entry(lck, mid);
-			talloc_destroy(lck);
+			TALLOC_FREE(lck);
 		}
 
 		/* Ensure we don't reprocess this message. */
