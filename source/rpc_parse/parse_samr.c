@@ -1004,7 +1004,7 @@ inits a SAM_ENTRY1 structure.
 static void init_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx,
 			    UNISTR2 *sam_name, UNISTR2 *sam_full,
 			    UNISTR2 *sam_desc, uint32 rid_user,
-			    uint16 acb_info)
+			    uint32 acb_info)
 {
 	DEBUG(5, ("init_sam_entry1\n"));
 
@@ -1040,10 +1040,7 @@ static BOOL sam_io_sam_entry1(const char *desc, SAM_ENTRY1 * sam,
 
 	if(!prs_uint32("rid_user ", ps, depth, &sam->rid_user))
 		return False;
-	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
-		return False;
-
-	if(!prs_align(ps))
+	if(!prs_uint32("acb_info ", ps, depth, &sam->acb_info))
 		return False;
 
 	if (!smb_io_unihdr("hdr_acct_name", &sam->hdr_acct_name, ps, depth))
@@ -1085,7 +1082,7 @@ inits a SAM_ENTRY2 structure.
 ********************************************************************/
 static void init_sam_entry2(SAM_ENTRY2 * sam, uint32 user_idx,
 			    UNISTR2 *sam_name, UNISTR2 *sam_desc,
-			    uint32 rid_user, uint16 acb_info)
+			    uint32 rid_user, uint32 acb_info)
 {
 	DEBUG(5, ("init_sam_entry2\n"));
 
@@ -1118,10 +1115,7 @@ static BOOL sam_io_sam_entry2(const char *desc, SAM_ENTRY2 * sam,
 
 	if(!prs_uint32("rid_user ", ps, depth, &sam->rid_user))
 		return False;
-	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
-		return False;
-
-	if(!prs_align(ps))
+	if(!prs_uint32("acb_info ", ps, depth, &sam->acb_info))
 		return False;
 
 	if(!smb_io_unihdr("unihdr", &sam->hdr_srv_name, ps, depth))	/* account name unicode string header */
@@ -1322,7 +1316,7 @@ inits a SAMR_Q_ENUM_DOM_USERS structure.
 
 void init_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND *pol,
 				uint32 start_idx,
-				uint16 acb_mask, uint16 unk_1, uint32 size)
+				uint32 acb_mask, uint32 size)
 {
 	DEBUG(5, ("init_samr_q_enum_dom_users\n"));
 
@@ -1330,7 +1324,6 @@ void init_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND *pol,
 
 	q_e->start_idx = start_idx;	/* zero indicates lots */
 	q_e->acb_mask = acb_mask;
-	q_e->unknown_1 = unk_1;
 	q_e->max_size = size;
 }
 
@@ -1355,9 +1348,7 @@ BOOL samr_io_q_enum_dom_users(const char *desc, SAMR_Q_ENUM_DOM_USERS * q_e,
 
 	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 		return False;
-	if(!prs_uint16("acb_mask ", ps, depth, &q_e->acb_mask))
-		return False;
-	if(!prs_uint16("unknown_1", ps, depth, &q_e->unknown_1))
+	if(!prs_uint32("acb_mask ", ps, depth, &q_e->acb_mask))
 		return False;
 
 	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))

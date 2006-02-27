@@ -253,7 +253,7 @@ NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd)
  null). length *MUST BE MORE THAN 2* !
  **********************************************************/
 
-char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
+char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length)
 {
 	static fstring acct_str;
 
@@ -289,9 +289,9 @@ char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
  Decode the account control bits from a string.
  **********************************************************/
 
-uint16 pdb_decode_acct_ctrl(const char *p)
+uint32 pdb_decode_acct_ctrl(const char *p)
 {
-	uint16 acct_ctrl = 0;
+	uint32 acct_ctrl = 0;
 	BOOL finished = False;
 
 	/*
@@ -331,7 +331,7 @@ uint16 pdb_decode_acct_ctrl(const char *p)
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
 
-void pdb_sethexpwd(char *p, const unsigned char *pwd, uint16 acct_ctrl)
+void pdb_sethexpwd(char *p, const unsigned char *pwd, uint32 acct_ctrl)
 {
 	if (pwd != NULL) {
 		int i;
@@ -620,7 +620,7 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
 			   char *msg_str, size_t msg_str_len)
 {
 	struct samu 	*sam_pass=NULL;
-	uint16 other_acb;
+	uint32 other_acb;
 	NTSTATUS result;
 
 	*err_str = '\0';
@@ -799,12 +799,12 @@ NTSTATUS local_password_change(const char *user_name, int local_flags,
  Marshall/unmarshall struct samu structs.
  *********************************************************************/
 
-#define TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
+#define TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd"
 
 /*********************************************************************
 *********************************************************************/
 
-BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
+BOOL init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
 
 	/* times are stored as 32bit integer
@@ -834,8 +834,8 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 		
-	uint32	user_rid, group_rid, hours_len, unknown_6;
-	uint16	acct_ctrl, logon_divs;
+	uint32	user_rid, group_rid, hours_len, unknown_6, acct_ctrl;
+	uint16  logon_divs;
 	uint16	bad_password_count, logon_count;
 	uint8	*hours = NULL;
 	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL, *nt_pw_hist_ptr = NULL;
@@ -847,14 +847,14 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	BOOL expand_explicit = lp_passdb_expand_explicit();
 	
 	if(sampass == NULL || buf == NULL) {
-		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
+		DEBUG(0, ("init_sam_from_buffer_v3: NULL parameters found!\n"));
 		return False;
 	}
 									
-/* TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd" */
+/* TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V2,
+	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V3,
 		&logon_time,						/* d */
 		&logoff_time,						/* d */
 		&kickoff_time,						/* d */
@@ -880,7 +880,8 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 		&nt_pw_len, &nt_pw_ptr,					/* B */
 		/* Change from V1 is addition of password history field. */
 		&nt_pw_hist_len, &nt_pw_hist_ptr,			/* B */
-		&acct_ctrl,						/* w */
+		/* Change from V2 is the uint32 acb_mask */
+		&acct_ctrl,						/* d */
 		/* Also "remove_me" field was removed. */
 		&logon_divs,						/* w */
 		&hours_len,						/* d */
@@ -972,7 +973,6 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 		}
 	}
 
-	/* Change from V1 is addition of password history field. */
 	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
 		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
@@ -1006,6 +1006,7 @@ BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
 	pdb_set_logon_count(sampass, logon_count, PDB_SET);
 	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
+	/* Change from V2 is the uint32 acct_ctrl */
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
 	pdb_set_hours(sampass, hours, PDB_SET);
@@ -1035,7 +1036,7 @@ done:
 /*********************************************************************
 *********************************************************************/
 
-uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_only)
+uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, BOOL size_only)
 {
 	size_t len, buflen;
 
@@ -1215,10 +1216,10 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_onl
 		munged_dial_len = 0;	
 	}
 
-/* TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd" */
+/* TDB_FORMAT_STRING_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd" */
 
 	/* one time to get the size needed */
-	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING_V2,
+	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING_V3,
 		logon_time,				/* d */
 		logoff_time,				/* d */
 		kickoff_time,				/* d */
@@ -1243,7 +1244,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_onl
 		lm_pw_len, lm_pw,			/* B */
 		nt_pw_len, nt_pw,			/* B */
 		nt_pw_hist_len, nt_pw_hist,		/* B */
-		pdb_get_acct_ctrl(sampass),		/* w */
+		pdb_get_acct_ctrl(sampass),		/* d */
 		pdb_get_logon_divs(sampass),		/* w */
 		pdb_get_hours_len(sampass),		/* d */
 		MAX_HOURS_LEN, pdb_get_hours(sampass),	/* B */
@@ -1257,12 +1258,12 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_onl
 
 	/* malloc the space needed */
 	if ( (*buf=(uint8*)SMB_MALLOC(len)) == NULL) {
-		DEBUG(0,("init_buffer_from_sam_v2: Unable to malloc() memory for buffer!\n"));
+		DEBUG(0,("init_buffer_from_sam_v3: Unable to malloc() memory for buffer!\n"));
 		return (-1);
 	}
 	
 	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING_V2,
+	buflen = tdb_pack((char *)*buf, len,  TDB_FORMAT_STRING_V3,
 		logon_time,				/* d */
 		logoff_time,				/* d */
 		kickoff_time,				/* d */
@@ -1287,7 +1288,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_onl
 		lm_pw_len, lm_pw,			/* B */
 		nt_pw_len, nt_pw,			/* B */
 		nt_pw_hist_len, nt_pw_hist,		/* B */
-		pdb_get_acct_ctrl(sampass),		/* w */
+		pdb_get_acct_ctrl(sampass),		/* d */
 		pdb_get_logon_divs(sampass),		/* w */
 		pdb_get_hours_len(sampass),		/* d */
 		MAX_HOURS_LEN, pdb_get_hours(sampass),	/* B */
@@ -1297,7 +1298,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, struct samu *sampass, BOOL size_onl
 	
 	/* check to make sure we got it correct */
 	if (buflen != len) {
-		DEBUG(0, ("init_buffer_from_sam_v2: somthing odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
+		DEBUG(0, ("init_buffer_from_sam_v3: somthing odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
 			  (unsigned long)buflen, (unsigned long)len));  
 		/* error */
 		SAFE_FREE (*buf);
@@ -1320,12 +1321,12 @@ BOOL pdb_copy_sam_account(struct samu *dst, struct samu *src )
 	if ( !dst )
 		return False;
 
-	len = init_buffer_from_sam_v2(&buf, src, False);
+	len = init_buffer_from_sam_v3(&buf, src, False);
 
 	if (len == -1)
 		return False;
 
-	result = init_sam_from_buffer_v2( dst, buf, len );
+	result = init_sam_from_buffer_v3( dst, buf, len );
 	dst->methods = src->methods;
 	
 	if ( src->unix_pw )
