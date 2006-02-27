@@ -1,6 +1,6 @@
 @c $Id$
 
-@node Programming with Kerberos
+@node Programming with Kerberos, Migration, Windows 2000 compatability, Top
 @chapter Programming with Kerberos
 
 First you need to know how the Kerberos model works, go read the
@@ -10,7 +10,7 @@ introduction text (@pxref{What is Kerberos?}).
 * Kerberos 5 API Overview::     
 * Walkthrough of a sample Kerberos 5 client::  
 * Validating a password in a server application::  
-* API differences to MIT Kerberos::
+* API differences to MIT Kerberos::  
 @end menu
 
 @node Kerberos 5 API Overview, Walkthrough of a sample Kerberos 5 client, Programming with Kerberos, Programming with Kerberos
@@ -337,7 +337,7 @@ The server is using @manpage{krb5_rd_safe,3} and
 
 See the manual page for @manpage{krb5_verify_user,3}.
 
-@node API differences to MIT Kerberos, , Validating a password in a server application, Programming with Kerberos
+@node API differences to MIT Kerberos,  , Validating a password in a server application, Programming with Kerberos
 @section API differences to MIT Kerberos
 
 This section is somewhat disorganised, but so far there is no overall

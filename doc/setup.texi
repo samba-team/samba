@@ -4,31 +4,31 @@
 
 @chapter Setting up a realm
 
-@menu
-* Configuration file::
-* Creating the database::
-* Modifying the database::
-* keytabs::
-* Serving Kerberos 4/524/kaserver::
-* Remote administration::
-* Password changing::
-* Testing clients and servers::
-* Slave Servers::
-* Incremental propagation::
-* Salting::
-* Cross realm::
-* Transit policy::
-* Setting up DNS::
-* Using LDAP to store the database::
-* Providing Kerberos credentials to servers and programs::
-@end menu
-
 A
 @cindex realm
 realm is an administrative domain.  The name of a Kerberos realm is
 usually the Internet domain name in uppercase.  Call your realm the same
 as your Internet domain name if you do not have strong reasons for not
 doing so.  It will make life easier for you and everyone else.
+
+@menu
+* Configuration file::          
+* Creating the database::       
+* Modifying the database::      
+* keytabs::                     
+* Serving Kerberos 4/524/kaserver::  
+* Remote administration::       
+* Password changing::           
+* Testing clients and servers::  
+* Slave Servers::               
+* Incremental propagation::     
+* Salting::                     
+* Cross realm::                 
+* Transit policy::              
+* Setting up DNS::              
+* Using LDAP to store the database::  
+* Providing Kerberos credentials to servers and programs::  
+@end menu
 
 @node  Configuration file, Creating the database, Setting up a realm, Setting up a realm
 @section Configuration file
@@ -529,7 +529,7 @@ automate this you will want to start
 Starting the propagation once an hour from @command{cron} is probably a
 good idea.
 
-@node Incremental propagation, Salting , Slave Servers, Setting up a realm
+@node Incremental propagation, Salting, Slave Servers, Setting up a realm
 @section Incremental propagation
 
 There is also a newer, and still somewhat experimental, mechanism for
@@ -640,7 +640,7 @@ the cell name appended to the password.
 
 @end itemize
 
-@node Cross realm, Transit policy , Salting, Setting up a realm
+@node Cross realm, Transit policy, Salting, Setting up a realm
 @section Cross realm
 @cindex Cross realm
 
@@ -703,7 +703,7 @@ May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE
 
 @end example
 
-@node Transit policy, Setting up DNS , Cross realm, Setting up a realm
+@node Transit policy, Setting up DNS, Cross realm, Setting up a realm
 @section Transit policy
 @cindex Transit policy
 
@@ -986,7 +986,7 @@ Now you can proceed as in @xref{Using LDAP to store the database}.
 Heimdal will pick up the Samba LDAP entries if they are in the same
 search space as the Kerberos entries.
 
-@node Providing Kerberos credentials to servers and programs, , Using LDAP to store the database, Setting up a realm
+@node Providing Kerberos credentials to servers and programs,  , Using LDAP to store the database, Setting up a realm
 @section Providing Kerberos credentials to servers and programs
 
 Some services require Kerberos credentials when they start to make

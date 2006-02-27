@@ -178,14 +178,70 @@ to the following restrictions:
 * What is Kerberos?::           
 * Building and Installing::     
 * Setting up a realm::          
-* Applications::          
+* Applications::                
 * Things in search for a better place::  
 * Kerberos 4 issues::           
-* Windows 2000 compatability::
-* Programming with Kerberos::
-* Migration::
+* Windows 2000 compatability::  
+* Programming with Kerberos::   
+* Migration::                   
 * Acknowledgments::             
 
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Setting up a realm
+
+* Configuration file::          
+* Creating the database::       
+* Modifying the database::      
+* keytabs::                     
+* Serving Kerberos 4/524/kaserver::  
+* Remote administration::       
+* Password changing::           
+* Testing clients and servers::  
+* Slave Servers::               
+* Incremental propagation::     
+* Salting::                     
+* Cross realm::                 
+* Transit policy::              
+* Setting up DNS::              
+* Using LDAP to store the database::  
+* Providing Kerberos credentials to servers and programs::  
+
+Applications
+
+* Authentication modules::      
+* AFS::                         
+
+Authentication modules
+
+* Digital SIA::                 
+* IRIX::                        
+
+Kerberos 4 issues
+
+* Principal conversion issues::  
+* Converting a version 4 database::  
+* kaserver::                    
+
+Windows 2000 compatability
+
+* Configuring Windows 2000 to use a Heimdal KDC::  
+* Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC::  
+* Create account mappings::     
+* Encryption types::            
+* Authorisation data::          
+* Quirks of Windows 2000 KDC::  
+* Useful links when reading about the Windows 2000::  
+
+Programming with Kerberos
+
+* Kerberos 5 API Overview::     
+* Walkthrough of a sample Kerberos 5 client::  
+* Validating a password in a server application::  
+* API differences to MIT Kerberos::  
+
+@end detailmenu
 @end menu
 
 @include intro.texi
