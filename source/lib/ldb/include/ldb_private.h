@@ -107,6 +107,9 @@ struct ldb_context {
 	int transaction_active;
 
 	int (*async_wait)(struct ldb_async_handle *, enum ldb_async_wait_type);
+
+	/* a backend supplied highestCommittedUSN function */
+	uint64_t (*sequence_number)(struct ldb_context *);
 };
 
 /* the modules init function */
