@@ -3624,7 +3624,7 @@ AC_ARG_WITH(cifsmount,
 	UNINSTALL_CIFSMOUNT="uninstallcifsmount"
 	;;
   *)
-	AC_MSG_ERROR(not on a linux system!)
+	AC_MSG_WARN(not on a linux system!)
 	;;
   esac ]
 )
