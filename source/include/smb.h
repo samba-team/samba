@@ -764,22 +764,11 @@ typedef enum {
 	P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
 
-/* passed to br lock code */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
-
 struct enum_list {
 	int value;
 	const char *name;
 };
 
-#define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 br_off start, br_off size)
-#define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
-				 enum brl_type lock_type, \
-				 br_off start, br_off size)
 struct parm_struct {
 	const char *label;
 	parm_type type;
@@ -797,11 +786,6 @@ struct parm_struct {
 	} def;
 };
 
-struct bitmap {
-	uint32 *b;
-	unsigned int n;
-};
-
 /* The following flags are used in SWAT */
 #define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
 #define FLAG_SHARE 	0x0002 /* file sharing options */
@@ -814,10 +798,27 @@ struct bitmap {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
+/* passed to br lock code */
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
+
+#define BRLOCK_FN_CAST() \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
+
+#define BRLOCK_FN(fn) \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
+				 enum brl_type lock_type, \
+				 br_off start, br_off size)
+
+struct bitmap {
+	uint32 *b;
+	unsigned int n;
+};
+
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
 #endif /* LOCKING_VERSION */
-
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
