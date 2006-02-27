@@ -1157,12 +1157,12 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
 	uint32		rid;
 	fstring		name;
 	
-	/* make sure we have an open handle to the tdb.  Should have happened 
-	   at module  initialization time */
-	   
-	if ( !tdbsam ) {
-		DEBUG(0,("tdbsam_delete_sam_account: tdbsam not open!\n"));
-		return NT_STATUS_NO_SUCH_USER;
+	/* open the database */
+		
+	if ( !tdbsam_open( tdbsam_filename ) ) {
+		DEBUG(0,("tdbsam_delete_sam_account: failed to open %s!\n",
+			 tdbsam_filename));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	fstrcpy(name, pdb_get_username(sam_pass));
@@ -1176,13 +1176,6 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
 	
 	rid = pdb_get_user_rid(sam_pass);
 
-	/* open the database */
-		
-	if ( !tdbsam_open( tdbsam_filename ) ) {
-		DEBUG(0,("tdbsam_delete_sam_account: failed to open %s!\n", tdbsam_filename));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	
 	/* it's outaa here!  8^) */
 
 	if ( tdb_delete(tdbsam, key) != TDB_SUCCESS ) {
