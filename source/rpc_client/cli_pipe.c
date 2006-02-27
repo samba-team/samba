@@ -1090,7 +1090,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
  Creates the internals of a DCE/RPC bind request or alter context PDU.
  ********************************************************************/
 
-static NTSTATUS create_bind_or_alt_ctx_internal(uint8 pkt_type,
+static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 						prs_struct *rpc_out, 
 						uint32 rpc_call_id,
 						RPC_IFACE *abstract,
