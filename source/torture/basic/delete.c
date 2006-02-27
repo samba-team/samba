@@ -29,7 +29,8 @@
 #include "torture/raw/proto.h"
 
 static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
-				  const char *fname, BOOL expect_it)
+				  const char *fname, BOOL expect_it, 
+				  const char *where)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("single_search");
 	union smb_search_data data;
@@ -47,7 +48,7 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 				       &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) single_search failed (%s)\n", 
-		       __location__, nt_errstr(status));
+		       where, nt_errstr(status));
 		res = False;
 		goto done;
 	}
@@ -61,22 +62,22 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) qpathinfo failed (%s)\n", __location__,
+			printf("(%s) qfileinfo failed (%s)\n", where,
 			       nt_errstr(status));
 			res = False;
 			goto done;
 		}
 
 		if (expect_it != io.all_info.out.delete_pending) {
-			printf("Expected del_on_close flag %d, qfileinfo gave %d\n",
-			       expect_it, io.all_info.out.delete_pending);
+			printf("%s - Expected del_on_close flag %d, qfileinfo/all_info gave %d\n",
+			       where, expect_it, io.all_info.out.delete_pending);
 			res = False;
 			goto done;
 		}
 
 		if (nlink != io.all_info.out.nlink) {
-			printf("Expected nlink %d, qfileinfo gave %d\n",
-			       nlink, io.all_info.out.nlink);
+			printf("%s - Expected nlink %d, qfileinfo/all_info gave %d\n",
+			       where, nlink, io.all_info.out.nlink);
 			res = False;
 			goto done;
 		}
@@ -86,22 +87,22 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) qpathinfo failed (%s)\n", __location__,
+			printf("(%s) qpathinfo failed (%s)\n", where,
 			       nt_errstr(status));
 			res = False;
 			goto done;
 		}
 
 		if (expect_it != io.standard_info.out.delete_pending) {
-			printf("Expected del_on_close flag %d, qfileinfo gave %d\n",
-			       expect_it, io.standard_info.out.delete_pending);
+			printf("%s - Expected del_on_close flag %d, qfileinfo/standard_info gave %d\n",
+			       where, expect_it, io.standard_info.out.delete_pending);
 			res = False;
 			goto done;
 		}
 
 		if (nlink != io.standard_info.out.nlink) {
-			printf("Expected nlink %d, qfileinfo gave %d\n",
-			       nlink, io.all_info.out.nlink);
+			printf("%s - Expected nlink %d, qfileinfo/standard_info gave %d\n",
+			       where, nlink, io.all_info.out.nlink);
 			res = False;
 			goto done;
 		}
@@ -116,14 +117,14 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			printf("(%s) qpathinfo did not give correct error "
 			       "code (%s) -- NT_STATUS_DELETE_PENDING "
-			       "expected\n", __location__,
+			       "expected\n", where,
 			       nt_errstr(status));
 			res = False;
 			goto done;
 		}
 	} else {
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) qpathinfo failed (%s)\n", __location__,
+			printf("(%s) qpathinfo failed (%s)\n", where,
 			       nt_errstr(status));
 			res = False;
 			goto done;
@@ -191,7 +192,7 @@ static BOOL deltest1(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		       __location__, fname);
 		return False;
 	}
-	
+
 	printf("first delete on close test succeeded.\n");
 	return True;
 }
@@ -502,7 +503,7 @@ static BOOL deltest7(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fnum1, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True, __location__);
 	
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, False))) {
 		printf("(%s) unsetting delete_on_close on file failed !\n",
@@ -511,7 +512,7 @@ static BOOL deltest7(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fnum1, fname, False);
+	correct &= check_delete_on_close(cli1, fnum1, fname, False, __location__);
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 2 failed (%s)\n", 
@@ -590,8 +591,8 @@ static BOOL deltest8(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fnum1, fname, True);
-	correct &= check_delete_on_close(cli2, fnum2, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True, __location__);
+	correct &= check_delete_on_close(cli2, fnum2, fname, True, __location__);
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 1 failed (%s)\n", 
@@ -600,8 +601,8 @@ static BOOL deltest8(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, -1, fname, True);
-	correct &= check_delete_on_close(cli2, fnum2, fname, True);
+	correct &= check_delete_on_close(cli1, -1, fname, True, __location__);
+	correct &= check_delete_on_close(cli2, fnum2, fname, True, __location__);
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
 		printf("(%s) close - 2 failed (%s)\n", 
@@ -830,8 +831,8 @@ static BOOL deltest13(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fnum1, fname, True);
-	correct &= check_delete_on_close(cli2, fnum2, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True, __location__);
+	correct &= check_delete_on_close(cli2, fnum2, fname, True, __location__);
 
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli2->tree, fnum2,
 						       False))) {
@@ -841,8 +842,8 @@ static BOOL deltest13(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fnum1, fname, False);
-	correct &= check_delete_on_close(cli2, fnum2, fname, False);
+	correct &= check_delete_on_close(cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(cli2, fnum2, fname, False, __location__);
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 1 failed (%s)\n", 
@@ -900,14 +901,14 @@ static BOOL deltest14(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	check_delete_on_close(cli1, dnum1, dirname, False);
+	correct &= check_delete_on_close(cli1, dnum1, dirname, False, __location__);
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, dnum1, True))) {
 		printf("(%s) setting delete_on_close on file failed !\n",
 		       __location__);
 		correct = False;
 		goto fail;
 	}
-	check_delete_on_close(cli1, dnum1, dirname, True);
+	correct &= check_delete_on_close(cli1, dnum1, dirname, True, __location__);
 	smbcli_close(cli1->tree, dnum1);
 
 	/* Now it should be gone... */
@@ -1006,12 +1007,7 @@ static BOOL deltest15(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	/* The file should be around under the new name, there's a second
 	 * handle open */
 
-	if (!check_delete_on_close(cli1, fnum1, fname_new, True)) {
-		printf("(%s) checking delete on close on file %s failed!\n",
-		       __location__, fname_new);
-		correct = False;
-		goto fail;
-	}
+	correct &= check_delete_on_close(cli1, fnum1, fname_new, True, __location__);
 
 	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
 				      SEC_GENERIC_ALL,
@@ -1028,6 +1024,8 @@ static BOOL deltest15(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		correct = False;
 		goto fail;
 	}
+
+	correct &= check_delete_on_close(cli2, fnum2, fname, False, __location__);
 
 	smbcli_close(cli2->tree, fnum2);
 	smbcli_close(cli1->tree, fnum1);
@@ -1109,10 +1107,14 @@ static BOOL deltest16(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	}
 
 	/* The delete on close bit is *not* reported as being set. */
-	check_delete_on_close(cli1, fnum1, fname, False);
+	correct &= check_delete_on_close(cli1, fnum1, fname, False, __location__);
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(cli1, -1, fname, False, __location__);
+	correct &= check_delete_on_close(cli2, -1, fname, False, __location__);
 
 	/* Now try opening again for read-only. */
-	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
 				      SEC_RIGHTS_FILE_READ,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -1130,9 +1132,17 @@ static BOOL deltest16(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	/* Now close both.... */
+	correct &= check_delete_on_close(cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(cli1, -1, fname, False, __location__);
+	correct &= check_delete_on_close(cli2, fnum2, fname, False, __location__);
+	correct &= check_delete_on_close(cli2, -1, fname, False, __location__);
+
 	smbcli_close(cli1->tree, fnum1);
-	smbcli_close(cli1->tree, fnum2);
+
+	correct &= check_delete_on_close(cli2, fnum2, fname, True, __location__);
+	correct &= check_delete_on_close(cli2, -1, fname, True, __location__);
+
+	smbcli_close(cli2->tree, fnum2);
 
 	/* And the file should be deleted ! */
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
@@ -1204,7 +1214,7 @@ static BOOL deltest17(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	}
 
 	/* The delete on close bit is *not* reported as being set. */
-	check_delete_on_close(cli1, fnum1, fname, False);
+	correct &= check_delete_on_close(cli1, fnum1, fname, False, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
@@ -1225,8 +1235,14 @@ static BOOL deltest17(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	/* Now close both.... */
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(cli1, fnum1, fname, False, __location__);
+	correct &= check_delete_on_close(cli1, fnum2, fname, False, __location__);
+
 	smbcli_close(cli1->tree, fnum1);
+
+	correct &= check_delete_on_close(cli1, fnum2, fname, False, __location__);
+
 	smbcli_close(cli1->tree, fnum2);
 
 	/* See if the file is deleted - shouldn't be.... */
@@ -1282,7 +1298,7 @@ static BOOL deltest18(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	}
 
 	/* The delete on close bit is *not* reported as being set. */
-	check_delete_on_close(cli1, fnum1, dirname, False);
+	correct &= check_delete_on_close(cli1, fnum1, dirname, False, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
@@ -1303,8 +1319,13 @@ static BOOL deltest18(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	/* Now close both.... */
+	correct &= check_delete_on_close(cli1, fnum1, dirname, False, __location__);
+	correct &= check_delete_on_close(cli1, fnum2, dirname, False, __location__);
+
 	smbcli_close(cli1->tree, fnum1);
+
+	correct &= check_delete_on_close(cli1, fnum2, dirname, True, __location__);
+
 	smbcli_close(cli1->tree, fnum2);
 
 	/* And the directory should be deleted ! */
@@ -1385,7 +1406,7 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 	}
 
 	/* The delete on close bit is *not* reported as being set. */
-	check_delete_on_close(cli1, fnum1, dirname, False);
+	correct &= check_delete_on_close(cli1, fnum1, dirname, False, __location__);
 
 	/* Now try opening again for read-only. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, dirname, 0, 
@@ -1405,8 +1426,10 @@ static BOOL deltest19(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	/* Now close both.... */
 	smbcli_close(cli1->tree, fnum1);
+
+	correct &= check_delete_on_close(cli1, fnum2, dirname, True, __location__);
+
 	smbcli_close(cli1->tree, fnum2);
 
 	/* See if the file is deleted - for a directory this seems to be true ! */
@@ -1466,7 +1489,7 @@ static BOOL deltest20(struct smbcli_state *cli1, struct smbcli_state *cli2)
 		goto fail;
 	}
 
-	check_delete_on_close(cli1, dnum1, dirname, False);
+	correct &= check_delete_on_close(cli1, dnum1, dirname, False, __location__);
 	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, True);
 
 	{
@@ -1476,8 +1499,8 @@ static BOOL deltest20(struct smbcli_state *cli1, struct smbcli_state *cli2)
 				    DENY_NONE);
 		if (fnum1 != -1) {
 			printf("(%s) smbcli_open succeeded, should have "
-			       "failed: %s\n",
-			       __location__, smbcli_errstr(cli1->tree));
+			       "failed with NT_STATUS_DELETE_PENDING\n",
+			       __location__);
 			correct = False;
 			goto fail;
 		}
@@ -1563,7 +1586,7 @@ static BOOL deltest21(struct smbcli_state **ppcli1, struct smbcli_state **ppcli2
 	}
 	
 	/* Ensure delete on close is set. */
-	check_delete_on_close(cli1, fnum1, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True, __location__);
 
 	/* Now yank the rug from under cli1. */
 	smbcli_transport_dead(cli1->transport);
