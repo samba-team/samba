@@ -30,6 +30,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/select.h" /* needed for WITH_EPOLL */
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/events/events_internal.h"
