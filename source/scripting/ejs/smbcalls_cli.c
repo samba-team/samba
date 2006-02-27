@@ -413,7 +413,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	struct cli_credentials *creds;
 	struct smb_composite_connect io;
 	struct smbcli_tree *tree;
-	const char *hostname, *sharename;
+	char *hostname, *sharename;
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
 
