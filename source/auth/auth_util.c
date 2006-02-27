@@ -1527,7 +1527,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 	
 	/* if we still don't have a valid unix account check for 
-	  'map to gues = bad uid' */
+	  'map to guest = bad user' */
 	  
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE( sam_account );
