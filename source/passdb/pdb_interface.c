@@ -193,7 +193,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
  Return an already initialised pdn_methods structure
 *******************************************************************/
 
-static struct pdb_methods *pdb_get_methods( BOOL reload ) 
+static struct pdb_methods *pdb_get_methods_reload( BOOL reload ) 
 {
 	static struct pdb_methods *pdb = NULL;
 
@@ -213,13 +213,18 @@ static struct pdb_methods *pdb_get_methods( BOOL reload )
 	return pdb;
 }
 
+static struct pdb_methods *pdb_get_methods()
+{
+	return pdb_get_methods_reload(False);
+}
+
 /******************************************************************
  Backward compatibility functions for the original passdb interface
 *******************************************************************/
 
 BOOL pdb_setsampwent(BOOL update, uint16 acb_mask) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -230,7 +235,7 @@ BOOL pdb_setsampwent(BOOL update, uint16 acb_mask)
 
 void pdb_endsampwent(void) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return;
@@ -241,7 +246,7 @@ void pdb_endsampwent(void)
 
 BOOL pdb_getsampwent(struct samu *user) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -258,7 +263,7 @@ BOOL pdb_getsampwent(struct samu *user)
 
 BOOL pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -311,7 +316,7 @@ BOOL pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 	struct pdb_methods *pdb;
 	uint32 rid;
 
-	if ( !(pdb = pdb_get_methods(False)) ) {
+	if ( !(pdb = pdb_get_methods()) ) {
 		return False;
 	}
 
@@ -399,7 +404,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32 flags,
 			 uint32 *rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -452,7 +457,7 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 
 NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -463,7 +468,7 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 
 NTSTATUS pdb_add_sam_account(struct samu *sam_acct) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -474,7 +479,7 @@ NTSTATUS pdb_add_sam_account(struct samu *sam_acct)
 
 NTSTATUS pdb_update_sam_account(struct samu *sam_acct) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -490,7 +495,7 @@ NTSTATUS pdb_update_sam_account(struct samu *sam_acct)
 
 NTSTATUS pdb_delete_sam_account(struct samu *sam_acct) 
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -506,7 +511,7 @@ NTSTATUS pdb_delete_sam_account(struct samu *sam_acct)
 
 NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -522,7 +527,7 @@ NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 
 NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -533,7 +538,7 @@ NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, BOOL success)
 
 BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -544,7 +549,7 @@ BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
 
 BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -555,7 +560,7 @@ BOOL pdb_getgrgid(GROUP_MAP *map, gid_t gid)
 
 BOOL pdb_getgrnam(GROUP_MAP *map, const char *name)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -605,7 +610,7 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
 			      uint32 *rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -664,7 +669,7 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 
 NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32 rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -675,7 +680,7 @@ NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32 rid)
 
 NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -686,7 +691,7 @@ NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map)
 
 NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -697,7 +702,7 @@ NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map)
 
 NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -709,7 +714,7 @@ NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid)
 BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **pp_rmap,
 			    size_t *p_num_entries, BOOL unix_only)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -724,7 +729,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				uint32 **pp_member_rids,
 				size_t *p_num_members)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -738,7 +743,7 @@ NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,
 				    DOM_SID **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -771,7 +776,7 @@ static NTSTATUS pdb_default_set_unix_primary_group(struct pdb_methods *methods,
 
 NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, struct samu *user)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -865,7 +870,7 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 			  uint32 member_rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -932,7 +937,7 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 			  uint32 member_rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -943,7 +948,7 @@ NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
 
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -955,7 +960,7 @@ BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 
 NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -966,7 +971,7 @@ NTSTATUS pdb_create_alias(const char *name, uint32 *rid)
 
 BOOL pdb_delete_alias(const DOM_SID *sid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -979,7 +984,7 @@ BOOL pdb_delete_alias(const DOM_SID *sid)
 
 BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -991,7 +996,7 @@ BOOL pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 
 BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1003,7 +1008,7 @@ BOOL pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info)
 
 NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1014,7 +1019,7 @@ NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1026,7 +1031,7 @@ NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias,
 			   DOM_SID **pp_members, size_t *p_num_members)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1042,7 +1047,7 @@ NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,
 				    uint32 **pp_alias_rids,
 				    size_t *p_num_alias_rids)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -1061,7 +1066,7 @@ NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 			 const char **names,
 			 uint32 *attrs)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -1077,7 +1082,7 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  uint32 *rids,
 			  uint32 *attrs)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -1089,7 +1094,7 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 
 BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1100,7 +1105,7 @@ BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 
 BOOL pdb_set_account_policy(int policy_index, uint32 value)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1111,7 +1116,7 @@ BOOL pdb_set_account_policy(int policy_index, uint32 value)
 
 BOOL pdb_get_seq_num(time_t *seq_num)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1122,7 +1127,7 @@ BOOL pdb_get_seq_num(time_t *seq_num)
 
 BOOL pdb_uid_to_rid(uid_t uid, uint32 *rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1133,7 +1138,7 @@ BOOL pdb_uid_to_rid(uid_t uid, uint32 *rid)
 
 BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1145,7 +1150,7 @@ BOOL pdb_gid_to_sid(gid_t gid, DOM_SID *sid)
 BOOL pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 		   enum SID_NAME_USE *type)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1156,7 +1161,7 @@ BOOL pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 
 BOOL pdb_rid_algorithm(void)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1167,7 +1172,7 @@ BOOL pdb_rid_algorithm(void)
 
 BOOL pdb_new_rid(uint32 *rid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 
 	if ( !pdb ) {
 		return False;
@@ -1199,7 +1204,7 @@ BOOL pdb_new_rid(uint32 *rid)
 
 BOOL initialize_password_db(BOOL reload)
 {	
-	return (pdb_get_methods(reload) != NULL);
+	return (pdb_get_methods_reload(reload) != NULL);
 }
 
 
@@ -1982,7 +1987,7 @@ static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
 
 struct pdb_search *pdb_search_users(uint16 acct_flags)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;
 
 	if (pdb == NULL) return NULL;
@@ -1999,7 +2004,7 @@ struct pdb_search *pdb_search_users(uint16 acct_flags)
 
 struct pdb_search *pdb_search_groups(void)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;
 
 	if (pdb == NULL) return NULL;
@@ -2016,7 +2021,7 @@ struct pdb_search *pdb_search_groups(void)
 
 struct pdb_search *pdb_search_aliases(const DOM_SID *sid)
 {
-	struct pdb_methods *pdb = pdb_get_methods(False);
+	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;
 
 	if (pdb == NULL) return NULL;
