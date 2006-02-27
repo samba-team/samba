@@ -1,3 +1,8 @@
+2006-02-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.8: fix grammar in --no-insecure-oob option (partly
+	from Thomas Klausner)
+	
 2006-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/ftp.c: Indent.
