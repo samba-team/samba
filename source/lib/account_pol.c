@@ -262,10 +262,18 @@ BOOL init_account_policy(void)
 		return True;
 	}
 
-	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	if (!tdb) {
-		DEBUG(0,("Failed to open account policy database\n"));
-		return False;
+	tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	if (!tdb) { /* the account policies files does not exist or open failed, try to create a new one */
+		tdb = tdb_open_log(lock_path("account_policy.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		if (!tdb) {
+			DEBUG(0,("Failed to open account policy database\n"));
+			return False;
+		}
+		/* creation was successful */
+	       	/* add AP_MIGRATED_TO_PASSDB speacial key */
+		/* so that you do not need to migrate policies */
+		/* on brand new servers as it does not make sense */
+		account_policy_migrated(True);
 	}
 
 	/* handle a Samba upgrade */
