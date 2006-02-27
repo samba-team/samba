@@ -3132,6 +3132,12 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 	   primary group SID is generated solely from the user's Unix 
 	   primary group. */
 
+	/* write the change out */
+	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
+		TALLOC_FREE(pwd);
+		return status;
+ 	}
+
 	TALLOC_FREE(pwd);
 
 	return NT_STATUS_OK;
