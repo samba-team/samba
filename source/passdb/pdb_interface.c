@@ -213,7 +213,7 @@ static struct pdb_methods *pdb_get_methods_reload( BOOL reload )
 	return pdb;
 }
 
-static struct pdb_methods *pdb_get_methods()
+static struct pdb_methods *pdb_get_methods(void)
 {
 	return pdb_get_methods_reload(False);
 }
