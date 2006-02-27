@@ -206,13 +206,13 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 }
 
 /****************************************************************************
- Set *maxfd to include oplock read pipe.
+ See if there is a message waiting in this fd set.
  Note that fds MAY BE NULL ! If so we must do our own select.
 ****************************************************************************/
 
 static BOOL irix_oplock_msg_waiting(fd_set *fds)
 {
-	int maxfd, selrtn;
+	int selrtn;
 	fd_set myfds;
 	struct timeval to;
 
