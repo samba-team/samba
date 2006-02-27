@@ -143,7 +143,7 @@ struct MprVar mprString(const char *s)
 struct MprVar mprData(const uint8_t *p, size_t length)
 {
 	struct MprVar var;
-	char *s = talloc_strndup(mprMemCtx(), p, length);
+	char *s = talloc_strndup(mprMemCtx(), (const char *)p, length);
 	if (s == NULL) {
 		return mprCreateUndefinedVar();
 	}
@@ -229,7 +229,7 @@ struct MprVar mprLdbArray(struct ldb_context *ldb,
 /*
   turn a MprVar string variable into a const char *
  */
-const char *mprToString(const struct MprVar *v)
+const char *mprToString(struct MprVar *v)
 {
 	if (v->trigger) {
 		mprReadProperty(v, 0);
@@ -241,7 +241,7 @@ const char *mprToString(const struct MprVar *v)
 /*
   turn a MprVar integer variable into an int
  */
-int mprToInt(const struct MprVar *v)
+int mprToInt(struct MprVar *v)
 {
 	if (v->trigger) {
 		mprReadProperty(v, 0);
