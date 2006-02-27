@@ -35,7 +35,7 @@ install}. The default location for installation is @file{/usr/heimdal},
 but this can be changed by running @code{configure} with
 @samp{--prefix=/some/other/place}.
 
-If you need to change the default behavior, configure understands the
+If you need to change the default behaviour, configure understands the
 following options:
 
 @table @asis

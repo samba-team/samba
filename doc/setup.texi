@@ -386,7 +386,7 @@ You might need to add @samp{kpasswd} to your @file{/etc/services} as
 
 It is important that users have good passwords, both to make it harder
 to guess them and to avoid off-line attacks (although
-pre-authentication provides some defense against off-line attacks).
+pre-authentication provides some defence against off-line attacks).
 To ensure that the users choose good passwords, you can enable
 password quality controls in @command{kpasswdd} and @command{kadmind}.
 The controls themselves are done in a shared library or an external
@@ -405,7 +405,7 @@ In @samp{[password_quality]policies} the module name is optional if
 the policy name is unique in all modules (members of
 @samp{policy_libraries}).
 
-The builtin polices are
+The built-in polices are
 
 @itemize @bullet
 
@@ -590,9 +590,9 @@ slave#  /usr/heimdal/libexec/ipropd-slave master &
 @section Salting
 @cindex Salting
 
-Salting is used to make it harder to precalculate all possible
+Salting is used to make it harder to pre-calculate all possible
 keys. Using a salt increases the search space to make it almost
-impossible to precalculate all keys. Salting is the process of mixing a
+impossible to pre-calculate all keys. Salting is the process of mixing a
 public string (the salt) with the password, then sending it through an
 encryption type specific string-to-key function that will output the
 fixed size encryption key.
@@ -800,7 +800,7 @@ RFC-2782 (A DNS RR for specifying the location of services (DNS SRV)).
 @subsection Using DNS to map hostname to Kerberos realm
 
 Heimdal also supports a way to lookup a realm from a hostname. This to
-minimize configuration needed on clients. Using this has the drawback
+minimise configuration needed on clients. Using this has the drawback
 that clients can be redirected by an attacker to realms within the
 same cross realm trust and made to believe they are talking to the
 right server (since Kerberos authentication will succeed).
@@ -826,7 +826,7 @@ Heimdal. Note that before attempting to configure such an
 installation, you should be aware of the implications of storing
 private information (such as users' keys) in a directory service
 primarily designed for public information. Nonetheless, with a
-suitable authorization policy, it is possible to set this up in a
+suitable authorisation policy, it is possible to set this up in a
 secure fashion. A knowledge of LDAP, Kerberos, and C is necessary to
 install this backend. The HDB schema was devised by Leif Johansson.
 
@@ -922,7 +922,7 @@ directory to have the raw keys inside it.
 
 @item
 Once you have built Heimdal and started the LDAP server, run kadmin
-(as usual) to initialize the database. Note that the instructions for
+(as usual) to initialise the database. Note that the instructions for
 stashing a master key are as per any Heimdal installation.
 
 @example
@@ -975,7 +975,7 @@ index	krb5PrincipalName	eq
 @c @node Using Samba LDAP password database, Providing Kerberos credentials to servers and programs, Using LDAP to store the database, Setting up a realm
 @c @section Using Samba LDAP password database
 
-The Samba domain and the Kerberos realm can have diffrent names since
+The Samba domain and the Kerberos realm can have different names since
 arcfour's string to key functions principal/realm independent.  So now
 will be your first and only chance name your Kerberos realm without
 needing to deal with old configuration files.

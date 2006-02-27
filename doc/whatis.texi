@@ -121,7 +121,7 @@ attack.
 her credentials, @var{C} just pretend to verify them. @var{C} can't
 be sure that she is talking to @var{A}.
 
-@section Defense strategies
+@section Defence strategies
 
 It would be possible to add a @dfn{replay cache}
 @cindex replay cache

@@ -95,7 +95,7 @@ following.
 
 @itemize @bullet
 @item
-Replace all occurencies of @file{krb5_matrix.conf} with
+Replace all occurrences of @file{krb5_matrix.conf} with
 @file{krb5+c2_matrix.conf} in the directions above.
 @item
 You must enable ``vouching'' in the @samp{default} database.  This will
@@ -124,7 +124,7 @@ Also, kerberised ftp will not work with C2 passwords. You can solve this
 by using both Digital's ftpd and our on different ports.
 
 @strong{Remember}, if you do these changes you will get a system that
-most certainly does @emph{not} fulfill the requirements of a C2
+most certainly does @emph{not} fulfil the requirements of a C2
 system. If C2 is what you want, for instance if someone else is forcing
 you to use it, you're out of luck.  If you use enhanced security because
 you want a system that is more secure than it would otherwise be, you
@@ -153,7 +153,7 @@ the same object format as the program that tries to load it. This might
 require that you have to configure and build for O32 in addition to the
 default N32.
 
-Appart from this it should ``just work''; there are no configuration
+Apart from this it should ``just work''; there are no configuration
 files.
 
 Note that recent Irix 6.5 versions (at least 6.5.22) have PAM,
