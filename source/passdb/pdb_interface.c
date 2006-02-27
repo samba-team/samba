@@ -1248,7 +1248,7 @@ static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
+static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update, uint32 acb_mask)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -1854,7 +1854,7 @@ static void search_end_users(struct pdb_search *search)
 
 static BOOL pdb_default_search_users(struct pdb_methods *methods,
 				     struct pdb_search *search,
-				     uint16 acct_flags)
+				     uint32 acct_flags)
 {
 	struct user_search *state;
 
@@ -1985,7 +1985,7 @@ static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
 	return (search->num_entries > idx) ? &search->cache[idx] : NULL;
 }
 
-struct pdb_search *pdb_search_users(uint16 acct_flags)
+struct pdb_search *pdb_search_users(uint32 acct_flags)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;

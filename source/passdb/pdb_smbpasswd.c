@@ -1223,7 +1223,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
  Functions to be implemented by the new passdb API 
  ****************************************************************/
 
-static NTSTATUS smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update, uint16 acb_mask)
+static NTSTATUS smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update, uint32 acb_mask)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	

@@ -488,8 +488,8 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
 	BOOL 		use_samba_attrs = True;
-	uint16 		acct_ctrl = 0, 
-			logon_divs;
+	uint32 		acct_ctrl = 0;
+	uint16		logon_divs;
 	uint16 		bad_password_count = 0, 
 			logon_count = 0;
 	uint32 hours_len;
@@ -1236,7 +1236,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
  Connect to LDAP server for password enumeration.
 *********************************************************************/
 
-static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint16 acb_mask)
+static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint32 acb_mask)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
@@ -3840,7 +3840,7 @@ const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 struct ldap_search_state {
 	struct smbldap_state *connection;
 
-	uint16 acct_flags;
+	uint32 acct_flags;
 	uint16 group_type;
 
 	const char *base;
@@ -4011,7 +4011,7 @@ static BOOL ldapuser2displayentry(struct ldap_search_state *state,
 {
 	char **vals;
 	DOM_SID sid;
-	uint16 acct_flags;
+	uint32 acct_flags;
 
 	vals = ldap_get_values(ld, entry, "sambaAcctFlags");
 	if ((vals == NULL) || (vals[0] == NULL)) {
@@ -4090,7 +4090,7 @@ static BOOL ldapuser2displayentry(struct ldap_search_state *state,
 
 static BOOL ldapsam_search_users(struct pdb_methods *methods,
 				 struct pdb_search *search,
-				 uint16 acct_flags)
+				 uint32 acct_flags)
 {
 	struct ldapsam_privates *ldap_state = methods->private_data;
 	struct ldap_search_state *state;

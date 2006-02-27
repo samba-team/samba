@@ -130,7 +130,7 @@ enum pdb_value_state {
 /* cache for bad password lockout data, to be used on replicated SAMs */
 typedef struct logon_cache_struct {
 	time_t entry_timestamp;
-	uint16 acct_ctrl;
+	uint32 acct_ctrl;
 	uint16 bad_password_count;
 	time_t bad_password_time;
 } LOGIN_CACHE;
@@ -171,7 +171,7 @@ struct samu {
 	DATA_BLOB nt_pw_his; /* nt hashed password history .data is Null if not available */
 	char* plaintext_pw; /* is Null if not available */
 		
-	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
 	uint32 fields_present; /* 0x00ff ffff */
 		
 	uint16 logon_divs; /* 168 - number of hours in a week */
@@ -204,7 +204,7 @@ struct acct_info {
 struct samr_displayentry {
 	uint32 idx;
 	uint32 rid;
-	uint16 acct_flags;
+	uint32 acct_flags;
 	const char *account_name;
 	const char *fullname;
 	const char *description;
@@ -248,7 +248,7 @@ struct pdb_methods
 {
 	const char *name; /* What name got this module */
 
-	NTSTATUS (*setsampwent)(struct pdb_methods *, BOOL update, uint16 acb_mask);
+	NTSTATUS (*setsampwent)(struct pdb_methods *, BOOL update, uint32 acb_mask);
 	
 	void (*endsampwent)(struct pdb_methods *);
 	
@@ -382,7 +382,7 @@ struct pdb_methods
 
 	BOOL (*search_users)(struct pdb_methods *methods,
 			     struct pdb_search *search,
-			     uint16 acct_flags);
+			     uint32 acct_flags);
 	BOOL (*search_groups)(struct pdb_methods *methods,
 			      struct pdb_search *search);
 	BOOL (*search_aliases)(struct pdb_methods *methods,

@@ -482,7 +482,7 @@ static void samr_clear_sam_passwd(struct samu *sam_pass)
 	pdb_set_nt_passwd(sam_pass, NULL, PDB_DEFAULT);
 }
 
-static uint32 count_sam_users(struct disp_info *info, uint16 acct_flags)
+static uint32 count_sam_users(struct disp_info *info, uint32 acct_flags)
 {
 	struct samr_displayentry *entry;
 
@@ -3218,7 +3218,7 @@ static BOOL set_user_info_pw(uint8 *pass, struct samu *pwd)
 {
 	uint32 len;
 	pstring plaintext_buf;
-	uint16 acct_ctrl;
+	uint32 acct_ctrl;
  
 	DEBUG(5, ("Attempting administrator password change for user %s\n",
 		  pdb_get_username(pwd)));

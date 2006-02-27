@@ -40,7 +40,7 @@
  Collection of get...() functions for struct samu.
  ********************************************************************/
 
-uint16 pdb_get_acct_ctrl (const struct samu *sampass)
+uint32 pdb_get_acct_ctrl (const struct samu *sampass)
 {
 	if (sampass)
 		return (sampass->acct_ctrl);
@@ -424,7 +424,7 @@ void *pdb_get_backend_private_data (const struct samu *sampass, const struct pdb
  Collection of set...() functions for struct samu.
  ********************************************************************/
 
-BOOL pdb_set_acct_ctrl (struct samu *sampass, uint16 acct_ctrl, enum pdb_value_state flag)
+BOOL pdb_set_acct_ctrl (struct samu *sampass, uint32 acct_ctrl, enum pdb_value_state flag)
 {
 	if (!sampass)
 		return False;

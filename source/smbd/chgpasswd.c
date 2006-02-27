@@ -575,7 +575,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	uchar unenc_new_pw[16];
 	uchar unenc_old_pw[16];
 	struct samu *sampass = NULL;
-	uint16 acct_ctrl;
+	uint32 acct_ctrl;
 	const uint8 *lanman_pw;
 	BOOL ret;
 	
@@ -641,7 +641,7 @@ BOOL change_lanman_password(struct samu *sampass, uchar *pass2)
 	static uchar null_pw[16];
 	uchar unenc_new_pw[16];
 	BOOL ret;
-	uint16 acct_ctrl;
+	uint32 acct_ctrl;
 	const uint8 *pwd;
 
 	if (sampass == NULL) {
@@ -755,7 +755,7 @@ static NTSTATUS check_oem_password(const char *user,
 	uint8 *password_encrypted;
 	const uint8 *encryption_key;
 	const uint8 *lanman_pw, *nt_pw;
-	uint16 acct_ctrl;
+	uint32 acct_ctrl;
 	uint32 new_pw_len;
 	uchar new_nt_hash[16];
 	uchar new_lm_hash[16];

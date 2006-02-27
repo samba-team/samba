@@ -100,7 +100,7 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	
 	printf("\tuser_rid :\t0x%x\n"  , usr->user_rid ); /* User ID */
 	printf("\tgroup_rid:\t0x%x\n"  , usr->group_rid); /* Group ID */
-	printf("\tacb_info :\t0x%04x\n", usr->acb_info ); /* Account Control Info */
+	printf("\tacb_info :\t0x%08x\n", usr->acb_info ); /* Account Control Info */
 	
 	printf("\tfields_present:\t0x%08x\n", usr->fields_present); /* 0x00ff ffff */
 	printf("\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
@@ -776,7 +776,7 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	char **dom_users;
 	uint32 *dom_rids;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	uint16 acb_mask = ACB_NORMAL;
+	uint32 acb_mask = ACB_NORMAL;
 	BOOL got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 1) || (argc > 3)) {
@@ -788,7 +788,7 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 		sscanf(argv[1], "%x", &access_mask);
 
 	if (argc > 2)
-		sscanf(argv[2], "%hx", &acb_mask);
+		sscanf(argv[2], "%x", &acb_mask);
 
 	/* Get sam policy handle */
 
@@ -1367,7 +1367,7 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
-	uint16 acb_info;
+	uint32 acb_info;
 	uint32 unknown, user_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 
