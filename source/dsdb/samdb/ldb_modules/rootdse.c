@@ -43,6 +43,7 @@ static int do_attribute(const char * const *attrs, const char *name)
 		ldb_attr_in_list(attrs, "*");
 }
 
+
 /*
   add dynamically generated attributes to rootDSE result
 */
@@ -104,6 +105,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_request *re
 					goto failed;
 				}
 			}
+		}
+	}
+
+	if (do_attribute(s->attrs, "highestCommittedUSN")) {
+		if (module->ldb->sequence_number != NULL && 
+		    ldb_msg_add_fmt(msg, "highestCommittedUSN", 
+				    "%llu", module->ldb->sequence_number(module->ldb)) != 0) {
+			goto failed;
 		}
 	}
 	

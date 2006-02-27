@@ -772,6 +772,31 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+/*
+  return sequenceNumber from @BASEINFO
+*/
+static uint64_t ltdb_sequence_number(struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	const char *attrs[] = { "sequenceNumber", NULL };
+	struct ldb_result *res = NULL;
+	struct ldb_dn *dn = ldb_dn_explode(tmp_ctx, "@BASEINFO");
+	int ret;
+	uint64_t seq_num;
+
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	talloc_steal(tmp_ctx, res);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		talloc_free(tmp_ctx);
+		/* zero is as good as anything when we don't know */
+		return 0;
+	}
+
+	seq_num = ldb_msg_find_uint64(res->msgs[0], "sequenceNumber", 0);
+	talloc_free(tmp_ctx);
+	return seq_num;	
+}
+
 static int ltdb_init_2(struct ldb_module *module)
 {
 	return LDB_SUCCESS;
@@ -847,6 +872,7 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->prev = ldb->modules->next = NULL;
 	ldb->modules->private_data = ltdb;
 	ldb->modules->ops = &ltdb_ops;
+	ldb->sequence_number = ltdb_sequence_number;
 
 	return 0;
 }

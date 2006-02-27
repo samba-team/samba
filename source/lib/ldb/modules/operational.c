@@ -267,6 +267,29 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	return 0;
 }
 
+/*
+  add a uint64_t element to a record
+*/
+static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_t v)
+{
+	struct ldb_message_element *el;
+
+	if (ldb_msg_find_element(msg, attr) != NULL) {
+		return 0;
+	}
+
+	if (ldb_msg_add_fmt(msg, attr, "%llu", v) != 0) {
+		return -1;
+	}
+
+	el = ldb_msg_find_element(msg, attr);
+	/* always set as replace. This works because on add ops, the flag
+	   is ignored */
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	return 0;
+}
+
 
 /*
   hook add record ops
@@ -292,6 +315,17 @@ static int operational_add(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(msg2);
 		return -1;
 	}
+
+	/* see if the backend can give us the USN */
+	if (module->ldb->sequence_number != NULL) {
+		uint64_t seq_num = module->ldb->sequence_number(module->ldb);
+		if (add_uint64_element(msg2, "uSNCreated", seq_num) != 0 ||
+		    add_uint64_element(msg2, "uSNChanged", seq_num) != 0) {
+			talloc_free(msg2);
+			return -1;
+		}
+	}
+
 	/* use the new structure for the call chain below this point */
 	req->op.add.message = msg2;
 	/* go on with the call chain */
@@ -326,6 +360,15 @@ static int operational_modify(struct ldb_module *module, struct ldb_request *req
 		talloc_free(msg2);
 		return -1;
 	}
+
+	/* update the records USN if possible */
+	if (module->ldb->sequence_number != NULL &&
+	    add_uint64_element(msg2, "uSNChanged", 
+			       module->ldb->sequence_number(module->ldb)) != 0) {
+		talloc_free(msg2);
+		return -1;
+	}
+
 	/* use the new structure for the call chain below this point */
 	req->op.mod.message = msg2;
 	/* go on with the call chain */
