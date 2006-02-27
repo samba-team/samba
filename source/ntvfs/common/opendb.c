@@ -258,7 +258,7 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dbuf.dptr = (char *)elist;
+	dbuf.dptr = (uint8_t *)elist;
 	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
 
 	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
@@ -307,7 +307,7 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dbuf.dptr = (char *)elist;
+	dbuf.dptr = (uint8_t *)elist;
 	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
 
 	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
@@ -495,7 +495,7 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 	int i, count;
 	struct odb_entry e;
 
-	kbuf.dptr = (char *)key->data;
+	kbuf.dptr = key->data;
 	kbuf.dsize = key->length;
 
 	dbuf = tdb_fetch(odb->w->tdb, kbuf);
