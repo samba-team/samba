@@ -22,6 +22,7 @@ fi
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
+rootsbindir="/sbin"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
 mandir="\${prefix}/man"
@@ -59,6 +60,22 @@ AC_ARG_WITH(privatedir,
   ;;
   * )
     privatedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set root sbin directory location
+AC_ARG_WITH(rootsbindir,
+[  --with-rootsbindir=DIR  Which directory to use for root sbin (/sbin)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-rootsbindir called without argument - will use default])
+  ;;
+  * )
+    rootsbindir="$withval"
     ;;
   esac])
 
@@ -201,6 +218,7 @@ AC_SUBST(privatedir)
 AC_SUBST(swatdir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
+AC_SUBST(rootsbindir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
@@ -242,6 +260,9 @@ AC_SUBST(SMBWRAPPER)
 AC_SUBST(SMBWRAP_OBJS)
 AC_SUBST(SMBWRAP_INC)
 AC_SUBST(EXTRA_BIN_PROGS)
+AC_SUBST(CIFSMOUNT_PROGS)
+AC_SUBST(INSTALL_CIFSMOUNT)
+AC_SUBST(UNINSTALL_CIFSMOUNT)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
 AC_SUBST(CONFIG_LIBS)
@@ -3567,6 +3588,46 @@ AC_ARG_WITH(smbmount,
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for mount- and umount.cifs support
+CIFSMOUNT_PROGS=""
+INSTALL_CIFSMOUNT=""
+UNINSTALL_CIFSMOUNT=""
+AC_MSG_CHECKING(whether to build mount.cifs and umount.cifs)
+AC_ARG_WITH(cifsmount,
+[  --with-cifsmount        Include mount.cifs and umount.cifs (Linux only) support (default=yes)],
+[ case "$withval" in
+  no)
+	AC_MSG_RESULT(no)
+	;;
+  *)
+	case "$host_os" in
+	*linux*)
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs and umount.cifs])
+		CIFSMOUNT_PROGS="bin/mount.cifs bin/umount.cifs"
+		INSTALL_CIFSMOUNT="installcifsmount"
+		UNINSTALL_CIFSMOUNT="uninstallcifsmount"
+		;;
+	*)
+		AC_MSG_ERROR(not on a linux system!)
+		;;
+	esac
+    ;;
+  esac ],
+[ case "$host_os" in
+  *linux*)
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs and umount.cifs])
+	CIFSMOUNT_PROGS="bin/mount.cifs bin/umount.cifs"
+	INSTALL_CIFSMOUNT="installcifsmount"
+	UNINSTALL_CIFSMOUNT="uninstallcifsmount"
+	;;
+  *)
+	AC_MSG_ERROR(not on a linux system!)
+	;;
+  esac ]
+)
 
 
 #################################################
