@@ -298,6 +298,27 @@ static NTSTATUS get_max_bad_attempts_from_lockout_policy(struct winbindd_domain 
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS get_pwd_properties(struct winbindd_domain *domain, 
+				   TALLOC_CTX *mem_ctx, 
+				   uint32 *password_properties)
+{
+	struct winbindd_methods *methods;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	SAM_UNK_INFO_1 password_policy;
+
+	*password_properties = 0;
+
+	methods = domain->methods;
+
+	status = methods->password_policy(domain, mem_ctx, &password_policy);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	*password_properties = password_policy.password_properties;
+
+	return NT_STATUS_OK;
+}
 
 static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx, 
 					const char *type,
@@ -789,22 +810,30 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			  "Won't be able to honour account lockout policies\n"));
 	}
 
-	if (max_allowed_bad_attempts == 0) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
 	/* increase counter */
-	if (my_info3->bad_pw_count < max_allowed_bad_attempts) {
-	
-		my_info3->bad_pw_count++;
+	my_info3->bad_pw_count++;
+
+	if (max_allowed_bad_attempts == 0) {
+		goto failed;
 	}
 
 	/* lockout user */
 	if (my_info3->bad_pw_count >= max_allowed_bad_attempts) {
 
-		my_info3->acct_flags |= ACB_AUTOLOCK;
+		uint32 password_properties;
+
+		result = get_pwd_properties(domain, state->mem_ctx, &password_properties);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("winbindd_dual_pam_auth_cached: failed to get password properties.\n"));
+		}
+
+		if ((my_info3->user_rid != DOMAIN_USER_RID_ADMIN) || 
+		    (password_properties & DOMAIN_LOCKOUT_ADMINS)) {
+			my_info3->acct_flags |= ACB_AUTOLOCK;
+		}
 	}
 
+failed:
 	result = winbindd_update_creds_by_info3(domain,
 						state->mem_ctx,
 						state->request.data.auth.user,
