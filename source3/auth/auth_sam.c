@@ -40,7 +40,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				DATA_BLOB *user_sess_key, 
 				DATA_BLOB *lm_sess_key)
 {
-	uint16 acct_ctrl;
+	uint32 acct_ctrl;
 	const uint8 *lm_pw, *nt_pw;
 	const char *username = pdb_get_username(sampass);
 
@@ -116,7 +116,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       struct samu *sampass, 
 			       const auth_usersupplied_info *user_info)
 {
-	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	uint32	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
 	time_t kickoff_time;
 	

@@ -29,7 +29,7 @@ static int testsam_debug_level = DBGC_ALL;
  Start enumeration of the passwd list.
 ****************************************************************/
 
-static NTSTATUS testsam_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
+static NTSTATUS testsam_setsampwent(struct pdb_methods *methods, BOOL update, uint32 acb_mask)
 {
 	DEBUG(10, ("testsam_setsampwent called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;

@@ -566,7 +566,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
-	uint16 acb_info;
+	uint32 acb_info;
 	uint32 unknown, user_rid;
 
 	if (argc != 1) {
@@ -5230,7 +5230,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	uint16 acb_info;
+	uint32 acb_info;
 	uint32 unknown, user_rid;
 
 	if (argc != 2) {

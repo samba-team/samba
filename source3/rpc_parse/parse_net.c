@@ -1424,7 +1424,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 			 
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, const DOM_GID *gids,
-			 uint32 user_flgs, uchar user_session_key[16],
+			 uint32 user_flgs, uint32 acct_flags,
+			 uchar user_session_key[16],
 			 uchar lm_session_key[16],
  			 const char *logon_srv, const char *logon_dom,
 			 const DOM_SID *dom_sid)
@@ -1466,6 +1467,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
+	usr->acct_flags = acct_flags;
 
 	if (user_session_key != NULL)
 		memcpy(usr->user_sess_key, user_session_key, sizeof(usr->user_sess_key));
@@ -1475,7 +1477,6 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
 	memset((char *)usr->lm_sess_key, '\0', sizeof(usr->lm_sess_key));
-	memset(&usr->acct_flags, '\0', sizeof(usr->acct_flags));
 
 	for (i=0; i<7; i++) {
 		memset(&usr->unknown[i], '\0', sizeof(usr->unknown));
@@ -1526,19 +1527,22 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	int lvl = 10;
 	DEBUG(lvl,("dump_acct_flags\n"));
 	if (acct_flags & ACB_NORMAL) {
-		DEBUGADD(lvl,("\taccount has UF_NORMAL_ACCOUNT\n"));
+		DEBUGADD(lvl,("\taccount has ACB_NORMAL\n"));
 	}
 	if (acct_flags & ACB_PWNOEXP) {
-		DEBUGADD(lvl,("\taccount has UF_DONT_EXPIRE_PASSWD\n"));
+		DEBUGADD(lvl,("\taccount has ACB_PWNOEXP\n"));
 	}
 	if (acct_flags & ACB_ENC_TXT_PWD_ALLOWED) {
-		DEBUGADD(lvl,("\taccount has UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED\n"));
+		DEBUGADD(lvl,("\taccount has ACB_ENC_TXT_PWD_ALLOWED\n"));
 	}
 	if (acct_flags & ACB_NOT_DELEGATED) {
-		DEBUGADD(lvl,("\taccount has UF_NOT_DELEGATED\n"));
+		DEBUGADD(lvl,("\taccount has ACB_NOT_DELEGATED\n"));
 	}
 	if (acct_flags & ACB_USE_DES_KEY_ONLY) {
-		DEBUGADD(lvl,("\taccount has UF_USE_DES_KEY_ONLY set, sig verify wont work\n"));
+		DEBUGADD(lvl,("\taccount has ACB_USE_DES_KEY_ONLY set, sig verify wont work\n"));
+	}
+	if (acct_flags & ACB_NO_AUTH_DATA_REQD) {
+		DEBUGADD(lvl,("\taccount has ACB_NO_AUTH_DATA_REQD set\n"));
 	}
 }
 

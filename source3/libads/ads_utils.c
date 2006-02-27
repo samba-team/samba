@@ -25,21 +25,28 @@
 /* 
 translated the ACB_CTRL Flags to UserFlags (userAccountControl) 
 */ 
-uint32 ads_acb2uf(uint16 acb)
+uint32 ads_acb2uf(uint32 acb)
 {
 	uint32 uf = 0x00000000;
 	
-	if (acb & ACB_DISABLED) 	uf |= UF_ACCOUNTDISABLE;
-	if (acb & ACB_HOMDIRREQ) 	uf |= UF_HOMEDIR_REQUIRED;
-	if (acb & ACB_PWNOTREQ) 	uf |= UF_PASSWD_NOTREQD;	
-	if (acb & ACB_TEMPDUP) 		uf |= UF_TEMP_DUPLICATE_ACCOUNT;	
-	if (acb & ACB_NORMAL)	 	uf |= UF_NORMAL_ACCOUNT;
-	if (acb & ACB_MNS) 		uf |= UF_MNS_LOGON_ACCOUNT;
-	if (acb & ACB_DOMTRUST) 	uf |= UF_INTERDOMAIN_TRUST_ACCOUNT;
-	if (acb & ACB_WSTRUST) 		uf |= UF_WORKSTATION_TRUST_ACCOUNT;
-	if (acb & ACB_SVRTRUST) 	uf |= UF_SERVER_TRUST_ACCOUNT;
-	if (acb & ACB_PWNOEXP) 		uf |= UF_DONT_EXPIRE_PASSWD;
-	if (acb & ACB_AUTOLOCK) 	uf |= UF_LOCKOUT;
+	if (acb & ACB_DISABLED) 		uf |= UF_ACCOUNTDISABLE;
+	if (acb & ACB_HOMDIRREQ) 		uf |= UF_HOMEDIR_REQUIRED;
+	if (acb & ACB_PWNOTREQ) 		uf |= UF_PASSWD_NOTREQD;	
+	if (acb & ACB_TEMPDUP) 			uf |= UF_TEMP_DUPLICATE_ACCOUNT;	
+	if (acb & ACB_NORMAL)	 		uf |= UF_NORMAL_ACCOUNT;
+	if (acb & ACB_MNS) 			uf |= UF_MNS_LOGON_ACCOUNT;
+	if (acb & ACB_DOMTRUST) 		uf |= UF_INTERDOMAIN_TRUST_ACCOUNT;
+	if (acb & ACB_WSTRUST) 			uf |= UF_WORKSTATION_TRUST_ACCOUNT;
+	if (acb & ACB_SVRTRUST) 		uf |= UF_SERVER_TRUST_ACCOUNT;
+	if (acb & ACB_PWNOEXP) 			uf |= UF_DONT_EXPIRE_PASSWD;
+	if (acb & ACB_AUTOLOCK) 		uf |= UF_LOCKOUT;
+	if (acb & ACB_USE_DES_KEY_ONLY)		uf |= UF_USE_DES_KEY_ONLY;
+	if (acb & ACB_SMARTCARD_REQUIRED)	uf |= UF_SMARTCARD_REQUIRED;
+	if (acb & ACB_TRUSTED_FOR_DELEGATION)	uf |= UF_TRUSTED_FOR_DELEGATION;
+	if (acb & ACB_DONT_REQUIRE_PREAUTH)	uf |= UF_DONT_REQUIRE_PREAUTH;
+	if (acb & ACB_NO_AUTH_DATA_REQD)	uf |= UF_NO_AUTH_DATA_REQUIRED;
+	if (acb & ACB_NOT_DELEGATED)		uf |= UF_NOT_DELEGATED;
+	if (acb & ACB_ENC_TXT_PWD_ALLOWED)	uf |= UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED;
 
 	return uf;
 }
@@ -47,9 +54,9 @@ uint32 ads_acb2uf(uint16 acb)
 /*
 translated the UserFlags (userAccountControl) to ACB_CTRL Flags
 */
-uint16 ads_uf2acb(uint32 uf)
+uint32 ads_uf2acb(uint32 uf)
 {
-	uint16 acb = 0x0000;
+	uint32 acb = 0x00000000;
 	
 	if (uf & UF_ACCOUNTDISABLE) 		acb |= ACB_DISABLED;
 	if (uf & UF_HOMEDIR_REQUIRED) 		acb |= ACB_HOMDIRREQ;
@@ -57,6 +64,13 @@ uint16 ads_uf2acb(uint32 uf)
 	if (uf & UF_MNS_LOGON_ACCOUNT) 		acb |= ACB_MNS;
 	if (uf & UF_DONT_EXPIRE_PASSWD)		acb |= ACB_PWNOEXP;
 	if (uf & UF_LOCKOUT) 			acb |= ACB_AUTOLOCK;
+	if (uf & UF_USE_DES_KEY_ONLY)		acb |= ACB_USE_DES_KEY_ONLY;
+	if (uf & UF_SMARTCARD_REQUIRED)		acb |= ACB_SMARTCARD_REQUIRED;
+	if (uf & UF_TRUSTED_FOR_DELEGATION)	acb |= ACB_TRUSTED_FOR_DELEGATION;
+	if (uf & UF_DONT_REQUIRE_PREAUTH)	acb |= ACB_DONT_REQUIRE_PREAUTH;
+	if (uf & UF_NO_AUTH_DATA_REQUIRED)	acb |= ACB_NO_AUTH_DATA_REQD;
+	if (uf & UF_NOT_DELEGATED)		acb |= ACB_NOT_DELEGATED;
+	if (uf & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED) acb |= ACB_ENC_TXT_PWD_ALLOWED;
 	
 	switch (uf & UF_ACCOUNT_TYPE_MASK)
 	{

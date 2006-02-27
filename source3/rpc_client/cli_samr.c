@@ -640,7 +640,7 @@ NTSTATUS rpccli_samr_query_groupmem(struct rpc_pipe_client *cli,
  **/
 
 NTSTATUS rpccli_samr_enum_dom_users(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 POLICY_HND *pol, uint32 *start_idx, uint16 acb_mask,
+                                 POLICY_HND *pol, uint32 *start_idx, uint32 acb_mask,
                                  uint32 size, char ***dom_users, uint32 **rids,
                                  uint32 *num_dom_users)
 {
@@ -661,7 +661,7 @@ NTSTATUS rpccli_samr_enum_dom_users(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	
 	/* Fill query structure with parameters */
 
-	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, 0, size);
+	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, size);
 	
 	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_ENUM_DOM_USERS,
 		q, r,
