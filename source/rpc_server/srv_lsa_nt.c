@@ -1535,17 +1535,23 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	 * I don't know if it's the right one. not documented.
 	 * but guessed with rpcclient.
 	 */
-	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
+	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION)) {
+		DEBUG(10, ("_lsa_create_account: No POLICY_GET_PRIVATE_INFORMATION access right!\n"));
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* check to see if the pipe_user is a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
 	   
-	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) {
+		DEBUG(10, ("_lsa_create_account: The use is not a Domain Admin, deny access!\n"));
 		return NT_STATUS_ACCESS_DENIED;
+	}
 		
-	if ( is_privileged_sid( &q_u->sid.sid ) )
+	if ( is_privileged_sid( &q_u->sid.sid ) ) {
+		DEBUG(10, ("_lsa_create_account: Policy account already exists!\n"));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
 
 	/* associate the user/group SID with the (unique) handle. */
 	
@@ -1560,6 +1566,7 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
+	DEBUG(10, ("_lsa_create_account: call privileges code to create an account\n"));
 	return privilege_create_account( &info->sid );
 }
 
