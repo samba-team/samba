@@ -179,7 +179,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 		char *s;
 		ssize_t len;
 		len = convert_string_talloc(mprMemCtx(), CH_UTF16, CH_UNIX, 
-					    blob->data, blob->length, &s);
+					    blob->data, blob->length, (void **)&s);
 		if (len == -1) {
 			ejsSetErrorMsg(eid, "regToVar invalid REG_SZ string");
 			return -1;
@@ -218,7 +218,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	case REG_MULTI_SZ: {
 		DATA_BLOB b = *blob;
-		char **list = NULL;
+		const char **list = NULL;
 		while (b.length > 0) {
 			char *s;
 			ssize_t len;
@@ -227,7 +227,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 				break;
 			}
 			len = convert_string_talloc(mprMemCtx(), CH_UTF16, CH_UNIX, 
-						    b.data, slen, &s);
+						    b.data, slen, (void **)&s);
 			if (len == -1) {
 				ejsSetErrorMsg(eid, "regToVar invalid REG_MULTI_SZ string");
 				return -1;
