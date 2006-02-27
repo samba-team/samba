@@ -1,3 +1,9 @@
+2006-02-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* doc/setup.texi: remove cartouches - we don't use them anywhere
+	else, they should be around the example, not inside it, and
+	probably shouldn't be used in html at all
+
 2006-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_warn.3: Document that applications want to use
