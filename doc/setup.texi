@@ -674,7 +674,6 @@ same set of encryption types. Remember to transfer the two keys in a
 safe manner.
 
 @example
-@cartouche
 vr$ klist
 Credentials cache: FILE:/tmp/krb5cc_913.console
         Principal: lha@@E.KTH.SE
@@ -702,7 +701,6 @@ May  3 13:55:52  May  3 23:55:54  krbtgt/E.KTH.SE@@E.KTH.SE
 May  3 13:55:56  May  3 23:55:54  krbtgt/SU.SE@@E.KTH.SE         
 May  3 14:10:54  May  3 23:55:54  host/hummel.it.su.se@@SU.SE    
 
-@end cartouche
 @end example
 
 @node Transit policy, Setting up DNS , Cross realm, Setting up a realm
@@ -722,12 +720,10 @@ know if one of the transited-realms changed the order of the list.
 The syntax for @code{[capaths]} section:
 
 @example
-@cartouche
 [capaths]
         CLIENT-REALM = @{
                 SERVER-REALM = PERMITTED-CROSS-REALMS ...
         @}
-@end cartouche
 @end example
 
 The realm @code{STACKEN.KTH.SE} allows clients from @code{SU.SE} and
@@ -737,7 +733,6 @@ has direct cross realm setup with @code{SU.SE} they need to use both
 @code{SU.SE} and @code{KTH.SE} as transit realms.
 
 @example
-@cartouche
 [capaths]
 	SU.SE = @{
                     STACKEN.KTH.SE = KTH.SE
@@ -746,7 +741,6 @@ has direct cross realm setup with @code{SU.SE} they need to use both
                     STACKEN.KTH.SE = SU.SE KTH.SE
 	@}
 
-@end cartouche
 @end example
 
 The order of the @code{PERMITTED-CROSS-REALMS} is not important when
