@@ -1161,7 +1161,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
 	   at module  initialization time */
 	   
 	if ( !tdbsam ) {
-		DEBUG(0,("tdbsam_getsampwrid: tdbsam not open!\n"));
+		DEBUG(0,("tdbsam_delete_sam_account: tdbsam not open!\n"));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -1179,7 +1179,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, struct
 	/* open the database */
 		
 	if ( !tdbsam_open( tdbsam_filename ) ) {
-		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n", tdbsam_filename));
+		DEBUG(0,("tdbsam_delete_sam_account: failed to open %s!\n", tdbsam_filename));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	
