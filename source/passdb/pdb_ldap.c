@@ -5223,7 +5223,6 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	LDAPMod **mods = NULL;
 	char *filter;
 	char *gidstr;
-	char *newgidstr;
 	const char *dn = NULL;
 	gid_t gid;
 	int rc;
@@ -5234,8 +5233,8 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 		DEBUG(0,("ldapsam_set_primary_group: failed to retieve gid from user's group SID!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	newgidstr = talloc_asprintf(mem_ctx, "%d", gid);
-	if (!newgidstr) {
+	gidstr = talloc_asprintf(mem_ctx, "%d", gid);
+	if (!gidstr) {
 		DEBUG(0,("ldapsam_set_primary_group: Out of Memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -5277,22 +5276,14 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* retrieve the current gid */
-	gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
-	if (!gidstr) {
-		DEBUG (0, ("ldapsam_set_primary_group: Unable to find the user's gid!\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	/* remove the old one, and add the new one, this way we do not risk races */
-	smbldap_set_mod(&mods, LDAP_MOD_DELETE, "gidNumber", gidstr);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", newgidstr);
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "gidNumber", gidstr);
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0,("ldapsam_set_primary_group: failed to modify [%s] primary group [%s] -> [%s]\n",
-			 pdb_get_username(sampass), gidstr, newgidstr));
+		DEBUG(0,("ldapsam_set_primary_group: failed to modify [%s] primary group to [%s]\n",
+			 pdb_get_username(sampass), gidstr));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
