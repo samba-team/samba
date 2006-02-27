@@ -5357,16 +5357,6 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
 	(*pdb_method)->new_rid = ldapsam_new_rid;
 
-	if (lp_parm_bool(-1, "ldapsam", "trusted", False) &&
-	    lp_parm_bool(-1, "ldapsam", "editposix", False)) {
-		(*pdb_method)->create_user = ldapsam_create_user;
-		(*pdb_method)->delete_user = ldapsam_delete_user;
-		(*pdb_method)->create_dom_group = ldapsam_create_dom_group;
-		(*pdb_method)->delete_dom_group = ldapsam_delete_dom_group;
-		(*pdb_method)->add_groupmem = ldapsam_add_groupmem;
-		(*pdb_method)->del_groupmem = ldapsam_del_groupmem;
-		(*pdb_method)->set_unix_primary_group = ldapsam_set_primary_group;
-	}
 	/* TODO: Setup private data and free */
 
 	if ( !(ldap_state = TALLOC_ZERO_P(*pdb_method, struct ldapsam_privates)) ) {
@@ -5475,6 +5465,16 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 			ldapsam_enum_group_memberships;
 		(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
 		(*pdb_method)->sid_to_id = ldapsam_sid_to_id;
+		
+		if (lp_parm_bool(-1, "ldapsam", "editposix", False)) {
+			(*pdb_method)->create_user = ldapsam_create_user;
+			(*pdb_method)->delete_user = ldapsam_delete_user;
+			(*pdb_method)->create_dom_group = ldapsam_create_dom_group;
+			(*pdb_method)->delete_dom_group = ldapsam_delete_dom_group;
+			(*pdb_method)->add_groupmem = ldapsam_add_groupmem;
+			(*pdb_method)->del_groupmem = ldapsam_del_groupmem;
+			(*pdb_method)->set_unix_primary_group = ldapsam_set_primary_group;
+		}
 	}
 
 	ldap_state = (*pdb_method)->private_data;
