@@ -342,9 +342,13 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 					TALLOC_CTX *tmp_ctx, const char *name,
 					uint32 acb_info, uint32 *rid)
 {
-	struct samu *sam_pass = NULL;
+	struct samu *sam_pass;
 	NTSTATUS status;
 	struct passwd *pwd;
+
+	if ((sam_pass = TALLOC_ZERO_P(tmp_ctx, struct samu)) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ( !(pwd = Get_Pwnam_alloc(tmp_ctx, name)) ) {
 		pstring add_script;
