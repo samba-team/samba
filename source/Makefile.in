@@ -59,6 +59,7 @@ BASEDIR= @prefix@
 BINDIR = @bindir@
 # sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
 SBINDIR = @sbindir@
+ROOTSBINDIR = @rootsbindir@
 LIBDIR = @libdir@
 VFSLIBDIR = $(LIBDIR)/vfs
 PDBLIBDIR = $(LIBDIR)/pdb
@@ -129,6 +130,8 @@ PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 # Note that all executable programs now provide for an optional executable suffix.
 
 SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
+
+ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
 
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
@@ -591,6 +594,10 @@ MNT_OBJ = client/smbmnt.o lib/replace.o $(VERSION_OBJ) $(SNPRINTF_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o
 
+CIFS_MOUNT_OBJ = client/mount.cifs.o
+
+CIFS_UMOUNT_OBJ = client/umount.cifs.o
+
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) \
                $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ) 
 
@@ -756,8 +763,8 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-	$(MODULES) @EXTRA_ALL_TARGETS@
+all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
+	$(SHLIBS) $(MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -828,7 +835,7 @@ MAKEDIR = || exec false; \
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $< \
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(MY_FLAGS) @PIE_CFLAGS@ -c $< \
 	  -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
@@ -950,6 +957,14 @@ bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
 bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
+
+bin/mount.cifs@EXEEXT@: $(CIFS_MOUNT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CIFS_MOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
+
+bin/umount.cifs@EXEEXT@: $(CIFS_UMOUNT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS)
 
 bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1401,7 +1416,7 @@ bin/t_push_ucs2@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_push_ucs2.o
 
 bin/t_snprintf@EXEEXT@: lib/snprintf.c
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) -DTEST_SNPRINTF lib/snprintf.c -lm
-install: installservers installbin installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
+install: installservers installbin @INSTALL_CIFSMOUNT@ installman installscripts installdat installswat installmodules @INSTALL_LIBSMBCLIENT@ @INSTALL_LIBMSRPC@
 
 install-everything: install installmodules
 
@@ -1422,6 +1437,9 @@ installservers: all installdirs
 installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(BINDIR) $(BIN_PROGS)
 
+installcifsmount: @CIFSMOUNT_PROGS@
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 # Some symlinks are required for the 'probing' of modules. 
 # This mechanism should go at some point..
@@ -1520,7 +1538,7 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@
+uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_LIBMSRPC@
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
@@ -1530,6 +1548,9 @@ uninstallservers:
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(BINDIR) $(BIN_PROGS)
+
+uninstallcifsmount:
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR) $(ROOTSBINDIR) @CIFSMOUNT_PROGS@
 
 uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR) $(BASEDIR) $(VFSLIBDIR) $(VFS_MODULES)
@@ -1566,7 +1587,7 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
-		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) \
+		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) $(MODULES) \
 		$(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBSMBSHAREMODES) \
 		$(EVERYTHING_PROGS) $(LIBMSRPC) .headers.stamp 
 	-rm -rf t_dir
