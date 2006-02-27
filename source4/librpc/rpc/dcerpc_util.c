@@ -961,7 +961,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx, 
 			       struct dcerpc_pipe **pp, 
 			       struct dcerpc_binding *binding,
-				   const struct dcerpc_interface_table *table,
+			       const struct dcerpc_interface_table *table,
 			       struct cli_credentials *credentials,
 			       struct event_context *ev)
 {
