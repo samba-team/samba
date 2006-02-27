@@ -1016,12 +1016,12 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				    pdb_get_pass_last_set_time(sampw),
 				    pdb_get_pass_can_change_time(sampw),
 				    pdb_get_pass_must_change_time(sampw),
-				    
 				    0, /* logon_count */
 				    0, /* bad_pw_count */
 				    num_gids,    /* uint32 num_groups */
 				    gids    , /* DOM_GID *gids */
-				    0x20    , /* uint32 user_flgs (?) */
+				    LOGON_EXTRA_SIDS, /* uint32 user_flgs (?) */
+				    pdb_get_acct_ctrl(sampw),
 				    server_info->user_session_key.length ? user_session_key : NULL,
 				    server_info->lm_session_key.length ? lm_session_key : NULL,
 				    my_name     , /* char *logon_srv */

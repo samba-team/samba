@@ -467,7 +467,7 @@ static PyObject *samr_create_dom_user(PyObject *self, PyObject *args,
 	uint32 user_rid;
 	PyObject *result = NULL;
 	TALLOC_CTX *mem_ctx;
-	uint16 acb_info = ACB_NORMAL;
+	uint32 acb_info = ACB_NORMAL;
 	POLICY_HND user_pol;
 	
 	if (!PyArg_ParseTupleAndKeywords(

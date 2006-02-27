@@ -1761,7 +1761,7 @@ struct SamEnumUsers {
       POLICY_HND *dom_hnd;
 
       /**Enumerate users with specific ACB. If 0, all users will be enumerated*/
-      uint16 acb_mask;
+      uint32 acb_mask;
    } in;
 
    struct {

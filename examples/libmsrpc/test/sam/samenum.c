@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
             eu.in.dom_hnd = sod.out.dom_hnd;
             
             printf("ACB mask (can be 0): ");
-            scanf("%hx", &eu.in.acb_mask);
+            scanf("%x", &eu.in.acb_mask);
 
             while(cac_SamEnumUsers(hnd, mem_ctx, &eu)) {
                printf("Enumerated %d users:\n", eu.out.num_users);

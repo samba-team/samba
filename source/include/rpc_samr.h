@@ -743,8 +743,7 @@ typedef struct q_samr_enum_dom_users_info
 	POLICY_HND pol;          /* policy handle */
 
 	uint32 start_idx;   /* number of values (0 indicates unlimited?) */
-	uint16 acb_mask;          /* 0x0000 indicates all */
-	uint16 unknown_1;         /* 0x0000 */
+	uint32 acb_mask;          /* 0x0000 indicates all */
 
 	uint32 max_size;              /* 0x0000 ffff */
 
@@ -847,7 +846,7 @@ typedef struct samr_entry_info1
 	uint32 user_idx;
 
 	uint32 rid_user;
-	uint16 acb_info;
+	uint32 acb_info;
 
 	UNIHDR hdr_acct_name;
 	UNIHDR hdr_user_name;
@@ -878,7 +877,7 @@ typedef struct samr_entry_info2
 	uint32 user_idx;
 
 	uint32 rid_user;
-	uint16 acb_info;
+	uint32 acb_info;
 
 	UNIHDR hdr_srv_name;
 	UNIHDR hdr_srv_desc;

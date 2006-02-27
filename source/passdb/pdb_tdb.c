@@ -38,7 +38,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#define TDBSAM_VERSION	2	/* Most recent TDBSAM version */
+#define TDBSAM_VERSION	3	/* Most recent TDBSAM version */
 #define TDBSAM_VERSION_STRING	"INFO/version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
@@ -64,6 +64,7 @@ static pstring tdbsam_filename;
 
 #define TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd"
 #define TDB_FORMAT_STRING_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd"
+#define TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 
 /*********************************************************************
 *********************************************************************/
@@ -432,13 +433,243 @@ done:
 	return ret;
 }
 
+BOOL init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen)
+{
+
+	/* times are stored as 32bit integer
+	   take care on system with 64bit wide time_t
+	   --SSS */
+	uint32	logon_time,
+		logoff_time,
+		kickoff_time,
+		bad_password_time,
+		pass_last_set_time,
+		pass_can_change_time,
+		pass_must_change_time;
+	char *username = NULL;
+	char *domain = NULL;
+	char *nt_username = NULL;
+	char *dir_drive = NULL;
+	char *unknown_str = NULL;
+	char *munged_dial = NULL;
+	char *fullname = NULL;
+	char *homedir = NULL;
+	char *logon_script = NULL;
+	char *profile_path = NULL;
+	char *acct_desc = NULL;
+	char *workstations = NULL;
+	uint32	username_len, domain_len, nt_username_len,
+		dir_drive_len, unknown_str_len, munged_dial_len,
+		fullname_len, homedir_len, logon_script_len,
+		profile_path_len, acct_desc_len, workstations_len;
+		
+	uint32	user_rid, group_rid, hours_len, unknown_6;
+	uint16	acct_ctrl, logon_divs;
+	uint16	bad_password_count, logon_count;
+	uint8	*hours = NULL;
+	uint8	*lm_pw_ptr = NULL, *nt_pw_ptr = NULL, *nt_pw_hist_ptr = NULL;
+	uint32		len = 0;
+	uint32		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
+	uint32 pwHistLen = 0;
+	BOOL ret = True;
+	fstring tmpstring;
+	BOOL expand_explicit = lp_passdb_expand_explicit();
+	
+	if(sampass == NULL || buf == NULL) {
+		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
+		return False;
+	}
+									
+/* TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd" */
+
+	/* unpack the buffer into variables */
+	len = tdb_unpack ((char *)buf, buflen, TDB_FORMAT_STRING_V2,
+		&logon_time,						/* d */
+		&logoff_time,						/* d */
+		&kickoff_time,						/* d */
+		&bad_password_time,					/* d */
+		&pass_last_set_time,					/* d */
+		&pass_can_change_time,					/* d */
+		&pass_must_change_time,					/* d */
+		&username_len, &username,				/* B */
+		&domain_len, &domain,					/* B */
+		&nt_username_len, &nt_username,				/* B */
+		&fullname_len, &fullname,				/* B */
+		&homedir_len, &homedir,					/* B */
+		&dir_drive_len, &dir_drive,				/* B */
+		&logon_script_len, &logon_script,			/* B */
+		&profile_path_len, &profile_path,			/* B */
+		&acct_desc_len, &acct_desc,				/* B */
+		&workstations_len, &workstations,			/* B */
+		&unknown_str_len, &unknown_str,				/* B */
+		&munged_dial_len, &munged_dial,				/* B */
+		&user_rid,						/* d */
+		&group_rid,						/* d */
+		&lm_pw_len, &lm_pw_ptr,					/* B */
+		&nt_pw_len, &nt_pw_ptr,					/* B */
+		/* Change from V1 is addition of password history field. */
+		&nt_pw_hist_len, &nt_pw_hist_ptr,			/* B */
+		&acct_ctrl,						/* w */
+		/* Also "remove_me" field was removed. */
+		&logon_divs,						/* w */
+		&hours_len,						/* d */
+		&hourslen, &hours,					/* B */
+		&bad_password_count,					/* w */
+		&logon_count,						/* w */
+		&unknown_6);						/* d */
+		
+	if (len == (uint32) -1)  {
+		ret = False;
+		goto done;
+	}
+
+	pdb_set_logon_time(sampass, logon_time, PDB_SET);
+	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
+	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
+	pdb_set_bad_password_time(sampass, bad_password_time, PDB_SET);
+	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
+	pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
+	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
+
+	pdb_set_username(sampass, username, PDB_SET); 
+	pdb_set_domain(sampass, domain, PDB_SET);
+	pdb_set_nt_username(sampass, nt_username, PDB_SET);
+	pdb_set_fullname(sampass, fullname, PDB_SET);
+
+	if (homedir) {
+		fstrcpy( tmpstring, homedir );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
+		pdb_set_homedir(sampass, tmpstring, PDB_SET);
+	}
+	else {
+		pdb_set_homedir(sampass, 
+			talloc_sub_basic(sampass, username, lp_logon_home()),
+			PDB_DEFAULT);
+	}
+
+	if (dir_drive) 	
+		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
+	else
+		pdb_set_dir_drive(sampass, lp_logon_drive(), PDB_DEFAULT );
+
+	if (logon_script) {
+		fstrcpy( tmpstring, logon_script );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
+		pdb_set_logon_script(sampass, tmpstring, PDB_SET);
+	}
+	else {
+		pdb_set_logon_script(sampass, 
+			talloc_sub_basic(sampass, username, lp_logon_script()),
+			PDB_DEFAULT);
+	}
+	
+	if (profile_path) {	
+		fstrcpy( tmpstring, profile_path );
+		if (expand_explicit) {
+			standard_sub_basic( username, tmpstring,
+					    sizeof(tmpstring) );
+		}
+		pdb_set_profile_path(sampass, tmpstring, PDB_SET);
+	} 
+	else {
+		pdb_set_profile_path(sampass, 
+			talloc_sub_basic(sampass, username, lp_logon_path()),
+			PDB_DEFAULT);
+	}
+
+	pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
+	pdb_set_workstations(sampass, workstations, PDB_SET);
+	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
+
+	if (lm_pw_ptr && lm_pw_len == LM_HASH_LEN) {
+		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr, PDB_SET)) {
+			ret = False;
+			goto done;
+		}
+	}
+
+	if (nt_pw_ptr && nt_pw_len == NT_HASH_LEN) {
+		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr, PDB_SET)) {
+			ret = False;
+			goto done;
+		}
+	}
+
+	/* Change from V1 is addition of password history field. */
+	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+	if (pwHistLen) {
+		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		if (!pw_hist) {
+			ret = False;
+			goto done;
+		}
+		memset(pw_hist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
+		if (nt_pw_hist_ptr && nt_pw_hist_len) {
+			int i;
+			SMB_ASSERT((nt_pw_hist_len % PW_HISTORY_ENTRY_LEN) == 0);
+			nt_pw_hist_len /= PW_HISTORY_ENTRY_LEN;
+			for (i = 0; (i < pwHistLen) && (i < nt_pw_hist_len); i++) {
+				memcpy(&pw_hist[i*PW_HISTORY_ENTRY_LEN],
+					&nt_pw_hist_ptr[i*PW_HISTORY_ENTRY_LEN],
+					PW_HISTORY_ENTRY_LEN);
+			}
+		}
+		if (!pdb_set_pw_history(sampass, pw_hist, pwHistLen, PDB_SET)) {
+			SAFE_FREE(pw_hist);
+			ret = False;
+			goto done;
+		}
+		SAFE_FREE(pw_hist);
+	} else {
+		pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
+	}
+
+	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
+	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
+	pdb_set_hours_len(sampass, hours_len, PDB_SET);
+	pdb_set_bad_password_count(sampass, bad_password_count, PDB_SET);
+	pdb_set_logon_count(sampass, logon_count, PDB_SET);
+	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
+	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
+	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
+	pdb_set_hours(sampass, hours, PDB_SET);
+
+done:
+
+	SAFE_FREE(username);
+	SAFE_FREE(domain);
+	SAFE_FREE(nt_username);
+	SAFE_FREE(fullname);
+	SAFE_FREE(homedir);
+	SAFE_FREE(dir_drive);
+	SAFE_FREE(logon_script);
+	SAFE_FREE(profile_path);
+	SAFE_FREE(acct_desc);
+	SAFE_FREE(workstations);
+	SAFE_FREE(munged_dial);
+	SAFE_FREE(unknown_str);
+	SAFE_FREE(lm_pw_ptr);
+	SAFE_FREE(nt_pw_ptr);
+	SAFE_FREE(nt_pw_hist_ptr);
+	SAFE_FREE(hours);
+
+	return ret;
+}
+
+
 /**********************************************************************
  Intialize a struct samu struct from a BYTE buffer of size len
  *********************************************************************/
 
 static BOOL init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen)
 {
-	return init_sam_from_buffer_v2(sampass, buf, buflen);
+	return init_sam_from_buffer_v3(sampass, buf, buflen);
 }
 
 /**********************************************************************
@@ -447,7 +678,7 @@ static BOOL init_sam_from_buffer(struct samu *sampass, uint8 *buf, uint32 buflen
 
 static uint32 init_buffer_from_sam (uint8 **buf, struct samu *sampass, BOOL size_only)
 {
-	return init_buffer_from_sam_v2(buf, sampass, size_only);
+	return init_buffer_from_sam_v3(buf, sampass, size_only);
 }
 
 /**********************************************************************
@@ -504,6 +735,9 @@ static BOOL tdbsam_convert(int32 from)
 					break;
 				case 2:
 					ret = init_sam_from_buffer_v2(user, (uint8 *)data.dptr, data.dsize);
+					break;
+				case 3:
+					ret = init_sam_from_buffer_v3(user, (uint8 *)data.dptr, data.dsize);
 					break;
 				default:
 					/* unknown tdbsam version */
@@ -677,7 +911,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
  Save a list of user keys for iteration.
 ****************************************************************/
 
-static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint16 acb_mask)
+static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update, uint32 acb_mask)
 {
 	if ( !tdbsam_open( tdbsam_filename ) ) {
 		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n", tdbsam_filename));
