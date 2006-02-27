@@ -861,7 +861,7 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 				pass = False;
 			}
 		} else {
-			static const char zeros[8];
+			static const uint8_t zeros[8];
 			if (memcmp(zeros, lm_session_key, 
 				   sizeof(lm_session_key)) != 0) {
 				printf("LM Session Key does not match expectations (zeros)!\n");
@@ -1111,7 +1111,7 @@ static BOOL test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 			pass = False;
 		}
 	} else {
-		static const char zeros[8];
+		static const uint8_t zeros[8];
 		if (memcmp(zeros, lm_key, 
 			   sizeof(lm_key)) != 0) {
 			printf("LM Session Key does not match expectations (zeros)!\n");
