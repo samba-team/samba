@@ -23,7 +23,7 @@ somewhat useful.
 * Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC::  
 * Create account mappings::     
 * Encryption types::            
-* Authorization data::          
+* Authorisation data::          
 * Quirks of Windows 2000 KDC::  
 * Useful links when reading about the Windows 2000::  
 @end menu
@@ -194,7 +194,7 @@ This adds @samp{authorizationNames} entry to the users LDAP entry to
 the Active Directory LDAP catalog. When you create users by script you
 can add this entry instead.
 
-@node Encryption types, Authorization data, Create account mappings, Windows 2000 compatability
+@node Encryption types, Authorisation data, Create account mappings, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
 @section Encryption types
 
@@ -206,11 +206,11 @@ MD4 and DES keys.  Users that are converted from a NT4 database, will
 only have MD4 passwords and will need a password change to get a DES
 key.
 
-@node Authorization data, Quirks of Windows 2000 KDC, Encryption types, Windows 2000 compatability
+@node Authorisation data, Quirks of Windows 2000 KDC, Encryption types, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
-@section Authorization data
+@section Authorisation data
 
-The Windows 2000 KDC also adds extra authorization data in tickets.
+The Windows 2000 KDC also adds extra authorisation data in tickets.
 It is at this point unclear what triggers it to do this.  The format of
 this data is only available under a ``secret'' license from Microsoft,
 which prohibits you implementing it.
@@ -228,13 +228,13 @@ database.  Make sure it has a DES key.
 keytab.
 @item Run @kbd{appl/test/nt_gss_server -p 2000 -s authsamp
 --dump-auth=@var{file}} where @var{file} is an appropriate file.
-@item It should authenticate and dump for you the authorization data in
+@item It should authenticate and dump for you the authorisation data in
 the file.
 @item The tool @kbd{lib/asn1/asn1_print} is somewhat useful for
-analyzing the data.
+analysing the data.
 @end enumerate
 
-@node Quirks of Windows 2000 KDC, Useful links when reading about the Windows 2000, Authorization data, Windows 2000 compatability
+@node Quirks of Windows 2000 KDC, Useful links when reading about the Windows 2000, Authorisation data, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
 @section Quirks of Windows 2000 KDC
 
@@ -270,7 +270,7 @@ unsupported types are generated.
 @comment  node-name,  next,  previous,  up
 @section Useful links when reading about the Windows 2000
 
-See also our paper presented at the 2001 usenix Annual Technical
+See also our paper presented at the 2001 Usenix Annual Technical
 Conference, available in the proceedings or at
 @uref{http://www.usenix.org/publications/library/proceedings/usenix01/freenix01/westerlund.html}.
 
@@ -300,7 +300,7 @@ Links to useful other links.
 
 @item Event logging for Kerberos:
 @uref{http://support.microsoft.com/support/kb/articles/Q262/1/77.ASP}.
-Basicly it say that you can add a registry key
+Basically it say that you can add a registry key
 @code{HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters\LogLevel}
 with value DWORD equal to 1, and then you'll get logging in the Event
 Logger.
