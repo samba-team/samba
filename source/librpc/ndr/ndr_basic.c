@@ -197,12 +197,13 @@ NTSTATUS ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
 */
 NTSTATUS ndr_pull_pointer(struct ndr_pull *ndr, int ndr_flags, void* *v)
 {
-	uint64_t h;
-	NTSTATUS status;
-	NDR_PULL_ALIGN(ndr, 8);
-	status = ndr_pull_udlong(ndr, ndr_flags, &h);
-	*v = (void *)((intptr_t)h);
-	return status;	
+	intptr_t h;
+	NDR_PULL_ALIGN(ndr, sizeof(h));
+	NDR_PULL_NEED_BYTES(ndr, sizeof(h));
+	memcpy(&h, ndr->data+ndr->offset, sizeof(h));
+	ndr->offset += sizeof(h);
+	*v = (void *)h;
+	return NT_STATUS_OK;	
 }
 
 /*
@@ -393,8 +394,12 @@ NTSTATUS ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 */
 NTSTATUS ndr_push_pointer(struct ndr_push *ndr, int ndr_flags, void* v)
 {
-	NDR_PUSH_ALIGN(ndr, 8);
-	return ndr_push_udlong(ndr, NDR_SCALARS, (intptr_t)v);
+	intptr_t h = (intptr_t)v;
+	NDR_PUSH_ALIGN(ndr, sizeof(h));
+	NDR_PUSH_NEED_BYTES(ndr, sizeof(h));
+	memcpy(ndr->data+ndr->offset, &h, sizeof(h));
+	ndr->offset += sizeof(h);
+	return NT_STATUS_OK;	
 }
 
 NTSTATUS ndr_push_align(struct ndr_push *ndr, size_t size)
