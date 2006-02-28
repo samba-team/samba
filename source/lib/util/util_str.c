@@ -983,10 +983,10 @@ size_t valgrind_strlen(const char *s)
 #endif
 
 
-/*
+/**
   format a string into length-prefixed dotted domain format, as used in NBT
   and in some ADS structures
-*/
+**/
 const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 {
 	char *ret;
@@ -1036,9 +1036,9 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 
 
 
-/*
+/**
   varient of strcmp() that handles NULL ptrs
-*/
+**/
 int strcmp_safe(const char *s1, const char *s2)
 {
 	if (s1 == s2) {
@@ -1051,11 +1051,11 @@ int strcmp_safe(const char *s1, const char *s2)
 }
 
 
-/*******************************************************************
+/**
 return the number of bytes occupied by a buffer in ASCII format
 the result includes the null termination
 limited by 'n' bytes
-********************************************************************/
+**/
 size_t ascii_len_n(const char *src, size_t n)
 {
 	size_t len;
@@ -1069,9 +1069,9 @@ size_t ascii_len_n(const char *src, size_t n)
 }
 
 
-/*******************************************************************
+/**
  Return a string representing a CIFS attribute for a file.
-********************************************************************/
+**/
 char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 {
 	int i, len;
@@ -1113,11 +1113,11 @@ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 	return ret;
 }
 
-/***************************************************************************
+/**
  Set a boolean variable from the text value stored in the passed string.
  Returns True in success, False if the passed string does not correctly 
  represent a boolean.
-***************************************************************************/
+**/
 
 BOOL set_boolean(const char *boolean_string, BOOL *boolean)
 {
@@ -1155,7 +1155,9 @@ BOOL conv_str_bool(const char * str, BOOL * val)
 	return True;
 }
 
-/* Convert a size specification like 16K into an integral number of bytes. */
+/**
+ * Convert a size specification like 16K into an integral number of bytes. 
+ **/
 BOOL conv_str_size(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;

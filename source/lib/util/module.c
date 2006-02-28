@@ -18,6 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/**
+ * @file
+ * @brief Module initialization function handling
+ */
+
 #include "includes.h"
 #include "system/dir.h"
 

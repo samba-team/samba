@@ -22,6 +22,11 @@
 #include "includes.h"
 #include "system/wait.h"
 
+/**
+ * @file
+ * @brief Signal handling
+ */
+
 /****************************************************************************
  Catch child exits and reap the child zombie status.
 ****************************************************************************/
@@ -61,9 +66,9 @@ static void sig_cld_leave_status(int signum)
 #endif
 }
 
-/*******************************************************************
+/**
  Block sigs.
-********************************************************************/
+**/
 
 void BlockSignals(BOOL block,int signum)
 {
@@ -88,12 +93,12 @@ void BlockSignals(BOOL block,int signum)
 #endif
 }
 
-/*******************************************************************
+/**
  Catch a signal. This should implement the following semantics:
 
  1) The handler remains installed after being called.
  2) The signal should be blocked during handler execution.
-********************************************************************/
+**/
 
 void (*CatchSignal(int signum,void (*handler)(int )))(int)
 {
@@ -121,18 +126,18 @@ void (*CatchSignal(int signum,void (*handler)(int )))(int)
 #endif
 }
 
-/*******************************************************************
+/**
  Ignore SIGCLD via whatever means is necessary for this OS.
-********************************************************************/
+**/
 
 void CatchChild(void)
 {
 	CatchSignal(SIGCLD, sig_cld);
 }
 
-/*******************************************************************
+/**
  Catch SIGCLD but leave the child around so it's status can be reaped.
-********************************************************************/
+**/
 
 void CatchChildLeaveStatus(void)
 {

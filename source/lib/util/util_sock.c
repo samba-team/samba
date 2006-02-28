@@ -22,6 +22,11 @@
 #include "includes.h"
 #include "system/network.h"
 
+/**
+ * @file
+ * @brief Socket utility functions
+ */
+
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
 static const struct {
@@ -67,9 +72,9 @@ static const struct {
   {NULL,0,0,0,0}};
 
 
-/****************************************************************************
+/**
  Set user socket options.
-****************************************************************************/
+**/
 void set_socket_options(int fd, const char *options)
 {
 	const char **options_list = str_list_make(NULL, options, " \t,");

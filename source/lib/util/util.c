@@ -28,10 +28,15 @@
 #include "system/iconv.h"
 #include "system/filesys.h"
 
-/***************************************************************************
+/**
+ * @file
+ * @brief Misc utility functions
+ */
+
+/**
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
-****************************************************************************/
+**/
 const char *tmpdir(void)
 {
 	char *p;
@@ -41,9 +46,9 @@ const char *tmpdir(void)
 }
 
 
-/*******************************************************************
+/**
  Check if a file exists - call vfs_file_exist for samba files.
-********************************************************************/
+**/
 BOOL file_exist(const char *fname)
 {
 	struct stat st;
@@ -55,9 +60,9 @@ BOOL file_exist(const char *fname)
 	return ((S_ISREG(st.st_mode)) || (S_ISFIFO(st.st_mode)));
 }
 
-/*******************************************************************
+/**
  Check a files mod time.
-********************************************************************/
+**/
 
 time_t file_modtime(const char *fname)
 {
@@ -69,9 +74,9 @@ time_t file_modtime(const char *fname)
 	return(st.st_mtime);
 }
 
-/*******************************************************************
+/**
  Check if a directory exists.
-********************************************************************/
+**/
 
 BOOL directory_exist(const char *dname)
 {
@@ -167,12 +172,12 @@ static void close_low_fds(BOOL stderr_too)
 #endif
 }
 
-/****************************************************************************
+/**
  Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
  else
   if SYSV use O_NDELAY
   if BSD use FNDELAY
-****************************************************************************/
+**/
 
 int set_blocking(int fd, BOOL set)
 {
@@ -198,9 +203,9 @@ int set_blocking(int fd, BOOL set)
 }
 
 
-/*******************************************************************
+/**
  Sleep for a specified number of milliseconds.
-********************************************************************/
+**/
 
 void msleep(uint_t t)
 {
@@ -213,9 +218,9 @@ void msleep(uint_t t)
 	select(0,NULL,NULL,NULL,&tval);
 }
 
-/****************************************************************************
+/**
  Become a daemon, discarding the controlling terminal.
-****************************************************************************/
+**/
 
 void become_daemon(BOOL Fork)
 {
@@ -244,11 +249,11 @@ void become_daemon(BOOL Fork)
 }
 
 
-/****************************************************************************
+/**
  Free memory, checks for NULL.
  Use directly SAFE_FREE()
  Exists only because we need to pass a function pointer somewhere --SSS
-****************************************************************************/
+**/
 
 void safe_free(void *p)
 {
@@ -256,7 +261,7 @@ void safe_free(void *p)
 }
 
 
-/*
+/**
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
 */
@@ -280,9 +285,9 @@ BOOL is_myname(const char *name)
 }
 
 
-/****************************************************************************
+/**
  Get my own name, return in malloc'ed storage.
-****************************************************************************/
+**/
 
 char* get_myname(void)
 {
@@ -311,9 +316,9 @@ char* get_myname(void)
 	return hostname;
 }
 
-/****************************************************************************
+/**
  Return true if a string could be a pure IP address.
-****************************************************************************/
+**/
 
 BOOL is_ipaddress(const char *str)
 {
@@ -330,9 +335,9 @@ BOOL is_ipaddress(const char *str)
 	return pure_address;
 }
 
-/****************************************************************************
+/**
  Interpret an internet address or name into an IP address in 4 byte form.
-****************************************************************************/
+**/
 uint32_t interpret_addr(const char *str)
 {
 	struct hostent *hp;
@@ -375,9 +380,9 @@ uint32_t interpret_addr(const char *str)
 	return(res);
 }
 
-/*******************************************************************
+/**
  A convenient addition to interpret_addr().
-******************************************************************/
+**/
 struct ipv4_addr interpret_addr2(const char *str)
 {
 	struct ipv4_addr ret;
@@ -386,18 +391,18 @@ struct ipv4_addr interpret_addr2(const char *str)
 	return ret;
 }
 
-/*******************************************************************
+/**
  Check if an IP is the 0.0.0.0.
-******************************************************************/
+**/
 
 BOOL is_zero_ip(struct ipv4_addr ip)
 {
 	return ip.addr == 0;
 }
 
-/*******************************************************************
+/**
  Are two IPs on the same subnet?
-********************************************************************/
+**/
 
 BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
 {
@@ -411,9 +416,9 @@ BOOL same_net(struct ipv4_addr ip1,struct ipv4_addr ip2,struct ipv4_addr mask)
 }
 
 
-/****************************************************************************
+/**
  Check if a process exists. Does this work on all unixes?
-****************************************************************************/
+**/
 
 BOOL process_exists(pid_t pid)
 {
@@ -423,10 +428,10 @@ BOOL process_exists(pid_t pid)
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
-/****************************************************************************
+/**
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
-****************************************************************************/
+**/
 
 BOOL fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 {
@@ -513,9 +518,9 @@ void dump_data(int level, const uint8_t *buf,int len)
 	}	
 }
 
-/*****************************************************************
+/**
  malloc that aborts with smb_panic on fail or zero size.
- *****************************************************************/  
+**/
 
 void *smb_xmalloc(size_t size)
 {
@@ -552,9 +557,9 @@ char *smb_xstrdup(const char *s)
 }
 
 
-/*****************************************************************
+/**
  Like strdup but for memory.
-*****************************************************************/  
+**/
 
 void *memdup(const void *p, size_t size)
 {
@@ -568,9 +573,9 @@ void *memdup(const void *p, size_t size)
 	return p2;
 }
 
-/*****************************************************************
+/**
  A useful function for returning a path in the Samba lock directory.
-*****************************************************************/  
+**/
 char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
@@ -596,9 +601,9 @@ char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 }
 
 
-/*****************************************************************
+/**
  A useful function for returning a path in the Samba piddir directory.
-*****************************************************************/  
+**/
 static char *pid_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname, *dname;
@@ -654,7 +659,7 @@ char *private_path(TALLOC_CTX* mem_ctx, const char *name)
 	return fname;
 }
 
-/*
+/**
   return a path in the smbd.tmp directory, where all temporary file
   for smbd go. If NULL is passed for name then return the directory 
   path itself
@@ -707,8 +712,10 @@ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 }
 
 
-/* see if a range of memory is all zero. A NULL pointer is considered
-   to be all zero */
+/**
+ * see if a range of memory is all zero. A NULL pointer is considered
+ * to be all zero 
+ */
 BOOL all_zero(const uint8_t *ptr, uint_t size)
 {
 	int i;
@@ -719,7 +726,7 @@ BOOL all_zero(const uint8_t *ptr, uint_t size)
 	return True;
 }
 
-/*
+/**
   realloc an array, checking for integer overflow in the array size
 */
 void *realloc_array(void *ptr, size_t el_size, unsigned count)
