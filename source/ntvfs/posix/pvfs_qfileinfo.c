@@ -185,7 +185,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 	case RAW_FILEINFO_STANDARD_INFORMATION:
 		info->standard_info.out.alloc_size     = name->dos.alloc_size;
 		info->standard_info.out.size           = name->st.st_size;
-		info->standard_info.out.nlink          = name->st.st_nlink;
+		info->standard_info.out.nlink          = name->dos.nlink;
 		info->standard_info.out.delete_pending = 0;
 		info->standard_info.out.directory   = 
 			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
@@ -210,7 +210,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		info->all_info.out.attrib         = name->dos.attrib;
 		info->all_info.out.alloc_size     = name->dos.alloc_size;
 		info->all_info.out.size           = name->st.st_size;
-		info->all_info.out.nlink          = name->st.st_nlink;
+		info->all_info.out.nlink          = name->dos.nlink;
 		info->all_info.out.delete_pending = 0;
 		info->all_info.out.directory      = 
 			(name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)? 1 : 0;
@@ -298,6 +298,11 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	status = pvfs_can_stat(pvfs, req, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_DELETE_PENDING;
+	}
+
 	status = pvfs_access_check_simple(pvfs, req, name, 
 					  pvfs_fileinfo_access(info->generic.level));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -345,7 +350,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	switch (info->generic.level) {
 	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
-		if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
 			info->standard_info.out.delete_pending = 1;
 			info->standard_info.out.nlink--;
 		}
@@ -353,7 +358,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
-		if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (pvfs_delete_on_close_set(pvfs, h, NULL, NULL)) {
 			info->all_info.out.delete_pending = 1;
 			info->all_info.out.nlink--;
 		}

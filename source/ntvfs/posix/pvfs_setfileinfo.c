@@ -121,6 +121,8 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 
 	/* if the destination exists, then check the rename is allowed */
 	if (name2->exists) {
+		struct odb_lock *lck;
+
 		if (strcmp(name2->full_name, name->full_name) == 0) {
 			/* rename to same name is null-op */
 			return NT_STATUS_OK;
@@ -130,7 +132,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
-		status = pvfs_can_delete(pvfs, req, name2);
+		status = pvfs_can_delete(pvfs, req, name2, &lck);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -243,7 +245,6 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
 	struct pvfs_file_handle *h;
-	uint32_t create_options;
 	struct pvfs_filename newstats;
 	NTSTATUS status;
 	uint32_t access_needed;
@@ -322,13 +323,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
-		create_options = h->create_options;
-		if (info->disposition_info.in.delete_on_close) {
-			create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
-		} else {
-			create_options &= ~NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
-		}
-		return pvfs_change_create_options(pvfs, req, f, create_options);
+		return pvfs_set_delete_on_close(pvfs, req, f, 
+						info->disposition_info.in.delete_on_close);
 
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:

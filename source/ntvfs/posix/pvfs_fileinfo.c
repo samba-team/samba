@@ -67,9 +67,10 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 */
 NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name, int fd)
 {
-	/* make directories appear as size 0 */
+	/* make directories appear as size 0 with 1 link */
 	if (S_ISDIR(name->st.st_mode)) {
 		name->st.st_size = 0;
+		name->st.st_nlink = 1;
 	}
 
 	/* for now just use the simple samba mapping */

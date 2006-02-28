@@ -68,17 +68,41 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 static int pvfs_dir_handle_destructor(void *p)
 {
 	struct pvfs_file_handle *h = p;
+	int open_count;
+	char *path;
 
-	if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
-		NTSTATUS status = pvfs_xattr_unlink_hook(h->pvfs, h->name->full_name);
+	if (h->name->stream_name == NULL && 
+	    pvfs_delete_on_close_set(h->pvfs, h, &open_count, &path) &&
+	    open_count == 1) {
+		NTSTATUS status;
+		status = pvfs_xattr_unlink_hook(h->pvfs, path);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Warning: xattr rmdir hook failed for '%s' - %s\n",
+			DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
+				 path, nt_errstr(status)));
+		}
+		if (rmdir(path) != 0) {
+			DEBUG(0,("pvfs_dir_handle_destructor: failed to rmdir '%s' - %s\n", 
+				 path, strerror(errno)));
+		}
+	}
+
+	if (h->have_opendb_entry) {
+		struct odb_lock *lck;
+		NTSTATUS status;
+
+		lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("Unable to lock opendb for close\n"));
+			return 0;
+		}
+
+		status = odb_close_file(lck, h);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Unable to remove opendb entry for '%s' - %s\n", 
 				 h->name->full_name, nt_errstr(status)));
 		}
-		if (rmdir(h->name->full_name) != 0 && errno != ENOTEMPTY) {
-			DEBUG(0,("pvfs_close: failed to rmdir '%s' - %s\n", 
-				 h->name->full_name, strerror(errno)));
-		}
+
+		talloc_free(lck);
 	}
 
 	return 0;
@@ -134,6 +158,379 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 }
 
 /*
+  form the lock context used for opendb locking. Note that we must
+  zero here to take account of possible padding on some architectures
+*/
+static NTSTATUS pvfs_locking_key(struct pvfs_filename *name, 
+				 TALLOC_CTX *mem_ctx, DATA_BLOB *key)
+{
+	struct {
+		dev_t device;
+		ino_t inode;
+	} lock_context;
+	ZERO_STRUCT(lock_context);
+
+	lock_context.device = name->st.st_dev;
+	lock_context.inode = name->st.st_ino;
+
+	*key = data_blob_talloc(mem_ctx, &lock_context, sizeof(lock_context));
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	return NT_STATUS_OK;
+}
+
+
+/*
+  create a new directory
+*/
+static NTSTATUS pvfs_create_directory(struct pvfs_state *pvfs, 
+				      struct smbsrv_request *req, 
+				      struct pvfs_filename *name, 
+				      union smb_open *io)
+{
+	struct pvfs_file *f;
+	NTSTATUS status;
+	int fnum, ret;
+	struct odb_lock *lck;
+	uint32_t create_options = io->generic.in.create_options;
+	uint32_t share_access = io->generic.in.share_access;
+	uint32_t access_mask = io->generic.in.access_mask;
+	mode_t mode;
+	uint32_t attrib;
+	BOOL del_on_close;
+
+	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
+	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_CANNOT_DELETE;
+	}
+	
+	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	f = talloc(req, struct pvfs_file);
+	if (f == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	f->handle = talloc(f, struct pvfs_file_handle);
+	if (f->handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_NEW_FNUM, UINT16_MAX);
+	if (fnum == -1) {
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
+	attrib = io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_DIRECTORY;
+	mode = pvfs_fileperms(pvfs, attrib);
+
+	/* create the directory */
+	ret = mkdir(name->full_name, mode);
+	if (ret == -1) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	pvfs_xattr_unlink_hook(pvfs, name->full_name);
+
+	/* re-resolve the new directory */
+	status = pvfs_resolve_name_fd(pvfs, -1, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		rmdir(name->full_name);
+		return status;
+	}
+
+	name->dos.attrib = attrib;
+
+	status = pvfs_open_setup_eas_acl(pvfs, req, name, -1, fnum, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup_delete;
+	}
+
+	/* form the lock context used for opendb locking */
+	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup_delete;
+	}
+
+	/* grab a lock on the open file record */
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
+			 name->full_name));
+		/* we were supposed to do a blocking lock, so something
+		   is badly wrong! */
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cleanup_delete;
+	}
+
+	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		del_on_close = True;
+	} else {
+		del_on_close = False;
+	}
+
+	status = odb_open_file(lck, f->handle, name->stream_id,
+			       share_access, access_mask, del_on_close, name->full_name);
+	talloc_free(lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* bad news, we must have hit a race */
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return status;
+	}
+
+	f->fnum              = fnum;
+	f->session           = req->session;
+	f->smbpid            = req->smbpid;
+	f->pvfs              = pvfs;
+	f->pending_list      = NULL;
+	f->lock_count        = 0;
+	f->share_access      = io->generic.in.share_access;
+	f->access_mask       = access_mask;
+	f->impersonation     = io->generic.in.impersonation;
+
+	f->handle->pvfs              = pvfs;
+	f->handle->name              = talloc_steal(f->handle, name);
+	f->handle->fd                = -1;
+	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->seek_offset       = 0;
+	f->handle->position          = 0;
+	f->handle->mode              = 0;
+	f->handle->have_opendb_entry = True;
+	f->handle->sticky_write_time = False;
+
+	DLIST_ADD(pvfs->open_files, f);
+
+	/* setup a destructor to avoid file descriptor leaks on
+	   abnormal termination */
+	talloc_set_destructor(f, pvfs_dir_fnum_destructor);
+	talloc_set_destructor(f->handle, pvfs_dir_handle_destructor);
+	
+	io->generic.out.oplock_level  = OPLOCK_NONE;
+	io->generic.out.fnum          = f->fnum;
+	io->generic.out.create_action = NTCREATEX_ACTION_CREATED;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
+	io->generic.out.file_type     = FILE_TYPE_DISK;
+	io->generic.out.ipc_state     = 0;
+	io->generic.out.is_directory  = 0;
+
+	/* success - keep the file handle */
+	talloc_steal(pvfs, f);
+
+	return NT_STATUS_OK;
+
+cleanup_delete:
+	idr_remove(pvfs->idtree_fnum, fnum);
+	rmdir(name->full_name);
+	return status;
+}
+
+#if 0
+/*
+  open a directory
+*/
+static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs, 
+				    struct smbsrv_request *req, 
+				    struct pvfs_filename *name, 
+				    union smb_open *io)
+{
+	struct pvfs_file *f;
+	NTSTATUS status;
+	int fnum;
+	struct odb_lock *lck;
+	uint32_t create_options;
+	uint32_t share_access;
+	uint32_t access_mask;
+	BOOL del_on_close;
+
+	create_options = io->generic.in.create_options;
+	share_access   = io->generic.in.share_access;
+	access_mask    = io->generic.in.access_mask;
+
+	/* certain create options are not allowed */
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    !(access_mask & SEC_STD_DELETE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (io->generic.in.open_disposition) {
+	case NTCREATEX_DISP_SUPERSEDE:
+	case NTCREATEX_DISP_OVERWRITE_IF:
+	case NTCREATEX_DISP_OPEN_IF:
+		break;
+
+	case NTCREATEX_DISP_OPEN:
+	case NTCREATEX_DISP_OVERWRITE:
+		if (!name->exists) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		break;
+
+	case NTCREATEX_DISP_CREATE:
+		if (name->exists) {
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+		break;
+
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* handle creating a new directory separately */
+	if (!name->exists) {
+		status = pvfs_create_directory(pvfs, req, name, io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			return status;
+		}
+
+		/* we've hit a race - the directory was created during this call */
+		if (io->generic.in.open_disposition == NTCREATEX_DISP_CREATE) {
+			return status;
+		}
+
+		/* try re-resolving the name */
+		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 0, &name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		/* fall through to a normal open */
+	}
+
+	if ((name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
+	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return NT_STATUS_CANNOT_DELETE;
+	}
+
+	/* check the security descriptor */
+	status = pvfs_access_check(pvfs, req, name, &access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	f = talloc(req, struct pvfs_file);
+	if (f == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	f->handle = talloc(f, struct pvfs_file_handle);
+	if (f->handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* allocate a fnum */
+	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_DIR_FNUM, UINT16_MAX);
+	if (fnum == -1) {
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
+	f->fnum          = fnum;
+	f->session       = req->session;
+	f->smbpid        = req->smbpid;
+	f->pvfs          = pvfs;
+	f->pending_list  = NULL;
+	f->lock_count    = 0;
+	f->share_access  = io->generic.in.share_access;
+	f->access_mask   = access_mask;
+	f->impersonation = io->generic.in.impersonation;
+
+	f->handle->pvfs              = pvfs;
+	f->handle->fd                = -1;
+	f->handle->name              = talloc_steal(f->handle, name);
+	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->seek_offset       = 0;
+	f->handle->position          = 0;
+	f->handle->mode              = 0;
+	f->handle->have_opendb_entry = False;
+	f->handle->sticky_write_time = False;
+
+	/* form the lock context used for opendb locking */
+	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, f->fnum);
+		return status;
+	}
+
+	/* get a lock on this file before the actual open */
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
+			 name->full_name));
+		/* we were supposed to do a blocking lock, so something
+		   is badly wrong! */
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	DLIST_ADD(pvfs->open_files, f);
+
+	/* setup a destructor to avoid file descriptor leaks on
+	   abnormal termination */
+	talloc_set_destructor(f, pvfs_dir_fnum_destructor);
+	talloc_set_destructor(f->handle, pvfs_dir_handle_destructor);
+
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    pvfs_directory_empty(pvfs, f->handle->name)) {
+		del_on_close = True;
+	} else {
+		del_on_close = False;
+	}
+
+	/* see if we are allowed to open at the same time as existing opens */
+	status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
+			       share_access, access_mask, del_on_close, name->full_name);
+
+#if 0
+	/* we don't do async open retries on directories yet */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) &&
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return pvfs_open_setup_retry(ntvfs, req, io, f, lck);
+	}
+#endif
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		return status;
+	}
+
+	f->handle->have_opendb_entry = True;
+
+	talloc_free(lck);
+
+	io->generic.out.oplock_level  = OPLOCK_NONE;
+	io->generic.out.fnum	      = f->fnum;
+	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
+	io->generic.out.file_type     = FILE_TYPE_DISK;
+	io->generic.out.ipc_state     = 0;
+	io->generic.out.is_directory  = 0;
+
+	/* success - keep the file handle */
+	talloc_steal(f->pvfs, f);
+
+	return NT_STATUS_OK;
+}
+#endif
+
+#if 1
+/*
   open a directory
 */
 static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs, 
@@ -146,6 +543,13 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	uint32_t create_action;
 	uint32_t access_mask = io->generic.in.access_mask;
+	struct odb_lock *lck;
+	BOOL del_on_close;
+	uint32_t create_options;
+	uint32_t share_access;
+
+	create_options = io->generic.in.create_options;
+	share_access   = io->generic.in.share_access;
 
 	if (name->stream_name) {
 		return NT_STATUS_NOT_A_DIRECTORY;
@@ -227,10 +631,47 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->mode              = 0;
 	f->handle->sticky_write_time = False;
 
-	DLIST_ADD(pvfs->open_files, f);
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    pvfs_directory_empty(pvfs, f->handle->name)) {
+		del_on_close = True;
+	} else {
+		del_on_close = False;
+	}
 
-	/* TODO: should we check in the opendb? Do directory opens 
-	   follow the share_access rules? */
+
+	if (name->exists) {
+		/* form the lock context used for opendb locking */
+		status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, f->fnum);
+			return status;
+		}
+
+		/* get a lock on this file before the actual open */
+		lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
+				 name->full_name));
+			/* we were supposed to do a blocking lock, so something
+			   is badly wrong! */
+			idr_remove(pvfs->idtree_fnum, fnum);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		
+		/* see if we are allowed to open at the same time as existing opens */
+		status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
+				       share_access, access_mask, del_on_close, name->full_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, f->fnum);
+			talloc_free(lck);
+			return status;
+		}
+
+		f->handle->have_opendb_entry = True;
+	}
+
+	DLIST_ADD(pvfs->open_files, f);
 
 	/* setup destructors to avoid leaks on abnormal termination */
 	talloc_set_destructor(f->handle, pvfs_dir_handle_destructor);
@@ -239,6 +680,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	if (!name->exists) {
 		uint32_t attrib = io->generic.in.file_attr | FILE_ATTRIBUTE_DIRECTORY;
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
+
 		if (mkdir(name->full_name, mode) == -1) {
 			idr_remove(pvfs->idtree_fnum, fnum);
 			return pvfs_map_errno(pvfs,errno);
@@ -255,6 +697,32 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
 		}
+
+		/* form the lock context used for opendb locking */
+		status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, f->fnum);
+			return status;
+		}
+
+		lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
+				 name->full_name));
+			/* we were supposed to do a blocking lock, so something
+			   is badly wrong! */
+			idr_remove(pvfs->idtree_fnum, fnum);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
+				       share_access, access_mask, del_on_close, name->full_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto cleanup_delete;
+		}
+
+		f->handle->have_opendb_entry = True;
 
 		create_action = NTCREATEX_ACTION_CREATED;
 	} else {
@@ -290,6 +758,7 @@ cleanup_delete:
 	rmdir(name->full_name);
 	return status;
 }
+#endif
 
 /*
   destroy a struct pvfs_file_handle
@@ -297,6 +766,8 @@ cleanup_delete:
 static int pvfs_handle_destructor(void *p)
 {
 	struct pvfs_file_handle *h = p;
+	int open_count;
+	char *path;
 
 	/* the write time is no longer sticky */
 	if (h->sticky_write_time) {
@@ -326,17 +797,18 @@ static int pvfs_handle_destructor(void *p)
 		h->fd = -1;
 	}
 
-	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
-	    h->name->stream_name == NULL) {
+	if (h->name->stream_name == NULL && 
+	    pvfs_delete_on_close_set(h->pvfs, h, &open_count, &path) &&
+	    open_count == 1) {
 		NTSTATUS status;
-		status = pvfs_xattr_unlink_hook(h->pvfs, h->name->full_name);
+		status = pvfs_xattr_unlink_hook(h->pvfs, path);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
-				 h->name->full_name, nt_errstr(status)));
+				 path, nt_errstr(status)));
 		}
-		if (unlink(h->name->full_name) != 0) {
+		if (unlink(path) != 0) {
 			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
-				 h->name->full_name, strerror(errno)));
+				 path, strerror(errno)));
 		}
 	}
 
@@ -377,30 +849,6 @@ static int pvfs_fnum_destructor(void *p)
 	return 0;
 }
 
-
-/*
-  form the lock context used for opendb locking. Note that we must
-  zero here to take account of possible padding on some architectures
-*/
-static NTSTATUS pvfs_locking_key(struct pvfs_filename *name, 
-				 TALLOC_CTX *mem_ctx, DATA_BLOB *key)
-{
-	struct {
-		dev_t device;
-		ino_t inode;
-	} lock_context;
-	ZERO_STRUCT(lock_context);
-
-	lock_context.device = name->st.st_dev;
-	lock_context.inode = name->st.st_ino;
-
-	*key = data_blob_talloc(mem_ctx, &lock_context, sizeof(lock_context));
-	if (key->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	return NT_STATUS_OK;
-}
 
 /*
   form the lock context used for byte range locking. This is separate
@@ -451,6 +899,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t access_mask = io->generic.in.access_mask;
 	mode_t mode;
 	uint32_t attrib;
+	BOOL del_on_close;
+	struct pvfs_filename *parent;
 
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
@@ -458,8 +908,20 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 	
 	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* check that the parent isn't opened with delete on close set */
+	status = pvfs_resolve_parent(pvfs, req, name, &parent);
+	if (NT_STATUS_IS_OK(status)) {
+		DATA_BLOB locking_key;
+		status = pvfs_locking_key(parent, req, &locking_key);
+		NT_STATUS_NOT_OK_RETURN(status);
+		status = odb_get_delete_on_close(pvfs->odb_context, &locking_key, 
+						 &del_on_close, NULL, NULL);
+		NT_STATUS_NOT_OK_RETURN(status);
+		if (del_on_close) {
+			return NT_STATUS_DELETE_PENDING;
+		}
 	}
 
 	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
@@ -548,8 +1010,14 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		goto cleanup_delete;
 	}
 
+	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		del_on_close = True;
+	} else {
+		del_on_close = False;
+	}
+
 	status = odb_open_file(lck, f->handle, name->stream_id,
-			       share_access, create_options, access_mask);
+			       share_access, access_mask, del_on_close, name->full_name);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* bad news, we must have hit a race - we don't delete the file
@@ -1037,10 +1505,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	talloc_set_destructor(f, pvfs_fnum_destructor);
 	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
-
 	/* see if we are allowed to open at the same time as existing opens */
 	status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
-			       share_access, create_options, access_mask);
+			       share_access, access_mask, False, name->full_name);
 
 	/* on a sharing violation we need to retry when the file is closed by 
 	   the other user, or after 1 second */
@@ -1222,41 +1689,36 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 
 
 /*
-  change the create options on an already open file
+  change the delete on close flag on an already open file
 */
-NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
-				    struct smbsrv_request *req, 
-				    struct pvfs_file *f, uint32_t create_options)
+NTSTATUS pvfs_set_delete_on_close(struct pvfs_state *pvfs,
+				  struct smbsrv_request *req, 
+				  struct pvfs_file *f, BOOL del_on_close)
 {
 	struct odb_lock *lck;
 	NTSTATUS status;
 
-	if (f->handle->create_options == create_options) {
-		return NT_STATUS_OK;
-	}
-
-	if ((f->handle->name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
-	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+	if ((f->handle->name->dos.attrib & FILE_ATTRIBUTE_READONLY) && del_on_close) {
 		return NT_STATUS_CANNOT_DELETE;
 	}
-
-	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		if (!pvfs_directory_empty(pvfs, f->handle->name)) {
-			return NT_STATUS_DIRECTORY_NOT_EMPTY;
-		}
-		f->handle->create_options = create_options;
-		return NT_STATUS_OK;
+	
+	if ((f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+	    !pvfs_directory_empty(pvfs, f->handle->name)) {
+		return NT_STATUS_DIRECTORY_NOT_EMPTY;
 	}
 
+	if (del_on_close) {
+		f->handle->create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	} else {
+		f->handle->create_options &= ~NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	}
+	
 	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
 	if (lck == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_set_create_options(lck, f->handle, create_options);
-	if (NT_STATUS_IS_OK(status)) {
-		f->handle->create_options = create_options;
-	}
+	status = odb_set_delete_on_close(lck, del_on_close);
 
 	talloc_free(lck);
 
@@ -1270,17 +1732,25 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 */
 NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, 
 			 struct smbsrv_request *req,
-			 struct pvfs_filename *name)
+			 struct pvfs_filename *name,
+			 struct odb_lock **lckp)
 {
 	NTSTATUS status;
 	DATA_BLOB key;
+	struct odb_lock *lck;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = odb_can_open(pvfs->odb_context, &key, 
+	lck = odb_lock(req, pvfs->odb_context, &key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_delete\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = odb_can_open(lck,
 			      NTCREATEX_SHARE_ACCESS_READ |
 			      NTCREATEX_SHARE_ACCESS_WRITE | 
 			      NTCREATEX_SHARE_ACCESS_DELETE, 
@@ -1291,6 +1761,13 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 		status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
 	}
 
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		*lckp = lck;
+	} else if (lckp != NULL) {
+		*lckp = lck;
+	}
+
 	return status;
 }
 
@@ -1298,21 +1775,89 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
   determine if a file can be renamed, or if it is prevented by an
   already open file
 */
-NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs, struct pvfs_filename *name)
+NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs, 
+			 struct smbsrv_request *req,
+			 struct pvfs_filename *name,
+			 struct odb_lock **lckp)
 {
 	NTSTATUS status;
 	DATA_BLOB key;
+	struct odb_lock *lck;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = odb_can_open(pvfs->odb_context, &key, 
+	lck = odb_lock(req, pvfs->odb_context, &key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_stat\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = odb_can_open(lck,
 			      NTCREATEX_SHARE_ACCESS_READ |
 			      NTCREATEX_SHARE_ACCESS_WRITE,
 			      0,
 			      SEC_STD_DELETE);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		*lckp = lck;
+	} else if (lckp != NULL) {
+		*lckp = lck;
+	}
+
 	return status;
+}
+
+/*
+  determine if file meta data can be accessed, or if it is prevented by an
+  already open file
+*/
+NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs, 
+		       struct smbsrv_request *req,
+		       struct pvfs_filename *name)
+{
+	NTSTATUS status;
+	DATA_BLOB key;
+	struct odb_lock *lck;
+
+	status = pvfs_locking_key(name, name, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lck = odb_lock(req, pvfs->odb_context, &key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_stat\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = odb_can_open(lck,
+			      NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE,
+			      0, 0);
+
+	return status;
+}
+
+
+/*
+  determine if delete on close is set on 
+*/
+BOOL pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h, 
+			      int *open_count, char **path)
+{
+	NTSTATUS status;
+	BOOL del_on_close;
+
+	status = odb_get_delete_on_close(pvfs->odb_context, &h->odb_locking_key, 
+					 &del_on_close, open_count, path);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("WARNING: unable to determine delete on close status for open file\n"));
+		return False;
+	}
+
+	return del_on_close;
 }

@@ -46,28 +46,13 @@
 #include "db_wrap.h"
 #include "smb_server/smb_server.h"
 #include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_opendb.h"
 
 struct odb_context {
 	struct tdb_wrap *w;
 	uint32_t server;
 	struct messaging_context *messaging_ctx;
 };
-
-/* 
-   the database is indexed by a file_key, and contains entries of the
-   following form
-*/
-struct odb_entry {
-	uint32_t server;
-	void     *file_handle;
-	uint32_t stream_id;
-	uint32_t share_access;
-	uint32_t create_options;
-	uint32_t access_mask;
-	void	 *notify_ptr;
-	BOOL     pending;
-};
-
 
 /*
   an odb lock handle. You must obtain one of these using odb_lock() before doing
@@ -157,10 +142,8 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 
   return NT_STATUS_OK on no conflict
 */
-static NTSTATUS share_conflict(struct odb_entry *e1, struct odb_entry *e2)
+static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
 {
-	if (e1->pending || e2->pending) return NT_STATUS_OK;
-
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
 	if (!(e1->access_mask & (SEC_FILE_WRITE_DATA |
@@ -203,74 +186,126 @@ static NTSTATUS share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 	CHECK_MASK(e2->access_mask, SEC_STD_DELETE,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
 
-	/* if a delete is pending then a second open is not allowed */
-	if ((e1->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) ||
-	    (e2->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
-		return NT_STATUS_DELETE_PENDING;
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a record, translating from the db format to the opendb_file structure defined
+  in opendb.idl
+*/
+static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	DATA_BLOB blob;
+	NTSTATUS status;
+		
+	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+	if (dbuf.dptr == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	blob.data = dbuf.dptr;
+	blob.length = dbuf.dsize;
+
+	status = ndr_pull_struct_blob(&blob, lck, file, (ndr_pull_flags_fn_t)ndr_pull_opendb_file);
+
+	free(dbuf.dptr);
+
+	return status;
+}
+
+/*
+  push a record, translating from the opendb_file structure defined in opendb.idl
+*/
+static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	DATA_BLOB blob;
+	NTSTATUS status;
+	int ret;
+
+	if (file->num_entries == 0) {
+		ret = tdb_delete(odb->w->tdb, lck->key);
+		if (ret != 0) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		return NT_STATUS_OK;
+	}
+
+	status = ndr_push_struct_blob(&blob, lck, file, (ndr_push_flags_fn_t)ndr_push_opendb_file);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dbuf.dptr = blob.data;
+	dbuf.dsize = blob.length;
+		
+	ret = tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE);
+	data_blob_free(&blob);
+	if (ret != 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	return NT_STATUS_OK;
 }
 
+
 /*
   register an open file in the open files database. This implements the share_access
   rules
+
+  Note that the path is only used by the delete on close logic, not
+  for comparing with other filenames
 */
 NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
-		       uint32_t stream_id,
-		       uint32_t share_access, uint32_t create_options,
-		       uint32_t access_mask)
+		       uint32_t stream_id, uint32_t share_access, 
+		       uint32_t access_mask, BOOL delete_on_close,
+		       const char *path)
 {
 	struct odb_context *odb = lck->odb;
-	TDB_DATA dbuf;
-	struct odb_entry e;
-	int i, count;
-	struct odb_entry *elist;
+	struct opendb_entry e;
+	int i;
+	struct opendb_file file;
+	NTSTATUS status;
+
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/* initialise a blank structure */
+		ZERO_STRUCT(file);
+		file.path = path;
+	} else {
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+
+	if (file.delete_on_close || 
+	    (file.num_entries != 0 && delete_on_close)) {
+		/* while delete on close is set, no new opens are allowed */
+		return NT_STATUS_DELETE_PENDING;
+	}
+
+	/* see if it conflicts */
+	e.server          = odb->server;
+	e.file_handle     = file_handle;
+	e.stream_id       = stream_id;
+	e.share_access    = share_access;
+	e.access_mask     = access_mask;
+	e.delete_on_close = delete_on_close;
 		
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
-
-	e.server         = odb->server;
-	e.file_handle    = file_handle;
-	e.stream_id      = stream_id;
-	e.share_access   = share_access;
-	e.create_options = create_options;
-	e.access_mask    = access_mask;
-	e.notify_ptr	 = NULL;
-	e.pending        = False;
-
-	/* check the existing file opens to see if they
-	   conflict */
-	elist = (struct odb_entry *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(struct odb_entry);
-
-	for (i=0;i<count;i++) {
-		NTSTATUS status;
-		status = share_conflict(elist+i, &e);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (dbuf.dptr) free(dbuf.dptr);
-			return status;
-		}
+	for (i=0;i<file.num_entries;i++) {
+		status = share_conflict(&file.entries[i], &e);
+		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	elist = realloc_p(dbuf.dptr, struct odb_entry, count+1);
-	if (elist == NULL) {
-		if (dbuf.dptr) free(dbuf.dptr);
-		return NT_STATUS_NO_MEMORY;
-	}
+	/* it doesn't, so add it to the end */
+	file.entries = talloc_realloc(lck, file.entries, struct opendb_entry, 
+				      file.num_entries+1);
+	NT_STATUS_HAVE_NO_MEMORY(file.entries);
 
-	dbuf.dptr = (uint8_t *)elist;
-	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
+	file.entries[file.num_entries] = e;
+	file.num_entries++;
 
-	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
-	       &e, sizeof(struct odb_entry));
-
-	if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
-		free(dbuf.dptr);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	free(dbuf.dptr);
-	return NT_STATUS_OK;
+	return odb_push_record(lck, &file);
 }
 
 
@@ -280,46 +315,22 @@ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 {
 	struct odb_context *odb = lck->odb;
-	TDB_DATA dbuf;
-	struct odb_entry e;
-	struct odb_entry *elist;
-	int count;
+	struct opendb_file file;
+	NTSTATUS status;
 		
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	e.server         = odb->server;
-	e.file_handle    = NULL;
-	e.stream_id      = 0;
-	e.share_access   = 0;
-	e.create_options = 0;
-	e.access_mask    = 0;
-	e.notify_ptr	 = private;
-	e.pending        = True;
+	file.pending = talloc_realloc(lck, file.pending, struct opendb_pending, 
+				      file.num_pending+1);
+	NT_STATUS_HAVE_NO_MEMORY(file.pending);
 
-	/* check the existing file opens to see if they
-	   conflict */
-	elist = (struct odb_entry *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(struct odb_entry);
+	file.pending[file.num_pending].server = odb->server;
+	file.pending[file.num_pending].notify_ptr = private;
 
-	elist = realloc_p(dbuf.dptr, struct odb_entry, count+1);
-	if (elist == NULL) {
-		if (dbuf.dptr) free(dbuf.dptr);
-		return NT_STATUS_NO_MEMORY;
-	}
+	file.num_pending++;
 
-	dbuf.dptr = (uint8_t *)elist;
-	dbuf.dsize = (count+1) * sizeof(struct odb_entry);
-
-	memcpy(dbuf.dptr + (count*sizeof(struct odb_entry)),
-	       &e, sizeof(struct odb_entry));
-
-	if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
-		free(dbuf.dptr);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	free(dbuf.dptr);
-	return NT_STATUS_OK;
+	return odb_push_record(lck, &file);
 }
 
 
@@ -329,61 +340,44 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 {
 	struct odb_context *odb = lck->odb;
-	TDB_DATA dbuf;
-	struct odb_entry *elist;
-	int i, count;
+	struct opendb_file file;
+	int i;
 	NTSTATUS status;
 
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
-
-	if (dbuf.dptr == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	elist = (struct odb_entry *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(struct odb_entry);
-
-	/* send any pending notifications, removing them once sent */
-	for (i=0;i<count;i++) {
-		if (elist[i].pending) {
-			messaging_send_ptr(odb->messaging_ctx, elist[i].server, 
-					   MSG_PVFS_RETRY_OPEN, elist[i].notify_ptr);
-			memmove(&elist[i], &elist[i+1], sizeof(struct odb_entry)*(count-(i+1)));
-			i--;
-			count--;
-		}
-	}
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* find the entry, and delete it */
-	for (i=0;i<count;i++) {
-		if (file_handle == elist[i].file_handle &&
-		    odb->server == elist[i].server) {
-			if (i < count-1) {
-				memmove(elist+i, elist+i+1, 
-					(count - (i+1)) * sizeof(struct odb_entry));
+	for (i=0;i<file.num_entries;i++) {
+		if (file_handle == file.entries[i].file_handle &&
+		    odb->server == file.entries[i].server) {
+			if (file.entries[i].delete_on_close) {
+				file.delete_on_close = True;
+			}
+			if (i < file.num_entries-1) {
+				memmove(file.entries+i, file.entries+i+1, 
+					(file.num_entries - (i+1)) * 
+					sizeof(struct opendb_entry));
 			}
 			break;
 		}
 	}
 
-	status = NT_STATUS_OK;
-
-	if (i == count) {
-		status = NT_STATUS_UNSUCCESSFUL;
-	} else if (count == 1) {
-		if (tdb_delete(odb->w->tdb, lck->key) != 0) {
-			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-	} else {
-		dbuf.dsize = (count-1) * sizeof(struct odb_entry);
-		if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
-			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+	if (i == file.num_entries) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	free(dbuf.dptr);
+	/* send any pending notifications, removing them once sent */
+	for (i=0;i<file.num_pending;i++) {
+		messaging_send_ptr(odb->messaging_ctx, file.pending[i].server, 
+				   MSG_PVFS_RETRY_OPEN, 
+				   file.pending[i].notify_ptr);
+	}
+	file.num_pending = 0;
 
-	return status;
+	file.num_entries--;
+	
+	return odb_push_record(lck, &file);
 }
 
 
@@ -393,91 +387,112 @@ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 {
 	struct odb_context *odb = lck->odb;
-	TDB_DATA dbuf;
-	struct odb_entry *elist;
-	int i, count;
+	int i;
 	NTSTATUS status;
+	struct opendb_file file;
 
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
-
-	if (dbuf.dptr == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	elist = (struct odb_entry *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(struct odb_entry);
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* find the entry, and delete it */
-	for (i=0;i<count;i++) {
-		if (private == elist[i].notify_ptr &&
-		    odb->server == elist[i].server) {
-			if (i < count-1) {
-				memmove(elist+i, elist+i+1, 
-					(count - (i+1)) * sizeof(struct odb_entry));
+	for (i=0;i<file.num_pending;i++) {
+		if (private == file.pending[i].notify_ptr &&
+		    odb->server == file.pending[i].server) {
+			if (i < file.num_pending-1) {
+				memmove(file.pending+i, file.pending+i+1, 
+					(file.num_pending - (i+1)) * 
+					sizeof(struct opendb_pending));
 			}
 			break;
 		}
 	}
 
-	status = NT_STATUS_OK;
-
-	if (i == count) {
-		status = NT_STATUS_UNSUCCESSFUL;
-	} else if (count == 1) {
-		if (tdb_delete(odb->w->tdb, lck->key) != 0) {
-			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-	} else {
-		dbuf.dsize = (count-1) * sizeof(struct odb_entry);
-		if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
-			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+	if (i == file.num_pending) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	free(dbuf.dptr);
-
-	return status;
+	file.num_pending--;
+	
+	return odb_push_record(lck, &file);
 }
 
 
 /*
-  update create options on an open file
+  rename the path in a open file
 */
-NTSTATUS odb_set_create_options(struct odb_lock *lck, 
-				void *file_handle, uint32_t create_options)
+NTSTATUS odb_rename(struct odb_lock *lck, const char *path)
 {
-	struct odb_context *odb = lck->odb;
-	TDB_DATA dbuf;
-	struct odb_entry *elist;
-	int i, count;
+	struct opendb_file file;
 	NTSTATUS status;
 
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
-	if (dbuf.dptr == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		/* not having the record at all is OK */
+		return NT_STATUS_OK;
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	file.path = path;
+	return odb_push_record(lck, &file);
+}
+
+/*
+  update delete on close flag on an open file
+*/
+NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, BOOL del_on_close)
+{
+	NTSTATUS status;
+	struct opendb_file file;
+
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	file.delete_on_close = del_on_close;
+
+	return odb_push_record(lck, &file);
+}
+
+/*
+  return the current value of the delete_on_close bit, and how many
+  people still have the file open
+*/
+NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
+				 DATA_BLOB *key, BOOL *del_on_close, 
+				 int *open_count, char **path)
+{
+	NTSTATUS status;
+	struct opendb_file file;
+	struct odb_lock *lck;
+
+	lck = odb_lock(odb, odb, key);
+	NT_STATUS_HAVE_NO_MEMORY(lck);
+
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		talloc_free(lck);
+		(*del_on_close) = False;
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		return status;
 	}
 
-	elist = (struct odb_entry *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(struct odb_entry);
-
-	/* find the entry, and modify it */
-	for (i=0;i<count;i++) {
-		if (file_handle == elist[i].file_handle &&
-		    odb->server == elist[i].server) {
-			elist[i].create_options = create_options;
-			break;
+	(*del_on_close) = file.delete_on_close;
+	if (open_count != NULL) {
+		(*open_count) = file.num_entries;
+	}
+	if (path != NULL) {
+		*path = talloc_strdup(odb, file.path);
+		NT_STATUS_HAVE_NO_MEMORY(*path);
+		if (file.num_entries == 1 && file.entries[0].delete_on_close) {
+			(*del_on_close) = True;
 		}
 	}
 
-	if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else {
-		status = NT_STATUS_OK;
-	}
+	talloc_free(lck);
 
-	free(dbuf.dptr);
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 
@@ -485,46 +500,40 @@ NTSTATUS odb_set_create_options(struct odb_lock *lck,
   determine if a file can be opened with the given share_access,
   create_options and access_mask
 */
-NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key, 
+NTSTATUS odb_can_open(struct odb_lock *lck,
 		      uint32_t share_access, uint32_t create_options, 
 		      uint32_t access_mask)
 {
-	TDB_DATA dbuf;
-	TDB_DATA kbuf;
-	struct odb_entry *elist;
-	int i, count;
-	struct odb_entry e;
+	struct odb_context *odb = lck->odb;
+	NTSTATUS status;
+	struct opendb_file file;
+	struct opendb_entry e;
+	int i;
 
-	kbuf.dptr = key->data;
-	kbuf.dsize = key->length;
-
-	dbuf = tdb_fetch(odb->w->tdb, kbuf);
-	if (dbuf.dptr == NULL) {
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		return NT_STATUS_OK;
 	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	elist = (struct odb_entry *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(struct odb_entry);
-
-	if (count == 0) {
-		free(dbuf.dptr);
-		return NT_STATUS_OK;
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) && 
+	    file.num_entries != 0) {
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	e.server         = odb->server;
-	e.file_handle    = NULL;
-	e.stream_id      = 0;
-	e.share_access   = share_access;
-	e.create_options = create_options;
-	e.access_mask    = access_mask;
-	e.notify_ptr	 = NULL;
-	e.pending	 = False;
+	if (file.delete_on_close) {
+		return NT_STATUS_DELETE_PENDING;
+	}
 
-	for (i=0;i<count;i++) {
-		NTSTATUS status;
-		status = share_conflict(elist+i, &e);
+	e.server       = odb->server;
+	e.file_handle  = NULL;
+	e.stream_id    = 0;
+	e.share_access = share_access;
+	e.access_mask  = access_mask;
+		
+	for (i=0;i<file.num_entries;i++) {
+		status = share_conflict(&file.entries[i], &e);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (dbuf.dptr) free(dbuf.dptr);
 			/* note that we discard the error code
 			   here. We do this as unless we are actually
 			   doing an open (which comes via a sdifferent
@@ -534,6 +543,5 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 		}
 	}
 
-	free(dbuf.dptr);
 	return NT_STATUS_OK;
 }
