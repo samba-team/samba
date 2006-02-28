@@ -656,7 +656,7 @@ struct ldb_request {
 		void *context;
 		int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
 
-		time_t timeout;
+		int timeout;
 		struct ldb_async_handle *handle;
 	} async;
 };
