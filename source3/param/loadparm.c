@@ -2152,14 +2152,17 @@ static param_opt_struct *get_parametrics(int snum, const char *type, const char 
 }
 
 
+#define MISSING_PARAMETER(name) \
+    DEBUG(0, ("%s(): value is NULL or empty!\n", #name))
+
 /*******************************************************************
 convenience routine to return int parameters.
 ********************************************************************/
 static int lp_int(const char *s)
 {
 
-	if (!s) {
-		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
+	if (!s || !*s) {
+		MISSING_PARAMETER(lp_int);
 		return (-1);
 	}
 
@@ -2169,12 +2172,12 @@ static int lp_int(const char *s)
 /*******************************************************************
 convenience routine to return unsigned long parameters.
 ********************************************************************/
-static int lp_ulong(const char *s)
+static unsigned long lp_ulong(const char *s)
 {
 
-	if (!s) {
-		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
-		return (-1);
+	if (!s || !*s) {
+		MISSING_PARAMETER(lp_ulong);
+		return (0);
 	}
 
 	return strtoul(s, NULL, 10);
@@ -2187,8 +2190,8 @@ static BOOL lp_bool(const char *s)
 {
 	BOOL ret = False;
 
-	if (!s) {
-		DEBUG(0,("lp_bool(%s): is called with NULL!\n",s));
+	if (!s || !*s) {
+		MISSING_PARAMETER(lp_bool);
 		return False;
 	}
 	
@@ -2207,8 +2210,8 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 {
 	int i;
 
-	if (!s || !_enum) {
-		DEBUG(0,("lp_enum(%s,enum): is called with NULL!\n",s));
+	if (!s || !*s || !_enum) {
+		MISSING_PARAMETER(lp_enum);
 		return (-1);
 	}
 	
@@ -2221,6 +2224,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 	return (-1);
 }
 
+#undef MISSING_PARAMETER
 
 /* DO NOT USE lp_parm_string ANYMORE!!!!
  * use lp_parm_const_string or lp_parm_talloc_string
@@ -3485,16 +3489,15 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL:
-			set_boolean((BOOL *)parm_ptr, pszParmValue);
+			*(BOOL *)parm_ptr = lp_bool(pszParmValue);
 			break;
 
 		case P_BOOLREV:
-			set_boolean((BOOL *)parm_ptr, pszParmValue);
-			*(BOOL *)parm_ptr = !*(BOOL *)parm_ptr;
+			*(BOOL *)parm_ptr = !lp_bool(pszParmValue);
 			break;
 
 		case P_INTEGER:
-			*(int *)parm_ptr = atoi(pszParmValue);
+			*(int *)parm_ptr = lp_int(pszParmValue);
 			break;
 
 		case P_CHAR:
