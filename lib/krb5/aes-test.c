@@ -200,7 +200,6 @@ string_to_key_test(krb5_context context)
 {
     krb5_data password, opaque;
     krb5_error_code ret;
-    krb5_keyblock key;
     krb5_salt salt;
     int i, val = 0;
     char iter[4];
@@ -242,38 +241,44 @@ string_to_key_test(krb5_context context)
 		printf("PBKDF2:\n");
 		hex_dump_data(keyout, keys[i].keylen);
 	    }
+	}
+
+	{
+	    krb5_keyblock key;
+
+	    ret = krb5_string_to_key_data_salt_opaque (context,
+						       keys[i].enctype,
+						       password, 
+						       salt, 
+						       opaque, 
+						       &key);
+	    if (ret) {
+		krb5_warn(context, ret, "%d: string_to_key_data_salt_opaque", 
+			  i);
+		val = 1;
+		continue;
+	    }
 	    
+	    if (key.keyvalue.length != keys[i].keylen) {
+		krb5_warnx(context, "%d: key wrong length (%lu/%lu)",
+			   i, (unsigned long)key.keyvalue.length, 
+			   (unsigned long)keys[i].keylen);
+		val = 1;
+		continue;
+	    }
+	    
+	    if (memcmp(key.keyvalue.data, keys[i].key, keys[i].keylen) != 0) {
+		krb5_warnx(context, "%d: key wrong", i);
+		val = 1;
+		continue;
+	    }
+	    
+	    if (verbose) {
+		printf("key:\n");
+		hex_dump_data(key.keyvalue.data, key.keyvalue.length);
+	    }
 	    krb5_free_keyblock_contents(context, &key);
 	}
-
-	ret = krb5_string_to_key_data_salt_opaque (context, keys[i].enctype,
-						   password, salt, opaque, 
-						   &key);
-	if (ret) {
-	    krb5_warn(context, ret, "%d: string_to_key_data_salt_opaque", i);
-	    val = 1;
-	    continue;
-	}
-
-	if (key.keyvalue.length != keys[i].keylen) {
-	    krb5_warnx(context, "%d: key wrong length (%lu/%lu)",
-		       i, (unsigned long)key.keyvalue.length, 
-		       (unsigned long)keys[i].keylen);
-	    val = 1;
-	    continue;
-	}
-
-	if (memcmp(key.keyvalue.data, keys[i].key, keys[i].keylen) != 0) {
-	    krb5_warnx(context, "%d: key wrong", i);
-	    val = 1;
-	    continue;
-	}
-	
-	if (verbose) {
-	    printf("key:\n");
-	    hex_dump_data(key.keyvalue.data, key.keyvalue.length);
-	}
-	krb5_free_keyblock_contents(context, &key);
     }
     return val;
 }
