@@ -193,6 +193,19 @@ NTSTATUS ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
 }
 
 /*
+  parse a pointer
+*/
+NTSTATUS ndr_pull_pointer(struct ndr_pull *ndr, int ndr_flags, void* *v)
+{
+	uint64_t h;
+	NTSTATUS status;
+	NDR_PULL_ALIGN(ndr, 8);
+	status = ndr_pull_udlong(ndr, ndr_flags, &h);
+	*v = (void *)((intptr_t)h);
+	return status;	
+}
+
+/*
   pull a NTSTATUS
 */
 NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, int ndr_flags, NTSTATUS *status)
@@ -373,6 +386,15 @@ NTSTATUS ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 8);
 	return ndr_push_udlong(ndr, NDR_SCALARS, v);
+}
+
+/*
+  push a pointer
+*/
+NTSTATUS ndr_push_pointer(struct ndr_push *ndr, int ndr_flags, void* v)
+{
+	NDR_PUSH_ALIGN(ndr, 8);
+	return ndr_push_udlong(ndr, NDR_SCALARS, (intptr_t)v);
 }
 
 NTSTATUS ndr_push_align(struct ndr_push *ndr, size_t size)
@@ -669,6 +691,11 @@ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)
 void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v)
 {
 	ndr_print_dlong(ndr, name, v);
+}
+
+void ndr_print_pointer(struct ndr_print *ndr, const char *name, void *v)
+{
+	ndr->print(ndr, "%-25s: %p", name, v);
 }
 
 void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p)
