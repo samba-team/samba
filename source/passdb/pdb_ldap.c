@@ -4627,7 +4627,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, *rid);
 
-	user = talloc_zero(tmp_ctx, struct samu);
+	user = samu_new(tmp_ctx);
 	if (!user) {
 		DEBUG(1,("ldapsam_create_user: Unable to allocate user struct\n"));
 		return NT_STATUS_NO_MEMORY;
