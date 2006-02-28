@@ -18,7 +18,7 @@ ADDARGS="$*"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-tests="BASE-UNLINK BASE-ATTR"
+tests="BASE-UNLINK BASE-ATTR BASE-DELETE"
 tests="$tests BASE-DIR2 BASE-TCON BASE-OPEN"
 tests="$tests BASE-CHKPATH RAW-QFSINFO RAW-QFILEINFO RAW-SFILEINFO"
 tests="$tests RAW-LOCK RAW-MKDIR RAW-SEEK RAW-OPEN RAW-WRITE"
