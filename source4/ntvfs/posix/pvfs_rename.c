@@ -130,6 +130,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	struct pvfs_filename *name1, *name2;
 	TALLOC_CTX *mem_ctx = talloc_new(req);
 	NTSTATUS status;
+	struct odb_lock *lck, *lck2;
 
 	/* resolve the wildcard pattern for this name */
 	fname2 = pvfs_resolve_wildcard(mem_ctx, fname1, fname2);
@@ -150,7 +151,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		goto failed;
 	}
 
-	status = pvfs_can_rename(pvfs, name1);
+	status = pvfs_can_rename(pvfs, req, name1, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
@@ -159,7 +160,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	status = pvfs_resolve_partial(pvfs, mem_ctx, 
 				      dir_path, fname2, &name2);
 	if (NT_STATUS_IS_OK(status)) {
-		status = pvfs_can_delete(pvfs, req, name2);
+		status = pvfs_can_delete(pvfs, req, name2, &lck2);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto failed;
 		}
@@ -176,6 +177,8 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		talloc_free(mem_ctx);
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	status = odb_rename(lck, fname2);
 
 failed:
 	talloc_free(mem_ctx);
@@ -246,6 +249,7 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
+	struct odb_lock *lck;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, ren->rename.in.pattern1, 
@@ -286,7 +290,7 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_can_rename(pvfs, name1);
+	status = pvfs_can_rename(pvfs, req, name1, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -294,6 +298,8 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 	if (rename(name1->full_name, name2->full_name) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	status = odb_rename(lck, name2->full_name);
 	
 	return NT_STATUS_OK;
 }
@@ -308,6 +314,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
+	struct odb_lock *lck;
 
 	switch (ren->ntrename.in.flags) {
 	case RENAME_FLAG_RENAME:
@@ -353,7 +360,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_can_rename(pvfs, name1);
+	status = pvfs_can_rename(pvfs, req, name1, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
