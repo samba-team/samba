@@ -24,10 +24,22 @@
 */
 
 /*
-  This is a ldb backend for the internal ldap client library in
-  Samba4. By using this backend we are independent of a system ldap
-  library
-*/
+ *  Name: ldb_ildap
+ *
+ *  Component: ldb ildap backend
+ *
+ *  Description: This is a ldb backend for the internal ldap
+ *  client library in Samba4. By using this backend we are
+ *  independent of a system ldap library
+ *
+ *  Author: Andrew Tridgell
+ *
+ *  Modifications:
+ *
+ *  - description: make the module use asyncronous calls
+ *    date: Feb 2006
+ *    author: Simo Sorce
+ */
 
 
 #include "includes.h"
@@ -141,7 +153,7 @@ static void ildb_async_callback(struct ldap_request *req)
 {
 	struct ldb_async_handle *handle = talloc_get_type(req->async.private_data, struct ldb_async_handle);
 	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
-	struct ildb_private *ildb = ac->module->private_data;
+	struct ildb_private *ildb = talloc_get_type(ac->module->private_data, struct ildb_private);
 	NTSTATUS status;
 	int i;
 
@@ -166,6 +178,10 @@ static void ildb_async_callback(struct ldap_request *req)
 		}
 		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
 		handle->status = ildb_map_error(ildb, status);
+		if (ac->callback && handle->status == LDB_SUCCESS) {
+			/* FIXME: build a corresponding ares to pass on */
+			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
 
@@ -176,6 +192,10 @@ static void ildb_async_callback(struct ldap_request *req)
 		}
 		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
 		handle->status = ildb_map_error(ildb, status);
+		if (ac->callback && handle->status == LDB_SUCCESS) {
+			/* FIXME: build a corresponding ares to pass on */
+			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
 
@@ -186,6 +206,10 @@ static void ildb_async_callback(struct ldap_request *req)
 		}
 		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
 		handle->status = ildb_map_error(ildb, status);
+		if (ac->callback && handle->status == LDB_SUCCESS) {
+			/* FIXME: build a corresponding ares to pass on */
+			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
 
@@ -196,6 +220,10 @@ static void ildb_async_callback(struct ldap_request *req)
 		}
 		status = ldap_check_response(req->conn, &req->replies[0]->r.GeneralResult);
 		handle->status = ildb_map_error(ildb, status);
+		if (ac->callback && handle->status == LDB_SUCCESS) {
+			/* FIXME: build a corresponding ares to pass on */
+			handle->status = ac->callback(ac->module->ldb, ac->context, NULL);
+		}
 		handle->state = LDB_ASYNC_DONE;
 		break;
 
@@ -302,7 +330,7 @@ static int ildb_request_send(struct ldb_module *module, struct ldap_message *msg
 			     int timeout,
 			     struct ldb_async_handle **handle)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ildb_async_context *ildb_ac;
 	struct ldb_async_handle *h;
 	struct ldap_request *req;
@@ -362,7 +390,7 @@ static int ildb_search_async(struct ldb_module *module, const struct ldb_dn *bas
 			      int timeout,
 			      struct ldb_async_handle **handle)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 	int n;
 
@@ -422,12 +450,6 @@ static int ildb_search_async(struct ldb_module *module, const struct ldb_dn *bas
 	return ildb_request_send(module, msg, context, callback, timeout, handle);
 }
 
-struct ildb_sync_context {
-	struct ldb_result *res;
-	int status;
-	int done;
-};
-
 static int ildb_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
 {
 	struct ldb_result *res;
@@ -476,12 +498,10 @@ static int ildb_search_sync_callback(struct ldb_context *ldb, void *context, str
 		res->refs[n + 1] = NULL;
 	}
 
-	if (ares->type == LDB_REPLY_DONE) {
-		if (ares->controls) {
-			res->controls = talloc_steal(res, ares->controls);
-			if (! res->controls) {
-				goto error;
-			}
+	if (ares->controls) {
+		res->controls = talloc_steal(res, ares->controls);
+		if (! res->controls) {
+			goto error;
 		}
 	}
 
@@ -504,7 +524,7 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 			      struct ldb_control **control_req,
 			      struct ldb_result **res)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldb_async_handle *handle;
 	int ret;
 
@@ -531,7 +551,7 @@ static int ildb_add_async(struct ldb_module *module, const struct ldb_message *l
 			  int timeout,
 			  struct ldb_async_handle **handle)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 	struct ldap_mod **mods;
 	int i,n;
@@ -578,7 +598,7 @@ static int ildb_add_async(struct ldb_module *module, const struct ldb_message *l
 
 static int ildb_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldb_async_handle *handle;
 	int ret;
 
@@ -600,7 +620,7 @@ static int ildb_modify_async(struct ldb_module *module, const struct ldb_message
 			     int timeout,
 			     struct ldb_async_handle **handle)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 	struct ldap_mod **mods;
 	int i,n;
@@ -647,7 +667,7 @@ static int ildb_modify_async(struct ldb_module *module, const struct ldb_message
 
 static int ildb_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldb_async_handle *handle;
 	int ret;
 
@@ -669,7 +689,7 @@ static int ildb_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 			     int timeout,
 			     struct ldb_async_handle **handle)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 
 	*handle = NULL;
@@ -697,7 +717,7 @@ static int ildb_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 
 static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldb_async_handle *handle;
 	int ret;
 
@@ -720,7 +740,7 @@ static int ildb_rename_async(struct ldb_module *module,
 			     int timeout,
 			     struct ldb_async_handle **handle)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldap_message *msg;
 
 	*handle = NULL;
@@ -766,7 +786,7 @@ static int ildb_rename_async(struct ldb_module *module,
 
 static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldb_async_handle *handle;
 	int ret;
 
@@ -878,12 +898,50 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+
+static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+{
+	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
+
+	if (!ac) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	handle->state = LDB_ASYNC_INIT;
+
+	switch(type) {
+	case LDB_WAIT_NONE:
+		if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
+			return LDB_ERR_OTHER;
+		}
+		break;
+	case LDB_WAIT_ONCE:
+		while (handle->status == LDB_SUCCESS && handle->state == LDB_ASYNC_INIT) {
+		       if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
+				return LDB_ERR_OTHER;
+			}
+		}
+		break;
+	case LDB_WAIT_ALL:
+		while (handle->status == LDB_SUCCESS && handle->state != LDB_ASYNC_DONE) {
+			if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
+				return LDB_ERR_OTHER;
+			}
+		}
+		break;
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	return handle->status;
+}
+
 /*
   fetch the rootDSE for later use
 */
 static int ildb_init_2(struct ldb_module *module)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
 	struct ldb_result *res = NULL;
 	struct ldb_dn *empty_dn = ldb_dn_new(ildb);
 	int ret;
@@ -907,43 +965,6 @@ static const struct ldb_module_ops ildb_ops = {
 	.del_transaction   = ildb_del_trans,
 	.second_stage_init = ildb_init_2
 };
-
-
-static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
-{
-	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
-
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	switch(type) {
-	case LDB_WAIT_NONE:
-		if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
-			return LDB_ERR_OTHER;
-		}
-		break;
-	case LDB_WAIT_ONCE:
-		handle->state = LDB_ASYNC_INIT;
-		while (handle->status == LDB_SUCCESS && handle->state == LDB_ASYNC_INIT) {
-		       if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
-				return LDB_ERR_OTHER;
-			}
-		}
-		break;
-	case LDB_WAIT_ALL:
-		while (handle->status == LDB_SUCCESS && handle->state != LDB_ASYNC_DONE) {
-			if (event_loop_once(ac->req->conn->event.event_ctx) != 0) {
-				return LDB_ERR_OTHER;
-			}
-		}
-		break;
-	default:
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	return handle->status;
-}
 
 /*
   connect to the database
