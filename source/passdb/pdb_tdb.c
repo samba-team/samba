@@ -817,17 +817,24 @@ static BOOL tdbsam_open( const char *name )
 		return False;
 	}
 
+	/* set the initial reference count - must be done before tdbsam_convert
+	   as that calls tdbsam_open()/tdbsam_close(). */
+
+	ref_count = 1;
+
 	/* Check the version */
 	version = tdb_fetch_int32( tdbsam, TDBSAM_VERSION_STRING );
 	
-	if (version == -1)
+	if (version == -1) {
 		version = 0;	/* Version not found, assume version 0 */
+	}
 	
 	/* Compare the version */
 	if (version > TDBSAM_VERSION) {
 		/* Version more recent than the latest known */ 
 		DEBUG(0, ("tdbsam_open: unknown version => %d\n", version));
 		tdb_close( tdbsam );
+		ref_count = 0;
 		return False;
 	} 
 	
@@ -839,16 +846,13 @@ static BOOL tdbsam_open( const char *name )
 		if ( !tdbsam_convert(version) ) {
 			DEBUG(0, ("tdbsam_open: Error when trying to convert tdbsam [%s]\n",name));
 			tdb_close(tdbsam);
+			ref_count = 0;
 			return False;
 		}
 			
 		DEBUG(3, ("TDBSAM converted successfully.\n"));
 	}
 	
-	/* set the initial reference count */
-
-	ref_count = 1;
-
 	DEBUG(4,("tdbsam_open: successfully opened %s\n", name ));	
 	
 	return True;
