@@ -35,7 +35,6 @@ extern const char *dyn_MODULESDIR;
 extern const char *dyn_SHLIBEXT;
 extern const char *dyn_LOCKDIR; 
 extern const char *dyn_PIDDIR;
-extern const char *dyn_SMB_PASSWD_FILE;
 extern const char *dyn_PRIVATE_DIR;
 extern const char *dyn_SWATDIR;
 extern const char *dyn_JSDIR;
