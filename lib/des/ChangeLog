@@ -1,3 +1,14 @@
+2006-02-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add pkcs5 files.
+
+	* test_pkcs5.c: Testcases for pkcs5 pbe2.
+
+	* pkcs5.c (PKCS5_PBKDF2_HMAC_SHA1): new function.
+
+	* hmac.c: Digest key when it exceeds block size, not when it
+	exceeds the size of the output block.
+	
 2006-02-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rand.c (RAND_bytes): Don't abort() on failure, return error.
