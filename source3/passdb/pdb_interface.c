@@ -346,7 +346,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 	NTSTATUS status;
 	struct passwd *pwd;
 
-	if ((sam_pass = TALLOC_ZERO_P(tmp_ctx, struct samu)) == NULL) {
+	if ((sam_pass = samu_new(tmp_ctx)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
