@@ -3834,6 +3834,21 @@ static BOOL remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 		}
 	}
 
+	/* Set the new empty file ACL. */
+	if (fsp && fsp->fh->fd != -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, new_file_acl) == -1) {
+			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
+				fname, strerror(errno) ));
+			goto done;
+		}
+	} else {
+		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS, new_file_acl) == -1) {
+			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
+				fname, strerror(errno) ));
+			goto done;
+		}
+	}
+
 	ret = True;
 
  done:
