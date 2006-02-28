@@ -363,8 +363,6 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 
 	delete_dir = (lck->delete_on_close | lck->initial_delete_on_close);
 
-	TALLOC_FREE(lck);
-
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir &&
 				lck->delete_token) {
@@ -381,6 +379,8 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 				lck->delete_token->ngroups,
 				lck->delete_token->groups,
 				NULL);
+
+		TALLOC_FREE(lck);
 
 		ok = rmdir_internals(fsp->conn, fsp->fsp_name);
 
@@ -402,6 +402,7 @@ static int close_directory(files_struct *fsp, enum file_close_type close_type)
 		}
 		process_pending_change_notify_queue((time_t)0);
 	} else {
+		TALLOC_FREE(lck);
 		remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_CANCELLED);
 	}
 
