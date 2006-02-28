@@ -54,6 +54,7 @@ check_PROGRAMS = \
 	rctest \
 	test_bn \
 	test_cipher \
+	test_pkcs5 \
 	test_pkcs12 \
 	test_hmac
 
@@ -86,6 +87,7 @@ libhcrypto_la_SOURCES =	\
 	md4.h		\
 	md5.c		\
 	md5.h		\
+	pkcs5.c		\
 	pkcs12.c	\
 	rand.c		\
 	rand.h		\
