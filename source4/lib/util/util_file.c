@@ -24,11 +24,16 @@
 #include "system/shmem.h"
 #include "system/filesys.h"
 
-/****************************************************************************
+/**
+ * @file
+ * @brief File-related utility functions
+ */
+
+/**
 read a line from a file with possible \ continuation chars. 
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
-****************************************************************************/
+**/
 char *fgets_slash(char *s2,int maxlen,XFILE *f)
 {
   char *s=s2;
@@ -98,7 +103,9 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
   return(s);
 }
 
-/* Read one line (data until next newline or eof) and allocate it */
+/**
+ * Read one line (data until next newline or eof) and allocate it 
+ */
 char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 {
 	char *data = NULL;
@@ -146,9 +153,9 @@ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 }
 
 
-/****************************************************************************
+/**
 load a file into memory from a fd.
-****************************************************************************/ 
+**/
 
 char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 {
@@ -171,9 +178,9 @@ char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 	return p;
 }
 
-/****************************************************************************
+/**
 load a file into memory
-****************************************************************************/
+**/
 char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	int fd;
@@ -192,9 +199,9 @@ char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 }
 
 
-/*******************************************************************
+/**
 mmap (if possible) or read a file
-********************************************************************/
+**/
 void *map_file(const char *fname, size_t size)
 {
 	size_t s2 = 0;
@@ -228,9 +235,9 @@ void *map_file(const char *fname, size_t size)
 }
 
 
-/****************************************************************************
+/**
 parse a buffer into lines
-****************************************************************************/
+**/
 static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	int i;
@@ -267,10 +274,10 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *
 }
 
 
-/****************************************************************************
+/**
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
-****************************************************************************/
+**/
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
@@ -287,11 +294,11 @@ char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
 	return lines;
 }
 
-/****************************************************************************
+/**
 load a fd into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). If convert is true calls unix_to_dos on
 the list.
-****************************************************************************/
+**/
 char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
@@ -309,10 +316,10 @@ char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 }
 
 
-/****************************************************************************
+/**
 take a list of lines and modify them to produce a list where \ continues
 a line
-****************************************************************************/
+**/
 void file_lines_slashcont(char **lines)
 {
 	int i, j;
@@ -332,7 +339,7 @@ void file_lines_slashcont(char **lines)
 	}
 }
 
-/*
+/**
   save a lump of data into a file. Mostly used for debugging 
 */
 BOOL file_save(const char *fname, const void *packet, size_t length)
@@ -349,7 +356,7 @@ BOOL file_save(const char *fname, const void *packet, size_t length)
 	return True;
 }
 
-/*
+/**
   see if a file exists
 */
 BOOL file_exists(const char *path)

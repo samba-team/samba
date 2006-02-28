@@ -24,6 +24,10 @@
    code now
 */  
 
+/**
+ * @file
+ * @brief MS-style Filename matching
+ */
 
 #include "includes.h"
 
@@ -212,7 +216,7 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 }
 
 
-/* a generic fnmatch function - uses for non-CIFS pattern matching */
+/** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string)
 {
 	return ms_fnmatch(pattern, string, PROTOCOL_NT1);

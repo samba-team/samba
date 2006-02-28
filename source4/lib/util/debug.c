@@ -24,6 +24,11 @@
 #include "system/time.h"
 #include "dynconfig.h"
 
+/**
+ * @file
+ * @brief Debug logging
+ **/
+
 /* this global variable determines what messages are printed */
 int DEBUGLEVEL;
 
@@ -74,7 +79,7 @@ void do_debug(const char *format, ...)
 	free(s);
 }
 
-/*
+/**
   reopen the log file (usually called because the log file name might have changed)
 */
 void reopen_logs(void)
@@ -118,7 +123,7 @@ void reopen_logs(void)
 	}
 }
 
-/*
+/**
   control the name of the logfile and whether logging will be to stdout, stderr
   or a file
 */
@@ -133,7 +138,7 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 	reopen_logs();
 }
 
-/*
+/**
   return a string constant containing n tabs
   no more than 10 tabs are returned
 */
@@ -146,8 +151,8 @@ const char *do_debug_tab(uint_t n)
 }
 
 
-/*
-  log/print suspicious usage - print comments and backtrace
+/**
+  log suspicious usage - print comments and backtrace
 */	
 void log_suspicious_usage(const char *from, const char *info)
 {
@@ -155,6 +160,12 @@ void log_suspicious_usage(const char *from, const char *info)
 		debug_handlers.ops.log_suspicious_usage(from, info);
 	}
 }
+
+
+/**
+  print suspicious usage - print comments and backtrace
+*/	
+
 void print_suspicious_usage(const char* from, const char* info)
 {
 	if (debug_handlers.ops.print_suspicious_usage) {
@@ -195,7 +206,7 @@ void log_task_id(void)
 	}
 }
 
-/*
+/**
   register a set of debug handlers. 
 */
 void register_debug_handlers(const char *name, struct debug_ops *ops)

@@ -23,6 +23,11 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 
+/**
+ * @file
+ * @brief Fault handling
+ */
+
 /* the registered fault handler */
 static struct {
 	const char *name;
@@ -38,6 +43,9 @@ static const char *progname;
 #include <libexc.h>
 #endif
 
+/**
+ * Write backtrace to debug log
+ */
 void call_backtrace(void)
 {
 #ifdef HAVE_BACKTRACE
@@ -101,9 +109,9 @@ void call_backtrace(void)
 #endif
 }
 
-/*******************************************************************
+/**
  Something really nasty happened - panic !
-********************************************************************/
+**/
 void smb_panic(const char *why)
 {
 	const char *cmd = lp_panic_action();
@@ -138,9 +146,9 @@ void smb_panic(const char *why)
 	abort();
 }
 
-/*******************************************************************
+/**
 report a fault
-********************************************************************/
+**/
 static void fault_report(int sig)
 {
 	static int counter;
@@ -157,9 +165,9 @@ static void fault_report(int sig)
 	exit(1);
 }
 
-/****************************************************************************
+/**
 catch serious errors
-****************************************************************************/
+**/
 static void sig_fault(int sig)
 {
 	if (fault_handlers.fault_handler) {
@@ -170,9 +178,9 @@ static void sig_fault(int sig)
 	fault_report(sig);
 }
 
-/*******************************************************************
+/**
 setup our fault handlers
-********************************************************************/
+**/
 void fault_setup(const char *pname)
 {
 	if (progname == NULL) {
@@ -192,7 +200,7 @@ void fault_setup(const char *pname)
 #endif
 }
 
-/*
+/**
   register a fault handler. 
   Should only be called once in the execution of smbd.
 */
