@@ -39,7 +39,6 @@
 .Nm krb5_string_to_key_data ,
 .Nm krb5_string_to_key_data_salt ,
 .Nm krb5_string_to_key_data_salt_opaque ,
-.Nm krb5_string_to_key_derived ,
 .Nm krb5_string_to_key_salt ,
 .Nm krb5_string_to_key_salt_opaque ,
 .Nm krb5_get_pw_salt ,
@@ -150,14 +149,6 @@ to free the salt when done.
 .Fn krb5_free_salt
 frees the content of
 .Fa salt .
-.Pp
-.Fn krb5_string_to_key_derived
-is deprecated, see the BUGS section below.
-.Sh BUGS
-.Fn krb5_string_to_key_derived
-only works for
-.Dv ETYPE_DES3_CBC_SHA1 ,
-if you use on on some other enctypes, it will produce the wrong result.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_data 3 ,
