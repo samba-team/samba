@@ -43,11 +43,11 @@ RCSID("$Id$");
 static int verbose = 0;
 
 static void
-hex_dump_data(krb5_data *data)
+hex_dump_data(const void *data, size_t length)
 {
     char *p;
 
-    hex_encode(data->data, data->length, &p);
+    hex_encode(data, length, &p);
     printf("%s\n", p);
     free(p);
 }
@@ -222,7 +222,6 @@ string_to_key_test(krb5_context context)
 	_krb5_put_int(iter, keys[i].iterations, 4);
 	
 	if (keys[i].pbkdf2) {
-#ifdef HAVE_OPENSSL
 	    char keyout[32];
 
 	    if (keys[i].keylen > sizeof(keyout))
@@ -234,38 +233,14 @@ string_to_key_test(krb5_context context)
 				   keys[i].keylen, keyout);
 	    
 	    if (memcmp(keyout, keys[i].pbkdf2, keys[i].keylen) != 0) {
-		krb5_warnx(context, "%d: openssl key pbkdf2", i);
-		val = 1;
-		continue;
-	    }
-#endif
-	    
-	    ret = _krb5_PKCS5_PBKDF2(context, CKSUMTYPE_SHA1, password, salt, 
-				     keys[i].iterations - 1,
-				     keys[i].enctype,
-				     &key);
-	    if (ret) {
-		krb5_warn(context, ret, "%d: krb5_PKCS5_PBKDF2", i);
+		krb5_warnx(context, "%d: pbkdf2", i);
 		val = 1;
 		continue;
 	    }
 	    
-	    if (key.keyvalue.length != keys[i].keylen) {
-		krb5_warnx(context, "%d: size key pbkdf2", i);
-		val = 1;
-		continue;
-	    }
-
-	    if (memcmp(key.keyvalue.data, keys[i].pbkdf2, keys[i].keylen) != 0) {
-		krb5_warnx(context, "%d: key pbkdf2 pl %lu", 
-			   i, (unsigned long)password.length);
-		val = 1;
-		continue;
-	    }
-
 	    if (verbose) {
 		printf("PBKDF2:\n");
-		hex_dump_data(&key.keyvalue);
+		hex_dump_data(keyout, keys[i].keylen);
 	    }
 	    
 	    krb5_free_keyblock_contents(context, &key);
@@ -296,7 +271,7 @@ string_to_key_test(krb5_context context)
 	
 	if (verbose) {
 	    printf("key:\n");
-	    hex_dump_data(&key.keyvalue);
+	    hex_dump_data(key.keyvalue.data, key.keyvalue.length);
 	}
 	krb5_free_keyblock_contents(context, &key);
     }
