@@ -841,7 +841,7 @@ MAKEDIR = || exec false; \
 
 # this adds support for precompiled headers. To use it, install a snapshot
 # of gcc-3.4 and run 'make pch' before you do the main build. 
-pch:
+pch: proto_exists
 	rm -f $(srcdir)/include/includes.h.gch
 	$(CC) -I. -I$(srcdir) $(FLAGS) @PIE_CFLAGS@ -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
