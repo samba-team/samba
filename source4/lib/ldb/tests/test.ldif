@@ -374,7 +374,7 @@ description: Manager of the directory
 userpassword:: c2VjcmV0
 
 dn: cn=Mark Elliot,ou=Alumni Association,ou=People,o=University of Michigan,c=
- US
+ TEST
 objectclass: OpenLDAPperson
 cn: Mark Elliot
 cn: Mark A Elliot
@@ -413,3 +413,4 @@ telephonenumber: +1 313 555 5331
 dn: ou=Ldb Test,ou=People,o=University of Michigan,c=TEST
 objectclass: organizationalUnit
 ou: Ldb Test
+
