@@ -8,6 +8,11 @@ upgrade process (from Samba3):
    from earlier Samba4 releases in the future)
  - Add support for reading WINS TDB files as well as WINS dat files.
 
+- seperate adminlog mechanism (as opposed to the current DEBUG log,
+  which is not really aimed at administrators but more at developers)
+  Perhaps similar to eventlog so we can also use eventlog to retrieve the data?
+- improve handling of test results in testsuite
+
 Configuration options
 =====================
 
@@ -195,7 +200,6 @@ or are not converted by the upgrade script:
 - browse list
 - enhanced browsing
 - wins proxy
-- wins hook
 - wins partners
 - blocking locks
 - fake oplocks
@@ -209,21 +213,6 @@ or are not converted by the upgrade script:
 - oplock contention limit
 - posix locking
 - share modes
-- ldap server
-- ldap port
-- ldap admin dn
-- ldap delete dn
-- ldap group suffix
-- ldap idmap suffix
-- ldap machine suffix
-- ldap passwd sync
-- ldap password sync
-- ldap replication sleep
-- ldap suffix
-- ldap ssl
-- ldap timeout
-- ldap page size
-- ldap user suffix
 - add share command
 - change share command
 - delete share command
