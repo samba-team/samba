@@ -58,7 +58,7 @@ HMAC_Init_ex(HMAC_CTX *ctx,
     ctx->engine = engine;
 #endif
 
-    if (keylen > EVP_MD_size(ctx->md)) {
+    if (keylen > EVP_MD_block_size(ctx->md)) {
 	EVP_Digest(key, keylen, ctx->buf, NULL, ctx->md, engine);
 	key = ctx->buf;
 	keylen = EVP_MD_size(ctx->md);
