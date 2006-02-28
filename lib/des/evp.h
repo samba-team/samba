@@ -84,6 +84,7 @@
 #define EVP_rc4_40 hc_EVP_rc4_40
 #define EVP_sha hc_EVP_sha
 #define EVP_sha1 hc_EVP_sha1
+#define PKCS5_PBKDF2_HMAC_SHA1 hc_PKCS5_PBKDF2_HMAC_SHA1
 
 /*
  *
@@ -222,6 +223,9 @@ int	EVP_CipherInit_ex(EVP_CIPHER_CTX *,const EVP_CIPHER *, ENGINE *,
 			  const void *, const void *, int);
 
 int	EVP_Cipher(EVP_CIPHER_CTX *,void *,const void *,size_t);
+
+int	PKCS5_PBKDF2_HMAC_SHA1(const void *, size_t, const void *, size_t,
+			       unsigned long, size_t, void *);
 
 
 #endif /* HEIM_EVP_H */
