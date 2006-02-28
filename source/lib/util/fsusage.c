@@ -21,6 +21,10 @@
 #include "includes.h"
 #include "system/filesys.h"
 
+/**
+ * @file
+ * @brief Utility functions for getting the amount of free disk space
+ */
 
 /* Return the number of TOSIZE-byte blocks used by
    BLOCKS FROMSIZE-byte blocks, rounding away from zero.
@@ -35,11 +39,13 @@ static uint64_t adjust_blocks(uint64_t blocks, uint64_t fromsize, uint64_t tosiz
 		return (blocks + 1) / (tosize / fromsize);
 }
 
-/* this does all of the system specific guff to get the free disk space.
-   It is derived from code in the GNU fileutils package, but has been
-   considerably mangled for use here 
-
-   results are returned in *dfree and *dsize, in 512 byte units
+/**
+ * Retrieve amount of free disk space.
+ * this does all of the system specific guff to get the free disk space.
+ * It is derived from code in the GNU fileutils package, but has been
+ * considerably mangled for use here 
+ *
+ * results are returned in *dfree and *dsize, in 512 byte units
 */
 int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 {

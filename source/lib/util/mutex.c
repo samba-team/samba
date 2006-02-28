@@ -20,6 +20,11 @@
 */
 #include "includes.h"
 #include "mutex.h"
+
+/**
+ * @file
+ * @brief Mutex utility functions
+ */
 	 
 /* the registered mutex handlers */
 static struct {
@@ -30,7 +35,7 @@ static struct {
 /* read/write lock routines */
 
 
-/*
+/**
   register a set of mutex/rwlock handlers. 
   Should only be called once in the execution of smbd.
 */

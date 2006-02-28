@@ -19,6 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/**
+ * @file
+ * @brief Capabilities functions
+ **/
+
 /*
   capabilities fns - will be needed when we enable kernel oplocks
 */

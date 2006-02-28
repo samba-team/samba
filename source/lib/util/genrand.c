@@ -25,15 +25,20 @@
 #include "system/filesys.h"
 #include "lib/crypto/crypto.h"
 
+/**
+ * @file
+ * @brief Random number generation
+ */
+
 static unsigned char hash[258];
 static uint32_t counter;
 
 static BOOL done_reseed = False;
 static void (*reseed_callback)(int *newseed);
 
-/**************************************************************** 
+/**
  Copy any user given reseed data.
-*****************************************************************/
+**/
 
 void set_rand_reseed_callback(void (*fn)(int *))
 {
@@ -196,9 +201,9 @@ static int do_reseed(BOOL use_fd, int fd)
 	return -1;
 }
 
-/*
+/**
  Interface to the (hopefully) good crypto random number generator.
-*/
+**/
 void generate_random_buffer(uint8_t *out, int len)
 {
 	static int urand_fd = -1;
@@ -242,9 +247,9 @@ void generate_random_buffer(uint8_t *out, int len)
 	}
 }
 
-/*
+/**
   generate a single random uint32_t
-*/
+**/
 uint32_t generate_random(void)
 {
 	uint8_t v[4];
@@ -253,9 +258,9 @@ uint32_t generate_random(void)
 }
 
 
-/*
+/**
   very basic password quality checker
-*/
+**/
 BOOL check_password_quality(const char *s)
 {
 	int has_digit=0, has_capital=0, has_lower=0;
@@ -273,9 +278,9 @@ BOOL check_password_quality(const char *s)
 	return has_digit && has_lower && has_capital;
 }
 
-/*******************************************************************
+/**
  Use the random number generator to generate a random string.
-********************************************************************/
+**/
 
 char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list)
 {

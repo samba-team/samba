@@ -22,6 +22,11 @@
 #include "includes.h"
 #include "smb_server/smb_server.h"
 
+/**
+ * @file
+ * @brief Substitution handling
+ */
+
 /* oh bugger - I really didn't want to have a top-level context
    anywhere, but until we change all lp_*() calls to take a context
    argument this is needed */
@@ -66,7 +71,7 @@ void sub_set_remote_arch(const char *str)
 	setup_string(&sub->remote_arch, str);
 }
 
-/*
+/**
   setup the string used by %U substitution 
 */
 void sub_set_user_name(const char *name)
@@ -75,17 +80,17 @@ void sub_set_user_name(const char *name)
 	setup_string(&sub->user_name, name);
 }
 
-/****************************************************************************
-FOO
-****************************************************************************/
+/**
+FIXME
+**/
 void standard_sub_basic(char *str,size_t len)
 {
 }
 
-/****************************************************************************
+/**
  Do some standard substitutions in a string.
  This function will return an allocated string that have to be freed.
-****************************************************************************/
+**/
 char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name, const char *str)
 {
 	return talloc_strdup(mem_ctx, str);
@@ -96,10 +101,10 @@ char *alloc_sub_basic(const char *smb_name, const char *str)
 	return strdup(str);
 }
 
-/****************************************************************************
+/**
  Do some specific substitutions in a string.
  This function will return an allocated string that have to be freed.
-****************************************************************************/
+**/
 
 char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			const char *input_string,
@@ -138,9 +143,9 @@ char *alloc_sub_advanced(int snum, const char *user,
 	return strdup(str);
 }
 
-/****************************************************************************
+/**
  Do some standard substitutions in a string.
-****************************************************************************/
+**/
 
 void standard_sub_tcon(struct smbsrv_tcon *tcon, char *str, size_t len)
 {
@@ -156,9 +161,9 @@ char *alloc_sub_tcon(struct smbsrv_tcon *tcon, char *str)
 	return strdup(str);
 }
 
-/****************************************************************************
- Like standard_sub but by snum.
-****************************************************************************/
+/**
+ Like standard_sub but by snum. FIXME
+**/
 
 void standard_sub_snum(int snum, char *str, size_t len)
 {

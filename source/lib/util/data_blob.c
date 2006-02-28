@@ -21,10 +21,15 @@
 
 #include "includes.h"
 
-/*******************************************************************
+/**
+ * @file
+ * @brief Manipulation of arbitrary data blobs
+ **/
+
+/**
  construct a data blob, must be freed with data_blob_free()
  you can pass NULL for p and get a blank data blob
-*******************************************************************/
+**/
 DATA_BLOB data_blob_named(const void *p, size_t length, const char *name)
 {
 	DATA_BLOB ret;
@@ -48,9 +53,9 @@ DATA_BLOB data_blob_named(const void *p, size_t length, const char *name)
 	return ret;
 }
 
-/*******************************************************************
+/**
  construct a data blob, using supplied TALLOC_CTX
-*******************************************************************/
+**/
 DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, size_t length, const char *name)
 {
 	DATA_BLOB ret = data_blob_named(p, length, name);
@@ -62,10 +67,10 @@ DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, size_t leng
 }
 
 
-/*******************************************************************
+/**
  reference a data blob, to the supplied TALLOC_CTX.  
  Returns a NULL DATA_BLOB on failure
-*******************************************************************/
+**/
 DATA_BLOB data_blob_talloc_reference(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 {
 	DATA_BLOB ret = *blob;
@@ -78,11 +83,11 @@ DATA_BLOB data_blob_talloc_reference(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 	return ret;
 }
 
-/*******************************************************************
+/**
  construct a zero data blob, using supplied TALLOC_CTX. 
  use this sparingly as it initialises data - better to initialise
  yourself if you want specific data in the blob
-*******************************************************************/
+**/
 DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
 {
 	DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, length);
@@ -90,9 +95,9 @@ DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
 	return blob;
 }
 
-/*******************************************************************
+/**
 free a data blob
-*******************************************************************/
+**/
 void data_blob_free(DATA_BLOB *d)
 {
 	if (d) {
@@ -102,9 +107,9 @@ void data_blob_free(DATA_BLOB *d)
 	}
 }
 
-/*******************************************************************
+/**
 clear a DATA_BLOB's contents
-*******************************************************************/
+**/
 void data_blob_clear(DATA_BLOB *d)
 {
 	if (d->data) {
@@ -112,9 +117,9 @@ void data_blob_clear(DATA_BLOB *d)
 	}
 }
 
-/*******************************************************************
+/**
 free a data blob and clear its contents
-*******************************************************************/
+**/
 void data_blob_clear_free(DATA_BLOB *d)
 {
 	data_blob_clear(d);
@@ -122,9 +127,9 @@ void data_blob_clear_free(DATA_BLOB *d)
 }
 
 
-/*******************************************************************
+/**
 check if two data blobs are equal
-*******************************************************************/
+**/
 BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
 {
 	if (d1->length != d2->length) {
@@ -142,9 +147,9 @@ BOOL data_blob_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
 	return False;
 }
 
-/*******************************************************************
+/**
 print the data_blob as hex string
-*******************************************************************/
+**/
 char *data_blob_hex_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 {
 	int i;
@@ -161,10 +166,10 @@ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 	return hex_string;
 }
 
-/*
+/**
   useful for constructing data blobs in test suites, while
   avoiding const warnings
-*/
+**/
 DATA_BLOB data_blob_string_const(const char *str)
 {
 	DATA_BLOB blob;
@@ -182,9 +187,9 @@ DATA_BLOB data_blob_const(const void *p, size_t length)
 }
 
 
-/*
+/**
   realloc a data_blob
-*/
+**/
 NTSTATUS data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t length)
 {
 	blob->data = talloc_realloc_size(mem_ctx, blob->data, length);
@@ -193,9 +198,9 @@ NTSTATUS data_blob_realloc(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, size_t length)
 	return NT_STATUS_OK;
 }
 
-/*
+/**
   append some data to a data blob
-*/
+**/
 NTSTATUS data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			  const void *p, size_t length)
 {

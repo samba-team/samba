@@ -23,6 +23,11 @@
 #include "includes.h"
 #include "system/filesys.h"
 
+/**
+ * @file
+ * @brief Gaining/losing root privileges
+ */
+
 /*
   there are times when smbd needs to temporarily gain root privileges
   to do some operation. To do this you call root_privileges(), which

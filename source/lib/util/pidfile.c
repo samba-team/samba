@@ -27,8 +27,15 @@
 #define O_NONBLOCK
 #endif
 
-/* return the pid in a pidfile. return 0 if the process (or pidfile)
-   does not exist */
+/**
+ * @file
+ * @brief Pid file handling
+ */
+
+/**
+ * return the pid in a pidfile. return 0 if the process (or pidfile)
+ * does not exist 
+ */
 pid_t pidfile_pid(const char *name)
 {
 	int fd;
@@ -73,7 +80,9 @@ pid_t pidfile_pid(const char *name)
 	return 0;
 }
 
-/* create a pid file in the pid directory. open it and leave it locked */
+/**
+ * create a pid file in the pid directory. open it and leave it locked 
+ */
 void pidfile_create(const char *name)
 {
 	int     fd;

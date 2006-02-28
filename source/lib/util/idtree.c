@@ -29,6 +29,10 @@
   see the section marked "public interface" below for documentation
 */
 
+/**
+ * @file
+ */
+
 #include "includes.h"
 
 #define IDR_BITS 5

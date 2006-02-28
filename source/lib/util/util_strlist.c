@@ -21,7 +21,12 @@
 
 #include "includes.h"
 
-/*
+/**
+ * @file
+ * @brief String list manipulation
+ */
+
+/**
   build a null terminated list of strings from a input string and a
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
@@ -71,9 +76,10 @@ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *
 	return ret;
 }
 
-/* build a null terminated list of strings from an argv-like input string 
-   Entries are seperated by spaces and can be enclosed by quotes. 
-   Does NOT support escaping
+/**
+ * build a null terminated list of strings from an argv-like input string 
+ * Entries are seperated by spaces and can be enclosed by quotes. 
+ * Does NOT support escaping
  */
 const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
@@ -131,7 +137,9 @@ const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const 
 
 }
 
-/* join a list back to one string */
+/**
+ * join a list back to one string 
+ */
 char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 {
 	char *ret = NULL;
@@ -149,7 +157,7 @@ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 	return ret;
 }
 
-/* join a list back to one (shell-like) string; entries 
+/** join a list back to one (shell-like) string; entries 
  * seperated by spaces, using quotes where necessary */
 char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 {
@@ -174,7 +182,7 @@ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 	return ret;
 }
 
-/*
+/**
   return the number of elements in a string list
 */
 size_t str_list_length(const char **list)
@@ -185,7 +193,7 @@ size_t str_list_length(const char **list)
 }
 
 
-/*
+/**
   copy a string list
 */
 const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
@@ -205,7 +213,7 @@ const char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 	return ret;
 }
 
-/*
+/**
    Return true if all the elements of the list match exactly.
  */
 BOOL str_list_equal(const char **list1, const char **list2)
@@ -228,7 +236,7 @@ BOOL str_list_equal(const char **list1, const char **list2)
 }
 
 
-/*
+/**
   add an entry to a string list
 */
 const char **str_list_add(const char **list, const char *s)
@@ -247,7 +255,7 @@ const char **str_list_add(const char **list, const char *s)
 	return ret;
 }
 
-/*
+/**
   remove an entry from a string list
 */
 void str_list_remove(const char **list, const char *s)
@@ -265,7 +273,7 @@ void str_list_remove(const char **list, const char *s)
 }
 
 
-/*
+/**
   return True if a string is in a list
 */
 BOOL str_list_check(const char **list, const char *s)
@@ -278,7 +286,7 @@ BOOL str_list_check(const char **list, const char *s)
 	return False;
 }
 
-/*
+/**
   return True if a string is in a list, case insensitively
 */
 BOOL str_list_check_ci(const char **list, const char *s)

@@ -18,6 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/**
+ * @file
+ * @brief scalable FILE replacement
+ */
+
 /*
   stdio is very convenient, but on some systems the file descriptor
   in FILE* is 8 bits, so it fails when more than 255 files are open. 

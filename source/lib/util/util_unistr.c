@@ -22,6 +22,11 @@
 #include "includes.h"
 #include "system/iconv.h"
 
+/**
+ * @file
+ * @brief Unicode string manipulation
+ */
+
 /* these 2 tables define the unicode case handling.  They are loaded
    at startup either via mmap() or read() from the lib directory */
 static void *upcase_table;
@@ -58,9 +63,9 @@ static void load_case_tables(void)
 	}
 }
 
-/*******************************************************************
+/**
  Convert a codepoint_t to upper case.
-********************************************************************/
+**/
 codepoint_t toupper_w(codepoint_t val)
 {
 	if (val < 128) {
@@ -78,9 +83,9 @@ codepoint_t toupper_w(codepoint_t val)
 	return SVAL(upcase_table, val*2);
 }
 
-/*******************************************************************
+/**
  Convert a codepoint_t to lower case.
-********************************************************************/
+**/
 codepoint_t tolower_w(codepoint_t val)
 {
 	if (val < 128) {
@@ -98,10 +103,10 @@ codepoint_t tolower_w(codepoint_t val)
 	return SVAL(lowcase_table, val*2);
 }
 
-/*******************************************************************
+/**
 return the number of bytes occupied by a buffer in CH_UTF16 format
 the result includes the null termination
-********************************************************************/
+**/
 size_t utf16_len(const void *buf)
 {
 	size_t len;
@@ -111,11 +116,11 @@ size_t utf16_len(const void *buf)
 	return len + 2;
 }
 
-/*******************************************************************
+/**
 return the number of bytes occupied by a buffer in CH_UTF16 format
 the result includes the null termination
 limited by 'n' bytes
-********************************************************************/
+**/
 size_t utf16_len_n(const void *src, size_t n)
 {
 	size_t len;
@@ -137,7 +142,7 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 	return PTR_DIFF(p, base_ptr) & 1;
 }
 
-/*
+/**
   compare two codepoints case insensitively
 */
 int codepoint_cmpi(codepoint_t c1, codepoint_t c2)
