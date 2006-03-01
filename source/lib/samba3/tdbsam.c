@@ -235,7 +235,7 @@ NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3
 	for (key = tdb_firstkey(tdb); key.dptr; key = tdb_nextkey(tdb, key))
 	{
 		BOOL ret;
-		if (strncmp(key.dptr, "USER_", 5) != 0) 
+		if (strncmp((const char *)key.dptr, "USER_", 5) != 0) 
 			continue;
 
 		val = tdb_fetch(tdb, key);
