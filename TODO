@@ -17,7 +17,8 @@ Configuration options
 =====================
 
 The following options don't exist in Samba4 yet
-or are not converted by the upgrade script:
+or are not converted by the upgrade script
+or will be removed:
 
 - update encrypted
 - public
@@ -200,7 +201,6 @@ or are not converted by the upgrade script:
 - browse list
 - enhanced browsing
 - wins proxy
-- wins partners
 - blocking locks
 - fake oplocks
 - kernel oplocks
