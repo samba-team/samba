@@ -81,19 +81,19 @@ static struct samba3_domainsecrets *secrets_find_domain(TALLOC_CTX *ctx, struct 
 
 static NTSTATUS ipc_password (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TALLOC_CTX *ctx, struct samba3_secrets *db) 
 {
-	cli_credentials_set_password(db->ipc_cred, vbuf.dptr, CRED_SPECIFIED);
+	cli_credentials_set_password(db->ipc_cred, (const char *)vbuf.dptr, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS ipc_username (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TALLOC_CTX *ctx, struct samba3_secrets *db) 
 {
-	cli_credentials_set_username(db->ipc_cred, vbuf.dptr, CRED_SPECIFIED);
+	cli_credentials_set_username(db->ipc_cred, (const char *)vbuf.dptr, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 	
 static NTSTATUS ipc_domain (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TALLOC_CTX *ctx, struct samba3_secrets *db) 
 {
-	cli_credentials_set_domain(db->ipc_cred, vbuf.dptr, CRED_SPECIFIED);
+	cli_credentials_set_domain(db->ipc_cred, (const char *)vbuf.dptr, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 
@@ -101,7 +101,7 @@ static NTSTATUS domain_sid (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TA
 {
 	struct samba3_domainsecrets *domainsec = secrets_find_domain(ctx, db, key);
 	domainsec->sid.sub_auths = talloc_array(ctx, uint32_t, 15);
-	tdb_sid_unpack(tdb, vbuf.dptr, vbuf.dsize, &domainsec->sid);
+	tdb_sid_unpack(tdb, (char *)vbuf.dptr, vbuf.dsize, &domainsec->sid);
 	return NT_STATUS_OK;
 }
 
@@ -116,7 +116,7 @@ static NTSTATUS ldap_bind_pw (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, 
 {
 	struct samba3_ldappw pw;
 	pw.dn = talloc_strdup(ctx, key);
-	pw.password = talloc_strdup(ctx, vbuf.dptr);
+	pw.password = talloc_strdup(ctx, (const char *)vbuf.dptr);
 
 	db->ldappws = talloc_realloc(ctx, db->ldappws, struct samba3_ldappw, db->ldappw_count+1);
 	db->ldappws[db->ldappw_count] = pw;
@@ -155,7 +155,7 @@ static NTSTATUS machine_last_change_time (TDB_CONTEXT *tdb, const char *key, TDB
 static NTSTATUS machine_password (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TALLOC_CTX *ctx, struct samba3_secrets *db) 
 {
 	struct samba3_domainsecrets *domainsec = secrets_find_domain(ctx, db, key);
-	domainsec->plaintext_pw = talloc_strdup(ctx, vbuf.dptr);
+	domainsec->plaintext_pw = talloc_strdup(ctx, (const char *)vbuf.dptr);
 	return NT_STATUS_OK;
 }
 
@@ -184,19 +184,19 @@ static NTSTATUS domtrust_acc (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, 
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* unpack unicode domain name and plaintext password */
-	len += tdb_unpack(tdb, vbuf.dptr, vbuf.dsize - len, "d", &pass.uni_name_len);
+	len += tdb_unpack(tdb, (char *)vbuf.dptr, vbuf.dsize - len, "d", &pass.uni_name_len);
 	
 	for (idx = 0; idx < 32; idx++)
-		len +=  tdb_unpack(tdb, vbuf.dptr + len, vbuf.dsize - len, "w", &pass.uni_name[idx]);
+		len +=  tdb_unpack(tdb, (char *)(vbuf.dptr + len), vbuf.dsize - len, "w", &pass.uni_name[idx]);
 
-	len += tdb_unpack(tdb, vbuf.dptr + len, vbuf.dsize - len, "d", &pass_len);
-	pass.pass = talloc_strdup(ctx, vbuf.dptr+len);
-	len += strlen(vbuf.dptr)+1;
-	len += tdb_unpack(tdb, vbuf.dptr + len, vbuf.dsize - len, "d", &pass.mod_time);
+	len += tdb_unpack(tdb, (char *)(vbuf.dptr + len), vbuf.dsize - len, "d", &pass_len);
+	pass.pass = talloc_strdup(ctx, (char *)(vbuf.dptr+len));
+	len += strlen((const char *)vbuf.dptr)+1;
+	len += tdb_unpack(tdb, (char *)(vbuf.dptr + len), vbuf.dsize - len, "d", &pass.mod_time);
 	
 	pass.domain_sid.sub_auths = talloc_array(ctx, uint32_t, 15);
 	/* unpack domain sid */
-	len += tdb_sid_unpack(tdb, vbuf.dptr + len, vbuf.dsize - len, &pass.domain_sid);
+	len += tdb_sid_unpack(tdb, (char *)(vbuf.dptr + len), vbuf.dsize - len, &pass.domain_sid);
 
 	/* FIXME: Add to list */
 
@@ -244,8 +244,8 @@ NTSTATUS samba3_read_secrets(const char *fname, TALLOC_CTX *ctx, struct samba3_s
 		vbuf = tdb_fetch(tdb, kbuf);
 
 		for (i = 0; secrets_handlers[i].prefix; i++) {
-			if (!strncmp(kbuf.dptr, secrets_handlers[i].prefix, strlen(secrets_handlers[i].prefix))) {
-				key = talloc_strndup(ctx, kbuf.dptr+strlen(secrets_handlers[i].prefix), kbuf.dsize-strlen(secrets_handlers[i].prefix));
+			if (!strncmp((const char *)kbuf.dptr, secrets_handlers[i].prefix, strlen(secrets_handlers[i].prefix))) {
+				key = talloc_strndup(ctx, (const char *)(kbuf.dptr+strlen(secrets_handlers[i].prefix)), kbuf.dsize-strlen(secrets_handlers[i].prefix));
 				secrets_handlers[i].handler(tdb, key, vbuf, ctx, db);
 				talloc_free(key);
 				break;

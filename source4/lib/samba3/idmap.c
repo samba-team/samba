@@ -58,17 +58,21 @@ NTSTATUS samba3_read_idmap(const char *fn, TALLOC_CTX *ctx, struct samba3_idmapd
 	for (key = tdb_firstkey(tdb); key.dptr; key = tdb_nextkey(tdb, key)) 
 	{
 		struct samba3_idmap_mapping map;
-		
-		if (strncmp(key.dptr, "GID ", 4) == 0) {
+		const char *k = (const char *)key.dptr;
+		const char *v;
+
+		if (strncmp(k, "GID ", 4) == 0) {
 			map.type = IDMAP_GROUP;
-			map.unix_id = atoi(key.dptr+4);
+			map.unix_id = atoi(k+4);
 			val = tdb_fetch(tdb, key);
-			map.sid = dom_sid_parse_talloc(ctx, val.dptr);
-		} else if (strncmp(key.dptr, "UID ", 4) == 0) {
+			v = (const char *)val.dptr;
+			map.sid = dom_sid_parse_talloc(ctx, v);
+		} else if (strncmp(k, "UID ", 4) == 0) {
 			map.type = IDMAP_USER;
-			map.unix_id = atoi(key.dptr+4);
+			map.unix_id = atoi(k+4);
 			val = tdb_fetch(tdb, key);
-			map.sid = dom_sid_parse_talloc(ctx, val.dptr);
+			v = (const char *)val.dptr;
+			map.sid = dom_sid_parse_talloc(ctx, v);
 		} else {
 			continue;
 		}

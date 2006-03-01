@@ -74,8 +74,9 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		struct samba3_groupmapping map;
+		const char *k = (const char *)kbuf.dptr;
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) == 0)
+		if (strncmp(k, GROUP_PREFIX, strlen(GROUP_PREFIX)) == 0)
 		{
 			dbuf = tdb_fetch(tdb, kbuf);
 			if (!dbuf.dptr)
@@ -83,9 +84,9 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 
 			ZERO_STRUCT(map);
 
-			map.sid = dom_sid_parse_talloc(ctx, kbuf.dptr+strlen(GROUP_PREFIX));
+			map.sid = dom_sid_parse_talloc(ctx, k+strlen(GROUP_PREFIX));
 
-			ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "dd",
+			ret = tdb_unpack(tdb, (char *)dbuf.dptr, dbuf.dsize, "dd",
 							 &map.gid, &map.sid_name_use);
 			
 			if ( ret == -1 ) {
@@ -93,8 +94,8 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 				continue;
 			}
 
-			map.nt_name = talloc_strdup(ctx, dbuf.dptr+ret);
-			map.comment = talloc_strdup(ctx, dbuf.dptr+ret+strlen(map.nt_name));
+			map.nt_name = talloc_strdup(ctx, (const char *)(dbuf.dptr+ret));
+			map.comment = talloc_strdup(ctx, (const char *)(dbuf.dptr+ret+strlen(map.nt_name)));
 
 			db->groupmappings = talloc_realloc(ctx, db->groupmappings, struct samba3_groupmapping, db->groupmap_count+1);
 
@@ -104,7 +105,7 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 			db->groupmappings[db->groupmap_count] = map;
 
 			db->groupmap_count++;
-		} else if (strncmp(kbuf.dptr, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
+		} else if (strncmp(k, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
 		{
 			struct samba3_alias alias;
 			const char **member_strlist;
@@ -114,11 +115,11 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 			if (!dbuf.dptr)
 				continue;
 
-			alias.sid = dom_sid_parse_talloc(ctx, kbuf.dptr+strlen(MEMBEROF_PREFIX));
+			alias.sid = dom_sid_parse_talloc(ctx, k+strlen(MEMBEROF_PREFIX));
 			alias.member_count = 0;
 			alias.members = NULL;
 
-			member_strlist = str_list_make_shell(ctx, dbuf.dptr, " ");
+			member_strlist = str_list_make_shell(ctx, (const char *)dbuf.dptr, " ");
 
 			for (i = 0; member_strlist[i]; i++) {
 				alias.members = talloc_realloc(ctx, alias.members, struct dom_sid *, alias.member_count+1);
