@@ -43,9 +43,6 @@ struct debug_ops {
 	void (*log_task_id)(int fd);
 };
 
-void do_debug_header(int level, const char *location, const char *func);
-void do_debug(const char *, ...) PRINTF_ATTRIBUTE(1,2);
-
 extern int DEBUGLEVEL;
 
 #define DEBUGLVL(level) ((level) <= DEBUGLEVEL)
