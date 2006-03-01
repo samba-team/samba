@@ -17,8 +17,8 @@
 	providing root access to the server via smbd.</para>
 
 	<para>Please read the extended description provided in the
-	Samba documentation before enabling this option.</para>
+	Samba documentation.</para>
 
 </description>
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>

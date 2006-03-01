@@ -11,9 +11,7 @@
                  between DC's through their SAM) and can contain users and
                  global groups from any trusted SAM. To be able to use nested
                  groups, you need to run nss_winbind.</para>
-		 <para>Please note that per 3.0.3 this is a new feature, so 
-		 handle with care.</para>
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
