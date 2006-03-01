@@ -1311,11 +1311,13 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, 
 	
 	tdbsam_endsampwent( my_methods );
 	
+#if 0 
 	if ( !pdb_get_group_rid(newpwd) ) {
 		DEBUG (0,("tdb_update_sam: Failing to store a struct samu for [%s] "
 			"without a primary group RID\n", pdb_get_username(newpwd)));
 		return False;
 	}
+#endif
 
 	if ( !(user_rid = pdb_get_user_rid(newpwd)) ) {
 		DEBUG(0,("tdb_update_sam: struct samu (%s) with no RID!\n", pdb_get_username(newpwd)));
