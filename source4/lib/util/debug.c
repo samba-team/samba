@@ -46,6 +46,24 @@ static struct {
 	const char *prog_name;
 } state;
 
+static void log_timestring(int level, const char *location, const char *func)
+{
+	char *t = NULL;
+	char *s = NULL;
+
+	if (state.logtype != DEBUG_FILE) return;
+
+	t = timestring(NULL, time(NULL));
+	if (!t) return;
+
+	asprintf(&s, "[%s, %d %s:%s()]\n", t, level, location, func);
+	talloc_free(t);
+	if (!s) return;
+
+	write(state.fd, s, strlen(s));
+	free(s);
+}
+
 /*
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
@@ -60,7 +78,7 @@ void do_debug_header(int level, const char *location, const char *func)
   the backend for debug messages. Note that the DEBUG() macro has already
   ensured that the log level has been met before this is called
 */
-void do_debug(const char *format, ...)
+void do_debug(const char *format, ...) _PRINTF_ATTRIBUTE(1,2)
 {
 	va_list ap;
 	char *s = NULL;
@@ -76,6 +94,7 @@ void do_debug(const char *format, ...)
 	va_end(ap);
 
 	write(state.fd, s, strlen(s));
+	fsync(state.fd);
 	free(s);
 }
 
@@ -119,6 +138,7 @@ void reopen_logs(void)
 	}
 
 	if (old_fd > 2) {
+		fsync(old_fd);
 		close(old_fd);
 	}
 }
@@ -171,24 +191,6 @@ void print_suspicious_usage(const char* from, const char* info)
 	if (debug_handlers.ops.print_suspicious_usage) {
 		debug_handlers.ops.print_suspicious_usage(from, info);
 	}
-}
-
-void log_timestring(int level, const char *location, const char *func)
-{
-	char *t = NULL;
-	char *s = NULL;
-
-	if (state.logtype != DEBUG_FILE) return;
-
-	t = timestring(NULL, time(NULL));
-	if (!t) return;
-
-	asprintf(&s, "[%s, %d %s:%s()]\n", t, level, location, func);
-	talloc_free(t);
-	if (!s) return;
-
-	write(state.fd, s, strlen(s));
-	free(s);
 }
 
 uint32_t get_task_id(void)
