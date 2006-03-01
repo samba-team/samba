@@ -156,6 +156,17 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
                                         continue;
                                 }
 
+
+                                SAFE_FREE(srv->share_name);
+                                srv->share_name = SMB_STRDUP(share);
+                                if (!srv->share_name) {
+                                        /* Out of memory. */
+                                        cli_shutdown(&srv->server->cli);
+                                        context->callbacks.remove_cached_srv_fn(context, srv->server);
+                                        continue;
+                                }
+
+
                                 return srv->server;
                         }
                 }
