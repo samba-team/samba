@@ -49,6 +49,9 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
 		return;
 	}
+	if (DEBUGLEVEL < 2 && level > LDB_DEBUG_ERROR) {
+		return;
+	}
 	vasprintf(&s, fmt, ap);
 	if (!s) return;
 	DEBUG(level, ("ldb: %s\n", s));
