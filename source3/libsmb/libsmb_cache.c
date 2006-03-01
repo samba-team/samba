@@ -156,7 +156,11 @@ static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server,
                                         continue;
                                 }
 
-
+                                /*
+                                 * Save the new share name.  We've
+                                 * disconnected from the old share, and are
+                                 * about to connect to the new one.
+                                 */
                                 SAFE_FREE(srv->share_name);
                                 srv->share_name = SMB_STRDUP(share);
                                 if (!srv->share_name) {
