@@ -572,7 +572,7 @@ static service sDefault = {
 	False,			/* bInheritPerms */
 	False,			/* bInheritACLS */
 	False,			/* bInheritOwner */
-	False,			/* bMSDfsRoot */
+	True,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
 	False,			/* bForcePrintername */
@@ -1627,7 +1627,7 @@ static void init_globals(BOOL first_time_only)
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
-	Globals.bWinbindNestedGroups = False;
+	Globals.bWinbindNestedGroups = True;
 	Globals.winbind_max_idle_children = 3;
 	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 	Globals.bWinbindRefreshTickets = False;
@@ -1647,6 +1647,7 @@ static void init_globals(BOOL first_time_only)
 	string_set(&Globals.smb_ports, SMB_PORTS);
 
 	Globals.bEnablePrivileges = True;
+	Globals.bHostMSDfs        = True;
 	Globals.bASUSupport       = False;
 	
 	/* User defined shares. */
