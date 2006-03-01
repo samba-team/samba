@@ -707,16 +707,13 @@ BOOL parse_logentry( char *line, Eventlog_entry * entry, BOOL * eor )
 		memset( temp, 0, sizeof( temp ) );
 		strncpy( temp, stop, temp_len );
 		rpcstr_push( ( void * ) ( entry->data_record.strings +
-					  entry->data_record.strings_len ),
+					  ( entry->data_record.strings_len / 2 ) ),
 			     temp,
 			     sizeof( entry->data_record.strings ) -
-			     entry->data_record.strings_len, STR_TERMINATE );
-		entry->data_record.strings_len += temp_len + 1;
+			     ( entry->data_record.strings_len / 2 ), STR_TERMINATE );
+		entry->data_record.strings_len += ( temp_len * 2 ) + 2;
 		entry->record.num_strings++;
 	} else if ( 0 == strncmp( start, "DAT", stop - start ) ) {
-		/* Now that we're done processing the STR data, adjust the length to account for
-		   unicode, then proceed with the DAT data. */
-		entry->data_record.strings_len *= 2;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */
