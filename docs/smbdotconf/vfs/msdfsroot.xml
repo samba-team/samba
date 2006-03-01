@@ -13,7 +13,6 @@
 </description>
 
 <related>host msdfs</related>
-<value type="default">no</value>
-		
-	<para>See also <smbconfoption name="host msdfs"/></para>
+<value type="default">yes</value>
+<para>See also <smbconfoption name="host msdfs"/></para>
 </samba:parameter>
