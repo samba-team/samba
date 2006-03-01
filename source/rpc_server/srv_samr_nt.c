@@ -3933,6 +3933,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	struct samu *sam_pass=NULL;
 	uint32 acc_granted;
 	BOOL can_add_accounts;
+	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
@@ -3960,7 +3961,14 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
+	acb_info = pdb_get_acct_ctrl(sam_pass);
+
+	/* For machine accounts it's the SeMachineAccountPrivilege that counts. */
+	if ( acb_info & ACB_WSTRUST ) {
+		can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_machine_account );
+	} else {
+		can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
+	} 
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 	
