@@ -142,10 +142,12 @@ BOOL map_username(fstring user)
 			}
 		}
 
+		/* skip lines like 'user = ' */
+
 		dosuserlist = str_list_make(dosname, NULL);
 		if (!dosuserlist) {
-			DEBUG(0,("Unable to build user list\n"));
-			return False;
+			DEBUG(0,("Bad username map entry.  Unable to build user list.  Ignoring.\n"));
+			continue;
 		}
 
 		if (strchr_m(dosname,'*') ||
