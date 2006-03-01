@@ -5279,6 +5279,10 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	/* remove the old one, and add the new one, this way we do not risk races */
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "gidNumber", gidstr);
 
+	if (mods == NULL) {
+		return NT_STATUS_OK;
+	}
+
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 
 	if (rc != LDAP_SUCCESS) {
