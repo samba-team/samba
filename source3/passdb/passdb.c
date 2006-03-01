@@ -222,7 +222,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 		return NT_STATUS_OK;
 	}
 
-	/* generate a SID for the user ewith the RID algorithm */
+	/* generate a SID for the user with the RID algorithm */
 	
 	urid = algorithmic_pdb_uid_to_user_rid( user->unix_pw->pw_uid );
 		

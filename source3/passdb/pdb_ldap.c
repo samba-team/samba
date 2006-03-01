@@ -6,6 +6,7 @@
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
    Copyright (C) Stefan (metze) Metzmacher	2002-2003
+   Copyright (C) Simo Sorce			2006
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2310,35 +2311,145 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	struct smbldap_state *conn = ldap_state->smbldap_state;
-	pstring filter;
-	int rc, count;
-	LDAPMessage *msg = NULL;
+	const char *id_attrs[] = { "memberUid", "gidNumber", NULL };
+	const char *sid_attrs[] = { "sambaSID", NULL };
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *result = NULL;
 	LDAPMessage *entry;
+	char *filter;
 	char **values = NULL;
 	char **memberuid;
-	char *sid_filter = NULL;
-	char *tmp;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	char *gidstr;
+	int rc, count;
 
 	*pp_member_rids = NULL;
 	*p_num_members = 0;
 
-	pstr_sprintf(filter,
-		     "(&(objectClass=sambaSamAccount)"
-		     "(sambaPrimaryGroupSid=%s))",
-		     sid_string_static(group));
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=sambaGroupMapping)"
+				 "(objectClass=posixGroup)"
+				 "(sambaSID=%s))",
+				 sid_string_static(group));
 
-	{
-		const char *attrs[] = { "sambaSID", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
-				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
-				    &msg);
-	}
+	rc = smbldap_search(conn, lp_ldap_group_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, id_attrs, 0,
+			    &result);
 
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
-	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	count = ldap_count_entries(conn->ldap_struct, result);
+
+	if (count > 1) {
+		DEBUG(1, ("Found more than one groupmap entry for %s\n",
+			  sid_string_static(group)));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	if (count == 0) {
+		ret = NT_STATUS_NO_SUCH_GROUP;
+		goto done;
+	}
+
+	entry = ldap_first_entry(conn->ldap_struct, result);
+	if (entry == NULL)
+		goto done;
+
+	gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
+	if (!gidstr) {
+		DEBUG (0, ("ldapsam_enum_group_members: Unable to find the group's gid!\n"));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	values = ldap_get_values(conn->ldap_struct, entry, "memberUid");
+
+	if (values) {
+
+		filter = talloc_strdup(mem_ctx, "(&(objectClass=sambaSamAccount)(|");
+		if (filter == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		for (memberuid = values; *memberuid != NULL; memberuid += 1) {
+			filter = talloc_asprintf_append(filter, "(uid=%s)", *memberuid);
+			if (filter == NULL) {
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+		}
+
+		filter = talloc_asprintf_append(filter, "))");
+		if (filter == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
+				    &result);
+
+		if (rc != LDAP_SUCCESS)
+			goto done;
+
+		count = ldap_count_entries(conn->ldap_struct, result);
+		DEBUG(10,("ldapsam_enum_group_members: found %d accounts\n", count));
+
+		talloc_autofree_ldapmsg(mem_ctx, result);
+
+		for (entry = ldap_first_entry(conn->ldap_struct, result);
+		     entry != NULL;
+		     entry = ldap_next_entry(conn->ldap_struct, entry))
+		{
+			char *sidstr;
+			DOM_SID sid;
+			uint32 rid;
+
+			sidstr = smbldap_talloc_single_attribute(conn->ldap_struct,
+								 entry, "sambaSID",
+								 mem_ctx);
+			if (!sidstr) {
+				DEBUG(0, ("Severe DB error, sambaSamAccount can't miss "
+					  "the sambaSID attribute\n"));
+				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+
+			if (!string_to_sid(&sid, sidstr))
+				goto done;
+
+			if (!sid_check_is_in_our_domain(&sid)) {
+				DEBUG(0, ("Inconsistent SAM -- group member uid not "
+					  "in our domain\n"));
+				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+
+			sid_peek_rid(&sid, &rid);
+
+			add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
+						p_num_members);
+		}
+	}
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=sambaSamAccount)"
+				 "(gidNumber=%s))", gidstr);
+
+	rc = smbldap_search(conn, lp_ldap_user_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
+			    &result);
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	for (entry = ldap_first_entry(conn->ldap_struct, result);
 	     entry != NULL;
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
@@ -2348,130 +2459,24 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 						    entry,
 						    get_global_sam_sid(),
 						    &rid)) {
-			DEBUG(2, ("Could not find sid from ldap entry\n"));
-			continue;
+			DEBUG(0, ("Severe DB error, sambaSamAccount can't miss "
+				  "the sambaSID attribute\n"));
+			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto done;
 		}
 
 		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
 					p_num_members);
 	}
 
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	pstr_sprintf(filter,
-		     "(&(objectClass=sambaGroupMapping)"
-		     "(objectClass=posixGroup)"
-		     "(sambaSID=%s))",
-		     sid_string_static(group));
-
-	{
-		const char *attrs[] = { "memberUid", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
-				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
-				    &msg);
-	}
-
-	if (rc != LDAP_SUCCESS)
-		goto done;
-
-	count = ldap_count_entries(conn->ldap_struct, msg);
-
-	if (count > 1) {
-		DEBUG(1, ("Found more than one groupmap entry for %s\n",
-			  sid_string_static(group)));
-		goto done;
-	}
-
-	if (count == 0) {
-		result = NT_STATUS_OK;
-		goto done;
-	}
-
-	entry = ldap_first_entry(conn->ldap_struct, msg);
-	if (entry == NULL)
-		goto done;
-
-	values = ldap_get_values(conn->ldap_struct, msg, "memberUid");
-	if (values == NULL) {
-		result = NT_STATUS_OK;
-		goto done;
-	}
-
-	sid_filter = SMB_STRDUP("(&(objectClass=sambaSamAccount)(|");
-	if (sid_filter == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	for (memberuid = values; *memberuid != NULL; memberuid += 1) {
-		tmp = sid_filter;
-		asprintf(&sid_filter, "%s(uid=%s)", tmp, *memberuid);
-		free(tmp);
-		if (sid_filter == NULL) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	}
-
-	tmp = sid_filter;
-	asprintf(&sid_filter, "%s))", sid_filter);
-	free(tmp);
-	if (sid_filter == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	{
-		const char *attrs[] = { "sambaSID", NULL };
-		rc = smbldap_search(conn, lp_ldap_user_suffix(),
-				    LDAP_SCOPE_SUBTREE, sid_filter, attrs, 0,
-				    &msg);
-	}
-
-	if (rc != LDAP_SUCCESS)
-		goto done;
-
-	for (entry = ldap_first_entry(conn->ldap_struct, msg);
-	     entry != NULL;
-	     entry = ldap_next_entry(conn->ldap_struct, entry))
-	{
-		fstring str;
-		DOM_SID sid;
-		uint32 rid;
-
-		if (!smbldap_get_single_attribute(conn->ldap_struct,
-						  entry, "sambaSID",
-						  str, sizeof(str)-1))
-			continue;
-
-		if (!string_to_sid(&sid, str))
-			goto done;
-
-		if (!sid_check_is_in_our_domain(&sid)) {
-			DEBUG(1, ("Inconsistent SAM -- group member uid not "
-				  "in our domain\n"));
-			continue;
-		}
-
-		sid_peek_rid(&sid, &rid);
-
-		add_rid_to_array_unique(mem_ctx, rid, pp_member_rids,
-					p_num_members);
-	}
-
-	result = NT_STATUS_OK;
+	ret = NT_STATUS_OK;
 	
  done:
-	SAFE_FREE(sid_filter);
 
-	if (values != NULL)
+	if (values)
 		ldap_value_free(values);
 
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	return result;
+	return ret;
 }
 
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
@@ -3750,13 +3755,12 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 			continue;
 		}
 
-		attr = smbldap_talloc_single_attribute(ld, entry, "cn", names);
+		attr = smbldap_talloc_single_attribute(ld, entry, "displayName", names);
 
 		if (attr == NULL) {
-			DEBUG(10, ("Could not retrieve 'cn' attribute from %s\n",
+			DEBUG(10, ("Could not retrieve 'displayName' attribute from %s\n",
 				   dn));
-			attr = smbldap_talloc_single_attribute(
-				ld, entry, "displayName", names);
+			attr = smbldap_talloc_single_attribute(ld, entry, "cn", names);
 		}
 
 		if (attr == NULL) {
@@ -4524,6 +4528,775 @@ static BOOL ldapsam_sid_to_id(struct pdb_methods *methods,
 	return ret;
 }
 
+/*
+ * The following functions is called only if
+ * ldapsam:trusted and ldapsam:editposix are
+ * set to true
+ */
+
+/*
+ * ldapsam_create_user creates a new
+ * posixAccount and sambaSamAccount object
+ * in the ldap users subtree
+ *
+ * The uid is allocated by winbindd.
+ */
+
+static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
+				    TALLOC_CTX *tmp_ctx, const char *name,
+				    uint32 acb_info, uint32 *rid)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *entry = NULL;
+	LDAPMessage *result = NULL;
+	uint32 num_result;
+	BOOL is_machine = False;
+	BOOL add_posix = False;
+	LDAPMod **mods = NULL;
+	struct samu *user;
+	char *filter;
+	char *username;
+	char *homedir;
+	char *gidstr;
+	char *uidstr;
+	char *shell;
+	const char *dn = NULL;
+	DOM_SID group_sid;
+	DOM_SID user_sid;
+	gid_t gid = -1;
+	uid_t uid = -1;
+	NTSTATUS ret;
+	int rc;
+	
+	if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') {
+		is_machine = True;
+	}
+
+	username = escape_ldap_string_alloc(name);
+	filter = talloc_asprintf(tmp_ctx, "(&(uid=%s)(objectClass=posixAccount))", username);
+	SAFE_FREE(username);
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_create_user: ldap search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_create_user: More than one user with name [%s] ?!\n", name));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	if (num_result == 1) {
+		char *tmp;
+		/* check if it is just a posix account.
+		 * or if there is a sid attached to this entry
+		 */
+
+		entry = ldap_first_entry(priv2ld(ldap_state), result);
+		if (!entry) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		tmp = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "sambaSID", tmp_ctx);
+		if (tmp) {
+			DEBUG (1, ("ldapsam_create_user: The user [%s] already exist!\n", name));
+			return NT_STATUS_USER_EXISTS;
+		}
+
+		/* it is just a posix account, retrieve the dn for later use */
+		dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+		if (!dn) {
+			DEBUG(0,("ldapsam_create_user: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (num_result == 0) {
+		add_posix = True;
+	}
+	
+	/* Create the basic samu structure and generate the mods for the ldap commit */
+	if (!NT_STATUS_IS_OK((ret = ldapsam_get_new_rid(ldap_state, rid)))) {
+		DEBUG(1, ("ldapsam_create_user: Could not allocate a new RID\n"));
+		return ret;
+	}
+
+	sid_copy(&user_sid, get_global_sam_sid());
+	sid_append_rid(&user_sid, *rid);
+
+	user = samu_new(tmp_ctx);
+	if (!user) {
+		DEBUG(1,("ldapsam_create_user: Unable to allocate user struct\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_username(user, name, PDB_SET)) {
+		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	if (!pdb_set_domain(user, get_global_sam_name(), PDB_SET)) {
+		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	if (is_machine) {
+		if (!pdb_set_acct_ctrl(user, ACB_WSTRUST | ACB_DISABLED, PDB_SET)) {
+			DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		if (!pdb_set_acct_ctrl(user, ACB_NORMAL | ACB_DISABLED, PDB_SET)) {
+			DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	if (!pdb_set_user_sid(user, &user_sid, PDB_SET)) {
+		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!init_ldap_from_sam(ldap_state, NULL, &mods, user, element_is_set_or_changed)) {
+		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	switch ( ldap_state->schema_ver ) {
+		case SCHEMAVER_SAMBAACCOUNT:
+			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBAACCOUNT);
+			break;
+		case SCHEMAVER_SAMBASAMACCOUNT:
+			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_SAMBASAMACCOUNT);
+			break;
+		default:
+			DEBUG(0,("ldapsam_add_sam_account: invalid schema version specified\n"));
+			break;
+	}
+
+	if (add_posix) {
+		DEBUG(3,("ldapsam_create_user: Creating new posix user\n"));
+
+		/* retrieve the Domain Users group gid */
+		if (!sid_compose(&group_sid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS) ||
+		    !sid_to_gid(&group_sid, &gid)) {
+			DEBUG (0, ("ldapsam_create_user: Unable to get the Domain Users gid: bailing out!\n"));
+			return NT_STATUS_INVALID_PRIMARY_GROUP;
+		}
+
+		/* lets allocate a new userid for this user */
+		if (!winbind_allocate_uid(&uid)) {
+			DEBUG (0, ("ldapsam_create_user: Unable to allocate a new user id: bailing out!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+
+		if (is_machine) {
+			/* TODO: choose a more appropriate default for machines */
+			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), "SMB_workstations_home", ldap_state->domain_name, uid, gid);
+			shell = talloc_strdup(tmp_ctx, "/bin/false");
+		} else {
+			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), name, ldap_state->domain_name, uid, gid);
+			shell = talloc_sub_specified(tmp_ctx, lp_template_shell(), name, ldap_state->domain_name, uid, gid);
+		}
+		uidstr = talloc_asprintf(tmp_ctx, "%d", uid);
+		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
+		if (is_machine) {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", name, lp_ldap_machine_suffix ());
+		} else {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", name, lp_ldap_user_suffix ());
+		}
+
+		if (!homedir || !shell || !uidstr || !gidstr || !dn) {
+			DEBUG (0, ("ldapsam_create_user: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_ACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXACCOUNT);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "uidNumber", uidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "homeDirectory", homedir);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
+	}
+
+	talloc_autofree_ldapmod(tmp_ctx, mods);
+
+	if (add_posix) {	
+		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
+	} else {
+		rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+	}	
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_create_user: failed to create a new user [%s] (dn = %s)\n", name ,dn));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(2,("ldapsam_create_user: added account [%s] in the LDAP database\n", name));
+
+	flush_pwnam_cache();
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *tmp_ctx, struct samu *sam_acct)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int num_result;
+	const char *dn;
+	char *filter;
+	int rc;
+
+	DEBUG(0,("ldapsam_delete_user: Attempt to delete user [%s]\n", pdb_get_username(sam_acct)));
+	
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(uid=%s)"
+				 "(objectClass=posixAccount)"
+				 "(objectClass=sambaSamAccount))",
+				 pdb_get_username(sam_acct));
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_delete_user: user search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(0,("ldapsam_delete_user: user not found!\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_delete_user: More than one user with name [%s] ?!\n", pdb_get_username(sam_acct)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* it is just a posix account, retrieve the dn for later use */
+	dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+	if (!dn) {
+		DEBUG(0,("ldapsam_delete_user: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = smbldap_delete(ldap_state->smbldap_state, dn);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	flush_pwnam_cache();
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * ldapsam_create_group creates a new
+ * posixGroup and sambaGroupMapping object
+ * in the ldap groups subtree
+ *
+ * The gid is allocated by winbindd.
+ */
+
+static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
+					 TALLOC_CTX *tmp_ctx,
+					 const char *name,
+					 uint32 *rid)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	NTSTATUS ret;
+	LDAPMessage *entry = NULL;
+	LDAPMessage *result = NULL;
+	uint32 num_result;
+	BOOL is_new_entry = False;
+	LDAPMod **mods = NULL;
+	char *filter;
+	char *groupsidstr;
+	char *groupname;
+	char *grouptype;
+	char *gidstr;
+	const char *dn = NULL;
+	DOM_SID group_sid;
+	gid_t gid = -1;
+	int rc;
+	
+	groupname = escape_ldap_string_alloc(name);
+	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=posixGroup))", groupname);
+	SAFE_FREE(groupname);
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_create_group: ldap search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_create_group: There exists more than one group with name [%s]: bailing out!\n", name));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	if (num_result == 1) {
+		char *tmp;
+		/* check if it is just a posix group.
+		 * or if there is a sid attached to this entry
+		 */
+
+		entry = ldap_first_entry(priv2ld(ldap_state), result);
+		if (!entry) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		tmp = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "sambaSID", tmp_ctx);
+		if (tmp) {
+			DEBUG (1, ("ldapsam_create_group: The group [%s] already exist!\n", name));
+			return NT_STATUS_GROUP_EXISTS;
+		}
+
+		/* it is just a posix group, retrieve the gid and the dn for later use */
+		tmp = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", tmp_ctx);
+		if (!tmp) {
+			DEBUG (1, ("ldapsam_create_group: Couldn't retrieve the gidNumber for [%s]?!?!\n", name));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		
+		gid = strtoul(tmp, NULL, 10);
+
+		dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+		if (!dn) {
+			DEBUG(0,("ldapsam_create_group: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (num_result == 0) {
+		DEBUG(3,("ldapsam_create_user: Creating new posix group\n"));
+
+		is_new_entry = True;
+	
+		/* lets allocate a new groupid for this group */
+		if (!winbind_allocate_gid(&gid)) {
+			DEBUG (0, ("ldapsam_create_group: Unable to allocate a new group id: bailing out!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
+		dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", name, lp_ldap_group_suffix());
+
+		if (!gidstr || !dn) {
+			DEBUG (0, ("ldapsam_create_group: Out of memory!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
+	}
+
+	if (!NT_STATUS_IS_OK((ret = ldapsam_get_new_rid(ldap_state, rid)))) {
+		DEBUG(1, ("ldapsam_create_group: Could not allocate a new RID\n"));
+		return ret;
+	}
+
+	sid_copy(&group_sid, get_global_sam_sid());
+	sid_append_rid(&group_sid, *rid);
+
+	groupsidstr = talloc_strdup(tmp_ctx, sid_string_static(&group_sid));
+	grouptype = talloc_asprintf(tmp_ctx, "%d", SID_NAME_DOM_GRP);
+
+	if (!groupsidstr || !grouptype) {
+		DEBUG(0,("ldapsam_create_group: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", "sambaGroupMapping");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", groupsidstr);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", grouptype);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
+	talloc_autofree_ldapmod(tmp_ctx, mods);
+
+	if (is_new_entry) {	
+		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
+#if 0
+		if (rc == LDAP_OBJECT_CLASS_VIOLATION) {
+			/* This call may fail with rfc2307bis schema */
+			/* Retry adding a structural class */
+			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", "????");
+			rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
+		}
+#endif
+	} else {
+		rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+	}	
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_create_group: failed to create a new group [%s] (dn = %s)\n", name ,dn));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(2,("ldapsam_create_group: added group [%s] in the LDAP database\n", name));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_CTX *tmp_ctx, uint32 rid)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int num_result;
+	const char *dn;
+	char *gidstr;
+	char *filter;
+	DOM_SID group_sid;
+	int rc;
+
+	/* get the group sid */
+	sid_copy(&group_sid, get_global_sam_sid());
+	sid_append_rid(&group_sid, rid);
+
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(sambaSID=%s)"
+				 "(objectClass=posixGroup)"
+				 "(objectClass=sambaGroupMapping))",
+				 sid_string_static(&group_sid));
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1,("ldapsam_delete_dom_group: group search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(1,("ldapsam_delete_dom_group: group not found!\n"));
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_delete_dom_group: More than one group with the same SID ?!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* here it is, retrieve the dn for later use */
+	dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+	if (!dn) {
+		DEBUG(0,("ldapsam_delete_dom_group: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", tmp_ctx);
+	if (!gidstr) {
+		DEBUG (0, ("ldapsam_delete_dom_group: Unable to find the group's gid!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* check no user have this group marked as primary group */
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(gidNumber=%s)"
+				 "(objectClass=posixAccount)"
+				 "(objectClass=sambaSamAccount))",
+				 gidstr);
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1,("ldapsam_delete_dom_group: accounts search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result != 0) {
+		DEBUG(3,("ldapsam_delete_dom_group: Can't delete group, it is a primary group for %d users\n", num_result));
+		return NT_STATUS_MEMBERS_PRIMARY_GROUP;
+	}
+
+	rc = smbldap_delete(ldap_state->smbldap_state, dn);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
+					TALLOC_CTX *tmp_ctx,
+					uint32 group_rid,
+					uint32 member_rid,
+					int modop)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *entry = NULL;
+	LDAPMessage *result = NULL;
+	uint32 num_result;
+	LDAPMod **mods = NULL;
+	char *filter;
+	char *uidstr;
+	const char *dn = NULL;
+	DOM_SID group_sid;
+	DOM_SID member_sid;
+	int rc;
+
+	switch (modop) {
+	case LDAP_MOD_ADD:
+		DEBUG(1,("ldapsam_change_groupmem: add new member(rid=%d) to a domain group(rid=%d)", member_rid, group_rid));
+		break;
+	case LDAP_MOD_DELETE:
+		DEBUG(1,("ldapsam_change_groupmem: delete member(rid=%d) from a domain group(rid=%d)", member_rid, group_rid));
+		break;
+	default:
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* get member sid  */
+	sid_copy(&member_sid, get_global_sam_sid());
+	sid_append_rid(&member_sid, member_rid);
+
+	/* get the group sid */
+	sid_copy(&group_sid, get_global_sam_sid());
+	sid_append_rid(&group_sid, group_rid);
+
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(sambaSID=%s)"
+				 "(objectClass=posixAccount)"
+				 "(objectClass=sambaSamAccount))",
+				 sid_string_static(&member_sid));
+
+	/* get the member uid */
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1,("ldapsam_change_groupmem: member search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(1,("ldapsam_change_groupmem: member not found!\n"));
+		return NT_STATUS_NO_SUCH_MEMBER;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_change_groupmem: More than one account with the same SID ?!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (modop == LDAP_MOD_DELETE) {
+		/* check if we are trying to remove the member from his primary group */
+		char *gidstr;
+		gid_t user_gid, group_gid;
+		
+		gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", tmp_ctx);
+		if (!gidstr) {
+			DEBUG (0, ("ldapsam_change_groupmem: Unable to find the member's gid!\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		user_gid = strtoul(gidstr, NULL, 10);
+	
+		if (!sid_to_gid(&group_sid, &group_gid)) {
+			DEBUG (0, ("ldapsam_change_groupmem: Unable to get group gid from SID!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (user_gid == group_gid) {
+			DEBUG (3, ("ldapsam_change_groupmem: can't remove user from it's own primary group!\n"));
+			return NT_STATUS_MEMBERS_PRIMARY_GROUP;
+		}
+	}
+
+	/* here it is, retrieve the uid for later use */
+	uidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "uid", tmp_ctx);
+	if (!uidstr) {
+		DEBUG (0, ("ldapsam_change_groupmem: Unable to find the member's name!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	filter = talloc_asprintf(tmp_ctx,
+				 "(&(sambaSID=%s)"
+				 "(objectClass=posixGroup)"
+				 "(objectClass=sambaGroupMapping))",
+				 sid_string_static(&group_sid));
+
+	/* get the group */
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(1,("ldapsam_change_groupmem: group search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(tmp_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(1,("ldapsam_change_groupmem: group not found!\n"));
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_change_groupmem: More than one group with the same SID ?!\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* here it is, retrieve the dn for later use */
+	dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
+	if (!dn) {
+		DEBUG(0,("ldapsam_change_groupmem: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	smbldap_set_mod(&mods, modop, "memberUid", uidstr);
+
+	talloc_autofree_ldapmod(tmp_ctx, mods);
+
+	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+	if (rc != LDAP_SUCCESS) {
+		if (rc == LDAP_TYPE_OR_VALUE_EXISTS && modop == LDAP_MOD_ADD) {
+			DEBUG(1,("ldapsam_change_groupmem: member is already in group, add failed!\n"));
+			return NT_STATUS_MEMBER_IN_GROUP;
+		}
+		if (rc == LDAP_NO_SUCH_ATTRIBUTE && modop == LDAP_MOD_DELETE) {
+			DEBUG(1,("ldapsam_change_groupmem: member is not in group, delete failed!\n"));
+			return NT_STATUS_MEMBER_NOT_IN_GROUP;
+		}
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_add_groupmem(struct pdb_methods *my_methods,
+				     TALLOC_CTX *tmp_ctx,
+				     uint32 group_rid,
+				     uint32 member_rid)
+{
+	return ldapsam_change_groupmem(my_methods, tmp_ctx, group_rid, member_rid, LDAP_MOD_ADD);
+}
+static NTSTATUS ldapsam_del_groupmem(struct pdb_methods *my_methods,
+				     TALLOC_CTX *tmp_ctx,
+				     uint32 group_rid,
+				     uint32 member_rid)
+{
+	return ldapsam_change_groupmem(my_methods, tmp_ctx, group_rid, member_rid, LDAP_MOD_DELETE);
+}
+
+static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
+					  TALLOC_CTX *mem_ctx,
+					  struct samu *sampass)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	LDAPMessage *entry = NULL;
+	LDAPMessage *result = NULL;
+	uint32 num_result;
+	LDAPMod **mods = NULL;
+	char *filter;
+	char *gidstr;
+	const char *dn = NULL;
+	gid_t gid;
+	int rc;
+
+	DEBUG(0,("ldapsam_set_primary_group: Attempt to set primary group for user [%s]\n", pdb_get_username(sampass)));
+
+	if (!sid_to_gid(pdb_get_group_sid(sampass), &gid)) {
+		DEBUG(0,("ldapsam_set_primary_group: failed to retieve gid from user's group SID!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	gidstr = talloc_asprintf(mem_ctx, "%d", gid);
+	if (!gidstr) {
+		DEBUG(0,("ldapsam_set_primary_group: Out of Memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(uid=%s)"
+				 "(objectClass=posixAccount)"
+				 "(objectClass=sambaSamAccount))",
+				 pdb_get_username(sampass));
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_set_primary_group: user search failed!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	num_result = ldap_count_entries(priv2ld(ldap_state), result);
+
+	if (num_result == 0) {
+		DEBUG(0,("ldapsam_set_primary_group: user not found!\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (num_result > 1) {
+		DEBUG (0, ("ldapsam_set_primary_group: More than one user with name [%s] ?!\n", pdb_get_username(sampass)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	entry = ldap_first_entry(priv2ld(ldap_state), result);
+	if (!entry) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* retrieve the dn for later use */
+	dn = smbldap_talloc_dn(mem_ctx, priv2ld(ldap_state), entry);
+	if (!dn) {
+		DEBUG(0,("ldapsam_set_primary_group: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* remove the old one, and add the new one, this way we do not risk races */
+	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "gidNumber", gidstr);
+
+	if (mods == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(0,("ldapsam_set_primary_group: failed to modify [%s] primary group to [%s]\n",
+			 pdb_get_username(sampass), gidstr));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	flush_pwnam_cache();
+
+	return NT_STATUS_OK;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -4697,6 +5470,16 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 			ldapsam_enum_group_memberships;
 		(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
 		(*pdb_method)->sid_to_id = ldapsam_sid_to_id;
+		
+		if (lp_parm_bool(-1, "ldapsam", "editposix", False)) {
+			(*pdb_method)->create_user = ldapsam_create_user;
+			(*pdb_method)->delete_user = ldapsam_delete_user;
+			(*pdb_method)->create_dom_group = ldapsam_create_dom_group;
+			(*pdb_method)->delete_dom_group = ldapsam_delete_dom_group;
+			(*pdb_method)->add_groupmem = ldapsam_add_groupmem;
+			(*pdb_method)->del_groupmem = ldapsam_del_groupmem;
+			(*pdb_method)->set_unix_primary_group = ldapsam_set_primary_group;
+		}
 	}
 
 	ldap_state = (*pdb_method)->private_data;
