@@ -93,6 +93,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 	static BOOL set_lock_msg;
 	blocking_lock_record *blr, *tmp;
 	BOOL my_lock_ctx = False;
+	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status;
 
 	if(in_chained_smb() ) {
@@ -126,10 +127,22 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 	memcpy(blr->inbuf, inbuf, length);
 	blr->length = length;
 
+	br_lck = brl_get_locks(NULL, blr->fsp);
+	if (!br_lck) {
+		free_blocking_lock_record(blr);
+		return False;
+	}
+
 	/* Add a pending lock record for this. */
-	status = brl_lock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-			lock_pid, procid_self(), blr->fsp->conn->cnum,
-			offset, count, PENDING_LOCK, &my_lock_ctx);
+	status = brl_lock(br_lck,
+			lock_pid,
+			procid_self(),
+			offset,
+			count,
+			PENDING_LOCK,
+			WINDOWS_LOCK,
+			&my_lock_ctx);
+	TALLOC_FREE(br_lck);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
@@ -227,7 +240,6 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 {
 	char *inbuf = blr->inbuf;
 	files_struct *fsp = blr->fsp;
-	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
 	uint16 lock_pid;
@@ -261,7 +273,11 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 		 * request would never have been queued. JRA.
 		 */
 		
-		do_unlock(fsp,conn,lock_pid,count,offset);
+		do_unlock(fsp,
+			lock_pid,
+			count,
+			offset,
+			WINDOWS_LOCK);
 	}
 	
 	generic_blocking_lock_error(blr, status);
@@ -302,7 +318,6 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	SMB_BIG_UINT startpos;
 	size_t numtoread;
 	NTSTATUS status;
-	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	files_struct *fsp = blr->fsp;
 	BOOL my_lock_ctx = False;
 
@@ -312,7 +327,14 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
 	data = smb_buf(outbuf) + 3;
  
-	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, startpos, READ_LOCK, &my_lock_ctx);
+	status = do_lock_spin(fsp,
+				SVAL(inbuf,smb_pid),
+				(SMB_BIG_UINT)numtoread,
+				startpos,
+				READ_LOCK,
+				WINDOWS_LOCK,
+				&my_lock_ctx);
+
 	if (NT_STATUS_V(status)) {
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
 			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -371,7 +393,6 @@ static BOOL process_lock(blocking_lock_record *blr)
 	int outsize;
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
 	NTSTATUS status;
-	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	files_struct *fsp = blr->fsp;
 	BOOL my_lock_ctx = False;
 
@@ -379,7 +400,14 @@ static BOOL process_lock(blocking_lock_record *blr)
 	offset = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
 
 	errno = 0;
-	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
+	status = do_lock_spin(fsp,
+				SVAL(inbuf,smb_pid),
+				count,
+				offset,
+				WRITE_LOCK,
+				WINDOWS_LOCK,
+				&my_lock_ctx);
+
 	if (NT_STATUS_IS_ERR(status)) {
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
 			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -423,7 +451,6 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 	char *inbuf = blr->inbuf;
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
 	files_struct *fsp = blr->fsp;
-	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
 	uint16 num_locks = SVAL(inbuf,smb_vwv7);
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
@@ -452,9 +479,17 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 		 * request would never have been queued. JRA.
 		 */
 		errno = 0;
-		status = do_lock_spin(fsp,conn,lock_pid,count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
-		if (NT_STATUS_IS_ERR(status)) break;
+		status = do_lock_spin(fsp,
+				lock_pid,
+				count,
+				offset, 
+				((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+				WINDOWS_LOCK,
+				&my_lock_ctx);
+
+		if (NT_STATUS_IS_ERR(status)) {
+			break;
+		}
 	}
 
 	if(blr->lock_num == num_locks) {
@@ -522,13 +557,24 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
 	for(blr = blocking_lock_queue; blr; blr = next) {
 		next = blr->next;
 		if(blr->fsp->fnum == fsp->fnum) {
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
-			DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
+			if (br_lck) {
+				DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
-			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-				blr->lock_pid, procid_self(), blr->fsp->conn->cnum,
-				blr->offset, blr->count, True, NULL, NULL);
+				brl_unlock(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					WINDOWS_LOCK,
+					True,
+					NULL,
+					NULL);
+				TALLOC_FREE(br_lck);
+
+			}
 
 			free_blocking_lock_record(blr);
 		}
@@ -547,14 +593,26 @@ void remove_pending_lock_requests_by_mid(int mid)
 		next = blr->next;
 		if(SVAL(blr->inbuf,smb_mid) == mid) {
 			files_struct *fsp = blr->fsp;
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
-			DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
+			if (br_lck) {
+				DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
+				brl_unlock(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					WINDOWS_LOCK,
+					True,
+					NULL,
+					NULL);
+
+				TALLOC_FREE(br_lck);
+			}
+
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
-			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-				blr->lock_pid, procid_self(), blr->fsp->conn->cnum,
-				blr->offset, blr->count, True, NULL, NULL);
 			free_blocking_lock_record(blr);
 		}
 	}
@@ -635,16 +693,29 @@ void process_blocking_lock_queue(time_t t)
 			fsp->fnum, fsp->fsp_name ));
 
 		if((blr->expire_time != -1) && (blr->expire_time <= t)) {
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+
 			/*
 			 * Lock expired - throw away all previously
 			 * obtained locks and return lock error.
 			 */
-			DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
-				fsp->fnum, fsp->fsp_name ));
 
-			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-				blr->lock_pid, procid_self(), conn->cnum,
-				blr->offset, blr->count, True, NULL, NULL);
+			if (br_lck) {
+				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
+					fsp->fnum, fsp->fsp_name ));
+
+				brl_unlock(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					WINDOWS_LOCK,
+					True,
+					NULL,
+					NULL);
+
+				TALLOC_FREE(br_lck);
+			}
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			free_blocking_lock_record(blr);
@@ -652,32 +723,56 @@ void process_blocking_lock_queue(time_t t)
 		}
 
 		if(!change_to_user(conn,vuid)) {
-			DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
-				vuid ));
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+
 			/*
 			 * Remove the entry and return an error to the client.
 			 */
+
+			if (br_lck) {
+				brl_unlock(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					WINDOWS_LOCK,
+					True,	
+					NULL,
+					NULL);
+
+				TALLOC_FREE(br_lck);
+			}
+
+			DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
+				vuid ));
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
-
-			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, procid_self(), conn->cnum,
-					blr->offset, blr->count, True, NULL, NULL);
-
 			free_blocking_lock_record(blr);
 			continue;
 		}
 
 		if(!set_current_service(conn,SVAL(blr->inbuf,smb_flg),True)) {
-			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+
 			/*
 			 * Remove the entry and return an error to the client.
 			 */
+
+			if (br_lck) {
+				brl_unlock(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					WINDOWS_LOCK,
+					True,
+					NULL,
+					NULL);
+
+				TALLOC_FREE(br_lck);
+			}
+
+			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
-
-			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, procid_self(), conn->cnum,
-					blr->offset, blr->count, True, NULL, NULL);
-
 			free_blocking_lock_record(blr);
 			change_to_root_user();
 			continue;
@@ -690,10 +785,21 @@ void process_blocking_lock_queue(time_t t)
 		 */
 
 		if(blocking_lock_record_process(blr)) {
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
-			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, procid_self(), conn->cnum,
-					blr->offset, blr->count, True, NULL, NULL);
+			if (br_lck) {
+				brl_unlock(br_lck,
+					blr->lock_pid,
+					procid_self(),
+					blr->offset,
+					blr->count,
+					WINDOWS_LOCK,
+					True,
+					NULL,
+					NULL);
+
+				TALLOC_FREE(br_lck);
+			}
 
 			free_blocking_lock_record(blr);
 		}

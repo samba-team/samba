@@ -45,7 +45,7 @@ uint16 global_smbpid;
 static TDB_CONTEXT *tdb;
 
 /****************************************************************************
- Debugging aid :-).
+ Debugging aids :-).
 ****************************************************************************/
 
 static const char *lock_type_name(enum brl_type lock_type)
@@ -53,23 +53,33 @@ static const char *lock_type_name(enum brl_type lock_type)
 	return (lock_type == READ_LOCK) ? "READ" : "WRITE";
 }
 
+static const char *lock_flav_name(enum brl_flavour lock_flav)
+{
+	return (lock_flav == WINDOWS_LOCK) ? "WINDOWS_LOCK" : "POSIX_LOCK";
+}
+
 /****************************************************************************
  Utility function called to see if a file region is locked.
+ Called in the read/write codepath.
 ****************************************************************************/
 
-BOOL is_locked(files_struct *fsp,connection_struct *conn,
-	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type)
+BOOL is_locked(files_struct *fsp,
+		SMB_BIG_UINT count,
+		SMB_BIG_UINT offset, 
+		enum brl_type lock_type)
 {
-	int snum = SNUM(conn);
+	int snum = SNUM(fsp->conn);
 	int strict_locking = lp_strict_locking(snum);
+	enum brl_flavour lock_flav = lp_posix_cifsu_locktype();
 	BOOL ret;
 	
-	if (count == 0)
+	if (count == 0) {
 		return(False);
+	}
 
-	if (!lp_locking(snum) || !strict_locking)
+	if (!lp_locking(snum) || !strict_locking) {
 		return(False);
+	}
 
 	if (strict_locking == Auto) {
 		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK || lock_type == WRITE_LOCK)) {
@@ -80,26 +90,40 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
 			ret = 0;
 		} else {
-			ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-				     global_smbpid, procid_self(), conn->cnum, 
-				     offset, count, lock_type);
+			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			ret = !brl_locktest(br_lck,
+					global_smbpid,
+					procid_self(),
+					offset,
+					count,
+					lock_type,
+					lock_flav);
+			TALLOC_FREE(br_lck);
 		}
 	} else {
-		ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-				global_smbpid, procid_self(), conn->cnum,
-				offset, count, lock_type);
+		struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+		ret = !brl_locktest(br_lck,
+				global_smbpid,
+				procid_self(),
+				offset,
+				count,
+				lock_type,
+				lock_flav);
+		TALLOC_FREE(br_lck);
 	}
 
-	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
+	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for file %s\n",
+			lock_flav_name(lock_flav),
 			(double)offset, (double)count, ret ? "locked" : "unlocked",
 			fsp->fsp_name ));
 
 	/*
 	 * There is no lock held by an SMB daemon, check to
 	 * see if there is a POSIX lock from a UNIX or NFS process.
+	 * This only conflicts with Windows locks, not POSIX locks.
 	 */
 
-	if(!ret && lp_posix_locking(snum)) {
+	if(!ret && lp_posix_locking(snum) && (lock_flav == WINDOWS_LOCK)) {
 		ret = is_posix_locked(fsp, offset, count, lock_type);
 
 		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for file %s\n",
@@ -114,51 +138,68 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
+static NTSTATUS do_lock(files_struct *fsp,
+			uint16 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			BOOL *my_lock_ctx)
 {
+	struct byte_range_lock *br_lck = NULL;
 	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
-	if (!lp_locking(SNUM(conn)))
+	if (!lp_locking(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
+	}
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
-	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
-		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
+	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f requested for file %s\n",
+		lock_flav_name(lock_flav), lock_type_name(lock_type),
+		(double)offset, (double)count, fsp->fsp_name ));
 
-	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-				  lock_pid, procid_self(), conn->cnum, 
-				  offset, count, 
-				  lock_type, my_lock_ctx);
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
+		return status;
+	}
 
-		if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(conn))) {
+	br_lck = brl_get_locks(NULL, fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = brl_lock(br_lck,
+			lock_pid,
+			procid_self(),
+			offset,
+			count, 
+			lock_type,
+			lock_flav,
+			my_lock_ctx);
+
+	if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(fsp->conn))) {
+
+		/*
+		 * Try and get a POSIX lock on this range.
+		 * Note that this is ok if it is a read lock
+		 * overlapping on a different fd. JRA.
+		 */
+
+		if (!set_posix_lock(fsp, offset, count, lock_type)) {
+			if (errno == EACCES || errno == EAGAIN) {
+				status = NT_STATUS_FILE_LOCK_CONFLICT;
+			} else {
+				status = map_nt_error_from_unix(errno);
+			}
 
 			/*
-			 * Try and get a POSIX lock on this range.
-			 * Note that this is ok if it is a read lock
-			 * overlapping on a different fd. JRA.
+			 * We failed to map - don't save the brl lock entry.
 			 */
-
-			if (!set_posix_lock(fsp, offset, count, lock_type)) {
-				if (errno == EACCES || errno == EAGAIN)
-					status = NT_STATUS_FILE_LOCK_CONFLICT;
-				else
-					status = map_nt_error_from_unix(errno);
-
-				/*
-				 * We failed to map - we must now remove the brl
-				 * lock entry.
-				 */
-				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								lock_pid, procid_self(), conn->cnum, 
-								offset, count, False,
-								NULL, NULL);
-			}
+			br_lck->modified = False;
 		}
 	}
 
+	TALLOC_FREE(br_lck);
 	return status;
 }
 
@@ -169,20 +210,33 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
  it, we need this. JRA.
 ****************************************************************************/
 
-NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type, BOOL *my_lock_ctx)
+NTSTATUS do_lock_spin(files_struct *fsp,
+			uint16 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			BOOL *my_lock_ctx)
 {
 	int j, maxj = lp_lock_spin_count();
 	int sleeptime = lp_lock_sleep_time();
 	NTSTATUS status, ret;
 
-	if (maxj <= 0)
+	if (maxj <= 0) {
 		maxj = 1;
+	}
 
 	ret = NT_STATUS_OK; /* to keep dumb compilers happy */
 
 	for (j = 0; j < maxj; j++) {
-		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type, my_lock_ctx);
+		status = do_lock(fsp,
+				lock_pid,
+				count,
+				offset,
+				lock_type,
+				lock_flav,
+				my_lock_ctx);
+
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			return status;
@@ -191,11 +245,19 @@ NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid
 		if (j == 0) {
 			ret = status;
 			/* Don't spin if we blocked ourselves. */
-			if (*my_lock_ctx)
+			if (*my_lock_ctx) {
 				return ret;
+			}
+
+			/* Only spin for Windows locks. */
+			if (lock_flav == POSIX_LOCK) {
+				return ret;
+			}
 		}
-		if (sleeptime)
+
+		if (sleeptime) {
 			sys_usleep(sleeptime);
+		}
 	}
 	return ret;
 }
@@ -215,24 +277,30 @@ static void posix_unlock(void *pre_data)
 {
 	struct posix_unlock_data_struct *pdata = (struct posix_unlock_data_struct *)pre_data;
 
-	if (lp_posix_locking(SNUM(pdata->fsp->conn)))
+	if (lp_posix_locking(SNUM(pdata->fsp->conn))) {
 		release_posix_lock(pdata->fsp, pdata->offset, pdata->count);
+	}
 }
 
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-		   SMB_BIG_UINT count,SMB_BIG_UINT offset)
+NTSTATUS do_unlock(files_struct *fsp,
+			uint16 lock_pid,
+			SMB_BIG_UINT count,
+			SMB_BIG_UINT offset,
+			enum brl_flavour lock_flav)
 {
 	BOOL ok = False;
 	struct posix_unlock_data_struct posix_data;
+	struct byte_range_lock *br_lck = NULL;
 	
-	if (!lp_locking(SNUM(conn)))
+	if (!lp_locking(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
+	}
 	
-	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
+	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
@@ -249,14 +317,28 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	posix_data.offset = offset;
 	posix_data.count = count;
 
-	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			lock_pid, procid_self(), conn->cnum, offset, count,
-			False, posix_unlock, (void *)&posix_data);
+	br_lck = brl_get_locks(NULL, fsp);
+	if (!br_lck) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = brl_unlock(br_lck,
+			lock_pid,
+			procid_self(),
+			offset,
+			count,
+			lock_flav,
+			False,
+			posix_unlock,
+			(void *)&posix_data);
    
+	TALLOC_FREE(br_lck);
+
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
+
 	return NT_STATUS_OK;
 }
 
@@ -266,6 +348,7 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 
 void locking_close_file(files_struct *fsp)
 {
+	struct byte_range_lock *br_lck;
 	struct process_id pid = procid_self();
 
 	if (!lp_locking(SNUM(fsp->conn)))
@@ -275,13 +358,14 @@ void locking_close_file(files_struct *fsp)
 	 * Just release all the brl locks, no need to release individually.
 	 */
 
-	brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+	br_lck = brl_get_locks(NULL,fsp);
+	if (br_lck) {
+		brl_close_fnum(br_lck, pid);
+		TALLOC_FREE(br_lck);
+	}
 
 	if(lp_posix_locking(SNUM(fsp->conn))) {
-
-	 	/* 
-		 * Release all the POSIX locks.
-		 */
+	 	/* Release all the POSIX locks.*/
 		posix_locking_close_file(fsp);
 
 	}

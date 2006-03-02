@@ -52,6 +52,7 @@ struct lock_struct {
 	br_off size;
 	int fnum;
 	enum brl_type lock_type;
+	enum brl_flavour lock_flav;
 };
 
 /* The key used in the brlock database. */
@@ -169,7 +170,7 @@ static BOOL brl_conflict1(struct lock_struct *lck1,
 
 /****************************************************************************
  Check to see if this lock conflicts, but ignore our own locks on the
- same fnum only.
+ same fnum only. This is the read/write lock check code path.
 ****************************************************************************/
 
 static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
@@ -178,6 +179,12 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 		return False;
 
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
+		return False;
+
+	/* POSIX flavour locks never conflict here - this is only called
+	   in the read/write path. */
+
+	if (lck1->lock_flav == POSIX_LOCK && lck2->lock_flav == POSIX_LOCK)
 		return False;
 
 	/*
@@ -222,88 +229,22 @@ static NTSTATUS brl_lock_failed(struct lock_struct *lock)
 	return NT_STATUS_LOCK_NOT_GRANTED;
 }
 
-#if DONT_DO_THIS
-	/* doing this traversal could kill solaris machines under high load (tridge) */
-	/* delete any dead locks */
-
-/****************************************************************************
- Delete a record if it is for a dead process, if check_self is true, then
- delete any records belonging to this pid also (there shouldn't be any).
-****************************************************************************/
-
-static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
-{
-	struct lock_struct *locks;
-	int count, i;
-	BOOL check_self = *(BOOL *)state;
-	pid_t mypid = sys_getpid();
-
-	tdb_chainlock(tdb, kbuf);
-
-	locks = (struct lock_struct *)dbuf.dptr;
-
-	count = dbuf.dsize / sizeof(*locks);
-	for (i=0; i<count; i++) {
-		struct lock_struct *lock = &locks[i];
-
-		/* If check_self is true we want to remove our own records. */
-		if (check_self && (mypid == lock->context.pid)) {
-
-			DEBUG(0,("brlock : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
-					(unsigned int)lock->context.pid ));
-
-		} else if (process_exists(&lock->context.pid)) {
-
-			DEBUG(10,("brlock : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
-			continue;
-		}
-
-		DEBUG(10,("brlock : delete_fn. Deleting record for process %u\n",
-				(unsigned int)lock->context.pid ));
-
-		if (count > 1 && i < count-1) {
-			memmove(&locks[i], &locks[i+1], 
-				sizeof(*locks)*((count-1) - i));
-		}
-		count--;
-		i--;
-	}
-
-	if (count == 0) {
-		tdb_delete(tdb, kbuf);
-	} else if (count < (dbuf.dsize / sizeof(*locks))) {
-		dbuf.dsize = count * sizeof(*locks);
-		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-	}
-
-	tdb_chainunlock(tdb, kbuf);
-	return 0;
-}
-#endif
-
 /****************************************************************************
  Open up the brlock.tdb database.
 ****************************************************************************/
 
 void brl_init(int read_only)
 {
-	if (tdb)
+	if (tdb) {
 		return;
+	}
 	tdb = tdb_open_log(lock_path("brlock.tdb"), 0,  TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST),
 		       read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
 	if (!tdb) {
-		DEBUG(0,("Failed to open byte range locking database\n"));
+		DEBUG(0,("Failed to open byte range locking database %s\n",
+			lock_path("brlock.tdb")));
 		return;
 	}
-
-#if DONT_DO_THIS
-	/* doing this traversal could kill solaris machines under high load (tridge) */
-	/* delete any dead locks */
-	if (!read_only) {
-		BOOL check_self = False;
-		tdb_traverse(tdb, delete_fn, &check_self);
-	}
-#endif
 }
 
 /****************************************************************************
@@ -312,29 +253,23 @@ void brl_init(int read_only)
 
 void brl_shutdown(int read_only)
 {
-	if (!tdb)
+	if (!tdb) {
 		return;
-
-#if DONT_DO_THIS
-	/* doing this traversal could kill solaris machines under high load (tridge) */
-	/* delete any dead locks */
-	if (!read_only) {
-		BOOL check_self = True;
-		tdb_traverse(tdb, delete_fn, &check_self);
 	}
-#endif
-
 	tdb_close(tdb);
 }
 
 #if ZERO_ZERO
 /****************************************************************************
-compare two locks for sorting
+ Compare two locks for sorting.
 ****************************************************************************/
+
 static int lock_compare(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
-	if (lck1->start != lck2->start) return (lck1->start - lck2->start);
+	if (lck1->start != lck2->start) {
+		return (lck1->start - lck2->start);
+	}
 	if (lck2->size != lck1->size) {
 		return ((int)lck1->size - (int)lck2->size);
 	}
@@ -343,24 +278,79 @@ static int lock_compare(struct lock_struct *lck1,
 #endif
 
 /****************************************************************************
+ Lock a range of bytes - Windows lock semantics.
+****************************************************************************/
+
+static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
+			struct lock_struct *plock,
+			BOOL *my_lock_ctx)
+{
+	unsigned int i;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	char *tp;
+
+	for (i=0; i < br_lck->num_locks; i++) {
+		if (brl_conflict(&locks[i], plock)) {
+			NTSTATUS status = brl_lock_failed(plock);;
+			/* Did we block ourselves ? */
+			if (brl_same_context(&locks[i].context, &plock->context)) {
+				*my_lock_ctx = True;
+			}
+			return status;
+		}
+#if ZERO_ZERO
+		if (plock->start == 0 && plock->size == 0 && 
+				locks[i].size == 0) {
+			break;
+		}
+#endif
+	}
+
+	/* no conflicts - add it to the list of locks */
+	tp = SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
+	if (!tp) {
+		return NT_STATUS_NO_MEMORY;
+	} else {
+		br_lck->num_locks += 1;
+		br_lck->lock_data = (void *)tp;
+		br_lck->modified = True;
+	}
+
+#if ZERO_ZERO
+	/* sort the lock list */
+	qsort(br_lck->lock_data, (size_t)br_lck->num_locks, sizeof(lock), lock_compare);
+#endif
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Lock a range of bytes - POSIX lock semantics.
+****************************************************************************/
+
+static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
+			struct lock_struct *plock)
+{
+	/* Placeholder until I fix this. */
+	return NT_STATUS_LOCK_NOT_GRANTED;
+}
+
+/****************************************************************************
  Lock a range of bytes.
 ****************************************************************************/
 
-NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-		  uint16 smbpid, struct process_id pid, uint16 tid,
-		  br_off start, br_off size, 
-		  enum brl_type lock_type, BOOL *my_lock_ctx)
+NTSTATUS brl_lock(struct byte_range_lock *br_lck,
+		uint16 smbpid,
+		struct process_id pid,
+		br_off start,
+		br_off size, 
+		enum brl_type lock_type,
+		enum brl_flavour lock_flav,
+		BOOL *my_lock_ctx)
 {
-	TDB_DATA kbuf, dbuf;
-	int count, i;
-	struct lock_struct lock, *locks;
-	char *tp;
-	NTSTATUS status = NT_STATUS_OK;
+	struct lock_struct lock;
 
 	*my_lock_ctx = False;
-	kbuf = locking_key(dev,ino);
-
-	dbuf.dptr = NULL;
 
 #if !ZERO_ZERO
 	if (start == 0 && size == 0) {
@@ -368,68 +358,20 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	}
 #endif
 
-	tdb_chainlock(tdb, kbuf);
-	dbuf = tdb_fetch(tdb, kbuf);
-
 	lock.context.smbpid = smbpid;
 	lock.context.pid = pid;
-	lock.context.tid = tid;
+	lock.context.tid = br_lck->fsp->conn->cnum;
 	lock.start = start;
 	lock.size = size;
-	lock.fnum = fnum;
+	lock.fnum = br_lck->fsp->fnum;
 	lock.lock_type = lock_type;
+	lock.lock_flav = lock_flav;
 
-	if (dbuf.dptr) {
-		/* there are existing locks - make sure they don't conflict */
-		locks = (struct lock_struct *)dbuf.dptr;
-		count = dbuf.dsize / sizeof(*locks);
-		for (i=0; i<count; i++) {
-			if (brl_conflict(&locks[i], &lock)) {
-				status = brl_lock_failed(&lock);;
-				/* Did we block ourselves ? */
-				if (brl_same_context(&locks[i].context, &lock.context))
-					*my_lock_ctx = True;
-				goto fail;
-			}
-#if ZERO_ZERO
-			if (lock.start == 0 && lock.size == 0 && 
-			    locks[i].size == 0) {
-				break;
-			}
-#endif
-		}
-	}
-
-	/* no conflicts - add it to the list of locks */
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(*locks));
-	if (!tp) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	if (lock_flav == WINDOWS_LOCK) {
+		return brl_lock_windows(br_lck, &lock, my_lock_ctx);
 	} else {
-		dbuf.dptr = tp;
+		return brl_lock_posix(br_lck, &lock);
 	}
-	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
-	dbuf.dsize += sizeof(lock);
-
-#if ZERO_ZERO
-	/* sort the lock list */
-	qsort(dbuf.dptr, dbuf.dsize/sizeof(lock), sizeof(lock), lock_compare);
-#endif
-
-	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto fail;
-	}
-
-	SAFE_FREE(dbuf.dptr);
-	tdb_chainunlock(tdb, kbuf);
-	return NT_STATUS_OK;
-
- fail:
-
-	SAFE_FREE(dbuf.dptr);
-	tdb_chainunlock(tdb, kbuf);
-	return status;
 }
 
 /****************************************************************************
@@ -446,212 +388,211 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 }
 
 /****************************************************************************
- Unlock a range of bytes.
+ Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
 
-BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-		uint16 smbpid, struct process_id pid, uint16 tid,
-		br_off start, br_off size,
+static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
+		struct lock_struct *plock,
 		BOOL remove_pending_locks_only,
 		void (*pre_unlock_fn)(void *),
 		void *pre_unlock_data)
 {
-	TDB_DATA kbuf, dbuf;
-	int count, i, j;
-	struct lock_struct *locks;
-	struct lock_context context;
-
-	kbuf = locking_key(dev,ino);
-
-	dbuf.dptr = NULL;
-
-	tdb_chainlock(tdb, kbuf);
-	dbuf = tdb_fetch(tdb, kbuf);
-
-	if (!dbuf.dptr) {
-		DEBUG(10,("brl_unlock: tdb_fetch failed !\n"));
-		goto fail;
-	}
-
-	context.smbpid = smbpid;
-	context.pid = pid;
-	context.tid = tid;
-
-	/* there are existing locks - find a match */
-	locks = (struct lock_struct *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(*locks);
+	unsigned int i, j;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
 #if ZERO_ZERO
-	for (i=0; i<count; i++) {
+	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
 		if (lock->lock_type == WRITE_LOCK &&
-		    brl_same_context(&lock->context, &context) &&
-		    lock->fnum == fnum &&
-		    lock->start == start &&
-		    lock->size == size) {
+		    brl_same_context(&lock->context, &plock->context) &&
+		    lock->fnum == plock->fnum &&
+		    lock->start == plock->start &&
+		    lock->size == plock->size) {
 
-			if (pre_unlock_fn)
+			if (pre_unlock_fn) {
 				(*pre_unlock_fn)(pre_unlock_data);
-
-			/* found it - delete it */
-			if (count == 1) {
-				tdb_delete(tdb, kbuf);
-			} else {
-				if (i < count-1) {
-					memmove(&locks[i], &locks[i+1], 
-						sizeof(*locks)*((count-1) - i));
-				}
-				dbuf.dsize -= sizeof(*locks);
-				tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 
-			SAFE_FREE(dbuf.dptr);
-			tdb_chainunlock(tdb, kbuf);
+			/* found it - delete it */
+			if (i < br_lck->num_locks - 1) {
+				memmove(&locks[i], &locks[i+1], 
+					sizeof(*locks)*((br_lck->num_locks-1) - i));
+			}
+
+			br_lck->num_locks -= 1;
+			br_lck->modified = True;
 			return True;
 		}
 	}
 #endif
 
-	locks = (struct lock_struct *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(*locks);
-	for (i=0; i<count; i++) {
+	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
-		if (brl_same_context(&lock->context, &context) &&
-				lock->fnum == fnum &&
-				lock->start == start &&
-				lock->size == size) {
+		if (brl_same_context(&lock->context, &plock->context) &&
+				lock->fnum == plock->fnum &&
+				lock->start == plock->start &&
+				lock->size == plock->size) {
 
-			if (remove_pending_locks_only && lock->lock_type != PENDING_LOCK)
+			if (remove_pending_locks_only && lock->lock_type != PENDING_LOCK) {
 				continue;
+			}
 
 			if (lock->lock_type != PENDING_LOCK) {
 
 				/* Do any POSIX unlocks needed. */
-				if (pre_unlock_fn)
+				if (pre_unlock_fn) {
 					(*pre_unlock_fn)(pre_unlock_data);
+				}
 
 				/* Send unlock messages to any pending waiters that overlap. */
-				for (j=0; j<count; j++) {
+				for (j=0; j < br_lck->num_locks; j++) {
 					struct lock_struct *pend_lock = &locks[j];
 
 					/* Ignore non-pending locks. */
-					if (pend_lock->lock_type != PENDING_LOCK)
+					if (pend_lock->lock_type != PENDING_LOCK) {
 						continue;
+					}
 
 					/* We could send specific lock info here... */
 					if (brl_pending_overlap(lock, pend_lock)) {
 						DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
-									procid_str_static(&pend_lock->context.pid )));
+							procid_str_static(&pend_lock->context.pid )));
 
+						become_root();
 						message_send_pid(pend_lock->context.pid,
 								MSG_SMB_UNLOCK,
 								NULL, 0, True);
+						unbecome_root();
 					}
 				}
 			}
 
 			/* found it - delete it */
-			if (count == 1) {
-				tdb_delete(tdb, kbuf);
-			} else {
-				if (i < count-1) {
-					memmove(&locks[i], &locks[i+1], 
-						sizeof(*locks)*((count-1) - i));
-				}
-				dbuf.dsize -= sizeof(*locks);
-				tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+			if (i < br_lck->num_locks - 1) {
+				memmove(&locks[i], &locks[i+1], 
+					sizeof(*locks)*((br_lck->num_locks-1) - i));
 			}
 
-			SAFE_FREE(dbuf.dptr);
-			tdb_chainunlock(tdb, kbuf);
+			br_lck->num_locks -= 1;
+			br_lck->modified = True;
 			return True;
 		}
 	}
 
 	/* we didn't find it */
-
- fail:
-	SAFE_FREE(dbuf.dptr);
-	tdb_chainunlock(tdb, kbuf);
 	return False;
 }
 
+/****************************************************************************
+ Unlock a range of bytes - POSIX semantics.
+****************************************************************************/
+
+static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
+		struct lock_struct *plock,
+		BOOL remove_pending_locks_only,
+		void (*pre_unlock_fn)(void *),
+		void *pre_unlock_data)
+{
+	/* Placeholder for now. */
+	return True;
+}
+
+/****************************************************************************
+ Unlock a range of bytes.
+****************************************************************************/
+
+BOOL brl_unlock(struct byte_range_lock *br_lck,
+		uint16 smbpid,
+		struct process_id pid,
+		br_off start,
+		br_off size,
+		enum brl_flavour lock_flav,
+		BOOL remove_pending_locks_only,
+		void (*pre_unlock_fn)(void *),
+		void *pre_unlock_data)
+{
+	struct lock_struct lock;
+
+	lock.context.smbpid = smbpid;
+	lock.context.pid = pid;
+	lock.context.tid = br_lck->fsp->conn->cnum;
+	lock.start = start;
+	lock.size = size;
+	lock.fnum = br_lck->fsp->fnum;
+	lock.lock_type = READ_LOCK; /* We don't really care about this... */
+	lock.lock_flav = lock_flav;
+
+	if (lock_flav == WINDOWS_LOCK) {
+		return brl_unlock_windows(br_lck,
+				&lock,
+				remove_pending_locks_only,
+				pre_unlock_fn,
+				pre_unlock_data);
+	} else {
+		return brl_unlock_posix(br_lck,
+				&lock,
+				remove_pending_locks_only,
+				pre_unlock_fn,
+				pre_unlock_data);
+	}
+}
 
 /****************************************************************************
  Test if we could add a lock if we wanted to.
 ****************************************************************************/
 
-BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-		  uint16 smbpid, struct process_id pid, uint16 tid,
-		  br_off start, br_off size, 
-		  enum brl_type lock_type)
+BOOL brl_locktest(struct byte_range_lock *br_lck,
+		uint16 smbpid,
+		struct process_id pid,
+		br_off start,
+		br_off size, 
+		enum brl_type lock_type,
+		enum brl_flavour lock_flav)
 {
-	TDB_DATA kbuf, dbuf;
-	int count, i;
-	struct lock_struct lock, *locks;
-
-	kbuf = locking_key(dev,ino);
-
-	dbuf.dptr = NULL;
-
-	dbuf = tdb_fetch(tdb, kbuf);
+	unsigned int i;
+	struct lock_struct lock;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
 	lock.context.smbpid = smbpid;
 	lock.context.pid = pid;
-	lock.context.tid = tid;
+	lock.context.tid = br_lck->fsp->conn->cnum;
 	lock.start = start;
 	lock.size = size;
-	lock.fnum = fnum;
+	lock.fnum = br_lck->fsp->fnum;
 	lock.lock_type = lock_type;
+	lock.lock_flav = lock_flav;
 
-	if (dbuf.dptr) {
-		/* there are existing locks - make sure they don't conflict */
-		locks = (struct lock_struct *)dbuf.dptr;
-		count = dbuf.dsize / sizeof(*locks);
-		for (i=0; i<count; i++) {
-			/*
-			 * Our own locks don't conflict.
-			 */
-			if (brl_conflict_other(&locks[i], &lock))
-				goto fail;
+	/* Make sure existing locks don't conflict */
+	for (i=0; i < br_lck->num_locks; i++) {
+		/*
+		 * Our own locks don't conflict.
+		 */
+		if (brl_conflict_other(&locks[i], &lock)) {
+			return False;
 		}
 	}
 
 	/* no conflicts - we could have added it */
-	SAFE_FREE(dbuf.dptr);
 	return True;
-
- fail:
-	SAFE_FREE(dbuf.dptr);
-	return False;
 }
 
 /****************************************************************************
  Remove any locks associated with a open file.
 ****************************************************************************/
 
-void brl_close(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, int tid, int fnum)
+void brl_close_fnum(struct byte_range_lock *br_lck, struct process_id pid)
 {
-	TDB_DATA kbuf, dbuf;
-	int count, i, j, dcount=0;
-	struct lock_struct *locks;
+	files_struct *fsp = br_lck->fsp;
+	uint16 tid = fsp->conn->cnum;
+	int fnum = fsp->fnum;
+	unsigned int i, j, dcount=0;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
-	kbuf = locking_key(dev,ino);
+	/* Remove any existing locks for this fnum */
 
-	dbuf.dptr = NULL;
-
-	tdb_chainlock(tdb, kbuf);
-	dbuf = tdb_fetch(tdb, kbuf);
-
-	if (!dbuf.dptr) goto fail;
-
-	/* there are existing locks - remove any for this fnum */
-	locks = (struct lock_struct *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(*locks);
-
-	for (i=0; i<count; i++) {
+	for (i=0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
 		if (lock->context.tid == tid &&
@@ -659,47 +600,41 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, int tid, int
 		    lock->fnum == fnum) {
 
 			/* Send unlock messages to any pending waiters that overlap. */
-			for (j=0; j<count; j++) {
+			for (j=0; j < br_lck->num_locks; j++) {
 				struct lock_struct *pend_lock = &locks[j];
 
 				/* Ignore our own or non-pending locks. */
-				if (pend_lock->lock_type != PENDING_LOCK)
+				if (pend_lock->lock_type != PENDING_LOCK) {
 					continue;
+				}
 
 				if (pend_lock->context.tid == tid &&
 				    procid_equal(&pend_lock->context.pid, &pid) &&
-				    pend_lock->fnum == fnum)
+				    pend_lock->fnum == fnum) {
 					continue;
+				}
 
 				/* We could send specific lock info here... */
-				if (brl_pending_overlap(lock, pend_lock))
+				if (brl_pending_overlap(lock, pend_lock)) {
+					become_root();
 					message_send_pid(pend_lock->context.pid,
 							MSG_SMB_UNLOCK,
 							NULL, 0, True);
+					unbecome_root();
+				}
 			}
 
 			/* found it - delete it */
-			if (count > 1 && i < count-1) {
+			if (br_lck->num_locks > 1 && i < br_lck->num_locks - 1) {
 				memmove(&locks[i], &locks[i+1], 
-					sizeof(*locks)*((count-1) - i));
+					sizeof(*locks)*((br_lck->num_locks-1) - i));
 			}
-			count--;
+			br_lck->num_locks--;
+			br_lck->modified = True;
 			i--;
 			dcount++;
 		}
 	}
-
-	if (count == 0) {
-		tdb_delete(tdb, kbuf);
-	} else if (count < (dbuf.dsize / sizeof(*locks))) {
-		dbuf.dsize -= dcount * sizeof(*locks);
-		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-	}
-
-	/* we didn't find it */
- fail:
-	SAFE_FREE(dbuf.dptr);
-	tdb_chainunlock(tdb, kbuf);
 }
 
 /****************************************************************************
@@ -719,9 +654,11 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	key = (struct lock_key *)kbuf.dptr;
 
 	for (i=0;i<dbuf.dsize/sizeof(*locks);i++) {
-		traverse_callback(key->device, key->inode,
+		traverse_callback(key->device,
+				  key->inode,
 				  locks[i].context.pid,
 				  locks[i].lock_type,
+				  locks[i].lock_flav,
 				  locks[i].start,
 				  locks[i].size);
 	}
@@ -734,6 +671,82 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 
 int brl_forall(BRLOCK_FN(fn))
 {
-	if (!tdb) return 0;
+	if (!tdb) {
+		return 0;
+	}
 	return tdb_traverse(tdb, traverse_fn, (void *)fn);
+}
+
+/*******************************************************************
+ Store a potentially modified set of byte range lock data back into
+ the database.
+ Unlock the record.
+********************************************************************/
+
+static int byte_range_lock_destructor(void *p)
+{
+	struct byte_range_lock *br_lck =
+		talloc_get_type_abort(p, struct byte_range_lock);
+	TDB_DATA key = locking_key(br_lck->fsp->dev, br_lck->fsp->inode);
+
+	if (!br_lck->modified) {
+		goto done;
+	}
+
+	if (br_lck->num_locks == 0) {
+		/* No locks - delete this entry. */
+		if (tdb_delete(tdb, key) == -1) {
+			smb_panic("Could not delete byte range lock entry\n");
+		}
+	} else {
+		TDB_DATA data;
+		data.dptr = br_lck->lock_data;
+		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
+
+		if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
+			smb_panic("Could not store byte range mode entry\n");
+		}
+	}
+
+ done:
+
+	SAFE_FREE(br_lck->lock_data);
+	tdb_chainunlock(tdb, key);
+	return 0;
+}
+
+/*******************************************************************
+ Fetch a set of byte range lock data from the database.
+ Leave the record locked.
+********************************************************************/
+
+struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
+					files_struct *fsp)
+{
+	TDB_DATA key = locking_key(fsp->dev, fsp->inode);
+	TDB_DATA data;
+	struct byte_range_lock *br_lck;
+
+	br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
+	if (br_lck == NULL) {
+		return NULL;
+	}
+
+	br_lck->fsp = fsp;
+	br_lck->num_locks = 0;
+	br_lck->modified = False;
+
+	if (tdb_chainlock(tdb, key) != 0) {
+		DEBUG(3, ("Could not lock byte range lock entry\n"));
+		TALLOC_FREE(br_lck);
+		return NULL;
+	}
+
+	talloc_set_destructor(br_lck, byte_range_lock_destructor);
+
+	data = tdb_fetch(tdb, key);
+	br_lck->lock_data = (void *)data.dptr;
+	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
+
+	return br_lck;
 }

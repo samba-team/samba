@@ -2402,8 +2402,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
-			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(CIFS_UNIX_POSIX_ACLS_CAP|
-					CIFS_UNIX_POSIX_PATHNAMES_CAP))); /* We have POSIX ACLs and pathname capability. */
+			/* We have POSIX ACLs, pathname and locking capability. */
+			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
+					CIFS_UNIX_POSIX_ACLS_CAP|
+					CIFS_UNIX_POSIX_PATHNAMES_CAP|
+					CIFS_UNIX_FCNTL_LOCKS_CAP)));
 			break;
 
 		case SMB_QUERY_POSIX_FS_INFO:
@@ -2514,8 +2517,13 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					(unsigned int)client_unix_cap_high ));
 
 				/* Here is where we must switch to posix pathname processing... */
-				lp_set_posix_pathnames();
-				mangle_change_to_posix();
+				if (client_unix_cap_low & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+					lp_set_posix_pathnames();
+					mangle_change_to_posix();
+				}
+				if (client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) {
+					lp_set_posix_cifsx_locktype(POSIX_LOCK);
+				}
 				break;
 			}
 		case SMB_FS_QUOTA_INFORMATION:

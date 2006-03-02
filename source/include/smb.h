@@ -802,15 +802,25 @@ struct parm_struct {
 
 /* passed to br lock code */
 enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
+enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
+
+struct byte_range_lock {
+	files_struct *fsp;
+	unsigned int num_locks;
+	BOOL modified;
+	void *lock_data;
+};
 
 #define BRLOCK_FN_CAST() \
 	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
+				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
 #define BRLOCK_FN(fn) \
 	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
+				 enum brl_flavour lock_flav, \
 				 br_off start, br_off size)
 
 struct bitmap {
