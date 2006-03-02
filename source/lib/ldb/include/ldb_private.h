@@ -56,11 +56,11 @@ struct ldb_module {
 */
 struct ldb_module_ops {
 	const char *name;
+	int (*init_context) (struct ldb_module *);
 	int (*request)(struct ldb_module *, struct ldb_request *);
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
-	int (*second_stage_init)(struct ldb_module *);
 };
 
 
@@ -112,9 +112,6 @@ struct ldb_context {
 	uint64_t (*sequence_number)(struct ldb_context *);
 };
 
-/* the modules init function */
-typedef struct ldb_module *(*ldb_module_init_t)(struct ldb_context *, const char **);
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
@@ -124,9 +121,6 @@ typedef struct ldb_module *(*ldb_module_init_t)(struct ldb_context *, const char
 */
 #define ldb_oom(ldb) ldb_debug_set(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
 
-/* The following definitions come from lib/ldb/common/ldb.c */
-int ldb_second_stage_init(struct ldb_context *ldb);
-	
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
@@ -134,10 +128,12 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request);
 int ldb_next_start_trans(struct ldb_module *module);
 int ldb_next_end_trans(struct ldb_module *module);
 int ldb_next_del_trans(struct ldb_module *module);
-int ldb_next_second_stage_init(struct ldb_module *module);
+int ldb_next_init(struct ldb_module *module);
 
 void ldb_set_errstring(struct ldb_context *ldb, char *err_string);
 void ldb_reset_err_string(struct ldb_context *ldb);
+
+int ldb_register_module(const struct ldb_module_ops *);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
@@ -161,14 +157,13 @@ int lsqlite3_connect(struct ldb_context *ldb,
 		     const char *url, 
 		     unsigned int flags, 
 		     const char *options[]);
-struct ldb_module *objectclass_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *paged_results_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *server_sort_module_init(struct ldb_context *ldb, const char *options[]);
-struct ldb_module *asq_module_init(struct ldb_context *ldb, const char *options[]);
 
+int ldb_objectclass_init(void);
+int ldb_operational_init(void);
+int ldb_paged_results_init(void);
+int ldb_rdn_name_init(void);
+int ldb_schema_init(void);
+int ldb_sort_init(void);
 
 int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_message *msg,

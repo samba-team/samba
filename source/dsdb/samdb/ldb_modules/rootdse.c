@@ -199,34 +199,30 @@ static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-static const struct ldb_module_ops rootdse_ops = {
-	.name		= "rootdse",
-	.request	= rootdse_request
-};
-
-struct ldb_module *rootdse_module_init(struct ldb_context *ldb, const char *options[])
+static int rootdse_init(struct ldb_module *module)
 {
-	struct ldb_module *ctx;
 	struct private_data *data;
 
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	data = talloc(ctx, struct private_data);
+	data = talloc(module, struct private_data);
 	if (data == NULL) {
-		talloc_free(ctx);
-		return NULL;
+		return -1;
 	}
 
 	data->num_controls = 0;
 	data->controls = NULL;
-	ctx->private_data = data;
+	module->private_data = data;
 
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &rootdse_ops;
+	return ldb_next_init(module);
+}
 
-	return ctx;
+static const struct ldb_module_ops rootdse_ops = {
+	.name			= "rootdse",
+	.init_context	= rootdse_init,
+	.request		= rootdse_request
+};
+
+int rootdse_module_init(void)
+{
+	return ldb_register_module(&rootdse_ops);
 }
 

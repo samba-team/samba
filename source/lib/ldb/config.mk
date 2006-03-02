@@ -1,6 +1,7 @@
 ################################################
 # Start MODULE libldb_asq
 [MODULE::libldb_asq]
+INIT_FUNCTION = ldb_asq_init
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
@@ -11,6 +12,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE libldb_sort
 [MODULE::libldb_sort]
+INIT_FUNCTION = ldb_sort_init
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
@@ -21,6 +23,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE libldb_paged_results
 [MODULE::libldb_paged_results]
+INIT_FUNCTION = ldb_paged_results_init
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
@@ -32,6 +35,7 @@ OBJ_FILES = \
 # Start MODULE libldb_operational
 [MODULE::libldb_operational]
 SUBSYSTEM = LIBLDB
+INIT_FUNCTION = ldb_operational_init
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/operational.o
@@ -41,6 +45,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE libldb_objectclass
 [MODULE::libldb_objectclass]
+INIT_FUNCTION = ldb_objectclass_init
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
@@ -52,6 +57,7 @@ OBJ_FILES = \
 # Start MODULE libldb_rdn_name
 [MODULE::libldb_rdn_name]
 SUBSYSTEM = LIBLDB
+INIT_FUNCTION = ldb_rdn_name_init
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		modules/rdn_name.o
@@ -61,6 +67,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE libldb_schema
 [MODULE::libldb_schema]
+INIT_FUNCTION = ldb_schema_init
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
@@ -94,6 +101,7 @@ OBJ_FILES = modules/ldb_map.o
 # Start MODULE libldb_skel
 [MODULE::libldb_skel]
 SUBSYSTEM = LIBLDB
+INIT_FUNCTION = ldb_skel_init
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = modules/skel.o
 # End MODULE libldb_skel
@@ -136,6 +144,7 @@ NOPROTO = YES
 MAJOR_VERSION = 0
 MINOR_VERSION = 0
 DESCRIPTION = LDAP-like embedded database library
+INIT_FUNCTION_TYPE = int (*) (void)
 RELEASE_VERSION = 1
 OBJ_FILES = \
 		common/ldb.o \

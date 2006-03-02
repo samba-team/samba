@@ -16,6 +16,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE libldb_wins_ldb
 [MODULE::libldb_wins_ldb]
 SUBSYSTEM = LIBLDB
+INIT_FUNCTION = wins_ldb_module_init
 OUTPUT_TYPE = MERGEDOBJ
 OBJ_FILES = \
 		wins/wins_ldb.o

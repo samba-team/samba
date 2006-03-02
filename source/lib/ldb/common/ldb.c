@@ -129,19 +129,6 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 } while (0)
 
 /*
- second stage init all modules loaded
-*/
-int ldb_second_stage_init(struct ldb_context *ldb)
-{
-	struct ldb_module *module;
-
-	FIRST_OP(ldb, second_stage_init);
-
-	return module->ops->second_stage_init(module);
-}
-
-
-/*
   start a transaction
 */
 int ldb_transaction_start(struct ldb_context *ldb)

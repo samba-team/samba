@@ -333,22 +333,7 @@ static const struct ldb_module_ops proxy_ops = {
 	.request	= proxy_request
 };
 
-struct ldb_module *proxy_module_init(struct ldb_context *ldb, const char *options[])
+int proxy_module_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &proxy_ops;
-
-	ctx->private_data = talloc_zero(ctx, struct proxy_data);
-	if (ctx->private_data == NULL) {
-		return NULL;
-	}
-
-	return ctx;
+	return ldb_register_module(&proxy_ops);
 }

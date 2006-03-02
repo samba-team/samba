@@ -175,7 +175,7 @@ static int kludge_acl_request(struct ldb_module *module, struct ldb_request *req
 	}
 }
 
-static int kludge_acl_init_2(struct ldb_module *module)
+static int kludge_acl_init(struct ldb_module *module)
 {
 	int ret, i;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
@@ -184,8 +184,15 @@ static int kludge_acl_init_2(struct ldb_module *module)
 	struct ldb_message *msg;
 	struct ldb_message_element *password_attributes;
 
-	struct kludge_private_data *data = talloc_get_type(module->private_data, struct kludge_private_data);
+	struct kludge_private_data *data;
+
+	data = talloc(module, struct kludge_private_data);
+	if (data == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	data->password_attrs = NULL;
+	module->private_data = data;
 
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -227,7 +234,7 @@ static int kludge_acl_init_2(struct ldb_module *module)
 
 done:
 	talloc_free(mem_ctx);
-	return ldb_next_second_stage_init(module);
+	return ldb_next_init(module);
 }
 
 static const struct ldb_module_ops kludge_acl_ops = {
@@ -236,30 +243,10 @@ static const struct ldb_module_ops kludge_acl_ops = {
 	.start_transaction = kludge_acl_start_trans,
 	.end_transaction   = kludge_acl_end_trans,
 	.del_transaction   = kludge_acl_del_trans,
-	.second_stage_init = kludge_acl_init_2
+	.init_context	   = kludge_acl_init
 };
 
-struct ldb_module *kludge_acl_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_kludge_acl_init(void)
 {
-	struct ldb_module *ctx;
-	struct kludge_private_data *data;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	data = talloc(ctx, struct kludge_private_data);
-	if (data == NULL) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	data->password_attrs = NULL;
-	ctx->private_data = data;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &kludge_acl_ops;
-
-	return ctx;
+	return ldb_register_module(&kludge_acl_ops);
 }

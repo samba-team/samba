@@ -666,6 +666,15 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *request);
 int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type);
 
 /**
+  Initialise ldbs' global information
+
+  This is required before any other LDB call
+
+  \return 0 if initialisation succeeded, -1 otherwise
+*/
+int ldb_global_init(void);
+
+/**
   Initialise an ldb context
 
   This is required before any other LDB call.

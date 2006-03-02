@@ -819,27 +819,20 @@ static int samldb_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int samldb_init(struct ldb_module *module)
+{
+	talloc_set_destructor(module, samldb_destructor);
+	return ldb_next_init(module);
+}
+
 static const struct ldb_module_ops samldb_ops = {
 	.name          = "samldb",
+	.init_context  = samldb_init,
 	.request       = samldb_request
 };
 
 
-/* the init function */
-struct ldb_module *samldb_module_init(struct ldb_context *ldb, const char *options[])
+int samldb_module_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->private_data = NULL;
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &samldb_ops;
-
-	talloc_set_destructor(ctx, samldb_destructor);
-
-	return ctx;
+	return ldb_register_module(&samldb_ops);
 }

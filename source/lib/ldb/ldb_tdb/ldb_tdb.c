@@ -797,18 +797,12 @@ static uint64_t ltdb_sequence_number(struct ldb_context *ldb)
 	return seq_num;	
 }
 
-static int ltdb_init_2(struct ldb_module *module)
-{
-	return LDB_SUCCESS;
-}
-
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
 	.request           = ltdb_request,
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
-	.del_transaction   = ltdb_del_trans,
-	.second_stage_init = ltdb_init_2
+	.del_transaction   = ltdb_del_trans
 };
 
 

@@ -482,19 +482,7 @@ static const struct ldb_module_ops schema_ops = {
 	.request           = schema_request
 };
 
-struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_schema_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx) {
-		return NULL;
-	}
-
-	ctx->private_data = NULL;
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &schema_ops;
-
-	return ctx;
+	return ldb_register_module(&schema_ops);
 }

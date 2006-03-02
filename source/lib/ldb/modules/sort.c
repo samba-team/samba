@@ -228,7 +228,7 @@ static int server_sort(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int server_sort_init_2(struct ldb_module *module)
+static int server_sort_init(struct ldb_module *module)
 {
 	struct ldb_request request;
 	int ret;
@@ -243,27 +243,16 @@ static int server_sort_init_2(struct ldb_module *module)
 		return LDB_ERR_OTHER;
 	}
 
-	return ldb_next_second_stage_init(module);
+	return ldb_next_init(module);
 }
 
 static const struct ldb_module_ops server_sort_ops = {
 	.name		   = "server_sort",
 	.request      	   = server_sort,
-	.second_stage_init = server_sort_init_2
+	.init_context	   = server_sort_init
 };
 
-struct ldb_module *server_sort_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_sort_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &server_sort_ops;
-	ctx->private_data = NULL;
-
-	return ctx;
+	return ldb_register_module(&server_sort_ops);
 }

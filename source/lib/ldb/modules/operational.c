@@ -400,31 +400,24 @@ static int operational_request(struct ldb_module *module, struct ldb_request *re
 	}
 }
 
+static int operational_init(struct ldb_module *ctx)
+{
+	/* setup some standard attribute handlers */
+	ldb_set_attrib_handler_syntax(ctx->ldb, "whenCreated", LDB_SYNTAX_UTC_TIME);
+	ldb_set_attrib_handler_syntax(ctx->ldb, "whenChanged", LDB_SYNTAX_UTC_TIME);
+	ldb_set_attrib_handler_syntax(ctx->ldb, "subschemaSubentry", LDB_SYNTAX_DN);
+	ldb_set_attrib_handler_syntax(ctx->ldb, "structuralObjectClass", LDB_SYNTAX_OBJECTCLASS);
+
+	return ldb_next_init(ctx);
+}
+
 static const struct ldb_module_ops operational_ops = {
 	.name              = "operational",
-	.request           = operational_request
+	.request           = operational_request,
+	.init_context	   = operational_init
 };
 
-
-/* the init function */
-struct ldb_module *operational_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_operational_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->private_data = NULL;
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &operational_ops;
-
-	/* setup some standard attribute handlers */
-	ldb_set_attrib_handler_syntax(ldb, "whenCreated", LDB_SYNTAX_UTC_TIME);
-	ldb_set_attrib_handler_syntax(ldb, "whenChanged", LDB_SYNTAX_UTC_TIME);
-	ldb_set_attrib_handler_syntax(ldb, "subschemaSubentry", LDB_SYNTAX_DN);
-	ldb_set_attrib_handler_syntax(ldb, "structuralObjectClass", LDB_SYNTAX_OBJECTCLASS);
-
-	return ctx;
+	return ldb_register_module(&operational_ops);
 }

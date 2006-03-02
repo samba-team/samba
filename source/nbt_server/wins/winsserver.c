@@ -29,6 +29,7 @@
 #include "libcli/composite/composite.h"
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
+#include "lib/ldb/include/ldb.h"
 
 /*
   work out the ttl we will use given a client requested ttl
@@ -839,6 +840,8 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 		nbtsrv->winssrv = NULL;
 		return NT_STATUS_OK;
 	}
+
+	ldb_global_init();
 
 	nbtsrv->winssrv = talloc_zero(nbtsrv, struct wins_server);
 	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);

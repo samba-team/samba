@@ -79,6 +79,8 @@ static void usage(void)
 	int ret, i;
 	struct ldb_cmdline *options;
 
+	ldb_global_init();
+
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);

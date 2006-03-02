@@ -97,6 +97,10 @@ sub check_library($$$)
 		return;
 	}
 
+	unless (defined($lib->{INIT_FUNCTION_TYPE})) {
+		$lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
+	}
+
 	$lib->{INSTALLDIR} = "LIBDIR";
 }
 

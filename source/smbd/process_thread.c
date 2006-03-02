@@ -35,7 +35,7 @@
 #include "smb_server/smb_server.h"
 #include "mutex.h"
 
-/* For sepecifiying event context to GSSAPI below */
+/* For specifying event context to GSSAPI below */
 #include "system/kerberos.h"
 #include "heimdal/lib/gssapi/gssapi_locl.h"
 

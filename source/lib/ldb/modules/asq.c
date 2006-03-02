@@ -210,7 +210,7 @@ static int asq(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int asq_init_2(struct ldb_module *module)
+static int asq_init(struct ldb_module *module)
 {
 	struct ldb_request request;
 	int ret;
@@ -225,28 +225,17 @@ static int asq_init_2(struct ldb_module *module)
 		return LDB_ERR_OTHER;
 	}
 
-	return ldb_next_second_stage_init(module);
+	return ldb_next_init(module);
 }
 
 
 static const struct ldb_module_ops asq_ops = {
 	.name		   = "asq",
 	.request      	   = asq,
-	.second_stage_init = asq_init_2
+	.init_context	   = asq_init
 };
 
-struct ldb_module *asq_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_asq_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &asq_ops;
-	ctx->private_data = NULL;
-
-	return ctx;
+	return ldb_register_module(&asq_ops);
 }

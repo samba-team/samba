@@ -148,7 +148,7 @@ static int do_search(struct ldb_context *ldb,
 	return 0;
 }
 
- int main(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *basedn = NULL;
@@ -156,6 +156,8 @@ static int do_search(struct ldb_context *ldb,
 	struct ldb_cmdline *options;
 	int ret = -1;
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
+
+	ldb_global_init();
 
 	ldb = ldb_init(NULL);
 

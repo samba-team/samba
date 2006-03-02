@@ -89,27 +89,12 @@ call_next:
 	return ldb_next_request(module, req);	
 }
 
-static const struct ldb_module_ops wins_ldb_ops = {
-	.name          = "wins_ldb",
-	.request       = wins_ldb_request
-};
-
-
-/* the init function */
-struct ldb_module *wins_ldb_module_init(struct ldb_context *ldb, const char *options[])
+static int wins_ldb_init(struct ldb_module *ctx)
 {
-	struct ldb_module *ctx;
 	struct winsdb_handle *h;
 	const char *owner;
-	int ret;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx) return NULL;
 
 	ctx->private_data = NULL;
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &wins_ldb_ops;
 
 	owner = lp_parm_string(-1, "winsdb", "local_owner");
 	if (!owner) {
@@ -121,17 +106,27 @@ struct ldb_module *wins_ldb_module_init(struct ldb_context *ldb, const char *opt
 
 	h = talloc(ctx, struct winsdb_handle);
 	if (!h) goto failed;
-	h->ldb		= ldb;
+	h->ldb		= ctx->ldb;
 	h->caller	= WINSDB_HANDLE_CALLER_ADMIN;
 	h->local_owner	= talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;
 
-	ret = ldb_set_opaque(ldb, "winsdb_handle", h);
-	if (ret != LDB_SUCCESS) goto failed;
-
-	return ctx;
+	return ldb_set_opaque(ctx->ldb, "winsdb_handle", h);
 
 failed:
-	talloc_free(ctx);
-	return NULL;
+	talloc_free(h);
+	return LDB_ERR_OTHER;
+}
+
+static const struct ldb_module_ops wins_ldb_ops = {
+	.name          = "wins_ldb",
+	.request       = wins_ldb_request,
+	.init_context  = wins_ldb_init
+};
+
+
+/* the init function */
+int wins_ldb_module_init(void)
+{
+	return ldb_register_module(&wins_ldb_ops);
 }

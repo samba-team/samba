@@ -67,7 +67,7 @@ static char *talloc_strdup_no_spaces(struct ldb_context *ldb, const char *string
 
 /* modules are called in inverse order on the stack.
    Lets place them as an admin would think the right order is.
-   Modules order is imprtant */
+   Modules order is important */
 static char **ldb_modules_list_from_string(struct ldb_context *ldb, const char *string)
 {
 	char **modules = NULL;
@@ -109,35 +109,79 @@ static char **ldb_modules_list_from_string(struct ldb_context *ldb, const char *
 	return modules;
 }
 
+static struct ops_list_entry {
+	const struct ldb_module_ops *ops;
+	struct ops_list_entry *next;	
+} *registered_modules = NULL;
+
+static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
+{
+	struct ops_list_entry *e;
+ 
+	for (e = registered_modules; e; e = e->next) {
+ 		if (strcmp(e->ops->name, name) == 0) 
+			return e->ops;
+	}
+
+	return NULL;
+}
+
+	
+#ifndef STATIC_LIBLDB_MODULES
+#define STATIC_LIBLDB_MODULES \
+	{	\
+		ldb_schema_init,	\
+		ldb_operational_init,	\
+		ldb_rdn_name_init,	\
+		ldb_objectclass_init,	\
+		ldb_paged_results_init,	\
+		ldb_sort_init,		\
+		NULL			\
+	}
+#endif
+
+int ldb_global_init(void)
+{
+	static int (*static_init_fns[])(void) = STATIC_LIBLDB_MODULES;
+
+	static int initialized = 0;
+	int ret = 0, i;
+
+	if (initialized) 
+		return 0;
+
+	initialized = 1;
+	
+	for (i = 0; static_init_fns[i]; i++) {
+		if (static_init_fns[i]() == -1)
+			ret = -1;
+	}
+
+	return ret;
+}
+
+int ldb_register_module(const struct ldb_module_ops *ops)
+{
+	struct ops_list_entry *entry = talloc(talloc_autofree_context(), struct ops_list_entry);
+
+	if (ldb_find_module_ops(ops->name) != NULL)
+		return -1;
+
+	if (entry == NULL)
+		return -1;
+
+	entry->ops = ops;
+	entry->next = registered_modules;
+	registered_modules = entry;
+
+	return 0;
+}
+
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	char **modules = NULL;
+	struct ldb_module *module;
 	int i;
-	const struct {
-		const char *name;
-		ldb_module_init_t init;
-	} well_known_modules[] = {
-		{ "schema", schema_module_init },
-		{ "operational", operational_module_init },
-		{ "rdn_name", rdn_name_module_init },
-		{ "objectclass", objectclass_module_init },
-		{ "paged_results", paged_results_module_init },
-		{ "server_sort", server_sort_module_init },
-		{ "asq", asq_module_init },
-#ifdef _SAMBA_BUILD_
-		{ "objectguid", objectguid_module_init },
-		{ "samldb", samldb_module_init },
-		{ "samba3sam", ldb_samba3sam_module_init },
-		{ "proxy", proxy_module_init },
-		{ "rootdse", rootdse_module_init },
-		{ "extended_dn", extended_dn_module_init },
-		{ "password_hash", password_hash_module_init },
-		{ "kludge_acl", kludge_acl_module_init },
-		{ "wins_ldb", wins_ldb_module_init },
-#endif
-		{ NULL, NULL }
-	};
-
 	/* find out which modules we are requested to activate */
 
 	/* check if we have a custom module list passd as ldb option */
@@ -149,7 +193,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		}
 	}
 
-	/* if not overloaded by options and the backend is not ldap try to load the modules list form ldb */
+	/* if not overloaded by options and the backend is not ldap try to load the modules list from ldb */
 	if ((modules == NULL) && (strcmp("ldap", ldb->modules->ops->name) != 0)) { 
 		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
@@ -191,27 +235,34 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	for (i = 0; modules[i] != NULL; i++) {
 		struct ldb_module *current;
-		int m;
-		for (m=0;well_known_modules[m].name;m++) {
-			if (strcmp(modules[i], well_known_modules[m].name) == 0) {
-				current = well_known_modules[m].init(ldb, options);
-				if (current == NULL) {
-					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-					return -1;
-				}
-				DLIST_ADD(ldb->modules, current);
-				break;
-			}
-		}
-		if (well_known_modules[m].name == NULL) {
+		const struct ldb_module_ops *ops;
+				
+		ops = ldb_find_module_ops(modules[i]);
+		if (ops == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
 				  modules[i]);
+			continue;
 		}
+
+		current = talloc_zero(ldb, struct ldb_module);
+		if (current == NULL) {
+			return -1;
+		}
+
+		current->ldb = ldb;
+		current->ops = ops;
+		
+		DLIST_ADD(ldb->modules, current);
 	}
 
-	/* second stage init */
-	if (ldb_second_stage_init(ldb) != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "ERROR: Second stage init failed!\n");
+	module = ldb->modules;
+
+	while (module && module->ops->init_context == NULL) 
+		module = module->next;
+
+	if (module && module->ops->init_context &&
+		module->ops->init_context(module) != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "module initialization failed\n");
 		return -1;
 	}
 
@@ -240,10 +291,20 @@ int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 	return module->ops->request(module, request);
 }
 
-int ldb_next_second_stage_init(struct ldb_module *module)
+int ldb_next_init(struct ldb_module *module)
 {
-	FIND_OP(module, second_stage_init);
-	return module->ops->second_stage_init(module);
+	/* init is different in that it is not an error if modules
+	 * do not require initialization */
+
+	module = module->next;
+
+	while (module && module->ops->init_context == NULL) 
+		module = module->next;
+
+	if (module == NULL) 
+		return LDB_SUCCESS;
+
+	return module->ops->init_context(module);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)

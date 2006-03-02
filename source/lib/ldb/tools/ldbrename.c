@@ -58,6 +58,8 @@ static void usage(void)
 	struct ldb_cmdline *options;
 	const struct ldb_dn *dn1, *dn2;
 
+	ldb_global_init();
+
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
