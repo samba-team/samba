@@ -376,6 +376,8 @@ static void usage(void)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ldb_context *ldb;
 
+	ldb_global_init();
+
 	ldb = ldb_init(mem_ctx);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);

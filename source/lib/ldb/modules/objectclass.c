@@ -302,19 +302,7 @@ static const struct ldb_module_ops objectclass_ops = {
 	.request      	   = objectclass_request,
 };
 
-struct ldb_module *objectclass_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_objectclass_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->private_data = NULL;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &objectclass_ops;
-
-	return ctx;
+	return ldb_register_module(&objectclass_ops);
 }

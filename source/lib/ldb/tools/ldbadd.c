@@ -84,11 +84,13 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 
 
 
- int main(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int i, count=0;
 	struct ldb_cmdline *options;
+
+	ldb_global_init();
 
 	ldb = ldb_init(NULL);
 

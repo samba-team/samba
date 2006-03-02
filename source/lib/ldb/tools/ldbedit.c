@@ -281,6 +281,8 @@ static void usage(void)
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
 	const char * const * attrs = NULL;
 
+	ldb_global_init();
+
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);

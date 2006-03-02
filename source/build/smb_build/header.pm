@@ -30,13 +30,16 @@ sub _prepare_build_h($)
 		my $DEFINE = ();
 		next if ($key->{TYPE} ne "LIBRARY" and $key->{TYPE} ne "SUBSYSTEM");
 		next unless defined($key->{INIT_FUNCTIONS});
-		
+
 		$DEFINE->{COMMENT} = "$key->{TYPE} $key->{NAME} INIT";
 		$DEFINE->{KEY} = "STATIC_$key->{NAME}_MODULES";
 		$DEFINE->{VAL} = "{ \\\n";
 		foreach (@{$key->{INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t$_, \\\n";
-			$output .= "NTSTATUS $_(void);\n";
+			my $fn = $key->{INIT_FUNCTION_TYPE};
+			unless(defined($fn)) { $fn = "NTSTATUS (*) (void)"; }
+			$fn =~ s/\(\*\)/$_/;
+			$output .= "$fn;\n";
 		}
 
 		$DEFINE->{VAL} .= "\tNULL \\\n }";

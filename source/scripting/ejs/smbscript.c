@@ -26,6 +26,7 @@
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
 #include "auth/gensec/gensec.h"
+#include "ldb/include/ldb.h"
 
 static EjsId eid;
 
@@ -37,7 +38,7 @@ void ejs_exception(const char *reason)
 	exit(127);
 }
 
- int main(int argc, const char **argv)
+int main(int argc, const char **argv)
 {
 	EjsHandle handle = 0;
 	MprVar result;
@@ -50,6 +51,9 @@ void ejs_exception(const char *reason)
 	int exit_status, i;
 
 	fault_setup(argv[0]);
+
+	ldb_global_init();
+
 	gensec_init();
 	mprSetCtx(mem_ctx);
 
