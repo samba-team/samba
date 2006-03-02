@@ -269,7 +269,7 @@ static int extended_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int extended_init_2(struct ldb_module *module)
+static int extended_init(struct ldb_module *module)
 {
 	struct ldb_request request;
 	int ret;
@@ -284,27 +284,16 @@ static int extended_init_2(struct ldb_module *module)
 		return LDB_ERR_OTHER;
 	}
 
-	return ldb_next_second_stage_init(module);
+	return ldb_next_init(module);
 }
 
 static const struct ldb_module_ops extended_dn_ops = {
 	.name		   = "extended_dn",
 	.request      	   = extended_request,
-	.second_stage_init = extended_init_2
+	.init_context	   = extended_init
 };
 
-struct ldb_module *extended_dn_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_extended_dn_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &extended_dn_ops;
-	ctx->private_data = NULL;
-
-	return ctx;
+	return ldb_register_module(&extended_dn_ops);
 }

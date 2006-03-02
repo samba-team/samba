@@ -122,45 +122,33 @@ static int skel_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int skel_init_2(struct ldb_module *module)
+static int skel_init(struct ldb_module *ctx)
 {
-	/* second stage init stuff */
-	/* see control modules as example */
-	return ldb_next_second_stage_init(module);
-}
-
-static const struct ldb_module_ops skel_ops = {
-	.name		   = "skel",
-	.request      	   = skel_request,
-	.start_transaction = skel_start_trans,
-	.end_transaction   = skel_end_trans,
-	.del_transaction   = skel_del_trans,
-	.second_stage_init = skel_init_2
-};
-
-struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options[])
-{
-	struct ldb_module *ctx;
 	struct private_data *data;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
 
 	data = talloc(ctx, struct private_data);
 	if (data == NULL) {
-		talloc_free(ctx);
-		return NULL;
+		return 1;
 	}
 
 	data->some_private_data = NULL;
 	ctx->private_data = data;
 
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &skel_ops;
-
 	talloc_set_destructor (ctx, skel_destructor);
 
-	return ctx;
+	return ldb_next_init(ctx);
+}
+
+static const struct ldb_module_ops skel_ops = {
+	.name		   = "skel",
+	.init_context	   = skel_init,
+	.request      	   = skel_request,
+	.start_transaction = skel_start_trans,
+	.end_transaction   = skel_end_trans,
+	.del_transaction   = skel_del_trans,
+};
+
+int ldb_skel_init(void)
+{
+	return ldb_register_module(&skel_ops);
 }

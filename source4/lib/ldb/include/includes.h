@@ -10,6 +10,8 @@
 #include "system/iconv.h"
 #include "system/time.h"
 
+#include "build.h"
+
 #else /*_SAMBA_BUILD_*/
 
 #ifndef _GNU_SOURCE

@@ -91,6 +91,8 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	int i;
 	struct ldb_cmdline *options;
 
+	ldb_global_init();
+
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);

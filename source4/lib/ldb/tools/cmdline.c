@@ -71,6 +71,8 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		POPT_TABLEEND
 	};
 
+	ldb_global_init();
+
 #ifdef _SAMBA_BUILD_
 	r = ldb_register_samba_handlers(ldb);
 	if (r != 0) {

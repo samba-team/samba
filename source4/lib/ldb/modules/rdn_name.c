@@ -211,19 +211,7 @@ static const struct ldb_module_ops rdn_name_ops = {
 };
 
 
-/* the init function */
-struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_rdn_name_init(void)
 {
-	struct ldb_module *ctx;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	ctx->private_data = NULL;
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &rdn_name_ops;
-
-	return ctx;
+	return ldb_register_module(&rdn_name_ops);
 }

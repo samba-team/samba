@@ -247,10 +247,20 @@ static int paged_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int paged_request_init_2(struct ldb_module *module)
+static int paged_request_init(struct ldb_module *module)
 {
 	struct ldb_request request;
 	int ret;
+	struct private_data *data;
+
+	data = talloc(module, struct private_data);
+	if (data == NULL) {
+		return LDB_ERR_OTHER;
+	}
+
+	data->next_free_id = 1;
+	data->store = NULL;
+	module->private_data = data;
 
 	request.operation = LDB_REQ_REGISTER;
 	request.op.reg.oid = LDB_CONTROL_PAGED_RESULTS_OID;
@@ -262,37 +272,17 @@ static int paged_request_init_2(struct ldb_module *module)
 		return LDB_ERR_OTHER;
 	}
 
-	return ldb_next_second_stage_init(module);
+	return ldb_next_init(module);
 }
 
 static const struct ldb_module_ops paged_ops = {
-	.name		   = "paged_results",
-	.request      	   = paged_request,
-	.second_stage_init = paged_request_init_2
+	.name		   	= "paged_results",
+	.request        = paged_request,
+	.init_context 	= paged_request_init
 };
 
-struct ldb_module *paged_results_module_init(struct ldb_context *ldb, const char *options[])
+int ldb_paged_results_init(void)
 {
-	struct ldb_module *ctx;
-	struct private_data *data;
-
-	ctx = talloc(ldb, struct ldb_module);
-	if (!ctx)
-		return NULL;
-
-	data = talloc(ctx, struct private_data);
-	if (data == NULL) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	data->next_free_id = 1;
-	data->store = NULL;
-	ctx->private_data = data;
-
-	ctx->ldb = ldb;
-	ctx->prev = ctx->next = NULL;
-	ctx->ops = &paged_ops;
-
-	return ctx;
+	return ldb_register_module(&paged_ops);
 }
+
