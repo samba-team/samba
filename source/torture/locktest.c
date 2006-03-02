@@ -573,6 +573,8 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
+	load_case_tables();
+
 	dbf = x_stderr;
 
 	if (argc < 3 || argv[1][0] == '-') {
