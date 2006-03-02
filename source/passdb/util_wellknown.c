@@ -85,6 +85,17 @@ BOOL sid_check_is_wellknown_domain(const DOM_SID *sid, const char **name)
 	return False;
 }
 
+BOOL sid_check_is_in_wellknown_domain(const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+	
+	return sid_check_is_wellknown_domain(&dom_sid, NULL);
+}
+
 /**************************************************************************
  Looks up a known username from one of the known domains.
 ***************************************************************************/
