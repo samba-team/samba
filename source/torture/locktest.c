@@ -51,6 +51,20 @@ static BOOL zero_zero;
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
+const char *lock_op_type(int op)
+{
+	if (op == WRITE_LOCK) return "write";
+	else if (op == READ_LOCK) return "read";
+	else return "other";
+}
+
+const char *lock_op_name(enum lock_op op)
+{
+	if (op == OP_LOCK) return "lock";
+	else if (op == OP_UNLOCK) return "unlock";
+	else return "reopen";
+}
+
 struct record {
 	enum lock_op lock_op;
 	enum brl_type lock_type;
@@ -524,9 +538,9 @@ static void test_locks(char *share[NSERVERS])
 	close_files(cli, fnum);
 
 	for (i=0;i<n;i++) {
-		printf("{%d, %d, %u, %u, %.0f, %.0f, %u},\n",
-		       recorded[i].lock_op,
-		       recorded[i].lock_type,
+		printf("{%s, %s, conn = %u, file = %u, start = %.0f, len = %.0f, %u},\n",
+		       lock_op_name(recorded[i].lock_op),
+		       lock_op_type(recorded[i].lock_type),
 		       recorded[i].conn,
 		       recorded[i].f,
 		       (double)recorded[i].start,
