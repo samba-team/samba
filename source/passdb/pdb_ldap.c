@@ -2489,38 +2489,118 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 	struct smbldap_state *conn = ldap_state->smbldap_state;
-	pstring filter;
+	char *filter;
 	const char *attrs[] = { "gidNumber", "sambaSID", NULL };
 	char *escape_name;
-	int rc;
-	LDAPMessage *msg = NULL;
+	int rc, count;
+	LDAPMessage *result = NULL;
 	LDAPMessage *entry;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	size_t num_sids, num_gids;
-	gid_t primary_gid;
+	char *gidstr;
+	gid_t primary_gid = -1;
+	uid_t user_uid;
+	const DOM_SID *user_sid;
+	uint32 user_rid;
 
 	*pp_sids = NULL;
 	num_sids = 0;
 
-	if (!sid_to_gid(pdb_get_group_sid(user), &primary_gid)) {
-		DEBUG(1, ("sid_to_gid failed for user's primary group\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	escape_name = escape_ldap_string_alloc(pdb_get_username(user));
-
 	if (escape_name == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	pstr_sprintf(filter, "(&(objectClass=posixGroup)"
-		     "(|(memberUid=%s)(gidNumber=%d)))",
-		     escape_name, primary_gid);
+	/* retrieve the users primary gid */
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=sambaSamAccount)(uid=%s))",
+				 escape_name);
 
-	rc = smbldap_search(conn, lp_ldap_group_suffix(),
-			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &msg);
+	rc = smbldap_search(conn, lp_ldap_user_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS)
 		goto done;
+
+	talloc_autofree_ldapmsg(mem_ctx, result);
+
+	count = ldap_count_entries(priv2ld(ldap_state), result);
+
+	switch (count) {
+	case 0:	
+		/* check if this is the special virtual guest account or root or return with error */
+		user_sid = pdb_get_user_sid(user);
+		if (!sid_peek_rid(user_sid, &user_rid)) {
+			DEBUG(1, ("Could not peek into RID\n"));
+			ret = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+		if (!sid_to_uid(user_sid, &user_uid)) {
+			user_uid = -1;
+		}
+		if (user_rid == DOMAIN_USER_RID_GUEST) {
+			struct passwd *pw;
+			/* try to get the user gid from the system
+			 * this is a special system account and is
+			 * allowed to stay off the ldap tree */
+			if (!(pw = getpwnam_alloc(mem_ctx, pdb_get_username(user)))) {
+				ret = NT_STATUS_NO_SUCH_USER;
+				goto done;
+			}
+			primary_gid = pw->pw_gid;
+			talloc_free(pw);
+		} else {
+			ret = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
+		break;
+	case 1:
+		entry = ldap_first_entry(priv2ld(ldap_state), result);
+
+		gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
+		if (!gidstr) {
+			/* make a special exception for the root user */
+			user_sid = pdb_get_user_sid(user);
+			if (!sid_to_uid(user_sid, &user_uid)) {
+				user_uid = -1;
+			}
+
+			if (user_uid == 0) {
+				struct passwd *pw;
+				/* try to get the user gid from the system
+				 * this is a special system account and is
+				 * allowed to stay off the ldap tree */
+				if (!(pw = getpwnam_alloc(mem_ctx, pdb_get_username(user)))) {
+					ret = NT_STATUS_NO_SUCH_USER;
+					goto done;
+				}
+				primary_gid = pw->pw_gid;
+				talloc_free(pw);
+			} else {
+				DEBUG (1, ("Unable to find the member's gid!\n"));
+				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+		} else {
+			primary_gid = strtoul(gidstr, NULL, 10);
+		}
+		break;
+	default:
+		DEBUG(1, ("found more than one accoutn with the same user name ?!\n"));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(objectClass=posixGroup)(|(memberUid=%s)(gidNumber=%d)))",
+				 escape_name, primary_gid);
+
+	rc = smbldap_search(conn, lp_ldap_group_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	talloc_autofree_ldapmsg(mem_ctx, result);
 
 	num_gids = 0;
 	*pp_gids = NULL;
@@ -2536,7 +2616,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	add_sid_to_array_unique(mem_ctx, &global_sid_NULL, pp_sids, &num_sids);
 
-	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	for (entry = ldap_first_entry(conn->ldap_struct, result);
 	     entry != NULL;
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
@@ -2576,20 +2656,19 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	if (sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
 		DEBUG(3, ("primary group of [%s] not found\n",
 			  pdb_get_username(user)));
-		goto done;
+		/* this may be the special guest user, do not give up
+		 * and use gid_to_sid */
+		gid_to_sid(&(*pp_sids)[0], primary_gid);
 	}
 
 	*p_num_groups = num_sids;
 
-	result = NT_STATUS_OK;
+	ret = NT_STATUS_OK;
 
  done:
 
 	SAFE_FREE(escape_name);
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	return result;
+	return ret;
 }
 
 /**********************************************************************
@@ -4568,7 +4647,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	NTSTATUS ret;
 	int rc;
 	
-	if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') {
+	if (((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') ||
+	      acb_info & ACB_WSTRUST ||
+	      acb_info & ACB_SVRTRUST ||
+	      acb_info & ACB_DOMTRUST) {
 		is_machine = True;
 	}
 
@@ -4643,9 +4725,16 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (is_machine) {
-		if (!pdb_set_acct_ctrl(user, ACB_WSTRUST | ACB_DISABLED, PDB_SET)) {
-			DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
-			return NT_STATUS_UNSUCCESSFUL;
+		if (acb_info & ACB_NORMAL) {
+			if (!pdb_set_acct_ctrl(user, ACB_WSTRUST, PDB_SET)) {
+				DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+		} else {
+			if (!pdb_set_acct_ctrl(user, acb_info, PDB_SET)) {
+				DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
 		}
 	} else {
 		if (!pdb_set_acct_ctrl(user, ACB_NORMAL | ACB_DISABLED, PDB_SET)) {
