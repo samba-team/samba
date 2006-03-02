@@ -1397,6 +1397,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private_val)
 		/* Drop chain lock, call out */
 		if (tdb_unlock(tdb, tl.hash, F_WRLCK) != 0) {
 			ret = -1;
+			SAFE_FREE(key.dptr);
 			goto out;
 		}
 		if (fn && fn(tdb, key, dbuf, private_val)) {
@@ -1406,9 +1407,8 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private_val)
 				TDB_LOG((tdb, 0, "tdb_traverse: unlock_record failed!\n"));;
 				ret = -1;
 			}
-			tdb->travlocks.next = tl.next;
 			SAFE_FREE(key.dptr);
-			return count;
+			goto out;
 		}
 		SAFE_FREE(key.dptr);
 	}
