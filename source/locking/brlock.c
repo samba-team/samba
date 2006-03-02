@@ -311,8 +311,10 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	if (!tp) {
 		return NT_STATUS_NO_MEMORY;
 	} else {
+		locks = (struct lock_struct *)tp;
+		memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
 		br_lck->num_locks += 1;
-		br_lck->lock_data = (void *)tp;
+		br_lck->lock_data = (void *)locks;
 		br_lck->modified = True;
 	}
 
@@ -715,6 +717,22 @@ static int byte_range_lock_destructor(void *p)
 	return 0;
 }
 
+static void print_lock_struct(unsigned int i, struct lock_struct *pls)
+{
+	DEBUG(10,("[%u]: smbpid = %u, tid = %u, pid = %u, ",
+			i,
+			(unsigned int)pls->context.smbpid,
+			(unsigned int)pls->context.tid,
+			(unsigned int)procid_to_pid(&pls->context.pid) ));
+	
+	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
+		(double)pls->start,
+		(double)pls->size,
+		pls->fnum,
+		lock_type_name(pls->lock_type),
+		lock_flav_name(pls->lock_flav) ));
+}
+
 /*******************************************************************
  Fetch a set of byte range lock data from the database.
  Leave the record locked.
@@ -748,5 +766,15 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 	br_lck->lock_data = (void *)data.dptr;
 	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
 
+	if (DEBUGLEVEL >= 10) {
+		unsigned int i;
+		struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+		DEBUG(10,("brl_get_locks: %u current locks on dev=%.0f, inode=%.0f\n",
+			br_lck->num_locks,
+			(double)fsp->dev, (double)fsp->inode ));
+		for( i = 0; i < br_lck->num_locks; i++) {
+			print_lock_struct(i, &locks[i]);
+		}
+	}
 	return br_lck;
 }

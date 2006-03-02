@@ -48,12 +48,21 @@ static TDB_CONTEXT *tdb;
  Debugging aids :-).
 ****************************************************************************/
 
-static const char *lock_type_name(enum brl_type lock_type)
+const char *lock_type_name(enum brl_type lock_type)
 {
-	return (lock_type == READ_LOCK) ? "READ" : "WRITE";
+	switch (lock_type) {
+		case READ_LOCK:
+			return "READ";
+		case WRITE_LOCK:
+			return "WRITE";
+		case PENDING_LOCK:
+			return "PENDING";
+		default:
+			return "other";
+	}
 }
 
-static const char *lock_flav_name(enum brl_flavour lock_flav)
+const char *lock_flav_name(enum brl_flavour lock_flav)
 {
 	return (lock_flav == WINDOWS_LOCK) ? "WINDOWS_LOCK" : "POSIX_LOCK";
 }
@@ -112,10 +121,10 @@ BOOL is_locked(files_struct *fsp,
 		TALLOC_FREE(br_lck);
 	}
 
-	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for file %s\n",
+	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for fnum %d file %s\n",
 			lock_flav_name(lock_flav),
 			(double)offset, (double)count, ret ? "locked" : "unlocked",
-			fsp->fsp_name ));
+			fsp->fnum, fsp->fsp_name ));
 
 	/*
 	 * There is no lock held by an SMB daemon, check to
@@ -126,9 +135,9 @@ BOOL is_locked(files_struct *fsp,
 	if(!ret && lp_posix_locking(snum) && (lock_flav == WINDOWS_LOCK)) {
 		ret = is_posix_locked(fsp, offset, count, lock_type);
 
-		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for file %s\n",
+		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
 				(double)offset, (double)count, ret ? "locked" : "unlocked",
-				fsp->fsp_name ));
+				fsp->fnum, fsp->fsp_name ));
 	}
 
 	return ret;
@@ -155,9 +164,9 @@ static NTSTATUS do_lock(files_struct *fsp,
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
-	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f requested for file %s\n",
+	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f requested for fnum %d file %s\n",
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
-		(double)offset, (double)count, fsp->fsp_name ));
+		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
 	if (!OPEN_FSP(fsp) || !fsp->can_lock) {
 		return status;
@@ -304,8 +313,8 @@ NTSTATUS do_unlock(files_struct *fsp,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	
-	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
-		  (double)offset, (double)count, fsp->fsp_name ));
+	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
+		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
 	/*
 	 * Remove the existing lock record from the tdb lockdb
