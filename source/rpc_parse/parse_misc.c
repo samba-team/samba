@@ -1254,7 +1254,7 @@ BOOL smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockou
  Inits a DOM_RID structure.
 ********************************************************************/
 
-void init_dom_rid(DOM_RID *prid, uint32 rid, uint8 type, uint32 idx)
+void init_dom_rid(DOM_RID *prid, uint32 rid, uint16 type, uint32 idx)
 {
 	prid->type    = type;
 	prid->rid     = rid;
@@ -1276,7 +1276,7 @@ BOOL smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
    
-	if(!prs_uint8("type   ", ps, depth, &rid->type))
+	if(!prs_uint16("type   ", ps, depth, &rid->type))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -1303,7 +1303,7 @@ BOOL smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
    
-	if(!prs_uint8("type   ", ps, depth, &rid->type))
+	if(!prs_uint16("type   ", ps, depth, &rid->type))
 		return False;
 	if(!prs_align(ps))
 		return False;
