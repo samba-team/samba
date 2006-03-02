@@ -6,5 +6,5 @@ Exec=gepdump
 #Icon=media-player-48.png
 Terminal=false
 Type=Application
-Categories=GNOME;GTK;Application;DCE/RPC;Endpoint;
+Categories=GNOME;GTK;Application;DCE/RPC;Endpoint;Samba;
 StartupNotify=true
