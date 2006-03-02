@@ -1191,9 +1191,13 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		goto done;
 	}
 
-	if (sid_check_is_in_builtin(psid) && pdb_getgrsid(&map, *psid)) {
-		*pgid = map.gid;
-		goto done;
+	if ((sid_check_is_in_builtin(psid) ||
+	     sid_check_is_in_wellknown_domain(psid))) {
+		if (pdb_getgrsid(&map, *psid)) {
+			*pgid = map.gid;
+			goto done;
+		}
+		return False;
 	}
 
 	if (sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
