@@ -99,9 +99,13 @@ static struct record preset[] = {
 
 static struct record *recorded;
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
-		      enum brl_type lock_type,
-		      br_off start, br_off size)
+static void print_brl(SMB_DEV_T dev,
+			SMB_INO_T ino,
+			struct process_id pid, 
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav,
+			br_off start,
+			br_off size)
 {
 #if NASTY_POSIX_LOCK_HACK
 	{
