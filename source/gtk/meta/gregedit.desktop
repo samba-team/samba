@@ -6,5 +6,5 @@ Exec=gregedit
 #Icon=media-player-48.png
 Terminal=false
 Type=Application
-Categories=GNOME;GTK;Application;Registry;
+Categories=GNOME;GTK;Application;Registry;Samba;
 StartupNotify=true

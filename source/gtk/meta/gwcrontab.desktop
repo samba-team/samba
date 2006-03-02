@@ -6,5 +6,5 @@ Exec=gwcrontab
 #Icon=media-player-48.png
 Terminal=false
 Type=Application
-Categories=GNOME;GTK;Application;Crontab;At;
+Categories=GNOME;GTK;Application;Crontab;At;Samba;
 StartupNotify=true
