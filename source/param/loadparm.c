@@ -1623,8 +1623,8 @@ static void init_globals(BOOL first_time_only)
 	string_set(&Globals.szIPrintServer, "");
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
-	Globals.bWinbindEnumUsers = True;
-	Globals.bWinbindEnumGroups = True;
+	Globals.bWinbindEnumUsers = False;
+	Globals.bWinbindEnumGroups = False;
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
