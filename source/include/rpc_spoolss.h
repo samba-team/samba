@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
-   Copyright (C) Gerald Carter                2001-2005.
+   Copyright (C) Gerald Carter                2001-2006.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,7 +107,15 @@
 #define SPOOLSS_DELETEPRINTERDATAEX			0x51
 #define SPOOLSS_DELETEPRINTERKEY			0x52
 #define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
+#define SPOOLSS_XCVDATAPORT				0x58
 #define SPOOLSS_ADDPRINTERDRIVEREX			0x59
+
+/* 
+ * Special strings for the OpenPrinter() call.  See the MSDN DDK
+ * docs on the XcvDataPort() for more details.
+ */
+
+#define SPL_XCV_MONITOR_TCPMON	",XcvMonitor Standard TCP/IP Port"
 
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
@@ -2160,6 +2168,24 @@ typedef struct spool_r_getprintprocessordirectory
 	WERROR status;
 }
 SPOOL_R_GETPRINTPROCESSORDIRECTORY;
+
+/**************************************/
+
+typedef struct spool_q_xcvdataport {
+	POLICY_HND handle;
+	UNISTR2 dataname;
+	RPC_BUFFER indata;
+	uint32 indata_len;
+	uint32 offered;
+	uint32 unknown;
+} SPOOL_Q_XCVDATAPORT;
+
+typedef struct spool_r_xcvdataport {
+	RPC_BUFFER outdata;
+	uint32 *unknown1;
+	uint32 *unknown2;
+	WERROR status;
+} SPOOL_R_XCVDATAPORT;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"

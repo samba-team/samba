@@ -1519,65 +1519,33 @@ static BOOL api_spoolss_deleteprinterdriverex(pipes_struct *p)
 	return True;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL api_spoolss_replyopenprinter(pipes_struct *p)
+static BOOL api_spoolss_xcvdataport(pipes_struct *p)
 {
-	SPOOL_Q_REPLYOPENPRINTER q_u;
-	SPOOL_R_REPLYOPENPRINTER r_u;
+	SPOOL_Q_XCVDATAPORT q_u;
+	SPOOL_R_XCVDATAPORT r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 	
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 	
-	if(!spoolss_io_q_replyopenprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_replyopenprinter: unable to unmarshall SPOOL_Q_REPLYOPENPRINTER.\n"));
+	if(!spoolss_io_q_xcvdataport("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_replyopenprinter: unable to unmarshall SPOOL_Q_XCVDATAPORT.\n"));
 		return False;
 	}
 	
-	r_u.status = _spoolss_replyopenprinter(p, &q_u, &r_u);
+	r_u.status = _spoolss_xcvdataport(p, &q_u, &r_u);
 				
-	if(!spoolss_io_r_replyopenprinter("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_replyopenprinter: unable to marshall SPOOL_R_REPLYOPENPRINTER.\n"));
+	if(!spoolss_io_r_xcvdataport("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_replyopenprinter: unable to marshall SPOOL_R_XCVDATAPORT.\n"));
 		return False;
 	}
 	
 	return True;
 }
-
-/****************************************************************************
-****************************************************************************/
-
-static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
-{
-	SPOOL_Q_REPLYCLOSEPRINTER q_u;
-	SPOOL_R_REPLYCLOSEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_replycloseprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_replycloseprinter: unable to unmarshall SPOOL_Q_REPLYCLOSEPRINTER.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_replycloseprinter(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_replycloseprinter("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_replycloseprinter: unable to marshall SPOOL_R_REPLYCLOSEPRINTER.\n"));
-		return False;
-	}
-	
-	return True;
-}
-
-#endif
 
 /*******************************************************************
 \pipe\spoolss commands
@@ -1636,11 +1604,8 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
  {"SPOOLSS_GETPRINTPROCESSORDIRECTORY",SPOOLSS_GETPRINTPROCESSORDIRECTORY,api_spoolss_getprintprocessordirectory},
  {"SPOOLSS_ADDPRINTERDRIVEREX",        SPOOLSS_ADDPRINTERDRIVEREX,        api_spoolss_addprinterdriverex        },
  {"SPOOLSS_DELETEPRINTERDRIVEREX",     SPOOLSS_DELETEPRINTERDRIVEREX,     api_spoolss_deleteprinterdriverex     },
-#if 0
- {"SPOOLSS_REPLYOPENPRINTER",          SPOOLSS_REPLYOPENPRINTER,          api_spoolss_replyopenprinter          },
- {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         }
-#endif
-    };
+ {"SPOOLSS_XCVDATAPORT",               SPOOLSS_XCVDATAPORT,               api_spoolss_xcvdataport               },
+};
 
 void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {

@@ -435,7 +435,10 @@ static BOOL set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
 }
 
 /****************************************************************************
- Set printer handle name.
+ Set printer handle name..  Accept names like \\server, \\server\printer, 
+ \\server\SHARE, & "\\server\,XcvMonitor Standard TCP/IP Port"    See
+ the MSDN docs regarding OpenPrinter() for details on the XcvData() and 
+ XcvDataPort() interface.
 ****************************************************************************/
 
 static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
@@ -477,6 +480,14 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		return False;
 
 	DEBUGADD(5, ("searching for [%s]\n", aprinter ));
+	
+	/* check for the TCPMON interface */
+	
+	if ( strequal( aprinter, SPL_XCV_MONITOR_TCPMON ) ) {
+		Printer->printer_type = PRINTER_HANDLE_IS_TCPMON;
+		fstrcpy(sname, SPL_XCV_MONITOR_TCPMON);
+		found = True;
+	}
 
 	/* Search all sharenames first as this is easier than pulling 
 	   the printer_info_2 off of disk. Don't use find_service() since
@@ -1473,60 +1484,6 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 }
 
 /********************************************************************
- * spoolss_open_printer
- *
- * If the openprinterex rpc call contains a devmode,
- * it's a per-user one. This per-user devmode is derivated
- * from the global devmode. Openprinterex() contains a per-user 
- * devmode for when you do EMF printing and spooling.
- * In the EMF case, the NT workstation is only doing half the job
- * of rendering the page. The other half is done by running the printer
- * driver on the server.
- * The EMF file doesn't contain the page description (paper size, orientation, ...).
- * The EMF file only contains what is to be printed on the page.
- * So in order for the server to know how to print, the NT client sends
- * a devicemode attached to the openprinterex call.
- * But this devicemode is short lived, it's only valid for the current print job.
- *
- * If Samba would have supported EMF spooling, this devicemode would
- * have been attached to the handle, to sent it to the driver to correctly
- * rasterize the EMF file.
- *
- * As Samba only supports RAW spooling, we only receive a ready-to-print file,
- * we just act as a pass-thru between windows and the printer.
- *
- * In order to know that Samba supports only RAW spooling, NT has to call
- * getprinter() at level 2 (attribute field) or NT has to call startdoc()
- * and until NT sends a RAW job, we refuse it.
- *
- * But to call getprinter() or startdoc(), you first need a valid handle,
- * and to get an handle you have to call openprintex(). Hence why you have
- * a devicemode in the openprinterex() call.
- *
- *
- * Differences between NT4 and NT 2000.
- * NT4:
- * ---
- * On NT4, you only have a global devicemode. This global devicemode can be changed
- * by the administrator (or by a user with enough privs). Everytime a user
- * wants to print, the devicemode is resetted to the default. In Word, everytime
- * you print, the printer's characteristics are always reset to the global devicemode.
- *
- * NT 2000:
- * -------
- * In W2K, there is the notion of per-user devicemode. The first time you use
- * a printer, a per-user devicemode is build from the global devicemode.
- * If you change your per-user devicemode, it is saved in the registry, under the
- * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
- * printer preferences available.
- *
- * To change the per-user devicemode: it's the "Printing Preferences ..." button
- * on the General Tab of the printer properties windows.
- *
- * To change the global devicemode: it's the "Printing Defaults..." button
- * on the Advanced Tab of the printer properties window.
- *
- * JFM.
  ********************************************************************/
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
@@ -1581,10 +1538,15 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	 * Second case: the user is opening a printer:
 	 * NT doesn't let us connect to a printer if the connecting user
 	 * doesn't have print permission.
+	 * 
+	 * Third case: user is opening the TCP/IP port monitor
+	 * access checks same as opening a handle to the print server.
 	 */
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) 
+	switch (Printer->printer_type ) 
 	{
+	case PRINTER_HANDLE_IS_PRINTSERVER:
+	case PRINTER_HANDLE_IS_TCPMON:
 		/* Printserver handles use global struct... */
 
 		snum = -1;
@@ -1642,10 +1604,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			? "SERVER_ACCESS_ADMINISTER" : "SERVER_ACCESS_ENUMERATE" ));
 			
 		/* We fall through to return WERR_OK */
-		
-	}
-	else
-	{
+		break;
+
+	case PRINTER_HANDLE_IS_PRINTER:
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
@@ -1702,6 +1663,11 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
 			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
 
+		break;
+
+	default:
+		/* sanity check to prevent programmer error */
+		return WERR_BADFID;
 	}
 	
 	Printer->access_granted = printer_default->access_required;
@@ -8496,18 +8462,22 @@ WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 
 static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	PRINTMONITOR_1 *info_1=NULL;
+	PRINTMONITOR_1 *info_1;
 	WERROR result = WERR_OK;
+	int i;
 	
-	if((info_1 = SMB_MALLOC_P(PRINTMONITOR_1)) == NULL)
+	if((info_1 = SMB_MALLOC_ARRAY(PRINTMONITOR_1, 2)) == NULL)
 		return WERR_NOMEM;
 
-	(*returned) = 0x1;
+	*returned = 2;
 	
-	init_unistr(&info_1->name, "Local Port");
+	init_unistr(&(info_1[0].name), "Local Port");
+	init_unistr(&(info_1[1].name), "Standard TCP/IP Port");
 
-	*needed += spoolss_size_printmonitor_info_1(info_1);
-
+	for ( i=0; i<*returned; i++ ) {
+		*needed += spoolss_size_printmonitor_info_1(&info_1[i]);
+	}
+	
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
@@ -8518,7 +8488,9 @@ static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	smb_io_printmonitor_info_1("", buffer, info_1, 0);
+	for ( i=0; i<*returned; i++ ) {
+		smb_io_printmonitor_info_1("", buffer, &info_1[i], 0);
+	}
 
 out:
 	SAFE_FREE(info_1);
@@ -8535,20 +8507,27 @@ out:
 
 static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
-	PRINTMONITOR_2 *info_2=NULL;
+	PRINTMONITOR_2 *info_2;
 	WERROR result = WERR_OK;
+	int i;
 	
-	if((info_2 = SMB_MALLOC_P(PRINTMONITOR_2)) == NULL)
+	if((info_2 = SMB_MALLOC_ARRAY(PRINTMONITOR_2, 2)) == NULL)
 		return WERR_NOMEM;
 
-	(*returned) = 0x1;
+	*returned = 2;
 	
-	init_unistr(&info_2->name, "Local Port");
-	init_unistr(&info_2->environment, "Windows NT X86");
-	init_unistr(&info_2->dll_name, "localmon.dll");
+	init_unistr(&(info_2[0].name), "Local Port");
+	init_unistr(&(info_2[0].environment), "Windows NT X86");
+	init_unistr(&(info_2[0].dll_name), "localmon.dll");
+	
+	init_unistr(&(info_2[1].name), "Standard TCP/IP Port");
+	init_unistr(&(info_2[1].environment), "Windows NT X86");
+	init_unistr(&(info_2[1].dll_name), "tcpmon.dll");
 
-	*needed += spoolss_size_printmonitor_info_2(info_2);
-
+	for ( i=0; i<*returned; i++ ) {
+		*needed += spoolss_size_printmonitor_info_2(&info_2[i]);
+	}
+	
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
@@ -8559,7 +8538,9 @@ static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	smb_io_printmonitor_info_2("", buffer, info_2, 0);
+	for ( i=0; i<*returned; i++ ) {
+		smb_io_printmonitor_info_2("", buffer, &info_2[i], 0);
+	}
 
 out:
 	SAFE_FREE(info_2);
@@ -9398,23 +9379,9 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	return result;
 }
 
-#if 0
-
-WERROR _spoolss_replyopenprinter(pipes_struct *p, SPOOL_Q_REPLYOPENPRINTER *q_u, 
-				 SPOOL_R_REPLYOPENPRINTER *r_u)
+WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_XCVDATAPORT *r_u)
 {
- 	DEBUG(5,("_spoolss_replyopenprinter\n"));
-
-	DEBUG(10, ("replyopenprinter for localprinter %d\n", q_u->printer));
-
 	return WERR_OK;
 }
 
-WERROR _spoolss_replycloseprinter(pipes_struct *p, SPOOL_Q_REPLYCLOSEPRINTER *q_u, 
-				  SPOOL_R_REPLYCLOSEPRINTER *r_u)
-{
- 	DEBUG(5,("_spoolss_replycloseprinter\n"));
-	return WERR_OK;
-}
 
-#endif
