@@ -75,9 +75,6 @@
 #include <varargs.h>
 #endif
 
-/* tell ldb we have the internal ldap code */
-#define HAVE_ILDAP 1
-
 /*
   we use struct ipv4_addr to avoid having to include all the
   system networking headers everywhere

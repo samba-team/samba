@@ -12,6 +12,9 @@
 
 #include "build.h"
 
+/* tell ldb we have the internal ldap code */
+#define HAVE_ILDAP 1
+
 #else /*_SAMBA_BUILD_*/
 
 #ifndef _GNU_SOURCE
