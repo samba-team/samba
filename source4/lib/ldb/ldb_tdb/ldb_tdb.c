@@ -3,6 +3,7 @@
 
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Stefan Metzmacher  2004
+   Copyright (C) Simo Sorce       2006
    
 
      ** NOTE! The following LGPL license applies to the ldb
@@ -25,7 +26,7 @@
 */
 
 /*
- *  Name: ldb
+ *  Name: ldb_tdb
  *
  *  Component: ldb tdb backend
  *
@@ -33,6 +34,12 @@
  *
  *  Author: Andrew Tridgell
  *  Author: Stefan Metzmacher
+ *
+ *  Modifications:
+ *
+ *  - description: make the module use asyncronous calls
+ *    date: Feb 2006
+ *    Author: Simo Sorce
  */
 
 #include "includes.h"
@@ -70,6 +77,37 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 	return LDB_ERR_OTHER;
 }
 
+
+struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
+					  void *context,
+					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+					  int timeout)
+{
+	struct ltdb_async_context *ac;
+	struct ldb_async_handle *h;
+
+	h = talloc_zero(ltdb, struct ldb_async_handle);
+	if (h == NULL) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		return NULL;
+	}
+
+	ac = talloc_zero(h, struct ltdb_async_context);
+	if (ac == NULL) {
+		ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+		talloc_free(h);
+		return NULL;
+	}
+
+	h->private_data = (void *)ac;
+
+	ac->module = module;
+	ac->context = context;
+	ac->callback = callback;
+	ac->timeout = timeout;
+
+	return h;
+}
 
 /*
   form a TDB_DATA for a record key
@@ -218,28 +256,65 @@ done:
 /*
   add a record to the database
 */
-static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
+static int ltdb_add_async(struct ldb_module *module, const struct ldb_message *msg,
+			  void *context,
+			  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+			  int timeout,
+			  struct ldb_async_handle **handle)
 {
-	int ret;
+	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_async_context *ltdb_ac;
+	int ret = LDB_ERR_OPERATIONS_ERROR;
+
+	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	if (*handle == NULL) {
+		return ret;
+	}
+	ltdb_ac = talloc_get_type((*handle)->private_data, struct ltdb_async_context);
+	(*handle)->state = LDB_ASYNC_DONE;
+	(*handle)->status = LDB_SUCCESS;
 
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(*handle);
 		return ret;
 	}
 	
 	if (ltdb_cache_load(module) != 0) {
+		talloc_free(*handle);
 		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
-	if (ret == LDB_SUCCESS) {
-		ltdb_modified(module, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		(*handle)->status = ret;
+		return LDB_SUCCESS;
 	}
 
-	return ret;
+	ltdb_modified(module, msg->dn);
+
+	if (ltdb_ac->callback)
+		(*handle)->status = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
+	
+	return LDB_SUCCESS;
 }
 
+static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
+{
+	struct ldb_async_handle *handle;
+	int ret;
+
+	ret = ltdb_add_async(module, msg, NULL, NULL, 0, &handle);
+
+	if (ret != LDB_SUCCESS)
+		return ret;
+
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
+	return ret;
+}
 
 /*
   delete a record from the database, not updating indexes (used for deleting
@@ -269,16 +344,32 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 /*
   delete a record from the database
 */
-static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
+static int ltdb_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
+			     void *context,
+			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+			     int timeout,
+			     struct ldb_async_handle **handle)
 {
-	struct ldb_message *msg = NULL;
-	int ret = LDB_ERR_OTHER;
+	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_async_context *ltdb_ac;
+	struct ldb_message *msg;
+	int ret = LDB_ERR_OPERATIONS_ERROR;
+
+	*handle = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
 		goto failed;
 	}
 
-	msg = talloc(module, struct ldb_message);
+	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	if (*handle == NULL) {
+		goto failed;
+	}
+	ltdb_ac = talloc_get_type((*handle)->private_data, struct ltdb_async_context);
+	(*handle)->state = LDB_ASYNC_DONE;
+	(*handle)->status = LDB_SUCCESS;
+
+	msg = talloc(ltdb_ac, struct ldb_message);
 	if (msg == NULL) {
 		goto failed;
 	}
@@ -288,8 +379,8 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	ret = ltdb_search_dn1(module, dn, msg);
 	if (ret != 1) {
 		/* not finding the old record is an error */
-		ret = LDB_ERR_NO_SUCH_OBJECT;
-		goto failed;
+		(*handle)->status = LDB_ERR_NO_SUCH_OBJECT;
+		return LDB_SUCCESS;
 	}
 
 	ret = ltdb_delete_noindex(module, dn);
@@ -299,16 +390,35 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 
 	/* remove any indexed attributes */
 	ret = ltdb_index_del(module, msg);
-	if (ret == LDB_SUCCESS) {
-		ltdb_modified(module, dn);
-	} else
-		ret = LDB_ERR_OTHER;
+	if (ret) {
+		goto failed;
+	}
+	ltdb_modified(module, dn);
 
-	talloc_free(msg);
-	return ret;
+	if (ltdb_ac->callback)
+		(*handle)->status = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
+	
+	return LDB_SUCCESS;
 
 failed:
-	talloc_free(msg);
+	talloc_free(*handle);
+	return ret;
+}
+
+static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
+{
+	struct ldb_async_handle *handle;
+	int ret;
+
+	ret = ltdb_delete_async(module, dn,
+				NULL, NULL, 0, &handle);
+
+	if (ret != LDB_SUCCESS)
+		return ret;
+
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
 	return ret;
 }
 
@@ -624,42 +734,97 @@ failed:
 /*
   modify a record
 */
-static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
+static int ltdb_modify_async(struct ldb_module *module, const struct ldb_message *msg,
+			  void *context,
+			  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+			  int timeout,
+			  struct ldb_async_handle **handle)
 {
-	int ret;
+	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_async_context *ltdb_ac;
+	int ret = LDB_ERR_OPERATIONS_ERROR;
+
+	*handle = NULL;
+
+	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	if (*handle == NULL) {
+		return ret;
+	}
+	ltdb_ac = talloc_get_type((*handle)->private_data, struct ltdb_async_context);
+	(*handle)->state = LDB_ASYNC_DONE;
+	(*handle)->status = LDB_SUCCESS;
 
 	ret = ltdb_check_special_dn(module, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
+		talloc_free(*handle);
 		return ret;
 	}
 	
 	if (ltdb_cache_load(module) != 0) {
-		return -1;
+		talloc_free(*handle);
+		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_modify_internal(module, msg);
 
-	if (ret == LDB_SUCCESS) {
-		ltdb_modified(module, msg->dn);
+	if (ret != LDB_SUCCESS) {
+		(*handle)->status = ret;
+		return LDB_SUCCESS;
 	}
 
+	ltdb_modified(module, msg->dn);
+
+	if (ltdb_ac->callback)
+		(*handle)->status = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
+	
+	return LDB_SUCCESS;
+}
+
+static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
+{
+	struct ldb_async_handle *handle;
+	int ret;
+
+	ret = ltdb_modify_async(module, msg, NULL, NULL, 0, &handle);
+
+	if (ret != LDB_SUCCESS)
+		return ret;
+
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
 	return ret;
 }
 
 /*
   rename a record
 */
-static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+static int ltdb_rename_async(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn,
+			     void *context,
+			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+			     int timeout,
+			     struct ldb_async_handle **handle)
 {
+	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_async_context *ltdb_ac;
 	struct ldb_message *msg;
-	char *error_str;
-	int ret = LDB_ERR_OTHER;
+	int ret = LDB_ERR_OPERATIONS_ERROR;
+
+	*handle = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
 		return ret;
 	}
 
-	msg = talloc(module, struct ldb_message);
+	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	if (*handle == NULL) {
+		goto failed;
+	}
+	ltdb_ac = talloc_get_type((*handle)->private_data, struct ltdb_async_context);
+	(*handle)->state = LDB_ASYNC_DONE;
+	(*handle)->status = LDB_SUCCESS;
+
+	msg = talloc(ltdb_ac, struct ldb_message);
 	if (msg == NULL) {
 		goto failed;
 	}
@@ -669,35 +834,53 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	ret = ltdb_search_dn1(module, olddn, msg);
 	if (ret != 1) {
 		/* not finding the old record is an error */
-		ret = LDB_ERR_NO_SUCH_OBJECT;
-		goto failed;
+		(*handle)->status = LDB_ERR_NO_SUCH_OBJECT;
+		return LDB_SUCCESS;
 	}
 
 	msg->dn = ldb_dn_copy(msg, newdn);
 	if (!msg->dn) {
-		ret = LDB_ERR_OTHER;
+		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto failed;
 	}
 
 	ret = ltdb_add(module, msg);
 	if (ret != LDB_SUCCESS) {
-		goto failed;
+		(*handle)->status = LDB_ERR_OPERATIONS_ERROR;
+		return LDB_SUCCESS;
 	}
 
 	ret = ltdb_delete(module, olddn);
-	error_str = talloc_strdup(module, ldb_errstring(module->ldb));
 	if (ret != LDB_SUCCESS) {
 		ltdb_delete(module, newdn);
+		(*handle)->status = ret;
+		return LDB_SUCCESS;
 	}
 
-	ldb_set_errstring(module->ldb, error_str);
+	if (ltdb_ac->callback)
+		(*handle)->status = ltdb_ac->callback(module->ldb, ltdb_ac->context, NULL);
 
-	talloc_free(msg);
-
-	return ret;
+	return LDB_SUCCESS;
 
 failed:
-	talloc_free(msg);
+	talloc_free(*handle);
+	return ret;
+}
+
+static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
+{
+	struct ldb_async_handle *handle;
+	int ret;
+
+	ret = ltdb_rename_async(module, olddn, newdn,
+				NULL, NULL, 0, &handle);
+
+	if (ret != LDB_SUCCESS)
+		return ret;
+
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
 	return ret;
 }
 
@@ -734,9 +917,18 @@ static int ltdb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
+static int ltdb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+{
+	return handle->status;
+}
+
 static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 {
 	/* check for oustanding critical controls and return an error if found */
+
+	if (req->controls != NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Controls should not reach the ldb_tdb backend!\n");
+	}
 
 	if (check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
@@ -749,7 +941,7 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 					  req->op.search.base,
 					  req->op.search.scope, 
 					  req->op.search.tree, 
-					  req->op.search.attrs, 
+					  req->op.search.attrs,
 					  &req->op.search.res);
 
 	case LDB_REQ_ADD:
@@ -765,6 +957,50 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 		return ltdb_rename(module,
 					req->op.rename.olddn,
 					req->op.rename.newdn);
+
+	case LDB_ASYNC_SEARCH:
+		return ltdb_search_async(module,
+					req->op.search.base,
+					req->op.search.scope, 
+					req->op.search.tree, 
+					req->op.search.attrs,
+					req->async.context,
+					req->async.callback,
+					req->async.timeout,
+					&req->async.handle);
+
+	case LDB_ASYNC_ADD:
+		return ltdb_add_async(module,
+					req->op.add.message,
+					req->async.context,
+					req->async.callback,
+					req->async.timeout,
+					&req->async.handle);
+
+	case LDB_ASYNC_MODIFY:
+		return ltdb_modify_async(module,
+					req->op.mod.message,
+					req->async.context,
+					req->async.callback,
+					req->async.timeout,
+					&req->async.handle);
+
+	case LDB_ASYNC_DELETE:
+		return ltdb_delete_async(module,
+					req->op.del.dn,
+					req->async.context,
+					req->async.callback,
+					req->async.timeout,
+					&req->async.handle);
+
+	case LDB_ASYNC_RENAME:
+		return ltdb_rename_async(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn,
+					req->async.context,
+					req->async.callback,
+					req->async.timeout,
+					&req->async.handle);
 
 	default:
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -867,6 +1103,8 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->private_data = ltdb;
 	ldb->modules->ops = &ltdb_ops;
 	ldb->sequence_number = ltdb_sequence_number;
+
+	ldb->async_wait = &ltdb_async_wait;
 
 	return 0;
 }

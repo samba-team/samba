@@ -213,7 +213,7 @@ int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct l
 {
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
-	TDB_DATA tdb_key, tdb_data, tdb_data2;
+	TDB_DATA tdb_key, tdb_data;
 
 	memset(msg, 0, sizeof(*msg));
 
@@ -229,27 +229,19 @@ int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct l
 		return 0;
 	}
 
-	tdb_data2.dptr = talloc_memdup(msg, tdb_data.dptr, tdb_data.dsize);
-	free(tdb_data.dptr);
-	if (!tdb_data2.dptr) {
-		return -1;
-	}
-	tdb_data2.dsize = tdb_data.dsize;
-
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = ltdb_unpack_data(module, &tdb_data2, msg);
+	ret = ltdb_unpack_data(module, &tdb_data, msg);
+	free(tdb_data.dptr);
 	if (ret == -1) {
-		talloc_free(tdb_data2.dptr);
 		return -1;		
 	}
 
 	if (!msg->dn) {
-		msg->dn = ldb_dn_copy(tdb_data2.dptr, dn);
+		msg->dn = ldb_dn_copy(msg, dn);
 	}
 	if (!msg->dn) {
-		talloc_free(tdb_data2.dptr);
 		return -1;
 	}
 
@@ -328,28 +320,67 @@ int ltdb_add_attr_results(struct ldb_module *module,
 }
 
 
-/*
-  internal search state during a full db search
-*/
-struct ltdb_search_info {
-	struct ldb_module *module;
-	struct ldb_parse_tree *tree;
-	const struct ldb_dn *base;
-	enum ldb_scope scope;
-	const char * const *attrs;
-	struct ldb_message **msgs;
-	unsigned int failures;
-	unsigned int count;
-};
 
+/*
+  filter the specified list of attributes from a message
+  removing not requested attrs.
+ */
+int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
+{
+	int i, keep_all = 0;
+
+	if (attrs) {
+		/* check for special attrs */
+		for (i = 0; attrs[i]; i++) {
+			if (strcmp(attrs[i], "*") == 0) {
+				keep_all = 1;
+				break;
+			}
+
+			if (ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
+				if (msg_add_distinguished_name(msg) != 0) {
+					return -1;
+				}
+			}
+		}
+	} else {
+		keep_all = 1;
+	}
+	
+	if (keep_all) {
+		if (msg_add_distinguished_name(msg) != 0) {
+			return -1;
+		}
+		return 0;
+	}
+
+	for (i = 0; i < msg->num_elements; i++) {
+		int j, found;
+		
+		for (j = 0, found = 0; attrs[j]; j++) {
+			if (ldb_attr_cmp(msg->elements[i].name, attrs[j]) == 0) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			ldb_msg_remove_attr(msg, msg->elements[i].name);
+			i--;
+		}
+	}
+
+	return 0;
+}
 
 /*
   search function for a non-indexed search
  */
 static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	struct ltdb_search_info *sinfo = state;
-	struct ldb_message *msg;
+	struct ldb_async_handle *handle = talloc_get_type(state, struct ldb_async_handle);
+	struct ltdb_async_context *ac = talloc_get_type(handle->private_data, struct ltdb_async_context);
+	struct ldb_async_result *ares = NULL;
 	int ret;
 
 	if (key.dsize < 4 || 
@@ -357,43 +388,65 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		return 0;
 	}
 
-	msg = talloc(sinfo, struct ldb_message);
-	if (msg == NULL) {
+	ares = talloc_zero(ac, struct ldb_async_result);
+	if (!ares) {
+		handle->status = LDB_ERR_OPERATIONS_ERROR;
+		handle->state = LDB_ASYNC_DONE;
+		return -1;
+	}
+
+	ares->message = ldb_msg_new(ares);
+	if (!ares->message) {
+		handle->status = LDB_ERR_OPERATIONS_ERROR;
+		handle->state = LDB_ASYNC_DONE;
+		talloc_free(ares);
 		return -1;
 	}
 
 	/* unpack the record */
-	ret = ltdb_unpack_data(sinfo->module, &data, msg);
+	ret = ltdb_unpack_data(ac->module, &data, ares->message);
 	if (ret == -1) {
-		sinfo->failures++;
-		talloc_free(msg);
-		return 0;
+		talloc_free(ares);
+		return -1;
 	}
 
-	if (!msg->dn) {
-		msg->dn = ldb_dn_explode(msg, (char *)key.dptr + 3);
-		if (msg->dn == NULL) {
-			talloc_free(msg);
+	if (!ares->message->dn) {
+		ares->message->dn = ldb_dn_explode(ares->message, (char *)key.dptr + 3);
+		if (ares->message->dn == NULL) {
+			handle->status = LDB_ERR_OPERATIONS_ERROR;
+			handle->state = LDB_ASYNC_DONE;
+			talloc_free(ares);
 			return -1;
 		}
 	}
 
 	/* see if it matches the given expression */
-	if (!ldb_match_msg(sinfo->module->ldb, msg, sinfo->tree, 
-			       sinfo->base, sinfo->scope)) {
-		talloc_free(msg);
+	if (!ldb_match_msg(ac->module->ldb, ares->message, ac->tree, 
+			       ac->base, ac->scope)) {
+		talloc_free(ares);
 		return 0;
 	}
 
-	ret = ltdb_add_attr_results(sinfo->module, sinfo, msg, sinfo->attrs, &sinfo->count, &sinfo->msgs);
+	/* filter the attributes that the user wants */
+	ret = ltdb_filter_attrs(ares->message, ac->attrs);
 
 	if (ret == -1) {
-		sinfo->failures++;
+		handle->status = LDB_ERR_OPERATIONS_ERROR;
+		handle->state = LDB_ASYNC_DONE;
+		talloc_free(ares);
+		return -1;
 	}
 
-	talloc_free(msg);
+	ares->type = LDB_REPLY_ENTRY;
+        handle->state = LDB_ASYNC_PENDING;
+	handle->status = ac->callback(ac->module->ldb, ac->context, ares);
 
-	return ret;
+	if (handle->status != LDB_SUCCESS) {
+		/* don't try to free ares here, the callback is in charge of that */
+		return -1;
+	}	
+
+	return 0;
 }
 
 
@@ -401,56 +454,127 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
-static int ltdb_search_full(struct ldb_module *module, 
-			    const struct ldb_dn *base,
-			    enum ldb_scope scope,
-			    struct ldb_parse_tree *tree,
-			    const char * const attrs[], struct ldb_result **res)
+static int ltdb_search_full(struct ldb_async_handle *handle)
 {
-	struct ltdb_private *ltdb = module->private_data;
-	struct ldb_result *result;
+	struct ltdb_async_context *ac = talloc_get_type(handle->private_data, struct ltdb_async_context);
+	struct ltdb_private *ltdb = talloc_get_type(ac->module->private_data, struct ltdb_private);
 	int ret;
-	struct ltdb_search_info *sinfo;
 
-	result = talloc(ltdb, struct ldb_result);
-	if (result == NULL) {
-		return LDB_ERR_OTHER;
-	}
+	ret = tdb_traverse_read(ltdb->tdb, search_func, handle);
 
-	sinfo = talloc(ltdb, struct ltdb_search_info);
-	if (sinfo == NULL) {
-		talloc_free(result);
-		return LDB_ERR_OTHER;
-	}
-
-	sinfo->tree = tree;
-	sinfo->module = module;
-	sinfo->scope = scope;
-	sinfo->base = base;
-	sinfo->attrs = attrs;
-	sinfo->msgs = NULL;
-	sinfo->count = 0;
-	sinfo->failures = 0;
-
-	ret = tdb_traverse_read(ltdb->tdb, search_func, sinfo);
+	handle->state = LDB_ASYNC_DONE;
 
 	if (ret == -1) {
-		talloc_free(result);
-		talloc_free(sinfo);
-		return -1;
+		handle->status = LDB_ERR_OPERATIONS_ERROR;
+		return handle->status;
 	}
 
-	result->controls = NULL;
-	result->refs = NULL;
-	result->msgs = talloc_steal(result, sinfo->msgs);
-	result->count = sinfo->count;
-	*res = result;
-
-	talloc_free(sinfo);
-
-	return LDB_SUCCESS;
+	handle->status = LDB_SUCCESS;
+	return handle->status;
 }
 
+static int ltdb_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
+{
+	struct ldb_result *res;
+	
+ 	if (!context) {
+		ldb_set_errstring(ldb, talloc_strdup(ldb, "NULL Context in callback"));
+		goto error;
+	}	
+
+	res = *((struct ldb_result **)context);
+
+	if (!res || !ares) {
+		goto error;
+	}
+
+	if (ares->type == LDB_REPLY_ENTRY) {
+		res->msgs = talloc_realloc(res, res->msgs, struct ldb_message *, res->count + 2);
+		if (! res->msgs) {
+			goto error;
+		}
+
+		res->msgs[res->count + 1] = NULL;
+
+		res->msgs[res->count] = talloc_steal(res->msgs, ares->message);
+		if (! res->msgs[res->count]) {
+			goto error;
+		}
+
+		res->count++;
+	} else {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "unrecognized async reply in ltdb_search_sync_callback!\n");
+		goto error;
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+
+error:
+	if (ares) talloc_free(ares);
+	if (res) talloc_free(res);
+	if (context) *((struct ldb_result **)context) = NULL;
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
+		      enum ldb_scope scope, struct ldb_parse_tree *tree,
+		      const char * const *attrs,
+		      void *context,
+		      int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+		      int timeout,
+		      struct ldb_async_handle **handle)
+{
+	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	struct ltdb_async_context *ltdb_ac;
+	int ret;
+
+	if ((base == NULL || base->comp_num == 0) &&
+	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL))
+		return LDB_ERR_OPERATIONS_ERROR;
+
+	if (ltdb_lock_read(module) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock_read(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (tree == NULL) {
+		ltdb_unlock_read(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	if (*handle == NULL) {
+		talloc_free(*handle);
+		ltdb_unlock_read(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ltdb_ac = talloc_get_type((*handle)->private_data, struct ltdb_async_context);
+
+	ltdb_ac->tree = tree;
+	ltdb_ac->scope = scope;
+	ltdb_ac->base = base;
+	ltdb_ac->attrs = attrs;
+
+	ret = ltdb_search_indexed(*handle);
+	if (ret == -1) {
+		ret = ltdb_search_full(*handle);
+	}
+	if (ret != LDB_SUCCESS) {
+		ldb_set_errstring(module->ldb, talloc_strdup(module->ldb, "Indexed and full searches both failed!\n"));
+		talloc_free(*handle);
+		*handle = NULL;
+	}
+
+	ltdb_unlock_read(module);
+
+	return ret;
+}
 
 /*
   search the database with a LDAP-like expression.
@@ -460,33 +584,24 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const attrs[], struct ldb_result **res)
 {
+	struct ldb_async_handle *handle;
 	int ret;
 
-	if ((base == NULL || base->comp_num == 0) &&
-	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
-
-	if (ltdb_lock_read(module) != 0) {
-		return -1;
+	*res = talloc_zero(module, struct ldb_result);
+	if (! *res) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ltdb_cache_load(module) != 0) {
-		ltdb_unlock_read(module);
-		return -1;
-	}
+	ret = ltdb_search_async(module, base, scope, tree, attrs,
+				res, &ltdb_search_sync_callback,
+				0, &handle);
 
-	if (tree == NULL) {
-		return -1;
-	}
+	if (ret != LDB_SUCCESS)
+		return ret;
 
-	*res = NULL;
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
 
-	ret = ltdb_search_indexed(module, base, scope, tree, attrs, res);
-	if (ret == -1) {
-		ret = ltdb_search_full(module, base, scope, tree, attrs, res);
-	}
-
-	ltdb_unlock_read(module);
-
+	talloc_free(handle);
 	return ret;
 }
 
