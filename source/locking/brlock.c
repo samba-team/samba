@@ -739,7 +739,6 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 		if (brl_same_context(&lock->context, &plock->context) &&
 					lock->fnum == plock->fnum &&
 					lock->lock_flav == WINDOWS_LOCK &&
-					lock->lock_type == PENDING_LOCK &&
 					lock->start == plock->start &&
 					lock->size == plock->size ) {
 			break;
