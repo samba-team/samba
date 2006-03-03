@@ -702,11 +702,12 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 		void *pre_unlock_data)
 {
 	unsigned int i, j;
+	struct lock_struct *lock;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
 
 #if ZERO_ZERO
 	for (i = 0; i < br_lck->num_locks; i++) {
-		struct lock_struct *lock = &locks[i];
+		lock = &locks[i];
 
 		if (lock->lock_type == WRITE_LOCK &&
 		    brl_same_context(&lock->context, &plock->context) &&
@@ -732,61 +733,68 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 #endif
 
 	for (i = 0; i < br_lck->num_locks; i++) {
-		struct lock_struct *lock = &locks[i];
+		lock = &locks[i];
 
-		if (brl_same_context(&lock->context, &plock->context) &&
-				lock->fnum == plock->fnum &&
-				lock->start == plock->start &&
-				lock->size == plock->size) {
+		/* Only remove our own locks that match in start, size, and flavour. */
+		if (!brl_same_context(&lock->context, &plock->context) ||
+					lock->fnum != plock->fnum ||
+					lock->lock_flav != WINDOWS_LOCK ||
+					lock->start != plock->start ||
+					lock->size != plock->size ) {
+			continue;
+		}
 
-			if (remove_pending_locks_only && lock->lock_type != PENDING_LOCK) {
-				continue;
-			}
+		if (remove_pending_locks_only && lock->lock_type == PENDING_LOCK) {
+			/* Found this particular pending lock - delete it */
+			break;
+		}
 
-			if (lock->lock_type != PENDING_LOCK) {
-
-				/* Do any POSIX unlocks needed. */
-				if (pre_unlock_fn) {
-					(*pre_unlock_fn)(pre_unlock_data);
-				}
-
-				/* Send unlock messages to any pending waiters that overlap. */
-				for (j=0; j < br_lck->num_locks; j++) {
-					struct lock_struct *pend_lock = &locks[j];
-
-					/* Ignore non-pending locks. */
-					if (pend_lock->lock_type != PENDING_LOCK) {
-						continue;
-					}
-
-					/* We could send specific lock info here... */
-					if (brl_pending_overlap(lock, pend_lock)) {
-						DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
-							procid_str_static(&pend_lock->context.pid )));
-
-						become_root();
-						message_send_pid(pend_lock->context.pid,
-								MSG_SMB_UNLOCK,
-								NULL, 0, True);
-						unbecome_root();
-					}
-				}
-			}
-
-			/* found it - delete it */
-			if (i < br_lck->num_locks - 1) {
-				memmove(&locks[i], &locks[i+1], 
-					sizeof(*locks)*((br_lck->num_locks-1) - i));
-			}
-
-			br_lck->num_locks -= 1;
-			br_lck->modified = True;
-			return True;
+		if (lock->lock_type != PENDING_LOCK) {
+			/* Found it. */
+			break;
 		}
 	}
 
-	/* we didn't find it */
-	return False;
+	if (i == br_lck->num_locks) {
+		/* we didn't find it */
+		return False;
+	}
+
+	/* Do any POSIX unlocks needed. */
+	if (pre_unlock_fn) {
+		(*pre_unlock_fn)(pre_unlock_data);
+	}
+
+	/* Send unlock messages to any pending waiters that overlap. */
+	for (j=0; j < br_lck->num_locks; j++) {
+		struct lock_struct *pend_lock = &locks[j];
+
+		/* Ignore non-pending locks. */
+		if (pend_lock->lock_type != PENDING_LOCK) {
+			continue;
+		}
+
+		/* We could send specific lock info here... */
+		if (brl_pending_overlap(lock, pend_lock)) {
+			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
+				procid_str_static(&pend_lock->context.pid )));
+
+			become_root();
+			message_send_pid(pend_lock->context.pid,
+					MSG_SMB_UNLOCK,
+					NULL, 0, True);
+			unbecome_root();
+		}
+	}
+
+	if (i < br_lck->num_locks - 1) {
+		memmove(&locks[i], &locks[i+1], 
+			sizeof(*locks)*((br_lck->num_locks-1) - i));
+	}
+
+	br_lck->num_locks -= 1;
+	br_lck->modified = True;
+	return True;
 }
 
 /****************************************************************************
@@ -799,8 +807,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
 		void (*pre_unlock_fn)(void *),
 		void *pre_unlock_data)
 {
-	/* Placeholder for now. */
-	return True;
+	return False;
 }
 
 /****************************************************************************

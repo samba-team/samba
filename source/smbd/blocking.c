@@ -35,6 +35,7 @@ typedef struct _blocking_lock_record {
 	SMB_BIG_UINT offset;
 	SMB_BIG_UINT count;
 	uint16 lock_pid;
+	enum brl_flavour lock_flav;
 	char *inbuf;
 	int length;
 } blocking_lock_record;
@@ -122,6 +123,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 	blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
 	blr->lock_num = lock_num;
 	blr->lock_pid = lock_pid;
+	blr->lock_flav = WINDOWS_LOCK;
 	blr->offset = offset;
 	blr->count = count;
 	memcpy(blr->inbuf, inbuf, length);
@@ -140,7 +142,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 			offset,
 			count,
 			PENDING_LOCK,
-			WINDOWS_LOCK,
+			blr->lock_flav,
 			&my_lock_ctx);
 	TALLOC_FREE(br_lck);
 
@@ -568,7 +570,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					procid_self(),
 					blr->offset,
 					blr->count,
-					WINDOWS_LOCK,
+					blr->lock_flav,
 					True,
 					NULL,
 					NULL);
@@ -604,7 +606,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					procid_self(),
 					blr->offset,
 					blr->count,
-					WINDOWS_LOCK,
+					blr->lock_flav,
 					True,
 					NULL,
 					NULL);
@@ -709,7 +711,7 @@ void process_blocking_lock_queue(time_t t)
 					procid_self(),
 					blr->offset,
 					blr->count,
-					WINDOWS_LOCK,
+					blr->lock_flav,
 					True,
 					NULL,
 					NULL);
@@ -763,7 +765,7 @@ void process_blocking_lock_queue(time_t t)
 					procid_self(),
 					blr->offset,
 					blr->count,
-					WINDOWS_LOCK,
+					blr->lock_flav,
 					True,
 					NULL,
 					NULL);
@@ -793,7 +795,7 @@ void process_blocking_lock_queue(time_t t)
 					procid_self(),
 					blr->offset,
 					blr->count,
-					WINDOWS_LOCK,
+					blr->lock_flav,
 					True,
 					NULL,
 					NULL);
