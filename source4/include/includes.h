@@ -125,10 +125,6 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 
 #include "util/safe_string.h"
 
-#ifndef HAVE_PIPE
-#define SYNC_DNS 1
-#endif
-
 extern int DEBUGLEVEL;
 
 #if defined(VALGRIND)
