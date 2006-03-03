@@ -860,7 +860,7 @@ error:
 	return handle->status;
 }
 
-static int lldb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int lldb_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	struct lldb_async_context *ac = talloc_get_type(handle->private_data, struct lldb_async_context);
 	struct lldb_private *lldb = talloc_get_type(ac->module->private_data, struct lldb_private);
@@ -1027,6 +1027,7 @@ static const struct ldb_module_ops lldb_ops = {
 	.start_transaction = lldb_start_trans,
 	.end_transaction   = lldb_end_trans,
 	.del_transaction   = lldb_del_trans,
+	.async_wait        = lldb_async_wait
 };
 
 
@@ -1083,8 +1084,6 @@ int lldb_connect(struct ldb_context *ldb,
 	ldb->modules->prev = ldb->modules->next = NULL;
 	ldb->modules->private_data = lldb;
 	ldb->modules->ops = &lldb_ops;
-
-	ldb->async_wait = &lldb_async_wait;
 
 	return 0;
 

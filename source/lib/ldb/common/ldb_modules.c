@@ -278,7 +278,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 #define FIND_OP(module, op) do { \
 	module = module->next; \
 	while (module && module->ops->op == NULL) module = module->next; \
-	if (module == NULL) return LDB_ERR_OTHER; \
+	if (module == NULL) return LDB_ERR_OPERATIONS_ERROR; \
 } while (0)
 
 
@@ -323,4 +323,10 @@ int ldb_next_del_trans(struct ldb_module *module)
 {
 	FIND_OP(module, del_transaction);
 	return module->ops->del_transaction(module);
+}
+
+int ldb_next_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+{
+	FIND_OP(module, async_wait);
+	return module->ops->async_wait(module, handle, type);
 }

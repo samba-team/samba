@@ -61,6 +61,7 @@ struct ldb_module_ops {
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
+	int (*async_wait)(struct ldb_module *, struct ldb_async_handle *, enum ldb_async_wait_type);
 };
 
 
@@ -105,8 +106,6 @@ struct ldb_context {
 	char *err_string;
 
 	int transaction_active;
-
-	int (*async_wait)(struct ldb_async_handle *, enum ldb_async_wait_type);
 
 	/* a backend supplied highestCommittedUSN function */
 	uint64_t (*sequence_number)(struct ldb_context *);

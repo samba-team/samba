@@ -217,7 +217,7 @@ static int rootdse_init(struct ldb_module *module)
 
 static const struct ldb_module_ops rootdse_ops = {
 	.name			= "rootdse",
-	.init_context	= rootdse_init,
+	.init_context           = rootdse_init,
 	.request		= rootdse_request
 };
 

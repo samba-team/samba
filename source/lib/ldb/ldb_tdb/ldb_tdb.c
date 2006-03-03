@@ -917,7 +917,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int ltdb_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	return handle->status;
 }
@@ -1038,7 +1038,8 @@ static const struct ldb_module_ops ltdb_ops = {
 	.request           = ltdb_request,
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
-	.del_transaction   = ltdb_del_trans
+	.del_transaction   = ltdb_del_trans,
+	.async_wait        = ltdb_async_wait
 };
 
 
@@ -1103,8 +1104,6 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->private_data = ltdb;
 	ldb->modules->ops = &ltdb_ops;
 	ldb->sequence_number = ltdb_sequence_number;
-
-	ldb->async_wait = &ltdb_async_wait;
 
 	return 0;
 }
