@@ -4336,6 +4336,83 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 #endif
 
+		case SMB_SET_POSIX_LOCK:
+		{
+			SMB_BIG_UINT count;
+			SMB_BIG_UINT offset;
+			uint16 lock_pid;
+			BOOL lock_blocking;
+			enum brl_type lock_type;
+			BOOL my_lock_ctx;
+
+			if (fsp == NULL || fsp->fh->fd == -1) {
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+			}
+
+			if (total_data < POSIX_LOCK_DATA_SIZE) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			switch (SVAL(pdata, POSIX_LOCK_TYPE_OFFSET)) {
+				case POSIX_LOCK_TYPE_READ:
+					lock_type = READ_LOCK;
+					break;
+				case POSIX_LOCK_TYPE_WRITE:
+					lock_type = WRITE_LOCK;
+					break;
+				case POSIX_LOCK_TYPE_UNLOCK:
+					lock_type = UNLOCK_LOCK;
+					break;
+				default:
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_NOWAIT) {
+				lock_blocking = False;
+			} else if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_WAIT) {
+				lock_blocking = True;
+			} else {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			lock_pid = (uint16)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+#if defined(HAVE_LONGLONG)
+			offset = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
+					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_START_OFFSET));
+			count = (((SMB_BIG_UINT) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
+					((SMB_BIG_UINT) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
+#else /* HAVE_LONGLONG */
+			offset = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_START_OFFSET);
+			count = (SMB_BIG_UINT)IVAL(pdata,POSIX_LOCK_LEN_OFFSET);
+#endif /* HAVE_LONGLONG */
+
+			if (lock_type == UNLOCK_LOCK) {
+				status = do_unlock(fsp,
+						lock_pid,
+						count,
+						offset,
+						POSIX_LOCK);
+			} else {
+				status = do_lock(fsp,
+						lock_pid,
+						count,
+						offset,
+						lock_type,
+						POSIX_LOCK,
+						&my_lock_ctx);
+
+				/* TODO: Deal with rescheduling blocking lock fail here... */
+			}
+
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
+		}
+
 		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}

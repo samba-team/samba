@@ -576,4 +576,28 @@ number of entries sent will be zero.
 #define SMB_POSIX_ACL_ENTRY_SIZE         10
 
 #define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
+
+/* Definition of SMB_SET_POSIX_LOCK */
+/*
+  [2 bytes] lock_type - 0 = Read, 1 = Write, 2 = Unlock
+  [2 bytes] lock_flags - 1 = Wait (only valid for setlock)
+  [4 bytes] pid = locking context.
+  [8 bytes] start = unsigned 64 bits.
+  [8 bytes] length = unsigned 64 bits.
+*/
+
+#define POSIX_LOCK_TYPE_OFFSET 0
+#define POSIX_LOCK_FLAGS_OFFSET 2
+#define POSIX_LOCK_PID_OFFSET 4
+#define POSIX_LOCK_START_OFFSET 8
+#define POSIX_LOCK_LEN_OFFSET 16
+#define POSIX_LOCK_DATA_SIZE 24
+
+#define POSIX_LOCK_FLAG_NOWAIT 0
+#define POSIX_LOCK_FLAG_WAIT 1
+
+#define POSIX_LOCK_TYPE_READ 0
+#define POSIX_LOCK_TYPE_WRITE 1
+#define POSIX_LOCK_TYPE_UNLOCK 2
+
 #endif

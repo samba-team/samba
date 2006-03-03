@@ -170,7 +170,7 @@ static BOOL brl_conflict_posix(struct lock_struct *lck1,
 	}
 
 	/* One is read, the other write, context or fnum are different,
-	   do the overlap ? */
+	   do they overlap ? */
 	return brl_overlap(lck1, lck2);
 } 
 
@@ -429,9 +429,9 @@ BECOMES....
         |   plock       | ex    | - different lock types.
         +---------------+-------+
 OR....
-        +---------------+-------+
+        +-----------------------+
         |   ex                  | - same lock type.
-        +---------------+-------+
+        +-----------------------+
 **********************************************/
 
 	if ( (ex->start >= plock->start) &&
@@ -474,9 +474,9 @@ BECOMES....
    +-------+---------------+
 
 OR
-   +-------+---------------+
+   +-----------------------+
    | ex                    | - same lock type.
-   +-------+---------------+
+   +-----------------------+
 
 **********************************************/
 

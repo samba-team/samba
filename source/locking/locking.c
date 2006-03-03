@@ -148,7 +148,7 @@ BOOL is_locked(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
-static NTSTATUS do_lock(files_struct *fsp,
+NTSTATUS do_lock(files_struct *fsp,
 			uint16 lock_pid,
 			SMB_BIG_UINT count,
 			SMB_BIG_UINT offset,
