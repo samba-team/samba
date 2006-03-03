@@ -48,6 +48,14 @@ struct data_blob_list_item {
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
 
+/*
+  we use struct ipv4_addr to avoid having to include all the
+  system networking headers everywhere
+*/
+struct ipv4_addr {
+	uint32_t addr;
+};
+
 typedef NTSTATUS (*init_module_fn) (void);
 
 #endif /* _SAMBA_CORE_H */
