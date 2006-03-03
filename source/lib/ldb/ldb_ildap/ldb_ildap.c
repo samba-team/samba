@@ -536,12 +536,15 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	ret = ildb_search_async(module, base, scope, tree, attrs, control_req,
 				res, &ildb_search_sync_callback, ildb->ldap->timeout, &handle);
 
-	if (ret != LDB_SUCCESS)
-		return ret;
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+		talloc_free(handle);
+	}
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(*res);
+	}
 
-	talloc_free(handle);
 	return ret;
 }
 
