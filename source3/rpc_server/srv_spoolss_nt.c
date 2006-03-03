@@ -7147,13 +7147,15 @@ static void fill_port_1(PORT_INFO_1 *port, const char *name)
 }
 
 /****************************************************************************
+ TODO: This probably needs distinguish between TCP/IP and Local ports 
+ somehow.
 ****************************************************************************/
 
 static void fill_port_2(PORT_INFO_2 *port, const char *name)
 {
 	init_unistr(&port->port_name, name);
 	init_unistr(&port->monitor_name, "Local Monitor");
-	init_unistr(&port->description, "Local Port");
+	init_unistr(&port->description, SPL_LOCAL_PORT );
 	port->port_type=PORT_TYPE_WRITE;
 	port->reserved=0x0;	
 }
@@ -8477,8 +8479,8 @@ static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint
 
 	*returned = 2;
 	
-	init_unistr(&(info_1[0].name), "Local Port");
-	init_unistr(&(info_1[1].name), "Standard TCP/IP Port");
+	init_unistr(&(info_1[0].name), SPL_LOCAL_PORT ); 
+	init_unistr(&(info_1[1].name), SPL_TCPIP_PORT );
 
 	for ( i=0; i<*returned; i++ ) {
 		*needed += spoolss_size_printmonitor_info_1(&info_1[i]);
@@ -8522,13 +8524,13 @@ static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint
 
 	*returned = 2;
 	
-	init_unistr(&(info_2[0].name), "Local Port");
-	init_unistr(&(info_2[0].environment), "Windows NT X86");
-	init_unistr(&(info_2[0].dll_name), "localmon.dll");
+	init_unistr( &(info_2[0].name), SPL_LOCAL_PORT );
+	init_unistr( &(info_2[0].environment), "Windows NT X86" );
+	init_unistr( &(info_2[0].dll_name), "localmon.dll" );
 	
-	init_unistr(&(info_2[1].name), "Standard TCP/IP Port");
-	init_unistr(&(info_2[1].environment), "Windows NT X86");
-	init_unistr(&(info_2[1].dll_name), "tcpmon.dll");
+	init_unistr( &(info_2[1].name), SPL_TCPIP_PORT );
+	init_unistr( &(info_2[1].environment), "Windows NT X86" );
+	init_unistr( &(info_2[1].dll_name), "tcpmon.dll" );
 
 	for ( i=0; i<*returned; i++ ) {
 		*needed += spoolss_size_printmonitor_info_2(&info_2[i]);
