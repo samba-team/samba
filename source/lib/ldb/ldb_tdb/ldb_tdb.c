@@ -80,8 +80,7 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 
 struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
 					  void *context,
-					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					  int timeout)
+					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *))
 {
 	struct ltdb_async_context *ac;
 	struct ldb_async_handle *h;
@@ -104,7 +103,6 @@ struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_
 	ac->module = module;
 	ac->context = context;
 	ac->callback = callback;
-	ac->timeout = timeout;
 
 	return h;
 }
@@ -259,14 +257,13 @@ done:
 static int ltdb_add_async(struct ldb_module *module, const struct ldb_message *msg,
 			  void *context,
 			  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			  int timeout,
 			  struct ldb_async_handle **handle)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
 	struct ltdb_async_context *ltdb_ac;
 	int ret = LDB_ERR_OPERATIONS_ERROR;
 
-	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	*handle = init_ltdb_handle(ltdb, module, context, callback);
 	if (*handle == NULL) {
 		return ret;
 	}
@@ -305,7 +302,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldb_async_handle *handle;
 	int ret;
 
-	ret = ltdb_add_async(module, msg, NULL, NULL, 0, &handle);
+	ret = ltdb_add_async(module, msg, NULL, NULL, &handle);
 
 	if (ret != LDB_SUCCESS)
 		return ret;
@@ -347,7 +344,6 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 static int ltdb_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 			     void *context,
 			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			     int timeout,
 			     struct ldb_async_handle **handle)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
@@ -361,7 +357,7 @@ static int ltdb_delete_async(struct ldb_module *module, const struct ldb_dn *dn,
 		goto failed;
 	}
 
-	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	*handle = init_ltdb_handle(ltdb, module, context, callback);
 	if (*handle == NULL) {
 		goto failed;
 	}
@@ -410,8 +406,7 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	struct ldb_async_handle *handle;
 	int ret;
 
-	ret = ltdb_delete_async(module, dn,
-				NULL, NULL, 0, &handle);
+	ret = ltdb_delete_async(module, dn, NULL, NULL, &handle);
 
 	if (ret != LDB_SUCCESS)
 		return ret;
@@ -737,7 +732,6 @@ failed:
 static int ltdb_modify_async(struct ldb_module *module, const struct ldb_message *msg,
 			  void *context,
 			  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			  int timeout,
 			  struct ldb_async_handle **handle)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
@@ -746,7 +740,7 @@ static int ltdb_modify_async(struct ldb_module *module, const struct ldb_message
 
 	*handle = NULL;
 
-	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	*handle = init_ltdb_handle(ltdb, module, context, callback);
 	if (*handle == NULL) {
 		return ret;
 	}
@@ -785,7 +779,7 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldb_async_handle *handle;
 	int ret;
 
-	ret = ltdb_modify_async(module, msg, NULL, NULL, 0, &handle);
+	ret = ltdb_modify_async(module, msg, NULL, NULL, &handle);
 
 	if (ret != LDB_SUCCESS)
 		return ret;
@@ -802,7 +796,6 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 static int ltdb_rename_async(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn,
 			     void *context,
 			     int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-			     int timeout,
 			     struct ldb_async_handle **handle)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
@@ -816,7 +809,7 @@ static int ltdb_rename_async(struct ldb_module *module, const struct ldb_dn *old
 		return ret;
 	}
 
-	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	*handle = init_ltdb_handle(ltdb, module, context, callback);
 	if (*handle == NULL) {
 		goto failed;
 	}
@@ -872,8 +865,7 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	struct ldb_async_handle *handle;
 	int ret;
 
-	ret = ltdb_rename_async(module, olddn, newdn,
-				NULL, NULL, 0, &handle);
+	ret = ltdb_rename_async(module, olddn, newdn, NULL, NULL, &handle);
 
 	if (ret != LDB_SUCCESS)
 		return ret;
@@ -966,7 +958,6 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 					req->op.search.attrs,
 					req->async.context,
 					req->async.callback,
-					req->async.timeout,
 					&req->async.handle);
 
 	case LDB_ASYNC_ADD:
@@ -974,7 +965,6 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 					req->op.add.message,
 					req->async.context,
 					req->async.callback,
-					req->async.timeout,
 					&req->async.handle);
 
 	case LDB_ASYNC_MODIFY:
@@ -982,7 +972,6 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 					req->op.mod.message,
 					req->async.context,
 					req->async.callback,
-					req->async.timeout,
 					&req->async.handle);
 
 	case LDB_ASYNC_DELETE:
@@ -990,7 +979,6 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 					req->op.del.dn,
 					req->async.context,
 					req->async.callback,
-					req->async.timeout,
 					&req->async.handle);
 
 	case LDB_ASYNC_RENAME:
@@ -999,7 +987,6 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 					req->op.rename.newdn,
 					req->async.context,
 					req->async.callback,
-					req->async.timeout,
 					&req->async.handle);
 
 	default:
