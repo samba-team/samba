@@ -2185,8 +2185,8 @@ typedef struct spool_q_xcvdataport {
 
 typedef struct spool_r_xcvdataport {
 	RPC_BUFFER outdata;
-	uint32 *unknown1;
-	uint32 *unknown2;
+	uint32 needed;
+	uint32 unknown;
 	WERROR status;
 } SPOOL_R_XCVDATAPORT;
 
