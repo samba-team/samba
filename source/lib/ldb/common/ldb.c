@@ -125,7 +125,7 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 #define FIRST_OP(ldb, op) do { \
 	module = ldb->modules; \
 	while (module && module->ops->op == NULL) module = module->next; \
-	if (module == NULL) return -1; \
+	if (module == NULL) return LDB_ERR_OPERATIONS_ERROR; \
 } while (0)
 
 /*
@@ -208,10 +208,11 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 int ldb_async_wait(struct ldb_context *ldb, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
-	if (ldb->async_wait != NULL)
-		return ldb->async_wait(handle, type);
+	struct ldb_module *module;
 
-	return LDB_ERR_OPERATIONS_ERROR;
+	FIRST_OP(ldb, async_wait);
+
+	return module->ops->async_wait(module, handle, type);
 }
 
 /*

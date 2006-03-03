@@ -475,7 +475,7 @@ static int ltdb_search_full(struct ldb_async_handle *handle)
 
 static int ltdb_search_sync_callback(struct ldb_context *ldb, void *context, struct ldb_async_result *ares)
 {
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 	
  	if (!context) {
 		ldb_set_errstring(ldb, talloc_strdup(ldb, "NULL Context in callback"));

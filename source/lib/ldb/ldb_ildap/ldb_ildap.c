@@ -913,7 +913,7 @@ static int ildb_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-static int ildb_async_wait(struct ldb_async_handle *handle, enum ldb_async_wait_type type)
+static int ildb_async_wait(struct ldb_module *module, struct ldb_async_handle *handle, enum ldb_async_wait_type type)
 {
 	struct ildb_async_context *ac = talloc_get_type(handle->private_data, struct ildb_async_context);
 
@@ -977,6 +977,7 @@ static const struct ldb_module_ops ildb_ops = {
 	.start_transaction = ildb_start_trans,
 	.end_transaction   = ildb_end_trans,
 	.del_transaction   = ildb_del_trans,
+	.async_wait        = ildb_async_wait,
 	.init_context	   = ildb_init
 };
 
@@ -1050,8 +1051,6 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 			}
 		}
 	}
-
-	ldb->async_wait = &ildb_async_wait;
 
 	return 0;
 
