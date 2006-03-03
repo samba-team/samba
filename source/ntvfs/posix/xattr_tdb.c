@@ -52,7 +52,7 @@ static NTSTATUS xattr_tdb_add_list(struct pvfs_state *pvfs, const char *attr_nam
 		blob = data_blob(NULL, 0);
 	}
 
-	for (s=blob.data; s < (char *)(blob.data+blob.length); s += strlen(s) + 1) {
+	for (s=(const char *)blob.data; s < (const char *)(blob.data+blob.length); s += strlen(s) + 1) {
 		if (strcmp(attr_name, s) == 0) {
 			talloc_free(mem_ctx);
 			return NT_STATUS_OK;
@@ -96,7 +96,7 @@ static NTSTATUS get_ea_db_key(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	key->dptr = talloc_array(mem_ctx, char, 16 + len);
+	key->dptr = talloc_array(mem_ctx, uint8_t, 16 + len);
 	if (key->dptr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -225,7 +225,7 @@ NTSTATUS unlink_xattr_tdb(struct pvfs_state *pvfs, const char *fname)
 		return NT_STATUS_OK;
 	}
 
-	for (s=blob.data; s < (char *)(blob.data+blob.length); s += strlen(s) + 1) {
+	for (s=(const char *)blob.data; s < (const char *)(blob.data+blob.length); s += strlen(s) + 1) {
 		delete_xattr_tdb(pvfs, s, fname, -1);
 	}
 
