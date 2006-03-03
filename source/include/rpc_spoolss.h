@@ -115,7 +115,10 @@
  * docs on the XcvDataPort() for more details.
  */
 
-#define SPL_XCV_MONITOR_TCPMON	",XcvMonitor Standard TCP/IP Port"
+#define SPL_LOCAL_PORT            "Local Port"
+#define SPL_TCPIP_PORT            "Standard TCP/IP Port"
+#define SPL_XCV_MONITOR_LOCALMON  ",XcvMonitor Local Port"
+#define SPL_XCV_MONITOR_TCPMON    ",XcvMonitor Standard TCP/IP Port"
 
 
 #define PRINTER_CONTROL_UNPAUSE		0x00000000
