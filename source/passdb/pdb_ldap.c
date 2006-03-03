@@ -2499,9 +2499,6 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	size_t num_sids, num_gids;
 	char *gidstr;
 	gid_t primary_gid = -1;
-	uid_t user_uid;
-	const DOM_SID *user_sid;
-	uint32 user_rid;
 
 	*pp_sids = NULL;
 	num_sids = 0;
@@ -2527,62 +2524,19 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	switch (count) {
 	case 0:	
-		/* check if this is the special virtual guest account or root or return with error */
-		user_sid = pdb_get_user_sid(user);
-		if (!sid_peek_rid(user_sid, &user_rid)) {
-			DEBUG(1, ("Could not peek into RID\n"));
-			ret = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-		if (!sid_to_uid(user_sid, &user_uid)) {
-			user_uid = -1;
-		}
-		if (user_rid == DOMAIN_USER_RID_GUEST) {
-			struct passwd *pw;
-			/* try to get the user gid from the system
-			 * this is a special system account and is
-			 * allowed to stay off the ldap tree */
-			if (!(pw = getpwnam_alloc(mem_ctx, pdb_get_username(user)))) {
-				ret = NT_STATUS_NO_SUCH_USER;
-				goto done;
-			}
-			primary_gid = pw->pw_gid;
-			talloc_free(pw);
-		} else {
-			ret = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-		break;
+		DEBUG(1, ("User account [%s] not found!\n", pdb_get_username(user)));
+		ret = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	case 1:
 		entry = ldap_first_entry(priv2ld(ldap_state), result);
 
 		gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", mem_ctx);
 		if (!gidstr) {
-			/* make a special exception for the root user */
-			user_sid = pdb_get_user_sid(user);
-			if (!sid_to_uid(user_sid, &user_uid)) {
-				user_uid = -1;
-			}
-
-			if (user_uid == 0) {
-				struct passwd *pw;
-				/* try to get the user gid from the system
-				 * this is a special system account and is
-				 * allowed to stay off the ldap tree */
-				if (!(pw = getpwnam_alloc(mem_ctx, pdb_get_username(user)))) {
-					ret = NT_STATUS_NO_SUCH_USER;
-					goto done;
-				}
-				primary_gid = pw->pw_gid;
-				talloc_free(pw);
-			} else {
-				DEBUG (1, ("Unable to find the member's gid!\n"));
-				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
-				goto done;
-			}
-		} else {
-			primary_gid = strtoul(gidstr, NULL, 10);
+			DEBUG (1, ("Unable to find the member's gid!\n"));
+			ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto done;
 		}
+		primary_gid = strtoul(gidstr, NULL, 10);
 		break;
 	default:
 		DEBUG(1, ("found more than one accoutn with the same user name ?!\n"));
@@ -2656,9 +2610,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	if (sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
 		DEBUG(3, ("primary group of [%s] not found\n",
 			  pdb_get_username(user)));
-		/* this may be the special guest user, do not give up
-		 * and use gid_to_sid */
-		gid_to_sid(&(*pp_sids)[0], primary_gid);
+		goto done;
 	}
 
 	*p_num_groups = num_sids;
@@ -3692,8 +3644,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 
 	for (i=0; i<num_rids; i++) {
 		DOM_SID sid;
-		sid_copy(&sid, domain_sid);
-		sid_append_rid(&sid, rids[i]);
+		sid_compose(&sid, domain_sid, rids[i]);
 		allsids = talloc_asprintf_append(allsids, "(sambaSid=%s)",
 						 sid_string_static(&sid));
 		if (allsids == NULL) {
@@ -4707,8 +4658,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return ret;
 	}
 
-	sid_copy(&user_sid, get_global_sam_sid());
-	sid_append_rid(&user_sid, *rid);
+	sid_compose(&user_sid, get_global_sam_sid(), *rid);
 
 	user = samu_new(tmp_ctx);
 	if (!user) {
@@ -5001,8 +4951,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		return ret;
 	}
 
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, *rid);
+	sid_compose(&group_sid, get_global_sam_sid(), *rid);
 
 	groupsidstr = talloc_strdup(tmp_ctx, sid_string_static(&group_sid));
 	grouptype = talloc_asprintf(tmp_ctx, "%d", SID_NAME_DOM_GRP);
@@ -5055,8 +5004,7 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 	int rc;
 
 	/* get the group sid */
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, rid);
+	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(sambaSID=%s)"
@@ -5160,12 +5108,10 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 	}
 	
 	/* get member sid  */
-	sid_copy(&member_sid, get_global_sam_sid());
-	sid_append_rid(&member_sid, member_rid);
+	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
 	/* get the group sid */
-	sid_copy(&group_sid, get_global_sam_sid());
-	sid_append_rid(&group_sid, group_rid);
+	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(sambaSID=%s)"
