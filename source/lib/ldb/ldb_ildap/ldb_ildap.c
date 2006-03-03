@@ -539,7 +539,10 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	return ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
+	return ret;
 }
 
 /*
@@ -608,7 +611,10 @@ static int ildb_add(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	return ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
+	return ret;
 }
 
 /*
@@ -677,7 +683,10 @@ static int ildb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	return ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
+	return ret;
 }
 
 /*
@@ -727,7 +736,10 @@ static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	return ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
+	return ret;
 }
 
 /*
@@ -796,7 +808,10 @@ static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	if (ret != LDB_SUCCESS)
 		return ret;
 
-	return ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+
+	talloc_free(handle);
+	return ret;
 }
 
 static int ildb_start_trans(struct ldb_module *module)

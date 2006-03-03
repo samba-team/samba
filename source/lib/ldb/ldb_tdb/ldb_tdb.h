@@ -29,6 +29,25 @@ struct ltdb_private {
 	} *cache;
 };
 
+/*
+  the async local context
+  holds also internal search state during a full db search
+*/
+struct ltdb_async_context {
+	struct ldb_module *module;
+
+	/* search stuff */
+	struct ldb_parse_tree *tree;
+	const struct ldb_dn *base;
+	enum ldb_scope scope;
+	const char * const *attrs;
+
+	/* async stuff */
+	void *context;
+	int timeout;
+	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
+};
+
 /* special record types */
 #define LTDB_INDEX      "@INDEX"
 #define LTDB_INDEXLIST  "@INDEXLIST"
@@ -53,11 +72,7 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 struct ldb_parse_tree;
 
-int ltdb_search_indexed(struct ldb_module *module, 
-			const struct ldb_dn *base,
-			enum ldb_scope scope,
-			struct ldb_parse_tree *tree,
-			const char * const attrs[], struct ldb_result **res);
+int ltdb_search_indexed(struct ldb_async_handle *handle);
 int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_reindex(struct ldb_module *module);
@@ -85,12 +100,24 @@ int ltdb_add_attr_results(struct ldb_module *module,
 			  const char * const attrs[], 
 			  unsigned int *count, 
 			  struct ldb_message ***res);
+int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs);
+int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
+		      enum ldb_scope scope, struct ldb_parse_tree *tree,
+		      const char * const *attrs,
+		      void *context,
+		      int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+		      int timeout,
+		      struct ldb_async_handle **handle);
 int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const attrs[], struct ldb_result **res);
 
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
+struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
+					  void *context,
+					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
+					  int timeout);
 struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);
