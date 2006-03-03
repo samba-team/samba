@@ -522,7 +522,6 @@ int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
 		      const char * const *attrs,
 		      void *context,
 		      int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-		      int timeout,
 		      struct ldb_async_handle **handle)
 {
 	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
@@ -547,7 +546,7 @@ int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	*handle = init_ltdb_handle(ltdb, module, context, callback, timeout);
+	*handle = init_ltdb_handle(ltdb, module, context, callback);
 	if (*handle == NULL) {
 		talloc_free(*handle);
 		ltdb_unlock_read(module);
@@ -594,14 +593,17 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 
 	ret = ltdb_search_async(module, base, scope, tree, attrs,
 				res, &ltdb_search_sync_callback,
-				0, &handle);
+				&handle);
 
-	if (ret != LDB_SUCCESS)
-		return ret;
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+		talloc_free(handle);
+	}
 
-	ret = ldb_async_wait(module->ldb, handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(*res);
+	}
 
-	talloc_free(handle);
 	return ret;
 }
 

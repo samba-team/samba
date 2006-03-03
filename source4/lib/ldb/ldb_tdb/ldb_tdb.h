@@ -44,7 +44,6 @@ struct ltdb_async_context {
 
 	/* async stuff */
 	void *context;
-	int timeout;
 	int (*callback)(struct ldb_context *, void *, struct ldb_async_result *);
 };
 
@@ -106,7 +105,6 @@ int ltdb_search_async(struct ldb_module *module, const struct ldb_dn *base,
 		      const char * const *attrs,
 		      void *context,
 		      int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-		      int timeout,
 		      struct ldb_async_handle **handle);
 int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
@@ -116,8 +114,7 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 struct ldb_async_handle *init_ltdb_handle(struct ltdb_private *ltdb, struct ldb_module *module,
 					  void *context,
-					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *),
-					  int timeout);
+					  int (*callback)(struct ldb_context *, void *, struct ldb_async_result *));
 struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);
