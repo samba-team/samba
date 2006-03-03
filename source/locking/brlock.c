@@ -697,7 +697,6 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 
 static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 		struct lock_struct *plock,
-		BOOL remove_pending_locks_only,
 		void (*pre_unlock_fn)(void *),
 		void *pre_unlock_data)
 {
@@ -712,6 +711,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 		if (lock->lock_type == WRITE_LOCK &&
 		    brl_same_context(&lock->context, &plock->context) &&
 		    lock->fnum == plock->fnum &&
+		    lock->lock_flav == WINDOWS_LOCK &&
 		    lock->start == plock->start &&
 		    lock->size == plock->size) {
 
@@ -736,21 +736,12 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 		lock = &locks[i];
 
 		/* Only remove our own locks that match in start, size, and flavour. */
-		if (!brl_same_context(&lock->context, &plock->context) ||
-					lock->fnum != plock->fnum ||
-					lock->lock_flav != WINDOWS_LOCK ||
-					lock->start != plock->start ||
-					lock->size != plock->size ) {
-			continue;
-		}
-
-		if (remove_pending_locks_only && lock->lock_type == PENDING_LOCK) {
-			/* Found this particular pending lock - delete it */
-			break;
-		}
-
-		if (lock->lock_type != PENDING_LOCK) {
-			/* Found it. */
+		if (brl_same_context(&lock->context, &plock->context) &&
+					lock->fnum == plock->fnum &&
+					lock->lock_flav == WINDOWS_LOCK &&
+					lock->lock_type == PENDING_LOCK &&
+					lock->start == plock->start &&
+					lock->size == plock->size ) {
 			break;
 		}
 	}
@@ -787,6 +778,7 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 		}
 	}
 
+	/* Actually delete the lock. */
 	if (i < br_lck->num_locks - 1) {
 		memmove(&locks[i], &locks[i+1], 
 			sizeof(*locks)*((br_lck->num_locks-1) - i));
@@ -803,11 +795,200 @@ static BOOL brl_unlock_windows(struct byte_range_lock *br_lck,
 
 static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
 		struct lock_struct *plock,
-		BOOL remove_pending_locks_only,
 		void (*pre_unlock_fn)(void *),
 		void *pre_unlock_data)
 {
-	return False;
+	unsigned int i, j, count;
+	struct lock_struct *lock;
+	struct lock_struct *tp, *tp1;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	BOOL overlap_found = False;
+
+	/* No zero-zero locks for POSIX. */
+	if (plock->start == 0 && plock->size == 0) {
+		return False;
+	}
+
+	/* Don't allow 64-bit lock wrap. */
+	if (plock->start + plock->size < plock->start ||
+			plock->start + plock->size < plock->size) {
+		return False;
+	}
+
+	/* The worst case scenario here is we have to split an
+	   existing POSIX lock range into two, so we need at most
+	   1 more entry. */
+
+	tp = SMB_MALLOC_ARRAY(struct lock_struct, (br_lck->num_locks + 1));
+	if (!tp) {
+		return False;
+	}
+
+	count = 0;
+	for (i = 0; i < br_lck->num_locks; i++) {
+		struct lock_struct tmp_lock[3];
+		BOOL lock_was_added = False;
+		unsigned int tmp_count;
+
+		lock = &locks[i];
+
+		/* Only remove our own locks */
+		if (!brl_same_context(&lock->context, &plock->context) ||
+					lock->lock_type == PENDING_LOCK ||
+					lock->fnum != plock->fnum ) {
+			memcpy(&tp[count], lock, sizeof(struct lock_struct));
+			count++;
+			continue;
+		}
+
+		/* Work out overlaps. */
+		tmp_count = brlock_posix_split_merge(&tmp_lock[0], &locks[i], plock, &lock_was_added);
+
+		if (tmp_count == 1) {
+			/* Ether the locks didn't overlap, or the unlock completely
+			   overlapped this lock. If it didn't overlap, then there's
+			   no change in the locks. */
+			if (tmp_lock[0].lock_type != UNLOCK_LOCK) {
+				SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
+				/* No change in this lock. */
+				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
+				count++;
+			} else {
+				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
+				overlap_found = True;
+			}
+			continue;
+		} else if (tmp_count == 2) {
+			/* The unlock overlapped an existing lock. Copy the truncated
+			   lock into the lock array. */
+			if (tmp_lock[0].lock_type != UNLOCK_LOCK) {
+				SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
+				SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
+				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
+			} else {
+				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
+				SMB_ASSERT(tmp_lock[1].lock_type == locks[i].lock_type);
+				memcpy(&tp[count], &tmp_lock[1], sizeof(struct lock_struct));
+			}
+			count++;
+			overlap_found = True;
+			continue;
+		} else {
+			/* tmp_count == 3 - (we split a lock range in two). */
+			SMB_ASSERT(tmp_lock[0].lock_type == locks[i].lock_type);
+			SMB_ASSERT(tmp_lock[1].lock_type == UNLOCK_LOCK);
+			SMB_ASSERT(tmp_lock[2].lock_type != locks[i].lock_type);
+
+			memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
+			count++;
+			memcpy(&tp[count], &tmp_lock[2], sizeof(struct lock_struct));
+			count++;
+			overlap_found = True;
+			/* Optimisation... */
+			/* We know we're finished here as we can't overlap any
+			   more POSIX locks. Copy the rest of the lock array. */
+			if (i < br_lck->num_locks - 1) {
+				memcpy(&tp[count], &locks[i+1], 
+					sizeof(*locks)*((br_lck->num_locks-1) - i));
+				count += ((br_lck->num_locks-1) - i);
+			}
+			break;
+		}
+	}
+
+	if (!overlap_found) {
+		/* Just ignore - no change. */
+		SAFE_FREE(tp);
+		return True;
+	}
+
+	/* Do any POSIX unlocks needed. */
+	if (pre_unlock_fn) {
+		(*pre_unlock_fn)(pre_unlock_data);
+	}
+
+	/* Realloc so we don't leak entries per unlock call. */
+	tp1 = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+	if (!tp1) {
+		return False;
+	}
+	br_lck->num_locks = count;
+	br_lck->lock_data = (void *)tp1;
+	br_lck->modified = True;
+
+	/* Send unlock messages to any pending waiters that overlap. */
+	locks = tp1;
+
+	for (j=0; j < br_lck->num_locks; j++) {
+		struct lock_struct *pend_lock = &locks[j];
+
+		/* Ignore non-pending locks. */
+		if (pend_lock->lock_type != PENDING_LOCK) {
+			continue;
+		}
+
+		/* We could send specific lock info here... */
+		if (brl_pending_overlap(lock, pend_lock)) {
+			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
+				procid_str_static(&pend_lock->context.pid )));
+
+			become_root();
+			message_send_pid(pend_lock->context.pid,
+					MSG_SMB_UNLOCK,
+					NULL, 0, True);
+			unbecome_root();
+		}
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ Remove a particular pending lock.
+****************************************************************************/
+
+BOOL brl_remove_pending_lock(struct byte_range_lock *br_lck,
+		uint16 smbpid,
+		struct process_id pid,
+		br_off start,
+		br_off size,
+		enum brl_flavour lock_flav)
+{
+	unsigned int i;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_context context;
+
+	context.smbpid = smbpid;
+	context.pid = pid;
+	context.tid = br_lck->fsp->conn->cnum;
+
+	for (i = 0; i < br_lck->num_locks; i++) {
+		struct lock_struct *lock = &locks[i];
+
+		if (brl_same_context(&lock->context, &context) &&
+				lock->fnum == br_lck->fsp->fnum &&
+				lock->lock_type == PENDING_LOCK &&
+				lock->lock_flav == lock_flav &&
+				lock->start == start &&
+				lock->size == size) {
+			break;
+		}
+	}
+
+	if (i == br_lck->num_locks) {
+		/* Didn't find it. */
+		return False;
+	}
+
+	if (i < br_lck->num_locks - 1) {
+		/* Found this particular pending lock - delete it */
+		memmove(&locks[i], &locks[i+1], 
+			sizeof(*locks)*((br_lck->num_locks-1) - i));
+	}
+
+	br_lck->num_locks -= 1;
+	br_lck->modified = True;
+	return True;
 }
 
 /****************************************************************************
@@ -832,19 +1013,17 @@ BOOL brl_unlock(struct byte_range_lock *br_lck,
 	lock.start = start;
 	lock.size = size;
 	lock.fnum = br_lck->fsp->fnum;
-	lock.lock_type = READ_LOCK; /* We don't really care about this... */
+	lock.lock_type = UNLOCK_LOCK;
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
 		return brl_unlock_windows(br_lck,
 				&lock,
-				remove_pending_locks_only,
 				pre_unlock_fn,
 				pre_unlock_data);
 	} else {
 		return brl_unlock_posix(br_lck,
 				&lock,
-				remove_pending_locks_only,
 				pre_unlock_fn,
 				pre_unlock_data);
 	}

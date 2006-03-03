@@ -800,8 +800,10 @@ struct parm_struct {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 
-/* passed to br lock code */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
+/* passed to br lock code - the UNLOCK_LOCK should never be stored into the tdb
+   and is used in calculating POSIX unlock ranges only. */
+
+enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK, UNLOCK_LOCK};
 enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 
 struct byte_range_lock {

@@ -565,15 +565,12 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
 				DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
-				brl_unlock(br_lck,
+				brl_remove_pending_lock(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
-					blr->lock_flav,
-					True,
-					NULL,
-					NULL);
+					blr->lock_flav);
 				TALLOC_FREE(br_lck);
 
 			}
@@ -601,16 +598,12 @@ void remove_pending_lock_requests_by_mid(int mid)
 				DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
-				brl_unlock(br_lck,
+				brl_remove_pending_lock(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
-					blr->lock_flav,
-					True,
-					NULL,
-					NULL);
-
+					blr->lock_flav);
 				TALLOC_FREE(br_lck);
 			}
 
@@ -706,16 +699,12 @@ void process_blocking_lock_queue(time_t t)
 				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
 					fsp->fnum, fsp->fsp_name ));
 
-				brl_unlock(br_lck,
+				brl_remove_pending_lock(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
-					blr->lock_flav,
-					True,
-					NULL,
-					NULL);
-
+					blr->lock_flav);
 				TALLOC_FREE(br_lck);
 			}
 
@@ -732,16 +721,12 @@ void process_blocking_lock_queue(time_t t)
 			 */
 
 			if (br_lck) {
-				brl_unlock(br_lck,
+				brl_remove_pending_lock(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
-					WINDOWS_LOCK,
-					True,	
-					NULL,
-					NULL);
-
+					blr->lock_flav);
 				TALLOC_FREE(br_lck);
 			}
 
@@ -760,16 +745,12 @@ void process_blocking_lock_queue(time_t t)
 			 */
 
 			if (br_lck) {
-				brl_unlock(br_lck,
+				brl_remove_pending_lock(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
-					blr->lock_flav,
-					True,
-					NULL,
-					NULL);
-
+					blr->lock_flav);
 				TALLOC_FREE(br_lck);
 			}
 
@@ -790,16 +771,12 @@ void process_blocking_lock_queue(time_t t)
 			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
 
 			if (br_lck) {
-				brl_unlock(br_lck,
+				brl_remove_pending_lock(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
-					blr->lock_flav,
-					True,
-					NULL,
-					NULL);
-
+					blr->lock_flav);
 				TALLOC_FREE(br_lck);
 			}
 
