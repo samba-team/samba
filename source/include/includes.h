@@ -75,14 +75,6 @@
 #include <varargs.h>
 #endif
 
-/*
-  we use struct ipv4_addr to avoid having to include all the
-  system networking headers everywhere
-*/
-struct ipv4_addr {
-	uint32_t addr;
-};
-
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets. FIXME: Move to one of the smb-specific headers */
 enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
