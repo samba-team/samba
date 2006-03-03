@@ -423,6 +423,7 @@ typedef struct {
 
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
+#define PRINTER_HANDLE_IS_TCPMON	2
 
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */

@@ -574,7 +574,7 @@ static service sDefault = {
 	False,			/* bInheritOwner */
 	True,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
-	False,			/* bDefaultDevmode */
+	True,			/* bDefaultDevmode */
 	False,			/* bForcePrintername */
 	True,			/* bNTAclSupport */
 	False,                  /* bForceUnknownAclUser */
