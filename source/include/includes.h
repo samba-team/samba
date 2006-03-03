@@ -77,10 +77,22 @@
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets. FIXME: Move to one of the smb-specific headers */
-enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
+enum protocol_types {
+	PROTOCOL_NONE,
+	PROTOCOL_CORE,
+	PROTOCOL_COREPLUS,
+	PROTOCOL_LANMAN1,
+	PROTOCOL_LANMAN2,
+	PROTOCOL_NT1
+};
 
 /* passed to br lock code. FIXME: Move to one of the smb-specific headers */
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
+enum brl_type {
+	READ_LOCK,
+	WRITE_LOCK,
+	PENDING_READ_LOCK,
+	PENDING_WRITE_LOCK
+};
 
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #include "lib/replace/replace.h"
