@@ -73,8 +73,9 @@ void nbtd_mailslot_browse_handler(struct dgram_mailslot_handler *dgmslot,
 	return;
 
 failed:
-	DEBUG(2,("nbtd browse handler failed from %s:%d - %s\n",
-		 src->addr, src->port, nt_errstr(status)));
+	DEBUG(2,("nbtd browse handler failed from %s:%d to %s - %s\n",
+		 src->addr, src->port, nbt_name_string(browse, name),
+		 nt_errstr(status)));
 	talloc_free(browse);
 
 }
