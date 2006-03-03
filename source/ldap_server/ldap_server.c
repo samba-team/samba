@@ -362,7 +362,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		char policy_name[256];
 		int policy_value, s;
 
-		s = sscanf(el->values[i].data, "%255[^=]=%d", policy_name, &policy_value);
+		s = sscanf((const char *)el->values[i].data, "%255[^=]=%d", policy_name, &policy_value);
 		if (ret != 2 || policy_value == 0)
 			continue;
 		
