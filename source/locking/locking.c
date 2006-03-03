@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Locking functions
    Copyright (C) Andrew Tridgell 1992-2000
-   Copyright (C) Jeremy Allison 1992-2000
+   Copyright (C) Jeremy Allison 1992-2006
    Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
@@ -33,6 +33,7 @@
    rewrtten completely to use new tdb code. Tridge, Dec '99
 
    Added POSIX locking support. Jeremy Allison (jeremy@valinux.com), Apr. 2000.
+   Added Unix Extensions POSIX locking support. Jeremy Allison Mar 2006.
 */
 
 #include "includes.h"

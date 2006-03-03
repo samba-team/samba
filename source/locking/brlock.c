@@ -124,9 +124,11 @@ static BOOL brl_overlap(struct lock_struct *lck1,
 static BOOL brl_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
+	/* Ignore PENDING locks. */
 	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
 		return False;
 
+	/* Read locks never conflict. */
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
 		return False;
 	}
@@ -136,6 +138,39 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 		return False;
 	}
 
+	return brl_overlap(lck1, lck2);
+} 
+
+/****************************************************************************
+ See if lock2 can be added when lock1 is in place - when both locks are POSIX
+ flavour.
+****************************************************************************/
+
+static BOOL brl_conflict_posix(struct lock_struct *lck1, 
+			 struct lock_struct *lck2)
+{
+#if defined(DEVELOPER)
+	SMB_ASSERT(lck1->lock_flav == POSIX_LOCK);
+	SMB_ASSERT(lck2->lock_flav == POSIX_LOCK);
+#endif
+
+	/* Ignore PENDING locks. */
+	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+		return False;
+
+	/* Read locks never conflict. */
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
+		return False;
+	}
+
+	/* Locks on the same context on the same fnum con't conflict. */
+	if (brl_same_context(&lck1->context, &lck2->context) &&
+			(lck1->fnum == lck2->fnum)) {
+		return False;
+	}
+
+	/* One is read, the other write, context or fnum are different,
+	   do the overlap ? */
 	return brl_overlap(lck1, lck2);
 } 
 
@@ -287,9 +322,10 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 {
 	unsigned int i;
 	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
-	char *tp;
+	struct lock_struct *tp;
 
 	for (i=0; i < br_lck->num_locks; i++) {
+		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
 			NTSTATUS status = brl_lock_failed(plock);;
 			/* Did we block ourselves ? */
@@ -307,34 +343,292 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	tp = SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
+	tp = (struct lock_struct *)SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
 	if (!tp) {
 		return NT_STATUS_NO_MEMORY;
 	} else {
-		locks = (struct lock_struct *)tp;
+		locks = tp;
 		memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
 		br_lck->num_locks += 1;
 		br_lck->lock_data = (void *)locks;
 		br_lck->modified = True;
 	}
 
-#if ZERO_ZERO
-	/* sort the lock list */
-	qsort(br_lck->lock_data, (size_t)br_lck->num_locks, sizeof(lock), lock_compare);
-#endif
-
 	return NT_STATUS_OK;
 }
 
 /****************************************************************************
+ Cope with POSIX range splits and merges.
+****************************************************************************/
+
+static unsigned int brlock_posix_split_merge(struct lock_struct *lck_arr,
+						struct lock_struct *ex,
+						struct lock_struct *plock,
+						BOOL *lock_was_added)
+{
+	BOOL lock_types_differ = (ex->lock_type != plock->lock_type);
+
+	/* We can't merge non-conplicting locks on different context
+		or not on the same fnum */
+
+	if (!brl_same_context(&ex->context, &plock->context) || (ex->fnum != plock->fnum)) {
+		/* Just copy. */
+		memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+		return 1;
+	}
+
+	/* We now know we have the same context and fnum. */
+
+	/* Did we overlap ? */
+
+/*********************************************
+                                             +---------+
+                                             | ex      |
+                                             +---------+
+                                +-------+
+                                | plock |
+                                +-------+
+OR....
+             +---------+
+             |  ex     |
+             +---------+
+**********************************************/
+
+	if ( (ex->start >= (plock->start + plock->size)) ||
+			(plock->start >= (ex->start + ex->size))) {
+		/* No overlap with this lock - copy existing. */
+		memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+		return 1;
+	}
+
+/*********************************************
+                +---------+
+                |  ex     |
+                +---------+
+        +---------------------------+
+        |       plock               | -> replace with plock.
+        +---------------------------+
+**********************************************/
+
+	if ( (ex->start >= plock->start) &&
+			(ex->start + ex->size <= plock->start + plock->size) ) {
+		memcpy(&lck_arr[0], plock, sizeof(struct lock_struct));
+		*lock_was_added = True;
+		return 1;
+	}
+
+/*********************************************
+                +---------------+
+                |  ex           |
+                +---------------+
+        +---------------+
+        |   plock       |
+        +---------------+
+BECOMES....
+        +---------------+-------+
+        |   plock       | ex    | - different lock types.
+        +---------------+-------+
+OR....
+        +---------------+-------+
+        |   ex                  | - same lock type.
+        +---------------+-------+
+**********************************************/
+
+	if ( (ex->start >= plock->start) &&
+				(ex->start < plock->start + plock->size) &&
+				(ex->start + ex->size > plock->start + plock->size) ) {
+
+		*lock_was_added = True;
+
+		/* If the lock types are the same, we merge, if different, we
+		   add the new lock before the old. */
+
+		if (lock_types_differ) {
+			/* Add new. */
+			memcpy(&lck_arr[0], plock, sizeof(struct lock_struct));
+			memcpy(&lck_arr[1], ex, sizeof(struct lock_struct));
+			/* Adjust existing start and size. */
+			lck_arr[1].start = plock->start + plock->size;
+			lck_arr[1].size = (ex->start + ex->size) - (plock->start + plock->size);
+			return 2;
+		} else {
+			/* Merge. */
+			memcpy(&lck_arr[0], plock, sizeof(struct lock_struct));
+			/* Set new start and size. */
+			lck_arr[0].start = plock->start;
+			lck_arr[0].size = (ex->start + ex->size) - plock->start;
+			return 1;
+		}
+	}
+
+/*********************************************
+   +---------------+
+   |  ex           |
+   +---------------+
+           +---------------+
+           |   plock       |
+           +---------------+
+BECOMES....
+   +-------+---------------+
+   | ex    |   plock       | - different lock types
+   +-------+---------------+
+
+OR
+   +-------+---------------+
+   | ex                    | - same lock type.
+   +-------+---------------+
+
+**********************************************/
+
+	if ( (ex->start < plock->start) &&
+			(ex->start + ex->size > plock->start) &&
+			(ex->start + ex->size <= plock->start + plock->size) ) {
+
+		*lock_was_added = True;
+
+		/* If the lock types are the same, we merge, if different, we
+		   add the new lock after the old. */
+
+		if (lock_types_differ) {
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+			memcpy(&lck_arr[1], plock, sizeof(struct lock_struct));
+			/* Adjust existing size. */
+			lck_arr[0].size = plock->start - ex->start;
+			return 2;
+		} else {
+			/* Merge. */
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+			/* Adjust existing size. */
+			lck_arr[0].size = (plock->start + plock->size) - ex->start;
+			return 1;
+		}
+	}
+
+/*********************************************
+        +---------------------------+
+        |        ex                 |
+        +---------------------------+
+                +---------+
+                |  plock  |
+                +---------+
+BECOMES.....
+        +-------+---------+---------+
+        | ex    |  plock  | ex      | - different lock types.
+        +-------+---------+---------+
+OR
+        +---------------------------+
+        |        ex                 | - same lock type.
+        +---------------------------+
+**********************************************/
+
+	if ( (ex->start < plock->start) && (ex->start + ex->size > plock->start + plock->size) ) {
+		*lock_was_added = True;
+
+		if (lock_types_differ) {
+
+			/* We have to split ex into two locks here. */
+
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+			memcpy(&lck_arr[1], plock, sizeof(struct lock_struct));
+			memcpy(&lck_arr[2], ex, sizeof(struct lock_struct));
+
+			/* Adjust first existing size. */
+			lck_arr[0].size = plock->start - ex->start;
+
+			/* Adjust second existing start and size. */
+			lck_arr[2].start = plock->start + plock->size;
+			lck_arr[2].size = (ex->start + ex->size) - (plock->start + plock->size);
+			return 3;
+		} else {
+			/* Just eat plock. */
+			memcpy(&lck_arr[0], ex, sizeof(struct lock_struct));
+			return 1;
+		}
+	}
+
+	/* Never get here. */
+	smb_panic("brlock_posix_split_merge\n");
+	return 0;
+}
+
+/****************************************************************************
  Lock a range of bytes - POSIX lock semantics.
+ We must cope with range splits and merges.
 ****************************************************************************/
 
 static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
-			struct lock_struct *plock)
+			struct lock_struct *plock,
+			BOOL *my_lock_ctx)
 {
-	/* Placeholder until I fix this. */
-	return NT_STATUS_LOCK_NOT_GRANTED;
+	unsigned int i, count;
+	struct lock_struct *locks = (struct lock_struct *)br_lck->lock_data;
+	struct lock_struct *tp, *tp1;
+	BOOL lock_was_added = False;
+
+	/* No zero-zero locks for POSIX. */
+	if (plock->start == 0 && plock->size == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Don't allow 64-bit lock wrap. */
+	if (plock->start + plock->size < plock->start ||
+			plock->start + plock->size < plock->size) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* The worst case scenario here is we have to split an
+	   existing POSIX lock range into two, and add our lock,
+	   so we need at most 2 more entries. */
+
+	tp = SMB_MALLOC_ARRAY(struct lock_struct, (br_lck->num_locks + 2));
+	if (!tp) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	count = 0;
+	for (i=0; i < br_lck->num_locks; i++) {
+		if (locks[i].lock_flav == WINDOWS_LOCK) {
+			/* Do any Windows flavour locks conflict ? */
+			if (brl_conflict(&locks[i], plock)) {
+				/* Did we block ourselves ? */
+				if (brl_same_context(&locks[i].context, &plock->context)) {
+					*my_lock_ctx = True;
+				}
+				/* No games with error messages. */
+				SAFE_FREE(tp);
+				return NT_STATUS_FILE_LOCK_CONFLICT;
+			}
+			/* Just copy the Windows lock into the new array. */
+			memcpy(&tp[count], &locks[i], sizeof(struct lock_struct));
+			count++;
+		} else {
+			/* POSIX conflict semantics are different. */
+			if (brl_conflict_posix(&locks[i], plock)) {
+				/* Can't block ourselves with POSIX locks. */
+				/* No games with error messages. */
+				SAFE_FREE(tp);
+				return NT_STATUS_FILE_LOCK_CONFLICT;
+			}
+
+			/* Work out overlaps. */
+			count += brlock_posix_split_merge(&tp[count], &locks[i], plock, &lock_was_added);
+		}
+	}
+
+	if (!lock_was_added) {
+		memcpy(&tp[count], plock, sizeof(struct lock_struct));
+		count++;
+	}
+
+	/* Realloc so we don't leak entries per lock call. */
+	tp1 = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+	if (!tp1) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	br_lck->num_locks = count;
+	br_lck->lock_data = (void *)tp1;
+	br_lck->modified = True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -350,6 +644,7 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 		enum brl_flavour lock_flav,
 		BOOL *my_lock_ctx)
 {
+	NTSTATUS ret;
 	struct lock_struct lock;
 
 	*my_lock_ctx = False;
@@ -370,10 +665,17 @@ NTSTATUS brl_lock(struct byte_range_lock *br_lck,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		return brl_lock_windows(br_lck, &lock, my_lock_ctx);
+		ret = brl_lock_windows(br_lck, &lock, my_lock_ctx);
 	} else {
-		return brl_lock_posix(br_lck, &lock);
+		ret = brl_lock_posix(br_lck, &lock, my_lock_ctx);
 	}
+
+#if ZERO_ZERO
+	/* sort the lock list */
+	qsort(br_lck->lock_data, (size_t)br_lck->num_locks, sizeof(lock), lock_compare);
+#endif
+
+	return ret;
 }
 
 /****************************************************************************
