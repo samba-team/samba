@@ -86,6 +86,15 @@ extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
+
+/* API table for Xcv Monitor functions */
+
+struct xcv_api_table {
+	const char *name;
+	WERROR(*fn) (RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed);
+};
+
+
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
 {
@@ -9388,11 +9397,22 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 }
 
 /*******************************************************************
+ Streams the monitor UI DLL name in UNICODE
 *******************************************************************/
 
-static WERROR process_xcvtcp_command( const char *command, RPC_BUFFER *inbuf, RPC_BUFFER *outbuf )
+static WERROR xcvtcp_monitorui( RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed )
 {
-	DEBUG(10,("process_xcvtcp_command: Received command \"%s\"\n", command));
+	const char *dllname = "tcpmonui.dll";
+	
+	*needed = (strlen(dllname)+1) * 2;
+	
+	if ( rpcbuf_get_size(out) < *needed ) {
+		return WERR_INSUFFICIENT_BUFFER;		
+	}
+	
+	if ( !make_monitorui_buf( out, dllname ) ) {
+		return WERR_NOMEM;
+	}
 	
 	return WERR_OK;
 }
@@ -9400,11 +9420,71 @@ static WERROR process_xcvtcp_command( const char *command, RPC_BUFFER *inbuf, RP
 /*******************************************************************
 *******************************************************************/
 
-static WERROR process_xcvlocal_command( const char *command, RPC_BUFFER *inbuf, RPC_BUFFER *outbuf )
+struct xcv_api_table xcvtcp_cmds[] = {
+	{ "MonitorUI",	xcvtcp_monitorui },
+	{ NULL,		NULL }
+};
+
+static WERROR process_xcvtcp_command( const char *command, RPC_BUFFER *inbuf,
+                                        RPC_BUFFER *outbuf, uint32 *needed )
 {
-	DEBUG(10,("process_xcvlocal_command: Received command \"%s\"\n", command));
+	int i;
+	
+	DEBUG(10,("process_xcvtcp_command: Received command \"%s\"\n", command));
+	
+	for ( i=0; xcvtcp_cmds[i].name; i++ ) {
+		if ( strcmp( command, xcvtcp_cmds[i].name ) == 0 )
+			return xcvtcp_cmds[i].fn( inbuf, outbuf, needed );
+	}
+	
+	return WERR_BADFUNC;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static WERROR xcvlocal_monitorui( RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed )
+{
+	const char *dllname = "localui.dll";
+	
+	*needed = (strlen(dllname)+1) * 2;
+	
+	if ( rpcbuf_get_size(out) < *needed ) {
+		return WERR_INSUFFICIENT_BUFFER;		
+	}
+	
+	if ( !make_monitorui_buf( out, dllname )) {
+		return WERR_NOMEM;
+	}
 	
 	return WERR_OK;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+struct xcv_api_table xcvlocal_cmds[] = {
+	{ "MonitorUI",	xcvlocal_monitorui },
+	{ NULL,		NULL }
+};
+
+
+/*******************************************************************
+*******************************************************************/
+
+static WERROR process_xcvlocal_command( const char *command, RPC_BUFFER *inbuf, 
+                                        RPC_BUFFER *outbuf, uint32 *needed )
+{
+	int i;
+	
+	DEBUG(10,("process_xcvlocal_command: Received command \"%s\"\n", command));
+	
+
+	for ( i=0; xcvlocal_cmds[i].name; i++ ) {
+		if ( strcmp( command, xcvlocal_cmds[i].name ) == 0 )
+			return xcvlocal_cmds[i].fn( inbuf, outbuf , needed );
+	}
+	return WERR_BADFUNC;
 }
 
 /*******************************************************************
@@ -9422,8 +9502,8 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	/* Has to be a handle to the TCP/IP port monitor */
 	
-	if ( Printer->printer_type != SPLHND_PORTMON_TCP ) {
-		DEBUG(2,("_spoolss_xcvdataport: Call only valid for the TCP/IP Port Monitor\n"));
+	if ( !(Printer->printer_type & (SPLHND_PORTMON_LOCAL|SPLHND_PORTMON_TCP)) ) {
+		DEBUG(2,("_spoolss_xcvdataport: Call only valid for Port Monitors\n"));
 		return WERR_BADFID;
 	}
 	
@@ -9437,13 +9517,18 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 	/* Get the command name.  There's numerous commands supported by the 
 	   TCPMON interface. */
 	
-	rpcstr_pull(command, q_u->dataname.buffer, sizeof(command), q_u->dataname.uni_str_len*2, 0);
+	rpcstr_pull(command, q_u->dataname.buffer, sizeof(command), 
+		q_u->dataname.uni_str_len*2, 0);
+		
+	/* Allocate the outgoing buffer */
+	
+	rpcbuf_init( &r_u->outdata, q_u->offered, p->mem_ctx );
 	
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:
-		return process_xcvtcp_command( command, &q_u->indata, &r_u->outdata );
+		return process_xcvtcp_command( command, &q_u->indata, &r_u->outdata, &r_u->needed );
 	case SPLHND_PORTMON_LOCAL:
-		return process_xcvlocal_command( command, &q_u->indata, &r_u->outdata );
+		return process_xcvlocal_command( command, &q_u->indata, &r_u->outdata, &r_u->needed );
 	}
 
 	return WERR_INVALID_PRINT_MONITOR;

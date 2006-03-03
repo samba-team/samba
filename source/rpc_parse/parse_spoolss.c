@@ -7460,13 +7460,31 @@ BOOL spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_st
 	if (!prs_align(ps))
 		return False;
 
-        if(!prs_pointer("unknown1", ps, depth, (void**)&r_u->unknown1, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_uint32))
-                return False;
-        if(!prs_pointer("unknown2", ps, depth, (void**)&r_u->unknown2, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_uint32))
-                return False;
-	if(!prs_werror("status",     ps, depth, &r_u->status))
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &r_u->unknown))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
 }
 
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL make_monitorui_buf( RPC_BUFFER *buf, const char *dllname )
+{
+	UNISTR string;
+	
+	if ( !buf )
+		return False;
+
+	init_unistr( &string, dllname );
+
+	if ( !prs_unistr( "ui_dll", &buf->prs, 0, &string ) )
+		return False;
+
+	return True;
+}
