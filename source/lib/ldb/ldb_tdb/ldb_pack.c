@@ -240,7 +240,11 @@ int ltdb_unpack_data(struct ldb_module *module,
 			goto failed;
 		}
 		message->elements[i].flags = 0;
-		message->elements[i].name = (char *)p;
+		message->elements[i].name = talloc_strndup(message->elements, (char *)p, len);
+		if (message->elements[i].name == NULL) {
+			errno = ENOMEM;
+			goto failed;
+		}
 		remaining -= len + 1;
 		p += len + 1;
 		message->elements[i].num_values = pull_uint32(p, 0);
@@ -264,7 +268,14 @@ int ltdb_unpack_data(struct ldb_module *module,
 			}
 
 			message->elements[i].values[j].length = len;
-			message->elements[i].values[j].data = p+4;
+			message->elements[i].values[j].data = talloc_size(message->elements[i].values, len+1);
+			if (message->elements[i].values[j].data == NULL) {
+				errno = ENOMEM;
+				goto failed;
+			}
+			memcpy(message->elements[i].values[j].data, p+4, len);
+			message->elements[i].values[j].data[len] = 0;
+	
 			remaining -= len+4+1;
 			p += len+4+1;
 		}
