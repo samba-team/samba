@@ -421,9 +421,10 @@ typedef struct {
 	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
 } SPOOLSS_NOTIFY_MSG_CTR;
 
-#define PRINTER_HANDLE_IS_PRINTER	0
-#define PRINTER_HANDLE_IS_PRINTSERVER	1
-#define PRINTER_HANDLE_IS_TCPMON	2
+#define SPLHND_PRINTER		1
+#define SPLHND_SERVER	 	2
+#define SPLHND_PORTMON_TCP	3
+#define SPLHND_PORTMON_LOCAL	4
 
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */
