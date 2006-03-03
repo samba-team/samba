@@ -25,7 +25,7 @@ for f in $SRCDIR/codepages/*.dat; do
 	if test "$mode" = 'install'; then
 		echo "Installing $f as $FNAME "
 		cp "$f" "$FNAME"
-		if test ! -e "$FNAME"; then
+		if test ! -f "$FNAME"; then
 			echo "Cannot install $FNAME.  Does $USER have privileges? "
 			exit 1
 		fi
@@ -33,7 +33,7 @@ for f in $SRCDIR/codepages/*.dat; do
 	elif test "$mode" = 'uninstall'; then
 		echo "Removing $FNAME "
 		rm -f "$FNAME"
-		if test -e "$FNAME"; then
+		if test -f "$FNAME"; then
 			echo "Cannot remove $FNAME.  Does $USER have privileges? "
 			exit 1
 		fi

@@ -25,7 +25,7 @@ for p in $*; do
   fi
 
   # this is a special case, mount needs this in a specific location
-  if test "$p2" = smbmount -a -e "$DESTDIR/sbin/mount.smbfs"; then
+  if test "$p2" = smbmount -a -f "$DESTDIR/sbin/mount.smbfs"; then
     echo "Removing $DESTDIR/sbin/mount.smbfs "
     rm -f "$DESTDIR/sbin/mount.smbfs"
   fi
