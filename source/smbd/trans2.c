@@ -1642,11 +1642,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
-			if (!lp_unix_extensions())
-				return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+			if (!lp_unix_extensions()) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
 			break;
 		default:
-			return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
 	srvstr_get_path_wcard(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, &mask_contains_wcard);
@@ -1925,11 +1926,12 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			break;
 		case SMB_FIND_FILE_UNIX:
-			if (!lp_unix_extensions())
-				return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+			if (!lp_unix_extensions()) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
 			break;
 		default:
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
 	if (info_level == SMB_FIND_EA_LIST) {
@@ -2397,8 +2399,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		 */
 
 		case SMB_QUERY_CIFS_UNIX_INFO:
-			if (!lp_unix_extensions())
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			if (!lp_unix_extensions()) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
@@ -2414,9 +2417,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			int rc;
 			vfs_statvfs_struct svfs;
 
-			if (!lp_unix_extensions())
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
-			
+			if (!lp_unix_extensions()) {
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+			}
+
 			rc = SMB_VFS_STATVFS(conn, ".", &svfs);
 
 			if (!rc) {
@@ -2432,7 +2436,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_POSIX_FS_INFO succsessful\n"));
 #ifdef EOPNOTSUPP
 			} else if (rc == EOPNOTSUPP) {
-				return ERROR_DOS(ERRDOS, ERRunknownlevel);
+				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 #endif /* EOPNOTSUPP */
 			} else {
 				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
@@ -2453,7 +2457,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			}
 			/* drop through */
 		default:
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
 
@@ -2497,7 +2501,7 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 				uint32 client_unix_cap_high;
 
 				if (!lp_unix_extensions()) {
-					return ERROR_DOS(ERRDOS,ERRunknownlevel);
+					return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 				}
 
 				/* There should be 12 bytes of capabilities set. */
@@ -2600,7 +2604,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 		default:
 			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
 				info_level));
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 			break;
 	}
 
@@ -2775,13 +2779,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	char *fullpathname;
 	char *base_name;
 	char *p;
+	char *lock_data;
 	SMB_OFF_T pos = 0;
 	BOOL bad_path = False;
 	BOOL delete_pending = False;
 	int len;
 	time_t c_time;
 	files_struct *fsp = NULL;
-	TALLOC_CTX *ea_ctx = NULL;
+	TALLOC_CTX *data_ctx = NULL;
 	struct ea_list *ea_list = NULL;
 	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 
@@ -2900,8 +2905,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		nlink -= 1;
 	}
 
-	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
+		return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+	}
 
 	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d total_data=%d\n",
 		fname,fsp ? fsp->fnum : -1, info_level,tran_call,total_data));
@@ -2920,40 +2926,68 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	if (!(mode & aDIR))
 		file_size = get_file_size(sbuf);
 
-	/* Pull any EA list from the data portion. */
-	if (info_level == SMB_INFO_QUERY_EAS_FROM_LIST) {
-		uint32 ea_size;
+	/* Pull out any data sent here before we realloc. */
+	switch (info_level) {
+		case SMB_INFO_QUERY_EAS_FROM_LIST:
+		{
+			/* Pull any EA list from the data portion. */
+			uint32 ea_size;
 
-		if (total_data < 4) {
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-		}
-		ea_size = IVAL(pdata,0);
+			if (total_data < 4) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+			ea_size = IVAL(pdata,0);
 
-		if (total_data > 0 && ea_size != total_data) {
-			DEBUG(4,("call_trans2qfilepathinfo: Rejecting EA request with incorrect \
+			if (total_data > 0 && ea_size != total_data) {
+				DEBUG(4,("call_trans2qfilepathinfo: Rejecting EA request with incorrect \
 total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-		}
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 
-		if (!lp_ea_support(SNUM(conn))) {
-			return ERROR_DOS(ERRDOS,ERReasnotsupported);
-		}
+			if (!lp_ea_support(SNUM(conn))) {
+				return ERROR_DOS(ERRDOS,ERReasnotsupported);
+			}
 
-		if ((ea_ctx = talloc_init("ea_list")) == NULL) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
+			if ((data_ctx = talloc_init("ea_list")) == NULL) {
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
 
-		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ea_ctx, pdata + 4, ea_size - 4);
-		if (!ea_list) {
-			talloc_destroy(ea_ctx);
-			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			/* Pull out the list of names. */
+			ea_list = read_ea_name_list(data_ctx, pdata + 4, ea_size - 4);
+			if (!ea_list) {
+				talloc_destroy(data_ctx);
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+			break;
 		}
+		case SMB_QUERY_POSIX_LOCK:
+		{
+			if (fsp == NULL || fsp->fh->fd == -1) {
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+			}
+
+			if (total_data != POSIX_LOCK_DATA_SIZE) {
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			if ((data_ctx = talloc_init("lock_request")) == NULL) {
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+
+			/* Copy the lock range data. */
+			lock_data = talloc_memdup(data_ctx, pdata, total_data);
+			if (!lock_data) {
+				talloc_destroy(data_ctx);
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+		}
+		default:
+			break;
 	}
 
 	params = SMB_REALLOC(*pparams,2);
 	if (params == NULL) {
-		talloc_destroy(ea_ctx);
+		talloc_destroy(data_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	*pparams = params;
@@ -2961,7 +2995,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	pdata = SMB_REALLOC(*ppdata, data_size); 
 	if ( pdata == NULL ) {
-		talloc_destroy(ea_ctx);
+		talloc_destroy(data_ctx);
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	*ppdata = pdata;
@@ -3047,18 +3081,18 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 
-			ea_file_list = get_ea_list_from_file(ea_ctx, conn, fsp, fname, &total_ea_len);
+			ea_file_list = get_ea_list_from_file(data_ctx, conn, fsp, fname, &total_ea_len);
 			ea_list = ea_list_union(ea_list, ea_file_list, &total_ea_len);
 
 			if (!ea_list || (total_ea_len > data_size)) {
-				talloc_destroy(ea_ctx);
+				talloc_destroy(data_ctx);
 				data_size = 4;
 				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
 				break;
 			}
 
-			data_size = fill_ea_buffer(ea_ctx, pdata, data_size, conn, ea_list);
-			talloc_destroy(ea_ctx);
+			data_size = fill_ea_buffer(data_ctx, pdata, data_size, conn, ea_list);
+			talloc_destroy(data_ctx);
 			break;
 		}
 
@@ -3069,21 +3103,21 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 
-			ea_ctx = talloc_init("ea_ctx");
-			if (!ea_ctx) {
+			data_ctx = talloc_init("ea_ctx");
+			if (!data_ctx) {
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 
-			ea_list = get_ea_list_from_file(ea_ctx, conn, fsp, fname, &total_ea_len);
+			ea_list = get_ea_list_from_file(data_ctx, conn, fsp, fname, &total_ea_len);
 			if (!ea_list || (total_ea_len > data_size)) {
-				talloc_destroy(ea_ctx);
+				talloc_destroy(data_ctx);
 				data_size = 4;
 				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
 				break;
 			}
 
-			data_size = fill_ea_buffer(ea_ctx, pdata, data_size, conn, ea_list);
-			talloc_destroy(ea_ctx);
+			data_size = fill_ea_buffer(data_ctx, pdata, data_size, conn, ea_list);
+			talloc_destroy(data_ctx);
 			break;
 		}
 
@@ -3476,8 +3510,66 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 #endif
 
+		case SMB_QUERY_POSIX_LOCK:
+		{
+			NTSTATUS status;
+			SMB_BIG_UINT count;
+			SMB_BIG_UINT offset;
+			uint16 lock_pid;
+			enum brl_type lock_type;
+
+			switch (SVAL(lock_data, POSIX_LOCK_TYPE_OFFSET)) {
+				case POSIX_LOCK_TYPE_READ:
+					lock_type = READ_LOCK;
+					break;
+				case POSIX_LOCK_TYPE_WRITE:
+					lock_type = WRITE_LOCK;
+					break;
+				case POSIX_LOCK_TYPE_UNLOCK:
+				default:
+					/* There's no point in asking for an unlock... */
+					talloc_destroy(data_ctx);
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
+
+			lock_pid = (uint16)IVAL(lock_data, POSIX_LOCK_PID_OFFSET);
+#if defined(HAVE_LONGLONG)
+			offset = (((SMB_BIG_UINT) IVAL(lock_data,(POSIX_LOCK_START_OFFSET+4))) << 32) |
+					((SMB_BIG_UINT) IVAL(lock_data,POSIX_LOCK_START_OFFSET));
+			count = (((SMB_BIG_UINT) IVAL(lock_data,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
+					((SMB_BIG_UINT) IVAL(lock_data,POSIX_LOCK_LEN_OFFSET));
+#else /* HAVE_LONGLONG */
+			offset = (SMB_BIG_UINT)IVAL(lock_data,POSIX_LOCK_START_OFFSET);
+			count = (SMB_BIG_UINT)IVAL(lock_data,POSIX_LOCK_LEN_OFFSET);
+#endif /* HAVE_LONGLONG */
+
+#if 0
+			/* We need a vfs change to get data on already locked regions... */
+			status = do_lock(fsp,
+					lock_pid,
+					count,
+					offset,
+					lock_type,
+					POSIX_LOCK,
+					&my_lock_ctx);
+#endif
+
+			if (!NT_STATUS_IS_OK(status)) {
+				/* Here we need to report who has it locked... */
+				data_size = POSIX_LOCK_DATA_SIZE;
+				memcpy(pdata, lock_data, POSIX_LOCK_DATA_SIZE);
+			} else {
+				/* For success we just return a copy of what we sent
+				   with the lock type set to POSIX_LOCK_TYPE_UNLOCK. */
+				data_size = POSIX_LOCK_DATA_SIZE;
+				memcpy(pdata, lock_data, POSIX_LOCK_DATA_SIZE);
+				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET,POSIX_LOCK_TYPE_UNLOCK);
+			}
+			break;
+		}
+
 		default:
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
 	send_trans2_replies(outbuf, bufsize, params, param_size, *ppdata, data_size);
@@ -3681,8 +3773,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
 
-	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
-		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
+		return ERROR_NT(NT_STATUS_INVALID_LEVEL);
+	}
 
 	if (VALID_STAT(sbuf))
 		unixmode = sbuf.st_mode;
@@ -3850,8 +3943,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #ifdef LARGE_SMB_OFF_T
 			allocation_size |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0) /* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			if (IVAL(pdata,4) != 0) {
+				/* more than 32 bits? */
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 					fname, (double)allocation_size ));
@@ -3917,8 +4012,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #ifdef LARGE_SMB_OFF_T
 			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			if (IVAL(pdata,4) != 0)	{
+				/* more than 32 bits? */
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set end of file info for file %s to %.0f\n", fname, (double)size ));
 			break;
@@ -3971,8 +4068,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #ifdef LARGE_SMB_OFF_T
 			position_information |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0) /* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			if (IVAL(pdata,4) != 0) {
+				/* more than 32 bits? */
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			}
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
 					fname, (double)position_information ));
@@ -4028,8 +4127,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #ifdef LARGE_SMB_OFF_T
 				size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
-				if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-					return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				if (IVAL(pdata,4) != 0)	{
+					/* more than 32 bits? */
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 #endif /* LARGE_SMB_OFF_T */
 			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
@@ -4349,7 +4450,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
 			}
 
-			if (total_data < POSIX_LOCK_DATA_SIZE) {
+			if (total_data != POSIX_LOCK_DATA_SIZE) {
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 
@@ -4358,6 +4459,10 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					lock_type = READ_LOCK;
 					break;
 				case POSIX_LOCK_TYPE_WRITE:
+					/* Return the right POSIX-mappable error code for files opened read-only. */
+					if (!fsp->can_write) {
+						return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+					}
 					lock_type = WRITE_LOCK;
 					break;
 				case POSIX_LOCK_TYPE_UNLOCK:
@@ -4414,7 +4519,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 
 		default:
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
@@ -4666,7 +4771,7 @@ static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char
 		case 2:
 			break;
 		default:
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
 
 	/* Realloc the parameter and data sizes */

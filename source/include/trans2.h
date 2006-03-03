@@ -441,7 +441,9 @@ Offset Size         Name
 #define SMB_QUERY_ATTR_FLAGS           0x206 /* chflags, chattr */
 #define SMB_SET_ATTR_FLAGS             0x206 
 #define SMB_QUERY_POSIX_PERMISSION     0x207
+/* Only valid for qfileinfo */
 #define SMB_QUERY_POSIX_LOCK	       0x208
+/* Only valid for setfileinfo */
 #define SMB_SET_POSIX_LOCK	       0x208
 
 /* Transact 2 Find First levels */
