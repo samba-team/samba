@@ -157,7 +157,7 @@ static BOOL inject_extended_dn(struct ldb_message *msg,
 	val = ldb_msg_find_ldb_val(msg, "distinguishedName");
 	if (val) {
 		ldb_msg_remove_attr(msg, "distinguishedName");
-		if (ldb_msg_add_string(msg, "distinguishedName", new_dn))
+		if (ldb_msg_add_steal_string(msg, "distinguishedName", new_dn))
 			return False;
 	}
 

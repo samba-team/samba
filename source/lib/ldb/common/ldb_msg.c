@@ -263,7 +263,7 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
 	val.data   = (uint8_t *)str;
 	val.length = strlen(str);
 
-	return ldb_msg_add_value(msg, attr_name, &val);
+	return ldb_msg_add_steal_value(msg, attr_name, &val);
 }
 
 /*
