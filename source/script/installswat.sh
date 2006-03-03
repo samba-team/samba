@@ -51,14 +51,14 @@ for ln in $LANGS; do
     echo $FNAME
     if test "$mode" = 'install'; then
       cp "$f" "$FNAME"
-      if test ! -e "$FNAME"; then
+      if test ! -f "$FNAME"; then
         echo "Cannot install $FNAME. Does $USER have privileges? "
         exit 1
       fi
       chmod 0644 "$FNAME"
     elif test "$mode" = 'uninstall'; then
       rm -f "$FNAME"
-      if test -e "$FNAME"; then
+      if test -f "$FNAME"; then
         echo "Cannot remove $FNAME.  Does $USER have privileges? "
         exit 1
       fi
@@ -84,14 +84,14 @@ for ln in $LANGS; do
       f=$f.tmp
       cp "$f" "$FNAME"
       rm -f "$f"
-      if test ! -e "$FNAME"; then
+      if test ! -f "$FNAME"; then
         echo "Cannot install $FNAME. Does $USER have privileges? "
         exit 1
       fi
       chmod 0644 "$FNAME"
     elif test "$mode" = 'uninstall'; then
       rm -f "$FNAME"
-      if test -e "$FNAME"; then
+      if test -f "$FNAME"; then
         echo "Cannot remove $FNAME.  Does $USER have privileges? "
         exit 1
       fi
@@ -107,14 +107,14 @@ for ln in $LANGS; do
       echo $FNAME
       if test "$mode" = 'install'; then
         cp "$f" "$FNAME"
-        if test ! -e "$FNAME"; then
+        if test ! -f "$FNAME"; then
           echo "Cannot install $FNAME. Does $USER have privileges? "
           exit 1
         fi
         chmod 0644 $FNAME
       elif test "$mode" = 'uninstall'; then
         rm -f "$FNAME"
-        if test -e "$FNAME"; then
+        if test -f "$FNAME"; then
           echo "Cannot remove $FNAME.  Does $USER have privileges? "
           exit 1
         fi
@@ -130,14 +130,14 @@ for ln in $LANGS; do
       echo $FNAME
       if test "$mode" = 'install'; then
         cp "$f" "$FNAME"
-        if test ! -e "$FNAME"; then
+        if test ! -f "$FNAME"; then
           echo "Cannot install $FNAME. Does $USER have privileges? "
           exit 1
         fi
         chmod 0644 $FNAME
       elif test "$mode" = 'uninstall'; then
         rm -f "$FNAME"
-        if test -e "$FNAME"; then
+        if test -f "$FNAME"; then
           echo "Cannot remove $FNAME.  Does $USER have privileges? "
           exit 1
         fi
@@ -171,14 +171,14 @@ if [ -d $SRCDIR../docs/htmldocs/ ]; then
 	  echo $FNAME
           if test "$mode" = 'install'; then
             cp "$f" "$FNAME"
-            if test ! -e "$FNAME"; then
+            if test ! -f "$FNAME"; then
               echo "Cannot install $FNAME. Does $USER have privileges? "
               exit 1
             fi
             chmod 0644 $FNAME
           elif test "$mode" = 'uninstall'; then
             rm -f "$FNAME"
-            if test -e "$FNAME"; then
+            if test -f "$FNAME"; then
               echo "Cannot remove $FNAME.  Does $USER have privileges? "
               exit 1
             fi
@@ -198,14 +198,14 @@ if [ -d $SRCDIR../docs/htmldocs/ ]; then
               echo $FNAME
               if test "$mode" = 'install'; then
                 cp "$f" "$FNAME"
-                if test ! -e "$FNAME"; then
+                if test ! -f "$FNAME"; then
                   echo "Cannot install $FNAME. Does $USER have privileges? "
                   exit 1
                 fi
                 chmod 0644 $FNAME
               elif test "$mode" = 'uninstall'; then
                 rm -f "$FNAME"
-                if test -e "$FNAME"; then
+                if test -f "$FNAME"; then
                   echo "Cannot remove $FNAME.  Does $USER have privileges? "
                   exit 1
                 fi
@@ -238,14 +238,14 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
         echo $FNAME
         if test "$mode" = 'install'; then
           cp "$f" "$FNAME"
-          if test ! -e "$FNAME"; then
+          if test ! -f "$FNAME"; then
             echo "Cannot install $FNAME. Does $USER have privileges? "
             exit 1
           fi
           chmod 0644 $FNAME
         elif test "$mode" = 'uninstall'; then
           rm -f "$FNAME"
-          if test -e "$FNAME"; then
+          if test -f "$FNAME"; then
             echo "Cannot remove $FNAME.  Does $USER have privileges? "
             exit 1
           fi
@@ -257,14 +257,14 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
         echo $FNAME
         if test "$mode" = 'install'; then
           cp "$f" "$FNAME"
-          if test ! -e "$FNAME"; then
+          if test ! -f "$FNAME"; then
             echo "Cannot install $FNAME. Does $USER have privileges? "
             exit 1
           fi
           chmod 0644 $FNAME
         elif test "$mode" = 'uninstall'; then
           rm -f "$FNAME"
-          if test -e "$FNAME"; then
+          if test -f "$FNAME"; then
             echo "Cannot remove $FNAME.  Does $USER have privileges? "
             exit 1
           fi
@@ -278,14 +278,14 @@ if [ "x$BOOKDIR" != "x" -a -f $SRCDIR../docs/htmldocs/using_samba/toc.html ]; th
         echo $FNAME
         if test "$mode" = 'install'; then
           cp "$f" "$FNAME"
-          if test ! -e "$FNAME"; then
+          if test ! -f "$FNAME"; then
             echo "Cannot install $FNAME. Does $USER have privileges? "
             exit 1
           fi
           chmod 0644 $FNAME
         elif test "$mode" = 'uninstall'; then
           rm -f "$FNAME"
-          if test -e "$FNAME"; then
+          if test -f "$FNAME"; then
             echo "Cannot remove $FNAME.  Does $USER have privileges? "
             exit 1
           fi
