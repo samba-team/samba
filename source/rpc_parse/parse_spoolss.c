@@ -7406,3 +7406,67 @@ BOOL make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
 
 	return True;
 }
+
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL spoolss_io_q_xcvdataport(const char *desc, SPOOL_Q_XCVDATAPORT *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_xcvdataport");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;	
+
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->dataname, True, ps, depth))
+		return False;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_rpcbuffer("", ps, depth, &q_u->indata))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("indata_len", ps, depth, &q_u->indata_len))
+		return False;
+	if (!prs_uint32("offered", ps, depth, &q_u->offered))
+		return False;
+	if (!prs_uint32("unknown", ps, depth, &q_u->unknown))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/  
+
+BOOL spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_xcvdataport");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_rpcbuffer("", ps, depth, &r_u->outdata))
+		return False;
+		
+	if (!prs_align(ps))
+		return False;
+
+        if(!prs_pointer("unknown1", ps, depth, (void**)&r_u->unknown1, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_uint32))
+                return False;
+        if(!prs_pointer("unknown2", ps, depth, (void**)&r_u->unknown2, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_uint32))
+                return False;
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
