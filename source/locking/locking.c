@@ -127,20 +127,6 @@ BOOL is_locked(files_struct *fsp,
 			(double)offset, (double)count, ret ? "locked" : "unlocked",
 			fsp->fnum, fsp->fsp_name ));
 
-	/*
-	 * There is no lock held by an SMB daemon, check to
-	 * see if there is a POSIX lock from a UNIX or NFS process.
-	 * This only conflicts with Windows locks, not POSIX locks.
-	 */
-
-	if(!ret && lp_posix_locking(snum) && (lock_flav == WINDOWS_LOCK)) {
-		ret = is_posix_locked(fsp, offset, count, lock_type);
-
-		DEBUG(10,("is_locked: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
-				(double)offset, (double)count, ret ? "locked" : "unlocked",
-				fsp->fnum, fsp->fsp_name ));
-	}
-
 	return ret;
 }
 
@@ -186,28 +172,6 @@ NTSTATUS do_lock(files_struct *fsp,
 			lock_type,
 			lock_flav,
 			my_lock_ctx);
-
-	if (NT_STATUS_IS_OK(status) && lp_posix_locking(SNUM(fsp->conn))) {
-
-		/*
-		 * Try and get a POSIX lock on this range.
-		 * Note that this is ok if it is a read lock
-		 * overlapping on a different fd. JRA.
-		 */
-
-		if (!set_posix_lock(fsp, offset, count, lock_type)) {
-			if (errno == EACCES || errno == EAGAIN) {
-				status = NT_STATUS_FILE_LOCK_CONFLICT;
-			} else {
-				status = map_nt_error_from_unix(errno);
-			}
-
-			/*
-			 * We failed to map - don't save the brl lock entry.
-			 */
-			br_lck->modified = False;
-		}
-	}
 
 	TALLOC_FREE(br_lck);
 	return status;
@@ -279,6 +243,7 @@ struct posix_unlock_data_struct {
 	SMB_BIG_UINT count;
 };
 
+#if 0
 /****************************************************************************
  Function passed to brl_unlock to allow POSIX unlock to be done first.
 ****************************************************************************/
@@ -291,6 +256,7 @@ static void posix_unlock(void *pre_data)
 		release_posix_lock(pdata->fsp, pdata->offset, pdata->count);
 	}
 }
+#endif
 
 /****************************************************************************
  Utility function called by unlocking requests.
@@ -303,7 +269,9 @@ NTSTATUS do_unlock(files_struct *fsp,
 			enum brl_flavour lock_flav)
 {
 	BOOL ok = False;
+#if 0
 	struct posix_unlock_data_struct posix_data;
+#endif
 	struct byte_range_lock *br_lck = NULL;
 	
 	if (!lp_locking(SNUM(fsp->conn))) {
@@ -317,15 +285,11 @@ NTSTATUS do_unlock(files_struct *fsp,
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	/*
-	 * Remove the existing lock record from the tdb lockdb
-	 * before looking at POSIX locks. If this record doesn't
-	 * match then don't bother looking to remove POSIX locks.
-	 */
-
+#if 0
 	posix_data.fsp = fsp;
 	posix_data.offset = offset;
 	posix_data.count = count;
+#endif
 
 	br_lck = brl_get_locks(NULL, fsp);
 	if (!br_lck) {
@@ -337,10 +301,7 @@ NTSTATUS do_unlock(files_struct *fsp,
 			procid_self(),
 			offset,
 			count,
-			lock_flav,
-			False,
-			posix_unlock,
-			(void *)&posix_data);
+			lock_flav);
    
 	TALLOC_FREE(br_lck);
 

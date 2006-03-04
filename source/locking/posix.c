@@ -696,7 +696,11 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
  region is locked, False otherwise.
 ****************************************************************************/
 
-BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+BOOL is_posix_locked(files_struct *fsp,
+			SMB_BIG_UINT u_offset,
+			SMB_BIG_UINT u_count,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
@@ -959,9 +963,14 @@ lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size,
 /****************************************************************************
  POSIX function to acquire a lock. Returns True if the
  lock could be granted, False if not.
+ TODO -- Fix POSIX lock flavour semantics.
 ****************************************************************************/
 
-BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+BOOL set_posix_lock(files_struct *fsp,
+			SMB_BIG_UINT u_offset,
+			SMB_BIG_UINT u_count,
+			enum brl_type lock_type,
+			enum brl_flavour lock_flav)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
