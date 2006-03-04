@@ -67,6 +67,26 @@ struct lock_key {
 static TDB_CONTEXT *tdb;
 
 /****************************************************************************
+ Debug info at level 10 for lock struct.
+****************************************************************************/
+
+static void print_lock_struct(unsigned int i, struct lock_struct *pls)
+{
+	DEBUG(10,("[%u]: smbpid = %u, tid = %u, pid = %u, ",
+			i,
+			(unsigned int)pls->context.smbpid,
+			(unsigned int)pls->context.tid,
+			(unsigned int)procid_to_pid(&pls->context.pid) ));
+	
+	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
+		(double)pls->start,
+		(double)pls->size,
+		pls->fnum,
+		lock_type_name(pls->lock_type),
+		lock_flav_name(pls->lock_flav) ));
+}
+
+/****************************************************************************
  Create a locking key - ensuring zero filled for pad purposes.
 ****************************************************************************/
 
@@ -811,6 +831,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
 	/* Don't allow 64-bit lock wrap. */
 	if (plock->start + plock->size < plock->start ||
 			plock->start + plock->size < plock->size) {
+		DEBUG(10,("brl_unlock_posix: lock wrap\n"));
 		return False;
 	}
 
@@ -820,6 +841,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
 
 	tp = SMB_MALLOC_ARRAY(struct lock_struct, (br_lck->num_locks + 1));
 	if (!tp) {
+		DEBUG(10,("brl_unlock_posix: malloc fail\n"));
 		return False;
 	}
 
@@ -898,6 +920,7 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
 	if (!overlap_found) {
 		/* Just ignore - no change. */
 		SAFE_FREE(tp);
+		DEBUG(10,("brl_unlock_posix: No overlap - unlocked.\n"));
 		return True;
 	}
 
@@ -907,10 +930,18 @@ static BOOL brl_unlock_posix(struct byte_range_lock *br_lck,
 	}
 
 	/* Realloc so we don't leak entries per unlock call. */
-	tp1 = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
-	if (!tp1) {
-		return False;
+	if (count) {
+		tp1 = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
+		if (!tp1) {
+			DEBUG(10,("brl_unlock_posix: realloc fail\n"));
+			return False;
+		}
+	} else {
+		/* We deleted the last lock. */
+		SAFE_FREE(tp);
+		tp1 = NULL;
 	}
+
 	br_lck->num_locks = count;
 	br_lck->lock_data = (void *)tp1;
 	br_lck->modified = True;
@@ -1202,22 +1233,6 @@ static int byte_range_lock_destructor(void *p)
 	SAFE_FREE(br_lck->lock_data);
 	tdb_chainunlock(tdb, key);
 	return 0;
-}
-
-static void print_lock_struct(unsigned int i, struct lock_struct *pls)
-{
-	DEBUG(10,("[%u]: smbpid = %u, tid = %u, pid = %u, ",
-			i,
-			(unsigned int)pls->context.smbpid,
-			(unsigned int)pls->context.tid,
-			(unsigned int)procid_to_pid(&pls->context.pid) ));
-	
-	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
-		(double)pls->start,
-		(double)pls->size,
-		pls->fnum,
-		lock_type_name(pls->lock_type),
-		lock_flav_name(pls->lock_flav) ));
 }
 
 /*******************************************************************
